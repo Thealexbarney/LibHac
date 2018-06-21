@@ -6,6 +6,8 @@ namespace libhac
 {
     public static class Util
     {
+        private const int MediaSize = 0x200;
+
         public static T CreateJaggedArray<T>(params int[] lengths)
         {
             return (T)InitializeJaggedArray(typeof(T).GetElementType(), 0, lengths);
@@ -49,7 +51,7 @@ namespace libhac
 
             for (int i = 0; i < array.Length; i++)
             {
-                if (i != 0)
+                if (array[i] != 0)
                 {
                     return false;
                 }
@@ -158,6 +160,11 @@ namespace libhac
                 result[lastcell - (i >> 1)] |= ByteLookup[i & 1, HexToInt(input[lastchar - i])];
             }
             return result;
+        }
+
+        internal static ulong MediaToReal(ulong media)
+        {
+            return MediaSize * media;
         }
     }
 }

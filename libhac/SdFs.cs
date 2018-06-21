@@ -23,19 +23,17 @@ namespace libhac
             Files = Directory.GetFiles(ContentsDir, "00", SearchOption.AllDirectories).Select(Path.GetDirectoryName).ToArray();
         }
 
-        public List<Nca> ReadAllNca()
+        public IEnumerable<Nca> ReadAllNca()
         {
-            List<Nca> ncas = new List<Nca>();
             foreach (var file in Files)
             {
                 var sdPath = "/" + Util.GetRelativePath(file, ContentsDir).Replace('\\', '/');
                 var nax0 = new Nax0(Keyset, file, sdPath);
                 var nca = new Nca(Keyset, nax0.Stream);
-                ncas.Add(nca);
                 nca.Name = Path.GetFileName(file);
+                yield return nca;
             }
 
-            return ncas;
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using libhac;
 
 namespace hactoolnet
@@ -22,7 +23,7 @@ namespace hactoolnet
             using (var output = new FileStream(args[4], FileMode.Create))
             using (var progress = new ProgressBar())
             {
-                progress.LogMessage($"Title ID: {nca.TitleId:X8}");
+                progress.LogMessage($"Title ID: {nca.Header.TitleId:X16}");
                 progress.LogMessage($"Writing {args[4]}");
                 nax0.Stream.CopyStream(output, nax0.Stream.Length, progress);
             }
@@ -33,11 +34,11 @@ namespace hactoolnet
             var keyset = ExternalKeys.ReadKeyFile(args[0]);
             keyset.SetSdSeed(args[1].ToBytes());
             var sdfs = new SdFs(keyset, args[2]);
-            var ncas = sdfs.ReadAllNca();
+            var ncas = sdfs.ReadAllNca().ToArray();
 
             foreach (var nca in ncas)
             {
-                Console.WriteLine($"{nca.TitleId:X8} {nca.ContentType} {nca.Name}");
+                Console.WriteLine($"{nca.Header.TitleId:X16} {nca.Header.ContentType} {nca.Name}");
             }
         }
     }

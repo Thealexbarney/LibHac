@@ -31,6 +31,7 @@ namespace libhac
         public byte[] header_kek_source { get; set; } = new byte[0x10];
         public byte[] sd_card_kek_source { get; set; } = new byte[0x10];
         public byte[][] sd_card_key_sources { get; set; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
+        public byte[][] sd_card_key_sources_specific { get; set; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
         public byte[] encrypted_header_key { get; set; } = new byte[0x20];
         public byte[] header_key { get; set; } = new byte[0x20];
         public byte[][] titlekeks { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
@@ -42,13 +43,14 @@ namespace libhac
 
         public void SetSdSeed(byte[] sdseed)
         {
-            foreach (byte[] key in sd_card_key_sources)
+            for (int k = 0; k < sd_card_key_sources.Length; k++)
             {
                 for (int i = 0; i < 0x20; i++)
                 {
-                    key[i] ^= sdseed[i & 0xF];
+                    sd_card_key_sources_specific[k][i] = (byte)(sd_card_key_sources[k][i] ^ sdseed[i & 0xF]);
                 }
             }
+
             DeriveKeys();
         }
 
@@ -65,9 +67,9 @@ namespace libhac
             var sdKek = new byte[0x10];
             Crypto.GenerateKek(sdKek, sd_card_kek_source, master_keys[0], aes_kek_generation_source, aes_key_generation_source);
 
-            for (int k = 0; k < sd_card_key_sources.Length; k++)
+            for (int k = 0; k < sd_card_key_sources_specific.Length; k++)
             {
-                Crypto.DecryptEcb(sdKek, sd_card_key_sources[k], sd_card_keys[k], 0x20);
+                Crypto.DecryptEcb(sdKek, sd_card_key_sources_specific[k], sd_card_keys[k], 0x20);
             }
         }
     }
@@ -76,7 +78,7 @@ namespace libhac
     {
         private static readonly Dictionary<string, KeyValue> KeyDict = CreateKeyDict();
 
-        public static Keyset ReadKeyFile(string filename)
+        public static Keyset ReadKeyFile(string filename, IProgressReport progress = null)
         {
             var keyset = new Keyset();
             using (var reader = new StreamReader(new FileStream(filename, FileMode.Open)))
@@ -92,14 +94,14 @@ namespace libhac
 
                     if (!KeyDict.TryGetValue(key, out var kv))
                     {
-                        Console.WriteLine($"Failed to match key {key}");
+                        progress?.LogMessage($"Failed to match key {key}");
                         continue;
                     }
 
                     var value = valueStr.ToBytes();
                     if (value.Length != kv.Size)
                     {
-                        Console.WriteLine($"Key {key} had incorrect size {value.Length}. (Expected {kv.Size})");
+                        progress?.LogMessage($"Key {key} had incorrect size {value.Length}. (Expected {kv.Size})");
                         continue;
                     }
 
