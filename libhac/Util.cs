@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 
 namespace libhac
 {
@@ -72,6 +73,12 @@ namespace libhac
                 progress?.ReportAdd(1);
             }
         }
+
+        public static string ReadAscii(this BinaryReader reader, int size)
+        {
+            return Encoding.ASCII.GetString(reader.ReadBytes(size), 0, size);
+        }
+
 
         private static int HexToInt(char c)
         {
