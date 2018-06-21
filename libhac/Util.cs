@@ -79,6 +79,22 @@ namespace libhac
             return Encoding.ASCII.GetString(reader.ReadBytes(size), 0, size);
         }
 
+        // todo Maybe make less naive
+        public static string GetRelativePath(string path, string basePath)
+        {
+            var directory = new DirectoryInfo(basePath);
+            var file = new FileInfo(path);
+
+            string fullDirectory = directory.FullName;
+            string fullFile = file.FullName;
+
+            if (!fullFile.StartsWith(fullDirectory))
+            {
+                throw new ArgumentException($"{nameof(path)} is not a subpath of {nameof(basePath)}");
+            }
+
+            return fullFile.Substring(fullDirectory.Length + 1);
+        }
 
         private static int HexToInt(char c)
         {

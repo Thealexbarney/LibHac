@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using libhac;
 
 namespace hactoolnet
@@ -6,6 +7,11 @@ namespace hactoolnet
     public static class Program
     {
         static void Main(string[] args)
+        {
+            ListSdContents(args);
+        }
+
+        static void DecryptNax0(string[] args)
         {
             var keyset = ExternalKeys.ReadKeyFile(args[0]);
             keyset.SetSdSeed(args[1].ToBytes());
@@ -19,6 +25,19 @@ namespace hactoolnet
                 progress.LogMessage($"Title ID: {nca.TitleId:X8}");
                 progress.LogMessage($"Writing {args[4]}");
                 nax0.Stream.CopyStream(output, nax0.Stream.Length, progress);
+            }
+        }
+
+        static void ListSdContents(string[] args)
+        {
+            var keyset = ExternalKeys.ReadKeyFile(args[0]);
+            keyset.SetSdSeed(args[1].ToBytes());
+            var sdfs = new SdFs(keyset, args[2]);
+            var ncas = sdfs.ReadAllNca();
+
+            foreach (var nca in ncas)
+            {
+                Console.WriteLine($"{nca.TitleId:X8} {nca.ContentType} {nca.Name}");
             }
         }
     }

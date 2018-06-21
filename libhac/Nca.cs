@@ -17,6 +17,7 @@ namespace libhac
         public uint SdkVersion { get; set; } // What SDK was this built with?
         public byte CryptoType2 { get; set; } // Which keyblob (field 2)
         public byte[] RightsId { get; set; }
+        public string Name { get; set; }
 
         public Nca(Keyset keyset, Stream stream)
         {

@@ -41,6 +41,7 @@ namespace libhac.XTSSharp
         private bool _bufferDirty;
         private bool _bufferLoaded;
         private int _bufferPos;
+        private int _currentBufferSize;
 
         /// <summary>
         /// Creates a new stream
@@ -106,7 +107,7 @@ namespace libhac.XTSSharp
         /// <returns>The current position within the stream.</returns>
         public override long Position
         {
-            get { return _bufferLoaded ? (_s.Position - _bufferSize + _bufferPos) : _s.Position + _bufferPos; }
+            get { return _bufferLoaded ? (_s.Position - _currentBufferSize + _bufferPos) : _s.Position + _bufferPos; }
             set
             {
                 if (value < 0L)
@@ -299,6 +300,7 @@ namespace libhac.XTSSharp
             _bufferLoaded = true;
             _bufferPos = 0;
             _bufferDirty = false;
+            _currentBufferSize = bytesRead;
         }
 
         /// <summary>
