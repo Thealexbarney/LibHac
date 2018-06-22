@@ -162,7 +162,7 @@ namespace libhac
             return result;
         }
 
-        internal static ulong MediaToReal(ulong media)
+        internal static long MediaToReal(long media)
         {
             return MediaSize * media;
         }

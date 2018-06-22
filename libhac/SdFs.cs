@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -27,11 +28,20 @@ namespace libhac
         {
             foreach (var file in Files)
             {
-                var sdPath = "/" + Util.GetRelativePath(file, ContentsDir).Replace('\\', '/');
-                var nax0 = new Nax0(Keyset, file, sdPath);
-                var nca = new Nca(Keyset, nax0.Stream);
-                nca.Name = Path.GetFileName(file);
-                yield return nca;
+                Nca nca = null;
+                try
+                {
+                    var sdPath = "/" + Util.GetRelativePath(file, ContentsDir).Replace('\\', '/');
+                    var nax0 = new Nax0(Keyset, file, sdPath);
+                    nca = new Nca(Keyset, nax0.Stream);
+                    nca.Name = Path.GetFileName(file);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"{ex.Message} {file}");
+                }
+
+                if (nca != null) yield return nca;
             }
 
         }
