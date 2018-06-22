@@ -76,6 +76,21 @@ namespace libhac
             }
         }
 
+        public static string ReadAsciiZ(this BinaryReader reader)
+        {
+            var start = reader.BaseStream.Position;
+
+            // Read until we hit the end of the stream (-1) or a zero
+            while (reader.BaseStream.ReadByte() - 1 > 0) { }
+
+            int size = (int)(reader.BaseStream.Position - start - 1);
+            reader.BaseStream.Position = start;
+
+            string text = reader.ReadAscii(size);
+            reader.BaseStream.Position++; // Skip the null byte
+            return text;
+        }
+
         public static string ReadAscii(this BinaryReader reader, int size)
         {
             return Encoding.ASCII.GetString(reader.ReadBytes(size), 0, size);

@@ -38,11 +38,28 @@ namespace libhac
             }
         }
 
-        public Stream OpenSection(int index)
+        public NcaSection OpenSection(int index)
         {
             if (index >= Sections.Count) throw new ArgumentOutOfRangeException(nameof(index));
             var sect = Sections[index];
-            Stream.Position = sect.Offset;
+
+            sect.Stream = null;
+            long offset = sect.Offset;
+            long size = sect.Size;
+
+            switch (sect.Header.FsType)
+            {
+                case SectionFsType.Pfs0:
+                    offset = sect.Offset + sect.Pfs0.Superblock.Pfs0Offset;
+                    size = sect.Pfs0.Superblock.Pfs0Size;
+                    break;
+                case SectionFsType.Romfs:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            Stream.Position = offset;
 
             switch (sect.Header.CryptType)
             {
@@ -51,14 +68,15 @@ namespace libhac
                 case SectionCryptType.XTS:
                     break;
                 case SectionCryptType.CTR:
-                    return new RandomAccessSectorStream(new AesCtrStream(Stream, DecryptedKeys[2], sect.Offset, sect.Size, sect.Offset));
+                    sect.Stream = new RandomAccessSectorStream(new AesCtrStream(Stream, DecryptedKeys[2], offset, size, offset));
+                    break;
                 case SectionCryptType.BKTR:
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
 
-            return null;
+            return sect;
         }
 
         private void ReadHeader(Keyset keyset, Stream stream)
@@ -107,7 +125,7 @@ namespace libhac
 
     public class NcaSection
     {
-        public Stream Stream;
+        public Stream Stream { get; set; }
         public NcaFsHeader Header { get; set; }
         public SectionType Type { get; set; }
         public int SectionNum { get; set; }
