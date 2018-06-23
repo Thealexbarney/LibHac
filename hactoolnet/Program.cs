@@ -59,7 +59,7 @@ namespace hactoolnet
             var sdfs = new SdFs(keyset, args[2]);
             var ncas = sdfs.ReadAllNca().ToArray();
 
-            var metadata = new List<byte[]>();
+            var metadata = new List<Cnmt>();
 
             using (var progress = new ProgressBar())
             {
@@ -76,11 +76,23 @@ namespace hactoolnet
                             var path = Path.Combine("meta", entry.Name);
                             Directory.CreateDirectory(Path.GetDirectoryName(path));
                             var file = pfs0.GetFile(entry.Index);
-                            metadata.Add(file);
+
+                            metadata.Add(new Cnmt(new MemoryStream(file)));
                             File.WriteAllBytes(path, file);
-                            progress.LogMessage(path);
                         }
                     }
+                }
+
+                foreach (var meta in metadata.OrderBy(x => x.TitleId))
+                {
+                    progress.LogMessage($"{meta.TitleId:X16} v{meta.TitleVersion} {meta.Type}");
+
+                    foreach (var content in meta.ContentEntries)
+                    {
+                        // Add an actual hexdump function
+                        progress.LogMessage($"    {BitConverter.ToString(content.NcaId).Replace("-", "")}.nca {content.Type}");
+                    }
+                    progress.LogMessage("");
                 }
             }
         }
