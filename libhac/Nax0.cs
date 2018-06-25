@@ -26,7 +26,7 @@ namespace libhac
 
             stream.Position = 0x4000;
             var xts = XtsAes128.Create(Keys[0], Keys[1]);
-            Stream = new RandomAccessSectorStream(new XtsSectorStream(stream, xts, 0x4000, 0x4000));
+            Stream = new RandomAccessSectorStream(new XtsSectorStream(stream, xts, 0x4000, 0x4000), keepOpen);
         }
 
         private void ReadHeader(Stream stream)

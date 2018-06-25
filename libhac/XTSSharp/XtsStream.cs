@@ -50,7 +50,7 @@ namespace libhac.XTSSharp
         /// <param name="xts">Xts implementation to use</param>
         /// <param name="sectorSize">Sector size</param>
         public XtsStream(Stream baseStream, Xts xts, int sectorSize)
-            : base(new XtsSectorStream(baseStream, xts, sectorSize), true)
+            : base(new XtsSectorStream(baseStream, xts, sectorSize), false)
         {
         }
 
@@ -63,7 +63,7 @@ namespace libhac.XTSSharp
         /// <param name="sectorSize">Sector size</param>
         /// <param name="offset">Offset to start counting sectors</param>
         public XtsStream(Stream baseStream, Xts xts, int sectorSize, long offset)
-            : base(new XtsSectorStream(baseStream, xts, sectorSize, offset), true)
+            : base(new XtsSectorStream(baseStream, xts, sectorSize, offset), false)
         {
         }
     }

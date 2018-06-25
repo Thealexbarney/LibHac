@@ -5,20 +5,19 @@ namespace libhac
 {
     public class Pfs0
     {
-        public Pfs0Superblock Superblock { get; set; }
         public Pfs0Header Header { get; set; }
         public int HeaderSize { get; set; }
         public Pfs0FileEntry[] Entries { get; set; }
         private Stream Stream { get; set; }
 
-        public void Open(Stream file)
+        public Pfs0(Stream stream)
         {
             byte[] headerBytes;
-            using (var reader = new BinaryReader(file, Encoding.Default, true))
+            using (var reader = new BinaryReader(stream, Encoding.Default, true))
             {
                 Header = new Pfs0Header(reader);
                 HeaderSize = (int)(16 + 24 * Header.NumFiles + Header.StringTableSize);
-                file.Position = 0;
+                stream.Position = 0;
                 headerBytes = reader.ReadBytes(HeaderSize);
             }
 
@@ -40,7 +39,7 @@ namespace libhac
                 }
             }
 
-            Stream = file;
+            Stream = stream;
         }
 
         public byte[] GetFile(int index)

@@ -37,6 +37,7 @@ namespace libhac.XTSSharp
         private readonly Stream _baseStream;
         private readonly long _offset;
         private ulong _currentSector;
+        private bool _keepOpen;
 
         /// <summary>
         /// Creates a new stream
@@ -55,10 +56,26 @@ namespace libhac.XTSSharp
         /// <param name="sectorSize">The size of the sectors to read/write</param>
         /// <param name="offset">Offset to start counting sectors</param>
         public SectorStream(Stream baseStream, int sectorSize, long offset)
+            : this(baseStream, sectorSize, offset, false)
         {
             SectorSize = sectorSize;
             _baseStream = baseStream;
             _offset = offset;
+        }
+
+        /// <summary>
+        /// Creates a new stream
+        /// </summary>
+        /// <param name="baseStream">The base stream to read/write from</param>
+        /// <param name="sectorSize">The size of the sectors to read/write</param>
+        /// <param name="offset">Offset to start counting sectors</param>
+        /// <param name="keepOpen">Should this stream leave the base stream open when disposed?</param>
+        public SectorStream(Stream baseStream, int sectorSize, long offset, bool keepOpen)
+        {
+            SectorSize = sectorSize;
+            _baseStream = baseStream;
+            _offset = offset;
+            _keepOpen = keepOpen;
         }
 
         /// <summary>
@@ -228,6 +245,16 @@ namespace libhac.XTSSharp
 
             _baseStream.Write(buffer, offset, count);
             _currentSector++;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!_keepOpen)
+            {
+                _baseStream.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
     }
 }

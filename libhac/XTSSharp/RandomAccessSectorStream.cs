@@ -37,7 +37,7 @@ namespace libhac.XTSSharp
         private readonly byte[] _buffer;
         private readonly int _bufferSize;
         private readonly SectorStream _s;
-        private readonly bool _isStreamOwned;
+        private readonly bool _keepOpen;
         private bool _bufferDirty;
         private bool _bufferLoaded;
         private int _bufferPos;
@@ -48,7 +48,7 @@ namespace libhac.XTSSharp
         /// </summary>
         /// <param name="s">Base stream</param>
         public RandomAccessSectorStream(SectorStream s)
-            : this(s, false)
+            : this(s, true)
         {
         }
 
@@ -56,11 +56,11 @@ namespace libhac.XTSSharp
         /// Creates a new stream
         /// </summary>
         /// <param name="s">Base stream</param>
-        /// <param name="isStreamOwned">Does this stream own the base stream? i.e. should it be automatically disposed?</param>
-        public RandomAccessSectorStream(SectorStream s, bool isStreamOwned)
+        /// <param name="keepOpen">Should this stream leave the base stream open when disposed?</param>
+        public RandomAccessSectorStream(SectorStream s, bool keepOpen)
         {
             _s = s;
-            _isStreamOwned = isStreamOwned;
+            _keepOpen = keepOpen;
             _buffer = new byte[s.SectorSize];
             _bufferSize = s.SectorSize;
         }
@@ -152,7 +152,7 @@ namespace libhac.XTSSharp
 
             base.Dispose(disposing);
 
-            if (_isStreamOwned)
+            if (!_keepOpen)
                 _s.Dispose();
         }
 

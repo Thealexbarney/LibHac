@@ -5,12 +5,14 @@ using System.Linq;
 
 namespace libhac
 {
-    public class SdFs
+    public class SdFs : IDisposable
     {
         public Keyset Keyset { get; }
         public string RootDir { get; }
         public string ContentsDir { get; }
         public string[] Files { get; }
+        public List<Nca> Ncas { get; } = new List<Nca>();
+        private List<Nax0> Nax0s { get; } = new List<Nax0>();
 
         public SdFs(Keyset keyset, string sdPath)
         {
@@ -24,7 +26,7 @@ namespace libhac
             Files = Directory.GetFiles(ContentsDir, "00", SearchOption.AllDirectories).Select(Path.GetDirectoryName).ToArray();
         }
 
-        public IEnumerable<Nca> ReadAllNca()
+        public void OpenAllNcas()
         {
             foreach (var file in Files)
             {
@@ -33,7 +35,8 @@ namespace libhac
                 {
                     var sdPath = "/" + Util.GetRelativePath(file, ContentsDir).Replace('\\', '/');
                     var nax0 = Nax0.CreateFromPath(Keyset, file, sdPath);
-                    nca = new Nca(Keyset, nax0.Stream);
+                    Nax0s.Add(nax0);
+                    nca = new Nca(Keyset, nax0.Stream, false);
                     nca.Name = Path.GetFileName(file);
                 }
                 catch (Exception ex)
@@ -41,9 +44,28 @@ namespace libhac
                     Console.WriteLine($"{ex.Message} {file}");
                 }
 
-                if (nca != null) yield return nca;
+                if (nca != null) Ncas.Add(nca);
             }
+        }
 
+        private void DisposeNcas()
+        {
+            foreach (var nca in Ncas)
+            {
+                nca.Dispose();
+            }
+            Ncas.Clear();
+
+            foreach (var nax0 in Nax0s)
+            {
+                nax0.Dispose();
+            }
+            Nax0s.Clear();
+        }
+
+        public void Dispose()
+        {
+            DisposeNcas();
         }
     }
 }

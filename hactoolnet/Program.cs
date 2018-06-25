@@ -29,7 +29,7 @@ namespace hactoolnet
 
             using (var nax0 = Nax0.CreateFromPath(keyset, args[2], args[3]))
             {
-                var nca = new Nca(keyset, nax0.Stream);
+                var nca = new Nca(keyset, nax0.Stream, true);
 
                 using (var output = new FileStream(args[4], FileMode.Create))
                 using (var progress = new ProgressBar())
@@ -54,12 +54,15 @@ namespace hactoolnet
             }
 
             keyset.SetSdSeed(args[1].ToBytes());
-            var sdfs = new SdFs(keyset, args[2]);
-            var ncas = sdfs.ReadAllNca();
-
-            foreach (Nca nca in ncas)
+            using (var sdfs = new SdFs(keyset, args[2]))
             {
-                Console.WriteLine($"{nca.Header.TitleId:X16} {nca.Header.ContentType.ToString().PadRight(10, ' ')} {nca.Name}");
+                sdfs.OpenAllNcas();
+
+                foreach (Nca nca in sdfs.Ncas)
+                {
+                    Console.WriteLine(
+                        $"{nca.Header.TitleId:X16} {nca.Header.ContentType.ToString().PadRight(10, ' ')} {nca.Name}");
+                }
             }
         }
 
@@ -67,43 +70,48 @@ namespace hactoolnet
         {
             var keyset = ExternalKeys.ReadKeyFile(args[0]);
             keyset.SetSdSeed(args[1].ToBytes());
-            var sdfs = new SdFs(keyset, args[2]);
-            var ncas = sdfs.ReadAllNca().ToArray();
-
-            var metadata = new List<Cnmt>();
-
-            using (var progress = new ProgressBar())
+            List<Nca> ncas;
+            using (var sdfs = new SdFs(keyset, args[2]))
             {
-                foreach (var nca in ncas.Where(x => x.Header.ContentType == ContentType.Meta))
+                sdfs.OpenAllNcas();
+                ncas = sdfs.Ncas;
+
+                var metadata = new List<Cnmt>();
+
+                using (var progress = new ProgressBar())
                 {
-                    foreach (var section in nca.Sections.Where(x => x.Header.FsType == SectionFsType.Pfs0))
+                    foreach (var nca in ncas.Where(x => x.Header.ContentType == ContentType.Meta))
                     {
-                        var sect = nca.OpenSection(section.SectionNum);
-                        var pfs0 = sect.Pfs0;
-                        pfs0.Open(sect.Stream);
-
-                        foreach (var entry in pfs0.Entries)
+                        foreach (var section in nca.Sections.Where(x => x.Header.FsType == SectionFsType.Pfs0))
                         {
-                            var path = Path.Combine("meta", entry.Name);
-                            Directory.CreateDirectory(Path.GetDirectoryName(path));
-                            var file = pfs0.GetFile(entry.Index);
+                            var sect = nca.OpenSection(section.SectionNum);
+                            var pfs0 = new Pfs0(sect);
 
-                            metadata.Add(new Cnmt(new MemoryStream(file)));
-                            File.WriteAllBytes(path, file);
+                            foreach (var entry in pfs0.Entries)
+                            {
+                                var path = Path.Combine("meta", entry.Name);
+                                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                                var file = pfs0.GetFile(entry.Index);
+
+                                metadata.Add(new Cnmt(new MemoryStream(file)));
+                                File.WriteAllBytes(path, file);
+                            }
                         }
                     }
-                }
 
-                foreach (var meta in metadata.OrderBy(x => x.TitleId))
-                {
-                   // progress.LogMessage($"{meta.TitleId:X16} v{meta.TitleVersion} {meta.Type}");
-
-                    foreach (var content in meta.ContentEntries)
+                    foreach (var meta in metadata.OrderBy(x => x.TitleId))
                     {
-                        // Add an actual hexdump function
-                       // progress.LogMessage($"    {BitConverter.ToString(content.NcaId).Replace("-", "")}.nca {content.Type}");
+                        progress.LogMessage($"{meta.TitleId:X16} v{meta.TitleVersion} {meta.Type}");
+
+                        foreach (var content in meta.ContentEntries)
+                        {
+                            // Add an actual hexdump function
+                            progress.LogMessage(
+                                $"    {BitConverter.ToString(content.NcaId).Replace("-", "")}.nca {content.Type}");
+                        }
+
+                        progress.LogMessage("");
                     }
-                    //progress.LogMessage("");
                 }
             }
         }
