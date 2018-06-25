@@ -74,8 +74,8 @@ namespace libhac
         SystemUpdate,
         FirmwarePackageA,
         FirmwarePackageB,
-        RegularApplication = 0x80,
-        UpdateTitle,
+        Application = 0x80,
+        Patch,
         AddOnContent,
         DeltaTitle
     }

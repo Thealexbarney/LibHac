@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using libhac;
@@ -10,7 +11,15 @@ namespace hactoolnet
     {
         static void Main(string[] args)
         {
+            Console.WriteLine("Listing NCA files");
+            ListSdContents(args);
+
+            Console.WriteLine("Listing titles");
+            var watch = Stopwatch.StartNew();
+
             DumpMeta(args);
+            watch.Stop();
+            Console.WriteLine(watch.Elapsed.TotalMilliseconds);
         }
 
         static void DecryptNax0(string[] args)
@@ -18,15 +27,17 @@ namespace hactoolnet
             var keyset = ExternalKeys.ReadKeyFile(args[0]);
             keyset.SetSdSeed(args[1].ToBytes());
 
-            var nax0 = new Nax0(keyset, args[2], args[3]);
-            var nca = new Nca(keyset, nax0.Stream);
-
-            using (var output = new FileStream(args[4], FileMode.Create))
-            using (var progress = new ProgressBar())
+            using (var nax0 = Nax0.CreateFromPath(keyset, args[2], args[3]))
             {
-                progress.LogMessage($"Title ID: {nca.Header.TitleId:X16}");
-                progress.LogMessage($"Writing {args[4]}");
-                nax0.Stream.CopyStream(output, nax0.Stream.Length, progress);
+                var nca = new Nca(keyset, nax0.Stream);
+
+                using (var output = new FileStream(args[4], FileMode.Create))
+                using (var progress = new ProgressBar())
+                {
+                    progress.LogMessage($"Title ID: {nca.Header.TitleId:X16}");
+                    progress.LogMessage($"Writing {args[4]}");
+                    nax0.Stream.CopyStream(output, nax0.Stream.Length, progress);
+                }
             }
         }
 
@@ -46,7 +57,7 @@ namespace hactoolnet
             var sdfs = new SdFs(keyset, args[2]);
             var ncas = sdfs.ReadAllNca();
 
-            foreach (var nca in ncas.Where(x => x != null))
+            foreach (Nca nca in ncas)
             {
                 Console.WriteLine($"{nca.Header.TitleId:X16} {nca.Header.ContentType.ToString().PadRight(10, ' ')} {nca.Name}");
             }
@@ -85,14 +96,14 @@ namespace hactoolnet
 
                 foreach (var meta in metadata.OrderBy(x => x.TitleId))
                 {
-                    progress.LogMessage($"{meta.TitleId:X16} v{meta.TitleVersion} {meta.Type}");
+                   // progress.LogMessage($"{meta.TitleId:X16} v{meta.TitleVersion} {meta.Type}");
 
                     foreach (var content in meta.ContentEntries)
                     {
                         // Add an actual hexdump function
-                        progress.LogMessage($"    {BitConverter.ToString(content.NcaId).Replace("-", "")}.nca {content.Type}");
+                       // progress.LogMessage($"    {BitConverter.ToString(content.NcaId).Replace("-", "")}.nca {content.Type}");
                     }
-                    progress.LogMessage("");
+                    //progress.LogMessage("");
                 }
             }
         }

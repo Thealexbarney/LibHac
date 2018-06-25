@@ -7,62 +7,64 @@ using libhac.XTSSharp;
 
 namespace libhac
 {
-    public class Nax0
+    public class Nax0 : IDisposable
     {
-        public List<string> Files = new List<string>();
-        public byte[] Hmac { get; set; }
+        public byte[] Hmac { get; private set; }
         public byte[][] EncKeys { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x10);
         public byte[][] Keys { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x10);
-        public long Length { get; set; }
+        public long Length { get; private set; }
         public Stream Stream { get; }
-        private List<Stream> Streams = new List<Stream>();
+        private bool KeepOpen { get; }
 
-        public Nax0(Keyset keyset, string path, string sdPath)
+        public Nax0(Keyset keyset, Stream stream, string sdPath, bool keepOpen)
         {
-            if (Directory.Exists(path))
-            {
-                while (true)
-                {
-                    var partName = Path.Combine(path, $"{Files.Count:D2}");
-                    if (!File.Exists(partName)) break;
-
-                    Files.Add(partName);
-                }
-
-            }
-            else if (File.Exists(path))
-            {
-                Files.Add(path);
-            }
-            else
-            {
-                throw new FileNotFoundException("Could not find the input file or directory");
-            }
-
-            foreach (var file in Files)
-            {
-                Streams.Add(new FileStream(file, FileMode.Open));
-            }
-
-            var stream = new CombinationStream(Streams);
+            stream.Position = 0;
+            KeepOpen = keepOpen;
             ReadHeader(stream);
+            DeriveKeys(keyset, sdPath);
+            ValidateKeys(keyset, stream);
 
+            stream.Position = 0x4000;
+            var xts = XtsAes128.Create(Keys[0], Keys[1]);
+            Stream = new RandomAccessSectorStream(new XtsSectorStream(stream, xts, 0x4000, 0x4000));
+        }
+
+        private void ReadHeader(Stream stream)
+        {
+            var header = new byte[0x60];
+            stream.Read(header, 0, 0x60);
+            var reader = new BinaryReader(new MemoryStream(header));
+
+            Hmac = reader.ReadBytes(0x20);
+            string magic = reader.ReadAscii(4);
+            reader.BaseStream.Position += 4;
+            if (magic != "NAX0") throw new InvalidDataException("Not an NAX0 file");
+            EncKeys[0] = reader.ReadBytes(0x10);
+            EncKeys[1] = reader.ReadBytes(0x10);
+            Length = reader.ReadInt64();
+        }
+
+        private void DeriveKeys(Keyset keyset, string sdPath)
+        {
             for (int k = 0; k < 2; k++)
             {
                 var naxSpecificKeys = Util.CreateJaggedArray<byte[][]>(2, 0x10);
-                var hashKey2 = new byte[0x10];
-                Array.Copy(keyset.sd_card_keys[k], hashKey2, 0x10);
+                var hashKey = new byte[0x10];
+                Array.Copy(keyset.sd_card_keys[k], hashKey, 0x10);
 
-                var hash2 = new HMACSHA256(hashKey2);
+                var hash = new HMACSHA256(hashKey);
                 var sdPathBytes = Encoding.ASCII.GetBytes(sdPath);
-                var checksum = hash2.ComputeHash(sdPathBytes, 0, sdPathBytes.Length);
+                var checksum = hash.ComputeHash(sdPathBytes, 0, sdPathBytes.Length);
                 Array.Copy(checksum, 0, naxSpecificKeys[0], 0, 0x10);
                 Array.Copy(checksum, 0x10, naxSpecificKeys[1], 0, 0x10);
 
                 Crypto.DecryptEcb(naxSpecificKeys[0], EncKeys[0], Keys[0], 0x10);
                 Crypto.DecryptEcb(naxSpecificKeys[1], EncKeys[1], Keys[1], 0x10);
             }
+        }
 
+        private void ValidateKeys(Keyset keyset, Stream stream)
+        {
             stream.Position = 0x20;
             var hashKey = new byte[0x60];
             stream.Read(hashKey, 0, 0x60);
@@ -74,23 +76,48 @@ namespace libhac
             var isValid = Util.ArraysEqual(Hmac, validationMac);
 
             if (!isValid) throw new ArgumentException("NAX0 key derivation failed.");
-
-            stream.Position = 0x4000;
-
-            var xts = XtsAes128.Create(Keys[0], Keys[1]);
-            Stream = new RandomAccessSectorStream(new XtsSectorStream(stream, xts, 0x4000, 0x4000));
         }
 
-        private void ReadHeader(Stream nax0)
+        public static Nax0 CreateFromPath(Keyset keyset, string path, string sdPath)
         {
-            var reader = new BinaryReader(nax0);
-            nax0.Position = 0;
+            List<string> files = new List<string>();
+            List<Stream> streams = new List<Stream>();
 
-            Hmac = reader.ReadBytes(0x20);
-            nax0.Position += 8; //todo check magic
-            EncKeys[0] = reader.ReadBytes(0x10);
-            EncKeys[1] = reader.ReadBytes(0x10);
-            Length = reader.ReadInt64();
+            if (Directory.Exists(path))
+            {
+                while (true)
+                {
+                    var partName = Path.Combine(path, $"{files.Count:D2}");
+                    if (!File.Exists(partName)) break;
+
+                    files.Add(partName);
+                }
+
+            }
+            else if (File.Exists(path))
+            {
+                files.Add(path);
+            }
+            else
+            {
+                throw new FileNotFoundException("Could not find the input file or directory");
+            }
+
+            foreach (var file in files)
+            {
+                streams.Add(new FileStream(file, FileMode.Open));
+            }
+
+            var stream = new CombinationStream(streams);
+            return new Nax0(keyset, stream, sdPath, false);
+        }
+
+        public void Dispose()
+        {
+            if (!KeepOpen)
+            {
+                Stream?.Dispose();
+            }
         }
     }
 }

@@ -32,7 +32,7 @@ namespace libhac
                 try
                 {
                     var sdPath = "/" + Util.GetRelativePath(file, ContentsDir).Replace('\\', '/');
-                    var nax0 = new Nax0(Keyset, file, sdPath);
+                    var nax0 = Nax0.CreateFromPath(Keyset, file, sdPath);
                     nca = new Nca(Keyset, nax0.Stream);
                     nca.Name = Path.GetFileName(file);
                 }

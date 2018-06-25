@@ -31,6 +31,7 @@ namespace libhac
             head.Signature1 = reader.ReadBytes(0x100);
             head.Signature2 = reader.ReadBytes(0x100);
             head.Magic = reader.ReadAscii(4);
+            if(head.Magic != "NCA3") throw new InvalidDataException("Not an NCA3 file");
             head.Distribution = reader.ReadByte();
             head.ContentType = (ContentType)reader.ReadByte();
             head.CryptoType = reader.ReadByte();
