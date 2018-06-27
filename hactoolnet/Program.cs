@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using libhac;
@@ -20,10 +18,12 @@ namespace hactoolnet
             ListTitles(sdfs);
 
             //DecryptNax0(sdfs, "C0628FB07A89E9050BDA258F74868E8D");
+            DecryptTitle(sdfs, 0x0100000000010800);
         }
 
         static void DecryptNax0(SdFs sdFs, string name)
         {
+            if (!sdFs.Ncas.ContainsKey(name)) return;
             var nca = sdFs.Ncas[name];
             using (var output = new FileStream($"{nca.NcaId}.nca", FileMode.Create))
             using (var progress = new ProgressBar())
@@ -32,6 +32,25 @@ namespace hactoolnet
                 progress.LogMessage($"Writing {nca.NcaId}.nca");
                 nca.Stream.Position = 0;
                 nca.Stream.CopyStream(output, nca.Stream.Length, progress);
+            }
+        }
+
+        static void DecryptTitle(SdFs sdFs, ulong titleId)
+        {
+            var title = sdFs.Titles[titleId];
+            var dirName = $"{titleId:X16}v{title.Version.Version}";
+
+            Directory.CreateDirectory(dirName);
+
+            foreach (var nca in title.Ncas)
+            {
+                using (var output = new FileStream(Path.Combine(dirName, nca.Filename), FileMode.Create))
+                using (var progress = new ProgressBar())
+                {
+                    progress.LogMessage($"Writing {nca.Filename}");
+                    nca.Stream.Position = 0;
+                    nca.Stream.CopyStream(output, nca.Stream.Length, progress);
+                }
             }
         }
 
@@ -60,7 +79,7 @@ namespace hactoolnet
                 foreach (var content in title.Metadata.ContentEntries)
                 {
                     Console.WriteLine(
-                        $"    {BitConverter.ToString(content.NcaId).Replace("-", "")}.nca {content.Type} {Util.GetBytesReadable(content.Size)}");
+                        $"    {content.NcaId.ToHexString()}.nca {content.Type} {Util.GetBytesReadable(content.Size)}");
                 }
 
                 Console.WriteLine("");

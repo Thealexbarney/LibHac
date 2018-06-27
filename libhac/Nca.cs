@@ -9,6 +9,7 @@ namespace libhac
     {
         public NcaHeader Header { get; private set; }
         public string NcaId { get; set; }
+        public string Filename { get; set; }
         public bool HasRightsId { get; private set; }
         public int CryptoType { get; private set; }
         public byte[][] DecryptedKeys { get; } = Util.CreateJaggedArray<byte[][]>(4, 0x10);

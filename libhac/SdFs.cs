@@ -31,7 +31,7 @@ namespace libhac
             ReadTitles();
         }
 
-        public void OpenAllNcas()
+        private void OpenAllNcas()
         {
             foreach (var file in Files)
             {
@@ -43,6 +43,8 @@ namespace libhac
                     Nax0s.Add(nax0);
                     nca = new Nca(Keyset, nax0.Stream, false);
                     nca.NcaId = Path.GetFileNameWithoutExtension(file);
+                    var extention = nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
+                    nca.Filename = nca.NcaId + extention;
                 }
                 catch (Exception ex)
                 {
@@ -53,7 +55,7 @@ namespace libhac
             }
         }
 
-        public void ReadTitles()
+        private void ReadTitles()
         {
             foreach (var nca in Ncas.Values.Where(x => x.Header.ContentType == ContentType.Meta))
             {
@@ -68,6 +70,18 @@ namespace libhac
                 title.Id = metadata.TitleId;
                 title.Version = new TitleVersion(metadata.TitleVersion);
                 title.Metadata = metadata;
+                title.Ncas.Add(nca);
+
+                foreach (var content in metadata.ContentEntries)
+                {
+                    var ncaId = content.NcaId.ToHexString();
+
+                    if (Ncas.TryGetValue(ncaId, out Nca contentNca))
+                    {
+                        title.Ncas.Add(contentNca);
+                    }
+                }
+
                 Titles.Add(title.Id, title);
             }
         }
