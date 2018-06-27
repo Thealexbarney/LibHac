@@ -181,5 +181,52 @@ namespace libhac
         {
             return MediaSize * media;
         }
+
+        public static string GetBytesReadable(long bytes)
+        {
+            // Get absolute value
+            long absBytes = (bytes < 0 ? -bytes : bytes);
+            // Determine the suffix and readable value
+            string suffix;
+            double readable;
+            if (absBytes >= 0x1000000000000000) // Exabyte
+            {
+                suffix = "EB";
+                readable = (bytes >> 50);
+            }
+            else if (absBytes >= 0x4000000000000) // Petabyte
+            {
+                suffix = "PB";
+                readable = (bytes >> 40);
+            }
+            else if (absBytes >= 0x10000000000) // Terabyte
+            {
+                suffix = "TB";
+                readable = (bytes >> 30);
+            }
+            else if (absBytes >= 0x40000000) // Gigabyte
+            {
+                suffix = "GB";
+                readable = (bytes >> 20);
+            }
+            else if (absBytes >= 0x100000) // Megabyte
+            {
+                suffix = "MB";
+                readable = (bytes >> 10);
+            }
+            else if (absBytes >= 0x400) // Kilobyte
+            {
+                suffix = "KB";
+                readable = bytes;
+            }
+            else
+            {
+                return bytes.ToString("0 B"); // Byte
+            }
+            // Divide by 1024 to get fractional value
+            readable = (readable / 1024);
+            // Return formatted number with suffix
+            return readable.ToString("0.### ") + suffix;
+        }
     }
 }

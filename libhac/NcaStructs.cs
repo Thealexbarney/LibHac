@@ -31,7 +31,7 @@ namespace libhac
             head.Signature1 = reader.ReadBytes(0x100);
             head.Signature2 = reader.ReadBytes(0x100);
             head.Magic = reader.ReadAscii(4);
-            if(head.Magic != "NCA3") throw new InvalidDataException("Not an NCA3 file");
+            if (head.Magic != "NCA3") throw new InvalidDataException("Not an NCA3 file");
             head.Distribution = reader.ReadByte();
             head.ContentType = (ContentType)reader.ReadByte();
             head.CryptoType = reader.ReadByte();
@@ -213,6 +213,29 @@ namespace libhac
             Field14 = reader.ReadUInt32();
             NumEntries = reader.ReadUInt32();
             Field1C = reader.ReadUInt32();
+        }
+    }
+
+    public class TitleVersion
+    {
+        public uint Version { get; }
+        public byte Major { get; }
+        public byte Minor { get; }
+        public byte Patch { get; }
+        public byte Revision { get; }
+
+        public TitleVersion(uint version)
+        {
+            Version = version;
+            Revision = (byte)version;
+            Patch = (byte)(version >> 8);
+            Minor = (byte)(version >> 16);
+            Major = (byte)(version >> 24);
+        }
+
+        public override string ToString()
+        {
+            return $"{Major}.{Minor}.{Patch}.{Revision}";
         }
     }
 

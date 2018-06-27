@@ -11,108 +11,59 @@ namespace hactoolnet
     {
         static void Main(string[] args)
         {
+            var sdfs = LoadSdFs(args);
+
             Console.WriteLine("Listing NCA files");
-            ListSdContents(args);
+            ListNcas(sdfs);
 
             Console.WriteLine("Listing titles");
-            var watch = Stopwatch.StartNew();
+            ListTitles(sdfs);
 
-            DumpMeta(args);
-            watch.Stop();
-            Console.WriteLine(watch.Elapsed.TotalMilliseconds);
+            //DecryptNax0(sdfs, "C0628FB07A89E9050BDA258F74868E8D");
         }
 
-        static void DecryptNax0(string[] args)
+        static void DecryptNax0(SdFs sdFs, string name)
         {
-            var keyset = ExternalKeys.ReadKeyFile(args[0]);
-            keyset.SetSdSeed(args[1].ToBytes());
-
-            using (var nax0 = Nax0.CreateFromPath(keyset, args[2], args[3]))
+            var nca = sdFs.Ncas[name];
+            using (var output = new FileStream($"{nca.NcaId}.nca", FileMode.Create))
+            using (var progress = new ProgressBar())
             {
-                var nca = new Nca(keyset, nax0.Stream, true);
-
-                using (var output = new FileStream(args[4], FileMode.Create))
-                using (var progress = new ProgressBar())
-                {
-                    progress.LogMessage($"Title ID: {nca.Header.TitleId:X16}");
-                    progress.LogMessage($"Writing {args[4]}");
-                    nax0.Stream.CopyStream(output, nax0.Stream.Length, progress);
-                }
+                progress.LogMessage($"Title ID: {nca.Header.TitleId:X16}");
+                progress.LogMessage($"Writing {nca.NcaId}.nca");
+                nca.Stream.Position = 0;
+                nca.Stream.CopyStream(output, nca.Stream.Length, progress);
             }
         }
 
-        static void ListSdContents(string[] args)
+        static SdFs LoadSdFs(string[] args)
         {
-            Console.WriteLine($"Using key file {args[0]}");
-            Console.WriteLine($"SD seed {BitConverter.ToString(args[1].ToBytes())}");
-            Console.WriteLine($"SD path {args[2]}");
             var keyset = ExternalKeys.ReadKeyFile(args[0]);
-
-            if (keyset.master_keys[0].IsEmpty())
-            {
-                Console.WriteLine("Need master key 0");
-            }
-
             keyset.SetSdSeed(args[1].ToBytes());
-            using (var sdfs = new SdFs(keyset, args[2]))
-            {
-                sdfs.OpenAllNcas();
+            var sdfs = new SdFs(keyset, args[2]);
+            return sdfs;
+        }
 
-                foreach (Nca nca in sdfs.Ncas)
+        static void ListNcas(SdFs sdfs)
+        {
+            foreach (Nca nca in sdfs.Ncas.Values.OrderBy(x => x.Header.TitleId))
+            {
+                Console.WriteLine($"{nca.Header.TitleId:X16} {nca.Header.ContentType.ToString().PadRight(10, ' ')} {nca.NcaId}");
+            }
+        }
+
+        static void ListTitles(SdFs sdfs)
+        {
+            foreach (var title in sdfs.Titles.Values.OrderBy(x => x.Id))
+            {
+                Console.WriteLine($"{title.Id:X16} v{title.Version.Version} ({title.Version}) {title.Metadata.Type}");
+
+                foreach (var content in title.Metadata.ContentEntries)
                 {
                     Console.WriteLine(
-                        $"{nca.Header.TitleId:X16} {nca.Header.ContentType.ToString().PadRight(10, ' ')} {nca.Name}");
+                        $"    {BitConverter.ToString(content.NcaId).Replace("-", "")}.nca {content.Type} {Util.GetBytesReadable(content.Size)}");
                 }
-            }
-        }
 
-        static void DumpMeta(string[] args)
-        {
-            var keyset = ExternalKeys.ReadKeyFile(args[0]);
-            keyset.SetSdSeed(args[1].ToBytes());
-            List<Nca> ncas;
-            using (var sdfs = new SdFs(keyset, args[2]))
-            {
-                sdfs.OpenAllNcas();
-                ncas = sdfs.Ncas;
-
-                var metadata = new List<Cnmt>();
-
-                using (var progress = new ProgressBar())
-                {
-                    foreach (var nca in ncas.Where(x => x.Header.ContentType == ContentType.Meta))
-                    {
-                        foreach (var section in nca.Sections.Where(x => x.Header.FsType == SectionFsType.Pfs0))
-                        {
-                            var sect = nca.OpenSection(section.SectionNum);
-                            var pfs0 = new Pfs0(sect);
-
-                            foreach (var entry in pfs0.Entries)
-                            {
-                                var path = Path.Combine("meta", entry.Name);
-                                Directory.CreateDirectory(Path.GetDirectoryName(path));
-                                var file = pfs0.GetFile(entry.Index);
-
-                                metadata.Add(new Cnmt(new MemoryStream(file)));
-                                File.WriteAllBytes(path, file);
-                            }
-                        }
-                    }
-
-                    foreach (var meta in metadata.OrderBy(x => x.TitleId))
-                    {
-                        progress.LogMessage($"{meta.TitleId:X16} v{meta.TitleVersion} {meta.Type}");
-
-                        foreach (var content in meta.ContentEntries)
-                        {
-                            // Add an actual hexdump function
-                            progress.LogMessage(
-                                $"    {BitConverter.ToString(content.NcaId).Replace("-", "")}.nca {content.Type}");
-                        }
-
-                        progress.LogMessage("");
-                    }
-                }
+                Console.WriteLine("");
             }
         }
     }

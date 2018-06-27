@@ -8,7 +8,7 @@ namespace libhac
     public class Nca : IDisposable
     {
         public NcaHeader Header { get; private set; }
-        public string Name { get; set; }
+        public string NcaId { get; set; }
         public bool HasRightsId { get; private set; }
         public int CryptoType { get; private set; }
         public byte[][] DecryptedKeys { get; } = Util.CreateJaggedArray<byte[][]>(4, 0x10);
