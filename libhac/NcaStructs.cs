@@ -96,6 +96,7 @@ namespace libhac
         public Pfs0Superblock Pfs0;
         public RomfsSuperblock Romfs;
         public BktrSuperblock Bktr;
+        public ulong Ctr;
 
         public NcaFsHeader(BinaryReader reader)
         {
@@ -124,6 +125,9 @@ namespace libhac
                     Romfs = new RomfsSuperblock(reader);
                 }
             }
+
+            Ctr = reader.ReadUInt64();
+            reader.BaseStream.Position += 184;
         }
     }
 
