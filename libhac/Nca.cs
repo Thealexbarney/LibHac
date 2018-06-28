@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using libhac.XTSSharp;
@@ -17,7 +16,7 @@ namespace libhac
         public Stream Stream { get; private set; }
         private bool KeepOpen { get; }
 
-        public List<NcaSection> Sections = new List<NcaSection>();
+        public NcaSection[] Sections { get; } = new NcaSection[4];
 
         public Nca(Keyset keyset, Stream stream, bool keepOpen)
         {
@@ -47,14 +46,14 @@ namespace libhac
             {
                 var section = ParseSection(i);
                 if (section == null) continue;
-                Sections.Add(section);
+                Sections[i] = section;
                 ValidateSuperblockHash(i);
             }
         }
 
         public Stream OpenSection(int index, bool raw)
         {
-            if (index >= Sections.Count) throw new ArgumentOutOfRangeException(nameof(index));
+            if (Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
             var sect = Sections[index];
 
             long offset = sect.Offset;
@@ -83,7 +82,7 @@ namespace libhac
             switch (sect.Header.CryptType)
             {
                 case SectionCryptType.None:
-                    break;
+                    return new SubStream(Stream, offset, size);
                 case SectionCryptType.XTS:
                     break;
                 case SectionCryptType.CTR:
@@ -144,7 +143,7 @@ namespace libhac
 
         private void ValidateSuperblockHash(int index)
         {
-            if (index >= Sections.Count) throw new ArgumentOutOfRangeException(nameof(index));
+            if (Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
             var sect = Sections[index];
             var stream = OpenSection(index, true);
 
@@ -164,6 +163,10 @@ namespace libhac
                     size = pfs0.HashTableSize;
                     break;
                 case SectionType.Romfs:
+                    var ivfc = sect.Header.Romfs.IvfcHeader;
+                    expected = ivfc.MasterHash;
+                    offset = (long)ivfc.LevelHeaders[0].LogicalOffset;
+                    size = 1 << (int)ivfc.LevelHeaders[0].BlockSize;
                     break;
                 case SectionType.Bktr:
                     break;

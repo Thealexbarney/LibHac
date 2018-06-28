@@ -30,7 +30,7 @@ namespace hactoolnet
         static void ReadNca()
         {
             var keyset = ExternalKeys.ReadKeyFile("keys.txt", "titlekeys.txt");
-            using (var file = new FileStream("bf8b106a2e68df3c3f1694636423585a.nca", FileMode.Open, FileAccess.Read))
+            using (var file = new FileStream("671d172e7993ee033d1be25ee76378e3.nca", FileMode.Open, FileAccess.Read))
             {
                 var nca = new Nca(keyset, file, false);
                 var romfs = nca.OpenSection(0, false);
@@ -107,7 +107,7 @@ namespace hactoolnet
                 {
                     Console.WriteLine($"      {nca.HasRightsId} {nca.NcaId} {nca.Header.ContentType}");
 
-                    foreach (var sect in nca.Sections)
+                    foreach (var sect in nca.Sections.Where(x => x != null))
                     {
                         Console.WriteLine($"        {sect.SectionNum} {sect.Type} {sect.Header.CryptType} {sect.SuperblockHashValidity}");
                     }

@@ -101,6 +101,7 @@ namespace libhac
 
         public NcaFsHeader(BinaryReader reader)
         {
+            var start = reader.BaseStream.Position;
             Field0 = reader.ReadByte();
             Field1 = reader.ReadByte();
             PartitionType = (SectionPartitionType)reader.ReadByte();
@@ -128,7 +129,7 @@ namespace libhac
             }
 
             Ctr = reader.ReadBytes(8).Reverse().ToArray();
-            reader.BaseStream.Position += 184;
+            reader.BaseStream.Position = start + 512;
         }
     }
 
