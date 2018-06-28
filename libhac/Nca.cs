@@ -57,6 +57,8 @@ namespace libhac
                     size = sect.Pfs0.Pfs0Size;
                     break;
                 case SectionFsType.Romfs:
+                    offset = sect.Offset + (long)sect.Header.Romfs.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1].LogicalOffset;
+                    size = (long)sect.Header.Romfs.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1].HashDataSize;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

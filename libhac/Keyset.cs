@@ -41,6 +41,8 @@ namespace libhac
         public byte[] acid_fixed_key_modulus { get; set; } = new byte[0x100];
         public byte[] package2_fixed_key_modulus { get; set; } = new byte[0x100];
 
+        public Dictionary<byte[], byte[]> TitleKeys { get; } = new Dictionary<byte[], byte[]>(new ByteArray128BitComparer());
+
         public void SetSdSeed(byte[] sdseed)
         {
             for (int k = 0; k < sd_card_key_sources.Length; k++)
@@ -76,12 +78,46 @@ namespace libhac
 
     public static class ExternalKeys
     {
+        private const int TitleKeySize = 0x10;
         private static readonly Dictionary<string, KeyValue> KeyDict = CreateKeyDict();
+
+        public static Keyset ReadKeyFile(string filename, string titleKeysFilename, IProgressReport progress = null)
+        {
+            var keyset = ReadKeyFile(filename, progress);
+            using (var reader = new StreamReader(new FileStream(titleKeysFilename, FileMode.Open, FileAccess.Read)))
+            {
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    var a = line.Split(',');
+                    if (a.Length != 2) continue;
+
+                    var rightsId = a[0].Trim().ToBytes();
+                    var titleKey = a[1].Trim().ToBytes();
+
+                    if (rightsId.Length != TitleKeySize)
+                    {
+                        progress?.LogMessage($"Rights ID {rightsId.ToHexString()} had incorrect size {rightsId.Length}. (Expected {TitleKeySize})");
+                        continue;
+                    }
+
+                    if (titleKey.Length != TitleKeySize)
+                    {
+                        progress?.LogMessage($"Title key {titleKey.ToHexString()} had incorrect size {titleKey.Length}. (Expected {TitleKeySize})");
+                        continue;
+                    }
+
+                    keyset.TitleKeys.Add(rightsId, titleKey);
+                }
+            }
+
+            return keyset;
+        }
 
         public static Keyset ReadKeyFile(string filename, IProgressReport progress = null)
         {
             var keyset = new Keyset();
-            using (var reader = new StreamReader(new FileStream(filename, FileMode.Open)))
+            using (var reader = new StreamReader(new FileStream(filename, FileMode.Open, FileAccess.Read)))
             {
                 string line;
                 while ((line = reader.ReadLine()) != null)

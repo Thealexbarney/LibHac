@@ -9,6 +9,12 @@ namespace hactoolnet
     {
         static void Main(string[] args)
         {
+            ReadNca();
+            //ListSdfs(args);
+        }
+
+        private static void ListSdfs(string[] args)
+        {
             var sdfs = LoadSdFs(args);
 
             Console.WriteLine("Listing NCA files");
@@ -18,7 +24,22 @@ namespace hactoolnet
             ListTitles(sdfs);
 
             //DecryptNax0(sdfs, "C0628FB07A89E9050BDA258F74868E8D");
-            DecryptTitle(sdfs, 0x0100000000010800);
+            DecryptTitle(sdfs, 0x010025400AECE000);
+        }
+
+        static void ReadNca()
+        {
+            var keyset = ExternalKeys.ReadKeyFile("keys.txt", "titlekeys.txt");
+            using (var file = new FileStream("acc9da939a8e0b339aa3be3d409d9ada.nca", FileMode.Open, FileAccess.Read))
+            {
+                var nca = new Nca(keyset, file, false);
+                var romfs = nca.OpenSection(0);
+
+                using (var output = new FileStream("romfs_net", FileMode.Create))
+                {
+                    romfs.CopyTo(output);
+                }
+            }
         }
 
         static void DecryptNax0(SdFs sdFs, string name)

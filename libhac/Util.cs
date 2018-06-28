@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace libhac
@@ -253,6 +255,46 @@ namespace libhac
             readable = (readable / 1024);
             // Return formatted number with suffix
             return readable.ToString("0.### ") + suffix;
+        }
+    }
+
+    public class ByteArray128BitComparer : EqualityComparer<byte[]>
+    {
+        public override bool Equals(byte[] first, byte[] second)
+        {
+            if (first == null || second == null)
+            {
+                // null == null returns true.
+                // non-null == null returns false.
+                return first == second;
+            }
+            if (ReferenceEquals(first, second))
+            {
+                return true;
+            }
+            if (first.Length != second.Length)
+            {
+                return false;
+            }
+            // Linq extension method is based on IEnumerable, must evaluate every item.
+            return first.SequenceEqual(second);
+        }
+
+        public override int GetHashCode(byte[] obj)
+        {
+            if (obj == null)
+            {
+                throw new ArgumentNullException(nameof(obj));
+            }
+            if (obj.Length != 16)
+            {
+                throw new ArgumentException("Length must be 16 bytes");
+            }
+
+            var hi = BitConverter.ToUInt64(obj, 0);
+            var lo = BitConverter.ToUInt64(obj, 8);
+
+            return (hi.GetHashCode() * 397) ^ lo.GetHashCode();
         }
     }
 }
