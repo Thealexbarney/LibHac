@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 using libhac.XTSSharp;
 
 namespace libhac
@@ -34,15 +35,24 @@ namespace libhac
             {
                 DecryptKeyArea(keyset);
             }
+            else
+            {
+                if (keyset.TitleKeys.TryGetValue(Header.RightsId, out var titleKey))
+                {
+                    Crypto.DecryptEcb(keyset.titlekeks[CryptoType], titleKey, DecryptedKeys[2], 0x10);
+                }
+            }
 
             for (int i = 0; i < 4; i++)
             {
                 var section = ParseSection(i);
-                if (section != null) Sections.Add(section);
+                if (section == null) continue;
+                Sections.Add(section);
+                ValidateSuperblockHash(i);
             }
         }
 
-        public Stream OpenSection(int index)
+        public Stream OpenSection(int index, bool raw)
         {
             if (index >= Sections.Count) throw new ArgumentOutOfRangeException(nameof(index));
             var sect = Sections[index];
@@ -50,18 +60,22 @@ namespace libhac
             long offset = sect.Offset;
             long size = sect.Size;
 
-            switch (sect.Header.FsType)
+            if (!raw)
             {
-                case SectionFsType.Pfs0:
-                    offset = sect.Offset + sect.Pfs0.Pfs0Offset;
-                    size = sect.Pfs0.Pfs0Size;
-                    break;
-                case SectionFsType.Romfs:
-                    offset = sect.Offset + (long)sect.Header.Romfs.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1].LogicalOffset;
-                    size = (long)sect.Header.Romfs.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1].HashDataSize;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
+                switch (sect.Header.FsType)
+                {
+                    case SectionFsType.Pfs0:
+                        offset = sect.Offset + sect.Pfs0.Pfs0Offset;
+                        size = sect.Pfs0.Pfs0Size;
+                        break;
+                    case SectionFsType.Romfs:
+                        offset = sect.Offset + (long)sect.Header.Romfs.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1]
+                                     .LogicalOffset;
+                        size = (long)sect.Header.Romfs.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1].HashDataSize;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
             }
 
             Stream.Position = offset;
@@ -73,7 +87,7 @@ namespace libhac
                 case SectionCryptType.XTS:
                     break;
                 case SectionCryptType.CTR:
-                    return new RandomAccessSectorStream(new AesCtrStream(Stream, DecryptedKeys[2], offset, size, offset), false);
+                    return new RandomAccessSectorStream(new AesCtrStream(Stream, DecryptedKeys[2], offset, size, offset, sect.Header.Ctr), false);
                 case SectionCryptType.BKTR:
                     break;
                 default:
@@ -128,6 +142,47 @@ namespace libhac
             return sect;
         }
 
+        private void ValidateSuperblockHash(int index)
+        {
+            if (index >= Sections.Count) throw new ArgumentOutOfRangeException(nameof(index));
+            var sect = Sections[index];
+            var stream = OpenSection(index, true);
+
+            byte[] expected = null;
+            byte[] actual;
+            long offset = 0;
+            long size = 0;
+
+            switch (sect.Type)
+            {
+                case SectionType.Invalid:
+                    break;
+                case SectionType.Pfs0:
+                    var pfs0 = sect.Header.Pfs0;
+                    expected = pfs0.MasterHash;
+                    offset = pfs0.HashTableOffset;
+                    size = pfs0.HashTableSize;
+                    break;
+                case SectionType.Romfs:
+                    break;
+                case SectionType.Bktr:
+                    break;
+            }
+
+            if (expected == null) return;
+
+            var hashTable = new byte[size];
+            stream.Position = offset;
+            stream.Read(hashTable, 0, hashTable.Length);
+
+            using (SHA256 hash = SHA256.Create())
+            {
+                actual = hash.ComputeHash(hashTable);
+            }
+
+            sect.SuperblockHashValidity = Util.ArraysEqual(expected, actual) ? Validity.Valid : Validity.Invalid;
+        }
+
         public void Dispose()
         {
             if (!KeepOpen)
@@ -145,6 +200,7 @@ namespace libhac
         public int SectionNum { get; set; }
         public long Offset { get; set; }
         public long Size { get; set; }
+        public Validity SuperblockHashValidity { get; set; }
 
         public Pfs0Superblock Pfs0 { get; set; }
     }

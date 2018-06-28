@@ -24,6 +24,7 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+using System;
 using System.IO;
 using System.Security.Cryptography;
 using libhac.XTSSharp;
@@ -40,6 +41,7 @@ namespace libhac
         /// </summary>
         public const int DefaultSectorSize = 16;
 
+        private readonly byte[] _initialCounter;
         private readonly long _counterOffset;
         private readonly byte[] _tempBuffer;
         private readonly Aes _aes;
@@ -62,9 +64,16 @@ namespace libhac
         /// <param name="offset">Offset to start at in the input stream</param>
         /// <param name="length">The length of the created stream</param>
         /// <param name="counterOffset">Offset to add to the counter</param>
-        public AesCtrStream(Stream baseStream, byte[] key, long offset, long length, long counterOffset)
+        /// <param name="ctrHi">The value of the upper 64 bits of the counter</param>
+        public AesCtrStream(Stream baseStream, byte[] key, long offset, long length, long counterOffset, byte[] ctrHi = null)
             : base(baseStream, 0x10, offset)
         {
+            _initialCounter = new byte[0x10];
+            if (ctrHi != null)
+            {
+                Array.Copy(ctrHi, _initialCounter, 8);
+            }
+
             _counterOffset = counterOffset;
             Length = length;
             _tempBuffer = new byte[0x10];
@@ -80,7 +89,7 @@ namespace libhac
 
         private CounterModeCryptoTransform CreateDecryptor()
         {
-            var dec = new CounterModeCryptoTransform(_aes, _aes.Key, new byte[0x10]);
+            var dec = new CounterModeCryptoTransform(_aes, _aes.Key, _initialCounter ?? new byte[0x10]);
             dec.UpdateCounter(_counterOffset + Position);
             return dec;
         }

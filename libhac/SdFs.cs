@@ -62,7 +62,7 @@ namespace libhac
                 var title = new Title();
 
                 // Meta contents always have 1 Partition FS section with 1 file in it
-                Stream sect = nca.OpenSection(0);
+                Stream sect = nca.OpenSection(0, false);
                 var pfs0 = new Pfs0(sect);
                 var file = pfs0.GetFile(0);
 

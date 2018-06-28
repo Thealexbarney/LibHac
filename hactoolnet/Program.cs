@@ -9,8 +9,8 @@ namespace hactoolnet
     {
         static void Main(string[] args)
         {
-            ReadNca();
-            //ListSdfs(args);
+            //ReadNca();
+            ListSdfs(args);
         }
 
         private static void ListSdfs(string[] args)
@@ -24,16 +24,16 @@ namespace hactoolnet
             ListTitles(sdfs);
 
             //DecryptNax0(sdfs, "C0628FB07A89E9050BDA258F74868E8D");
-            DecryptTitle(sdfs, 0x010025400AECE000);
+            //DecryptTitle(sdfs, 0x010023900AEE0000);
         }
 
         static void ReadNca()
         {
             var keyset = ExternalKeys.ReadKeyFile("keys.txt", "titlekeys.txt");
-            using (var file = new FileStream("acc9da939a8e0b339aa3be3d409d9ada.nca", FileMode.Open, FileAccess.Read))
+            using (var file = new FileStream("bf8b106a2e68df3c3f1694636423585a.nca", FileMode.Open, FileAccess.Read))
             {
                 var nca = new Nca(keyset, file, false);
-                var romfs = nca.OpenSection(0);
+                var romfs = nca.OpenSection(0, false);
 
                 using (var output = new FileStream("romfs_net", FileMode.Create))
                 {
@@ -77,7 +77,7 @@ namespace hactoolnet
 
         static SdFs LoadSdFs(string[] args)
         {
-            var keyset = ExternalKeys.ReadKeyFile(args[0]);
+            var keyset = ExternalKeys.ReadKeyFile(args[0], "titlekeys.txt");
             keyset.SetSdSeed(args[1].ToBytes());
             var sdfs = new SdFs(keyset, args[2]);
             return sdfs;
@@ -101,6 +101,16 @@ namespace hactoolnet
                 {
                     Console.WriteLine(
                         $"    {content.NcaId.ToHexString()}.nca {content.Type} {Util.GetBytesReadable(content.Size)}");
+                }
+
+                foreach (var nca in title.Ncas)
+                {
+                    Console.WriteLine($"      {nca.HasRightsId} {nca.NcaId} {nca.Header.ContentType}");
+
+                    foreach (var sect in nca.Sections)
+                    {
+                        Console.WriteLine($"        {sect.SectionNum} {sect.Type} {sect.Header.CryptType} {sect.SuperblockHashValidity}");
+                    }
                 }
 
                 Console.WriteLine("");

@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Linq;
 
 namespace libhac
 {
@@ -96,7 +97,7 @@ namespace libhac
         public Pfs0Superblock Pfs0;
         public RomfsSuperblock Romfs;
         public BktrSuperblock Bktr;
-        public ulong Ctr;
+        public byte[] Ctr;
 
         public NcaFsHeader(BinaryReader reader)
         {
@@ -126,7 +127,7 @@ namespace libhac
                 }
             }
 
-            Ctr = reader.ReadUInt64();
+            Ctr = reader.ReadBytes(8).Reverse().ToArray();
             reader.BaseStream.Position += 184;
         }
     }
@@ -279,5 +280,12 @@ namespace libhac
         Pfs0,
         Romfs,
         Bktr
+    }
+
+    public enum Validity
+    {
+        Unchecked,
+        Invalid,
+        Valid
     }
 }
