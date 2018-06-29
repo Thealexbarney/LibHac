@@ -104,19 +104,27 @@ namespace libhac
 
         private void ResolveFilenames()
         {
+            var list = new List<string>();
             var sb = new StringBuilder();
+            var delimiter = "/";
             foreach (var file in Files)
             {
-                sb.Append(file.Name);
+                list.Add(file.Name);
                 var dir = file.ParentDir;
                 while (dir != null)
                 {
-                    sb.Insert(0, "/");
-                    sb.Insert(0, dir.Name);
+                    list.Add(delimiter);
+                    list.Add(dir.Name);
                     dir = dir.Parent;
                 }
 
+                for (int i = list.Count-1; i >= 0; i--)
+                {
+                    sb.Append(list[i]);
+                }
+
                 file.FullPath = sb.ToString();
+                list.Clear();
                 sb.Clear();
             }
         }
