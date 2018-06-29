@@ -166,7 +166,7 @@ namespace libhac
                 _decryptor = CreateDecryptor();
 
             //decrypt the sector
-            var retV = _decryptor.TransformBlock(_tempBuffer, 0, ret, buffer, offset);
+            var retV = _decryptor.TransformBlock(_tempBuffer, 0, buffer, offset);
 
             //Console.WriteLine("Decrypting sector {0} == {1} bytes", currentSector, retV);
 

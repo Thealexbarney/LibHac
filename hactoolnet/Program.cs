@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using libhac;
@@ -35,12 +36,17 @@ namespace hactoolnet
             var title = sdfs.Titles[0x0100E95004038000];
             var nca = title.ProgramNca;
             var romfsStream = nca.OpenSection(1, false);
-            var romfs = new Romfs(romfsStream);
-            var file = romfs.OpenFile("/stream/voice/us/127/127390101.nop");
 
-            using (var output = new FileStream("127390101.nop", FileMode.Create))
+            var romfs = new Romfs(romfsStream);
+            var file = romfs.OpenFile("/bf2.ard");
+
+            using (var progress = new ProgressBar())
+            using (var output = new FileStream("bf2.ard", FileMode.Create))
             {
-                file.CopyTo(output);
+                var watch = Stopwatch.StartNew();
+                file.CopyStream(output, file.Length / 100, progress);
+                watch.Stop();
+                progress.LogMessage(watch.Elapsed.TotalSeconds.ToString());
             }
         }
 
@@ -53,11 +59,15 @@ namespace hactoolnet
                 var romfsStream = nca.OpenSection(1, false);
 
                 var romfs = new Romfs(romfsStream);
-                var bfstm = romfs.OpenFile("/Sound/Resource/Stream/BGM_Castle.bfstm");
+                var bfstm = romfs.OpenFile("/Sound/Resource/Stream/Demo149_1_SoundTrack.bfstm");
 
-                using (var output = new FileStream("BGM_Castle.bfstm", FileMode.Create))
+                using (var progress = new ProgressBar())
+                using (var output = new FileStream("Demo149_1_SoundTrack.bfstm", FileMode.Create))
                 {
-                    bfstm.CopyTo(output);
+                    var watch = Stopwatch.StartNew();
+                    bfstm.CopyStream(output, bfstm.Length, progress);
+                    watch.Stop();
+                    progress.LogMessage(watch.Elapsed.TotalSeconds.ToString());
                 }
             }
         }
@@ -66,7 +76,7 @@ namespace hactoolnet
         {
             var sdfs = LoadSdFs(args);
             var nca = sdfs.Ncas["8EE79C7AB0F16737BC50F049DFDBB595"];
-            var romfsStream =nca.OpenSection(1, false);
+            var romfsStream = nca.OpenSection(1, false);
             var romfs = new Romfs(romfsStream);
         }
 

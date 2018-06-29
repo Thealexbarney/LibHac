@@ -21,87 +21,39 @@
 // THE SOFTWARE.
 
 using System;
-using System.Collections.Generic;
 using System.Security.Cryptography;
 
 namespace libhac
 {
-    public class Aes128CounterMode : SymmetricAlgorithm
+    public class CounterModeCryptoTransform
     {
-        private readonly byte[] _counter = new byte[0x10];
-        private readonly AesManaged _aes;
-
-        public Aes128CounterMode()
-        {
-            _aes = new AesManaged
-            {
-                Mode = CipherMode.ECB,
-                Padding = PaddingMode.None
-            };
-        }
-
-        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] ignoredParameter)
-        {
-            return new CounterModeCryptoTransform(_aes, rgbKey, _counter);
-        }
-
-        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] ignoredParameter)
-        {
-            return new CounterModeCryptoTransform(_aes, rgbKey, _counter);
-        }
-
-        public override void GenerateKey()
-        {
-            _aes.GenerateKey();
-        }
-
-        public override void GenerateIV()
-        {
-            // IV not needed in Counter Mode
-        }
-    }
-
-    public class CounterModeCryptoTransform : ICryptoTransform
-    {
+        private const int BlockSize = 128;
+        private const int BlockSizeBytes = BlockSize / 8;
         private readonly byte[] _counter;
+        private readonly byte[] _counterEnc = new byte[0x10];
         private readonly ICryptoTransform _counterEncryptor;
-        private readonly Queue<byte> _xorMask = new Queue<byte>();
-        private readonly SymmetricAlgorithm _symmetricAlgorithm;
 
         public CounterModeCryptoTransform(SymmetricAlgorithm symmetricAlgorithm, byte[] key, byte[] counter)
         {
-            if (symmetricAlgorithm == null) throw new ArgumentNullException(nameof(symmetricAlgorithm));
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (counter == null) throw new ArgumentNullException(nameof(counter));
-            if (counter.Length != symmetricAlgorithm.BlockSize / 8)
+            if (counter.Length != BlockSizeBytes)
                 throw new ArgumentException(String.Format("Counter size must be same as block size (actual: {0}, expected: {1})",
-                    counter.Length, symmetricAlgorithm.BlockSize / 8));
+                    counter.Length, BlockSizeBytes));
 
-            _symmetricAlgorithm = symmetricAlgorithm;
             _counter = counter;
-
-            var zeroIv = new byte[_symmetricAlgorithm.BlockSize / 8];
-            _counterEncryptor = symmetricAlgorithm.CreateEncryptor(key, zeroIv);
+            _counterEncryptor = symmetricAlgorithm.CreateEncryptor(key, new byte[BlockSize / 8]);
         }
 
-        public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
+        public int TransformBlock(byte[] inputBuffer, int inputOffset, byte[] outputBuffer, int outputOffset)
         {
-            var output = new byte[inputCount];
-            TransformBlock(inputBuffer, inputOffset, inputCount, output, 0);
-            return output;
-        }
-
-        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
-        {
-            for (var i = 0; i < inputCount; i++)
+            EncryptCounterThenIncrement();
+            for (int i = 0; i < 16; i++)
             {
-                if (NeedMoreXorMaskBytes()) EncryptCounterThenIncrement();
-
-                var mask = _xorMask.Dequeue();
-                outputBuffer[outputOffset + i] = (byte)(inputBuffer[inputOffset + i] ^ mask);
+                outputBuffer[outputOffset + i] = (byte)(inputBuffer[inputOffset + i] ^ _counterEnc[i]);
             }
 
-            return inputCount;
+            return 16;
         }
 
         public void UpdateCounter(long offset)
@@ -114,22 +66,10 @@ namespace libhac
             }
         }
 
-        private bool NeedMoreXorMaskBytes()
-        {
-            return _xorMask.Count == 0;
-        }
-
         private void EncryptCounterThenIncrement()
         {
-            var counterModeBlock = new byte[_symmetricAlgorithm.BlockSize / 8];
-
-            _counterEncryptor.TransformBlock(_counter, 0, _counter.Length, counterModeBlock, 0);
+            _counterEncryptor.TransformBlock(_counter, 0, _counter.Length, _counterEnc, 0);
             IncrementCounter();
-
-            foreach (var b in counterModeBlock)
-            {
-                _xorMask.Enqueue(b);
-            }
         }
 
         private void IncrementCounter()
@@ -140,11 +80,6 @@ namespace libhac
                     break;
             }
         }
-
-        public int InputBlockSize => _symmetricAlgorithm.BlockSize / 8;
-        public int OutputBlockSize => _symmetricAlgorithm.BlockSize / 8;
-        public bool CanTransformMultipleBlocks => true;
-        public bool CanReuseTransform => false;
 
         public void Dispose()
         {
