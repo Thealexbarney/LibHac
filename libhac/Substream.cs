@@ -18,7 +18,7 @@ namespace libhac
             Length = length;
             Offset = offset;
 
-            baseStream.Seek(offset, SeekOrigin.Current);
+            baseStream.Seek(offset, SeekOrigin.Begin);
         }
         public override int Read(byte[] buffer, int offset, int count)
         {

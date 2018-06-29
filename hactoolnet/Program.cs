@@ -9,8 +9,10 @@ namespace hactoolnet
     {
         static void Main(string[] args)
         {
+            FileReadTest(args);
             //ReadNca();
-            ListSdfs(args);
+            //ListSdfs(args);
+            //ReadNcaSdfs(args);
         }
 
         private static void ListSdfs(string[] args)
@@ -27,19 +29,45 @@ namespace hactoolnet
             //DecryptTitle(sdfs, 0x010023900AEE0000);
         }
 
+        static void FileReadTest(string[] args)
+        {
+            var sdfs = LoadSdFs(args);
+            var title = sdfs.Titles[0x0100E95004038000];
+            var nca = title.ProgramNca;
+            var romfsStream = nca.OpenSection(1, false);
+            var romfs = new Romfs(romfsStream);
+            var file = romfs.OpenFile("/stream/voice/us/127/127390101.nop");
+
+            using (var output = new FileStream("127390101.nop", FileMode.Create))
+            {
+                file.CopyTo(output);
+            }
+        }
+
         static void ReadNca()
         {
             var keyset = ExternalKeys.ReadKeyFile("keys.txt", "titlekeys.txt");
-            using (var file = new FileStream("671d172e7993ee033d1be25ee76378e3.nca", FileMode.Open, FileAccess.Read))
+            using (var file = new FileStream("27eeccfe5f6e7637352273bc46ab97e4.nca", FileMode.Open, FileAccess.Read))
             {
                 var nca = new Nca(keyset, file, false);
-                var romfs = nca.OpenSection(0, false);
+                var romfsStream = nca.OpenSection(1, false);
 
-                using (var output = new FileStream("romfs_net", FileMode.Create))
+                var romfs = new Romfs(romfsStream);
+                var bfstm = romfs.OpenFile("/Sound/Resource/Stream/BGM_Castle.bfstm");
+
+                using (var output = new FileStream("BGM_Castle.bfstm", FileMode.Create))
                 {
-                    romfs.CopyTo(output);
+                    bfstm.CopyTo(output);
                 }
             }
+        }
+
+        static void ReadNcaSdfs(string[] args)
+        {
+            var sdfs = LoadSdFs(args);
+            var nca = sdfs.Ncas["8EE79C7AB0F16737BC50F049DFDBB595"];
+            var romfsStream =nca.OpenSection(1, false);
+            var romfs = new Romfs(romfsStream);
         }
 
         static void DecryptNax0(SdFs sdFs, string name)

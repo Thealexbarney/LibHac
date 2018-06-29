@@ -70,6 +70,7 @@ namespace libhac
                 title.Id = metadata.TitleId;
                 title.Version = new TitleVersion(metadata.TitleVersion);
                 title.Metadata = metadata;
+                title.MetaNca = nca;
                 title.Ncas.Add(nca);
 
                 foreach (var content in metadata.ContentEntries)
@@ -79,6 +80,16 @@ namespace libhac
                     if (Ncas.TryGetValue(ncaId, out Nca contentNca))
                     {
                         title.Ncas.Add(contentNca);
+                    }
+
+                    switch (content.Type)
+                    {
+                        case CnmtContentType.Program:
+                            title.ProgramNca = contentNca;
+                            break;
+                        case CnmtContentType.Control:
+                            title.ControlNca = contentNca;
+                            break;
                     }
                 }
 
@@ -111,5 +122,9 @@ namespace libhac
         public TitleVersion Version { get; internal set; }
         public List<Nca> Ncas { get; } = new List<Nca>();
         public Cnmt Metadata { get; internal set; }
+
+        public Nca MetaNca { get; internal set; }
+        public Nca ProgramNca { get; internal set; }
+        public Nca ControlNca { get; internal set; }
     }
 }

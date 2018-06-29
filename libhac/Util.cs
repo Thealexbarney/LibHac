@@ -98,6 +98,11 @@ namespace libhac
             return Encoding.ASCII.GetString(reader.ReadBytes(size), 0, size);
         }
 
+        public static string ReadUtf8(this BinaryReader reader, int size)
+        {
+            return Encoding.UTF8.GetString(reader.ReadBytes(size), 0, size);
+        }
+
         // todo Maybe make less naive
         public static string GetRelativePath(string path, string basePath)
         {
@@ -255,6 +260,17 @@ namespace libhac
             readable = (readable / 1024);
             // Return formatted number with suffix
             return readable.ToString("0.### ") + suffix;
+        }
+
+        public static long GetNextMultiple(long value, int multiple)
+        {
+            if (multiple <= 0)
+                return value;
+
+            if (value % multiple == 0)
+                return value;
+
+            return value + multiple - value % multiple;
         }
     }
 
