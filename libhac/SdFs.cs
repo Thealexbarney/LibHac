@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -108,7 +109,16 @@ namespace libhac
                 File.WriteAllBytes($"control/{title.Id:X16}.nacp", control);
 
                 var reader = new BinaryReader(new MemoryStream(control));
-                title.Name = reader.ReadUtf8Z();
+                title.Control = new Nacp(reader);
+
+                foreach (var lang in title.Control.Languages)
+                {
+                    if (!string.IsNullOrWhiteSpace(lang.Title))
+                    {
+                        title.Name = lang.Title;
+                        break;
+                    }
+                }
             }
         }
 
@@ -131,6 +141,7 @@ namespace libhac
         }
     }
 
+    [DebuggerDisplay("{" + nameof(Name) + "}")]
     public class Title
     {
         public ulong Id { get; internal set; }
@@ -139,6 +150,7 @@ namespace libhac
         public Cnmt Metadata { get; internal set; }
 
         public string Name { get; internal set; }
+        public Nacp Control { get; internal set; }
         public Nca MetaNca { get; internal set; }
         public Nca ProgramNca { get; internal set; }
         public Nca ControlNca { get; internal set; }

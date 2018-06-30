@@ -129,7 +129,7 @@ namespace hactoolnet
         {
             foreach (var title in sdfs.Titles.Values.OrderBy(x => x.Id))
             {
-                Console.WriteLine(title.Name);
+                Console.WriteLine($"{title.Name} {title.Control?.Version}");
                 Console.WriteLine($"{title.Id:X16} v{title.Version.Version} ({title.Version}) {title.Metadata.Type}");
 
                 foreach (var content in title.Metadata.ContentEntries)
