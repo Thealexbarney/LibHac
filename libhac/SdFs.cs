@@ -29,6 +29,7 @@ namespace libhac
             Files = Directory.GetFiles(ContentsDir, "00", SearchOption.AllDirectories).Select(Path.GetDirectoryName).ToArray();
             OpenAllNcas();
             ReadTitles();
+            ReadControls();
         }
 
         private void OpenAllNcas()
@@ -97,6 +98,20 @@ namespace libhac
             }
         }
 
+        private void ReadControls()
+        {
+            foreach (var title in Titles.Values.Where(x => x.ControlNca != null))
+            {
+                var romfs = new Romfs(title.ControlNca.OpenSection(0, false));
+                var control = romfs.GetFile("/control.nacp");
+                Directory.CreateDirectory("control");
+                File.WriteAllBytes($"control/{title.Id:X16}.nacp", control);
+
+                var reader = new BinaryReader(new MemoryStream(control));
+                title.Name = reader.ReadUtf8Z();
+            }
+        }
+
         private void DisposeNcas()
         {
             foreach (Nca nca in Ncas.Values)
@@ -123,6 +138,7 @@ namespace libhac
         public List<Nca> Ncas { get; } = new List<Nca>();
         public Cnmt Metadata { get; internal set; }
 
+        public string Name { get; internal set; }
         public Nca MetaNca { get; internal set; }
         public Nca ProgramNca { get; internal set; }
         public Nca ControlNca { get; internal set; }

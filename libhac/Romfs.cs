@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -20,8 +19,6 @@ namespace libhac
 
         public Romfs(Stream stream)
         {
-            var watch = Stopwatch.StartNew();
-
             byte[] dirMetaTable;
             byte[] fileMetaTable;
             using (var reader = new BinaryReader(stream, Encoding.Default, true))
@@ -61,10 +58,6 @@ namespace libhac
             ResolveFilenames();
             FileDict = Files.ToDictionary(x => x.FullPath, x => x);
             Stream = stream;
-
-            watch.Stop();
-            Console.WriteLine(watch.Elapsed.TotalMilliseconds);
-            Console.WriteLine(Files.Count);
         }
 
         public Stream OpenFile(string filename)
@@ -76,6 +69,18 @@ namespace libhac
 
             var stream = new SubStream(Stream, Header.DataOffset + file.DataOffset, file.DataLength);
             return stream;
+        }
+
+        public byte[] GetFile(string filename)
+        {
+            var stream = OpenFile(filename);
+            var file = new byte[stream.Length];
+            using (var ms = new MemoryStream(file))
+            {
+                stream.CopyTo(ms);
+            }
+
+            return file;
         }
 
         public bool FileExists(string filename) => FileDict.ContainsKey(filename);
@@ -118,7 +123,7 @@ namespace libhac
                     dir = dir.Parent;
                 }
 
-                for (int i = list.Count-1; i >= 0; i--)
+                for (int i = list.Count - 1; i >= 0; i--)
                 {
                     sb.Append(list[i]);
                 }

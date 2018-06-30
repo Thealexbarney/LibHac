@@ -10,7 +10,8 @@ namespace hactoolnet
     {
         static void Main(string[] args)
         {
-            FileReadTest(args);
+            ListSdfs(args);
+            //FileReadTest(args);
             //ReadNca();
             //ListSdfs(args);
             //ReadNcaSdfs(args);
@@ -36,17 +37,12 @@ namespace hactoolnet
             var title = sdfs.Titles[0x0100E95004038000];
             var nca = title.ProgramNca;
             var romfsStream = nca.OpenSection(1, false);
-
             var romfs = new Romfs(romfsStream);
-            var file = romfs.OpenFile("/bf2.ard");
+            var file = romfs.OpenFile("/stream/voice/us/127/127390101.nop");
 
-            using (var progress = new ProgressBar())
-            using (var output = new FileStream("bf2.ard", FileMode.Create))
+            using (var output = new FileStream("127390101.nop", FileMode.Create))
             {
-                var watch = Stopwatch.StartNew();
-                file.CopyStream(output, file.Length / 100, progress);
-                watch.Stop();
-                progress.LogMessage(watch.Elapsed.TotalSeconds.ToString());
+                file.CopyTo(output);
             }
         }
 
@@ -133,6 +129,7 @@ namespace hactoolnet
         {
             foreach (var title in sdfs.Titles.Values.OrderBy(x => x.Id))
             {
+                Console.WriteLine(title.Name);
                 Console.WriteLine($"{title.Id:X16} v{title.Version.Version} ({title.Version}) {title.Metadata.Type}");
 
                 foreach (var content in title.Metadata.ContentEntries)
