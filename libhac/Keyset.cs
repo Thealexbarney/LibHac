@@ -107,7 +107,7 @@ namespace libhac
                         continue;
                     }
 
-                    keyset.TitleKeys.Add(rightsId, titleKey);
+                    keyset.TitleKeys[rightsId] = titleKey;
                 }
             }
 

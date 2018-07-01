@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -76,40 +75,6 @@ namespace libhac
             var isValid = Util.ArraysEqual(Hmac, validationMac);
 
             if (!isValid) throw new ArgumentException("NAX0 key derivation failed.");
-        }
-
-        public static Nax0 CreateFromPath(Keyset keyset, string path, string sdPath)
-        {
-            List<string> files = new List<string>();
-            List<Stream> streams = new List<Stream>();
-
-            if (Directory.Exists(path))
-            {
-                while (true)
-                {
-                    var partName = Path.Combine(path, $"{files.Count:D2}");
-                    if (!File.Exists(partName)) break;
-
-                    files.Add(partName);
-                }
-
-            }
-            else if (File.Exists(path))
-            {
-                files.Add(path);
-            }
-            else
-            {
-                throw new FileNotFoundException("Could not find the input file or directory");
-            }
-
-            foreach (var file in files)
-            {
-                streams.Add(new FileStream(file, FileMode.Open));
-            }
-
-            var stream = new CombinationStream(streams);
-            return new Nax0(keyset, stream, sdPath, false);
         }
 
         public void Dispose()

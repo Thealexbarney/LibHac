@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace libhac
 {
@@ -11,23 +12,26 @@ namespace libhac
         public Keyset Keyset { get; }
         public string RootDir { get; }
         public string ContentsDir { get; }
-        public string[] Files { get; }
 
         public Dictionary<string, Nca> Ncas { get; } = new Dictionary<string, Nca>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<ulong, Title> Titles { get; } = new Dictionary<ulong, Title>();
 
         private List<Nax0> Nax0s { get; } = new List<Nax0>();
 
-        public SdFs(Keyset keyset, string sdPath)
+        public SdFs(Keyset keyset, string rootDir)
         {
-            if (Directory.Exists(Path.Combine(sdPath, "Nintendo")))
+            RootDir = rootDir;
+            Keyset = keyset;
+
+            if (Directory.Exists(Path.Combine(rootDir, "Nintendo")))
             {
-                RootDir = sdPath;
-                Keyset = keyset;
-                ContentsDir = Path.Combine(sdPath, "Nintendo", "Contents");
+                ContentsDir = Path.Combine(rootDir, "Nintendo", "Contents");
+            }
+            else if (Directory.Exists(Path.Combine(rootDir, "Contents")))
+            {
+                ContentsDir = Path.Combine(rootDir, "Contents");
             }
 
-            Files = Directory.GetFiles(ContentsDir, "00", SearchOption.AllDirectories).Select(Path.GetDirectoryName).ToArray();
             OpenAllNcas();
             ReadTitles();
             ReadControls();
@@ -35,15 +39,36 @@ namespace libhac
 
         private void OpenAllNcas()
         {
-            foreach (var file in Files)
+            string[] files = Directory.GetFileSystemEntries(ContentsDir, "*.nca", SearchOption.AllDirectories).ToArray();
+
+            foreach (var file in files)
             {
                 Nca nca = null;
                 try
                 {
-                    var sdPath = "/" + Util.GetRelativePath(file, ContentsDir).Replace('\\', '/');
-                    var nax0 = Nax0.CreateFromPath(Keyset, file, sdPath);
-                    Nax0s.Add(nax0);
-                    nca = new Nca(Keyset, nax0.Stream, false);
+                    bool isNax0;
+                    Stream stream = OpenSplitNcaStream(file);
+                    if (stream == null) continue;
+
+                    using (var reader = new BinaryReader(stream, Encoding.Default, true))
+                    {
+                        stream.Position = 0x20;
+                        isNax0 = reader.ReadUInt32() == 0x3058414E; // NAX0
+                        stream.Position = 0;
+                    }
+
+                    if (isNax0)
+                    {
+                        var sdPath = "/" + Util.GetRelativePath(file, ContentsDir).Replace('\\', '/');
+                        var nax0 = new Nax0(Keyset, stream, sdPath, false);
+                        Nax0s.Add(nax0);
+                        nca = new Nca(Keyset, nax0.Stream, false);
+                    }
+                    else
+                    {
+                        nca = new Nca(Keyset, stream, false);
+                    }
+                    
                     nca.NcaId = Path.GetFileNameWithoutExtension(file);
                     var extention = nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
                     nca.Filename = nca.NcaId + extention;
@@ -70,7 +95,7 @@ namespace libhac
 
                 var metadata = new Cnmt(new MemoryStream(file));
                 title.Id = metadata.TitleId;
-                title.Version = new TitleVersion(metadata.TitleVersion);
+                title.Version = metadata.TitleVersion;
                 title.Metadata = metadata;
                 title.MetaNca = nca;
                 title.Ncas.Add(nca);
@@ -122,6 +147,45 @@ namespace libhac
             }
         }
 
+        internal static Stream OpenSplitNcaStream(string path)
+        {
+            List<string> files = new List<string>();
+            List<Stream> streams = new List<Stream>();
+
+            if (Directory.Exists(path))
+            {
+                while (true)
+                {
+                    var partName = Path.Combine(path, $"{files.Count:D2}");
+                    if (!File.Exists(partName)) break;
+
+                    files.Add(partName);
+                }
+            }
+            else if (File.Exists(path))
+            {
+                if (Path.GetFileName(path) != "00")
+                {
+                    return new FileStream(path, FileMode.Open, FileAccess.Read);
+                }
+                files.Add(path);
+            }
+            else
+            {
+                throw new FileNotFoundException("Could not find the input file or directory");
+            }
+
+            foreach (var file in files)
+            {
+                streams.Add(new FileStream(file, FileMode.Open, FileAccess.Read));
+            }
+
+            if (streams.Count == 0) return null;
+
+            var stream = new CombinationStream(streams);
+            return stream;
+        }
+
         private void DisposeNcas()
         {
             foreach (Nca nca in Ncas.Values)
@@ -154,5 +218,45 @@ namespace libhac
         public Nca MetaNca { get; internal set; }
         public Nca ProgramNca { get; internal set; }
         public Nca ControlNca { get; internal set; }
+    }
+
+    public class Application
+    {
+        public Title Main { get; private set; }
+        public Title Patch { get; private set; }
+        public List<Title> AddOnContent { get; private set; }
+
+        public string Name { get; private set; }
+        public string Version { get; private set; }
+
+        public void SetMainTitle(Title title)
+        {
+            Main = title;
+        }
+
+        public void SetPatchTitle(Title title)
+        {
+            if (title.Metadata.Type != TitleType.Patch) throw new InvalidDataException("Title is not a patch");
+            Patch = title;
+        }
+
+        private void UpdateName()
+        {
+            if (Patch != null)
+            {
+                Name = Patch.Name;
+                Version = Patch.Control?.Version ?? "";
+            }
+            else if (Main != null)
+            {
+                Name = Main.Name;
+                Version = Main.Control?.Version ?? "";
+            }
+            else
+            {
+                Name = "";
+                Version = "";
+            }
+        }
     }
 }

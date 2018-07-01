@@ -225,18 +225,29 @@ namespace libhac
     public class TitleVersion
     {
         public uint Version { get; }
-        public byte Major { get; }
-        public byte Minor { get; }
-        public byte Patch { get; }
-        public byte Revision { get; }
+        public int Major { get; }
+        public int Minor { get; }
+        public int Patch { get; }
+        public int Revision { get; }
 
-        public TitleVersion(uint version)
+        public TitleVersion(uint version, bool isSystemTitle = false)
         {
             Version = version;
-            Revision = (byte)version;
-            Patch = (byte)(version >> 8);
-            Minor = (byte)(version >> 16);
-            Major = (byte)(version >> 24);
+
+            if (isSystemTitle)
+            {
+                Revision = (int)(version & ((1 << 16) - 1));
+                Patch = (int)((version >> 16) & ((1 << 4) - 1));
+                Minor = (int)((version >> 20) & ((1 << 6) - 1));
+                Major = (int)((version >> 26) & ((1 << 6) - 1));
+            }
+            else
+            {
+                Revision = (byte)version;
+                Patch = (byte)(version >> 8);
+                Minor = (byte)(version >> 16);
+                Major = (byte)(version >> 24);
+            }
         }
 
         public override string ToString()
@@ -244,7 +255,7 @@ namespace libhac
             return $"{Major}.{Minor}.{Patch}.{Revision}";
         }
     }
-
+    
     public enum ContentType
     {
         Program,
