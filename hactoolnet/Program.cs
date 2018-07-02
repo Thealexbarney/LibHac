@@ -10,11 +10,71 @@ namespace hactoolnet
     {
         static void Main(string[] args)
         {
-            ListSdfs(args);
+            var ctx = new Context();
+            ctx.Options = CliParser.Parse(args);
+            if (ctx.Options == null) return;
+
+            using (var logger = new ProgressBar())
+            {
+                ctx.Logger = logger;
+                OpenKeyset(ctx);
+
+                switch (ctx.Options.InFileType)
+                {
+                    case FileType.Nca:
+                        ProcessNca(ctx);
+                        break;
+                    case FileType.Pfs0:
+                        break;
+                    case FileType.Romfs:
+                        break;
+                    case FileType.Nax0:
+                        break;
+                    case FileType.SwitchFs:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+
+            //ListSdfs(args);
             //FileReadTest(args);
             //ReadNca();
             //ListSdfs(args);
             //ReadNcaSdfs(args);
+        }
+
+        private static void ProcessNca(Context ctx)
+        {
+            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
+            {
+                var nca = new Nca(ctx.Keyset, file, false);
+
+                if (ctx.Options.RomfsOut != null && nca.Sections[1] != null)
+                {
+                    var romfs = nca.OpenSection(1, false);
+
+                    using (var outFile = new FileStream(ctx.Options.RomfsOut, FileMode.Create, FileAccess.ReadWrite))
+                    {
+                        romfs.CopyStream(outFile, romfs.Length, ctx.Logger);
+                    }
+                }
+
+                if (ctx.Options.SectionOut[0] != null && nca.Sections[0] != null)
+                {
+                    var romfs = nca.OpenSection(0, false);
+
+                    using (var outFile = new FileStream(ctx.Options.SectionOut[0], FileMode.Create, FileAccess.ReadWrite))
+                    {
+                        romfs.CopyStream(outFile, romfs.Length, ctx.Logger);
+                    }
+                }
+            }
+        }
+
+        private static void OpenKeyset(Context ctx)
+        {
+            ctx.Keyset = ExternalKeys.ReadKeyFile(ctx.Options.Keyfile, ctx.Options.TitleKeyFile, ctx.Logger);
         }
 
         private static void ListSdfs(string[] args)
@@ -161,7 +221,6 @@ namespace hactoolnet
             {
                 Console.WriteLine($"{app.Name} v{app.DisplayVersion}");
 
-                long totalSize = 0;
                 if (app.Main != null)
                 {
                     Console.WriteLine($"Software: {Util.GetBytesReadable(app.Main.GetSize())}");
@@ -189,3 +248,4 @@ namespace hactoolnet
         }
     }
 }
+
