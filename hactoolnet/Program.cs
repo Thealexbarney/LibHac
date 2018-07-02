@@ -27,6 +27,9 @@ namespace hactoolnet
             Console.WriteLine("Listing titles");
             ListTitles(sdfs);
 
+            Console.WriteLine("Listing applications");
+            ListApplications(sdfs);
+
             //DecryptNax0(sdfs, "C0628FB07A89E9050BDA258F74868E8D");
             //DecryptTitle(sdfs, 0x010023900AEE0000);
         }
@@ -147,6 +150,39 @@ namespace hactoolnet
                         Console.WriteLine($"        {sect.SectionNum} {sect.Type} {sect.Header.CryptType} {sect.SuperblockHashValidity}");
                     }
                 }
+
+                Console.WriteLine("");
+            }
+        }
+
+        static void ListApplications(SdFs sdfs)
+        {
+            foreach (var app in sdfs.Applications.Values.OrderBy(x => x.Name))
+            {
+                Console.WriteLine($"{app.Name} v{app.DisplayVersion}");
+
+                long totalSize = 0;
+                if (app.Main != null)
+                {
+                    Console.WriteLine($"Software: {Util.GetBytesReadable(app.Main.GetSize())}");
+                }
+
+                if (app.Patch != null)
+                {
+                    Console.WriteLine($"Update Data: {Util.GetBytesReadable(app.Patch.GetSize())}");
+                }
+
+                if (app.AddOnContent.Count > 0)
+                {
+                    Console.WriteLine($"DLC: {Util.GetBytesReadable(app.AddOnContent.Sum(x => x.GetSize()))}");
+                }
+
+                if (app.Nacp?.UserTotalSaveDataSize > 0)
+                    Console.WriteLine($"User save: {Util.GetBytesReadable(app.Nacp.UserTotalSaveDataSize)}");
+                if (app.Nacp?.DeviceTotalSaveDataSize > 0)
+                    Console.WriteLine($"System save: {Util.GetBytesReadable(app.Nacp.DeviceTotalSaveDataSize)}");
+                if (app.Nacp?.BcatSaveDataSize > 0)
+                    Console.WriteLine($"BCAT save: {Util.GetBytesReadable(app.Nacp.BcatSaveDataSize)}");
 
                 Console.WriteLine("");
             }

@@ -37,6 +37,7 @@ namespace libhac
                 switch (Type)
                 {
                     case TitleType.Application:
+                        ApplicationTitleId = TitleId;
                         PatchTitleId = reader.ReadUInt64();
                         MinimumSystemVersion = new TitleVersion(reader.ReadUInt32(), true);
                         break;

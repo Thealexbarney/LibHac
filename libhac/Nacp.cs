@@ -6,6 +6,17 @@ namespace libhac
     {
         public NacpLang[] Languages { get; } = new NacpLang[0x10];
         public string Version { get; }
+        public ulong AddOnContentBaseId { get; }
+        public ulong SaveDataOwnerId { get; }
+        public long UserAccountSaveDataSize { get; }
+        public long UserAccountSaveDataJournalSize { get; }
+        public long DeviceSaveDataSize { get; }
+        public long DeviceSaveDataJournalSize { get; }
+        public long BcatSaveDataSize { get; }
+
+        public long TotalSaveDataSize { get; }
+        public long UserTotalSaveDataSize { get; }
+        public long DeviceTotalSaveDataSize { get; }
 
         public Nacp(BinaryReader reader)
         {
@@ -18,6 +29,18 @@ namespace libhac
 
             reader.BaseStream.Position = start + 0x3060;
             Version = reader.ReadUtf8Z();
+            reader.BaseStream.Position = start + 0x3070;
+            AddOnContentBaseId = reader.ReadUInt64();
+            SaveDataOwnerId = reader.ReadUInt64();
+            UserAccountSaveDataSize = reader.ReadInt64();
+            UserAccountSaveDataJournalSize = reader.ReadInt64();
+            DeviceSaveDataSize = reader.ReadInt64();
+            DeviceSaveDataJournalSize = reader.ReadInt64();
+            BcatSaveDataSize = reader.ReadInt64();
+
+            UserTotalSaveDataSize = UserAccountSaveDataSize + UserAccountSaveDataJournalSize;
+            DeviceTotalSaveDataSize = DeviceSaveDataSize + DeviceSaveDataJournalSize;
+            TotalSaveDataSize = UserTotalSaveDataSize + DeviceTotalSaveDataSize;
         }
     }
 

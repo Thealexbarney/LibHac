@@ -15,6 +15,7 @@ namespace libhac
 
         public Dictionary<string, Nca> Ncas { get; } = new Dictionary<string, Nca>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<ulong, Title> Titles { get; } = new Dictionary<ulong, Title>();
+        public Dictionary<ulong, Application> Applications { get; } = new Dictionary<ulong, Application>();
 
         private List<Nax0> Nax0s { get; } = new List<Nax0>();
 
@@ -35,6 +36,7 @@ namespace libhac
             OpenAllNcas();
             ReadTitles();
             ReadControls();
+            CreateApplications();
         }
 
         private void OpenAllNcas()
@@ -68,7 +70,7 @@ namespace libhac
                     {
                         nca = new Nca(Keyset, stream, false);
                     }
-                    
+
                     nca.NcaId = Path.GetFileNameWithoutExtension(file);
                     var extention = nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
                     nca.Filename = nca.NcaId + extention;
@@ -147,6 +149,23 @@ namespace libhac
             }
         }
 
+        private void CreateApplications()
+        {
+            foreach (var title in Titles.Values.Where(x => x.Metadata.Type >= TitleType.Application))
+            {
+                var meta = title.Metadata;
+                ulong appId = meta.ApplicationTitleId;
+
+                if (!Applications.TryGetValue(appId, out var app))
+                {
+                    app = new Application();
+                    Applications.Add(appId, app);
+                }
+
+                app.AddTitle(title);
+            }
+        }
+
         internal static Stream OpenSplitNcaStream(string path)
         {
             List<string> files = new List<string>();
@@ -218,44 +237,72 @@ namespace libhac
         public Nca MetaNca { get; internal set; }
         public Nca ProgramNca { get; internal set; }
         public Nca ControlNca { get; internal set; }
+
+        public long GetSize()
+        {
+            return Metadata.ContentEntries
+                .Where(x => x.Type < CnmtContentType.UpdatePatch)
+                .Sum(x => x.Size);
+        }
     }
 
     public class Application
     {
         public Title Main { get; private set; }
         public Title Patch { get; private set; }
-        public List<Title> AddOnContent { get; private set; }
+        public List<Title> AddOnContent { get; } = new List<Title>();
+
+        public ulong TitleId { get; private set; }
+        public TitleVersion Version { get; private set; }
+        public Nacp Nacp { get; private set; }
 
         public string Name { get; private set; }
-        public string Version { get; private set; }
+        public string DisplayVersion { get; private set; }
 
-        public void SetMainTitle(Title title)
+        public void AddTitle(Title title)
         {
-            Main = title;
+            if (TitleId != 0 && title.Metadata.ApplicationTitleId != TitleId)
+                throw new InvalidDataException("Title IDs do not match");
+            TitleId = title.Metadata.ApplicationTitleId;
+
+            switch (title.Metadata.Type)
+            {
+                case TitleType.Application:
+                    Main = title;
+                    break;
+                case TitleType.Patch:
+                    Patch = title;
+                    break;
+                case TitleType.AddOnContent:
+                    AddOnContent.Add(title);
+                    break;
+                case TitleType.DeltaTitle:
+                    break;
+            }
+
+            UpdateInfo();
         }
 
-        public void SetPatchTitle(Title title)
-        {
-            if (title.Metadata.Type != TitleType.Patch) throw new InvalidDataException("Title is not a patch");
-            Patch = title;
-        }
-
-        private void UpdateName()
+        private void UpdateInfo()
         {
             if (Patch != null)
             {
                 Name = Patch.Name;
-                Version = Patch.Control?.Version ?? "";
+                Version = Patch.Version;
+                DisplayVersion = Patch.Control?.Version ?? "";
+                Nacp = Patch.Control;
             }
             else if (Main != null)
             {
                 Name = Main.Name;
-                Version = Main.Control?.Version ?? "";
+                Version = Main.Version;
+                DisplayVersion = Main.Control?.Version ?? "";
+                Nacp = Main.Control;
             }
             else
             {
                 Name = "";
-                Version = "";
+                DisplayVersion = "";
             }
         }
     }
