@@ -17,8 +17,6 @@ namespace libhac
         public Dictionary<ulong, Title> Titles { get; } = new Dictionary<ulong, Title>();
         public Dictionary<ulong, Application> Applications { get; } = new Dictionary<ulong, Application>();
 
-        private List<Nax0> Nax0s { get; } = new List<Nax0>();
-
         public SdFs(Keyset keyset, string rootDir)
         {
             RootDir = rootDir;
@@ -63,7 +61,6 @@ namespace libhac
                     {
                         var sdPath = "/" + Util.GetRelativePath(file, ContentsDir).Replace('\\', '/');
                         var nax0 = new Nax0(Keyset, stream, sdPath, false);
-                        Nax0s.Add(nax0);
                         nca = new Nca(Keyset, nax0.Stream, false);
                     }
                     else
@@ -212,9 +209,6 @@ namespace libhac
                 nca.Dispose();
             }
             Ncas.Clear();
-
-            // Disposing the Nca disposes the Nax0 as well
-            Nax0s.Clear();
             Titles.Clear();
         }
 

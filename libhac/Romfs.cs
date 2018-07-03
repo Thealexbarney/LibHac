@@ -8,7 +8,7 @@ namespace libhac
 {
     public class Romfs
     {
-        public static readonly int IvfcMaxLevel = 6;
+        internal const int IvfcMaxLevel = 6;
         public RomfsHeader Header { get; }
         public List<RomfsDir> Directories { get; } = new List<RomfsDir>();
         public List<RomfsFile> Files { get; } = new List<RomfsFile>();
@@ -62,13 +62,17 @@ namespace libhac
 
         public Stream OpenFile(string filename)
         {
-            if (!FileDict.TryGetValue(filename, out var file))
+            if (!FileDict.TryGetValue(filename, out RomfsFile file))
             {
                 throw new FileNotFoundException();
             }
 
-            var stream = new SubStream(Stream, Header.DataOffset + file.DataOffset, file.DataLength);
-            return stream;
+            return OpenFile(file);
+        }
+
+        public Stream OpenFile(RomfsFile file)
+        {
+            return new SubStream(Stream, Header.DataOffset + file.DataOffset, file.DataLength);
         }
 
         public byte[] GetFile(string filename)
@@ -231,5 +235,24 @@ namespace libhac
         public ulong HashOffset { get; set; }
         public ulong HashBlockSize { get; set; }
         public ulong HashBlockCount { get; set; }
+    }
+
+    public static class RomfsExtensions
+    {
+        public static void Extract(this Romfs romfs, string outDir, IProgressReport logger = null)
+        {
+            foreach (var file in romfs.Files)
+            {
+                var stream = romfs.OpenFile(file);
+                var outName = outDir + file.FullPath;
+                Directory.CreateDirectory(Path.GetDirectoryName(outName));
+
+                using (var outFile = new FileStream(outName, FileMode.Create, FileAccess.ReadWrite))
+                {
+                    logger?.LogMessage(file.FullPath);
+                    stream.CopyStream(outFile, stream.Length, logger);
+                }
+            }
+        }
     }
 }

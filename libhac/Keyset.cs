@@ -119,6 +119,8 @@ namespace libhac
         public static Keyset ReadKeyFile(string filename, IProgressReport progress = null)
         {
             var keyset = new Keyset();
+            if (filename == null) return keyset;
+
             using (var reader = new StreamReader(new FileStream(filename, FileMode.Open, FileAccess.Read)))
             {
                 string line;

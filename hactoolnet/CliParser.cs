@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 
 namespace hactoolnet
 {
@@ -26,6 +28,10 @@ namespace hactoolnet
             new CliOption("outdir", 1, (o, a) => o.OutDir = a[0]),
             new CliOption("sdseed", 1, (o, a) => o.SdSeed = a[0]),
             new CliOption("sdpath", 1, (o, a) => o.SdPath = a[0]),
+            new CliOption("listapps", 0, (o, a) => o.ListApps = true),
+            new CliOption("listtitles", 0, (o, a) => o.ListTitles = true),
+            new CliOption("listromfs", 0, (o, a) => o.ListRomFs = true),
+            new CliOption("title", 1, (o, a) => o.TitleId = ParseTitleId(a[0])),
         };
 
         public static Options Parse(string[] args)
@@ -49,7 +55,7 @@ namespace hactoolnet
                 {
                     if (inputSpecified)
                     {
-                        Console.WriteLine($"Unable to parse option {args[i]}");
+                        PrintWithUsage($"Unable to parse option {args[i]}");
                         return null;
                     }
 
@@ -61,13 +67,13 @@ namespace hactoolnet
                 var option = CliOptions.FirstOrDefault(x => x.Long == arg || x.Short == arg);
                 if (option == null)
                 {
-                    Console.WriteLine($"Unknown option {args[i]}");
+                    PrintWithUsage($"Unknown option {args[i]}");
                     return null;
                 }
 
                 if (i + option.ArgsNeeded >= args.Length)
                 {
-                    Console.WriteLine($"Need {option.ArgsNeeded} parameter{(option.ArgsNeeded == 1 ? "" : "s")} after {args[i]}");
+                    PrintWithUsage($"Need {option.ArgsNeeded} parameter{(option.ArgsNeeded == 1 ? "" : "s")} after {args[i]}");
                     return null;
                 }
 
@@ -80,7 +86,7 @@ namespace hactoolnet
 
             if (!inputSpecified)
             {
-                Console.WriteLine("Input file must be specified");
+                PrintWithUsage("Input file must be specified");
                 return null;
             }
 
@@ -97,10 +103,56 @@ namespace hactoolnet
             return type;
         }
 
+        private static ulong ParseTitleId(string input)
+        {
+            if (input.Length != 16)
+            {
+                PrintWithUsage("Title ID must be 16 hex characters long");
+            }
+
+            if (!ulong.TryParse(input, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var id))
+            {
+                PrintWithUsage("Could not parse title ID");
+            }
+
+            return id;
+        }
+
         private static void PrintWithUsage(string toPrint)
         {
             Console.WriteLine(toPrint);
+            Console.WriteLine(GetUsage());
             // PrintUsage();
+        }
+
+        private static string GetUsage()
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine("Usage: hactoolnet.exe [options...] <path>");
+            sb.AppendLine("Options:");
+            sb.AppendLine("  -r, --raw            Keep raw data, don\'t unpack.");
+            sb.AppendLine("  -k, --keyset         Load keys from an external file.");
+            sb.AppendLine("  -t, --intype=type    Specify input file type [nca, switchfs]");
+            sb.AppendLine("  --titlekeys <file>   Load title keys from an external file.");
+            sb.AppendLine("NCA options:");
+            sb.AppendLine("  --section0 <file>    Specify Section 0 file path.");
+            sb.AppendLine("  --section1 <file>    Specify Section 1 file path.");
+            sb.AppendLine("  --section2 <file>    Specify Section 2 file path.");
+            sb.AppendLine("  --section3 <file>    Specify Section 3 file path.");
+            sb.AppendLine("  --section0dir <dir>  Specify Section 0 directory path.");
+            sb.AppendLine("  --section1dir <dir>  Specify Section 1 directory path.");
+            sb.AppendLine("  --section2dir <dir>  Specify Section 2 directory path.");
+            sb.AppendLine("  --section3dir <dir>  Specify Section 3 directory path.");
+            sb.AppendLine("  --listromfs          List files in RomFS.");
+            sb.AppendLine("Switch FS options:");
+            sb.AppendLine("  --sdseed <seed>      Set console unique seed for SD card NAX0 encryption.");
+            sb.AppendLine("  --listapps           List application info.");
+            sb.AppendLine("  --listtitles         List title info for all titles.");
+            sb.AppendLine("  --title <title id>   Specify title ID to use.");
+            sb.AppendLine("  --romfsdir <dir>     Specify RomFS directory path.");
+
+            return sb.ToString();
         }
 
         private class CliOption

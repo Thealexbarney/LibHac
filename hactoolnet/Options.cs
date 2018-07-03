@@ -18,6 +18,11 @@ namespace hactoolnet
         public string OutDir;
         public string SdSeed;
         public string SdPath;
+        public bool ListApps;
+        public bool ListTitles;
+        public bool ListRomFs;
+        public ulong TitleId;
+
     }
 
     internal enum FileType

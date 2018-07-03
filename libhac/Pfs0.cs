@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace libhac
@@ -7,7 +9,9 @@ namespace libhac
     {
         public Pfs0Header Header { get; set; }
         public int HeaderSize { get; set; }
-        public Pfs0FileEntry[] Entries { get; set; }
+        public Pfs0FileEntry[] Files { get; set; }
+
+        private Dictionary<string, Pfs0FileEntry> FileDict { get; }
         private Stream Stream { get; set; }
 
         public Pfs0(Stream stream)
@@ -25,26 +29,42 @@ namespace libhac
             {
                 reader.BaseStream.Position = 16;
 
-                Entries = new Pfs0FileEntry[Header.NumFiles];
+                Files = new Pfs0FileEntry[Header.NumFiles];
                 for (int i = 0; i < Header.NumFiles; i++)
                 {
-                    Entries[i] = new Pfs0FileEntry(reader) { Index = i };
+                    Files[i] = new Pfs0FileEntry(reader) { Index = i };
                 }
 
                 int stringTableOffset = 16 + 24 * Header.NumFiles;
                 for (int i = 0; i < Header.NumFiles; i++)
                 {
-                    reader.BaseStream.Position = stringTableOffset + Entries[i].StringTableOffset;
-                    Entries[i].Name = reader.ReadAsciiZ();
+                    reader.BaseStream.Position = stringTableOffset + Files[i].StringTableOffset;
+                    Files[i].Name = reader.ReadAsciiZ();
                 }
             }
 
+            FileDict = Files.ToDictionary(x => x.Name, x => x);
             Stream = stream;
+        }
+
+        public Stream OpenFile(string filename)
+        {
+            if (!FileDict.TryGetValue(filename, out Pfs0FileEntry file))
+            {
+                throw new FileNotFoundException();
+            }
+
+            return OpenFile(file);
+        }
+
+        public Stream OpenFile(Pfs0FileEntry file)
+        {
+            return new SubStream(Stream, HeaderSize + file.Offset, file.Size);
         }
 
         public byte[] GetFile(int index)
         {
-            var entry = Entries[index];
+            var entry = Files[index];
             var file = new byte[entry.Size];
             Stream.Position = HeaderSize + entry.Offset;
             Stream.Read(file, 0, file.Length);
@@ -106,6 +126,25 @@ namespace libhac
             Size = reader.ReadInt64();
             StringTableOffset = reader.ReadUInt32();
             Reserved = reader.ReadUInt32();
+        }
+    }
+
+    public static class Pfs0Extensions
+    {
+        public static void Extract(this Pfs0 pfs0, string outDir, IProgressReport logger = null)
+        {
+            foreach (var file in pfs0.Files)
+            {
+                var stream = pfs0.OpenFile(file);
+                var outName = Path.Combine(outDir, file.Name);
+                Directory.CreateDirectory(Path.GetDirectoryName(outName));
+
+                using (var outFile = new FileStream(outName, FileMode.Create, FileAccess.ReadWrite))
+                {
+                    logger?.LogMessage(file.Name);
+                    stream.CopyStream(outFile, stream.Length, logger);
+                }
+            }
         }
     }
 }

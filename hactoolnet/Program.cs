@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using libhac;
 
 namespace hactoolnet
@@ -10,6 +11,7 @@ namespace hactoolnet
     {
         static void Main(string[] args)
         {
+            Console.OutputEncoding = Encoding.UTF8;
             var ctx = new Context();
             ctx.Options = CliParser.Parse(args);
             if (ctx.Options == null) return;
@@ -31,6 +33,7 @@ namespace hactoolnet
                     case FileType.Nax0:
                         break;
                     case FileType.SwitchFs:
+                        ProcessSwitchFs(ctx);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -50,31 +53,94 @@ namespace hactoolnet
             {
                 var nca = new Nca(ctx.Keyset, file, false);
 
-                if (ctx.Options.RomfsOut != null && nca.Sections[1] != null)
+                for (int i = 0; i < 3; i++)
                 {
-                    var romfs = nca.OpenSection(1, false);
-
-                    using (var outFile = new FileStream(ctx.Options.RomfsOut, FileMode.Create, FileAccess.ReadWrite))
+                    if (ctx.Options.SectionOut[i] != null)
                     {
-                        romfs.CopyStream(outFile, romfs.Length, ctx.Logger);
+                        nca.ExportSection(i, ctx.Options.SectionOut[i], ctx.Options.Raw, ctx.Logger);
+                    }
+
+                    if (ctx.Options.SectionOutDir[i] != null)
+                    {
+                        nca.ExtractSection(i, ctx.Options.SectionOutDir[i], ctx.Logger);
                     }
                 }
 
-                if (ctx.Options.SectionOut[0] != null && nca.Sections[0] != null)
+                if (ctx.Options.ListRomFs && nca.Sections[1] != null)
                 {
-                    var romfs = nca.OpenSection(0, false);
+                    var romfs = new Romfs(nca.OpenSection(1, false));
 
-                    using (var outFile = new FileStream(ctx.Options.SectionOut[0], FileMode.Create, FileAccess.ReadWrite))
+                    foreach (var romfsFile in romfs.Files)
                     {
-                        romfs.CopyStream(outFile, romfs.Length, ctx.Logger);
+                        ctx.Logger.LogMessage(romfsFile.FullPath);
                     }
                 }
             }
         }
 
+        private static void ProcessSwitchFs(Context ctx)
+        {
+            var switchFs = new SdFs(ctx.Keyset, ctx.Options.InFile);
+
+            if (ctx.Options.ListTitles)
+            {
+                ListTitles(switchFs);
+            }
+
+            if (ctx.Options.ListApps)
+            {
+                ctx.Logger.LogMessage(ListApplications(switchFs));
+            }
+
+            if (ctx.Options.RomfsOutDir != null)
+            {
+                var id = ctx.Options.TitleId;
+                if (id == 0)
+                {
+                    ctx.Logger.LogMessage("Title ID must be specified to dump RomFS");
+                    return;
+                }
+
+                if (!switchFs.Titles.TryGetValue(id, out var title))
+                {
+                    ctx.Logger.LogMessage($"Could not find title {id:X16}");
+                    return;
+                }
+
+                if (title.ProgramNca == null)
+                {
+                    ctx.Logger.LogMessage($"Could not find main program data for title {id:X16}");
+                    return;
+                }
+
+                var romfs = new Romfs(title.ProgramNca.OpenSection(1, false));
+                romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
+            }
+        }
+
         private static void OpenKeyset(Context ctx)
         {
-            ctx.Keyset = ExternalKeys.ReadKeyFile(ctx.Options.Keyfile, ctx.Options.TitleKeyFile, ctx.Logger);
+            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            var homeKeyFile = Path.Combine(home, ".switch", "prod.keys");
+            var homeTitleKeyFile = Path.Combine(home, ".switch", "titlekeys.txt");
+            var keyFile = ctx.Options.Keyfile;
+            var titleKeyFile = ctx.Options.TitleKeyFile;
+
+            if (keyFile == null && File.Exists(homeKeyFile))
+            {
+                keyFile = homeKeyFile;
+            }
+
+            if (titleKeyFile == null && File.Exists(homeTitleKeyFile))
+            {
+                titleKeyFile = homeTitleKeyFile;
+            }
+
+            ctx.Keyset = ExternalKeys.ReadKeyFile(keyFile, titleKeyFile, ctx.Logger);
+            if (ctx.Options.SdSeed != null)
+            {
+                ctx.Keyset.SetSdSeed(ctx.Options.SdSeed.ToBytes());
+            }
         }
 
         private static void ListSdfs(string[] args)
@@ -215,36 +281,40 @@ namespace hactoolnet
             }
         }
 
-        static void ListApplications(SdFs sdfs)
+        static string ListApplications(SdFs sdfs)
         {
+            var sb = new StringBuilder();
+
             foreach (var app in sdfs.Applications.Values.OrderBy(x => x.Name))
             {
-                Console.WriteLine($"{app.Name} v{app.DisplayVersion}");
+                sb.AppendLine($"{app.Name} v{app.DisplayVersion}");
 
                 if (app.Main != null)
                 {
-                    Console.WriteLine($"Software: {Util.GetBytesReadable(app.Main.GetSize())}");
+                    sb.AppendLine($"Software: {Util.GetBytesReadable(app.Main.GetSize())}");
                 }
 
                 if (app.Patch != null)
                 {
-                    Console.WriteLine($"Update Data: {Util.GetBytesReadable(app.Patch.GetSize())}");
+                    sb.AppendLine($"Update Data: {Util.GetBytesReadable(app.Patch.GetSize())}");
                 }
 
                 if (app.AddOnContent.Count > 0)
                 {
-                    Console.WriteLine($"DLC: {Util.GetBytesReadable(app.AddOnContent.Sum(x => x.GetSize()))}");
+                    sb.AppendLine($"DLC: {Util.GetBytesReadable(app.AddOnContent.Sum(x => x.GetSize()))}");
                 }
 
                 if (app.Nacp?.UserTotalSaveDataSize > 0)
-                    Console.WriteLine($"User save: {Util.GetBytesReadable(app.Nacp.UserTotalSaveDataSize)}");
+                    sb.AppendLine($"User save: {Util.GetBytesReadable(app.Nacp.UserTotalSaveDataSize)}");
                 if (app.Nacp?.DeviceTotalSaveDataSize > 0)
-                    Console.WriteLine($"System save: {Util.GetBytesReadable(app.Nacp.DeviceTotalSaveDataSize)}");
+                    sb.AppendLine($"System save: {Util.GetBytesReadable(app.Nacp.DeviceTotalSaveDataSize)}");
                 if (app.Nacp?.BcatSaveDataSize > 0)
-                    Console.WriteLine($"BCAT save: {Util.GetBytesReadable(app.Nacp.BcatSaveDataSize)}");
+                    sb.AppendLine($"BCAT save: {Util.GetBytesReadable(app.Nacp.BcatSaveDataSize)}");
 
-                Console.WriteLine("");
+                sb.AppendLine();
             }
+
+            return sb.ToString();
         }
     }
 }

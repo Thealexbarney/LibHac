@@ -207,4 +207,46 @@ namespace libhac
 
         public Pfs0Superblock Pfs0 { get; set; }
     }
+
+    public static class NcaExtensions
+    {
+        public static void ExportSection(this Nca nca, int index, string filename, bool raw = false, IProgressReport logger = null)
+        {
+            if(index < 0 || index > 3) throw new IndexOutOfRangeException();
+            if (nca.Sections[index] == null) return;
+
+            var section = nca.OpenSection(index, raw);
+            Directory.CreateDirectory(Path.GetDirectoryName(filename));
+
+            using (var outFile = new FileStream(filename, FileMode.Create, FileAccess.ReadWrite))
+            {
+                section.CopyStream(outFile, section.Length, logger);
+            }
+        }
+
+        public static void ExtractSection(this Nca nca, int index, string outputDir, IProgressReport logger = null)
+        {
+            if(index < 0 || index > 3) throw new IndexOutOfRangeException();
+            if (nca.Sections[index] == null) return;
+
+            var section = nca.Sections[index];
+            var stream = nca.OpenSection(index, false);
+
+            switch (section.Type)
+            {
+                case SectionType.Invalid:
+                    break;
+                case SectionType.Pfs0:
+                    var pfs0 = new Pfs0(stream);
+                    pfs0.Extract(outputDir, logger);
+                    break;
+                case SectionType.Romfs:
+                    var romfs = new Romfs(stream);
+                    romfs.Extract(outputDir, logger);
+                    break;
+                case SectionType.Bktr:
+                    break;
+            }
+        }
+    }
 }
