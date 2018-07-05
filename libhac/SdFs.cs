@@ -77,7 +77,7 @@ namespace libhac
                     Console.WriteLine($"{ex.Message} {file}");
                 }
 
-                if (nca != null) Ncas.Add(nca.NcaId, nca);
+                if (nca?.NcaId != null) Ncas.Add(nca.NcaId, nca);
             }
         }
 
@@ -129,9 +129,7 @@ namespace libhac
             {
                 var romfs = new Romfs(title.ControlNca.OpenSection(0, false));
                 var control = romfs.GetFile("/control.nacp");
-                Directory.CreateDirectory("control");
-                File.WriteAllBytes($"control/{title.Id:X16}.nacp", control);
-
+               
                 var reader = new BinaryReader(new MemoryStream(control));
                 title.Control = new Nacp(reader);
 

@@ -9,8 +9,10 @@ namespace hactoolnet
     {
         private static readonly CliOption[] CliOptions =
         {
+            new CliOption("custom", 0, (o, a) => o.RunCustom = true),
             new CliOption("intype", 't', 1, (o, a) => o.InFileType = ParseFileType(a[0])),
             new CliOption("raw", 'r', 0, (o, a) => o.Raw = true),
+            new CliOption("verify", 'y', 0, (o, a) => o.Validate = true),
             new CliOption("keyset", 'k', 1, (o, a) => o.Keyfile = a[0]),
             new CliOption("titlekeys", 1, (o, a) => o.TitleKeyFile = a[0]),
             new CliOption("section0", 1, (o, a) => o.SectionOut[0] = a[0]),
@@ -132,6 +134,7 @@ namespace hactoolnet
             sb.AppendLine("Usage: hactoolnet.exe [options...] <path>");
             sb.AppendLine("Options:");
             sb.AppendLine("  -r, --raw            Keep raw data, don\'t unpack.");
+            sb.AppendLine("  -y, --verify         Verify hashes.");
             sb.AppendLine("  -k, --keyset         Load keys from an external file.");
             sb.AppendLine("  -t, --intype=type    Specify input file type [nca, switchfs]");
             sb.AppendLine("  --titlekeys <file>   Load title keys from an external file.");
@@ -150,6 +153,7 @@ namespace hactoolnet
             sb.AppendLine("  --listapps           List application info.");
             sb.AppendLine("  --listtitles         List title info for all titles.");
             sb.AppendLine("  --title <title id>   Specify title ID to use.");
+            sb.AppendLine("  --outdir <dir>       Specify directory path to save title to.");
             sb.AppendLine("  --romfsdir <dir>     Specify RomFS directory path.");
 
             return sb.ToString();

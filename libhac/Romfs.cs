@@ -230,11 +230,13 @@ namespace libhac
 
     public class IvfcLevel
     {
-        public ulong DataOffset { get; set; }
-        public ulong DataSize { get; set; }
-        public ulong HashOffset { get; set; }
-        public ulong HashBlockSize { get; set; }
-        public ulong HashBlockCount { get; set; }
+        public long DataOffset { get; set; }
+        public long DataSize { get; set; }
+        public long HashOffset { get; set; }
+        public long HashSize { get; set; }
+        public long HashBlockSize { get; set; }
+        public long HashBlockCount { get; set; }
+        public Validity HashValidity { get; set; }
     }
 
     public static class RomfsExtensions
@@ -245,7 +247,8 @@ namespace libhac
             {
                 var stream = romfs.OpenFile(file);
                 var outName = outDir + file.FullPath;
-                Directory.CreateDirectory(Path.GetDirectoryName(outName));
+                var dir = Path.GetDirectoryName(outName);
+                if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
 
                 using (var outFile = new FileStream(outName, FileMode.Create, FileAccess.ReadWrite))
                 {

@@ -9,12 +9,18 @@ namespace hactoolnet
 {
     public static class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             Console.OutputEncoding = Encoding.UTF8;
             var ctx = new Context();
             ctx.Options = CliParser.Parse(args);
             if (ctx.Options == null) return;
+
+            if (ctx.Options.RunCustom)
+            {
+                CustomTask(ctx);
+                return;
+            }
 
             using (var logger = new ProgressBar())
             {
@@ -64,6 +70,11 @@ namespace hactoolnet
                     {
                         nca.ExtractSection(i, ctx.Options.SectionOutDir[i], ctx.Logger);
                     }
+
+                    if (ctx.Options.Validate && nca.Sections[i] != null)
+                    {
+                        nca.VerifySection(i, ctx.Logger);
+                    }
                 }
 
                 if (ctx.Options.ListRomFs && nca.Sections[1] != null)
@@ -75,6 +86,8 @@ namespace hactoolnet
                         ctx.Logger.LogMessage(romfsFile.FullPath);
                     }
                 }
+
+                ctx.Logger.LogMessage(nca.Dump());
             }
         }
 
@@ -116,6 +129,11 @@ namespace hactoolnet
                 var romfs = new Romfs(title.ProgramNca.OpenSection(1, false));
                 romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
             }
+
+            if (ctx.Options.OutDir != null)
+            {
+                SaveTitle(ctx, switchFs);
+            }
         }
 
         private static void OpenKeyset(Context ctx)
@@ -141,6 +159,13 @@ namespace hactoolnet
             {
                 ctx.Keyset.SetSdSeed(ctx.Options.SdSeed.ToBytes());
             }
+        }
+
+        // For running random stuff
+        // ReSharper disable once UnusedParameter.Local
+        private static void CustomTask(Context ctx)
+        {
+
         }
 
         private static void ListSdfs(string[] args)
@@ -219,21 +244,32 @@ namespace hactoolnet
             }
         }
 
-        static void DecryptTitle(SdFs sdFs, ulong titleId)
+        private static void SaveTitle(Context ctx, SdFs switchFs)
         {
-            var title = sdFs.Titles[titleId];
-            var dirName = $"{titleId:X16}v{title.Version.Version}";
+            var id = ctx.Options.TitleId;
+            if (id == 0)
+            {
+                ctx.Logger.LogMessage("Title ID must be specified to save title");
+                return;
+            }
 
-            Directory.CreateDirectory(dirName);
+            if (!switchFs.Titles.TryGetValue(id, out var title))
+            {
+                ctx.Logger.LogMessage($"Could not find title {id:X16}");
+                return;
+            }
+
+            var saveDir = Path.Combine(ctx.Options.OutDir, $"{title.Id:X16}v{title.Version.Version}");
+            Directory.CreateDirectory(saveDir);
 
             foreach (var nca in title.Ncas)
             {
-                using (var output = new FileStream(Path.Combine(dirName, nca.Filename), FileMode.Create))
-                using (var progress = new ProgressBar())
+                nca.Stream.Position = 0;
+                var outFile = Path.Combine(saveDir, nca.Filename);
+                ctx.Logger.LogMessage(nca.Filename);
+                using (var outStream = new FileStream(outFile, FileMode.Create, FileAccess.ReadWrite))
                 {
-                    progress.LogMessage($"Writing {nca.Filename}");
-                    nca.Stream.Position = 0;
-                    nca.Stream.CopyStream(output, nca.Stream.Length, progress);
+                    nca.Stream.CopyStream(outStream, nca.Stream.Length, ctx.Logger);
                 }
             }
         }
@@ -318,4 +354,3 @@ namespace hactoolnet
         }
     }
 }
-

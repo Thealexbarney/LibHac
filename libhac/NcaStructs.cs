@@ -8,13 +8,13 @@ namespace libhac
         public byte[] Signature1; // RSA-PSS signature over header with fixed key.
         public byte[] Signature2; // RSA-PSS signature over header with key in NPDM.
         public string Magic;
-        public byte Distribution; // System vs gamecard.
+        public DistributionType Distribution; // System vs gamecard.
         public ContentType ContentType;
         public byte CryptoType; // Which keyblob (field 1)
         public byte KaekInd; // Which kaek index?
         public ulong NcaSize; // Entire archive size.
         public ulong TitleId;
-        public uint SdkVersion; // What SDK was this built with?
+        public TitleVersion SdkVersion; // What SDK was this built with?
         public byte CryptoType2; // Which keyblob (field 2)
         public byte[] RightsId;
         public string Name;
@@ -33,7 +33,7 @@ namespace libhac
             head.Signature2 = reader.ReadBytes(0x100);
             head.Magic = reader.ReadAscii(4);
             if (head.Magic != "NCA3") throw new InvalidDataException("Not an NCA3 file");
-            head.Distribution = reader.ReadByte();
+            head.Distribution = (DistributionType)reader.ReadByte();
             head.ContentType = (ContentType)reader.ReadByte();
             head.CryptoType = reader.ReadByte();
             head.KaekInd = reader.ReadByte();
@@ -41,7 +41,7 @@ namespace libhac
             head.TitleId = reader.ReadUInt64();
             reader.BaseStream.Position += 4;
 
-            head.SdkVersion = reader.ReadUInt32();
+            head.SdkVersion = new TitleVersion(reader.ReadUInt32());
             head.CryptoType2 = reader.ReadByte();
             reader.BaseStream.Position += 0xF;
 
@@ -188,16 +188,16 @@ namespace libhac
 
     public class IvfcLevelHeader
     {
-        public ulong LogicalOffset;
-        public ulong HashDataSize;
-        public uint BlockSize;
+        public long LogicalOffset;
+        public long HashDataSize;
+        public int BlockSize;
         public uint Reserved;
 
         public IvfcLevelHeader(BinaryReader reader)
         {
-            LogicalOffset = reader.ReadUInt64();
-            HashDataSize = reader.ReadUInt64();
-            BlockSize = reader.ReadUInt32();
+            LogicalOffset = reader.ReadInt64();
+            HashDataSize = reader.ReadInt64();
+            BlockSize = reader.ReadInt32();
             Reserved = reader.ReadUInt32();
         }
     }
@@ -255,7 +255,19 @@ namespace libhac
             return $"{Major}.{Minor}.{Patch}.{Revision}";
         }
     }
-    
+
+    public class Pfs0Section
+    {
+        public Pfs0Superblock Superblock { get; set; }
+        public Validity Validity { get; set; }
+    }
+
+    public class RomfsSection
+    {
+        public RomfsSuperblock Superblock { get; set; }
+        public IvfcLevel[] IvfcLevels { get; set; } = new IvfcLevel[Romfs.IvfcMaxLevel];
+    }
+
     public enum ContentType
     {
         Program,
@@ -264,6 +276,12 @@ namespace libhac
         Manual,
         Data,
         Unknown
+    }
+
+    public enum DistributionType
+    {
+        Download,
+        Gamecard
     }
 
     public enum SectionCryptType

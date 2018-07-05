@@ -137,7 +137,8 @@ namespace libhac
             {
                 var stream = pfs0.OpenFile(file);
                 var outName = Path.Combine(outDir, file.Name);
-                Directory.CreateDirectory(Path.GetDirectoryName(outName));
+                var dir = Path.GetDirectoryName(outName);
+                if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
 
                 using (var outFile = new FileStream(outName, FileMode.Create, FileAccess.ReadWrite))
                 {

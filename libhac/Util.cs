@@ -287,6 +287,54 @@ namespace libhac
 
             return value + multiple - value % multiple;
         }
+
+        public static int DivideByRoundUp(int value, int divisor) => (value + divisor - 1) / divisor;
+        public static long DivideByRoundUp(long value, long divisor) => (value + divisor - 1) / divisor;
+
+        public static void MemDump(this StringBuilder sb, string prefix, byte[] data)
+        {
+
+            int max = 32;
+            var remaining = data.Length;
+            bool first = true;
+            int offset = 0;
+
+            while (remaining > 0)
+            {
+                max = Math.Min(max, remaining);
+
+                if (first)
+                {
+                    sb.Append(prefix);
+                    first = false;
+                }
+                else
+                {
+                    sb.Append(' ', prefix.Length);
+                }
+
+                for (int i = 0; i < max; i++)
+                {
+                    sb.Append($"{data[offset++]:X2}");
+                }
+
+                sb.AppendLine();
+                remaining -= max;
+            }
+        }
+
+        public static string GetKeyRevisionSummary(int revision)
+        {
+            switch (revision)
+            {
+                case 0: return "1.0.0-2.3.0";
+                case 1: return "3.0.0";
+                case 2: return "3.0.1-3.0.2";
+                case 3: return "4.0.0-4.1.0";
+                case 4: return "5.0.0";
+                default: return "Unknown";
+            }
+        }
     }
 
     public class ByteArray128BitComparer : EqualityComparer<byte[]>

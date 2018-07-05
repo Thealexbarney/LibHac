@@ -4,9 +4,11 @@ namespace hactoolnet
 {
     internal class Options
     {
+        public bool RunCustom;
         public string InFile;
         public FileType InFileType = FileType.Nca;
-        public bool Raw = false;
+        public bool Raw;
+        public bool Validate;
         public string Keyfile;
         public string TitleKeyFile;
         public string[] SectionOut = new string[4];
