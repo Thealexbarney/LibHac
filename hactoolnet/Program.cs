@@ -16,16 +16,16 @@ namespace hactoolnet
             ctx.Options = CliParser.Parse(args);
             if (ctx.Options == null) return;
 
-            if (ctx.Options.RunCustom)
-            {
-                CustomTask(ctx);
-                return;
-            }
-
             using (var logger = new ProgressBar())
             {
                 ctx.Logger = logger;
                 OpenKeyset(ctx);
+
+                if (ctx.Options.RunCustom)
+                {
+                    CustomTask(ctx);
+                    return;
+                }
 
                 switch (ctx.Options.InFileType)
                 {
@@ -120,13 +120,21 @@ namespace hactoolnet
                     return;
                 }
 
-                if (title.ProgramNca == null)
+                if (title.MainNca == null)
                 {
-                    ctx.Logger.LogMessage($"Could not find main program data for title {id:X16}");
+                    ctx.Logger.LogMessage($"Could not find main data for title {id:X16}");
                     return;
                 }
 
-                var romfs = new Romfs(title.ProgramNca.OpenSection(1, false));
+                var section = title.MainNca.Sections.FirstOrDefault(x => x.Type == SectionType.Romfs);
+
+                if (section == null)
+                {
+                    ctx.Logger.LogMessage($"Main NCA for title {id:X16} has no Rom FS section");
+                    return;
+                }
+
+                var romfs = new Romfs(title.MainNca.OpenSection(section.SectionNum, false));
                 romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
             }
 
@@ -189,7 +197,7 @@ namespace hactoolnet
         {
             var sdfs = LoadSdFs(args);
             var title = sdfs.Titles[0x0100E95004038000];
-            var nca = title.ProgramNca;
+            var nca = title.MainNca;
             var romfsStream = nca.OpenSection(1, false);
             var romfs = new Romfs(romfsStream);
             var file = romfs.OpenFile("/stream/voice/us/127/127390101.nop");

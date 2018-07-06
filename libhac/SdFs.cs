@@ -111,7 +111,8 @@ namespace libhac
                     switch (content.Type)
                     {
                         case CnmtContentType.Program:
-                            title.ProgramNca = contentNca;
+                        case CnmtContentType.Data:
+                            title.MainNca = contentNca;
                             break;
                         case CnmtContentType.Control:
                             title.ControlNca = contentNca;
@@ -227,7 +228,7 @@ namespace libhac
         public string Name { get; internal set; }
         public Nacp Control { get; internal set; }
         public Nca MetaNca { get; internal set; }
-        public Nca ProgramNca { get; internal set; }
+        public Nca MainNca { get; internal set; }
         public Nca ControlNca { get; internal set; }
 
         public long GetSize()

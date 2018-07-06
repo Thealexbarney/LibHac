@@ -275,7 +275,7 @@ namespace libhac
         Control,
         Manual,
         Data,
-        Unknown
+        AocData
     }
 
     public enum DistributionType
