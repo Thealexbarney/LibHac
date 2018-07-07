@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using libhac.XTSSharp;
@@ -18,6 +19,7 @@ namespace libhac
         public byte[] TitleKeyDec { get; } = new byte[0x10];
         public Stream Stream { get; private set; }
         private bool KeepOpen { get; }
+        private Nca BaseNca { get; set; }
 
         public NcaSection[] Sections { get; } = new NcaSection[4];
 
@@ -77,9 +79,6 @@ namespace libhac
                         size = sect.Header.Romfs.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1].HashDataSize;
                         break;
                     case SectionType.Bktr:
-                        offset = sect.Offset + sect.Header.Bktr.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1]
-                                     .LogicalOffset;
-                        size = sect.Header.Bktr.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1].HashDataSize;
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -97,13 +96,35 @@ namespace libhac
                 case SectionCryptType.CTR:
                     return new RandomAccessSectorStream(new AesCtrStream(Stream, DecryptedKeys[2], offset, size, offset, sect.Header.Ctr), false);
                 case SectionCryptType.BKTR:
-                    return new RandomAccessSectorStream(new AesCtrStream(Stream, DecryptedKeys[2], offset, size, offset, sect.Header.Ctr), false);
+                    var patchStream = new RandomAccessSectorStream(
+                        new BktrCryptoStream(Stream, DecryptedKeys[2], offset, size, offset, sect.Header.Ctr, sect),
+                        false);
+                    if (BaseNca == null)
+                    {
+                        return patchStream;
+                    }
+                    else
+                    {
+                        var dataLevel = sect.Header.Bktr.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1];
+
+                        var baseSect = BaseNca.Sections.FirstOrDefault(x => x.Type == SectionType.Romfs);
+                        if (baseSect == null) throw new InvalidDataException("Base NCA has no RomFS section");
+
+                        var baseStream = BaseNca.OpenSection(baseSect.SectionNum, true);
+                        var virtStreamRaw = new Bktr(patchStream, baseStream, sect);
+
+                        if (raw) return virtStreamRaw;
+                        var virtStream = new SubStream(virtStreamRaw, dataLevel.LogicalOffset, dataLevel.HashDataSize);
+                        return virtStream;
+                    }
                 default:
                     throw new ArgumentOutOfRangeException();
             }
 
             return new SubStream(Stream, offset, size);
         }
+
+        public void SetBaseNca(Nca baseNca) => BaseNca = baseNca;
 
         private void DecryptHeader(Keyset keyset, Stream stream)
         {

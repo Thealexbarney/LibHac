@@ -66,6 +66,14 @@ namespace libhac
             }
         }
 
+        public void UpdateCounterSubsection(uint value)
+        {
+            _counter[7] = (byte) value;
+            _counter[6] = (byte) (value >> 8);
+            _counter[5] = (byte) (value >> 16);
+            _counter[4] = (byte) (value >> 24);
+        }
+
         private void EncryptCounterThenIncrement()
         {
             _counterEncryptor.TransformBlock(_counter, 0, _counter.Length, _counterEnc, 0);

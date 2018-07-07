@@ -20,6 +20,7 @@ namespace hactoolnet
         public string OutDir;
         public string SdSeed;
         public string SdPath;
+        public string BaseNca;
         public bool ListApps;
         public bool ListTitles;
         public bool ListRomFs;

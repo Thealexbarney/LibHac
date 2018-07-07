@@ -45,7 +45,7 @@ namespace libhac
         private readonly long _counterOffset;
         private readonly byte[] _tempBuffer;
         private readonly Aes _aes;
-        private CounterModeCryptoTransform _decryptor;
+        protected CounterModeCryptoTransform Decryptor;
 
         /// <summary>
         /// Creates a new stream
@@ -83,7 +83,7 @@ namespace libhac
             _aes.Key = key;
             _aes.Mode = CipherMode.ECB;
             _aes.Padding = PaddingMode.None;
-            _decryptor = CreateDecryptor();
+            Decryptor = CreateDecryptor();
 
         }
 
@@ -101,7 +101,7 @@ namespace libhac
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
-            _decryptor?.Dispose();
+            Decryptor?.Dispose();
         }
 
         public override void Flush()
@@ -141,7 +141,7 @@ namespace libhac
             set
             {
                 base.Position = value;
-                _decryptor.UpdateCounter(_counterOffset + base.Position);
+                Decryptor.UpdateCounter(_counterOffset + base.Position);
             }
         }
 
@@ -162,11 +162,11 @@ namespace libhac
             if (ret == 0)
                 return 0;
 
-            if (_decryptor == null)
-                _decryptor = CreateDecryptor();
+            if (Decryptor == null)
+                Decryptor = CreateDecryptor();
 
             //decrypt the sector
-            var retV = _decryptor.TransformBlock(_tempBuffer, 0, buffer, offset);
+            var retV = Decryptor.TransformBlock(_tempBuffer, 0, buffer, offset);
 
             //Console.WriteLine("Decrypting sector {0} == {1} bytes", currentSector, retV);
 

@@ -52,6 +52,13 @@ namespace hactoolnet
             {
                 var nca = new Nca(ctx.Keyset, file, false);
 
+                if (ctx.Options.BaseNca != null)
+                {
+                    var baseFile = new FileStream(ctx.Options.BaseNca, FileMode.Open, FileAccess.Read);
+                    var baseNca = new Nca(ctx.Keyset, baseFile, false);
+                    nca.SetBaseNca(baseNca);
+                }
+
                 for (int i = 0; i < 3; i++)
                 {
                     if (ctx.Options.SectionOut[i] != null)
@@ -77,6 +84,36 @@ namespace hactoolnet
                     foreach (var romfsFile in romfs.Files)
                     {
                         ctx.Logger.LogMessage(romfsFile.FullPath);
+                    }
+                }
+
+                if (ctx.Options.RomfsOutDir != null)
+                {
+                    NcaSection section = nca.Sections.FirstOrDefault(x => x.Type == SectionType.Romfs || x.Type == SectionType.Bktr);
+
+                    if (section == null)
+                    {
+                        ctx.Logger.LogMessage("NCA has no RomFS section");
+                        return;
+                    }
+
+                    if (section.Type == SectionType.Bktr)
+                    {
+                        if (ctx.Options.BaseNca == null)
+                        {
+                            ctx.Logger.LogMessage("Cannot save BKTR section without base RomFS");
+                            return;
+                        }
+
+                        var bktr = nca.OpenSection(1, false);
+                        var romfs = new Romfs(bktr);
+                        romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
+
+                    }
+                    else
+                    {
+                        var romfs = new Romfs(nca.OpenSection(section.SectionNum, false));
+                        romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
                     }
                 }
 

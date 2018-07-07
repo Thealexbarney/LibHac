@@ -30,6 +30,7 @@ namespace hactoolnet
             new CliOption("outdir", 1, (o, a) => o.OutDir = a[0]),
             new CliOption("sdseed", 1, (o, a) => o.SdSeed = a[0]),
             new CliOption("sdpath", 1, (o, a) => o.SdPath = a[0]),
+            new CliOption("basenca", 1, (o, a) => o.BaseNca = a[0]),
             new CliOption("listapps", 0, (o, a) => o.ListApps = true),
             new CliOption("listtitles", 0, (o, a) => o.ListTitles = true),
             new CliOption("listromfs", 0, (o, a) => o.ListRomFs = true),

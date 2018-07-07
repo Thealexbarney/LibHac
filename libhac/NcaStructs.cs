@@ -204,8 +204,8 @@ namespace libhac
 
     public class BktrHeader
     {
-        public ulong Offset;
-        public ulong Size;
+        public long Offset;
+        public long Size;
         public uint Magic;
         public uint Field14;
         public uint NumEntries;
@@ -213,8 +213,8 @@ namespace libhac
 
         public BktrHeader(BinaryReader reader)
         {
-            Offset = reader.ReadUInt64();
-            Size = reader.ReadUInt64();
+            Offset = reader.ReadInt64();
+            Size = reader.ReadInt64();
             Magic = reader.ReadUInt32();
             Field14 = reader.ReadUInt32();
             NumEntries = reader.ReadUInt32();
