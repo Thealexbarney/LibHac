@@ -160,6 +160,17 @@ namespace libhac
 
                 app.AddTitle(title);
             }
+
+            foreach (var app in Applications.Values)
+            {
+                var main = app.Main?.MainNca;
+                var patch = app.Patch?.MainNca;
+
+                if (main != null)
+                {
+                    patch?.SetBaseNca(main);
+                }
+            }
         }
 
         internal static Stream OpenSplitNcaStream(string path)

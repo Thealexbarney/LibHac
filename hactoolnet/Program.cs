@@ -156,7 +156,7 @@ namespace hactoolnet
                     return;
                 }
 
-                var section = title.MainNca.Sections.FirstOrDefault(x => x.Type == SectionType.Romfs);
+                var section = title.MainNca.Sections.FirstOrDefault(x => x?.Type == SectionType.Romfs || x?.Type == SectionType.Bktr);
 
                 if (section == null)
                 {
