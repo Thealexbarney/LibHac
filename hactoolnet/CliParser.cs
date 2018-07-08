@@ -149,6 +149,7 @@ namespace hactoolnet
             sb.AppendLine("  --section2dir <dir>  Specify Section 2 directory path.");
             sb.AppendLine("  --section3dir <dir>  Specify Section 3 directory path.");
             sb.AppendLine("  --listromfs          List files in RomFS.");
+            sb.AppendLine("  --basenca            Set Base NCA to use with update partitions.");
             sb.AppendLine("Switch FS options:");
             sb.AppendLine("  --sdseed <seed>      Set console unique seed for SD card NAX0 encryption.");
             sb.AppendLine("  --listapps           List application info.");
