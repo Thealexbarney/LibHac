@@ -11,6 +11,7 @@ namespace hactoolnet
         public bool Validate;
         public string Keyfile;
         public string TitleKeyFile;
+        public string ConsoleKeyFile;
         public string[] SectionOut = new string[4];
         public string[] SectionOutDir = new string[4];
         public string ExefsOut;
@@ -25,7 +26,6 @@ namespace hactoolnet
         public bool ListTitles;
         public bool ListRomFs;
         public ulong TitleId;
-
     }
 
     internal enum FileType

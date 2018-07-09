@@ -9,8 +9,6 @@ namespace libhac
 {
     public class Keyset
     {
-        public byte[] secure_boot_key { get; set; } = new byte[0x10];
-        public byte[] tsec_key { get; set; } = new byte[0x10];
         public byte[][] keyblob_keys { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
         public byte[][] keyblob_mac_keys { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
         public byte[][] encrypted_keyblobs { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0xB0);
@@ -41,22 +39,21 @@ namespace libhac
         public byte[] acid_fixed_key_modulus { get; set; } = new byte[0x100];
         public byte[] package2_fixed_key_modulus { get; set; } = new byte[0x100];
 
+        public byte[] secure_boot_key { get; set; } = new byte[0x10];
+        public byte[] tsec_key { get; set; } = new byte[0x10];
+        public byte[] device_key { get; set; } = new byte[0x10];
+        public byte[][] bis_keys { get; set; } = Util.CreateJaggedArray<byte[][]>(4, 0x20);
+        public byte[] sd_seed { get; set; } = new byte[0x10];
+
         public Dictionary<byte[], byte[]> TitleKeys { get; } = new Dictionary<byte[], byte[]>(new ByteArray128BitComparer());
 
         public void SetSdSeed(byte[] sdseed)
         {
-            for (int k = 0; k < sd_card_key_sources.Length; k++)
-            {
-                for (int i = 0; i < 0x20; i++)
-                {
-                    sd_card_key_sources_specific[k][i] = (byte)(sd_card_key_sources[k][i] ^ sdseed[i & 0xF]);
-                }
-            }
-
+            Array.Copy(sdseed, sd_seed, sd_seed.Length);
             DeriveKeys();
         }
 
-        private void DeriveKeys()
+        internal void DeriveKeys()
         {
             //var cmac = new byte[0x10];
             //for (int i = 0; i < 0x20; i++)
@@ -68,6 +65,14 @@ namespace libhac
 
             var sdKek = new byte[0x10];
             Crypto.GenerateKek(sdKek, sd_card_kek_source, master_keys[0], aes_kek_generation_source, aes_key_generation_source);
+
+            for (int k = 0; k < sd_card_key_sources.Length; k++)
+            {
+                for (int i = 0; i < 0x20; i++)
+                {
+                    sd_card_key_sources_specific[k][i] = (byte)(sd_card_key_sources[k][i] ^ sd_seed[i & 0xF]);
+                }
+            }
 
             for (int k = 0; k < sd_card_key_sources_specific.Length; k++)
             {
@@ -81,45 +86,21 @@ namespace libhac
         private const int TitleKeySize = 0x10;
         private static readonly Dictionary<string, KeyValue> KeyDict = CreateKeyDict();
 
-        public static Keyset ReadKeyFile(string filename, string titleKeysFilename, IProgressReport progress = null)
+        public static Keyset ReadKeyFile(string filename, string titleKeysFilename = null, string consoleKeysFilename = null, IProgressReport progress = null)
         {
-            var keyset = ReadKeyFile(filename, progress);
-            if (titleKeysFilename == null) return keyset;
+            var keyset = new Keyset();
 
-            using (var reader = new StreamReader(new FileStream(titleKeysFilename, FileMode.Open, FileAccess.Read)))
-            {
-                string line;
-                while ((line = reader.ReadLine()) != null)
-                {
-                    var a = line.Split(',');
-                    if (a.Length != 2) continue;
-
-                    var rightsId = a[0].Trim().ToBytes();
-                    var titleKey = a[1].Trim().ToBytes();
-
-                    if (rightsId.Length != TitleKeySize)
-                    {
-                        progress?.LogMessage($"Rights ID {rightsId.ToHexString()} had incorrect size {rightsId.Length}. (Expected {TitleKeySize})");
-                        continue;
-                    }
-
-                    if (titleKey.Length != TitleKeySize)
-                    {
-                        progress?.LogMessage($"Title key {titleKey.ToHexString()} had incorrect size {titleKey.Length}. (Expected {TitleKeySize})");
-                        continue;
-                    }
-
-                    keyset.TitleKeys[rightsId] = titleKey;
-                }
-            }
+            if (filename != null) ReadMainKeys(keyset, filename, progress);
+            if (consoleKeysFilename != null) ReadMainKeys(keyset, consoleKeysFilename, progress);
+            if (titleKeysFilename != null) ReadTitleKeys(keyset, titleKeysFilename, progress);
+            keyset.DeriveKeys();
 
             return keyset;
         }
 
-        public static Keyset ReadKeyFile(string filename, IProgressReport progress = null)
+        private static void ReadMainKeys(Keyset keyset, string filename, IProgressReport progress = null)
         {
-            var keyset = new Keyset();
-            if (filename == null) return keyset;
+            if (filename == null) return;
 
             using (var reader = new StreamReader(new FileStream(filename, FileMode.Open, FileAccess.Read)))
             {
@@ -145,52 +126,91 @@ namespace libhac
                         continue;
                     }
 
-                    kv.Assign(keyset, value);
+                    var dest = kv.GetKey(keyset);
+                    Array.Copy(value, dest, value.Length);
                 }
             }
+        }
 
-            return keyset;
+        private static void ReadTitleKeys(Keyset keyset, string filename, IProgressReport progress = null)
+        {
+            if (filename == null) return;
+
+            using (var reader = new StreamReader(new FileStream(filename, FileMode.Open, FileAccess.Read)))
+            {
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    var a = line.Split(',');
+                    if (a.Length != 2) continue;
+
+                    var rightsId = a[0].Trim().ToBytes();
+                    var titleKey = a[1].Trim().ToBytes();
+
+                    if (rightsId.Length != TitleKeySize)
+                    {
+                        progress?.LogMessage($"Rights ID {rightsId.ToHexString()} had incorrect size {rightsId.Length}. (Expected {TitleKeySize})");
+                        continue;
+                    }
+
+                    if (titleKey.Length != TitleKeySize)
+                    {
+                        progress?.LogMessage($"Title key {titleKey.ToHexString()} had incorrect size {titleKey.Length}. (Expected {TitleKeySize})");
+                        continue;
+                    }
+
+                    keyset.TitleKeys[rightsId] = titleKey;
+                }
+            }
         }
 
         private static Dictionary<string, KeyValue> CreateKeyDict()
         {
             var keys = new List<KeyValue>
             {
-                new KeyValue("aes_kek_generation_source", 0x10, (set, key) => set.aes_kek_generation_source = key),
-                new KeyValue("aes_key_generation_source", 0x10, (set, key) => set.aes_key_generation_source = key),
-                new KeyValue("key_area_key_application_source", 0x10, (set, key) => set.key_area_key_application_source = key),
-                new KeyValue("key_area_key_ocean_source", 0x10, (set, key) => set.key_area_key_ocean_source = key),
-                new KeyValue("key_area_key_system_source", 0x10, (set, key) => set.key_area_key_system_source = key),
-                new KeyValue("titlekek_source", 0x10, (set, key) => set.titlekek_source = key),
-                new KeyValue("header_kek_source", 0x10, (set, key) => set.header_kek_source = key),
-                new KeyValue("header_key_source", 0x20, (set, key) => set.encrypted_header_key = key),
-                new KeyValue("header_key", 0x20, (set, key) => set.header_key = key),
-                new KeyValue("encrypted_header_key", 0x20, (set, key) => set.encrypted_header_key = key),
-                new KeyValue("package2_key_source", 0x10, (set, key) => set.package2_key_source = key),
-                new KeyValue("sd_card_kek_source", 0x10, (set, key) => set.sd_card_kek_source = key),
-                new KeyValue("sd_card_nca_key_source", 0x20, (set, key) => set.sd_card_key_sources[1] = key),
-                new KeyValue("sd_card_save_key_source", 0x20, (set, key) => set.sd_card_key_sources[0] = key),
-                new KeyValue("master_key_source", 0x10, (set, key) => set.master_key_source = key),
-                new KeyValue("keyblob_mac_key_source", 0x10, (set, key) => set.keyblob_mac_key_source = key),
-                new KeyValue("secure_boot_key", 0x10, (set, key) => set.secure_boot_key = key),
-                new KeyValue("tsec_key", 0x10, (set, key) => set.tsec_key = key)
+                new KeyValue("aes_kek_generation_source", 0x10, set => set.aes_kek_generation_source),
+                new KeyValue("aes_key_generation_source", 0x10, set => set.aes_key_generation_source),
+                new KeyValue("key_area_key_application_source", 0x10, set => set.key_area_key_application_source),
+                new KeyValue("key_area_key_ocean_source", 0x10, set => set.key_area_key_ocean_source),
+                new KeyValue("key_area_key_system_source", 0x10, set => set.key_area_key_system_source),
+                new KeyValue("titlekek_source", 0x10, set => set.titlekek_source),
+                new KeyValue("header_kek_source", 0x10, set => set.header_kek_source),
+                new KeyValue("header_key_source", 0x20, set => set.encrypted_header_key),
+                new KeyValue("header_key", 0x20, set => set.header_key),
+                new KeyValue("encrypted_header_key", 0x20, set => set.encrypted_header_key),
+                new KeyValue("package2_key_source", 0x10, set => set.package2_key_source),
+                new KeyValue("sd_card_kek_source", 0x10, set => set.sd_card_kek_source),
+                new KeyValue("sd_card_nca_key_source", 0x20, set => set.sd_card_key_sources[1]),
+                new KeyValue("sd_card_save_key_source", 0x20, set => set.sd_card_key_sources[0]),
+                new KeyValue("master_key_source", 0x10, set => set.master_key_source),
+                new KeyValue("keyblob_mac_key_source", 0x10, set => set.keyblob_mac_key_source),
+                new KeyValue("secure_boot_key", 0x10, set => set.secure_boot_key),
+                new KeyValue("tsec_key", 0x10, set => set.tsec_key),
+                new KeyValue("device_key", 0x10, set => set.device_key),
+                new KeyValue("sd_seed", 0x10, set => set.sd_seed)
             };
 
             for (int slot = 0; slot < 0x20; slot++)
             {
                 int i = slot;
-                keys.Add(new KeyValue($"keyblob_key_source_{i:D2}", 0x10, (set, key) => set.keyblob_key_sources[i] = key));
-                keys.Add(new KeyValue($"keyblob_key_{i:D2}", 0x10, (set, key) => set.keyblob_keys[i] = key));
-                keys.Add(new KeyValue($"keyblob_mac_key_{i:D2}", 0x10, (set, key) => set.keyblob_mac_keys[i] = key));
-                keys.Add(new KeyValue($"encrypted_keyblob_{i:D2}", 0xB0, (set, key) => set.encrypted_keyblobs[i] = key));
-                keys.Add(new KeyValue($"keyblob_{i:D2}", 0x90, (set, key) => set.keyblobs[i] = key));
-                keys.Add(new KeyValue($"master_key_{i:D2}", 0x10, (set, key) => set.master_keys[i] = key));
-                keys.Add(new KeyValue($"package1_key_{i:D2}", 0x10, (set, key) => set.package1_keys[i] = key));
-                keys.Add(new KeyValue($"package2_key_{i:D2}", 0x10, (set, key) => set.package2_keys[i] = key));
-                keys.Add(new KeyValue($"titlekek_{i:D2}", 0x10, (set, key) => set.titlekeks[i] = key));
-                keys.Add(new KeyValue($"key_area_key_application_{i:D2}", 0x10, (set, key) => set.key_area_keys[i][0] = key));
-                keys.Add(new KeyValue($"key_area_key_ocean_{i:D2}", 0x10, (set, key) => set.key_area_keys[i][1] = key));
-                keys.Add(new KeyValue($"key_area_key_system_{i:D2}", 0x10, (set, key) => set.key_area_keys[i][2] = key));
+                keys.Add(new KeyValue($"keyblob_key_source_{i:D2}", 0x10, set => set.keyblob_key_sources[i]));
+                keys.Add(new KeyValue($"keyblob_key_{i:D2}", 0x10, set => set.keyblob_keys[i]));
+                keys.Add(new KeyValue($"keyblob_mac_key_{i:D2}", 0x10, set => set.keyblob_mac_keys[i]));
+                keys.Add(new KeyValue($"encrypted_keyblob_{i:D2}", 0xB0, set => set.encrypted_keyblobs[i]));
+                keys.Add(new KeyValue($"keyblob_{i:D2}", 0x90, set => set.keyblobs[i]));
+                keys.Add(new KeyValue($"master_key_{i:D2}", 0x10, set => set.master_keys[i]));
+                keys.Add(new KeyValue($"package1_key_{i:D2}", 0x10, set => set.package1_keys[i]));
+                keys.Add(new KeyValue($"package2_key_{i:D2}", 0x10, set => set.package2_keys[i]));
+                keys.Add(new KeyValue($"titlekek_{i:D2}", 0x10, set => set.titlekeks[i]));
+                keys.Add(new KeyValue($"key_area_key_application_{i:D2}", 0x10, set => set.key_area_keys[i][0]));
+                keys.Add(new KeyValue($"key_area_key_ocean_{i:D2}", 0x10, set => set.key_area_keys[i][1]));
+                keys.Add(new KeyValue($"key_area_key_system_{i:D2}", 0x10, set => set.key_area_keys[i][2]));
+            }
+
+            for (int slot = 0; slot < 4; slot++)
+            {
+                int i = slot;
+                keys.Add(new KeyValue($"bis_key_{i:D2}", 0x20, set => set.bis_keys[i]));
             }
 
             return keys.ToDictionary(k => k.Name, k => k);
@@ -198,15 +218,15 @@ namespace libhac
 
         private class KeyValue
         {
-            public string Name;
-            public int Size;
-            public Action<Keyset, byte[]> Assign;
+            public readonly string Name;
+            public readonly int Size;
+            public readonly Func<Keyset, byte[]> GetKey;
 
-            public KeyValue(string name, int size, Action<Keyset, byte[]> assign)
+            public KeyValue(string name, int size, Func<Keyset, byte[]> retrieveFunc)
             {
                 Name = name;
                 Size = size;
-                Assign = assign;
+                GetKey = retrieveFunc;
             }
         }
     }

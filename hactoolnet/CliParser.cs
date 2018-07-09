@@ -15,6 +15,7 @@ namespace hactoolnet
             new CliOption("verify", 'y', 0, (o, a) => o.Validate = true),
             new CliOption("keyset", 'k', 1, (o, a) => o.Keyfile = a[0]),
             new CliOption("titlekeys", 1, (o, a) => o.TitleKeyFile = a[0]),
+            new CliOption("consolekeys", 1, (o, a) => o.ConsoleKeyFile = a[0]),
             new CliOption("section0", 1, (o, a) => o.SectionOut[0] = a[0]),
             new CliOption("section1", 1, (o, a) => o.SectionOut[1] = a[0]),
             new CliOption("section2", 1, (o, a) => o.SectionOut[2] = a[0]),

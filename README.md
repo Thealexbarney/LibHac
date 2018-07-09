@@ -58,6 +58,8 @@ Specifying the patch title ID will extract the patched title.
 Keys can be loaded from a text file by specifying a filename with the `-k` argument. The file should be in the same format read by [hactool](https://github.com/SciresM/hactool#external-keys):  
 "Keyset files are text files containing one key per line, in the form "key_name = HEXADECIMALKEY". Case shouldn't matter, nor should whitespace."
 
+Console-unique keys can be loaded from a text file by specifying a filename with the `--consolekeys` argument. The file format is the same as the main keyset file.
+
 Title keys can be loaded from a text file by specifying a filename with the `--titlekeys` argument. The file should contain one key per line in the form `rights_id,HEXADECIMALKEY`.
 
-If a keyfile is not set at the command line, hactoolnet will search for and load keyfiles in `$HOME/.switch/prod.keys` and `$HOME/.switch/titlekeys.txt`.
+If a keyfile is not set at the command line, hactoolnet will search for and load keyfiles in `$HOME/.switch/prod.keys`, `$HOME/.switch/console.keys` and `$HOME/.switch/title.keys`.

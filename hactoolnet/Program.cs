@@ -178,9 +178,11 @@ namespace hactoolnet
         {
             var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             var homeKeyFile = Path.Combine(home, ".switch", "prod.keys");
-            var homeTitleKeyFile = Path.Combine(home, ".switch", "titlekeys.txt");
+            var homeTitleKeyFile = Path.Combine(home, ".switch", "title.keys");
+            var homeConsoleKeyFile = Path.Combine(home, ".switch", "console.keys");
             var keyFile = ctx.Options.Keyfile;
             var titleKeyFile = ctx.Options.TitleKeyFile;
+            var consoleKeyFile = ctx.Options.ConsoleKeyFile;
 
             if (keyFile == null && File.Exists(homeKeyFile))
             {
@@ -192,7 +194,12 @@ namespace hactoolnet
                 titleKeyFile = homeTitleKeyFile;
             }
 
-            ctx.Keyset = ExternalKeys.ReadKeyFile(keyFile, titleKeyFile, ctx.Logger);
+            if (consoleKeyFile == null && File.Exists(homeConsoleKeyFile))
+            {
+                consoleKeyFile = homeConsoleKeyFile;
+            }
+
+            ctx.Keyset = ExternalKeys.ReadKeyFile(keyFile, titleKeyFile, consoleKeyFile, ctx.Logger);
             if (ctx.Options.SdSeed != null)
             {
                 ctx.Keyset.SetSdSeed(ctx.Options.SdSeed.ToBytes());
