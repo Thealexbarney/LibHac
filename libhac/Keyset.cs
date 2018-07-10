@@ -193,24 +193,24 @@ namespace libhac
             for (int slot = 0; slot < 0x20; slot++)
             {
                 int i = slot;
-                keys.Add(new KeyValue($"keyblob_key_source_{i:D2}", 0x10, set => set.keyblob_key_sources[i]));
-                keys.Add(new KeyValue($"keyblob_key_{i:D2}", 0x10, set => set.keyblob_keys[i]));
-                keys.Add(new KeyValue($"keyblob_mac_key_{i:D2}", 0x10, set => set.keyblob_mac_keys[i]));
-                keys.Add(new KeyValue($"encrypted_keyblob_{i:D2}", 0xB0, set => set.encrypted_keyblobs[i]));
-                keys.Add(new KeyValue($"keyblob_{i:D2}", 0x90, set => set.keyblobs[i]));
-                keys.Add(new KeyValue($"master_key_{i:D2}", 0x10, set => set.master_keys[i]));
-                keys.Add(new KeyValue($"package1_key_{i:D2}", 0x10, set => set.package1_keys[i]));
-                keys.Add(new KeyValue($"package2_key_{i:D2}", 0x10, set => set.package2_keys[i]));
-                keys.Add(new KeyValue($"titlekek_{i:D2}", 0x10, set => set.titlekeks[i]));
-                keys.Add(new KeyValue($"key_area_key_application_{i:D2}", 0x10, set => set.key_area_keys[i][0]));
-                keys.Add(new KeyValue($"key_area_key_ocean_{i:D2}", 0x10, set => set.key_area_keys[i][1]));
-                keys.Add(new KeyValue($"key_area_key_system_{i:D2}", 0x10, set => set.key_area_keys[i][2]));
+                keys.Add(new KeyValue($"keyblob_key_source_{i:x2}", 0x10, set => set.keyblob_key_sources[i]));
+                keys.Add(new KeyValue($"keyblob_key_{i:x2}", 0x10, set => set.keyblob_keys[i]));
+                keys.Add(new KeyValue($"keyblob_mac_key_{i:x2}", 0x10, set => set.keyblob_mac_keys[i]));
+                keys.Add(new KeyValue($"encrypted_keyblob_{i:x2}", 0xB0, set => set.encrypted_keyblobs[i]));
+                keys.Add(new KeyValue($"keyblob_{i:x2}", 0x90, set => set.keyblobs[i]));
+                keys.Add(new KeyValue($"master_key_{i:x2}", 0x10, set => set.master_keys[i]));
+                keys.Add(new KeyValue($"package1_key_{i:x2}", 0x10, set => set.package1_keys[i]));
+                keys.Add(new KeyValue($"package2_key_{i:x2}", 0x10, set => set.package2_keys[i]));
+                keys.Add(new KeyValue($"titlekek_{i:x2}", 0x10, set => set.titlekeks[i]));
+                keys.Add(new KeyValue($"key_area_key_application_{i:x2}", 0x10, set => set.key_area_keys[i][0]));
+                keys.Add(new KeyValue($"key_area_key_ocean_{i:x2}", 0x10, set => set.key_area_keys[i][1]));
+                keys.Add(new KeyValue($"key_area_key_system_{i:x2}", 0x10, set => set.key_area_keys[i][2]));
             }
 
             for (int slot = 0; slot < 4; slot++)
             {
                 int i = slot;
-                keys.Add(new KeyValue($"bis_key_{i:D2}", 0x20, set => set.bis_keys[i]));
+                keys.Add(new KeyValue($"bis_key_{i:x2}", 0x20, set => set.bis_keys[i]));
             }
 
             return keys.ToDictionary(k => k.Name, k => k);
