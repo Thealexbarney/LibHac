@@ -31,6 +31,11 @@ namespace libhac
                 ContentsDir = Path.Combine(rootDir, "Contents");
             }
 
+            if (ContentsDir == null)
+            {
+                throw new DirectoryNotFoundException("Could not find \"Contents\" directory");
+            }
+
             OpenAllNcas();
             ReadTitles();
             ReadControls();

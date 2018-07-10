@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Json;
 using System.Security.Cryptography;
 using System.Text;
 using libhac.XTSSharp;
@@ -62,6 +63,8 @@ namespace libhac
         {
             if (Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
             var sect = Sections[index];
+
+            if (sect.SuperblockHashValidity == Validity.Invalid) return null;
 
             long offset = sect.Offset;
             long size = sect.Size;
@@ -200,11 +203,26 @@ namespace libhac
             }
         }
 
+        private void CheckBktrKey(NcaSection sect)
+        {
+            var offset = sect.Header.Bktr.SubsectionHeader.Offset;
+            using (var streamDec = new RandomAccessSectorStream(new AesCtrStream(Stream, DecryptedKeys[2], sect.Offset, sect.Size, sect.Offset, sect.Header.Ctr)))
+            {
+                var reader = new BinaryReader(streamDec);
+                streamDec.Position = offset + 8;
+                var size = reader.ReadInt64();
+
+                if (size != offset)
+                {
+                    sect.SuperblockHashValidity = Validity.Invalid;
+                }
+            }
+        }
+
         private void ValidateSuperblockHash(int index)
         {
             if (Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
             var sect = Sections[index];
-            var stream = OpenSection(index, true);
 
             byte[] expected = null;
             byte[] actual;
@@ -228,13 +246,12 @@ namespace libhac
                     size = 1 << ivfc.LevelHeaders[0].BlockSize;
                     break;
                 case SectionType.Bktr:
-                    var ivfcBktr = sect.Header.Bktr.IvfcHeader;
-                    expected = ivfcBktr.MasterHash;
-                    offset = ivfcBktr.LevelHeaders[0].LogicalOffset;
-                    size = 1 << ivfcBktr.LevelHeaders[0].BlockSize;
-                    break;
+                    CheckBktrKey(sect);
+                    return;
             }
 
+            var stream = OpenSection(index, true);
+            if (stream == null) return;
             if (expected == null) return;
 
             var hashTable = new byte[size];
