@@ -37,40 +37,40 @@ namespace libhac.Nand
             return decStream;
         }
 
-        public FatFileSystem OpenProdInfoF()
+        public NandPartition OpenProdInfoF()
         {
             var encStream = ProdInfoF.Open();
             var xts = XtsAes128.Create(Keyset.bis_keys[0]);
             var decStream = new RandomAccessSectorStream(new XtsSectorStream(encStream, xts, 0x4000, 0), true);
             FatFileSystem fat = new FatFileSystem(decStream, Ownership.None);
-            return fat;
+            return new NandPartition(fat);
         }
 
-        public FatFileSystem OpenSafePartition()
+        public NandPartition OpenSafePartition()
         {
             var encStream = Safe.Open();
             var xts = XtsAes128.Create(Keyset.bis_keys[1]);
             var decStream = new RandomAccessSectorStream(new XtsSectorStream(encStream, xts, 0x4000, 0), true);
             FatFileSystem fat = new FatFileSystem(decStream, Ownership.None);
-            return fat;
+            return new NandPartition(fat);
         }
 
-        public FatFileSystem OpenSystemPartition()
+        public NandPartition OpenSystemPartition()
         {
             var encStream = System.Open();
             var xts = XtsAes128.Create(Keyset.bis_keys[2]);
             var decStream = new RandomAccessSectorStream(new XtsSectorStream(encStream, xts, 0x4000, 0), true);
             FatFileSystem fat = new FatFileSystem(decStream, Ownership.None);
-            return fat;
+            return new NandPartition(fat);
         }
 
-        public FatFileSystem OpenUserPartition()
+        public NandPartition OpenUserPartition()
         {
             var encStream = User.Open();
             var xts = XtsAes128.Create(Keyset.bis_keys[3]);
             var decStream = new RandomAccessSectorStream(new XtsSectorStream(encStream, xts, 0x4000, 0), true);
             FatFileSystem fat = new FatFileSystem(decStream, Ownership.None);
-            return fat;
+            return new NandPartition(fat);
         }
     }
 }

@@ -123,7 +123,7 @@ namespace hactoolnet
 
         private static void ProcessSwitchFs(Context ctx)
         {
-            var switchFs = new SdFs(ctx.Keyset, ctx.Options.InFile);
+            var switchFs = new SdFs(ctx.Keyset, new FileSystem(ctx.Options.InFile));
 
             if (ctx.Options.ListTitles)
             {

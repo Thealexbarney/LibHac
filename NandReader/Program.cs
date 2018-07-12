@@ -15,7 +15,31 @@ namespace NandReader
                 Console.WriteLine("Usage: NandReader raw_nand_dump_file");
                 return;
             }
-            DumpTickets(args[0]);
+            ReadSwitchFs(args[0]);
+        }
+
+        private static void ReadSwitchFs(string nandFile)
+        {
+            using (var logger = new ProgressBar())
+            using (var stream = new FileStream(nandFile, FileMode.Open, FileAccess.Read))
+            {
+                var keyset = OpenKeyset();
+                var nand = new Nand(stream, keyset);
+                var user = nand.OpenSystemPartition();
+                var sdfs = new SdFs(keyset, user);
+            }
+        }
+
+        private static void ReadCalibration(string nandFile)
+        {
+            using (var logger = new ProgressBar())
+            using (var stream = new FileStream(nandFile, FileMode.Open, FileAccess.Read))
+            {
+                var keyset = OpenKeyset();
+                var nand = new Nand(stream, keyset);
+                var prodinfo = nand.OpenProdInfo();
+                var calibration = new Calibration(prodinfo);
+            }
         }
 
         private static void DumpTickets(string nandFile)

@@ -10,25 +10,25 @@ namespace libhac
     public class SdFs : IDisposable
     {
         public Keyset Keyset { get; }
-        public string RootDir { get; }
+        public IFileSystem Fs { get; }
         public string ContentsDir { get; }
 
         public Dictionary<string, Nca> Ncas { get; } = new Dictionary<string, Nca>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<ulong, Title> Titles { get; } = new Dictionary<ulong, Title>();
         public Dictionary<ulong, Application> Applications { get; } = new Dictionary<ulong, Application>();
 
-        public SdFs(Keyset keyset, string rootDir)
+        public SdFs(Keyset keyset, IFileSystem fs)
         {
-            RootDir = rootDir;
+            Fs = fs;
             Keyset = keyset;
 
-            if (Directory.Exists(Path.Combine(rootDir, "Nintendo")))
+            if (fs.DirectoryExists("Nintendo"))
             {
-                ContentsDir = Path.Combine(rootDir, "Nintendo", "Contents");
+                ContentsDir = fs.GetFullPath(Path.Combine("Nintendo", "Contents"));
             }
-            else if (Directory.Exists(Path.Combine(rootDir, "Contents")))
+            else if (fs.DirectoryExists("Contents"))
             {
-                ContentsDir = Path.Combine(rootDir, "Contents");
+                ContentsDir = fs.GetFullPath("Contents");
             }
 
             if (ContentsDir == null)
@@ -44,7 +44,7 @@ namespace libhac
 
         private void OpenAllNcas()
         {
-            string[] files = Directory.GetFileSystemEntries(ContentsDir, "*.nca", SearchOption.AllDirectories).ToArray();
+            string[] files = Fs.GetFileSystemEntries(ContentsDir, "*.nca", SearchOption.AllDirectories);
 
             foreach (var file in files)
             {
@@ -52,7 +52,7 @@ namespace libhac
                 try
                 {
                     bool isNax0;
-                    Stream stream = OpenSplitNcaStream(file);
+                    Stream stream = OpenSplitNcaStream(Fs, file);
                     if (stream == null) continue;
 
                     using (var reader = new BinaryReader(stream, Encoding.Default, true))
@@ -178,26 +178,26 @@ namespace libhac
             }
         }
 
-        internal static Stream OpenSplitNcaStream(string path)
+        internal static Stream OpenSplitNcaStream(IFileSystem fs, string path)
         {
             List<string> files = new List<string>();
             List<Stream> streams = new List<Stream>();
 
-            if (Directory.Exists(path))
+            if (fs.DirectoryExists(path))
             {
                 while (true)
                 {
                     var partName = Path.Combine(path, $"{files.Count:D2}");
-                    if (!File.Exists(partName)) break;
+                    if (!fs.FileExists(partName)) break;
 
                     files.Add(partName);
                 }
             }
-            else if (File.Exists(path))
+            else if (fs.FileExists(path))
             {
                 if (Path.GetFileName(path) != "00")
                 {
-                    return new FileStream(path, FileMode.Open, FileAccess.Read);
+                    return fs.OpenFile(path, FileMode.Open, FileAccess.Read);
                 }
                 files.Add(path);
             }
@@ -208,7 +208,7 @@ namespace libhac
 
             foreach (var file in files)
             {
-                streams.Add(new FileStream(file, FileMode.Open, FileAccess.Read));
+                streams.Add(fs.OpenFile(file, FileMode.Open, FileAccess.Read));
             }
 
             if (streams.Count == 0) return null;
