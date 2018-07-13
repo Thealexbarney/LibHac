@@ -38,12 +38,14 @@ namespace libhac
         public byte[] nca_hdr_fixed_key_modulus { get; set; } = new byte[0x100];
         public byte[] acid_fixed_key_modulus { get; set; } = new byte[0x100];
         public byte[] package2_fixed_key_modulus { get; set; } = new byte[0x100];
+        public byte[] eticket_rsa_kek { get; set; } = new byte[0x10];
 
         public byte[] secure_boot_key { get; set; } = new byte[0x10];
         public byte[] tsec_key { get; set; } = new byte[0x10];
         public byte[] device_key { get; set; } = new byte[0x10];
         public byte[][] bis_keys { get; set; } = Util.CreateJaggedArray<byte[][]>(4, 0x20);
         public byte[] sd_seed { get; set; } = new byte[0x10];
+        public RsaKey eticket_ext_key_rsa { get; set; }
 
         public Dictionary<byte[], byte[]> TitleKeys { get; } = new Dictionary<byte[], byte[]>(new ByteArray128BitComparer());
 
@@ -187,7 +189,8 @@ namespace libhac
                 new KeyValue("secure_boot_key", 0x10, set => set.secure_boot_key),
                 new KeyValue("tsec_key", 0x10, set => set.tsec_key),
                 new KeyValue("device_key", 0x10, set => set.device_key),
-                new KeyValue("sd_seed", 0x10, set => set.sd_seed)
+                new KeyValue("sd_seed", 0x10, set => set.sd_seed),
+                new KeyValue("eticket_rsa_kek", 0x10, set => set.eticket_rsa_kek )
             };
 
             for (int slot = 0; slot < 0x20; slot++)

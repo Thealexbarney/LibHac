@@ -15,7 +15,7 @@ namespace libhac.Nand
         private GuidPartitionInfo Safe { get; }
         private GuidPartitionInfo System { get; }
         private GuidPartitionInfo User { get; }
-        private Keyset Keyset { get; }
+        public Keyset Keyset { get; }
 
         public Nand(Stream stream, Keyset keyset)
         {

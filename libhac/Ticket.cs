@@ -12,7 +12,7 @@ namespace libhac
         public byte[] Signature { get; }
         public string Issuer { get; }
         public byte[] TitleKeyBlock { get; }
-        public byte TitleKeyType { get; }
+        public TitleKeyType TitleKeyType { get; }
         public byte CryptoType { get; }
         public ulong TicketId { get; }
         public ulong DeviceId { get; }
@@ -20,6 +20,12 @@ namespace libhac
         public uint AccountId { get; }
         public int Length { get; } // Not completely sure about this one
         public byte[] File { get; }
+
+        internal static readonly byte[] LabelHash =
+        {
+            0xE3, 0xB0, 0xC4, 0x42, 0x98, 0xFC, 0x1C, 0x14, 0x9A, 0xFB, 0xF4, 0xC8, 0x99, 0x6F, 0xB9, 0x24,
+            0x27, 0xAE, 0x41, 0xE4, 0x64, 0x9B, 0x93, 0x4C, 0xA4, 0x95, 0x99, 0x1B, 0x78, 0x52, 0xB8, 0x55
+        };
 
         public Ticket(BinaryReader reader)
         {
@@ -53,7 +59,7 @@ namespace libhac
             reader.BaseStream.Position = dataStart + 0x40;
             TitleKeyBlock = reader.ReadBytes(0x100);
             reader.BaseStream.Position = dataStart + 0x141;
-            TitleKeyType = reader.ReadByte();
+            TitleKeyType = (TitleKeyType)reader.ReadByte();
             reader.BaseStream.Position = dataStart + 0x145;
             CryptoType = reader.ReadByte();
             reader.BaseStream.Position = dataStart + 0x150;
@@ -106,6 +112,18 @@ namespace libhac
             logger?.SetTotal(0);
             return tickets.Values.ToArray();
         }
+
+        public byte[] GetTitleKey(Keyset keyset)
+        {
+            if (TitleKeyType == TitleKeyType.Common)
+            {
+                var commonKey = new byte[0x10];
+                Array.Copy(TitleKeyBlock, commonKey, commonKey.Length);
+                return commonKey;
+            }
+
+            return Crypto.DecryptTitleKey(TitleKeyBlock, keyset.eticket_ext_key_rsa);
+        }
     }
 
     public enum TicketSigType
@@ -116,5 +134,11 @@ namespace libhac
         Rsa4096Sha256,
         Rsa2048Sha256,
         EcdsaSha256
+    }
+
+    public enum TitleKeyType
+    {
+        Common,
+        Personalized
     }
 }

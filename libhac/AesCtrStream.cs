@@ -26,6 +26,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using libhac.XTSSharp;
 
@@ -55,6 +56,28 @@ namespace libhac
         /// <param name="counterOffset">Offset to add to the counter</param>
         public AesCtrStream(Stream baseStream, byte[] key, long counterOffset = 0)
             : this(baseStream, key, 0, baseStream.Length, counterOffset) { }
+
+        /// <summary>
+        /// Creates a new stream
+        /// </summary>
+        /// <param name="baseStream">The base stream</param>
+        /// <param name="key">The decryption key</param>
+        /// <param name="counter">The intial counter</param>
+        public AesCtrStream(Stream baseStream, byte[] key, byte[] counter)
+            : base(baseStream, 0x10, 0)
+        {
+            _initialCounter = counter.ToArray();
+            _counterOffset = 0;
+            Length = baseStream.Length;
+            _tempBuffer = new byte[0x10];
+
+            _aes = Aes.Create();
+            if (_aes == null) throw new CryptographicException("Unable to create AES object");
+            _aes.Key = key;
+            _aes.Mode = CipherMode.ECB;
+            _aes.Padding = PaddingMode.None;
+            Decryptor = new CounterModeCryptoTransform(_aes, _aes.Key, _initialCounter ?? new byte[0x10]);
+        }
 
         /// <summary>
         /// Creates a new stream
