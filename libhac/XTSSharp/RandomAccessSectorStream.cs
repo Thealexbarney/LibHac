@@ -25,6 +25,7 @@
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace libhac.XTSSharp
@@ -34,7 +35,7 @@ namespace libhac.XTSSharp
     /// </summary>
     public class RandomAccessSectorStream : Stream
     {
-        private readonly byte[] _buffer;
+        private byte[] _buffer;
         private readonly int _bufferSize;
         private readonly SectorStream _s;
         private readonly bool _keepOpen;
@@ -42,6 +43,15 @@ namespace libhac.XTSSharp
         private bool _bufferLoaded;
         private int _bufferPos;
         private int _currentBufferSize;
+
+        private long PhysicalRead { get; set; }
+        private long VirtualRead { get; set; }
+        private int CacheMisses { get; set; }
+        private int CacheHits { get; set; }
+
+        // List should work just fine for a tiny cache
+        private List<Sector> Cache { get; }
+        private const int CacheSize = 4;
 
         /// <summary>
         /// Creates a new stream
@@ -63,6 +73,17 @@ namespace libhac.XTSSharp
             _keepOpen = keepOpen;
             _buffer = new byte[s.SectorSize];
             _bufferSize = s.SectorSize;
+
+            Cache = new List<Sector>(CacheSize);
+
+            for (int i = 0; i < CacheSize; i++)
+            {
+                Cache.Add(new Sector
+                {
+                    Position = -1,
+                    Data = new byte[_bufferSize]
+                });
+            }
         }
 
         /// <summary>
@@ -246,6 +267,8 @@ namespace libhac.XTSSharp
                     ReadSector();
             }
 
+            VirtualRead += totalBytesRead;
+
             return totalBytesRead;
         }
 
@@ -291,7 +314,37 @@ namespace libhac.XTSSharp
                 return;
             }
 
+            var sectorPosition = _s.Position;
+
+            for (int i = 0; i < CacheSize; i++)
+            {
+                var sector = Cache[i];
+                if (sector.Position == sectorPosition)
+                {
+                    if (i != 0)
+                    {
+                        Cache.RemoveAt(i);
+                        Cache.Insert(0, sector);
+                    }
+
+                    _buffer = sector.Data;
+
+                    _bufferLoaded = true;
+                    _bufferPos = 0;
+                    _bufferDirty = false;
+                    _currentBufferSize = sector.Length;
+                    CacheHits++;
+                    _s.Position += _bufferSize;
+                    return;
+                }
+            }
+
+            var item = Cache[CacheSize - 1];
+            Cache.RemoveAt(CacheSize - 1);
+            _buffer = item.Data;
+
             var bytesRead = _s.Read(_buffer, 0, _buffer.Length);
+            PhysicalRead += bytesRead;
 
             //clean the end of it
             if (bytesRead != _bufferSize)
@@ -301,6 +354,11 @@ namespace libhac.XTSSharp
             _bufferPos = 0;
             _bufferDirty = false;
             _currentBufferSize = bytesRead;
+
+            item.Position = sectorPosition;
+            item.Length = bytesRead;
+            Cache.Insert(0, item);
+            CacheMisses++;
         }
 
         /// <summary>
@@ -320,6 +378,13 @@ namespace libhac.XTSSharp
             _bufferLoaded = false;
             _bufferPos = 0;
             Array.Clear(_buffer, 0, _bufferSize);
+        }
+
+        private class Sector
+        {
+            public long Position { get; set; }
+            public byte[] Data { get; set; }
+            public int Length { get; set; }
         }
     }
 }
