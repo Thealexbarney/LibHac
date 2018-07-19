@@ -138,7 +138,7 @@ namespace hactoolnet
             sb.AppendLine("  -r, --raw            Keep raw data, don\'t unpack.");
             sb.AppendLine("  -y, --verify         Verify hashes.");
             sb.AppendLine("  -k, --keyset         Load keys from an external file.");
-            sb.AppendLine("  -t, --intype=type    Specify input file type [nca, switchfs]");
+            sb.AppendLine("  -t, --intype=type    Specify input file type [nca, switchfs, save]");
             sb.AppendLine("  --titlekeys <file>   Load title keys from an external file.");
             sb.AppendLine("NCA options:");
             sb.AppendLine("  --section0 <file>    Specify Section 0 file path.");
@@ -156,8 +156,8 @@ namespace hactoolnet
             sb.AppendLine("  --listapps           List application info.");
             sb.AppendLine("  --listtitles         List title info for all titles.");
             sb.AppendLine("  --title <title id>   Specify title ID to use.");
-            sb.AppendLine("  --outdir <dir>       Specify directory path to save title to.");
-            sb.AppendLine("  --romfsdir <dir>     Specify RomFS directory path.");
+            sb.AppendLine("  --outdir <dir>       Specify directory path to save title to. (--title must be specified)");
+            sb.AppendLine("  --romfsdir <dir>     Specify RomFS directory path. (--title must be specified)");
 
             return sb.ToString();
         }
