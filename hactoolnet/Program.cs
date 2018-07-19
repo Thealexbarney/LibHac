@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using libhac;
+using libhac.Savefile;
 
 namespace hactoolnet
 {
@@ -39,6 +40,9 @@ namespace hactoolnet
                         break;
                     case FileType.SwitchFs:
                         ProcessSwitchFs(ctx);
+                        break;
+                    case FileType.Save:
+                        ProcessSave(ctx);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -203,6 +207,45 @@ namespace hactoolnet
             if (ctx.Options.SdSeed != null)
             {
                 ctx.Keyset.SetSdSeed(ctx.Options.SdSeed.ToBytes());
+            }
+        }
+
+        private static void ProcessSave(Context ctx)
+        {
+            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
+            {
+                var save = new Savefile(file);
+                var layout = save.Header.Layout;
+
+                save.FileRemap.Position = layout.DuplexL1OffsetB;
+                using (var outFile = new FileStream("0_DuplexL1A", FileMode.Create, FileAccess.Write))
+                {
+                    save.FileRemap.CopyStream(outFile, layout.DuplexDataSize);
+                }
+
+                save.FileRemap.Position = layout.DuplexL1OffsetB;
+                using (var outFile = new FileStream("1_DuplexL1B", FileMode.Create, FileAccess.Write))
+                {
+                    save.FileRemap.CopyStream(outFile, layout.DuplexDataSize);
+                }
+
+                save.FileRemap.Position = layout.DuplexDataOffsetA;
+                using (var outFile = new FileStream("2_DuplexDataA", FileMode.Create, FileAccess.Write))
+                {
+                    save.FileRemap.CopyStream(outFile, layout.DuplexDataSize);
+                }
+
+                save.FileRemap.Position = layout.DuplexDataOffsetB;
+                using (var outFile = new FileStream("3_DuplexDataB", FileMode.Create, FileAccess.Write))
+                {
+                    save.FileRemap.CopyStream(outFile, layout.DuplexDataSize);
+                }
+
+                save.FileRemap.Position = layout.JournalDataOffset;
+                using (var outFile = new FileStream("4_JournalData", FileMode.Create, FileAccess.Write))
+                {
+                    save.FileRemap.CopyStream(outFile, layout.JournalDataSizeB + layout.SizeReservedArea);
+                }
             }
         }
 

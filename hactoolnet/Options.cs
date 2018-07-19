@@ -34,7 +34,8 @@ namespace hactoolnet
         Pfs0,
         Romfs,
         Nax0,
-        SwitchFs
+        SwitchFs,
+        Save
     }
 
     internal class Context
