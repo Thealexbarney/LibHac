@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Security.Cryptography;
 
 namespace libhac.Savefile
 {
@@ -13,8 +14,14 @@ namespace libhac.Savefile
         public MapEntry[] FileMapEntries { get; set; }
         public MapEntry[] MetaMapEntries { get; set; }
 
-        public Header(BinaryReader reader)
+        public byte[] Data { get; }
+
+        public Header(BinaryReader reader, IProgressReport logger = null)
         {
+            reader.BaseStream.Position = 0;
+            Data = reader.ReadBytes(0x4000);
+            reader.BaseStream.Position = 0;
+
             Cmac = reader.ReadBytes(0x10);
 
             reader.BaseStream.Position = 0x100;
@@ -37,6 +44,18 @@ namespace libhac.Savefile
             for (int i = 0; i < MetaRemap.MapEntryCount; i++)
             {
                 MetaMapEntries[i] = new MapEntry(reader);
+            }
+
+            var hashStatus = ValidateHeaderHash() ? "valid" : "invalid";
+            logger?.LogMessage($"Header hash is {hashStatus}");
+        }
+
+        private bool ValidateHeaderHash()
+        {
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                var hash = sha256.ComputeHash(Data, 0x300, 0x3d00);
+                return Util.ArraysEqual(hash, Layout.Hash);
             }
         }
     }
@@ -62,11 +81,11 @@ namespace libhac.Savefile
         public long JournalDataSizeA { get; set; }
         public long JournalDataSizeB { get; set; }
         public long SizeReservedArea { get; set; }
-        public long OffsetL1Bitmap0 { get; set; }
-        public long OffsetL1Bitmap1 { get; set; }
-        public long SizeL1Bitmap { get; set; }
-        public long MasterHashOffset { get; set; }
-        public long FieldC8 { get; set; }
+        public long L1BitmapOffset0 { get; set; }
+        public long L1BitmapOffset1 { get; set; }
+        public long L1BitmapSize { get; set; }
+        public long MasterHashOffset0 { get; set; }
+        public long MasterHashOffset1 { get; set; }
         public long MasterHashSize { get; set; }
         public long OffsetJournalTable { get; set; }
         public long SizeJournalTable { get; set; }
@@ -107,11 +126,11 @@ namespace libhac.Savefile
             JournalDataSizeA = reader.ReadInt64();
             JournalDataSizeB = reader.ReadInt64();
             SizeReservedArea = reader.ReadInt64();
-            OffsetL1Bitmap0 = reader.ReadInt64();
-            OffsetL1Bitmap1 = reader.ReadInt64();
-            SizeL1Bitmap = reader.ReadInt64();
-            MasterHashOffset = reader.ReadInt64();
-            FieldC8 = reader.ReadInt64();
+            L1BitmapOffset0 = reader.ReadInt64();
+            L1BitmapOffset1 = reader.ReadInt64();
+            L1BitmapSize = reader.ReadInt64();
+            MasterHashOffset0 = reader.ReadInt64();
+            MasterHashOffset1 = reader.ReadInt64();
             MasterHashSize = reader.ReadInt64();
             OffsetJournalTable = reader.ReadInt64();
             SizeJournalTable = reader.ReadInt64();
