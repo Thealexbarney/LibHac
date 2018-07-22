@@ -53,14 +53,14 @@ namespace libhac.Savefile
             if (remaining < count) count = (int)remaining;
 
             var toOutput = count;
-            int pos = 0;
+            int outPos = offset;
 
             while (toOutput > 0)
             {
                 var remainInEntry = CurrentEntry.VirtualOffsetEnd - Position;
                 int toRead = (int)Math.Min(toOutput, remainInEntry);
-                BaseStream.Read(buffer, pos, toRead);
-                pos += toRead;
+                BaseStream.Read(buffer, outPos, toRead);
+                outPos += toRead;
                 toOutput -= toRead;
                 Position += toRead;
             }
