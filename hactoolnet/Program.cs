@@ -214,37 +214,33 @@ namespace hactoolnet
         {
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
             {
-                var save = new Savefile(file);
+                var save = new Savefile(file, ctx.Logger);
                 var layout = save.Header.Layout;
 
-                save.FileRemap.Position = layout.DuplexL1OffsetB;
-                using (var outFile = new FileStream("0_DuplexL1A", FileMode.Create, FileAccess.Write))
-                {
-                    save.FileRemap.CopyStream(outFile, layout.DuplexDataSize);
-                }
+                File.WriteAllBytes("d0_JournalTable", save.JournalTable);
+                File.WriteAllBytes("d1_JournalBitmapUpdatedPhysical", save.JournalBitmapUpdatedPhysical);
+                File.WriteAllBytes("d2_JournalBitmapUpdatedVirtual", save.JournalBitmapUpdatedVirtual);
+                File.WriteAllBytes("d3_JournalBitmapUnassigned", save.JournalBitmapUnassigned);
+                File.WriteAllBytes("d4_Layer1Hash", save.JournalLayer1Hash);
+                File.WriteAllBytes("d5_Layer2Hash", save.JournalLayer2Hash);
+                File.WriteAllBytes("d6_Layer3Hash", save.JournalLayer3Hash);
+                File.WriteAllBytes("d7_Stuff", save.JournalStuff);
 
-                save.FileRemap.Position = layout.DuplexL1OffsetB;
-                using (var outFile = new FileStream("1_DuplexL1B", FileMode.Create, FileAccess.Write))
-                {
-                    save.FileRemap.CopyStream(outFile, layout.DuplexDataSize);
-                }
-
-                save.FileRemap.Position = layout.DuplexDataOffsetA;
-                using (var outFile = new FileStream("2_DuplexDataA", FileMode.Create, FileAccess.Write))
-                {
-                    save.FileRemap.CopyStream(outFile, layout.DuplexDataSize);
-                }
-
-                save.FileRemap.Position = layout.DuplexDataOffsetB;
-                using (var outFile = new FileStream("3_DuplexDataB", FileMode.Create, FileAccess.Write))
-                {
-                    save.FileRemap.CopyStream(outFile, layout.DuplexDataSize);
-                }
+                File.WriteAllBytes("0_DuplexL1A", save.DuplexL1A);
+                File.WriteAllBytes("1_DuplexL1B", save.DuplexL1B);
+                File.WriteAllBytes("2_DuplexDataA", save.DuplexDataA);
+                File.WriteAllBytes("3_DuplexDataB", save.DuplexDataB);
 
                 save.FileRemap.Position = layout.JournalDataOffset;
                 using (var outFile = new FileStream("4_JournalData", FileMode.Create, FileAccess.Write))
                 {
                     save.FileRemap.CopyStream(outFile, layout.JournalDataSizeB + layout.SizeReservedArea);
+                }
+
+                save.JournalStream.Position = 0;
+                using (var outFile = new FileStream("j0_Data", FileMode.Create, FileAccess.Write))
+                {
+                    save.JournalStream.CopyStream(outFile, save.JournalStream.Length);
                 }
             }
         }

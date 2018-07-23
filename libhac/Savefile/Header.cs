@@ -7,6 +7,7 @@ namespace libhac.Savefile
     {
         public byte[] Cmac { get; set; }
         public FsLayout Layout { get; set; }
+        public JournalHeader Journal{ get; set; }
 
         public RemapHeader FileRemap { get; set; }
         public RemapHeader MetaRemap { get; set; }
@@ -26,6 +27,9 @@ namespace libhac.Savefile
 
             reader.BaseStream.Position = 0x100;
             Layout = new FsLayout(reader);
+
+            reader.BaseStream.Position = 0x408;
+            Journal = new JournalHeader(reader);
 
             reader.BaseStream.Position = 0x650;
             FileRemap = new RemapHeader(reader);
@@ -87,8 +91,8 @@ namespace libhac.Savefile
         public long MasterHashOffset0 { get; set; }
         public long MasterHashOffset1 { get; set; }
         public long MasterHashSize { get; set; }
-        public long OffsetJournalTable { get; set; }
-        public long SizeJournalTable { get; set; }
+        public long JournalTableOffset { get; set; }
+        public long JournalTableSize { get; set; }
         public long JournalBitmapUpdatedPhysicalOffset { get; set; }
         public long JournalBitmapUpdatedPhysicalSize { get; set; }
         public long JournalBitmapUpdatedVirtualOffset { get; set; }
@@ -132,8 +136,8 @@ namespace libhac.Savefile
             MasterHashOffset0 = reader.ReadInt64();
             MasterHashOffset1 = reader.ReadInt64();
             MasterHashSize = reader.ReadInt64();
-            OffsetJournalTable = reader.ReadInt64();
-            SizeJournalTable = reader.ReadInt64();
+            JournalTableOffset = reader.ReadInt64();
+            JournalTableSize = reader.ReadInt64();
             JournalBitmapUpdatedPhysicalOffset = reader.ReadInt64();
             JournalBitmapUpdatedPhysicalSize = reader.ReadInt64();
             JournalBitmapUpdatedVirtualOffset = reader.ReadInt64();
@@ -167,6 +171,32 @@ namespace libhac.Savefile
             MapEntryCount = reader.ReadInt32();
             MapSegmentCount = reader.ReadInt32();
             Field10 = reader.ReadInt32();
+        }
+    }
+
+    public class JournalHeader
+    {
+        public string Magic { get; }
+        public uint MagicNum { get; }
+        public long Field8 { get; }
+        public long Field10 { get; }
+        public long BlockSize { get; }
+        public int Field20 { get; }
+        public int MappingEntryCount { get; }
+        public int Field28 { get; }
+        public int Field2C { get; }
+
+        public JournalHeader(BinaryReader reader)
+        {
+            Magic = reader.ReadAscii(4);
+            MagicNum = reader.ReadUInt32();
+            Field8 = reader.ReadInt64();
+            Field10 = reader.ReadInt64();
+            BlockSize = reader.ReadInt64();
+            Field20 = reader.ReadInt32();
+            MappingEntryCount = reader.ReadInt32();
+            Field28 = reader.ReadInt32();
+            Field2C = reader.ReadInt32();
         }
     }
 
