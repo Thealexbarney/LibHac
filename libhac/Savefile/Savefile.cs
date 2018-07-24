@@ -108,7 +108,7 @@ namespace libhac.Savefile
 
         public Stream OpenFile(FileEntry file)
         {
-            return new SubStream(JournalStream, file.Offset * Header.Save.BlockSize, file.Size);
+            return new SubStream(JournalStream, file.Offset, file.Size);
         }
 
         public bool FileExists(string filename) => FileDict.ContainsKey(filename);
@@ -142,6 +142,7 @@ namespace libhac.Savefile
                 if (file.NextIndex != 0) file.Next = fileEntries[file.NextIndex];
                 if (file.ParentDirIndex != 0 && file.ParentDirIndex < dirEntries.Length)
                     file.ParentDir = dirEntries[file.ParentDirIndex];
+                file.Offset = file.BlockIndex < 0 ? 0 : file.BlockIndex * blockSize;
             }
 
             Files = new FileEntry[fileEntries.Length - 2];

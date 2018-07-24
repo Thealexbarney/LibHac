@@ -9,11 +9,12 @@ namespace libhac.Savefile
         public int ParentDirIndex { get; }
         public string Name { get; }
         public int Field44 { get; }
-        public int Offset { get; }
+        public int BlockIndex { get; }
         public long Size { get; }
         public long Field54 { get; }
         public int NextIndex { get; }
 
+        public long Offset { get; internal set; }
         public string FullPath { get; private set; }
         public FileEntry ParentDir { get; internal set; }
         public FileEntry Next { get; internal set; }
@@ -26,7 +27,7 @@ namespace libhac.Savefile
             reader.BaseStream.Position = start + 0x44;
 
             Field44 = reader.ReadInt32();
-            Offset = reader.ReadInt32();
+            BlockIndex = reader.ReadInt32();
             Size = reader.ReadInt64();
             Field54 = reader.ReadInt64();
             NextIndex = reader.ReadInt32();
