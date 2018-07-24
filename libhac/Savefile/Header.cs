@@ -7,7 +7,8 @@ namespace libhac.Savefile
     {
         public byte[] Cmac { get; set; }
         public FsLayout Layout { get; set; }
-        public JournalHeader Journal{ get; set; }
+        public JournalHeader Journal { get; set; }
+        public SaveHeader Save { get; set; }
 
         public RemapHeader FileRemap { get; set; }
         public RemapHeader MetaRemap { get; set; }
@@ -30,6 +31,9 @@ namespace libhac.Savefile
 
             reader.BaseStream.Position = 0x408;
             Journal = new JournalHeader(reader);
+
+            reader.BaseStream.Position = 0x608;
+            Save = new SaveHeader(reader);
 
             reader.BaseStream.Position = 0x650;
             FileRemap = new RemapHeader(reader);
@@ -197,6 +201,50 @@ namespace libhac.Savefile
             MappingEntryCount = reader.ReadInt32();
             Field28 = reader.ReadInt32();
             Field2C = reader.ReadInt32();
+        }
+    }
+
+    public class SaveHeader
+    {
+        public string Magic { get; }
+        public uint MagicNum { get; }
+        public int Field8 { get; }
+        public int FieldC { get; }
+        public int Field10 { get; }
+        public int Field14 { get; }
+        public long BlockSize { get; }
+        public StorageInfo AllocationTableInfo { get; }
+        public StorageInfo DataInfo { get; }
+        public int DirectoryTableBlock { get; }
+        public int FileTableBlock { get; }
+
+        public SaveHeader(BinaryReader reader)
+        {
+            Magic = reader.ReadAscii(4);
+            MagicNum = reader.ReadUInt32();
+            Field8 = reader.ReadInt32();
+            FieldC = reader.ReadInt32();
+            Field10 = reader.ReadInt32();
+            Field14 = reader.ReadInt32();
+            BlockSize = reader.ReadInt64();
+            AllocationTableInfo = new StorageInfo(reader);
+            DataInfo = new StorageInfo(reader);
+            DirectoryTableBlock = reader.ReadInt32();
+            FileTableBlock = reader.ReadInt32();
+        }
+    }
+
+    public class StorageInfo
+    {
+        public long Offset { get; }
+        public int Size { get; }
+        public int FieldC { get; }
+
+        public StorageInfo(BinaryReader reader)
+        {
+            Offset = reader.ReadInt64();
+            Size = reader.ReadInt32();
+            FieldC = reader.ReadInt32();
         }
     }
 

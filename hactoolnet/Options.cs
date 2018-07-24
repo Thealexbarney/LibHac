@@ -18,6 +18,7 @@ namespace hactoolnet
         public string ExefsOutDir;
         public string RomfsOut;
         public string RomfsOutDir;
+        public string DebugOutDir;
         public string OutDir;
         public string SdSeed;
         public string SdPath;

@@ -1,4 +1,7 @@
-﻿using System.IO;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace libhac.Savefile
@@ -24,6 +27,9 @@ namespace libhac.Savefile
         public byte[] JournalLayer2Hash { get; }
         public byte[] JournalLayer3Hash { get; }
         public byte[] JournalStuff { get; }
+
+        public FileEntry[] Files { get; private set; }
+        private Dictionary<string, FileEntry> FileDict { get; }
 
         public Savefile(Stream file, IProgressReport logger = null)
         {
@@ -84,8 +90,97 @@ namespace libhac.Savefile
 
                 var journalData = new SubStream(FileRemap, layout.JournalDataOffset,
                     layout.JournalDataSizeB + layout.SizeReservedArea);
-                JournalStream = new JournalStream(journalData, journalMap, (int) Header.Journal.BlockSize)
-                ;
+                JournalStream = new JournalStream(journalData, journalMap, (int)Header.Journal.BlockSize);
+                ReadFileInfo();
+                FileDict = Files.ToDictionary(x => x.FullPath, x => x);
+            }
+        }
+
+        public Stream OpenFile(string filename)
+        {
+            if (!FileDict.TryGetValue(filename, out FileEntry file))
+            {
+                throw new FileNotFoundException();
+            }
+
+            return OpenFile(file);
+        }
+
+        public Stream OpenFile(FileEntry file)
+        {
+            return new SubStream(JournalStream, file.Offset * Header.Save.BlockSize, file.Size);
+        }
+
+        public bool FileExists(string filename) => FileDict.ContainsKey(filename);
+
+        private void ReadFileInfo()
+        {
+            var blockSize = Header.Save.BlockSize;
+            var dirOffset = Header.Save.DirectoryTableBlock * blockSize;
+            var fileOffset = Header.Save.FileTableBlock * blockSize;
+
+            FileEntry[] dirEntries;
+            FileEntry[] fileEntries;
+            using (var reader = new BinaryReader(JournalStream, Encoding.Default, true))
+            {
+                JournalStream.Position = dirOffset;
+                dirEntries = ReadFileEntries(reader);
+
+                JournalStream.Position = fileOffset;
+                fileEntries = ReadFileEntries(reader);
+            }
+
+            foreach (var dir in dirEntries)
+            {
+                if (dir.NextIndex != 0) dir.Next = dirEntries[dir.NextIndex];
+                if (dir.ParentDirIndex != 0 && dir.ParentDirIndex < dirEntries.Length)
+                    dir.ParentDir = dirEntries[dir.ParentDirIndex];
+            }
+
+            foreach (var file in fileEntries)
+            {
+                if (file.NextIndex != 0) file.Next = fileEntries[file.NextIndex];
+                if (file.ParentDirIndex != 0 && file.ParentDirIndex < dirEntries.Length)
+                    file.ParentDir = dirEntries[file.ParentDirIndex];
+            }
+
+            Files = new FileEntry[fileEntries.Length - 2];
+            Array.Copy(fileEntries, 2, Files, 0, Files.Length);
+
+            FileEntry.ResolveFilenames(Files);
+        }
+
+        private FileEntry[] ReadFileEntries(BinaryReader reader)
+        {
+            var count = reader.ReadInt32();
+            JournalStream.Position -= 4;
+
+            var entries = new FileEntry[count];
+            for (int i = 0; i < count; i++)
+            {
+                entries[i] = new FileEntry(reader);
+            }
+
+            return entries;
+        }
+    }
+
+    public static class SavefileExtensions
+    {
+        public static void Extract(this Savefile save, string outDir, IProgressReport logger = null)
+        {
+            foreach (var file in save.Files)
+            {
+                var stream = save.OpenFile(file);
+                var outName = outDir + file.FullPath;
+                var dir = Path.GetDirectoryName(outName);
+                if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
+
+                using (var outFile = new FileStream(outName, FileMode.Create, FileAccess.ReadWrite))
+                {
+                    logger?.LogMessage(file.FullPath);
+                    stream.CopyStream(outFile, stream.Length, logger);
+                }
             }
         }
     }

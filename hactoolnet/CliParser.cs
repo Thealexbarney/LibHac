@@ -28,6 +28,7 @@ namespace hactoolnet
             new CliOption("exefsdir", 1, (o, a) => o.ExefsOutDir = a[0]),
             new CliOption("romfs", 1, (o, a) => o.RomfsOut = a[0]),
             new CliOption("romfsdir", 1, (o, a) => o.RomfsOutDir = a[0]),
+            new CliOption("debugoutdir", 1, (o, a) => o.DebugOutDir = a[0]),
             new CliOption("outdir", 1, (o, a) => o.OutDir = a[0]),
             new CliOption("sdseed", 1, (o, a) => o.SdSeed = a[0]),
             new CliOption("sdpath", 1, (o, a) => o.SdPath = a[0]),
@@ -158,6 +159,10 @@ namespace hactoolnet
             sb.AppendLine("  --title <title id>   Specify title ID to use.");
             sb.AppendLine("  --outdir <dir>       Specify directory path to save title to. (--title must be specified)");
             sb.AppendLine("  --romfsdir <dir>     Specify RomFS directory path. (--title must be specified)");
+            sb.AppendLine("Savefile options:");
+            sb.AppendLine("  --outdir <dir>       Specify directory path to save contents to.");
+            sb.AppendLine("  --debugoutdir <dir>  Specify directory path to save intermediate data to for debugging.");
+
 
             return sb.ToString();
         }

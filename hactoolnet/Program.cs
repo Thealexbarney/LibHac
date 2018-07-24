@@ -217,30 +217,41 @@ namespace hactoolnet
                 var save = new Savefile(file, ctx.Logger);
                 var layout = save.Header.Layout;
 
-                File.WriteAllBytes("d0_JournalTable", save.JournalTable);
-                File.WriteAllBytes("d1_JournalBitmapUpdatedPhysical", save.JournalBitmapUpdatedPhysical);
-                File.WriteAllBytes("d2_JournalBitmapUpdatedVirtual", save.JournalBitmapUpdatedVirtual);
-                File.WriteAllBytes("d3_JournalBitmapUnassigned", save.JournalBitmapUnassigned);
-                File.WriteAllBytes("d4_Layer1Hash", save.JournalLayer1Hash);
-                File.WriteAllBytes("d5_Layer2Hash", save.JournalLayer2Hash);
-                File.WriteAllBytes("d6_Layer3Hash", save.JournalLayer3Hash);
-                File.WriteAllBytes("d7_Stuff", save.JournalStuff);
-
-                File.WriteAllBytes("0_DuplexL1A", save.DuplexL1A);
-                File.WriteAllBytes("1_DuplexL1B", save.DuplexL1B);
-                File.WriteAllBytes("2_DuplexDataA", save.DuplexDataA);
-                File.WriteAllBytes("3_DuplexDataB", save.DuplexDataB);
-
-                save.FileRemap.Position = layout.JournalDataOffset;
-                using (var outFile = new FileStream("4_JournalData", FileMode.Create, FileAccess.Write))
+                if (ctx.Options.OutDir != null)
                 {
-                    save.FileRemap.CopyStream(outFile, layout.JournalDataSizeB + layout.SizeReservedArea);
+                    save.Extract(ctx.Options.OutDir, ctx.Logger);
                 }
 
-                save.JournalStream.Position = 0;
-                using (var outFile = new FileStream("j0_Data", FileMode.Create, FileAccess.Write))
+                if (ctx.Options.DebugOutDir != null)
                 {
-                    save.JournalStream.CopyStream(outFile, save.JournalStream.Length);
+                    var dir = ctx.Options.DebugOutDir;
+                    Directory.CreateDirectory(dir);
+
+                    File.WriteAllBytes(Path.Combine(dir, "L0_0_DuplexL1A"), save.DuplexL1A);
+                    File.WriteAllBytes(Path.Combine(dir, "L0_1_DuplexL1B"), save.DuplexL1B);
+                    File.WriteAllBytes(Path.Combine(dir, "L0_2_DuplexDataA"), save.DuplexDataA);
+                    File.WriteAllBytes(Path.Combine(dir, "L0_3_DuplexDataB"), save.DuplexDataB);
+
+                    save.FileRemap.Position = layout.JournalDataOffset;
+                    using (var outFile = new FileStream(Path.Combine(dir, "L0_4_JournalData"), FileMode.Create, FileAccess.Write))
+                    {
+                        save.FileRemap.CopyStream(outFile, layout.JournalDataSizeB + layout.SizeReservedArea);
+                    }
+
+                    File.WriteAllBytes(Path.Combine(dir, "L1_0_JournalTable"), save.JournalTable);
+                    File.WriteAllBytes(Path.Combine(dir, "L1_1_JournalBitmapUpdatedPhysical"), save.JournalBitmapUpdatedPhysical);
+                    File.WriteAllBytes(Path.Combine(dir, "L1_2_JournalBitmapUpdatedVirtual"), save.JournalBitmapUpdatedVirtual);
+                    File.WriteAllBytes(Path.Combine(dir, "L1_3_JournalBitmapUnassigned"), save.JournalBitmapUnassigned);
+                    File.WriteAllBytes(Path.Combine(dir, "L1_4_Layer1Hash"), save.JournalLayer1Hash);
+                    File.WriteAllBytes(Path.Combine(dir, "L1_5_Layer2Hash"), save.JournalLayer2Hash);
+                    File.WriteAllBytes(Path.Combine(dir, "L1_6_Layer3Hash"), save.JournalLayer3Hash);
+                    File.WriteAllBytes(Path.Combine(dir, "L1_7_FAT"), save.JournalStuff);
+
+                    save.JournalStream.Position = 0;
+                    using (var outFile = new FileStream(Path.Combine(dir, "L2_0_SaveData"), FileMode.Create, FileAccess.Write))
+                    {
+                        save.JournalStream.CopyStream(outFile, save.JournalStream.Length);
+                    }
                 }
             }
         }
