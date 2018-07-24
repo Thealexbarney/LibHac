@@ -111,7 +111,7 @@ namespace libhac.Savefile
         public long Layer3HashSize { get; set; }
         public long Field148 { get; set; }
         public long Field150 { get; set; }
-        public long Field158 { get; set; }
+        public long DuplexIndex { get; set; }
 
         public FsLayout(BinaryReader reader)
         {
@@ -156,7 +156,7 @@ namespace libhac.Savefile
             Layer3HashSize = reader.ReadInt64();
             Field148 = reader.ReadInt64();
             Field150 = reader.ReadInt64();
-            Field158 = reader.ReadInt64();
+            DuplexIndex = reader.ReadInt64();
         }
     }
 

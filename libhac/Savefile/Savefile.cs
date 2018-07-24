@@ -26,7 +26,7 @@ namespace libhac.Savefile
         public byte[] JournalLayer1Hash { get; }
         public byte[] JournalLayer2Hash { get; }
         public byte[] JournalLayer3Hash { get; }
-        public byte[] JournalStuff { get; }
+        public byte[] JournalFat { get; }
 
         public FileEntry[] Files { get; private set; }
         private Dictionary<string, FileEntry> FileDict { get; }
@@ -56,7 +56,8 @@ namespace libhac.Savefile
                 FileRemap.Position = layout.DuplexDataOffsetB;
                 FileRemap.Read(DuplexDataB, 0, DuplexDataB.Length);
 
-                var duplexData = new SubStream(FileRemap, layout.DuplexDataOffsetB, layout.DuplexDataSize);
+                var duplexDataOffset = layout.DuplexIndex == 0 ? layout.DuplexDataOffsetA : layout.DuplexDataOffsetB;
+                var duplexData = new SubStream(FileRemap, duplexDataOffset, layout.DuplexDataSize);
                 MetaRemap = new RemapStream(duplexData, Header.MetaMapEntries, Header.MetaRemap.MapSegmentCount);
 
                 JournalTable = new byte[layout.JournalTableSize];
@@ -66,7 +67,7 @@ namespace libhac.Savefile
                 JournalLayer1Hash = new byte[layout.Layer1HashSize];
                 JournalLayer2Hash = new byte[layout.Layer2HashSize];
                 JournalLayer3Hash = new byte[layout.Layer3HashSize];
-                JournalStuff = new byte[layout.Field150];
+                JournalFat = new byte[layout.Field150];
 
                 MetaRemap.Position = layout.JournalTableOffset;
                 MetaRemap.Read(JournalTable, 0, JournalTable.Length);
@@ -83,7 +84,7 @@ namespace libhac.Savefile
                 MetaRemap.Position = layout.Layer3HashOffset;
                 MetaRemap.Read(JournalLayer3Hash, 0, JournalLayer3Hash.Length);
                 MetaRemap.Position = layout.Field148;
-                MetaRemap.Read(JournalStuff, 0, JournalStuff.Length);
+                MetaRemap.Read(JournalFat, 0, JournalFat.Length);
 
                 var journalMap = JournalStream.ReadMappingEntries(JournalTable, JournalBitmapUpdatedPhysical,
                     JournalBitmapUpdatedVirtual, JournalBitmapUnassigned, Header.Journal.MappingEntryCount);

@@ -245,7 +245,7 @@ namespace hactoolnet
                     File.WriteAllBytes(Path.Combine(dir, "L1_4_Layer1Hash"), save.JournalLayer1Hash);
                     File.WriteAllBytes(Path.Combine(dir, "L1_5_Layer2Hash"), save.JournalLayer2Hash);
                     File.WriteAllBytes(Path.Combine(dir, "L1_6_Layer3Hash"), save.JournalLayer3Hash);
-                    File.WriteAllBytes(Path.Combine(dir, "L1_7_FAT"), save.JournalStuff);
+                    File.WriteAllBytes(Path.Combine(dir, "L1_7_FAT"), save.JournalFat);
 
                     save.JournalStream.Position = 0;
                     using (var outFile = new FileStream(Path.Combine(dir, "L2_0_SaveData"), FileMode.Create, FileAccess.Write))
