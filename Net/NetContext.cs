@@ -74,14 +74,44 @@ namespace Net
             return null;
         }
 
+        public Nacp GetControl(ulong titleId, int version)
+        {
+            var cnmt = GetCnmt(titleId, version);
+            var controlEntry = cnmt.ContentEntries.FirstOrDefault(x => x.Type == CnmtContentType.Control);
+            if (controlEntry == null) return null;
+
+            var controlNca = GetNcaFile(titleId, version, controlEntry.NcaId.ToHexString());
+            var nca = new Nca(ToolCtx.Keyset, controlNca, true);
+            var romfs = new Romfs(nca.OpenSection(0, false));
+            var controlNacp = romfs.GetFile("/control.nacp");
+
+            var reader = new BinaryReader(new MemoryStream(controlNacp));
+            var control = new Nacp(reader);
+            return control;
+        }
+
+        public Stream GetNcaFile(ulong titleId, int version, string ncaId)
+        {
+            string titleDir = GetTitleDir(titleId, version);
+            var filePath = Path.Combine(titleDir, $"{ncaId.ToLower()}.nca");
+            if (!File.Exists(filePath))
+            {
+                DownloadFile(GetContentUrl(ncaId), filePath);
+            }
+
+            if (!File.Exists(filePath)) return null;
+
+            return new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        }
+
         private void DownloadCnmt(ulong titleId, int version)
         {
             var titleDir = GetTitleDir(titleId, version);
 
             var ncaId = GetMetadataNcaId(titleId, version);
-            var filename = $"{ncaId}.cnmt.nca";
+            var filename = $"{ncaId.ToLower()}.cnmt.nca";
             var filePath = Path.Combine(titleDir, filename);
-            DownloadFile(GetContentUrl(ncaId), filePath);
+            DownloadFile(GetMetaUrl(ncaId), filePath);
         }
 
         public void DownloadFile(string url, string filePath)
@@ -103,9 +133,15 @@ namespace Net
             return titleDir;
         }
 
+        public string GetMetaUrl(string ncaId)
+        {
+            string url = $"{GetAtumUrl()}/c/a/{ncaId.ToLower()}";
+            return url;
+        }
+
         public string GetContentUrl(string ncaId)
         {
-            string url = $"{GetAtumUrl()}/c/a/{ncaId}";
+            string url = $"{GetAtumUrl()}/c/c/{ncaId.ToLower()}";
             return url;
         }
 
