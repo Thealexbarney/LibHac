@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NandReader", "NandReader\Na
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NandReaderGui", "NandReaderGui\NandReaderGui.csproj", "{3CBD38B0-6575-4768-8E94-A8AF2D2C9F43}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Net", "Net\Net.csproj", "{3398A7B0-E962-4D3D-9B64-0D5F90E56F16}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,6 +39,11 @@ Global
 		{9889C467-284F-4061-B4DB-EC94051C29C0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3CBD38B0-6575-4768-8E94-A8AF2D2C9F43}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3CBD38B0-6575-4768-8E94-A8AF2D2C9F43}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3CBD38B0-6575-4768-8E94-A8AF2D2C9F43}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3398A7B0-E962-4D3D-9B64-0D5F90E56F16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3398A7B0-E962-4D3D-9B64-0D5F90E56F16}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3398A7B0-E962-4D3D-9B64-0D5F90E56F16}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3398A7B0-E962-4D3D-9B64-0D5F90E56F16}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
