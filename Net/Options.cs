@@ -11,6 +11,8 @@ namespace Net
         public int Version;
         public ulong DeviceId;
         public string CertFile;
+        public string CommonCertFile;
+        public bool GetMetadata;
     }
 
     internal class Context
