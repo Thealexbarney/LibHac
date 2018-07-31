@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using libhac;
 
@@ -26,10 +27,21 @@ namespace Net
 
         private static void ProcessNet(Context ctx)
         {
-            
             if (ctx.Options.DeviceId == 0)
             {
                 CliParser.PrintWithUsage("A non-zero Device ID must be set.");
+                return;
+            }
+
+            if (ctx.Options.GetMetadata)
+            {
+                GetMetadata(new NetContext(ctx), ctx.Logger);
+                return;
+            }
+
+            if (ctx.Options.TitleId == 0)
+            {
+                CliParser.PrintWithUsage("A non-zero Title ID must be set.");
                 return;
             }
 
@@ -37,21 +49,51 @@ namespace Net
             var ver = ctx.Options.Version;
 
             var net = new NetContext(ctx);
-            //GetControls(net);
-
             var cnmt = net.GetCnmt(tid, ver);
+            if (cnmt == null) return;
+            ctx.Logger.LogMessage($"Title is of type {cnmt.Type} and has {cnmt.ContentEntries.Length} content entries");
+            var control = net.GetControl(tid, ver);
+            if (control != null)
+            {
+                ctx.Logger.LogMessage($"Title has name {control.Languages[0].Title}");
+            }
             foreach (var entry in cnmt.ContentEntries)
             {
-                Console.WriteLine($"{entry.NcaId.ToHexString()} {entry.Type}");
+                ctx.Logger.LogMessage($"{entry.NcaId.ToHexString()} {entry.Type}");
                 net.GetNcaFile(tid, ver, entry.NcaId.ToHexString());
             }
-
-            var control = net.GetControl(tid, ver);
-            ;
         }
 
-        private static void GetControls(NetContext net)
+        private static void GetMetadata(NetContext net, IProgressReport logger = null)
         {
+            var versionList = net.GetVersionList();
+            net.Db.ImportVersionList(versionList);
+            net.Save();
+
+            foreach (var title in net.Db.Titles.Values)
+            {
+                foreach (var version in title.Versions.Values.Where(x => x.Exists))
+                {
+                    var titleId = version.Version == 0 ? title.Id : title.UpdateId;
+                    try
+                    {
+                        var control = net.GetControl((ulong)titleId, version.Version);
+                        version.Control = control;
+                        if (control == null) version.Exists = false;
+                        logger?.LogMessage($"{titleId}v{version.Version}");
+                        //Thread.Sleep(300);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Failed getting {titleId}v{version.Version}\n{ex.Message}");
+                    }
+                }
+               // net.Save();
+            }
+
+            net.Save();
+            return;
+
             var titles = GetTitleIds("titles.txt");
 
             foreach (var title in titles)
@@ -108,4 +150,3 @@ namespace Net
         }
     }
 }
-

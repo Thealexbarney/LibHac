@@ -15,7 +15,9 @@ namespace Net
             new CliOption("title", 1, (o, a) => o.TitleId = ParseTitleId(a[0])),
             new CliOption("version", 1, (o, a) => o.Version = ParseVersion(a[0])),
             new CliOption("did", 1, (o, a) => o.DeviceId = ParseTitleId(a[0])),
-            new CliOption("cert", 1, (o, a) => o.CertFile = a[0])
+            new CliOption("cert", 1, (o, a) => o.CertFile = a[0]),
+            new CliOption("commoncert", 1, (o, a) => o.CommonCertFile = a[0]),
+            new CliOption("metadata", 0, (o, a) => o.GetMetadata = true)
         };
 
         public static Options Parse(string[] args)
