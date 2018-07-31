@@ -10,11 +10,15 @@ namespace Net
     internal class NetContext
     {
         private X509Certificate2 Certificate { get; set; }
+        private X509Certificate2 CertificateCommon { get; set; }
         private string Eid { get; } = "lp1";
         private ulong Did { get; }
         private string Firmware { get; } = "5.1.0-3.0";
         private string CachePath { get; } = "titles";
         private Context ToolCtx { get; }
+        public Database Db { get; }
+
+        private const string VersionUrl = "https://tagaya.hac.lp1.eshop.nintendo.net/tagaya/hac_versionlist";
 
         public NetContext(Context ctx)
         {
@@ -24,6 +28,25 @@ namespace Net
             {
                 SetCertificate(ctx.Options.CertFile);
             }
+
+            if (ctx.Options.CommonCertFile != null)
+            {
+                CertificateCommon = new X509Certificate2(ctx.Options.CommonCertFile, "shop");
+            }
+
+            var databaseFile = Path.Combine(CachePath, "database.json");
+            if (!File.Exists(databaseFile))
+            {
+                File.WriteAllText(databaseFile, new Database().Serialize());
+            }
+            Db = Database.Deserialize(databaseFile);
+        }
+
+        public void Save()
+        {
+            var databaseFile = Path.Combine(CachePath, "database.json");
+
+            File.WriteAllText(databaseFile, Db.Serialize());
         }
 
         public void SetCertificate(string filename)
@@ -35,6 +58,8 @@ namespace Net
         {
             using (var stream = GetCnmtFile(titleId, version))
             {
+                if (stream == null) return null;
+
                 var nca = new Nca(ToolCtx.Keyset, stream, true);
                 Stream sect = nca.OpenSection(0, false);
                 var pfs0 = new Pfs0(sect);
@@ -68,7 +93,7 @@ namespace Net
 
             if (cnmtFiles.Length > 1)
             {
-                throw new FileNotFoundException($"More than cnmt file exists for {titleId:x16}v{version}");
+                throw new FileNotFoundException($"More than 1 cnmt file exists for {titleId:x16}v{version}");
             }
 
             return null;
@@ -77,7 +102,7 @@ namespace Net
         public Nacp GetControl(ulong titleId, int version)
         {
             var cnmt = GetCnmt(titleId, version);
-            var controlEntry = cnmt.ContentEntries.FirstOrDefault(x => x.Type == CnmtContentType.Control);
+            var controlEntry = cnmt?.ContentEntries.FirstOrDefault(x => x.Type == CnmtContentType.Control);
             if (controlEntry == null) return null;
 
             var controlNca = GetNcaFile(titleId, version, controlEntry.NcaId.ToHexString());
@@ -109,6 +134,12 @@ namespace Net
             var titleDir = GetTitleDir(titleId, version);
 
             var ncaId = GetMetadataNcaId(titleId, version);
+            if (ncaId == null)
+            {
+                Console.WriteLine($"Could not get {titleId:x16}v{version} metadata");
+                return;
+            }
+
             var filename = $"{ncaId.ToLower()}.cnmt.nca";
             var filePath = Path.Combine(titleDir, filename);
             DownloadFile(GetMetaUrl(ncaId), filePath);
@@ -117,6 +148,7 @@ namespace Net
         public void DownloadFile(string url, string filePath)
         {
             var response = Request("GET", url);
+            if (response == null) return;
             using (var responseStream = response.GetResponseStream())
             using (var outStream = new FileStream(filePath, FileMode.Create, FileAccess.ReadWrite))
             {
@@ -151,8 +183,32 @@ namespace Net
 
             using (WebResponse response = Request("HEAD", url))
             {
-                return response.Headers.Get("X-Nintendo-Content-ID");
+                return response?.Headers.Get("X-Nintendo-Content-ID");
             }
+        }
+
+        public VersionList GetVersionList()
+        {
+            var filename = Path.Combine(CachePath, "hac_versionlist");
+            VersionList list = null;
+            if (Db.IsVersionListCurrent() && File.Exists(filename))
+            {
+                return Json.ReadVersionList(filename);
+            }
+
+            DownloadVersionList();
+            if (File.Exists(filename))
+            {
+                list = Json.ReadVersionList(filename);
+            }
+
+            return list;
+        }
+
+        public void DownloadVersionList()
+        {
+            DownloadFile(VersionUrl, Path.Combine(CachePath, "hac_versionlist"));
+            Db.VersionListTime = DateTime.UtcNow;
         }
 
         private string GetAtumUrl()
@@ -164,11 +220,22 @@ namespace Net
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
             request.ClientCertificates.Add(Certificate);
-            request.UserAgent = string.Format("NintendoSDK Firmware/{0} (platform:NX; did:{1}; eid:{2})", Firmware, Did, Eid);
+            request.UserAgent = $"NintendoSDK Firmware/{Firmware} (platform:NX; did:{Did}; eid:{Eid})";
             request.Method = method;
-            ServicePointManager.ServerCertificateValidationCallback = ((sender, certificate, chain, sslPolicyErrors) => true);
-            if (((HttpWebResponse)request.GetResponse()).StatusCode != HttpStatusCode.OK) { Console.WriteLine("http error"); return null; }
-            return request.GetResponse();
+            ServicePointManager.ServerCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+
+            try
+            {
+                if (((HttpWebResponse)request.GetResponse()).StatusCode == HttpStatusCode.OK)
+                    return request.GetResponse();
+            }
+            catch (WebException ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+            Console.WriteLine("http error");
+            return null;
         }
     }
 }
