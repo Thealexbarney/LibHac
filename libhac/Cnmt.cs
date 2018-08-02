@@ -20,6 +20,8 @@ namespace libhac
         public TitleVersion MinimumSystemVersion { get; }
         public TitleVersion MinimumApplicationVersion { get; }
 
+        public Cnmt() { }
+
         public Cnmt(Stream file)
         {
             using (var reader = new BinaryReader(file))
@@ -33,7 +35,7 @@ namespace libhac
                 ContentEntryCount = reader.ReadUInt16();
                 MetaEntryCount = reader.ReadUInt16();
                 file.Position += 12;
-                
+
                 switch (Type)
                 {
                     case TitleType.Application:
@@ -76,6 +78,8 @@ namespace libhac
         public long Size { get; set; }
         public CnmtContentType Type { get; set; }
 
+        public CnmtContentEntry() { }
+
         public CnmtContentEntry(BinaryReader reader)
         {
             Hash = reader.ReadBytes(0x20);
@@ -93,6 +97,7 @@ namespace libhac
         public TitleVersion Version { get; }
         public CnmtContentType Type { get; }
 
+        public CnmtMetaEntry() { }
 
         public CnmtMetaEntry(BinaryReader reader)
         {
