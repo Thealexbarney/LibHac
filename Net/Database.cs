@@ -52,13 +52,13 @@ namespace Net
                 titleDb.MaxVersion = title.version;
 
                 int maxVersionShort = title.version >> 16;
-                for(int i = 0; i <= maxVersionShort; i++)
+                for (int i = 0; i <= maxVersionShort; i++)
                 {
                     var version = i << 16;
 
                     if (!titleDb.Versions.TryGetValue(version, out TitleVersion versionDb))
                     {
-                        versionDb = new TitleVersion {Version = version};
+                        versionDb = new TitleVersion { Version = version };
                         titleDb.Versions.Add(version, versionDb);
                     }
                 }
@@ -70,6 +70,7 @@ namespace Net
     {
         public long Id { get; set; }
         public long UpdateId { get; set; }
+        public List<long> AocIds { get; set; } = new List<long>();
         public int MaxVersion { get; set; }
         public Dictionary<int, TitleVersion> Versions { get; set; } = new Dictionary<int, TitleVersion>();
 
