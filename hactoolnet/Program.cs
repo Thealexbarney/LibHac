@@ -297,7 +297,7 @@ namespace hactoolnet
         {
             foreach (var title in sdfs.Titles.Values.OrderBy(x => x.Id))
             {
-                Console.WriteLine($"{title.Name} {title.Control?.Version}");
+                Console.WriteLine($"{title.Name} {title.Control?.DisplayVersion}");
                 Console.WriteLine($"{title.Id:X16} v{title.Version.Version} ({title.Version}) {title.Metadata.Type}");
 
                 foreach (var content in title.Metadata.ContentEntries)
@@ -347,8 +347,8 @@ namespace hactoolnet
                     sb.AppendLine($"User save: {Util.GetBytesReadable(app.Nacp.UserTotalSaveDataSize)}");
                 if (app.Nacp?.DeviceTotalSaveDataSize > 0)
                     sb.AppendLine($"System save: {Util.GetBytesReadable(app.Nacp.DeviceTotalSaveDataSize)}");
-                if (app.Nacp?.BcatSaveDataSize > 0)
-                    sb.AppendLine($"BCAT save: {Util.GetBytesReadable(app.Nacp.BcatSaveDataSize)}");
+                if (app.Nacp?.BcatDeliveryCacheStorageSize > 0)
+                    sb.AppendLine($"BCAT save: {Util.GetBytesReadable(app.Nacp.BcatDeliveryCacheStorageSize)}");
 
                 sb.AppendLine();
             }

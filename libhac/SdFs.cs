@@ -298,14 +298,14 @@ namespace libhac
             {
                 Name = Patch.Name;
                 Version = Patch.Version;
-                DisplayVersion = Patch.Control?.Version ?? "";
+                DisplayVersion = Patch.Control?.DisplayVersion ?? "";
                 Nacp = Patch.Control;
             }
             else if (Main != null)
             {
                 Name = Main.Name;
                 Version = Main.Version;
-                DisplayVersion = Main.Control?.Version ?? "";
+                DisplayVersion = Main.Control?.DisplayVersion ?? "";
                 Nacp = Main.Control;
             }
             else

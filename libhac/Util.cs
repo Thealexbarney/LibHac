@@ -67,14 +67,14 @@ namespace libhac
             const int bufferSize = 0x8000;
             long remaining = length;
             byte[] buffer = new byte[bufferSize];
-            progress?.SetTotal((length + bufferSize) / bufferSize);
+            progress?.SetTotal(length);
 
             int read;
             while ((read = input.Read(buffer, 0, (int)Math.Min(buffer.Length, remaining))) > 0)
             {
                 output.Write(buffer, 0, read);
                 remaining -= read;
-                progress?.ReportAdd(1);
+                progress?.ReportAdd(read);
             }
         }
 
