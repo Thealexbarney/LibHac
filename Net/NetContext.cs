@@ -106,6 +106,8 @@ namespace Net
             if (controlEntry == null) return null;
 
             var controlNca = GetNcaFile(titleId, version, controlEntry.NcaId.ToHexString());
+            if (controlNca == null) return null;
+
             var nca = new Nca(ToolCtx.Keyset, controlNca, true);
             var romfs = new Romfs(nca.OpenSection(0, false));
             var controlNacp = romfs.GetFile("/control.nacp");

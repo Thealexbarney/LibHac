@@ -80,26 +80,23 @@ namespace Net
                         var control = net.GetControl((ulong)titleId, version.Version);
                         version.Control = control;
                         if (control == null) version.Exists = false;
+
+                        Cnmt meta = net.GetCnmt((ulong)titleId, version.Version);
+                        version.ContentMetadata = meta;
+                        if (meta == null) version.Exists = false;
+
                         logger?.LogMessage($"{titleId}v{version.Version}");
                         //Thread.Sleep(300);
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Failed getting {titleId}v{version.Version}\n{ex.Message}");
+                        logger?.LogMessage($"Failed getting {titleId}v{version.Version}\n{ex.Message}");
                     }
                 }
-               // net.Save();
+                // net.Save();
             }
 
             net.Save();
-            return;
-
-            var titles = GetTitleIds("titles.txt");
-
-            foreach (var title in titles)
-            {
-                var control = net.GetControl(title, 0);
-            }
         }
 
         private static void OpenKeyset(Context ctx)
