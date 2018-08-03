@@ -21,6 +21,7 @@ namespace hactoolnet
         public string DebugOutDir;
         public string OutDir;
         public string SdSeed;
+        public string NspOut;
         public string SdPath;
         public string BaseNca;
         public bool ListApps;

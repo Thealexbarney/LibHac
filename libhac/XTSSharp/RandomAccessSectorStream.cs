@@ -119,7 +119,7 @@ namespace libhac.XTSSharp
         /// <returns>A long value representing the length of the stream in bytes.</returns>
         public override long Length
         {
-            get { return _s.Length + _bufferPos; }
+            get { return _s.Length; }
         }
 
         /// <summary>

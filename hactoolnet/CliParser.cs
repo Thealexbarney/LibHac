@@ -30,6 +30,7 @@ namespace hactoolnet
             new CliOption("romfsdir", 1, (o, a) => o.RomfsOutDir = a[0]),
             new CliOption("debugoutdir", 1, (o, a) => o.DebugOutDir = a[0]),
             new CliOption("outdir", 1, (o, a) => o.OutDir = a[0]),
+            new CliOption("nspout", 1, (o, a) => o.NspOut = a[0]),
             new CliOption("sdseed", 1, (o, a) => o.SdSeed = a[0]),
             new CliOption("sdpath", 1, (o, a) => o.SdPath = a[0]),
             new CliOption("basenca", 1, (o, a) => o.BaseNca = a[0]),

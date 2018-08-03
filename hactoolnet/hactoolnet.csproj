@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="CA00000003_XS00000020" />
+    <EmbeddedResource Include="CA00000003_XS00000020" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\libhac\libhac.csproj" />
   </ItemGroup>
 
