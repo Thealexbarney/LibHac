@@ -36,6 +36,7 @@ namespace hactoolnet
         Pfs0,
         Romfs,
         Nax0,
+        Xci,
         SwitchFs,
         Save
     }

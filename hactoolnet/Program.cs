@@ -45,6 +45,9 @@ namespace hactoolnet
                     case FileType.Save:
                         ProcessSave(ctx);
                         break;
+                    case FileType.Xci:
+                        ProcessXci(ctx);
+                        break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -181,6 +184,14 @@ namespace hactoolnet
             if (ctx.Options.NspOut != null)
             {
                 CreateNsp(ctx, switchFs);
+            }
+        }
+
+        private static void ProcessXci(Context ctx)
+        {
+            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
+            {
+                var xci = new Xci(ctx.Keyset, file);
             }
         }
 

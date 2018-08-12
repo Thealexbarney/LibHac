@@ -8,6 +8,9 @@ namespace libhac
 {
     public class Crypto
     {
+        internal const int Aes128Size = 0x10;
+        internal const int Sha256DigestSize = 0x20;
+
         public static void DecryptEcb(byte[] key, byte[] src, int srcIndex, byte[] dest, int destIndex, int length)
         {
             using (var aes = Aes.Create())
@@ -29,16 +32,38 @@ namespace libhac
         public static void DecryptEcb(byte[] key, byte[] src, byte[] dest, int length) =>
             DecryptEcb(key, src, 0, dest, 0, length);
 
+        public static void DecryptCbc(byte[] key, byte[] iv, byte[] src, int srcIndex, byte[] dest, int destIndex, int length)
+        {
+            using (var aes = Aes.Create())
+            {
+                if (aes == null) throw new CryptographicException("Unable to create AES object");
+                aes.Key = key;
+                aes.IV = iv;
+                aes.Mode = CipherMode.CBC;
+                aes.Padding = PaddingMode.None;
+                var dec = aes.CreateDecryptor();
+                using (var ms = new MemoryStream(dest, destIndex, length))
+                using (var cs = new CryptoStream(ms, dec, CryptoStreamMode.Write))
+                {
+                    cs.Write(src, srcIndex, length);
+                    cs.FlushFinalBlock();
+                }
+            }
+        }
+
+        public static void DecryptCbc(byte[] key, byte[] iv, byte[] src, byte[] dest, int length) =>
+            DecryptCbc(key, iv, src, 0, dest, 0, length);
+
         public static void GenerateKek(byte[] dst, byte[] src, byte[] masterKey, byte[] kekSeed, byte[] keySeed)
         {
-            var kek = new byte[0x10];
-            var srcKek = new byte[0x10];
-            DecryptEcb(masterKey, kekSeed, kek, 0x10);
-            DecryptEcb(kek, src, srcKek, 0x10);
+            var kek = new byte[Aes128Size];
+            var srcKek = new byte[Aes128Size];
+            DecryptEcb(masterKey, kekSeed, kek, Aes128Size);
+            DecryptEcb(kek, src, srcKek, Aes128Size);
 
             if (keySeed != null)
             {
-                DecryptEcb(srcKek, keySeed, dst, 0x10);
+                DecryptEcb(srcKek, keySeed, dst, Aes128Size);
             }
         }
 

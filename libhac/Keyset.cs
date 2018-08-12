@@ -30,8 +30,9 @@ namespace libhac
         public byte[] sd_card_kek_source { get; set; } = new byte[0x10];
         public byte[][] sd_card_key_sources { get; set; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
         public byte[][] sd_card_key_sources_specific { get; set; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
-        public byte[] encrypted_header_key { get; set; } = new byte[0x20];
+        public byte[] header_key_source { get; set; } = new byte[0x20];
         public byte[] header_key { get; set; } = new byte[0x20];
+        public byte[] xci_header_key { get; set; } = new byte[0x10];
         public byte[][] titlekeks { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
         public byte[][][] key_area_keys { get; set; } = Util.CreateJaggedArray<byte[][][]>(0x20, 3, 0x10);
         public byte[][] sd_card_keys { get; set; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
@@ -177,9 +178,10 @@ namespace libhac
                 new KeyValue("key_area_key_system_source", 0x10, set => set.key_area_key_system_source),
                 new KeyValue("titlekek_source", 0x10, set => set.titlekek_source),
                 new KeyValue("header_kek_source", 0x10, set => set.header_kek_source),
-                new KeyValue("header_key_source", 0x20, set => set.encrypted_header_key),
+                new KeyValue("header_key_source", 0x20, set => set.header_key_source),
                 new KeyValue("header_key", 0x20, set => set.header_key),
-                new KeyValue("encrypted_header_key", 0x20, set => set.encrypted_header_key),
+                new KeyValue("xci_header_key", 0x10, set => set.xci_header_key),
+                new KeyValue("encrypted_header_key", 0x20, set => set.header_key_source),
                 new KeyValue("package2_key_source", 0x10, set => set.package2_key_source),
                 new KeyValue("sd_card_kek_source", 0x10, set => set.sd_card_kek_source),
                 new KeyValue("sd_card_nca_key_source", 0x20, set => set.sd_card_key_sources[1]),
