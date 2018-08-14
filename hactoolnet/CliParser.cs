@@ -165,6 +165,7 @@ namespace hactoolnet
             sb.AppendLine("  --securedir <dir>    Specify secure XCI directory path.");
             sb.AppendLine("  --logodir <dir>      Specify logo XCI directory path.");
             sb.AppendLine("  --outdir <dir>       Specify XCI directory path.");
+            sb.AppendLine("  --romfsdir <dir>     Specify main RomFS directory path.");
             sb.AppendLine("Switch FS options:");
             sb.AppendLine("  --sdseed <seed>      Set console unique seed for SD card NAX0 encryption.");
             sb.AppendLine("  --listapps           List application info.");

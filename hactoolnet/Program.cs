@@ -221,6 +221,11 @@ namespace hactoolnet
                 if (ctx.Options.OutDir != null && xci.RootPartition != null)
                 {
                     var root = xci.RootPartition;
+                    if (root == null)
+                    {
+                        ctx.Logger.LogMessage("Could not find root partition");
+                        return;
+                    }
 
                     foreach (var sub in root.Files)
                     {
@@ -229,6 +234,45 @@ namespace hactoolnet
 
                         subPfs.Extract(subDir, ctx.Logger);
                     }
+                }
+
+                if (ctx.Options.RomfsOutDir != null)
+                {
+                    if (xci.SecurePartition == null)
+                    {
+                        ctx.Logger.LogMessage("Could not find secure partition");
+                        return;
+                    }
+
+                    Nca mainNca = null;
+
+                    foreach (var fileEntry in xci.SecurePartition.Files.Where(x => x.Name.EndsWith(".nca")))
+                    {
+                        var ncaStream = xci.SecurePartition.OpenFile(fileEntry);
+                        var nca = new Nca(ctx.Keyset, ncaStream, true);
+
+                        if (nca.Header.ContentType == ContentType.Program)
+                        {
+                            mainNca = nca;
+                        }
+                    }
+
+                    if (mainNca == null)
+                    {
+                        ctx.Logger.LogMessage("Could not find Program NCA");
+                        return;
+                    }
+
+                    var romfsSection = mainNca.Sections.FirstOrDefault(x => x.Type == SectionType.Romfs);
+
+                    if (romfsSection == null)
+                    {
+                        ctx.Logger.LogMessage("NCA has no RomFS section");
+                        return;
+                    }
+
+                    var romfs = new Romfs(mainNca.OpenSection(romfsSection.SectionNum, false));
+                    romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
                 }
             }
         }
