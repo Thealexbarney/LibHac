@@ -34,6 +34,11 @@ namespace hactoolnet
             new CliOption("sdseed", 1, (o, a) => o.SdSeed = a[0]),
             new CliOption("sdpath", 1, (o, a) => o.SdPath = a[0]),
             new CliOption("basenca", 1, (o, a) => o.BaseNca = a[0]),
+            new CliOption("rootdir", 1, (o, a) => o.RootDir = a[0]),
+            new CliOption("updatedir", 1, (o, a) => o.UpdateDir = a[0]),
+            new CliOption("normaldir", 1, (o, a) => o.NormalDir = a[0]),
+            new CliOption("securedir", 1, (o, a) => o.SecureDir = a[0]),
+            new CliOption("logodir", 1, (o, a) => o.LogoDir = a[0]),
             new CliOption("listapps", 0, (o, a) => o.ListApps = true),
             new CliOption("listtitles", 0, (o, a) => o.ListTitles = true),
             new CliOption("listromfs", 0, (o, a) => o.ListRomFs = true),
@@ -153,6 +158,13 @@ namespace hactoolnet
             sb.AppendLine("  --section3dir <dir>  Specify Section 3 directory path.");
             sb.AppendLine("  --listromfs          List files in RomFS.");
             sb.AppendLine("  --basenca            Set Base NCA to use with update partitions.");
+            sb.AppendLine("XCI options:");
+            sb.AppendLine("  --rootdir <dir>      Specify root XCI directory path.");
+            sb.AppendLine("  --updatedir <dir>    Specify update XCI directory path.");
+            sb.AppendLine("  --normaldir <dir>    Specify normal XCI directory path.");
+            sb.AppendLine("  --securedir <dir>    Specify secure XCI directory path.");
+            sb.AppendLine("  --logodir <dir>      Specify logo XCI directory path.");
+            sb.AppendLine("  --outdir <dir>       Specify XCI directory path.");
             sb.AppendLine("Switch FS options:");
             sb.AppendLine("  --sdseed <seed>      Set console unique seed for SD card NAX0 encryption.");
             sb.AppendLine("  --listapps           List application info.");

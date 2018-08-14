@@ -192,6 +192,44 @@ namespace hactoolnet
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
             {
                 var xci = new Xci(ctx.Keyset, file);
+
+                if (ctx.Options.RootDir != null)
+                {
+                    xci.RootPartition?.Extract(ctx.Options.RootDir, ctx.Logger);
+                }
+
+                if (ctx.Options.UpdateDir != null)
+                {
+                    xci.UpdatePartition?.Extract(ctx.Options.UpdateDir, ctx.Logger);
+                }
+
+                if (ctx.Options.NormalDir != null)
+                {
+                    xci.NormalPartition?.Extract(ctx.Options.NormalDir, ctx.Logger);
+                }
+
+                if (ctx.Options.SecureDir != null)
+                {
+                    xci.SecurePartition?.Extract(ctx.Options.SecureDir, ctx.Logger);
+                }
+
+                if (ctx.Options.LogoDir != null)
+                {
+                    xci.LogoPartition?.Extract(ctx.Options.LogoDir, ctx.Logger);
+                }
+
+                if (ctx.Options.OutDir != null && xci.RootPartition != null)
+                {
+                    var root = xci.RootPartition;
+
+                    foreach (var sub in root.Files)
+                    {
+                        var subPfs = new Pfs(root.OpenFile(sub));
+                        var subDir = Path.Combine(ctx.Options.OutDir, sub.Name);
+
+                        subPfs.Extract(subDir, ctx.Logger);
+                    }
+                }
             }
         }
 

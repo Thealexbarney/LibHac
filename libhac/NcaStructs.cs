@@ -94,7 +94,7 @@ namespace libhac
         public SectionCryptType CryptType;
         public SectionType Type;
 
-        public Pfs0Superblock Pfs0;
+        public PfsSuperblock Pfs;
         public RomfsSuperblock Romfs;
         public BktrSuperblock Bktr;
         public byte[] Ctr;
@@ -112,7 +112,7 @@ namespace libhac
             if (PartitionType == SectionPartitionType.Pfs0 && FsType == SectionFsType.Pfs0)
             {
                 Type = SectionType.Pfs0;
-                Pfs0 = new Pfs0Superblock(reader);
+                Pfs = new PfsSuperblock(reader);
             }
             else if (PartitionType == SectionPartitionType.Romfs && FsType == SectionFsType.Romfs)
             {
@@ -258,7 +258,7 @@ namespace libhac
 
     public class Pfs0Section
     {
-        public Pfs0Superblock Superblock { get; set; }
+        public PfsSuperblock Superblock { get; set; }
         public Validity Validity { get; set; }
     }
 

@@ -126,7 +126,7 @@ namespace libhac
             stream.Position = bodyStart + 0x40;
             if (TitleKeyBlock?.Length <= 0x100) writer.Write(TitleKeyBlock);
             stream.Position = bodyStart + 0x140;
-            writer.Write((byte)FormatVersion);
+            writer.Write(FormatVersion);
             writer.Write((byte)TitleKeyType);
             writer.Write(TicketVersion);
             writer.Write((byte)LicenseType);

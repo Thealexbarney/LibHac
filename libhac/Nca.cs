@@ -168,7 +168,7 @@ namespace libhac
             if (sect.Type == SectionType.Pfs0)
             {
                 sect.Pfs0 = new Pfs0Section();
-                sect.Pfs0.Superblock = header.Pfs0;
+                sect.Pfs0.Superblock = header.Pfs;
             }
             else if (sect.Type == SectionType.Romfs)
             {
@@ -233,7 +233,7 @@ namespace libhac
                 case SectionType.Invalid:
                     break;
                 case SectionType.Pfs0:
-                    var pfs0 = sect.Header.Pfs0;
+                    var pfs0 = sect.Header.Pfs;
                     expected = pfs0.MasterHash;
                     offset = pfs0.HashTableOffset;
                     size = pfs0.HashTableSize;
@@ -402,7 +402,7 @@ namespace libhac
                 case SectionType.Invalid:
                     break;
                 case SectionType.Pfs0:
-                    var pfs0 = new Pfs0(stream);
+                    var pfs0 = new Pfs(stream);
                     pfs0.Extract(outputDir, logger);
                     break;
                 case SectionType.Romfs:

@@ -24,6 +24,11 @@ namespace hactoolnet
         public string NspOut;
         public string SdPath;
         public string BaseNca;
+        public string RootDir;
+        public string UpdateDir;
+        public string NormalDir;
+        public string SecureDir;
+        public string LogoDir;
         public bool ListApps;
         public bool ListTitles;
         public bool ListRomFs;

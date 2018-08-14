@@ -21,6 +21,9 @@ namespace libhac
             baseStream.Seek(offset, SeekOrigin.Begin);
         }
 
+        public SubStream(Stream baseStream, long offset) 
+            : this(baseStream, offset, baseStream.Length - offset) { }
+
         public override int Read(byte[] buffer, int offset, int count)
         {
             long remaining = Length - Position;
