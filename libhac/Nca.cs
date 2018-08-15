@@ -56,6 +56,17 @@ namespace libhac
                 Sections[i] = section;
                 ValidateSuperblockHash(i);
             }
+
+            foreach (var pfsSection in Sections.Where(x => x != null && x.Type == SectionType.Pfs0))
+            {
+                var sectionStream = OpenSection(pfsSection.SectionNum, false);
+                if (sectionStream == null) continue;
+
+                var pfs = new Pfs(sectionStream);
+                if (!pfs.FileExists("main.npdm")) continue;
+
+                pfsSection.IsExefs = true;
+            }
         }
 
         public Stream OpenSection(int index, bool raw)
@@ -370,6 +381,7 @@ namespace libhac
 
         public Pfs0Section Pfs0 { get; set; }
         public RomfsSection Romfs { get; set; }
+        public bool IsExefs { get; internal set; }
     }
 
     public static class NcaExtensions
@@ -468,7 +480,7 @@ namespace libhac
                     sb.AppendLine($"    Section {i}:");
                     PrintItem("        Offset:", $"0x{sect.Offset:x12}");
                     PrintItem("        Size:", $"0x{sect.Size:x12}");
-                    PrintItem("        Partition Type:", sect.Type);
+                    PrintItem("        Partition Type:", sect.IsExefs ? "ExeFS" : sect.Type.ToString());
                     PrintItem("        Section CTR:", sect.Header.Ctr);
 
                     switch (sect.Type)

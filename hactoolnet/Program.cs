@@ -125,6 +125,19 @@ namespace hactoolnet
                     }
                 }
 
+                if (ctx.Options.ExefsOutDir != null)
+                {
+                    NcaSection section = nca.Sections.FirstOrDefault(x => x.IsExefs);
+
+                    if (section == null)
+                    {
+                        ctx.Logger.LogMessage("Could not find an ExeFS section");
+                        return;
+                    }
+
+                    nca.ExtractSection(section.SectionNum, ctx.Options.ExefsOutDir, ctx.Logger);
+                }
+
                 ctx.Logger.LogMessage(nca.Dump());
             }
         }
