@@ -249,7 +249,7 @@ namespace hactoolnet
                     }
                 }
 
-                if (ctx.Options.RomfsOutDir != null)
+                if (ctx.Options.RomfsOutDir != null || ctx.Options.RomfsOut != null)
                 {
                     if (xci.SecurePartition == null)
                     {
@@ -284,8 +284,16 @@ namespace hactoolnet
                         return;
                     }
 
-                    var romfs = new Romfs(mainNca.OpenSection(romfsSection.SectionNum, false));
-                    romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
+                    if (ctx.Options.RomfsOutDir != null)
+                    {
+                        var romfs = new Romfs(mainNca.OpenSection(romfsSection.SectionNum, false));
+                        romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
+                    }
+
+                    if (ctx.Options.RomfsOut != null)
+                    {
+                        mainNca.ExportSection(romfsSection.SectionNum, ctx.Options.RomfsOut, ctx.Options.Raw, ctx.Logger);
+                    }
                 }
             }
         }

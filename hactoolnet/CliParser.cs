@@ -156,6 +156,7 @@ namespace hactoolnet
             sb.AppendLine("  --section1dir <dir>  Specify Section 1 directory path.");
             sb.AppendLine("  --section2dir <dir>  Specify Section 2 directory path.");
             sb.AppendLine("  --section3dir <dir>  Specify Section 3 directory path.");
+            sb.AppendLine("  --romfsdir <dir>     Specify main RomFS directory path.");
             sb.AppendLine("  --listromfs          List files in RomFS.");
             sb.AppendLine("  --basenca            Set Base NCA to use with update partitions.");
             sb.AppendLine("XCI options:");
