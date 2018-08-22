@@ -93,7 +93,13 @@ namespace libhac.Savefile
                     layout.JournalDataSizeB + layout.SizeReservedArea);
                 JournalStream = new JournalStream(journalData, journalMap, (int)Header.Journal.BlockSize);
                 ReadFileInfo();
-                FileDict = Files.ToDictionary(x => x.FullPath, x => x);
+                Dictionary<string, FileEntry> dictionary = new Dictionary<string, FileEntry>();
+                foreach (FileEntry entry in Files)
+                {
+                    dictionary[entry.FullPath] = entry;
+                }
+
+                FileDict = dictionary;
             }
         }
 
