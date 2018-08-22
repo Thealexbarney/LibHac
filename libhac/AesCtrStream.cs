@@ -54,8 +54,9 @@ namespace libhac
         /// <param name="baseStream">The base stream</param>
         /// <param name="key">The decryption key</param>
         /// <param name="counterOffset">Offset to add to the counter</param>
-        public AesCtrStream(Stream baseStream, byte[] key, long counterOffset = 0)
-            : this(baseStream, key, 0, baseStream.Length, counterOffset) { }
+        /// <param name="ctrHi">The value of the upper 64 bits of the counter</param>
+        public AesCtrStream(Stream baseStream, byte[] key, long counterOffset = 0, byte[] ctrHi = null)
+            : this(baseStream, key, 0, baseStream.Length, counterOffset, ctrHi) { }
 
         /// <summary>
         /// Creates a new stream

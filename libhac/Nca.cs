@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using libhac.Streams;
 using libhac.XTSSharp;
 
 namespace libhac
@@ -17,7 +18,8 @@ namespace libhac
         public byte[][] DecryptedKeys { get; } = Util.CreateJaggedArray<byte[][]>(4, 0x10);
         public byte[] TitleKey { get; }
         public byte[] TitleKeyDec { get; } = new byte[0x10];
-        public Stream Stream { get; private set; }
+        private Stream Stream { get; }
+        private SharedStreamSource StreamSource { get; }
         private bool KeepOpen { get; }
         private Nca BaseNca { get; set; }
 
@@ -28,6 +30,7 @@ namespace libhac
             stream.Position = 0;
             KeepOpen = keepOpen;
             Stream = stream;
+            StreamSource = new SharedStreamSource(stream);
             DecryptHeader(keyset, stream);
 
             CryptoType = Math.Max(Header.CryptoType, Header.CryptoType2);
@@ -69,6 +72,11 @@ namespace libhac
             }
         }
 
+        public Stream GetStream()
+        {
+            return StreamSource.CreateStream();
+        }
+
         public Stream OpenSection(int index, bool raw)
         {
             if (Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
@@ -98,19 +106,19 @@ namespace libhac
                 }
             }
 
-            Stream.Position = offset;
+            var sectionStream = StreamSource.CreateStream(offset, size);
 
             switch (sect.Header.CryptType)
             {
                 case SectionCryptType.None:
-                    return new SubStream(Stream, offset, size);
+                    return sectionStream;
                 case SectionCryptType.XTS:
                     break;
                 case SectionCryptType.CTR:
-                    return new RandomAccessSectorStream(new AesCtrStream(Stream, DecryptedKeys[2], offset, size, offset, sect.Header.Ctr), false);
+                    return new RandomAccessSectorStream(new AesCtrStream(sectionStream, DecryptedKeys[2], offset, sect.Header.Ctr), false);
                 case SectionCryptType.BKTR:
                     var patchStream = new RandomAccessSectorStream(
-                        new BktrCryptoStream(Stream, DecryptedKeys[2], offset, size, offset, sect.Header.Ctr, sect),
+                        new BktrCryptoStream(sectionStream, DecryptedKeys[2], 0, size, offset, sect.Header.Ctr, sect),
                         false);
                     if (BaseNca == null)
                     {
@@ -134,7 +142,7 @@ namespace libhac
                     throw new ArgumentOutOfRangeException();
             }
 
-            return new SubStream(Stream, offset, size);
+            return sectionStream;
         }
 
         public void SetBaseNca(Nca baseNca) => BaseNca = baseNca;
@@ -216,7 +224,7 @@ namespace libhac
         private void CheckBktrKey(NcaSection sect)
         {
             var offset = sect.Header.Bktr.SubsectionHeader.Offset;
-            using (var streamDec = new RandomAccessSectorStream(new AesCtrStream(Stream, DecryptedKeys[2], sect.Offset, sect.Size, sect.Offset, sect.Header.Ctr)))
+            using (var streamDec = new RandomAccessSectorStream(new AesCtrStream(GetStream(), DecryptedKeys[2], sect.Offset, sect.Size, sect.Offset, sect.Header.Ctr)))
             {
                 var reader = new BinaryReader(streamDec);
                 streamDec.Position = offset + 8;

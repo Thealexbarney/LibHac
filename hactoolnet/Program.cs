@@ -493,12 +493,12 @@ namespace hactoolnet
 
             foreach (var nca in title.Ncas)
             {
-                nca.Stream.Position = 0;
+                var stream = nca.GetStream();
                 var outFile = Path.Combine(saveDir, nca.Filename);
                 ctx.Logger.LogMessage(nca.Filename);
                 using (var outStream = new FileStream(outFile, FileMode.Create, FileAccess.ReadWrite))
                 {
-                    nca.Stream.CopyStream(outStream, nca.Stream.Length, ctx.Logger);
+                    stream.CopyStream(outStream, stream.Length, ctx.Logger);
                 }
             }
         }
@@ -522,7 +522,7 @@ namespace hactoolnet
 
             foreach (var nca in title.Ncas)
             {
-                builder.AddFile(nca.Filename, nca.Stream);
+                builder.AddFile(nca.Filename, nca.GetStream());
             }
 
             var ticket = new Ticket
