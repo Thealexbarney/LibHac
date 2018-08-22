@@ -95,7 +95,7 @@ namespace hactoolnet
                     }
                 }
 
-                if (ctx.Options.RomfsOutDir != null)
+                if (ctx.Options.RomfsOutDir != null || ctx.Options.RomfsOut != null)
                 {
                     NcaSection section = nca.Sections.FirstOrDefault(x => x.Type == SectionType.Romfs || x.Type == SectionType.Bktr);
 
@@ -105,27 +105,25 @@ namespace hactoolnet
                         return;
                     }
 
-                    if (section.Type == SectionType.Bktr)
+                    if (section.Type == SectionType.Bktr && ctx.Options.BaseNca == null)
                     {
-                        if (ctx.Options.BaseNca == null)
-                        {
-                            ctx.Logger.LogMessage("Cannot save BKTR section without base RomFS");
-                            return;
-                        }
-
-                        var bktr = nca.OpenSection(1, false);
-                        var romfs = new Romfs(bktr);
-                        romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
-
+                        ctx.Logger.LogMessage("Cannot save BKTR section without base RomFS");
+                        return;
                     }
-                    else
+
+                    if (ctx.Options.RomfsOut != null)
+                    {
+                        nca.ExportSection(section.SectionNum, ctx.Options.RomfsOut, ctx.Options.Raw, ctx.Logger);
+                    }
+
+                    if (ctx.Options.RomfsOutDir != null)
                     {
                         var romfs = new Romfs(nca.OpenSection(section.SectionNum, false));
                         romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
                     }
                 }
 
-                if (ctx.Options.ExefsOutDir != null)
+                if (ctx.Options.ExefsOutDir != null || ctx.Options.ExefsOut != null)
                 {
                     NcaSection section = nca.Sections.FirstOrDefault(x => x.IsExefs);
 
@@ -135,7 +133,15 @@ namespace hactoolnet
                         return;
                     }
 
-                    nca.ExtractSection(section.SectionNum, ctx.Options.ExefsOutDir, ctx.Logger);
+                    if (ctx.Options.ExefsOut != null)
+                    {
+                        nca.ExportSection(section.SectionNum, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Logger);
+                    }
+
+                    if (ctx.Options.ExefsOutDir != null)
+                    {
+                        nca.ExtractSection(section.SectionNum, ctx.Options.ExefsOutDir, ctx.Logger);
+                    }
                 }
 
                 ctx.Logger.LogMessage(nca.Dump());
@@ -156,7 +162,47 @@ namespace hactoolnet
                 ctx.Logger.LogMessage(ListApplications(switchFs));
             }
 
-            if (ctx.Options.RomfsOutDir != null)
+            if (ctx.Options.ExefsOutDir != null || ctx.Options.ExefsOut != null)
+            {
+                var id = ctx.Options.TitleId;
+                if (id == 0)
+                {
+                    ctx.Logger.LogMessage("Title ID must be specified to dump ExeFS");
+                    return;
+                }
+
+                if (!switchFs.Titles.TryGetValue(id, out var title))
+                {
+                    ctx.Logger.LogMessage($"Could not find title {id:X16}");
+                    return;
+                }
+
+                if (title.MainNca == null)
+                {
+                    ctx.Logger.LogMessage($"Could not find main data for title {id:X16}");
+                    return;
+                }
+
+                var section = title.MainNca.Sections.FirstOrDefault(x => x.IsExefs == true);
+
+                if (section == null)
+                {
+                    ctx.Logger.LogMessage($"Main NCA for title {id:X16} has no ExeFS section");
+                    return;
+                }
+
+                if (ctx.Options.ExefsOutDir != null)
+                {
+                    title.MainNca.ExtractSection(section.SectionNum, ctx.Options.ExefsOutDir, ctx.Logger);
+                }
+
+                if (ctx.Options.ExefsOut != null)
+                {
+                    title.MainNca.ExportSection(section.SectionNum, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Logger);
+                }
+            }
+
+            if (ctx.Options.RomfsOutDir != null || ctx.Options.RomfsOut != null)
             {
                 var id = ctx.Options.TitleId;
                 if (id == 0)
@@ -181,12 +227,20 @@ namespace hactoolnet
 
                 if (section == null)
                 {
-                    ctx.Logger.LogMessage($"Main NCA for title {id:X16} has no Rom FS section");
+                    ctx.Logger.LogMessage($"Main NCA for title {id:X16} has no RomFS section");
                     return;
                 }
 
-                var romfs = new Romfs(title.MainNca.OpenSection(section.SectionNum, false));
-                romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
+                if (ctx.Options.RomfsOutDir != null)
+                {
+                    var romfs = new Romfs(title.MainNca.OpenSection(section.SectionNum, false));
+                    romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
+                }
+
+                if (ctx.Options.RomfsOut != null)
+                {
+                    title.MainNca.ExportSection(section.SectionNum, ctx.Options.RomfsOut, ctx.Options.Raw, ctx.Logger);
+                }
             }
 
             if (ctx.Options.OutDir != null)
@@ -249,26 +303,38 @@ namespace hactoolnet
                     }
                 }
 
-                if (ctx.Options.RomfsOutDir != null || ctx.Options.RomfsOut != null)
+                if (ctx.Options.ExefsOutDir != null || ctx.Options.ExefsOut != null)
                 {
-                    if (xci.SecurePartition == null)
+                    var mainNca = GetXciMainNca(xci, ctx);
+
+                    if (mainNca == null)
                     {
-                        ctx.Logger.LogMessage("Could not find secure partition");
+                        ctx.Logger.LogMessage("Could not find Program NCA");
                         return;
                     }
 
-                    Nca mainNca = null;
+                    var exefsSection = mainNca.Sections.FirstOrDefault(x => x.IsExefs == true);
 
-                    foreach (var fileEntry in xci.SecurePartition.Files.Where(x => x.Name.EndsWith(".nca")))
+                    if (exefsSection == null)
                     {
-                        var ncaStream = xci.SecurePartition.OpenFile(fileEntry);
-                        var nca = new Nca(ctx.Keyset, ncaStream, true);
-
-                        if (nca.Header.ContentType == ContentType.Program)
-                        {
-                            mainNca = nca;
-                        }
+                        ctx.Logger.LogMessage("NCA has no ExeFS section");
+                        return;
                     }
+
+                    if (ctx.Options.ExefsOutDir != null)
+                    {
+                        mainNca.ExtractSection(exefsSection.SectionNum, ctx.Options.ExefsOutDir, ctx.Logger);
+                    }
+
+                    if (ctx.Options.ExefsOut != null)
+                    {
+                        mainNca.ExportSection(exefsSection.SectionNum, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Logger);
+                    }
+                }
+
+                if (ctx.Options.RomfsOutDir != null || ctx.Options.RomfsOut != null)
+                {
+                    var mainNca = GetXciMainNca(xci, ctx);
 
                     if (mainNca == null)
                     {
@@ -296,6 +362,30 @@ namespace hactoolnet
                     }
                 }
             }
+        }
+
+        private static Nca GetXciMainNca(Xci xci, Context ctx)
+        {
+            if (xci.SecurePartition == null)
+            {
+                ctx.Logger.LogMessage("Could not find secure partition");
+                return null;
+            }
+
+            Nca mainNca = null;
+
+            foreach (var fileEntry in xci.SecurePartition.Files.Where(x => x.Name.EndsWith(".nca")))
+            {
+                var ncaStream = xci.SecurePartition.OpenFile(fileEntry);
+                var nca = new Nca(ctx.Keyset, ncaStream, true);
+
+                if (nca.Header.ContentType == ContentType.Program)
+                {
+                    mainNca = nca;
+                }
+            }
+
+            return mainNca;
         }
 
         private static void OpenKeyset(Context ctx)
