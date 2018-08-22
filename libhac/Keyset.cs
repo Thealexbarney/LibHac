@@ -110,7 +110,7 @@ namespace libhac
                 string line;
                 while ((line = reader.ReadLine()) != null)
                 {
-                    var a = line.Split('=');
+                    var a = line.Split(',', '=');
                     if (a.Length != 2) continue;
 
                     var key = a[0].Trim();
@@ -144,7 +144,7 @@ namespace libhac
                 string line;
                 while ((line = reader.ReadLine()) != null)
                 {
-                    var a = line.Split(',');
+                    var a = line.Split(',', '=');
                     if (a.Length != 2) continue;
 
                     var rightsId = a[0].Trim().ToBytes();
