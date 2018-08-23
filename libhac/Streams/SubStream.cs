@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace libhac
+namespace libhac.Streams
 {
     public class SubStream : Stream
     {

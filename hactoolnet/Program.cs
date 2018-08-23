@@ -183,7 +183,7 @@ namespace hactoolnet
                     return;
                 }
 
-                var section = title.MainNca.Sections.FirstOrDefault(x => x.IsExefs == true);
+                var section = title.MainNca.Sections.FirstOrDefault(x => x.IsExefs);
 
                 if (section == null)
                 {
@@ -313,7 +313,7 @@ namespace hactoolnet
                         return;
                     }
 
-                    var exefsSection = mainNca.Sections.FirstOrDefault(x => x.IsExefs == true);
+                    var exefsSection = mainNca.Sections.FirstOrDefault(x => x.IsExefs);
 
                     if (exefsSection == null)
                     {

@@ -27,7 +27,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 
-namespace libhac
+namespace libhac.Streams
 {
     internal class CombinationStream : Stream
     {

@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using libhac.Streams;
 
 namespace libhac
 {
