@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using libhac.Streams;
 
 namespace libhac
 {
@@ -13,7 +14,7 @@ namespace libhac
         public PfsFileEntry[] Files { get; }
 
         private Dictionary<string, PfsFileEntry> FileDict { get; }
-        private Stream Stream { get; set; }
+        private SharedStreamSource StreamSource { get; }
 
         public Pfs(Stream stream)
         {
@@ -25,7 +26,7 @@ namespace libhac
             HeaderSize = Header.HeaderSize;
             Files = Header.Files;
             FileDict = Header.Files.ToDictionary(x => x.Name, x => x);
-            Stream = stream;
+            StreamSource = new SharedStreamSource(stream);
         }
 
         public Stream OpenFile(string filename)
@@ -52,7 +53,7 @@ namespace libhac
 
         public Stream OpenFile(PfsFileEntry file)
         {
-            return new SubStream(Stream, HeaderSize + file.Offset, file.Size);
+            return StreamSource.CreateStream(HeaderSize + file.Offset, file.Size);
         }
 
         public bool FileExists(string filename)

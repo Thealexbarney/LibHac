@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using libhac.Streams;
 
 namespace libhac
 {
@@ -15,13 +16,15 @@ namespace libhac
         public RomfsDir RootDir { get; }
 
         private Dictionary<string, RomfsFile> FileDict { get; }
-        private Stream Stream { get; set; }
+        private SharedStreamSource StreamSource { get; }
 
         public Romfs(Stream stream)
         {
+            StreamSource = new SharedStreamSource(stream);
+
             byte[] dirMetaTable;
             byte[] fileMetaTable;
-            using (var reader = new BinaryReader(stream, Encoding.Default, true))
+            using (var reader = new BinaryReader(StreamSource.CreateStream(), Encoding.Default, true))
             {
                 Header = new RomfsHeader(reader);
                 stream.Position = Header.DirMetaTableOffset;
@@ -53,11 +56,9 @@ namespace libhac
                 }
             }
 
-
             SetReferences();
             ResolveFilenames();
             FileDict = Files.ToDictionary(x => x.FullPath, x => x);
-            Stream = stream;
         }
 
         public Stream OpenFile(string filename)
@@ -72,7 +73,7 @@ namespace libhac
 
         public Stream OpenFile(RomfsFile file)
         {
-            return new SubStream(Stream, Header.DataOffset + file.DataOffset, file.DataLength);
+            return StreamSource.CreateStream(Header.DataOffset + file.DataOffset, file.DataLength);
         }
 
         public byte[] GetFile(string filename)
