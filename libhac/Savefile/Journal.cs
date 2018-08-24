@@ -81,13 +81,9 @@ namespace libhac.Savefile
             }
         }
 
-        public static MappingEntry[] ReadMappingEntries(byte[] mapTable, byte[] bitmapUpdatedPhysical,
-            byte[] bitmapUpdatedVirtual, byte[] bitmapUnassigned, int count)
+        public static MappingEntry[] ReadMappingEntries(Stream mapTable, int count)
         {
-            var physicalBits = new BitReader(bitmapUpdatedPhysical);
-            var virtualBits = new BitReader(bitmapUpdatedVirtual);
-            var unassignedBits = new BitReader(bitmapUnassigned);
-            var tableReader = new BinaryReader(new MemoryStream(mapTable));
+            var tableReader = new BinaryReader(mapTable);
             var map = new MappingEntry[count];
 
             for (int i = 0; i < count; i++)
@@ -95,10 +91,7 @@ namespace libhac.Savefile
                 var entry = new MappingEntry
                 {
                     VirtualIndex = i,
-                    PhysicalIndex = tableReader.ReadInt32() & 0x7FFFFFFF,
-                    //UpdatedPhysical = physicalBits.ReadBool(),
-                    //UpdatedVirtual = virtualBits.ReadBool(),
-                    //Unassigned = unassignedBits.ReadBool()
+                    PhysicalIndex = tableReader.ReadInt32() & 0x7FFFFFFF
                 };
 
                 map[i] = entry;

@@ -9,31 +9,33 @@ namespace libhac.Savefile
     public class Savefile
     {
         public Header Header { get; }
-        public RemapStream FileRemap { get; }
-        public RemapStream MetaRemap { get; }
-        private Stream FileStream { get; }
-        public JournalStream JournalStream { get; }
+        private RemapStream FileRemap { get; }
+        public SharedStreamSource FileRemapSource { get; }
+        private RemapStream MetaRemap { get; }
+        public SharedStreamSource MetaRemapSource { get; }
+        private JournalStream JournalStream { get; }
+        public SharedStreamSource JournalStreamSource { get; }
 
-        public byte[] DuplexL1A { get; }
-        public byte[] DuplexL1B { get; }
-        public byte[] DuplexDataA { get; }
-        public byte[] DuplexDataB { get; }
+        public Stream DuplexL1A { get; }
+        public Stream DuplexL1B { get; }
+        public Stream DuplexDataA { get; }
+        public Stream DuplexDataB { get; }
+        public Stream JournalData { get; }
 
-        public byte[] JournalTable { get; }
-        public byte[] JournalBitmapUpdatedPhysical { get; }
-        public byte[] JournalBitmapUpdatedVirtual { get; }
-        public byte[] JournalBitmapUnassigned { get; }
-        public byte[] JournalLayer1Hash { get; }
-        public byte[] JournalLayer2Hash { get; }
-        public byte[] JournalLayer3Hash { get; }
-        public byte[] JournalFat { get; }
+        public Stream JournalTable { get; }
+        public Stream JournalBitmapUpdatedPhysical { get; }
+        public Stream JournalBitmapUpdatedVirtual { get; }
+        public Stream JournalBitmapUnassigned { get; }
+        public Stream JournalLayer1Hash { get; }
+        public Stream JournalLayer2Hash { get; }
+        public Stream JournalLayer3Hash { get; }
+        public Stream JournalFat { get; }
 
         public FileEntry[] Files { get; private set; }
         private Dictionary<string, FileEntry> FileDict { get; }
 
         public Savefile(Stream file, IProgressReport logger = null)
         {
-            FileStream = file;
             using (var reader = new BinaryReader(file, Encoding.Default, true))
             {
                 Header = new Header(reader, logger);
@@ -42,56 +44,33 @@ namespace libhac.Savefile
                     new SubStream(file, layout.FileMapDataOffset, layout.FileMapDataSize),
                     Header.FileMapEntries, Header.FileRemap.MapSegmentCount);
 
-                DuplexL1A = new byte[layout.DuplexL1Size];
-                DuplexL1B = new byte[layout.DuplexL1Size];
-                DuplexDataA = new byte[layout.DuplexDataSize];
-                DuplexDataB = new byte[layout.DuplexDataSize];
+                FileRemapSource = new SharedStreamSource(FileRemap);
 
-                FileRemap.Position = layout.DuplexL1OffsetA;
-                FileRemap.Read(DuplexL1A, 0, DuplexL1A.Length);
-                FileRemap.Position = layout.DuplexL1OffsetB;
-                FileRemap.Read(DuplexL1B, 0, DuplexL1B.Length);
-                FileRemap.Position = layout.DuplexDataOffsetA;
-                FileRemap.Read(DuplexDataA, 0, DuplexDataA.Length);
-                FileRemap.Position = layout.DuplexDataOffsetB;
-                FileRemap.Read(DuplexDataB, 0, DuplexDataB.Length);
+                DuplexL1A = FileRemapSource.CreateStream(layout.DuplexL1OffsetA, layout.DuplexL1Size);
+                DuplexL1B = FileRemapSource.CreateStream(layout.DuplexL1OffsetB, layout.DuplexL1Size);
+                DuplexDataA = FileRemapSource.CreateStream(layout.DuplexDataOffsetA, layout.DuplexDataSize);
+                DuplexDataB = FileRemapSource.CreateStream(layout.DuplexDataOffsetB, layout.DuplexDataSize);
+                JournalData = FileRemapSource.CreateStream(layout.JournalDataOffset, layout.JournalDataSizeB + layout.SizeReservedArea);
 
-                var duplexDataOffset = layout.DuplexIndex == 0 ? layout.DuplexDataOffsetA : layout.DuplexDataOffsetB;
-                var duplexData = new SubStream(FileRemap, duplexDataOffset, layout.DuplexDataSize);
+                var duplexData = layout.DuplexIndex == 0 ? DuplexDataA : DuplexDataB;
                 MetaRemap = new RemapStream(duplexData, Header.MetaMapEntries, Header.MetaRemap.MapSegmentCount);
+                MetaRemapSource = new SharedStreamSource(MetaRemap);
 
-                JournalTable = new byte[layout.JournalTableSize];
-                JournalBitmapUpdatedPhysical = new byte[layout.JournalBitmapUpdatedPhysicalSize];
-                JournalBitmapUpdatedVirtual = new byte[layout.JournalBitmapUpdatedVirtualSize];
-                JournalBitmapUnassigned = new byte[layout.JournalBitmapUnassignedSize];
-                JournalLayer1Hash = new byte[layout.Layer1HashSize];
-                JournalLayer2Hash = new byte[layout.Layer2HashSize];
-                JournalLayer3Hash = new byte[layout.Layer3HashSize];
-                JournalFat = new byte[layout.Field150];
+                JournalTable = MetaRemapSource.CreateStream(layout.JournalTableOffset, layout.JournalTableSize);
+                JournalBitmapUpdatedPhysical = MetaRemapSource.CreateStream(layout.JournalBitmapUpdatedPhysicalOffset, layout.JournalBitmapUpdatedPhysicalSize);
+                JournalBitmapUpdatedVirtual = MetaRemapSource.CreateStream(layout.JournalBitmapUpdatedVirtualOffset, layout.JournalBitmapUpdatedVirtualSize);
+                JournalBitmapUnassigned = MetaRemapSource.CreateStream(layout.JournalBitmapUnassignedOffset, layout.JournalBitmapUnassignedSize);
+                JournalLayer1Hash = MetaRemapSource.CreateStream(layout.Layer1HashOffset, layout.Layer1HashSize);
+                JournalLayer2Hash = MetaRemapSource.CreateStream(layout.Layer2HashOffset, layout.Layer2HashSize);
+                JournalLayer3Hash = MetaRemapSource.CreateStream(layout.Layer3HashOffset, layout.Layer3HashSize);
+                JournalFat = MetaRemapSource.CreateStream(layout.Field148, layout.Field150);
 
-                MetaRemap.Position = layout.JournalTableOffset;
-                MetaRemap.Read(JournalTable, 0, JournalTable.Length);
-                MetaRemap.Position = layout.JournalBitmapUpdatedPhysicalOffset;
-                MetaRemap.Read(JournalBitmapUpdatedPhysical, 0, JournalBitmapUpdatedPhysical.Length);
-                MetaRemap.Position = layout.JournalBitmapUpdatedVirtualOffset;
-                MetaRemap.Read(JournalBitmapUpdatedVirtual, 0, JournalBitmapUpdatedVirtual.Length);
-                MetaRemap.Position = layout.JournalBitmapUnassignedOffset;
-                MetaRemap.Read(JournalBitmapUnassigned, 0, JournalBitmapUnassigned.Length);
-                MetaRemap.Position = layout.Layer1HashOffset;
-                MetaRemap.Read(JournalLayer1Hash, 0, JournalLayer1Hash.Length);
-                MetaRemap.Position = layout.Layer2HashOffset;
-                MetaRemap.Read(JournalLayer2Hash, 0, JournalLayer2Hash.Length);
-                MetaRemap.Position = layout.Layer3HashOffset;
-                MetaRemap.Read(JournalLayer3Hash, 0, JournalLayer3Hash.Length);
-                MetaRemap.Position = layout.Field148;
-                MetaRemap.Read(JournalFat, 0, JournalFat.Length);
+                var journalMap = JournalStream.ReadMappingEntries(JournalTable, Header.Journal.MappingEntryCount);
 
-                var journalMap = JournalStream.ReadMappingEntries(JournalTable, JournalBitmapUpdatedPhysical,
-                    JournalBitmapUpdatedVirtual, JournalBitmapUnassigned, Header.Journal.MappingEntryCount);
-
-                var journalData = new SubStream(FileRemap, layout.JournalDataOffset,
+                var journalData = FileRemapSource.CreateStream(layout.JournalDataOffset,
                     layout.JournalDataSizeB + layout.SizeReservedArea);
                 JournalStream = new JournalStream(journalData, journalMap, (int)Header.Journal.BlockSize);
+                JournalStreamSource = new SharedStreamSource(JournalStream);
                 ReadFileInfo();
                 Dictionary<string, FileEntry> dictionary = new Dictionary<string, FileEntry>();
                 foreach (FileEntry entry in Files)
@@ -115,7 +94,7 @@ namespace libhac.Savefile
 
         public Stream OpenFile(FileEntry file)
         {
-            return new SubStream(JournalStream, file.Offset, file.Size);
+            return JournalStreamSource.CreateStream(file.Offset, file.Size);
         }
 
         public bool FileExists(string filename) => FileDict.ContainsKey(filename);
@@ -128,12 +107,12 @@ namespace libhac.Savefile
 
             FileEntry[] dirEntries;
             FileEntry[] fileEntries;
-            using (var reader = new BinaryReader(JournalStream, Encoding.Default, true))
+            using (var reader = new BinaryReader(JournalStreamSource.CreateStream(), Encoding.Default, true))
             {
-                JournalStream.Position = dirOffset;
+                reader.BaseStream.Position = dirOffset;
                 dirEntries = ReadFileEntries(reader);
 
-                JournalStream.Position = fileOffset;
+                reader.BaseStream.Position = fileOffset;
                 fileEntries = ReadFileEntries(reader);
             }
 
@@ -161,7 +140,7 @@ namespace libhac.Savefile
         private FileEntry[] ReadFileEntries(BinaryReader reader)
         {
             var count = reader.ReadInt32();
-            JournalStream.Position -= 4;
+            reader.BaseStream.Position -= 4;
 
             var entries = new FileEntry[count];
             for (int i = 0; i < count; i++)

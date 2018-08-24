@@ -16,6 +16,11 @@ namespace libhac.Savefile
         public MapEntry[] FileMapEntries { get; set; }
         public MapEntry[] MetaMapEntries { get; set; }
 
+        public byte[] MasterHashA { get; }
+        public byte[] MasterHashB { get; }
+        public byte[] DuplexMasterA { get; }
+        public byte[] DuplexMasterB { get; }
+
         public byte[] Data { get; }
 
         public Header(BinaryReader reader, IProgressReport logger = null)
@@ -39,6 +44,16 @@ namespace libhac.Savefile
             FileRemap = new RemapHeader(reader);
             reader.BaseStream.Position = 0x690;
             MetaRemap = new RemapHeader(reader);
+
+            reader.BaseStream.Position = Layout.MasterHashOffset0;
+            MasterHashA = reader.ReadBytes((int) Layout.MasterHashSize);
+            reader.BaseStream.Position = Layout.MasterHashOffset1;
+            MasterHashB = reader.ReadBytes((int) Layout.MasterHashSize);
+
+            reader.BaseStream.Position = Layout.L1BitmapOffset0;
+            DuplexMasterA = reader.ReadBytes((int) Layout.L1BitmapSize);
+            reader.BaseStream.Position = Layout.L1BitmapOffset1;
+            DuplexMasterB = reader.ReadBytes((int) Layout.L1BitmapSize);
 
             reader.BaseStream.Position = Layout.FileMapEntryOffset;
             FileMapEntries = new MapEntry[FileRemap.MapEntryCount];

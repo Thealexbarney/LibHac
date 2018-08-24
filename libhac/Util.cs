@@ -78,6 +78,16 @@ namespace libhac
             }
         }
 
+        public static void WriteAllBytes(this Stream input, string filename, IProgressReport progress = null)
+        {
+            input.Position = 0;
+
+            using (var outFile = new FileStream(filename, FileMode.Create, FileAccess.Write))
+            {
+                input.CopyStream(outFile, input.Length, progress);
+            }
+        }
+
         public static string ReadAsciiZ(this BinaryReader reader, int maxLength = int.MaxValue)
         {
             var start = reader.BaseStream.Position;
