@@ -145,45 +145,6 @@ namespace libhac
             return stream.ToArray();
         }
 
-        public static Ticket[] SearchTickets(Stream file, IProgressReport logger = null)
-        {
-            var reader = new BinaryReader(file, Encoding.Default, true);
-            file.Position += 0x140;
-            var tickets = new Dictionary<string, Ticket>();
-
-            logger?.SetTotal(file.Length);
-
-            // Ticket starts occur at multiples of 0x400
-            while (file.Position + 0x800 < file.Length)
-            {
-                var position = file.Position;
-                logger?.Report(position);
-
-                if (reader.ReadUInt32() != 0x746f6f52) // Root
-                {
-                    file.Position = position + 0x400;
-                    continue;
-                }
-
-                file.Position -= 0x144;
-                var sigType = (TicketSigType)reader.ReadUInt32();
-                if (sigType < TicketSigType.Rsa4096Sha1 || sigType > TicketSigType.EcdsaSha256)
-                {
-                    file.Position = position + 0x400;
-                    continue;
-                }
-
-                file.Position -= 4;
-
-                var ticket = new Ticket(reader);
-                tickets[ticket.RightsId.ToHexString()] = ticket;
-                file.Position = position + 0x400;
-            }
-
-            logger?.SetTotal(0);
-            return tickets.Values.ToArray();
-        }
-
         public byte[] GetTitleKey(Keyset keyset)
         {
             if (TitleKeyType == TitleKeyType.Common)

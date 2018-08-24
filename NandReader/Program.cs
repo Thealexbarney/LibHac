@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using libhac;
 using libhac.Nand;
+using libhac.Savefile;
 
 namespace NandReader
 {
@@ -86,17 +87,35 @@ namespace NandReader
             var tickets = new List<Ticket>();
             var system = nand.OpenSystemPartition();
 
-            logger?.LogMessage("Searching save 80000000000000E1");
-            var saveE1 = system.OpenFile("save\\80000000000000E1", FileMode.Open, FileAccess.Read);
-            tickets.AddRange(Ticket.SearchTickets(saveE1, logger));
+            var saveE1File = system.OpenFile("save\\80000000000000E1", FileMode.Open, FileAccess.Read);
+            tickets.AddRange(ReadTickets(saveE1File));
 
-            logger?.LogMessage("Searching save 80000000000000E2");
             var saveE2 = system.OpenFile("save\\80000000000000E2", FileMode.Open, FileAccess.Read);
-            tickets.AddRange(Ticket.SearchTickets(saveE2, logger));
+            tickets.AddRange(ReadTickets(saveE2));
 
             logger?.LogMessage($"Found {tickets.Count} tickets");
 
             return tickets.ToArray();
+        }
+
+        private static List<Ticket> ReadTickets(Stream savefile)
+        {
+            var tickets = new List<Ticket>();
+            var save = new Savefile(savefile);
+            var ticketList = new BinaryReader(save.OpenFile("ticket_list.bin"));
+            var ticketFile = new BinaryReader(save.OpenFile("ticket.bin"));
+
+            var titleId = ticketList.ReadUInt64();
+            while (titleId != ulong.MaxValue)
+            {
+                ticketList.BaseStream.Position += 0x18;
+                var start = ticketFile.BaseStream.Position;
+                tickets.Add(new Ticket(ticketFile));
+                ticketFile.BaseStream.Position = start + 0x400;
+                titleId = ticketList.ReadUInt64();
+            }
+
+            return tickets;
         }
 
         private static Keyset OpenKeyset()
