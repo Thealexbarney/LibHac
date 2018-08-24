@@ -83,7 +83,7 @@ namespace libhac
             Array.Copy(encryptedKey, 0x10, body, 0, 0x230);
             var dec = new byte[0x230];
 
-            using (var streamDec = new RandomAccessSectorStream(new AesCtrStream(new MemoryStream(body), kek, counter)))
+            using (var streamDec = new RandomAccessSectorStream(new Aes128CtrStream(new MemoryStream(body), kek, counter)))
             {
                 streamDec.Read(dec, 0, dec.Length);
             }

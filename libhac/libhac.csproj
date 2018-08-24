@@ -6,4 +6,8 @@
     <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" Condition=" '$(TargetFramework)' == 'net45' " />
+  </ItemGroup>
+
 </Project>

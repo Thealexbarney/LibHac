@@ -27,9 +27,9 @@ namespace libhac
             using (var reader = new BinaryReader(StreamSource.CreateStream(), Encoding.Default, true))
             {
                 Header = new RomfsHeader(reader);
-                stream.Position = Header.DirMetaTableOffset;
+                reader.BaseStream.Position = Header.DirMetaTableOffset;
                 dirMetaTable = reader.ReadBytes((int)Header.DirMetaTableSize);
-                stream.Position = Header.FileMetaTableOffset;
+                reader.BaseStream.Position = Header.FileMetaTableOffset;
                 fileMetaTable = reader.ReadBytes((int)Header.FileMetaTableSize);
             }
 

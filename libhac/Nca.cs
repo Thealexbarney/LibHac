@@ -115,10 +115,10 @@ namespace libhac
                 case SectionCryptType.XTS:
                     break;
                 case SectionCryptType.CTR:
-                    return new RandomAccessSectorStream(new AesCtrStream(sectionStream, DecryptedKeys[2], offset, sect.Header.Ctr), false);
+                    return new RandomAccessSectorStream(new Aes128CtrStream(sectionStream, DecryptedKeys[2], offset, sect.Header.Ctr), false);
                 case SectionCryptType.BKTR:
                     var patchStream = new RandomAccessSectorStream(
-                        new BktrCryptoStream(sectionStream, DecryptedKeys[2], 0, size, offset, sect.Header.Ctr, sect),
+                        new BktrCryptoStream(sectionStream, DecryptedKeys[2], 0, size, offset, sect.Header.Ctr, sect.Header.Bktr),
                         false);
                     if (BaseNca == null)
                     {
@@ -224,7 +224,7 @@ namespace libhac
         private void CheckBktrKey(NcaSection sect)
         {
             var offset = sect.Header.Bktr.SubsectionHeader.Offset;
-            using (var streamDec = new RandomAccessSectorStream(new AesCtrStream(GetStream(), DecryptedKeys[2], sect.Offset, sect.Size, sect.Offset, sect.Header.Ctr)))
+            using (var streamDec = new RandomAccessSectorStream(new Aes128CtrStream(GetStream(), DecryptedKeys[2], sect.Offset, sect.Size, sect.Offset, sect.Header.Ctr)))
             {
                 var reader = new BinaryReader(streamDec);
                 streamDec.Position = offset + 8;
