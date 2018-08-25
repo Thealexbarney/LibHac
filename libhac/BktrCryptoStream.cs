@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using libhac.XTSSharp;
@@ -69,14 +70,26 @@ namespace libhac
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            var ret = base.Read(buffer, offset, count);
-            if (Position >= CurrentEntry.OffsetEnd)
+            int totalBytesRead = 0;
+            var outPos = offset;
+
+            while (count > 0)
             {
-                CurrentEntry = CurrentEntry.Next;
-                UpdateCounterSubsection(CurrentEntry.Counter);
+                int bytesToRead = (int)Math.Min(CurrentEntry.OffsetEnd - Position, count);
+                int bytesRead = base.Read(buffer, outPos, bytesToRead);
+
+                outPos += bytesRead;
+                totalBytesRead += bytesRead;
+                count -= bytesRead;
+
+                if (Position >= CurrentEntry.OffsetEnd)
+                {
+                    CurrentEntry = CurrentEntry.Next;
+                    UpdateCounterSubsection(CurrentEntry.Counter);
+                }
             }
 
-            return ret;
+            return totalBytesRead;
         }
 
         private SubsectionEntry GetSubsectionEntry(long offset)
@@ -93,5 +106,10 @@ namespace libhac
             Counter[5] = (byte)(value >> 16);
             Counter[4] = (byte)(value >> 24);
         }
+
+        // todo: Make SectorStream play nicer with reading multiple
+        // blocks at a time to remove the need for this hack
+        protected override void ValidateSize(int value) { }
+        protected override void ValidateSize(long value) { }
     }
 }

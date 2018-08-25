@@ -154,7 +154,7 @@ namespace libhac.XTSSharp
         /// <summary>
         /// Validates that the size is equal to the sector size
         /// </summary>
-        protected void ValidateSize(long value)
+        protected virtual void ValidateSize(long value)
         {
             if (value != SectorSize)
                 throw new ArgumentException(string.Format("Value needs to be {0}", SectorSize));
@@ -163,7 +163,7 @@ namespace libhac.XTSSharp
         /// <summary>
         /// Validates that the size is equal to the sector size
         /// </summary>
-        protected void ValidateSize(int value)
+        protected virtual void ValidateSize(int value)
         {
             if (value != SectorSize)
                 throw new ArgumentException(string.Format("Value needs to be {0}", SectorSize));
