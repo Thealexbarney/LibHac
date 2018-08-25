@@ -6,7 +6,7 @@ using libhac.XTSSharp;
 
 namespace libhac
 {
-    public class Crypto
+    public static class Crypto
     {
         internal const int Aes128Size = 0x10;
         internal const int Sha256DigestSize = 0x20;
@@ -67,15 +67,15 @@ namespace libhac
             }
         }
 
-        internal static BigInteger GetBigInteger(byte[] bytes)
+        private static BigInteger GetBigInteger(byte[] bytes)
         {
-            byte[] signPadded = new byte[bytes.Length + 1];
+            var signPadded = new byte[bytes.Length + 1];
             Buffer.BlockCopy(bytes, 0, signPadded, 1, bytes.Length);
             Array.Reverse(signPadded);
             return new BigInteger(signPadded);
         }
 
-        public static RsaKey DecryptRsaKey(byte[] encryptedKey, byte[] kek)
+        public static RSAParameters DecryptRsaKey(byte[] encryptedKey, byte[] kek)
         {
             var counter = new byte[0x10];
             Array.Copy(encryptedKey, counter, 0x10);
@@ -99,120 +99,188 @@ namespace libhac
             var nInt = GetBigInteger(n);
             var eInt = GetBigInteger(e);
 
-            var test = new BigInteger(12345678);
-            var testEnc = BigInteger.ModPow(test, dInt, nInt);
-            var testDec = BigInteger.ModPow(testEnc, eInt, nInt);
+            RSAParameters rsaParams = RecoverRsaParameters(nInt, eInt, dInt);
+            TestRsaKey(rsaParams);
+            return rsaParams;
+        }
 
-            if (test != testDec)
+        private static void TestRsaKey(RSAParameters keyParams)
+        {
+            var rsa = new RSACryptoServiceProvider();
+            rsa.ImportParameters(keyParams);
+
+            var test = new byte[] {12, 34, 56, 78};
+            byte[] testEnc = rsa.Encrypt(test, false);
+            byte[] testDec = rsa.Decrypt(testEnc, false);
+
+            if (!Util.ArraysEqual(test, testDec))
             {
                 throw new InvalidDataException("Could not verify RSA key pair");
             }
-
-            return new RsaKey(n, e, d);
         }
 
-        public static byte[] DecryptTitleKey(byte[] titleKeyblock, RsaKey rsaKey)
+        public static byte[] DecryptTitleKey(byte[] titleKeyblock, RSAParameters rsaParams)
         {
-            if (rsaKey == null) return new byte[0x10];
-
-            var tikInt = GetBigInteger(titleKeyblock);
-            var decInt = BigInteger.ModPow(tikInt, rsaKey.DInt, rsaKey.NInt);
-            var decBytes = decInt.ToByteArray();
-            Array.Reverse(decBytes);
-            var decBlock = new byte[0x100];
-            Array.Copy(decBytes, 0, decBlock, decBlock.Length - decBytes.Length, decBytes.Length);
-            return UnwrapTitleKey(decBlock);
+#if USE_RSA_CNG
+            RSA rsa = new RSACng();
+#else
+            RSA rsa = RSA.Create();
+#endif
+            rsa.ImportParameters(rsaParams);
+            return rsa.Decrypt(titleKeyblock, RSAEncryptionPadding.OaepSHA256);
         }
 
-        public static byte[] UnwrapTitleKey(byte[] data)
+        private static RSAParameters RecoverRsaParameters(BigInteger n, BigInteger e, BigInteger d)
         {
-            var expectedLabelHash = Ticket.LabelHash;
-            var salt = new byte[0x20];
-            var db = new byte[0xdf];
-            Array.Copy(data, 1, salt, 0, salt.Length);
-            Array.Copy(data, 0x21, db, 0, db.Length);
-
-            CalculateMgf1AndXor(salt, db);
-            CalculateMgf1AndXor(db, salt);
-
-            for (int i = 0; i < 0x20; i++)
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
             {
-                if (expectedLabelHash[i] != db[i])
+                BigInteger k = d * e - 1;
+
+                if (!k.IsEven)
                 {
-                    return null;
+                    throw new InvalidOperationException("d*e - 1 is odd");
                 }
+
+                BigInteger two = 2;
+                BigInteger t = BigInteger.One;
+
+                BigInteger r = k / two;
+
+                while (r.IsEven)
+                {
+                    t++;
+                    r /= two;
+                }
+
+                byte[] rndBuf = n.ToByteArray();
+
+                if (rndBuf[rndBuf.Length - 1] == 0)
+                {
+                    rndBuf = new byte[rndBuf.Length - 1];
+                }
+
+                BigInteger nMinusOne = n - BigInteger.One;
+
+                bool cracked = false;
+                BigInteger y = BigInteger.Zero;
+
+                for (int i = 0; i < 100 && !cracked; i++)
+                {
+                    BigInteger g;
+
+                    do
+                    {
+                        rng.GetBytes(rndBuf);
+                        g = GetBigInteger(rndBuf);
+                    }
+                    while (g >= n);
+
+                    y = BigInteger.ModPow(g, r, n);
+
+                    if (y.IsOne || y == nMinusOne)
+                    {
+                        i--;
+                        continue;
+                    }
+
+                    for (BigInteger j = BigInteger.One; j < t; j++)
+                    {
+                        BigInteger x = BigInteger.ModPow(y, two, n);
+
+                        if (x.IsOne)
+                        {
+                            cracked = true;
+                            break;
+                        }
+
+                        if (x == nMinusOne)
+                        {
+                            break;
+                        }
+
+                        y = x;
+                    }
+                }
+
+                if (!cracked)
+                {
+                    throw new InvalidOperationException("Prime factors not found");
+                }
+
+                BigInteger p = BigInteger.GreatestCommonDivisor(y - BigInteger.One, n);
+                BigInteger q = n / p;
+                BigInteger dp = d % (p - BigInteger.One);
+                BigInteger dq = d % (q - BigInteger.One);
+                BigInteger inverseQ = ModInverse(q, p);
+
+                int modLen = rndBuf.Length;
+                int halfModLen = (modLen + 1) / 2;
+
+                return new RSAParameters
+                {
+                    Modulus = GetBytes(n, modLen),
+                    Exponent = GetBytes(e, -1),
+                    D = GetBytes(d, modLen),
+                    P = GetBytes(p, halfModLen),
+                    Q = GetBytes(q, halfModLen),
+                    DP = GetBytes(dp, halfModLen),
+                    DQ = GetBytes(dq, halfModLen),
+                    InverseQ = GetBytes(inverseQ, halfModLen),
+                };
+            }
+        }
+
+        private static byte[] GetBytes(BigInteger value, int size)
+        {
+            byte[] bytes = value.ToByteArray();
+
+            if (size == -1)
+            {
+                size = bytes.Length;
             }
 
-            int keyOffset = 0x20;
-            while (keyOffset < 0xdf)
+            if (bytes.Length > size + 1)
             {
-                var value = db[keyOffset++];
-                if (value == 1)
-                {
-                    break;
-                }
-                if (value != 0)
-                {
-                    return null;
-                }
+                throw new InvalidOperationException($"Cannot squeeze value {value} to {size} bytes from {bytes.Length}.");
             }
 
-            if (keyOffset + 0x10 > db.Length) return null;
-
-            var key = new byte[0x10];
-            Array.Copy(db, keyOffset, key, 0, 0x10);
-
-            return key;
-        }
-
-        private static void CalculateMgf1AndXor(byte[] masked, byte[] seed)
-        {
-            SHA256 hash = SHA256.Create();
-            var hashBuf = new byte[seed.Length + 4];
-            Array.Copy(seed, hashBuf, seed.Length);
-
-            int maskedSize = masked.Length;
-            int roundNum = 0;
-            int pOut = 0;
-
-            while (maskedSize != 0)
+            if (bytes.Length == size + 1 && bytes[bytes.Length - 1] != 0)
             {
-                hashBuf[hashBuf.Length - 4] = (byte)(roundNum >> 24);
-                hashBuf[hashBuf.Length - 3] = (byte)(roundNum >> 16);
-                hashBuf[hashBuf.Length - 2] = (byte)(roundNum >> 8);
-                hashBuf[hashBuf.Length - 1] = (byte)roundNum;
-                roundNum++;
-
-                byte[] mask = hash.ComputeHash(hashBuf);
-                int curSize = Math.Min(maskedSize, 0x20);
-
-                for (int i = 0; i < curSize; i++, pOut++)
-                {
-                    masked[pOut] ^= mask[i];
-                }
-
-                maskedSize -= curSize;
+                throw new InvalidOperationException($"Cannot squeeze value {value} to {size} bytes from {bytes.Length}.");
             }
+
+            Array.Resize(ref bytes, size);
+            Array.Reverse(bytes);
+            return bytes;
         }
-    }
 
-    public class RsaKey
-    {
-        public byte[] N { get; }
-        public byte[] E { get; }
-        public byte[] D { get; }
-        public BigInteger NInt { get; }
-        public BigInteger EInt { get; }
-        public BigInteger DInt { get; }
-
-        public RsaKey(byte[] n, byte[] e, byte[] d)
+        private static BigInteger ModInverse(BigInteger e, BigInteger n)
         {
-            N = n;
-            E = e;
-            D = d;
-            NInt = Crypto.GetBigInteger(n);
-            EInt = Crypto.GetBigInteger(e);
-            DInt = Crypto.GetBigInteger(d);
+            BigInteger r = n;
+            BigInteger newR = e;
+            BigInteger t = 0;
+            BigInteger newT = 1;
+
+            while (newR != 0)
+            {
+                BigInteger quotient = r / newR;
+                BigInteger temp;
+
+                temp = t;
+                t = newT;
+                newT = temp - quotient * newT;
+
+                temp = r;
+                r = newR;
+                newR = temp - quotient * newR;
+            }
+
+            if (t < 0)
+            {
+                t = t + n;
+            }
+
+            return t;
         }
     }
 }

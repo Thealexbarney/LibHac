@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace libhac
 {
@@ -46,7 +47,7 @@ namespace libhac
         public byte[] device_key { get; set; } = new byte[0x10];
         public byte[][] bis_keys { get; set; } = Util.CreateJaggedArray<byte[][]>(4, 0x20);
         public byte[] sd_seed { get; set; } = new byte[0x10];
-        public RsaKey eticket_ext_key_rsa { get; set; }
+        public RSAParameters eticket_ext_key_rsa { get; set; }
 
         public Dictionary<byte[], byte[]> TitleKeys { get; } = new Dictionary<byte[], byte[]>(new ByteArray128BitComparer());
 
