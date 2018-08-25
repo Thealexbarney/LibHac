@@ -131,14 +131,14 @@ namespace DiscUtils.Fat
                 return false;
             }
             if (!string.IsNullOrEmpty(LongName) && !string.IsNullOrEmpty(other.LongName))
-                return LongName == other.LongName;
+                return LongName.Equals(other.LongName, StringComparison.InvariantCultureIgnoreCase);
 
             return CompareRawNames(this, other) == 0;
         }
 
         public static FileName FromPath(string path, Encoding encoding)
         {
-            return new FileName(Utilities.GetFileFromPath(path), encoding, false);
+            return new FileName(Utilities.GetFileFromPath(path), encoding, true);
         }
 
         public static bool operator ==(FileName a, FileName b)
