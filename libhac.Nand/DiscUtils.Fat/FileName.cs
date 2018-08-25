@@ -126,7 +126,7 @@ namespace DiscUtils.Fat
 
         public bool Equals(FileName other)
         {
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }
