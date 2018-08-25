@@ -425,7 +425,6 @@ namespace hactoolnet
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
             {
                 var save = new Savefile(file, ctx.Logger);
-                var layout = save.Header.Layout;
 
                 if (ctx.Options.OutDir != null)
                 {

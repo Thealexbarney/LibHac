@@ -20,9 +20,9 @@ namespace libhac
         public Bktr(Stream patchRomfs, Stream baseRomfs, NcaSection section)
         {
             if (section.Type != SectionType.Bktr) throw new ArgumentException("Section is not of type BKTR");
+            Patch = patchRomfs ?? throw new NullReferenceException($"{nameof(patchRomfs)} cannot be null");
+            Base = baseRomfs ?? throw new NullReferenceException($"{nameof(baseRomfs)} cannot be null");
 
-            Patch = patchRomfs;
-            Base = baseRomfs;
             IvfcLevelHeader level5 = section.Header.Bktr.IvfcHeader.LevelHeaders[5];
             Length = level5.LogicalOffset + level5.HashDataSize;
 
