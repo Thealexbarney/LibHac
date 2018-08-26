@@ -23,12 +23,12 @@ namespace LibHac
 
         public Stream OpenFile(string path, FileMode mode)
         {
-            return new FileStream(path, mode);
+            return new FileStream(Path.Combine(Root, path), mode);
         }
 
         public Stream OpenFile(string path, FileMode mode, FileAccess access)
         {
-            return new FileStream(path, mode, access);
+            return new FileStream(Path.Combine(Root, path), mode, access);
         }
 
         public string[] GetFileSystemEntries(string path, string searchPattern)
