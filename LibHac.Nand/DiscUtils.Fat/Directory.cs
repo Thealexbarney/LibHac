@@ -414,7 +414,7 @@ namespace DiscUtils.Fat
                                 validChecksum = false;
                                 break;
                             }
-                            sb.Append(slot.Name.ToUpperInvariant());
+                            sb.Append(slot.Name);
                         }
 
                         if (validChecksum)
