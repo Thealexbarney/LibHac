@@ -134,7 +134,7 @@ namespace DiscUtils.Fat
 
             if (!TryLoadCurrentCluster())
             {
-                if ((_position == _length || _position == DetectLength()) && !_atEOF)
+                if ((_position == _length || _position == DetectLength()))
                 {
                     _atEOF = true;
                     return 0;
