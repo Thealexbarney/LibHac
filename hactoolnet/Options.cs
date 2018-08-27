@@ -43,7 +43,8 @@ namespace hactoolnet
         Nax0,
         Xci,
         SwitchFs,
-        Save
+        Save,
+        Keygen
     }
 
     internal class Context

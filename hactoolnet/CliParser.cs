@@ -95,7 +95,7 @@ namespace hactoolnet
                 i += option.ArgsNeeded;
             }
 
-            if (!inputSpecified)
+            if (!inputSpecified && options.InFileType != FileType.Keygen)
             {
                 PrintWithUsage("Input file must be specified");
                 return null;
@@ -145,7 +145,7 @@ namespace hactoolnet
             sb.AppendLine("  -r, --raw            Keep raw data, don\'t unpack.");
             sb.AppendLine("  -y, --verify         Verify hashes.");
             sb.AppendLine("  -k, --keyset         Load keys from an external file.");
-            sb.AppendLine("  -t, --intype=type    Specify input file type [nca, switchfs, save]");
+            sb.AppendLine("  -t, --intype=type    Specify input file type [nca, xci, switchfs, save, keygen]");
             sb.AppendLine("  --titlekeys <file>   Load title keys from an external file.");
             sb.AppendLine("NCA options:");
             sb.AppendLine("  --section0 <file>    Specify Section 0 file path.");

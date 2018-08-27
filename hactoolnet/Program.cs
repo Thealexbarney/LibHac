@@ -48,6 +48,9 @@ namespace hactoolnet
                     case FileType.Xci:
                         ProcessXci(ctx);
                         break;
+                    case FileType.Keygen:
+                        ProcessKeygen(ctx);
+                        break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -458,6 +461,11 @@ namespace hactoolnet
                     save.JournalStreamSource.CreateStream().WriteAllBytes(Path.Combine(dir, "L2_0_SaveData"), ctx.Logger);
                 }
             }
+        }
+
+        private static void ProcessKeygen(Context ctx)
+        {
+            Console.WriteLine(ExternalKeys.PrintKeys(ctx.Keyset));
         }
 
         // For running random stuff
