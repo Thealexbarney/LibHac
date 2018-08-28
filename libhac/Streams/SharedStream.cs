@@ -65,7 +65,7 @@ namespace libhac.Streams
             get => _position;
             set
             {
-                if (value < 0 || value >= Length)
+                if (value < 0)
                     throw new ArgumentOutOfRangeException(nameof(value));
 
                 _position = value;

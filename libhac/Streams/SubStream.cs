@@ -42,7 +42,7 @@ namespace libhac.Streams
             get => BaseStream.Position - Offset;
             set
             {
-                if (value < 0 || value >= Length)
+                if (value < 0)
                     throw new ArgumentOutOfRangeException(nameof(value));
 
                 BaseStream.Position = Offset + value;
