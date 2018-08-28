@@ -115,7 +115,7 @@ namespace DiscUtils.Fat
 
             if (_position > _length)
             {
-                throw new IOException("Attempt to read beyond end of file");
+                return 0;
             }
 
             if (count < 0)
