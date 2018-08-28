@@ -90,6 +90,8 @@ namespace libhac
 
         public bool FileExists(string filename) => FileDict.ContainsKey(filename);
 
+        public Stream OpenRawStream() => StreamSource.CreateStream();
+
         private void SetReferences()
         {
             var dirDict = Directories.ToDictionary(x => x.Offset, x => x);
