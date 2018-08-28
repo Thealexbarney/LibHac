@@ -35,8 +35,6 @@ namespace DiscUtils.Fat
         private readonly List<uint> _knownClusters;
         private readonly ClusterReader _reader;
 
-        private bool _atEOF;
-
         private uint _currentCluster;
         private uint _length;
         private long _position;
@@ -96,7 +94,6 @@ namespace DiscUtils.Fat
                 if (value >= 0)
                 {
                     _position = value;
-                    _atEOF = false;
                 }
                 else
                 {
@@ -136,7 +133,6 @@ namespace DiscUtils.Fat
             {
                 if ((_position == _length || _position == DetectLength()))
                 {
-                    _atEOF = true;
                     return 0;
                 }
                 throw new IOException("Attempt to read beyond known clusters");
@@ -162,11 +158,6 @@ namespace DiscUtils.Fat
                 }
             }
 
-            if (numRead == 0)
-            {
-                _atEOF = true;
-            }
-
             return numRead;
         }
 
@@ -183,7 +174,6 @@ namespace DiscUtils.Fat
             }
 
             _position = newPos;
-            _atEOF = false;
             return newPos;
         }
 
@@ -284,8 +274,6 @@ namespace DiscUtils.Fat
             {
                 _fat.Flush();
             }
-
-            _atEOF = false;
         }
 
         /// <summary>
