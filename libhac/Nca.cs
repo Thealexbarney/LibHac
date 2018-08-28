@@ -87,62 +87,59 @@ namespace libhac
             long offset = sect.Offset;
             long size = sect.Size;
 
-            if (!raw)
-            {
-                switch (sect.Header.Type)
-                {
-                    case SectionType.Pfs0:
-                        offset = sect.Offset + sect.Pfs0.Superblock.Pfs0Offset;
-                        size = sect.Pfs0.Superblock.Pfs0Size;
-                        break;
-                    case SectionType.Romfs:
-                        offset = sect.Offset + sect.Header.Romfs.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1].LogicalOffset;
-                        size = sect.Header.Romfs.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1].HashDataSize;
-                        break;
-                    case SectionType.Bktr:
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-            }
-
-            var sectionStream = StreamSource.CreateStream(offset, size);
+            Stream rawStream = StreamSource.CreateStream(offset, size);
 
             switch (sect.Header.CryptType)
             {
                 case SectionCryptType.None:
-                    return sectionStream;
+                    break;
                 case SectionCryptType.XTS:
                     break;
                 case SectionCryptType.CTR:
-                    return new RandomAccessSectorStream(new Aes128CtrStream(sectionStream, DecryptedKeys[2], offset, sect.Header.Ctr), false);
+                    rawStream = new RandomAccessSectorStream(new Aes128CtrStream(rawStream, DecryptedKeys[2], offset, sect.Header.Ctr), false);
+                    break;
                 case SectionCryptType.BKTR:
-                    var patchStream = new RandomAccessSectorStream(
-                        new BktrCryptoStream(sectionStream, DecryptedKeys[2], 0, size, offset, sect.Header.Ctr, sect.Header.Bktr),
+                    rawStream = new RandomAccessSectorStream(
+                        new BktrCryptoStream(rawStream, DecryptedKeys[2], 0, size, offset, sect.Header.Ctr, sect.Header.Bktr),
                         false);
                     if (BaseNca == null)
                     {
-                        return patchStream;
+                        return rawStream;
                     }
                     else
                     {
-                        var dataLevel = sect.Header.Bktr.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1];
-
                         var baseSect = BaseNca.Sections.FirstOrDefault(x => x.Type == SectionType.Romfs);
                         if (baseSect == null) throw new InvalidDataException("Base NCA has no RomFS section");
 
                         var baseStream = BaseNca.OpenSection(baseSect.SectionNum, true);
-                        var virtStreamRaw = new Bktr(patchStream, baseStream, sect);
-
-                        if (raw) return virtStreamRaw;
-                        var virtStream = new SubStream(virtStreamRaw, dataLevel.LogicalOffset, dataLevel.HashDataSize);
-                        return virtStream;
+                        rawStream = new Bktr(rawStream, baseStream, sect);
                     }
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
 
-            return sectionStream;
+            if (raw) return rawStream;
+
+            switch (sect.Header.Type)
+            {
+                case SectionType.Pfs0:
+                    offset = sect.Pfs0.Superblock.Pfs0Offset;
+                    size = sect.Pfs0.Superblock.Pfs0Size;
+                    break;
+                case SectionType.Romfs:
+                    offset = sect.Header.Romfs.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1].LogicalOffset;
+                    size = sect.Header.Romfs.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1].HashDataSize;
+                    break;
+                case SectionType.Bktr:
+                    offset = sect.Header.Bktr.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1].LogicalOffset;
+                    size = sect.Header.Bktr.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1].HashDataSize;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            return new SubStream(rawStream, offset, size);
+
         }
 
         public void SetBaseNca(Nca baseNca) => BaseNca = baseNca;

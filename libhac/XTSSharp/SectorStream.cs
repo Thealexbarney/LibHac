@@ -145,7 +145,7 @@ namespace libhac.XTSSharp
         /// Validates that the size is a multiple of the sector size
         /// </summary>
         // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
-        private void ValidateSizeMultiple(long value)
+        protected virtual void ValidateSizeMultiple(long value)
         {
             if (value % SectorSize != 0)
                 throw new ArgumentException(string.Format("Value needs to be a multiple of {0}", SectorSize));

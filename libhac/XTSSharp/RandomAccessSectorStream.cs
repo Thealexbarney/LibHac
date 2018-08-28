@@ -334,7 +334,7 @@ namespace libhac.XTSSharp
                     _bufferDirty = false;
                     _currentBufferSize = sector.Length;
                     CacheHits++;
-                    _s.Position += _bufferSize;
+                    _s.Position += _currentBufferSize;
                     return;
                 }
             }

@@ -379,29 +379,26 @@ namespace hactoolnet
 
         private static void ProcessRomFs(Context ctx, Romfs romfs)
         {
-            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
+            if (ctx.Options.ListRomFs)
             {
-                if (ctx.Options.ListRomFs)
+                foreach (var romfsFile in romfs.Files)
                 {
-                    foreach (var romfsFile in romfs.Files)
-                    {
-                        ctx.Logger.LogMessage(romfsFile.FullPath);
-                    }
+                    ctx.Logger.LogMessage(romfsFile.FullPath);
                 }
+            }
 
-                if (ctx.Options.RomfsOut != null)
+            if (ctx.Options.RomfsOut != null)
+            {
+                using (var outFile = new FileStream(ctx.Options.RomfsOut, FileMode.Create, FileAccess.ReadWrite))
                 {
-                    using (var outFile = new FileStream(ctx.Options.RomfsOut, FileMode.Create, FileAccess.ReadWrite))
-                    {
-                        var romfsStream = romfs.OpenRawStream();
-                        romfsStream.CopyStream(outFile, romfsStream.Length, ctx.Logger);
-                    }
+                    var romfsStream = romfs.OpenRawStream();
+                    romfsStream.CopyStream(outFile, romfsStream.Length, ctx.Logger);
                 }
+            }
 
-                if (ctx.Options.RomfsOutDir != null)
-                {
-                    romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
-                }
+            if (ctx.Options.RomfsOutDir != null)
+            {
+                romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
             }
         }
 

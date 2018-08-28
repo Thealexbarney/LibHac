@@ -134,5 +134,11 @@ namespace libhac
 
             return _decryptor.TransformBlock(_tempBuffer, 0, bytesRead, buffer, offset);
         }
+
+        protected override void ValidateSizeMultiple(long value)
+        {
+            if (value % 0x10 != 0)
+                throw new ArgumentException($"Value needs to be a multiple of {SectorSize}");
+        }
     }
 }
