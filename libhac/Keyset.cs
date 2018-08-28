@@ -121,15 +121,26 @@ namespace libhac
     public static class ExternalKeys
     {
         private const int TitleKeySize = 0x10;
-        private static readonly Dictionary<string, KeyValue> CommonKeyDict = CreateCommonKeyDict();
-        private static readonly Dictionary<string, KeyValue> UniqueKeyDict = CreateUniqueKeyDict();
+        private static readonly Dictionary<string, KeyValue> CommonKeyDict;
+        private static readonly Dictionary<string, KeyValue> UniqueKeyDict;
+        private static readonly Dictionary<string, KeyValue> AllKeyDict;
+
+        static ExternalKeys()
+        {
+            var commonKeys = CreateCommonKeyList();
+            var uniqueKeys = CreateUniqueKeyList();
+
+            CommonKeyDict = commonKeys.ToDictionary(k => k.Name, k => k);
+            UniqueKeyDict = uniqueKeys.ToDictionary(k => k.Name, k => k);
+            AllKeyDict = uniqueKeys.Concat(commonKeys).ToDictionary(k => k.Name, k => k);
+        }
 
         public static Keyset ReadKeyFile(string filename, string titleKeysFilename = null, string consoleKeysFilename = null, IProgressReport progress = null)
         {
             var keyset = new Keyset();
 
-            if (filename != null) ReadMainKeys(keyset, filename, CommonKeyDict, progress);
-            if (consoleKeysFilename != null) ReadMainKeys(keyset, consoleKeysFilename, UniqueKeyDict, progress);
+            if (filename != null) ReadMainKeys(keyset, filename, AllKeyDict, progress);
+            if (consoleKeysFilename != null) ReadMainKeys(keyset, consoleKeysFilename, AllKeyDict, progress);
             if (titleKeysFilename != null) ReadTitleKeys(keyset, titleKeysFilename, progress);
             keyset.DeriveKeys();
 
@@ -219,7 +230,7 @@ namespace libhac
             return sb.ToString();
         }
 
-        private static Dictionary<string, KeyValue> CreateCommonKeyDict()
+        private static List<KeyValue> CreateCommonKeyList()
         {
             var keys = new List<KeyValue>
             {
@@ -260,10 +271,10 @@ namespace libhac
                 keys.Add(new KeyValue($"key_area_key_system_{i:x2}", 0x10, set => set.key_area_keys[i][2]));
             }
 
-            return keys.ToDictionary(k => k.Name, k => k);
+            return keys;
         }
 
-        private static Dictionary<string, KeyValue> CreateUniqueKeyDict()
+        private static List<KeyValue> CreateUniqueKeyList()
         {
             var keys = new List<KeyValue>
             {
@@ -279,7 +290,7 @@ namespace libhac
                 keys.Add(new KeyValue($"bis_key_{i:x2}", 0x20, set => set.bis_keys[i]));
             }
 
-            return keys.ToDictionary(k => k.Name, k => k);
+            return keys;
         }
 
         private class KeyValue
