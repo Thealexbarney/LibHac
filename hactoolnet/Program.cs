@@ -101,7 +101,7 @@ namespace hactoolnet
 
                 if (ctx.Options.RomfsOutDir != null || ctx.Options.RomfsOut != null)
                 {
-                    NcaSection section = nca.Sections.FirstOrDefault(x => x.Type == SectionType.Romfs || x.Type == SectionType.Bktr);
+                    NcaSection section = nca.Sections.FirstOrDefault(x => x?.Type == SectionType.Romfs || x?.Type == SectionType.Bktr);
 
                     if (section == null)
                     {

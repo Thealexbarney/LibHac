@@ -4,6 +4,7 @@ using DiscUtils;
 using DiscUtils.Fat;
 using DiscUtils.Partitions;
 using DiscUtils.Streams;
+using libhac.Streams;
 using libhac.XTSSharp;
 
 namespace libhac.Nand

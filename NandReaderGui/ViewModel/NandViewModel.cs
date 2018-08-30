@@ -8,7 +8,7 @@ using GalaSoft.MvvmLight.Command;
 using libhac;
 using libhac.Nand;
 using libhac.Savefile;
-using libhac.XTSSharp;
+using libhac.Streams;
 
 namespace NandReaderGui.ViewModel
 {

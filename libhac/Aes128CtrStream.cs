@@ -1,12 +1,13 @@
 ﻿using System;
 using System.IO;
-using libhac.XTSSharp;
+using libhac.Streams;
 
 namespace libhac
 {
     public class Aes128CtrStream : SectorStream
     {
         private const int CryptChunkSize = 0x4000;
+        private const int BlockSize = 0x10;
 
         private readonly long _counterOffset;
         private readonly byte[] _tempBuffer;
@@ -30,7 +31,7 @@ namespace libhac
         /// <param name="key">The decryption key</param>
         /// <param name="counter">The intial counter</param>
         public Aes128CtrStream(Stream baseStream, byte[] key, byte[] counter)
-            : base(baseStream, 0x10, 0)
+            : base(baseStream, BlockSize)
         {
             _counterOffset = 0;
             Length = baseStream.Length;
@@ -50,9 +51,9 @@ namespace libhac
         /// <param name="counterOffset">Offset to add to the counter</param>
         /// <param name="ctrHi">The value of the upper 64 bits of the counter</param>
         public Aes128CtrStream(Stream baseStream, byte[] key, long offset, long length, long counterOffset, byte[] ctrHi = null)
-            : base(baseStream, CryptChunkSize, offset)
+            : base(baseStream, BlockSize, CryptChunkSize / BlockSize, offset)
         {
-            var initialCounter = new byte[0x10];
+            var initialCounter = new byte[BlockSize];
             if (ctrHi != null)
             {
                 Array.Copy(ctrHi, initialCounter, 8);
@@ -133,12 +134,6 @@ namespace libhac
             if (bytesRead == 0) return 0;
 
             return _decryptor.TransformBlock(_tempBuffer, 0, bytesRead, buffer, offset);
-        }
-
-        protected override void ValidateSizeMultiple(long value)
-        {
-            if (value % 0x10 != 0)
-                throw new ArgumentException($"Value needs to be a multiple of {SectorSize}");
         }
     }
 }

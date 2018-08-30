@@ -25,6 +25,7 @@
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System.IO;
+using libhac.Streams;
 
 namespace libhac.XTSSharp
 {

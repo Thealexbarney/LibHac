@@ -2,7 +2,7 @@
 using System.IO;
 using System.Numerics;
 using System.Security.Cryptography;
-using libhac.XTSSharp;
+using libhac.Streams;
 
 namespace libhac
 {

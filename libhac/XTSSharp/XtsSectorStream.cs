@@ -25,6 +25,7 @@
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System.IO;
+using libhac.Streams;
 
 namespace libhac.XTSSharp
 {
@@ -72,7 +73,7 @@ namespace libhac.XTSSharp
         /// <param name="sectorSize">Sector size</param>
         /// <param name="offset">Offset to start counting sectors</param>
         public XtsSectorStream(Stream baseStream, Xts xts, int sectorSize, long offset)
-            : base(baseStream, sectorSize, offset)
+            : base(baseStream, sectorSize, 1, offset)
         {
             _xts = xts;
             _tempBuffer = new byte[sectorSize];
@@ -113,7 +114,7 @@ namespace libhac.XTSSharp
                 _encryptor = _xts.CreateEncryptor();
 
             //encrypt the sector
-            int transformedCount = _encryptor.TransformBlock(buffer, offset, count, _tempBuffer, 0, currentSector);
+            int transformedCount = _encryptor.TransformBlock(buffer, offset, count, _tempBuffer, 0, (ulong) currentSector);
 
             //Console.WriteLine("Encrypting sector {0}", currentSector);
 
@@ -145,7 +146,7 @@ namespace libhac.XTSSharp
                 _decryptor = _xts.CreateDecryptor();
 
             //decrypt the sector
-            var retV = _decryptor.TransformBlock(_tempBuffer, 0, ret, buffer, offset, currentSector);
+            var retV = _decryptor.TransformBlock(_tempBuffer, 0, ret, buffer, offset, (ulong) currentSector);
 
             //Console.WriteLine("Decrypting sector {0} == {1} bytes", currentSector, retV);
 

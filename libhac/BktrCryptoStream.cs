@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using libhac.XTSSharp;
+using libhac.Streams;
 
 namespace libhac
 {
@@ -106,10 +106,5 @@ namespace libhac
             Counter[5] = (byte)(value >> 16);
             Counter[4] = (byte)(value >> 24);
         }
-
-        // todo: Make SectorStream play nicer with reading multiple
-        // blocks at a time to remove the need for this hack
-        protected override void ValidateSize(int value) { }
-        protected override void ValidateSize(long value) { }
     }
 }
