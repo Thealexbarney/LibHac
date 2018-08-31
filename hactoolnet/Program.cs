@@ -3,8 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using libhac;
-using libhac.Savefile;
+using LibHac;
+using LibHac.Savefile;
 
 namespace hactoolnet
 {

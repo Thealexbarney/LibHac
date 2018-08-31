@@ -1,12 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <TargetFrameworks>netcoreapp2.1;net46</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\LibHac.Nand\LibHac.Nand.csproj" />
+    <ProjectReference Include="..\LibHac\LibHac.csproj" />
   </ItemGroup>
 
 </Project>

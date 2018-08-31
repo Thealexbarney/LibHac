@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using libhac;
-using libhac.Nand;
-using libhac.Savefile;
+using LibHac;
+using LibHac.Nand;
+using LibHac.Savefile;
 
 namespace NandReader
 {

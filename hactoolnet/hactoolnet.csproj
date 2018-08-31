@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\libhac\libhac.csproj" />
+    <ProjectReference Include="..\LibHac\LibHac.csproj" />
   </ItemGroup>
 
 </Project>

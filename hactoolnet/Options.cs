@@ -1,4 +1,4 @@
-﻿using libhac;
+﻿using LibHac;
 
 namespace hactoolnet
 {

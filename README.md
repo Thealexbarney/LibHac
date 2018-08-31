@@ -1,6 +1,6 @@
-# libhac
+# LibHac
 
-libhac is a .NET or .NET Core library for opening, decrypting and extracting common content file formats used by the Nintendo Switch.
+LibHac is a .NET or .NET Core library for opening, decrypting and extracting common content file formats used by the Nintendo Switch.
 
 All content is imported and exported as .NET streams. This means that reading nested file types and encryptions can easily be done by linking different file readers together.  
 For example, the files from a title stored on the external SD card can be read or extracted in this way.  
@@ -8,7 +8,7 @@ For example, the files from a title stored on the external SD card can be read o
 
 # hactoolnet
 
-hactoolnet is an example program that uses libhac. It is used in a similar manner to [hactool](https://github.com/SciresM/hactool).
+hactoolnet is an example program that uses LibHac. It is used in a similar manner to [hactool](https://github.com/SciresM/hactool).
 
 ## Usage
 ```
