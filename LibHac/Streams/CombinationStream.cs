@@ -29,7 +29,7 @@ using System.Threading;
 
 namespace LibHac.Streams
 {
-    internal class CombinationStream : Stream
+    public class CombinationStream : Stream
     {
         private readonly IList<Stream> _streams;
         private readonly IList<int> _streamsToDispose;
