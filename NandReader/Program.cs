@@ -103,8 +103,8 @@ namespace NandReader
         {
             var tickets = new List<Ticket>();
             var save = new Savefile(savefile);
-            var ticketList = new BinaryReader(save.OpenFile("ticket_list.bin"));
-            var ticketFile = new BinaryReader(save.OpenFile("ticket.bin"));
+            var ticketList = new BinaryReader(save.OpenFile("/ticket_list.bin"));
+            var ticketFile = new BinaryReader(save.OpenFile("/ticket.bin"));
 
             var titleId = ticketList.ReadUInt64();
             while (titleId != ulong.MaxValue)

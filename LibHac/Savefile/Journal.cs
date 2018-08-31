@@ -17,6 +17,9 @@ namespace LibHac.Savefile
             Map = map;
             BlockSize = blockSize;
             Length = map.Length * BlockSize;
+
+            CurrentMapEntry = Map[0];
+            BaseStream.Position = CurrentMapEntry.PhysicalIndex * BlockSize;
         }
 
         public override int Read(byte[] buffer, int offset, int count)
