@@ -8,7 +8,7 @@ using LibHac.Streams;
 
 namespace LibHac
 {
-    public class SdFs : IDisposable
+    public class SwitchFs : IDisposable
     {
         public Keyset Keyset { get; }
         public IFileSystem Fs { get; }
@@ -18,7 +18,7 @@ namespace LibHac
         public Dictionary<ulong, Title> Titles { get; } = new Dictionary<ulong, Title>();
         public Dictionary<ulong, Application> Applications { get; } = new Dictionary<ulong, Application>();
 
-        public SdFs(Keyset keyset, IFileSystem fs)
+        public SwitchFs(Keyset keyset, IFileSystem fs)
         {
             Fs = fs;
             Keyset = keyset;

@@ -48,7 +48,7 @@ namespace NandReader
                 var keyset = OpenKeyset();
                 var nand = new Nand(stream, keyset);
                 var user = nand.OpenSystemPartition();
-                var sdfs = new SdFs(keyset, user);
+                var sdfs = new SwitchFs(keyset, user);
             }
         }
 

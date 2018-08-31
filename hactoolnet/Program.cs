@@ -154,7 +154,7 @@ namespace hactoolnet
 
         private static void ProcessSwitchFs(Context ctx)
         {
-            var switchFs = new SdFs(ctx.Keyset, new FileSystem(ctx.Options.InFile));
+            var switchFs = new SwitchFs(ctx.Keyset, new FileSystem(ctx.Options.InFile));
 
             if (ctx.Options.ListTitles)
             {
@@ -510,7 +510,7 @@ namespace hactoolnet
 
         }
 
-        private static void SaveTitle(Context ctx, SdFs switchFs)
+        private static void SaveTitle(Context ctx, SwitchFs switchFs)
         {
             var id = ctx.Options.TitleId;
             if (id == 0)
@@ -540,7 +540,7 @@ namespace hactoolnet
             }
         }
 
-        private static void CreateNsp(Context ctx, SdFs switchFs)
+        private static void CreateNsp(Context ctx, SwitchFs switchFs)
         {
             var id = ctx.Options.TitleId;
             if (id == 0)
@@ -587,7 +587,7 @@ namespace hactoolnet
             }
         }
 
-        static void ListTitles(SdFs sdfs)
+        static void ListTitles(SwitchFs sdfs)
         {
             foreach (var title in sdfs.Titles.Values.OrderBy(x => x.Id))
             {
@@ -614,7 +614,7 @@ namespace hactoolnet
             }
         }
 
-        static string ListApplications(SdFs sdfs)
+        static string ListApplications(SwitchFs sdfs)
         {
             var sb = new StringBuilder();
 
