@@ -122,6 +122,7 @@ namespace LibHac
     {
         private const int TitleKeySize = 0x10;
         private static readonly Dictionary<string, KeyValue> CommonKeyDict;
+        private static readonly Dictionary<string, KeyValue> UniqueKeyDict;
         private static readonly Dictionary<string, KeyValue> AllKeyDict;
 
         static ExternalKeys()
@@ -130,19 +131,32 @@ namespace LibHac
             var uniqueKeys = CreateUniqueKeyList();
 
             CommonKeyDict = commonKeys.ToDictionary(k => k.Name, k => k);
+            UniqueKeyDict = uniqueKeys.ToDictionary(k => k.Name, k => k);
             AllKeyDict = uniqueKeys.Concat(commonKeys).ToDictionary(k => k.Name, k => k);
         }
 
-        public static Keyset ReadKeyFile(string filename, string titleKeysFilename = null, string consoleKeysFilename = null, IProgressReport progress = null)
+        public static Keyset ReadKeyFile(string filename, string titleKeysFilename = null, string consoleKeysFilename = null, IProgressReport logger = null)
         {
             var keyset = new Keyset();
 
-            if (filename != null) ReadMainKeys(keyset, filename, AllKeyDict, progress);
-            if (consoleKeysFilename != null) ReadMainKeys(keyset, consoleKeysFilename, AllKeyDict, progress);
-            if (titleKeysFilename != null) ReadTitleKeys(keyset, titleKeysFilename, progress);
+            if (filename != null) ReadMainKeys(keyset, filename, AllKeyDict, logger);
+            if (consoleKeysFilename != null) ReadMainKeys(keyset, consoleKeysFilename, AllKeyDict, logger);
+            if (titleKeysFilename != null) ReadTitleKeys(keyset, titleKeysFilename, logger);
             keyset.DeriveKeys();
 
             return keyset;
+        }
+
+        public static void LoadConsoleKeys(this Keyset keyset, string filename, IProgressReport logger = null)
+        {
+            foreach (KeyValue key in UniqueKeyDict.Values)
+            {
+                byte[] keyBytes = key.GetKey(keyset);
+                Array.Clear(keyBytes, 0, keyBytes.Length);
+            }
+
+            ReadMainKeys(keyset, filename, UniqueKeyDict, logger);
+            keyset.DeriveKeys();
         }
 
         private static void ReadMainKeys(Keyset keyset, string filename, Dictionary<string, KeyValue> keyDict, IProgressReport logger = null)
@@ -256,9 +270,6 @@ namespace LibHac
             {
                 int i = slot;
                 keys.Add(new KeyValue($"keyblob_key_source_{i:x2}", 0x10, set => set.keyblob_key_sources[i]));
-                keys.Add(new KeyValue($"keyblob_key_{i:x2}", 0x10, set => set.keyblob_keys[i]));
-                keys.Add(new KeyValue($"keyblob_mac_key_{i:x2}", 0x10, set => set.keyblob_mac_keys[i]));
-                keys.Add(new KeyValue($"encrypted_keyblob_{i:x2}", 0xB0, set => set.encrypted_keyblobs[i]));
                 keys.Add(new KeyValue($"keyblob_{i:x2}", 0x90, set => set.keyblobs[i]));
                 keys.Add(new KeyValue($"master_key_{i:x2}", 0x10, set => set.master_keys[i]));
                 keys.Add(new KeyValue($"package1_key_{i:x2}", 0x10, set => set.package1_keys[i]));
@@ -281,6 +292,14 @@ namespace LibHac
                 new KeyValue("device_key", 0x10, set => set.device_key),
                 new KeyValue("sd_seed", 0x10, set => set.sd_seed),
             };
+
+            for (int slot = 0; slot < 0x20; slot++)
+            {
+                int i = slot;
+                keys.Add(new KeyValue($"keyblob_key_{i:x2}", 0x10, set => set.keyblob_keys[i]));
+                keys.Add(new KeyValue($"keyblob_mac_key_{i:x2}", 0x10, set => set.keyblob_mac_keys[i]));
+                keys.Add(new KeyValue($"encrypted_keyblob_{i:x2}", 0xB0, set => set.encrypted_keyblobs[i]));
+            }
 
             for (int slot = 0; slot < 4; slot++)
             {
