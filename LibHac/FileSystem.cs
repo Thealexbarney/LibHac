@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace LibHac
@@ -46,7 +47,7 @@ namespace LibHac
             {
                 result.AddRange(GetFileSystemEntries(Path.Combine(Root, path), searchPattern));
             }
-            catch { /**/ }
+            catch (UnauthorizedAccessException) { /* Skip this directory */ }
 
             if (searchOption == SearchOption.TopDirectoryOnly)
                 return result.ToArray();
@@ -58,7 +59,7 @@ namespace LibHac
                 {
                     result.AddRange(GetFileSystemEntries(search, searchPattern, searchOption));
                 }
-                catch { /**/ }
+                catch (UnauthorizedAccessException) { /* Skip this result */ }
             }
 
             return result.ToArray();
