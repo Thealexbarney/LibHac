@@ -130,16 +130,10 @@ namespace NandReaderGui
             _handleValue = null;
             base.Close();
         }
+
         private bool _disposed;
 
-        private new void Dispose()
-        {
-            Dispose(true);
-            base.Dispose();
-            GC.SuppressFinalize(this);
-        }
-
-        private new void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             // Check to see if Dispose has already been called.
             if (!_disposed)
@@ -156,7 +150,7 @@ namespace NandReaderGui
                 }
                 // Note disposing has been done.
                 _disposed = true;
-
+                base.Dispose(disposing);
             }
         }
     }

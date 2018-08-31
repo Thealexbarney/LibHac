@@ -1,4 +1,5 @@
-﻿using System;
+﻿// ReSharper disable UnusedVariable UnusedMember.Local
+using System;
 using System.Collections.Generic;
 using System.IO;
 using LibHac;

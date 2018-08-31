@@ -115,7 +115,10 @@ namespace LibHac
             SeedForPseudoDeviceId = reader.ReadUInt64();
             BcatPassphrase = reader.ReadUtf8Z(65);
 
-            reader.BaseStream.Position = start + 0x3148;
+            reader.BaseStream.Position = start + 0x3141;
+            Reserved01 = reader.ReadByte();
+            Reserved02 = reader.ReadBytes(6);
+
             UserAccountSaveDataSizeMax = reader.ReadInt64();
             UserAccountSaveDataJournalSizeMax = reader.ReadInt64();
             DeviceSaveDataSizeMax = reader.ReadInt64();

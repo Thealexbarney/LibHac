@@ -122,7 +122,6 @@ namespace LibHac
     {
         private const int TitleKeySize = 0x10;
         private static readonly Dictionary<string, KeyValue> CommonKeyDict;
-        private static readonly Dictionary<string, KeyValue> UniqueKeyDict;
         private static readonly Dictionary<string, KeyValue> AllKeyDict;
 
         static ExternalKeys()
@@ -131,7 +130,6 @@ namespace LibHac
             var uniqueKeys = CreateUniqueKeyList();
 
             CommonKeyDict = commonKeys.ToDictionary(k => k.Name, k => k);
-            UniqueKeyDict = uniqueKeys.ToDictionary(k => k.Name, k => k);
             AllKeyDict = uniqueKeys.Concat(commonKeys).ToDictionary(k => k.Name, k => k);
         }
 
