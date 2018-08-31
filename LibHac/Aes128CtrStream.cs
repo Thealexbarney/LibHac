@@ -29,11 +29,21 @@ namespace LibHac
         /// </summary>
         /// <param name="baseStream">The base stream</param>
         /// <param name="key">The decryption key</param>
-        /// <param name="counter">The intial counter</param>
+        /// <param name="counter">The initial counter</param>
         public Aes128CtrStream(Stream baseStream, byte[] key, byte[] counter)
             : base(baseStream, BlockSize)
         {
             _counterOffset = 0;
+
+            // Make the stream seekable by remembering the initial counter value
+            if (counter != null)
+            {
+                for (int i = 0; i < 8; i++)
+                {
+                    _counterOffset |= (long)counter[0xF - i] << (4 + i * 8);
+                }
+            }
+
             Length = baseStream.Length;
             _tempBuffer = new byte[CryptChunkSize];
 
@@ -70,11 +80,11 @@ namespace LibHac
 
         private void UpdateCounter(long offset)
         {
-            offset >>= 4;
+            ulong off = (ulong)offset >> 4;
             for (uint j = 0; j < 0x8; j++)
             {
-                Counter[0x10 - j - 1] = (byte)(offset & 0xFF);
-                offset >>= 8;
+                Counter[0x10 - j - 1] = (byte)(off & 0xFF);
+                off >>= 8;
             }
         }
 

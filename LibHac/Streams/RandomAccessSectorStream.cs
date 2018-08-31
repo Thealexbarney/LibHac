@@ -31,7 +31,10 @@ namespace LibHac.Streams
 
             _currentSector = sectorNum;
             long startPos = sectorNum * _bufferSize;
-            _baseStream.Position = startPos;
+            if (_baseStream.Position != startPos)
+            {
+                _baseStream.Position = startPos;
+            }
 
             _readBytes = _baseStream.Read(_buffer, 0, _bufferSize);
         }
