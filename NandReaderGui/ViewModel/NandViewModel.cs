@@ -5,10 +5,10 @@ using System.Management;
 using System.Windows.Input;
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
-using libhac;
-using libhac.Nand;
-using libhac.Savefile;
-using libhac.Streams;
+using LibHac;
+using LibHac.Nand;
+using LibHac.Savefile;
+using LibHac.Streams;
 
 namespace NandReaderGui.ViewModel
 {
