@@ -8,6 +8,7 @@ namespace LibHac.Savefile
         public byte[] Cmac { get; set; }
         public FsLayout Layout { get; set; }
         public JournalHeader Journal { get; set; }
+        public DuplexHeader Duplex { get; set; }
         public SaveHeader Save { get; set; }
 
         public RemapHeader FileRemap { get; set; }
@@ -34,6 +35,9 @@ namespace LibHac.Savefile
             reader.BaseStream.Position = 0x100;
             Layout = new FsLayout(reader);
 
+            reader.BaseStream.Position = 0x300;
+            Duplex = new DuplexHeader(reader);
+
             reader.BaseStream.Position = 0x408;
             Journal = new JournalHeader(reader);
 
@@ -46,14 +50,14 @@ namespace LibHac.Savefile
             MetaRemap = new RemapHeader(reader);
 
             reader.BaseStream.Position = Layout.MasterHashOffset0;
-            MasterHashA = reader.ReadBytes((int) Layout.MasterHashSize);
+            MasterHashA = reader.ReadBytes((int)Layout.MasterHashSize);
             reader.BaseStream.Position = Layout.MasterHashOffset1;
-            MasterHashB = reader.ReadBytes((int) Layout.MasterHashSize);
+            MasterHashB = reader.ReadBytes((int)Layout.MasterHashSize);
 
             reader.BaseStream.Position = Layout.L1BitmapOffset0;
-            DuplexMasterA = reader.ReadBytes((int) Layout.L1BitmapSize);
+            DuplexMasterA = reader.ReadBytes((int)Layout.L1BitmapSize);
             reader.BaseStream.Position = Layout.L1BitmapOffset1;
-            DuplexMasterB = reader.ReadBytes((int) Layout.L1BitmapSize);
+            DuplexMasterB = reader.ReadBytes((int)Layout.L1BitmapSize);
 
             reader.BaseStream.Position = Layout.FileMapEntryOffset;
             FileMapEntries = new MapEntry[FileRemap.MapEntryCount];
@@ -190,6 +194,42 @@ namespace LibHac.Savefile
             MapEntryCount = reader.ReadInt32();
             MapSegmentCount = reader.ReadInt32();
             Field10 = reader.ReadInt32();
+        }
+    }
+
+    public class DuplexHeader
+    {
+        public string Magic { get; }
+        public uint MagicNum { get; }
+        public DuplexInfo[] Layers { get; } = new DuplexInfo[3];
+
+        public DuplexHeader(BinaryReader reader)
+        {
+            Magic = reader.ReadAscii(4);
+            MagicNum = reader.ReadUInt32();
+
+            for (int i = 0; i < Layers.Length; i++)
+            {
+                Layers[i] = new DuplexInfo(reader);
+            }
+        }
+    }
+
+    public class DuplexInfo
+    {
+        public long Offset { get; }
+        public long Length { get; set; }
+        public int BlockSizePower { get; set; }
+        public int BlockSize { get; set; }
+
+        public DuplexInfo() { }
+
+        public DuplexInfo(BinaryReader reader)
+        {
+            Offset = reader.ReadInt64();
+            Length = reader.ReadInt64();
+            BlockSizePower = reader.ReadInt32();
+            BlockSize = 1 << BlockSizePower;
         }
     }
 

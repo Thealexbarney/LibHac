@@ -95,7 +95,7 @@ namespace hactoolnet
                 i += option.ArgsNeeded;
             }
 
-            if (!inputSpecified && options.InFileType != FileType.Keygen)
+            if (!inputSpecified && options.InFileType != FileType.Keygen && !options.RunCustom)
             {
                 PrintWithUsage("Input file must be specified");
                 return null;

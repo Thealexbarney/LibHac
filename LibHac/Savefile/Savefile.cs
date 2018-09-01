@@ -20,6 +20,7 @@ namespace LibHac.Savefile
         public Stream DuplexL1B { get; }
         public Stream DuplexDataA { get; }
         public Stream DuplexDataB { get; }
+        public LayeredDuplexFs DuplexData { get; }
         public Stream JournalData { get; }
 
         public Stream JournalTable { get; }
@@ -46,14 +47,37 @@ namespace LibHac.Savefile
 
                 FileRemapSource = new SharedStreamSource(FileRemap);
 
+                var duplexLayers = new DuplexFsLayerInfo[3];
+
+                duplexLayers[0] = new DuplexFsLayerInfo
+                {
+                    DataA = new MemoryStream(Header.DuplexMasterA),
+                    DataB = new MemoryStream(Header.DuplexMasterB),
+                    Info = Header.Duplex.Layers[0]
+                };
+
+                duplexLayers[1] = new DuplexFsLayerInfo
+                {
+                    DataA = FileRemapSource.CreateStream(layout.DuplexL1OffsetA, layout.DuplexL1Size),
+                    DataB = FileRemapSource.CreateStream(layout.DuplexL1OffsetB, layout.DuplexL1Size),
+                    Info = Header.Duplex.Layers[1]
+                };
+
+                duplexLayers[2] = new DuplexFsLayerInfo
+                {
+                    DataA = FileRemapSource.CreateStream(layout.DuplexDataOffsetA, layout.DuplexDataSize),
+                    DataB = FileRemapSource.CreateStream(layout.DuplexDataOffsetB, layout.DuplexDataSize),
+                    Info = Header.Duplex.Layers[2]
+                };
+
                 DuplexL1A = FileRemapSource.CreateStream(layout.DuplexL1OffsetA, layout.DuplexL1Size);
                 DuplexL1B = FileRemapSource.CreateStream(layout.DuplexL1OffsetB, layout.DuplexL1Size);
                 DuplexDataA = FileRemapSource.CreateStream(layout.DuplexDataOffsetA, layout.DuplexDataSize);
                 DuplexDataB = FileRemapSource.CreateStream(layout.DuplexDataOffsetB, layout.DuplexDataSize);
                 JournalData = FileRemapSource.CreateStream(layout.JournalDataOffset, layout.JournalDataSizeB + layout.SizeReservedArea);
 
-                var duplexData = layout.DuplexIndex == 0 ? DuplexDataA : DuplexDataB;
-                MetaRemap = new RemapStream(duplexData, Header.MetaMapEntries, Header.MetaRemap.MapSegmentCount);
+                DuplexData = new LayeredDuplexFs(duplexLayers, Header.Layout.DuplexIndex == 1);
+                MetaRemap = new RemapStream(DuplexData, Header.MetaMapEntries, Header.MetaRemap.MapSegmentCount);
                 MetaRemapSource = new SharedStreamSource(MetaRemap);
 
                 JournalTable = MetaRemapSource.CreateStream(layout.JournalTableOffset, layout.JournalTableSize);
