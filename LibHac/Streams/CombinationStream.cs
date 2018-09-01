@@ -126,6 +126,7 @@ namespace LibHac.Streams
                         break;
 
                     _currentStream = _streams[_currentStreamIndex++];
+                    _currentStream.Position = 0;
                 }
             }
 

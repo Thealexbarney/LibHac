@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace LibHac
 {
@@ -23,12 +25,12 @@ namespace LibHac
 
         public Stream OpenFile(string path, FileMode mode)
         {
-            return new FileStream(path, mode);
+            return new FileStream(Path.Combine(Root, path), mode);
         }
 
         public Stream OpenFile(string path, FileMode mode, FileAccess access)
         {
-            return new FileStream(path, mode, access);
+            return new FileStream(Path.Combine(Root, path), mode, access);
         }
 
         public string[] GetFileSystemEntries(string path, string searchPattern)
@@ -38,7 +40,29 @@ namespace LibHac
 
         public string[] GetFileSystemEntries(string path, string searchPattern, SearchOption searchOption)
         {
-            return Directory.GetFileSystemEntries(Path.Combine(Root, path), searchPattern, searchOption);
+            //return Directory.GetFileSystemEntries(Path.Combine(Root, path), searchPattern, searchOption);
+            var result = new List<string>();
+
+            try
+            {
+                result.AddRange(GetFileSystemEntries(Path.Combine(Root, path), searchPattern));
+            }
+            catch (UnauthorizedAccessException) { /* Skip this directory */ }
+
+            if (searchOption == SearchOption.TopDirectoryOnly)
+                return result.ToArray();
+
+            var searchDirectories = Directory.GetDirectories(Path.Combine(Root, path));
+            foreach (var search in searchDirectories)
+            {
+                try
+                {
+                    result.AddRange(GetFileSystemEntries(search, searchPattern, searchOption));
+                }
+                catch (UnauthorizedAccessException) { /* Skip this result */ }
+            }
+
+            return result.ToArray();
         }
 
         public string GetFullPath(string path)
