@@ -1,10 +1,11 @@
-﻿namespace LibHac.Savefile
+﻿using System;
+
+namespace LibHac.Savefile
 {
     public class AllocationTableIterator
     {
         private AllocationTable Fat { get; }
 
-        public bool IsValid { get;  }
         public int VirtualBlock { get; private set; }
         public int PhysicalBlock { get; private set; }
         public int CurrentSegmentSize { get; private set; }
@@ -12,7 +13,10 @@
         public AllocationTableIterator(AllocationTable table, int initialBlock)
         {
             Fat = table;
-            IsValid = BeginIteration(initialBlock);
+            if (!BeginIteration(initialBlock))
+            {
+                throw new ArgumentException($"Attempted to start FAT iteration from an invalid block. ({initialBlock}");
+            }
         }
 
         public bool BeginIteration(int initialBlock)
@@ -47,7 +51,7 @@
 
             var newEntry = Fat.Entries[newBlock];
             VirtualBlock += CurrentSegmentSize;
-            
+
             if (newEntry.IsSingleBlockSegment())
             {
                 CurrentSegmentSize = 1;

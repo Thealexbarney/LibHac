@@ -17,7 +17,6 @@ namespace LibHac.Savefile
             BlockSize = blockSize;
             Length = length;
             Iterator = new AllocationTableIterator(table, initialBlock);
-            if (!Iterator.IsValid) Length = 0;
             Data.Position = Iterator.PhysicalBlock * BlockSize;
         }
 

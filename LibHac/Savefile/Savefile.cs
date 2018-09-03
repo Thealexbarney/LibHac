@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using LibHac.Streams;
@@ -33,7 +32,9 @@ namespace LibHac.Savefile
         public Stream JournalLayer3Hash { get; }
         public Stream JournalFat { get; }
 
+        public DirectoryEntry RootDirectory { get; private set; }
         public FileEntry[] Files { get; private set; }
+        public DirectoryEntry[] Directories { get; private set; }
         private Dictionary<string, FileEntry> FileDict { get; }
 
         public Savefile(Stream file, IProgressReport logger = null)
@@ -126,7 +127,7 @@ namespace LibHac.Savefile
                 return JournalStreamSource.CreateStream(0, 0);
             }
 
-            return OpenFatBlock(file.BlockIndex, file.Size);
+            return OpenFatBlock(file.BlockIndex, file.FileSize);
         }
 
         private AllocationTableStream OpenFatBlock(int blockIndex, long size)
@@ -138,34 +139,54 @@ namespace LibHac.Savefile
 
         private void ReadFileInfo()
         {
-            var blockSize = Header.Save.BlockSize;
-
             // todo: Query the FAT for the file size when none is given
             var dirTableStream = OpenFatBlock(Header.Save.DirectoryTableBlock, 1000000);
             var fileTableStream = OpenFatBlock(Header.Save.FileTableBlock, 1000000);
 
-            FileEntry[] dirEntries = ReadFileEntries(dirTableStream);
+            DirectoryEntry[] dirEntries = ReadDirEntries(dirTableStream);
             FileEntry[] fileEntries = ReadFileEntries(fileTableStream);
 
-            foreach (var dir in dirEntries)
+            foreach (DirectoryEntry dir in dirEntries)
             {
-                if (dir.NextIndex != 0) dir.Next = dirEntries[dir.NextIndex];
+                if (dir.NextSiblingIndex != 0) dir.NextSibling = dirEntries[dir.NextSiblingIndex];
+                if (dir.FirstChildIndex != 0) dir.FirstChild = dirEntries[dir.FirstChildIndex];
+                if (dir.FirstFileIndex != 0) dir.FirstFile = fileEntries[dir.FirstFileIndex];
+                if (dir.NextInChainIndex != 0) dir.NextInChain = dirEntries[dir.NextInChainIndex];
                 if (dir.ParentDirIndex != 0 && dir.ParentDirIndex < dirEntries.Length)
                     dir.ParentDir = dirEntries[dir.ParentDirIndex];
             }
 
-            foreach (var file in fileEntries)
+            foreach (FileEntry file in fileEntries)
             {
-                if (file.NextIndex != 0) file.Next = fileEntries[file.NextIndex];
+                if (file.NextSiblingIndex != 0) file.NextSibling = fileEntries[file.NextSiblingIndex];
+                if (file.NextInChainIndex != 0) file.NextInChain = fileEntries[file.NextInChainIndex];
                 if (file.ParentDirIndex != 0 && file.ParentDirIndex < dirEntries.Length)
                     file.ParentDir = dirEntries[file.ParentDirIndex];
-                file.Offset = file.BlockIndex < 0 ? 0 : file.BlockIndex * blockSize;
             }
 
-            Files = new FileEntry[fileEntries.Length - 2];
-            Array.Copy(fileEntries, 2, Files, 0, Files.Length);
+            RootDirectory = dirEntries[2];
 
-            FileEntry.ResolveFilenames(Files);
+            var fileChain = fileEntries[1].NextInChain;
+            var files = new List<FileEntry>();
+            while (fileChain != null)
+            {
+                files.Add(fileChain);
+                fileChain = fileChain.NextInChain;
+            }
+
+            var dirChain = dirEntries[1].NextInChain;
+            var dirs = new List<DirectoryEntry>();
+            while (dirChain != null)
+            {
+                dirs.Add(dirChain);
+                dirChain = dirChain.NextInChain;
+            }
+
+            Files = files.ToArray();
+            Directories = dirs.ToArray();
+
+            FsEntry.ResolveFilenames(Files);
+            FsEntry.ResolveFilenames(Directories);
         }
 
         private FileEntry[] ReadFileEntries(Stream stream)
@@ -179,6 +200,22 @@ namespace LibHac.Savefile
             for (int i = 0; i < count; i++)
             {
                 entries[i] = new FileEntry(reader);
+            }
+
+            return entries;
+        }
+
+        private DirectoryEntry[] ReadDirEntries(Stream stream)
+        {
+            var reader = new BinaryReader(stream);
+            var count = reader.ReadInt32();
+
+            reader.BaseStream.Position -= 4;
+
+            var entries = new DirectoryEntry[count];
+            for (int i = 0; i < count; i++)
+            {
+                entries[i] = new DirectoryEntry(reader);
             }
 
             return entries;
