@@ -15,6 +15,7 @@ namespace LibHac.Savefile
         public SharedStreamSource MetaRemapSource { get; }
         private JournalStream JournalStream { get; }
         public SharedStreamSource JournalStreamSource { get; }
+        private AllocationTable AllocationTable { get; }
 
         public Stream DuplexL1A { get; }
         public Stream DuplexL1B { get; }
@@ -88,6 +89,7 @@ namespace LibHac.Savefile
                 JournalLayer2Hash = MetaRemapSource.CreateStream(layout.Layer2HashOffset, layout.Layer2HashSize);
                 JournalLayer3Hash = MetaRemapSource.CreateStream(layout.Layer3HashOffset, layout.Layer3HashSize);
                 JournalFat = MetaRemapSource.CreateStream(layout.Field148, layout.Field150);
+                AllocationTable = new AllocationTable(JournalFat);
 
                 var journalMap = JournalStream.ReadMappingEntries(JournalTable, Header.Journal.MappingEntryCount);
 
@@ -118,7 +120,18 @@ namespace LibHac.Savefile
 
         public Stream OpenFile(FileEntry file)
         {
-            return JournalStreamSource.CreateStream(file.Offset, file.Size);
+            if (file.BlockIndex < 0)
+            {
+                //todo replace
+                return JournalStreamSource.CreateStream(0, 0);
+            }
+
+            return OpenFatBlock(file.BlockIndex, file.Size);
+        }
+
+        private AllocationTableStream OpenFatBlock(int blockIndex, long size)
+        {
+            return new AllocationTableStream(JournalStreamSource.CreateStream(), AllocationTable, (int)Header.Save.BlockSize, blockIndex, size);
         }
 
         public bool FileExists(string filename) => FileDict.ContainsKey(filename);
@@ -126,19 +139,13 @@ namespace LibHac.Savefile
         private void ReadFileInfo()
         {
             var blockSize = Header.Save.BlockSize;
-            var dirOffset = Header.Save.DirectoryTableBlock * blockSize;
-            var fileOffset = Header.Save.FileTableBlock * blockSize;
 
-            FileEntry[] dirEntries;
-            FileEntry[] fileEntries;
-            using (var reader = new BinaryReader(JournalStreamSource.CreateStream(), Encoding.Default, true))
-            {
-                reader.BaseStream.Position = dirOffset;
-                dirEntries = ReadFileEntries(reader);
+            // todo: Query the FAT for the file size when none is given
+            var dirTableStream = OpenFatBlock(Header.Save.DirectoryTableBlock, 1000000);
+            var fileTableStream = OpenFatBlock(Header.Save.FileTableBlock, 1000000);
 
-                reader.BaseStream.Position = fileOffset;
-                fileEntries = ReadFileEntries(reader);
-            }
+            FileEntry[] dirEntries = ReadFileEntries(dirTableStream);
+            FileEntry[] fileEntries = ReadFileEntries(fileTableStream);
 
             foreach (var dir in dirEntries)
             {
@@ -161,9 +168,11 @@ namespace LibHac.Savefile
             FileEntry.ResolveFilenames(Files);
         }
 
-        private FileEntry[] ReadFileEntries(BinaryReader reader)
+        private FileEntry[] ReadFileEntries(Stream stream)
         {
+            var reader = new BinaryReader(stream);
             var count = reader.ReadInt32();
+
             reader.BaseStream.Position -= 4;
 
             var entries = new FileEntry[count];
