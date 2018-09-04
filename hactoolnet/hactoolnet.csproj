@@ -6,6 +6,11 @@
     <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <VersionPrefix>0.1.1</VersionPrefix>
+    <PathMap>$(MSBuildProjectDirectory)=C:/hactoolnet/</PathMap>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Remove="CA00000003_XS00000020" />
     <EmbeddedResource Include="CA00000003_XS00000020" />
