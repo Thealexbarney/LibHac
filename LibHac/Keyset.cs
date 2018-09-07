@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using LibHac.Streams;
 
 namespace LibHac
 {
@@ -42,6 +43,10 @@ namespace LibHac
         public byte[] acid_fixed_key_modulus { get; set; } = new byte[0x100];
         public byte[] package2_fixed_key_modulus { get; set; } = new byte[0x100];
         public byte[] eticket_rsa_kek { get; set; } = new byte[0x10];
+        public byte[] retail_specific_aes_key_source { get; set; } = new byte[0x10];
+        public byte[] per_console_key_source { get; set; } = new byte[0x10];
+        public byte[] bis_kek_source { get; set; } = new byte[0x10];
+        public byte[][] bis_key_source { get; set; } = Util.CreateJaggedArray<byte[][]>(3, 0x20);
 
         public byte[] secure_boot_key { get; set; } = new byte[0x10];
         public byte[] tsec_key { get; set; } = new byte[0x10];
@@ -58,8 +63,96 @@ namespace LibHac
             DeriveKeys();
         }
 
-        internal void DeriveKeys()
+        internal void DeriveKeys(IProgressReport logger = null)
         {
+            for (int i = 0; i < 0x20; i++)
+            {
+                if (secure_boot_key.IsEmpty() || tsec_key.IsEmpty() || keyblob_key_sources[i].IsEmpty())
+                {
+                    continue;
+                }
+
+                var temp = new byte[0x10];
+
+                Crypto.DecryptEcb(tsec_key, keyblob_key_sources[i], temp, 0x10);
+                Crypto.DecryptEcb(secure_boot_key, temp, keyblob_keys[i], 0x10);
+
+                if (keyblob_mac_key_source.IsEmpty()) continue;
+
+                Crypto.DecryptEcb(keyblob_keys[i], keyblob_mac_key_source, keyblob_mac_keys[i], 0x10);
+            }
+
+            var cmac = new byte[0x10];
+            var expectedCmac = new byte[0x10];
+            var counter = new byte[0x10];
+
+            for (int i = 0; i < 0x20; i++)
+            {
+                if (keyblob_keys[i].IsEmpty() || keyblob_mac_keys[i].IsEmpty() || encrypted_keyblobs[i].IsEmpty())
+                {
+                    continue;
+                }
+
+                Array.Copy(encrypted_keyblobs[i], expectedCmac, 0x10);
+                Crypto.CalculateAesCmac(keyblob_mac_keys[i], encrypted_keyblobs[i], 0x10, cmac, 0, 0xa0);
+
+                if (!Util.ArraysEqual(cmac, expectedCmac))
+                {
+                    logger?.LogMessage($"Warning: Keyblob MAC {i:x2} is invalid. Are SBK/TSEC key correct?");
+                }
+
+                Array.Copy(encrypted_keyblobs[i], 0x10, counter, 0, 0x10);
+
+                using (var keyblobDec = new RandomAccessSectorStream(new Aes128CtrStream(new MemoryStream(encrypted_keyblobs[i], 0x20, keyblobs[i].Length), keyblob_keys[i], counter)))
+                {
+                    keyblobDec.Read(keyblobs[i], 0, keyblobs[i].Length);
+                }
+            }
+
+            for (int i = 0; i < 0x20; i++)
+            {
+                if (keyblobs[i].IsEmpty()) continue;
+
+                Array.Copy(keyblobs[i], 0x80, package1_keys[i], 0, 0x10);
+            }
+
+            for (int i = 0; i < 0x20; i++)
+            {
+                if (master_key_source.IsEmpty() || keyblobs[i].IsEmpty()) continue;
+
+                var masterKek = new byte[0x10];
+                Array.Copy(keyblobs[i], masterKek, 0x10);
+
+                Crypto.DecryptEcb(masterKek, master_key_source, master_keys[i], 0x10);
+            }
+
+            if (!per_console_key_source.IsEmpty() && !keyblob_keys[0].IsEmpty())
+            {
+                Crypto.DecryptEcb(keyblob_keys[0], per_console_key_source, device_key, 0x10);
+            }
+
+            if (!device_key.IsEmpty()
+                && !bis_key_source[0].IsEmpty()
+                && !bis_key_source[1].IsEmpty()
+                && !bis_key_source[2].IsEmpty()
+                && !bis_kek_source.IsEmpty()
+                && !aes_kek_generation_source.IsEmpty()
+                && !aes_key_generation_source.IsEmpty()
+                && !retail_specific_aes_key_source.IsEmpty())
+            {
+                var kek = new byte[0x10];
+
+                Crypto.DecryptEcb(device_key, retail_specific_aes_key_source, kek, 0x10);
+                Crypto.DecryptEcb(kek, bis_key_source[0], bis_keys[0], 0x20);
+
+                Crypto.GenerateKek(kek, bis_kek_source, device_key, aes_kek_generation_source, aes_key_generation_source);
+
+                Crypto.DecryptEcb(kek, bis_key_source[1], bis_keys[1], 0x20);
+                Crypto.DecryptEcb(kek, bis_key_source[2], bis_keys[2], 0x20);
+
+                Array.Copy(bis_keys[2], bis_keys[3], 0x20);
+            }
+
             for (int i = 0; i < 0x20; i++)
             {
                 if (master_keys[i].IsEmpty())
@@ -93,7 +186,7 @@ namespace LibHac
                 }
             }
 
-            if (!header_kek_source.IsEmpty() && !header_key_source.IsEmpty())
+            if (!header_kek_source.IsEmpty() && !header_key_source.IsEmpty() && !master_keys[0].IsEmpty())
             {
                 var headerKek = new byte[0x10];
                 Crypto.GenerateKek(headerKek, header_kek_source, master_keys[0], aes_kek_generation_source, aes_key_generation_source);
@@ -142,7 +235,7 @@ namespace LibHac
             if (filename != null) ReadMainKeys(keyset, filename, AllKeyDict, logger);
             if (consoleKeysFilename != null) ReadMainKeys(keyset, consoleKeysFilename, AllKeyDict, logger);
             if (titleKeysFilename != null) ReadTitleKeys(keyset, titleKeysFilename, logger);
-            keyset.DeriveKeys();
+            keyset.DeriveKeys(logger);
 
             return keyset;
         }
@@ -263,7 +356,10 @@ namespace LibHac
                 new KeyValue("sd_card_save_key_source", 0x20, set => set.sd_card_key_sources[0]),
                 new KeyValue("master_key_source", 0x10, set => set.master_key_source),
                 new KeyValue("keyblob_mac_key_source", 0x10, set => set.keyblob_mac_key_source),
-                new KeyValue("eticket_rsa_kek", 0x10, set => set.eticket_rsa_kek )
+                new KeyValue("eticket_rsa_kek", 0x10, set => set.eticket_rsa_kek),
+                new KeyValue("retail_specific_aes_key_source", 0x10, set => set.retail_specific_aes_key_source),
+                new KeyValue("per_console_key_source", 0x10, set => set.per_console_key_source),
+                new KeyValue("bis_kek_source", 0x10, set => set.bis_kek_source)
             };
 
             for (int slot = 0; slot < 0x20; slot++)
@@ -280,6 +376,12 @@ namespace LibHac
                 keys.Add(new KeyValue($"key_area_key_system_{i:x2}", 0x10, set => set.key_area_keys[i][2]));
             }
 
+            for (int slot = 0; slot < 3; slot++)
+            {
+                int i = slot;
+                keys.Add(new KeyValue($"bis_key_source_{i:x2}", 0x20, set => set.bis_key_source[i]));
+            }
+
             return keys;
         }
 
@@ -290,7 +392,7 @@ namespace LibHac
                 new KeyValue("secure_boot_key", 0x10, set => set.secure_boot_key),
                 new KeyValue("tsec_key", 0x10, set => set.tsec_key),
                 new KeyValue("device_key", 0x10, set => set.device_key),
-                new KeyValue("sd_seed", 0x10, set => set.sd_seed),
+                new KeyValue("sd_seed", 0x10, set => set.sd_seed)
             };
 
             for (int slot = 0; slot < 0x20; slot++)

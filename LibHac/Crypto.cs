@@ -54,6 +54,28 @@ namespace LibHac
         public static void DecryptCbc(byte[] key, byte[] iv, byte[] src, byte[] dest, int length) =>
             DecryptCbc(key, iv, src, 0, dest, 0, length);
 
+        public static void EncryptCbc(byte[] key, byte[] iv, byte[] src, int srcIndex, byte[] dest, int destIndex, int length)
+        {
+            using (var aes = Aes.Create())
+            {
+                if (aes == null) throw new CryptographicException("Unable to create AES object");
+                aes.Key = key;
+                aes.IV = iv;
+                aes.Mode = CipherMode.CBC;
+                aes.Padding = PaddingMode.None;
+                var dec = aes.CreateEncryptor();
+                using (var ms = new MemoryStream(dest, destIndex, length))
+                using (var cs = new CryptoStream(ms, dec, CryptoStreamMode.Write))
+                {
+                    cs.Write(src, srcIndex, length);
+                    cs.FlushFinalBlock();
+                }
+            }
+        }
+
+        public static void EncryptCbc(byte[] key, byte[] iv, byte[] src, byte[] dest, int length) =>
+            EncryptCbc(key, iv, src, 0, dest, 0, length);
+
         public static void GenerateKek(byte[] dst, byte[] src, byte[] masterKey, byte[] kekSeed, byte[] keySeed)
         {
             var kek = new byte[Aes128Size];
@@ -109,7 +131,7 @@ namespace LibHac
             var rsa = new RSACryptoServiceProvider();
             rsa.ImportParameters(keyParams);
 
-            var test = new byte[] {12, 34, 56, 78};
+            var test = new byte[] { 12, 34, 56, 78 };
             byte[] testEnc = rsa.Encrypt(test, false);
             byte[] testDec = rsa.Decrypt(testEnc, false);
 
@@ -281,6 +303,59 @@ namespace LibHac
             }
 
             return t;
+        }
+
+        // https://stackoverflow.com/questions/29163493/aes-cmac-calculation-c-sharp
+        public static void CalculateAesCmac(byte[] key, byte[] src, int srcIndex, byte[] dest, int destIndex, int length)
+        {
+            byte[] l = new byte[16];
+            EncryptCbc(key, new byte[16], new byte[16], l, 0x10);
+
+            byte[] firstSubkey = Rol(l);
+            if ((l[0] & 0x80) == 0x80)
+                firstSubkey[15] ^= 0x87;
+
+            byte[] secondSubkey = Rol(firstSubkey);
+            if ((firstSubkey[0] & 0x80) == 0x80)
+                secondSubkey[15] ^= 0x87;
+
+            int paddingBytes = 16 - length % 16;
+            byte[] srcPadded = new byte[length + paddingBytes];
+
+            Array.Copy(src, srcIndex, srcPadded, 0, length);
+
+            if (paddingBytes > 0)
+            {
+                srcPadded[length] = 0x80;
+
+                for (int j = 0; j < firstSubkey.Length; j++)
+                    srcPadded[length - 16 + j] ^= firstSubkey[j];
+            }
+            else
+            {
+                for (int j = 0; j < secondSubkey.Length; j++)
+                    srcPadded[length - 16 + j] ^= secondSubkey[j];
+            }
+
+            byte[] encResult = new byte[length];
+            EncryptCbc(key, new byte[16], srcPadded, encResult, length);
+
+            Array.Copy(encResult, length - 0x10, dest, destIndex, 0x10);
+        }
+
+        private static byte[] Rol(byte[] b)
+        {
+            byte[] r = new byte[b.Length];
+            byte carry = 0;
+
+            for (int i = b.Length - 1; i >= 0; i--)
+            {
+                ushort u = (ushort)(b[i] << 1);
+                r[i] = (byte)((u & 0xff) + carry);
+                carry = (byte)((u & 0xff00) >> 8);
+            }
+
+            return r;
         }
     }
 }
