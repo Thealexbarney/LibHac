@@ -68,6 +68,7 @@ namespace Net
         {
             var versionList = net.GetVersionList();
             net.Db.ImportVersionList(versionList);
+            //net.Db.ImportList("titles.txt");
             net.Save();
 
             foreach (var title in net.Db.Titles.Values)

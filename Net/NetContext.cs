@@ -34,6 +34,7 @@ namespace Net
                 CertificateCommon = new X509Certificate2(ctx.Options.CommonCertFile, "shop");
             }
 
+            Directory.CreateDirectory(CachePath);
             var databaseFile = Path.Combine(CachePath, "database.json");
             if (!File.Exists(databaseFile))
             {
@@ -84,6 +85,8 @@ namespace Net
         public Stream GetCnmtFileFromCache(ulong titleId, int version)
         {
             string titleDir = GetTitleDir(titleId, version);
+            if (!Directory.Exists(titleDir)) return null;
+
             var cnmtFiles = Directory.GetFiles(titleDir, "*.cnmt.nca").ToArray();
 
             if (cnmtFiles.Length == 1)
@@ -120,6 +123,8 @@ namespace Net
         public Stream GetNcaFile(ulong titleId, int version, string ncaId)
         {
             string titleDir = GetTitleDir(titleId, version);
+            if (!Directory.Exists(titleDir)) return null;
+
             var filePath = Path.Combine(titleDir, $"{ncaId.ToLower()}.nca");
             if (!File.Exists(filePath))
             {
@@ -151,20 +156,32 @@ namespace Net
         {
             var response = Request("GET", url);
             if (response == null) return;
-            using (var responseStream = response.GetResponseStream())
-            using (var outStream = new FileStream(filePath, FileMode.Create, FileAccess.ReadWrite))
+
+            var dir = Path.GetDirectoryName(filePath) ?? throw new DirectoryNotFoundException();
+            Directory.CreateDirectory(dir);
+
+            try
             {
-                var dir = Path.GetDirectoryName(filePath) ?? throw new DirectoryNotFoundException();
-                Directory.CreateDirectory(dir);
-                responseStream.CopyStream(outStream, response.ContentLength, ToolCtx.Logger);
+                using (var responseStream = response.GetResponseStream())
+                using (var outStream = new FileStream(filePath, FileMode.Create, FileAccess.ReadWrite))
+                {
+                    responseStream.CopyStream(outStream, response.ContentLength, ToolCtx.Logger);
+                }
+            }
+            catch (Exception)
+            {
+                if (!Directory.EnumerateFileSystemEntries(dir).Any())
+                {
+                    Directory.Delete(dir);
+                }
+
+                throw;
             }
         }
 
         private string GetTitleDir(ulong titleId, int version)
         {
-            var titleDir = Path.Combine(CachePath, $"{titleId:x16}", $"{version}");
-            Directory.CreateDirectory(titleDir);
-            return titleDir;
+            return Path.Combine(CachePath, $"{titleId:x16}", $"{version}");
         }
 
         public string GetMetaUrl(string ncaId)

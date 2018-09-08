@@ -44,7 +44,7 @@ namespace Net
                 if (!Titles.TryGetValue(mainId, out TitleMetadata titleDb))
                 {
                     titleDb = new TitleMetadata();
-                    Titles.Add(mainId, titleDb);
+                    Titles[mainId] = titleDb;
                 }
 
                 titleDb.Id = mainId;
@@ -52,6 +52,45 @@ namespace Net
                 titleDb.MaxVersion = title.version;
 
                 int maxVersionShort = title.version >> 16;
+                for (int i = 0; i <= maxVersionShort; i++)
+                {
+                    var version = i << 16;
+
+                    if (!titleDb.Versions.TryGetValue(version, out TitleVersion versionDb))
+                    {
+                        versionDb = new TitleVersion { Version = version };
+                        titleDb.Versions.Add(version, versionDb);
+                    }
+                }
+            }
+        }
+
+        public void ImportList(string filename)
+        {
+            ImportList(File.ReadAllLines(filename));
+        }
+
+        public void ImportList(string[] titleIds)
+        {
+            foreach (string id in titleIds)
+            {
+                var mainId = long.Parse(id, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                long updateId = 0;
+                bool isUpdate = (mainId & 0x800) != 0;
+                if (isUpdate)
+                {
+                    updateId = mainId;
+                    mainId &= ~0x800;
+                }
+
+                var titleDb = new TitleMetadata();
+                Titles[mainId] = titleDb;
+
+                titleDb.Id = mainId;
+                titleDb.UpdateId = mainId | 0x800;
+                titleDb.MaxVersion = 5 << 16;
+
+                int maxVersionShort = 5;
                 for (int i = 0; i <= maxVersionShort; i++)
                 {
                     var version = i << 16;
