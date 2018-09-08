@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
-using libhac;
+using LibHac;
 
 namespace Net
 {
@@ -63,10 +63,10 @@ namespace Net
 
                 var nca = new Nca(ToolCtx.Keyset, stream, true);
                 Stream sect = nca.OpenSection(0, false);
-                var pfs0 = new Pfs0(sect);
-                var file = pfs0.GetFile(0);
+                var pfs0 = new Pfs(sect);
+                var file = pfs0.OpenFile(pfs0.Files[0]);
 
-                var cnmt = new Cnmt(new MemoryStream(file));
+                var cnmt = new Cnmt(file);
                 return cnmt;
             }
         }

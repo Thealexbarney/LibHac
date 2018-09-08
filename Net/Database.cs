@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using libhac;
+using LibHac;
 using Newtonsoft.Json;
 
 namespace Net
