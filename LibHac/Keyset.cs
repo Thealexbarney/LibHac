@@ -172,7 +172,7 @@ namespace LibHac
             Crypto.DecryptEcb(device_key, retail_specific_aes_key_source, kek, 0x10);
             Crypto.DecryptEcb(kek, bis_key_source[0], bis_keys[0], 0x20);
 
-            Crypto.GenerateKek(kek, bis_kek_source, device_key, aes_kek_generation_source, aes_key_generation_source);
+            Crypto.GenerateKek(device_key, bis_kek_source, kek, aes_kek_generation_source, aes_key_generation_source);
 
             Crypto.DecryptEcb(kek, bis_key_source[1], bis_keys[1], 0x20);
             Crypto.DecryptEcb(kek, bis_key_source[2], bis_keys[2], 0x20);
@@ -198,19 +198,19 @@ namespace LibHac
 
                 if (haveKakSource0)
                 {
-                    Crypto.GenerateKek(key_area_keys[i][0], key_area_key_application_source, master_keys[i],
+                    Crypto.GenerateKek(master_keys[i], key_area_key_application_source, key_area_keys[i][0],
                         aes_kek_generation_source, aes_key_generation_source);
                 }
 
                 if (haveKakSource1)
                 {
-                    Crypto.GenerateKek(key_area_keys[i][1], key_area_key_ocean_source, master_keys[i],
+                    Crypto.GenerateKek(master_keys[i], key_area_key_ocean_source, key_area_keys[i][1],
                         aes_kek_generation_source, aes_key_generation_source);
                 }
 
                 if (haveKakSource2)
                 {
-                    Crypto.GenerateKek(key_area_keys[i][2], key_area_key_system_source, master_keys[i],
+                    Crypto.GenerateKek(master_keys[i], key_area_key_system_source, key_area_keys[i][2],
                         aes_kek_generation_source, aes_key_generation_source);
                 }
 
@@ -232,7 +232,7 @@ namespace LibHac
 
             var headerKek = new byte[0x10];
 
-            Crypto.GenerateKek(headerKek, header_kek_source, master_keys[0], aes_kek_generation_source,
+            Crypto.GenerateKek(master_keys[0], header_kek_source, headerKek, aes_kek_generation_source,
                 aes_key_generation_source);
             Crypto.DecryptEcb(headerKek, header_key_source, header_key, 0x20);
         }
@@ -240,7 +240,7 @@ namespace LibHac
         private void DeriveSdCardKeys()
         {
             var sdKek = new byte[0x10];
-            Crypto.GenerateKek(sdKek, sd_card_kek_source, master_keys[0], aes_kek_generation_source, aes_key_generation_source);
+            Crypto.GenerateKek(master_keys[0], sd_card_kek_source, sdKek, aes_kek_generation_source, aes_key_generation_source);
 
             for (int k = 0; k < sd_card_key_sources.Length; k++)
             {

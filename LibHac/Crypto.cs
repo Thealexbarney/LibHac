@@ -76,16 +76,17 @@ namespace LibHac
         public static void EncryptCbc(byte[] key, byte[] iv, byte[] src, byte[] dest, int length) =>
             EncryptCbc(key, iv, src, 0, dest, 0, length);
 
-        public static void GenerateKek(byte[] dst, byte[] src, byte[] masterKey, byte[] kekSeed, byte[] keySeed)
+        public static void GenerateKek(byte[] key, byte[] src, byte[] dest, byte[] kekSeed, byte[] keySeed)
         {
             var kek = new byte[Aes128Size];
             var srcKek = new byte[Aes128Size];
-            DecryptEcb(masterKey, kekSeed, kek, Aes128Size);
+
+            DecryptEcb(key, kekSeed, kek, Aes128Size);
             DecryptEcb(kek, src, srcKek, Aes128Size);
 
             if (keySeed != null)
             {
-                DecryptEcb(srcKek, keySeed, dst, Aes128Size);
+                DecryptEcb(srcKek, keySeed, dest, Aes128Size);
             }
         }
 
