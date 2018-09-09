@@ -65,23 +65,38 @@ namespace LibHac
 
         internal void DeriveKeys(IProgressReport logger = null)
         {
+            DeriveKeyblobKeys();
+            DecryptKeyblobs(logger);
+            ReadKeyblobs();
+
+            DerivePerConsoleKeys();
+            DerivePerFirmwareKeys();
+            DeriveNcaHeaderKey();
+            DeriveSdCardKeys();
+        }
+
+        private void DeriveKeyblobKeys()
+        {
+            if (secure_boot_key.IsEmpty() || tsec_key.IsEmpty()) return;
+
+            bool haveKeyblobMacKeySource = !master_key_source.IsEmpty();
+            var temp = new byte[0x10];
+
             for (int i = 0; i < 0x20; i++)
             {
-                if (secure_boot_key.IsEmpty() || tsec_key.IsEmpty() || keyblob_key_sources[i].IsEmpty())
-                {
-                    continue;
-                }
-
-                var temp = new byte[0x10];
+                if (keyblob_key_sources[i].IsEmpty()) continue;
 
                 Crypto.DecryptEcb(tsec_key, keyblob_key_sources[i], temp, 0x10);
                 Crypto.DecryptEcb(secure_boot_key, temp, keyblob_keys[i], 0x10);
 
-                if (keyblob_mac_key_source.IsEmpty()) continue;
+                if (!haveKeyblobMacKeySource) continue;
 
                 Crypto.DecryptEcb(keyblob_keys[i], keyblob_mac_key_source, keyblob_mac_keys[i], 0x10);
             }
+        }
 
+        private void DecryptKeyblobs(IProgressReport logger = null)
+        {
             var cmac = new byte[0x10];
             var expectedCmac = new byte[0x10];
             var counter = new byte[0x10];
@@ -103,55 +118,76 @@ namespace LibHac
 
                 Array.Copy(encrypted_keyblobs[i], 0x10, counter, 0, 0x10);
 
-                using (var keyblobDec = new RandomAccessSectorStream(new Aes128CtrStream(new MemoryStream(encrypted_keyblobs[i], 0x20, keyblobs[i].Length), keyblob_keys[i], counter)))
+                using (var keyblobDec = new RandomAccessSectorStream(new Aes128CtrStream(
+                    new MemoryStream(encrypted_keyblobs[i], 0x20, keyblobs[i].Length), keyblob_keys[i], counter)))
                 {
                     keyblobDec.Read(keyblobs[i], 0, keyblobs[i].Length);
                 }
             }
+        }
+
+        private void ReadKeyblobs()
+        {
+            var masterKek = new byte[0x10];
+
+            bool haveMasterKeySource = !master_key_source.IsEmpty();
 
             for (int i = 0; i < 0x20; i++)
             {
                 if (keyblobs[i].IsEmpty()) continue;
 
                 Array.Copy(keyblobs[i], 0x80, package1_keys[i], 0, 0x10);
-            }
 
-            for (int i = 0; i < 0x20; i++)
-            {
-                if (master_key_source.IsEmpty() || keyblobs[i].IsEmpty()) continue;
+                if (!haveMasterKeySource) continue;
 
-                var masterKek = new byte[0x10];
                 Array.Copy(keyblobs[i], masterKek, 0x10);
 
                 Crypto.DecryptEcb(masterKek, master_key_source, master_keys[i], 0x10);
             }
+        }
 
+        private void DerivePerConsoleKeys()
+        {
+            // Derive the device key
             if (!per_console_key_source.IsEmpty() && !keyblob_keys[0].IsEmpty())
             {
                 Crypto.DecryptEcb(keyblob_keys[0], per_console_key_source, device_key, 0x10);
             }
 
-            if (!device_key.IsEmpty()
-                && !bis_key_source[0].IsEmpty()
-                && !bis_key_source[1].IsEmpty()
-                && !bis_key_source[2].IsEmpty()
-                && !bis_kek_source.IsEmpty()
-                && !aes_kek_generation_source.IsEmpty()
-                && !aes_key_generation_source.IsEmpty()
-                && !retail_specific_aes_key_source.IsEmpty())
+            // Derive BIS keys
+            if (device_key.IsEmpty()
+                || bis_key_source[0].IsEmpty()
+                || bis_key_source[1].IsEmpty()
+                || bis_key_source[2].IsEmpty()
+                || bis_kek_source.IsEmpty()
+                || aes_kek_generation_source.IsEmpty()
+                || aes_key_generation_source.IsEmpty()
+                || retail_specific_aes_key_source.IsEmpty())
             {
-                var kek = new byte[0x10];
-
-                Crypto.DecryptEcb(device_key, retail_specific_aes_key_source, kek, 0x10);
-                Crypto.DecryptEcb(kek, bis_key_source[0], bis_keys[0], 0x20);
-
-                Crypto.GenerateKek(kek, bis_kek_source, device_key, aes_kek_generation_source, aes_key_generation_source);
-
-                Crypto.DecryptEcb(kek, bis_key_source[1], bis_keys[1], 0x20);
-                Crypto.DecryptEcb(kek, bis_key_source[2], bis_keys[2], 0x20);
-
-                Array.Copy(bis_keys[2], bis_keys[3], 0x20);
+                return;
             }
+
+            var kek = new byte[0x10];
+
+            Crypto.DecryptEcb(device_key, retail_specific_aes_key_source, kek, 0x10);
+            Crypto.DecryptEcb(kek, bis_key_source[0], bis_keys[0], 0x20);
+
+            Crypto.GenerateKek(kek, bis_kek_source, device_key, aes_kek_generation_source, aes_key_generation_source);
+
+            Crypto.DecryptEcb(kek, bis_key_source[1], bis_keys[1], 0x20);
+            Crypto.DecryptEcb(kek, bis_key_source[2], bis_keys[2], 0x20);
+
+            // BIS keys 2 and 3 are the same
+            Array.Copy(bis_keys[2], bis_keys[3], 0x20);
+        }
+
+        private void DerivePerFirmwareKeys()
+        {
+            bool haveKakSource0 = !key_area_key_application_source.IsEmpty();
+            bool haveKakSource1 = !key_area_key_ocean_source.IsEmpty();
+            bool haveKakSource2 = !key_area_key_system_source.IsEmpty();
+            bool haveTitleKekSource = !titlekek_source.IsEmpty();
+            bool havePackage2KeySource = !package2_key_source.IsEmpty();
 
             for (int i = 0; i < 0x20; i++)
             {
@@ -160,39 +196,49 @@ namespace LibHac
                     continue;
                 }
 
-                if (!key_area_key_application_source.IsEmpty())
+                if (haveKakSource0)
                 {
-                    Crypto.GenerateKek(key_area_keys[i][0], key_area_key_application_source, master_keys[i], aes_kek_generation_source, aes_key_generation_source);
+                    Crypto.GenerateKek(key_area_keys[i][0], key_area_key_application_source, master_keys[i],
+                        aes_kek_generation_source, aes_key_generation_source);
                 }
 
-                if (!key_area_key_ocean_source.IsEmpty())
+                if (haveKakSource1)
                 {
-                    Crypto.GenerateKek(key_area_keys[i][1], key_area_key_ocean_source, master_keys[i], aes_kek_generation_source, aes_key_generation_source);
+                    Crypto.GenerateKek(key_area_keys[i][1], key_area_key_ocean_source, master_keys[i],
+                        aes_kek_generation_source, aes_key_generation_source);
                 }
 
-                if (!key_area_key_system_source.IsEmpty())
+                if (haveKakSource2)
                 {
-                    Crypto.GenerateKek(key_area_keys[i][2], key_area_key_system_source, master_keys[i], aes_kek_generation_source, aes_key_generation_source);
+                    Crypto.GenerateKek(key_area_keys[i][2], key_area_key_system_source, master_keys[i],
+                        aes_kek_generation_source, aes_key_generation_source);
                 }
 
-                if (!titlekek_source.IsEmpty())
+                if (haveTitleKekSource)
                 {
                     Crypto.DecryptEcb(master_keys[i], titlekek_source, titlekeks[i], 0x10);
                 }
 
-                if (!package2_key_source.IsEmpty())
+                if (havePackage2KeySource)
                 {
                     Crypto.DecryptEcb(master_keys[i], package2_key_source, package2_keys[i], 0x10);
                 }
             }
+        }
 
-            if (!header_kek_source.IsEmpty() && !header_key_source.IsEmpty() && !master_keys[0].IsEmpty())
-            {
-                var headerKek = new byte[0x10];
-                Crypto.GenerateKek(headerKek, header_kek_source, master_keys[0], aes_kek_generation_source, aes_key_generation_source);
-                Crypto.DecryptEcb(headerKek, header_key_source, header_key, 0x20);
-            }
+        private void DeriveNcaHeaderKey()
+        {
+            if (header_kek_source.IsEmpty() || header_key_source.IsEmpty() || master_keys[0].IsEmpty()) return;
 
+            var headerKek = new byte[0x10];
+
+            Crypto.GenerateKek(headerKek, header_kek_source, master_keys[0], aes_kek_generation_source,
+                aes_key_generation_source);
+            Crypto.DecryptEcb(headerKek, header_key_source, header_key, 0x20);
+        }
+
+        private void DeriveSdCardKeys()
+        {
             var sdKek = new byte[0x10];
             Crypto.GenerateKek(sdKek, sd_card_kek_source, master_keys[0], aes_kek_generation_source, aes_key_generation_source);
 
