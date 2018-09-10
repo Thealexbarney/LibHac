@@ -173,6 +173,7 @@ namespace hactoolnet
             sb.AppendLine("  --exefsdir <dir>     Specify main ExeFS directory path.");
             sb.AppendLine("  --romfs <file>       Specify main RomFS file path.");
             sb.AppendLine("  --romfsdir <dir>     Specify main RomFS directory path.");
+            sb.AppendLine("  --nspout <file>      Specify file for the created NSP.");
             sb.AppendLine("Switch FS options:");
             sb.AppendLine("  --sdseed <seed>      Set console unique seed for SD card NAX0 encryption.");
             sb.AppendLine("  --listapps           List application info.");

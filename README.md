@@ -12,12 +12,12 @@ hactoolnet is an example program that uses LibHac. It is used in a similar manne
 
 ## Usage
 ```
-Usage: hactoolnet [options...] <path>
+Usage: hactoolnet.exe [options...] <path>
 Options:
   -r, --raw            Keep raw data, don't unpack.
   -y, --verify         Verify hashes.
   -k, --keyset         Load keys from an external file.
-  -t, --intype=type    Specify input file type [nca, switchfs]
+  -t, --intype=type    Specify input file type [nca, xci, switchfs, save, keygen]
   --titlekeys <file>   Load title keys from an external file.
 NCA options:
   --section0 <file>    Specify Section 0 file path.
@@ -28,15 +28,37 @@ NCA options:
   --section1dir <dir>  Specify Section 1 directory path.
   --section2dir <dir>  Specify Section 2 directory path.
   --section3dir <dir>  Specify Section 3 directory path.
+  --exefs <file>       Specify ExeFS directory path.
+  --exefsdir <dir>     Specify ExeFS directory path.
+  --romfs <file>       Specify RomFS directory path.
+  --romfsdir <dir>     Specify RomFS directory path.
   --listromfs          List files in RomFS.
   --basenca            Set Base NCA to use with update partitions.
+XCI options:
+  --rootdir <dir>      Specify root XCI directory path.
+  --updatedir <dir>    Specify update XCI directory path.
+  --normaldir <dir>    Specify normal XCI directory path.
+  --securedir <dir>    Specify secure XCI directory path.
+  --logodir <dir>      Specify logo XCI directory path.
+  --outdir <dir>       Specify XCI directory path.
+  --exefs <file>       Specify main ExeFS file path.
+  --exefsdir <dir>     Specify main ExeFS directory path.
+  --romfs <file>       Specify main RomFS file path.
+  --romfsdir <dir>     Specify main RomFS directory path.
+  --nspout <file>      Specify file for the created NSP.
 Switch FS options:
   --sdseed <seed>      Set console unique seed for SD card NAX0 encryption.
   --listapps           List application info.
   --listtitles         List title info for all titles.
   --title <title id>   Specify title ID to use.
-  --outdir <dir>       Specify directory path to save title to.
-  --romfsdir <dir>     Specify RomFS directory path.
+  --outdir <dir>       Specify directory path to save title NCAs to. (--title must be specified)
+  --exefs <file>       Specify ExeFS directory path. (--title must be specified)
+  --exefsdir <dir>     Specify ExeFS directory path. (--title must be specified)
+  --romfs <file>       Specify RomFS directory path. (--title must be specified)
+  --romfsdir <dir>     Specify RomFS directory path. (--title must be specified)
+Savefile options:
+  --outdir <dir>       Specify directory path to save contents to.
+  --debugoutdir <dir>  Specify directory path to save intermediate data to for debugging.
 ```
 
 ## Examples
@@ -54,6 +76,8 @@ Specifying the base title ID will extract the unpatched title.
 Specifying the patch title ID will extract the patched title.
 
 ## External Keys
+
+For more detailed information on keyset files, see [KEYS.md](KEYS.md).
 
 Keys can be loaded from a text file by specifying a filename with the `-k` argument. The file should be in the same format read by [hactool](https://github.com/SciresM/hactool#external-keys):  
 "Keyset files are text files containing one key per line, in the form "key_name = HEXADECIMALKEY". Case shouldn't matter, nor should whitespace."
