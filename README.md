@@ -56,6 +56,7 @@ Switch FS options:
   --exefsdir <dir>     Specify ExeFS directory path. (--title must be specified)
   --romfs <file>       Specify RomFS directory path. (--title must be specified)
   --romfsdir <dir>     Specify RomFS directory path. (--title must be specified)
+  --savedir <dir>      Specify save file directory path.
 Savefile options:
   --outdir <dir>       Specify directory path to save contents to.
   --debugoutdir <dir>  Specify directory path to save intermediate data to for debugging.

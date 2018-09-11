@@ -13,8 +13,10 @@ namespace LibHac
         public Keyset Keyset { get; }
         public IFileSystem Fs { get; }
         public string ContentsDir { get; }
+        public string SaveDir { get; }
 
         public Dictionary<string, Nca> Ncas { get; } = new Dictionary<string, Nca>(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, Savefile.Savefile> Saves { get; } = new Dictionary<string, Savefile.Savefile>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<ulong, Title> Titles { get; } = new Dictionary<ulong, Title>();
         public Dictionary<ulong, Application> Applications { get; } = new Dictionary<ulong, Application>();
 
@@ -26,10 +28,19 @@ namespace LibHac
             if (fs.DirectoryExists("Nintendo"))
             {
                 ContentsDir = fs.GetFullPath(Path.Combine("Nintendo", "Contents"));
+                SaveDir = fs.GetFullPath(Path.Combine("Nintendo", "save"));
             }
-            else if (fs.DirectoryExists("Contents"))
+            else
             {
-                ContentsDir = fs.GetFullPath("Contents");
+                if (fs.DirectoryExists("Contents"))
+                {
+                    ContentsDir = fs.GetFullPath("Contents");
+                }
+
+                if (fs.DirectoryExists("save"))
+                {
+                    SaveDir = fs.GetFullPath("save");
+                }
             }
 
             if (ContentsDir == null)
@@ -37,6 +48,7 @@ namespace LibHac
                 throw new DirectoryNotFoundException("Could not find \"Contents\" directory");
             }
 
+            OpenAllSaves();
             OpenAllNcas();
             ReadTitles();
             ReadControls();
@@ -87,6 +99,35 @@ namespace LibHac
             }
         }
 
+        private void OpenAllSaves()
+        {
+            string[] files = Fs.GetFileSystemEntries(SaveDir, "*");
+
+            foreach (string file in files)
+            {
+                Savefile.Savefile save = null;
+                string saveName = Path.GetFileNameWithoutExtension(file);
+
+                try
+                {
+                    Stream stream = Fs.OpenFile(file, FileMode.Open);
+
+                    string sdPath = "/" + Util.GetRelativePath(file, SaveDir).Replace('\\', '/');
+                    var nax0 = new Nax0(Keyset, stream, sdPath, false);
+                    save = new Savefile.Savefile(nax0.Stream);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"{ex.Message} {file}");
+                }
+
+                if (save != null && saveName != null)
+                {
+                    Saves[saveName] = save;
+                }
+            }
+        }
+
         private void ReadTitles()
         {
             foreach (var nca in Ncas.Values.Where(x => x.Header.ContentType == ContentType.Meta))
@@ -126,7 +167,7 @@ namespace LibHac
                     }
                 }
 
-                Titles.Add(title.Id, title);
+                Titles[title.Id] = title;
             }
         }
 
@@ -136,7 +177,7 @@ namespace LibHac
             {
                 var romfs = new Romfs(title.ControlNca.OpenSection(0, false));
                 var control = romfs.GetFile("/control.nacp");
-               
+
                 var reader = new BinaryReader(new MemoryStream(control));
                 title.Control = new Nacp(reader);
 

@@ -256,6 +256,11 @@ namespace hactoolnet
             {
                 CreateNsp(ctx, switchFs);
             }
+
+            if (ctx.Options.SaveOutDir != null)
+            {
+                ExportSdSaves(ctx, switchFs);
+            }
         }
 
         private static void ProcessXci(Context ctx)
@@ -649,6 +654,15 @@ namespace hactoolnet
             }
 
             return sb.ToString();
+        }
+
+        private static void ExportSdSaves(Context ctx, SwitchFs switchFs)
+        {
+            foreach (var save in switchFs.Saves)
+            {
+                var outDir = Path.Combine(ctx.Options.SaveOutDir, save.Key);
+                save.Value.Extract(outDir, ctx.Logger);
+            }
         }
     }
 }
