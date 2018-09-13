@@ -49,6 +49,8 @@ namespace LibHac
 
             _decryptor = new Aes128CtrTransform(key, counter ?? new byte[0x10], CryptChunkSize);
             Counter = _decryptor.Counter;
+
+            baseStream.Position = 0;
         }
 
         /// <summary>
@@ -76,6 +78,8 @@ namespace LibHac
             _decryptor = new Aes128CtrTransform(key, initialCounter, CryptChunkSize);
             Counter = _decryptor.Counter;
             UpdateCounter(_counterOffset + base.Position);
+
+            baseStream.Position = offset;
         }
 
         private void UpdateCounter(long offset)

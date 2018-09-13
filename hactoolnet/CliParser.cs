@@ -146,7 +146,7 @@ namespace hactoolnet
             sb.AppendLine("  -r, --raw            Keep raw data, don\'t unpack.");
             sb.AppendLine("  -y, --verify         Verify hashes.");
             sb.AppendLine("  -k, --keyset         Load keys from an external file.");
-            sb.AppendLine("  -t, --intype=type    Specify input file type [nca, xci, switchfs, save, keygen]");
+            sb.AppendLine("  -t, --intype=type    Specify input file type [nca, xci, romfs, pk11, switchfs, save, keygen]");
             sb.AppendLine("  --titlekeys <file>   Load title keys from an external file.");
             sb.AppendLine("NCA options:");
             sb.AppendLine("  --section0 <file>    Specify Section 0 file path.");
@@ -163,6 +163,9 @@ namespace hactoolnet
             sb.AppendLine("  --romfsdir <dir>     Specify RomFS directory path.");
             sb.AppendLine("  --listromfs          List files in RomFS.");
             sb.AppendLine("  --basenca            Set Base NCA to use with update partitions.");
+            sb.AppendLine("RomFS options:");
+            sb.AppendLine("  --romfsdir <dir>     Specify RomFS directory path.");
+            sb.AppendLine("  --listromfs          List files in RomFS.");
             sb.AppendLine("XCI options:");
             sb.AppendLine("  --rootdir <dir>      Specify root XCI directory path.");
             sb.AppendLine("  --updatedir <dir>    Specify update XCI directory path.");
@@ -175,6 +178,8 @@ namespace hactoolnet
             sb.AppendLine("  --romfs <file>       Specify main RomFS file path.");
             sb.AppendLine("  --romfsdir <dir>     Specify main RomFS directory path.");
             sb.AppendLine("  --nspout <file>      Specify file for the created NSP.");
+            sb.AppendLine("Package1 options:");
+            sb.AppendLine("  --outdir <dir>       Specify Package1 directory path.");
             sb.AppendLine("Switch FS options:");
             sb.AppendLine("  --sdseed <seed>      Set console unique seed for SD card NAX0 encryption.");
             sb.AppendLine("  --listapps           List application info.");
@@ -189,7 +194,6 @@ namespace hactoolnet
             sb.AppendLine("Savefile options:");
             sb.AppendLine("  --outdir <dir>       Specify directory path to save contents to.");
             sb.AppendLine("  --debugoutdir <dir>  Specify directory path to save intermediate data to for debugging.");
-
 
             return sb.ToString();
         }

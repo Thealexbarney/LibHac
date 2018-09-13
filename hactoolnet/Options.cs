@@ -45,7 +45,8 @@ namespace hactoolnet
         Xci,
         SwitchFs,
         Save,
-        Keygen
+        Keygen,
+        Pk11
     }
 
     internal class Context

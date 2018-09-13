@@ -17,7 +17,7 @@ Options:
   -r, --raw            Keep raw data, don't unpack.
   -y, --verify         Verify hashes.
   -k, --keyset         Load keys from an external file.
-  -t, --intype=type    Specify input file type [nca, xci, switchfs, save, keygen]
+  -t, --intype=type    Specify input file type [nca, xci, romfs, pk11, switchfs, save, keygen]
   --titlekeys <file>   Load title keys from an external file.
 NCA options:
   --section0 <file>    Specify Section 0 file path.
@@ -34,6 +34,9 @@ NCA options:
   --romfsdir <dir>     Specify RomFS directory path.
   --listromfs          List files in RomFS.
   --basenca            Set Base NCA to use with update partitions.
+RomFS options:
+  --romfsdir <dir>     Specify RomFS directory path.
+  --listromfs          List files in RomFS.
 XCI options:
   --rootdir <dir>      Specify root XCI directory path.
   --updatedir <dir>    Specify update XCI directory path.
@@ -46,6 +49,8 @@ XCI options:
   --romfs <file>       Specify main RomFS file path.
   --romfsdir <dir>     Specify main RomFS directory path.
   --nspout <file>      Specify file for the created NSP.
+Package1 options:
+  --outdir <dir>       Specify Package1 directory path.
 Switch FS options:
   --sdseed <seed>      Set console unique seed for SD card NAX0 encryption.
   --listapps           List application info.
