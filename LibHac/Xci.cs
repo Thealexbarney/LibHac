@@ -1,47 +1,66 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using LibHac.Streams;
 
 namespace LibHac
 {
     public class Xci
     {
+        private const string RootPartitionName = "rootpt";
         private const string UpdatePartitionName = "update";
         private const string NormalPartitionName = "normal";
         private const string SecurePartitionName = "secure";
         private const string LogoPartitionName = "logo";
 
         public XciHeader Header { get; }
-        public Pfs RootPartition { get; }
-        public Pfs UpdatePartition { get; }
-        public Pfs NormalPartition { get; }
-        public Pfs SecurePartition { get; }
-        public Pfs LogoPartition { get; }
+
+        public XciPartition RootPartition { get; }
+        public XciPartition UpdatePartition { get; }
+        public XciPartition NormalPartition { get; }
+        public XciPartition SecurePartition { get; }
+        public XciPartition LogoPartition { get; }
+
+        public List<XciPartition> Partitions { get; } = new List<XciPartition>();
 
         public Xci(Keyset keyset, Stream stream)
         {
             Header = new XciHeader(keyset, stream);
             var hfs0Stream = new SubStream(stream, Header.PartitionFsHeaderAddress);
-            RootPartition = new Pfs(hfs0Stream);
 
-            if (RootPartition.TryOpenFile(UpdatePartitionName, out var updateStream))
+            RootPartition = new XciPartition(hfs0Stream)
             {
-                UpdatePartition = new Pfs(updateStream);
+                Name = RootPartitionName,
+                Offset = Header.PartitionFsHeaderAddress
+            };
+
+            Partitions.Add(RootPartition);
+
+            foreach (PfsFileEntry file in RootPartition.Files)
+            {
+                Stream partitionStream = RootPartition.OpenFile(file);
+
+                var partition = new XciPartition(partitionStream)
+                {
+                    Name = file.Name,
+                    Offset = Header.PartitionFsHeaderAddress + RootPartition.HeaderSize + file.Offset
+                };
+
+                Partitions.Add(partition);
             }
 
-            if (RootPartition.TryOpenFile(NormalPartitionName, out var normalStream))
-            {
-                NormalPartition = new Pfs(normalStream);
-            }
-
-            if (RootPartition.TryOpenFile(SecurePartitionName, out var secureStream))
-            {
-                SecurePartition = new Pfs(secureStream);
-            }
-
-            if (RootPartition.TryOpenFile(LogoPartitionName, out var logoStream))
-            {
-                LogoPartition = new Pfs(logoStream);
-            }
+            UpdatePartition = Partitions.FirstOrDefault(x => x.Name == UpdatePartitionName);
+            NormalPartition = Partitions.FirstOrDefault(x => x.Name == NormalPartitionName);
+            SecurePartition = Partitions.FirstOrDefault(x => x.Name == SecurePartitionName);
+            LogoPartition = Partitions.FirstOrDefault(x => x.Name == LogoPartitionName);
         }
+    }
+
+    public class XciPartition : Pfs
+    {
+        public string Name { get; internal set; }
+        public long Offset { get; internal set; }
+
+        public XciPartition(Stream stream) : base(stream) { }
     }
 }

@@ -9,7 +9,7 @@ namespace LibHac
 {
     public class Romfs
     {
-        internal const int IvfcMaxLevel = 6;
+        public const int IvfcMaxLevel = 6;
         public RomfsHeader Header { get; }
         public List<RomfsDir> Directories { get; } = new List<RomfsDir>();
         public List<RomfsFile> Files { get; } = new List<RomfsFile>();

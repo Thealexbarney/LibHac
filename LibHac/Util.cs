@@ -251,7 +251,7 @@ namespace LibHac
             return new string(result);
         }
 
-        internal static long MediaToReal(long media)
+        public static long MediaToReal(long media)
         {
             return MediaSize * media;
         }
