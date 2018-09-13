@@ -30,7 +30,7 @@ namespace NandReader
                 var prodinfo = nand.OpenProdInfo();
                 var calibration = new Calibration(prodinfo);
 
-                keyset.eticket_ext_key_rsa = Crypto.DecryptRsaKey(calibration.EticketExtKeyRsa, keyset.eticket_rsa_kek);
+                keyset.EticketExtKeyRsa = Crypto.DecryptRsaKey(calibration.EticketExtKeyRsa, keyset.EticketRsaKek);
                 var tickets = GetTickets(nand, logger);
 
                 foreach (var ticket in tickets)

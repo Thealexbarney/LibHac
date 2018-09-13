@@ -39,7 +39,7 @@ namespace LibHac
 
             for (int i = 0; i < 0x20; i++)
             {
-                var dec = new Aes128CtrStream(encStream, keyset.package1_keys[i], Counter);
+                var dec = new Aes128CtrStream(encStream, keyset.Package1Keys[i], Counter);
                 dec.Read(decBuffer, 0, 0x10);
 
                 if (BitConverter.ToUInt32(decBuffer, 0) == Pk11Magic)

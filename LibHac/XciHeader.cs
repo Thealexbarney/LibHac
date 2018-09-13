@@ -73,11 +73,11 @@ namespace LibHac
             SelKey = reader.ReadInt32();
             LimAreaPage = reader.ReadInt32();
 
-            if (keyset.xci_header_key.IsEmpty()) return;
+            if (keyset.XciHeaderKey.IsEmpty()) return;
 
             var encHeader = reader.ReadBytes(EncryptedHeaderSize);
             var decHeader = new byte[EncryptedHeaderSize];
-            Crypto.DecryptCbc(keyset.xci_header_key, AesCbcIv, encHeader, decHeader, EncryptedHeaderSize);
+            Crypto.DecryptCbc(keyset.XciHeaderKey, AesCbcIv, encHeader, decHeader, EncryptedHeaderSize);
 
             reader = new BinaryReader(new MemoryStream(decHeader));
             FwVersion = reader.ReadUInt64();

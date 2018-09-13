@@ -52,7 +52,7 @@ namespace NandReaderGui.ViewModel
             var prodinfo = nand.OpenProdInfo();
             var calibration = new Calibration(prodinfo);
 
-            keyset.eticket_ext_key_rsa = Crypto.DecryptRsaKey(calibration.EticketExtKeyRsa, keyset.eticket_rsa_kek);
+            keyset.EticketExtKeyRsa = Crypto.DecryptRsaKey(calibration.EticketExtKeyRsa, keyset.EticketRsaKek);
             var tickets = GetTickets(nand);
 
             using (var outStream = new StreamWriter("titlekeys.txt"))

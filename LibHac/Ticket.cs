@@ -151,7 +151,7 @@ namespace LibHac
                 return commonKey;
             }
 
-            return Crypto.DecryptTitleKey(TitleKeyBlock, keyset.eticket_ext_key_rsa);
+            return Crypto.DecryptTitleKey(TitleKeyBlock, keyset.EticketExtKeyRsa);
         }
     }
 

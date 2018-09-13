@@ -47,7 +47,7 @@ namespace LibHac
                 if (keyset.TitleKeys.TryGetValue(Header.RightsId, out var titleKey))
                 {
                     TitleKey = titleKey;
-                    Crypto.DecryptEcb(keyset.titlekeks[CryptoType], titleKey, TitleKeyDec, 0x10);
+                    Crypto.DecryptEcb(keyset.Titlekeks[CryptoType], titleKey, TitleKeyDec, 0x10);
                     DecryptedKeys[2] = TitleKeyDec;
                 }
             }
@@ -147,7 +147,7 @@ namespace LibHac
         private void DecryptHeader(Keyset keyset, Stream stream)
         {
             byte[] headerBytes = new byte[0xC00];
-            var xts = XtsAes128.Create(keyset.header_key);
+            var xts = XtsAes128.Create(keyset.HeaderKey);
             using (var headerDec = new RandomAccessSectorStream(new XtsSectorStream(stream, xts, 0x200)))
             {
                 headerDec.Read(headerBytes, 0, headerBytes.Length);
@@ -162,7 +162,7 @@ namespace LibHac
         {
             for (int i = 0; i < 4; i++)
             {
-                Crypto.DecryptEcb(keyset.key_area_keys[CryptoType][Header.KaekInd], Header.EncryptedKeys[i],
+                Crypto.DecryptEcb(keyset.KeyAreaKeys[CryptoType][Header.KaekInd], Header.EncryptedKeys[i],
                     DecryptedKeys[i], 0x10);
             }
         }

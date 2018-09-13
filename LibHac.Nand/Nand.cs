@@ -33,7 +33,7 @@ namespace LibHac.Nand
         public Stream OpenProdInfo()
         {
             var encStream = ProdInfo.Open();
-            var xts = XtsAes128.Create(Keyset.bis_keys[0]);
+            var xts = XtsAes128.Create(Keyset.BisKeys[0]);
             var decStream = new RandomAccessSectorStream(new XtsSectorStream(encStream, xts, 0x4000, 0), true);
             return decStream;
         }
@@ -41,7 +41,7 @@ namespace LibHac.Nand
         public NandPartition OpenProdInfoF()
         {
             var encStream = ProdInfoF.Open();
-            var xts = XtsAes128.Create(Keyset.bis_keys[0]);
+            var xts = XtsAes128.Create(Keyset.BisKeys[0]);
             var decStream = new RandomAccessSectorStream(new XtsSectorStream(encStream, xts, 0x4000, 0), true);
             FatFileSystem fat = new FatFileSystem(decStream, Ownership.None);
             return new NandPartition(fat);
@@ -50,7 +50,7 @@ namespace LibHac.Nand
         public NandPartition OpenSafePartition()
         {
             var encStream = Safe.Open();
-            var xts = XtsAes128.Create(Keyset.bis_keys[1]);
+            var xts = XtsAes128.Create(Keyset.BisKeys[1]);
             var decStream = new RandomAccessSectorStream(new XtsSectorStream(encStream, xts, 0x4000, 0), true);
             FatFileSystem fat = new FatFileSystem(decStream, Ownership.None);
             return new NandPartition(fat);
@@ -59,7 +59,7 @@ namespace LibHac.Nand
         public NandPartition OpenSystemPartition()
         {
             var encStream = System.Open();
-            var xts = XtsAes128.Create(Keyset.bis_keys[2]);
+            var xts = XtsAes128.Create(Keyset.BisKeys[2]);
             var decStream = new RandomAccessSectorStream(new XtsSectorStream(encStream, xts, 0x4000, 0), true);
             FatFileSystem fat = new FatFileSystem(decStream, Ownership.None);
             return new NandPartition(fat);
@@ -68,7 +68,7 @@ namespace LibHac.Nand
         public NandPartition OpenUserPartition()
         {
             var encStream = User.Open();
-            var xts = XtsAes128.Create(Keyset.bis_keys[3]);
+            var xts = XtsAes128.Create(Keyset.BisKeys[3]);
             var decStream = new RandomAccessSectorStream(new XtsSectorStream(encStream, xts, 0x4000, 0), true);
             FatFileSystem fat = new FatFileSystem(decStream, Ownership.None);
             return new NandPartition(fat);

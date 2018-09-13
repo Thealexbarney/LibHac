@@ -54,7 +54,7 @@ namespace LibHac
             {
                 var naxSpecificKeys = Util.CreateJaggedArray<byte[][]>(2, 0x10);
                 var hashKey = new byte[0x10];
-                Array.Copy(keyset.sd_card_keys[k], hashKey, 0x10);
+                Array.Copy(keyset.SdCardKeys[k], hashKey, 0x10);
 
                 // Use the sd path to generate the kek for this NAX0
                 var hash = new HMACSHA256(hashKey);
@@ -73,7 +73,7 @@ namespace LibHac
                 Array.Copy(Keys[1], 0, validationHashKey, 0x18, 0x10);
 
                 var validationHash = new HMACSHA256(validationHashKey);
-                byte[] validationMac = validationHash.ComputeHash(keyset.sd_card_keys[k], 0x10, 0x10);
+                byte[] validationMac = validationHash.ComputeHash(keyset.SdCardKeys[k], 0x10, 0x10);
 
                 if (Util.ArraysEqual(Hmac, validationMac))
                 {

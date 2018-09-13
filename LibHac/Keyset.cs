@@ -1,5 +1,4 @@
-﻿// ReSharper disable InconsistentNaming
-
+﻿
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,58 +11,58 @@ namespace LibHac
 {
     public class Keyset
     {
-        public byte[][] keyblob_keys { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
-        public byte[][] keyblob_mac_keys { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
-        public byte[][] encrypted_keyblobs { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0xB0);
-        public byte[][] keyblobs { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x90);
-        public byte[][] keyblob_key_sources { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
-        public byte[] keyblob_mac_key_source { get; set; } = new byte[0x10];
-        public byte[] master_key_source { get; set; } = new byte[0x10];
-        public byte[][] master_keys { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
-        public byte[][] package1_keys { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
-        public byte[][] package2_keys { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
-        public byte[] package2_key_source { get; set; } = new byte[0x10];
-        public byte[] aes_kek_generation_source { get; set; } = new byte[0x10];
-        public byte[] aes_key_generation_source { get; set; } = new byte[0x10];
-        public byte[] key_area_key_application_source { get; set; } = new byte[0x10];
-        public byte[] key_area_key_ocean_source { get; set; } = new byte[0x10];
-        public byte[] key_area_key_system_source { get; set; } = new byte[0x10];
-        public byte[] titlekek_source { get; set; } = new byte[0x10];
-        public byte[] header_kek_source { get; set; } = new byte[0x10];
-        public byte[] sd_card_kek_source { get; set; } = new byte[0x10];
-        public byte[][] sd_card_key_sources { get; set; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
-        public byte[][] sd_card_key_sources_specific { get; set; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
-        public byte[] header_key_source { get; set; } = new byte[0x20];
-        public byte[] header_key { get; set; } = new byte[0x20];
-        public byte[] xci_header_key { get; set; } = new byte[0x10];
-        public byte[][] titlekeks { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
-        public byte[][][] key_area_keys { get; set; } = Util.CreateJaggedArray<byte[][][]>(0x20, 3, 0x10);
-        public byte[][] sd_card_keys { get; set; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
-        public byte[] nca_hdr_fixed_key_modulus { get; set; } = new byte[0x100];
-        public byte[] acid_fixed_key_modulus { get; set; } = new byte[0x100];
-        public byte[] package2_fixed_key_modulus { get; set; } = new byte[0x100];
-        public byte[] eticket_rsa_kek { get; set; } = new byte[0x10];
-        public byte[] retail_specific_aes_key_source { get; set; } = new byte[0x10];
-        public byte[] per_console_key_source { get; set; } = new byte[0x10];
-        public byte[] bis_kek_source { get; set; } = new byte[0x10];
-        public byte[][] bis_key_source { get; set; } = Util.CreateJaggedArray<byte[][]>(3, 0x20);
+        public byte[][] KeyblobKeys { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
+        public byte[][] KeyblobMacKeys { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
+        public byte[][] EncryptedKeyblobs { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0xB0);
+        public byte[][] Keyblobs { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x90);
+        public byte[][] KeyblobKeySources { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
+        public byte[] KeyblobMacKeySource { get; set; } = new byte[0x10];
+        public byte[] MasterKeySource { get; set; } = new byte[0x10];
+        public byte[][] MasterKeys { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
+        public byte[][] Package1Keys { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
+        public byte[][] Package2Keys { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
+        public byte[] Package2KeySource { get; set; } = new byte[0x10];
+        public byte[] AesKekGenerationSource { get; set; } = new byte[0x10];
+        public byte[] AesKeyGenerationSource { get; set; } = new byte[0x10];
+        public byte[] KeyAreaKeyApplicationSource { get; set; } = new byte[0x10];
+        public byte[] KeyAreaKeyOceanSource { get; set; } = new byte[0x10];
+        public byte[] KeyAreaKeySystemSource { get; set; } = new byte[0x10];
+        public byte[] TitlekekSource { get; set; } = new byte[0x10];
+        public byte[] HeaderKekSource { get; set; } = new byte[0x10];
+        public byte[] SdCardKekSource { get; set; } = new byte[0x10];
+        public byte[][] SdCardKeySources { get; set; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
+        public byte[][] SdCardKeySourcesSpecific { get; set; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
+        public byte[] HeaderKeySource { get; set; } = new byte[0x20];
+        public byte[] HeaderKey { get; set; } = new byte[0x20];
+        public byte[] XciHeaderKey { get; set; } = new byte[0x10];
+        public byte[][] Titlekeks { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
+        public byte[][][] KeyAreaKeys { get; set; } = Util.CreateJaggedArray<byte[][][]>(0x20, 3, 0x10);
+        public byte[][] SdCardKeys { get; set; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
+        public byte[] NcaHdrFixedKeyModulus { get; set; } = new byte[0x100];
+        public byte[] AcidFixedKeyModulus { get; set; } = new byte[0x100];
+        public byte[] Package2FixedKeyModulus { get; set; } = new byte[0x100];
+        public byte[] EticketRsaKek { get; set; } = new byte[0x10];
+        public byte[] RetailSpecificAesKeySource { get; set; } = new byte[0x10];
+        public byte[] PerConsoleKeySource { get; set; } = new byte[0x10];
+        public byte[] BisKekSource { get; set; } = new byte[0x10];
+        public byte[][] BisKeySource { get; set; } = Util.CreateJaggedArray<byte[][]>(3, 0x20);
 
-        public byte[] secure_boot_key { get; set; } = new byte[0x10];
-        public byte[] tsec_key { get; set; } = new byte[0x10];
-        public byte[] device_key { get; set; } = new byte[0x10];
-        public byte[][] bis_keys { get; set; } = Util.CreateJaggedArray<byte[][]>(4, 0x20);
-        public byte[] sd_seed { get; set; } = new byte[0x10];
-        public RSAParameters eticket_ext_key_rsa { get; set; }
+        public byte[] SecureBootKey { get; set; } = new byte[0x10];
+        public byte[] TsecKey { get; set; } = new byte[0x10];
+        public byte[] DeviceKey { get; set; } = new byte[0x10];
+        public byte[][] BisKeys { get; set; } = Util.CreateJaggedArray<byte[][]>(4, 0x20);
+        public byte[] SdSeed { get; set; } = new byte[0x10];
+        public RSAParameters EticketExtKeyRsa { get; set; }
 
         public Dictionary<byte[], byte[]> TitleKeys { get; } = new Dictionary<byte[], byte[]>(new ByteArray128BitComparer());
 
         public void SetSdSeed(byte[] sdseed)
         {
-            Array.Copy(sdseed, sd_seed, sd_seed.Length);
+            Array.Copy(sdseed, SdSeed, SdSeed.Length);
             DeriveKeys();
         }
 
-        internal void DeriveKeys(IProgressReport logger = null)
+        public void DeriveKeys(IProgressReport logger = null)
         {
             DeriveKeyblobKeys();
             DecryptKeyblobs(logger);
@@ -77,21 +76,21 @@ namespace LibHac
 
         private void DeriveKeyblobKeys()
         {
-            if (secure_boot_key.IsEmpty() || tsec_key.IsEmpty()) return;
+            if (SecureBootKey.IsEmpty() || TsecKey.IsEmpty()) return;
 
-            bool haveKeyblobMacKeySource = !master_key_source.IsEmpty();
+            bool haveKeyblobMacKeySource = !MasterKeySource.IsEmpty();
             var temp = new byte[0x10];
 
             for (int i = 0; i < 0x20; i++)
             {
-                if (keyblob_key_sources[i].IsEmpty()) continue;
+                if (KeyblobKeySources[i].IsEmpty()) continue;
 
-                Crypto.DecryptEcb(tsec_key, keyblob_key_sources[i], temp, 0x10);
-                Crypto.DecryptEcb(secure_boot_key, temp, keyblob_keys[i], 0x10);
+                Crypto.DecryptEcb(TsecKey, KeyblobKeySources[i], temp, 0x10);
+                Crypto.DecryptEcb(SecureBootKey, temp, KeyblobKeys[i], 0x10);
 
                 if (!haveKeyblobMacKeySource) continue;
 
-                Crypto.DecryptEcb(keyblob_keys[i], keyblob_mac_key_source, keyblob_mac_keys[i], 0x10);
+                Crypto.DecryptEcb(KeyblobKeys[i], KeyblobMacKeySource, KeyblobMacKeys[i], 0x10);
             }
         }
 
@@ -103,25 +102,25 @@ namespace LibHac
 
             for (int i = 0; i < 0x20; i++)
             {
-                if (keyblob_keys[i].IsEmpty() || keyblob_mac_keys[i].IsEmpty() || encrypted_keyblobs[i].IsEmpty())
+                if (KeyblobKeys[i].IsEmpty() || KeyblobMacKeys[i].IsEmpty() || EncryptedKeyblobs[i].IsEmpty())
                 {
                     continue;
                 }
 
-                Array.Copy(encrypted_keyblobs[i], expectedCmac, 0x10);
-                Crypto.CalculateAesCmac(keyblob_mac_keys[i], encrypted_keyblobs[i], 0x10, cmac, 0, 0xa0);
+                Array.Copy(EncryptedKeyblobs[i], expectedCmac, 0x10);
+                Crypto.CalculateAesCmac(KeyblobMacKeys[i], EncryptedKeyblobs[i], 0x10, cmac, 0, 0xa0);
 
                 if (!Util.ArraysEqual(cmac, expectedCmac))
                 {
                     logger?.LogMessage($"Warning: Keyblob MAC {i:x2} is invalid. Are SBK/TSEC key correct?");
                 }
 
-                Array.Copy(encrypted_keyblobs[i], 0x10, counter, 0, 0x10);
+                Array.Copy(EncryptedKeyblobs[i], 0x10, counter, 0, 0x10);
 
                 using (var keyblobDec = new RandomAccessSectorStream(new Aes128CtrStream(
-                    new MemoryStream(encrypted_keyblobs[i], 0x20, keyblobs[i].Length), keyblob_keys[i], counter)))
+                    new MemoryStream(EncryptedKeyblobs[i], 0x20, Keyblobs[i].Length), KeyblobKeys[i], counter)))
                 {
-                    keyblobDec.Read(keyblobs[i], 0, keyblobs[i].Length);
+                    keyblobDec.Read(Keyblobs[i], 0, Keyblobs[i].Length);
                 }
             }
         }
@@ -130,129 +129,129 @@ namespace LibHac
         {
             var masterKek = new byte[0x10];
 
-            bool haveMasterKeySource = !master_key_source.IsEmpty();
+            bool haveMasterKeySource = !MasterKeySource.IsEmpty();
 
             for (int i = 0; i < 0x20; i++)
             {
-                if (keyblobs[i].IsEmpty()) continue;
+                if (Keyblobs[i].IsEmpty()) continue;
 
-                Array.Copy(keyblobs[i], 0x80, package1_keys[i], 0, 0x10);
+                Array.Copy(Keyblobs[i], 0x80, Package1Keys[i], 0, 0x10);
 
                 if (!haveMasterKeySource) continue;
 
-                Array.Copy(keyblobs[i], masterKek, 0x10);
+                Array.Copy(Keyblobs[i], masterKek, 0x10);
 
-                Crypto.DecryptEcb(masterKek, master_key_source, master_keys[i], 0x10);
+                Crypto.DecryptEcb(masterKek, MasterKeySource, MasterKeys[i], 0x10);
             }
         }
 
         private void DerivePerConsoleKeys()
         {
             // Derive the device key
-            if (!per_console_key_source.IsEmpty() && !keyblob_keys[0].IsEmpty())
+            if (!PerConsoleKeySource.IsEmpty() && !KeyblobKeys[0].IsEmpty())
             {
-                Crypto.DecryptEcb(keyblob_keys[0], per_console_key_source, device_key, 0x10);
+                Crypto.DecryptEcb(KeyblobKeys[0], PerConsoleKeySource, DeviceKey, 0x10);
             }
 
             // Derive BIS keys
-            if (device_key.IsEmpty()
-                || bis_key_source[0].IsEmpty()
-                || bis_key_source[1].IsEmpty()
-                || bis_key_source[2].IsEmpty()
-                || bis_kek_source.IsEmpty()
-                || aes_kek_generation_source.IsEmpty()
-                || aes_key_generation_source.IsEmpty()
-                || retail_specific_aes_key_source.IsEmpty())
+            if (DeviceKey.IsEmpty()
+                || BisKeySource[0].IsEmpty()
+                || BisKeySource[1].IsEmpty()
+                || BisKeySource[2].IsEmpty()
+                || BisKekSource.IsEmpty()
+                || AesKekGenerationSource.IsEmpty()
+                || AesKeyGenerationSource.IsEmpty()
+                || RetailSpecificAesKeySource.IsEmpty())
             {
                 return;
             }
 
             var kek = new byte[0x10];
 
-            Crypto.DecryptEcb(device_key, retail_specific_aes_key_source, kek, 0x10);
-            Crypto.DecryptEcb(kek, bis_key_source[0], bis_keys[0], 0x20);
+            Crypto.DecryptEcb(DeviceKey, RetailSpecificAesKeySource, kek, 0x10);
+            Crypto.DecryptEcb(kek, BisKeySource[0], BisKeys[0], 0x20);
 
-            Crypto.GenerateKek(device_key, bis_kek_source, kek, aes_kek_generation_source, aes_key_generation_source);
+            Crypto.GenerateKek(DeviceKey, BisKekSource, kek, AesKekGenerationSource, AesKeyGenerationSource);
 
-            Crypto.DecryptEcb(kek, bis_key_source[1], bis_keys[1], 0x20);
-            Crypto.DecryptEcb(kek, bis_key_source[2], bis_keys[2], 0x20);
+            Crypto.DecryptEcb(kek, BisKeySource[1], BisKeys[1], 0x20);
+            Crypto.DecryptEcb(kek, BisKeySource[2], BisKeys[2], 0x20);
 
             // BIS keys 2 and 3 are the same
-            Array.Copy(bis_keys[2], bis_keys[3], 0x20);
+            Array.Copy(BisKeys[2], BisKeys[3], 0x20);
         }
 
         private void DerivePerFirmwareKeys()
         {
-            bool haveKakSource0 = !key_area_key_application_source.IsEmpty();
-            bool haveKakSource1 = !key_area_key_ocean_source.IsEmpty();
-            bool haveKakSource2 = !key_area_key_system_source.IsEmpty();
-            bool haveTitleKekSource = !titlekek_source.IsEmpty();
-            bool havePackage2KeySource = !package2_key_source.IsEmpty();
+            bool haveKakSource0 = !KeyAreaKeyApplicationSource.IsEmpty();
+            bool haveKakSource1 = !KeyAreaKeyOceanSource.IsEmpty();
+            bool haveKakSource2 = !KeyAreaKeySystemSource.IsEmpty();
+            bool haveTitleKekSource = !TitlekekSource.IsEmpty();
+            bool havePackage2KeySource = !Package2KeySource.IsEmpty();
 
             for (int i = 0; i < 0x20; i++)
             {
-                if (master_keys[i].IsEmpty())
+                if (MasterKeys[i].IsEmpty())
                 {
                     continue;
                 }
 
                 if (haveKakSource0)
                 {
-                    Crypto.GenerateKek(master_keys[i], key_area_key_application_source, key_area_keys[i][0],
-                        aes_kek_generation_source, aes_key_generation_source);
+                    Crypto.GenerateKek(MasterKeys[i], KeyAreaKeyApplicationSource, KeyAreaKeys[i][0],
+                        AesKekGenerationSource, AesKeyGenerationSource);
                 }
 
                 if (haveKakSource1)
                 {
-                    Crypto.GenerateKek(master_keys[i], key_area_key_ocean_source, key_area_keys[i][1],
-                        aes_kek_generation_source, aes_key_generation_source);
+                    Crypto.GenerateKek(MasterKeys[i], KeyAreaKeyOceanSource, KeyAreaKeys[i][1],
+                        AesKekGenerationSource, AesKeyGenerationSource);
                 }
 
                 if (haveKakSource2)
                 {
-                    Crypto.GenerateKek(master_keys[i], key_area_key_system_source, key_area_keys[i][2],
-                        aes_kek_generation_source, aes_key_generation_source);
+                    Crypto.GenerateKek(MasterKeys[i], KeyAreaKeySystemSource, KeyAreaKeys[i][2],
+                        AesKekGenerationSource, AesKeyGenerationSource);
                 }
 
                 if (haveTitleKekSource)
                 {
-                    Crypto.DecryptEcb(master_keys[i], titlekek_source, titlekeks[i], 0x10);
+                    Crypto.DecryptEcb(MasterKeys[i], TitlekekSource, Titlekeks[i], 0x10);
                 }
 
                 if (havePackage2KeySource)
                 {
-                    Crypto.DecryptEcb(master_keys[i], package2_key_source, package2_keys[i], 0x10);
+                    Crypto.DecryptEcb(MasterKeys[i], Package2KeySource, Package2Keys[i], 0x10);
                 }
             }
         }
 
         private void DeriveNcaHeaderKey()
         {
-            if (header_kek_source.IsEmpty() || header_key_source.IsEmpty() || master_keys[0].IsEmpty()) return;
+            if (HeaderKekSource.IsEmpty() || HeaderKeySource.IsEmpty() || MasterKeys[0].IsEmpty()) return;
 
             var headerKek = new byte[0x10];
 
-            Crypto.GenerateKek(master_keys[0], header_kek_source, headerKek, aes_kek_generation_source,
-                aes_key_generation_source);
-            Crypto.DecryptEcb(headerKek, header_key_source, header_key, 0x20);
+            Crypto.GenerateKek(MasterKeys[0], HeaderKekSource, headerKek, AesKekGenerationSource,
+                AesKeyGenerationSource);
+            Crypto.DecryptEcb(headerKek, HeaderKeySource, HeaderKey, 0x20);
         }
 
         private void DeriveSdCardKeys()
         {
             var sdKek = new byte[0x10];
-            Crypto.GenerateKek(master_keys[0], sd_card_kek_source, sdKek, aes_kek_generation_source, aes_key_generation_source);
+            Crypto.GenerateKek(MasterKeys[0], SdCardKekSource, sdKek, AesKekGenerationSource, AesKeyGenerationSource);
 
-            for (int k = 0; k < sd_card_key_sources.Length; k++)
+            for (int k = 0; k < SdCardKeySources.Length; k++)
             {
                 for (int i = 0; i < 0x20; i++)
                 {
-                    sd_card_key_sources_specific[k][i] = (byte)(sd_card_key_sources[k][i] ^ sd_seed[i & 0xF]);
+                    SdCardKeySourcesSpecific[k][i] = (byte)(SdCardKeySources[k][i] ^ SdSeed[i & 0xF]);
                 }
             }
 
-            for (int k = 0; k < sd_card_key_sources_specific.Length; k++)
+            for (int k = 0; k < SdCardKeySourcesSpecific.Length; k++)
             {
-                Crypto.DecryptEcb(sdKek, sd_card_key_sources_specific[k], sd_card_keys[k], 0x20);
+                Crypto.DecryptEcb(sdKek, SdCardKeySourcesSpecific[k], SdCardKeys[k], 0x20);
             }
         }
     }
@@ -385,47 +384,46 @@ namespace LibHac
         {
             var keys = new List<KeyValue>
             {
-                new KeyValue("aes_kek_generation_source", 0x10, set => set.aes_kek_generation_source),
-                new KeyValue("aes_key_generation_source", 0x10, set => set.aes_key_generation_source),
-                new KeyValue("key_area_key_application_source", 0x10, set => set.key_area_key_application_source),
-                new KeyValue("key_area_key_ocean_source", 0x10, set => set.key_area_key_ocean_source),
-                new KeyValue("key_area_key_system_source", 0x10, set => set.key_area_key_system_source),
-                new KeyValue("titlekek_source", 0x10, set => set.titlekek_source),
-                new KeyValue("header_kek_source", 0x10, set => set.header_kek_source),
-                new KeyValue("header_key_source", 0x20, set => set.header_key_source),
-                new KeyValue("header_key", 0x20, set => set.header_key),
-                new KeyValue("xci_header_key", 0x10, set => set.xci_header_key),
-                //new KeyValue("encrypted_header_key", 0x20, set => set.header_key_source),
-                new KeyValue("package2_key_source", 0x10, set => set.package2_key_source),
-                new KeyValue("sd_card_kek_source", 0x10, set => set.sd_card_kek_source),
-                new KeyValue("sd_card_nca_key_source", 0x20, set => set.sd_card_key_sources[1]),
-                new KeyValue("sd_card_save_key_source", 0x20, set => set.sd_card_key_sources[0]),
-                new KeyValue("master_key_source", 0x10, set => set.master_key_source),
-                new KeyValue("keyblob_mac_key_source", 0x10, set => set.keyblob_mac_key_source),
-                new KeyValue("eticket_rsa_kek", 0x10, set => set.eticket_rsa_kek),
-                new KeyValue("retail_specific_aes_key_source", 0x10, set => set.retail_specific_aes_key_source),
-                new KeyValue("per_console_key_source", 0x10, set => set.per_console_key_source),
-                new KeyValue("bis_kek_source", 0x10, set => set.bis_kek_source)
+                new KeyValue("aes_kek_generation_source", 0x10, set => set.AesKekGenerationSource),
+                new KeyValue("aes_key_generation_source", 0x10, set => set.AesKeyGenerationSource),
+                new KeyValue("key_area_key_application_source", 0x10, set => set.KeyAreaKeyApplicationSource),
+                new KeyValue("key_area_key_ocean_source", 0x10, set => set.KeyAreaKeyOceanSource),
+                new KeyValue("key_area_key_system_source", 0x10, set => set.KeyAreaKeySystemSource),
+                new KeyValue("titlekek_source", 0x10, set => set.TitlekekSource),
+                new KeyValue("header_kek_source", 0x10, set => set.HeaderKekSource),
+                new KeyValue("header_key_source", 0x20, set => set.HeaderKeySource),
+                new KeyValue("header_key", 0x20, set => set.HeaderKey),
+                new KeyValue("xci_header_key", 0x10, set => set.XciHeaderKey),
+                new KeyValue("package2_key_source", 0x10, set => set.Package2KeySource),
+                new KeyValue("sd_card_kek_source", 0x10, set => set.SdCardKekSource),
+                new KeyValue("sd_card_nca_key_source", 0x20, set => set.SdCardKeySources[1]),
+                new KeyValue("sd_card_save_key_source", 0x20, set => set.SdCardKeySources[0]),
+                new KeyValue("master_key_source", 0x10, set => set.MasterKeySource),
+                new KeyValue("keyblob_mac_key_source", 0x10, set => set.KeyblobMacKeySource),
+                new KeyValue("eticket_rsa_kek", 0x10, set => set.EticketRsaKek),
+                new KeyValue("retail_specific_aes_key_source", 0x10, set => set.RetailSpecificAesKeySource),
+                new KeyValue("per_console_key_source", 0x10, set => set.PerConsoleKeySource),
+                new KeyValue("bis_kek_source", 0x10, set => set.BisKekSource)
             };
 
             for (int slot = 0; slot < 0x20; slot++)
             {
                 int i = slot;
-                keys.Add(new KeyValue($"keyblob_key_source_{i:x2}", 0x10, set => set.keyblob_key_sources[i]));
-                keys.Add(new KeyValue($"keyblob_{i:x2}", 0x90, set => set.keyblobs[i]));
-                keys.Add(new KeyValue($"master_key_{i:x2}", 0x10, set => set.master_keys[i]));
-                keys.Add(new KeyValue($"package1_key_{i:x2}", 0x10, set => set.package1_keys[i]));
-                keys.Add(new KeyValue($"package2_key_{i:x2}", 0x10, set => set.package2_keys[i]));
-                keys.Add(new KeyValue($"titlekek_{i:x2}", 0x10, set => set.titlekeks[i]));
-                keys.Add(new KeyValue($"key_area_key_application_{i:x2}", 0x10, set => set.key_area_keys[i][0]));
-                keys.Add(new KeyValue($"key_area_key_ocean_{i:x2}", 0x10, set => set.key_area_keys[i][1]));
-                keys.Add(new KeyValue($"key_area_key_system_{i:x2}", 0x10, set => set.key_area_keys[i][2]));
+                keys.Add(new KeyValue($"keyblob_key_source_{i:x2}", 0x10, set => set.KeyblobKeySources[i]));
+                keys.Add(new KeyValue($"keyblob_{i:x2}", 0x90, set => set.Keyblobs[i]));
+                keys.Add(new KeyValue($"master_key_{i:x2}", 0x10, set => set.MasterKeys[i]));
+                keys.Add(new KeyValue($"package1_key_{i:x2}", 0x10, set => set.Package1Keys[i]));
+                keys.Add(new KeyValue($"package2_key_{i:x2}", 0x10, set => set.Package2Keys[i]));
+                keys.Add(new KeyValue($"titlekek_{i:x2}", 0x10, set => set.Titlekeks[i]));
+                keys.Add(new KeyValue($"key_area_key_application_{i:x2}", 0x10, set => set.KeyAreaKeys[i][0]));
+                keys.Add(new KeyValue($"key_area_key_ocean_{i:x2}", 0x10, set => set.KeyAreaKeys[i][1]));
+                keys.Add(new KeyValue($"key_area_key_system_{i:x2}", 0x10, set => set.KeyAreaKeys[i][2]));
             }
 
             for (int slot = 0; slot < 3; slot++)
             {
                 int i = slot;
-                keys.Add(new KeyValue($"bis_key_source_{i:x2}", 0x20, set => set.bis_key_source[i]));
+                keys.Add(new KeyValue($"bis_key_source_{i:x2}", 0x20, set => set.BisKeySource[i]));
             }
 
             return keys;
@@ -435,24 +433,24 @@ namespace LibHac
         {
             var keys = new List<KeyValue>
             {
-                new KeyValue("secure_boot_key", 0x10, set => set.secure_boot_key),
-                new KeyValue("tsec_key", 0x10, set => set.tsec_key),
-                new KeyValue("device_key", 0x10, set => set.device_key),
-                new KeyValue("sd_seed", 0x10, set => set.sd_seed)
+                new KeyValue("secure_boot_key", 0x10, set => set.SecureBootKey),
+                new KeyValue("tsec_key", 0x10, set => set.TsecKey),
+                new KeyValue("device_key", 0x10, set => set.DeviceKey),
+                new KeyValue("sd_seed", 0x10, set => set.SdSeed)
             };
 
             for (int slot = 0; slot < 0x20; slot++)
             {
                 int i = slot;
-                keys.Add(new KeyValue($"keyblob_key_{i:x2}", 0x10, set => set.keyblob_keys[i]));
-                keys.Add(new KeyValue($"keyblob_mac_key_{i:x2}", 0x10, set => set.keyblob_mac_keys[i]));
-                keys.Add(new KeyValue($"encrypted_keyblob_{i:x2}", 0xB0, set => set.encrypted_keyblobs[i]));
+                keys.Add(new KeyValue($"keyblob_key_{i:x2}", 0x10, set => set.KeyblobKeys[i]));
+                keys.Add(new KeyValue($"keyblob_mac_key_{i:x2}", 0x10, set => set.KeyblobMacKeys[i]));
+                keys.Add(new KeyValue($"encrypted_keyblob_{i:x2}", 0xB0, set => set.EncryptedKeyblobs[i]));
             }
 
             for (int slot = 0; slot < 4; slot++)
             {
                 int i = slot;
-                keys.Add(new KeyValue($"bis_key_{i:x2}", 0x20, set => set.bis_keys[i]));
+                keys.Add(new KeyValue($"bis_key_{i:x2}", 0x20, set => set.BisKeys[i]));
             }
 
             return keys;
