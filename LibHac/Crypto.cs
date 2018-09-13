@@ -142,6 +142,25 @@ namespace LibHac
             }
         }
 
+        public static bool Rsa2048Pkcs1Verify(byte[] data, byte[] signature, byte[] modulus)
+        {
+            byte[] hash;
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                hash = sha256.ComputeHash(data);
+            }
+
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                rsa.ImportParameters(new RSAParameters() { Exponent = new byte[] { 1, 0, 1 }, Modulus = modulus });
+
+                var rsaFormatter = new RSAPKCS1SignatureDeformatter(rsa);
+                rsaFormatter.SetHashAlgorithm("SHA256");
+
+                return rsaFormatter.VerifySignature(hash, signature);
+            }
+        }
+
         public static byte[] DecryptTitleKey(byte[] titleKeyblock, RSAParameters rsaParams)
         {
 #if USE_RSA_CNG
