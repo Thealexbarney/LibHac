@@ -85,11 +85,15 @@ namespace LibHac
         private void UpdateCounter(long offset)
         {
             ulong off = (ulong)offset >> 4;
-            for (uint j = 0; j < 0x8; j++)
+            for (uint j = 0; j < 0x7; j++)
             {
                 Counter[0x10 - j - 1] = (byte)(off & 0xFF);
                 off >>= 8;
             }
+
+            // Because the value stored in the counter is offset >> 4, the top 4 bits 
+            // of byte 8 need to have their original value preserved
+            Counter[8] = (byte)((Counter[8] & 0xF0) | (int)(off & 0x0F));
         }
 
         public override void Flush()
