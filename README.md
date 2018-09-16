@@ -65,6 +65,7 @@ Switch FS options:
 Savefile options:
   --outdir <dir>       Specify directory path to save contents to.
   --debugoutdir <dir>  Specify directory path to save intermediate data to for debugging.
+  --sign               Sign the save file. (Requires device_key in key file)
 ```
 
 ## Examples

@@ -9,6 +9,7 @@ namespace LibHac.Savefile
     {
         public Header Header { get; }
         private RemapStream FileRemap { get; }
+        public SharedStreamSource SavefileSource { get; }
         public SharedStreamSource FileRemapSource { get; }
         private RemapStream MetaRemap { get; }
         public SharedStreamSource MetaRemapSource { get; }
@@ -39,12 +40,15 @@ namespace LibHac.Savefile
 
         public Savefile(Keyset keyset, Stream file, IProgressReport logger = null)
         {
-            using (var reader = new BinaryReader(file, Encoding.Default, true))
+            SavefileSource = new SharedStreamSource(file);
+
+            using (var reader = new BinaryReader(SavefileSource.CreateStream(), Encoding.Default, true))
             {
                 Header = new Header(keyset, reader, logger);
-                var layout = Header.Layout;
+                FsLayout layout = Header.Layout;
+
                 FileRemap = new RemapStream(
-                    new SubStream(file, layout.FileMapDataOffset, layout.FileMapDataSize),
+                    SavefileSource.CreateStream(layout.FileMapDataOffset, layout.FileMapDataSize),
                     Header.FileMapEntries, Header.FileRemap.MapSegmentCount);
 
                 FileRemapSource = new SharedStreamSource(FileRemap);
@@ -219,6 +223,25 @@ namespace LibHac.Savefile
             }
 
             return entries;
+        }
+
+        public bool SignHeader(Keyset keyset)
+        {
+            if (keyset.SaveMacKey.IsEmpty()) return false;
+
+            var data = new byte[0x200];
+            var cmac = new byte[0x10];
+
+            var headerStream = SavefileSource.CreateStream();
+            headerStream.Position = 0x100;
+            headerStream.Read(data, 0, 0x200);
+
+            Crypto.CalculateAesCmac(keyset.SaveMacKey, data, 0, cmac, 0, 0x200);
+
+            headerStream.Position = 0;
+            headerStream.Write(cmac, 0, 0x10);
+
+            return true;
         }
     }
 

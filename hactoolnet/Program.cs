@@ -93,7 +93,7 @@ namespace hactoolnet
 
         private static void ProcessSave(Context ctx)
         {
-            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
+            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.ReadWrite))
             {
                 var save = new Savefile(ctx.Keyset, file, ctx.Logger);
 
@@ -128,6 +128,18 @@ namespace hactoolnet
                     save.JournalFat.WriteAllBytes(Path.Combine(dir, "L2_7_FAT"), ctx.Logger);
 
                     save.JournalStreamSource.CreateStream().WriteAllBytes(Path.Combine(dir, "L3_0_SaveData"), ctx.Logger);
+                }
+
+                if (ctx.Options.SignSave)
+                {
+                    if (save.SignHeader(ctx.Keyset))
+                    {
+                        ctx.Logger.LogMessage("Successfully signed save file");
+                    }
+                    else
+                    {
+                        ctx.Logger.LogMessage("Unable to sign save file. Do you have all the required keys?");
+                    }
                 }
             }
         }

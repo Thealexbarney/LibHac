@@ -95,6 +95,8 @@ bis_key_source_01                = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 bis_key_source_02                = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 bis_kek_source                   = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+save_mac_kek_source              = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+save_mac_key_source              = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
 ### Console-unique keys
@@ -141,6 +143,8 @@ bis_kek_source
 bis_key_source_00
 bis_key_source_01
 bis_key_source_02
+save_mac_kek_source
+save_mac_key_source
 
 header_key
 xci_header_key

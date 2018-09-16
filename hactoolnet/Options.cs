@@ -33,6 +33,7 @@ namespace hactoolnet
         public bool ListApps;
         public bool ListTitles;
         public bool ListRomFs;
+        public bool SignSave;
         public ulong TitleId;
     }
 
