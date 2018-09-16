@@ -53,7 +53,7 @@ namespace NandReaderGui.ViewModel
             var calibration = new Calibration(prodinfo);
 
             keyset.EticketExtKeyRsa = Crypto.DecryptRsaKey(calibration.EticketExtKeyRsa, keyset.EticketRsaKek);
-            var tickets = GetTickets(nand);
+            var tickets = GetTickets(keyset, nand);
 
             using (var outStream = new StreamWriter("titlekeys.txt"))
             {
@@ -65,26 +65,26 @@ namespace NandReaderGui.ViewModel
             }
         }
 
-        private static Ticket[] GetTickets(Nand nand, IProgressReport logger = null)
+        private static Ticket[] GetTickets(Keyset keyset, Nand nand, IProgressReport logger = null)
         {
             var tickets = new List<Ticket>();
             var system = nand.OpenSystemPartition();
 
             var saveE1File = system.OpenFile("save\\80000000000000E1", FileMode.Open, FileAccess.Read);
-            tickets.AddRange(ReadTickets(saveE1File));
+            tickets.AddRange(ReadTickets(keyset, saveE1File));
 
             var saveE2 = system.OpenFile("save\\80000000000000E2", FileMode.Open, FileAccess.Read);
-            tickets.AddRange(ReadTickets(saveE2));
+            tickets.AddRange(ReadTickets(keyset, saveE2));
 
             logger?.LogMessage($"Found {tickets.Count} tickets");
 
             return tickets.ToArray();
         }
 
-        private static List<Ticket> ReadTickets(Stream savefile)
+        private static List<Ticket> ReadTickets(Keyset keyset, Stream savefile)
         {
             var tickets = new List<Ticket>();
-            var save = new Savefile(savefile);
+            var save = new Savefile(keyset, savefile);
             var ticketList = new BinaryReader(save.OpenFile("/ticket_list.bin"));
             var ticketFile = new BinaryReader(save.OpenFile("/ticket.bin"));
 

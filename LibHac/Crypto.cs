@@ -88,6 +88,10 @@ namespace LibHac
             {
                 DecryptEcb(srcKek, keySeed, dest, Aes128Size);
             }
+            else
+            {
+                Array.Copy(srcKek, dest, Aes128Size);
+            }
         }
 
         private static BigInteger GetBigInteger(byte[] bytes)

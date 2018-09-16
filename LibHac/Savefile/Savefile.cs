@@ -37,11 +37,11 @@ namespace LibHac.Savefile
         public DirectoryEntry[] Directories { get; private set; }
         private Dictionary<string, FileEntry> FileDict { get; }
 
-        public Savefile(Stream file, IProgressReport logger = null)
+        public Savefile(Keyset keyset, Stream file, IProgressReport logger = null)
         {
             using (var reader = new BinaryReader(file, Encoding.Default, true))
             {
-                Header = new Header(reader, logger);
+                Header = new Header(keyset, reader, logger);
                 var layout = Header.Layout;
                 FileRemap = new RemapStream(
                     new SubStream(file, layout.FileMapDataOffset, layout.FileMapDataSize),

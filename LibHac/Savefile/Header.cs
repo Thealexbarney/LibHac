@@ -22,9 +22,12 @@ namespace LibHac.Savefile
         public byte[] DuplexMasterA { get; }
         public byte[] DuplexMasterB { get; }
 
+        public Validity SignatureValidity { get; }
+        public Validity HeaderHashValidity { get; }
+
         public byte[] Data { get; }
 
-        public Header(BinaryReader reader, IProgressReport logger = null)
+        public Header(Keyset keyset, BinaryReader reader, IProgressReport logger = null)
         {
             reader.BaseStream.Position = 0;
             Data = reader.ReadBytes(0x4000);
@@ -73,17 +76,28 @@ namespace LibHac.Savefile
                 MetaMapEntries[i] = new MapEntry(reader);
             }
 
-            var hashStatus = ValidateHeaderHash() ? "valid" : "invalid";
-            logger?.LogMessage($"Header hash is {hashStatus}");
+            HeaderHashValidity = ValidateHeaderHash();
+            SignatureValidity = ValidateSignature(keyset);
+
+            logger?.LogMessage($"Header hash is {HeaderHashValidity}");
         }
 
-        private bool ValidateHeaderHash()
+        private Validity ValidateHeaderHash()
         {
             using (SHA256 sha256 = SHA256.Create())
             {
                 var hash = sha256.ComputeHash(Data, 0x300, 0x3d00);
-                return Util.ArraysEqual(hash, Layout.Hash);
+                return Util.ArraysEqual(hash, Layout.Hash) ? Validity.Valid : Validity.Invalid;
             }
+        }
+
+        private Validity ValidateSignature(Keyset keyset)
+        {
+            var calculatedCmac = new byte[0x10];
+
+            Crypto.CalculateAesCmac(keyset.SaveMacKey, Data, 0x100, calculatedCmac, 0, 0x200);
+
+            return Util.ArraysEqual(calculatedCmac, Cmac) ? Validity.Valid : Validity.Invalid;
         }
     }
 

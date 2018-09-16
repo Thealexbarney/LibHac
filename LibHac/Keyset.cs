@@ -27,6 +27,8 @@ namespace LibHac
         public byte[] KeyAreaKeyApplicationSource { get; set; } = new byte[0x10];
         public byte[] KeyAreaKeyOceanSource { get; set; } = new byte[0x10];
         public byte[] KeyAreaKeySystemSource { get; set; } = new byte[0x10];
+        public byte[] SaveMacKekSource { get; set; } = new byte[0x10];
+        public byte[] SaveMacKeySource { get; set; } = new byte[0x10];
         public byte[] TitlekekSource { get; set; } = new byte[0x10];
         public byte[] HeaderKekSource { get; set; } = new byte[0x10];
         public byte[] SdCardKekSource { get; set; } = new byte[0x10];
@@ -37,6 +39,7 @@ namespace LibHac
         public byte[] XciHeaderKey { get; set; } = new byte[0x10];
         public byte[][] Titlekeks { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
         public byte[][][] KeyAreaKeys { get; set; } = Util.CreateJaggedArray<byte[][][]>(0x20, 3, 0x10);
+        public byte[] SaveMacKey { get; set; } = new byte[0x10];
         public byte[][] SdCardKeys { get; set; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
         public byte[] NcaHdrFixedKeyModulus { get; set; } = new byte[0x100];
         public byte[] AcidFixedKeyModulus { get; set; } = new byte[0x100];
@@ -147,10 +150,19 @@ namespace LibHac
 
         private void DerivePerConsoleKeys()
         {
+            var kek = new byte[0x10];
+
             // Derive the device key
             if (!PerConsoleKeySource.IsEmpty() && !KeyblobKeys[0].IsEmpty())
             {
                 Crypto.DecryptEcb(KeyblobKeys[0], PerConsoleKeySource, DeviceKey, 0x10);
+            }
+
+            // Derive save key
+            if (!SaveMacKekSource.IsEmpty() && !SaveMacKeySource.IsEmpty() && !DeviceKey.IsEmpty())
+            {
+                Crypto.GenerateKek(DeviceKey, SaveMacKekSource, kek, AesKekGenerationSource, null);
+                Crypto.DecryptEcb(kek, SaveMacKeySource, SaveMacKey, 0x10);
             }
 
             // Derive BIS keys
@@ -165,8 +177,6 @@ namespace LibHac
             {
                 return;
             }
-
-            var kek = new byte[0x10];
 
             Crypto.DecryptEcb(DeviceKey, RetailSpecificAesKeySource, kek, 0x10);
             Crypto.DecryptEcb(kek, BisKeySource[0], BisKeys[0], 0x20);
@@ -403,7 +413,10 @@ namespace LibHac
                 new KeyValue("eticket_rsa_kek", 0x10, set => set.EticketRsaKek),
                 new KeyValue("retail_specific_aes_key_source", 0x10, set => set.RetailSpecificAesKeySource),
                 new KeyValue("per_console_key_source", 0x10, set => set.PerConsoleKeySource),
-                new KeyValue("bis_kek_source", 0x10, set => set.BisKekSource)
+                new KeyValue("bis_kek_source", 0x10, set => set.BisKekSource),
+                new KeyValue("save_mac_kek_source", 0x10, set => set.SaveMacKekSource),
+                new KeyValue("save_mac_key_source", 0x10, set => set.SaveMacKeySource),
+                new KeyValue("save_mac_key", 0x10, set => set.SaveMacKey)
             };
 
             for (int slot = 0; slot < 0x20; slot++)
