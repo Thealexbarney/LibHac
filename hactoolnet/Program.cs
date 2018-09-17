@@ -53,6 +53,9 @@ namespace hactoolnet
                     case FileType.Pk11:
                         ProcessPackage.ProcessPk11(ctx);
                         break;
+                    case FileType.Pk21:
+                        ProcessPackage.ProcessPk21(ctx);
+                        break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }

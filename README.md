@@ -17,7 +17,7 @@ Options:
   -r, --raw            Keep raw data, don't unpack.
   -y, --verify         Verify hashes.
   -k, --keyset         Load keys from an external file.
-  -t, --intype=type    Specify input file type [nca, xci, romfs, pk11, switchfs, save, keygen]
+  -t, --intype=type    Specify input file type [nca, xci, romfs, pk11, pk21, switchfs, save, keygen]
   --titlekeys <file>   Load title keys from an external file.
 NCA options:
   --section0 <file>    Specify Section 0 file path.
@@ -51,6 +51,8 @@ XCI options:
   --nspout <file>      Specify file for the created NSP.
 Package1 options:
   --outdir <dir>       Specify Package1 directory path.
+Package2 options:
+  --outdir <dir>       Specify Package2 directory path.
 Switch FS options:
   --sdseed <seed>      Set console unique seed for SD card NAX0 encryption.
   --listapps           List application info.

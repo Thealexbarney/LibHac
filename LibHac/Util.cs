@@ -322,6 +322,15 @@ namespace LibHac
         public static int AlignDown(int value, int multiple) => value - value % multiple;
         public static long AlignDown(long value, long multiple) => value - value % multiple;
 
+        public static void IncrementByteArray(byte[] array)
+        {
+            for (int i = array.Length - 1; i >= 0; i--)
+            {
+                if (++array[i] != 0)
+                    break;
+            }
+        }
+
         public static void MemDump(this StringBuilder sb, string prefix, byte[] data)
         {
 
@@ -407,5 +416,6 @@ namespace LibHac
 
             return (hi.GetHashCode() * 397) ^ lo.GetHashCode();
         }
+
     }
 }

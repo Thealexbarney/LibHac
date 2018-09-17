@@ -19,6 +19,15 @@ namespace LibHac
         /// </summary>
         /// <param name="baseStream">The base stream</param>
         /// <param name="key">The decryption key</param>
+        /// <param name="counter">The initial counter</param>
+        public Aes128CtrStream(Stream baseStream, byte[] key, byte[] counter)
+            : this(baseStream, key, 0, baseStream.Length, counter) { }
+
+        /// <summary>
+        /// Creates a new stream
+        /// </summary>
+        /// <param name="baseStream">The base stream</param>
+        /// <param name="key">The decryption key</param>
         /// <param name="counterOffset">Offset to add to the counter</param>
         /// <param name="ctrHi">The value of the upper 64 bits of the counter</param>
         public Aes128CtrStream(Stream baseStream, byte[] key, long counterOffset = 0, byte[] ctrHi = null)
@@ -29,9 +38,11 @@ namespace LibHac
         /// </summary>
         /// <param name="baseStream">The base stream</param>
         /// <param name="key">The decryption key</param>
+        /// <param name="offset">Offset to start at in the input stream</param>
+        /// <param name="length">The length of the created stream</param>
         /// <param name="counter">The initial counter</param>
-        public Aes128CtrStream(Stream baseStream, byte[] key, byte[] counter)
-            : base(baseStream, BlockSize)
+        public Aes128CtrStream(Stream baseStream, byte[] key, long offset, long length, byte[] counter)
+            : base(baseStream, BlockSize, 1, offset)
         {
             _counterOffset = 0;
 
@@ -44,13 +55,11 @@ namespace LibHac
                 }
             }
 
-            Length = baseStream.Length;
+            Length = length;
             _tempBuffer = new byte[CryptChunkSize];
 
             _decryptor = new Aes128CtrTransform(key, counter ?? new byte[0x10], CryptChunkSize);
             Counter = _decryptor.Counter;
-
-            baseStream.Position = 0;
         }
 
         /// <summary>

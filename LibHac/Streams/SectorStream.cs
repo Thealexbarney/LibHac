@@ -63,6 +63,7 @@ namespace LibHac.Streams
             _offset = offset;
             _keepOpen = keepOpen;
             _maxBufferSize = MaxSectors * SectorSize;
+            baseStream.Position = offset;
         }
 
         public override void Flush()

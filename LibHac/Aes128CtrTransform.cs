@@ -63,11 +63,7 @@ namespace LibHac
 
         private void IncrementCounter()
         {
-            for (int i = Counter.Length - 1; i >= 0; i--)
-            {
-                if (++Counter[i] != 0)
-                    break;
-            }
+            Util.IncrementByteArray(Counter);
         }
 
         private void XorArrays(byte[] inputBuffer, int inputOffset, byte[] outputBuffer, int outputOffset, byte[] xor, int length)
