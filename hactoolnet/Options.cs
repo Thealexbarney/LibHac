@@ -48,7 +48,8 @@ namespace hactoolnet
         Save,
         Keygen,
         Pk11,
-        Pk21
+        Pk21,
+        Kip1
     }
 
     internal class Context

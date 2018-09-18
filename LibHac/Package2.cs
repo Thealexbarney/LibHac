@@ -46,6 +46,8 @@ namespace LibHac
         {
             SharedStream encStream = StreamSource.CreateStream(0x110, 0xF0);
 
+            // The counter starts counting at 0x100, but the block at 0x100 isn't encrypted.
+            // Increase the counter by one and start decrypting at 0x110.
             var counter = new byte[0x10];
             Array.Copy(Header.Counter, counter, 0x10);
             Util.IncrementByteArray(counter);

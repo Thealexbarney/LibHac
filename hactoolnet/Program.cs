@@ -56,6 +56,9 @@ namespace hactoolnet
                     case FileType.Pk21:
                         ProcessPackage.ProcessPk21(ctx);
                         break;
+                    case FileType.Kip1:
+                        ProcessKip.ProcessKip1(ctx);
+                        break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -155,8 +158,8 @@ namespace hactoolnet
         // For running random stuff
         // ReSharper disable once UnusedParameter.Local
         private static void CustomTask(Context ctx)
-        {
-
+        {        
+            
         }
     }
 }
