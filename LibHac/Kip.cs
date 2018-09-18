@@ -49,6 +49,8 @@ namespace LibHac
             return DecompressBlz(compressed);
         }
 
+        public Stream OpenRawFile() => StreamSource.CreateStream();
+
         private static byte[] DecompressBlz(byte[] compressed)
         {
             int additionalSize = BitConverter.ToInt32(compressed, compressed.Length - 4);
@@ -159,6 +161,47 @@ namespace LibHac
             DecompressedSize = reader.ReadInt32();
             CompressedSize = reader.ReadInt32();
             Attribute = reader.ReadInt32();
+        }
+    }
+
+    public class Ini1
+    {
+        public Kip[] Kips { get; }
+
+        public string Magic { get; }
+        public int Size { get; }
+        public int KipCount { get; }
+
+        private SharedStreamSource StreamSource { get; }
+
+        public Ini1(Stream stream)
+        {
+            StreamSource = new SharedStreamSource(stream);
+            Stream initStream = StreamSource.CreateStream();
+
+            var reader = new BinaryReader(initStream);
+
+            Magic = reader.ReadAscii(4);
+            if (Magic != "INI1")
+            {
+                throw new InvalidDataException("Invalid INI1 file!");
+            }
+
+            Size = reader.ReadInt32();
+            KipCount = reader.ReadInt32();
+
+            Kips = new Kip[KipCount];
+            int offset = 0x10;
+
+            for (int i = 0; i < KipCount; i++)
+            {
+                // How to get the KIP's size the lazy way
+                var kip = new Kip(StreamSource.CreateStream(offset));
+
+                Kips[i] = new Kip(StreamSource.CreateStream(offset, kip.Size));
+
+                offset += kip.Size;
+            }
         }
     }
 }

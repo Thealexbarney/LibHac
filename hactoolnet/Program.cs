@@ -59,6 +59,9 @@ namespace hactoolnet
                     case FileType.Kip1:
                         ProcessKip.ProcessKip1(ctx);
                         break;
+                    case FileType.Ini1:
+                        ProcessKip.ProcessIni1(ctx);
+                        break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }

@@ -147,7 +147,7 @@ namespace hactoolnet
             sb.AppendLine("  -r, --raw            Keep raw data, don\'t unpack.");
             sb.AppendLine("  -y, --verify         Verify hashes.");
             sb.AppendLine("  -k, --keyset         Load keys from an external file.");
-            sb.AppendLine("  -t, --intype=type    Specify input file type [nca, xci, romfs, pk11, pk21, switchfs, save, keygen]");
+            sb.AppendLine("  -t, --intype=type    Specify input file type [nca, xci, romfs, pk11, pk21, ini1, kip1, switchfs, save, keygen]");
             sb.AppendLine("  --titlekeys <file>   Load title keys from an external file.");
             sb.AppendLine("NCA options:");
             sb.AppendLine("  --section0 <file>    Specify Section 0 file path.");
@@ -183,6 +183,8 @@ namespace hactoolnet
             sb.AppendLine("  --outdir <dir>       Specify Package1 directory path.");
             sb.AppendLine("Package2 options:");
             sb.AppendLine("  --outdir <dir>       Specify Package2 directory path.");
+            sb.AppendLine("INI1 options:");
+            sb.AppendLine("  --outdir <dir>       Specify INI1 directory path.");
             sb.AppendLine("Switch FS options:");
             sb.AppendLine("  --sdseed <seed>      Set console unique seed for SD card NAX0 encryption.");
             sb.AppendLine("  --listapps           List application info.");
