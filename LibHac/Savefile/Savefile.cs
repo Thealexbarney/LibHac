@@ -127,8 +127,7 @@ namespace LibHac.Savefile
         {
             if (file.BlockIndex < 0)
             {
-                //todo replace
-                return JournalStreamSource.CreateStream(0, 0);
+                return Stream.Null;
             }
 
             return OpenFatBlock(file.BlockIndex, file.FileSize);

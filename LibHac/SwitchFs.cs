@@ -135,7 +135,7 @@ namespace LibHac
                 var title = new Title();
 
                 // Meta contents always have 1 Partition FS section with 1 file in it
-                Stream sect = nca.OpenSection(0, false);
+                Stream sect = nca.OpenSection(0, false, true);
                 var pfs0 = new Pfs(sect);
                 var file = pfs0.OpenFile(pfs0.Files[0]);
 
@@ -175,7 +175,7 @@ namespace LibHac
         {
             foreach (var title in Titles.Values.Where(x => x.ControlNca != null))
             {
-                var romfs = new Romfs(title.ControlNca.OpenSection(0, false));
+                var romfs = new Romfs(title.ControlNca.OpenSection(0, false, true));
                 var control = romfs.GetFile("/control.nacp");
 
                 var reader = new BinaryReader(new MemoryStream(control));

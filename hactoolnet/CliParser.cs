@@ -13,6 +13,7 @@ namespace hactoolnet
             new CliOption("intype", 't', 1, (o, a) => o.InFileType = ParseFileType(a[0])),
             new CliOption("raw", 'r', 0, (o, a) => o.Raw = true),
             new CliOption("verify", 'y', 0, (o, a) => o.Validate = true),
+            new CliOption("enablehash", 'h', 0, (o, a) => o.EnableHash = true),
             new CliOption("keyset", 'k', 1, (o, a) => o.Keyfile = a[0]),
             new CliOption("titlekeys", 1, (o, a) => o.TitleKeyFile = a[0]),
             new CliOption("consolekeys", 1, (o, a) => o.ConsoleKeyFile = a[0]),
@@ -145,7 +146,8 @@ namespace hactoolnet
             sb.AppendLine("Usage: hactoolnet.exe [options...] <path>");
             sb.AppendLine("Options:");
             sb.AppendLine("  -r, --raw            Keep raw data, don\'t unpack.");
-            sb.AppendLine("  -y, --verify         Verify hashes.");
+            sb.AppendLine("  -y, --verify         Verify all hashes in the input file.");
+            sb.AppendLine("  -h, --enablehash     Enable hash checks when reading the input file.");
             sb.AppendLine("  -k, --keyset         Load keys from an external file.");
             sb.AppendLine("  -t, --intype=type    Specify input file type [nca, xci, romfs, pk11, pk21, ini1, kip1, switchfs, save, keygen]");
             sb.AppendLine("  --titlekeys <file>   Load title keys from an external file.");

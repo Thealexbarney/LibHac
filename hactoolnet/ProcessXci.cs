@@ -79,12 +79,12 @@ namespace hactoolnet
 
                     if (ctx.Options.ExefsOutDir != null)
                     {
-                        mainNca.ExtractSection(exefsSection.SectionNum, ctx.Options.ExefsOutDir, ctx.Logger);
+                        mainNca.ExtractSection(exefsSection.SectionNum, ctx.Options.ExefsOutDir, ctx.Options.EnableHash, ctx.Logger);
                     }
 
                     if (ctx.Options.ExefsOut != null)
                     {
-                        mainNca.ExportSection(exefsSection.SectionNum, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Logger);
+                        mainNca.ExportSection(exefsSection.SectionNum, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Options.EnableHash, ctx.Logger);
                     }
                 }
 
@@ -108,13 +108,13 @@ namespace hactoolnet
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        var romfs = new Romfs(mainNca.OpenSection(romfsSection.SectionNum, false));
+                        var romfs = new Romfs(mainNca.OpenSection(romfsSection.SectionNum, false, ctx.Options.EnableHash));
                         romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
                     }
 
                     if (ctx.Options.RomfsOut != null)
                     {
-                        mainNca.ExportSection(romfsSection.SectionNum, ctx.Options.RomfsOut, ctx.Options.Raw, ctx.Logger);
+                        mainNca.ExportSection(romfsSection.SectionNum, ctx.Options.RomfsOut, ctx.Options.Raw, ctx.Options.EnableHash, ctx.Logger);
                     }
                 }
             }

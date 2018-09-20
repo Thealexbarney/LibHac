@@ -61,7 +61,7 @@ namespace LibHac
 
             foreach (var pfsSection in Sections.Where(x => x != null && x.Type == SectionType.Pfs0))
             {
-                var sectionStream = OpenSection(pfsSection.SectionNum, false);
+                Stream sectionStream = OpenSection(pfsSection.SectionNum, false, false);
                 if (sectionStream == null) continue;
 
                 var pfs = new Pfs(sectionStream);
@@ -76,10 +76,10 @@ namespace LibHac
             return StreamSource.CreateStream();
         }
 
-        public Stream OpenSection(int index, bool raw)
+        private Stream OpenRawSection(int index)
         {
-            if (Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
-            var sect = Sections[index];
+            NcaSection sect = Sections[index];
+            if (sect == null) throw new ArgumentOutOfRangeException(nameof(index));
 
             if (sect.SuperblockHashValidity == Validity.Invalid) return null;
 
@@ -91,54 +91,87 @@ namespace LibHac
             switch (sect.Header.CryptType)
             {
                 case SectionCryptType.None:
-                    break;
+                    return rawStream;
                 case SectionCryptType.XTS:
-                    break;
+                    throw new NotImplementedException("NCA sections using XTS are not supported");
                 case SectionCryptType.CTR:
-                    rawStream = new RandomAccessSectorStream(new Aes128CtrStream(rawStream, DecryptedKeys[2], offset, sect.Header.Ctr), false);
-                    break;
+                    return new RandomAccessSectorStream(new Aes128CtrStream(rawStream, DecryptedKeys[2], offset, sect.Header.Ctr), false);
                 case SectionCryptType.BKTR:
                     rawStream = new RandomAccessSectorStream(
                         new BktrCryptoStream(rawStream, DecryptedKeys[2], 0, size, offset, sect.Header.Ctr, sect.Header.Bktr),
                         false);
-                    if (BaseNca == null)
-                    {
-                        return rawStream;
-                    }
-                    else
-                    {
-                        var baseSect = BaseNca.Sections.FirstOrDefault(x => x.Type == SectionType.Romfs);
-                        if (baseSect == null) throw new InvalidDataException("Base NCA has no RomFS section");
+                    if (BaseNca == null) return rawStream;
 
-                        var baseStream = BaseNca.OpenSection(baseSect.SectionNum, true);
-                        rawStream = new Bktr(rawStream, baseStream, sect);
-                    }
-                    break;
+                    NcaSection baseSect = BaseNca.Sections.FirstOrDefault(x => x.Type == SectionType.Romfs);
+                    if (baseSect == null) throw new InvalidDataException("Base NCA has no RomFS section");
+
+                    Stream baseStream = BaseNca.OpenSection(baseSect.SectionNum, true, false);
+                    return new Bktr(rawStream, baseStream, sect);
+
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+        }
+
+        public Stream OpenSection(int index, bool raw, bool enableIntegrityChecks)
+        {
+            Stream rawStream = OpenRawSection(index);
+            NcaSection sect = Sections[index];
 
             if (raw) return rawStream;
 
             switch (sect.Header.Type)
             {
                 case SectionType.Pfs0:
-                    offset = sect.Pfs0.Superblock.Pfs0Offset;
-                    size = sect.Pfs0.Superblock.Pfs0Size;
-                    break;
+                    PfsSuperblock pfs0Superblock = sect.Pfs0.Superblock;
+
+                    return new SubStream(rawStream, pfs0Superblock.Pfs0Offset, pfs0Superblock.Pfs0Size);
                 case SectionType.Romfs:
-                    offset = sect.Header.Romfs.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1].LogicalOffset;
-                    size = sect.Header.Romfs.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1].HashDataSize;
-                    break;
                 case SectionType.Bktr:
-                    offset = sect.Header.Bktr.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1].LogicalOffset;
-                    size = sect.Header.Bktr.IvfcHeader.LevelHeaders[Romfs.IvfcMaxLevel - 1].HashDataSize;
-                    break;
+
+                    var romfsStreamSource = new SharedStreamSource(rawStream);
+
+                    IvfcHeader ivfc;
+                    if (sect.Header.Type == SectionType.Romfs)
+                    {
+                        ivfc = sect.Header.Romfs.IvfcHeader;
+                    }
+                    else
+                    {
+                        ivfc = sect.Header.Bktr.IvfcHeader;
+                    }
+
+                    return InitIvfcForRomfs(ivfc, romfsStreamSource, enableIntegrityChecks);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            return new SubStream(rawStream, offset, size);
+        }
 
+        private static HierarchicalIntegrityVerificationStream InitIvfcForRomfs(IvfcHeader ivfc,
+            SharedStreamSource romfsStreamSource, bool enableIntegrityChecks)
+        {
+            var initInfo = new IntegrityVerificationInfo[ivfc.NumLevels];
+
+            // Set the master hash
+            initInfo[0] = new IntegrityVerificationInfo
+            {
+                Data = new MemoryStream(ivfc.MasterHash),
+                BlockSizePower = 0
+            };
+
+            for (int i = 1; i < ivfc.NumLevels; i++)
+            {
+                IvfcLevelHeader level = ivfc.LevelHeaders[i - 1];
+                Stream data = romfsStreamSource.CreateStream(level.LogicalOffset, level.HashDataSize);
+
+                initInfo[i] = new IntegrityVerificationInfo
+                {
+                    Data = data,
+                    BlockSizePower = level.BlockSize
+                };
+            }
+
+            return new HierarchicalIntegrityVerificationStream(initInfo, enableIntegrityChecks);
         }
 
         public void SetBaseNca(Nca baseNca) => BaseNca = baseNca;
@@ -264,7 +297,7 @@ namespace LibHac
                     return;
             }
 
-            var stream = OpenSection(index, true);
+            Stream stream = OpenSection(index, true, false);
             if (stream == null) return;
             if (expected == null) return;
 
@@ -287,7 +320,7 @@ namespace LibHac
         {
             if (Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
             var sect = Sections[index];
-            var stream = OpenSection(index, true);
+            var stream = OpenSection(index, true, false);
             logger?.LogMessage($"Verifying section {index}...");
 
             switch (sect.Type)
@@ -390,12 +423,12 @@ namespace LibHac
 
     public static class NcaExtensions
     {
-        public static void ExportSection(this Nca nca, int index, string filename, bool raw = false, IProgressReport logger = null)
+        public static void ExportSection(this Nca nca, int index, string filename, bool raw = false, bool verify = false, IProgressReport logger = null)
         {
             if (index < 0 || index > 3) throw new IndexOutOfRangeException();
             if (nca.Sections[index] == null) return;
 
-            var section = nca.OpenSection(index, raw);
+            var section = nca.OpenSection(index, raw, verify);
             var dir = Path.GetDirectoryName(filename);
             if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
 
@@ -405,13 +438,13 @@ namespace LibHac
             }
         }
 
-        public static void ExtractSection(this Nca nca, int index, string outputDir, IProgressReport logger = null)
+        public static void ExtractSection(this Nca nca, int index, string outputDir, bool verify = false, IProgressReport logger = null)
         {
             if (index < 0 || index > 3) throw new IndexOutOfRangeException();
             if (nca.Sections[index] == null) return;
 
             var section = nca.Sections[index];
-            var stream = nca.OpenSection(index, false);
+            var stream = nca.OpenSection(index, false, verify);
 
             switch (section.Type)
             {

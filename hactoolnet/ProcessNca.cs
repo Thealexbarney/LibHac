@@ -25,12 +25,12 @@ namespace hactoolnet
                 {
                     if (ctx.Options.SectionOut[i] != null)
                     {
-                        nca.ExportSection(i, ctx.Options.SectionOut[i], ctx.Options.Raw, ctx.Logger);
+                        nca.ExportSection(i, ctx.Options.SectionOut[i], ctx.Options.Raw, ctx.Options.EnableHash, ctx.Logger);
                     }
 
                     if (ctx.Options.SectionOutDir[i] != null)
                     {
-                        nca.ExtractSection(i, ctx.Options.SectionOutDir[i], ctx.Logger);
+                        nca.ExtractSection(i, ctx.Options.SectionOutDir[i], ctx.Options.EnableHash, ctx.Logger);
                     }
 
                     if (ctx.Options.Validate && nca.Sections[i] != null)
@@ -41,7 +41,7 @@ namespace hactoolnet
 
                 if (ctx.Options.ListRomFs && nca.Sections[1] != null)
                 {
-                    var romfs = new Romfs(nca.OpenSection(1, false));
+                    var romfs = new Romfs(nca.OpenSection(1, false, ctx.Options.EnableHash));
 
                     foreach (var romfsFile in romfs.Files)
                     {
@@ -67,12 +67,12 @@ namespace hactoolnet
 
                     if (ctx.Options.RomfsOut != null)
                     {
-                        nca.ExportSection(section.SectionNum, ctx.Options.RomfsOut, ctx.Options.Raw, ctx.Logger);
+                        nca.ExportSection(section.SectionNum, ctx.Options.RomfsOut, ctx.Options.Raw, ctx.Options.EnableHash, ctx.Logger);
                     }
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        var romfs = new Romfs(nca.OpenSection(section.SectionNum, false));
+                        var romfs = new Romfs(nca.OpenSection(section.SectionNum, false, ctx.Options.EnableHash));
                         romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
                     }
                 }
@@ -89,12 +89,12 @@ namespace hactoolnet
 
                     if (ctx.Options.ExefsOut != null)
                     {
-                        nca.ExportSection(section.SectionNum, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Logger);
+                        nca.ExportSection(section.SectionNum, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Options.EnableHash, ctx.Logger);
                     }
 
                     if (ctx.Options.ExefsOutDir != null)
                     {
-                        nca.ExtractSection(section.SectionNum, ctx.Options.ExefsOutDir, ctx.Logger);
+                        nca.ExtractSection(section.SectionNum, ctx.Options.ExefsOutDir, ctx.Options.EnableHash, ctx.Logger);
                     }
                 }
 
