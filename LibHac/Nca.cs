@@ -167,7 +167,8 @@ namespace LibHac
                 initInfo[i] = new IntegrityVerificationInfo
                 {
                     Data = data,
-                    BlockSizePower = level.BlockSize
+                    BlockSizePower = level.BlockSize,
+                    Type = IntegrityStreamType.RomFs
                 };
             }
 

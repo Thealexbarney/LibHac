@@ -19,8 +19,7 @@ namespace LibHac
 
             for (int i = 1; i < Levels.Length; i++)
             {
-                var levelData = new IntegrityVerificationStream(levelInfo[i].Data, Levels[i - 1],
-                    levelInfo[i].BlockSizePower, enableIntegrityChecks);
+                var levelData = new IntegrityVerificationStream(levelInfo[i], Levels[i - 1], enableIntegrityChecks);
 
                 Levels[i] = new RandomAccessSectorStream(levelData);
             }

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 using LibHac.Streams;
 
@@ -15,6 +16,8 @@ namespace LibHac.Savefile
         public SharedStreamSource MetaRemapSource { get; }
         private JournalStream JournalStream { get; }
         public SharedStreamSource JournalStreamSource { get; }
+        private HierarchicalIntegrityVerificationStream IvfcStream { get; }
+        public SharedStreamSource IvfcStreamSource { get; }
         private AllocationTable AllocationTable { get; }
 
         public Stream DuplexL1A { get; }
@@ -38,7 +41,7 @@ namespace LibHac.Savefile
         public DirectoryEntry[] Directories { get; private set; }
         private Dictionary<string, FileEntry> FileDict { get; }
 
-        public Savefile(Keyset keyset, Stream file, IProgressReport logger = null)
+        public Savefile(Keyset keyset, Stream file, bool enableIntegrityChecks, IProgressReport logger = null)
         {
             SavefileSource = new SharedStreamSource(file);
 
@@ -102,6 +105,10 @@ namespace LibHac.Savefile
                     layout.JournalDataSizeB + layout.SizeReservedArea);
                 JournalStream = new JournalStream(journalData, journalMap, (int)Header.Journal.BlockSize);
                 JournalStreamSource = new SharedStreamSource(JournalStream);
+
+                IvfcStream = InitIvfcStream(enableIntegrityChecks);
+                IvfcStreamSource = new SharedStreamSource(IvfcStream);
+
                 ReadFileInfo();
                 Dictionary<string, FileEntry> dictionary = new Dictionary<string, FileEntry>();
                 foreach (FileEntry entry in Files)
@@ -111,6 +118,40 @@ namespace LibHac.Savefile
 
                 FileDict = dictionary;
             }
+        }
+
+        private HierarchicalIntegrityVerificationStream InitIvfcStream(bool enableIntegrityChecks)
+        {
+            IvfcHeader ivfc = Header.Ivfc;
+
+            const int ivfcLevels = 5;
+            var initInfo = new IntegrityVerificationInfo[ivfcLevels];
+
+            initInfo[0] = new IntegrityVerificationInfo
+            {
+                Data = new MemoryStream(Header.MasterHashA),
+                BlockSizePower = 0,
+                Type = IntegrityStreamType.Save
+            };
+
+            for (int i = 1; i < ivfcLevels; i++)
+            {
+                IvfcLevelHeader level = ivfc.LevelHeaders[i - 1];
+
+                Stream data = i == ivfcLevels - 1
+                    ? (Stream)JournalStream
+                    : MetaRemapSource.CreateStream(level.LogicalOffset, level.HashDataSize);
+
+                initInfo[i] = new IntegrityVerificationInfo
+                {
+                    Data = data,
+                    BlockSizePower = level.BlockSize,
+                    Salt = new HMACSHA256(Encoding.ASCII.GetBytes(SaltSources[i - 1])).ComputeHash(ivfc.SaltSource),
+                    Type = IntegrityStreamType.Save
+                };
+            }
+
+            return new HierarchicalIntegrityVerificationStream(initInfo, enableIntegrityChecks);
         }
 
         public Stream OpenFile(string filename)
@@ -135,7 +176,7 @@ namespace LibHac.Savefile
 
         private AllocationTableStream OpenFatBlock(int blockIndex, long size)
         {
-            return new AllocationTableStream(JournalStreamSource.CreateStream(), AllocationTable, (int)Header.Save.BlockSize, blockIndex, size);
+            return new AllocationTableStream(IvfcStreamSource.CreateStream(), AllocationTable, (int)Header.Save.BlockSize, blockIndex, size);
         }
 
         public bool FileExists(string filename) => FileDict.ContainsKey(filename);
@@ -242,6 +283,16 @@ namespace LibHac.Savefile
 
             return true;
         }
+
+        private string[] SaltSources =
+        {
+            "HierarchicalIntegrityVerificationStorage::Master",
+            "HierarchicalIntegrityVerificationStorage::L1",
+            "HierarchicalIntegrityVerificationStorage::L2",
+            "HierarchicalIntegrityVerificationStorage::L3",
+            "HierarchicalIntegrityVerificationStorage::L4",
+            "HierarchicalIntegrityVerificationStorage::L5"
+        };
     }
 
     public static class SavefileExtensions

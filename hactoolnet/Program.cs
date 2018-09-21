@@ -104,7 +104,7 @@ namespace hactoolnet
         {
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.ReadWrite))
             {
-                var save = new Savefile(ctx.Keyset, file, ctx.Logger);
+                var save = new Savefile(ctx.Keyset, file, ctx.Options.EnableHash, ctx.Logger);
 
                 if (ctx.Options.OutDir != null)
                 {
@@ -136,7 +136,7 @@ namespace hactoolnet
                     save.JournalLayer3Hash.WriteAllBytes(Path.Combine(dir, "L2_6_Layer3Hash"), ctx.Logger);
                     save.JournalFat.WriteAllBytes(Path.Combine(dir, "L2_7_FAT"), ctx.Logger);
 
-                    save.JournalStreamSource.CreateStream().WriteAllBytes(Path.Combine(dir, "L3_0_SaveData"), ctx.Logger);
+                    save.IvfcStreamSource.CreateStream().WriteAllBytes(Path.Combine(dir, "L3_0_SaveData"), ctx.Logger);
                 }
 
                 if (ctx.Options.SignSave)

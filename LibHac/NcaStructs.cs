@@ -166,8 +166,8 @@ namespace LibHac
         public uint MasterHashSize;
         public uint NumLevels;
         public IvfcLevelHeader[] LevelHeaders = new IvfcLevelHeader[6];
+        public byte[] SaltSource;
         public byte[] MasterHash;
-
 
         public IvfcHeader(BinaryReader reader)
         {
@@ -181,7 +181,7 @@ namespace LibHac
                 LevelHeaders[i] = new IvfcLevelHeader(reader);
             }
 
-            reader.BaseStream.Position += 0x20;
+            SaltSource = reader.ReadBytes(0x20);
             MasterHash = reader.ReadBytes(0x20);
         }
     }

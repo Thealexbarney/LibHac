@@ -9,6 +9,7 @@ namespace LibHac.Savefile
         public FsLayout Layout { get; set; }
         public JournalHeader Journal { get; set; }
         public DuplexHeader Duplex { get; set; }
+        public IvfcHeader Ivfc { get; set; }
         public SaveHeader Save { get; set; }
 
         public RemapHeader FileRemap { get; set; }
@@ -40,6 +41,9 @@ namespace LibHac.Savefile
 
             reader.BaseStream.Position = 0x300;
             Duplex = new DuplexHeader(reader);
+
+            reader.BaseStream.Position = 0x344;
+            Ivfc = new IvfcHeader(reader);
 
             reader.BaseStream.Position = 0x408;
             Journal = new JournalHeader(reader);
