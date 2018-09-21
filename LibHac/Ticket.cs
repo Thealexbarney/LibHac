@@ -34,6 +34,8 @@ namespace LibHac
 
         public Ticket() { }
 
+        public Ticket(Stream stream) : this(new BinaryReader(stream)) { }
+
         public Ticket(BinaryReader reader)
         {
             var fileStart = reader.BaseStream.Position;
