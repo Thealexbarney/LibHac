@@ -135,6 +135,23 @@ namespace LibHac
                 reader.BaseStream.Position = stringTableOffset + Files[i].StringTableOffset;
                 Files[i].Name = reader.ReadAsciiZ();
             }
+
+
+            if (Type == PfsType.Hfs0) {
+                for (int i = 0; i < NumFiles; i++)
+                {
+                    reader.BaseStream.Position = HeaderSize + Files[i].Offset;
+                    if (Crypto.CheckMemoryHashTable(reader.ReadBytes((int)Files[i].HashedRegionSize), Files[i].Hash))
+                    {
+                        Files[i].HashValidity = Validity.Valid;
+                    }
+                    else
+                    {
+                        Files[i].HashValidity = Validity.Invalid;
+                    }
+                }
+            }
+
         }
 
         private static int GetFileEntrySize(PfsType type)
@@ -161,6 +178,7 @@ namespace LibHac
         public int HashedRegionSize;
         public byte[] Hash;
         public string Name;
+        public Validity HashValidity = Validity.Unchecked;
 
         public PfsFileEntry(BinaryReader reader, PfsType type)
         {

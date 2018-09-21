@@ -11,6 +11,17 @@ namespace LibHac
         internal const int Aes128Size = 0x10;
         internal const int Sha256DigestSize = 0x20;
 
+        public static bool CheckMemoryHashTable(byte[] data, byte[] hash)
+        {
+            bool comp = false;
+            using (var _SHA = SHA256.Create())
+            {
+                comp = Util.ArraysEqual(hash, _SHA.ComputeHash(data));
+            }
+            return comp;
+        }
+
+
         public static void DecryptEcb(byte[] key, byte[] src, int srcIndex, byte[] dest, int destIndex, int length)
         {
             using (var aes = Aes.Create())
