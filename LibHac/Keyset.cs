@@ -10,50 +10,51 @@ namespace LibHac
 {
     public class Keyset
     {
-        public byte[][] KeyblobKeys { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
-        public byte[][] KeyblobMacKeys { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
-        public byte[][] EncryptedKeyblobs { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0xB0);
-        public byte[][] Keyblobs { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x90);
-        public byte[][] KeyblobKeySources { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
-        public byte[] KeyblobMacKeySource { get; set; } = new byte[0x10];
-        public byte[] MasterKeySource { get; set; } = new byte[0x10];
-        public byte[][] MasterKeys { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
-        public byte[][] Package1Keys { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
-        public byte[][] Package2Keys { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
-        public byte[] Package2KeySource { get; set; } = new byte[0x10];
-        public byte[] AesKekGenerationSource { get; set; } = new byte[0x10];
-        public byte[] AesKeyGenerationSource { get; set; } = new byte[0x10];
-        public byte[] KeyAreaKeyApplicationSource { get; set; } = new byte[0x10];
-        public byte[] KeyAreaKeyOceanSource { get; set; } = new byte[0x10];
-        public byte[] KeyAreaKeySystemSource { get; set; } = new byte[0x10];
-        public byte[] SaveMacKekSource { get; set; } = new byte[0x10];
-        public byte[] SaveMacKeySource { get; set; } = new byte[0x10];
-        public byte[] TitlekekSource { get; set; } = new byte[0x10];
-        public byte[] HeaderKekSource { get; set; } = new byte[0x10];
-        public byte[] SdCardKekSource { get; set; } = new byte[0x10];
-        public byte[][] SdCardKeySources { get; set; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
-        public byte[][] SdCardKeySourcesSpecific { get; set; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
-        public byte[] HeaderKeySource { get; set; } = new byte[0x20];
-        public byte[] HeaderKey { get; set; } = new byte[0x20];
-        public byte[] XciHeaderKey { get; set; } = new byte[0x10];
-        public byte[][] Titlekeks { get; set; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
-        public byte[][][] KeyAreaKeys { get; set; } = Util.CreateJaggedArray<byte[][][]>(0x20, 3, 0x10);
-        public byte[] SaveMacKey { get; set; } = new byte[0x10];
-        public byte[][] SdCardKeys { get; set; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
-        public byte[] NcaHdrFixedKeyModulus { get; set; } = new byte[0x100];
-        public byte[] AcidFixedKeyModulus { get; set; } = new byte[0x100];
-        public byte[] Package2FixedKeyModulus { get; set; } = new byte[0x100];
-        public byte[] EticketRsaKek { get; set; } = new byte[0x10];
-        public byte[] RetailSpecificAesKeySource { get; set; } = new byte[0x10];
-        public byte[] PerConsoleKeySource { get; set; } = new byte[0x10];
-        public byte[] BisKekSource { get; set; } = new byte[0x10];
-        public byte[][] BisKeySource { get; set; } = Util.CreateJaggedArray<byte[][]>(3, 0x20);
+        public byte[][] KeyblobKeys { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
+        public byte[][] KeyblobMacKeys { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
+        public byte[][] EncryptedKeyblobs { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0xB0);
+        public byte[][] Keyblobs { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x90);
+        public byte[][] KeyblobKeySources { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
+        public byte[] KeyblobMacKeySource { get; } = new byte[0x10];
+        public byte[] MasterKeySource { get; } = new byte[0x10];
+        public byte[][] MasterKeys { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
+        public byte[][] Package1Keys { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
+        public byte[][] Package2Keys { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
+        public byte[] Package2KeySource { get; } = new byte[0x10];
+        public byte[] AesKekGenerationSource { get; } = new byte[0x10];
+        public byte[] AesKeyGenerationSource { get; } = new byte[0x10];
+        public byte[] KeyAreaKeyApplicationSource { get; } = new byte[0x10];
+        public byte[] KeyAreaKeyOceanSource { get; } = new byte[0x10];
+        public byte[] KeyAreaKeySystemSource { get; } = new byte[0x10];
+        public byte[] SaveMacKekSource { get; } = new byte[0x10];
+        public byte[] SaveMacKeySource { get; } = new byte[0x10];
+        public byte[] TitlekekSource { get; } = new byte[0x10];
+        public byte[] HeaderKekSource { get; } = new byte[0x10];
+        public byte[] SdCardKekSource { get; } = new byte[0x10];
+        public byte[][] SdCardKeySources { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
+        public byte[][] SdCardKeySourcesSpecific { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
+        public byte[] HeaderKeySource { get; } = new byte[0x20];
+        public byte[] HeaderKey { get; } = new byte[0x20];
+        public byte[] XciHeaderKey { get; } = new byte[0x10];
+        public byte[][] Titlekeks { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
+        public byte[][][] KeyAreaKeys { get; } = Util.CreateJaggedArray<byte[][][]>(0x20, 3, 0x10);
+        public byte[] SaveMacKey { get; } = new byte[0x10];
+        public byte[][] SdCardKeys { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
+        public byte[] NcaHdrFixedKeyModulus { get; } = new byte[0x100];
+        public byte[] AcidFixedKeyModulus { get; } = new byte[0x100];
+        public byte[] Package2FixedKeyModulus { get; } = new byte[0x100];
+        public byte[] EticketRsaKek { get; } = new byte[0x10];
+        public byte[] RetailSpecificAesKeySource { get; } = new byte[0x10];
+        public byte[] PerConsoleKeySource { get; } = new byte[0x10];
+        public byte[] BisKekSource { get; } = new byte[0x10];
+        public byte[][] BisKeySource { get; } = Util.CreateJaggedArray<byte[][]>(3, 0x20);
 
-        public byte[] SecureBootKey { get; set; } = new byte[0x10];
-        public byte[] TsecKey { get; set; } = new byte[0x10];
-        public byte[] DeviceKey { get; set; } = new byte[0x10];
-        public byte[][] BisKeys { get; set; } = Util.CreateJaggedArray<byte[][]>(4, 0x20);
-        public byte[] SdSeed { get; set; } = new byte[0x10];
+        public byte[] SecureBootKey { get; } = new byte[0x10];
+        public byte[] TsecKey { get; } = new byte[0x10];
+        public byte[] DeviceKey { get; } = new byte[0x10];
+        public byte[][] BisKeys { get; } = Util.CreateJaggedArray<byte[][]>(4, 0x20);
+        public byte[] SdSeed { get; } = new byte[0x10];
+
         public RSAParameters EticketExtKeyRsa { get; set; }
 
         public Dictionary<byte[], byte[]> TitleKeys { get; } = new Dictionary<byte[], byte[]>(new ByteArray128BitComparer());
@@ -363,13 +364,13 @@ namespace LibHac
 
                     if (splitLine.Length < 2) continue;
 
-                    if(!splitLine[0].Trim().TryToBytes(out byte[] rightsId))
+                    if (!splitLine[0].Trim().TryToBytes(out byte[] rightsId))
                     {
                         progress?.LogMessage($"Invalid rights ID \"{splitLine[0].Trim()}\" in title key file");
                         continue;
                     }
 
-                    if(!splitLine[1].Trim().TryToBytes(out byte[] titleKey))
+                    if (!splitLine[1].Trim().TryToBytes(out byte[] titleKey))
                     {
                         progress?.LogMessage($"Invalid title key \"{splitLine[1].Trim()}\" in title key file");
                         continue;
