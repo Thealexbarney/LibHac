@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -350,11 +349,31 @@ namespace LibHac
                 string line;
                 while ((line = reader.ReadLine()) != null)
                 {
-                    var a = line.Split(',', '=');
-                    if (a.Length != 2) continue;
+                    string[] splitLine;
 
-                    var rightsId = a[0].Trim().ToBytes();
-                    var titleKey = a[1].Trim().ToBytes();
+                    // Some people use pipes as delimiters
+                    if (line.Contains('|'))
+                    {
+                        splitLine = line.Split('|');
+                    }
+                    else
+                    {
+                        splitLine = line.Split(',', '=');
+                    }
+
+                    if (splitLine.Length < 2) continue;
+
+                    if(!splitLine[0].Trim().TryToBytes(out byte[] rightsId))
+                    {
+                        progress?.LogMessage($"Invalid rights ID \"{splitLine[0].Trim()}\" in title key file");
+                        continue;
+                    }
+
+                    if(!splitLine[1].Trim().TryToBytes(out byte[] titleKey))
+                    {
+                        progress?.LogMessage($"Invalid title key \"{splitLine[1].Trim()}\" in title key file");
+                        continue;
+                    }
 
                     if (rightsId.Length != TitleKeySize)
                     {

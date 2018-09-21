@@ -161,51 +161,54 @@ namespace LibHac
             return fullFile.Substring(fullDirectory.Length + 1);
         }
 
-        private static int HexToInt(char c)
+        private static bool TryHexToInt(char c, out int value)
         {
             switch (c)
             {
                 case '0':
-                    return 0;
+                    value = 0; break;
                 case '1':
-                    return 1;
+                    value = 1; break;
                 case '2':
-                    return 2;
+                    value = 2; break;
                 case '3':
-                    return 3;
+                    value = 3; break;
                 case '4':
-                    return 4;
+                    value = 4; break;
                 case '5':
-                    return 5;
+                    value = 5; break;
                 case '6':
-                    return 6;
+                    value = 6; break;
                 case '7':
-                    return 7;
+                    value = 7; break;
                 case '8':
-                    return 8;
+                    value = 8; break;
                 case '9':
-                    return 9;
+                    value = 9; break;
                 case 'a':
                 case 'A':
-                    return 10;
+                    value = 10; break;
                 case 'b':
                 case 'B':
-                    return 11;
+                    value = 11; break;
                 case 'c':
                 case 'C':
-                    return 12;
+                    value = 12; break;
                 case 'd':
                 case 'D':
-                    return 13;
+                    value = 13; break;
                 case 'e':
                 case 'E':
-                    return 14;
+                    value = 14; break;
                 case 'f':
                 case 'F':
-                    return 15;
+                    value = 15; break;
                 default:
-                    throw new FormatException("Unrecognized hex char " + c);
+                    value = 0;
+                    return false;
             }
+
+            return true;
         }
 
         private static readonly byte[,] ByteLookup = {
@@ -220,9 +223,33 @@ namespace LibHac
             int lastchar = input.Length - 1;
             for (int i = 0; i < input.Length; i++)
             {
-                result[lastcell - (i >> 1)] |= ByteLookup[i & 1, HexToInt(input[lastchar - i])];
+                if (!TryHexToInt(input[lastchar - i], out int hexInt))
+                {
+                    throw new FormatException($"Unrecognized hex char {input[lastchar - i]}");
+                }
+
+                result[lastcell - (i >> 1)] |= ByteLookup[i & 1, hexInt];
             }
             return result;
+        }
+
+        public static bool TryToBytes(this string input, out byte[] bytes)
+        {
+            var result = new byte[(input.Length + 1) >> 1];
+            int lastcell = result.Length - 1;
+            int lastchar = input.Length - 1;
+            for (int i = 0; i < input.Length; i++)
+            {
+                if (!TryHexToInt(input[lastchar - i], out int hexInt))
+                {
+                    bytes = null;
+                    return false;
+                }
+
+                result[lastcell - (i >> 1)] |= ByteLookup[i & 1, hexInt];
+            }
+            bytes = result;
+            return true;
         }
 
         private static readonly uint[] Lookup32 = CreateLookup32();
