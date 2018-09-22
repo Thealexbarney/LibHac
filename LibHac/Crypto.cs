@@ -30,7 +30,7 @@ namespace LibHac
                 aes.Key = key;
                 aes.Mode = CipherMode.ECB;
                 aes.Padding = PaddingMode.None;
-                Array.Copy(aes.CreateDecryptor().TransformFinalBlock(src, srcIndex, src.Length), srcIndex, dest, destIndex, length);
+                Array.Copy(aes.CreateDecryptor().TransformFinalBlock(src, srcIndex, length), 0, dest, destIndex, length);
             }
         }
 
@@ -46,7 +46,7 @@ namespace LibHac
                 aes.IV = iv;
                 aes.Mode = CipherMode.CBC;
                 aes.Padding = PaddingMode.None;
-                Array.Copy(aes.CreateDecryptor().TransformFinalBlock(src, srcIndex, src.Length), srcIndex, dest, destIndex, length);
+                Array.Copy(aes.CreateDecryptor().TransformFinalBlock(src, srcIndex, length), 0, dest, destIndex, length);
             }
         }
 
@@ -62,7 +62,7 @@ namespace LibHac
                 aes.IV = iv;
                 aes.Mode = CipherMode.CBC;
                 aes.Padding = PaddingMode.None;
-                Array.Copy(aes.CreateEncryptor().TransformFinalBlock(src, srcIndex, src.Length), srcIndex, dest, destIndex, length);
+                Array.Copy(aes.CreateEncryptor().TransformFinalBlock(src, srcIndex, length), 0, dest, destIndex, length);
             }
         }
 
