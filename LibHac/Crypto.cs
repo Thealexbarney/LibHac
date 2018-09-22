@@ -30,13 +30,7 @@ namespace LibHac
                 aes.Key = key;
                 aes.Mode = CipherMode.ECB;
                 aes.Padding = PaddingMode.None;
-                var dec = aes.CreateDecryptor();
-                using (var ms = new MemoryStream(dest, destIndex, length))
-                using (var cs = new CryptoStream(ms, dec, CryptoStreamMode.Write))
-                {
-                    cs.Write(src, srcIndex, length);
-                    cs.FlushFinalBlock();
-                }
+                Array.Copy(aes.CreateDecryptor().TransformFinalBlock(src, srcIndex, src.Length), srcIndex, dest, destIndex, length);
             }
         }
 
@@ -52,13 +46,7 @@ namespace LibHac
                 aes.IV = iv;
                 aes.Mode = CipherMode.CBC;
                 aes.Padding = PaddingMode.None;
-                var dec = aes.CreateDecryptor();
-                using (var ms = new MemoryStream(dest, destIndex, length))
-                using (var cs = new CryptoStream(ms, dec, CryptoStreamMode.Write))
-                {
-                    cs.Write(src, srcIndex, length);
-                    cs.FlushFinalBlock();
-                }
+                Array.Copy(aes.CreateDecryptor().TransformFinalBlock(src, srcIndex, src.Length), srcIndex, dest, destIndex, length);
             }
         }
 
@@ -74,13 +62,7 @@ namespace LibHac
                 aes.IV = iv;
                 aes.Mode = CipherMode.CBC;
                 aes.Padding = PaddingMode.None;
-                var dec = aes.CreateEncryptor();
-                using (var ms = new MemoryStream(dest, destIndex, length))
-                using (var cs = new CryptoStream(ms, dec, CryptoStreamMode.Write))
-                {
-                    cs.Write(src, srcIndex, length);
-                    cs.FlushFinalBlock();
-                }
+                Array.Copy(aes.CreateEncryptor().TransformFinalBlock(src, srcIndex, src.Length), srcIndex, dest, destIndex, length);
             }
         }
 
