@@ -87,12 +87,22 @@ namespace LibHac
                     }
 
                     nca.NcaId = Path.GetFileNameWithoutExtension(file);
-                    var extention = nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
-                    nca.Filename = nca.NcaId + extention;
+                    var extension = nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
+                    nca.Filename = nca.NcaId + extension;
+                }
+                catch (MissingKeyException ex)
+                {
+                    if (ex.Name == null)
+                    { Console.WriteLine($"{ex.Message} File:\n{file}"); }
+                    else
+                    {
+                        string name = ex.Type == KeyType.Title ? $"Title key for rights ID {ex.Name}" : ex.Name;
+                        Console.WriteLine($"{ex.Message}\nKey: {name}\nFile: {file}");
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"{ex.Message} {file}");
+                    Console.WriteLine($"{ex.Message} File: {file}");
                 }
 
                 if (nca?.NcaId != null) Ncas.Add(nca.NcaId, nca);
@@ -101,6 +111,8 @@ namespace LibHac
 
         private void OpenAllSaves()
         {
+            if (SaveDir == null) return;
+
             string[] files = Fs.GetFileSystemEntries(SaveDir, "*");
 
             foreach (string file in files)
@@ -118,7 +130,7 @@ namespace LibHac
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"{ex.Message} {file}");
+                    Console.WriteLine($"{ex.Message} File: {file}");
                 }
 
                 if (save != null && saveName != null)

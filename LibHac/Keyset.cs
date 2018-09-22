@@ -503,4 +503,11 @@ namespace LibHac
             }
         }
     }
+
+    public enum KeyType
+    {
+        Common,
+        Unique,
+        Title
+    }
 }

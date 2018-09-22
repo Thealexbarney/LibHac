@@ -49,6 +49,10 @@ namespace LibHac
                     Crypto.DecryptEcb(keyset.Titlekeks[CryptoType], titleKey, TitleKeyDec, 0x10);
                     DecryptedKeys[2] = TitleKeyDec;
                 }
+                else
+                {
+                    throw new MissingKeyException("A required key is missing.", $"{Header.RightsId.ToHexString()}", KeyType.Title);
+                }
             }
 
             for (int i = 0; i < 4; i++)
