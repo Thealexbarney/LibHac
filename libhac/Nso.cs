@@ -36,11 +36,11 @@ namespace LibHac
             dataSection.IsCompressed = flags[2];
             dataSection.CheckHash = flags[5];
 
-            ReadSegmentHeader(textSection);
+            ReadSegmentHeader(textSection, reader);
             reader.ReadUInt32(); // Module offset (TODO)
-            ReadSegmentHeader(rodataSection);
+            ReadSegmentHeader(rodataSection, reader);
             reader.ReadUInt32(); // Module file size
-            ReadSegmentHeader(dataSection);
+            ReadSegmentHeader(dataSection, reader);
             BssSize = reader.ReadUInt32();
             reader.Read(BuildID, 0, 0x20);
             textSection.CompressedSize = reader.ReadUInt32();
@@ -49,7 +49,7 @@ namespace LibHac
             reader.ReadBytes(0x1C); // Padding
             RodataRelativeExtents = new RodataRelativeExtent[]
             {
-                ReadRodataRelativeExtent(), ReadRodataRelativeExtent(), ReadRodataRelativeExtent()
+                ReadRodataRelativeExtent(reader), ReadRodataRelativeExtent(reader), ReadRodataRelativeExtent(reader)
             };
 
             reader.Read(textSection.Hash, 0, 0x20);
@@ -60,22 +60,18 @@ namespace LibHac
             reader.Close();
         }
 
-        public void ReadSegmentHeader(NsoSection section)
+        public void ReadSegmentHeader(NsoSection section, BinaryReader reader)
         {
-            BinaryReader reader = new BinaryReader(StreamSource.CreateStream());
             section.FileOffset = reader.ReadUInt32();
             section.MemoryOffset = reader.ReadUInt32();
             section.DecompressedSize = reader.ReadUInt32();
-            reader.Close();
         }
 
-        public RodataRelativeExtent ReadRodataRelativeExtent()
+        public RodataRelativeExtent ReadRodataRelativeExtent(BinaryReader reader)
         {
-            BinaryReader reader = new BinaryReader(StreamSource.CreateStream());
             RodataRelativeExtent extent = new RodataRelativeExtent();
             extent.RegionRodataOffset = reader.ReadUInt32();
             extent.RegionSize = reader.ReadUInt32();
-            reader.Close();
             return extent;
         }
 
