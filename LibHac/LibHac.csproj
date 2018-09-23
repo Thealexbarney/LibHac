@@ -27,6 +27,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="lz4net" Version="1.0.15.93" />
     <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" Condition=" '$(TargetFramework)' == 'net46' " />
   </ItemGroup>
 
