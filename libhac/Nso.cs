@@ -110,7 +110,10 @@ namespace LibHac
             {
                 byte[] compressed = new byte[CompressedSize];
                 OpenCompressedStream().Read(compressed, 0, (int) CompressedSize);
-                return Lz4.Decompress(compressed, (int) DecompressedSize);
+                if (IsCompressed)
+                    return Lz4.Decompress(compressed, (int)DecompressedSize);
+                else
+                    return compressed;
             }
         }
 
