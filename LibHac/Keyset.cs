@@ -270,10 +270,9 @@ namespace LibHac
     {
         private const int TitleKeySize = 0x10;
 
-        public static readonly Dictionary<string, KeyValue> 
-            CommonKeyDict,
-            UniqueKeyDict,
-            AllKeyDict;
+        public static readonly Dictionary<string, KeyValue> CommonKeyDict;
+        public static readonly Dictionary<string, KeyValue> UniqueKeyDict;
+        public static readonly Dictionary<string, KeyValue> AllKeyDict;
 
         static ExternalKeys()
         {

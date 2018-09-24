@@ -1,21 +1,18 @@
-﻿using LibHac.Streams;
-using Ryujinx.HLE.Loaders.Compression;
-using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections;
 using System.IO;
-using System.Text;
+using LibHac.Streams;
+using Ryujinx.HLE.Loaders.Compression;
 
 namespace LibHac
 {
     public class Nso
     {
-        public NsoSection[] Sections;
-        public RodataRelativeExtent[] RodataRelativeExtents;
-        public uint BssSize;
-        public byte[] BuildID = new byte[0x20];
+        public NsoSection[] Sections { get; }
+        public RodataRelativeExtent[] RodataRelativeExtents { get; }
+        public uint BssSize { get; }
+        public byte[] BuildId { get; } = new byte[0x20];
 
-        private SharedStreamSource StreamSource;
+        private SharedStreamSource StreamSource { get; }
 
         public Nso(Stream stream)
         {
@@ -25,101 +22,93 @@ namespace LibHac
                 throw new InvalidDataException("NSO magic is incorrect!");
             reader.ReadUInt32(); // Version
             reader.ReadUInt32(); // Reserved/Unused
-            BitArray flags = new BitArray(new int[] { (int) reader.ReadUInt32() });
+            BitArray flags = new BitArray(new[] { (int)reader.ReadUInt32() });
             NsoSection textSection = new NsoSection(StreamSource);
             NsoSection rodataSection = new NsoSection(StreamSource);
             NsoSection dataSection = new NsoSection(StreamSource);
             textSection.IsCompressed = flags[0];
-            textSection.CheckHash = flags[3];
             rodataSection.IsCompressed = flags[1];
-            rodataSection.CheckHash = flags[4];
             dataSection.IsCompressed = flags[2];
+            textSection.CheckHash = flags[3];
+            rodataSection.CheckHash = flags[4];
             dataSection.CheckHash = flags[5];
 
-            ReadSegmentHeader(textSection, reader);
+            textSection.ReadSegmentHeader(reader);
             reader.ReadUInt32(); // Module offset (TODO)
-            ReadSegmentHeader(rodataSection, reader);
+            rodataSection.ReadSegmentHeader(reader);
             reader.ReadUInt32(); // Module file size
-            ReadSegmentHeader(dataSection, reader);
+            dataSection.ReadSegmentHeader(reader);
             BssSize = reader.ReadUInt32();
-            reader.Read(BuildID, 0, 0x20);
+            reader.Read(BuildId, 0, 0x20);
             textSection.CompressedSize = reader.ReadUInt32();
             rodataSection.CompressedSize = reader.ReadUInt32();
             dataSection.CompressedSize = reader.ReadUInt32();
             reader.ReadBytes(0x1C); // Padding
-            RodataRelativeExtents = new RodataRelativeExtent[]
+            RodataRelativeExtents = new[]
             {
-                ReadRodataRelativeExtent(reader), ReadRodataRelativeExtent(reader), ReadRodataRelativeExtent(reader)
+                new RodataRelativeExtent(reader), new RodataRelativeExtent(reader), new RodataRelativeExtent(reader)
             };
 
             reader.Read(textSection.Hash, 0, 0x20);
             reader.Read(rodataSection.Hash, 0, 0x20);
             reader.Read(dataSection.Hash, 0, 0x20);
 
-            Sections = new NsoSection[] {textSection, rodataSection, dataSection };
+            Sections = new[] { textSection, rodataSection, dataSection };
             reader.Close();
-        }
-
-        public void ReadSegmentHeader(NsoSection section, BinaryReader reader)
-        {
-            section.FileOffset = reader.ReadUInt32();
-            section.MemoryOffset = reader.ReadUInt32();
-            section.DecompressedSize = reader.ReadUInt32();
-        }
-
-        public RodataRelativeExtent ReadRodataRelativeExtent(BinaryReader reader)
-        {
-            RodataRelativeExtent extent = new RodataRelativeExtent();
-            extent.RegionRodataOffset = reader.ReadUInt32();
-            extent.RegionSize = reader.ReadUInt32();
-            return extent;
         }
 
         public class NsoSection
         {
-            private readonly SharedStreamSource StreamSource;
+            private SharedStreamSource StreamSource { get; }
 
-            public bool IsCompressed,
-                 CheckHash;
-            public uint FileOffset,
-                MemoryOffset,
-                DecompressedSize,
-                CompressedSize;
-            public byte[] Hash = new byte[0x20];
+            public bool IsCompressed { get; set; }
+            public bool CheckHash { get; set; }
+            public uint FileOffset { get; set; }
+            public uint MemoryOffset { get; set; }
+            public uint DecompressedSize { get; set; }
+            public uint CompressedSize { get; set; }
+
+            public byte[] Hash { get; } = new byte[0x20];
 
             public NsoSection(SharedStreamSource streamSource)
             {
                 StreamSource = streamSource;
             }
 
-            public Stream OpenCompressedStream()
+            public Stream OpenSection()
             {
                 return StreamSource.CreateStream(FileOffset, CompressedSize);
             }
 
-            public Stream OpenDecompressedStream()
-            {
-                return new MemoryStream(Decompress());
-            }
-
-            public byte[] Decompress()
+            public byte[] DecompressSection()
             {
                 byte[] compressed = new byte[CompressedSize];
-                OpenCompressedStream().Read(compressed, 0, (int) CompressedSize);
+                OpenSection().Read(compressed, 0, (int)CompressedSize);
+
                 if (IsCompressed)
                     return Lz4.Decompress(compressed, (int)DecompressedSize);
                 else
                     return compressed;
             }
+
+            internal void ReadSegmentHeader(BinaryReader reader)
+            {
+                FileOffset = reader.ReadUInt32();
+                MemoryOffset = reader.ReadUInt32();
+                DecompressedSize = reader.ReadUInt32();
+            }
         }
 
         public class RodataRelativeExtent
         {
-            public uint 
-                RegionRodataOffset,
-                RegionSize;
+            public uint RegionRodataOffset { get; }
+            public uint RegionSize { get; }
+
+            public RodataRelativeExtent(BinaryReader reader)
+            {
+                RegionRodataOffset = reader.ReadUInt32();
+                RegionSize = reader.ReadUInt32();
+            }
         }
-
-
     }
 }
