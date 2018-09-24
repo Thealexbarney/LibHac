@@ -155,6 +155,7 @@ namespace hactoolnet
 
             PrintItem(sb, colLen, "Magic:", xci.Header.Magic);
             PrintItem(sb, colLen, $"Header Signature:{xci.Header.SignatureValidity.GetValidityString()}", xci.Header.Signature);
+            PrintItem(sb, colLen, $"Header Hash:{xci.Header.PartitionFsHeaderValidity.GetValidityString()}", xci.Header.PartitionFsHeaderHash);
             PrintItem(sb, colLen, "Cartridge Type:", GetCartridgeType(xci.Header.RomSize));
             PrintItem(sb, colLen, "Cartridge Size:", $"0x{Util.MediaToReal(xci.Header.ValidDataEndPage + 1):x12}");
             PrintItem(sb, colLen, "Header IV:", xci.Header.AesCbcIv);
@@ -172,7 +173,7 @@ namespace hactoolnet
         {
             const int fileNameLen = 57;
 
-            sb.AppendLine($"{GetDisplayName(partition.Name)} Partition:");
+            sb.AppendLine($"{GetDisplayName(partition.Name)} Partition:{partition.HashValidity.GetValidityString()}");
             PrintItem(sb, colLen, "    Magic:", partition.Header.Magic);
             PrintItem(sb, colLen, "    Offset:", $"{partition.Offset:x12}");
             PrintItem(sb, colLen, "    Number of files:", partition.Files.Length);
@@ -184,7 +185,7 @@ namespace hactoolnet
                     PfsFileEntry file = partition.Files[i];
 
                     string label = i == 0 ? "    Files:" : "";
-                    string offsets = $"{file.Offset:x12}-{file.Offset + file.Size:x12}";
+                    string offsets = $"{file.Offset:x12}-{file.Offset + file.Size:x12}{file.HashValidity.GetValidityString()}";
                     string data = $"{partition.Name}:/{file.Name}".PadRight(fileNameLen) + offsets;
 
                     PrintItem(sb, colLen, label, data);

@@ -64,68 +64,88 @@ namespace LibHac
 
         public Validity SignatureValidity { get; set; }
 
+        public Validity PartitionFsHeaderValidity { get; set; } = Validity.Unchecked;
+
         public XciHeader(Keyset keyset, Stream stream)
         {
-            var reader = new BinaryReader(stream, Encoding.Default, true);
-            Signature = reader.ReadBytes(SignatureSize);
-            Magic = reader.ReadAscii(4);
-            if (Magic != HeaderMagic)
-            {
-                throw new InvalidDataException("Invalid XCI file: Header magic invalid.");
+
+            using (var reader = new BinaryReader(stream, Encoding.Default, true)) {
+
+                Signature = reader.ReadBytes(SignatureSize);
+                Magic = reader.ReadAscii(4);
+                if (Magic != HeaderMagic)
+                {
+                    throw new InvalidDataException("Invalid XCI file: Header magic invalid.");
+                }
+
+                reader.BaseStream.Position = SignatureSize;
+                byte[] sigData = reader.ReadBytes(SignatureSize);
+                reader.BaseStream.Position = SignatureSize + 4;
+
+                if (Crypto.Rsa2048Pkcs1Verify(sigData, Signature, _xciHeaderPubk))
+                {
+                    SignatureValidity = Validity.Valid;
+                }
+                else
+                {
+                    SignatureValidity = Validity.Invalid;
+                }
+
+                RomAreaStartPage = reader.ReadInt32();
+                BackupAreaStartPage = reader.ReadInt32();
+                byte keyIndex = reader.ReadByte();
+                KekIndex = (byte)(keyIndex >> 4);
+                TitleKeyDecIndex = (byte)(keyIndex & 7);
+                RomSize = (RomSize)reader.ReadByte();
+                CardHeaderVersion = reader.ReadByte();
+                Flags = (XciFlags)reader.ReadByte();
+                PackageId = reader.ReadUInt64();
+                ValidDataEndPage = reader.ReadInt64();
+                AesCbcIv = reader.ReadBytes(Crypto.Aes128Size);
+                Array.Reverse(AesCbcIv);
+                PartitionFsHeaderAddress = reader.ReadInt64();
+                PartitionFsHeaderSize = reader.ReadInt64();
+                PartitionFsHeaderHash = reader.ReadBytes(Crypto.Sha256DigestSize);
+                InitialDataHash = reader.ReadBytes(Crypto.Sha256DigestSize);
+                SelSec = reader.ReadInt32();
+                SelT1Key = reader.ReadInt32();
+                SelKey = reader.ReadInt32();
+                LimAreaPage = reader.ReadInt32();
+
+                if (!keyset.XciHeaderKey.IsEmpty()) {
+
+                    var encHeader = reader.ReadBytes(EncryptedHeaderSize);
+                    var decHeader = new byte[EncryptedHeaderSize];
+                    Crypto.DecryptCbc(keyset.XciHeaderKey, AesCbcIv, encHeader, decHeader, EncryptedHeaderSize);
+
+                    using (var decreader = new BinaryReader(new MemoryStream(decHeader))) {
+                        FwVersion = decreader.ReadUInt64();
+                        AccCtrl1 = (CardClockRate)decreader.ReadInt32();
+                        Wait1TimeRead = decreader.ReadInt32();
+                        Wait2TimeRead = decreader.ReadInt32();
+                        Wait1TimeWrite = decreader.ReadInt32();
+                        Wait2TimeWrite = decreader.ReadInt32();
+                        FwMode = decreader.ReadInt32();
+                        UppVersion = decreader.ReadInt32();
+                        decreader.BaseStream.Position += 4;
+                        UppHash = decreader.ReadBytes(8);
+                        UppId = decreader.ReadUInt64();
+                    }
+                }
+
+                reader.BaseStream.Position = PartitionFsHeaderAddress;
+
+                if (Crypto.CheckMemoryHashTable(reader.ReadBytes((int)PartitionFsHeaderSize), PartitionFsHeaderHash)) {
+                    PartitionFsHeaderValidity = Validity.Valid;
+                }
+                else
+                {
+                    PartitionFsHeaderValidity = Validity.Invalid;
+                }
+
             }
 
-            reader.BaseStream.Position = SignatureSize;
-            byte[] sigData = reader.ReadBytes(SignatureSize);
-            reader.BaseStream.Position = SignatureSize + 4;
 
-            if (Crypto.Rsa2048Pkcs1Verify(sigData, Signature, _xciHeaderPubk))
-            {
-                SignatureValidity = Validity.Valid;
-            }
-            else
-            {
-                SignatureValidity = Validity.Invalid;
-            }
-
-            RomAreaStartPage = reader.ReadInt32();
-            BackupAreaStartPage = reader.ReadInt32();
-            byte keyIndex = reader.ReadByte();
-            KekIndex = (byte)(keyIndex >> 4);
-            TitleKeyDecIndex = (byte)(keyIndex & 7);
-            RomSize = (RomSize)reader.ReadByte();
-            CardHeaderVersion = reader.ReadByte();
-            Flags = (XciFlags)reader.ReadByte();
-            PackageId = reader.ReadUInt64();
-            ValidDataEndPage = reader.ReadInt64();
-            AesCbcIv = reader.ReadBytes(Crypto.Aes128Size);
-            Array.Reverse(AesCbcIv);
-            PartitionFsHeaderAddress = reader.ReadInt64();
-            PartitionFsHeaderSize = reader.ReadInt64();
-            PartitionFsHeaderHash = reader.ReadBytes(Crypto.Sha256DigestSize);
-            InitialDataHash = reader.ReadBytes(Crypto.Sha256DigestSize);
-            SelSec = reader.ReadInt32();
-            SelT1Key = reader.ReadInt32();
-            SelKey = reader.ReadInt32();
-            LimAreaPage = reader.ReadInt32();
-
-            if (keyset.XciHeaderKey.IsEmpty()) return;
-
-            var encHeader = reader.ReadBytes(EncryptedHeaderSize);
-            var decHeader = new byte[EncryptedHeaderSize];
-            Crypto.DecryptCbc(keyset.XciHeaderKey, AesCbcIv, encHeader, decHeader, EncryptedHeaderSize);
-
-            reader = new BinaryReader(new MemoryStream(decHeader));
-            FwVersion = reader.ReadUInt64();
-            AccCtrl1 = (CardClockRate)reader.ReadInt32();
-            Wait1TimeRead = reader.ReadInt32();
-            Wait2TimeRead = reader.ReadInt32();
-            Wait1TimeWrite = reader.ReadInt32();
-            Wait2TimeWrite = reader.ReadInt32();
-            FwMode = reader.ReadInt32();
-            UppVersion = reader.ReadInt32();
-            reader.BaseStream.Position += 4;
-            UppHash = reader.ReadBytes(8);
-            UppId = reader.ReadUInt64();
         }
     }
 

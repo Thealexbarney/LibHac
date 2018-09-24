@@ -11,6 +11,17 @@ namespace LibHac
         internal const int Aes128Size = 0x10;
         internal const int Sha256DigestSize = 0x20;
 
+        public static bool CheckMemoryHashTable(byte[] data, byte[] hash)
+        {
+            bool comp = false;
+            using (var _SHA = SHA256.Create())
+            {
+                comp = Util.ArraysEqual(hash, _SHA.ComputeHash(data));
+            }
+            return comp;
+        }
+
+
         public static void DecryptEcb(byte[] key, byte[] src, int srcIndex, byte[] dest, int destIndex, int length)
         {
             using (var aes = Aes.Create())
@@ -19,13 +30,7 @@ namespace LibHac
                 aes.Key = key;
                 aes.Mode = CipherMode.ECB;
                 aes.Padding = PaddingMode.None;
-                var dec = aes.CreateDecryptor();
-                using (var ms = new MemoryStream(dest, destIndex, length))
-                using (var cs = new CryptoStream(ms, dec, CryptoStreamMode.Write))
-                {
-                    cs.Write(src, srcIndex, length);
-                    cs.FlushFinalBlock();
-                }
+                Array.Copy(aes.CreateDecryptor().TransformFinalBlock(src, srcIndex, length), 0, dest, destIndex, length);
             }
         }
 
@@ -41,13 +46,7 @@ namespace LibHac
                 aes.IV = iv;
                 aes.Mode = CipherMode.CBC;
                 aes.Padding = PaddingMode.None;
-                var dec = aes.CreateDecryptor();
-                using (var ms = new MemoryStream(dest, destIndex, length))
-                using (var cs = new CryptoStream(ms, dec, CryptoStreamMode.Write))
-                {
-                    cs.Write(src, srcIndex, length);
-                    cs.FlushFinalBlock();
-                }
+                Array.Copy(aes.CreateDecryptor().TransformFinalBlock(src, srcIndex, length), 0, dest, destIndex, length);
             }
         }
 
@@ -63,13 +62,7 @@ namespace LibHac
                 aes.IV = iv;
                 aes.Mode = CipherMode.CBC;
                 aes.Padding = PaddingMode.None;
-                var dec = aes.CreateEncryptor();
-                using (var ms = new MemoryStream(dest, destIndex, length))
-                using (var cs = new CryptoStream(ms, dec, CryptoStreamMode.Write))
-                {
-                    cs.Write(src, srcIndex, length);
-                    cs.FlushFinalBlock();
-                }
+                Array.Copy(aes.CreateEncryptor().TransformFinalBlock(src, srcIndex, length), 0, dest, destIndex, length);
             }
         }
 

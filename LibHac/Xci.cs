@@ -31,7 +31,8 @@ namespace LibHac
             RootPartition = new XciPartition(hfs0Stream)
             {
                 Name = RootPartitionName,
-                Offset = Header.PartitionFsHeaderAddress
+                Offset = Header.PartitionFsHeaderAddress,
+                HashValidity = Header.PartitionFsHeaderValidity 
             };
 
             Partitions.Add(RootPartition);
@@ -43,7 +44,8 @@ namespace LibHac
                 var partition = new XciPartition(partitionStream)
                 {
                     Name = file.Name,
-                    Offset = Header.PartitionFsHeaderAddress + RootPartition.HeaderSize + file.Offset
+                    Offset = Header.PartitionFsHeaderAddress + RootPartition.HeaderSize + file.Offset,
+                   HashValidity = file.HashValidity
                 };
 
                 Partitions.Add(partition);
@@ -60,6 +62,7 @@ namespace LibHac
     {
         public string Name { get; internal set; }
         public long Offset { get; internal set; }
+        public Validity HashValidity { get; set; } = Validity.Unchecked;
 
         public XciPartition(Stream stream) : base(stream) { }
     }
