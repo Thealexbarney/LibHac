@@ -269,9 +269,10 @@ namespace LibHac
     public static class ExternalKeys
     {
         private const int TitleKeySize = 0x10;
-        private static readonly Dictionary<string, KeyValue> CommonKeyDict;
-        private static readonly Dictionary<string, KeyValue> UniqueKeyDict;
-        private static readonly Dictionary<string, KeyValue> AllKeyDict;
+
+        public static readonly Dictionary<string, KeyValue> CommonKeyDict;
+        public static readonly Dictionary<string, KeyValue> UniqueKeyDict;
+        public static readonly Dictionary<string, KeyValue> AllKeyDict;
 
         static ExternalKeys()
         {
@@ -393,17 +394,48 @@ namespace LibHac
             }
         }
 
-        public static string PrintKeys(Keyset keyset)
+        public static string PrintKeys(Keyset keyset, Dictionary<string, KeyValue> dict)
         {
             var sb = new StringBuilder();
-            int maxNameLength = CommonKeyDict.Values.Max(x => x.Name.Length);
+            int maxNameLength = dict.Values.Max(x => x.Name.Length);
 
-            foreach (KeyValue keySlot in CommonKeyDict.Values.OrderBy(x => x.Name))
+            foreach (KeyValue keySlot in dict.Values.OrderBy(x => x.Name))
             {
                 byte[] key = keySlot.GetKey(keyset);
                 if (key.IsEmpty()) continue;
 
                 var line = $"{keySlot.Name.PadRight(maxNameLength)} = {key.ToHexString()}";
+                sb.AppendLine(line);
+            }
+
+            return sb.ToString();
+        }
+
+        public static string PrintCommonKeys(Keyset keyset)
+        {
+            return PrintKeys(keyset, CommonKeyDict);
+        }
+
+        public static string PrintUniqueKeys(Keyset keyset)
+        {
+            return PrintKeys(keyset, UniqueKeyDict);
+        }
+
+        public static string PrintAllKeys(Keyset keyset)
+        {
+            return PrintKeys(keyset, AllKeyDict);
+        }
+
+        public static string PrintTitleKeys(Keyset keyset)
+        {
+            var sb = new StringBuilder();
+            int maxNameLength = keyset.TitleKeys.Values.Max(x => x.Length);
+
+            foreach (KeyValuePair<byte[], byte[]> kv in keyset.TitleKeys)
+            {
+                byte[] key = kv.Key;
+                byte[] value = kv.Value;
+                var line = $"{key.ToHexString().PadRight(maxNameLength)} = {value.ToHexString()}";
                 sb.AppendLine(line);
             }
 
@@ -489,7 +521,7 @@ namespace LibHac
             return keys;
         }
 
-        private class KeyValue
+        public class KeyValue
         {
             public readonly string Name;
             public readonly int Size;
