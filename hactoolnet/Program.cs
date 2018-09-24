@@ -155,7 +155,7 @@ namespace hactoolnet
 
         private static void ProcessKeygen(Context ctx)
         {
-            Console.WriteLine(ExternalKeys.PrintKeys(ctx.Keyset));
+            Console.WriteLine(ExternalKeys.PrintCommonKeys(ctx.Keyset));
         }
 
         // For running random stuff
