@@ -304,7 +304,7 @@ namespace LibHac
         public long GetSize()
         {
             return Metadata.ContentEntries
-                .Where(x => x.Type < CnmtContentType.UpdatePatch)
+                .Where(x => x.Type < CnmtContentType.DeltaFragment)
                 .Sum(x => x.Size);
         }
     }
@@ -339,7 +339,7 @@ namespace LibHac
                 case TitleType.AddOnContent:
                     AddOnContent.Add(title);
                     break;
-                case TitleType.DeltaTitle:
+                case TitleType.Delta:
                     break;
             }
 
