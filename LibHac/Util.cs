@@ -90,36 +90,34 @@ namespace LibHac
 
         public static string ReadAsciiZ(this BinaryReader reader, int maxLength = int.MaxValue)
         {
-            var start = reader.BaseStream.Position;
+            List<byte> str = new List<byte>();
+            byte ch;
             int size = 0;
-
-            // Read until we hit the end of the stream (-1) or a zero
-            while (reader.BaseStream.ReadByte() - 1 > 0 && size < maxLength)
+            while (size < maxLength)
             {
                 size++;
+                ch = reader.ReadByte();
+                if (ch == 0)
+                    break;
+                str.Add(ch);
             }
-
-            reader.BaseStream.Position = start;
-            string text = reader.ReadAscii(size);
-            reader.BaseStream.Position++; // Skip the null byte
-            return text;
+            return Encoding.ASCII.GetString(str.ToArray());
         }
 
         public static string ReadUtf8Z(this BinaryReader reader, int maxLength = int.MaxValue)
         {
-            var start = reader.BaseStream.Position;
+            List<byte> str = new List<byte>();
+            byte ch;
             int size = 0;
-
-            // Read until we hit the end of the stream (-1) or a zero
-            while (reader.BaseStream.ReadByte() - 1 > 0 && size < maxLength)
+            while (size < maxLength)
             {
                 size++;
+                ch = reader.ReadByte();
+                if (ch == 0)
+                    break;
+                str.Add(ch);
             }
-
-            reader.BaseStream.Position = start;
-            string text = reader.ReadUtf8(size);
-            reader.BaseStream.Position++; // Skip the null byte
-            return text;
+            return Encoding.UTF8.GetString(str.ToArray());
         }
 
         public static void WriteUTF8(this BinaryWriter writer, string value)
