@@ -42,6 +42,7 @@ namespace hactoolnet
     {
         Nca,
         Pfs0,
+        Nsp,
         Romfs,
         Nax0,
         Xci,
