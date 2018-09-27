@@ -12,6 +12,7 @@ namespace Net
         public ulong DeviceId;
         public string CertFile;
         public string CommonCertFile;
+        public string Token;
         public bool GetMetadata;
     }
 

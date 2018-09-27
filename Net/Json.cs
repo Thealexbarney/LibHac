@@ -14,6 +14,12 @@ namespace Net
             var versionList = JsonConvert.DeserializeObject<VersionList>(text);
             return versionList;
         }
+
+        public static List<SuperflyInfo> ReadSuperfly(string filename)
+        {
+            string text = File.ReadAllText(filename);
+            return JsonConvert.DeserializeObject<List<SuperflyInfo>>(text);
+        }
     }
 
     public class VersionList
@@ -28,5 +34,12 @@ namespace Net
         public string id { get; set; }
         public int version { get; set; }
         public int required_version { get; set; }
+    }
+
+    public class SuperflyInfo
+    {
+        public string title_id { get; set; }
+        public int version { get; set; }
+        public string title_type { get; set; }
     }
 }

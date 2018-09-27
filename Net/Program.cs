@@ -45,8 +45,14 @@ namespace Net
                 return;
             }
 
-            var tid = ctx.Options.TitleId;
-            var ver = ctx.Options.Version;
+            if (string.IsNullOrWhiteSpace(ctx.Options.Token))
+            {
+                CliParser.PrintWithUsage("A token must be set.");
+                return;
+            }
+
+            ulong tid = ctx.Options.TitleId;
+            int ver = ctx.Options.Version;
 
             var net = new NetContext(ctx);
             var cnmt = net.GetCnmt(tid, ver);
@@ -66,38 +72,79 @@ namespace Net
 
         private static void GetMetadata(NetContext net, IProgressReport logger = null)
         {
-            var versionList = net.GetVersionList();
+            VersionList versionList = net.GetVersionList();
             net.Db.ImportVersionList(versionList);
             //net.Db.ImportList("titles.txt");
             net.Save();
+            ReadMetaNcas(net, logger);
+            
+            net.Save();
+        }
 
-            foreach (var title in net.Db.Titles.Values)
+        private static void ReadMetaNcas(NetContext net, IProgressReport logger = null)
+        {
+            foreach (TitleMetadata title in net.Db.Titles.Values.ToArray())
             {
-                foreach (var version in title.Versions.Values.Where(x => x.Exists))
+                if (title.Versions.Count == 0)
                 {
-                    var titleId = version.Version == 0 ? title.Id : title.UpdateId;
+                    int version = 0;
+                    if ((title.Id & 0x800) != 0)
+                    {
+                        version = 1 << 16;
+                    }
+
+                    title.Versions.Add(version, new TitleVersion { Version = version });
+                }
+
+                foreach (TitleVersion version in title.Versions.Values.Where(x => x.Exists))
+                {
+                    ulong titleId = title.Id;
                     try
                     {
-                        var control = net.GetControl((ulong)titleId, version.Version);
-                        version.Control = control;
-                        if (control == null) version.Exists = false;
-
-                        Cnmt meta = net.GetCnmt((ulong)titleId, version.Version);
+                        Cnmt meta = net.GetCnmt(titleId, version.Version);
                         version.ContentMetadata = meta;
-                        if (meta == null) version.Exists = false;
+                        if (meta == null)
+                        {
+                            version.Exists = false;
+                            logger?.LogMessage($"{titleId:x16}v{version.Version} not found.");
+                            continue;
+                        }
 
-                        logger?.LogMessage($"{titleId}v{version.Version}");
+                        Nacp control = net.GetControl(titleId, version.Version);
+                        version.Control = control;
+
+                        if (!net.Db.Titles.ContainsKey(meta.ApplicationTitleId))
+                        {
+                            net.Db.AddTitle(meta.ApplicationTitleId);
+                            logger?.LogMessage($"Found title {meta.ApplicationTitleId:x16}");
+                        }
+
+                        if (meta.Type == TitleType.Application)
+                        {
+                            ReadSuperfly(title, net, logger);
+                        }
+
+                        logger?.LogMessage($"{titleId:x16}v{version.Version}");
                         //Thread.Sleep(300);
                     }
                     catch (Exception ex)
                     {
-                        logger?.LogMessage($"Failed getting {titleId}v{version.Version}\n{ex.Message}");
+                        logger?.LogMessage($"Failed getting {titleId:x16}v{version.Version}\n{ex.Message}");
                     }
                 }
                 // net.Save();
             }
+        }
 
-            net.Save();
+        private static void ReadSuperfly(TitleMetadata titleDb, NetContext net, IProgressReport logger = null)
+        {
+            titleDb.Superfly = net.GetSuperfly(titleDb.Id);
+
+            foreach (SuperflyInfo title in titleDb.Superfly)
+            {
+                ulong id = ulong.Parse(title.title_id, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                net.Db.AddTitle(id, title.version);
+            }
         }
 
         private static void OpenKeyset(Context ctx)

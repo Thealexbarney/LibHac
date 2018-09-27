@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -11,9 +12,10 @@ namespace Net
     {
         private X509Certificate2 Certificate { get; set; }
         private X509Certificate2 CertificateCommon { get; set; }
+        private string Token { get; }
         private string Eid { get; } = "lp1";
         private ulong Did { get; }
-        private string Firmware { get; } = "5.1.0-3.0";
+        private string Firmware { get; } = "6.0.0-5.0";
         private string CachePath { get; } = "titles";
         private Context ToolCtx { get; }
         public Database Db { get; }
@@ -24,6 +26,8 @@ namespace Net
         {
             ToolCtx = ctx;
             Did = ctx.Options.DeviceId;
+            Token = ctx.Options.Token;
+
             if (ctx.Options.CertFile != null)
             {
                 SetCertificate(ctx.Options.CertFile);
@@ -62,7 +66,7 @@ namespace Net
                 if (stream == null) return null;
 
                 var nca = new Nca(ToolCtx.Keyset, stream, true);
-                Stream sect = nca.OpenSection(0, false);
+                Stream sect = nca.OpenSection(0, false, true);
                 var pfs0 = new Pfs(sect);
                 var file = pfs0.OpenFile(pfs0.Files[0]);
 
@@ -112,7 +116,7 @@ namespace Net
             if (controlNca == null) return null;
 
             var nca = new Nca(ToolCtx.Keyset, controlNca, true);
-            var romfs = new Romfs(nca.OpenSection(0, false));
+            var romfs = new Romfs(nca.OpenSection(0, false, true));
             var controlNacp = romfs.GetFile("/control.nacp");
 
             var reader = new BinaryReader(new MemoryStream(controlNacp));
@@ -134,6 +138,27 @@ namespace Net
             if (!File.Exists(filePath)) return null;
 
             return new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        }
+
+        public List<SuperflyInfo> GetSuperfly(ulong titleId)
+        {
+            var filename = GetSuperflyFile(titleId);
+            return Json.ReadSuperfly(filename);
+        }
+
+        public string GetSuperflyFile(ulong titleId)
+        {
+            string titleDir = GetTitleDir(titleId);
+
+            var filePath = Path.Combine(titleDir, $"{titleId:x16}.json");
+            if (!File.Exists(filePath))
+            {
+                DownloadFile(GetSuperflyUrl(titleId), filePath);
+            }
+
+            if (!File.Exists(filePath)) return null;
+
+            return filePath;
         }
 
         private void DownloadCnmt(ulong titleId, int version)
@@ -179,9 +204,14 @@ namespace Net
             }
         }
 
-        private string GetTitleDir(ulong titleId, int version)
+        private string GetTitleDir(ulong titleId, int version = -1)
         {
-            return Path.Combine(CachePath, $"{titleId:x16}", $"{version}");
+            if (version >= 0)
+            {
+                return Path.Combine(CachePath, $"{titleId:x16}", $"{version}");
+            }
+
+            return Path.Combine(CachePath, $"{titleId:x16}");
         }
 
         public string GetMetaUrl(string ncaId)
@@ -193,6 +223,12 @@ namespace Net
         public string GetContentUrl(string ncaId)
         {
             string url = $"{GetAtumUrl()}/c/c/{ncaId.ToLower()}";
+            return url;
+        }
+
+        public string GetSuperflyUrl(ulong titleId)
+        {
+            string url = $"https://superfly.hac.{Eid}.d4c.nintendo.net/v1/a/{titleId:x16}/dv";
             return url;
         }
 
@@ -239,7 +275,9 @@ namespace Net
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
             request.ClientCertificates.Add(Certificate);
+            request.Accept = "*/*";
             request.UserAgent = $"NintendoSDK Firmware/{Firmware} (platform:NX; did:{Did}; eid:{Eid})";
+            request.Headers.Add("X-Nintendo-DenebEdgeToken", Token);
             request.Method = method;
             ServicePointManager.ServerCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
 

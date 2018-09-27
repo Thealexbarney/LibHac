@@ -9,7 +9,7 @@ namespace Net
 {
     public class Database
     {
-        public Dictionary<long, TitleMetadata> Titles { get; set; } = new Dictionary<long, TitleMetadata>();
+        public Dictionary<ulong, TitleMetadata> Titles { get; set; } = new Dictionary<ulong, TitleMetadata>();
         public DateTime VersionListTime { get; set; }
 
         public string Serialize()
@@ -30,36 +30,39 @@ namespace Net
 
         public void ImportVersionList(VersionList list)
         {
-            foreach (var title in list.titles)
+            foreach (VersionListTitle title in list.titles)
             {
-                var mainId = long.Parse(title.id, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-                long updateId = 0;
-                bool isUpdate = (mainId & 0x800) != 0;
-                if (isUpdate)
+                ulong mainId = ulong.Parse(title.id, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+
+                AddTitle(mainId);
+            }
+        }
+
+        public void AddTitle(ulong id, int version = -1)
+        {
+            bool isUpdate = (id & 0x800) != 0;
+
+            if (!Titles.TryGetValue(id, out TitleMetadata titleDb))
+            {
+                titleDb = new TitleMetadata { Id = id };
+                Titles[id] = titleDb;
+            }
+
+            if (version >= 0)
+            {
+                titleDb.MaxVersion = version;
+
+                int minVersion = isUpdate ? 1 : 0;
+
+                int maxVersionShort = titleDb.MaxVersion >> 16;
+                for (int i = minVersion; i <= maxVersionShort; i++)
                 {
-                    updateId = mainId;
-                    mainId &= ~0x800;
-                }
+                    int longVersion = i << 16;
 
-                if (!Titles.TryGetValue(mainId, out TitleMetadata titleDb))
-                {
-                    titleDb = new TitleMetadata();
-                    Titles[mainId] = titleDb;
-                }
-
-                titleDb.Id = mainId;
-                titleDb.UpdateId = updateId;
-                titleDb.MaxVersion = title.version;
-
-                int maxVersionShort = title.version >> 16;
-                for (int i = 0; i <= maxVersionShort; i++)
-                {
-                    var version = i << 16;
-
-                    if (!titleDb.Versions.TryGetValue(version, out TitleVersion versionDb))
+                    if (!titleDb.Versions.TryGetValue(longVersion, out TitleVersion versionDb))
                     {
-                        versionDb = new TitleVersion { Version = version };
-                        titleDb.Versions.Add(version, versionDb);
+                        versionDb = new TitleVersion { Version = longVersion };
+                        titleDb.Versions.Add(longVersion, versionDb);
                     }
                 }
             }
@@ -74,46 +77,21 @@ namespace Net
         {
             foreach (string id in titleIds)
             {
-                var mainId = long.Parse(id, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-                long updateId = 0;
-                bool isUpdate = (mainId & 0x800) != 0;
-                if (isUpdate)
-                {
-                    updateId = mainId;
-                    mainId &= ~0x800;
-                }
-
-                var titleDb = new TitleMetadata();
-                Titles[mainId] = titleDb;
-
-                titleDb.Id = mainId;
-                titleDb.UpdateId = mainId | 0x800;
-                titleDb.MaxVersion = 5 << 16;
-
-                int maxVersionShort = 5;
-                for (int i = 0; i <= maxVersionShort; i++)
-                {
-                    var version = i << 16;
-
-                    if (!titleDb.Versions.TryGetValue(version, out TitleVersion versionDb))
-                    {
-                        versionDb = new TitleVersion { Version = version };
-                        titleDb.Versions.Add(version, versionDb);
-                    }
-                }
+                ulong mainId = ulong.Parse(id, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                AddTitle(mainId);
             }
         }
     }
 
     public class TitleMetadata
     {
-        public long Id { get; set; }
-        public long UpdateId { get; set; }
-        public List<long> AocIds { get; set; } = new List<long>();
+        public ulong Id { get; set; }
         public int MaxVersion { get; set; }
+        public List<SuperflyInfo> Superfly { get; set; } = new List<SuperflyInfo>();
+        public DateTime SuperflyTime { get; set; }
         public Dictionary<int, TitleVersion> Versions { get; set; } = new Dictionary<int, TitleVersion>();
 
-
+        public bool IsSuperflyCurrent() => SuperflyTime.AddDays(15) > DateTime.UtcNow;
     }
 
     public class TitleVersion
