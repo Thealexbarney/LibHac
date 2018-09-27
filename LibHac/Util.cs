@@ -144,10 +144,18 @@ namespace LibHac
 
         public static byte[] ToBytes(this string input)
         {
-            return Enumerable.Range(0, input.Length)
+            byte[] ret = new byte[]{ };
+            try
+            {
+                ret = Enumerable.Range(0, input.Length)
                      .Where(x => x % 2 == 0)
                      .Select(x => Convert.ToByte(input.Substring(x, 2), 16))
                      .ToArray();
+            }
+            catch (Exception)
+            {
+            }
+            return ret;
         }
 
         public static bool TryToBytes(this string input, out byte[] bytes)
