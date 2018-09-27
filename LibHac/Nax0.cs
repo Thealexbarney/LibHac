@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using LibHac.Streams;
@@ -75,7 +76,7 @@ namespace LibHac
                 var validationHash = new HMACSHA256(validationHashKey);
                 byte[] validationMac = validationHash.ComputeHash(keyset.SdCardKeys[k], 0x10, 0x10);
 
-                if (Util.ArraysEqual(Hmac, validationMac))
+                if (Hmac.SequenceEqual(validationMac))
                 {
                     return;
                 }

@@ -315,7 +315,7 @@ namespace LibHac
                 actual = hash.ComputeHash(hashTable);
             }
 
-            var validity = Util.ArraysEqual(expected, actual) ? Validity.Valid : Validity.Invalid;
+            var validity = expected.SequenceEqual(actual) ? Validity.Valid : Validity.Invalid;
 
             sect.SuperblockHashValidity = validity;
             if (sect.Type == SectionType.Romfs) sect.Romfs.IvfcLevels[0].HashValidity = validity;
@@ -391,7 +391,7 @@ namespace LibHac
                     section.Read(currentBlock, 0, curBlockSize);
                     var actualHash = sha256.ComputeHash(currentBlock, 0, curBlockSize);
 
-                    if (!Util.ArraysEqual(expectedHash, actualHash))
+                    if (!expectedHash.SequenceEqual(actualHash))
                     {
                         return Validity.Invalid;
                     }

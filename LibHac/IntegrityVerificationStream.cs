@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using LibHac.Streams;
 
@@ -95,7 +96,7 @@ namespace LibHac
                 hash[0x1F] |= 0x80;
             }
 
-            if (!Util.ArraysEqual(_hashBuffer, hash))
+            if (!_hashBuffer.SequenceEqual(hash))
             {
                 throw new InvalidDataException("Hash error!");
             }

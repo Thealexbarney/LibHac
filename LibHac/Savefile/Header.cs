@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Security.Cryptography;
+using System.Linq;
 
 namespace LibHac.Savefile
 {
@@ -91,7 +92,7 @@ namespace LibHac.Savefile
             using (SHA256 sha256 = SHA256.Create())
             {
                 var hash = sha256.ComputeHash(Data, 0x300, 0x3d00);
-                return Util.ArraysEqual(hash, Layout.Hash) ? Validity.Valid : Validity.Invalid;
+                return hash.SequenceEqual(Layout.Hash) ? Validity.Valid : Validity.Invalid;
             }
         }
 
@@ -101,7 +102,7 @@ namespace LibHac.Savefile
 
             Crypto.CalculateAesCmac(keyset.SaveMacKey, Data, 0x100, calculatedCmac, 0, 0x200);
 
-            return Util.ArraysEqual(calculatedCmac, Cmac) ? Validity.Valid : Validity.Invalid;
+            return calculatedCmac.SequenceEqual(Cmac) ? Validity.Valid : Validity.Invalid;
         }
     }
 

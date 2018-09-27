@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Security.Cryptography;
 using LibHac.Streams;
@@ -16,7 +17,7 @@ namespace LibHac
             bool comp = false;
             using (var _SHA = SHA256.Create())
             {
-                comp = Util.ArraysEqual(hash, _SHA.ComputeHash(data));
+                comp = hash.SequenceEqual(_SHA.ComputeHash(data));
             }
             return comp;
         }
@@ -133,7 +134,7 @@ namespace LibHac
             byte[] testEnc = rsa.Encrypt(test, false);
             byte[] testDec = rsa.Decrypt(testEnc, false);
 
-            if (!Util.ArraysEqual(test, testDec))
+            if (!test.SequenceEqual(testDec))
             {
                 throw new InvalidDataException("Could not verify RSA key pair");
             }
