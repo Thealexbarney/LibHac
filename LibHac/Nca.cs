@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using LibHac.Streams;
 using LibHac.XTSSharp;
 
@@ -190,9 +189,11 @@ namespace LibHac
                 headerDec.Read(headerBytes, 0, headerBytes.Length);
             }
 
-            var reader = new BinaryReader(new MemoryStream(headerBytes));
-
-            Header = NcaHeader.Read(reader);
+            using (var reader = new BinaryReader(new MemoryStream(headerBytes)))
+            {
+                Header = NcaHeader.Read(reader);
+            }
+            
         }
 
         private void DecryptKeyArea(Keyset keyset)
@@ -260,13 +261,15 @@ namespace LibHac
             var offset = sect.Header.Bktr.SubsectionHeader.Offset;
             using (var streamDec = new RandomAccessSectorStream(new Aes128CtrStream(GetStream(), DecryptedKeys[2], sect.Offset, sect.Size, sect.Offset, sect.Header.Ctr)))
             {
-                var reader = new BinaryReader(streamDec);
-                streamDec.Position = offset + 8;
-                var size = reader.ReadInt64();
-
-                if (size != offset)
+                using (var reader = new BinaryReader(streamDec))
                 {
-                    sect.SuperblockHashValidity = Validity.Invalid;
+                    streamDec.Position = offset + 8;
+                    var size = reader.ReadInt64();
+
+                    if (size != offset)
+                    {
+                         sect.SuperblockHashValidity = Validity.Invalid;
+                    }
                 }
             }
         }
@@ -277,7 +280,6 @@ namespace LibHac
             var sect = Sections[index];
 
             byte[] expected = null;
-            byte[] actual;
             long offset = 0;
             long size = 0;
 
@@ -310,15 +312,8 @@ namespace LibHac
             stream.Position = offset;
             stream.Read(hashTable, 0, hashTable.Length);
 
-            using (SHA256 hash = SHA256.Create())
-            {
-                actual = hash.ComputeHash(hashTable);
-            }
-
-            var validity = expected.SequenceEqual(actual) ? Validity.Valid : Validity.Invalid;
-
-            sect.SuperblockHashValidity = validity;
-            if (sect.Type == SectionType.Romfs) sect.Romfs.IvfcLevels[0].HashValidity = validity;
+            sect.SuperblockHashValidity = Crypto.CheckMemoryHashTable(hashTable,expected,0, hashTable.Length);
+            if (sect.Type == SectionType.Romfs) sect.Romfs.IvfcLevels[0].HashValidity = sect.SuperblockHashValidity;
         }
 
         public void VerifySection(int index, IProgressReport logger = null)
@@ -362,8 +357,7 @@ namespace LibHac
                 var table = new byte[level.HashSize];
                 section.Position = level.HashOffset;
                 section.Read(table, 0, table.Length);
-                level.HashValidity =
-                    VerifyHashTable(section, table, level.DataOffset, level.DataSize, level.HashBlockSize, true, logger);
+                level.HashValidity = VerifyHashTable(section, table, level.DataOffset, level.DataSize, level.HashBlockSize, true, logger);
             }
         }
 
@@ -377,26 +371,24 @@ namespace LibHac
             section.Position = dataOffset;
             logger?.SetTotal(blockCount);
 
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                for (long i = 0; i < blockCount; i++)
-                {
-                    var remaining = (dataLen - i * blockSize);
-                    if (remaining < blockSize)
-                    {
-                        Array.Clear(currentBlock, 0, currentBlock.Length);
-                        if (!isFinalBlockFull) curBlockSize = (int)remaining;
-                    }
-                    Array.Copy(hashTable, i * hashSize, expectedHash, 0, hashSize);
-                    section.Read(currentBlock, 0, curBlockSize);
-                    var actualHash = sha256.ComputeHash(currentBlock, 0, curBlockSize);
 
-                    if (!expectedHash.SequenceEqual(actualHash))
-                    {
-                        return Validity.Invalid;
-                    }
-                    logger?.ReportAdd(1);
+            for (long i = 0; i < blockCount; i++)
+            {
+                var remaining = (dataLen - i * blockSize);
+                if (remaining < blockSize)
+                {
+                    Array.Clear(currentBlock, 0, currentBlock.Length);
+                    if (!isFinalBlockFull) curBlockSize = (int)remaining;
                 }
+                Array.Copy(hashTable, i * hashSize, expectedHash, 0, hashSize);
+                section.Read(currentBlock, 0, curBlockSize);
+
+                if (Crypto.CheckMemoryHashTable(currentBlock, expectedHash, 0, curBlockSize) == Validity.Invalid)
+                {
+                    return Validity.Invalid;
+                }
+
+                logger?.ReportAdd(1);
             }
 
             return Validity.Valid;
