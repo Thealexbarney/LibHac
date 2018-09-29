@@ -134,14 +134,7 @@ namespace LibHac
                 }
 
                 reader.BaseStream.Position = PartitionFsHeaderAddress;
-
-                if (Crypto.CheckMemoryHashTable(reader.ReadBytes((int)PartitionFsHeaderSize), PartitionFsHeaderHash)) {
-                    PartitionFsHeaderValidity = Validity.Valid;
-                }
-                else
-                {
-                    PartitionFsHeaderValidity = Validity.Invalid;
-                }
+                PartitionFsHeaderValidity = Crypto.CheckMemoryHashTable(reader.ReadBytes((int)PartitionFsHeaderSize), PartitionFsHeaderHash, 0, (int)PartitionFsHeaderSize);
 
             }
 
