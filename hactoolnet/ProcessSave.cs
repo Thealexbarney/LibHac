@@ -14,7 +14,7 @@ namespace hactoolnet
         {
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.ReadWrite))
             {
-                var save = new Savefile(ctx.Keyset, file, ctx.Options.EnableHash, ctx.Logger);
+                var save = new Savefile(ctx.Keyset, file, ctx.Options.EnableHash);
 
                 if (ctx.Options.OutDir != null)
                 {

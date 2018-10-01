@@ -141,7 +141,7 @@ namespace LibHac
                 for (int i = 0; i < NumFiles; i++)
                 {
                     reader.BaseStream.Position = HeaderSize + Files[i].Offset;
-                    if (Crypto.CheckMemoryHashTable(reader.ReadBytes((int)Files[i].HashedRegionSize), Files[i].Hash))
+                    if (Crypto.CheckMemoryHashTable(reader.ReadBytes(Files[i].HashedRegionSize), Files[i].Hash))
                     {
                         Files[i].HashValidity = Validity.Valid;
                     }

@@ -64,7 +64,7 @@ namespace LibHac
 
         public Validity SignatureValidity { get; set; }
 
-        public Validity PartitionFsHeaderValidity { get; set; } = Validity.Unchecked;
+        public Validity PartitionFsHeaderValidity { get; set; }
 
         public XciHeader(Keyset keyset, Stream stream)
         {

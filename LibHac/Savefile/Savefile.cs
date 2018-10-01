@@ -41,13 +41,13 @@ namespace LibHac.Savefile
         public DirectoryEntry[] Directories { get; private set; }
         private Dictionary<string, FileEntry> FileDict { get; }
 
-        public Savefile(Keyset keyset, Stream file, bool enableIntegrityChecks, IProgressReport logger = null)
+        public Savefile(Keyset keyset, Stream file, bool enableIntegrityChecks)
         {
             SavefileSource = new SharedStreamSource(file);
 
             using (var reader = new BinaryReader(SavefileSource.CreateStream(), Encoding.Default, true))
             {
-                Header = new Header(keyset, reader, logger);
+                Header = new Header(keyset, reader);
                 FsLayout layout = Header.Layout;
 
                 FileRemap = new RemapStream(

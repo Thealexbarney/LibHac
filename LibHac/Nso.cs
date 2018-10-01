@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using System.IO;
 using LibHac.Streams;
-using Ryujinx.HLE.Loaders.Compression;
 
 namespace LibHac
 {

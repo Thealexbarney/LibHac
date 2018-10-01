@@ -13,14 +13,11 @@ namespace LibHac
 
         public static bool CheckMemoryHashTable(byte[] data, byte[] hash)
         {
-            bool comp = false;
-            using (var _SHA = SHA256.Create())
+            using (SHA256 sha = SHA256.Create())
             {
-                comp = Util.ArraysEqual(hash, _SHA.ComputeHash(data));
+                return Util.ArraysEqual(hash, sha.ComputeHash(data));
             }
-            return comp;
         }
-
 
         public static void DecryptEcb(byte[] key, byte[] src, int srcIndex, byte[] dest, int destIndex, int length)
         {
