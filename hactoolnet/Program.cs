@@ -2,7 +2,6 @@
 using System.IO;
 using System.Text;
 using LibHac;
-using LibHac.Savefile;
 
 namespace hactoolnet
 {
@@ -42,7 +41,7 @@ namespace hactoolnet
                         ProcessSwitchFs.Process(ctx);
                         break;
                     case FileType.Save:
-                        ProcessSave(ctx);
+                        ProcessSave.Process(ctx);
                         break;
                     case FileType.Xci:
                         ProcessXci.Process(ctx);
@@ -100,59 +99,6 @@ namespace hactoolnet
             }
         }
 
-        private static void ProcessSave(Context ctx)
-        {
-            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.ReadWrite))
-            {
-                var save = new Savefile(ctx.Keyset, file, ctx.Options.EnableHash, ctx.Logger);
-
-                if (ctx.Options.OutDir != null)
-                {
-                    save.Extract(ctx.Options.OutDir, ctx.Logger);
-                }
-
-                if (ctx.Options.DebugOutDir != null)
-                {
-                    var dir = ctx.Options.DebugOutDir;
-                    Directory.CreateDirectory(dir);
-
-                    File.WriteAllBytes(Path.Combine(dir, "L0_0_MasterHashA"), save.Header.MasterHashA);
-                    File.WriteAllBytes(Path.Combine(dir, "L0_1_MasterHashB"), save.Header.MasterHashB);
-                    File.WriteAllBytes(Path.Combine(dir, "L0_2_DuplexMasterA"), save.Header.DuplexMasterA);
-                    File.WriteAllBytes(Path.Combine(dir, "L0_3_DuplexMasterB"), save.Header.DuplexMasterB);
-                    save.DuplexL1A.WriteAllBytes(Path.Combine(dir, "L0_4_DuplexL1A"), ctx.Logger);
-                    save.DuplexL1B.WriteAllBytes(Path.Combine(dir, "L0_5_DuplexL1B"), ctx.Logger);
-                    save.DuplexDataA.WriteAllBytes(Path.Combine(dir, "L0_6_DuplexDataA"), ctx.Logger);
-                    save.DuplexDataB.WriteAllBytes(Path.Combine(dir, "L0_7_DuplexDataB"), ctx.Logger);
-                    save.JournalData.WriteAllBytes(Path.Combine(dir, "L0_9_JournalData"), ctx.Logger);
-
-                    save.DuplexData.WriteAllBytes(Path.Combine(dir, "L1_0_DuplexData"), ctx.Logger);
-                    save.JournalTable.WriteAllBytes(Path.Combine(dir, "L2_0_JournalTable"), ctx.Logger);
-                    save.JournalBitmapUpdatedPhysical.WriteAllBytes(Path.Combine(dir, "L2_1_JournalBitmapUpdatedPhysical"), ctx.Logger);
-                    save.JournalBitmapUpdatedVirtual.WriteAllBytes(Path.Combine(dir, "L2_2_JournalBitmapUpdatedVirtual"), ctx.Logger);
-                    save.JournalBitmapUnassigned.WriteAllBytes(Path.Combine(dir, "L2_3_JournalBitmapUnassigned"), ctx.Logger);
-                    save.JournalLayer1Hash.WriteAllBytes(Path.Combine(dir, "L2_4_Layer1Hash"), ctx.Logger);
-                    save.JournalLayer2Hash.WriteAllBytes(Path.Combine(dir, "L2_5_Layer2Hash"), ctx.Logger);
-                    save.JournalLayer3Hash.WriteAllBytes(Path.Combine(dir, "L2_6_Layer3Hash"), ctx.Logger);
-                    save.JournalFat.WriteAllBytes(Path.Combine(dir, "L2_7_FAT"), ctx.Logger);
-
-                    save.IvfcStreamSource.CreateStream().WriteAllBytes(Path.Combine(dir, "L3_0_SaveData"), ctx.Logger);
-                }
-
-                if (ctx.Options.SignSave)
-                {
-                    if (save.SignHeader(ctx.Keyset))
-                    {
-                        ctx.Logger.LogMessage("Successfully signed save file");
-                    }
-                    else
-                    {
-                        ctx.Logger.LogMessage("Unable to sign save file. Do you have all the required keys?");
-                    }
-                }
-            }
-        }
-
         private static void ProcessKeygen(Context ctx)
         {
             Console.WriteLine(ExternalKeys.PrintCommonKeys(ctx.Keyset));
@@ -161,8 +107,8 @@ namespace hactoolnet
         // For running random stuff
         // ReSharper disable once UnusedParameter.Local
         private static void CustomTask(Context ctx)
-        {        
-            
+        {
+
         }
     }
 }

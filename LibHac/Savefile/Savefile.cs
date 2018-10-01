@@ -93,13 +93,13 @@ namespace LibHac.Savefile
                 JournalBitmapUpdatedPhysical = MetaRemapSource.CreateStream(layout.JournalBitmapUpdatedPhysicalOffset, layout.JournalBitmapUpdatedPhysicalSize);
                 JournalBitmapUpdatedVirtual = MetaRemapSource.CreateStream(layout.JournalBitmapUpdatedVirtualOffset, layout.JournalBitmapUpdatedVirtualSize);
                 JournalBitmapUnassigned = MetaRemapSource.CreateStream(layout.JournalBitmapUnassignedOffset, layout.JournalBitmapUnassignedSize);
-                JournalLayer1Hash = MetaRemapSource.CreateStream(layout.Layer1HashOffset, layout.Layer1HashSize);
-                JournalLayer2Hash = MetaRemapSource.CreateStream(layout.Layer2HashOffset, layout.Layer2HashSize);
-                JournalLayer3Hash = MetaRemapSource.CreateStream(layout.Layer3HashOffset, layout.Layer3HashSize);
-                JournalFat = MetaRemapSource.CreateStream(layout.Field148, layout.Field150);
+                JournalLayer1Hash = MetaRemapSource.CreateStream(layout.IvfcL1Offset, layout.IvfcL1Size);
+                JournalLayer2Hash = MetaRemapSource.CreateStream(layout.IvfcL2Offset, layout.IvfcL2Size);
+                JournalLayer3Hash = MetaRemapSource.CreateStream(layout.IvfcL3Offset, layout.IvfcL3Size);
+                JournalFat = MetaRemapSource.CreateStream(layout.FatOffset, layout.FatSize);
                 AllocationTable = new AllocationTable(JournalFat);
 
-                var journalMap = JournalStream.ReadMappingEntries(JournalTable, Header.Journal.MappingEntryCount);
+                var journalMap = JournalStream.ReadMappingEntries(JournalTable, Header.Journal.MainDataBlockCount);
 
                 var journalData = FileRemapSource.CreateStream(layout.JournalDataOffset,
                     layout.JournalDataSizeB + layout.SizeReservedArea);
