@@ -109,8 +109,5 @@ namespace LibHac.Savefile
     {
         public int PhysicalIndex { get; set; }
         public int VirtualIndex { get; set; }
-        public bool UpdatedPhysical { get; set; }
-        public bool UpdatedVirtual { get; set; }
-        public bool Unassigned { get; set; }
     }
 }

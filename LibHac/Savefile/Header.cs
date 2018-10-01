@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 
 namespace LibHac.Savefile
@@ -14,6 +15,7 @@ namespace LibHac.Savefile
 
         public RemapHeader FileRemap { get; set; }
         public RemapHeader MetaRemap { get; set; }
+        public ExtraData ExtraData { get; set; }
 
         public MapEntry[] FileMapEntries { get; set; }
         public MapEntry[] MetaMapEntries { get; set; }
@@ -56,15 +58,18 @@ namespace LibHac.Savefile
             reader.BaseStream.Position = 0x690;
             MetaRemap = new RemapHeader(reader);
 
-            reader.BaseStream.Position = Layout.MasterHashOffset0;
-            MasterHashA = reader.ReadBytes((int)Layout.MasterHashSize);
-            reader.BaseStream.Position = Layout.MasterHashOffset1;
-            MasterHashB = reader.ReadBytes((int)Layout.MasterHashSize);
+            reader.BaseStream.Position = 0x6D8;
+            ExtraData = new ExtraData(reader);
 
-            reader.BaseStream.Position = Layout.L1BitmapOffset0;
-            DuplexMasterA = reader.ReadBytes((int)Layout.L1BitmapSize);
-            reader.BaseStream.Position = Layout.L1BitmapOffset1;
-            DuplexMasterB = reader.ReadBytes((int)Layout.L1BitmapSize);
+            reader.BaseStream.Position = Layout.IvfcMasterHashOffsetA;
+            MasterHashA = reader.ReadBytes((int)Layout.IvfcMasterHashSize);
+            reader.BaseStream.Position = Layout.IvfcMasterHashOffsetB;
+            MasterHashB = reader.ReadBytes((int)Layout.IvfcMasterHashSize);
+
+            reader.BaseStream.Position = Layout.DuplexMasterOffsetA;
+            DuplexMasterA = reader.ReadBytes((int)Layout.DuplexMasterSize);
+            reader.BaseStream.Position = Layout.DuplexMasterOffsetB;
+            DuplexMasterB = reader.ReadBytes((int)Layout.DuplexMasterSize);
 
             reader.BaseStream.Position = Layout.FileMapEntryOffset;
             FileMapEntries = new MapEntry[FileRemap.MapEntryCount];
@@ -80,10 +85,8 @@ namespace LibHac.Savefile
                 MetaMapEntries[i] = new MapEntry(reader);
             }
 
-            HeaderHashValidity = Crypto.CheckMemoryHashTable(Data, Layout.Hash, 0x300, 0x3d00);  
+            HeaderHashValidity = Crypto.CheckMemoryHashTable(Data, Layout.Hash, 0x300, 0x3d00);
             SignatureValidity = ValidateSignature(keyset);
-
-            logger?.LogMessage($"Header hash is {HeaderHashValidity}");
         }
 
         private Validity ValidateSignature(Keyset keyset)
@@ -117,12 +120,12 @@ namespace LibHac.Savefile
         public long JournalDataSizeA { get; set; }
         public long JournalDataSizeB { get; set; }
         public long SizeReservedArea { get; set; }
-        public long L1BitmapOffset0 { get; set; }
-        public long L1BitmapOffset1 { get; set; }
-        public long L1BitmapSize { get; set; }
-        public long MasterHashOffset0 { get; set; }
-        public long MasterHashOffset1 { get; set; }
-        public long MasterHashSize { get; set; }
+        public long DuplexMasterOffsetA { get; set; }
+        public long DuplexMasterOffsetB { get; set; }
+        public long DuplexMasterSize { get; set; }
+        public long IvfcMasterHashOffsetA { get; set; }
+        public long IvfcMasterHashOffsetB { get; set; }
+        public long IvfcMasterHashSize { get; set; }
         public long JournalTableOffset { get; set; }
         public long JournalTableSize { get; set; }
         public long JournalBitmapUpdatedPhysicalOffset { get; set; }
@@ -131,14 +134,14 @@ namespace LibHac.Savefile
         public long JournalBitmapUpdatedVirtualSize { get; set; }
         public long JournalBitmapUnassignedOffset { get; set; }
         public long JournalBitmapUnassignedSize { get; set; }
-        public long Layer1HashOffset { get; set; }
-        public long Layer1HashSize { get; set; }
-        public long Layer2HashOffset { get; set; }
-        public long Layer2HashSize { get; set; }
-        public long Layer3HashOffset { get; set; }
-        public long Layer3HashSize { get; set; }
-        public long Field148 { get; set; }
-        public long Field150 { get; set; }
+        public long IvfcL1Offset { get; set; }
+        public long IvfcL1Size { get; set; }
+        public long IvfcL2Offset { get; set; }
+        public long IvfcL2Size { get; set; }
+        public long IvfcL3Offset { get; set; }
+        public long IvfcL3Size { get; set; }
+        public long FatOffset { get; set; }
+        public long FatSize { get; set; }
         public long DuplexIndex { get; set; }
 
         public FsLayout(BinaryReader reader)
@@ -162,12 +165,12 @@ namespace LibHac.Savefile
             JournalDataSizeA = reader.ReadInt64();
             JournalDataSizeB = reader.ReadInt64();
             SizeReservedArea = reader.ReadInt64();
-            L1BitmapOffset0 = reader.ReadInt64();
-            L1BitmapOffset1 = reader.ReadInt64();
-            L1BitmapSize = reader.ReadInt64();
-            MasterHashOffset0 = reader.ReadInt64();
-            MasterHashOffset1 = reader.ReadInt64();
-            MasterHashSize = reader.ReadInt64();
+            DuplexMasterOffsetA = reader.ReadInt64();
+            DuplexMasterOffsetB = reader.ReadInt64();
+            DuplexMasterSize = reader.ReadInt64();
+            IvfcMasterHashOffsetA = reader.ReadInt64();
+            IvfcMasterHashOffsetB = reader.ReadInt64();
+            IvfcMasterHashSize = reader.ReadInt64();
             JournalTableOffset = reader.ReadInt64();
             JournalTableSize = reader.ReadInt64();
             JournalBitmapUpdatedPhysicalOffset = reader.ReadInt64();
@@ -176,15 +179,15 @@ namespace LibHac.Savefile
             JournalBitmapUpdatedVirtualSize = reader.ReadInt64();
             JournalBitmapUnassignedOffset = reader.ReadInt64();
             JournalBitmapUnassignedSize = reader.ReadInt64();
-            Layer1HashOffset = reader.ReadInt64();
-            Layer1HashSize = reader.ReadInt64();
-            Layer2HashOffset = reader.ReadInt64();
-            Layer2HashSize = reader.ReadInt64();
-            Layer3HashOffset = reader.ReadInt64();
-            Layer3HashSize = reader.ReadInt64();
-            Field148 = reader.ReadInt64();
-            Field150 = reader.ReadInt64();
-            DuplexIndex = reader.ReadInt64();
+            IvfcL1Offset = reader.ReadInt64();
+            IvfcL1Size = reader.ReadInt64();
+            IvfcL2Offset = reader.ReadInt64();
+            IvfcL2Size = reader.ReadInt64();
+            IvfcL3Offset = reader.ReadInt64();
+            IvfcL3Size = reader.ReadInt64();
+            FatOffset = reader.ReadInt64();
+            FatSize = reader.ReadInt64();
+            DuplexIndex = reader.ReadByte();
         }
     }
 
@@ -246,24 +249,24 @@ namespace LibHac.Savefile
     {
         public string Magic { get; }
         public uint MagicNum { get; }
-        public long Field8 { get; }
-        public long Field10 { get; }
+        public long TotalSize { get; }
+        public long JournalSize { get; }
         public long BlockSize { get; }
         public int Field20 { get; }
-        public int MappingEntryCount { get; }
-        public int Field28 { get; }
+        public int MainDataBlockCount { get; }
+        public int JournalBlockCount { get; }
         public int Field2C { get; }
 
         public JournalHeader(BinaryReader reader)
         {
             Magic = reader.ReadAscii(4);
             MagicNum = reader.ReadUInt32();
-            Field8 = reader.ReadInt64();
-            Field10 = reader.ReadInt64();
+            TotalSize = reader.ReadInt64();
+            JournalSize = reader.ReadInt64();
             BlockSize = reader.ReadInt64();
             Field20 = reader.ReadInt32();
-            MappingEntryCount = reader.ReadInt32();
-            Field28 = reader.ReadInt32();
+            MainDataBlockCount = reader.ReadInt32();
+            JournalBlockCount = reader.ReadInt32();
             Field2C = reader.ReadInt32();
         }
     }
@@ -332,5 +335,57 @@ namespace LibHac.Savefile
             Alignment = reader.ReadInt32();
             StorageType = reader.ReadInt32();
         }
+    }
+
+    public class ExtraData
+    {
+        public ulong TitleId { get; }
+        public Guid UserId { get; }
+        public ulong SaveId { get; }
+        public SaveDataType Type { get; }
+
+        public ulong SaveOwnerId { get; }
+        public long Timestamp { get; }
+        public long Field50 { get; }
+        public uint Field54 { get; }
+        public long DataSize { get; }
+        public long JournalSize { get; }
+
+        public ExtraData(BinaryReader reader)
+        {
+            TitleId = reader.ReadUInt64();
+            UserId = ToGuid(reader.ReadBytes(0x10));
+            SaveId = reader.ReadUInt64();
+            Type = (SaveDataType)reader.ReadByte();
+            reader.BaseStream.Position += 0x1f;
+
+            SaveOwnerId = reader.ReadUInt64();
+            Timestamp = reader.ReadInt64();
+            Field50 = reader.ReadUInt32();
+            Field54 = reader.ReadUInt32();
+            DataSize = reader.ReadInt64();
+            JournalSize = reader.ReadInt64();
+        }
+
+        private static Guid ToGuid(byte[] bytes)
+        {
+            var b = new byte[0x10];
+            Array.Copy(bytes, b, 0x10);
+
+            // The Guid constructor uses a weird, mixed-endian format
+            Array.Reverse(b, 10, 6);
+
+            return new Guid(b);
+        }
+    }
+
+    public enum SaveDataType
+    {
+        SystemSaveData,
+        SaveData,
+        BcatDeliveryCacheStorage,
+        DeviceSaveData,
+        TemporaryStorage,
+        CacheStorage
     }
 }
