@@ -24,51 +24,48 @@ namespace LibHac
         public byte[][] EncryptedKeys = new byte[4][];
 
         public NcaFsHeader[] FsHeaders = new NcaFsHeader[4];
-
-        public static NcaHeader Read(BinaryReader reader)
+      
+        public NcaHeader(BinaryReader reader)
         {
-            var head = new NcaHeader();
-
-            head.Signature1 = reader.ReadBytes(0x100);
-            head.Signature2 = reader.ReadBytes(0x100);
-            head.Magic = reader.ReadAscii(4);
-            if (head.Magic != "NCA3") throw new InvalidDataException("Not an NCA3 file");
-            head.Distribution = (DistributionType)reader.ReadByte();
-            head.ContentType = (ContentType)reader.ReadByte();
-            head.CryptoType = reader.ReadByte();
-            head.KaekInd = reader.ReadByte();
-            head.NcaSize = reader.ReadUInt64();
-            head.TitleId = reader.ReadUInt64();
+            Signature1 = reader.ReadBytes(0x100);
+            Signature2 = reader.ReadBytes(0x100);
+            Magic = reader.ReadAscii(4);
+            if (Magic != "NCA3") throw new InvalidDataException("Not an NCA3 file");
+            Distribution = (DistributionType)reader.ReadByte();
+            ContentType = (ContentType)reader.ReadByte();
+            CryptoType = reader.ReadByte();
+            KaekInd = reader.ReadByte();
+            NcaSize = reader.ReadUInt64();
+            TitleId = reader.ReadUInt64();
             reader.BaseStream.Position += 4;
 
-            head.SdkVersion = new TitleVersion(reader.ReadUInt32());
-            head.CryptoType2 = reader.ReadByte();
+            SdkVersion = new TitleVersion(reader.ReadUInt32());
+            CryptoType2 = reader.ReadByte();
             reader.BaseStream.Position += 0xF;
 
-            head.RightsId = reader.ReadBytes(0x10);
+            RightsId = reader.ReadBytes(0x10);
 
             for (int i = 0; i < 4; i++)
             {
-                head.SectionEntries[i] = new NcaSectionEntry(reader);
+                SectionEntries[i] = new NcaSectionEntry(reader);
             }
 
             for (int i = 0; i < 4; i++)
             {
-                head.SectionHashes[i] = reader.ReadBytes(0x20);
+                SectionHashes[i] = reader.ReadBytes(0x20);
             }
 
             for (int i = 0; i < 4; i++)
             {
-                head.EncryptedKeys[i] = reader.ReadBytes(0x10);
+                EncryptedKeys[i] = reader.ReadBytes(0x10);
             }
 
             reader.BaseStream.Position += 0xC0;
 
             for (int i = 0; i < 4; i++)
             {
-                head.FsHeaders[i] = new NcaFsHeader(reader);
+                FsHeaders[i] = new NcaFsHeader(reader);
             }
-            return head;
         }
     }
 

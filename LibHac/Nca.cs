@@ -191,7 +191,7 @@ namespace LibHac
 
             using (var reader = new BinaryReader(new MemoryStream(headerBytes)))
             {
-                Header = NcaHeader.Read(reader);
+                Header = new NcaHeader(reader);
             }
             
         }
