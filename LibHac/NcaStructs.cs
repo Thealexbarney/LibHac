@@ -101,7 +101,7 @@ namespace LibHac
 
         public NcaFsHeader(BinaryReader reader)
         {
-            var start = reader.BaseStream.Position;
+            long start = reader.BaseStream.Position;
             Field0 = reader.ReadByte();
             Field1 = reader.ReadByte();
             PartitionType = (SectionPartitionType)reader.ReadByte();

@@ -44,7 +44,7 @@ namespace LibHac.Savefile
                 int blockPos = (int)(Position % BlockSize);
                 int bytesToRead = (int)Math.Min(remaining, BlockSize - blockPos);
 
-                var data = Bitmap.Bitmap[blockNum] ? DataB : DataA;
+                Stream data = Bitmap.Bitmap[blockNum] ? DataB : DataA;
                 data.Position = blockNum * BlockSize + blockPos;
 
                 data.Read(buffer, outOffset, bytesToRead);

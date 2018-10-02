@@ -30,7 +30,7 @@ namespace LibHac
                 SubsectionBlock = new SubsectionBlock(reader);
             }
 
-            foreach (var bucket in SubsectionBlock.Buckets)
+            foreach (SubsectionBucket bucket in SubsectionBlock.Buckets)
             {
                 SubsectionEntries.AddRange(bucket.Entries);
             }
@@ -71,7 +71,7 @@ namespace LibHac
         public override int Read(byte[] buffer, int offset, int count)
         {
             int totalBytesRead = 0;
-            var outPos = offset;
+            int outPos = offset;
 
             while (count > 0)
             {
@@ -94,7 +94,7 @@ namespace LibHac
 
         private SubsectionEntry GetSubsectionEntry(long offset)
         {
-            var index = SubsectionOffsets.BinarySearch(offset);
+            int index = SubsectionOffsets.BinarySearch(offset);
             if (index < 0) index = ~index - 1;
             return SubsectionEntries[index];
         }

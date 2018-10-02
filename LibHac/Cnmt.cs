@@ -29,7 +29,7 @@ namespace LibHac
             using (var reader = new BinaryReader(file))
             {
                 TitleId = reader.ReadUInt64();
-                var version = reader.ReadUInt32();
+                uint version = reader.ReadUInt32();
                 Type = (TitleType)reader.ReadByte();
                 TitleVersion = new TitleVersion(version, Type < TitleType.Application);
                 FieldD = reader.ReadByte();
@@ -92,7 +92,7 @@ namespace LibHac
             Hash = reader.ReadBytes(0x20);
             NcaId = reader.ReadBytes(0x10);
             Size = reader.ReadUInt32();
-            Size |= ((long)reader.ReadUInt16() << 32);
+            Size |= (long)reader.ReadUInt16() << 32;
             Type = (CnmtContentType)reader.ReadByte();
             reader.BaseStream.Position += 1;
         }
@@ -261,8 +261,8 @@ namespace LibHac
             NcaIdNew = reader.ReadBytes(0x10);
 
             SizeOld = reader.ReadUInt32();
-            SizeOld |= ((long)reader.ReadUInt16() << 32);
-            SizeNew |= ((long)reader.ReadUInt16() << 32);
+            SizeOld |= (long)reader.ReadUInt16() << 32;
+            SizeNew |= (long)reader.ReadUInt16() << 32;
             SizeNew = reader.ReadUInt32();
 
             Field2C = reader.ReadInt16();
@@ -282,7 +282,7 @@ namespace LibHac
         {
             NcaId = reader.ReadBytes(0x10);
             Size = reader.ReadUInt32();
-            Size |= ((long)reader.ReadUInt16() << 32);
+            Size |= (long)reader.ReadUInt16() << 32;
             Type = (CnmtContentType)reader.ReadByte();
             reader.BaseStream.Position += 1;
         }

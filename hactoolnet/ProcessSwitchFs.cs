@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -25,14 +26,14 @@ namespace hactoolnet
 
             if (ctx.Options.ExefsOutDir != null || ctx.Options.ExefsOut != null)
             {
-                var id = ctx.Options.TitleId;
+                ulong id = ctx.Options.TitleId;
                 if (id == 0)
                 {
                     ctx.Logger.LogMessage("Title ID must be specified to dump ExeFS");
                     return;
                 }
 
-                if (!switchFs.Titles.TryGetValue(id, out var title))
+                if (!switchFs.Titles.TryGetValue(id, out Title title))
                 {
                     ctx.Logger.LogMessage($"Could not find title {id:X16}");
                     return;
@@ -44,7 +45,7 @@ namespace hactoolnet
                     return;
                 }
 
-                var section = title.MainNca.Sections.FirstOrDefault(x => x.IsExefs);
+                NcaSection section = title.MainNca.Sections.FirstOrDefault(x => x.IsExefs);
 
                 if (section == null)
                 {
@@ -65,14 +66,14 @@ namespace hactoolnet
 
             if (ctx.Options.RomfsOutDir != null || ctx.Options.RomfsOut != null)
             {
-                var id = ctx.Options.TitleId;
+                ulong id = ctx.Options.TitleId;
                 if (id == 0)
                 {
                     ctx.Logger.LogMessage("Title ID must be specified to dump RomFS");
                     return;
                 }
 
-                if (!switchFs.Titles.TryGetValue(id, out var title))
+                if (!switchFs.Titles.TryGetValue(id, out Title title))
                 {
                     ctx.Logger.LogMessage($"Could not find title {id:X16}");
                     return;
@@ -84,7 +85,7 @@ namespace hactoolnet
                     return;
                 }
 
-                var section = title.MainNca.Sections.FirstOrDefault(x => x?.Type == SectionType.Romfs || x?.Type == SectionType.Bktr);
+                NcaSection section = title.MainNca.Sections.FirstOrDefault(x => x?.Type == SectionType.Romfs || x?.Type == SectionType.Bktr);
 
                 if (section == null)
                 {
@@ -122,26 +123,26 @@ namespace hactoolnet
 
         private static void SaveTitle(Context ctx, SwitchFs switchFs)
         {
-            var id = ctx.Options.TitleId;
+            ulong id = ctx.Options.TitleId;
             if (id == 0)
             {
                 ctx.Logger.LogMessage("Title ID must be specified to save title");
                 return;
             }
 
-            if (!switchFs.Titles.TryGetValue(id, out var title))
+            if (!switchFs.Titles.TryGetValue(id, out Title title))
             {
                 ctx.Logger.LogMessage($"Could not find title {id:X16}");
                 return;
             }
 
-            var saveDir = Path.Combine(ctx.Options.OutDir, $"{title.Id:X16}v{title.Version.Version}");
+            string saveDir = Path.Combine(ctx.Options.OutDir, $"{title.Id:X16}v{title.Version.Version}");
             Directory.CreateDirectory(saveDir);
 
-            foreach (var nca in title.Ncas)
+            foreach (Nca nca in title.Ncas)
             {
-                var stream = nca.GetStream();
-                var outFile = Path.Combine(saveDir, nca.Filename);
+                Stream stream = nca.GetStream();
+                string outFile = Path.Combine(saveDir, nca.Filename);
                 ctx.Logger.LogMessage(nca.Filename);
                 using (var outStream = new FileStream(outFile, FileMode.Create, FileAccess.ReadWrite))
                 {
@@ -152,22 +153,22 @@ namespace hactoolnet
 
         static void ListTitles(SwitchFs sdfs)
         {
-            foreach (var title in sdfs.Titles.Values.OrderBy(x => x.Id))
+            foreach (Title title in sdfs.Titles.Values.OrderBy(x => x.Id))
             {
                 Console.WriteLine($"{title.Name} {title.Control?.DisplayVersion}");
                 Console.WriteLine($"{title.Id:X16} v{title.Version.Version} ({title.Version}) {title.Metadata.Type}");
 
-                foreach (var content in title.Metadata.ContentEntries)
+                foreach (CnmtContentEntry content in title.Metadata.ContentEntries)
                 {
                     Console.WriteLine(
                         $"    {content.NcaId.ToHexString()}.nca {content.Type} {Util.GetBytesReadable(content.Size)}");
                 }
 
-                foreach (var nca in title.Ncas)
+                foreach (Nca nca in title.Ncas)
                 {
                     Console.WriteLine($"      {nca.HasRightsId} {nca.NcaId} {nca.Header.ContentType}");
 
-                    foreach (var sect in nca.Sections.Where(x => x != null))
+                    foreach (NcaSection sect in nca.Sections.Where(x => x != null))
                     {
                         Console.WriteLine($"        {sect.SectionNum} {sect.Type} {sect.Header.CryptType} {sect.SuperblockHashValidity}");
                     }
@@ -181,7 +182,7 @@ namespace hactoolnet
         {
             var sb = new StringBuilder();
 
-            foreach (var app in sdfs.Applications.Values.OrderBy(x => x.Name))
+            foreach (Application app in sdfs.Applications.Values.OrderBy(x => x.Name))
             {
                 sb.AppendLine($"{app.Name} v{app.DisplayVersion}");
 
@@ -215,9 +216,9 @@ namespace hactoolnet
 
         private static void ExportSdSaves(Context ctx, SwitchFs switchFs)
         {
-            foreach (var save in switchFs.Saves)
+            foreach (KeyValuePair<string, Savefile> save in switchFs.Saves)
             {
-                var outDir = Path.Combine(ctx.Options.SaveOutDir, save.Key);
+                string outDir = Path.Combine(ctx.Options.SaveOutDir, save.Key);
                 save.Value.Extract(outDir, ctx.Logger);
             }
         }

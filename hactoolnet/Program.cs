@@ -69,13 +69,13 @@ namespace hactoolnet
 
         private static void OpenKeyset(Context ctx)
         {
-            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            var homeKeyFile = Path.Combine(home, ".switch", "prod.keys");
-            var homeTitleKeyFile = Path.Combine(home, ".switch", "title.keys");
-            var homeConsoleKeyFile = Path.Combine(home, ".switch", "console.keys");
-            var keyFile = ctx.Options.Keyfile;
-            var titleKeyFile = ctx.Options.TitleKeyFile;
-            var consoleKeyFile = ctx.Options.ConsoleKeyFile;
+            string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string homeKeyFile = Path.Combine(home, ".switch", "prod.keys");
+            string homeTitleKeyFile = Path.Combine(home, ".switch", "title.keys");
+            string homeConsoleKeyFile = Path.Combine(home, ".switch", "console.keys");
+            string keyFile = ctx.Options.Keyfile;
+            string titleKeyFile = ctx.Options.TitleKeyFile;
+            string consoleKeyFile = ctx.Options.ConsoleKeyFile;
 
             if (keyFile == null && File.Exists(homeKeyFile))
             {

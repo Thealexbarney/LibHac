@@ -59,7 +59,7 @@ namespace LibHac
         {
             string[] files = Fs.GetFileSystemEntries(ContentsDir, "*.nca", SearchOption.AllDirectories);
 
-            foreach (var file in files)
+            foreach (string file in files)
             {
                 Nca nca = null;
                 try
@@ -77,7 +77,7 @@ namespace LibHac
 
                     if (isNax0)
                     {
-                        var sdPath = "/" + Util.GetRelativePath(file, ContentsDir).Replace('\\', '/');
+                        string sdPath = "/" + Util.GetRelativePath(file, ContentsDir).Replace('\\', '/');
                         var nax0 = new Nax0(Keyset, stream, sdPath, false);
                         nca = new Nca(Keyset, nax0.Stream, false);
                     }
@@ -87,7 +87,7 @@ namespace LibHac
                     }
 
                     nca.NcaId = Path.GetFileNameWithoutExtension(file);
-                    var extension = nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
+                    string extension = nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
                     nca.Filename = nca.NcaId + extension;
                 }
                 catch (MissingKeyException ex)
@@ -142,14 +142,14 @@ namespace LibHac
 
         private void ReadTitles()
         {
-            foreach (var nca in Ncas.Values.Where(x => x.Header.ContentType == ContentType.Meta))
+            foreach (Nca nca in Ncas.Values.Where(x => x.Header.ContentType == ContentType.Meta))
             {
                 var title = new Title();
 
                 // Meta contents always have 1 Partition FS section with 1 file in it
                 Stream sect = nca.OpenSection(0, false, true);
                 var pfs0 = new Pfs(sect);
-                var file = pfs0.OpenFile(pfs0.Files[0]);
+                Stream file = pfs0.OpenFile(pfs0.Files[0]);
 
                 var metadata = new Cnmt(file);
                 title.Id = metadata.TitleId;
@@ -158,9 +158,9 @@ namespace LibHac
                 title.MetaNca = nca;
                 title.Ncas.Add(nca);
 
-                foreach (var content in metadata.ContentEntries)
+                foreach (CnmtContentEntry content in metadata.ContentEntries)
                 {
-                    var ncaId = content.NcaId.ToHexString();
+                    string ncaId = content.NcaId.ToHexString();
 
                     if (Ncas.TryGetValue(ncaId, out Nca contentNca))
                     {
@@ -185,15 +185,15 @@ namespace LibHac
 
         private void ReadControls()
         {
-            foreach (var title in Titles.Values.Where(x => x.ControlNca != null))
+            foreach (Title title in Titles.Values.Where(x => x.ControlNca != null))
             {
                 var romfs = new Romfs(title.ControlNca.OpenSection(0, false, true));
-                var control = romfs.GetFile("/control.nacp");
+                byte[] control = romfs.GetFile("/control.nacp");
 
                 var reader = new BinaryReader(new MemoryStream(control));
                 title.Control = new Nacp(reader);
 
-                foreach (var lang in title.Control.Languages)
+                foreach (NacpLang lang in title.Control.Languages)
                 {
                     if (!string.IsNullOrWhiteSpace(lang.Title))
                     {
@@ -206,12 +206,12 @@ namespace LibHac
 
         private void CreateApplications()
         {
-            foreach (var title in Titles.Values.Where(x => x.Metadata.Type >= TitleType.Application))
+            foreach (Title title in Titles.Values.Where(x => x.Metadata.Type >= TitleType.Application))
             {
-                var meta = title.Metadata;
+                Cnmt meta = title.Metadata;
                 ulong appId = meta.ApplicationTitleId;
 
-                if (!Applications.TryGetValue(appId, out var app))
+                if (!Applications.TryGetValue(appId, out Application app))
                 {
                     app = new Application();
                     Applications.Add(appId, app);
@@ -220,10 +220,10 @@ namespace LibHac
                 app.AddTitle(title);
             }
 
-            foreach (var app in Applications.Values)
+            foreach (Application app in Applications.Values)
             {
-                var main = app.Main?.MainNca;
-                var patch = app.Patch?.MainNca;
+                Nca main = app.Main?.MainNca;
+                Nca patch = app.Patch?.MainNca;
 
                 if (main != null)
                 {
@@ -234,14 +234,14 @@ namespace LibHac
 
         internal static Stream OpenSplitNcaStream(IFileSystem fs, string path)
         {
-            List<string> files = new List<string>();
-            List<Stream> streams = new List<Stream>();
+            var files = new List<string>();
+            var streams = new List<Stream>();
 
             if (fs.DirectoryExists(path))
             {
                 while (true)
                 {
-                    var partName = Path.Combine(path, $"{files.Count:D2}");
+                    string partName = Path.Combine(path, $"{files.Count:D2}");
                     if (!fs.FileExists(partName)) break;
 
                     files.Add(partName);
@@ -260,7 +260,7 @@ namespace LibHac
                 throw new FileNotFoundException("Could not find the input file or directory");
             }
 
-            foreach (var file in files)
+            foreach (string file in files)
             {
                 streams.Add(fs.OpenFile(file, FileMode.Open, FileAccess.Read));
             }

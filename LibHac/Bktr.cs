@@ -52,7 +52,7 @@ namespace LibHac
 
         private RelocationEntry GetRelocationEntry(long offset)
         {
-            var index = RelocationOffsets.BinarySearch(offset);
+            int index = RelocationOffsets.BinarySearch(offset);
             if (index < 0) index = ~index - 1;
             return RelocationEntries[index];
         }
@@ -63,12 +63,12 @@ namespace LibHac
             if (remaining <= 0) return 0;
             if (remaining < count) count = (int)remaining;
 
-            var toOutput = count;
+            int toOutput = count;
             int pos = 0;
 
             while (toOutput > 0)
             {
-                var remainInEntry = CurrentEntry.VirtOffsetEnd - Position;
+                long remainInEntry = CurrentEntry.VirtOffsetEnd - Position;
                 int toRead = (int)Math.Min(toOutput, remainInEntry);
                 ReadCurrent(buffer, pos, toRead);
                 pos += toRead;
@@ -97,7 +97,7 @@ namespace LibHac
             // At end of virtual stream
             if (CurrentEntry == null) return;
 
-            var entryOffset = Position - CurrentEntry.VirtOffset;
+            long entryOffset = Position - CurrentEntry.VirtOffset;
 
             if (CurrentEntry.IsPatch)
             {

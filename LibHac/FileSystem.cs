@@ -52,8 +52,8 @@ namespace LibHac
             if (searchOption == SearchOption.TopDirectoryOnly)
                 return result.ToArray();
 
-            var searchDirectories = Directory.GetDirectories(Path.Combine(Root, path));
-            foreach (var search in searchDirectories)
+            string[] searchDirectories = Directory.GetDirectories(Path.Combine(Root, path));
+            foreach (string search in searchDirectories)
             {
                 try
                 {

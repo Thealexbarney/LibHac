@@ -66,7 +66,7 @@ namespace LibHac
         {
             const int bufferSize = 0x8000;
             long remaining = length;
-            byte[] buffer = new byte[bufferSize];
+            var buffer = new byte[bufferSize];
             progress?.SetTotal(length);
 
             int read;
@@ -90,7 +90,7 @@ namespace LibHac
 
         public static string ReadAsciiZ(this BinaryReader reader, int maxLength = int.MaxValue)
         {
-            var start = reader.BaseStream.Position;
+            long start = reader.BaseStream.Position;
             int size = 0;
 
             // Read until we hit the end of the stream (-1) or a zero
@@ -107,7 +107,7 @@ namespace LibHac
 
         public static string ReadUtf8Z(this BinaryReader reader, int maxLength = int.MaxValue)
         {
-            var start = reader.BaseStream.Position;
+            long start = reader.BaseStream.Position;
             int size = 0;
 
             // Read until we hit the end of the stream (-1) or a zero
@@ -267,11 +267,11 @@ namespace LibHac
 
         public static string ToHexString(this byte[] bytes)
         {
-            var lookup32 = Lookup32;
+            uint[] lookup32 = Lookup32;
             var result = new char[bytes.Length * 2];
             for (int i = 0; i < bytes.Length; i++)
             {
-                var val = lookup32[bytes[i]];
+                uint val = lookup32[bytes[i]];
                 result[2 * i] = (char)val;
                 result[2 * i + 1] = (char)(val >> 16);
             }
@@ -283,37 +283,38 @@ namespace LibHac
             return MediaSize * media;
         }
 
+        // https://stackoverflow.com/a/11124118
         public static string GetBytesReadable(long bytes)
         {
             // Get absolute value
-            long absBytes = (bytes < 0 ? -bytes : bytes);
+            long absBytes = bytes < 0 ? -bytes : bytes;
             // Determine the suffix and readable value
             string suffix;
             double readable;
             if (absBytes >= 0x1000000000000000) // Exabyte
             {
                 suffix = "EB";
-                readable = (bytes >> 50);
+                readable = bytes >> 50;
             }
             else if (absBytes >= 0x4000000000000) // Petabyte
             {
                 suffix = "PB";
-                readable = (bytes >> 40);
+                readable = bytes >> 40;
             }
             else if (absBytes >= 0x10000000000) // Terabyte
             {
                 suffix = "TB";
-                readable = (bytes >> 30);
+                readable = bytes >> 30;
             }
             else if (absBytes >= 0x40000000) // Gigabyte
             {
                 suffix = "GB";
-                readable = (bytes >> 20);
+                readable = bytes >> 20;
             }
             else if (absBytes >= 0x100000) // Megabyte
             {
                 suffix = "MB";
-                readable = (bytes >> 10);
+                readable = bytes >> 10;
             }
             else if (absBytes >= 0x400) // Kilobyte
             {
@@ -325,7 +326,7 @@ namespace LibHac
                 return bytes.ToString("0 B"); // Byte
             }
             // Divide by 1024 to get fractional value
-            readable = (readable / 1024);
+            readable = readable / 1024;
             // Return formatted number with suffix
             return readable.ToString("0.### ") + suffix;
         }
@@ -362,7 +363,7 @@ namespace LibHac
         {
 
             int max = 32;
-            var remaining = data.Length;
+            int remaining = data.Length;
             bool first = true;
             int offset = 0;
 
@@ -438,11 +439,10 @@ namespace LibHac
                 throw new ArgumentException("Length must be 16 bytes");
             }
 
-            var hi = BitConverter.ToUInt64(obj, 0);
-            var lo = BitConverter.ToUInt64(obj, 8);
+            ulong hi = BitConverter.ToUInt64(obj, 0);
+            ulong lo = BitConverter.ToUInt64(obj, 8);
 
             return (hi.GetHashCode() * 397) ^ lo.GetHashCode();
         }
-
     }
 }

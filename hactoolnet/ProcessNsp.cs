@@ -8,14 +8,14 @@ namespace hactoolnet
     {
         public static void CreateNsp(Context ctx, SwitchFs switchFs)
         {
-            var id = ctx.Options.TitleId;
+            ulong id = ctx.Options.TitleId;
             if (id == 0)
             {
                 ctx.Logger.LogMessage("Title ID must be specified to save title");
                 return;
             }
 
-            if (!switchFs.Titles.TryGetValue(id, out var title))
+            if (!switchFs.Titles.TryGetValue(id, out Title title))
             {
                 ctx.Logger.LogMessage($"Could not find title {id:X16}");
                 return;
@@ -23,7 +23,7 @@ namespace hactoolnet
 
             var builder = new Pfs0Builder();
 
-            foreach (var nca in title.Ncas)
+            foreach (Nca nca in title.Ncas)
             {
                 builder.AddFile(nca.Filename, nca.GetStream());
             }
@@ -39,11 +39,11 @@ namespace hactoolnet
                 CryptoType = title.MainNca.Header.CryptoType2,
                 SectHeaderOffset = 0x2C0
             };
-            var ticketBytes = ticket.GetBytes();
+            byte[] ticketBytes = ticket.GetBytes();
             builder.AddFile($"{ticket.RightsId.ToHexString()}.tik", new MemoryStream(ticketBytes));
 
-            var thisAssembly = Assembly.GetExecutingAssembly();
-            var cert = thisAssembly.GetManifestResourceStream("hactoolnet.CA00000003_XS00000020");
+            Assembly thisAssembly = Assembly.GetExecutingAssembly();
+            Stream cert = thisAssembly.GetManifestResourceStream("hactoolnet.CA00000003_XS00000020");
             builder.AddFile($"{ticket.RightsId.ToHexString()}.cert", cert);
 
 

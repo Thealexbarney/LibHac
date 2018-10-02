@@ -23,7 +23,7 @@ namespace hactoolnet
 
                 if (ctx.Options.DebugOutDir != null)
                 {
-                    var dir = ctx.Options.DebugOutDir;
+                    string dir = ctx.Options.DebugOutDir;
                     Directory.CreateDirectory(dir);
 
                     File.WriteAllBytes(Path.Combine(dir, "L0_0_MasterHashA"), save.Header.MasterHashA);

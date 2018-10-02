@@ -108,7 +108,7 @@ namespace LibHac.XTSSharp
                 return;
 
             //get the current sector
-            var currentSector = CurrentSector;
+            long currentSector = CurrentSector;
 
             if (_encryptor == null)
                 _encryptor = _xts.CreateEncryptor();
@@ -134,10 +134,10 @@ namespace LibHac.XTSSharp
             ValidateSize(count);
 
             //get the current sector
-            var currentSector = CurrentSector;
+            long currentSector = CurrentSector;
 
             //read the sector from the base stream
-            var ret = base.Read(_tempBuffer, 0, count);
+            int ret = base.Read(_tempBuffer, 0, count);
 
             if (ret == 0)
                 return 0;
@@ -146,7 +146,7 @@ namespace LibHac.XTSSharp
                 _decryptor = _xts.CreateDecryptor();
 
             //decrypt the sector
-            var retV = _decryptor.TransformBlock(_tempBuffer, 0, ret, buffer, offset, (ulong) currentSector);
+            int retV = _decryptor.TransformBlock(_tempBuffer, 0, ret, buffer, offset, (ulong) currentSector);
 
             //Console.WriteLine("Decrypting sector {0} == {1} bytes", currentSector, retV);
 

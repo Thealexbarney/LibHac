@@ -63,7 +63,7 @@ namespace LibHac
 
         public Nacp(BinaryReader reader)
         {
-            var start = reader.BaseStream.Position;
+            long start = reader.BaseStream.Position;
 
             for (int i = 0; i < 16; i++)
             {
@@ -132,7 +132,7 @@ namespace LibHac
 
             for (int i = 0; i < 16; i++)
             {
-                var value = reader.ReadUInt64();
+                ulong value = reader.ReadUInt64();
                 if (value != 0) PlayLogQueryableApplicationId.Add(value);
             }
 
@@ -155,7 +155,7 @@ namespace LibHac
 
         public NacpLang(BinaryReader reader)
         {
-            var start = reader.BaseStream.Position;
+            long start = reader.BaseStream.Position;
             Title = reader.ReadUtf8Z();
             reader.BaseStream.Position = start + 0x200;
             Developer = reader.ReadUtf8Z();

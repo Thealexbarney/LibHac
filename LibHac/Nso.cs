@@ -16,15 +16,15 @@ namespace LibHac
         public Nso(Stream stream)
         {
             StreamSource = new SharedStreamSource(stream);
-            BinaryReader reader = new BinaryReader(StreamSource.CreateStream());
+            var reader = new BinaryReader(StreamSource.CreateStream());
             if (reader.ReadAscii(4) != "NSO0")
                 throw new InvalidDataException("NSO magic is incorrect!");
             reader.ReadUInt32(); // Version
             reader.ReadUInt32(); // Reserved/Unused
-            BitArray flags = new BitArray(new[] { (int)reader.ReadUInt32() });
-            NsoSection textSection = new NsoSection(StreamSource);
-            NsoSection rodataSection = new NsoSection(StreamSource);
-            NsoSection dataSection = new NsoSection(StreamSource);
+            var flags = new BitArray(new[] { (int)reader.ReadUInt32() });
+            var textSection = new NsoSection(StreamSource);
+            var rodataSection = new NsoSection(StreamSource);
+            var dataSection = new NsoSection(StreamSource);
             textSection.IsCompressed = flags[0];
             rodataSection.IsCompressed = flags[1];
             dataSection.IsCompressed = flags[2];
@@ -81,7 +81,7 @@ namespace LibHac
 
             public byte[] DecompressSection()
             {
-                byte[] compressed = new byte[CompressedSize];
+                var compressed = new byte[CompressedSize];
                 OpenSection().Read(compressed, 0, (int)CompressedSize);
 
                 if (IsCompressed)

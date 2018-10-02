@@ -25,7 +25,7 @@ namespace NandReaderGui.ViewModel
             var query = new WqlObjectQuery("SELECT * FROM Win32_DiskDrive");
             using (var searcher = new ManagementObjectSearcher(query))
             {
-                foreach (var drive in searcher.Get())
+                foreach (ManagementBaseObject drive in searcher.Get())
                 {
                     if (drive.GetPropertyValue("Size") == null) continue;
                     var info = new DiskInfo();
@@ -43,23 +43,23 @@ namespace NandReaderGui.ViewModel
 
         public void Open()
         {
-            var disk = SelectedDisk;
+            DiskInfo disk = SelectedDisk;
             var stream = new RandomAccessSectorStream(new SectorStream(new DeviceStream(disk.PhysicalName, disk.Length), disk.SectorSize * 100));
 
-            var keyset = OpenKeyset();
+            Keyset keyset = OpenKeyset();
             var nand = new Nand(stream, keyset);
 
-            var prodinfo = nand.OpenProdInfo();
+            Stream prodinfo = nand.OpenProdInfo();
             var calibration = new Calibration(prodinfo);
 
             keyset.EticketExtKeyRsa = Crypto.DecryptRsaKey(calibration.EticketExtKeyRsa, keyset.EticketRsaKek);
-            var tickets = GetTickets(keyset, nand);
+            Ticket[] tickets = GetTickets(keyset, nand);
 
             using (var outStream = new StreamWriter("titlekeys.txt"))
             {
-                foreach (var ticket in tickets)
+                foreach (Ticket ticket in tickets)
                 {
-                    var key = ticket.GetTitleKey(keyset);
+                    byte[] key = ticket.GetTitleKey(keyset);
                     outStream.WriteLine($"{ticket.RightsId.ToHexString()},{key.ToHexString()}");
                 }
             }
@@ -68,12 +68,12 @@ namespace NandReaderGui.ViewModel
         private static Ticket[] GetTickets(Keyset keyset, Nand nand, IProgressReport logger = null)
         {
             var tickets = new List<Ticket>();
-            var system = nand.OpenSystemPartition();
+            NandPartition system = nand.OpenSystemPartition();
 
-            var saveE1File = system.OpenFile("save\\80000000000000E1", FileMode.Open, FileAccess.Read);
+            Stream saveE1File = system.OpenFile("save\\80000000000000E1", FileMode.Open, FileAccess.Read);
             tickets.AddRange(ReadTickets(keyset, saveE1File));
 
-            var saveE2 = system.OpenFile("save\\80000000000000E2", FileMode.Open, FileAccess.Read);
+            Stream saveE2 = system.OpenFile("save\\80000000000000E2", FileMode.Open, FileAccess.Read);
             tickets.AddRange(ReadTickets(keyset, saveE2));
 
             logger?.LogMessage($"Found {tickets.Count} tickets");
@@ -88,11 +88,11 @@ namespace NandReaderGui.ViewModel
             var ticketList = new BinaryReader(save.OpenFile("/ticket_list.bin"));
             var ticketFile = new BinaryReader(save.OpenFile("/ticket.bin"));
 
-            var titleId = ticketList.ReadUInt64();
+            ulong titleId = ticketList.ReadUInt64();
             while (titleId != ulong.MaxValue)
             {
                 ticketList.BaseStream.Position += 0x18;
-                var start = ticketFile.BaseStream.Position;
+                long start = ticketFile.BaseStream.Position;
                 tickets.Add(new Ticket(ticketFile));
                 ticketFile.BaseStream.Position = start + 0x400;
                 titleId = ticketList.ReadUInt64();
@@ -103,10 +103,10 @@ namespace NandReaderGui.ViewModel
 
         private static Keyset OpenKeyset()
         {
-            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            var homeKeyFile = Path.Combine(home, ".switch", "prod.keys");
-            var homeTitleKeyFile = Path.Combine(home, ".switch", "title.keys");
-            var homeConsoleKeyFile = Path.Combine(home, ".switch", "console.keys");
+            string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string homeKeyFile = Path.Combine(home, ".switch", "prod.keys");
+            string homeTitleKeyFile = Path.Combine(home, ".switch", "title.keys");
+            string homeConsoleKeyFile = Path.Combine(home, ".switch", "console.keys");
             string keyFile = null;
             string titleKeyFile = null;
             string consoleKeyFile = null;

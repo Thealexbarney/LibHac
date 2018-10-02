@@ -56,7 +56,7 @@ namespace LibHac.Streams
 
             _streamsStartPos = new List<long>(streams.Count);
             long pos = 0;
-            foreach (var strm in streams)
+            foreach (Stream strm in streams)
             {
                 _streamsStartPos.Add(pos);
                 pos += strm.Length;
@@ -170,7 +170,7 @@ namespace LibHac.Streams
 #else
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
         {
-            CombinationStreamAsyncResult asyncResult = new CombinationStreamAsyncResult(state);
+            var asyncResult = new CombinationStreamAsyncResult(state);
             if (count > 0)
             {
                 int buffPostion = offset;
@@ -302,7 +302,7 @@ namespace LibHac.Streams
             base.Dispose(disposing);
             if (_streamsToDispose == null)
             {
-                foreach (var stream in InternalStreams)
+                foreach (Stream stream in InternalStreams)
                     stream.Dispose();
             }
             else
@@ -335,7 +335,7 @@ namespace LibHac.Streams
                 if (_length == -1)
                 {
                     _length = 0;
-                    foreach (var stream in _streams)
+                    foreach (Stream stream in _streams)
                         _length += stream.Length;
                 }
 

@@ -93,7 +93,7 @@ namespace LibHac.Savefile
         {
             using (SHA256 sha256 = SHA256.Create())
             {
-                var hash = sha256.ComputeHash(Data, 0x300, 0x3d00);
+                byte[] hash = sha256.ComputeHash(Data, 0x300, 0x3d00);
                 return Util.ArraysEqual(hash, Layout.Hash) ? Validity.Valid : Validity.Invalid;
             }
         }

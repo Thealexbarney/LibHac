@@ -40,8 +40,8 @@ namespace LibHac.Nand
 
         public string[] GetFileSystemEntries(string path, string searchPattern, SearchOption searchOption)
         {
-            var files = Fs.GetFiles(path, searchPattern, searchOption);
-            var dirs = Fs.GetDirectories(path, searchPattern, searchOption);
+            string[] files = Fs.GetFiles(path, searchPattern, searchOption);
+            string[] dirs = Fs.GetDirectories(path, searchPattern, searchOption);
             return files.Concat(dirs).ToArray();
         }
 

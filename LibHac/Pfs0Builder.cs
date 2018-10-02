@@ -29,14 +29,14 @@ namespace LibHac
             var stringWriter = new BinaryWriter(strings);
             var writer = new BinaryWriter(output);
 
-            foreach (var entry in Entries)
+            foreach (Entry entry in Entries)
             {
                 entry.StringOffset = (int)strings.Length;
                 stringWriter.WriteUTF8Z(entry.Name);
             }
 
             strings.Position = Util.GetNextMultiple(strings.Length, 0x10);
-            var stringTable = strings.ToArray();
+            byte[] stringTable = strings.ToArray();
 
             output.Position = 0;
             writer.WriteUTF8("PFS0");
@@ -44,7 +44,7 @@ namespace LibHac
             writer.Write(stringTable.Length);
             writer.Write(0);
 
-            foreach (var entry in Entries)
+            foreach (Entry entry in Entries)
             {
                 writer.Write(entry.Offset);
                 writer.Write(entry.Length);
@@ -54,7 +54,7 @@ namespace LibHac
 
             writer.Write(stringTable);
 
-            foreach (var entry in Entries)
+            foreach (Entry entry in Entries)
             {
                 logger?.LogMessage(entry.Name);
                 entry.Stream.Position = 0;

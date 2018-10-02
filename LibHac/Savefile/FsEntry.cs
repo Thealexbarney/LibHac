@@ -18,11 +18,11 @@ namespace LibHac.Savefile
         {
             var list = new List<string>();
             var sb = new StringBuilder();
-            var delimiter = "/";
-            foreach (var file in entries)
+            string delimiter = "/";
+            foreach (FsEntry file in entries)
             {
                 list.Add(file.Name);
-                var dir = file.ParentDir;
+                DirectoryEntry dir = file.ParentDir;
                 while (dir != null)
                 {
                     list.Add(delimiter);
@@ -55,7 +55,7 @@ namespace LibHac.Savefile
 
         public FileEntry(BinaryReader reader)
         {
-            var start = reader.BaseStream.Position;
+            long start = reader.BaseStream.Position;
             ParentDirIndex = reader.ReadInt32();
             Name = reader.ReadUtf8Z(0x40);
             reader.BaseStream.Position = start + 0x44;
@@ -83,7 +83,7 @@ namespace LibHac.Savefile
 
         public DirectoryEntry(BinaryReader reader)
         {
-            var start = reader.BaseStream.Position;
+            long start = reader.BaseStream.Position;
             ParentDirIndex = reader.ReadInt32();
             Name = reader.ReadUtf8Z(0x40);
             reader.BaseStream.Position = start + 0x44;

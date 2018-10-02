@@ -21,7 +21,7 @@ namespace LibHac.Nand
         public Nand(Stream stream, Keyset keyset)
         {
             var disc = new GuidPartitionTable(stream, Geometry.Null);
-            var partitions = disc.Partitions.Select(x => (GuidPartitionInfo)x).ToArray();
+            GuidPartitionInfo[] partitions = disc.Partitions.Select(x => (GuidPartitionInfo)x).ToArray();
             ProdInfo = partitions.FirstOrDefault(x => x.Name == "PRODINFO");
             ProdInfoF = partitions.FirstOrDefault(x => x.Name == "PRODINFOF");
             Safe = partitions.FirstOrDefault(x => x.Name == "SAFE");
@@ -32,45 +32,45 @@ namespace LibHac.Nand
 
         public Stream OpenProdInfo()
         {
-            var encStream = ProdInfo.Open();
-            var xts = XtsAes128.Create(Keyset.BisKeys[0]);
+            SparseStream encStream = ProdInfo.Open();
+            Xts xts = XtsAes128.Create(Keyset.BisKeys[0]);
             var decStream = new RandomAccessSectorStream(new XtsSectorStream(encStream, xts, 0x4000, 0), true);
             return decStream;
         }
 
         public NandPartition OpenProdInfoF()
         {
-            var encStream = ProdInfoF.Open();
-            var xts = XtsAes128.Create(Keyset.BisKeys[0]);
+            SparseStream encStream = ProdInfoF.Open();
+            Xts xts = XtsAes128.Create(Keyset.BisKeys[0]);
             var decStream = new RandomAccessSectorStream(new XtsSectorStream(encStream, xts, 0x4000, 0), true);
-            FatFileSystem fat = new FatFileSystem(decStream, Ownership.None);
+            var fat = new FatFileSystem(decStream, Ownership.None);
             return new NandPartition(fat);
         }
 
         public NandPartition OpenSafePartition()
         {
-            var encStream = Safe.Open();
-            var xts = XtsAes128.Create(Keyset.BisKeys[1]);
+            SparseStream encStream = Safe.Open();
+            Xts xts = XtsAes128.Create(Keyset.BisKeys[1]);
             var decStream = new RandomAccessSectorStream(new XtsSectorStream(encStream, xts, 0x4000, 0), true);
-            FatFileSystem fat = new FatFileSystem(decStream, Ownership.None);
+            var fat = new FatFileSystem(decStream, Ownership.None);
             return new NandPartition(fat);
         }
 
         public NandPartition OpenSystemPartition()
         {
-            var encStream = System.Open();
-            var xts = XtsAes128.Create(Keyset.BisKeys[2]);
+            SparseStream encStream = System.Open();
+            Xts xts = XtsAes128.Create(Keyset.BisKeys[2]);
             var decStream = new RandomAccessSectorStream(new XtsSectorStream(encStream, xts, 0x4000, 0), true);
-            FatFileSystem fat = new FatFileSystem(decStream, Ownership.None);
+            var fat = new FatFileSystem(decStream, Ownership.None);
             return new NandPartition(fat);
         }
 
         public NandPartition OpenUserPartition()
         {
-            var encStream = User.Open();
-            var xts = XtsAes128.Create(Keyset.BisKeys[3]);
+            SparseStream encStream = User.Open();
+            Xts xts = XtsAes128.Create(Keyset.BisKeys[3]);
             var decStream = new RandomAccessSectorStream(new XtsSectorStream(encStream, xts, 0x4000, 0), true);
-            FatFileSystem fat = new FatFileSystem(decStream, Ownership.None);
+            var fat = new FatFileSystem(decStream, Ownership.None);
             return new NandPartition(fat);
         }
     }

@@ -12,7 +12,7 @@ namespace LibHac
 
         public RelocationBlock(BinaryReader reader)
         {
-            var start = reader.BaseStream.Position;
+            long start = reader.BaseStream.Position;
 
             Field0 = reader.ReadUInt32();
             BucketCount = reader.ReadInt32();
@@ -43,7 +43,7 @@ namespace LibHac
 
         public RelocationBucket(BinaryReader reader)
         {
-            var start = reader.BaseStream.Position;
+            long start = reader.BaseStream.Position;
 
             BucketNum = reader.ReadInt32();
             EntryCount = reader.ReadInt32();
@@ -85,7 +85,7 @@ namespace LibHac
 
         public SubsectionBlock(BinaryReader reader)
         {
-            var start = reader.BaseStream.Position;
+            long start = reader.BaseStream.Position;
 
             Field0 = reader.ReadUInt32();
             BucketCount = reader.ReadInt32();
@@ -115,7 +115,7 @@ namespace LibHac
         public SubsectionEntry[] Entries;
         public SubsectionBucket(BinaryReader reader)
         {
-            var start = reader.BaseStream.Position;
+            long start = reader.BaseStream.Position;
 
             BucketNum = reader.ReadInt32();
             EntryCount = reader.ReadInt32();
