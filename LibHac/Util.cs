@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace LibHac
@@ -424,8 +423,8 @@ namespace LibHac
             {
                 return false;
             }
-            // Linq extension method is based on IEnumerable, must evaluate every item.
-            return first.SequenceEqual(second);
+
+            return Util.ArraysEqual(first, second);
         }
 
         public override int GetHashCode(byte[] obj)

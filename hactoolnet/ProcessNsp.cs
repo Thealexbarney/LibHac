@@ -1,11 +1,54 @@
 ﻿using System.IO;
 using System.Reflection;
+using System.Text;
 using LibHac;
+using static hactoolnet.Print;
 
 namespace hactoolnet
 {
     internal static class ProcessNsp
     {
+        public static void Process(Context ctx)
+        {
+            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
+            {
+                Pfs pfs = new Pfs(file);
+                ctx.Logger.LogMessage(pfs.Print());
+
+                if (ctx.Options.OutDir != null)
+                {
+                    pfs.Extract(ctx.Options.OutDir, ctx.Logger);
+                }
+            }
+        }
+
+        private static string Print(this Pfs pfs)
+        {
+            const int colLen = 36;
+            const int fileNameLen = 39;
+
+            var sb = new StringBuilder();
+            sb.AppendLine();
+
+            sb.AppendLine("PFS0:");
+
+            PrintItem(sb, colLen, "Magic:", pfs.Header.Magic);
+            PrintItem(sb, colLen, "Number of files:", pfs.Header.NumFiles);
+
+            for (int i = 0; i < pfs.Files.Length; i++)
+            {
+                PfsFileEntry file = pfs.Files[i];
+
+                string label = i == 0 ? "Files:" : "";
+                string offsets = $"{file.Offset:x12}-{file.Offset + file.Size:x12}{file.HashValidity.GetValidityString()}";
+                string data = $"pfs0:/{file.Name}".PadRight(fileNameLen) + offsets;
+
+                PrintItem(sb, colLen, label, data);
+            }
+
+            return sb.ToString();
+        }
+
         public static void CreateNsp(Context ctx, SwitchFs switchFs)
         {
             ulong id = ctx.Options.TitleId;

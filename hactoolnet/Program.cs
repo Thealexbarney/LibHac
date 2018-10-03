@@ -31,6 +31,8 @@ namespace hactoolnet
                         ProcessNca.Process(ctx);
                         break;
                     case FileType.Pfs0:
+                    case FileType.Nsp:
+                        ProcessNsp.Process(ctx);
                         break;
                     case FileType.Romfs:
                         ProcessRomfs.Process(ctx);

@@ -137,18 +137,12 @@ namespace LibHac
             }
 
 
-            if (Type == PfsType.Hfs0) {
+            if (Type == PfsType.Hfs0)
+            {
                 for (int i = 0; i < NumFiles; i++)
                 {
                     reader.BaseStream.Position = HeaderSize + Files[i].Offset;
-                    if (Crypto.CheckMemoryHashTable(reader.ReadBytes(Files[i].HashedRegionSize), Files[i].Hash))
-                    {
-                        Files[i].HashValidity = Validity.Valid;
-                    }
-                    else
-                    {
-                        Files[i].HashValidity = Validity.Invalid;
-                    }
+                    Files[i].HashValidity = Crypto.CheckMemoryHashTable(reader.ReadBytes(Files[i].HashedRegionSize), Files[i].Hash, 0, Files[i].HashedRegionSize);
                 }
             }
 
