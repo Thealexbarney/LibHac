@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using LibHac;
@@ -25,7 +24,8 @@ namespace hactoolnet
 
         private static string Print(this Pfs pfs)
         {
-            const int colLen = 65;
+            const int colLen = 36;
+            const int fileNameLen = 39;
 
             var sb = new StringBuilder();
             sb.AppendLine();
@@ -35,10 +35,15 @@ namespace hactoolnet
             PrintItem(sb, colLen, "Magic:", pfs.Header.Magic);
             PrintItem(sb, colLen, "Number of files:", pfs.Header.NumFiles);
 
-            sb.AppendLine("Files:");
-            foreach (PfsFileEntry file in pfs.Files.OrderBy(x => x.Offset))
+            for (int i = 0; i < pfs.Files.Length; i++)
             {
-                PrintItem(sb, colLen, $"{file.Name}", $"{file.Offset:x12}-{file.Offset + file.Size:x12}");
+                PfsFileEntry file = pfs.Files[i];
+
+                string label = i == 0 ? "Files:" : "";
+                string offsets = $"{file.Offset:x12}-{file.Offset + file.Size:x12}{file.HashValidity.GetValidityString()}";
+                string data = $"pfs0:/{file.Name}".PadRight(fileNameLen) + offsets;
+
+                PrintItem(sb, colLen, label, data);
             }
 
             return sb.ToString();

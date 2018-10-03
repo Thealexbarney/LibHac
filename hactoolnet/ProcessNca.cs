@@ -79,7 +79,7 @@ namespace hactoolnet
 
                 if (ctx.Options.ExefsOutDir != null || ctx.Options.ExefsOut != null)
                 {
-                    NcaSection section = nca.Sections.FirstOrDefault(x => x.IsExefs);
+                    NcaSection section = nca.Sections.FirstOrDefault(x => x?.IsExefs == true);
 
                     if (section == null)
                     {

@@ -189,11 +189,9 @@ namespace LibHac
                 headerDec.Read(headerBytes, 0, headerBytes.Length);
             }
 
-            using (var reader = new BinaryReader(new MemoryStream(headerBytes)))
-            {
-                Header = new NcaHeader(reader);
-            }
-            
+            var reader = new BinaryReader(new MemoryStream(headerBytes));
+
+            Header = new NcaHeader(reader);
         }
 
         private void DecryptKeyArea(Keyset keyset)
@@ -261,15 +259,13 @@ namespace LibHac
             long offset = sect.Header.Bktr.SubsectionHeader.Offset;
             using (var streamDec = new RandomAccessSectorStream(new Aes128CtrStream(GetStream(), DecryptedKeys[2], sect.Offset, sect.Size, sect.Offset, sect.Header.Ctr)))
             {
-                using (var reader = new BinaryReader(streamDec))
-                {
-                    streamDec.Position = offset + 8;
-                    var size = reader.ReadInt64();
+                var reader = new BinaryReader(streamDec);
+                streamDec.Position = offset + 8;
+                long size = reader.ReadInt64();
 
-                    if (size != offset)
-                    {
-                         sect.SuperblockHashValidity = Validity.Invalid;
-                    }
+                if (size != offset)
+                {
+                    sect.SuperblockHashValidity = Validity.Invalid;
                 }
             }
         }
@@ -312,7 +308,7 @@ namespace LibHac
             stream.Position = offset;
             stream.Read(hashTable, 0, hashTable.Length);
 
-            sect.SuperblockHashValidity = Crypto.CheckMemoryHashTable(hashTable,expected,0, hashTable.Length);
+            sect.SuperblockHashValidity = Crypto.CheckMemoryHashTable(hashTable, expected, 0, hashTable.Length);
             if (sect.Type == SectionType.Romfs) sect.Romfs.IvfcLevels[0].HashValidity = sect.SuperblockHashValidity;
         }
 
@@ -370,7 +366,6 @@ namespace LibHac
             int curBlockSize = (int)blockSize;
             section.Position = dataOffset;
             logger?.SetTotal(blockCount);
-
 
             for (long i = 0; i < blockCount; i++)
             {
