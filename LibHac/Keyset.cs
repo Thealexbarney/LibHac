@@ -276,8 +276,8 @@ namespace LibHac
 
         static ExternalKeys()
         {
-            var commonKeys = CreateCommonKeyList();
-            var uniqueKeys = CreateUniqueKeyList();
+            List<KeyValue> commonKeys = CreateCommonKeyList();
+            List<KeyValue> uniqueKeys = CreateUniqueKeyList();
 
             CommonKeyDict = commonKeys.ToDictionary(k => k.Name, k => k);
             UniqueKeyDict = uniqueKeys.ToDictionary(k => k.Name, k => k);
@@ -317,26 +317,26 @@ namespace LibHac
                 string line;
                 while ((line = reader.ReadLine()) != null)
                 {
-                    var a = line.Split(',', '=');
+                    string[] a = line.Split(',', '=');
                     if (a.Length != 2) continue;
 
-                    var key = a[0].Trim();
-                    var valueStr = a[1].Trim();
+                    string key = a[0].Trim();
+                    string valueStr = a[1].Trim();
 
-                    if (!keyDict.TryGetValue(key, out var kv))
+                    if (!keyDict.TryGetValue(key, out KeyValue kv))
                     {
                         logger?.LogMessage($"Failed to match key {key}");
                         continue;
                     }
 
-                    var value = valueStr.ToBytes();
+                    byte[] value = valueStr.ToBytes();
                     if (value.Length != kv.Size)
                     {
                         logger?.LogMessage($"Key {key} had incorrect size {value.Length}. (Expected {kv.Size})");
                         continue;
                     }
 
-                    var dest = kv.GetKey(keyset);
+                    byte[] dest = kv.GetKey(keyset);
                     Array.Copy(value, dest, value.Length);
                 }
             }
@@ -404,7 +404,7 @@ namespace LibHac
                 byte[] key = keySlot.GetKey(keyset);
                 if (key.IsEmpty()) continue;
 
-                var line = $"{keySlot.Name.PadRight(maxNameLength)} = {key.ToHexString()}";
+                string line = $"{keySlot.Name.PadRight(maxNameLength)} = {key.ToHexString()}";
                 sb.AppendLine(line);
             }
 
@@ -435,7 +435,7 @@ namespace LibHac
             {
                 byte[] key = kv.Key;
                 byte[] value = kv.Value;
-                var line = $"{key.ToHexString().PadRight(maxNameLength)} = {value.ToHexString()}";
+                string line = $"{key.ToHexString().PadRight(maxNameLength)} = {value.ToHexString()}";
                 sb.AppendLine(line);
             }
 

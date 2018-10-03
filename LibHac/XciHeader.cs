@@ -64,7 +64,7 @@ namespace LibHac
 
         public Validity SignatureValidity { get; set; }
 
-        public Validity PartitionFsHeaderValidity { get; set; } = Validity.Unchecked;
+        public Validity PartitionFsHeaderValidity { get; set; }
 
         public XciHeader(Keyset keyset, Stream stream)
         {
@@ -114,7 +114,7 @@ namespace LibHac
 
                 if (!keyset.XciHeaderKey.IsEmpty()) {
 
-                    var encHeader = reader.ReadBytes(EncryptedHeaderSize);
+                    byte[] encHeader = reader.ReadBytes(EncryptedHeaderSize);
                     var decHeader = new byte[EncryptedHeaderSize];
                     Crypto.DecryptCbc(keyset.XciHeaderKey, AesCbcIv, encHeader, decHeader, EncryptedHeaderSize);
 

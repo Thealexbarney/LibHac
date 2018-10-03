@@ -78,7 +78,7 @@ namespace LibHac
 
         public byte[] GetFile(string filename)
         {
-            var stream = OpenFile(filename);
+            Stream stream = OpenFile(filename);
             var file = new byte[stream.Length];
             using (var ms = new MemoryStream(file))
             {
@@ -94,10 +94,10 @@ namespace LibHac
 
         private void SetReferences()
         {
-            var dirDict = Directories.ToDictionary(x => x.Offset, x => x);
-            var fileDict = Files.ToDictionary(x => x.Offset, x => x);
+            Dictionary<int, RomfsDir> dirDict = Directories.ToDictionary(x => x.Offset, x => x);
+            Dictionary<int, RomfsFile> fileDict = Files.ToDictionary(x => x.Offset, x => x);
 
-            foreach (var dir in Directories)
+            foreach (RomfsDir dir in Directories)
             {
                 if (dir.ParentOffset >= 0 && dir.ParentOffset != dir.Offset) dir.Parent = dirDict[dir.ParentOffset];
                 if (dir.NextSiblingOffset >= 0) dir.NextSibling = dirDict[dir.NextSiblingOffset];
@@ -106,7 +106,7 @@ namespace LibHac
                 if (dir.NextDirHashOffset >= 0) dir.NextDirHash = dirDict[dir.NextDirHashOffset];
             }
 
-            foreach (var file in Files)
+            foreach (RomfsFile file in Files)
             {
                 if (file.ParentDirOffset >= 0) file.ParentDir = dirDict[file.ParentDirOffset];
                 if (file.NextSiblingOffset >= 0) file.NextSibling = fileDict[file.NextSiblingOffset];
@@ -118,11 +118,11 @@ namespace LibHac
         {
             var list = new List<string>();
             var sb = new StringBuilder();
-            var delimiter = "/";
-            foreach (var file in Files)
+            string delimiter = "/";
+            foreach (RomfsFile file in Files)
             {
                 list.Add(file.Name);
-                var dir = file.ParentDir;
+                RomfsDir dir = file.ParentDir;
                 while (dir != null)
                 {
                     list.Add(delimiter);
@@ -246,11 +246,11 @@ namespace LibHac
     {
         public static void Extract(this Romfs romfs, string outDir, IProgressReport logger = null)
         {
-            foreach (var file in romfs.Files)
+            foreach (RomfsFile file in romfs.Files)
             {
-                var stream = romfs.OpenFile(file);
-                var outName = outDir + file.FullPath;
-                var dir = Path.GetDirectoryName(outName);
+                Stream stream = romfs.OpenFile(file);
+                string outName = outDir + file.FullPath;
+                string dir = Path.GetDirectoryName(outName);
                 if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
 
                 using (var outFile = new FileStream(outName, FileMode.Create, FileAccess.ReadWrite))

@@ -38,7 +38,7 @@ namespace LibHac
 
         public Ticket(BinaryReader reader)
         {
-            var fileStart = reader.BaseStream.Position;
+            long fileStart = reader.BaseStream.Position;
             SignatureType = (TicketSigType)reader.ReadUInt32();
 
             switch (SignatureType)
@@ -62,7 +62,7 @@ namespace LibHac
                     throw new ArgumentOutOfRangeException();
             }
 
-            var dataStart = reader.BaseStream.Position;
+            long dataStart = reader.BaseStream.Position;
 
             Issuer = reader.ReadUtf8Z(0x40);
             reader.BaseStream.Position = dataStart + 0x40;
@@ -111,7 +111,7 @@ namespace LibHac
                     throw new ArgumentOutOfRangeException();
             }
 
-            var bodyStart = Util.GetNextMultiple(4 + sigLength, 0x40);
+            long bodyStart = Util.GetNextMultiple(4 + sigLength, 0x40);
 
             writer.Write((int)SignatureType);
 

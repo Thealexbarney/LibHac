@@ -42,7 +42,7 @@ namespace LibHac
             }
             else
             {
-                if (keyset.TitleKeys.TryGetValue(Header.RightsId, out var titleKey))
+                if (keyset.TitleKeys.TryGetValue(Header.RightsId, out byte[] titleKey))
                 {
                     TitleKey = titleKey;
                     Crypto.DecryptEcb(keyset.Titlekeks[CryptoType], titleKey, TitleKeyDec, 0x10);
@@ -56,13 +56,13 @@ namespace LibHac
 
             for (int i = 0; i < 4; i++)
             {
-                var section = ParseSection(i);
+                NcaSection section = ParseSection(i);
                 if (section == null) continue;
                 Sections[i] = section;
                 ValidateSuperblockHash(i);
             }
 
-            foreach (var pfsSection in Sections.Where(x => x != null && x.Type == SectionType.Pfs0))
+            foreach (NcaSection pfsSection in Sections.Where(x => x != null && x.Type == SectionType.Pfs0))
             {
                 Stream sectionStream = OpenSection(pfsSection.SectionNum, false, false);
                 if (sectionStream == null) continue;
@@ -182,8 +182,8 @@ namespace LibHac
 
         private void DecryptHeader(Keyset keyset, Stream stream)
         {
-            byte[] headerBytes = new byte[0xC00];
-            var xts = XtsAes128.Create(keyset.HeaderKey);
+            var headerBytes = new byte[0xC00];
+            Xts xts = XtsAes128.Create(keyset.HeaderKey);
             using (var headerDec = new RandomAccessSectorStream(new XtsSectorStream(stream, xts, 0x200)))
             {
                 headerDec.Read(headerBytes, 0, headerBytes.Length);
@@ -207,8 +207,8 @@ namespace LibHac
 
         private NcaSection ParseSection(int index)
         {
-            var entry = Header.SectionEntries[index];
-            var header = Header.FsHeaders[index];
+            NcaSectionEntry entry = Header.SectionEntries[index];
+            NcaFsHeader header = Header.FsHeaders[index];
             if (entry.MediaStartOffset == 0) return null;
 
             var sect = new NcaSection();
@@ -236,13 +236,13 @@ namespace LibHac
         {
             sect.Romfs = new RomfsSection();
             sect.Romfs.Superblock = sect.Header.Romfs;
-            var headers = sect.Romfs.Superblock.IvfcHeader.LevelHeaders;
+            IvfcLevelHeader[] headers = sect.Romfs.Superblock.IvfcHeader.LevelHeaders;
 
             for (int i = 0; i < Romfs.IvfcMaxLevel; i++)
             {
                 var level = new IvfcLevel();
                 sect.Romfs.IvfcLevels[i] = level;
-                var header = headers[i];
+                IvfcLevelHeader header = headers[i];
                 level.DataOffset = header.LogicalOffset;
                 level.DataSize = header.HashDataSize;
                 level.HashBlockSize = 1 << header.BlockSize;
@@ -258,7 +258,7 @@ namespace LibHac
 
         private void CheckBktrKey(NcaSection sect)
         {
-            var offset = sect.Header.Bktr.SubsectionHeader.Offset;
+            long offset = sect.Header.Bktr.SubsectionHeader.Offset;
             using (var streamDec = new RandomAccessSectorStream(new Aes128CtrStream(GetStream(), DecryptedKeys[2], sect.Offset, sect.Size, sect.Offset, sect.Header.Ctr)))
             {
                 using (var reader = new BinaryReader(streamDec))
@@ -277,7 +277,7 @@ namespace LibHac
         private void ValidateSuperblockHash(int index)
         {
             if (Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
-            var sect = Sections[index];
+            NcaSection sect = Sections[index];
 
             byte[] expected = null;
             long offset = 0;
@@ -288,13 +288,13 @@ namespace LibHac
                 case SectionType.Invalid:
                     break;
                 case SectionType.Pfs0:
-                    var pfs0 = sect.Header.Pfs;
+                    PfsSuperblock pfs0 = sect.Header.Pfs;
                     expected = pfs0.MasterHash;
                     offset = pfs0.HashTableOffset;
                     size = pfs0.HashTableSize;
                     break;
                 case SectionType.Romfs:
-                    var ivfc = sect.Header.Romfs.IvfcHeader;
+                    IvfcHeader ivfc = sect.Header.Romfs.IvfcHeader;
                     expected = ivfc.MasterHash;
                     offset = ivfc.LevelHeaders[0].LogicalOffset;
                     size = 1 << ivfc.LevelHeaders[0].BlockSize;
@@ -319,8 +319,8 @@ namespace LibHac
         public void VerifySection(int index, IProgressReport logger = null)
         {
             if (Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
-            var sect = Sections[index];
-            var stream = OpenSection(index, true, false);
+            NcaSection sect = Sections[index];
+            Stream stream = OpenSection(index, true, false);
             logger?.LogMessage($"Verifying section {index}...");
 
             switch (sect.Type)
@@ -340,7 +340,7 @@ namespace LibHac
 
         private void VerifyPfs0(Stream section, Pfs0Section pfs0, IProgressReport logger = null)
         {
-            var sb = pfs0.Superblock;
+            PfsSuperblock sb = pfs0.Superblock;
             var table = new byte[sb.HashTableSize];
             section.Position = sb.HashTableOffset;
             section.Read(table, 0, table.Length);
@@ -353,7 +353,7 @@ namespace LibHac
             for (int i = 1; i < levels.Length; i++)
             {
                 logger?.LogMessage($"    Verifying IVFC Level {i}...");
-                var level = levels[i];
+                IvfcLevel level = levels[i];
                 var table = new byte[level.HashSize];
                 section.Position = level.HashOffset;
                 section.Read(table, 0, table.Length);
@@ -366,7 +366,7 @@ namespace LibHac
             const int hashSize = 0x20;
             var currentBlock = new byte[blockSize];
             var expectedHash = new byte[hashSize];
-            var blockCount = Util.DivideByRoundUp(dataLen, blockSize);
+            long blockCount = Util.DivideByRoundUp(dataLen, blockSize);
             int curBlockSize = (int)blockSize;
             section.Position = dataOffset;
             logger?.SetTotal(blockCount);
@@ -425,8 +425,8 @@ namespace LibHac
             if (index < 0 || index > 3) throw new IndexOutOfRangeException();
             if (nca.Sections[index] == null) return;
 
-            var section = nca.OpenSection(index, raw, verify);
-            var dir = Path.GetDirectoryName(filename);
+            Stream section = nca.OpenSection(index, raw, verify);
+            string dir = Path.GetDirectoryName(filename);
             if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
 
             using (var outFile = new FileStream(filename, FileMode.Create, FileAccess.ReadWrite))
@@ -440,8 +440,8 @@ namespace LibHac
             if (index < 0 || index > 3) throw new IndexOutOfRangeException();
             if (nca.Sections[index] == null) return;
 
-            var section = nca.Sections[index];
-            var stream = nca.OpenSection(index, false, verify);
+            NcaSection section = nca.Sections[index];
+            Stream stream = nca.OpenSection(index, false, verify);
 
             switch (section.Type)
             {

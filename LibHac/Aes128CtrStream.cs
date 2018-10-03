@@ -157,7 +157,7 @@ namespace LibHac
         {
             ValidateSize(count);
 
-            var bytesRead = base.Read(_tempBuffer, 0, count);
+            int bytesRead = base.Read(_tempBuffer, 0, count);
             if (bytesRead == 0) return 0;
 
             return _decryptor.TransformBlock(_tempBuffer, 0, bytesRead, buffer, offset);

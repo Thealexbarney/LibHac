@@ -42,7 +42,7 @@ namespace LibHac
             if (inputCount > _maxSize)
                 throw new ArgumentException($"{nameof(inputCount)} cannot be greater than {_maxSize}");
 
-            var blockCount = Util.DivideByRoundUp(inputCount, BlockSizeBytes);
+            int blockCount = Util.DivideByRoundUp(inputCount, BlockSizeBytes);
 
             FillDecryptedCounter(blockCount);
 
@@ -76,7 +76,7 @@ namespace LibHac
                 {
                     var inputVec = new Vector<byte>(inputBuffer, inputOffset + i);
                     var xorVec = new Vector<byte>(xor, i);
-                    var outputVec = inputVec ^ xorVec;
+                    Vector<byte> outputVec = inputVec ^ xorVec;
                     outputVec.CopyTo(outputBuffer, outputOffset + i);
                 }
             }

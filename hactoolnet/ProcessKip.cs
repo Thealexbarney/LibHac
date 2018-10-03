@@ -10,6 +10,7 @@ namespace hactoolnet
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
             {
                 var kip = new Kip(file);
+                kip.OpenRawFile();
             }
         }
 

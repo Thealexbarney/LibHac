@@ -100,8 +100,8 @@ namespace LibHac.XTSSharp
             int lim;
 
             /* get number of blocks */
-            var m = inputCount >> 4;
-            var mo = inputCount & 15;
+            int m = inputCount >> 4;
+            int mo = inputCount & 15;
 
             /* encrypt the tweak */
             _key2.TransformBlock(_tweak, 0, _tweak.Length, _t, 0);
@@ -112,7 +112,7 @@ namespace LibHac.XTSSharp
             else
                 lim = m - 1;
 
-            for (var i = 0; i < lim; i++)
+            for (int i = 0; i < lim; i++)
             {
                 TweakCrypt(inputBuffer, inputOffset, outputBuffer, outputOffset, _t);
                 inputOffset += 16;
@@ -194,14 +194,14 @@ namespace LibHac.XTSSharp
         /// </summary>
         private void TweakCrypt(byte[] inputBuffer, int inputOffset, byte[] outputBuffer, int outputOffset, byte[] t)
         {
-            for (var x = 0; x < 16; x++)
+            for (int x = 0; x < 16; x++)
             {
                 outputBuffer[x + outputOffset] = (byte)(inputBuffer[x + inputOffset] ^ t[x]);
             }
 
             _key1.TransformBlock(outputBuffer, outputOffset, 16, outputBuffer, outputOffset);
 
-            for (var x = 0; x < 16; x++)
+            for (int x = 0; x < 16; x++)
             {
                 outputBuffer[x + outputOffset] = (byte)(outputBuffer[x + outputOffset] ^ t[x]);
             }
@@ -217,7 +217,7 @@ namespace LibHac.XTSSharp
         {
             byte t = 0, tt = 0;
 
-            for (var x = 0; x < 16; x++)
+            for (int x = 0; x < 16; x++)
             {
                 tt = (byte)(i[x] >> 7);
                 i[x] = (byte)(((i[x] << 1) | t) & 0xFF);

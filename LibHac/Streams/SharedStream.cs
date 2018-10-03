@@ -24,7 +24,7 @@ namespace LibHac.Streams
             if (remaining <= 0) return 0;
             if (remaining < count) count = (int)remaining;
 
-            var bytesRead = _stream.Read(_offset + _position, buffer, offset, count);
+            int bytesRead = _stream.Read(_offset + _position, buffer, offset, count);
             _position += bytesRead;
             return bytesRead;
         }

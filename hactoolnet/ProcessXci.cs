@@ -43,17 +43,17 @@ namespace hactoolnet
 
                 if (ctx.Options.OutDir != null && xci.RootPartition != null)
                 {
-                    var root = xci.RootPartition;
+                    XciPartition root = xci.RootPartition;
                     if (root == null)
                     {
                         ctx.Logger.LogMessage("Could not find root partition");
                         return;
                     }
 
-                    foreach (var sub in root.Files)
+                    foreach (PfsFileEntry sub in root.Files)
                     {
                         var subPfs = new Pfs(root.OpenFile(sub));
-                        var subDir = Path.Combine(ctx.Options.OutDir, sub.Name);
+                        string subDir = Path.Combine(ctx.Options.OutDir, sub.Name);
 
                         subPfs.Extract(subDir, ctx.Logger);
                     }
@@ -61,7 +61,7 @@ namespace hactoolnet
 
                 if (ctx.Options.ExefsOutDir != null || ctx.Options.ExefsOut != null)
                 {
-                    var mainNca = GetXciMainNca(xci, ctx);
+                    Nca mainNca = GetXciMainNca(xci, ctx);
 
                     if (mainNca == null)
                     {
@@ -69,7 +69,7 @@ namespace hactoolnet
                         return;
                     }
 
-                    var exefsSection = mainNca.Sections.FirstOrDefault(x => x.IsExefs);
+                    NcaSection exefsSection = mainNca.Sections.FirstOrDefault(x => x.IsExefs);
 
                     if (exefsSection == null)
                     {
@@ -90,7 +90,7 @@ namespace hactoolnet
 
                 if (ctx.Options.RomfsOutDir != null || ctx.Options.RomfsOut != null)
                 {
-                    var mainNca = GetXciMainNca(xci, ctx);
+                    Nca mainNca = GetXciMainNca(xci, ctx);
 
                     if (mainNca == null)
                     {
@@ -98,7 +98,7 @@ namespace hactoolnet
                         return;
                     }
 
-                    var romfsSection = mainNca.Sections.FirstOrDefault(x => x.Type == SectionType.Romfs);
+                    NcaSection romfsSection = mainNca.Sections.FirstOrDefault(x => x.Type == SectionType.Romfs);
 
                     if (romfsSection == null)
                     {
@@ -130,9 +130,9 @@ namespace hactoolnet
 
             Nca mainNca = null;
 
-            foreach (var fileEntry in xci.SecurePartition.Files.Where(x => x.Name.EndsWith(".nca")))
+            foreach (PfsFileEntry fileEntry in xci.SecurePartition.Files.Where(x => x.Name.EndsWith(".nca")))
             {
-                var ncaStream = xci.SecurePartition.OpenFile(fileEntry);
+                Stream ncaStream = xci.SecurePartition.OpenFile(fileEntry);
                 var nca = new Nca(ctx.Keyset, ncaStream, true);
 
                 if (nca.Header.ContentType == ContentType.Program)

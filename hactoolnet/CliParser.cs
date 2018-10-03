@@ -51,7 +51,7 @@ namespace hactoolnet
         public static Options Parse(string[] args)
         {
             var options = new Options();
-            var inputSpecified = false;
+            bool inputSpecified = false;
 
             for (int i = 0; i < args.Length; i++)
             {
@@ -78,7 +78,7 @@ namespace hactoolnet
                     continue;
                 }
 
-                var option = CliOptions.FirstOrDefault(x => x.Long == arg || x.Short == arg);
+                CliOption option = CliOptions.FirstOrDefault(x => x.Long == arg || x.Short == arg);
                 if (option == null)
                 {
                     PrintWithUsage($"Unknown option {args[i]}");
@@ -124,7 +124,7 @@ namespace hactoolnet
                 PrintWithUsage("Title ID must be 16 hex characters long");
             }
 
-            if (!ulong.TryParse(input, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var id))
+            if (!ulong.TryParse(input, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong id))
             {
                 PrintWithUsage("Could not parse title ID");
             }
@@ -202,7 +202,9 @@ namespace hactoolnet
             sb.AppendLine("  --outdir <dir>       Specify directory path to save contents to.");
             sb.AppendLine("  --debugoutdir <dir>  Specify directory path to save intermediate data to for debugging.");
             sb.AppendLine("  --sign               Sign the save file. (Requires device_key in key file)");
-
+            sb.AppendLine("Keygen options:");
+            sb.AppendLine("  --outdir <dir>       Specify directory path to save key files to.");
+            
             return sb.ToString();
         }
 

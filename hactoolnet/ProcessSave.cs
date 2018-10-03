@@ -14,7 +14,7 @@ namespace hactoolnet
         {
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.ReadWrite))
             {
-                var save = new Savefile(ctx.Keyset, file, ctx.Options.EnableHash, ctx.Logger);
+                var save = new Savefile(ctx.Keyset, file, ctx.Options.EnableHash);
 
                 if (ctx.Options.OutDir != null)
                 {
@@ -23,7 +23,7 @@ namespace hactoolnet
 
                 if (ctx.Options.DebugOutDir != null)
                 {
-                    var dir = ctx.Options.DebugOutDir;
+                    string dir = ctx.Options.DebugOutDir;
                     Directory.CreateDirectory(dir);
 
                     File.WriteAllBytes(Path.Combine(dir, "L0_0_MasterHashA"), save.Header.MasterHashA);

@@ -28,12 +28,12 @@ namespace LibHac.Savefile
             if (remaining <= 0) return 0;
             if (remaining < count) count = (int)remaining;
 
-            var toOutput = count;
+            int toOutput = count;
             int outPos = offset;
 
             while (toOutput > 0)
             {
-                var remainInEntry = BlockSize - Position % BlockSize;
+                long remainInEntry = BlockSize - Position % BlockSize;
                 int toRead = (int)Math.Min(toOutput, remainInEntry);
                 BaseStream.Read(buffer, outPos, toRead);
 
@@ -77,8 +77,8 @@ namespace LibHac.Savefile
             {
                 _position = value;
                 if (value >= Length) return;
-                var currentBlock = value / BlockSize;
-                var blockPos = value % BlockSize;
+                long currentBlock = value / BlockSize;
+                long blockPos = value % BlockSize;
                 CurrentMapEntry = Map[currentBlock];
                 BaseStream.Position = CurrentMapEntry.PhysicalIndex * BlockSize + blockPos;
             }

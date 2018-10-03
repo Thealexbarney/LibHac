@@ -43,7 +43,7 @@ namespace hactoolnet
                 {
                     var romfs = new Romfs(nca.OpenSection(1, false, ctx.Options.EnableHash));
 
-                    foreach (var romfsFile in romfs.Files)
+                    foreach (RomfsFile romfsFile in romfs.Files)
                     {
                         ctx.Logger.LogMessage(romfsFile.FullPath);
                     }
@@ -178,7 +178,7 @@ namespace hactoolnet
 
             void PrintPfs0(NcaSection sect)
             {
-                var sBlock = sect.Pfs0.Superblock;
+                PfsSuperblock sBlock = sect.Pfs0.Superblock;
                 PrintItem(sb, colLen, $"        Superblock Hash{sect.SuperblockHashValidity.GetValidityString()}:", sBlock.MasterHash);
                 sb.AppendLine($"        Hash Table{sect.Pfs0.Validity.GetValidityString()}:");
 
@@ -191,8 +191,8 @@ namespace hactoolnet
 
             void PrintRomfs(NcaSection sect)
             {
-                var sBlock = sect.Romfs.Superblock;
-                var levels = sect.Romfs.IvfcLevels;
+                RomfsSuperblock sBlock = sect.Romfs.Superblock;
+                IvfcLevel[] levels = sect.Romfs.IvfcLevels;
 
                 PrintItem(sb, colLen, $"        Superblock Hash{sect.SuperblockHashValidity.GetValidityString()}:", sBlock.IvfcHeader.MasterHash);
                 PrintItem(sb, colLen, "        Magic:", sBlock.IvfcHeader.Magic);
@@ -200,7 +200,7 @@ namespace hactoolnet
 
                 for (int i = 0; i < Romfs.IvfcMaxLevel; i++)
                 {
-                    var level = levels[i];
+                    IvfcLevel level = levels[i];
                     sb.AppendLine($"        Level {i}{level.HashValidity.GetValidityString()}:");
                     PrintItem(sb, colLen, "            Data Offset:", $"0x{level.DataOffset:x12}");
                     PrintItem(sb, colLen, "            Data Size:", $"0x{level.DataSize:x12}");

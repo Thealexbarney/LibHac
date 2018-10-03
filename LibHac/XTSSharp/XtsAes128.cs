@@ -70,8 +70,8 @@ namespace LibHac.XTSSharp
         {
             VerifyKey(KeyLength * 2, key);
 
-            byte[] key1 = new byte[KeyByteLength];
-            byte[] key2 = new byte[KeyByteLength];
+            var key1 = new byte[KeyByteLength];
+            var key2 = new byte[KeyByteLength];
 
             Buffer.BlockCopy(key, 0, key1, 0, KeyByteLength);
             Buffer.BlockCopy(key, KeyByteLength, key2, 0, KeyByteLength);

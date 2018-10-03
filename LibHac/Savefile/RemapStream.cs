@@ -52,12 +52,12 @@ namespace LibHac.Savefile
             if (remaining <= 0) return 0;
             if (remaining < count) count = (int)remaining;
 
-            var toOutput = count;
+            int toOutput = count;
             int outPos = offset;
 
             while (toOutput > 0)
             {
-                var remainInEntry = CurrentEntry.VirtualOffsetEnd - Position;
+                long remainInEntry = CurrentEntry.VirtualOffsetEnd - Position;
                 int toRead = (int)Math.Min(toOutput, remainInEntry);
                 BaseStream.Read(buffer, outPos, toRead);
                 outPos += toRead;
@@ -104,7 +104,7 @@ namespace LibHac.Savefile
         private MapEntry GetMapEntry(long offset)
         {
             // todo: is O(n) search a possible performance issue?
-            var entry = MapEntries.FirstOrDefault(x => offset >= x.VirtualOffset && offset < x.VirtualOffsetEnd);
+            MapEntry entry = MapEntries.FirstOrDefault(x => offset >= x.VirtualOffset && offset < x.VirtualOffsetEnd);
             if (entry == null) throw new ArgumentOutOfRangeException(nameof(offset));
             return entry;
         }
@@ -113,7 +113,7 @@ namespace LibHac.Savefile
         {
             // At end of virtual stream
             if (CurrentEntry == null) return;
-            var entryOffset = Position - CurrentEntry.VirtualOffset;
+            long entryOffset = Position - CurrentEntry.VirtualOffset;
             BaseStream.Position = CurrentEntry.PhysicalOffset + entryOffset;
         }
 

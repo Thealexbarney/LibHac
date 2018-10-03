@@ -137,7 +137,8 @@ namespace LibHac
             }
 
 
-            if (Type == PfsType.Hfs0) {
+            if (Type == PfsType.Hfs0)
+            {
                 for (int i = 0; i < NumFiles; i++)
                 {
                     reader.BaseStream.Position = HeaderSize + Files[i].Offset;
@@ -195,11 +196,11 @@ namespace LibHac
     {
         public static void Extract(this Pfs pfs, string outDir, IProgressReport logger = null)
         {
-            foreach (var file in pfs.Header.Files)
+            foreach (PfsFileEntry file in pfs.Header.Files)
             {
-                var stream = pfs.OpenFile(file);
-                var outName = Path.Combine(outDir, file.Name);
-                var dir = Path.GetDirectoryName(outName);
+                Stream stream = pfs.OpenFile(file);
+                string outName = Path.Combine(outDir, file.Name);
+                string dir = Path.GetDirectoryName(outName);
                 if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
 
                 using (var outFile = new FileStream(outName, FileMode.Create, FileAccess.ReadWrite))

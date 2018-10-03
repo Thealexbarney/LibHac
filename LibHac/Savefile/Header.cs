@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 
 namespace LibHac.Savefile
 {
@@ -30,7 +29,7 @@ namespace LibHac.Savefile
 
         public byte[] Data { get; }
 
-        public Header(Keyset keyset, BinaryReader reader, IProgressReport logger = null)
+        public Header(Keyset keyset, BinaryReader reader)
         {
             reader.BaseStream.Position = 0;
             Data = reader.ReadBytes(0x4000);

@@ -117,7 +117,7 @@ namespace LibHac.Streams
             {
                 if (_readBytes == 0) FillBuffer(Position / _bufferSize);
 
-                var bytesToWrite = Math.Min(remaining, _readBytes - _bufferPos);
+                int bytesToWrite = Math.Min(remaining, _readBytes - _bufferPos);
 
                 Buffer.BlockCopy(buffer, outOffset, _buffer, _bufferPos, bytesToWrite);
 

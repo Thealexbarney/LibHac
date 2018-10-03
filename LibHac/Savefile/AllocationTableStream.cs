@@ -33,7 +33,7 @@ namespace LibHac.Savefile
 
             while (remaining > 0)
             {
-                var remainingInSegment = Iterator.CurrentSegmentSize * BlockSize - SegmentPos;
+                int remainingInSegment = Iterator.CurrentSegmentSize * BlockSize - SegmentPos;
                 int bytesToRead = Math.Min(remaining, remainingInSegment);
                 int bytesRead = Data.Read(buffer, outOffset, bytesToRead);
 
@@ -91,7 +91,7 @@ namespace LibHac.Savefile
                     }
                 }
 
-                var segmentPos = value - (Iterator.VirtualBlock * BlockSize);
+                long segmentPos = value - (Iterator.VirtualBlock * BlockSize);
                 Data.Position = Iterator.PhysicalBlock * BlockSize + segmentPos;
             }
         }

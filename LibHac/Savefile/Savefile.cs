@@ -41,13 +41,13 @@ namespace LibHac.Savefile
         public DirectoryEntry[] Directories { get; private set; }
         private Dictionary<string, FileEntry> FileDict { get; }
 
-        public Savefile(Keyset keyset, Stream file, bool enableIntegrityChecks, IProgressReport logger = null)
+        public Savefile(Keyset keyset, Stream file, bool enableIntegrityChecks)
         {
             SavefileSource = new SharedStreamSource(file);
 
             using (var reader = new BinaryReader(SavefileSource.CreateStream(), Encoding.Default, true))
             {
-                Header = new Header(keyset, reader, logger);
+                Header = new Header(keyset, reader);
                 FsLayout layout = Header.Layout;
 
                 FileRemap = new RemapStream(
@@ -99,9 +99,9 @@ namespace LibHac.Savefile
                 JournalFat = MetaRemapSource.CreateStream(layout.FatOffset, layout.FatSize);
                 AllocationTable = new AllocationTable(JournalFat);
 
-                var journalMap = JournalStream.ReadMappingEntries(JournalTable, Header.Journal.MainDataBlockCount);
+                MappingEntry[] journalMap = JournalStream.ReadMappingEntries(JournalTable, Header.Journal.MainDataBlockCount);
 
-                var journalData = FileRemapSource.CreateStream(layout.JournalDataOffset,
+                SharedStream journalData = FileRemapSource.CreateStream(layout.JournalDataOffset,
                     layout.JournalDataSizeB + layout.SizeReservedArea);
                 JournalStream = new JournalStream(journalData, journalMap, (int)Header.Journal.BlockSize);
                 JournalStreamSource = new SharedStreamSource(JournalStream);
@@ -110,7 +110,7 @@ namespace LibHac.Savefile
                 IvfcStreamSource = new SharedStreamSource(IvfcStream);
 
                 ReadFileInfo();
-                Dictionary<string, FileEntry> dictionary = new Dictionary<string, FileEntry>();
+                var dictionary = new Dictionary<string, FileEntry>();
                 foreach (FileEntry entry in Files)
                 {
                     dictionary[entry.FullPath] = entry;
@@ -184,8 +184,8 @@ namespace LibHac.Savefile
         private void ReadFileInfo()
         {
             // todo: Query the FAT for the file size when none is given
-            var dirTableStream = OpenFatBlock(Header.Save.DirectoryTableBlock, 1000000);
-            var fileTableStream = OpenFatBlock(Header.Save.FileTableBlock, 1000000);
+            AllocationTableStream dirTableStream = OpenFatBlock(Header.Save.DirectoryTableBlock, 1000000);
+            AllocationTableStream fileTableStream = OpenFatBlock(Header.Save.FileTableBlock, 1000000);
 
             DirectoryEntry[] dirEntries = ReadDirEntries(dirTableStream);
             FileEntry[] fileEntries = ReadFileEntries(fileTableStream);
@@ -210,7 +210,7 @@ namespace LibHac.Savefile
 
             RootDirectory = dirEntries[2];
 
-            var fileChain = fileEntries[1].NextInChain;
+            FileEntry fileChain = fileEntries[1].NextInChain;
             var files = new List<FileEntry>();
             while (fileChain != null)
             {
@@ -218,7 +218,7 @@ namespace LibHac.Savefile
                 fileChain = fileChain.NextInChain;
             }
 
-            var dirChain = dirEntries[1].NextInChain;
+            DirectoryEntry dirChain = dirEntries[1].NextInChain;
             var dirs = new List<DirectoryEntry>();
             while (dirChain != null)
             {
@@ -236,7 +236,7 @@ namespace LibHac.Savefile
         private FileEntry[] ReadFileEntries(Stream stream)
         {
             var reader = new BinaryReader(stream);
-            var count = reader.ReadInt32();
+            int count = reader.ReadInt32();
 
             reader.BaseStream.Position -= 4;
 
@@ -252,7 +252,7 @@ namespace LibHac.Savefile
         private DirectoryEntry[] ReadDirEntries(Stream stream)
         {
             var reader = new BinaryReader(stream);
-            var count = reader.ReadInt32();
+            int count = reader.ReadInt32();
 
             reader.BaseStream.Position -= 4;
 
@@ -272,7 +272,7 @@ namespace LibHac.Savefile
             var data = new byte[0x200];
             var cmac = new byte[0x10];
 
-            var headerStream = SavefileSource.CreateStream();
+            SharedStream headerStream = SavefileSource.CreateStream();
             headerStream.Position = 0x100;
             headerStream.Read(data, 0, 0x200);
 
@@ -299,11 +299,11 @@ namespace LibHac.Savefile
     {
         public static void Extract(this Savefile save, string outDir, IProgressReport logger = null)
         {
-            foreach (var file in save.Files)
+            foreach (FileEntry file in save.Files)
             {
-                var stream = save.OpenFile(file);
-                var outName = outDir + file.FullPath;
-                var dir = Path.GetDirectoryName(outName);
+                Stream stream = save.OpenFile(file);
+                string outName = outDir + file.FullPath;
+                string dir = Path.GetDirectoryName(outName);
                 if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
 
                 using (var outFile = new FileStream(outName, FileMode.Create, FileAccess.ReadWrite))
