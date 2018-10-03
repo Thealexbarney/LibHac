@@ -96,7 +96,7 @@ namespace LibHac
                 hash[0x1F] |= 0x80;
             }
 
-            if (!_hashBuffer.SequenceEqual(hash))
+            if (!Util.ArraysEqual(_hashBuffer, hash))
             {
                 throw new InvalidDataException("Hash error!");
             }

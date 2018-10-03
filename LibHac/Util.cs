@@ -30,6 +30,17 @@ namespace LibHac
             return array;
         }
 
+        public static bool ArraysEqual<T>(T[] a1, T[] a2)
+        {
+            if (a1 == null || a2 == null) return false;
+            if (a1.Length != a2.Length) return false;
+            for (int i = 0; i < a1.Length; i++)
+            {
+                if (!a1[i].Equals(a2[i])) return false;
+            }
+            return true;
+        }
+
         public static bool IsEmpty(this byte[] array)
         {
             if (array == null) throw new ArgumentNullException(nameof(array));
@@ -142,31 +153,121 @@ namespace LibHac
             return fullFile.Substring(fullDirectory.Length + 1);
         }
 
+        private static bool TryHexToInt(char c, out int value)
+        {
+            switch (c)
+            {
+                case '0':
+                    value = 0; break;
+                case '1':
+                    value = 1; break;
+                case '2':
+                    value = 2; break;
+                case '3':
+                    value = 3; break;
+                case '4':
+                    value = 4; break;
+                case '5':
+                    value = 5; break;
+                case '6':
+                    value = 6; break;
+                case '7':
+                    value = 7; break;
+                case '8':
+                    value = 8; break;
+                case '9':
+                    value = 9; break;
+                case 'a':
+                case 'A':
+                    value = 10; break;
+                case 'b':
+                case 'B':
+                    value = 11; break;
+                case 'c':
+                case 'C':
+                    value = 12; break;
+                case 'd':
+                case 'D':
+                    value = 13; break;
+                case 'e':
+                case 'E':
+                    value = 14; break;
+                case 'f':
+                case 'F':
+                    value = 15; break;
+                default:
+                    value = 0;
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static readonly byte[,] ByteLookup = {
+            {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f},
+            {0x00, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80, 0x90, 0xa0, 0xb0, 0xc0, 0xd0, 0xe0, 0xf0}
+        };
+
         public static byte[] ToBytes(this string input)
         {
-            byte[] ret = new byte[]{ };
-            try
+            var result = new byte[(input.Length + 1) >> 1];
+            int lastcell = result.Length - 1;
+            int lastchar = input.Length - 1;
+            for (int i = 0; i < input.Length; i++)
             {
-                ret = Enumerable.Range(0, input.Length)
-                     .Where(x => x % 2 == 0)
-                     .Select(x => Convert.ToByte(input.Substring(x, 2), 16))
-                     .ToArray();
+                if (!TryHexToInt(input[lastchar - i], out int hexInt))
+                {
+                    throw new FormatException($"Unrecognized hex char {input[lastchar - i]}");
+                }
+
+                result[lastcell - (i >> 1)] |= ByteLookup[i & 1, hexInt];
             }
-            catch (Exception)
-            {
-            }
-            return ret;
+            return result;
         }
 
         public static bool TryToBytes(this string input, out byte[] bytes)
         {
-            bytes = input.ToBytes();
-            return bytes.Length == (input.Length / 2);
+            var result = new byte[(input.Length + 1) >> 1];
+            int lastcell = result.Length - 1;
+            int lastchar = input.Length - 1;
+            for (int i = 0; i < input.Length; i++)
+            {
+                if (!TryHexToInt(input[lastchar - i], out int hexInt))
+                {
+                    bytes = null;
+                    return false;
+                }
+
+                result[lastcell - (i >> 1)] |= ByteLookup[i & 1, hexInt];
+            }
+            bytes = result;
+            return true;
+        }
+
+        private static readonly uint[] Lookup32 = CreateLookup32();
+
+        private static uint[] CreateLookup32()
+        {
+            var result = new uint[256];
+            for (int i = 0; i < 256; i++)
+            {
+                string s = i.ToString("X2");
+                result[i] = s[0] + ((uint)s[1] << 16);
+            }
+            return result;
         }
 
         public static string ToHexString(this byte[] bytes)
         {
-            return string.Concat(bytes.Select(b => b.ToString("X2")));
+            var lookup32 = Lookup32;
+            var result = new char[bytes.Length * 2];
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                var val = lookup32[bytes[i]];
+                result[2 * i] = (char)val;
+                result[2 * i + 1] = (char)(val >> 16);
+            }
+            return new string(result);
         }
 
         public static long MediaToReal(long media)
@@ -314,8 +415,8 @@ namespace LibHac
             {
                 return false;
             }
-            // Linq extension method is based on IEnumerable, must evaluate every item.
-            return first.SequenceEqual(second);
+
+            return Util.ArraysEqual(first,second);
         }
 
         public override int GetHashCode(byte[] obj)

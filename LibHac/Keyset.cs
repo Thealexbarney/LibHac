@@ -113,7 +113,7 @@ namespace LibHac
                 Array.Copy(EncryptedKeyblobs[i], expectedCmac, 0x10);
                 Crypto.CalculateAesCmac(KeyblobMacKeys[i], EncryptedKeyblobs[i], 0x10, cmac, 0, 0xa0);
 
-                if (!cmac.SequenceEqual(expectedCmac))
+                if (!Util.ArraysEqual(cmac, expectedCmac))
                 {
                     logger?.LogMessage($"Warning: Keyblob MAC {i:x2} is invalid. Are SBK/TSEC key correct?");
                 }

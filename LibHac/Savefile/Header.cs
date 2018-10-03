@@ -95,7 +95,7 @@ namespace LibHac.Savefile
 
             Crypto.CalculateAesCmac(keyset.SaveMacKey, Data, 0x100, calculatedCmac, 0, 0x200);
 
-            return calculatedCmac.SequenceEqual(Cmac) ? Validity.Valid : Validity.Invalid;
+            return Util.ArraysEqual(calculatedCmac, Cmac) ? Validity.Valid : Validity.Invalid;
         }
     }
 

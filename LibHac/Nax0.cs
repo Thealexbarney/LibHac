@@ -76,7 +76,7 @@ namespace LibHac
                 var validationHash = new HMACSHA256(validationHashKey);
                 byte[] validationMac = validationHash.ComputeHash(keyset.SdCardKeys[k], 0x10, 0x10);
 
-                if (Hmac.SequenceEqual(validationMac))
+                if (Util.ArraysEqual(Hmac, validationMac))
                 {
                     return;
                 }

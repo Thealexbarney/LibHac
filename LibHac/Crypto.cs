@@ -17,7 +17,7 @@ namespace LibHac
             Validity comp = Validity.Invalid ;
             using (var _SHA = SHA256.Create())
             {
-                comp =  hash.SequenceEqual(_SHA.ComputeHash(data , offset , count)) ? Validity.Valid : Validity.Invalid;
+                comp = Util.ArraysEqual(hash, _SHA.ComputeHash(data , offset , count)) ? Validity.Valid : Validity.Invalid;
             }
             return comp;
         }
@@ -134,7 +134,7 @@ namespace LibHac
             byte[] testEnc = rsa.Encrypt(test, false);
             byte[] testDec = rsa.Decrypt(testEnc, false);
 
-            if (!test.SequenceEqual(testDec))
+            if (!Util.ArraysEqual(test, testDec))
             {
                 throw new InvalidDataException("Could not verify RSA key pair");
             }
