@@ -97,6 +97,16 @@ namespace hactoolnet
             {
                 ctx.Keyset.SetSdSeed(ctx.Options.SdSeed.ToBytes());
             }
+
+            if (ctx.Options.OutDir != null)
+            {
+                string dir = ctx.Options.OutDir;
+                Directory.CreateDirectory(dir);
+
+                File.WriteAllText(Path.Combine(dir, "prod.keys"), ExternalKeys.PrintCommonKeys(ctx.Keyset));
+                File.WriteAllText(Path.Combine(dir, "console.keys"), ExternalKeys.PrintUniqueKeys(ctx.Keyset));
+                File.WriteAllText(Path.Combine(dir, "title.keys"), ExternalKeys.PrintTitleKeys(ctx.Keyset));
+            }
         }
 
         private static void ProcessKeygen(Context ctx)

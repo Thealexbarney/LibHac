@@ -202,7 +202,9 @@ namespace hactoolnet
             sb.AppendLine("  --outdir <dir>       Specify directory path to save contents to.");
             sb.AppendLine("  --debugoutdir <dir>  Specify directory path to save intermediate data to for debugging.");
             sb.AppendLine("  --sign               Sign the save file. (Requires device_key in key file)");
-
+            sb.AppendLine("Keygen options:");
+            sb.AppendLine("  --outdir <dir>       Specify directory path to save key files to.");
+            
             return sb.ToString();
         }
 
