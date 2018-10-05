@@ -1,15 +1,20 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace LibHac.Streams
 {
-    public class SharedStreamSource
+    public class SharedStreamSource : IDisposable
     {
         private Stream BaseStream { get; }
         private object Locker { get; } = new object();
+        private bool KeepOpen { get; }
 
-        public SharedStreamSource(Stream baseStream)
+        public SharedStreamSource(Stream baseStream) : this(baseStream, true) { }
+
+        public SharedStreamSource(Stream baseStream, bool keepOpen)
         {
             BaseStream = baseStream;
+            KeepOpen = keepOpen;
         }
 
         public SharedStream CreateStream()
@@ -59,5 +64,13 @@ namespace LibHac.Streams
         public bool CanSeek => BaseStream.CanSeek;
         public bool CanWrite => BaseStream.CanWrite;
         public long Length => BaseStream.Length;
+
+        public void Dispose()
+        {
+            if (KeepOpen)
+            {
+                BaseStream?.Dispose();
+            }
+        }
     }
 }

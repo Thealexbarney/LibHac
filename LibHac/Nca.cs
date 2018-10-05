@@ -16,7 +16,6 @@ namespace LibHac
         public byte[][] DecryptedKeys { get; } = Util.CreateJaggedArray<byte[][]>(4, 0x10);
         public byte[] TitleKey { get; }
         public byte[] TitleKeyDec { get; } = new byte[0x10];
-        private Stream Stream { get; }
         private SharedStreamSource StreamSource { get; }
         private bool KeepOpen { get; }
         private Nca BaseNca { get; set; }
@@ -27,8 +26,7 @@ namespace LibHac
         {
             stream.Position = 0;
             KeepOpen = keepOpen;
-            Stream = stream;
-            StreamSource = new SharedStreamSource(stream);
+            StreamSource = new SharedStreamSource(stream, keepOpen);
             DecryptHeader(keyset, stream);
 
             CryptoType = Math.Max(Header.CryptoType, Header.CryptoType2);
@@ -50,7 +48,8 @@ namespace LibHac
                 }
                 else
                 {
-                    throw new MissingKeyException("A required key is missing.", $"{Header.RightsId.ToHexString()}", KeyType.Title);
+                    // todo enable key check when opening a section
+                    // throw new MissingKeyException("A required key is missing.", $"{Header.RightsId.ToHexString()}", KeyType.Title);
                 }
             }
 
@@ -121,7 +120,7 @@ namespace LibHac
             Stream rawStream = OpenRawSection(index);
             NcaSection sect = Sections[index];
 
-            if (raw) return rawStream;
+            if (raw || rawStream == null) return rawStream;
 
             switch (sect.Header.Type)
             {
@@ -393,7 +392,7 @@ namespace LibHac
         {
             if (!KeepOpen)
             {
-                Stream?.Dispose();
+                StreamSource?.Dispose();
             }
         }
     }
