@@ -396,6 +396,8 @@ namespace LibHac
 
         public static string PrintKeys(Keyset keyset, Dictionary<string, KeyValue> dict)
         {
+            if(dict.Count == 0) return string.Empty;
+
             var sb = new StringBuilder();
             int maxNameLength = dict.Values.Max(x => x.Name.Length);
 
@@ -429,13 +431,10 @@ namespace LibHac
         public static string PrintTitleKeys(Keyset keyset)
         {
             var sb = new StringBuilder();
-            int maxNameLength = keyset.TitleKeys.Values.Max(x => x.Length);
 
             foreach (KeyValuePair<byte[], byte[]> kv in keyset.TitleKeys)
             {
-                byte[] key = kv.Key;
-                byte[] value = kv.Value;
-                string line = $"{key.ToHexString().PadRight(maxNameLength)} = {value.ToHexString()}";
+                string line = $"{kv.Key.ToHexString()} = {kv.Value.ToHexString()}";
                 sb.AppendLine(line);
             }
 
