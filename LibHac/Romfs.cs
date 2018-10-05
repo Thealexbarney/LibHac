@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -15,7 +14,7 @@ namespace LibHac
         public List<RomfsFile> Files { get; } = new List<RomfsFile>();
         public RomfsDir RootDir { get; }
 
-        private Dictionary<string, RomfsFile> FileDict { get; }
+        public Dictionary<string, RomfsFile> FileDict { get; }
         private SharedStreamSource StreamSource { get; }
 
         public Romfs(Stream stream)
@@ -40,7 +39,7 @@ namespace LibHac
                 {
                     var dir = new RomfsDir(reader) { Offset = position };
                     Directories.Add(dir);
-                    if (dir.ParentOffset == position) RootDir = dir;
+                    if (dir.ParentDirOffset == position) RootDir = dir;
                     position = (int)reader.BaseStream.Position;
                 }
             }
@@ -57,7 +56,8 @@ namespace LibHac
             }
 
             SetReferences();
-            ResolveFilenames();
+            RomfsEntry.ResolveFilenames(Files);
+            RomfsEntry.ResolveFilenames(Directories);
             FileDict = Files.ToDictionary(x => x.FullPath, x => x);
         }
 
@@ -99,7 +99,7 @@ namespace LibHac
 
             foreach (RomfsDir dir in Directories)
             {
-                if (dir.ParentOffset >= 0 && dir.ParentOffset != dir.Offset) dir.Parent = dirDict[dir.ParentOffset];
+                if (dir.ParentDirOffset >= 0 && dir.ParentDirOffset != dir.Offset) dir.ParentDir = dirDict[dir.ParentDirOffset];
                 if (dir.NextSiblingOffset >= 0) dir.NextSibling = dirDict[dir.NextSiblingOffset];
                 if (dir.FirstChildOffset >= 0) dir.FirstChild = dirDict[dir.FirstChildOffset];
                 if (dir.FirstFileOffset >= 0) dir.FirstFile = fileDict[dir.FirstFileOffset];
@@ -111,33 +111,6 @@ namespace LibHac
                 if (file.ParentDirOffset >= 0) file.ParentDir = dirDict[file.ParentDirOffset];
                 if (file.NextSiblingOffset >= 0) file.NextSibling = fileDict[file.NextSiblingOffset];
                 if (file.NextFileHashOffset >= 0) file.NextFileHash = fileDict[file.NextFileHashOffset];
-            }
-        }
-
-        private void ResolveFilenames()
-        {
-            var list = new List<string>();
-            var sb = new StringBuilder();
-            string delimiter = "/";
-            foreach (RomfsFile file in Files)
-            {
-                list.Add(file.Name);
-                RomfsDir dir = file.ParentDir;
-                while (dir != null)
-                {
-                    list.Add(delimiter);
-                    list.Add(dir.Name);
-                    dir = dir.Parent;
-                }
-
-                for (int i = list.Count - 1; i >= 0; i--)
-                {
-                    sb.Append(list[i]);
-                }
-
-                file.FullPath = sb.ToString();
-                list.Clear();
-                sb.Clear();
             }
         }
     }
@@ -170,66 +143,7 @@ namespace LibHac
         }
     }
 
-    [DebuggerDisplay("{" + nameof(Name) + "}")]
-    public class RomfsDir
-    {
-        public int Offset { get; set; }
-        public int ParentOffset { get; }
-        public int NextSiblingOffset { get; }
-        public int FirstChildOffset { get; }
-        public int FirstFileOffset { get; }
-        public int NextDirHashOffset { get; }
-        public int NameLength { get; }
-        public string Name { get; }
-
-        public RomfsDir Parent { get; internal set; }
-        public RomfsDir NextSibling { get; internal set; }
-        public RomfsDir FirstChild { get; internal set; }
-        public RomfsFile FirstFile { get; internal set; }
-        public RomfsDir NextDirHash { get; internal set; }
-
-        public RomfsDir(BinaryReader reader)
-        {
-            ParentOffset = reader.ReadInt32();
-            NextSiblingOffset = reader.ReadInt32();
-            FirstChildOffset = reader.ReadInt32();
-            FirstFileOffset = reader.ReadInt32();
-            NextDirHashOffset = reader.ReadInt32();
-            NameLength = reader.ReadInt32();
-            Name = reader.ReadUtf8(NameLength);
-            reader.BaseStream.Position = Util.GetNextMultiple(reader.BaseStream.Position, 4);
-        }
-    }
-
-    [DebuggerDisplay("{" + nameof(Name) + "}")]
-    public class RomfsFile
-    {
-        public int Offset { get; set; }
-        public int ParentDirOffset { get; }
-        public int NextSiblingOffset { get; }
-        public long DataOffset { get; }
-        public long DataLength { get; }
-        public int NextFileHashOffset { get; }
-        public int NameLength { get; }
-        public string Name { get; }
-
-        public RomfsDir ParentDir { get; internal set; }
-        public RomfsFile NextSibling { get; internal set; }
-        public RomfsFile NextFileHash { get; internal set; }
-        public string FullPath { get; set; }
-
-        public RomfsFile(BinaryReader reader)
-        {
-            ParentDirOffset = reader.ReadInt32();
-            NextSiblingOffset = reader.ReadInt32();
-            DataOffset = reader.ReadInt64();
-            DataLength = reader.ReadInt64();
-            NextFileHashOffset = reader.ReadInt32();
-            NameLength = reader.ReadInt32();
-            Name = reader.ReadUtf8(NameLength);
-            reader.BaseStream.Position = Util.GetNextMultiple(reader.BaseStream.Position, 4);
-        }
-    }
+    
 
     public class IvfcLevel
     {
