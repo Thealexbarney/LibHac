@@ -130,7 +130,7 @@ namespace LibHac.Savefile
             initInfo[0] = new IntegrityVerificationInfo
             {
                 Data = new MemoryStream(Header.MasterHashA),
-                BlockSizePower = 0,
+                BlockSize = 0,
                 Type = IntegrityStreamType.Save
             };
 
@@ -145,7 +145,7 @@ namespace LibHac.Savefile
                 initInfo[i] = new IntegrityVerificationInfo
                 {
                     Data = data,
-                    BlockSizePower = level.BlockSize,
+                    BlockSize = 1 << level.BlockSizePower,
                     Salt = new HMACSHA256(Encoding.ASCII.GetBytes(SaltSources[i - 1])).ComputeHash(ivfc.SaltSource),
                     Type = IntegrityStreamType.Save
                 };

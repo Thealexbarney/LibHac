@@ -84,48 +84,66 @@ namespace LibHac
 
     public class NcaFsHeader
     {
-        public byte Field0;
-        public byte Field1;
-        public SectionPartitionType PartitionType;
-        public SectionFsType FsType;
-        public SectionCryptType CryptType;
+        public short Version;
+        public NcaFormatType FormatType;
+        public NcaHashType HashType;
+        public NcaEncryptionType EncryptionType;
         public SectionType Type;
 
-        public PfsSuperblock Pfs;
-        public RomfsSuperblock Romfs;
-        public BktrSuperblock Bktr;
+        public IvfcHeader IvfcInfo;
+        public Sha256Info Sha256Info;
+        public BktrPatchInfo BktrInfo;
+
         public byte[] Ctr;
 
         public NcaFsHeader(BinaryReader reader)
         {
             long start = reader.BaseStream.Position;
-            Field0 = reader.ReadByte();
-            Field1 = reader.ReadByte();
-            PartitionType = (SectionPartitionType)reader.ReadByte();
-            FsType = (SectionFsType)reader.ReadByte();
-            CryptType = (SectionCryptType)reader.ReadByte();
+            Version = reader.ReadInt16();
+            FormatType = (NcaFormatType)reader.ReadByte();
+            HashType = (NcaHashType)reader.ReadByte();
+            EncryptionType = (NcaEncryptionType)reader.ReadByte();
             reader.BaseStream.Position += 3;
 
-            if (PartitionType == SectionPartitionType.Pfs0 && FsType == SectionFsType.Pfs0)
+            switch (HashType)
+            {
+                case NcaHashType.Sha256:
+                    Sha256Info = new Sha256Info(reader);
+                    break;
+                case NcaHashType.Ivfc:
+                    IvfcInfo = new IvfcHeader(reader);
+                    break;
+            }
+
+            if (EncryptionType == NcaEncryptionType.AesCtrEx)
+            {
+                BktrInfo = new BktrPatchInfo();
+
+                reader.BaseStream.Position = start + 0x100;
+
+                BktrInfo.RelocationHeader = new BktrHeader(reader);
+                BktrInfo.EncryptionHeader = new BktrHeader(reader);
+            }
+
+            if (FormatType == NcaFormatType.Pfs0)
             {
                 Type = SectionType.Pfs0;
-                Pfs = new PfsSuperblock(reader);
             }
-            else if (PartitionType == SectionPartitionType.Romfs && FsType == SectionFsType.Romfs)
+            else if (FormatType == NcaFormatType.Romfs)
             {
-                if (CryptType == SectionCryptType.BKTR)
+                if (EncryptionType == NcaEncryptionType.AesCtrEx)
                 {
                     Type = SectionType.Bktr;
-                    Bktr = new BktrSuperblock(reader);
                 }
                 else
                 {
                     Type = SectionType.Romfs;
-                    Romfs = new RomfsSuperblock(reader);
                 }
             }
 
+            reader.BaseStream.Position = start + 0x140;
             Ctr = reader.ReadBytes(8).Reverse().ToArray();
+
             reader.BaseStream.Position = start + 512;
         }
     }
@@ -156,10 +174,16 @@ namespace LibHac
         }
     }
 
+    public class BktrPatchInfo
+    {
+        public BktrHeader RelocationHeader;
+        public BktrHeader EncryptionHeader;
+    }
+
     public class IvfcHeader
     {
         public string Magic;
-        public uint Id;
+        public int Version;
         public uint MasterHashSize;
         public uint NumLevels;
         public IvfcLevelHeader[] LevelHeaders = new IvfcLevelHeader[6];
@@ -169,7 +193,8 @@ namespace LibHac
         public IvfcHeader(BinaryReader reader)
         {
             Magic = reader.ReadAscii(4);
-            Id = reader.ReadUInt32();
+            Version = reader.ReadInt16();
+            reader.BaseStream.Position += 2;
             MasterHashSize = reader.ReadUInt32();
             NumLevels = reader.ReadUInt32();
 
@@ -187,15 +212,37 @@ namespace LibHac
     {
         public long LogicalOffset;
         public long HashDataSize;
-        public int BlockSize;
+        public int BlockSizePower;
         public uint Reserved;
 
         public IvfcLevelHeader(BinaryReader reader)
         {
             LogicalOffset = reader.ReadInt64();
             HashDataSize = reader.ReadInt64();
-            BlockSize = reader.ReadInt32();
+            BlockSizePower = reader.ReadInt32();
             Reserved = reader.ReadUInt32();
+        }
+    }
+
+    public class Sha256Info
+    {
+        public byte[] MasterHash;
+        public int BlockSize; // In bytes
+        public uint Always2;
+        public long HashTableOffset;
+        public long HashTableSize;
+        public long DataOffset;
+        public long DataSize;
+
+        public Sha256Info(BinaryReader reader)
+        {
+            MasterHash = reader.ReadBytes(0x20);
+            BlockSize = reader.ReadInt32();
+            Always2 = reader.ReadUInt32();
+            HashTableOffset = reader.ReadInt64();
+            HashTableSize = reader.ReadInt64();
+            DataOffset = reader.ReadInt64();
+            DataSize = reader.ReadInt64();
         }
     }
 
@@ -204,7 +251,7 @@ namespace LibHac
         public long Offset;
         public long Size;
         public uint Magic;
-        public uint Field14;
+        public uint Version;
         public uint NumEntries;
         public uint Field1C;
 
@@ -213,7 +260,7 @@ namespace LibHac
             Offset = reader.ReadInt64();
             Size = reader.ReadInt64();
             Magic = reader.ReadUInt32();
-            Field14 = reader.ReadUInt32();
+            Version = reader.ReadUInt32();
             NumEntries = reader.ReadUInt32();
             Field1C = reader.ReadUInt32();
         }
@@ -281,21 +328,24 @@ namespace LibHac
         Gamecard
     }
 
-    public enum SectionCryptType
+    public enum NcaEncryptionType
     {
-        None = 1,
+        Auto,
+        None,
         XTS,
-        CTR,
-        BKTR
+        AesCtr,
+        AesCtrEx
     }
 
-    public enum SectionFsType
+    public enum NcaHashType
     {
-        Pfs0 = 2,
-        Romfs
+        Auto,
+        None,
+        Sha256,
+        Ivfc
     }
 
-    public enum SectionPartitionType
+    public enum NcaFormatType
     {
         Romfs,
         Pfs0

@@ -71,7 +71,7 @@ namespace LibHac
     public class PfsSuperblock
     {
         public byte[] MasterHash; /* SHA-256 hash of the hash table. */
-        public uint BlockSize; /* In bytes. */
+        public int BlockSize; /* In bytes. */
         public uint Always2;
         public long HashTableOffset; /* Normally zero. */
         public long HashTableSize;
@@ -81,7 +81,7 @@ namespace LibHac
         public PfsSuperblock(BinaryReader reader)
         {
             MasterHash = reader.ReadBytes(0x20);
-            BlockSize = reader.ReadUInt32();
+            BlockSize = reader.ReadInt32();
             Always2 = reader.ReadUInt32();
             HashTableOffset = reader.ReadInt64();
             HashTableSize = reader.ReadInt64();

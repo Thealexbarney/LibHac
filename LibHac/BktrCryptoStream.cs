@@ -8,15 +8,15 @@ namespace LibHac
 {
     public class BktrCryptoStream : Aes128CtrStream
     {
-        public SubsectionBlock SubsectionBlock { get; }
-        private List<SubsectionEntry> SubsectionEntries { get; } = new List<SubsectionEntry>();
+        public AesSubsectionBlock AesSubsectionBlock { get; }
+        private List<AesSubsectionEntry> SubsectionEntries { get; } = new List<AesSubsectionEntry>();
         private List<long> SubsectionOffsets { get; }
-        private SubsectionEntry CurrentEntry { get; set; }
+        private AesSubsectionEntry CurrentEntry { get; set; }
 
-        public BktrCryptoStream(Stream baseStream, byte[] key, long offset, long length, long counterOffset, byte[] ctrHi, BktrSuperblock bktr)
+        public BktrCryptoStream(Stream baseStream, byte[] key, long offset, long length, long counterOffset, byte[] ctrHi, BktrPatchInfo bktr)
             : base(baseStream, key, offset, length, counterOffset, ctrHi)
         {
-            BktrHeader header = bktr.SubsectionHeader;
+            BktrHeader header = bktr.EncryptionHeader;
             byte[] subsectionBytes;
             using (var streamDec = new RandomAccessSectorStream(new Aes128CtrStream(baseStream, key, offset, length, counterOffset, ctrHi)))
             {
@@ -27,16 +27,16 @@ namespace LibHac
 
             using (var reader = new BinaryReader(new MemoryStream(subsectionBytes)))
             {
-                SubsectionBlock = new SubsectionBlock(reader);
+                AesSubsectionBlock = new AesSubsectionBlock(reader);
             }
 
-            foreach (SubsectionBucket bucket in SubsectionBlock.Buckets)
+            foreach (AesSubsectionBucket bucket in AesSubsectionBlock.Buckets)
             {
                 SubsectionEntries.AddRange(bucket.Entries);
             }
 
             // Add a subsection for the BKTR headers to make things easier
-            var headerSubsection = new SubsectionEntry
+            var headerSubsection = new AesSubsectionEntry
             {
                 Offset = bktr.RelocationHeader.Offset,
                 Counter = (uint)(ctrHi[4] << 24 | ctrHi[5] << 16 | ctrHi[6] << 8 | ctrHi[7]),
@@ -92,7 +92,7 @@ namespace LibHac
             return totalBytesRead;
         }
 
-        private SubsectionEntry GetSubsectionEntry(long offset)
+        private AesSubsectionEntry GetSubsectionEntry(long offset)
         {
             int index = SubsectionOffsets.BinarySearch(offset);
             if (index < 0) index = ~index - 1;

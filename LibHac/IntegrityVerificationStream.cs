@@ -19,7 +19,7 @@ namespace LibHac
         private readonly SHA256 _hash = SHA256.Create();
 
         public IntegrityVerificationStream(IntegrityVerificationInfo info, Stream hashStream, bool enableIntegrityChecks)
-            : base(info.Data, 1 << info.BlockSizePower)
+            : base(info.Data, info.BlockSize)
         {
             HashStream = hashStream;
             EnableIntegrityChecks = enableIntegrityChecks;
@@ -61,6 +61,9 @@ namespace LibHac
             HashStream.Read(_hashBuffer, 0, DigestSize);
 
             int bytesRead = base.Read(buffer, 0, count);
+            int bytesToHash = SectorSize;
+
+            if (bytesRead == 0) return 0;
 
             // If a hash is zero the data for the entire block is zero
             if (Type == IntegrityStreamType.Save && _hashBuffer.IsEmpty())
@@ -73,6 +76,12 @@ namespace LibHac
             {
                 // Pad out unused portion of block
                 Array.Clear(buffer, bytesRead, SectorSize - bytesRead);
+
+                // Partition FS hashes don't pad out an incomplete block
+                if (Type == IntegrityStreamType.PartitionFs)
+                {
+                    bytesToHash = bytesRead;
+                }
             }
 
             if (!EnableIntegrityChecks) return bytesRead;
@@ -84,7 +93,7 @@ namespace LibHac
                 _hash.TransformBlock(Salt, 0, Salt.Length, null, 0);
             }
 
-            _hash.TransformBlock(buffer, 0, SectorSize, null, 0);
+            _hash.TransformBlock(buffer, 0, bytesToHash, null, 0);
             _hash.TransformFinalBlock(buffer, 0, 0);
 
             byte[] hash = _hash.Hash;
@@ -119,7 +128,7 @@ namespace LibHac
     public class IntegrityVerificationInfo
     {
         public Stream Data { get; set; }
-        public int BlockSizePower { get; set; }
+        public int BlockSize { get; set; }
         public byte[] Salt { get; set; }
         public IntegrityStreamType Type { get; set; }
     }
@@ -127,6 +136,7 @@ namespace LibHac
     public enum IntegrityStreamType
     {
         Save,
-        RomFs
+        RomFs,
+        PartitionFs
     }
 }

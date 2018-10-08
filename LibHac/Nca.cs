@@ -83,24 +83,24 @@ namespace LibHac
             NcaSection sect = Sections[index];
             if (sect == null) throw new ArgumentOutOfRangeException(nameof(index));
 
-            if (sect.SuperblockHashValidity == Validity.Invalid) return null;
+            //if (sect.SuperblockHashValidity == Validity.Invalid) return null;
 
             long offset = sect.Offset;
             long size = sect.Size;
 
             Stream rawStream = StreamSource.CreateStream(offset, size);
 
-            switch (sect.Header.CryptType)
+            switch (sect.Header.EncryptionType)
             {
-                case SectionCryptType.None:
+                case NcaEncryptionType.None:
                     return rawStream;
-                case SectionCryptType.XTS:
+                case NcaEncryptionType.XTS:
                     throw new NotImplementedException("NCA sections using XTS are not supported");
-                case SectionCryptType.CTR:
+                case NcaEncryptionType.AesCtr:
                     return new RandomAccessSectorStream(new Aes128CtrStream(rawStream, DecryptedKeys[2], offset, sect.Header.Ctr), false);
-                case SectionCryptType.BKTR:
+                case NcaEncryptionType.AesCtrEx:
                     rawStream = new RandomAccessSectorStream(
-                        new BktrCryptoStream(rawStream, DecryptedKeys[2], 0, size, offset, sect.Header.Ctr, sect.Header.Bktr),
+                        new BktrCryptoStream(rawStream, DecryptedKeys[2], 0, size, offset, sect.Header.Ctr, sect.Header.BktrInfo),
                         false);
                     if (BaseNca == null) return rawStream;
 
@@ -125,25 +125,10 @@ namespace LibHac
             switch (sect.Header.Type)
             {
                 case SectionType.Pfs0:
-                    PfsSuperblock pfs0Superblock = sect.Pfs0.Superblock;
-
-                    return new SubStream(rawStream, pfs0Superblock.Pfs0Offset, pfs0Superblock.Pfs0Size);
+                    return InitIvfcForPartitionfs(sect.Header.Sha256Info, new SharedStreamSource(rawStream), enableIntegrityChecks);
                 case SectionType.Romfs:
                 case SectionType.Bktr:
-
-                    var romfsStreamSource = new SharedStreamSource(rawStream);
-
-                    IvfcHeader ivfc;
-                    if (sect.Header.Type == SectionType.Romfs)
-                    {
-                        ivfc = sect.Header.Romfs.IvfcHeader;
-                    }
-                    else
-                    {
-                        ivfc = sect.Header.Bktr.IvfcHeader;
-                    }
-
-                    return InitIvfcForRomfs(ivfc, romfsStreamSource, enableIntegrityChecks);
+                    return InitIvfcForRomfs(sect.Header.IvfcInfo, new SharedStreamSource(rawStream), enableIntegrityChecks);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -158,7 +143,7 @@ namespace LibHac
             initInfo[0] = new IntegrityVerificationInfo
             {
                 Data = new MemoryStream(ivfc.MasterHash),
-                BlockSizePower = 0
+                BlockSize = 0
             };
 
             for (int i = 1; i < ivfc.NumLevels; i++)
@@ -169,10 +154,43 @@ namespace LibHac
                 initInfo[i] = new IntegrityVerificationInfo
                 {
                     Data = data,
-                    BlockSizePower = level.BlockSize,
+                    BlockSize = 1 << level.BlockSizePower,
                     Type = IntegrityStreamType.RomFs
                 };
             }
+
+            return new HierarchicalIntegrityVerificationStream(initInfo, enableIntegrityChecks);
+        }
+
+        private static Stream InitIvfcForPartitionfs(Sha256Info sb,
+            SharedStreamSource pfsStreamSource, bool enableIntegrityChecks)
+        {
+            SharedStream hashStream = pfsStreamSource.CreateStream(sb.HashTableOffset, sb.HashTableSize);
+            SharedStream dataStream = pfsStreamSource.CreateStream(sb.DataOffset, sb.DataSize);
+
+            var initInfo = new IntegrityVerificationInfo[3];
+
+            // Set the master hash
+            initInfo[0] = new IntegrityVerificationInfo
+            {
+                Data = new MemoryStream(sb.MasterHash),
+                BlockSize = 0,
+                Type = IntegrityStreamType.PartitionFs
+            };
+
+            initInfo[1] = new IntegrityVerificationInfo
+            {
+                Data = hashStream,
+                BlockSize = (int)sb.HashTableSize,
+                Type = IntegrityStreamType.PartitionFs
+            };
+
+            initInfo[2] = new IntegrityVerificationInfo
+            {
+                Data = dataStream,
+                BlockSize = sb.BlockSize,
+                Type = IntegrityStreamType.PartitionFs
+            };
 
             return new HierarchicalIntegrityVerificationStream(initInfo, enableIntegrityChecks);
         }
@@ -216,46 +234,12 @@ namespace LibHac
             sect.Header = header;
             sect.Type = header.Type;
 
-            if (sect.Type == SectionType.Pfs0)
-            {
-                sect.Pfs0 = new Pfs0Section();
-                sect.Pfs0.Superblock = header.Pfs;
-            }
-            else if (sect.Type == SectionType.Romfs)
-            {
-                ProcessIvfcSection(sect);
-            }
-
             return sect;
-        }
-
-        private void ProcessIvfcSection(NcaSection sect)
-        {
-            sect.Romfs = new RomfsSection();
-            sect.Romfs.Superblock = sect.Header.Romfs;
-            IvfcLevelHeader[] headers = sect.Romfs.Superblock.IvfcHeader.LevelHeaders;
-
-            for (int i = 0; i < Romfs.IvfcMaxLevel; i++)
-            {
-                var level = new IvfcLevel();
-                sect.Romfs.IvfcLevels[i] = level;
-                IvfcLevelHeader header = headers[i];
-                level.DataOffset = header.LogicalOffset;
-                level.DataSize = header.HashDataSize;
-                level.HashBlockSize = 1 << header.BlockSize;
-                level.HashBlockCount = Util.DivideByRoundUp(level.DataSize, level.HashBlockSize);
-                level.HashSize = level.HashBlockCount * 0x20;
-
-                if (i != 0)
-                {
-                    level.HashOffset = sect.Romfs.IvfcLevels[i - 1].DataOffset;
-                }
-            }
         }
 
         private void CheckBktrKey(NcaSection sect)
         {
-            long offset = sect.Header.Bktr.SubsectionHeader.Offset;
+            long offset = sect.Header.BktrInfo.EncryptionHeader.Offset;
             using (var streamDec = new RandomAccessSectorStream(new Aes128CtrStream(GetStream(), DecryptedKeys[2], sect.Offset, sect.Size, sect.Offset, sect.Header.Ctr)))
             {
                 var reader = new BinaryReader(streamDec);
@@ -283,16 +267,16 @@ namespace LibHac
                 case SectionType.Invalid:
                     break;
                 case SectionType.Pfs0:
-                    PfsSuperblock pfs0 = sect.Header.Pfs;
+                    Sha256Info pfs0 = sect.Header.Sha256Info;
                     expected = pfs0.MasterHash;
                     offset = pfs0.HashTableOffset;
                     size = pfs0.HashTableSize;
                     break;
                 case SectionType.Romfs:
-                    IvfcHeader ivfc = sect.Header.Romfs.IvfcHeader;
+                    IvfcHeader ivfc = sect.Header.IvfcInfo;
                     expected = ivfc.MasterHash;
                     offset = ivfc.LevelHeaders[0].LogicalOffset;
-                    size = 1 << ivfc.LevelHeaders[0].BlockSize;
+                    size = 1 << ivfc.LevelHeaders[0].BlockSizePower;
                     break;
                 case SectionType.Bktr:
                     CheckBktrKey(sect);
@@ -308,7 +292,7 @@ namespace LibHac
             stream.Read(hashTable, 0, hashTable.Length);
 
             sect.SuperblockHashValidity = Crypto.CheckMemoryHashTable(hashTable, expected, 0, hashTable.Length);
-            if (sect.Type == SectionType.Romfs) sect.Romfs.IvfcLevels[0].HashValidity = sect.SuperblockHashValidity;
+            // todo if (sect.Type == SectionType.Romfs) sect.Romfs.IvfcLevels[0].HashValidity = sect.SuperblockHashValidity;
         }
 
         public void VerifySection(int index, IProgressReport logger = null)
@@ -323,71 +307,16 @@ namespace LibHac
                 case SectionType.Invalid:
                     break;
                 case SectionType.Pfs0:
-                    VerifyPfs0(stream, sect.Pfs0, logger);
+                    // todo VerifyPfs0(stream, sect.Pfs0, logger);
                     break;
                 case SectionType.Romfs:
-                    VerifyIvfc(stream, sect.Romfs.IvfcLevels, logger);
+                    // todo VerifyIvfc(stream, sect.Romfs.IvfcLevels, logger);
                     break;
                 case SectionType.Bktr:
                     break;
             }
         }
-
-        private void VerifyPfs0(Stream section, Pfs0Section pfs0, IProgressReport logger = null)
-        {
-            PfsSuperblock sb = pfs0.Superblock;
-            var table = new byte[sb.HashTableSize];
-            section.Position = sb.HashTableOffset;
-            section.Read(table, 0, table.Length);
-
-            pfs0.Validity = VerifyHashTable(section, table, sb.Pfs0Offset, sb.Pfs0Size, sb.BlockSize, false, logger);
-        }
-
-        private void VerifyIvfc(Stream section, IvfcLevel[] levels, IProgressReport logger = null)
-        {
-            for (int i = 1; i < levels.Length; i++)
-            {
-                logger?.LogMessage($"    Verifying IVFC Level {i}...");
-                IvfcLevel level = levels[i];
-                var table = new byte[level.HashSize];
-                section.Position = level.HashOffset;
-                section.Read(table, 0, table.Length);
-                level.HashValidity = VerifyHashTable(section, table, level.DataOffset, level.DataSize, level.HashBlockSize, true, logger);
-            }
-        }
-
-        private Validity VerifyHashTable(Stream section, byte[] hashTable, long dataOffset, long dataLen, long blockSize, bool isFinalBlockFull, IProgressReport logger = null)
-        {
-            const int hashSize = 0x20;
-            var currentBlock = new byte[blockSize];
-            var expectedHash = new byte[hashSize];
-            long blockCount = Util.DivideByRoundUp(dataLen, blockSize);
-            int curBlockSize = (int)blockSize;
-            section.Position = dataOffset;
-            logger?.SetTotal(blockCount);
-
-            for (long i = 0; i < blockCount; i++)
-            {
-                var remaining = (dataLen - i * blockSize);
-                if (remaining < blockSize)
-                {
-                    Array.Clear(currentBlock, 0, currentBlock.Length);
-                    if (!isFinalBlockFull) curBlockSize = (int)remaining;
-                }
-                Array.Copy(hashTable, i * hashSize, expectedHash, 0, hashSize);
-                section.Read(currentBlock, 0, curBlockSize);
-
-                if (Crypto.CheckMemoryHashTable(currentBlock, expectedHash, 0, curBlockSize) == Validity.Invalid)
-                {
-                    return Validity.Invalid;
-                }
-
-                logger?.ReportAdd(1);
-            }
-
-            return Validity.Valid;
-        }
-
+        
         public void Dispose()
         {
             if (!KeepOpen)
@@ -399,7 +328,6 @@ namespace LibHac
 
     public class NcaSection
     {
-        public Stream Stream { get; set; }
         public NcaFsHeader Header { get; set; }
         public SectionType Type { get; set; }
         public int SectionNum { get; set; }
@@ -407,8 +335,6 @@ namespace LibHac
         public long Size { get; set; }
         public Validity SuperblockHashValidity { get; set; }
 
-        public Pfs0Section Pfs0 { get; set; }
-        public RomfsSection Romfs { get; set; }
         public bool IsExefs { get; internal set; }
     }
 
