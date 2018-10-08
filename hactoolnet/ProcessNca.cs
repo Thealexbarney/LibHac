@@ -178,34 +178,43 @@ namespace hactoolnet
 
             void PrintPfs0(NcaSection sect)
             {
-                PfsSuperblock sBlock = sect.Pfs0.Superblock;
-                PrintItem(sb, colLen, $"        Superblock Hash{sect.SuperblockHashValidity.GetValidityString()}:", sBlock.MasterHash);
-                sb.AppendLine($"        Hash Table{sect.Pfs0.Validity.GetValidityString()}:");
+                Sha256Info hashInfo = sect.Header.Sha256Info;
 
-                PrintItem(sb, colLen, "            Offset:", $"0x{sBlock.HashTableOffset:x12}");
-                PrintItem(sb, colLen, "            Size:", $"0x{sBlock.HashTableSize:x12}");
-                PrintItem(sb, colLen, "            Block Size:", $"0x{sBlock.BlockSize:x}");
-                PrintItem(sb, colLen, "        PFS0 Offset:", $"0x{sBlock.Pfs0Offset:x12}");
-                PrintItem(sb, colLen, "        PFS0 Size:", $"0x{sBlock.Pfs0Size:x12}");
+                PrintItem(sb, colLen, $"        Superblock Hash{sect.SuperblockHashValidity.GetValidityString()}:", hashInfo.MasterHash);
+                // todo sb.AppendLine($"        Hash Table{sect.Pfs0.Validity.GetValidityString()}:");
+                sb.AppendLine($"        Hash Table:");
+
+                PrintItem(sb, colLen, "            Offset:", $"0x{hashInfo.HashTableOffset:x12}");
+                PrintItem(sb, colLen, "            Size:", $"0x{hashInfo.HashTableSize:x12}");
+                PrintItem(sb, colLen, "            Block Size:", $"0x{hashInfo.BlockSize:x}");
+                PrintItem(sb, colLen, "        PFS0 Offset:", $"0x{hashInfo.DataOffset:x12}");
+                PrintItem(sb, colLen, "        PFS0 Size:", $"0x{hashInfo.DataSize:x12}");
             }
 
             void PrintRomfs(NcaSection sect)
             {
-                RomfsSuperblock sBlock = sect.Romfs.Superblock;
-                IvfcLevel[] levels = sect.Romfs.IvfcLevels;
+                IvfcHeader ivfcInfo = sect.Header.IvfcInfo;
 
-                PrintItem(sb, colLen, $"        Superblock Hash{sect.SuperblockHashValidity.GetValidityString()}:", sBlock.IvfcHeader.MasterHash);
-                PrintItem(sb, colLen, "        Magic:", sBlock.IvfcHeader.Magic);
-                PrintItem(sb, colLen, "        ID:", $"{sBlock.IvfcHeader.Id:x8}");
+                PrintItem(sb, colLen, $"        Superblock Hash{sect.SuperblockHashValidity.GetValidityString()}:", ivfcInfo.MasterHash);
+                PrintItem(sb, colLen, "        Magic:", ivfcInfo.Magic);
+                PrintItem(sb, colLen, "        Version:", $"{ivfcInfo.Version:x8}");
 
                 for (int i = 0; i < Romfs.IvfcMaxLevel; i++)
                 {
-                    IvfcLevel level = levels[i];
-                    sb.AppendLine($"        Level {i}{level.HashValidity.GetValidityString()}:");
-                    PrintItem(sb, colLen, "            Data Offset:", $"0x{level.DataOffset:x12}");
-                    PrintItem(sb, colLen, "            Data Size:", $"0x{level.DataSize:x12}");
-                    PrintItem(sb, colLen, "            Hash Offset:", $"0x{level.HashOffset:x12}");
-                    PrintItem(sb, colLen, "            Hash BlockSize:", $"0x{level.HashBlockSize:x8}");
+                    IvfcLevelHeader level = ivfcInfo.LevelHeaders[i];
+                    long hashOffset = 0;
+
+                    if (i != 0)
+                    {
+                        hashOffset = ivfcInfo.LevelHeaders[i - 1].LogicalOffset;
+                    }
+
+                    // todo  sb.AppendLine($"        Level {i}{level.HashValidity.GetValidityString()}:");
+                    sb.AppendLine($"        Level {i}:");
+                    PrintItem(sb, colLen, "            Data Offset:", $"0x{level.LogicalOffset:x12}");
+                    PrintItem(sb, colLen, "            Data Size:", $"0x{level.HashDataSize:x12}");
+                    PrintItem(sb, colLen, "            Hash Offset:", $"0x{hashOffset:x12}");
+                    PrintItem(sb, colLen, "            Hash BlockSize:", $"0x{1 << level.BlockSizePower:x8}");
                 }
             }
         }

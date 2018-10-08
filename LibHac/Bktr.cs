@@ -23,12 +23,12 @@ namespace LibHac
             Patch = patchRomfs ?? throw new NullReferenceException($"{nameof(patchRomfs)} cannot be null");
             Base = baseRomfs ?? throw new NullReferenceException($"{nameof(baseRomfs)} cannot be null");
 
-            IvfcLevelHeader level5 = section.Header.Bktr.IvfcHeader.LevelHeaders[5];
+            IvfcLevelHeader level5 = section.Header.IvfcInfo.LevelHeaders[5];
             Length = level5.LogicalOffset + level5.HashDataSize;
 
             using (var reader = new BinaryReader(patchRomfs, Encoding.Default, true))
             {
-                patchRomfs.Position = section.Header.Bktr.RelocationHeader.Offset;
+                patchRomfs.Position = section.Header.BktrInfo.RelocationHeader.Offset;
                 RelocationBlock = new RelocationBlock(reader);
             }
 

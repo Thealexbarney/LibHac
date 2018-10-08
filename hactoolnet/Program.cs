@@ -100,7 +100,7 @@ namespace hactoolnet
                 ctx.Keyset.SetSdSeed(ctx.Options.SdSeed.ToBytes());
             }
 
-            if (ctx.Options.OutDir != null)
+            if (ctx.Options.InFileType == FileType.Keygen && ctx.Options.OutDir != null)
             {
                 string dir = ctx.Options.OutDir;
                 Directory.CreateDirectory(dir);
