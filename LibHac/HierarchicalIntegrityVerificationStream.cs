@@ -8,18 +8,18 @@ namespace LibHac
     {
         public Stream[] Levels { get; }
         public Stream DataLevel { get; }
-        public bool EnableIntegrityChecks { get; }
+        public IntegrityCheckLevel IntegrityCheckLevel { get; }
 
-        public HierarchicalIntegrityVerificationStream(IntegrityVerificationInfo[] levelInfo, bool enableIntegrityChecks)
+        public HierarchicalIntegrityVerificationStream(IntegrityVerificationInfo[] levelInfo, IntegrityCheckLevel integrityCheckLevel)
         {
             Levels = new Stream[levelInfo.Length];
-            EnableIntegrityChecks = enableIntegrityChecks;
+            IntegrityCheckLevel = integrityCheckLevel;
 
             Levels[0] = levelInfo[0].Data;
 
             for (int i = 1; i < Levels.Length; i++)
             {
-                var levelData = new IntegrityVerificationStream(levelInfo[i], Levels[i - 1], enableIntegrityChecks);
+                var levelData = new IntegrityVerificationStream(levelInfo[i], Levels[i - 1], integrityCheckLevel);
 
                 Levels[i] = new RandomAccessSectorStream(levelData);
             }

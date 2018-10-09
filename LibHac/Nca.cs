@@ -140,7 +140,7 @@ namespace LibHac
                         false);
                     if (BaseNca == null) return rawStream;
 
-                    Stream baseStream = BaseNca.OpenSection(ProgramPartitionType.Data, true, false);
+                    Stream baseStream = BaseNca.OpenSection(ProgramPartitionType.Data, true, IntegrityCheckLevel.None);
                     if (baseStream == null) throw new InvalidDataException("Base NCA has no RomFS section");
 
                     return new Bktr(rawStream, baseStream, sect);
@@ -155,11 +155,11 @@ namespace LibHac
         /// </summary>
         /// <param name="index">The index of the NCA section to open. Valid indexes are 0-3.</param>
         /// <param name="raw"><see langword="true"/> to open the raw section with hash metadata.</param>
-        /// <param name="enableIntegrityChecks"><see langword="true"/> to enable data integrity checks when reading the section.
-        /// Only applies if <paramref name="raw"/> is <see langword="false"/>.</param>
+        /// <param name="integrityCheckLevel">The level of integrity checks to be performed when reading the section.
+        /// Always <see cref="IntegrityCheckLevel.None"/> if <paramref name="raw"/> is <see langword="false"/>.</param>
         /// <returns>A <see cref="Stream"/> that provides access to the specified section. <see langword="null"/> if the section does not exist.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="index"/> is outside the valid range.</exception>
-        public Stream OpenSection(int index, bool raw, bool enableIntegrityChecks)
+        public Stream OpenSection(int index, bool raw, IntegrityCheckLevel integrityCheckLevel)
         {
             Stream rawStream = OpenRawSection(index);
             NcaSection sect = Sections[index];
@@ -173,9 +173,9 @@ namespace LibHac
             switch (header.HashType)
             {
                 case NcaHashType.Sha256:
-                    return InitIvfcForPartitionfs(header.Sha256Info, new SharedStreamSource(rawStream), enableIntegrityChecks);
+                    return InitIvfcForPartitionfs(header.Sha256Info, new SharedStreamSource(rawStream), integrityCheckLevel);
                 case NcaHashType.Ivfc:
-                    return InitIvfcForRomfs(header.IvfcInfo, new SharedStreamSource(rawStream), enableIntegrityChecks);
+                    return InitIvfcForRomfs(header.IvfcInfo, new SharedStreamSource(rawStream), integrityCheckLevel);
 
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -187,15 +187,15 @@ namespace LibHac
         /// </summary>
         /// <param name="type">The type of section to open.</param>
         /// <param name="raw"><see langword="true"/> to open the raw section with hash metadata.</param>
-        /// <param name="enableIntegrityChecks"><see langword="true"/> to enable data integrity checks when reading the section.
-        /// Only applies if <paramref name="raw"/> is <see langword="false"/>.</param>
+        /// <param name="integrityCheckLevel">The level of integrity checks to be performed when reading the section.
+        /// Always <see cref="IntegrityCheckLevel.None"/> if <paramref name="raw"/> is <see langword="false"/>.</param>
         /// <returns>A <see cref="Stream"/> that provides access to the specified section. <see langword="null"/> if the section does not exist.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="type"/> is outside the valid range.</exception>
-        public Stream OpenSection(ProgramPartitionType type, bool raw, bool enableIntegrityChecks) =>
-            OpenSection((int)type, raw, enableIntegrityChecks);
+        public Stream OpenSection(ProgramPartitionType type, bool raw, IntegrityCheckLevel integrityCheckLevel) =>
+            OpenSection((int)type, raw, integrityCheckLevel);
 
         private static HierarchicalIntegrityVerificationStream InitIvfcForRomfs(IvfcHeader ivfc,
-            SharedStreamSource romfsStreamSource, bool enableIntegrityChecks)
+            SharedStreamSource romfsStreamSource, IntegrityCheckLevel integrityCheckLevel)
         {
             var initInfo = new IntegrityVerificationInfo[ivfc.NumLevels];
 
@@ -219,11 +219,11 @@ namespace LibHac
                 };
             }
 
-            return new HierarchicalIntegrityVerificationStream(initInfo, enableIntegrityChecks);
+            return new HierarchicalIntegrityVerificationStream(initInfo, integrityCheckLevel);
         }
 
         private static Stream InitIvfcForPartitionfs(Sha256Info sb,
-            SharedStreamSource pfsStreamSource, bool enableIntegrityChecks)
+            SharedStreamSource pfsStreamSource, IntegrityCheckLevel integrityCheckLevel)
         {
             SharedStream hashStream = pfsStreamSource.CreateStream(sb.HashTableOffset, sb.HashTableSize);
             SharedStream dataStream = pfsStreamSource.CreateStream(sb.DataOffset, sb.DataSize);
@@ -252,7 +252,7 @@ namespace LibHac
                 Type = IntegrityStreamType.PartitionFs
             };
 
-            return new HierarchicalIntegrityVerificationStream(initInfo, enableIntegrityChecks);
+            return new HierarchicalIntegrityVerificationStream(initInfo, integrityCheckLevel);
         }
 
         /// <summary>
@@ -376,32 +376,13 @@ namespace LibHac
                     return;
             }
 
-            Stream stream = OpenSection(index, true, false);
+            Stream stream = OpenSection(index, true, IntegrityCheckLevel.None);
 
             var hashTable = new byte[size];
             stream.Position = offset;
             stream.Read(hashTable, 0, hashTable.Length);
 
             sect.MasterHashValidity = Crypto.CheckMemoryHashTable(hashTable, expected, 0, hashTable.Length);
-        }
-
-        public void VerifySection(int index, IProgressReport logger = null)
-        {
-            if (Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
-
-            NcaSection sect = Sections[index];
-            Stream stream = OpenSection(index, false, true);
-            logger?.LogMessage($"Verifying section {index}...");
-
-            switch (sect.Header.HashType)
-            {
-                case NcaHashType.Sha256:
-                    break;
-                case NcaHashType.Ivfc:
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
         }
 
         public void Dispose()
@@ -444,12 +425,12 @@ namespace LibHac
 
     public static class NcaExtensions
     {
-        public static void ExportSection(this Nca nca, int index, string filename, bool raw = false, bool verify = false, IProgressReport logger = null)
+        public static void ExportSection(this Nca nca, int index, string filename, bool raw = false, IntegrityCheckLevel integrityCheckLevel = IntegrityCheckLevel.None, IProgressReport logger = null)
         {
             if (index < 0 || index > 3) throw new IndexOutOfRangeException();
             if (nca.Sections[index] == null) return;
 
-            Stream section = nca.OpenSection(index, raw, verify);
+            Stream section = nca.OpenSection(index, raw, integrityCheckLevel);
             string dir = Path.GetDirectoryName(filename);
             if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
 
@@ -459,13 +440,13 @@ namespace LibHac
             }
         }
 
-        public static void ExtractSection(this Nca nca, int index, string outputDir, bool verify = false, IProgressReport logger = null)
+        public static void ExtractSection(this Nca nca, int index, string outputDir, IntegrityCheckLevel integrityCheckLevel = IntegrityCheckLevel.None, IProgressReport logger = null)
         {
             if (index < 0 || index > 3) throw new IndexOutOfRangeException();
             if (nca.Sections[index] == null) return;
 
             NcaSection section = nca.Sections[index];
-            Stream stream = nca.OpenSection(index, false, verify);
+            Stream stream = nca.OpenSection(index, false, integrityCheckLevel);
 
             switch (section.Type)
             {
@@ -481,6 +462,32 @@ namespace LibHac
                     break;
                 case SectionType.Bktr:
                     break;
+            }
+        }
+
+        public static void VerifySection(this Nca nca, int index, IProgressReport logger = null)
+        {
+            if (nca.Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
+
+            NcaSection sect = nca.Sections[index];
+            Stream stream = nca.OpenSection(index, false, IntegrityCheckLevel.WarnOnInvalid);
+            logger?.LogMessage($"Verifying section {index}...");
+
+            switch (sect.Header.HashType)
+            {
+                case NcaHashType.Sha256:
+                case NcaHashType.Ivfc:
+                    if (stream is HierarchicalIntegrityVerificationStream ivfc)
+                    {
+                        for (int i = 1; i < ivfc.Levels.Length; i++)
+                        {
+                            logger?.LogMessage($"    Verifying IVFC Level {i}...");
+                            ivfc.Levels[i].CopyStream(Stream.Null, ivfc.Levels[i].Length, logger);
+                        }
+                    }
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
     }

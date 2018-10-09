@@ -36,6 +36,9 @@ namespace hactoolnet
         public bool ListRomFs;
         public bool SignSave;
         public ulong TitleId;
+
+        public IntegrityCheckLevel IntegrityLevel =>
+            EnableHash ? IntegrityCheckLevel.ErrorOnInvalid : IntegrityCheckLevel.None;
     }
 
     internal enum FileType

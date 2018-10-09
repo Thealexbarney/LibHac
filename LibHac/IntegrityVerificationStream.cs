@@ -10,7 +10,7 @@ namespace LibHac
         private const int DigestSize = 0x20;
 
         private Stream HashStream { get; }
-        public bool EnableIntegrityChecks { get; }
+        public IntegrityCheckLevel IntegrityCheckLevel { get; }
 
         private byte[] Salt { get; }
         private IntegrityStreamType Type { get; }
@@ -18,11 +18,11 @@ namespace LibHac
         private readonly byte[] _hashBuffer = new byte[DigestSize];
         private readonly SHA256 _hash = SHA256.Create();
 
-        public IntegrityVerificationStream(IntegrityVerificationInfo info, Stream hashStream, bool enableIntegrityChecks)
+        public IntegrityVerificationStream(IntegrityVerificationInfo info, Stream hashStream, IntegrityCheckLevel integrityCheckLevel)
             : base(info.Data, info.BlockSize)
         {
             HashStream = hashStream;
-            EnableIntegrityChecks = enableIntegrityChecks;
+            IntegrityCheckLevel = integrityCheckLevel;
             Salt = info.Salt;
             Type = info.Type;
         }
@@ -84,7 +84,7 @@ namespace LibHac
                 }
             }
 
-            if (!EnableIntegrityChecks) return bytesRead;
+            if (IntegrityCheckLevel == IntegrityCheckLevel.None) return bytesRead;
 
             _hash.Initialize();
 
@@ -138,5 +138,24 @@ namespace LibHac
         Save,
         RomFs,
         PartitionFs
+    }
+
+    /// <summary>
+    /// Represents the level of integrity checks to be performed.
+    /// </summary>
+    public enum IntegrityCheckLevel
+    {
+        /// <summary>
+        /// No integrity checks will be performed.
+        /// </summary>
+        None,
+        /// <summary>
+        /// 
+        /// </summary>
+        WarnOnInvalid,
+        /// <summary>
+        /// An <see cref="InvalidDataException"/> will be thrown if an integrity check fails.
+        /// </summary>
+        ErrorOnInvalid
     }
 }
