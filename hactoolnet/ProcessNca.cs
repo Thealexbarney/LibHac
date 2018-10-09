@@ -13,6 +13,7 @@ namespace hactoolnet
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
             {
                 var nca = new Nca(ctx.Keyset, file, false);
+                nca.ValidateMasterHashes();
 
                 if (ctx.Options.BaseNca != null)
                 {
@@ -180,7 +181,7 @@ namespace hactoolnet
             {
                 Sha256Info hashInfo = sect.Header.Sha256Info;
 
-                PrintItem(sb, colLen, $"        Superblock Hash{sect.SuperblockHashValidity.GetValidityString()}:", hashInfo.MasterHash);
+                PrintItem(sb, colLen, $"        Superblock Hash{sect.MasterHashValidity.GetValidityString()}:", hashInfo.MasterHash);
                 // todo sb.AppendLine($"        Hash Table{sect.Pfs0.Validity.GetValidityString()}:");
                 sb.AppendLine($"        Hash Table:");
 
@@ -195,7 +196,7 @@ namespace hactoolnet
             {
                 IvfcHeader ivfcInfo = sect.Header.IvfcInfo;
 
-                PrintItem(sb, colLen, $"        Superblock Hash{sect.SuperblockHashValidity.GetValidityString()}:", ivfcInfo.MasterHash);
+                PrintItem(sb, colLen, $"        Superblock Hash{sect.MasterHashValidity.GetValidityString()}:", ivfcInfo.MasterHash);
                 PrintItem(sb, colLen, "        Magic:", ivfcInfo.Magic);
                 PrintItem(sb, colLen, "        Version:", $"{ivfcInfo.Version:x8}");
 

@@ -170,7 +170,7 @@ namespace hactoolnet
 
                     foreach (NcaSection sect in nca.Sections.Where(x => x != null))
                     {
-                        Console.WriteLine($"        {sect.SectionNum} {sect.Type} {sect.Header.EncryptionType} {sect.SuperblockHashValidity}");
+                        Console.WriteLine($"        {sect.SectionNum} {sect.Type} {sect.Header.EncryptionType} {sect.MasterHashValidity}");
                     }
                 }
 

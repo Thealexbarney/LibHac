@@ -312,6 +312,13 @@ namespace LibHac
         public IvfcLevel[] IvfcLevels { get; set; } = new IvfcLevel[Romfs.IvfcMaxLevel];
     }
 
+    public enum ProgramPartitionType
+    {
+        Code,
+        Data,
+        Logo
+    };
+
     public enum ContentType
     {
         Program,
@@ -363,6 +370,7 @@ namespace LibHac
     {
         Unchecked,
         Invalid,
-        Valid
+        Valid,
+        MissingKey
     }
 }
