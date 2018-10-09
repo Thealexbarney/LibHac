@@ -183,6 +183,18 @@ namespace LibHac
         }
 
         /// <summary>
+        /// Opens one of the sections in the current <see cref="Nca"/> as a <see cref="HierarchicalIntegrityVerificationStream"/>
+        /// Only works with sections that have a <see cref="NcaFsHeader.HashType"/> of <see cref="NcaHashType.Ivfc"/> or <see cref="NcaHashType.Sha256"/>.
+        /// </summary>
+        /// <param name="index">The index of the NCA section to open. Valid indexes are 0-3.</param>
+        /// <param name="integrityCheckLevel">The level of integrity checks to be performed when reading the section.</param>
+        /// <returns>A <see cref="Stream"/> that provides access to the specified section. <see langword="null"/> if the section does not exist,
+        /// or is has no hash metadata.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="index"/> is outside the valid range.</exception>
+        public HierarchicalIntegrityVerificationStream OpenHashedSection(int index, IntegrityCheckLevel integrityCheckLevel) =>
+            OpenSection(index, false, integrityCheckLevel) as HierarchicalIntegrityVerificationStream;
+
+        /// <summary>
         /// Opens one of the sections in the current <see cref="Nca"/>. For use with <see cref="ContentType.Program"/> type NCAs.
         /// </summary>
         /// <param name="type">The type of section to open.</param>
@@ -383,6 +395,7 @@ namespace LibHac
             stream.Read(hashTable, 0, hashTable.Length);
 
             sect.MasterHashValidity = Crypto.CheckMemoryHashTable(hashTable, expected, 0, hashTable.Length);
+            if (sect.Type == SectionType.Romfs) sect.Header.IvfcInfo.LevelHeaders[0].HashValidity = sect.MasterHashValidity;
         }
 
         public void Dispose()
@@ -470,24 +483,27 @@ namespace LibHac
             if (nca.Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
 
             NcaSection sect = nca.Sections[index];
-            Stream stream = nca.OpenSection(index, false, IntegrityCheckLevel.WarnOnInvalid);
+            NcaHashType hashType = sect.Header.HashType;
+            if (hashType != NcaHashType.Sha256 && hashType != NcaHashType.Ivfc) return;
+
+            HierarchicalIntegrityVerificationStream stream = nca.OpenHashedSection(index, IntegrityCheckLevel.IgnoreOnInvalid);
+            if (stream == null) return;
+
             logger?.LogMessage($"Verifying section {index}...");
 
-            switch (sect.Header.HashType)
+            for (int i = 0; i < stream.Levels.Length - 1; i++)
             {
-                case NcaHashType.Sha256:
-                case NcaHashType.Ivfc:
-                    if (stream is HierarchicalIntegrityVerificationStream ivfc)
-                    {
-                        for (int i = 1; i < ivfc.Levels.Length; i++)
-                        {
-                            logger?.LogMessage($"    Verifying IVFC Level {i}...");
-                            ivfc.Levels[i].CopyStream(Stream.Null, ivfc.Levels[i].Length, logger);
-                        }
-                    }
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
+                logger?.LogMessage($"    Verifying Hash Level {i}...");
+                Validity result = stream.ValidateLevel(i, true, logger);
+
+                if (hashType == NcaHashType.Ivfc)
+                {
+                    sect.Header.IvfcInfo.LevelHeaders[i].HashValidity = result;
+                }
+                else if (hashType == NcaHashType.Sha256 && i == stream.Levels.Length - 2)
+                {
+                    sect.Header.Sha256Info.HashValidity = result;
+                }
             }
         }
     }

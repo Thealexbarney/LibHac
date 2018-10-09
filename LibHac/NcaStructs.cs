@@ -215,6 +215,8 @@ namespace LibHac
         public int BlockSizePower;
         public uint Reserved;
 
+        public Validity HashValidity = Validity.Unchecked;
+
         public IvfcLevelHeader(BinaryReader reader)
         {
             LogicalOffset = reader.ReadInt64();
@@ -234,6 +236,8 @@ namespace LibHac
         public long DataOffset;
         public long DataSize;
 
+        public Validity HashValidity = Validity.Unchecked;
+        
         public Sha256Info(BinaryReader reader)
         {
             MasterHash = reader.ReadBytes(0x20);
@@ -366,7 +370,7 @@ namespace LibHac
         Bktr
     }
 
-    public enum Validity
+    public enum Validity : byte
     {
         Unchecked,
         Invalid,

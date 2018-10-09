@@ -169,6 +169,7 @@ namespace hactoolnet
                             PrintRomfs(sect);
                             break;
                         case SectionType.Bktr:
+                            PrintRomfs(sect);
                             break;
                         default:
                             sb.AppendLine("        Unknown/invalid superblock!");
@@ -181,9 +182,8 @@ namespace hactoolnet
             {
                 Sha256Info hashInfo = sect.Header.Sha256Info;
 
-                PrintItem(sb, colLen, $"        Superblock Hash{sect.MasterHashValidity.GetValidityString()}:", hashInfo.MasterHash);
-                // todo sb.AppendLine($"        Hash Table{sect.Pfs0.Validity.GetValidityString()}:");
-                sb.AppendLine($"        Hash Table:");
+                PrintItem(sb, colLen, $"        Master Hash{sect.MasterHashValidity.GetValidityString()}:", hashInfo.MasterHash);
+                sb.AppendLine($"        Hash Table{sect.Header.Sha256Info.HashValidity.GetValidityString()}:");
 
                 PrintItem(sb, colLen, "            Offset:", $"0x{hashInfo.HashTableOffset:x12}");
                 PrintItem(sb, colLen, "            Size:", $"0x{hashInfo.HashTableSize:x12}");
@@ -196,7 +196,7 @@ namespace hactoolnet
             {
                 IvfcHeader ivfcInfo = sect.Header.IvfcInfo;
 
-                PrintItem(sb, colLen, $"        Superblock Hash{sect.MasterHashValidity.GetValidityString()}:", ivfcInfo.MasterHash);
+                PrintItem(sb, colLen, $"        Master Hash{sect.MasterHashValidity.GetValidityString()}:", ivfcInfo.MasterHash);
                 PrintItem(sb, colLen, "        Magic:", ivfcInfo.Magic);
                 PrintItem(sb, colLen, "        Version:", $"{ivfcInfo.Version:x8}");
 
@@ -210,8 +210,7 @@ namespace hactoolnet
                         hashOffset = ivfcInfo.LevelHeaders[i - 1].LogicalOffset;
                     }
 
-                    // todo  sb.AppendLine($"        Level {i}{level.HashValidity.GetValidityString()}:");
-                    sb.AppendLine($"        Level {i}:");
+                    sb.AppendLine($"        Level {i}{level.HashValidity.GetValidityString()}:");
                     PrintItem(sb, colLen, "            Data Offset:", $"0x{level.LogicalOffset:x12}");
                     PrintItem(sb, colLen, "            Data Size:", $"0x{level.HashDataSize:x12}");
                     PrintItem(sb, colLen, "            Hash Offset:", $"0x{hashOffset:x12}");
