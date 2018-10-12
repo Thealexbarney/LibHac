@@ -62,7 +62,7 @@ namespace LibHac
             {
                 if (validities[i] == Validity.Unchecked)
                 {
-                    levelStream.Position = levelStream.SectorSize * i;
+                    levelStream.Position = (long)levelStream.SectorSize * i;
                     levelStream.Read(buffer, 0, buffer.Length, IntegrityCheckLevel.IgnoreOnInvalid);
                 }
 

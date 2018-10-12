@@ -78,8 +78,6 @@ namespace LibHac
                 int bytesToRead = (int)Math.Min(CurrentEntry.OffsetEnd - Position, count);
                 int bytesRead = base.Read(buffer, outPos, bytesToRead);
 
-                if (bytesRead == 0) break;
-
                 outPos += bytesRead;
                 totalBytesRead += bytesRead;
                 count -= bytesRead;
@@ -88,6 +86,10 @@ namespace LibHac
                 {
                     CurrentEntry = CurrentEntry.Next;
                     UpdateCounterSubsection(CurrentEntry.Counter);
+                }
+                else if (bytesRead == 0)
+                {
+                    break;
                 }
             }
 

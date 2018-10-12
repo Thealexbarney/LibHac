@@ -478,33 +478,52 @@ namespace LibHac
             }
         }
 
-        public static void VerifySection(this Nca nca, int index, IProgressReport logger = null)
+        public static Validity VerifyNca(this Nca nca, IProgressReport logger = null, bool quiet = false)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                if (nca.Sections[i] != null)
+                {
+                    Validity sectionValidity = VerifySection(nca, i, logger, quiet);
+
+                    if (sectionValidity == Validity.Invalid) return Validity.Invalid;
+                }
+            }
+
+            return Validity.Valid;
+        }
+
+        public static Validity VerifySection(this Nca nca, int index, IProgressReport logger = null, bool quiet = false)
         {
             if (nca.Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
 
             NcaSection sect = nca.Sections[index];
             NcaHashType hashType = sect.Header.HashType;
-            if (hashType != NcaHashType.Sha256 && hashType != NcaHashType.Ivfc) return;
+            if (hashType != NcaHashType.Sha256 && hashType != NcaHashType.Ivfc) return Validity.Unchecked;
 
             HierarchicalIntegrityVerificationStream stream = nca.OpenHashedSection(index, IntegrityCheckLevel.IgnoreOnInvalid);
-            if (stream == null) return;
+            if (stream == null) return Validity.Unchecked;
 
-            logger?.LogMessage($"Verifying section {index}...");
+            if (!quiet) logger?.LogMessage($"Verifying section {index}...");
 
             for (int i = 0; i < stream.Levels.Length - 1; i++)
             {
-                logger?.LogMessage($"    Verifying Hash Level {i}...");
-                Validity result = stream.ValidateLevel(i, true, logger);
+                if (!quiet) logger?.LogMessage($"    Verifying Hash Level {i}...");
+                Validity levelValidity = stream.ValidateLevel(i, true, logger);
 
                 if (hashType == NcaHashType.Ivfc)
                 {
-                    sect.Header.IvfcInfo.LevelHeaders[i].HashValidity = result;
+                    sect.Header.IvfcInfo.LevelHeaders[i].HashValidity = levelValidity;
                 }
                 else if (hashType == NcaHashType.Sha256 && i == stream.Levels.Length - 2)
                 {
-                    sect.Header.Sha256Info.HashValidity = result;
+                    sect.Header.Sha256Info.HashValidity = levelValidity;
                 }
+
+                if (levelValidity == Validity.Invalid) return Validity.Invalid;
             }
+
+            return Validity.Valid;
         }
     }
 }

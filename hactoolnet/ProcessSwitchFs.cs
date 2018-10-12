@@ -119,6 +119,67 @@ namespace hactoolnet
             {
                 ExportSdSaves(ctx, switchFs);
             }
+
+            if (ctx.Options.Validate)
+            {
+                ValidateSwitchFs(ctx, switchFs);
+            }
+        }
+
+        private static void ValidateSwitchFs(Context ctx, SwitchFs switchFs)
+        {
+            if (ctx.Options.TitleId != 0)
+            {
+                ulong id = ctx.Options.TitleId;
+
+                if (!switchFs.Titles.TryGetValue(id, out Title title))
+                {
+                    ctx.Logger.LogMessage($"Could not find title {id:X16}");
+                    return;
+                }
+
+                ValidateTitle(ctx, title, "");
+
+                return;
+            }
+
+            foreach (Application app in switchFs.Applications.Values)
+            {
+                ctx.Logger.LogMessage($"Checking {app.Name}...");
+
+                Title mainTitle = app.Patch ?? app.Main;
+
+                if (mainTitle != null)
+                {
+                    ValidateTitle(ctx, mainTitle, "Main title");
+                }
+
+                foreach (Title title in app.AddOnContent)
+                {
+                    ValidateTitle(ctx, title, "Add-on content");
+                }
+            }
+        }
+
+        private static void ValidateTitle(Context ctx, Title title, string caption)
+        {
+            try
+            {
+                ctx.Logger.LogMessage($"  {caption} {title.Id:x16}");
+
+                foreach (Nca nca in title.Ncas)
+                {
+                    ctx.Logger.LogMessage($"    {nca.Header.ContentType.ToString()}");
+
+                    Validity validity = nca.VerifyNca(ctx.Logger, true);
+
+                    ctx.Logger.LogMessage($"      {validity.ToString()}");
+                }
+            }
+            catch (Exception ex)
+            {
+                ctx.Logger.LogMessage($"Error processing title {title.Id:x16}:\n{ex.Message}");
+            }
         }
 
         private static void SaveTitle(Context ctx, SwitchFs switchFs)
