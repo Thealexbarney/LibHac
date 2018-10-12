@@ -140,8 +140,7 @@ namespace LibHac
                         false);
                     if (BaseNca == null) return rawStream;
 
-                    Stream baseStream = BaseNca.OpenSection(ProgramPartitionType.Data, true, IntegrityCheckLevel.None);
-                    if (baseStream == null) throw new InvalidDataException("Base NCA has no RomFS section");
+                    Stream baseStream = BaseNca.OpenSection(ProgramPartitionType.Data, true, IntegrityCheckLevel.None) ?? Stream.Null;
 
                     return new Bktr(rawStream, baseStream, sect);
 
@@ -162,10 +161,11 @@ namespace LibHac
         public Stream OpenSection(int index, bool raw, IntegrityCheckLevel integrityCheckLevel)
         {
             Stream rawStream = OpenRawSection(index);
+            
+            if (raw || rawStream == null) return rawStream;
+
             NcaSection sect = Sections[index];
             NcaFsHeader header = sect.Header;
-
-            if (raw || rawStream == null) return rawStream;
 
             // If it's a patch section without a base, return the raw section because it has no hash data
             if (header.EncryptionType == NcaEncryptionType.AesCtrEx && BaseNca == null) return rawStream;
