@@ -83,7 +83,7 @@ namespace LibHac.Streams
                     break;
             }
             int idx = 0;
-            while (idx+1 < _streamsStartPos.Count)
+            while (idx + 1 < _streamsStartPos.Count)
             {
                 if (_streamsStartPos[idx + 1] > pos)
                 {
@@ -122,10 +122,11 @@ namespace LibHac.Streams
 
                 if (count > 0)
                 {
-                    if (_currentStreamIndex >= _streams.Count)
+                    if (_currentStreamIndex + 1 >= _streams.Count)
                         break;
 
-                    _currentStream = _streams[_currentStreamIndex++];
+                    _currentStream = _streams[_currentStreamIndex + 1];
+                    _currentStreamIndex++;
                     _currentStream.Position = 0;
                 }
             }
