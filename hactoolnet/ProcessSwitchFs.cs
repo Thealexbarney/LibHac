@@ -45,7 +45,7 @@ namespace hactoolnet
                     return;
                 }
 
-                NcaSection section = title.MainNca.Sections.FirstOrDefault(x => x.IsExefs);
+                NcaSection section = title.MainNca.Sections[(int)ProgramPartitionType.Code];
 
                 if (section == null)
                 {

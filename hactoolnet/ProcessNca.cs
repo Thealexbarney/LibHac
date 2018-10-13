@@ -80,7 +80,13 @@ namespace hactoolnet
 
                 if (ctx.Options.ExefsOutDir != null || ctx.Options.ExefsOut != null)
                 {
-                    NcaSection section = nca.Sections.FirstOrDefault(x => x?.IsExefs == true);
+                    if (nca.Header.ContentType != ContentType.Program)
+                    {
+                        ctx.Logger.LogMessage("NCA's content type is not \"Program\"");
+                        return;
+                    }
+
+                    NcaSection section = nca.Sections[(int)ProgramPartitionType.Code];
 
                     if (section == null)
                     {
@@ -154,10 +160,12 @@ namespace hactoolnet
                     NcaSection sect = nca.Sections[i];
                     if (sect == null) continue;
 
+                    bool isExefs = nca.Header.ContentType == ContentType.Program && i == (int)ProgramPartitionType.Code;
+
                     sb.AppendLine($"    Section {i}:");
                     PrintItem(sb, colLen, "        Offset:", $"0x{sect.Offset:x12}");
                     PrintItem(sb, colLen, "        Size:", $"0x{sect.Size:x12}");
-                    PrintItem(sb, colLen, "        Partition Type:", sect.IsExefs ? "ExeFS" : sect.Type.ToString());
+                    PrintItem(sb, colLen, "        Partition Type:", isExefs ? "ExeFS" : sect.Type.ToString());
                     PrintItem(sb, colLen, "        Section CTR:", sect.Header.Ctr);
 
                     switch (sect.Header.HashType)

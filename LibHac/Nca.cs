@@ -61,19 +61,7 @@ namespace LibHac
                 NcaSection section = ParseSection(i);
                 if (section == null) continue;
                 Sections[i] = section;
-                ValidateMasterHash(i);
             }
-
-            //foreach (NcaSection pfsSection in Sections.Where(x => x != null && x.Type == SectionType.Pfs0))
-            //{
-            //    Stream sectionStream = OpenSection(pfsSection.SectionNum, false, false);
-            //    if (sectionStream == null) continue;
-
-            //    var pfs = new Pfs(sectionStream);
-            //    if (!pfs.FileExists("main.npdm")) continue;
-
-            //    pfsSection.IsExefs = true;
-            //}
         }
 
         /// <summary>
@@ -161,7 +149,7 @@ namespace LibHac
         public Stream OpenSection(int index, bool raw, IntegrityCheckLevel integrityCheckLevel)
         {
             Stream rawStream = OpenRawSection(index);
-            
+
             if (raw || rawStream == null) return rawStream;
 
             NcaSection sect = Sections[index];
@@ -379,7 +367,7 @@ namespace LibHac
                     break;
                 case NcaHashType.Ivfc when sect.Header.EncryptionType == NcaEncryptionType.AesCtrEx:
                     CheckBktrKey(sect);
-                    break;
+                    return;
                 case NcaHashType.Ivfc:
                     offset = sect.Header.IvfcInfo.LevelHeaders[0].LogicalOffset;
                     size = 1 << sect.Header.IvfcInfo.LevelHeaders[0].BlockSizePower;
@@ -413,8 +401,6 @@ namespace LibHac
         public long Offset { get; set; }
         public long Size { get; set; }
         public Validity MasterHashValidity { get; set; }
-
-        public bool IsExefs { get; internal set; }
 
         public byte[] GetMasterHash()
         {
