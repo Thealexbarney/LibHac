@@ -41,7 +41,7 @@ namespace LibHac.Savefile
         public DirectoryEntry[] Directories { get; private set; }
         private Dictionary<string, FileEntry> FileDict { get; }
 
-        public Savefile(Keyset keyset, Stream file, bool enableIntegrityChecks)
+        public Savefile(Keyset keyset, Stream file, IntegrityCheckLevel integrityCheckLevel)
         {
             SavefileSource = new SharedStreamSource(file);
 
@@ -106,7 +106,7 @@ namespace LibHac.Savefile
                 JournalStream = new JournalStream(journalData, journalMap, (int)Header.Journal.BlockSize);
                 JournalStreamSource = new SharedStreamSource(JournalStream);
 
-                IvfcStream = InitIvfcStream(enableIntegrityChecks);
+                IvfcStream = InitIvfcStream(integrityCheckLevel);
                 IvfcStreamSource = new SharedStreamSource(IvfcStream);
 
                 ReadFileInfo();
@@ -120,7 +120,7 @@ namespace LibHac.Savefile
             }
         }
 
-        private HierarchicalIntegrityVerificationStream InitIvfcStream(bool enableIntegrityChecks)
+        private HierarchicalIntegrityVerificationStream InitIvfcStream(IntegrityCheckLevel integrityCheckLevel)
         {
             IvfcHeader ivfc = Header.Ivfc;
 
@@ -151,7 +151,7 @@ namespace LibHac.Savefile
                 };
             }
 
-            return new HierarchicalIntegrityVerificationStream(initInfo, enableIntegrityChecks);
+            return new HierarchicalIntegrityVerificationStream(initInfo, integrityCheckLevel);
         }
 
         public Stream OpenFile(string filename)

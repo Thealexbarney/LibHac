@@ -9,6 +9,27 @@ namespace hactoolnet
     {
         public static void Main(string[] args)
         {
+            try
+            {
+                Run(args);
+            }
+            catch (MissingKeyException ex)
+            {
+                string name = ex.Type == KeyType.Title ? $"Title key for rights ID {ex.Name}" : ex.Name;
+                Console.WriteLine($"\nERROR: {ex.Message}\nA required key is missing.\nKey name: {name}\n");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\nERROR: {ex.Message}\n");
+
+                Console.WriteLine("Additional information:");
+                Console.WriteLine(ex.GetType().FullName);
+                Console.WriteLine(ex.StackTrace);
+            }
+        }
+
+        private static void Run(string[] args)
+        {
             Console.OutputEncoding = Encoding.UTF8;
             var ctx = new Context();
             ctx.Options = CliParser.Parse(args);
@@ -25,47 +46,52 @@ namespace hactoolnet
                     return;
                 }
 
-                switch (ctx.Options.InFileType)
-                {
-                    case FileType.Nca:
-                        ProcessNca.Process(ctx);
-                        break;
-                    case FileType.Pfs0:
-                    case FileType.Nsp:
-                        ProcessNsp.Process(ctx);
-                        break;
-                    case FileType.Romfs:
-                        ProcessRomfs.Process(ctx);
-                        break;
-                    case FileType.Nax0:
-                        break;
-                    case FileType.SwitchFs:
-                        ProcessSwitchFs.Process(ctx);
-                        break;
-                    case FileType.Save:
-                        ProcessSave.Process(ctx);
-                        break;
-                    case FileType.Xci:
-                        ProcessXci.Process(ctx);
-                        break;
-                    case FileType.Keygen:
-                        ProcessKeygen(ctx);
-                        break;
-                    case FileType.Pk11:
-                        ProcessPackage.ProcessPk11(ctx);
-                        break;
-                    case FileType.Pk21:
-                        ProcessPackage.ProcessPk21(ctx);
-                        break;
-                    case FileType.Kip1:
-                        ProcessKip.ProcessKip1(ctx);
-                        break;
-                    case FileType.Ini1:
-                        ProcessKip.ProcessIni1(ctx);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+                RunTask(ctx);
+            }
+        }
+
+        private static void RunTask(Context ctx)
+        {
+            switch (ctx.Options.InFileType)
+            {
+                case FileType.Nca:
+                    ProcessNca.Process(ctx);
+                    break;
+                case FileType.Pfs0:
+                case FileType.Nsp:
+                    ProcessNsp.Process(ctx);
+                    break;
+                case FileType.Romfs:
+                    ProcessRomfs.Process(ctx);
+                    break;
+                case FileType.Nax0:
+                    break;
+                case FileType.SwitchFs:
+                    ProcessSwitchFs.Process(ctx);
+                    break;
+                case FileType.Save:
+                    ProcessSave.Process(ctx);
+                    break;
+                case FileType.Xci:
+                    ProcessXci.Process(ctx);
+                    break;
+                case FileType.Keygen:
+                    ProcessKeygen(ctx);
+                    break;
+                case FileType.Pk11:
+                    ProcessPackage.ProcessPk11(ctx);
+                    break;
+                case FileType.Pk21:
+                    ProcessPackage.ProcessPk21(ctx);
+                    break;
+                case FileType.Kip1:
+                    ProcessKip.ProcessKip1(ctx);
+                    break;
+                case FileType.Ini1:
+                    ProcessKip.ProcessIni1(ctx);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
 

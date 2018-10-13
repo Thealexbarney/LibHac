@@ -69,7 +69,7 @@ namespace hactoolnet
                         return;
                     }
 
-                    NcaSection exefsSection = mainNca.Sections.FirstOrDefault(x => x.IsExefs);
+                    NcaSection exefsSection = mainNca.Sections[(int)ProgramPartitionType.Code];
 
                     if (exefsSection == null)
                     {
@@ -79,12 +79,12 @@ namespace hactoolnet
 
                     if (ctx.Options.ExefsOutDir != null)
                     {
-                        mainNca.ExtractSection(exefsSection.SectionNum, ctx.Options.ExefsOutDir, ctx.Options.EnableHash, ctx.Logger);
+                        mainNca.ExtractSection(exefsSection.SectionNum, ctx.Options.ExefsOutDir, ctx.Options.IntegrityLevel, ctx.Logger);
                     }
 
                     if (ctx.Options.ExefsOut != null)
                     {
-                        mainNca.ExportSection(exefsSection.SectionNum, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Options.EnableHash, ctx.Logger);
+                        mainNca.ExportSection(exefsSection.SectionNum, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
                     }
                 }
 
@@ -108,13 +108,13 @@ namespace hactoolnet
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        var romfs = new Romfs(mainNca.OpenSection(romfsSection.SectionNum, false, ctx.Options.EnableHash));
+                        var romfs = new Romfs(mainNca.OpenSection(romfsSection.SectionNum, false, ctx.Options.IntegrityLevel));
                         romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
                     }
 
                     if (ctx.Options.RomfsOut != null)
                     {
-                        mainNca.ExportSection(romfsSection.SectionNum, ctx.Options.RomfsOut, ctx.Options.Raw, ctx.Options.EnableHash, ctx.Logger);
+                        mainNca.ExportSection(romfsSection.SectionNum, ctx.Options.RomfsOut, ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
                     }
                 }
             }

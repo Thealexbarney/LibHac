@@ -143,19 +143,6 @@ namespace LibHac
         }
     }
 
-    
-
-    public class IvfcLevel
-    {
-        public long DataOffset { get; set; }
-        public long DataSize { get; set; }
-        public long HashOffset { get; set; }
-        public long HashSize { get; set; }
-        public long HashBlockSize { get; set; }
-        public long HashBlockCount { get; set; }
-        public Validity HashValidity { get; set; }
-    }
-
     public static class RomfsExtensions
     {
         public static void Extract(this Romfs romfs, string outDir, IProgressReport logger = null)

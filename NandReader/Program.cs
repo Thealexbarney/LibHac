@@ -102,7 +102,7 @@ namespace NandReader
         private static List<Ticket> ReadTickets(Keyset keyset, Stream savefile)
         {
             var tickets = new List<Ticket>();
-            var save = new Savefile(keyset, savefile, false);
+            var save = new Savefile(keyset, savefile, IntegrityCheckLevel.None);
             var ticketList = new BinaryReader(save.OpenFile("/ticket_list.bin"));
             var ticketFile = new BinaryReader(save.OpenFile("/ticket.bin"));
 

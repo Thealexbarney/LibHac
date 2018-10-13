@@ -148,32 +148,6 @@ namespace LibHac
         }
     }
 
-    public class RomfsSuperblock
-    {
-        public IvfcHeader IvfcHeader;
-
-        public RomfsSuperblock(BinaryReader reader)
-        {
-            IvfcHeader = new IvfcHeader(reader);
-            reader.BaseStream.Position += 0x58;
-        }
-    }
-
-    public class BktrSuperblock
-    {
-        public IvfcHeader IvfcHeader;
-        public BktrHeader RelocationHeader;
-        public BktrHeader SubsectionHeader;
-
-        public BktrSuperblock(BinaryReader reader)
-        {
-            IvfcHeader = new IvfcHeader(reader);
-            reader.BaseStream.Position += 0x18;
-            RelocationHeader = new BktrHeader(reader);
-            SubsectionHeader = new BktrHeader(reader);
-        }
-    }
-
     public class BktrPatchInfo
     {
         public BktrHeader RelocationHeader;
@@ -215,6 +189,8 @@ namespace LibHac
         public int BlockSizePower;
         public uint Reserved;
 
+        public Validity HashValidity = Validity.Unchecked;
+
         public IvfcLevelHeader(BinaryReader reader)
         {
             LogicalOffset = reader.ReadInt64();
@@ -234,6 +210,8 @@ namespace LibHac
         public long DataOffset;
         public long DataSize;
 
+        public Validity HashValidity = Validity.Unchecked;
+        
         public Sha256Info(BinaryReader reader)
         {
             MasterHash = reader.ReadBytes(0x20);
@@ -300,17 +278,12 @@ namespace LibHac
         }
     }
 
-    public class Pfs0Section
+    public enum ProgramPartitionType
     {
-        public PfsSuperblock Superblock { get; set; }
-        public Validity Validity { get; set; }
-    }
-
-    public class RomfsSection
-    {
-        public RomfsSuperblock Superblock { get; set; }
-        public IvfcLevel[] IvfcLevels { get; set; } = new IvfcLevel[Romfs.IvfcMaxLevel];
-    }
+        Code,
+        Data,
+        Logo
+    };
 
     public enum ContentType
     {
@@ -359,10 +332,11 @@ namespace LibHac
         Bktr
     }
 
-    public enum Validity
+    public enum Validity : byte
     {
         Unchecked,
         Invalid,
-        Valid
+        Valid,
+        MissingKey
     }
 }

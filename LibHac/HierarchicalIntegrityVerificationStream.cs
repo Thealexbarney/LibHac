@@ -8,23 +8,76 @@ namespace LibHac
     {
         public Stream[] Levels { get; }
         public Stream DataLevel { get; }
-        public bool EnableIntegrityChecks { get; }
+        public IntegrityCheckLevel IntegrityCheckLevel { get; }
 
-        public HierarchicalIntegrityVerificationStream(IntegrityVerificationInfo[] levelInfo, bool enableIntegrityChecks)
+        /// <summary>
+        /// An array of the hash statuses of every block in each level.
+        /// </summary>
+        public Validity[][] LevelValidities { get; }
+
+        private IntegrityVerificationStream[] IntegrityStreams { get; }
+
+        public HierarchicalIntegrityVerificationStream(IntegrityVerificationInfo[] levelInfo, IntegrityCheckLevel integrityCheckLevel)
         {
             Levels = new Stream[levelInfo.Length];
-            EnableIntegrityChecks = enableIntegrityChecks;
+            IntegrityCheckLevel = integrityCheckLevel;
+            LevelValidities = new Validity[levelInfo.Length - 1][];
+            IntegrityStreams = new IntegrityVerificationStream[levelInfo.Length - 1];
 
             Levels[0] = levelInfo[0].Data;
 
             for (int i = 1; i < Levels.Length; i++)
             {
-                var levelData = new IntegrityVerificationStream(levelInfo[i], Levels[i - 1], enableIntegrityChecks);
+                var levelData = new IntegrityVerificationStream(levelInfo[i], Levels[i - 1], integrityCheckLevel);
 
                 Levels[i] = new RandomAccessSectorStream(levelData);
+                LevelValidities[i - 1] = levelData.BlockValidities;
+                IntegrityStreams[i - 1] = levelData;
             }
 
             DataLevel = Levels[Levels.Length - 1];
+        }
+
+        /// <summary>
+        /// Checks the hashes of any unchecked blocks and returns the <see cref="Validity"/> of the hash level.
+        /// </summary>
+        /// <param name="level">The level of hierarchical hashes to check.</param>
+        /// <param name="returnOnError">If <see langword="true"/>, return as soon as an invalid block is found.</param>
+        /// <param name="logger">An optional <see cref="IProgressReport"/> for reporting progress.</param>
+        /// <returns>The <see cref="Validity"/> of the data of the specified hash level.</returns>
+        public Validity ValidateLevel(int level, bool returnOnError, IProgressReport logger = null)
+        {
+            Validity[] validities = LevelValidities[level];
+            IntegrityVerificationStream levelStream = IntegrityStreams[level];
+
+            // The original position of the stream must be restored when we're done validating
+            long initialPosition = levelStream.Position;
+
+            var buffer = new byte[levelStream.SectorSize];
+            var result = Validity.Valid;
+
+            logger?.SetTotal(levelStream.SectorCount);
+
+            for (int i = 0; i < levelStream.SectorCount; i++)
+            {
+                if (validities[i] == Validity.Unchecked)
+                {
+                    levelStream.Position = (long)levelStream.SectorSize * i;
+                    levelStream.Read(buffer, 0, buffer.Length, IntegrityCheckLevel.IgnoreOnInvalid);
+                }
+
+                if (validities[i] == Validity.Invalid)
+                {
+                    result = Validity.Invalid;
+                    if (returnOnError) break;
+                }
+
+                logger?.ReportAdd(1);
+            }
+
+            logger?.SetTotal(0);
+            levelStream.Position = initialPosition;
+            return result;
         }
 
         public override void Flush()

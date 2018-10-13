@@ -13,6 +13,7 @@ namespace hactoolnet
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
             {
                 var nca = new Nca(ctx.Keyset, file, false);
+                nca.ValidateMasterHashes();
 
                 if (ctx.Options.BaseNca != null)
                 {
@@ -25,12 +26,12 @@ namespace hactoolnet
                 {
                     if (ctx.Options.SectionOut[i] != null)
                     {
-                        nca.ExportSection(i, ctx.Options.SectionOut[i], ctx.Options.Raw, ctx.Options.EnableHash, ctx.Logger);
+                        nca.ExportSection(i, ctx.Options.SectionOut[i], ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
                     }
 
                     if (ctx.Options.SectionOutDir[i] != null)
                     {
-                        nca.ExtractSection(i, ctx.Options.SectionOutDir[i], ctx.Options.EnableHash, ctx.Logger);
+                        nca.ExtractSection(i, ctx.Options.SectionOutDir[i], ctx.Options.IntegrityLevel, ctx.Logger);
                     }
 
                     if (ctx.Options.Validate && nca.Sections[i] != null)
@@ -41,7 +42,7 @@ namespace hactoolnet
 
                 if (ctx.Options.ListRomFs && nca.Sections[1] != null)
                 {
-                    var romfs = new Romfs(nca.OpenSection(1, false, ctx.Options.EnableHash));
+                    var romfs = new Romfs(nca.OpenSection(1, false, ctx.Options.IntegrityLevel));
 
                     foreach (RomfsFile romfsFile in romfs.Files)
                     {
@@ -67,19 +68,25 @@ namespace hactoolnet
 
                     if (ctx.Options.RomfsOut != null)
                     {
-                        nca.ExportSection(section.SectionNum, ctx.Options.RomfsOut, ctx.Options.Raw, ctx.Options.EnableHash, ctx.Logger);
+                        nca.ExportSection(section.SectionNum, ctx.Options.RomfsOut, ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
                     }
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        var romfs = new Romfs(nca.OpenSection(section.SectionNum, false, ctx.Options.EnableHash));
+                        var romfs = new Romfs(nca.OpenSection(section.SectionNum, false, ctx.Options.IntegrityLevel));
                         romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
                     }
                 }
 
                 if (ctx.Options.ExefsOutDir != null || ctx.Options.ExefsOut != null)
                 {
-                    NcaSection section = nca.Sections.FirstOrDefault(x => x?.IsExefs == true);
+                    if (nca.Header.ContentType != ContentType.Program)
+                    {
+                        ctx.Logger.LogMessage("NCA's content type is not \"Program\"");
+                        return;
+                    }
+
+                    NcaSection section = nca.Sections[(int)ProgramPartitionType.Code];
 
                     if (section == null)
                     {
@@ -89,12 +96,12 @@ namespace hactoolnet
 
                     if (ctx.Options.ExefsOut != null)
                     {
-                        nca.ExportSection(section.SectionNum, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Options.EnableHash, ctx.Logger);
+                        nca.ExportSection(section.SectionNum, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
                     }
 
                     if (ctx.Options.ExefsOutDir != null)
                     {
-                        nca.ExtractSection(section.SectionNum, ctx.Options.ExefsOutDir, ctx.Options.EnableHash, ctx.Logger);
+                        nca.ExtractSection(section.SectionNum, ctx.Options.ExefsOutDir, ctx.Options.IntegrityLevel, ctx.Logger);
                     }
                 }
 
@@ -153,21 +160,21 @@ namespace hactoolnet
                     NcaSection sect = nca.Sections[i];
                     if (sect == null) continue;
 
+                    bool isExefs = nca.Header.ContentType == ContentType.Program && i == (int)ProgramPartitionType.Code;
+
                     sb.AppendLine($"    Section {i}:");
                     PrintItem(sb, colLen, "        Offset:", $"0x{sect.Offset:x12}");
                     PrintItem(sb, colLen, "        Size:", $"0x{sect.Size:x12}");
-                    PrintItem(sb, colLen, "        Partition Type:", sect.IsExefs ? "ExeFS" : sect.Type.ToString());
+                    PrintItem(sb, colLen, "        Partition Type:", isExefs ? "ExeFS" : sect.Type.ToString());
                     PrintItem(sb, colLen, "        Section CTR:", sect.Header.Ctr);
 
-                    switch (sect.Type)
+                    switch (sect.Header.HashType)
                     {
-                        case SectionType.Pfs0:
-                            PrintPfs0(sect);
+                        case NcaHashType.Sha256:
+                            PrintSha256Hash(sect);
                             break;
-                        case SectionType.Romfs:
-                            PrintRomfs(sect);
-                            break;
-                        case SectionType.Bktr:
+                        case NcaHashType.Ivfc:
+                            PrintIvfcHash(sect);
                             break;
                         default:
                             sb.AppendLine("        Unknown/invalid superblock!");
@@ -176,13 +183,12 @@ namespace hactoolnet
                 }
             }
 
-            void PrintPfs0(NcaSection sect)
+            void PrintSha256Hash(NcaSection sect)
             {
                 Sha256Info hashInfo = sect.Header.Sha256Info;
 
-                PrintItem(sb, colLen, $"        Superblock Hash{sect.SuperblockHashValidity.GetValidityString()}:", hashInfo.MasterHash);
-                // todo sb.AppendLine($"        Hash Table{sect.Pfs0.Validity.GetValidityString()}:");
-                sb.AppendLine($"        Hash Table:");
+                PrintItem(sb, colLen, $"        Master Hash{sect.MasterHashValidity.GetValidityString()}:", hashInfo.MasterHash);
+                sb.AppendLine($"        Hash Table{sect.Header.Sha256Info.HashValidity.GetValidityString()}:");
 
                 PrintItem(sb, colLen, "            Offset:", $"0x{hashInfo.HashTableOffset:x12}");
                 PrintItem(sb, colLen, "            Size:", $"0x{hashInfo.HashTableSize:x12}");
@@ -191,11 +197,11 @@ namespace hactoolnet
                 PrintItem(sb, colLen, "        PFS0 Size:", $"0x{hashInfo.DataSize:x12}");
             }
 
-            void PrintRomfs(NcaSection sect)
+            void PrintIvfcHash(NcaSection sect)
             {
                 IvfcHeader ivfcInfo = sect.Header.IvfcInfo;
 
-                PrintItem(sb, colLen, $"        Superblock Hash{sect.SuperblockHashValidity.GetValidityString()}:", ivfcInfo.MasterHash);
+                PrintItem(sb, colLen, $"        Master Hash{sect.MasterHashValidity.GetValidityString()}:", ivfcInfo.MasterHash);
                 PrintItem(sb, colLen, "        Magic:", ivfcInfo.Magic);
                 PrintItem(sb, colLen, "        Version:", $"{ivfcInfo.Version:x8}");
 
@@ -209,8 +215,7 @@ namespace hactoolnet
                         hashOffset = ivfcInfo.LevelHeaders[i - 1].LogicalOffset;
                     }
 
-                    // todo  sb.AppendLine($"        Level {i}{level.HashValidity.GetValidityString()}:");
-                    sb.AppendLine($"        Level {i}:");
+                    sb.AppendLine($"        Level {i}{level.HashValidity.GetValidityString()}:");
                     PrintItem(sb, colLen, "            Data Offset:", $"0x{level.LogicalOffset:x12}");
                     PrintItem(sb, colLen, "            Data Size:", $"0x{level.HashDataSize:x12}");
                     PrintItem(sb, colLen, "            Hash Offset:", $"0x{hashOffset:x12}");

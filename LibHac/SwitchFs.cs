@@ -126,7 +126,7 @@ namespace LibHac
 
                     string sdPath = "/" + Util.GetRelativePath(file, SaveDir).Replace('\\', '/');
                     var nax0 = new Nax0(Keyset, stream, sdPath, false);
-                    save = new Savefile.Savefile(Keyset, nax0.Stream, false);
+                    save = new Savefile.Savefile(Keyset, nax0.Stream, IntegrityCheckLevel.None);
                 }
                 catch (Exception ex)
                 {
@@ -147,7 +147,7 @@ namespace LibHac
                 var title = new Title();
 
                 // Meta contents always have 1 Partition FS section with 1 file in it
-                Stream sect = nca.OpenSection(0, false, true);
+                Stream sect = nca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid);
                 var pfs0 = new Pfs(sect);
                 Stream file = pfs0.OpenFile(pfs0.Files[0]);
 
@@ -187,7 +187,7 @@ namespace LibHac
         {
             foreach (Title title in Titles.Values.Where(x => x.ControlNca != null))
             {
-                var romfs = new Romfs(title.ControlNca.OpenSection(0, false, true));
+                var romfs = new Romfs(title.ControlNca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid));
                 byte[] control = romfs.GetFile("/control.nacp");
 
                 var reader = new BinaryReader(new MemoryStream(control));
