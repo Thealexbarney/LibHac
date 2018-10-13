@@ -68,29 +68,6 @@ namespace LibHac
         Hfs0
     }
 
-    public class PfsSuperblock
-    {
-        public byte[] MasterHash; /* SHA-256 hash of the hash table. */
-        public int BlockSize; /* In bytes. */
-        public uint Always2;
-        public long HashTableOffset; /* Normally zero. */
-        public long HashTableSize;
-        public long Pfs0Offset;
-        public long Pfs0Size;
-
-        public PfsSuperblock(BinaryReader reader)
-        {
-            MasterHash = reader.ReadBytes(0x20);
-            BlockSize = reader.ReadInt32();
-            Always2 = reader.ReadUInt32();
-            HashTableOffset = reader.ReadInt64();
-            HashTableSize = reader.ReadInt64();
-            Pfs0Offset = reader.ReadInt64();
-            Pfs0Size = reader.ReadInt64();
-            reader.BaseStream.Position += 0xF0;
-        }
-    }
-
     public class PfsHeader
     {
         public string Magic;

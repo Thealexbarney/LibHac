@@ -198,6 +198,7 @@ namespace hactoolnet
             sb.AppendLine("  --romfs <file>       Specify RomFS directory path. (--title must be specified)");
             sb.AppendLine("  --romfsdir <dir>     Specify RomFS directory path. (--title must be specified)");
             sb.AppendLine("  --savedir <dir>      Specify save file directory path.");
+            sb.AppendLine("  -y, --verify         Verify all titles, or verify a single title if --title is set.");
             sb.AppendLine("Savefile options:");
             sb.AppendLine("  --outdir <dir>       Specify directory path to save contents to.");
             sb.AppendLine("  --debugoutdir <dir>  Specify directory path to save intermediate data to for debugging.");

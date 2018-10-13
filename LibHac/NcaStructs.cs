@@ -148,32 +148,6 @@ namespace LibHac
         }
     }
 
-    public class RomfsSuperblock
-    {
-        public IvfcHeader IvfcHeader;
-
-        public RomfsSuperblock(BinaryReader reader)
-        {
-            IvfcHeader = new IvfcHeader(reader);
-            reader.BaseStream.Position += 0x58;
-        }
-    }
-
-    public class BktrSuperblock
-    {
-        public IvfcHeader IvfcHeader;
-        public BktrHeader RelocationHeader;
-        public BktrHeader SubsectionHeader;
-
-        public BktrSuperblock(BinaryReader reader)
-        {
-            IvfcHeader = new IvfcHeader(reader);
-            reader.BaseStream.Position += 0x18;
-            RelocationHeader = new BktrHeader(reader);
-            SubsectionHeader = new BktrHeader(reader);
-        }
-    }
-
     public class BktrPatchInfo
     {
         public BktrHeader RelocationHeader;
@@ -302,18 +276,6 @@ namespace LibHac
         {
             return $"{Major}.{Minor}.{Patch}.{Revision}";
         }
-    }
-
-    public class Pfs0Section
-    {
-        public PfsSuperblock Superblock { get; set; }
-        public Validity Validity { get; set; }
-    }
-
-    public class RomfsSection
-    {
-        public RomfsSuperblock Superblock { get; set; }
-        public IvfcLevel[] IvfcLevels { get; set; } = new IvfcLevel[Romfs.IvfcMaxLevel];
     }
 
     public enum ProgramPartitionType

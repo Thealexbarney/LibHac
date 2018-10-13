@@ -160,16 +160,13 @@ namespace hactoolnet
                     PrintItem(sb, colLen, "        Partition Type:", sect.IsExefs ? "ExeFS" : sect.Type.ToString());
                     PrintItem(sb, colLen, "        Section CTR:", sect.Header.Ctr);
 
-                    switch (sect.Type)
+                    switch (sect.Header.HashType)
                     {
-                        case SectionType.Pfs0:
-                            PrintPfs0(sect);
+                        case NcaHashType.Sha256:
+                            PrintSha256Hash(sect);
                             break;
-                        case SectionType.Romfs:
-                            PrintRomfs(sect);
-                            break;
-                        case SectionType.Bktr:
-                            PrintRomfs(sect);
+                        case NcaHashType.Ivfc:
+                            PrintIvfcHash(sect);
                             break;
                         default:
                             sb.AppendLine("        Unknown/invalid superblock!");
@@ -178,7 +175,7 @@ namespace hactoolnet
                 }
             }
 
-            void PrintPfs0(NcaSection sect)
+            void PrintSha256Hash(NcaSection sect)
             {
                 Sha256Info hashInfo = sect.Header.Sha256Info;
 
@@ -192,7 +189,7 @@ namespace hactoolnet
                 PrintItem(sb, colLen, "        PFS0 Size:", $"0x{hashInfo.DataSize:x12}");
             }
 
-            void PrintRomfs(NcaSection sect)
+            void PrintIvfcHash(NcaSection sect)
             {
                 IvfcHeader ivfcInfo = sect.Header.IvfcInfo;
 

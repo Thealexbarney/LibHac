@@ -371,21 +371,19 @@ namespace LibHac
             long offset = 0;
             long size = 0;
 
-            switch (sect.Type)
+            switch (sect.Header.HashType)
             {
-                case SectionType.Invalid:
-                    break;
-                case SectionType.Pfs0:
+                case NcaHashType.Sha256:
                     offset = sect.Header.Sha256Info.HashTableOffset;
                     size = sect.Header.Sha256Info.HashTableSize;
                     break;
-                case SectionType.Romfs:
+                case NcaHashType.Ivfc when sect.Header.EncryptionType == NcaEncryptionType.AesCtrEx:
+                    CheckBktrKey(sect);
+                    break;
+                case NcaHashType.Ivfc:
                     offset = sect.Header.IvfcInfo.LevelHeaders[0].LogicalOffset;
                     size = 1 << sect.Header.IvfcInfo.LevelHeaders[0].BlockSizePower;
                     break;
-                case SectionType.Bktr:
-                    CheckBktrKey(sect);
-                    return;
             }
 
             Stream stream = OpenSection(index, true, IntegrityCheckLevel.None);
@@ -395,7 +393,7 @@ namespace LibHac
             stream.Read(hashTable, 0, hashTable.Length);
 
             sect.MasterHashValidity = Crypto.CheckMemoryHashTable(hashTable, expected, 0, hashTable.Length);
-            if (sect.Type == SectionType.Romfs) sect.Header.IvfcInfo.LevelHeaders[0].HashValidity = sect.MasterHashValidity;
+            if (sect.Header.HashType == NcaHashType.Ivfc) sect.Header.IvfcInfo.LevelHeaders[0].HashValidity = sect.MasterHashValidity;
         }
 
         public void Dispose()
