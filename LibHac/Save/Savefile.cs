@@ -4,7 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using LibHac.Streams;
 
-namespace LibHac.Savefile
+namespace LibHac.Save
 {
     public class Savefile
     {

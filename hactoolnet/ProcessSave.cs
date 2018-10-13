@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using LibHac;
-using LibHac.Savefile;
+using LibHac.Save;
 using static hactoolnet.Print;
 
 namespace hactoolnet

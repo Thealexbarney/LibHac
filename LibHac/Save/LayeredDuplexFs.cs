@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace LibHac.Savefile
+namespace LibHac.Save
 {
     public class LayeredDuplexFs : Stream
     {

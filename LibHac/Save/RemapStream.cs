@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace LibHac.Savefile
+namespace LibHac.Save
 {
     public class RemapStream : Stream
     {

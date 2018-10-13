@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using LibHac;
-using LibHac.Savefile;
+using LibHac.Save;
 
 namespace hactoolnet
 {
