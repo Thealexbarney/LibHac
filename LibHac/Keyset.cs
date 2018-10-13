@@ -246,7 +246,7 @@ namespace LibHac
             Crypto.DecryptEcb(headerKek, HeaderKeySource, HeaderKey, 0x20);
         }
 
-        private void DeriveSdCardKeys()
+        public void DeriveSdCardKeys()
         {
             var sdKek = new byte[0x10];
             Crypto.GenerateKek(MasterKeys[0], SdCardKekSource, sdKek, AesKekGenerationSource, AesKeyGenerationSource);
@@ -264,6 +264,8 @@ namespace LibHac
                 Crypto.DecryptEcb(sdKek, SdCardKeySourcesSpecific[k], SdCardKeys[k], 0x20);
             }
         }
+
+        internal static readonly string[] KakNames = {"application", "ocean", "system"};
     }
 
     public static class ExternalKeys
@@ -396,7 +398,7 @@ namespace LibHac
 
         public static string PrintKeys(Keyset keyset, Dictionary<string, KeyValue> dict)
         {
-            if(dict.Count == 0) return string.Empty;
+            if (dict.Count == 0) return string.Empty;
 
             var sb = new StringBuilder();
             int maxNameLength = dict.Values.Max(x => x.Name.Length);

@@ -16,6 +16,11 @@ namespace LibHac.Streams
         public int SectorSize { get; }
 
         /// <summary>
+        /// The number of sectors in the stream.
+        /// </summary>
+        public int SectorCount { get; }
+
+        /// <summary>
         /// The maximum number of sectors that can be read or written in a single operation.
         /// </summary>
         public int MaxSectors { get; }
@@ -64,6 +69,8 @@ namespace LibHac.Streams
             _keepOpen = keepOpen;
             _maxBufferSize = MaxSectors * SectorSize;
             baseStream.Position = offset;
+
+            SectorCount = (int)Util.DivideByRoundUp(_baseStream.Length - _offset, sectorSize);
         }
 
         public override void Flush()

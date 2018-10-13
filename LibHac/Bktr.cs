@@ -19,7 +19,7 @@ namespace LibHac
 
         public Bktr(Stream patchRomfs, Stream baseRomfs, NcaSection section)
         {
-            if (section.Type != SectionType.Bktr) throw new ArgumentException("Section is not of type BKTR");
+            if (section.Header.EncryptionType != NcaEncryptionType.AesCtrEx) throw new ArgumentException("Section is not of type BKTR");
             Patch = patchRomfs ?? throw new NullReferenceException($"{nameof(patchRomfs)} cannot be null");
             Base = baseRomfs ?? throw new NullReferenceException($"{nameof(baseRomfs)} cannot be null");
 

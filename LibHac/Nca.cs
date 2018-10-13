@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using LibHac.Streams;
 using LibHac.XTSSharp;
 
@@ -20,6 +19,9 @@ namespace LibHac
         private bool KeepOpen { get; }
         private Nca BaseNca { get; set; }
 
+        private bool IsMissingTitleKey { get; set; }
+        private string MissingKeyName { get; set; }
+
         public NcaSection[] Sections { get; } = new NcaSection[4];
 
         public Nca(Keyset keyset, Stream stream, bool keepOpen)
@@ -38,19 +40,20 @@ namespace LibHac
             {
                 DecryptKeyArea(keyset);
             }
+            else if (keyset.TitleKeys.TryGetValue(Header.RightsId, out byte[] titleKey))
+            {
+                if (keyset.Titlekeks[CryptoType].IsEmpty())
+                {
+                    MissingKeyName = $"titlekek_{CryptoType:x2}";
+                }
+
+                TitleKey = titleKey;
+                Crypto.DecryptEcb(keyset.Titlekeks[CryptoType], titleKey, TitleKeyDec, 0x10);
+                DecryptedKeys[2] = TitleKeyDec;
+            }
             else
             {
-                if (keyset.TitleKeys.TryGetValue(Header.RightsId, out byte[] titleKey))
-                {
-                    TitleKey = titleKey;
-                    Crypto.DecryptEcb(keyset.Titlekeks[CryptoType], titleKey, TitleKeyDec, 0x10);
-                    DecryptedKeys[2] = TitleKeyDec;
-                }
-                else
-                {
-                    // todo enable key check when opening a section
-                    // throw new MissingKeyException("A required key is missing.", $"{Header.RightsId.ToHexString()}", KeyType.Title);
-                }
+                IsMissingTitleKey = true;
             }
 
             for (int i = 0; i < 4; i++)
@@ -58,35 +61,56 @@ namespace LibHac
                 NcaSection section = ParseSection(i);
                 if (section == null) continue;
                 Sections[i] = section;
-                ValidateSuperblockHash(i);
-            }
-
-            foreach (NcaSection pfsSection in Sections.Where(x => x != null && x.Type == SectionType.Pfs0))
-            {
-                Stream sectionStream = OpenSection(pfsSection.SectionNum, false, false);
-                if (sectionStream == null) continue;
-
-                var pfs = new Pfs(sectionStream);
-                if (!pfs.FileExists("main.npdm")) continue;
-
-                pfsSection.IsExefs = true;
             }
         }
 
+        /// <summary>
+        /// Opens a <see cref="Stream"/> of the underlying NCA file.
+        /// </summary>
+        /// <returns>A <see cref="Stream"/> that provides access to the entire raw NCA file.</returns>
         public Stream GetStream()
         {
             return StreamSource.CreateStream();
         }
 
+        public bool CanOpenSection(int index)
+        {
+            if (index < 0 || index > 3) throw new ArgumentOutOfRangeException(nameof(index));
+
+            NcaSection sect = Sections[index];
+            if (sect == null) return false;
+
+            return sect.Header.EncryptionType == NcaEncryptionType.None || !IsMissingTitleKey && string.IsNullOrWhiteSpace(MissingKeyName);
+        }
+
         private Stream OpenRawSection(int index)
         {
-            NcaSection sect = Sections[index];
-            if (sect == null) throw new ArgumentOutOfRangeException(nameof(index));
+            if (index < 0 || index > 3) throw new ArgumentOutOfRangeException(nameof(index));
 
-            //if (sect.SuperblockHashValidity == Validity.Invalid) return null;
+            NcaSection sect = Sections[index];
+            if (sect == null) return null;
+
+            if (sect.Header.EncryptionType != NcaEncryptionType.None)
+            {
+                if (IsMissingTitleKey)
+                {
+                    throw new MissingKeyException("Unable to decrypt NCA section.", Header.RightsId.ToHexString(), KeyType.Title);
+                }
+
+                if (!string.IsNullOrWhiteSpace(MissingKeyName))
+                {
+                    throw new MissingKeyException("Unable to decrypt NCA section.", MissingKeyName, KeyType.Common);
+                }
+            }
 
             long offset = sect.Offset;
             long size = sect.Size;
+
+            if (!Util.IsSubRange(offset, size, StreamSource.Length))
+            {
+                throw new InvalidDataException(
+                    $"Section offset (0x{offset:x}) and length (0x{size:x}) fall outside the total NCA length (0x{StreamSource.Length:x}).");
+            }
 
             Stream rawStream = StreamSource.CreateStream(offset, size);
 
@@ -104,10 +128,8 @@ namespace LibHac
                         false);
                     if (BaseNca == null) return rawStream;
 
-                    NcaSection baseSect = BaseNca.Sections.FirstOrDefault(x => x.Type == SectionType.Romfs);
-                    if (baseSect == null) throw new InvalidDataException("Base NCA has no RomFS section");
+                    Stream baseStream = BaseNca.OpenSection(ProgramPartitionType.Data, true, IntegrityCheckLevel.None) ?? Stream.Null;
 
-                    Stream baseStream = BaseNca.OpenSection(baseSect.SectionNum, true, false);
                     return new Bktr(rawStream, baseStream, sect);
 
                 default:
@@ -115,27 +137,65 @@ namespace LibHac
             }
         }
 
-        public Stream OpenSection(int index, bool raw, bool enableIntegrityChecks)
+        /// <summary>
+        /// Opens one of the sections in the current <see cref="Nca"/>.
+        /// </summary>
+        /// <param name="index">The index of the NCA section to open. Valid indexes are 0-3.</param>
+        /// <param name="raw"><see langword="true"/> to open the raw section with hash metadata.</param>
+        /// <param name="integrityCheckLevel">The level of integrity checks to be performed when reading the section.
+        /// Always <see cref="IntegrityCheckLevel.None"/> if <paramref name="raw"/> is <see langword="false"/>.</param>
+        /// <returns>A <see cref="Stream"/> that provides access to the specified section. <see langword="null"/> if the section does not exist.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="index"/> is outside the valid range.</exception>
+        public Stream OpenSection(int index, bool raw, IntegrityCheckLevel integrityCheckLevel)
         {
             Stream rawStream = OpenRawSection(index);
-            NcaSection sect = Sections[index];
 
             if (raw || rawStream == null) return rawStream;
 
-            switch (sect.Header.Type)
+            NcaSection sect = Sections[index];
+            NcaFsHeader header = sect.Header;
+
+            // If it's a patch section without a base, return the raw section because it has no hash data
+            if (header.EncryptionType == NcaEncryptionType.AesCtrEx && BaseNca == null) return rawStream;
+
+            switch (header.HashType)
             {
-                case SectionType.Pfs0:
-                    return InitIvfcForPartitionfs(sect.Header.Sha256Info, new SharedStreamSource(rawStream), enableIntegrityChecks);
-                case SectionType.Romfs:
-                case SectionType.Bktr:
-                    return InitIvfcForRomfs(sect.Header.IvfcInfo, new SharedStreamSource(rawStream), enableIntegrityChecks);
+                case NcaHashType.Sha256:
+                    return InitIvfcForPartitionfs(header.Sha256Info, new SharedStreamSource(rawStream), integrityCheckLevel);
+                case NcaHashType.Ivfc:
+                    return InitIvfcForRomfs(header.IvfcInfo, new SharedStreamSource(rawStream), integrityCheckLevel);
+
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
 
+        /// <summary>
+        /// Opens one of the sections in the current <see cref="Nca"/> as a <see cref="HierarchicalIntegrityVerificationStream"/>
+        /// Only works with sections that have a <see cref="NcaFsHeader.HashType"/> of <see cref="NcaHashType.Ivfc"/> or <see cref="NcaHashType.Sha256"/>.
+        /// </summary>
+        /// <param name="index">The index of the NCA section to open. Valid indexes are 0-3.</param>
+        /// <param name="integrityCheckLevel">The level of integrity checks to be performed when reading the section.</param>
+        /// <returns>A <see cref="Stream"/> that provides access to the specified section. <see langword="null"/> if the section does not exist,
+        /// or is has no hash metadata.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="index"/> is outside the valid range.</exception>
+        public HierarchicalIntegrityVerificationStream OpenHashedSection(int index, IntegrityCheckLevel integrityCheckLevel) =>
+            OpenSection(index, false, integrityCheckLevel) as HierarchicalIntegrityVerificationStream;
+
+        /// <summary>
+        /// Opens one of the sections in the current <see cref="Nca"/>. For use with <see cref="ContentType.Program"/> type NCAs.
+        /// </summary>
+        /// <param name="type">The type of section to open.</param>
+        /// <param name="raw"><see langword="true"/> to open the raw section with hash metadata.</param>
+        /// <param name="integrityCheckLevel">The level of integrity checks to be performed when reading the section.
+        /// Always <see cref="IntegrityCheckLevel.None"/> if <paramref name="raw"/> is <see langword="false"/>.</param>
+        /// <returns>A <see cref="Stream"/> that provides access to the specified section. <see langword="null"/> if the section does not exist.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="type"/> is outside the valid range.</exception>
+        public Stream OpenSection(ProgramPartitionType type, bool raw, IntegrityCheckLevel integrityCheckLevel) =>
+            OpenSection((int)type, raw, integrityCheckLevel);
+
         private static HierarchicalIntegrityVerificationStream InitIvfcForRomfs(IvfcHeader ivfc,
-            SharedStreamSource romfsStreamSource, bool enableIntegrityChecks)
+            SharedStreamSource romfsStreamSource, IntegrityCheckLevel integrityCheckLevel)
         {
             var initInfo = new IntegrityVerificationInfo[ivfc.NumLevels];
 
@@ -159,11 +219,11 @@ namespace LibHac
                 };
             }
 
-            return new HierarchicalIntegrityVerificationStream(initInfo, enableIntegrityChecks);
+            return new HierarchicalIntegrityVerificationStream(initInfo, integrityCheckLevel);
         }
 
         private static Stream InitIvfcForPartitionfs(Sha256Info sb,
-            SharedStreamSource pfsStreamSource, bool enableIntegrityChecks)
+            SharedStreamSource pfsStreamSource, IntegrityCheckLevel integrityCheckLevel)
         {
             SharedStream hashStream = pfsStreamSource.CreateStream(sb.HashTableOffset, sb.HashTableSize);
             SharedStream dataStream = pfsStreamSource.CreateStream(sb.DataOffset, sb.DataSize);
@@ -192,13 +252,34 @@ namespace LibHac
                 Type = IntegrityStreamType.PartitionFs
             };
 
-            return new HierarchicalIntegrityVerificationStream(initInfo, enableIntegrityChecks);
+            return new HierarchicalIntegrityVerificationStream(initInfo, integrityCheckLevel);
         }
 
+        /// <summary>
+        /// Sets a base <see cref="Nca"/> to use when reading patches.
+        /// </summary>
+        /// <param name="baseNca">The base <see cref="Nca"/></param>
         public void SetBaseNca(Nca baseNca) => BaseNca = baseNca;
+
+        /// <summary>
+        /// Validates the master hash and store the result in <see cref="NcaSection.MasterHashValidity"/> for each <see cref="NcaSection"/>.
+        /// </summary>
+        public void ValidateMasterHashes()
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                if (Sections[i] == null) continue;
+                ValidateMasterHash(i);
+            }
+        }
 
         private void DecryptHeader(Keyset keyset, Stream stream)
         {
+            if (keyset.HeaderKey.IsEmpty())
+            {
+                throw new MissingKeyException("Unable to decrypt NCA header.", "header_key", KeyType.Common);
+            }
+
             var headerBytes = new byte[0xC00];
             Xts xts = XtsAes128.Create(keyset.HeaderKey);
             using (var headerDec = new RandomAccessSectorStream(new XtsSectorStream(stream, xts, 0x200)))
@@ -213,6 +294,12 @@ namespace LibHac
 
         private void DecryptKeyArea(Keyset keyset)
         {
+            if (keyset.KeyAreaKeys[CryptoType][Header.KaekInd].IsEmpty())
+            {
+                MissingKeyName = $"key_area_key_{Keyset.KakNames[Header.KaekInd]}_{CryptoType:x2}";
+                return;
+            }
+
             for (int i = 0; i < 4; i++)
             {
                 Crypto.DecryptEcb(keyset.KeyAreaKeys[CryptoType][Header.KaekInd], Header.EncryptedKeys[i],
@@ -239,6 +326,10 @@ namespace LibHac
 
         private void CheckBktrKey(NcaSection sect)
         {
+            // The encryption subsection table in the bktr partition contains the length of the entire partition.
+            // The encryption table is always located immediately following the partition data
+            // Decrypt this value and compare it to the encryption table offset found in the NCA header
+
             long offset = sect.Header.BktrInfo.EncryptionHeader.Offset;
             using (var streamDec = new RandomAccessSectorStream(new Aes128CtrStream(GetStream(), DecryptedKeys[2], sect.Offset, sect.Size, sect.Offset, sect.Header.Ctr)))
             {
@@ -248,75 +339,51 @@ namespace LibHac
 
                 if (size != offset)
                 {
-                    sect.SuperblockHashValidity = Validity.Invalid;
+                    sect.MasterHashValidity = Validity.Invalid;
                 }
             }
         }
 
-        private void ValidateSuperblockHash(int index)
+        private void ValidateMasterHash(int index)
         {
             if (Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
             NcaSection sect = Sections[index];
 
-            byte[] expected = null;
+            if (!CanOpenSection(index))
+            {
+                sect.MasterHashValidity = Validity.MissingKey;
+                return;
+            }
+
+            byte[] expected = sect.GetMasterHash();
             long offset = 0;
             long size = 0;
 
-            switch (sect.Type)
+            switch (sect.Header.HashType)
             {
-                case SectionType.Invalid:
+                case NcaHashType.Sha256:
+                    offset = sect.Header.Sha256Info.HashTableOffset;
+                    size = sect.Header.Sha256Info.HashTableSize;
                     break;
-                case SectionType.Pfs0:
-                    Sha256Info pfs0 = sect.Header.Sha256Info;
-                    expected = pfs0.MasterHash;
-                    offset = pfs0.HashTableOffset;
-                    size = pfs0.HashTableSize;
-                    break;
-                case SectionType.Romfs:
-                    IvfcHeader ivfc = sect.Header.IvfcInfo;
-                    expected = ivfc.MasterHash;
-                    offset = ivfc.LevelHeaders[0].LogicalOffset;
-                    size = 1 << ivfc.LevelHeaders[0].BlockSizePower;
-                    break;
-                case SectionType.Bktr:
+                case NcaHashType.Ivfc when sect.Header.EncryptionType == NcaEncryptionType.AesCtrEx:
                     CheckBktrKey(sect);
                     return;
+                case NcaHashType.Ivfc:
+                    offset = sect.Header.IvfcInfo.LevelHeaders[0].LogicalOffset;
+                    size = 1 << sect.Header.IvfcInfo.LevelHeaders[0].BlockSizePower;
+                    break;
             }
 
-            Stream stream = OpenSection(index, true, false);
-            if (stream == null) return;
-            if (expected == null) return;
+            Stream stream = OpenSection(index, true, IntegrityCheckLevel.None);
 
             var hashTable = new byte[size];
             stream.Position = offset;
             stream.Read(hashTable, 0, hashTable.Length);
 
-            sect.SuperblockHashValidity = Crypto.CheckMemoryHashTable(hashTable, expected, 0, hashTable.Length);
-            // todo if (sect.Type == SectionType.Romfs) sect.Romfs.IvfcLevels[0].HashValidity = sect.SuperblockHashValidity;
+            sect.MasterHashValidity = Crypto.CheckMemoryHashTable(hashTable, expected, 0, hashTable.Length);
+            if (sect.Header.HashType == NcaHashType.Ivfc) sect.Header.IvfcInfo.LevelHeaders[0].HashValidity = sect.MasterHashValidity;
         }
 
-        public void VerifySection(int index, IProgressReport logger = null)
-        {
-            if (Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
-            NcaSection sect = Sections[index];
-            Stream stream = OpenSection(index, true, false);
-            logger?.LogMessage($"Verifying section {index}...");
-
-            switch (sect.Type)
-            {
-                case SectionType.Invalid:
-                    break;
-                case SectionType.Pfs0:
-                    // todo VerifyPfs0(stream, sect.Pfs0, logger);
-                    break;
-                case SectionType.Romfs:
-                    // todo VerifyIvfc(stream, sect.Romfs.IvfcLevels, logger);
-                    break;
-                case SectionType.Bktr:
-                    break;
-            }
-        }
-        
         public void Dispose()
         {
             if (!KeepOpen)
@@ -333,19 +400,34 @@ namespace LibHac
         public int SectionNum { get; set; }
         public long Offset { get; set; }
         public long Size { get; set; }
-        public Validity SuperblockHashValidity { get; set; }
+        public Validity MasterHashValidity { get; set; }
 
-        public bool IsExefs { get; internal set; }
+        public byte[] GetMasterHash()
+        {
+            var hash = new byte[Crypto.Sha256DigestSize];
+
+            switch (Header.HashType)
+            {
+                case NcaHashType.Sha256:
+                    Array.Copy(Header.Sha256Info.MasterHash, hash, Crypto.Sha256DigestSize);
+                    break;
+                case NcaHashType.Ivfc:
+                    Array.Copy(Header.IvfcInfo.MasterHash, hash, Crypto.Sha256DigestSize);
+                    break;
+            }
+
+            return hash;
+        }
     }
 
     public static class NcaExtensions
     {
-        public static void ExportSection(this Nca nca, int index, string filename, bool raw = false, bool verify = false, IProgressReport logger = null)
+        public static void ExportSection(this Nca nca, int index, string filename, bool raw = false, IntegrityCheckLevel integrityCheckLevel = IntegrityCheckLevel.None, IProgressReport logger = null)
         {
             if (index < 0 || index > 3) throw new IndexOutOfRangeException();
             if (nca.Sections[index] == null) return;
 
-            Stream section = nca.OpenSection(index, raw, verify);
+            Stream section = nca.OpenSection(index, raw, integrityCheckLevel);
             string dir = Path.GetDirectoryName(filename);
             if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
 
@@ -355,13 +437,13 @@ namespace LibHac
             }
         }
 
-        public static void ExtractSection(this Nca nca, int index, string outputDir, bool verify = false, IProgressReport logger = null)
+        public static void ExtractSection(this Nca nca, int index, string outputDir, IntegrityCheckLevel integrityCheckLevel = IntegrityCheckLevel.None, IProgressReport logger = null)
         {
             if (index < 0 || index > 3) throw new IndexOutOfRangeException();
             if (nca.Sections[index] == null) return;
 
             NcaSection section = nca.Sections[index];
-            Stream stream = nca.OpenSection(index, false, verify);
+            Stream stream = nca.OpenSection(index, false, integrityCheckLevel);
 
             switch (section.Type)
             {
@@ -378,6 +460,54 @@ namespace LibHac
                 case SectionType.Bktr:
                     break;
             }
+        }
+
+        public static Validity VerifyNca(this Nca nca, IProgressReport logger = null, bool quiet = false)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                if (nca.Sections[i] != null)
+                {
+                    Validity sectionValidity = VerifySection(nca, i, logger, quiet);
+
+                    if (sectionValidity == Validity.Invalid) return Validity.Invalid;
+                }
+            }
+
+            return Validity.Valid;
+        }
+
+        public static Validity VerifySection(this Nca nca, int index, IProgressReport logger = null, bool quiet = false)
+        {
+            if (nca.Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
+
+            NcaSection sect = nca.Sections[index];
+            NcaHashType hashType = sect.Header.HashType;
+            if (hashType != NcaHashType.Sha256 && hashType != NcaHashType.Ivfc) return Validity.Unchecked;
+
+            HierarchicalIntegrityVerificationStream stream = nca.OpenHashedSection(index, IntegrityCheckLevel.IgnoreOnInvalid);
+            if (stream == null) return Validity.Unchecked;
+
+            if (!quiet) logger?.LogMessage($"Verifying section {index}...");
+
+            for (int i = 0; i < stream.Levels.Length - 1; i++)
+            {
+                if (!quiet) logger?.LogMessage($"    Verifying Hash Level {i}...");
+                Validity levelValidity = stream.ValidateLevel(i, true, logger);
+
+                if (hashType == NcaHashType.Ivfc)
+                {
+                    sect.Header.IvfcInfo.LevelHeaders[i].HashValidity = levelValidity;
+                }
+                else if (hashType == NcaHashType.Sha256 && i == stream.Levels.Length - 2)
+                {
+                    sect.Header.Sha256Info.HashValidity = levelValidity;
+                }
+
+                if (levelValidity == Validity.Invalid) return Validity.Invalid;
+            }
+
+            return Validity.Valid;
         }
     }
 }

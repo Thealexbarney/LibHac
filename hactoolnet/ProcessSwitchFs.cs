@@ -45,7 +45,7 @@ namespace hactoolnet
                     return;
                 }
 
-                NcaSection section = title.MainNca.Sections.FirstOrDefault(x => x.IsExefs);
+                NcaSection section = title.MainNca.Sections[(int)ProgramPartitionType.Code];
 
                 if (section == null)
                 {
@@ -55,12 +55,12 @@ namespace hactoolnet
 
                 if (ctx.Options.ExefsOutDir != null)
                 {
-                    title.MainNca.ExtractSection(section.SectionNum, ctx.Options.ExefsOutDir, ctx.Options.EnableHash, ctx.Logger);
+                    title.MainNca.ExtractSection(section.SectionNum, ctx.Options.ExefsOutDir, ctx.Options.IntegrityLevel, ctx.Logger);
                 }
 
                 if (ctx.Options.ExefsOut != null)
                 {
-                    title.MainNca.ExportSection(section.SectionNum, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Options.EnableHash, ctx.Logger);
+                    title.MainNca.ExportSection(section.SectionNum, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
                 }
             }
 
@@ -95,13 +95,13 @@ namespace hactoolnet
 
                 if (ctx.Options.RomfsOutDir != null)
                 {
-                    var romfs = new Romfs(title.MainNca.OpenSection(section.SectionNum, false, ctx.Options.EnableHash));
+                    var romfs = new Romfs(title.MainNca.OpenSection(section.SectionNum, false, ctx.Options.IntegrityLevel));
                     romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
                 }
 
                 if (ctx.Options.RomfsOut != null)
                 {
-                    title.MainNca.ExportSection(section.SectionNum, ctx.Options.RomfsOut, ctx.Options.Raw, ctx.Options.EnableHash, ctx.Logger);
+                    title.MainNca.ExportSection(section.SectionNum, ctx.Options.RomfsOut, ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
                 }
             }
 
@@ -118,6 +118,67 @@ namespace hactoolnet
             if (ctx.Options.SaveOutDir != null)
             {
                 ExportSdSaves(ctx, switchFs);
+            }
+
+            if (ctx.Options.Validate)
+            {
+                ValidateSwitchFs(ctx, switchFs);
+            }
+        }
+
+        private static void ValidateSwitchFs(Context ctx, SwitchFs switchFs)
+        {
+            if (ctx.Options.TitleId != 0)
+            {
+                ulong id = ctx.Options.TitleId;
+
+                if (!switchFs.Titles.TryGetValue(id, out Title title))
+                {
+                    ctx.Logger.LogMessage($"Could not find title {id:X16}");
+                    return;
+                }
+
+                ValidateTitle(ctx, title, "");
+
+                return;
+            }
+
+            foreach (Application app in switchFs.Applications.Values)
+            {
+                ctx.Logger.LogMessage($"Checking {app.Name}...");
+
+                Title mainTitle = app.Patch ?? app.Main;
+
+                if (mainTitle != null)
+                {
+                    ValidateTitle(ctx, mainTitle, "Main title");
+                }
+
+                foreach (Title title in app.AddOnContent)
+                {
+                    ValidateTitle(ctx, title, "Add-on content");
+                }
+            }
+        }
+
+        private static void ValidateTitle(Context ctx, Title title, string caption)
+        {
+            try
+            {
+                ctx.Logger.LogMessage($"  {caption} {title.Id:x16}");
+
+                foreach (Nca nca in title.Ncas)
+                {
+                    ctx.Logger.LogMessage($"    {nca.Header.ContentType.ToString()}");
+
+                    Validity validity = nca.VerifyNca(ctx.Logger, true);
+
+                    ctx.Logger.LogMessage($"      {validity.ToString()}");
+                }
+            }
+            catch (Exception ex)
+            {
+                ctx.Logger.LogMessage($"Error processing title {title.Id:x16}:\n{ex.Message}");
             }
         }
 
@@ -170,7 +231,7 @@ namespace hactoolnet
 
                     foreach (NcaSection sect in nca.Sections.Where(x => x != null))
                     {
-                        Console.WriteLine($"        {sect.SectionNum} {sect.Type} {sect.Header.EncryptionType} {sect.SuperblockHashValidity}");
+                        Console.WriteLine($"        {sect.SectionNum} {sect.Type} {sect.Header.EncryptionType} {sect.MasterHashValidity}");
                     }
                 }
 

@@ -15,9 +15,10 @@ hactoolnet is an example program that uses LibHac. It is used in a similar manne
 Usage: hactoolnet.exe [options...] <path>
 Options:
   -r, --raw            Keep raw data, don't unpack.
-  -y, --verify         Verify hashes.
+  -y, --verify         Verify all hashes in the input file.
+  -h, --enablehash     Enable hash checks when reading the input file.
   -k, --keyset         Load keys from an external file.
-  -t, --intype=type    Specify input file type [nca, xci, romfs, pk11, pk21, switchfs, save, keygen]
+  -t, --intype=type    Specify input file type [nca, xci, romfs, pk11, pk21, ini1, kip1, switchfs, save, keygen]
   --titlekeys <file>   Load title keys from an external file.
 NCA options:
   --section0 <file>    Specify Section 0 file path.
@@ -53,6 +54,8 @@ Package1 options:
   --outdir <dir>       Specify Package1 directory path.
 Package2 options:
   --outdir <dir>       Specify Package2 directory path.
+INI1 options:
+  --outdir <dir>       Specify INI1 directory path.
 Switch FS options:
   --sdseed <seed>      Set console unique seed for SD card NAX0 encryption.
   --listapps           List application info.
@@ -64,10 +67,13 @@ Switch FS options:
   --romfs <file>       Specify RomFS directory path. (--title must be specified)
   --romfsdir <dir>     Specify RomFS directory path. (--title must be specified)
   --savedir <dir>      Specify save file directory path.
+  -y, --verify         Verify all titles, or verify a single title if --title is set.
 Savefile options:
   --outdir <dir>       Specify directory path to save contents to.
   --debugoutdir <dir>  Specify directory path to save intermediate data to for debugging.
   --sign               Sign the save file. (Requires device_key in key file)
+Keygen options:
+  --outdir <dir>       Specify directory path to save key files to.
 ```
 
 ## Examples

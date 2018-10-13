@@ -87,6 +87,10 @@ namespace LibHac
                     CurrentEntry = CurrentEntry.Next;
                     UpdateCounterSubsection(CurrentEntry.Counter);
                 }
+                else if (bytesRead == 0)
+                {
+                    break;
+                }
             }
 
             return totalBytesRead;
