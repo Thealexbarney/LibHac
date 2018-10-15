@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using LibHac.Streams;
@@ -18,7 +17,7 @@ namespace LibHac.Save
         public SharedStreamSource JournalStreamSource { get; }
         private HierarchicalIntegrityVerificationStream IvfcStream { get; }
         public SharedStreamSource IvfcStreamSource { get; }
-        private AllocationTable AllocationTable { get; }
+        public SaveFs SaveFs { get; }
 
         public Stream DuplexL1A { get; }
         public Stream DuplexL1B { get; }
@@ -36,10 +35,9 @@ namespace LibHac.Save
         public Stream JournalLayer3Hash { get; }
         public Stream JournalFat { get; }
 
-        public DirectoryEntry RootDirectory { get; private set; }
-        public FileEntry[] Files { get; private set; }
-        public DirectoryEntry[] Directories { get; private set; }
-        private Dictionary<string, FileEntry> FileDict { get; }
+        public DirectoryEntry RootDirectory => SaveFs.RootDirectory;
+        public FileEntry[] Files => SaveFs.Files;
+        public DirectoryEntry[] Directories => SaveFs.Directories;
 
         public Savefile(Keyset keyset, Stream file, IntegrityCheckLevel integrityCheckLevel)
         {
@@ -97,7 +95,6 @@ namespace LibHac.Save
                 JournalLayer2Hash = MetaRemapSource.CreateStream(layout.IvfcL2Offset, layout.IvfcL2Size);
                 JournalLayer3Hash = MetaRemapSource.CreateStream(layout.IvfcL3Offset, layout.IvfcL3Size);
                 JournalFat = MetaRemapSource.CreateStream(layout.FatOffset, layout.FatSize);
-                AllocationTable = new AllocationTable(JournalFat);
 
                 MappingEntry[] journalMap = JournalStream.ReadMappingEntries(JournalTable, Header.Journal.MainDataBlockCount);
 
@@ -107,16 +104,10 @@ namespace LibHac.Save
                 JournalStreamSource = new SharedStreamSource(JournalStream);
 
                 IvfcStream = InitIvfcStream(integrityCheckLevel);
+
+                SaveFs = new SaveFs(IvfcStream, MetaRemapSource.CreateStream(layout.FatOffset, layout.FatSize), Header.Save);
+
                 IvfcStreamSource = new SharedStreamSource(IvfcStream);
-
-                ReadFileInfo();
-                var dictionary = new Dictionary<string, FileEntry>();
-                foreach (FileEntry entry in Files)
-                {
-                    dictionary[entry.FullPath] = entry;
-                }
-
-                FileDict = dictionary;
             }
         }
 
@@ -156,114 +147,16 @@ namespace LibHac.Save
 
         public Stream OpenFile(string filename)
         {
-            if (!FileDict.TryGetValue(filename, out FileEntry file))
-            {
-                throw new FileNotFoundException();
-            }
-
-            return OpenFile(file);
+            return SaveFs.OpenFile(filename);
         }
 
         public Stream OpenFile(FileEntry file)
         {
-            if (file.BlockIndex < 0)
-            {
-                return Stream.Null;
-            }
-
-            return OpenFatBlock(file.BlockIndex, file.FileSize);
+            return SaveFs.OpenFile(file);
         }
 
-        private AllocationTableStream OpenFatBlock(int blockIndex, long size)
-        {
-            return new AllocationTableStream(IvfcStreamSource.CreateStream(), AllocationTable, (int)Header.Save.BlockSize, blockIndex, size);
-        }
 
-        public bool FileExists(string filename) => FileDict.ContainsKey(filename);
-
-        private void ReadFileInfo()
-        {
-            // todo: Query the FAT for the file size when none is given
-            AllocationTableStream dirTableStream = OpenFatBlock(Header.Save.DirectoryTableBlock, 1000000);
-            AllocationTableStream fileTableStream = OpenFatBlock(Header.Save.FileTableBlock, 1000000);
-
-            DirectoryEntry[] dirEntries = ReadDirEntries(dirTableStream);
-            FileEntry[] fileEntries = ReadFileEntries(fileTableStream);
-
-            foreach (DirectoryEntry dir in dirEntries)
-            {
-                if (dir.NextSiblingIndex != 0) dir.NextSibling = dirEntries[dir.NextSiblingIndex];
-                if (dir.FirstChildIndex != 0) dir.FirstChild = dirEntries[dir.FirstChildIndex];
-                if (dir.FirstFileIndex != 0) dir.FirstFile = fileEntries[dir.FirstFileIndex];
-                if (dir.NextInChainIndex != 0) dir.NextInChain = dirEntries[dir.NextInChainIndex];
-                if (dir.ParentDirIndex != 0 && dir.ParentDirIndex < dirEntries.Length)
-                    dir.ParentDir = dirEntries[dir.ParentDirIndex];
-            }
-
-            foreach (FileEntry file in fileEntries)
-            {
-                if (file.NextSiblingIndex != 0) file.NextSibling = fileEntries[file.NextSiblingIndex];
-                if (file.NextInChainIndex != 0) file.NextInChain = fileEntries[file.NextInChainIndex];
-                if (file.ParentDirIndex != 0 && file.ParentDirIndex < dirEntries.Length)
-                    file.ParentDir = dirEntries[file.ParentDirIndex];
-            }
-
-            RootDirectory = dirEntries[2];
-
-            FileEntry fileChain = fileEntries[1].NextInChain;
-            var files = new List<FileEntry>();
-            while (fileChain != null)
-            {
-                files.Add(fileChain);
-                fileChain = fileChain.NextInChain;
-            }
-
-            DirectoryEntry dirChain = dirEntries[1].NextInChain;
-            var dirs = new List<DirectoryEntry>();
-            while (dirChain != null)
-            {
-                dirs.Add(dirChain);
-                dirChain = dirChain.NextInChain;
-            }
-
-            Files = files.ToArray();
-            Directories = dirs.ToArray();
-
-            FsEntry.ResolveFilenames(Files);
-            FsEntry.ResolveFilenames(Directories);
-        }
-
-        private FileEntry[] ReadFileEntries(Stream stream)
-        {
-            var reader = new BinaryReader(stream);
-            int count = reader.ReadInt32();
-
-            reader.BaseStream.Position -= 4;
-
-            var entries = new FileEntry[count];
-            for (int i = 0; i < count; i++)
-            {
-                entries[i] = new FileEntry(reader);
-            }
-
-            return entries;
-        }
-
-        private DirectoryEntry[] ReadDirEntries(Stream stream)
-        {
-            var reader = new BinaryReader(stream);
-            int count = reader.ReadInt32();
-
-            reader.BaseStream.Position -= 4;
-
-            var entries = new DirectoryEntry[count];
-            for (int i = 0; i < count; i++)
-            {
-                entries[i] = new DirectoryEntry(reader);
-            }
-
-            return entries;
-        }
+        public bool FileExists(string filename) => SaveFs.FileExists(filename);
 
         public bool SignHeader(Keyset keyset)
         {
