@@ -8,32 +8,18 @@ namespace LibHac.Save
     public class Savefile
     {
         public Header Header { get; }
-        private RemapStream FileRemap { get; }
         public SharedStreamSource SavefileSource { get; }
-        public SharedStreamSource FileRemapSource { get; }
-        private RemapStream MetaRemap { get; }
-        public SharedStreamSource MetaRemapSource { get; }
+
         private JournalStream JournalStream { get; }
         public SharedStreamSource JournalStreamSource { get; }
         private HierarchicalIntegrityVerificationStream IvfcStream { get; }
         public SharedStreamSource IvfcStreamSource { get; }
         public SaveFs SaveFs { get; }
 
-        public Stream DuplexL1A { get; }
-        public Stream DuplexL1B { get; }
-        public Stream DuplexDataA { get; }
-        public Stream DuplexDataB { get; }
-        public LayeredDuplexFs DuplexData { get; }
-        public Stream JournalData { get; }
+        public RemapStorage DataRemapStorage { get; }
+        public RemapStorage MetaRemapStorage { get; }
 
-        public Stream JournalTable { get; }
-        public Stream JournalBitmapUpdatedPhysical { get; }
-        public Stream JournalBitmapUpdatedVirtual { get; }
-        public Stream JournalBitmapUnassigned { get; }
-        public Stream JournalLayer1Hash { get; }
-        public Stream JournalLayer2Hash { get; }
-        public Stream JournalLayer3Hash { get; }
-        public Stream JournalFat { get; }
+        public LayeredDuplexFs DuplexData { get; }
 
         public DirectoryEntry RootDirectory => SaveFs.RootDirectory;
         public FileEntry[] Files => SaveFs.Files;
@@ -48,67 +34,57 @@ namespace LibHac.Save
                 Header = new Header(keyset, reader);
                 FsLayout layout = Header.Layout;
 
-                FileRemap = new RemapStream(
-                    SavefileSource.CreateStream(layout.FileMapDataOffset, layout.FileMapDataSize),
-                    Header.FileMapEntries, Header.FileRemap.MapSegmentCount);
+                DataRemapStorage = new RemapStorage(SavefileSource.CreateStream(layout.FileMapDataOffset, layout.FileMapDataSize),
+                        Header.FileRemap, Header.FileMapEntries);
 
-                FileRemapSource = new SharedStreamSource(FileRemap);
+                DuplexData = InitDuplexStream(DataRemapStorage, Header);
 
-                var duplexLayers = new DuplexFsLayerInfo[3];
+                MetaRemapStorage = new RemapStorage(DuplexData, Header.MetaRemap, Header.MetaMapEntries);
 
-                duplexLayers[0] = new DuplexFsLayerInfo
-                {
-                    DataA = new MemoryStream(Header.DuplexMasterA),
-                    DataB = new MemoryStream(Header.DuplexMasterB),
-                    Info = Header.Duplex.Layers[0]
-                };
+                Stream journalTable = MetaRemapStorage.OpenStream(layout.JournalTableOffset, layout.JournalTableSize);
 
-                duplexLayers[1] = new DuplexFsLayerInfo
-                {
-                    DataA = FileRemapSource.CreateStream(layout.DuplexL1OffsetA, layout.DuplexL1Size),
-                    DataB = FileRemapSource.CreateStream(layout.DuplexL1OffsetB, layout.DuplexL1Size),
-                    Info = Header.Duplex.Layers[1]
-                };
+                MappingEntry[] journalMap = JournalStream.ReadMappingEntries(journalTable, Header.Journal.MainDataBlockCount);
 
-                duplexLayers[2] = new DuplexFsLayerInfo
-                {
-                    DataA = FileRemapSource.CreateStream(layout.DuplexDataOffsetA, layout.DuplexDataSize),
-                    DataB = FileRemapSource.CreateStream(layout.DuplexDataOffsetB, layout.DuplexDataSize),
-                    Info = Header.Duplex.Layers[2]
-                };
-
-                DuplexL1A = FileRemapSource.CreateStream(layout.DuplexL1OffsetA, layout.DuplexL1Size);
-                DuplexL1B = FileRemapSource.CreateStream(layout.DuplexL1OffsetB, layout.DuplexL1Size);
-                DuplexDataA = FileRemapSource.CreateStream(layout.DuplexDataOffsetA, layout.DuplexDataSize);
-                DuplexDataB = FileRemapSource.CreateStream(layout.DuplexDataOffsetB, layout.DuplexDataSize);
-                JournalData = FileRemapSource.CreateStream(layout.JournalDataOffset, layout.JournalDataSizeB + layout.SizeReservedArea);
-
-                DuplexData = new LayeredDuplexFs(duplexLayers, Header.Layout.DuplexIndex == 1);
-                MetaRemap = new RemapStream(DuplexData, Header.MetaMapEntries, Header.MetaRemap.MapSegmentCount);
-                MetaRemapSource = new SharedStreamSource(MetaRemap);
-
-                JournalTable = MetaRemapSource.CreateStream(layout.JournalTableOffset, layout.JournalTableSize);
-                JournalBitmapUpdatedPhysical = MetaRemapSource.CreateStream(layout.JournalBitmapUpdatedPhysicalOffset, layout.JournalBitmapUpdatedPhysicalSize);
-                JournalBitmapUpdatedVirtual = MetaRemapSource.CreateStream(layout.JournalBitmapUpdatedVirtualOffset, layout.JournalBitmapUpdatedVirtualSize);
-                JournalBitmapUnassigned = MetaRemapSource.CreateStream(layout.JournalBitmapUnassignedOffset, layout.JournalBitmapUnassignedSize);
-                JournalLayer1Hash = MetaRemapSource.CreateStream(layout.IvfcL1Offset, layout.IvfcL1Size);
-                JournalLayer2Hash = MetaRemapSource.CreateStream(layout.IvfcL2Offset, layout.IvfcL2Size);
-                JournalLayer3Hash = MetaRemapSource.CreateStream(layout.IvfcL3Offset, layout.IvfcL3Size);
-                JournalFat = MetaRemapSource.CreateStream(layout.FatOffset, layout.FatSize);
-
-                MappingEntry[] journalMap = JournalStream.ReadMappingEntries(JournalTable, Header.Journal.MainDataBlockCount);
-
-                SharedStream journalData = FileRemapSource.CreateStream(layout.JournalDataOffset,
+                Stream journalData = DataRemapStorage.OpenStream(layout.JournalDataOffset,
                     layout.JournalDataSizeB + layout.SizeReservedArea);
                 JournalStream = new JournalStream(journalData, journalMap, (int)Header.Journal.BlockSize);
                 JournalStreamSource = new SharedStreamSource(JournalStream);
 
                 IvfcStream = InitIvfcStream(integrityCheckLevel);
 
-                SaveFs = new SaveFs(IvfcStream, MetaRemapSource.CreateStream(layout.FatOffset, layout.FatSize), Header.Save);
+                SaveFs = new SaveFs(IvfcStream, MetaRemapStorage.OpenStream(layout.FatOffset, layout.FatSize), Header.Save);
 
                 IvfcStreamSource = new SharedStreamSource(IvfcStream);
             }
+        }
+
+        private static LayeredDuplexFs InitDuplexStream(RemapStorage baseStorage, Header header)
+        {
+            FsLayout layout = header.Layout;
+            var duplexLayers = new DuplexFsLayerInfo[3];
+
+            duplexLayers[0] = new DuplexFsLayerInfo
+            {
+                DataA = new MemoryStream(header.DuplexMasterA),
+                DataB = new MemoryStream(header.DuplexMasterB),
+                Info = header.Duplex.Layers[0]
+            };
+
+            duplexLayers[1] = new DuplexFsLayerInfo
+            {
+                DataA = baseStorage.OpenStream(layout.DuplexL1OffsetA, layout.DuplexL1Size),
+                DataB = baseStorage.OpenStream(layout.DuplexL1OffsetB, layout.DuplexL1Size),
+                Info = header.Duplex.Layers[1]
+            };
+
+            duplexLayers[2] = new DuplexFsLayerInfo
+            {
+                DataA = baseStorage.OpenStream(layout.DuplexDataOffsetA, layout.DuplexDataSize),
+                DataB = baseStorage.OpenStream(layout.DuplexDataOffsetB, layout.DuplexDataSize),
+                Info = header.Duplex.Layers[2]
+            };
+
+            return new LayeredDuplexFs(duplexLayers, layout.DuplexIndex == 1);
         }
 
         private HierarchicalIntegrityVerificationStream InitIvfcStream(IntegrityCheckLevel integrityCheckLevel)
@@ -130,8 +106,8 @@ namespace LibHac.Save
                 IvfcLevelHeader level = ivfc.LevelHeaders[i - 1];
 
                 Stream data = i == ivfcLevels - 1
-                    ? (Stream)JournalStream
-                    : MetaRemapSource.CreateStream(level.LogicalOffset, level.HashDataSize);
+                    ? JournalStream
+                    : MetaRemapStorage.OpenStream(level.LogicalOffset, level.HashDataSize);
 
                 initInfo[i] = new IntegrityVerificationInfo
                 {
@@ -154,7 +130,6 @@ namespace LibHac.Save
         {
             return SaveFs.OpenFile(file);
         }
-
 
         public bool FileExists(string filename) => SaveFs.FileExists(filename);
 

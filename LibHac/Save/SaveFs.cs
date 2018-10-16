@@ -6,8 +6,8 @@ namespace LibHac.Save
 {
     public class SaveFs
     {
-        private AllocationTable AllocationTable { get; }
         private SharedStreamSource StreamSource { get; }
+        private AllocationTable AllocationTable { get; }
         private SaveHeader Header { get; }
 
         public DirectoryEntry RootDirectory { get; private set; }

@@ -9,40 +9,15 @@ namespace LibHac.Save
     {
         private long _position;
         private Stream BaseStream { get; }
-        public MapEntry[] MapEntries { get; set; }
-        public MapEntry CurrentEntry { get; set; }
-        public RemapSegment[] Segments { get; set; }
+        private RemapSegment Segment { get; }
+        private MapEntry CurrentEntry { get; set; }
 
-        public RemapStream(Stream baseStream, MapEntry[] entries, int segmentCount)
+        public RemapStream(Stream baseStream, RemapSegment segment)
         {
             BaseStream = baseStream;
-            MapEntries = entries;
-            Segments = new RemapSegment[segmentCount];
-
-            int entryIdx = 0;
-            for (int i = 0; i < segmentCount; i++)
-            {
-                var seg = new RemapSegment();
-                seg.Entries.Add(MapEntries[entryIdx]);
-                seg.Offset = MapEntries[entryIdx].VirtualOffset;
-                MapEntries[entryIdx].Segment = seg;
-                entryIdx++;
-
-                while (entryIdx < MapEntries.Length &&
-                       MapEntries[entryIdx - 1].VirtualOffsetEnd == MapEntries[entryIdx].VirtualOffset)
-                {
-                    MapEntries[entryIdx].Segment = seg;
-                    MapEntries[entryIdx - 1].Next = MapEntries[entryIdx];
-                    seg.Entries.Add(MapEntries[entryIdx]);
-                    entryIdx++;
-                }
-
-                seg.Length = seg.Entries[seg.Entries.Count - 1].VirtualOffsetEnd - seg.Entries[0].VirtualOffset;
-                Segments[i] = seg;
-            }
-
-            CurrentEntry = GetMapEntry(0);
-            UpdateBaseStreamPosition();
+            Segment = segment;
+            CurrentEntry = segment.Entries[0];
+            Length = segment.Length;
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -103,8 +78,7 @@ namespace LibHac.Save
 
         private MapEntry GetMapEntry(long offset)
         {
-            // todo: is O(n) search a possible performance issue?
-            MapEntry entry = MapEntries.FirstOrDefault(x => offset >= x.VirtualOffset && offset < x.VirtualOffsetEnd);
+            MapEntry entry = Segment.Entries.FirstOrDefault(x => offset >= x.VirtualOffset && offset < x.VirtualOffsetEnd);
             if (entry == null) throw new ArgumentOutOfRangeException(nameof(offset));
             return entry;
         }
@@ -120,7 +94,7 @@ namespace LibHac.Save
         public override bool CanRead => true;
         public override bool CanSeek => true;
         public override bool CanWrite => false;
-        public override long Length { get; } = -1;
+        public override long Length { get; }
 
         public override long Position
         {
