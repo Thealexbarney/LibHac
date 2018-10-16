@@ -44,7 +44,7 @@ namespace LibHac.Streams
             if (_readBytes == 0 || !_bufferDirty) return;
 
             _baseStream.Position = _currentSector * _bufferSize;
-            _baseStream.Write(_buffer, 0, _readBytes);
+            _baseStream.Write(_buffer, 0, _bufferSize);
 
             _readBytes = 0;
             _bufferDirty = false;

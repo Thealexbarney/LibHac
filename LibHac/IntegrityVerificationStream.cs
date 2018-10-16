@@ -90,7 +90,7 @@ namespace LibHac
                     bytesToHash = bytesRead;
                 }
             }
-       
+
             if (BlockValidities[blockNum] == Validity.Invalid && integrityCheckLevel == IntegrityCheckLevel.ErrorOnInvalid)
             {
                 throw new InvalidDataException("Hash error!");
@@ -100,23 +100,7 @@ namespace LibHac
 
             if (BlockValidities[blockNum] != Validity.Unchecked) return bytesRead;
 
-            _hash.Initialize();
-
-            if (Type == IntegrityStreamType.Save)
-            {
-                _hash.TransformBlock(Salt, 0, Salt.Length, null, 0);
-            }
-
-            _hash.TransformBlock(buffer, offset, bytesToHash, null, 0);
-            _hash.TransformFinalBlock(buffer, 0, 0);
-
-            byte[] hash = _hash.Hash;
-
-            if (Type == IntegrityStreamType.Save)
-            {
-                // This bit is set on all save hashes
-                hash[0x1F] |= 0x80;
-            }
+            byte[] hash = DoHash(buffer, offset, bytesToHash);
 
             Validity validity = Util.ArraysEqual(_hashBuffer, hash) ? Validity.Valid : Validity.Invalid;
             BlockValidities[blockNum] = validity;
@@ -131,7 +115,37 @@ namespace LibHac
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            throw new NotImplementedException();
+            long blockNum = CurrentSector;
+            int toWrite = (int)Math.Min(count, Length - Position);
+            byte[] hash = DoHash(buffer, offset, toWrite);
+
+            base.Write(buffer, offset, count);
+
+            HashStream.Position = blockNum * DigestSize;
+            HashStream.Write(hash, 0, DigestSize);
+        }
+
+        private byte[] DoHash(byte[] buffer, int offset, int count)
+        {
+            _hash.Initialize();
+
+            if (Type == IntegrityStreamType.Save)
+            {
+                _hash.TransformBlock(Salt, 0, Salt.Length, null, 0);
+            }
+
+            _hash.TransformBlock(buffer, offset, count, null, 0);
+            _hash.TransformFinalBlock(buffer, 0, 0);
+
+            byte[] hash = _hash.Hash;
+
+            if (Type == IntegrityStreamType.Save)
+            {
+                // This bit is set on all save hashes
+                hash[0x1F] |= 0x80;
+            }
+
+            return hash;
         }
 
         public override bool CanRead => true;

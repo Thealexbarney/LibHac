@@ -112,7 +112,9 @@ namespace LibHac.Streams
         public override void Write(byte[] buffer, int offset, int count)
         {
             ValidateSize(count);
-            _baseStream.Write(buffer, offset, count);
+            int toWrite = (int)Math.Min(count, Length - Position);
+
+            _baseStream.Write(buffer, offset, toWrite);
             CurrentSector += count / SectorSize;
         }
 
