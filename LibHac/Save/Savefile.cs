@@ -10,7 +10,6 @@ namespace LibHac.Save
         public Header Header { get; }
         public SharedStreamSource SavefileSource { get; }
 
-        private JournalStream JournalStream { get; }
         public SharedStreamSource JournalStreamSource { get; }
         private HierarchicalIntegrityVerificationStream IvfcStream { get; }
         public SharedStreamSource IvfcStreamSource { get; }
@@ -47,8 +46,8 @@ namespace LibHac.Save
 
                 Stream journalData = DataRemapStorage.OpenStream(layout.JournalDataOffset,
                     layout.JournalDataSizeB + layout.SizeReservedArea);
-                JournalStream = new JournalStream(journalData, journalMap, (int)Header.Journal.BlockSize);
-                JournalStreamSource = new SharedStreamSource(JournalStream);
+                var journalStream = new JournalStream(journalData, journalMap, (int)Header.Journal.BlockSize);
+                JournalStreamSource = new SharedStreamSource(journalStream);
 
                 IvfcStream = InitIvfcStream(integrityCheckLevel);
 
@@ -106,7 +105,7 @@ namespace LibHac.Save
                 IvfcLevelHeader level = ivfc.LevelHeaders[i - 1];
 
                 Stream data = i == ivfcLevels - 1
-                    ? JournalStream
+                    ? JournalStreamSource.CreateStream()
                     : MetaRemapStorage.OpenStream(level.LogicalOffset, level.HashDataSize);
 
                 initInfo[i] = new IntegrityVerificationInfo
