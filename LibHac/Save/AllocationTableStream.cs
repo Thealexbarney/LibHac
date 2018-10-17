@@ -22,7 +22,7 @@ namespace LibHac.Save
 
         public override void Flush()
         {
-            throw new NotImplementedException();
+            Data.Flush();
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -124,6 +124,12 @@ namespace LibHac.Save
                 long segmentPos = value - (Iterator.VirtualBlock * BlockSize);
                 Data.Position = Iterator.PhysicalBlock * BlockSize + segmentPos;
             }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            Flush();
+            base.Dispose(disposing);
         }
     }
 }

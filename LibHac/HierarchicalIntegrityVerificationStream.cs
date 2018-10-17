@@ -82,7 +82,7 @@ namespace LibHac
 
         public override void Flush()
         {
-            throw new NotImplementedException();
+            DataLevel.Flush();
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -115,7 +115,7 @@ namespace LibHac
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            throw new NotImplementedException();
+            DataLevel.Write(buffer, offset, count);
         }
 
         public override bool CanRead => DataLevel.CanRead;

@@ -43,6 +43,27 @@ namespace LibHac.Save
             return count;
         }
 
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            if (CurrentEntry == null) throw new EndOfStreamException();
+
+            long remaining = Math.Min(CurrentEntry.VirtualOffsetEnd - Position, count);
+            if (remaining <= 0) return;
+
+            int inPos = offset;
+
+            while (remaining > 0)
+            {
+                long remainInEntry = CurrentEntry.VirtualOffsetEnd - Position;
+                int toWrite = (int)Math.Min(remaining, remainInEntry);
+                BaseStream.Write(buffer, inPos, toWrite);
+
+                inPos += toWrite;
+                remaining -= toWrite;
+                Position += toWrite;
+            }
+        }
+
         public override long Seek(long offset, SeekOrigin origin)
         {
             switch (origin)
@@ -66,14 +87,9 @@ namespace LibHac.Save
             throw new NotSupportedException();
         }
 
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            throw new NotSupportedException();
-        }
-
         public override void Flush()
         {
-            throw new NotImplementedException();
+            BaseStream.Flush();
         }
 
         private MapEntry GetMapEntry(long offset)

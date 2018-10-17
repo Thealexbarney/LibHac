@@ -46,6 +46,7 @@ namespace LibHac.Streams
             _baseStream.Position = _currentSector * _bufferSize;
             _baseStream.Write(_buffer, 0, _bufferSize);
 
+            _bufferPos = 0;
             _readBytes = 0;
             _bufferDirty = false;
         }
@@ -53,6 +54,7 @@ namespace LibHac.Streams
         public override void Flush()
         {
             WriteSectorIfDirty();
+            _baseStream.Flush();
         }
 
         public override int Read(byte[] buffer, int offset, int count)

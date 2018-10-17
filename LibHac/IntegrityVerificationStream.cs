@@ -30,11 +30,6 @@ namespace LibHac
             BlockValidities = new Validity[SectorCount];
         }
 
-        public override void Flush()
-        {
-            throw new NotImplementedException();
-        }
-
         public override long Seek(long offset, SeekOrigin origin)
         {
             switch (origin)
@@ -119,6 +114,11 @@ namespace LibHac
             int toWrite = (int)Math.Min(count, Length - Position);
             byte[] hash = DoHash(buffer, offset, toWrite);
 
+            if (Type == IntegrityStreamType.Save && buffer.IsEmpty())
+            {
+                Array.Clear(hash, 0, DigestSize);
+            }
+
             base.Write(buffer, offset, count);
 
             HashStream.Position = blockNum * DigestSize;
@@ -146,6 +146,12 @@ namespace LibHac
             }
 
             return hash;
+        }
+
+        public override void Flush()
+        {
+            HashStream.Flush();
+            base.Flush();
         }
 
         public override bool CanRead => true;

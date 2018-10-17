@@ -90,7 +90,7 @@ namespace hactoolnet
             sb.AppendLine();
 
             sb.AppendLine("Savefile:");
-            PrintItem(sb, colLen, "CMAC Signature:", save.Header.Cmac);
+            PrintItem(sb, colLen, $"CMAC Signature{save.Header.SignatureValidity.GetValidityString()}:", save.Header.Cmac);
             PrintItem(sb, colLen, "Title ID:", $"{save.Header.ExtraData.TitleId:x16}");
             PrintItem(sb, colLen, "User ID:", save.Header.ExtraData.UserId);
             PrintItem(sb, colLen, "Save ID:", $"{save.Header.ExtraData.SaveId:x16}");

@@ -21,7 +21,7 @@ namespace LibHac.Streams
             baseStream.Seek(offset, SeekOrigin.Begin);
         }
 
-        public SubStream(Stream baseStream, long offset) 
+        public SubStream(Stream baseStream, long offset)
             : this(baseStream, offset, baseStream.Length - offset) { }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -30,6 +30,14 @@ namespace LibHac.Streams
             if (remaining <= 0) return 0;
             if (remaining < count) count = (int)remaining;
             return BaseStream.Read(buffer, offset, count);
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            long remaining = Math.Min(Length - Position, count);
+            if (remaining <= 0) return;
+
+            BaseStream.Write(buffer, offset, (int)remaining);
         }
 
         public override long Length { get; }
@@ -70,10 +78,5 @@ namespace LibHac.Streams
         public override void SetLength(long value) => throw new NotSupportedException();
 
         public override void Flush() => BaseStream.Flush();
-
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
