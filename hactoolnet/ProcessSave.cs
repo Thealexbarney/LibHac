@@ -73,7 +73,7 @@ namespace hactoolnet
 
                 if (ctx.Options.SignSave)
                 {
-                    if (save.SignHeader(ctx.Keyset))
+                    if (save.CommitHeader(ctx.Keyset))
                     {
                         ctx.Logger.LogMessage("Successfully signed save file");
                     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using LibHac.Streams;
 
 namespace LibHac.Save
 {
@@ -24,13 +25,17 @@ namespace LibHac.Save
         public byte[] DuplexMasterA { get; }
         public byte[] DuplexMasterB { get; }
 
+        public Stream MasterHash { get; }
+
         public Validity SignatureValidity { get; }
         public Validity HeaderHashValidity { get; }
 
         public byte[] Data { get; }
 
-        public Header(Keyset keyset, BinaryReader reader)
+        public Header(Keyset keyset, SharedStreamSource streamSource)
         {
+            var reader = new BinaryReader(streamSource.CreateStream());
+
             reader.BaseStream.Position = 0;
             Data = reader.ReadBytes(0x4000);
             reader.BaseStream.Position = 0;
@@ -64,6 +69,8 @@ namespace LibHac.Save
             MasterHashA = reader.ReadBytes((int)Layout.IvfcMasterHashSize);
             reader.BaseStream.Position = Layout.IvfcMasterHashOffsetB;
             MasterHashB = reader.ReadBytes((int)Layout.IvfcMasterHashSize);
+
+            MasterHash = streamSource.CreateStream(Layout.IvfcMasterHashOffsetA, Layout.IvfcMasterHashSize);
 
             reader.BaseStream.Position = Layout.DuplexMasterOffsetA;
             DuplexMasterA = reader.ReadBytes((int)Layout.DuplexMasterSize);

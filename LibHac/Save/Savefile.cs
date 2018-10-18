@@ -28,33 +28,30 @@ namespace LibHac.Save
         {
             SavefileSource = new SharedStreamSource(file);
 
-            using (var reader = new BinaryReader(SavefileSource.CreateStream(), Encoding.Default, true))
-            {
-                Header = new Header(keyset, reader);
-                FsLayout layout = Header.Layout;
+            Header = new Header(keyset, SavefileSource);
+            FsLayout layout = Header.Layout;
 
-                DataRemapStorage = new RemapStorage(SavefileSource.CreateStream(layout.FileMapDataOffset, layout.FileMapDataSize),
-                        Header.FileRemap, Header.FileMapEntries);
+            DataRemapStorage = new RemapStorage(SavefileSource.CreateStream(layout.FileMapDataOffset, layout.FileMapDataSize),
+                    Header.FileRemap, Header.FileMapEntries);
 
-                DuplexData = InitDuplexStream(DataRemapStorage, Header);
+            DuplexData = InitDuplexStream(DataRemapStorage, Header);
 
-                MetaRemapStorage = new RemapStorage(DuplexData, Header.MetaRemap, Header.MetaMapEntries);
+            MetaRemapStorage = new RemapStorage(DuplexData, Header.MetaRemap, Header.MetaMapEntries);
 
-                Stream journalTable = MetaRemapStorage.OpenStream(layout.JournalTableOffset, layout.JournalTableSize);
+            Stream journalTable = MetaRemapStorage.OpenStream(layout.JournalTableOffset, layout.JournalTableSize);
 
-                MappingEntry[] journalMap = JournalStream.ReadMappingEntries(journalTable, Header.Journal.MainDataBlockCount);
+            MappingEntry[] journalMap = JournalStream.ReadMappingEntries(journalTable, Header.Journal.MainDataBlockCount);
 
-                Stream journalData = DataRemapStorage.OpenStream(layout.JournalDataOffset,
-                    layout.JournalDataSizeB + layout.SizeReservedArea);
-                var journalStream = new JournalStream(journalData, journalMap, (int)Header.Journal.BlockSize);
-                JournalStreamSource = new SharedStreamSource(journalStream);
+            Stream journalData = DataRemapStorage.OpenStream(layout.JournalDataOffset,
+                layout.JournalDataSizeB + layout.SizeReservedArea);
+            var journalStream = new JournalStream(journalData, journalMap, (int)Header.Journal.BlockSize);
+            JournalStreamSource = new SharedStreamSource(journalStream);
 
-                IvfcStream = InitIvfcStream(integrityCheckLevel);
+            IvfcStream = InitIvfcStream(integrityCheckLevel);
 
-                SaveFs = new SaveFs(IvfcStream, MetaRemapStorage.OpenStream(layout.FatOffset, layout.FatSize), Header.Save);
+            SaveFs = new SaveFs(IvfcStream, MetaRemapStorage.OpenStream(layout.FatOffset, layout.FatSize), Header.Save);
 
-                IvfcStreamSource = new SharedStreamSource(IvfcStream);
-            }
+            IvfcStreamSource = new SharedStreamSource(IvfcStream);
         }
 
         private static LayeredDuplexFs InitDuplexStream(RemapStorage baseStorage, Header header)
@@ -95,7 +92,7 @@ namespace LibHac.Save
 
             initInfo[0] = new IntegrityVerificationInfo
             {
-                Data = new MemoryStream(Header.MasterHashA),
+                Data = Header.MasterHash,
                 BlockSize = 0,
                 Type = IntegrityStreamType.Save
             };
@@ -132,18 +129,28 @@ namespace LibHac.Save
 
         public bool FileExists(string filename) => SaveFs.FileExists(filename);
 
-        public bool SignHeader(Keyset keyset)
+        public bool CommitHeader(Keyset keyset)
         {
+            SharedStream headerStream = SavefileSource.CreateStream();
+
+            var hashData = new byte[0x3d00];
+
+            headerStream.Position = 0x300;
+            headerStream.Read(hashData, 0, hashData.Length);
+
+            byte[] hash = Crypto.ComputeSha256(hashData, 0, hashData.Length);
+            headerStream.Position = 0x108;
+            headerStream.Write(hash, 0, hash.Length);
+
             if (keyset.SaveMacKey.IsEmpty()) return false;
 
-            var data = new byte[0x200];
+            var cmacData = new byte[0x200];
             var cmac = new byte[0x10];
 
-            SharedStream headerStream = SavefileSource.CreateStream();
             headerStream.Position = 0x100;
-            headerStream.Read(data, 0, 0x200);
+            headerStream.Read(cmacData, 0, 0x200);
 
-            Crypto.CalculateAesCmac(keyset.SaveMacKey, data, 0, cmac, 0, 0x200);
+            Crypto.CalculateAesCmac(keyset.SaveMacKey, cmacData, 0, cmac, 0, 0x200);
 
             headerStream.Position = 0;
             headerStream.Write(cmac, 0, 0x10);
