@@ -130,4 +130,32 @@ namespace LibHac
             set => DataLevel.Position = value;
         }
     }
+
+    public static class HierarchicalIntegrityVerificationStreamExtensions
+    {
+        internal static void SetLevelValidities(this HierarchicalIntegrityVerificationStream stream, IvfcHeader header)
+        {
+            for (int i = 0; i < stream.Levels.Length - 1; i++)
+            {
+                Validity[] level = stream.LevelValidities[i];
+                var levelValidity = Validity.Valid;
+
+                foreach (Validity block in level)
+                {
+                    if (block == Validity.Invalid)
+                    {
+                        levelValidity = Validity.Invalid;
+                        break;
+                    }
+
+                    if (block == Validity.Unchecked && levelValidity != Validity.Invalid)
+                    {
+                        levelValidity = Validity.Unchecked;
+                    }
+                }
+
+                header.LevelHeaders[i].HashValidity = levelValidity;
+            }
+        }
+    }
 }

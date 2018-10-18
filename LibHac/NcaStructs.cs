@@ -158,8 +158,8 @@ namespace LibHac
     {
         public string Magic;
         public int Version;
-        public uint MasterHashSize;
-        public uint NumLevels;
+        public int MasterHashSize;
+        public int NumLevels;
         public IvfcLevelHeader[] LevelHeaders = new IvfcLevelHeader[6];
         public byte[] SaltSource;
         public byte[] MasterHash;
@@ -167,10 +167,10 @@ namespace LibHac
         public IvfcHeader(BinaryReader reader)
         {
             Magic = reader.ReadAscii(4);
-            Version = reader.ReadInt16();
             reader.BaseStream.Position += 2;
-            MasterHashSize = reader.ReadUInt32();
-            NumLevels = reader.ReadUInt32();
+            Version = reader.ReadInt16();
+            MasterHashSize = reader.ReadInt32();
+            NumLevels = reader.ReadInt32();
 
             for (int i = 0; i < LevelHeaders.Length; i++)
             {
@@ -210,8 +210,9 @@ namespace LibHac
         public long DataOffset;
         public long DataSize;
 
+        public Validity MasterHashValidity = Validity.Unchecked;
         public Validity HashValidity = Validity.Unchecked;
-        
+
         public Sha256Info(BinaryReader reader)
         {
             MasterHash = reader.ReadBytes(0x20);

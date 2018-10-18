@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Text;
 using LibHac;
 using LibHac.Save;
@@ -15,6 +14,11 @@ namespace hactoolnet
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.ReadWrite))
             {
                 var save = new Savefile(ctx.Keyset, file, ctx.Options.IntegrityLevel);
+
+                if (ctx.Options.Validate)
+                {
+                    save.Verify(ctx.Logger);
+                }
 
                 if (ctx.Options.OutDir != null)
                 {
@@ -79,6 +83,14 @@ namespace hactoolnet
                     }
                 }
 
+                if (ctx.Options.ListFiles)
+                {
+                    foreach (FileEntry fileEntry in save.Files)
+                    {
+                        ctx.Logger.LogMessage(fileEntry.FullPath);
+                    }
+                }
+
                 ctx.Logger.LogMessage(save.Print());
             }
         }
@@ -100,17 +112,9 @@ namespace hactoolnet
             PrintItem(sb, colLen, "Save Data Size:", $"0x{save.Header.ExtraData.DataSize:x16} ({Util.GetBytesReadable(save.Header.ExtraData.DataSize)})");
             PrintItem(sb, colLen, "Journal Size:", $"0x{save.Header.ExtraData.JournalSize:x16} ({Util.GetBytesReadable(save.Header.ExtraData.JournalSize)})");
             PrintItem(sb, colLen, $"Header Hash{save.Header.HeaderHashValidity.GetValidityString()}:", save.Header.Layout.Hash);
-            PrintItem(sb, colLen, "IVFC Salt Seed:", save.Header.Ivfc.SaltSource);
             PrintItem(sb, colLen, "Number of Files:", save.Files.Length);
 
-            if (save.Files.Length > 0 && save.Files.Length < 100)
-            {
-                sb.AppendLine("Files:");
-                foreach (FileEntry file in save.Files.OrderBy(x => x.FullPath))
-                {
-                    sb.AppendLine(file.FullPath);
-                }
-            }
+            PrintIvfcHash(sb, colLen, 4, save.Header.Ivfc, IntegrityStreamType.Save);
 
             return sb.ToString();
         }

@@ -151,6 +151,14 @@ namespace LibHac.Save
             return true;
         }
 
+        public Validity Verify(IProgressReport logger = null)
+        {
+            Validity validity = IvfcStream.Validate(true, logger);
+            IvfcStream.SetLevelValidities(Header.Ivfc);
+
+            return validity;
+        }
+
         private string[] SaltSources =
         {
             "HierarchicalIntegrityVerificationStorage::Master",

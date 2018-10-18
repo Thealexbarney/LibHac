@@ -381,7 +381,6 @@ namespace LibHac
             stream.Read(hashTable, 0, hashTable.Length);
 
             sect.MasterHashValidity = Crypto.CheckMemoryHashTable(hashTable, expected, 0, hashTable.Length);
-            if (sect.Header.HashType == NcaHashType.Ivfc) sect.Header.IvfcInfo.LevelHeaders[0].HashValidity = sect.MasterHashValidity;
         }
 
         public void Dispose()
@@ -400,7 +399,21 @@ namespace LibHac
         public int SectionNum { get; set; }
         public long Offset { get; set; }
         public long Size { get; set; }
-        public Validity MasterHashValidity { get; set; }
+
+        public Validity MasterHashValidity
+        {
+            get
+            {
+                if (Header.HashType == NcaHashType.Ivfc) return Header.IvfcInfo.LevelHeaders[0].HashValidity;
+                if (Header.HashType == NcaHashType.Sha256) return Header.Sha256Info.MasterHashValidity;
+                return Validity.Unchecked;
+            }
+            set
+            {
+                if (Header.HashType == NcaHashType.Ivfc) Header.IvfcInfo.LevelHeaders[0].HashValidity = value;
+                if (Header.HashType == NcaHashType.Sha256) Header.Sha256Info.MasterHashValidity = value;
+            }
+        }
 
         public byte[] GetMasterHash()
         {
@@ -493,7 +506,7 @@ namespace LibHac
 
             if (hashType == NcaHashType.Ivfc)
             {
-                SetIvfcLevelValidities(stream, sect.Header.IvfcInfo);
+                stream.SetLevelValidities(sect.Header.IvfcInfo);
             }
             else if (hashType == NcaHashType.Sha256)
             {
@@ -501,31 +514,6 @@ namespace LibHac
             }
 
             return validity;
-        }
-
-        private static void SetIvfcLevelValidities(HierarchicalIntegrityVerificationStream stream, IvfcHeader header)
-        {
-            for (int i = 0; i < stream.Levels.Length - 1; i++)
-            {
-                Validity[] level = stream.LevelValidities[i];
-                var levelValidity = Validity.Valid;
-
-                foreach (Validity block in level)
-                {
-                    if (block == Validity.Invalid)
-                    {
-                        levelValidity = Validity.Invalid;
-                        break;
-                    }
-
-                    if (block == Validity.Unchecked && levelValidity != Validity.Invalid)
-                    {
-                        levelValidity = Validity.Unchecked;
-                    }
-                }
-
-                header.LevelHeaders[i].HashValidity = levelValidity;
-            }
         }
     }
 }

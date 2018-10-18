@@ -71,6 +71,7 @@ namespace LibHac
             if (Type == IntegrityStreamType.Save && _hashBuffer.IsEmpty())
             {
                 Array.Clear(buffer, offset, SectorSize);
+                BlockValidities[blockNum] = Validity.Valid;
                 return bytesRead;
             }
 

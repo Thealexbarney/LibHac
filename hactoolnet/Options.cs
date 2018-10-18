@@ -34,11 +34,19 @@ namespace hactoolnet
         public bool ListApps;
         public bool ListTitles;
         public bool ListRomFs;
+        public bool ListFiles;
         public bool SignSave;
         public ulong TitleId;
 
-        public IntegrityCheckLevel IntegrityLevel =>
-            EnableHash ? IntegrityCheckLevel.ErrorOnInvalid : IntegrityCheckLevel.None;
+        public IntegrityCheckLevel IntegrityLevel
+        {
+            get
+            {
+                if (Validate) return IntegrityCheckLevel.IgnoreOnInvalid;
+                if (EnableHash) return IntegrityCheckLevel.ErrorOnInvalid;
+                return IntegrityCheckLevel.None;
+            }
+        }
     }
 
     internal enum FileType
