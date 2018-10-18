@@ -489,25 +489,43 @@ namespace LibHac
             if (stream == null) return Validity.Unchecked;
 
             if (!quiet) logger?.LogMessage($"Verifying section {index}...");
+            Validity validity = stream.Validate(true, logger);
 
-            for (int i = 0; i < stream.Levels.Length - 1; i++)
+            if (hashType == NcaHashType.Ivfc)
             {
-                if (!quiet) logger?.LogMessage($"    Verifying Hash Level {i}...");
-                Validity levelValidity = stream.ValidateLevel(i, true, logger);
-
-                if (hashType == NcaHashType.Ivfc)
-                {
-                    sect.Header.IvfcInfo.LevelHeaders[i].HashValidity = levelValidity;
-                }
-                else if (hashType == NcaHashType.Sha256 && i == stream.Levels.Length - 2)
-                {
-                    sect.Header.Sha256Info.HashValidity = levelValidity;
-                }
-
-                if (levelValidity == Validity.Invalid) return Validity.Invalid;
+                SetIvfcLevelValidities(stream, sect.Header.IvfcInfo);
+            }
+            else if (hashType == NcaHashType.Sha256)
+            {
+                sect.Header.Sha256Info.HashValidity = validity;
             }
 
-            return Validity.Valid;
+            return validity;
+        }
+
+        private static void SetIvfcLevelValidities(HierarchicalIntegrityVerificationStream stream, IvfcHeader header)
+        {
+            for (int i = 0; i < stream.Levels.Length - 1; i++)
+            {
+                Validity[] level = stream.LevelValidities[i];
+                var levelValidity = Validity.Valid;
+
+                foreach (Validity block in level)
+                {
+                    if (block == Validity.Invalid)
+                    {
+                        levelValidity = Validity.Invalid;
+                        break;
+                    }
+
+                    if (block == Validity.Unchecked && levelValidity != Validity.Invalid)
+                    {
+                        levelValidity = Validity.Unchecked;
+                    }
+                }
+
+                header.LevelHeaders[i].HashValidity = levelValidity;
+            }
         }
     }
 }

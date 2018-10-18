@@ -39,31 +39,33 @@ namespace LibHac
         }
 
         /// <summary>
-        /// Checks the hashes of any unchecked blocks and returns the <see cref="Validity"/> of the hash level.
+        /// Checks the hashes of any unchecked blocks and returns the <see cref="Validity"/> of the data.
         /// </summary>
-        /// <param name="level">The level of hierarchical hashes to check.</param>
         /// <param name="returnOnError">If <see langword="true"/>, return as soon as an invalid block is found.</param>
         /// <param name="logger">An optional <see cref="IProgressReport"/> for reporting progress.</param>
         /// <returns>The <see cref="Validity"/> of the data of the specified hash level.</returns>
-        public Validity ValidateLevel(int level, bool returnOnError, IProgressReport logger = null)
+        public Validity Validate(bool returnOnError, IProgressReport logger = null)
         {
-            Validity[] validities = LevelValidities[level];
-            IntegrityVerificationStream levelStream = IntegrityStreams[level];
+            Validity[] validities = LevelValidities[LevelValidities.Length - 1];
+            IntegrityVerificationStream stream = IntegrityStreams[IntegrityStreams.Length - 1];
 
-            // The original position of the stream must be restored when we're done validating
-            long initialPosition = levelStream.Position;
+            // Restore the original position of the stream when we're done validating
+            long initialPosition = stream.Position;
 
-            var buffer = new byte[levelStream.SectorSize];
+            long blockSize = stream.SectorSize;
+            int blockCount = (int)Util.DivideByRoundUp(Length, blockSize);
+
+            var buffer = new byte[blockSize];
             var result = Validity.Valid;
 
-            logger?.SetTotal(levelStream.SectorCount);
+            logger?.SetTotal(blockCount);
 
-            for (int i = 0; i < levelStream.SectorCount; i++)
+            for (int i = 0; i < blockCount; i++)
             {
                 if (validities[i] == Validity.Unchecked)
                 {
-                    levelStream.Position = (long)levelStream.SectorSize * i;
-                    levelStream.Read(buffer, 0, buffer.Length, IntegrityCheckLevel.IgnoreOnInvalid);
+                    stream.Position = blockSize * i;
+                    stream.Read(buffer, 0, buffer.Length, IntegrityCheckLevel.IgnoreOnInvalid);
                 }
 
                 if (validities[i] == Validity.Invalid)
@@ -76,7 +78,7 @@ namespace LibHac
             }
 
             logger?.SetTotal(0);
-            levelStream.Position = initialPosition;
+            stream.Position = initialPosition;
             return result;
         }
 
