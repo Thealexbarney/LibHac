@@ -105,11 +105,6 @@ namespace LibHac
             Counter[8] = (byte)((Counter[8] & 0xF0) | (int)(off & 0x0F));
         }
 
-        public override void Flush()
-        {
-            throw new NotImplementedException();
-        }
-
         public override long Seek(long offset, SeekOrigin origin)
         {
             switch (origin)

@@ -32,7 +32,13 @@ namespace LibHac.Streams
             return new SharedStream(this, offset, length);
         }
 
-        public void Flush() => BaseStream.Flush();
+        public void Flush()
+        {
+            lock (Locker)
+            {
+                BaseStream.Flush();
+            }
+        }
 
         public int Read(long readOffset, byte[] buffer, int bufferOffset, int count)
         {

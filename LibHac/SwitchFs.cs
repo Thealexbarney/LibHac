@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using LibHac.Save;
 using LibHac.Streams;
 
 namespace LibHac
@@ -16,7 +17,7 @@ namespace LibHac
         public string SaveDir { get; }
 
         public Dictionary<string, Nca> Ncas { get; } = new Dictionary<string, Nca>(StringComparer.OrdinalIgnoreCase);
-        public Dictionary<string, Savefile.Savefile> Saves { get; } = new Dictionary<string, Savefile.Savefile>(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, Savefile> Saves { get; } = new Dictionary<string, Savefile>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<ulong, Title> Titles { get; } = new Dictionary<ulong, Title>();
         public Dictionary<ulong, Application> Applications { get; } = new Dictionary<ulong, Application>();
 
@@ -117,7 +118,7 @@ namespace LibHac
 
             foreach (string file in files)
             {
-                Savefile.Savefile save = null;
+                Savefile save = null;
                 string saveName = Path.GetFileNameWithoutExtension(file);
 
                 try
@@ -126,7 +127,7 @@ namespace LibHac
 
                     string sdPath = "/" + Util.GetRelativePath(file, SaveDir).Replace('\\', '/');
                     var nax0 = new Nax0(Keyset, stream, sdPath, false);
-                    save = new Savefile.Savefile(Keyset, nax0.Stream, IntegrityCheckLevel.None);
+                    save = new Savefile(Keyset, nax0.Stream, IntegrityCheckLevel.None);
                 }
                 catch (Exception ex)
                 {

@@ -7,7 +7,7 @@ using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 using LibHac;
 using LibHac.Nand;
-using LibHac.Savefile;
+using LibHac.Save;
 using LibHac.Streams;
 
 namespace NandReaderGui.ViewModel
