@@ -154,6 +154,7 @@ namespace LibHac.Save
 
             headerStream.Position = 0;
             headerStream.Write(cmac, 0, 0x10);
+            headerStream.Flush();
 
             return true;
         }
