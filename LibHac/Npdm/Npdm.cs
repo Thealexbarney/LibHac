@@ -1,9 +1,9 @@
 using System;
 using System.IO;
-using System.Text;
 
-namespace LibHac
+namespace LibHac.Npdm
 {
+    //https://github.com/Ryujinx/Ryujinx/blob/master/Ryujinx.HLE/Loaders/Npdm/Npdm.cs
     //https://github.com/SciresM/hactool/blob/master/npdm.c
     //https://github.com/SciresM/hactool/blob/master/npdm.h
     //http://switchbrew.org/index.php?title=NPDM
@@ -21,8 +21,8 @@ namespace LibHac
         public string TitleName               { get; private set; }
         public byte[] ProductCode             { get; private set; }
 
-        public ACI0 ACI0 { get; private set; }
-        public ACID ACID { get; private set; }
+        public ACI0 Aci0 { get; private set; }
+        public ACID AciD { get; private set; }
 
         public Npdm(Stream Stream)
         {
@@ -70,8 +70,8 @@ namespace LibHac
             int ACIDOffset = Reader.ReadInt32();
             int ACIDSize   = Reader.ReadInt32();
 
-            ACI0 = new ACI0(Stream, ACI0Offset);
-            ACID = new ACID(Stream, ACIDOffset);
+            Aci0 = new ACI0(Stream, ACI0Offset);
+            AciD = new ACID(Stream, ACIDOffset);
         }
     }
 }

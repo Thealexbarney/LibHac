@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace LibHac
+namespace LibHac.Npdm
 {
     class ACID
     {
@@ -15,9 +15,9 @@ namespace LibHac
         public long TitleIdRangeMin { get; private set; }
         public long TitleIdRangeMax { get; private set; }
 
-        public FsAccessControl      FsAccessControl      { get; private set; }
-        public ServiceAccessControl ServiceAccessControl { get; private set; }
-        public KernelAccessControl  KernelAccessControl  { get; private set; }
+        public FsAccessControl      FsAccess      { get; private set; }
+        public ServiceAccessControl ServiceAccess { get; private set; }
+        public KernelAccessControl  KernelAccess { get; private set; }
 
         public ACID(Stream Stream, int Offset)
         {
@@ -52,11 +52,11 @@ namespace LibHac
             int KernelAccessControlOffset  = Reader.ReadInt32();
             int KernelAccessControlSize    = Reader.ReadInt32();
 
-            FsAccessControl = new FsAccessControl(Stream, Offset + FsAccessControlOffset, FsAccessControlSize);
+            FsAccess = new FsAccessControl(Stream, Offset + FsAccessControlOffset, FsAccessControlSize);
 
-            ServiceAccessControl = new ServiceAccessControl(Stream, Offset + ServiceAccessControlOffset, ServiceAccessControlSize);
+            ServiceAccess = new ServiceAccessControl(Stream, Offset + ServiceAccessControlOffset, ServiceAccessControlSize);
 
-            KernelAccessControl = new KernelAccessControl(Stream, Offset + KernelAccessControlOffset, KernelAccessControlSize);
+            KernelAccess = new KernelAccessControl(Stream, Offset + KernelAccessControlOffset, KernelAccessControlSize);
         }
     }
 }

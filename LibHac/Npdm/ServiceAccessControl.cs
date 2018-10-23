@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 
-namespace LibHac
+namespace LibHac.Npdm
 {
     class ServiceAccessControl
     {

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace LibHac
+namespace LibHac.Npdm
 {
     struct KernelAccessControlItem
     {

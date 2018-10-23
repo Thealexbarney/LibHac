@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace LibHac
+namespace LibHac.Npdm
 {
     class ACI0
     {
@@ -12,8 +12,8 @@ namespace LibHac
         public int   FsVersion            { get; private set; }
         public ulong FsPermissionsBitmask { get; private set; }
 
-        public ServiceAccessControl ServiceAccessControl { get; private set; }
-        public KernelAccessControl  KernelAccessControl  { get; private set; }
+        public ServiceAccessControl ServiceAccess{ get; private set; }
+        public KernelAccessControl  KernelAccess  { get; private set; }
 
         public ACI0(Stream Stream, int Offset)
         {
@@ -42,14 +42,14 @@ namespace LibHac
             int KernelAccessControlOffset  = Reader.ReadInt32();
             int KernelAccessControlSize    = Reader.ReadInt32();
 
-            FsAccessHeader FsAccessHeader = new FsAccessHeader(Stream, Offset + FsAccessHeaderOffset, FsAccessHeaderSize);
+            FsAccessHeader AccessHeader = new FsAccessHeader(Stream, Offset + FsAccessHeaderOffset, FsAccessHeaderSize);
 
-            FsVersion            = FsAccessHeader.Version;
-            FsPermissionsBitmask = FsAccessHeader.PermissionsBitmask;
+            FsVersion            = AccessHeader.Version;
+            FsPermissionsBitmask = AccessHeader.PermissionsBitmask;
 
-            ServiceAccessControl = new ServiceAccessControl(Stream, Offset + ServiceAccessControlOffset, ServiceAccessControlSize);
+            ServiceAccess = new ServiceAccessControl(Stream, Offset + ServiceAccessControlOffset, ServiceAccessControlSize);
 
-            KernelAccessControl = new KernelAccessControl(Stream, Offset + KernelAccessControlOffset, KernelAccessControlSize);
+            KernelAccess = new KernelAccessControl(Stream, Offset + KernelAccessControlOffset, KernelAccessControlSize);
         }
     }
 }

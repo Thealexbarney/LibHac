@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace LibHac
+namespace LibHac.Npdm
 {
     class FsAccessHeader
     {
