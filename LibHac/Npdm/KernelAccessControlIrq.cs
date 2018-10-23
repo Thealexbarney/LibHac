@@ -1,6 +1,6 @@
 namespace LibHac.Npdm
 {
-    struct KernelAccessControlIrq
+    public struct KernelAccessControlIrq
     {
         public uint Irq0 { get; private set; }
         public uint Irq1 { get; private set; }

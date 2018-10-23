@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace LibHac.Npdm
 {
-    class KernelAccessControl
+    public class KernelAccessControl
     {
         public List<KernelAccessControlItem> Items;
 

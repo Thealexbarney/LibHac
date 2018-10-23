@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace LibHac.Npdm
 {
-    struct KernelAccessControlItem
+    public struct KernelAccessControlItem
     {
         public bool HasKernelFlags        { get; set; }
         public uint LowestThreadPriority  { get; set; }

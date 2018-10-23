@@ -3,7 +3,7 @@ using System.IO;
 
 namespace LibHac.Npdm
 {
-    class FsAccessHeader
+    public class FsAccessHeader
     {
         public int   Version            { get; private set; }
         public ulong PermissionsBitmask { get; private set; }

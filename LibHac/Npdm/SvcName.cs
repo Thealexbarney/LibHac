@@ -1,6 +1,6 @@
 namespace LibHac.Npdm
 {
-    enum SvcName
+    public enum SvcName
     {
         Reserved0,
         SetHeapSize,

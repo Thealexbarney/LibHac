@@ -3,7 +3,7 @@ using System.IO;
 
 namespace LibHac.Npdm
 {
-    class ServiceAccessControl
+    public class ServiceAccessControl
     {
         public Dictionary<string, bool> Services { get; private set; } = new Dictionary<string, bool>();
 

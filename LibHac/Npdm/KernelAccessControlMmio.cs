@@ -1,6 +1,6 @@
 namespace LibHac.Npdm
 {
-    struct KernelAccessControlMmio
+    public struct KernelAccessControlMmio
     {
         public ulong Address  { get; private set; }
         public ulong Size     { get; private set; }

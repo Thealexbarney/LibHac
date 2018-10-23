@@ -1,6 +1,6 @@
 namespace LibHac.Npdm
 {
-    enum FsPermissionBool : ulong
+    public enum FsPermissionBool : ulong
     {
         BisCache                  = 0x8000000000000080,
         EraseMmc                  = 0x8000000000000080,

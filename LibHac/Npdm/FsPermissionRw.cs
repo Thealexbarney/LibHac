@@ -1,6 +1,6 @@
 namespace LibHac.Npdm
 {
-    enum FsPermissionRw : ulong
+    public enum FsPermissionRw : ulong
     {
         MountContentType2     = 0x8000000000000801,
         MountContentType5     = 0x8000000000000801,

@@ -2,7 +2,7 @@
 
 namespace LibHac.Npdm
 {
-    class FsAccessControl
+    public class FsAccessControl
     {
         public int   Version            { get; private set; }
         public ulong PermissionsBitmask { get; private set; }

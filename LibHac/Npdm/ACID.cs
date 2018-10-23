@@ -3,7 +3,7 @@ using System.IO;
 
 namespace LibHac.Npdm
 {
-    class ACID
+    public class ACID
     {
 
         public string Magic;

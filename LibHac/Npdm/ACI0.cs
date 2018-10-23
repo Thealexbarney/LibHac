@@ -3,7 +3,7 @@ using System.IO;
 
 namespace LibHac.Npdm
 {
-    class ACI0
+    public class ACI0
     {
         public string Magic;
 
