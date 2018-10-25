@@ -44,6 +44,7 @@ namespace hactoolnet
             new CliOption("listapps", 0, (o, a) => o.ListApps = true),
             new CliOption("listtitles", 0, (o, a) => o.ListTitles = true),
             new CliOption("listromfs", 0, (o, a) => o.ListRomFs = true),
+            new CliOption("listfiles", 0, (o, a) => o.ListFiles = true),
             new CliOption("sign", 0, (o, a) => o.SignSave = true),
             new CliOption("title", 1, (o, a) => o.TitleId = ParseTitleId(a[0])),
         };
@@ -203,9 +204,10 @@ namespace hactoolnet
             sb.AppendLine("  --outdir <dir>       Specify directory path to save contents to.");
             sb.AppendLine("  --debugoutdir <dir>  Specify directory path to save intermediate data to for debugging.");
             sb.AppendLine("  --sign               Sign the save file. (Requires device_key in key file)");
+            sb.AppendLine("  --listfiles          List files in save file.");
             sb.AppendLine("Keygen options:");
             sb.AppendLine("  --outdir <dir>       Specify directory path to save key files to.");
-            
+
             return sb.ToString();
         }
 

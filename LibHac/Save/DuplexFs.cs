@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace LibHac.Savefile
+namespace LibHac.Save
 {
     public class DuplexFs : Stream
     {
@@ -28,7 +28,9 @@ namespace LibHac.Savefile
 
         public override void Flush()
         {
-            throw new NotImplementedException();
+            BitmapStream?.Flush();
+            DataA?.Flush();
+            DataB?.Flush();
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -57,6 +59,30 @@ namespace LibHac.Savefile
             return totalBytesRead;
         }
 
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            long remaining = Math.Min(count, Length - Position);
+            if (remaining <= 0) return;
+
+            int inOffset = offset;
+
+            while (remaining > 0)
+            {
+                int blockNum = (int)(Position / BlockSize);
+                int blockPos = (int)(Position % BlockSize);
+                int bytesToWrite = (int)Math.Min(remaining, BlockSize - blockPos);
+
+                Stream data = Bitmap.Bitmap[blockNum] ? DataB : DataA;
+                data.Position = blockNum * BlockSize + blockPos;
+
+                data.Write(buffer, inOffset, bytesToWrite);
+
+                inOffset += bytesToWrite;
+                remaining -= bytesToWrite;
+                Position += bytesToWrite;
+            }
+        }
+
         public override long Seek(long offset, SeekOrigin origin)
         {
             switch (origin)
@@ -76,11 +102,6 @@ namespace LibHac.Savefile
         }
 
         public override void SetLength(long value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void Write(byte[] buffer, int offset, int count)
         {
             throw new NotImplementedException();
         }

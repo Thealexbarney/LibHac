@@ -174,7 +174,7 @@ namespace hactoolnet
                             PrintSha256Hash(sect);
                             break;
                         case NcaHashType.Ivfc:
-                            PrintIvfcHash(sect);
+                            PrintIvfcHash(sb, colLen, 8, sect.Header.IvfcInfo, IntegrityStreamType.RomFs);
                             break;
                         default:
                             sb.AppendLine("        Unknown/invalid superblock!");
@@ -195,32 +195,6 @@ namespace hactoolnet
                 PrintItem(sb, colLen, "            Block Size:", $"0x{hashInfo.BlockSize:x}");
                 PrintItem(sb, colLen, "        PFS0 Offset:", $"0x{hashInfo.DataOffset:x12}");
                 PrintItem(sb, colLen, "        PFS0 Size:", $"0x{hashInfo.DataSize:x12}");
-            }
-
-            void PrintIvfcHash(NcaSection sect)
-            {
-                IvfcHeader ivfcInfo = sect.Header.IvfcInfo;
-
-                PrintItem(sb, colLen, $"        Master Hash{sect.MasterHashValidity.GetValidityString()}:", ivfcInfo.MasterHash);
-                PrintItem(sb, colLen, "        Magic:", ivfcInfo.Magic);
-                PrintItem(sb, colLen, "        Version:", $"{ivfcInfo.Version:x8}");
-
-                for (int i = 0; i < Romfs.IvfcMaxLevel; i++)
-                {
-                    IvfcLevelHeader level = ivfcInfo.LevelHeaders[i];
-                    long hashOffset = 0;
-
-                    if (i != 0)
-                    {
-                        hashOffset = ivfcInfo.LevelHeaders[i - 1].LogicalOffset;
-                    }
-
-                    sb.AppendLine($"        Level {i}{level.HashValidity.GetValidityString()}:");
-                    PrintItem(sb, colLen, "            Data Offset:", $"0x{level.LogicalOffset:x12}");
-                    PrintItem(sb, colLen, "            Data Size:", $"0x{level.HashDataSize:x12}");
-                    PrintItem(sb, colLen, "            Hash Offset:", $"0x{hashOffset:x12}");
-                    PrintItem(sb, colLen, "            Hash BlockSize:", $"0x{1 << level.BlockSizePower:x8}");
-                }
             }
         }
     }

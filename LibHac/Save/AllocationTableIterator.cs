@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LibHac.Savefile
+namespace LibHac.Save
 {
     public class AllocationTableIterator
     {

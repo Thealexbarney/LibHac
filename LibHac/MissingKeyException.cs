@@ -75,5 +75,25 @@ namespace LibHac
             base.GetObjectData(info, context);
             info.AddValue(nameof(Name), Name);
         }
+
+        public override string Message
+        {
+            get
+            {
+                string s = base.Message;
+
+                if (Type != KeyType.None)
+                {
+                    s += $"{Environment.NewLine}Key Type: {Type}";
+                }
+
+                if (Name != null)
+                {
+                    s += $"{Environment.NewLine}Key Name: {Name}";
+                }
+
+                return s;
+            }
+        }
     }
 }

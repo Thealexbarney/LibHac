@@ -1,7 +1,8 @@
 ﻿using System;
 using System.IO;
+using LibHac.Streams;
 
-namespace LibHac.Savefile
+namespace LibHac.Save
 {
     public class Header
     {
@@ -24,13 +25,17 @@ namespace LibHac.Savefile
         public byte[] DuplexMasterA { get; }
         public byte[] DuplexMasterB { get; }
 
+        public Stream MasterHash { get; }
+
         public Validity SignatureValidity { get; }
         public Validity HeaderHashValidity { get; }
 
         public byte[] Data { get; }
 
-        public Header(Keyset keyset, BinaryReader reader)
+        public Header(Keyset keyset, SharedStreamSource streamSource)
         {
+            var reader = new BinaryReader(streamSource.CreateStream());
+
             reader.BaseStream.Position = 0;
             Data = reader.ReadBytes(0x4000);
             reader.BaseStream.Position = 0;
@@ -64,6 +69,8 @@ namespace LibHac.Savefile
             MasterHashA = reader.ReadBytes((int)Layout.IvfcMasterHashSize);
             reader.BaseStream.Position = Layout.IvfcMasterHashOffsetB;
             MasterHashB = reader.ReadBytes((int)Layout.IvfcMasterHashSize);
+
+            MasterHash = streamSource.CreateStream(Layout.IvfcMasterHashOffsetA, Layout.IvfcMasterHashSize);
 
             reader.BaseStream.Position = Layout.DuplexMasterOffsetA;
             DuplexMasterA = reader.ReadBytes((int)Layout.DuplexMasterSize);
@@ -192,11 +199,11 @@ namespace LibHac.Savefile
 
     public class RemapHeader
     {
-        public string Magic { get; set; }
-        public uint MagicNum { get; set; }
-        public int MapEntryCount { get; set; }
-        public int MapSegmentCount { get; set; }
-        public int Field10 { get; set; }
+        public string Magic { get; }
+        public uint MagicNum { get; }
+        public int MapEntryCount { get; }
+        public int MapSegmentCount { get; }
+        public int SegmentBits { get; }
 
         public RemapHeader(BinaryReader reader)
         {
@@ -204,7 +211,7 @@ namespace LibHac.Savefile
             MagicNum = reader.ReadUInt32();
             MapEntryCount = reader.ReadInt32();
             MapSegmentCount = reader.ReadInt32();
-            Field10 = reader.ReadInt32();
+            SegmentBits = reader.ReadInt32();
         }
     }
 
@@ -320,7 +327,8 @@ namespace LibHac.Savefile
         public long PhysicalOffset { get; }
         public long Size { get; }
         public int Alignment { get; }
-        public int StorageType { get; }
+        public int Field1C { get; }
+
         public long VirtualOffsetEnd => VirtualOffset + Size;
         public long PhysicalOffsetEnd => PhysicalOffset + Size;
         internal RemapSegment Segment { get; set; }
@@ -332,7 +340,7 @@ namespace LibHac.Savefile
             PhysicalOffset = reader.ReadInt64();
             Size = reader.ReadInt64();
             Alignment = reader.ReadInt32();
-            StorageType = reader.ReadInt32();
+            Field1C = reader.ReadInt32();
         }
     }
 
