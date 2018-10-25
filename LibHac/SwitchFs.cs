@@ -189,16 +189,15 @@ namespace LibHac
             foreach (Title title in Titles.Values.Where(x => x.ControlNca != null))
             {
                 var romfs = new Romfs(title.ControlNca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid));
-                byte[] control = romfs.GetFile("/control.nacp");
+                Stream control = romfs.OpenFile("/control.nacp");
 
-                var reader = new BinaryReader(new MemoryStream(control));
-                title.Control = new Nacp(reader);
+                title.Control = new Nacp(control);
 
-                foreach (NacpLang lang in title.Control.Languages)
+                foreach (NacpDescripion desc in title.Control.Descriptions)
                 {
-                    if (!string.IsNullOrWhiteSpace(lang.Title))
+                    if (!string.IsNullOrWhiteSpace(desc.Title))
                     {
-                        title.Name = lang.Title;
+                        title.Name = desc.Title;
                         break;
                     }
                 }
