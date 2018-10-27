@@ -17,6 +17,8 @@ namespace LibHac
         public Dictionary<string, RomfsFile> FileDict { get; }
         private SharedStreamSource StreamSource { get; }
 
+        public Romfs(Storage storage) : this(storage.AsStream()) { }
+
         public Romfs(Stream stream)
         {
             StreamSource = new SharedStreamSource(stream);

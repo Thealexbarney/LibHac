@@ -234,6 +234,8 @@ namespace LibHac
         public uint NumEntries;
         public uint Field1C;
 
+        public byte[] Header;
+
         public BktrHeader(BinaryReader reader)
         {
             Offset = reader.ReadInt64();
@@ -242,6 +244,9 @@ namespace LibHac
             Version = reader.ReadUInt32();
             NumEntries = reader.ReadUInt32();
             Field1C = reader.ReadUInt32();
+
+            reader.BaseStream.Position -= 0x10;
+            Header = reader.ReadBytes(0x10);
         }
     }
 

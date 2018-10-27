@@ -2,8 +2,7 @@
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using LibHac.Streams;
-using LibHac.XTSSharp;
+using LibHac.IO;
 
 namespace LibHac
 {
@@ -12,20 +11,18 @@ namespace LibHac
         public byte[] Hmac { get; private set; }
         public byte[][] EncKeys { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x10);
         public byte[][] Keys { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x10);
+        public byte[] Key { get; } = new byte[0x20];
         public long Length { get; private set; }
-        public Stream Stream { get; }
+        public Storage Storage { get; }
         private bool KeepOpen { get; }
 
-        public Nax0(Keyset keyset, Stream stream, string sdPath, bool keepOpen)
+        public Nax0(Keyset keyset, Storage storage, string sdPath, bool keepOpen)
         {
-            stream.Position = 0;
             KeepOpen = keepOpen;
-            ReadHeader(stream);
-            DeriveKeys(keyset, sdPath, stream);
+            ReadHeader(storage.AsStream());
+            DeriveKeys(keyset, sdPath, storage);
 
-            stream.Position = 0x4000;
-            Xts xts = XtsAes128.Create(Keys[0], Keys[1]);
-            Stream = new RandomAccessSectorStream(new XtsSectorStream(stream, xts, 0x4000, 0x4000), keepOpen);
+            Storage = new XtsStorage(storage.Slice(0x4000), Key, 0x4000);
         }
 
         private void ReadHeader(Stream stream)
@@ -43,11 +40,10 @@ namespace LibHac
             Length = reader.ReadInt64();
         }
 
-        private void DeriveKeys(Keyset keyset, string sdPath, Stream stream)
+        private void DeriveKeys(Keyset keyset, string sdPath, Storage storage)
         {
-            stream.Position = 0x20;
             var validationHashKey = new byte[0x60];
-            stream.Read(validationHashKey, 0, 0x60);
+            storage.Read(validationHashKey, 0x20);
 
             // Try both the NCA and save key sources and pick the one that works
             for (int k = 0; k < 2; k++)
@@ -66,6 +62,8 @@ namespace LibHac
                 // Decrypt this NAX0's keys
                 Crypto.DecryptEcb(naxSpecificKeys[0], EncKeys[0], Keys[0], 0x10);
                 Crypto.DecryptEcb(naxSpecificKeys[1], EncKeys[1], Keys[1], 0x10);
+                Array.Copy(Keys[0], 0, Key, 0, 0x10);
+                Array.Copy(Keys[1], 0, Key, 0x10, 0x10);
 
                 // Copy the decrypted keys into the NAX0 header and use that for the HMAC key
                 // for validating that the keys are correct
@@ -88,7 +86,7 @@ namespace LibHac
         {
             if (!KeepOpen)
             {
-                Stream?.Dispose();
+                Storage?.Dispose();
             }
         }
     }

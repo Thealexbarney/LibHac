@@ -16,6 +16,8 @@ namespace LibHac
         private Dictionary<string, PfsFileEntry> FileDict { get; }
         private SharedStreamSource StreamSource { get; }
 
+        public Pfs(Storage storage) : this(storage.AsStream()) { }
+
         public Pfs(Stream stream)
         {
             using (var reader = new BinaryReader(stream, Encoding.Default, true))

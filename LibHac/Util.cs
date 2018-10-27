@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using LibHac.IO;
 
 namespace LibHac
 {
@@ -46,13 +47,15 @@ namespace LibHac
             return true;
         }
 
-        public static bool IsEmpty(this byte[] array)
-        {
-            if (array == null) throw new ArgumentNullException(nameof(array));
+        public static bool IsEmpty(this byte[] array) => array.AsSpan().IsEmpty();
 
-            for (int i = 0; i < array.Length; i++)
+        public static bool IsEmpty(this Span<byte> span)
+        {
+            if (span == null) throw new ArgumentNullException(nameof(span));
+
+            for (int i = 0; i < span.Length; i++)
             {
-                if (array[i] != 0)
+                if (span[i] != 0)
                 {
                     return false;
                 }
@@ -75,6 +78,30 @@ namespace LibHac
                 remaining -= read;
                 progress?.ReportAdd(read);
             }
+        }
+
+        public static void CopyToStream(this Storage input, Stream output, long length, IProgressReport progress = null)
+        {
+            const int bufferSize = 0x8000;
+            long remaining = length;
+            long inOffset = 0;
+            var buffer = new byte[bufferSize];
+            progress?.SetTotal(length);
+
+            int read;
+            while ((read = input.Read(buffer, inOffset, (int)Math.Min(buffer.Length, remaining), 0)) > 0)
+            {
+                output.Write(buffer, 0, read);
+                remaining -= read;
+                inOffset += read;
+                progress?.ReportAdd(read);
+            }
+        }
+
+        public static Storage AsStorage(this Stream stream)
+        {
+            if (stream == null) return null;
+            return new StreamStorage(stream, true);
         }
 
         public static void WriteAllBytes(this Stream input, string filename, IProgressReport progress = null)

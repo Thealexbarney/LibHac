@@ -202,7 +202,7 @@ namespace hactoolnet
 
             foreach (Nca nca in title.Ncas)
             {
-                Stream stream = nca.GetStream();
+                Stream stream = nca.GetStorage().AsStream();
                 string outFile = Path.Combine(saveDir, nca.Filename);
                 ctx.Logger.LogMessage(nca.Filename);
                 using (var outStream = new FileStream(outFile, FileMode.Create, FileAccess.ReadWrite))

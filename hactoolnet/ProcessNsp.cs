@@ -68,7 +68,7 @@ namespace hactoolnet
 
             foreach (Nca nca in title.Ncas)
             {
-                builder.AddFile(nca.Filename, nca.GetStream());
+                builder.AddFile(nca.Filename, nca.GetStorage().AsStream());
             }
 
             var ticket = new Ticket

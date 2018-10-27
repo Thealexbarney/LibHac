@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Text;
 using LibHac;
+using LibHac.IO;
 using static hactoolnet.Print;
 
 namespace hactoolnet
@@ -10,14 +11,14 @@ namespace hactoolnet
     {
         public static void Process(Context ctx)
         {
-            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
+            using (var file = new StreamStorage(new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read), false))
             {
                 var nca = new Nca(ctx.Keyset, file, false);
                 nca.ValidateMasterHashes();
 
                 if (ctx.Options.BaseNca != null)
                 {
-                    var baseFile = new FileStream(ctx.Options.BaseNca, FileMode.Open, FileAccess.Read);
+                    var baseFile = new StreamStorage(new FileStream(ctx.Options.BaseNca, FileMode.Open, FileAccess.Read), false);
                     var baseNca = new Nca(ctx.Keyset, baseFile, false);
                     nca.SetBaseNca(baseNca);
                 }
