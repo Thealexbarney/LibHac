@@ -21,6 +21,14 @@ namespace LibHac
             return comp;
         }
 
+        public static byte[] ComputeSha256(byte[] data, int offset, int count)
+        {
+            using (SHA256 sha = SHA256.Create())
+            {
+                return sha.ComputeHash(data, offset, count);
+            }
+        }
+
         public static void DecryptEcb(byte[] key, byte[] src, int srcIndex, byte[] dest, int destIndex, int length)
         {
             using (Aes aes = Aes.Create())

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace LibHac.Savefile
+namespace LibHac.Save
 {
     public class AllocationTableStream : Stream
     {
@@ -22,7 +22,7 @@ namespace LibHac.Savefile
 
         public override void Flush()
         {
-            throw new NotImplementedException();
+            Data.Flush();
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -53,7 +53,20 @@ namespace LibHac.Savefile
 
         public override long Seek(long offset, SeekOrigin origin)
         {
-            throw new NotImplementedException();
+            switch (origin)
+            {
+                case SeekOrigin.Begin:
+                    Position = offset;
+                    break;
+                case SeekOrigin.Current:
+                    Position += offset;
+                    break;
+                case SeekOrigin.End:
+                    Position = Length - offset;
+                    break;
+            }
+
+            return Position;
         }
 
         public override void SetLength(long value)
@@ -63,12 +76,29 @@ namespace LibHac.Savefile
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            throw new NotImplementedException();
+            int remaining = count;
+            int outOffset = offset;
+
+            while (remaining > 0)
+            {
+                int remainingInSegment = Iterator.CurrentSegmentSize * BlockSize - SegmentPos;
+                int bytesToWrite = Math.Min(remaining, remainingInSegment);
+                Data.Write(buffer, outOffset, bytesToWrite);
+
+                outOffset += bytesToWrite;
+                remaining -= bytesToWrite;
+
+                if (SegmentPos >= Iterator.CurrentSegmentSize * BlockSize)
+                {
+                    if (!Iterator.MoveNext()) return;
+                    Data.Position = Iterator.PhysicalBlock * BlockSize;
+                }
+            }
         }
 
         public override bool CanRead => true;
         public override bool CanSeek => true;
-        public override bool CanWrite => false;
+        public override bool CanWrite => true;
         public override long Length { get; }
 
         public override long Position
@@ -94,6 +124,12 @@ namespace LibHac.Savefile
                 long segmentPos = value - (Iterator.VirtualBlock * BlockSize);
                 Data.Position = Iterator.PhysicalBlock * BlockSize + segmentPos;
             }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            Flush();
+            base.Dispose(disposing);
         }
     }
 }

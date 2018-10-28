@@ -381,7 +381,6 @@ namespace LibHac
             stream.Read(hashTable, 0, hashTable.Length);
 
             sect.MasterHashValidity = Crypto.CheckMemoryHashTable(hashTable, expected, 0, hashTable.Length);
-            if (sect.Header.HashType == NcaHashType.Ivfc) sect.Header.IvfcInfo.LevelHeaders[0].HashValidity = sect.MasterHashValidity;
         }
 
         public void Dispose()
@@ -400,7 +399,21 @@ namespace LibHac
         public int SectionNum { get; set; }
         public long Offset { get; set; }
         public long Size { get; set; }
-        public Validity MasterHashValidity { get; set; }
+
+        public Validity MasterHashValidity
+        {
+            get
+            {
+                if (Header.HashType == NcaHashType.Ivfc) return Header.IvfcInfo.LevelHeaders[0].HashValidity;
+                if (Header.HashType == NcaHashType.Sha256) return Header.Sha256Info.MasterHashValidity;
+                return Validity.Unchecked;
+            }
+            set
+            {
+                if (Header.HashType == NcaHashType.Ivfc) Header.IvfcInfo.LevelHeaders[0].HashValidity = value;
+                if (Header.HashType == NcaHashType.Sha256) Header.Sha256Info.MasterHashValidity = value;
+            }
+        }
 
         public byte[] GetMasterHash()
         {
@@ -489,25 +502,18 @@ namespace LibHac
             if (stream == null) return Validity.Unchecked;
 
             if (!quiet) logger?.LogMessage($"Verifying section {index}...");
+            Validity validity = stream.Validate(true, logger);
 
-            for (int i = 0; i < stream.Levels.Length - 1; i++)
+            if (hashType == NcaHashType.Ivfc)
             {
-                if (!quiet) logger?.LogMessage($"    Verifying Hash Level {i}...");
-                Validity levelValidity = stream.ValidateLevel(i, true, logger);
-
-                if (hashType == NcaHashType.Ivfc)
-                {
-                    sect.Header.IvfcInfo.LevelHeaders[i].HashValidity = levelValidity;
-                }
-                else if (hashType == NcaHashType.Sha256 && i == stream.Levels.Length - 2)
-                {
-                    sect.Header.Sha256Info.HashValidity = levelValidity;
-                }
-
-                if (levelValidity == Validity.Invalid) return Validity.Invalid;
+                stream.SetLevelValidities(sect.Header.IvfcInfo);
+            }
+            else if (hashType == NcaHashType.Sha256)
+            {
+                sect.Header.Sha256Info.HashValidity = validity;
             }
 
-            return Validity.Valid;
+            return validity;
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace LibHac.Savefile
+namespace LibHac.Save
 {
     public class LayeredDuplexFs : Stream
     {
@@ -32,7 +32,7 @@ namespace LibHac.Savefile
 
         public override void Flush()
         {
-            throw new System.NotImplementedException();
+            DataLayer.Flush();
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -52,7 +52,7 @@ namespace LibHac.Savefile
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            throw new System.NotImplementedException();
+            DataLayer.Write(buffer, offset, count);
         }
 
         public override bool CanRead => DataLayer.CanRead;

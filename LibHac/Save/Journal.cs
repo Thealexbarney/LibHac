@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace LibHac.Savefile
+namespace LibHac.Save
 {
     public class JournalStream : Stream
     {
@@ -45,6 +45,25 @@ namespace LibHac.Savefile
             return count;
         }
 
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            long remaining = Math.Min(Length - Position, count);
+            if (remaining <= 0) return;
+
+            int inPos = offset;
+
+            while (remaining > 0)
+            {
+                long remainInEntry = BlockSize - Position % BlockSize;
+                int toRead = (int)Math.Min(remaining, remainInEntry);
+                BaseStream.Write(buffer, inPos, toRead);
+
+                inPos += toRead;
+                remaining -= toRead;
+                Position += toRead;
+            }
+        }
+
         public override long Seek(long offset, SeekOrigin origin)
         {
             switch (origin)
@@ -64,11 +83,15 @@ namespace LibHac.Savefile
         }
 
         public override void SetLength(long value) => throw new NotSupportedException();
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-        public override void Flush() => throw new NotSupportedException();
+
+        public override void Flush()
+        {
+           BaseStream.Flush();
+        }
+
         public override bool CanRead => true;
         public override bool CanSeek => true;
-        public override bool CanWrite => false;
+        public override bool CanWrite => true;
         public override long Length { get; }
         public override long Position
         {
