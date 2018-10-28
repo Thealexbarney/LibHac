@@ -290,12 +290,17 @@ namespace LibHac
         {
             var keyset = new Keyset();
 
+            ReadKeyFile(keyset, filename, titleKeysFilename, consoleKeysFilename, logger);
+
+            return keyset;
+        }
+
+        public static void ReadKeyFile(Keyset keyset, string filename, string titleKeysFilename = null, string consoleKeysFilename = null, IProgressReport logger = null)
+        {
             if (filename != null) ReadMainKeys(keyset, filename, AllKeyDict, logger);
             if (consoleKeysFilename != null) ReadMainKeys(keyset, consoleKeysFilename, AllKeyDict, logger);
             if (titleKeysFilename != null) ReadTitleKeys(keyset, titleKeysFilename, logger);
             keyset.DeriveKeys(logger);
-
-            return keyset;
         }
 
         public static void LoadConsoleKeys(this Keyset keyset, string filename, IProgressReport logger = null)
