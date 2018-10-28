@@ -29,7 +29,15 @@ namespace LibHac.IO
             Counter = _decryptor.Counter;
         }
 
-        public Aes128CtrStorage(Storage baseStorage, byte[] key, long counterOffset, bool keepOpen, byte[] counterHi = null)
+        /// <summary>
+        /// Creates a new AES storage
+        /// </summary>
+        /// <param name="baseStorage">The input <see cref="Storage"/>.</param>
+        /// <param name="key">The decryption key.</param>
+        /// <param name="counterOffset">Offset to add to the counter.</param>
+        /// <param name="counterHi">The value of the upper 64 bits of the counter. Can be null.</param>
+        /// <param name="keepOpen">true to leave the stream open after the <see cref="Aes128CtrStorage"></see> object is disposed; otherwise, false.</param>
+        public Aes128CtrStorage(Storage baseStorage, byte[] key, long counterOffset, byte[] counterHi, bool keepOpen)
             : base(baseStorage, BlockSize, keepOpen)
         {
             if (key == null) throw new NullReferenceException(nameof(key));

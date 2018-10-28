@@ -12,6 +12,7 @@ namespace LibHac.IO
         /// An array of the hash statuses of every block in each level.
         /// </summary>
         public Validity[][] LevelValidities { get; }
+        public override long Length { get; }
 
         private IntegrityVerificationStorage[] IntegrityStorages { get; }
 
@@ -52,6 +53,72 @@ namespace LibHac.IO
             DataLevel.Flush();
         }
 
-        public override long Length { get; }
+        /// <summary>
+        /// Checks the hashes of any unchecked blocks and returns the <see cref="Validity"/> of the data.
+        /// </summary>
+        /// <param name="returnOnError">If <see langword="true"/>, return as soon as an invalid block is found.</param>
+        /// <param name="logger">An optional <see cref="IProgressReport"/> for reporting progress.</param>
+        /// <returns>The <see cref="Validity"/> of the data of the specified hash level.</returns>
+        public Validity Validate(bool returnOnError, IProgressReport logger = null)
+        {
+            Validity[] validities = LevelValidities[LevelValidities.Length - 1];
+            var storage = IntegrityStorages[IntegrityStorages.Length - 1];
+
+            long blockSize = storage.SectorSize;
+            int blockCount = (int)Util.DivideByRoundUp(Length, blockSize);
+
+            var buffer = new byte[blockSize];
+            var result = Validity.Valid;
+
+            logger?.SetTotal(blockCount);
+
+            for (int i = 0; i < blockCount; i++)
+            {
+                if (validities[i] == Validity.Unchecked)
+                {
+                    int toRead = (int) Math.Min(storage.Length - blockSize * i, buffer.Length);
+                    storage.Read(buffer, blockSize * i, toRead, 0, IntegrityCheckLevel.IgnoreOnInvalid);
+                }
+
+                if (validities[i] == Validity.Invalid)
+                {
+                    result = Validity.Invalid;
+                    if (returnOnError) break;
+                }
+
+                logger?.ReportAdd(1);
+            }
+
+            logger?.SetTotal(0);
+            return result;
+        }
+    }
+
+    public static class HierarchicalIntegrityVerificationStorageExtensions
+    {
+        internal static void SetLevelValidities(this HierarchicalIntegrityVerificationStorage stream, IvfcHeader header)
+        {
+            for (int i = 0; i < stream.Levels.Length - 1; i++)
+            {
+                Validity[] level = stream.LevelValidities[i];
+                var levelValidity = Validity.Valid;
+
+                foreach (Validity block in level)
+                {
+                    if (block == Validity.Invalid)
+                    {
+                        levelValidity = Validity.Invalid;
+                        break;
+                    }
+
+                    if (block == Validity.Unchecked && levelValidity != Validity.Invalid)
+                    {
+                        levelValidity = Validity.Unchecked;
+                    }
+                }
+
+                header.LevelHeaders[i].HashValidity = levelValidity;
+            }
+        }
     }
 }

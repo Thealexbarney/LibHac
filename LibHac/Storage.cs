@@ -77,7 +77,7 @@ namespace LibHac
             GC.SuppressFinalize(this);
         }
 
-        private void ValidateArrayParameters(byte[] buffer, long offset, int count, int bufferOffset)
+        protected void ValidateArrayParameters(byte[] buffer, long offset, int count, int bufferOffset)
         {
             if (buffer == null) throw new ArgumentNullException(nameof(buffer));
             if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), "Argument must be non-negative.");
@@ -91,7 +91,7 @@ namespace LibHac
             }
         }
 
-        private void ValidateSpanParameters(ReadOnlySpan<byte> destination, long offset)
+        protected void ValidateSpanParameters(ReadOnlySpan<byte> destination, long offset)
         {
             if (destination == null) throw new ArgumentNullException(nameof(destination));
             if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), "Argument must be non-negative.");

@@ -11,13 +11,13 @@ namespace LibHac.IO
         private BucketTree<AesSubsectionEntry> BucketTree { get; }
 
         public Aes128CtrExStorage(Storage baseStorage, byte[] key, long counterOffset, byte[] ctrHi, BktrPatchInfo bktr, bool keepOpen)
-            : base(baseStorage, key, counterOffset, keepOpen, ctrHi)
+            : base(baseStorage, key, counterOffset, ctrHi, keepOpen)
         {
             BktrHeader header = bktr.EncryptionHeader;
             var headerStorage = new MemoryStorage(header.Header);
 
             SubStorage bucketTreeStorage =
-                new CachedStorage(new Aes128CtrStorage(baseStorage, key, counterOffset, true, ctrHi), 0x4000, 4, false)
+                new CachedStorage(new Aes128CtrStorage(baseStorage, key, counterOffset, ctrHi, true), 0x4000, 4, false)
                     .Slice(header.Offset, header.Size);
 
             BucketTree = new BucketTree<AesSubsectionEntry>(headerStorage, bucketTreeStorage);

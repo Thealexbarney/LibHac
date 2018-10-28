@@ -119,21 +119,7 @@ namespace LibHac
                 case NcaEncryptionType.XTS:
                     throw new NotImplementedException("NCA sections using XTS are not supported");
                 case NcaEncryptionType.AesCtr:
-                    var counter = new byte[0x10];
-                    Array.Copy(sect.Header.Ctr, counter, 8);
-
-                    ulong off = (ulong)offset >> 4;
-                    for (uint j = 0; j < 0x7; j++)
-                    {
-                        counter[0x10 - j - 1] = (byte)(off & 0xFF);
-                        off >>= 8;
-                    }
-
-                    // Because the value stored in the counter is offset >> 4, the top 4 bits 
-                    // of byte 8 need to have their original value preserved
-                    counter[8] = (byte)((counter[8] & 0xF0) | (int)(off & 0x0F));
-
-                    return new CachedStorage(new Aes128CtrStorage(rawStorage, DecryptedKeys[2], counter, KeepOpen), 0x4000, 4, false);
+                    return new CachedStorage(new Aes128CtrStorage(rawStorage, DecryptedKeys[2], offset, sect.Header.Ctr, KeepOpen), 0x4000, 4, false);
                 case NcaEncryptionType.AesCtrEx:
                     Storage decStorage = new Aes128CtrExStorage(rawStorage, DecryptedKeys[2], offset, sect.Header.Ctr, sect.Header.BktrInfo, true);
                     decStorage = new CachedStorage(decStorage, 0x4000, 4, true);
@@ -342,7 +328,7 @@ namespace LibHac
             // Decrypt this value and compare it to the encryption table offset found in the NCA header
 
             long offset = sect.Header.BktrInfo.EncryptionHeader.Offset;
-            using (var streamDec = new CachedStorage(new Aes128CtrStorage(GetStorage().Slice(sect.Offset, sect.Size), DecryptedKeys[2], sect.Offset, true, sect.Header.Ctr), 0x4000, 4, false))
+            using (var streamDec = new CachedStorage(new Aes128CtrStorage(GetStorage().Slice(sect.Offset, sect.Size), DecryptedKeys[2], sect.Offset, sect.Header.Ctr, true), 0x4000, 4, false))
             {
                 var reader = new BinaryReader(streamDec.AsStream());
                 reader.BaseStream.Position = offset + 8;
@@ -511,21 +497,19 @@ namespace LibHac
             HierarchicalIntegrityVerificationStorage stream = nca.OpenHashedSection(index, IntegrityCheckLevel.IgnoreOnInvalid);
             if (stream == null) return Validity.Unchecked;
 
-            return Validity.Unchecked;
-            // todo
-            //if (!quiet) logger?.LogMessage($"Verifying section {index}...");
-            //Validity validity = stream.Validate(true, logger);
+            if (!quiet) logger?.LogMessage($"Verifying section {index}...");
+            Validity validity = stream.Validate(true, logger);
 
-            //if (hashType == NcaHashType.Ivfc)
-            //{
-            //    stream.SetLevelValidities(sect.Header.IvfcInfo);
-            //}
-            //else if (hashType == NcaHashType.Sha256)
-            //{
-            //    sect.Header.Sha256Info.HashValidity = validity;
-            //}
+            if (hashType == NcaHashType.Ivfc)
+            {
+                stream.SetLevelValidities(sect.Header.IvfcInfo);
+            }
+            else if (hashType == NcaHashType.Sha256)
+            {
+                sect.Header.Sha256Info.HashValidity = validity;
+            }
 
-            //return validity;
+            return validity;
         }
     }
 }
