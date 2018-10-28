@@ -1,8 +1,6 @@
 ﻿using System;
 using System.IO;
 using LibHac.IO;
-using LibHac.Streams;
-using LibHac.XTSSharp;
 
 namespace LibHac
 {
@@ -137,20 +135,18 @@ namespace LibHac
 
                     return new CachedStorage(new Aes128CtrStorage(rawStorage, DecryptedKeys[2], counter, KeepOpen), 0x4000, 4, false);
                 case NcaEncryptionType.AesCtrEx:
+                    Storage decStorage = new Aes128CtrExStorage(rawStorage, DecryptedKeys[2], offset, sect.Header.Ctr, sect.Header.BktrInfo, true);
+                    decStorage = new CachedStorage(decStorage, 0x4000, 4, true);
 
-                    var headerStorage = new MemoryStorage(sect.Header.BktrInfo.EncryptionHeader.Header);
+                    if (BaseNca == null) return decStorage;
 
-                    var c = new Aes128CtrExStorage(rawStorage, DecryptedKeys[2], offset, sect.Header.Ctr, sect.Header.BktrInfo, true);
-                    var d = new CachedStorage(c, 0x4000, 4, true);
+                    Storage baseStorage = BaseNca.OpenSection(ProgramPartitionType.Data, true, IntegrityCheckLevel.None);
 
-                    return d;
-                    if (BaseNca == null) return rawStorage;
+                    BktrHeader header = sect.Header.BktrInfo.RelocationHeader;
+                    Storage bktrHeader = new MemoryStorage(header.Header);
+                    Storage bktrData = decStorage.Slice(header.Offset, header.Size);
 
-                    //Stream baseStream = BaseNca.OpenSection(ProgramPartitionType.Data, true, IntegrityCheckLevel.None) ?? Stream.Null;
-
-                    //return new Bktr(rawStorage, baseStream, sect);
-                    return null;
-
+                    return new IndirectStorage(bktrHeader, bktrData, baseStorage, decStorage);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -245,7 +241,7 @@ namespace LibHac
             Storage pfsStorage, IntegrityCheckLevel integrityCheckLevel)
         {
             SubStorage hashStorage = pfsStorage.Slice(sb.HashTableOffset, sb.HashTableSize);
-            SubStorage dataStorage = pfsStorage.Slice(sb.DataOffset, sb.DataSize); ;
+            SubStorage dataStorage = pfsStorage.Slice(sb.DataOffset, sb.DataSize);
 
             var initInfo = new IntegrityVerificationInfoStorage[3];
 

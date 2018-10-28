@@ -4,18 +4,13 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-#if !STREAM_SPAN
-using System.Buffers;
-#endif
-
-namespace LibHac
+namespace LibHac.IO
 {
     public class Aes128CtrTransformStorage
     {
         private const int BlockSize = 128;
         private const int BlockSizeBytes = BlockSize / 8;
 
-        private readonly int _maxSize;
         public readonly byte[] Counter = new byte[BlockSizeBytes];
 
         private readonly ICryptoTransform _encryptor;
