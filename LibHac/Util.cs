@@ -120,6 +120,18 @@ namespace LibHac
             return new StreamStorage(stream, true);
         }
 
+        public static Storage AsStorage(this Stream stream, long start)
+        {
+            if (stream == null) return null;
+            return new StreamStorage(stream, true).Slice(start);
+        }
+
+        public static Storage AsStorage(this Stream stream, long start, int length)
+        {
+            if (stream == null) return null;
+            return new StreamStorage(stream, true).Slice(start, length);
+        }
+
         public static void WriteAllBytes(this Stream input, string filename, IProgressReport progress = null)
         {
             input.Position = 0;

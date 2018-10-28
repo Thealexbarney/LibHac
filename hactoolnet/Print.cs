@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using LibHac;
+using LibHac.IO;
 
 namespace hactoolnet
 {
@@ -28,24 +29,24 @@ namespace hactoolnet
             }
         }
 
-        public static void PrintIvfcHash(StringBuilder sb, int colLen, int indentSize, IvfcHeader ivfcInfo, IntegrityStreamType type)
+        public static void PrintIvfcHash(StringBuilder sb, int colLen, int indentSize, IvfcHeader ivfcInfo, IntegrityStorageType type)
         {
             string prefix = new string(' ', indentSize);
             string prefix2 = new string(' ', indentSize + 4);
 
-            if (type == IntegrityStreamType.RomFs)
+            if (type == IntegrityStorageType.RomFs)
                 PrintItem(sb, colLen, $"{prefix}Master Hash{ivfcInfo.LevelHeaders[0].HashValidity.GetValidityString()}:", ivfcInfo.MasterHash);
 
             PrintItem(sb, colLen, $"{prefix}Magic:", ivfcInfo.Magic);
             PrintItem(sb, colLen, $"{prefix}Version:", ivfcInfo.Version);
 
-            if (type == IntegrityStreamType.Save)
+            if (type == IntegrityStorageType.Save)
                 PrintItem(sb, colLen, $"{prefix}Salt Seed:", ivfcInfo.SaltSource);
 
             int levelCount = Math.Max(ivfcInfo.NumLevels - 1, 0);
-            if (type == IntegrityStreamType.Save) levelCount = 4;
+            if (type == IntegrityStorageType.Save) levelCount = 4;
 
-            int offsetLen = type == IntegrityStreamType.Save ? 16 : 12;
+            int offsetLen = type == IntegrityStorageType.Save ? 16 : 12;
 
             for (int i = 0; i < levelCount; i++)
             {

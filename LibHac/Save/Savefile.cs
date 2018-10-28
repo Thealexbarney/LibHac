@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using LibHac.IO;
 using LibHac.Streams;
 
 namespace LibHac.Save
@@ -11,7 +12,7 @@ namespace LibHac.Save
         public SharedStreamSource SavefileSource { get; }
 
         public SharedStreamSource JournalStreamSource { get; }
-        private HierarchicalIntegrityVerificationStream IvfcStream { get; }
+        private HierarchicalIntegrityVerificationStorage IvfcStream { get; }
         public SharedStreamSource IvfcStreamSource { get; }
         public SaveFs SaveFs { get; }
 
@@ -49,9 +50,9 @@ namespace LibHac.Save
 
             IvfcStream = InitIvfcStream(integrityCheckLevel);
 
-            SaveFs = new SaveFs(IvfcStream, MetaRemapStorage.OpenStream(layout.FatOffset, layout.FatSize), Header.Save);
+            SaveFs = new SaveFs(IvfcStream.AsStream(), MetaRemapStorage.OpenStream(layout.FatOffset, layout.FatSize), Header.Save);
 
-            IvfcStreamSource = new SharedStreamSource(IvfcStream);
+            IvfcStreamSource = new SharedStreamSource(IvfcStream.AsStream());
         }
 
         private static LayeredDuplexFs InitDuplexStream(RemapStorage baseStorage, Header header)
@@ -83,18 +84,18 @@ namespace LibHac.Save
             return new LayeredDuplexFs(duplexLayers, layout.DuplexIndex == 1);
         }
 
-        private HierarchicalIntegrityVerificationStream InitIvfcStream(IntegrityCheckLevel integrityCheckLevel)
+        private HierarchicalIntegrityVerificationStorage InitIvfcStream(IntegrityCheckLevel integrityCheckLevel)
         {
             IvfcHeader ivfc = Header.Ivfc;
 
             const int ivfcLevels = 5;
-            var initInfo = new IntegrityVerificationInfo[ivfcLevels];
+            var initInfo = new IntegrityVerificationInfoStorage[ivfcLevels];
 
-            initInfo[0] = new IntegrityVerificationInfo
+            initInfo[0] = new IntegrityVerificationInfoStorage
             {
-                Data = Header.MasterHash,
+                Data = Header.MasterHash.AsStorage(),
                 BlockSize = 0,
-                Type = IntegrityStreamType.Save
+                Type = IntegrityStorageType.Save
             };
 
             for (int i = 1; i < ivfcLevels; i++)
@@ -105,16 +106,16 @@ namespace LibHac.Save
                     ? JournalStreamSource.CreateStream()
                     : MetaRemapStorage.OpenStream(level.LogicalOffset, level.HashDataSize);
 
-                initInfo[i] = new IntegrityVerificationInfo
+                initInfo[i] = new IntegrityVerificationInfoStorage
                 {
-                    Data = data,
+                    Data = data.AsStorage(),
                     BlockSize = 1 << level.BlockSizePower,
                     Salt = new HMACSHA256(Encoding.ASCII.GetBytes(SaltSources[i - 1])).ComputeHash(ivfc.SaltSource),
-                    Type = IntegrityStreamType.Save
+                    Type = IntegrityStorageType.Save
                 };
             }
 
-            return new HierarchicalIntegrityVerificationStream(initInfo, integrityCheckLevel);
+            return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel);
         }
 
         public Stream OpenFile(string filename)

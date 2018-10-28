@@ -172,7 +172,7 @@ namespace LibHac
         }
 
         /// <summary>
-        /// Opens one of the sections in the current <see cref="Nca"/> as a <see cref="HierarchicalIntegrityVerificationStream"/>
+        /// Opens one of the sections in the current <see cref="Nca"/> as a <see cref="HierarchicalIntegrityVerificationStorage"/>
         /// Only works with sections that have a <see cref="NcaFsHeader.HashType"/> of <see cref="NcaHashType.Ivfc"/> or <see cref="NcaHashType.Sha256"/>.
         /// </summary>
         /// <param name="index">The index of the NCA section to open. Valid indexes are 0-3.</param>
@@ -216,7 +216,7 @@ namespace LibHac
                 {
                     Data = data,
                     BlockSize = 1 << level.BlockSizePower,
-                    Type = IntegrityStreamType.RomFs
+                    Type = IntegrityStorageType.RomFs
                 };
             }
 
@@ -237,21 +237,21 @@ namespace LibHac
                 Data = new StreamStorage(new MemoryStream(sb.MasterHash), true),
 
                 BlockSize = 0,
-                Type = IntegrityStreamType.PartitionFs
+                Type = IntegrityStorageType.PartitionFs
             };
 
             initInfo[1] = new IntegrityVerificationInfoStorage
             {
                 Data = hashStorage,
                 BlockSize = (int)sb.HashTableSize,
-                Type = IntegrityStreamType.PartitionFs
+                Type = IntegrityStorageType.PartitionFs
             };
 
             initInfo[2] = new IntegrityVerificationInfoStorage
             {
                 Data = dataStorage,
                 BlockSize = sb.BlockSize,
-                Type = IntegrityStreamType.PartitionFs
+                Type = IntegrityStorageType.PartitionFs
             };
 
             return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel);

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using LibHac;
+using LibHac.IO;
 using LibHac.Save;
 using static hactoolnet.Print;
 
@@ -114,7 +115,7 @@ namespace hactoolnet
             PrintItem(sb, colLen, $"Header Hash{save.Header.HeaderHashValidity.GetValidityString()}:", save.Header.Layout.Hash);
             PrintItem(sb, colLen, "Number of Files:", save.Files.Length);
 
-            PrintIvfcHash(sb, colLen, 4, save.Header.Ivfc, IntegrityStreamType.Save);
+            PrintIvfcHash(sb, colLen, 4, save.Header.Ivfc, IntegrityStorageType.Save);
 
             return sb.ToString();
         }

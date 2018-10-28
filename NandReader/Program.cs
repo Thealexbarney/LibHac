@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using LibHac;
+using LibHac.IO;
 using LibHac.Nand;
 using LibHac.Save;
 

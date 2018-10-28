@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using LibHac.IO;
 using LibHac.Streams;
 
 namespace LibHac
@@ -52,7 +53,7 @@ namespace LibHac
             Array.Copy(Header.Counter, counter, 0x10);
             Util.IncrementByteArray(counter);
 
-            return new RandomAccessSectorStream(new Aes128CtrStream(encStream, Key, counter));
+            return new CachedStorage(new Aes128CtrStorage(encStream.AsStorage(), Key, counter, true), 4, true).AsStream();
         }
 
         public Stream OpenKernel()
@@ -60,7 +61,7 @@ namespace LibHac
             int offset = 0x200;
             SharedStream encStream = StreamSource.CreateStream(offset, Header.SectionSizes[0]);
 
-            return new RandomAccessSectorStream(new Aes128CtrStream(encStream, Key, Header.SectionCounters[0]));
+            return new CachedStorage(new Aes128CtrStorage(encStream.AsStorage(), Key, Header.SectionCounters[0], true), 4, true).AsStream();
         }
 
         public Stream OpenIni1()
@@ -68,7 +69,7 @@ namespace LibHac
             int offset = 0x200 + Header.SectionSizes[0];
             SharedStream encStream = StreamSource.CreateStream(offset, Header.SectionSizes[1]);
 
-            return new RandomAccessSectorStream(new Aes128CtrStream(encStream, Key, Header.SectionCounters[1]));
+            return new CachedStorage(new Aes128CtrStorage(encStream.AsStorage(), Key, Header.SectionCounters[1], true), 4, true).AsStream();
         }
 
         private int FindKeyGeneration(Keyset keyset, Stream stream)
@@ -81,9 +82,8 @@ namespace LibHac
 
             for (int i = 0; i < 0x20; i++)
             {
-                var dec = new Aes128CtrStream(stream, keyset.Package2Keys[i], 0x100, 0x100, counter);
-                dec.Position = 0x50;
-                dec.Read(decBuffer, 0, 0x10);
+                var dec = new Aes128CtrStorage(stream.AsStorage(0x100), keyset.Package2Keys[i], counter, false);
+                dec.Read(decBuffer, 0x50);
 
                 if (BitConverter.ToUInt32(decBuffer, 0) == Pk21Magic)
                 {
@@ -118,7 +118,7 @@ namespace LibHac
             Signature = reader.ReadBytes(0x100);
             Counter = reader.ReadBytes(0x10);
 
-            var headerStream = new RandomAccessSectorStream(new Aes128CtrStream(stream, key, 0x100, 0x100, Counter));
+            var headerStream = new CachedStorage(new Aes128CtrStorage(stream.AsStorage(0x100), key, Counter, true), 4, true).AsStream();
 
             headerStream.Position = 0x10;
             reader = new BinaryReader(headerStream);

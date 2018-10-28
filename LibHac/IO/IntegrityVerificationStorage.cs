@@ -14,7 +14,7 @@ namespace LibHac.IO
         public Validity[] BlockValidities { get; }
 
         private byte[] Salt { get; }
-        private IntegrityStreamType Type { get; }
+        private IntegrityStorageType Type { get; }
 
         private readonly SHA256 _hash = SHA256.Create();
 
@@ -47,7 +47,7 @@ namespace LibHac.IO
 
             HashStorage.Read(hashBuffer, hashPos);
 
-            if (Type == IntegrityStreamType.Save && hashBuffer.IsEmpty())
+            if (Type == IntegrityStorageType.Save && hashBuffer.IsEmpty())
             {
                 destination.Clear();
                 BlockValidities[blockIndex] = Validity.Valid;
@@ -71,7 +71,7 @@ namespace LibHac.IO
                     Array.Clear(dataBuffer, count, SectorSize - count);
 
                     // Partition FS hashes don't pad out an incomplete block
-                    if (Type == IntegrityStreamType.PartitionFs)
+                    if (Type == IntegrityStorageType.PartitionFs)
                     {
                         bytesToHash = count;
                     }
@@ -133,7 +133,7 @@ namespace LibHac.IO
         {
             _hash.Initialize();
 
-            if (Type == IntegrityStreamType.Save)
+            if (Type == IntegrityStorageType.Save)
             {
                 _hash.TransformBlock(Salt, 0, Salt.Length, null, 0);
             }
@@ -143,7 +143,7 @@ namespace LibHac.IO
 
             byte[] hash = _hash.Hash;
 
-            if (Type == IntegrityStreamType.Save)
+            if (Type == IntegrityStorageType.Save)
             {
                 // This bit is set on all save hashes
                 hash[0x1F] |= 0x80;
@@ -161,6 +161,32 @@ namespace LibHac.IO
         public Storage Data { get; set; }
         public int BlockSize { get; set; }
         public byte[] Salt { get; set; }
-        public IntegrityStreamType Type { get; set; }
+        public IntegrityStorageType Type { get; set; }
+    }
+
+    public enum IntegrityStorageType
+    {
+        Save,
+        RomFs,
+        PartitionFs
+    }
+
+    /// <summary>
+    /// Represents the level of integrity checks to be performed.
+    /// </summary>
+    public enum IntegrityCheckLevel
+    {
+        /// <summary>
+        /// No integrity checks will be performed.
+        /// </summary>
+        None,
+        /// <summary>
+        /// Invalid blocks will be marked as invalid when read, and will not cause an error.
+        /// </summary>
+        IgnoreOnInvalid,
+        /// <summary>
+        /// An <see cref="InvalidDataException"/> will be thrown if an integrity check fails.
+        /// </summary>
+        ErrorOnInvalid
     }
 }

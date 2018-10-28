@@ -20,13 +20,13 @@ namespace LibHac.IO
 
         protected override int ReadSpan(Span<byte> destination, long offset)
         {
-            ValidateSize(destination.Length);
+            ValidateSize(destination.Length, offset);
             return BaseStorage.Read(destination, offset);
         }
 
         protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
         {
-            ValidateSize(source.Length);
+            ValidateSize(source.Length, offset);
             BaseStorage.Write(source, offset);
         }
 
@@ -40,12 +40,14 @@ namespace LibHac.IO
         /// <summary>
         /// Validates that the size is a multiple of the sector size
         /// </summary>
-        protected void ValidateSize(long value)
+        protected void ValidateSize(long size, long offset)
         {
-            if (value < 0)
-                throw new ArgumentException("Value must be non-negative");
-            if (value % SectorSize != 0)
-                throw new ArgumentException($"Value must be a multiple of {SectorSize}");
+            if (size < 0)
+                throw new ArgumentException("Size must be non-negative");
+            if (offset < 0)
+                throw new ArgumentException("Offset must be non-negative");
+            if (offset % SectorSize != 0)
+                throw new ArgumentException($"Offset must be a multiple of {SectorSize}");
         }
     }
 }

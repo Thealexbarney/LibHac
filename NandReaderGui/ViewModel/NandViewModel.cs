@@ -6,6 +6,7 @@ using System.Windows.Input;
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 using LibHac;
+using LibHac.IO;
 using LibHac.Nand;
 using LibHac.Save;
 using LibHac.Streams;

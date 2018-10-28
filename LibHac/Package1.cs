@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using LibHac.IO;
 using LibHac.Streams;
 
 namespace LibHac
@@ -39,15 +40,14 @@ namespace LibHac
 
             for (int i = 0; i < 0x20; i++)
             {
-                var dec = new Aes128CtrStream(encStream, keyset.Package1Keys[i], Counter);
-                dec.Read(decBuffer, 0, 0x10);
+                var dec = new Aes128CtrStorage(encStream.AsStorage(), keyset.Package1Keys[i], Counter, true);
+                dec.Read(decBuffer, 0);
 
                 if (BitConverter.ToUInt32(decBuffer, 0) == Pk11Magic)
                 {
                     KeyRevision = i;
 
-                    dec.Position = 0;
-                    Pk11 = new Pk11(new RandomAccessSectorStream(dec));
+                    Pk11 = new Pk11(new CachedStorage(dec, 4, true).AsStream());
 
                     return;
                 }

@@ -175,7 +175,7 @@ namespace hactoolnet
                             PrintSha256Hash(sect);
                             break;
                         case NcaHashType.Ivfc:
-                            PrintIvfcHash(sb, colLen, 8, sect.Header.IvfcInfo, IntegrityStreamType.RomFs);
+                            PrintIvfcHash(sb, colLen, 8, sect.Header.IvfcInfo, IntegrityStorageType.RomFs);
                             break;
                         default:
                             sb.AppendLine("        Unknown/invalid superblock!");

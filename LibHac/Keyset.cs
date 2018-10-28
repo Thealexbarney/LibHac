@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using LibHac.Streams;
+using LibHac.IO;
 
 namespace LibHac
 {
@@ -120,10 +120,10 @@ namespace LibHac
 
                 Array.Copy(EncryptedKeyblobs[i], 0x10, counter, 0, 0x10);
 
-                using (var keyblobDec = new RandomAccessSectorStream(new Aes128CtrStream(
-                    new MemoryStream(EncryptedKeyblobs[i], 0x20, Keyblobs[i].Length), KeyblobKeys[i], counter)))
+                using (var keyblobDec = new Aes128CtrStorage(
+                    new MemoryStorage(EncryptedKeyblobs[i], 0x20, Keyblobs[i].Length), KeyblobKeys[i], counter, false))
                 {
-                    keyblobDec.Read(Keyblobs[i], 0, Keyblobs[i].Length);
+                    keyblobDec.Read(Keyblobs[i], 0);
                 }
             }
         }

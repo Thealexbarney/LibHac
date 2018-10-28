@@ -2,7 +2,7 @@
 using System.IO;
 using System.Numerics;
 using System.Security.Cryptography;
-using LibHac.Streams;
+using LibHac.IO;
 
 namespace LibHac
 {
@@ -110,9 +110,9 @@ namespace LibHac
             Array.Copy(encryptedKey, 0x10, body, 0, 0x230);
             var dec = new byte[0x230];
 
-            using (var streamDec = new RandomAccessSectorStream(new Aes128CtrStream(new MemoryStream(body), kek, counter)))
+            using (var storageDec = new Aes128CtrStorage(new MemoryStorage(body), kek, counter, false))
             {
-                streamDec.Read(dec, 0, dec.Length);
+                storageDec.Read(dec, 0);
             }
 
             var d = new byte[0x100];
