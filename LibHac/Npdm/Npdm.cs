@@ -24,54 +24,54 @@ namespace LibHac.Npdm
         public ACI0 Aci0 { get; private set; }
         public ACID AciD { get; private set; }
 
-        public Npdm(Stream Stream)
+        public Npdm(Stream stream)
         {
-            BinaryReader Reader = new BinaryReader(Stream);
+            BinaryReader reader = new BinaryReader(stream);
 
-            Magic = Reader.ReadAscii(0x4);
+            Magic = reader.ReadAscii(0x4);
 
             if (Magic != "META")
             {
                 throw new Exception("NPDM Stream doesn't contain NPDM file!");
             }
 
-            Reader.ReadInt64();
+            reader.ReadInt64();
 
             //MmuFlags, bit0: 64-bit instructions, bits1-3: address space width (1=64-bit, 2=32-bit). Needs to be <= 0xF.
-            byte MmuFlags = Reader.ReadByte();
+            byte mmuflags = reader.ReadByte();
 
-            Is64Bits          = (MmuFlags & 1) != 0;
-            AddressSpaceWidth = (MmuFlags >> 1) & 7;
+            Is64Bits          = (mmuflags & 1) != 0;
+            AddressSpaceWidth = (mmuflags >> 1) & 7;
 
-            Reader.ReadByte();
+            reader.ReadByte();
 
-            MainThreadPriority = Reader.ReadByte(); //(0-63).
-            DefaultCpuId       = Reader.ReadByte();
+            MainThreadPriority = reader.ReadByte(); //(0-63).
+            DefaultCpuId       = reader.ReadByte();
 
-            Reader.ReadInt32();
+            reader.ReadInt32();
 
             //System resource size (max size as of 5.x: 534773760).
-            SystemResourceSize = Util.Swap32(Reader.ReadInt32());
+            SystemResourceSize = Util.Swap32(reader.ReadInt32());
 
             //ProcessCategory (0: regular title, 1: kernel built-in). Should be 0 here.
-            ProcessCategory = Util.Swap32(Reader.ReadInt32());
+            ProcessCategory = Util.Swap32(reader.ReadInt32());
 
             //Main entrypoint stack size.
-            MainEntrypointStackSize = Reader.ReadInt32();
+            MainEntrypointStackSize = reader.ReadInt32();
 
-            TitleName = Reader.ReadUtf8(0x10).Trim('\0');
+            TitleName = reader.ReadUtf8(0x10).Trim('\0');
 
-            ProductCode = Reader.ReadBytes(0x10);
+            ProductCode = reader.ReadBytes(0x10);
 
-            Stream.Seek(0x30, SeekOrigin.Current);
+            stream.Seek(0x30, SeekOrigin.Current);
 
-            int ACI0Offset = Reader.ReadInt32();
-            int ACI0Size   = Reader.ReadInt32();
-            int ACIDOffset = Reader.ReadInt32();
-            int ACIDSize   = Reader.ReadInt32();
+            int ACI0Offset = reader.ReadInt32();
+            int ACI0Size   = reader.ReadInt32();
+            int ACIDOffset = reader.ReadInt32();
+            int ACIDSize   = reader.ReadInt32();
 
-            Aci0 = new ACI0(Stream, ACI0Offset);
-            AciD = new ACID(Stream, ACIDOffset);
+            Aci0 = new ACI0(stream, ACI0Offset);
+            AciD = new ACID(stream, ACIDOffset);
         }
     }
 }

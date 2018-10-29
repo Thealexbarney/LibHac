@@ -65,89 +65,87 @@ namespace LibHac
         {
             long start = file.Position;
 
-            using (var reader = new BinaryReader(file))
+            BinaryReader reader = new BinaryReader(file);
+
+            for (int i = 0; i < 16; i++)
             {
-
-                for (int i = 0; i < 16; i++)
-                {
-                    Descriptions[i] = new NacpDescripion(reader, i);
-                }
-
-                Isbn = reader.ReadUtf8Z(37);
-                reader.BaseStream.Position = start + 0x3025;
-                StartupUserAccount = reader.ReadByte();
-                TouchScreenUsageMode = reader.ReadByte();
-                AocRegistrationType = reader.ReadByte();
-                AttributeFlag = reader.ReadInt32();
-                SupportedLanguageFlag = reader.ReadUInt32();
-                ParentalControlFlag = reader.ReadUInt32();
-                Screenshot = reader.ReadByte();
-                VideoCapture = reader.ReadByte();
-                DataLossConfirmation = reader.ReadByte();
-                PlayLogPolicy = reader.ReadByte();
-                PresenceGroupId = reader.ReadUInt64();
-
-                for (int i = 0; i < RatingAge.Length; i++)
-                {
-                    RatingAge[i] = reader.ReadSByte();
-                }
-
-                DisplayVersion = reader.ReadUtf8Z(16);
-                reader.BaseStream.Position = start + 0x3070;
-                AddOnContentBaseId = reader.ReadUInt64();
-                SaveDataOwnerId = reader.ReadUInt64();
-                UserAccountSaveDataSize = reader.ReadInt64();
-                UserAccountSaveDataJournalSize = reader.ReadInt64();
-                DeviceSaveDataSize = reader.ReadInt64();
-                DeviceSaveDataJournalSize = reader.ReadInt64();
-                BcatDeliveryCacheStorageSize = reader.ReadInt64();
-                ApplicationErrorCodeCategory = reader.ReadUtf8Z(8);
-                reader.BaseStream.Position = start + 0x30B0;
-
-                for (int i = 0; i < LocalCommunicationId.Length; i++)
-                {
-                    LocalCommunicationId[i] = reader.ReadUInt64();
-                }
-
-                LogoType = reader.ReadByte();
-                LogoHandling = reader.ReadByte();
-                RuntimeAddOnContentInstall = reader.ReadByte();
-                Reserved00 = reader.ReadBytes(3);
-                CrashReport = reader.ReadByte();
-                Hdcp = reader.ReadByte();
-                SeedForPseudoDeviceId = reader.ReadUInt64();
-                BcatPassphrase = reader.ReadUtf8Z(65);
-
-                reader.BaseStream.Position = start + 0x3141;
-                Reserved01 = reader.ReadByte();
-                Reserved02 = reader.ReadBytes(6);
-
-                UserAccountSaveDataSizeMax = reader.ReadInt64();
-                UserAccountSaveDataJournalSizeMax = reader.ReadInt64();
-                DeviceSaveDataSizeMax = reader.ReadInt64();
-                DeviceSaveDataJournalSizeMax = reader.ReadInt64();
-                TemporaryStorageSize = reader.ReadInt64();
-                CacheStorageSize = reader.ReadInt64();
-                CacheStorageJournalSize = reader.ReadInt64();
-                CacheStorageDataAndJournalSizeMax = reader.ReadInt64();
-                CacheStorageIndex = reader.ReadInt16();
-                Reserved03 = reader.ReadBytes(6);
-
-                for (int i = 0; i < 16; i++)
-                {
-                    ulong value = reader.ReadUInt64();
-                    if (value != 0) PlayLogQueryableApplicationId.Add(value);
-                }
-
-                PlayLogQueryCapability = reader.ReadByte();
-                RepairFlag = reader.ReadByte();
-                ProgramIndex = reader.ReadByte();
-
-                UserTotalSaveDataSize = UserAccountSaveDataSize + UserAccountSaveDataJournalSize;
-                DeviceTotalSaveDataSize = DeviceSaveDataSize + DeviceSaveDataJournalSize;
-                TotalSaveDataSize = UserTotalSaveDataSize + DeviceTotalSaveDataSize;
-
+                Descriptions[i] = new NacpDescripion(reader, i);
             }
+
+            Isbn = reader.ReadUtf8Z(37);
+            reader.BaseStream.Position = start + 0x3025;
+            StartupUserAccount = reader.ReadByte();
+            TouchScreenUsageMode = reader.ReadByte();
+            AocRegistrationType = reader.ReadByte();
+            AttributeFlag = reader.ReadInt32();
+            SupportedLanguageFlag = reader.ReadUInt32();
+            ParentalControlFlag = reader.ReadUInt32();
+            Screenshot = reader.ReadByte();
+            VideoCapture = reader.ReadByte();
+            DataLossConfirmation = reader.ReadByte();
+            PlayLogPolicy = reader.ReadByte();
+            PresenceGroupId = reader.ReadUInt64();
+
+            for (int i = 0; i < RatingAge.Length; i++)
+            {
+                RatingAge[i] = reader.ReadSByte();
+            }
+
+            DisplayVersion = reader.ReadUtf8Z(16);
+            reader.BaseStream.Position = start + 0x3070;
+            AddOnContentBaseId = reader.ReadUInt64();
+            SaveDataOwnerId = reader.ReadUInt64();
+            UserAccountSaveDataSize = reader.ReadInt64();
+            UserAccountSaveDataJournalSize = reader.ReadInt64();
+            DeviceSaveDataSize = reader.ReadInt64();
+            DeviceSaveDataJournalSize = reader.ReadInt64();
+            BcatDeliveryCacheStorageSize = reader.ReadInt64();
+            ApplicationErrorCodeCategory = reader.ReadUtf8Z(8);
+            reader.BaseStream.Position = start + 0x30B0;
+
+            for (int i = 0; i < LocalCommunicationId.Length; i++)
+            {
+                LocalCommunicationId[i] = reader.ReadUInt64();
+            }
+
+            LogoType = reader.ReadByte();
+            LogoHandling = reader.ReadByte();
+            RuntimeAddOnContentInstall = reader.ReadByte();
+            Reserved00 = reader.ReadBytes(3);
+            CrashReport = reader.ReadByte();
+            Hdcp = reader.ReadByte();
+            SeedForPseudoDeviceId = reader.ReadUInt64();
+            BcatPassphrase = reader.ReadUtf8Z(65);
+
+            reader.BaseStream.Position = start + 0x3141;
+            Reserved01 = reader.ReadByte();
+            Reserved02 = reader.ReadBytes(6);
+
+            UserAccountSaveDataSizeMax = reader.ReadInt64();
+            UserAccountSaveDataJournalSizeMax = reader.ReadInt64();
+            DeviceSaveDataSizeMax = reader.ReadInt64();
+            DeviceSaveDataJournalSizeMax = reader.ReadInt64();
+            TemporaryStorageSize = reader.ReadInt64();
+            CacheStorageSize = reader.ReadInt64();
+            CacheStorageJournalSize = reader.ReadInt64();
+            CacheStorageDataAndJournalSizeMax = reader.ReadInt64();
+            CacheStorageIndex = reader.ReadInt16();
+            Reserved03 = reader.ReadBytes(6);
+
+            for (int i = 0; i < 16; i++)
+            {
+                ulong value = reader.ReadUInt64();
+                if (value != 0) PlayLogQueryableApplicationId.Add(value);
+            }
+
+            PlayLogQueryCapability = reader.ReadByte();
+            RepairFlag = reader.ReadByte();
+            ProgramIndex = reader.ReadByte();
+
+            UserTotalSaveDataSize = UserAccountSaveDataSize + UserAccountSaveDataJournalSize;
+            DeviceTotalSaveDataSize = DeviceSaveDataSize + DeviceSaveDataJournalSize;
+            TotalSaveDataSize = UserTotalSaveDataSize + DeviceTotalSaveDataSize;
+
         }
     }
 

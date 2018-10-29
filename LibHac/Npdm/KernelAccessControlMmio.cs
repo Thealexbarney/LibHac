@@ -8,15 +8,15 @@ namespace LibHac.Npdm
         public bool  IsNormal { get; private set; }
 
         public KernelAccessControlMmio(
-            ulong Address,
-            ulong Size,
-            bool  IsRo,
-            bool  IsNormal)
+            ulong address,
+            ulong size,
+            bool  isro,
+            bool  isnormal)
         {
-            this.Address  = Address;
-            this.Size     = Size;
-            this.IsRo     = IsRo;
-            this.IsNormal = IsNormal;
+            this.Address  = address;
+            this.Size     = size;
+            this.IsRo     = isro;
+            this.IsNormal = isnormal;
         }
     }
 }

@@ -5,10 +5,10 @@ namespace LibHac.Npdm
         public uint Irq0 { get; private set; }
         public uint Irq1 { get; private set; }
 
-        public KernelAccessControlIrq(uint Irq0, uint Irq1)
+        public KernelAccessControlIrq(uint irq0, uint irq1)
         {
-            this.Irq0 = Irq0;
-            this.Irq1 = Irq1;
+            this.Irq0 = irq0;
+            this.Irq1 = irq1;
         }
     }
 }

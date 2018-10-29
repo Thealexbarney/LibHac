@@ -19,44 +19,44 @@ namespace LibHac.Npdm
         public ServiceAccessControl ServiceAccess { get; private set; }
         public KernelAccessControl  KernelAccess { get; private set; }
 
-        public ACID(Stream Stream, int Offset)
+        public ACID(Stream stream, int offset)
         {
-            Stream.Seek(Offset, SeekOrigin.Begin);
+            stream.Seek(offset, SeekOrigin.Begin);
 
-            BinaryReader Reader = new BinaryReader(Stream);
+            BinaryReader reader = new BinaryReader(stream);
 
-            RSA2048Signature = Reader.ReadBytes(0x100);
-            RSA2048Modulus   = Reader.ReadBytes(0x100);
+            RSA2048Signature = reader.ReadBytes(0x100);
+            RSA2048Modulus   = reader.ReadBytes(0x100);
 
-            Magic = Reader.ReadAscii(0x4);
+            Magic = reader.ReadAscii(0x4);
             if (Magic != "ACID")
             {
                 throw new Exception("ACID Stream doesn't contain ACID section!");
             }
 
             //Size field used with the above signature (?).
-            Unknown1 = Reader.ReadInt32();
+            Unknown1 = reader.ReadInt32();
 
-            Reader.ReadInt32();
+            reader.ReadInt32();
 
             //Bit0 must be 1 on retail, on devunit 0 is also allowed. Bit1 is unknown.
-            Flags = Reader.ReadInt32();
+            Flags = reader.ReadInt32();
 
-            TitleIdRangeMin = Reader.ReadInt64();
-            TitleIdRangeMax = Reader.ReadInt64();
+            TitleIdRangeMin = reader.ReadInt64();
+            TitleIdRangeMax = reader.ReadInt64();
 
-            int FsAccessControlOffset      = Reader.ReadInt32();
-            int FsAccessControlSize        = Reader.ReadInt32();
-            int ServiceAccessControlOffset = Reader.ReadInt32();
-            int ServiceAccessControlSize   = Reader.ReadInt32();
-            int KernelAccessControlOffset  = Reader.ReadInt32();
-            int KernelAccessControlSize    = Reader.ReadInt32();
+            int FsAccessControlOffset      = reader.ReadInt32();
+            int FsAccessControlSize        = reader.ReadInt32();
+            int ServiceAccessControlOffset = reader.ReadInt32();
+            int ServiceAccessControlSize   = reader.ReadInt32();
+            int KernelAccessControlOffset  = reader.ReadInt32();
+            int KernelAccessControlSize    = reader.ReadInt32();
 
-            FsAccess = new FsAccessControl(Stream, Offset + FsAccessControlOffset, FsAccessControlSize);
+            FsAccess = new FsAccessControl(stream, offset + FsAccessControlOffset, FsAccessControlSize);
 
-            ServiceAccess = new ServiceAccessControl(Stream, Offset + ServiceAccessControlOffset, ServiceAccessControlSize);
+            ServiceAccess = new ServiceAccessControl(stream, offset + ServiceAccessControlOffset, ServiceAccessControlSize);
 
-            KernelAccess = new KernelAccessControl(Stream, Offset + KernelAccessControlOffset, KernelAccessControlSize);
+            KernelAccess = new KernelAccessControl(stream, offset + KernelAccessControlOffset, KernelAccessControlSize);
         }
     }
 }

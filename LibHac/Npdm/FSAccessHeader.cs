@@ -8,24 +8,24 @@ namespace LibHac.Npdm
         public int   Version            { get; private set; }
         public ulong PermissionsBitmask { get; private set; }
 
-        public FsAccessHeader(Stream Stream, int Offset, int Size)
+        public FsAccessHeader(Stream stream, int offset, int size)
         {
-            Stream.Seek(Offset, SeekOrigin.Begin);
+            stream.Seek(offset, SeekOrigin.Begin);
 
-            BinaryReader Reader = new BinaryReader(Stream);
+            BinaryReader reader = new BinaryReader(stream);
 
-            Version            = Reader.ReadInt32();
-            PermissionsBitmask = Reader.ReadUInt64();
+            Version            = reader.ReadInt32();
+            PermissionsBitmask = reader.ReadUInt64();
 
-            int DataSize = Reader.ReadInt32();
+            int dataSize = reader.ReadInt32();
 
-            if (DataSize != 0x1c)
+            if (dataSize != 0x1c)
             {
                 throw new Exception("FsAccessHeader is corrupted!");
             }
 
-            int ContentOwnerIdSize        = Reader.ReadInt32();
-            int DataAndContentOwnerIdSize = Reader.ReadInt32();
+            int ContentOwnerIdSize        = reader.ReadInt32();
+            int DataAndContentOwnerIdSize = reader.ReadInt32();
 
             if (DataAndContentOwnerIdSize != 0x1c)
             {
