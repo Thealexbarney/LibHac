@@ -13,7 +13,7 @@ namespace LibHac
         public byte[][] Keys { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x10);
         public byte[] Key { get; } = new byte[0x20];
         public long Length { get; private set; }
-        public Storage Storage { get; }
+        public Storage BaseStorage { get; }
         private bool KeepOpen { get; }
 
         public Nax0(Keyset keyset, Storage storage, string sdPath, bool keepOpen)
@@ -22,7 +22,7 @@ namespace LibHac
             ReadHeader(storage.AsStream());
             DeriveKeys(keyset, sdPath, storage);
 
-            Storage = new XtsStorage(storage.Slice(0x4000), Key, 0x4000);
+            BaseStorage = new XtsStorage(storage.Slice(0x4000), Key, 0x4000);
         }
 
         private void ReadHeader(Stream stream)
@@ -86,7 +86,7 @@ namespace LibHac
         {
             if (!KeepOpen)
             {
-                Storage?.Dispose();
+                BaseStorage?.Dispose();
             }
         }
     }

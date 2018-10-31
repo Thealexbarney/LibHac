@@ -2,7 +2,6 @@
 using System.IO;
 using System.Linq;
 using System.Text;
-using LibHac.Streams;
 
 namespace LibHac
 {
@@ -15,17 +14,15 @@ namespace LibHac
         public RomfsDir RootDir { get; }
 
         public Dictionary<string, RomfsFile> FileDict { get; }
-        private SharedStreamSource StreamSource { get; }
+        private Storage BaseStorage { get; }
 
-        public Romfs(Storage storage) : this(storage.AsStream()) { }
-
-        public Romfs(Stream stream)
+        public Romfs(Storage storage)
         {
-            StreamSource = new SharedStreamSource(stream);
+            BaseStorage = storage;
 
             byte[] dirMetaTable;
             byte[] fileMetaTable;
-            using (var reader = new BinaryReader(StreamSource.CreateStream(), Encoding.Default, true))
+            using (var reader = new BinaryReader(BaseStorage.AsStream(), Encoding.Default, true))
             {
                 Header = new RomfsHeader(reader);
                 reader.BaseStream.Position = Header.DirMetaTableOffset;
@@ -63,7 +60,7 @@ namespace LibHac
             FileDict = Files.ToDictionary(x => x.FullPath, x => x);
         }
 
-        public Stream OpenFile(string filename)
+        public Storage OpenFile(string filename)
         {
             if (!FileDict.TryGetValue(filename, out RomfsFile file))
             {
@@ -73,26 +70,24 @@ namespace LibHac
             return OpenFile(file);
         }
 
-        public Stream OpenFile(RomfsFile file)
+        public Storage OpenFile(RomfsFile file)
         {
-            return StreamSource.CreateStream(Header.DataOffset + file.DataOffset, file.DataLength);
+            return BaseStorage.Slice(Header.DataOffset + file.DataOffset, file.DataLength);
         }
 
         public byte[] GetFile(string filename)
         {
-            Stream stream = OpenFile(filename);
-            var file = new byte[stream.Length];
-            using (var ms = new MemoryStream(file))
-            {
-                stream.CopyTo(ms);
-            }
+            Storage storage = OpenFile(filename);
+            var file = new byte[storage.Length];
+
+            storage.Read(file, 0);
 
             return file;
         }
 
         public bool FileExists(string filename) => FileDict.ContainsKey(filename);
 
-        public Stream OpenRawStream() => StreamSource.CreateStream();
+        public Storage OpenRawStream() => BaseStorage.Slice(0);
 
         private void SetReferences()
         {
@@ -151,7 +146,7 @@ namespace LibHac
         {
             foreach (RomfsFile file in romfs.Files)
             {
-                Stream stream = romfs.OpenFile(file);
+                Storage storage = romfs.OpenFile(file);
                 string outName = outDir + file.FullPath;
                 string dir = Path.GetDirectoryName(outName);
                 if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
@@ -159,7 +154,7 @@ namespace LibHac
                 using (var outFile = new FileStream(outName, FileMode.Create, FileAccess.ReadWrite))
                 {
                     logger?.LogMessage(file.FullPath);
-                    stream.CopyStream(outFile, stream.Length, logger);
+                    storage.CopyToStream(outFile, storage.Length, logger);
                 }
             }
         }

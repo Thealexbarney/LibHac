@@ -45,14 +45,14 @@ namespace LibHac.IO
             {
                 FillDecryptedCounter(blockCount, counterDec);
                 _encryptor.TransformBlock(counterDec, 0, length, counterEnc, 0);
+
+                XorArrays(data, counterEnc);
             }
             finally
             {
                 ArrayPool<byte>.Shared.Return(counterDec);
                 ArrayPool<byte>.Shared.Return(counterEnc);
             }
-
-            XorArrays(data, counterEnc);
 
             return data.Length;
         }
@@ -79,7 +79,7 @@ namespace LibHac.IO
                 Span<Vector<byte>> dataVec = MemoryMarshal.Cast<byte, Vector<byte>>(transformData);
                 Span<Vector<byte>> xorVec = MemoryMarshal.Cast<byte, Vector<byte>>(xorData);
                 sisdStart = dataVec.Length * Vector<byte>.Count;
-                
+
                 for (int i = 0; i < dataVec.Length; i++)
                 {
                     dataVec[i] ^= xorVec[i];

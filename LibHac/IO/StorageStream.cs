@@ -57,9 +57,9 @@ namespace LibHac.IO
             throw new NotImplementedException();
         }
 
-        public override bool CanRead => true;
+        public override bool CanRead => BaseStorage.CanRead;
         public override bool CanSeek => true;
-        public override bool CanWrite => true;
+        public override bool CanWrite => BaseStorage.CanWrite;
         public override long Length { get; }
         public override long Position { get; set; }
 

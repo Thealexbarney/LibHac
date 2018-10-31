@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using LibHac.Streams;
 
 namespace LibHac
 {
@@ -14,13 +13,11 @@ namespace LibHac
         public PfsFileEntry[] Files { get; }
 
         private Dictionary<string, PfsFileEntry> FileDict { get; }
-        private SharedStreamSource StreamSource { get; }
+        private Storage BaseStorage { get; }
 
-        public Pfs(Storage storage) : this(storage.AsStream()) { }
-
-        public Pfs(Stream stream)
+        public Pfs(Storage storage)
         {
-            using (var reader = new BinaryReader(stream, Encoding.Default, true))
+            using (var reader = new BinaryReader(storage.AsStream(), Encoding.Default, true))
             {
                 Header = new PfsHeader(reader);
             }
@@ -28,10 +25,10 @@ namespace LibHac
             HeaderSize = Header.HeaderSize;
             Files = Header.Files;
             FileDict = Header.Files.ToDictionary(x => x.Name, x => x);
-            StreamSource = new SharedStreamSource(stream);
+            BaseStorage = storage;
         }
 
-        public Stream OpenFile(string filename)
+        public Storage OpenFile(string filename)
         {
             if (!FileDict.TryGetValue(filename, out PfsFileEntry file))
             {
@@ -41,21 +38,21 @@ namespace LibHac
             return OpenFile(file);
         }
 
-        public bool TryOpenFile(string filename, out Stream stream)
+        public bool TryOpenFile(string filename, out Storage storage)
         {
             if (!FileDict.TryGetValue(filename, out PfsFileEntry file))
             {
-                stream = null;
+                storage = null;
                 return false;
             }
 
-            stream = OpenFile(file);
+            storage = OpenFile(file);
             return true;
         }
 
-        public Stream OpenFile(PfsFileEntry file)
+        public Storage OpenFile(PfsFileEntry file)
         {
-            return StreamSource.CreateStream(HeaderSize + file.Offset, file.Size);
+            return BaseStorage.Slice(HeaderSize + file.Offset, file.Size);
         }
 
         public bool FileExists(string filename)
@@ -177,7 +174,7 @@ namespace LibHac
         {
             foreach (PfsFileEntry file in pfs.Header.Files)
             {
-                Stream stream = pfs.OpenFile(file);
+                Storage storage = pfs.OpenFile(file);
                 string outName = Path.Combine(outDir, file.Name);
                 string dir = Path.GetDirectoryName(outName);
                 if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
@@ -185,7 +182,7 @@ namespace LibHac
                 using (var outFile = new FileStream(outName, FileMode.Create, FileAccess.ReadWrite))
                 {
                     logger?.LogMessage(file.Name);
-                    stream.CopyStream(outFile, stream.Length, logger);
+                    storage.CopyToStream(outFile, storage.Length, logger);
                 }
             }
         }

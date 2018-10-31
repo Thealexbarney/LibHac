@@ -81,7 +81,7 @@ namespace LibHac
                     {
                         string sdPath = "/" + Util.GetRelativePath(file, ContentsDir).Replace('\\', '/');
                         var nax0 = new Nax0(Keyset, storage, sdPath, false);
-                        nca = new Nca(Keyset, nax0.Storage, false);
+                        nca = new Nca(Keyset, nax0.BaseStorage, false);
                     }
                     else
                     {
@@ -128,7 +128,7 @@ namespace LibHac
 
                     string sdPath = "/" + Util.GetRelativePath(file, SaveDir).Replace('\\', '/');
                     var nax0 = new Nax0(Keyset, storage, sdPath, false);
-                    save = new Savefile(Keyset, nax0.Storage.AsStream(), IntegrityCheckLevel.None);
+                    save = new Savefile(Keyset, nax0.BaseStorage.AsStream(), IntegrityCheckLevel.None);
                 }
                 catch (Exception ex)
                 {
@@ -150,10 +150,10 @@ namespace LibHac
 
                 // Meta contents always have 1 Partition FS section with 1 file in it
                 Storage sect = nca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid);
-                var pfs0 = new Pfs(sect.AsStream());
-                Stream file = pfs0.OpenFile(pfs0.Files[0]);
+                var pfs0 = new Pfs(sect);
+                Storage file = pfs0.OpenFile(pfs0.Files[0]);
 
-                var metadata = new Cnmt(file);
+                var metadata = new Cnmt(file.AsStream());
                 title.Id = metadata.TitleId;
                 title.Version = metadata.TitleVersion;
                 title.Metadata = metadata;
@@ -189,7 +189,7 @@ namespace LibHac
         {
             foreach (Title title in Titles.Values.Where(x => x.ControlNca != null))
             {
-                var romfs = new Romfs(title.ControlNca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid).AsStream());
+                var romfs = new Romfs(title.ControlNca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid));
                 byte[] control = romfs.GetFile("/control.nacp");
 
                 var reader = new BinaryReader(new MemoryStream(control));

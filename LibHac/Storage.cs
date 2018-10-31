@@ -15,8 +15,11 @@ namespace LibHac
         public abstract void Flush();
         public abstract long Length { get; }
 
+        protected FileAccess Access { get; set; } = FileAccess.ReadWrite;
+
         public int Read(Span<byte> destination, long offset)
         {
+            EnsureCanRead();
             ValidateSpanParameters(destination, offset);
             return ReadSpan(destination, offset);
         }
@@ -29,6 +32,7 @@ namespace LibHac
 
         public void Write(ReadOnlySpan<byte> source, long offset)
         {
+            EnsureCanWrite();
             ValidateSpanParameters(source, offset);
             WriteSpan(source, offset);
         }
@@ -69,6 +73,24 @@ namespace LibHac
             }
 
             _isDisposed = true;
+        }
+
+        public void SetAccess(FileAccess access)
+        {
+            Access = access;
+        }
+
+        public virtual bool CanRead => (Access & FileAccess.Read) != 0;
+        public virtual bool CanWrite => (Access & FileAccess.Write) != 0;
+
+        private void EnsureCanRead()
+        {
+            if(!CanRead) throw new InvalidOperationException("Storage is not readable");
+        }
+
+        private void EnsureCanWrite()
+        {
+            if(!CanWrite) throw new InvalidOperationException("Storage is not writable");
         }
 
         public void Dispose()

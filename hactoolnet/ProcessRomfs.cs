@@ -9,7 +9,7 @@ namespace hactoolnet
         {
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
             {
-                var romfs = new Romfs(file);
+                var romfs = new Romfs(file.AsStorage());
                 Process(ctx, romfs);
             }
         }
@@ -28,8 +28,8 @@ namespace hactoolnet
             {
                 using (var outFile = new FileStream(ctx.Options.RomfsOut, FileMode.Create, FileAccess.ReadWrite))
                 {
-                    Stream romfsStream = romfs.OpenRawStream();
-                    romfsStream.CopyStream(outFile, romfsStream.Length, ctx.Logger);
+                    Storage romfsStorage = romfs.OpenRawStream();
+                    romfsStorage.CopyToStream(outFile, romfsStorage.Length, ctx.Logger);
                 }
             }
 

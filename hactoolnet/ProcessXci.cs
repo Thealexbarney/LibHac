@@ -12,7 +12,7 @@ namespace hactoolnet
         {
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
             {
-                var xci = new Xci(ctx.Keyset, file);
+                var xci = new Xci(ctx.Keyset, file.AsStorage());
 
                 ctx.Logger.LogMessage(xci.Print());
 
@@ -132,8 +132,8 @@ namespace hactoolnet
 
             foreach (PfsFileEntry fileEntry in xci.SecurePartition.Files.Where(x => x.Name.EndsWith(".nca")))
             {
-                Stream ncaStream = xci.SecurePartition.OpenFile(fileEntry);
-                var nca = new Nca(ctx.Keyset, null, true);
+                Storage ncaStorage = xci.SecurePartition.OpenFile(fileEntry);
+                var nca = new Nca(ctx.Keyset, ncaStorage, true);
 
                 if (nca.Header.ContentType == ContentType.Program)
                 {

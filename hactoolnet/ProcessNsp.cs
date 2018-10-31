@@ -12,7 +12,7 @@ namespace hactoolnet
         {
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
             {
-                Pfs pfs = new Pfs(file);
+                Pfs pfs = new Pfs(file.AsStorage());
                 ctx.Logger.LogMessage(pfs.Print());
 
                 if (ctx.Options.OutDir != null)
