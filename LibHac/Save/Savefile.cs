@@ -12,15 +12,15 @@ namespace LibHac.Save
         public Header Header { get; }
         public Storage BaseStorage { get; }
 
-        public SharedStreamSource JournalStreamSource { get; }
-        private HierarchicalIntegrityVerificationStorage IvfcStream { get; }
+        private HierarchicalIntegrityVerificationStorage IvfcStorage { get; }
         public SharedStreamSource IvfcStreamSource { get; }
-        public SaveFs SaveFs { get; }
+        public SaveFs2 SaveFs { get; }
 
         public RemapStorage DataRemapStorage { get; }
         public RemapStorage MetaRemapStorage { get; }
 
         public HierarchicalDuplexStorage DuplexStorage { get; }
+        public JournalStorage JournalStorage { get; }
 
         public DirectoryEntry RootDirectory => SaveFs.RootDirectory;
         public FileEntry[] Files => SaveFs.Files;
@@ -40,20 +40,20 @@ namespace LibHac.Save
 
             MetaRemapStorage = new RemapStorage(DuplexStorage, Header.MetaRemap, Header.MetaMapEntries);
 
-            Stream journalTable = MetaRemapStorage.Slice(layout.JournalTableOffset, layout.JournalTableSize).AsStream();
+            Storage journalTable = MetaRemapStorage.Slice(layout.JournalTableOffset, layout.JournalTableSize);
 
-            MappingEntry[] journalMap = JournalStream.ReadMappingEntries(journalTable, Header.Journal.MainDataBlockCount);
+            JournalMapEntry[] journalMap = JournalStorage.ReadMapEntries(journalTable, Header.Journal.MainDataBlockCount);
 
-            Stream journalData = DataRemapStorage.Slice(layout.JournalDataOffset,
-                layout.JournalDataSizeB + layout.SizeReservedArea).AsStream();
-            var journalStream = new JournalStream(journalData, journalMap, (int)Header.Journal.BlockSize);
-            JournalStreamSource = new SharedStreamSource(journalStream);
+            Storage journalData = DataRemapStorage.Slice(layout.JournalDataOffset,
+                layout.JournalDataSizeB + layout.SizeReservedArea);
 
-            IvfcStream = InitIvfcStream(integrityCheckLevel);
+            JournalStorage = new JournalStorage(journalData, journalMap, (int)Header.Journal.BlockSize);
 
-            SaveFs = new SaveFs(IvfcStream.AsStream(), MetaRemapStorage.Slice(layout.FatOffset, layout.FatSize).AsStream(), Header.Save);
+            IvfcStorage = InitIvfcStorage(integrityCheckLevel);
 
-            IvfcStreamSource = new SharedStreamSource(IvfcStream.AsStream());
+            SaveFs = new SaveFs2(IvfcStorage, MetaRemapStorage.Slice(layout.FatOffset, layout.FatSize), Header.Save);
+
+            IvfcStreamSource = new SharedStreamSource(IvfcStorage.AsStream());
         }
 
         private static HierarchicalDuplexStorage InitDuplexStream(Storage baseStorage, Header header)
@@ -85,7 +85,7 @@ namespace LibHac.Save
             return new HierarchicalDuplexStorage(duplexLayers, layout.DuplexIndex == 1);
         }
 
-        private HierarchicalIntegrityVerificationStorage InitIvfcStream(IntegrityCheckLevel integrityCheckLevel)
+        private HierarchicalIntegrityVerificationStorage InitIvfcStorage(IntegrityCheckLevel integrityCheckLevel)
         {
             IvfcHeader ivfc = Header.Ivfc;
 
@@ -103,13 +103,13 @@ namespace LibHac.Save
             {
                 IvfcLevelHeader level = ivfc.LevelHeaders[i - 1];
 
-                Stream data = i == ivfcLevels - 1
-                    ? JournalStreamSource.CreateStream()
-                    : MetaRemapStorage.Slice(level.LogicalOffset, level.HashDataSize).AsStream();
+                Storage data = i == ivfcLevels - 1
+                    ? (Storage)JournalStorage
+                    : MetaRemapStorage.Slice(level.LogicalOffset, level.HashDataSize);
 
                 initInfo[i] = new IntegrityVerificationInfoStorage
                 {
-                    Data = data.AsStorage(),
+                    Data = data,
                     BlockSize = 1 << level.BlockSizePower,
                     Salt = new HMACSHA256(Encoding.ASCII.GetBytes(SaltSources[i - 1])).ComputeHash(ivfc.SaltSource),
                     Type = IntegrityStorageType.Save
@@ -119,12 +119,12 @@ namespace LibHac.Save
             return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel);
         }
 
-        public Stream OpenFile(string filename)
+        public Storage OpenFile(string filename)
         {
             return SaveFs.OpenFile(filename);
         }
 
-        public Stream OpenFile(FileEntry file)
+        public Storage OpenFile(FileEntry file)
         {
             return SaveFs.OpenFile(file);
         }
@@ -164,8 +164,8 @@ namespace LibHac.Save
 
         public Validity Verify(IProgressReport logger = null)
         {
-            Validity validity = IvfcStream.Validate(true, logger);
-            IvfcStream.SetLevelValidities(Header.Ivfc);
+            Validity validity = IvfcStorage.Validate(true, logger);
+            IvfcStorage.SetLevelValidities(Header.Ivfc);
 
             return validity;
         }
@@ -187,7 +187,7 @@ namespace LibHac.Save
         {
             foreach (FileEntry file in save.Files)
             {
-                Stream stream = save.OpenFile(file);
+                Storage storage = save.OpenFile(file);
                 string outName = outDir + file.FullPath;
                 string dir = Path.GetDirectoryName(outName);
                 if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
@@ -195,7 +195,7 @@ namespace LibHac.Save
                 using (var outFile = new FileStream(outName, FileMode.Create, FileAccess.ReadWrite))
                 {
                     logger?.LogMessage(file.FullPath);
-                    stream.CopyStream(outFile, stream.Length, logger);
+                    storage.CopyToStream(outFile, storage.Length, logger);
                 }
             }
         }

@@ -2,7 +2,7 @@
 using System.Collections;
 using System.IO;
 
-namespace LibHac.Save
+namespace LibHac.IO.Save
 {
     public class DuplexBitmap
     {

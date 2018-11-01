@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LibHac.Save
+namespace LibHac.IO.Save
 {
     public class AllocationTableIterator
     {
@@ -13,6 +13,7 @@ namespace LibHac.Save
         public AllocationTableIterator(AllocationTable table, int initialBlock)
         {
             Fat = table;
+
             if (!BeginIteration(initialBlock))
             {
                 throw new ArgumentException($"Attempted to start FAT iteration from an invalid block. ({initialBlock}");
@@ -87,6 +88,25 @@ namespace LibHac.Save
             VirtualBlock -= CurrentSegmentSize;
             PhysicalBlock = newBlock - 1;
             return true;
+        }
+
+        public bool Seek(int block)
+        {
+            while (true)
+            {
+                if (block < VirtualBlock)
+                {
+                    if (!MovePrevious()) return false;
+                }
+                else if (block >= VirtualBlock + CurrentSegmentSize)
+                {
+                    if (!MoveNext()) return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
         }
     }
 }

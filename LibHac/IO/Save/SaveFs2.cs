@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using LibHac.Streams;
+using LibHac.Save;
 
-namespace LibHac.Save
+namespace LibHac.IO.Save
 {
-    public class SaveFs
+    public class SaveFs2
     {
-        private SharedStreamSource StreamSource { get; }
+        private Storage BaseStorage { get; }
         private AllocationTable AllocationTable { get; }
         private SaveHeader Header { get; }
 
@@ -15,10 +15,10 @@ namespace LibHac.Save
         public DirectoryEntry[] Directories { get; private set; }
         public Dictionary<string, FileEntry> FileDictionary { get; }
 
-        public SaveFs(Stream storage, Stream allocationTable, SaveHeader header)
+        public SaveFs2(Storage storage, Storage allocationTable, SaveHeader header)
         {
-            StreamSource = new SharedStreamSource(storage);
-            AllocationTable = new AllocationTable(allocationTable);
+            BaseStorage = storage;
+            AllocationTable = new AllocationTable(allocationTable.AsStream());
             Header = header;
 
             ReadFileInfo();
@@ -31,7 +31,7 @@ namespace LibHac.Save
             FileDictionary = dictionary;
         }
 
-        public Stream OpenFile(string filename)
+        public Storage OpenFile(string filename)
         {
             if (!FileDictionary.TryGetValue(filename, out FileEntry file))
             {
@@ -41,25 +41,24 @@ namespace LibHac.Save
             return OpenFile(file);
         }
 
-        public Stream OpenFile(FileEntry file)
+        public Storage OpenFile(FileEntry file)
         {
             if (file.BlockIndex < 0)
             {
-                return Stream.Null;
+                // todo
+                return new MemoryStorage(new byte[0]);
             }
 
             return OpenFatBlock(file.BlockIndex, file.FileSize);
         }
 
         public bool FileExists(string filename) => FileDictionary.ContainsKey(filename);
-
-        public Stream OpenRawSaveFs() => StreamSource.CreateStream();
-
+        
         private void ReadFileInfo()
         {
             // todo: Query the FAT for the file size when none is given
-            AllocationTableStream dirTableStream = OpenFatBlock(Header.DirectoryTableBlock, 1000000);
-            AllocationTableStream fileTableStream = OpenFatBlock(Header.FileTableBlock, 1000000);
+            AllocationTableStorage dirTableStream = OpenFatBlock(Header.DirectoryTableBlock, 1000000);
+            AllocationTableStorage fileTableStream = OpenFatBlock(Header.FileTableBlock, 1000000);
 
             DirectoryEntry[] dirEntries = ReadDirEntries(dirTableStream);
             FileEntry[] fileEntries = ReadFileEntries(fileTableStream);
@@ -107,9 +106,9 @@ namespace LibHac.Save
             FsEntry.ResolveFilenames(Directories);
         }
 
-        private FileEntry[] ReadFileEntries(Stream stream)
+        private FileEntry[] ReadFileEntries(Storage storage)
         {
-            var reader = new BinaryReader(stream);
+            var reader = new BinaryReader(storage.AsStream());
             int count = reader.ReadInt32();
 
             reader.BaseStream.Position -= 4;
@@ -123,9 +122,9 @@ namespace LibHac.Save
             return entries;
         }
 
-        private DirectoryEntry[] ReadDirEntries(Stream stream)
+        private DirectoryEntry[] ReadDirEntries(Storage storage)
         {
-            var reader = new BinaryReader(stream);
+            var reader = new BinaryReader(storage.AsStream());
             int count = reader.ReadInt32();
 
             reader.BaseStream.Position -= 4;
@@ -139,9 +138,9 @@ namespace LibHac.Save
             return entries;
         }
 
-        private AllocationTableStream OpenFatBlock(int blockIndex, long size)
+        private AllocationTableStorage OpenFatBlock(int blockIndex, long size)
         {
-            return new AllocationTableStream(StreamSource.CreateStream(), AllocationTable, (int)Header.BlockSize, blockIndex, size);
+            return new AllocationTableStorage(BaseStorage, AllocationTable, (int)Header.BlockSize, blockIndex, size);
         }
     }
 }
