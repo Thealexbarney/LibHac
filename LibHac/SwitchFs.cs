@@ -128,7 +128,7 @@ namespace LibHac
 
                     string sdPath = "/" + Util.GetRelativePath(file, SaveDir).Replace('\\', '/');
                     var nax0 = new Nax0(Keyset, storage, sdPath, false);
-                    save = new Savefile(Keyset, nax0.BaseStorage.AsStream(), IntegrityCheckLevel.None);
+                    save = new Savefile(Keyset, nax0.BaseStorage, IntegrityCheckLevel.None);
                 }
                 catch (Exception ex)
                 {

@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using LibHac.IO;
+using LibHac.IO.Save;
 using LibHac.Streams;
 
 namespace LibHac.Save
@@ -9,7 +10,7 @@ namespace LibHac.Save
     public class Savefile
     {
         public Header Header { get; }
-        public SharedStreamSource SavefileSource { get; }
+        public Storage BaseStorage { get; }
 
         public SharedStreamSource JournalStreamSource { get; }
         private HierarchicalIntegrityVerificationStorage IvfcStream { get; }
@@ -19,69 +20,69 @@ namespace LibHac.Save
         public RemapStorage DataRemapStorage { get; }
         public RemapStorage MetaRemapStorage { get; }
 
-        public LayeredDuplexFs DuplexData { get; }
+        public HierarchicalDuplexStorage DuplexStorage { get; }
 
         public DirectoryEntry RootDirectory => SaveFs.RootDirectory;
         public FileEntry[] Files => SaveFs.Files;
         public DirectoryEntry[] Directories => SaveFs.Directories;
 
-        public Savefile(Keyset keyset, Stream file, IntegrityCheckLevel integrityCheckLevel)
+        public Savefile(Keyset keyset, Storage storage, IntegrityCheckLevel integrityCheckLevel)
         {
-            SavefileSource = new SharedStreamSource(file);
+            BaseStorage = storage;
 
-            Header = new Header(keyset, SavefileSource);
+            Header = new Header(keyset, BaseStorage);
             FsLayout layout = Header.Layout;
 
-            DataRemapStorage = new RemapStorage(SavefileSource.CreateStream(layout.FileMapDataOffset, layout.FileMapDataSize),
+            DataRemapStorage = new RemapStorage(BaseStorage.Slice(layout.FileMapDataOffset, layout.FileMapDataSize),
                     Header.FileRemap, Header.FileMapEntries);
 
-            DuplexData = InitDuplexStream(DataRemapStorage, Header);
+            DuplexStorage = InitDuplexStream(DataRemapStorage, Header);
 
-            MetaRemapStorage = new RemapStorage(DuplexData, Header.MetaRemap, Header.MetaMapEntries);
+            MetaRemapStorage = new RemapStorage(DuplexStorage, Header.MetaRemap, Header.MetaMapEntries);
 
-            Stream journalTable = MetaRemapStorage.OpenStream(layout.JournalTableOffset, layout.JournalTableSize);
+            Stream journalTable = MetaRemapStorage.Slice(layout.JournalTableOffset, layout.JournalTableSize).AsStream();
 
             MappingEntry[] journalMap = JournalStream.ReadMappingEntries(journalTable, Header.Journal.MainDataBlockCount);
 
-            Stream journalData = DataRemapStorage.OpenStream(layout.JournalDataOffset,
-                layout.JournalDataSizeB + layout.SizeReservedArea);
+            Stream journalData = DataRemapStorage.Slice(layout.JournalDataOffset,
+                layout.JournalDataSizeB + layout.SizeReservedArea).AsStream();
             var journalStream = new JournalStream(journalData, journalMap, (int)Header.Journal.BlockSize);
             JournalStreamSource = new SharedStreamSource(journalStream);
 
             IvfcStream = InitIvfcStream(integrityCheckLevel);
 
-            SaveFs = new SaveFs(IvfcStream.AsStream(), MetaRemapStorage.OpenStream(layout.FatOffset, layout.FatSize), Header.Save);
+            SaveFs = new SaveFs(IvfcStream.AsStream(), MetaRemapStorage.Slice(layout.FatOffset, layout.FatSize).AsStream(), Header.Save);
 
             IvfcStreamSource = new SharedStreamSource(IvfcStream.AsStream());
         }
 
-        private static LayeredDuplexFs InitDuplexStream(RemapStorage baseStorage, Header header)
+        private static HierarchicalDuplexStorage InitDuplexStream(Storage baseStorage, Header header)
         {
             FsLayout layout = header.Layout;
-            var duplexLayers = new DuplexFsLayerInfo[3];
+            var duplexLayers = new DuplexFsLayerInfo2[3];
 
-            duplexLayers[0] = new DuplexFsLayerInfo
+            duplexLayers[0] = new DuplexFsLayerInfo2
             {
-                DataA = new MemoryStream(header.DuplexMasterA),
-                DataB = new MemoryStream(header.DuplexMasterB),
+                DataA = new MemoryStorage(header.DuplexMasterA),
+                DataB = new MemoryStorage(header.DuplexMasterB),
                 Info = header.Duplex.Layers[0]
             };
 
-            duplexLayers[1] = new DuplexFsLayerInfo
+            duplexLayers[1] = new DuplexFsLayerInfo2
             {
-                DataA = baseStorage.OpenStream(layout.DuplexL1OffsetA, layout.DuplexL1Size),
-                DataB = baseStorage.OpenStream(layout.DuplexL1OffsetB, layout.DuplexL1Size),
+                DataA = baseStorage.Slice(layout.DuplexL1OffsetA, layout.DuplexL1Size),
+                DataB = baseStorage.Slice(layout.DuplexL1OffsetB, layout.DuplexL1Size),
                 Info = header.Duplex.Layers[1]
             };
 
-            duplexLayers[2] = new DuplexFsLayerInfo
+            duplexLayers[2] = new DuplexFsLayerInfo2
             {
-                DataA = baseStorage.OpenStream(layout.DuplexDataOffsetA, layout.DuplexDataSize),
-                DataB = baseStorage.OpenStream(layout.DuplexDataOffsetB, layout.DuplexDataSize),
+                DataA = baseStorage.Slice(layout.DuplexDataOffsetA, layout.DuplexDataSize),
+                DataB = baseStorage.Slice(layout.DuplexDataOffsetB, layout.DuplexDataSize),
                 Info = header.Duplex.Layers[2]
             };
 
-            return new LayeredDuplexFs(duplexLayers, layout.DuplexIndex == 1);
+            return new HierarchicalDuplexStorage(duplexLayers, layout.DuplexIndex == 1);
         }
 
         private HierarchicalIntegrityVerificationStorage InitIvfcStream(IntegrityCheckLevel integrityCheckLevel)
@@ -93,7 +94,7 @@ namespace LibHac.Save
 
             initInfo[0] = new IntegrityVerificationInfoStorage
             {
-                Data = Header.MasterHash.AsStorage(),
+                Data = Header.MasterHash,
                 BlockSize = 0,
                 Type = IntegrityStorageType.Save
             };
@@ -104,7 +105,7 @@ namespace LibHac.Save
 
                 Stream data = i == ivfcLevels - 1
                     ? JournalStreamSource.CreateStream()
-                    : MetaRemapStorage.OpenStream(level.LogicalOffset, level.HashDataSize);
+                    : MetaRemapStorage.Slice(level.LogicalOffset, level.HashDataSize).AsStream();
 
                 initInfo[i] = new IntegrityVerificationInfoStorage
                 {
@@ -132,7 +133,8 @@ namespace LibHac.Save
 
         public bool CommitHeader(Keyset keyset)
         {
-            SharedStream headerStream = SavefileSource.CreateStream();
+            // todo
+            SharedStream headerStream = null;
 
             var hashData = new byte[0x3d00];
 

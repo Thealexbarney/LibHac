@@ -1,6 +1,6 @@
 ﻿using System;
 using System.IO;
-using LibHac.Streams;
+using LibHac.IO.Save;
 
 namespace LibHac.Save
 {
@@ -25,16 +25,17 @@ namespace LibHac.Save
         public byte[] DuplexMasterA { get; }
         public byte[] DuplexMasterB { get; }
 
-        public Stream MasterHash { get; }
+        public Storage MasterHash { get; }
 
         public Validity SignatureValidity { get; }
         public Validity HeaderHashValidity { get; }
 
         public byte[] Data { get; }
 
-        public Header(Keyset keyset, SharedStreamSource streamSource)
+        public Header(Keyset keyset, Storage storage)
         {
-            var reader = new BinaryReader(streamSource.CreateStream());
+
+            var reader = new BinaryReader(storage.AsStream());
 
             reader.BaseStream.Position = 0;
             Data = reader.ReadBytes(0x4000);
@@ -70,7 +71,7 @@ namespace LibHac.Save
             reader.BaseStream.Position = Layout.IvfcMasterHashOffsetB;
             MasterHashB = reader.ReadBytes((int)Layout.IvfcMasterHashSize);
 
-            MasterHash = streamSource.CreateStream(Layout.IvfcMasterHashOffsetA, Layout.IvfcMasterHashSize);
+            MasterHash = storage.Slice(Layout.IvfcMasterHashOffsetA, Layout.IvfcMasterHashSize);
 
             reader.BaseStream.Position = Layout.DuplexMasterOffsetA;
             DuplexMasterA = reader.ReadBytes((int)Layout.DuplexMasterSize);
@@ -318,29 +319,6 @@ namespace LibHac.Save
             Offset = reader.ReadInt64();
             Size = reader.ReadInt32();
             FieldC = reader.ReadInt32();
-        }
-    }
-
-    public class MapEntry
-    {
-        public long VirtualOffset { get; }
-        public long PhysicalOffset { get; }
-        public long Size { get; }
-        public int Alignment { get; }
-        public int Field1C { get; }
-
-        public long VirtualOffsetEnd => VirtualOffset + Size;
-        public long PhysicalOffsetEnd => PhysicalOffset + Size;
-        internal RemapSegment Segment { get; set; }
-        internal MapEntry Next { get; set; }
-
-        public MapEntry(BinaryReader reader)
-        {
-            VirtualOffset = reader.ReadInt64();
-            PhysicalOffset = reader.ReadInt64();
-            Size = reader.ReadInt64();
-            Alignment = reader.ReadInt32();
-            Field1C = reader.ReadInt32();
         }
     }
 
