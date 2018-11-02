@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using LibHac.IO;
-using LibHac.Save;
+using LibHac.IO.Save;
 using LibHac.Streams;
 
 namespace LibHac

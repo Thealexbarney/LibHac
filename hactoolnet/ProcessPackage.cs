@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Text;
 using LibHac;
+using LibHac.IO;
 using static hactoolnet.Print;
 
 namespace hactoolnet
@@ -11,7 +12,7 @@ namespace hactoolnet
         {
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
             {
-                var package1 = new Package1(ctx.Keyset, file);
+                var package1 = new Package1(ctx.Keyset, file.AsStorage());
                 string outDir = ctx.Options.OutDir;
 
                 if (outDir != null)
@@ -24,8 +25,8 @@ namespace hactoolnet
 
                     using (var decFile = new FileStream(Path.Combine(outDir, "Decrypted.bin"), FileMode.Create))
                     {
-                        package1.OpenPackage1Ldr().CopyTo(decFile);
-                        package1.Pk11.OpenDecryptedPk11().CopyTo(decFile);
+                        package1.OpenPackage1Ldr().CopyToStream(decFile);
+                        package1.Pk11.OpenDecryptedPk11().CopyToStream(decFile);
                     }
                 }
             }

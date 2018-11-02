@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using LibHac.IO;
 
 namespace LibHac
 {
@@ -94,42 +93,6 @@ namespace LibHac
                 remaining -= read;
                 progress?.ReportAdd(read);
             }
-        }
-
-        public static void CopyToStream(this Storage input, Stream output, long length, IProgressReport progress = null)
-        {
-            const int bufferSize = 0x8000;
-            long remaining = length;
-            long inOffset = 0;
-            var buffer = new byte[bufferSize];
-            progress?.SetTotal(length);
-
-            int read;
-            while ((read = input.Read(buffer, inOffset, (int)Math.Min(buffer.Length, remaining), 0)) > 0)
-            {
-                output.Write(buffer, 0, read);
-                remaining -= read;
-                inOffset += read;
-                progress?.ReportAdd(read);
-            }
-        }
-
-        public static Storage AsStorage(this Stream stream)
-        {
-            if (stream == null) return null;
-            return new StreamStorage(stream, true);
-        }
-
-        public static Storage AsStorage(this Stream stream, long start)
-        {
-            if (stream == null) return null;
-            return new StreamStorage(stream, true).Slice(start);
-        }
-
-        public static Storage AsStorage(this Stream stream, long start, int length)
-        {
-            if (stream == null) return null;
-            return new StreamStorage(stream, true).Slice(start, length);
         }
 
         public static void WriteAllBytes(this Stream input, string filename, IProgressReport progress = null)

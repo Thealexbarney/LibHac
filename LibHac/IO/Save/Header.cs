@@ -1,8 +1,7 @@
 ﻿using System;
 using System.IO;
-using LibHac.IO.Save;
 
-namespace LibHac.Save
+namespace LibHac.IO.Save
 {
     public class Header
     {

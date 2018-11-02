@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 
-namespace LibHac.Save
+namespace LibHac.IO.Save
 {
     [DebuggerDisplay("{" + nameof(FullPath) + "}")]
     public abstract class FsEntry

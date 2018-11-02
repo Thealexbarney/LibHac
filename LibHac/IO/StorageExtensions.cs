@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.IO;
 
 namespace LibHac.IO
 {
@@ -34,6 +35,52 @@ namespace LibHac.IO
             }
 
             progress?.SetTotal(0);
+        }
+
+        public static void WriteAllBytes(this Storage input, string filename, IProgressReport progress = null)
+        {
+            using (var outFile = new FileStream(filename, FileMode.Create, FileAccess.Write))
+            {
+                input.CopyToStream(outFile, input.Length, progress);
+            }
+        }
+        
+        public static void CopyToStream(this Storage input, Stream output, long length, IProgressReport progress = null)
+        {
+            const int bufferSize = 0x8000;
+            long remaining = length;
+            long inOffset = 0;
+            var buffer = new byte[bufferSize];
+            progress?.SetTotal(length);
+
+            int read;
+            while ((read = input.Read(buffer, inOffset, (int)Math.Min(buffer.Length, remaining), 0)) > 0)
+            {
+                output.Write(buffer, 0, read);
+                remaining -= read;
+                inOffset += read;
+                progress?.ReportAdd(read);
+            }
+        }
+
+        public static void CopyToStream(this Storage input, Stream output) => CopyToStream(input, output, input.Length);
+
+        public static Storage AsStorage(this Stream stream)
+        {
+            if (stream == null) return null;
+            return new StreamStorage(stream, true);
+        }
+
+        public static Storage AsStorage(this Stream stream, long start)
+        {
+            if (stream == null) return null;
+            return new StreamStorage(stream, true).Slice(start);
+        }
+
+        public static Storage AsStorage(this Stream stream, long start, int length)
+        {
+            if (stream == null) return null;
+            return new StreamStorage(stream, true).Slice(start, length);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using LibHac;
+using LibHac.IO;
 
 namespace hactoolnet
 {

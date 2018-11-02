@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using LibHac.Save;
-
 namespace LibHac.IO.Save
 {
     public class SaveFs

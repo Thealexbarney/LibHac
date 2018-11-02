@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using System.IO;
 using LibHac;
 using LibHac.IO;
+using LibHac.IO.Save;
 using LibHac.Nand;
-using LibHac.Save;
 
 namespace NandReader
 {

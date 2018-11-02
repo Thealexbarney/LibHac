@@ -1,10 +1,8 @@
 ﻿using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using LibHac.IO;
-using LibHac.IO.Save;
 
-namespace LibHac.Save
+namespace LibHac.IO.Save
 {
     public class Savefile
     {
