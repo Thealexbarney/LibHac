@@ -51,13 +51,34 @@ namespace LibHac.IO.Save
 
         protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
         {
-            throw new NotImplementedException();
+            var iterator = new AllocationTableIterator(Fat, InitialBlock);
+
+            long inPos = offset;
+            int outPos = 0;
+            int remaining = source.Length;
+
+            while (remaining > 0)
+            {
+                int blockNum = (int)(inPos / BlockSize);
+                iterator.Seek(blockNum);
+
+                int segmentPos = (int)(inPos - (long)iterator.VirtualBlock * BlockSize);
+                long physicalOffset = iterator.PhysicalBlock * BlockSize + segmentPos;
+
+                int remainingInSegment = iterator.CurrentSegmentSize * BlockSize - segmentPos;
+                int bytesToWrite = Math.Min(remaining, remainingInSegment);
+
+                BaseStorage.Write(source.Slice(outPos, bytesToWrite), physicalOffset);
+
+                outPos += bytesToWrite;
+                inPos += bytesToWrite;
+                remaining -= bytesToWrite;
+            }
         }
 
         public override void Flush()
         {
-            throw new NotImplementedException();
+            BaseStorage.Flush();
         }
-
     }
 }

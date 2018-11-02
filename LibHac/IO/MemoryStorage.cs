@@ -14,10 +14,10 @@ namespace LibHac.IO
 
         public MemoryStorage(byte[] buffer, int index, int count)
         {
-            if(buffer == null) throw new NullReferenceException(nameof(buffer));
-            if(index < 0) throw new ArgumentOutOfRangeException(nameof(index), "Value must be non-negative.");
-            if(count < 0) throw new ArgumentOutOfRangeException(nameof(count), "Value must be non-negative.");
-            if(buffer.Length - index < count) throw new ArgumentException("Length, index and count parameters are invalid.");
+            if (buffer == null) throw new NullReferenceException(nameof(buffer));
+            if (index < 0) throw new ArgumentOutOfRangeException(nameof(index), "Value must be non-negative.");
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), "Value must be non-negative.");
+            if (buffer.Length - index < count) throw new ArgumentException("Length, index and count parameters are invalid.");
 
             Buffer = buffer;
             Start = index;
@@ -26,7 +26,7 @@ namespace LibHac.IO
 
         protected override int ReadSpan(Span<byte> destination, long offset)
         {
-            Buffer.AsSpan((int) (Start + offset), destination.Length).CopyTo(destination);
+            Buffer.AsSpan((int)(Start + offset), destination.Length).CopyTo(destination);
             return destination.Length;
         }
 
@@ -35,10 +35,7 @@ namespace LibHac.IO
             throw new NotImplementedException();
         }
 
-        public override void Flush()
-        {
-            throw new NotImplementedException();
-        }
+        public override void Flush() { }
 
         public override long Length { get; }
     }

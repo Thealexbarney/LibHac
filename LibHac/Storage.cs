@@ -66,6 +66,7 @@ namespace LibHac
 
             if (disposing)
             {
+                Flush();
                 foreach (IDisposable item in ToDispose)
                 {
                     item?.Dispose();

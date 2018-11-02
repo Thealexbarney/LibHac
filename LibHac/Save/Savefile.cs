@@ -3,7 +3,6 @@ using System.Security.Cryptography;
 using System.Text;
 using LibHac.IO;
 using LibHac.IO.Save;
-using LibHac.Streams;
 
 namespace LibHac.Save
 {
@@ -12,9 +11,8 @@ namespace LibHac.Save
         public Header Header { get; }
         public Storage BaseStorage { get; }
 
-        private HierarchicalIntegrityVerificationStorage IvfcStorage { get; }
-        public SharedStreamSource IvfcStreamSource { get; }
-        public SaveFs2 SaveFs { get; }
+        public HierarchicalIntegrityVerificationStorage IvfcStorage { get; }
+        public SaveFs SaveFs { get; }
 
         public RemapStorage DataRemapStorage { get; }
         public RemapStorage MetaRemapStorage { get; }
@@ -36,7 +34,7 @@ namespace LibHac.Save
             DataRemapStorage = new RemapStorage(BaseStorage.Slice(layout.FileMapDataOffset, layout.FileMapDataSize),
                     Header.FileRemap, Header.FileMapEntries);
 
-            DuplexStorage = InitDuplexStream(DataRemapStorage, Header);
+            DuplexStorage = InitDuplexStorage(DataRemapStorage, Header);
 
             MetaRemapStorage = new RemapStorage(DuplexStorage, Header.MetaRemap, Header.MetaMapEntries);
 
@@ -51,12 +49,10 @@ namespace LibHac.Save
 
             IvfcStorage = InitIvfcStorage(integrityCheckLevel);
 
-            SaveFs = new SaveFs2(IvfcStorage, MetaRemapStorage.Slice(layout.FatOffset, layout.FatSize), Header.Save);
-
-            IvfcStreamSource = new SharedStreamSource(IvfcStorage.AsStream());
+            SaveFs = new SaveFs(IvfcStorage, MetaRemapStorage.Slice(layout.FatOffset, layout.FatSize), Header.Save);
         }
 
-        private static HierarchicalDuplexStorage InitDuplexStream(Storage baseStorage, Header header)
+        private static HierarchicalDuplexStorage InitDuplexStorage(Storage baseStorage, Header header)
         {
             FsLayout layout = header.Layout;
             var duplexLayers = new DuplexFsLayerInfo2[3];
@@ -134,7 +130,7 @@ namespace LibHac.Save
         public bool CommitHeader(Keyset keyset)
         {
             // todo
-            SharedStream headerStream = null;
+            Stream headerStream = BaseStorage.AsStream();
 
             var hashData = new byte[0x3d00];
 

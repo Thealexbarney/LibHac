@@ -61,12 +61,33 @@ namespace LibHac.IO.Save
 
         protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
         {
-            throw new NotImplementedException();
+            MapEntry entry = GetMapEntry(offset);
+
+            long inPos = offset;
+            int outPos = 0;
+            int remaining = source.Length;
+
+            while (remaining > 0)
+            {
+                long entryPos = inPos - entry.VirtualOffset;
+
+                int bytesToWrite = (int)Math.Min(entry.VirtualOffsetEnd - inPos, remaining);
+                BaseStorage.Write(source.Slice(outPos, bytesToWrite), entry.PhysicalOffset + entryPos);
+
+                outPos += bytesToWrite;
+                inPos += bytesToWrite;
+                remaining -= bytesToWrite;
+
+                if (inPos >= entry.VirtualOffsetEnd)
+                {
+                    entry = entry.Next;
+                }
+            }
         }
 
         public override void Flush()
         {
-            throw new NotImplementedException();
+            BaseStorage.Flush();
         }
 
         private static RemapSegment[] InitSegments(RemapHeader header, MapEntry[] mapEntries)

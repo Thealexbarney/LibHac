@@ -39,12 +39,12 @@ namespace LibHac.IO.Save
 
         protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
         {
-            throw new NotImplementedException();
+            DataLayer.Write(source, offset);
         }
 
         public override void Flush()
         {
-            throw new NotImplementedException();
+            DataLayer.Flush();
         }
 
         public override long Length { get; }

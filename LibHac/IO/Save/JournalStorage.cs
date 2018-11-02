@@ -46,12 +46,31 @@ namespace LibHac.IO.Save
 
         protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
         {
-            throw new NotImplementedException();
+            long inPos = offset;
+            int outPos = 0;
+            int remaining = source.Length;
+
+            while (remaining > 0)
+            {
+                int blockNum = (int)(inPos / BlockSize);
+                int blockPos = (int)(inPos % BlockSize);
+
+                JournalMapEntry entry = Map[blockNum];
+                long physicalOffset = entry.PhysicalIndex * BlockSize + blockPos;
+
+                int bytesToWrite = Math.Min(remaining, BlockSize - blockPos);
+
+                BaseStorage.Write(source.Slice(outPos, bytesToWrite), physicalOffset);
+
+                outPos += bytesToWrite;
+                inPos += bytesToWrite;
+                remaining -= bytesToWrite;
+            }
         }
 
         public override void Flush()
         {
-            throw new NotImplementedException();
+            BaseStorage.Flush();
         }
 
         public static JournalMapEntry[] ReadMapEntries(Storage mapTable, int count)

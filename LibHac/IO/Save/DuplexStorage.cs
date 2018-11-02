@@ -48,7 +48,25 @@ namespace LibHac.IO.Save
 
         protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
         {
-            throw new NotImplementedException();
+            long inPos = offset;
+            int outPos = 0;
+            int remaining = source.Length;
+
+            while (remaining > 0)
+            {
+                int blockNum = (int)(inPos / BlockSize);
+                int blockPos = (int)(inPos % BlockSize);
+
+                int bytesToWrite = Math.Min(remaining, BlockSize - blockPos);
+
+                Storage data = Bitmap.Bitmap[blockNum] ? DataB : DataA;
+
+                data.Write(source.Slice(outPos, bytesToWrite), inPos);
+
+                outPos += bytesToWrite;
+                inPos += bytesToWrite;
+                remaining -= bytesToWrite;
+            }
         }
 
         public override void Flush()

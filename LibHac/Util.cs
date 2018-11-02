@@ -63,9 +63,9 @@ namespace LibHac
             return true;
         }
 
-        public static bool IsEmpty(this byte[] array) => array.AsSpan().IsEmpty();
+        public static bool IsEmpty(this byte[] array) => ((ReadOnlySpan<byte>)array).IsEmpty();
 
-        public static bool IsEmpty(this Span<byte> span)
+        public static bool IsEmpty(this ReadOnlySpan<byte> span)
         {
             if (span == null) throw new ArgumentNullException(nameof(span));
 

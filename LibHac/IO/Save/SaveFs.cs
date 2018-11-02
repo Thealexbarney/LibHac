@@ -4,7 +4,7 @@ using LibHac.Save;
 
 namespace LibHac.IO.Save
 {
-    public class SaveFs2
+    public class SaveFs
     {
         private Storage BaseStorage { get; }
         private AllocationTable AllocationTable { get; }
@@ -15,7 +15,7 @@ namespace LibHac.IO.Save
         public DirectoryEntry[] Directories { get; private set; }
         public Dictionary<string, FileEntry> FileDictionary { get; }
 
-        public SaveFs2(Storage storage, Storage allocationTable, SaveHeader header)
+        public SaveFs(Storage storage, Storage allocationTable, SaveHeader header)
         {
             BaseStorage = storage;
             AllocationTable = new AllocationTable(allocationTable.AsStream());

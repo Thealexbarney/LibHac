@@ -27,6 +27,7 @@ namespace LibHac.IO
         public override void Write(byte[] buffer, int offset, int count)
         {
             BaseStorage.Write(buffer, Position, count, offset);
+            Position += count;
         }
 
         public override void Flush()

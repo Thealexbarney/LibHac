@@ -58,12 +58,42 @@ namespace LibHac.IO
 
         protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
         {
-            throw new NotImplementedException();
+            long remaining = source.Length;
+            long inOffset = offset;
+            int outOffset = 0;
+
+            lock (Blocks)
+            {
+                while (remaining > 0)
+                {
+                    long blockIndex = inOffset / BlockSize;
+                    int blockPos = (int)(inOffset % BlockSize);
+                    CacheBlock block = GetBlock(blockIndex);
+
+                    int bytesToWrite = (int)Math.Min(remaining, BlockSize - blockPos);
+
+                    source.Slice(outOffset, bytesToWrite).CopyTo(block.Buffer.AsSpan(blockPos));
+
+                    block.Dirty = true;
+
+                    outOffset += bytesToWrite;
+                    inOffset += bytesToWrite;
+                    remaining -= bytesToWrite;
+                }
+            }
         }
 
         public override void Flush()
         {
-            throw new NotImplementedException();
+            lock (Blocks)
+            {
+                foreach (CacheBlock cacheItem in Blocks)
+                {
+                    FlushBlock(cacheItem);
+                }
+            }
+
+            BaseStorage.Flush();
         }
 
         public override long Length { get; }
@@ -82,6 +112,8 @@ namespace LibHac.IO
             }
 
             node = Blocks.Last;
+            FlushBlock(node.Value);
+
             CacheBlock block = node.Value;
             Blocks.RemoveLast();
             BlockDict.Remove(block.Index);
@@ -116,7 +148,7 @@ namespace LibHac.IO
             if (!block.Dirty) return;
 
             long offset = block.Index * BlockSize;
-            BaseStorage.Write(block.Buffer, offset, block.Length, 0);
+            BaseStorage.Write(block.Buffer, offset, block.Buffer.Length, 0);
             block.Dirty = false;
         }
 

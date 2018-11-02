@@ -47,7 +47,7 @@ namespace LibHac.IO
 
             HashStorage.Read(hashBuffer, hashPos);
 
-            if (Type == IntegrityStorageType.Save && hashBuffer.IsEmpty())
+            if (Type == IntegrityStorageType.Save && Util.IsEmpty(hashBuffer))
             {
                 destination.Clear();
                 BlockValidities[blockIndex] = Validity.Valid;
@@ -114,19 +114,31 @@ namespace LibHac.IO
 
         protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
         {
-            //long blockNum = CurrentSector;
-            //int toWrite = (int)Math.Min(count, Length - Position);
-            //byte[] hash = DoHash(buffer, offset, toWrite);
+            long blockIndex = offset / SectorSize;
+            long hashPos = blockIndex * DigestSize;
 
-            //if (Type == IntegrityStreamType.Save && buffer.IsEmpty())
-            //{
-            //    Array.Clear(hash, 0, DigestSize);
-            //}
+            int toWrite = (int)Math.Min(source.Length, Length - offset);
 
-            //base.Write(buffer, offset, count);
+            byte[] dataBuffer = ArrayPool<byte>.Shared.Rent(SectorSize);
+            try
+            {
+                source.CopyTo(dataBuffer);
+                byte[] hash = DoHash(dataBuffer, 0, toWrite);
 
-            //HashStream.Position = blockNum * DigestSize;
-            //HashStream.Write(hash, 0, DigestSize);
+                if (Type == IntegrityStorageType.Save && source.IsEmpty())
+                {
+                    Array.Clear(hash, 0, DigestSize);
+                }
+
+                BaseStorage.Write(source, offset);
+
+                HashStorage.Write(hash, hashPos);
+                BlockValidities[blockIndex] = Validity.Unchecked;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(dataBuffer);
+            }
         }
 
         private byte[] DoHash(byte[] buffer, int offset, int count)
@@ -150,6 +162,12 @@ namespace LibHac.IO
             }
 
             return hash;
+        }
+
+        public override void Flush()
+        {
+            HashStorage.Flush();
+            base.Flush();
         }
     }
 
