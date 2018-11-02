@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using LibHac.Streams;
 
 namespace LibHac
 {
@@ -13,12 +12,12 @@ namespace LibHac
         public int[] SectionOffsets { get; } = new int[6];
         public int Size { get; }
 
-        private SharedStreamSource StreamSource { get; }
+        private Storage Storage { get; }
 
-        public Kip(Stream stream)
+        public Kip(Storage storage)
         {
-            StreamSource = new SharedStreamSource(stream);
-            Header = new KipHeader(StreamSource.CreateStream());
+            Storage = storage;
+            Header = new KipHeader(Storage);
 
             Size = HeaderSize;
 
@@ -30,26 +29,26 @@ namespace LibHac
             }
         }
 
-        public Stream OpenSection(int index)
+        public Storage OpenSection(int index)
         {
             if (index < 0 || index > 5)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), "Section index must be between 0-5");
             }
 
-            return StreamSource.CreateStream(SectionOffsets[index], Header.Sections[index].CompressedSize);
+            return Storage.Slice(SectionOffsets[index], Header.Sections[index].CompressedSize);
         }
 
         public byte[] DecompressSection(int index)
         {
-            Stream compStream = OpenSection(index);
+            Storage compStream = OpenSection(index);
             var compressed = new byte[compStream.Length];
-            compStream.Read(compressed, 0, compressed.Length);
+            compStream.Read(compressed, 0);
 
             return DecompressBlz(compressed);
         }
 
-        public Stream OpenRawFile() => StreamSource.CreateStream();
+        public Storage OpenRawFile() => Storage;
 
         private static byte[] DecompressBlz(byte[] compressed)
         {
@@ -119,9 +118,9 @@ namespace LibHac
         public KipSectionHeader[] Sections { get; } = new KipSectionHeader[6];
         public byte[] Capabilities { get; }
 
-        public KipHeader(Stream stream)
+        public KipHeader(Storage storage)
         {
-            var reader = new BinaryReader(stream);
+            var reader = new BinaryReader(storage.AsStream());
 
             Magic = reader.ReadAscii(4);
             if (Magic != "KIP1")
@@ -172,14 +171,13 @@ namespace LibHac
         public int Size { get; }
         public int KipCount { get; }
 
-        private SharedStreamSource StreamSource { get; }
+        private Storage Storage { get; }
 
-        public Ini1(Stream stream)
+        public Ini1(Storage storage)
         {
-            StreamSource = new SharedStreamSource(stream);
-            Stream initStream = StreamSource.CreateStream();
+            Storage = storage;
 
-            var reader = new BinaryReader(initStream);
+            var reader = new BinaryReader(Storage.AsStream());
 
             Magic = reader.ReadAscii(4);
             if (Magic != "INI1")
@@ -196,9 +194,9 @@ namespace LibHac
             for (int i = 0; i < KipCount; i++)
             {
                 // How to get the KIP's size the lazy way
-                var kip = new Kip(StreamSource.CreateStream(offset));
+                var kip = new Kip(Storage.Slice(offset));
 
-                Kips[i] = new Kip(StreamSource.CreateStream(offset, kip.Size));
+                Kips[i] = new Kip(Storage.Slice(offset, kip.Size));
 
                 offset += kip.Size;
             }

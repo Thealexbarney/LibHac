@@ -39,19 +39,17 @@ namespace LibHac.IO
             int blockCount = Util.DivideByRoundUp(data.Length, BlockSizeBytes);
             int length = blockCount * BlockSizeBytes;
 
-            byte[] counterDec = ArrayPool<byte>.Shared.Rent(length);
-            byte[] counterEnc = ArrayPool<byte>.Shared.Rent(length);
+            byte[] counterXor = ArrayPool<byte>.Shared.Rent(length);
             try
             {
-                FillDecryptedCounter(blockCount, counterDec);
-                _encryptor.TransformBlock(counterDec, 0, length, counterEnc, 0);
+                FillDecryptedCounter(blockCount, counterXor);
+                _encryptor.TransformBlock(counterXor, 0, length, counterXor, 0);
 
-                XorArrays(data, counterEnc);
+                XorArrays(data, counterXor);
             }
             finally
             {
-                ArrayPool<byte>.Shared.Return(counterDec);
-                ArrayPool<byte>.Shared.Return(counterEnc);
+                ArrayPool<byte>.Shared.Return(counterXor);
             }
 
             return data.Length;

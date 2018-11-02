@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using LibHac;
+using LibHac.IO;
 
 namespace hactoolnet
 {
@@ -9,7 +10,7 @@ namespace hactoolnet
         {
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
             {
-                var kip = new Kip(file);
+                var kip = new Kip(file.AsStorage());
                 kip.OpenRawFile();
             }
         }
@@ -18,7 +19,7 @@ namespace hactoolnet
         {
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
             {
-                var ini1 = new Ini1(file);
+                var ini1 = new Ini1(file.AsStorage());
 
                 string outDir = ctx.Options.OutDir;
 

@@ -34,7 +34,7 @@ namespace hactoolnet
 
         public static void ProcessPk21(Context ctx)
         {
-            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
+            using (var file = new CachedStorage(new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read).AsStorage(), 0x4000, 4, false))
             {
                 var package2 = new Package2(ctx.Keyset, file);
 
@@ -51,10 +51,10 @@ namespace hactoolnet
 
                     using (var decFile = new FileStream(Path.Combine(outDir, "Decrypted.bin"), FileMode.Create))
                     {
-                        package2.OpenHeaderPart1().CopyTo(decFile);
-                        package2.OpenHeaderPart2().CopyTo(decFile);
-                        package2.OpenKernel().CopyTo(decFile);
-                        package2.OpenIni1().CopyTo(decFile);
+                        package2.OpenHeaderPart1().CopyToStream(decFile);
+                        package2.OpenHeaderPart2().CopyToStream(decFile);
+                        package2.OpenKernel().CopyToStream(decFile);
+                        package2.OpenIni1().CopyToStream(decFile);
                     }
                 }
             }
