@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace LibHac.IO.Save
 {
@@ -120,10 +119,19 @@ namespace LibHac.IO.Save
 
         private MapEntry GetMapEntry(long offset)
         {
-            // todo
-            MapEntry entry = MapEntries.FirstOrDefault(x => offset >= x.VirtualOffset && offset < x.VirtualOffsetEnd);
-            if (entry == null) throw new ArgumentOutOfRangeException(nameof(offset));
-            return entry;
+            int segmentIdx = GetSegmentFromVirtualOffset(offset);
+
+            if (segmentIdx < Segments.Length)
+            {
+                RemapSegment segment = Segments[segmentIdx];
+
+                foreach (MapEntry entry in segment.Entries)
+                {
+                    if (entry.VirtualOffsetEnd > offset) return entry;
+                }
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(offset));
         }
 
         private int GetSegmentFromVirtualOffset(long virtualOffset)

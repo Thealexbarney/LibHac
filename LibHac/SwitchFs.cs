@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text;
 using LibHac.IO;
 using LibHac.IO.Save;
-using LibHac.Streams;
 
 namespace LibHac
 {
@@ -67,7 +66,7 @@ namespace LibHac
                 try
                 {
                     bool isNax0;
-                    Storage storage = OpenSplitNcaStream(Fs, file).AsStorage();
+                    Storage storage = OpenSplitNcaStream(Fs, file);
                     if (storage == null) continue;
 
                     using (var reader = new BinaryReader(storage.AsStream(), Encoding.Default, true))
@@ -234,10 +233,10 @@ namespace LibHac
             }
         }
 
-        internal static Stream OpenSplitNcaStream(IFileSystem fs, string path)
+        internal static Storage OpenSplitNcaStream(IFileSystem fs, string path)
         {
             var files = new List<string>();
-            var streams = new List<Stream>();
+            var storages = new List<Storage>();
 
             if (fs.DirectoryExists(path))
             {
@@ -253,7 +252,7 @@ namespace LibHac
             {
                 if (Path.GetFileName(path) != "00")
                 {
-                    return fs.OpenFile(path, FileMode.Open, FileAccess.Read);
+                    return fs.OpenFile(path, FileMode.Open, FileAccess.Read).AsStorage();
                 }
                 files.Add(path);
             }
@@ -264,13 +263,12 @@ namespace LibHac
 
             foreach (string file in files)
             {
-                streams.Add(fs.OpenFile(file, FileMode.Open, FileAccess.Read));
+                storages.Add(fs.OpenFile(file, FileMode.Open, FileAccess.Read).AsStorage());
             }
 
-            if (streams.Count == 0) return null;
+            if (storages.Count == 0) return null; //todo
 
-            var stream = new CombinationStream(streams);
-            return stream;
+            return new ConcatenationStorage(storages, true);
         }
 
         private void DisposeNcas()
