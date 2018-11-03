@@ -9,24 +9,23 @@ namespace LibHac.Npdm
     //http://switchbrew.org/index.php?title=NPDM
     public class Npdm
     {
-
         public string Magic;
-        public bool   Is64Bits                { get; private set; }
-        public int    AddressSpaceWidth       { get; private set; }
-        public byte   MainThreadPriority      { get; private set; }
-        public byte   DefaultCpuId            { get; private set; }
-        public int    SystemResourceSize      { get; private set; }
-        public int    ProcessCategory         { get; private set; }
-        public int    MainEntrypointStackSize { get; private set; }
-        public string TitleName               { get; private set; }
-        public byte[] ProductCode             { get; private set; }
+        public bool   Is64Bits                { get; }
+        public int    AddressSpaceWidth       { get; }
+        public byte   MainThreadPriority      { get; }
+        public byte   DefaultCpuId            { get; }
+        public int    SystemResourceSize      { get; }
+        public int    ProcessCategory         { get; }
+        public int    MainEntrypointStackSize { get; }
+        public string TitleName               { get; }
+        public byte[] ProductCode             { get; }
 
-        public ACI0 Aci0 { get; private set; }
-        public ACID AciD { get; private set; }
+        public Aci0 Aci0 { get; }
+        public Acid AciD { get; }
 
         public Npdm(Stream stream)
         {
-            BinaryReader reader = new BinaryReader(stream);
+            var reader = new BinaryReader(stream);
 
             Magic = reader.ReadAscii(0x4);
 
@@ -65,13 +64,13 @@ namespace LibHac.Npdm
 
             stream.Seek(0x30, SeekOrigin.Current);
 
-            int ACI0Offset = reader.ReadInt32();
-            int ACI0Size   = reader.ReadInt32();
-            int ACIDOffset = reader.ReadInt32();
-            int ACIDSize   = reader.ReadInt32();
+            int aci0Offset = reader.ReadInt32();
+            int aci0Size   = reader.ReadInt32();
+            int acidOffset = reader.ReadInt32();
+            int acidSize   = reader.ReadInt32();
 
-            Aci0 = new ACI0(stream, ACI0Offset);
-            AciD = new ACID(stream, ACIDOffset);
+            Aci0 = new Aci0(stream, aci0Offset);
+            AciD = new Acid(stream, acidOffset);
         }
     }
 }

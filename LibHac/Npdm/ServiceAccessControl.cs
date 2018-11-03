@@ -5,31 +5,31 @@ namespace LibHac.Npdm
 {
     public class ServiceAccessControl
     {
-        public Dictionary<string, bool> Services { get; private set; } = new Dictionary<string, bool>();
+        public Dictionary<string, bool> Services { get; } = new Dictionary<string, bool>();
 
         public ServiceAccessControl(Stream stream, int offset, int size)
         {
             stream.Seek(offset, SeekOrigin.Begin);
 
-            BinaryReader reader = new BinaryReader(stream);
+            var reader = new BinaryReader(stream);
 
-            int bytereaded = 0;
+            int bytesRead = 0;
 
-            while (bytereaded != size)
+            while (bytesRead != size)
             {
-                byte controlbyte = reader.ReadByte();
+                byte controlByte = reader.ReadByte();
 
-                if (controlbyte == 0)
+                if (controlByte == 0)
                 {
                     break;
                 }
 
-                int  Length          = ((controlbyte & 0x07)) + 1;
-                bool RegisterAllowed = ((controlbyte & 0x80) != 0);
+                int  length          = ((controlByte & 0x07)) + 1;
+                bool registerAllowed = ((controlByte & 0x80) != 0);
 
-                Services.Add(reader.ReadAscii(Length), RegisterAllowed);
+                Services.Add(reader.ReadAscii(length), registerAllowed);
 
-                bytereaded += Length + 1;
+                bytesRead += length + 1;
             }
         }
     }

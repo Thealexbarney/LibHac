@@ -193,7 +193,7 @@ namespace LibHac
 
                 title.Control = new Nacp(control);
 
-                foreach (NacpDescripion desc in title.Control.Descriptions)
+                foreach (NacpDescription desc in title.Control.Descriptions)
                 {
                     if (!string.IsNullOrWhiteSpace(desc.Title))
                     {

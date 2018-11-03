@@ -5,7 +5,7 @@ namespace LibHac
 {
     public class Nacp
     {
-        public NacpDescripion[] Descriptions { get; } = new NacpDescripion[0x10];
+        public NacpDescription[] Descriptions { get; } = new NacpDescription[0x10];
         public string Isbn { get; }
         public byte StartupUserAccount { get; }
         public byte TouchScreenUsageMode { get; }
@@ -54,7 +54,6 @@ namespace LibHac
         public byte RepairFlag { get; }
         public byte ProgramIndex { get; }
 
-
         public long TotalSaveDataSize { get; }
         public long UserTotalSaveDataSize { get; }
         public long DeviceTotalSaveDataSize { get; }
@@ -69,7 +68,7 @@ namespace LibHac
 
             for (int i = 0; i < 16; i++)
             {
-                Descriptions[i] = new NacpDescripion(reader, i);
+                Descriptions[i] = new NacpDescription(reader, i);
             }
 
             Isbn = reader.ReadUtf8Z(37);
@@ -145,20 +144,19 @@ namespace LibHac
             UserTotalSaveDataSize = UserAccountSaveDataSize + UserAccountSaveDataJournalSize;
             DeviceTotalSaveDataSize = DeviceSaveDataSize + DeviceSaveDataJournalSize;
             TotalSaveDataSize = UserTotalSaveDataSize + DeviceTotalSaveDataSize;
-
         }
     }
 
-    public class NacpDescripion
+    public class NacpDescription
     {
         public string Title { get; }
         public string Developer { get; }
 
         public TitleLanguage Language;
 
-        public NacpDescripion() {}
+        public NacpDescription() { }
 
-        public NacpDescripion(BinaryReader reader, int index)
+        public NacpDescription(BinaryReader reader, int index)
         {
             Language = (TitleLanguage)index;
             long start = reader.BaseStream.Position;
@@ -169,7 +167,7 @@ namespace LibHac
         }
     }
 
-    public enum TitleLanguage : int
+    public enum TitleLanguage
     {
         AmericanEnglish = 0,
         BritishEnglish,
@@ -187,7 +185,4 @@ namespace LibHac
         Taiwanese,
         Chinese
     }
-
-
-
 }

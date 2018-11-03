@@ -5,16 +5,16 @@ namespace LibHac.Npdm
 {
     public class FsAccessHeader
     {
-        public int   Version            { get; private set; }
-        public ulong PermissionsBitmask { get; private set; }
+        public int Version { get; }
+        public ulong PermissionsBitmask { get; }
 
-        public FsAccessHeader(Stream stream, int offset, int size)
+        public FsAccessHeader(Stream stream, int offset)
         {
             stream.Seek(offset, SeekOrigin.Begin);
 
-            BinaryReader reader = new BinaryReader(stream);
+            var reader = new BinaryReader(stream);
 
-            Version            = reader.ReadInt32();
+            Version = reader.ReadInt32();
             PermissionsBitmask = reader.ReadUInt64();
 
             int dataSize = reader.ReadInt32();
@@ -24,10 +24,10 @@ namespace LibHac.Npdm
                 throw new Exception("FsAccessHeader is corrupted!");
             }
 
-            int ContentOwnerIdSize        = reader.ReadInt32();
-            int DataAndContentOwnerIdSize = reader.ReadInt32();
+            int contentOwnerIdSize = reader.ReadInt32();
+            int dataAndContentOwnerIdSize = reader.ReadInt32();
 
-            if (DataAndContentOwnerIdSize != 0x1c)
+            if (dataAndContentOwnerIdSize != 0x1c)
             {
                 throw new NotImplementedException("ContentOwnerId section is not implemented!");
             }

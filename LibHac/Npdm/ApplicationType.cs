@@ -1,6 +1,6 @@
 namespace LibHac.Npdm
 {
-    enum ApplicationType
+    internal enum ApplicationType
     {
         SystemModule,
         Application,
