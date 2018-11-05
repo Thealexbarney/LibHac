@@ -9,7 +9,6 @@ using LibHac;
 using LibHac.IO;
 using LibHac.IO.Save;
 using LibHac.Nand;
-using LibHac.Streams;
 
 namespace NandReaderGui.ViewModel
 {
@@ -33,6 +32,7 @@ namespace NandReaderGui.ViewModel
                     info.PhysicalName = (string)drive.GetPropertyValue("Name");
                     info.Name = (string)drive.GetPropertyValue("Caption");
                     info.Model = (string)drive.GetPropertyValue("Model");
+                    //todo Why is Windows returning small sizes? https://stackoverflow.com/questions/15051660
                     info.Length = (long)((ulong)drive.GetPropertyValue("Size"));
                     info.SectorSize = (int)((uint)drive.GetPropertyValue("BytesPerSector"));
                     info.DisplaySize = Util.GetBytesReadable((long)((ulong)drive.GetPropertyValue("Size")));
@@ -45,7 +45,9 @@ namespace NandReaderGui.ViewModel
         public void Open()
         {
             DiskInfo disk = SelectedDisk;
-            var stream = new RandomAccessSectorStream(new SectorStream(new DeviceStream(disk.PhysicalName, disk.Length), disk.SectorSize * 100));
+            var storage = new CachedStorage(new DeviceStream(disk.PhysicalName, disk.Length).AsStorage(), disk.SectorSize * 100, 4, true);
+            storage.SetAccess(FileAccess.Read);
+            var stream = storage.AsStream();
 
             Keyset keyset = OpenKeyset();
             var nand = new Nand(stream, keyset);

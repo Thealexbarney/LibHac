@@ -22,7 +22,7 @@ namespace LibHac
             ReadHeader(storage.AsStream());
             DeriveKeys(keyset, sdPath, storage);
 
-            BaseStorage = new XtsStorage(storage.Slice(0x4000), Key, 0x4000);
+            BaseStorage = new CachedStorage(new Aes128XtsStorage(storage.Slice(0x4000), Key, 0x4000, true), 4, true);
         }
 
         private void ReadHeader(Stream stream)

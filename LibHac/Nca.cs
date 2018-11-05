@@ -282,7 +282,7 @@ namespace LibHac
                 throw new MissingKeyException("Unable to decrypt NCA header.", "header_key", KeyType.Common);
             }
 
-            var headerStorage = new XtsStorage(new SubStorage(storage, 0, 0xC00), keyset.HeaderKey, 0x200);
+            var headerStorage = new CachedStorage(new Aes128XtsStorage(new SubStorage(storage, 0, 0xC00), keyset.HeaderKey, 0x200, true), 1, true);
 
             var reader = new BinaryReader(headerStorage.AsStream());
 

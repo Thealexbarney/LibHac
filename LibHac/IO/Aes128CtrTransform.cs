@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 
 namespace LibHac.IO
 {
-    public class Aes128CtrTransformStorage
+    public class Aes128CtrTransform
     {
         private const int BlockSize = 128;
         private const int BlockSizeBytes = BlockSize / 8;
@@ -15,7 +15,7 @@ namespace LibHac.IO
 
         private readonly ICryptoTransform _encryptor;
 
-        public Aes128CtrTransformStorage(byte[] key, byte[] counter)
+        public Aes128CtrTransform(byte[] key, byte[] counter)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (counter == null) throw new ArgumentNullException(nameof(counter));

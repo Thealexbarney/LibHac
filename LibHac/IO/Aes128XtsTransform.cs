@@ -27,19 +27,13 @@
 using System;
 using System.Security.Cryptography;
 
-namespace LibHac.XTSSharp
+namespace LibHac.IO
 {
-    /// <summary>
-    /// The actual Xts cryptography transform
-    /// </summary>
-    /// <remarks>
-    /// The reason that it doesn't implement ICryptoTransform, as the interface is different.
-    /// 
-    /// Most of the logic was taken from the LibTomCrypt project - http://libtom.org and 
-    /// converted to C#
-    /// </remarks>
-    public class XtsCryptoTransform : IDisposable
+    public class Aes128XtsTransform
     {
+        private const int BlockSize = 128;
+        private const int BlockSizeBytes = BlockSize / 8;
+
         private readonly byte[] _cc = new byte[16];
         private readonly bool _decrypting;
         private readonly ICryptoTransform _key1;
@@ -49,38 +43,29 @@ namespace LibHac.XTSSharp
         private readonly byte[] _t = new byte[16];
         private readonly byte[] _tweak = new byte[16];
 
-        /// <summary>
-        /// Creates a new transform
-        /// </summary>
-        /// <param name="key1">Transform 1</param>
-        /// <param name="key2">Transform 2</param>
-        /// <param name="decrypting">Is this a decryption transform?</param>
-        public XtsCryptoTransform(ICryptoTransform key1, ICryptoTransform key2, bool decrypting)
+        public Aes128XtsTransform(byte[] key1, byte[] key2, bool decrypting)
         {
-            if (key1 == null)
-                throw new ArgumentNullException("key1");
+            if (key1?.Length != BlockSizeBytes || key2?.Length != BlockSizeBytes)
+                throw new ArgumentException($"Each key must be {BlockSizeBytes} bytes long");
 
-            if (key2 == null)
-                throw new ArgumentNullException("key2");
+            Aes aes = Aes.Create();
+            if (aes == null) throw new CryptographicException("Unable to create AES object");
+            aes.Mode = CipherMode.ECB;
+            aes.Padding = PaddingMode.None;
 
-            _key1 = key1;
-            _key2 = key2;
             _decrypting = decrypting;
+            
+            if (decrypting)
+            {
+                _key1 = aes.CreateDecryptor(key1, new byte[BlockSizeBytes]);
+                _key2 = aes.CreateEncryptor(key2, new byte[BlockSizeBytes]);
+            }
+            else
+            {
+                _key1 = aes.CreateEncryptor(key1, new byte[BlockSizeBytes]);
+                _key2 = aes.CreateEncryptor(key2, new byte[BlockSizeBytes]);
+            }
         }
-
-        #region IDisposable Members
-
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        /// </summary>
-        /// <filterpriority>2</filterpriority>
-        public void Dispose()
-        {
-            _key1.Dispose();
-            _key2.Dispose();
-        }
-
-        #endregion
 
         /// <summary>
         /// Transforms a single block.

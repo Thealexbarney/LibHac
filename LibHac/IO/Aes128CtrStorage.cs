@@ -7,7 +7,7 @@ namespace LibHac.IO
         private const int BlockSize = 0x10;
 
         private readonly long _counterOffset;
-        private readonly Aes128CtrTransformStorage _decryptor;
+        private readonly Aes128CtrTransform _decryptor;
 
         protected readonly byte[] Counter;
 
@@ -25,7 +25,7 @@ namespace LibHac.IO
                 _counterOffset |= (long)counter[0xF - i] << (4 + i * 8);
             }
 
-            _decryptor = new Aes128CtrTransformStorage(key, counter);
+            _decryptor = new Aes128CtrTransform(key, counter);
             Counter = _decryptor.Counter;
         }
 
@@ -51,7 +51,7 @@ namespace LibHac.IO
 
             _counterOffset = counterOffset;
 
-            _decryptor = new Aes128CtrTransformStorage(key, initialCounter);
+            _decryptor = new Aes128CtrTransform(key, initialCounter);
             Counter = _decryptor.Counter;
         }
 
