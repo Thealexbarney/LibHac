@@ -25,6 +25,8 @@
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
+using System.Buffers;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
 namespace LibHac.IO
@@ -41,7 +43,6 @@ namespace LibHac.IO
 
         private readonly byte[] _pp = new byte[16];
         private readonly byte[] _t = new byte[16];
-        private readonly byte[] _tweak = new byte[16];
 
         public Aes128XtsTransform(byte[] key1, byte[] key2, bool decrypting)
         {
@@ -54,7 +55,7 @@ namespace LibHac.IO
             aes.Padding = PaddingMode.None;
 
             _decrypting = decrypting;
-            
+
             if (decrypting)
             {
                 _key1 = aes.CreateDecryptor(key1, new byte[BlockSizeBytes]);
@@ -70,26 +71,19 @@ namespace LibHac.IO
         /// <summary>
         /// Transforms a single block.
         /// </summary>
-        /// <param name="inputBuffer"> The input for which to compute the transform.</param>
-        /// <param name="inputOffset">The offset into the input byte array from which to begin using data.</param>
-        /// <param name="inputCount">The number of bytes in the input byte array to use as data.</param>
-        /// <param name="outputBuffer">The output to which to write the transform.</param>
-        /// <param name="outputOffset">The offset into the output byte array from which to begin writing data.</param>
+        /// <param name="buffer"> The input for which to compute the transform.</param>
+        /// <param name="offset">The offset into the byte array from which to begin using data.</param>
+        /// <param name="count">The number of bytes in the byte array to use as data.</param>
         /// <param name="sector">The sector number of the block</param>
         /// <returns>The number of bytes written.</returns>
-        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset, ulong sector)
+        public int TransformBlock(byte[] buffer, int offset, int count, ulong sector)
         {
-            //Nintendo Switch uses Little Endian
-            FillArrayFromSectorLittleEndian(_tweak, sector);
-
             int lim;
 
             /* get number of blocks */
-            int m = inputCount >> 4;
-            int mo = inputCount & 15;
-
-            /* encrypt the tweak */
-            _key2.TransformBlock(_tweak, 0, _tweak.Length, _t, 0);
+            int m = count >> 4;
+            int mo = count & 15;
+            int alignedCount = Util.AlignUp(count, BlockSizeBytes);
 
             /* for i = 0 to m-2 do */
             if (mo == 0)
@@ -97,64 +91,95 @@ namespace LibHac.IO
             else
                 lim = m - 1;
 
-            for (int i = 0; i < lim; i++)
+            byte[] tweak = ArrayPool<byte>.Shared.Rent(alignedCount);
+            try
             {
-                TweakCrypt(inputBuffer, inputOffset, outputBuffer, outputOffset, _t);
-                inputOffset += 16;
-                outputOffset += 16;
-            }
+                FillArrayFromSector(tweak, sector);
 
-            /* if ptlen not divide 16 then */
-            if (mo > 0)
+                /* encrypt the tweak */
+                _key2.TransformBlock(tweak, 0, 16, tweak, 0);
+
+                FillTweakBuffer(tweak.AsSpan(0, alignedCount));
+
+                if (lim > 0)
+                {
+                    Util.XorArrays(buffer.AsSpan(offset, lim * 16), tweak);
+                    _key1.TransformBlock(buffer, offset, lim * 16, buffer, offset);
+                    Util.XorArrays(buffer.AsSpan(offset, lim * 16), tweak);
+                }
+
+                if (mo > 0)
+                {
+                    Buffer.BlockCopy(tweak, lim * 16, _t, 0, 16);
+
+                    if (_decrypting)
+                    {
+                        Buffer.BlockCopy(tweak, lim * 16 + 16, _cc, 0, 16);
+
+                        /* CC = tweak encrypt block m-1 */
+                        TweakCrypt(buffer, offset, _pp, 0, _cc);
+
+                        /* Cm = first ptlen % 16 bytes of CC */
+                        int i;
+                        for (i = 0; i < mo; i++)
+                        {
+                            _cc[i] = buffer[16 + i + offset];
+                            buffer[16 + i + offset] = _pp[i];
+                        }
+
+                        for (; i < 16; i++)
+                        {
+                            _cc[i] = _pp[i];
+                        }
+
+                        /* Cm-1 = Tweak encrypt PP */
+                        TweakCrypt(_cc, 0, buffer, offset, _t);
+                    }
+                    else
+                    {
+                        /* CC = tweak encrypt block m-1 */
+                        TweakCrypt(buffer, offset, _cc, 0, _t);
+
+                        /* Cm = first ptlen % 16 bytes of CC */
+                        int i;
+                        for (i = 0; i < mo; i++)
+                        {
+                            _pp[i] = buffer[16 + i + offset];
+                            buffer[16 + i + offset] = _cc[i];
+                        }
+
+                        for (; i < 16; i++)
+                        {
+                            _pp[i] = _cc[i];
+                        }
+
+                        /* Cm-1 = Tweak encrypt PP */
+                        TweakCrypt(_pp, 0, buffer, offset, _t);
+                    }
+                }
+            }
+            finally { ArrayPool<byte>.Shared.Return(tweak); }
+
+            return count;
+        }
+
+        private static void FillTweakBuffer(Span<byte> buffer)
+        {
+            Span<ulong> bufL = MemoryMarshal.Cast<byte, ulong>(buffer);
+
+            ulong a = bufL[1];
+            ulong b = bufL[0];
+
+            for (int i = 2; i < bufL.Length; i += 2)
             {
-                if (_decrypting)
-                {
-                    Buffer.BlockCopy(_t, 0, _cc, 0, 16);
-                    MultiplyByX(_cc);
+                ulong tt = (ulong)((long)a >> 63) & 0x87;
 
-                    /* CC = tweak encrypt block m-1 */
-                    TweakCrypt(inputBuffer, inputOffset, _pp, 0, _cc);
+                a = (a << 1) | (b >> 63);
+                b = (b << 1) ^ tt;
 
-                    /* Cm = first ptlen % 16 bytes of CC */
-                    int i;
-                    for (i = 0; i < mo; i++)
-                    {
-                        _cc[i] = inputBuffer[16 + i + inputOffset];
-                        outputBuffer[16 + i + outputOffset] = _pp[i];
-                    }
-
-                    for (; i < 16; i++)
-                    {
-                        _cc[i] = _pp[i];
-                    }
-
-                    /* Cm-1 = Tweak encrypt PP */
-                    TweakCrypt(_cc, 0, outputBuffer, outputOffset, _t);
-                }
-                else
-                {
-                    /* CC = tweak encrypt block m-1 */
-                    TweakCrypt(inputBuffer, inputOffset, _cc, 0, _t);
-
-                    /* Cm = first ptlen % 16 bytes of CC */
-                    int i;
-                    for (i = 0; i < mo; i++)
-                    {
-                        _pp[i] = inputBuffer[16 + i + inputOffset];
-                        outputBuffer[16 + i + outputOffset] = _cc[i];
-                    }
-
-                    for (; i < 16; i++)
-                    {
-                        _pp[i] = _cc[i];
-                    }
-
-                    /* Cm-1 = Tweak encrypt PP */
-                    TweakCrypt(_pp, 0, outputBuffer, outputOffset, _t);
-                }
+                bufL[i + 1] = a;
+                bufL[i] = b;
             }
-
-            return inputCount;
         }
 
         /// <summary>
@@ -162,16 +187,13 @@ namespace LibHac.IO
         /// </summary>
         /// <param name="value">The destination</param>
         /// <param name="sector">The sector number</param>
-        private static void FillArrayFromSectorLittleEndian(byte[] value, ulong sector)
+        private static void FillArrayFromSector(byte[] value, ulong sector)
         {
-            value[0x8] = (byte)((sector >> 56) & 255);
-            value[0x9] = (byte)((sector >> 48) & 255);
-            value[0xA] = (byte)((sector >> 40) & 255);
-            value[0xB] = (byte)((sector >> 32) & 255);
-            value[0xC] = (byte)((sector >> 24) & 255);
-            value[0xD] = (byte)((sector >> 16) & 255);
-            value[0xE] = (byte)((sector >> 8) & 255);
-            value[0xF] = (byte)(sector & 255);
+            for (int i = 0xF; i >= 0; i--)
+            {
+                value[i] = (byte)sector;
+                sector >>= 8;
+            }
         }
 
         /// <summary>

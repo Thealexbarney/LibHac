@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace LibHac
@@ -77,6 +79,27 @@ namespace LibHac
             }
 
             return true;
+        }
+
+        public static void XorArrays(Span<byte> transformData, Span<byte> xorData)
+        {
+            int sisdStart = 0;
+            if (Vector.IsHardwareAccelerated)
+            {
+                Span<Vector<byte>> dataVec = MemoryMarshal.Cast<byte, Vector<byte>>(transformData);
+                Span<Vector<byte>> xorVec = MemoryMarshal.Cast<byte, Vector<byte>>(xorData);
+                sisdStart = dataVec.Length * Vector<byte>.Count;
+
+                for (int i = 0; i < dataVec.Length; i++)
+                {
+                    dataVec[i] ^= xorVec[i];
+                }
+            }
+
+            for (int i = sisdStart; i < transformData.Length; i++)
+            {
+                transformData[i] ^= xorData[i];
+            }
         }
 
         public static void CopyStream(this Stream input, Stream output, long length, IProgressReport progress = null)

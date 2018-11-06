@@ -45,7 +45,7 @@ namespace LibHac.IO
                 FillDecryptedCounter(blockCount, counterXor);
                 _encryptor.TransformBlock(counterXor, 0, length, counterXor, 0);
 
-                XorArrays(data, counterXor);
+                Util.XorArrays(data, counterXor);
             }
             finally
             {
@@ -67,27 +67,6 @@ namespace LibHac.IO
         private void IncrementCounter()
         {
             Util.IncrementByteArray(Counter);
-        }
-
-        private void XorArrays(Span<byte> transformData, Span<byte> xorData)
-        {
-            int sisdStart = 0;
-            if (Vector.IsHardwareAccelerated)
-            {
-                Span<Vector<byte>> dataVec = MemoryMarshal.Cast<byte, Vector<byte>>(transformData);
-                Span<Vector<byte>> xorVec = MemoryMarshal.Cast<byte, Vector<byte>>(xorData);
-                sisdStart = dataVec.Length * Vector<byte>.Count;
-
-                for (int i = 0; i < dataVec.Length; i++)
-                {
-                    dataVec[i] ^= xorVec[i];
-                }
-            }
-
-            for (int i = sisdStart; i < transformData.Length; i++)
-            {
-                transformData[i] ^= xorData[i];
-            }
         }
     }
 }

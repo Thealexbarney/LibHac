@@ -43,7 +43,11 @@ namespace LibHac.IO
 #if STREAM_SPAN
             lock (Locker)
             {
-                BaseStream.Position = offset;
+                if (BaseStream.Position != offset)
+                {
+                    BaseStream.Position = offset;
+                }
+
                 return BaseStream.Read(destination);
             }
 #else

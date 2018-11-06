@@ -7,7 +7,6 @@ namespace LibHac.IO
         private const int BlockSize = 0x10;
 
         private readonly byte[] _tempBuffer;
-        private readonly byte[] _tempBuffer2;
 
         private Aes128XtsTransform _decryptor;
         private Aes128XtsTransform _encryptor;
@@ -22,9 +21,22 @@ namespace LibHac.IO
             if (key.Length != BlockSize * 2) throw new ArgumentException(nameof(key), $"Key must be {BlockSize * 2} bytes long");
 
             _tempBuffer = new byte[sectorSize];
-            _tempBuffer2 = new byte[sectorSize];
             _key1 = key.Slice(0, BlockSize).ToArray();
             _key2 = key.Slice(BlockSize, BlockSize).ToArray();
+
+            Length = baseStorage.Length;
+        }
+
+        public Aes128XtsStorage(Storage baseStorage, Span<byte> key1, Span<byte> key2, int sectorSize, bool keepOpen)
+            : base(baseStorage, sectorSize, keepOpen)
+        {
+            if (key1 == null) throw new NullReferenceException(nameof(key1));
+            if (key2 == null) throw new NullReferenceException(nameof(key2));
+            if (key1.Length != BlockSize || key1.Length != BlockSize) throw new ArgumentException($"Keys must be {BlockSize} bytes long");
+
+            _tempBuffer = new byte[sectorSize];
+            _key1 = key1.ToArray();
+            _key2 = key2.ToArray();
 
             Length = baseStorage.Length;
         }
@@ -39,8 +51,8 @@ namespace LibHac.IO
 
             base.ReadSpan(_tempBuffer.AsSpan(0, size), offset);
 
-            _decryptor.TransformBlock(_tempBuffer, 0, size, _tempBuffer2, 0, (ulong)sectorIndex);
-            _tempBuffer2.AsSpan(0, size).CopyTo(destination);
+            _decryptor.TransformBlock(_tempBuffer, 0, size, (ulong)sectorIndex);
+            _tempBuffer.AsSpan(0, size).CopyTo(destination);
 
             return size;
         }
@@ -53,9 +65,9 @@ namespace LibHac.IO
             if (_encryptor == null) _encryptor = new Aes128XtsTransform(_key1, _key2, false);
 
             source.CopyTo(_tempBuffer);
-            _encryptor.TransformBlock(_tempBuffer, 0, size, _tempBuffer2, 0, (ulong)sectorIndex);
+            _encryptor.TransformBlock(_tempBuffer, 0, size, (ulong)sectorIndex);
 
-            base.WriteSpan(_tempBuffer2.AsSpan(0, size), offset);
+            base.WriteSpan(_tempBuffer.AsSpan(0, size), offset);
         }
 
         public override void Flush()
