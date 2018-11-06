@@ -182,6 +182,20 @@ namespace LibHac.IO
             }
         }
 
+        private static void FillArkrayFromSector(byte[] value, ulong sector)
+        {
+            Array.Clear(value, 8, 8);
+            value[7] = (byte)((sector >> 56) & 255);
+            value[6] = (byte)((sector >> 48) & 255);
+            value[5] = (byte)((sector >> 40) & 255);
+            value[4] = (byte)((sector >> 32) & 255);
+            value[3] = (byte)((sector >> 24) & 255);
+            value[2] = (byte)((sector >> 16) & 255);
+            value[1] = (byte)((sector >> 8) & 255);
+            value[0] = (byte)(sector & 255);
+        }
+
+
         /// <summary>
         /// Fills a byte array from a sector number (little endian)
         /// </summary>
