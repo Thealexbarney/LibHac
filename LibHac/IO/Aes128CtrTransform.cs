@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Buffers;
-using System.Numerics;
+using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -42,9 +42,10 @@ namespace LibHac.IO
             byte[] counterXor = ArrayPool<byte>.Shared.Rent(length);
             try
             {
-                FillDecryptedCounter(blockCount, counterXor);
-                _encryptor.TransformBlock(counterXor, 0, length, counterXor, 0);
+                Counter.CopyTo(counterXor, 0);
+                FillDecryptedCounter(counterXor.AsSpan(0, length));
 
+                _encryptor.TransformBlock(counterXor, 0, length, counterXor, 0);
                 Util.XorArrays(data, counterXor);
             }
             finally
@@ -55,18 +56,20 @@ namespace LibHac.IO
             return data.Length;
         }
 
-        private void FillDecryptedCounter(int blockCount, byte[] buffer)
+        public static void FillDecryptedCounter(Span<byte> buffer)
         {
-            for (int i = 0; i < blockCount; i++)
-            {
-                Array.Copy(Counter, 0, buffer, i * BlockSizeBytes, BlockSizeBytes);
-                IncrementCounter();
-            }
-        }
+            int blockCount = buffer.Length / BlockSizeBytes;
+            Span<ulong> bufL = MemoryMarshal.Cast<byte, ulong>(buffer);
 
-        private void IncrementCounter()
-        {
-            Util.IncrementByteArray(Counter);
+            ulong hi = bufL[0];
+            ulong lo = BinaryPrimitives.ReverseEndianness(bufL[1]);
+
+            for (int i = 2; i < bufL.Length; i += 2)
+            {
+                lo++;
+                bufL[i] = hi;
+                bufL[i + 1] = BinaryPrimitives.ReverseEndianness(lo);
+            }
         }
     }
 }
