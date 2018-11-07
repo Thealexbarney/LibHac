@@ -38,6 +38,7 @@ namespace hactoolnet
         public bool ListFiles;
         public bool SignSave;
         public ulong TitleId;
+        public string BenchType;
 
         public IntegrityCheckLevel IntegrityLevel
         {
@@ -64,7 +65,8 @@ namespace hactoolnet
         Pk11,
         Pk21,
         Kip1,
-        Ini1
+        Ini1,
+        Bench
     }
 
     internal class Context

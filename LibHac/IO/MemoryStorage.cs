@@ -32,7 +32,7 @@ namespace LibHac.IO
 
         protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
         {
-            throw new NotImplementedException();
+            source.CopyTo(Buffer.AsSpan((int)(Start + offset), source.Length));
         }
 
         public override void Flush() { }

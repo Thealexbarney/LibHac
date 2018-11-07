@@ -47,6 +47,7 @@ namespace hactoolnet
             new CliOption("listfiles", 0, (o, a) => o.ListFiles = true),
             new CliOption("sign", 0, (o, a) => o.SignSave = true),
             new CliOption("title", 1, (o, a) => o.TitleId = ParseTitleId(a[0])),
+            new CliOption("bench", 1, (o, a) => o.BenchType = a[0]),
         };
 
         public static Options Parse(string[] args)
@@ -99,7 +100,7 @@ namespace hactoolnet
                 i += option.ArgsNeeded;
             }
 
-            if (!inputSpecified && options.InFileType != FileType.Keygen && !options.RunCustom)
+            if (!inputSpecified && options.InFileType != FileType.Keygen && options.InFileType != FileType.Bench && !options.RunCustom)
             {
                 PrintWithUsage("Input file must be specified");
                 return null;

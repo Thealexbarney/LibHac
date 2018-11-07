@@ -58,7 +58,6 @@ namespace LibHac.IO
 
         public static void FillDecryptedCounter(Span<byte> buffer)
         {
-            int blockCount = buffer.Length / BlockSizeBytes;
             Span<ulong> bufL = MemoryMarshal.Cast<byte, ulong>(buffer);
 
             ulong hi = bufL[0];

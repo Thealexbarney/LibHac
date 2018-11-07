@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 
 namespace LibHac.IO
 {
@@ -14,10 +15,10 @@ namespace LibHac.IO
         public Aes128CtrStorage(Storage baseStorage, byte[] key, byte[] counter, bool keepOpen)
             : base(baseStorage, BlockSize, keepOpen)
         {
-            if(key == null) throw new NullReferenceException(nameof(key));
-            if(key.Length != BlockSize) throw new ArgumentException(nameof(key), $"Key must be {BlockSize} bytes long");
-            if(counter == null) throw new NullReferenceException(nameof(counter));
-            if(counter.Length != BlockSize) throw new ArgumentException(nameof(counter), $"Counter must be {BlockSize} bytes long");
+            if (key == null) throw new NullReferenceException(nameof(key));
+            if (key.Length != BlockSize) throw new ArgumentException(nameof(key), $"Key must be {BlockSize} bytes long");
+            if (counter == null) throw new NullReferenceException(nameof(counter));
+            if (counter.Length != BlockSize) throw new ArgumentException(nameof(counter), $"Counter must be {BlockSize} bytes long");
 
             // Make the stream seekable by remembering the initial counter value
             for (int i = 0; i < 8; i++)
@@ -67,7 +68,20 @@ namespace LibHac.IO
 
         protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
         {
-            throw new NotImplementedException();
+            byte[] encrypted = ArrayPool<byte>.Shared.Rent(source.Length);
+            try
+            {
+                Span<byte> encryptedSpan = encrypted.AsSpan(0, source.Length);
+                source.CopyTo(encryptedSpan);
+
+                UpdateCounter(_counterOffset + offset);
+                _decryptor.TransformBlock(encryptedSpan);
+                base.WriteSpan(encryptedSpan, offset);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(encrypted);
+            }
         }
 
         private void UpdateCounter(long offset)

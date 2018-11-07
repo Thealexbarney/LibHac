@@ -10,7 +10,7 @@ namespace LibHac.IO
         {
             const int bufferSize = 81920;
             long remaining = Math.Min(input.Length, output.Length);
-            if(remaining < 0) throw new ArgumentException("Storage must have an explicit length");
+            if (remaining < 0) throw new ArgumentException("Storage must have an explicit length");
             progress?.SetTotal(remaining);
 
             long pos = 0;
@@ -20,13 +20,15 @@ namespace LibHac.IO
             {
                 while (remaining > 0)
                 {
-                    int toCopy = (int) Math.Min(buffer.Length, remaining);
+                    int toCopy = (int)Math.Min(bufferSize, remaining);
                     Span<byte> buf = buffer.AsSpan(0, toCopy);
                     input.Read(buf, pos);
                     output.Write(buf, pos);
 
                     remaining -= toCopy;
                     pos += toCopy;
+
+                    progress?.ReportAdd(toCopy);
                 }
             }
             finally
@@ -44,7 +46,7 @@ namespace LibHac.IO
                 input.CopyToStream(outFile, input.Length, progress);
             }
         }
-        
+
         public static void CopyToStream(this Storage input, Stream output, long length, IProgressReport progress = null)
         {
             const int bufferSize = 0x8000;
