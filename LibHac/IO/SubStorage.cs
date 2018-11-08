@@ -10,14 +10,6 @@ namespace LibHac.IO
 
         public SubStorage(Storage baseStorage, long offset, long length)
         {
-            if (baseStorage is SubStorage sub)
-            {
-                BaseStorage = sub.BaseStorage;
-                Offset = sub.Offset + offset;
-                Length = length;
-                return;
-            }
-
             BaseStorage = baseStorage;
             Offset = offset;
             Length = length;
@@ -36,6 +28,11 @@ namespace LibHac.IO
         public override void Flush()
         {
             BaseStorage.Flush();
+        }
+
+        public override Storage Slice(long start, long length)
+        {
+            return BaseStorage.Slice(Offset + start, length);
         }
     }
 }

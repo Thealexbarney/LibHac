@@ -74,6 +74,24 @@ namespace LibHac.IO
             }
         }
 
+        public override Storage Slice(long start, long length)
+        {
+            ConcatSource startSource = FindSource(start);
+            ConcatSource endSource = FindSource(start + length - 1);
+
+            if (startSource != endSource)
+            {
+                return base.Slice(start, length);
+            }
+
+            if (startSource.StartOffset == start && startSource.Storage.Length == length)
+            {
+                return startSource.Storage;
+            }
+
+            return startSource.Storage.Slice(start - startSource.StartOffset, length);
+        }
+
         private ConcatSource FindSource(long offset)
         {
             foreach (ConcatSource info in Sources)

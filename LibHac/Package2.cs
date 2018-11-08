@@ -44,7 +44,7 @@ namespace LibHac
 
         public Storage OpenHeaderPart2()
         {
-            SubStorage encStorage = Storage.Slice(0x110, 0xF0);
+            Storage encStorage = Storage.Slice(0x110, 0xF0);
 
             // The counter starts counting at 0x100, but the block at 0x100 isn't encrypted.
             // Increase the counter by one and start decrypting at 0x110.

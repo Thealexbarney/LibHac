@@ -98,7 +98,7 @@ namespace LibHac.IO.Save
                 IvfcLevelHeader level = ivfc.LevelHeaders[i - 1];
 
                 Storage data = i == ivfcLevels - 1
-                    ? (Storage)JournalStorage
+                    ? JournalStorage
                     : MetaRemapStorage.Slice(level.LogicalOffset, level.HashDataSize);
 
                 initInfo[i] = new IntegrityVerificationInfoStorage

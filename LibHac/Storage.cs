@@ -45,12 +45,12 @@ namespace LibHac
 
         public Stream AsStream() => new StorageStream(this, true);
 
-        public SubStorage Slice(long start, long length)
+        public virtual Storage Slice(long start, long length)
         {
             return new SubStorage(this, start, length);
         }
 
-        public SubStorage Slice(long start)
+        public Storage Slice(long start)
         {
             if (Length == -1)
             {

@@ -261,6 +261,11 @@ namespace LibHac
                 throw new FileNotFoundException("Could not find the input file or directory");
             }
 
+            if (files.Count == 1)
+            {
+                return fs.OpenFile(files[0], FileMode.Open, FileAccess.Read).AsStorage();
+            }
+
             foreach (string file in files)
             {
                 storages.Add(fs.OpenFile(file, FileMode.Open, FileAccess.Read).AsStorage());

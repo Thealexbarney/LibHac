@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using LibHac.IO;
 
 namespace LibHac
 {
@@ -25,7 +24,7 @@ namespace LibHac
         public Xci(Keyset keyset, Storage storage)
         {
             Header = new XciHeader(keyset, storage.AsStream());
-            SubStorage hfs0Stream = storage.Slice(Header.PartitionFsHeaderAddress);
+            Storage hfs0Stream = storage.Slice(Header.PartitionFsHeaderAddress);
 
             RootPartition = new XciPartition(hfs0Stream)
             {

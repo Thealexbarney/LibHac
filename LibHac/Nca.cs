@@ -226,7 +226,7 @@ namespace LibHac
             for (int i = 1; i < ivfc.NumLevels; i++)
             {
                 IvfcLevelHeader level = ivfc.LevelHeaders[i - 1];
-                Storage data = new SubStorage(romfsStorage, level.LogicalOffset, level.HashDataSize);
+                Storage data = romfsStorage.Slice(level.LogicalOffset, level.HashDataSize);
 
                 initInfo[i] = new IntegrityVerificationInfoStorage
                 {
@@ -242,8 +242,8 @@ namespace LibHac
         private static HierarchicalIntegrityVerificationStorage InitIvfcForPartitionfs(Sha256Info sb,
             Storage pfsStorage, IntegrityCheckLevel integrityCheckLevel)
         {
-            SubStorage hashStorage = pfsStorage.Slice(sb.HashTableOffset, sb.HashTableSize);
-            SubStorage dataStorage = pfsStorage.Slice(sb.DataOffset, sb.DataSize);
+            Storage hashStorage = pfsStorage.Slice(sb.HashTableOffset, sb.HashTableSize);
+            Storage dataStorage = pfsStorage.Slice(sb.DataOffset, sb.DataSize);
 
             var initInfo = new IntegrityVerificationInfoStorage[3];
 
@@ -298,7 +298,7 @@ namespace LibHac
                 throw new MissingKeyException("Unable to decrypt NCA header.", "header_key", KeyType.Common);
             }
 
-            var headerStorage = new CachedStorage(new Aes128XtsStorage(new SubStorage(storage, 0, 0xC00), keyset.HeaderKey, 0x200, true), 1, true);
+            var headerStorage = new CachedStorage(new Aes128XtsStorage(storage.Slice(0, 0xC00), keyset.HeaderKey, 0x200, true), 1, true);
 
             var reader = new BinaryReader(headerStorage.AsStream());
 
