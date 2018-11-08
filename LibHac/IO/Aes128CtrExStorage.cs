@@ -10,29 +10,11 @@ namespace LibHac.IO
         private List<long> SubsectionOffsets { get; }
         private BucketTree<AesSubsectionEntry> BucketTree { get; }
 
-        public Aes128CtrExStorage(Storage baseStorage, byte[] key, long counterOffset, byte[] ctrHi, BktrPatchInfo bktr, bool keepOpen)
+        public Aes128CtrExStorage(Storage baseStorage, Storage bucketTreeHeader, Storage bucketTreeData, byte[] key, long counterOffset, byte[] ctrHi, bool keepOpen)
             : base(baseStorage, key, counterOffset, ctrHi, keepOpen)
         {
-            BktrHeader header = bktr.EncryptionHeader;
-            var headerStorage = new MemoryStorage(header.Header);
-
-            SubStorage bucketTreeStorage =
-                new CachedStorage(new Aes128CtrStorage(baseStorage, key, counterOffset, ctrHi, true), 0x4000, 4, false)
-                    .Slice(header.Offset, header.Size);
-
-            BucketTree = new BucketTree<AesSubsectionEntry>(headerStorage, bucketTreeStorage);
+            BucketTree = new BucketTree<AesSubsectionEntry>(bucketTreeHeader, bucketTreeData);
             SubsectionEntries = BucketTree.GetEntryList();
-
-            // Add a subsection for the bucket tree data to make things easier
-            var headerSubsection = new AesSubsectionEntry
-            {
-                Offset = BucketTree.BucketOffsets.OffsetEnd,
-                Counter = (uint)(ctrHi[4] << 24 | ctrHi[5] << 16 | ctrHi[6] << 8 | ctrHi[7]),
-                OffsetEnd = baseStorage.Length
-            };
-
-            SubsectionEntries.Last().Next = headerSubsection;
-            SubsectionEntries.Add(headerSubsection);
 
             SubsectionOffsets = SubsectionEntries.Select(x => x.Offset).ToList();
         }

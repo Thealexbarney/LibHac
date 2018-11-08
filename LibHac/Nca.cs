@@ -9,8 +9,8 @@ namespace LibHac
         public NcaHeader Header { get; private set; }
         public string NcaId { get; set; }
         public string Filename { get; set; }
-        public bool HasRightsId { get; private set; }
-        public int CryptoType { get; private set; }
+        public bool HasRightsId { get; }
+        public int CryptoType { get; }
         public byte[][] DecryptedKeys { get; } = Util.CreateJaggedArray<byte[][]>(4, 0x10);
         public byte[] TitleKey { get; }
         public byte[] TitleKeyDec { get; } = new byte[0x10];
@@ -104,6 +104,7 @@ namespace LibHac
             long offset = sect.Offset;
             long size = sect.Size;
 
+            // todo
             //if (!Util.IsSubRange(offset, size, StreamSource.Length))
             //{
             //    throw new InvalidDataException(
@@ -121,18 +122,20 @@ namespace LibHac
                 case NcaEncryptionType.AesCtr:
                     return new CachedStorage(new Aes128CtrStorage(rawStorage, DecryptedKeys[2], offset, sect.Header.Ctr, KeepOpen), 0x4000, 4, false);
                 case NcaEncryptionType.AesCtrEx:
-                    Storage decStorage = new Aes128CtrExStorage(rawStorage, DecryptedKeys[2], offset, sect.Header.Ctr, sect.Header.BktrInfo, true);
+                    BktrPatchInfo info = sect.Header.BktrInfo;
+
+                    long bktrOffset = info.RelocationHeader.Offset;
+                    long bktrSize = size - bktrOffset;
+                    long dataSize = info.RelocationHeader.Offset;
+
+                    Storage bucketTreeHeader = new MemoryStorage(sect.Header.BktrInfo.EncryptionHeader.Header);
+                    Storage bucketTreeData = new CachedStorage(new Aes128CtrStorage(rawStorage.Slice(bktrOffset, bktrSize), DecryptedKeys[2], bktrOffset + offset, sect.Header.Ctr, true), 4, true);
+
+                    Storage encryptionBucketTreeData = bucketTreeData.Slice(info.EncryptionHeader.Offset - bktrOffset);
+                    Storage decStorage = new Aes128CtrExStorage(rawStorage.Slice(0, dataSize), bucketTreeHeader, encryptionBucketTreeData, DecryptedKeys[2], offset, sect.Header.Ctr, true);
                     decStorage = new CachedStorage(decStorage, 0x4000, 4, true);
 
-                    if (BaseNca == null) return decStorage;
-
-                    Storage baseStorage = BaseNca.OpenSection(ProgramPartitionType.Data, true, IntegrityCheckLevel.None);
-
-                    BktrHeader header = sect.Header.BktrInfo.RelocationHeader;
-                    Storage bktrHeader = new MemoryStorage(header.Header);
-                    Storage bktrData = decStorage.Slice(header.Offset, header.Size);
-
-                    return new IndirectStorage(bktrHeader, bktrData, baseStorage, decStorage);
+                    return new ConcatenationStorage(new[] { decStorage, bucketTreeData }, true);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -151,13 +154,26 @@ namespace LibHac
         {
             Storage rawStorage = OpenRawSection(index);
 
-            if (raw || rawStorage == null) return rawStorage;
-
             NcaSection sect = Sections[index];
             NcaFsHeader header = sect.Header;
 
-            // If it's a patch section without a base, return the raw section because it has no hash data
-            if (header.EncryptionType == NcaEncryptionType.AesCtrEx && BaseNca == null) return rawStorage;
+            if (header.EncryptionType == NcaEncryptionType.AesCtrEx)
+            {
+                if (raw && BaseNca == null) return rawStorage;
+
+                BktrHeader bktrInfo = header.BktrInfo.RelocationHeader;
+                Storage patchStorage = rawStorage.Slice(0, bktrInfo.Offset);
+
+                if (BaseNca == null) return patchStorage;
+
+                Storage baseStorage = BaseNca.OpenSection(ProgramPartitionType.Data, true, IntegrityCheckLevel.None);
+                Storage bktrHeader = new MemoryStorage(bktrInfo.Header);
+                Storage bktrData = rawStorage.Slice(bktrInfo.Offset, bktrInfo.Size);
+
+                rawStorage = new IndirectStorage(bktrHeader, bktrData, baseStorage, patchStorage);
+            }
+
+            if (raw || rawStorage == null) return rawStorage;
 
             switch (header.HashType)
             {
