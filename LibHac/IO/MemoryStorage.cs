@@ -24,13 +24,13 @@ namespace LibHac.IO
             Length = count;
         }
 
-        protected override int ReadSpan(Span<byte> destination, long offset)
+        protected override int ReadImpl(Span<byte> destination, long offset)
         {
             Buffer.AsSpan((int)(Start + offset), destination.Length).CopyTo(destination);
             return destination.Length;
         }
 
-        protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
+        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
             source.CopyTo(Buffer.AsSpan((int)(Start + offset), source.Length));
         }

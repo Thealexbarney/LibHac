@@ -24,7 +24,7 @@ namespace LibHac.IO
             Length = BucketTree.BucketOffsets.OffsetEnd;
         }
 
-        protected override int ReadSpan(Span<byte> destination, long offset)
+        protected override int ReadImpl(Span<byte> destination, long offset)
         {
             RelocationEntry entry = GetRelocationEntry(offset);
 
@@ -52,7 +52,7 @@ namespace LibHac.IO
             return outPos;
         }
 
-        protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
+        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
             throw new NotImplementedException();
         }

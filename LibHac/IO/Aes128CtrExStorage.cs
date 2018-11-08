@@ -37,7 +37,7 @@ namespace LibHac.IO
             SubsectionOffsets = SubsectionEntries.Select(x => x.Offset).ToList();
         }
 
-        protected override int ReadSpan(Span<byte> destination, long offset)
+        protected override int ReadImpl(Span<byte> destination, long offset)
         {
             AesSubsectionEntry entry = GetSubsectionEntry(offset);
             UpdateCounterSubsection(entry.Counter);
@@ -49,13 +49,13 @@ namespace LibHac.IO
             while (remaining > 0)
             {
                 int bytesToRead = (int)Math.Min(entry.OffsetEnd - inPos, remaining);
-                int bytesRead = base.ReadSpan(destination.Slice(outPos, bytesToRead), inPos);
+                int bytesRead = base.ReadImpl(destination.Slice(outPos, bytesToRead), inPos);
 
                 outPos += bytesRead;
                 inPos += bytesRead;
                 remaining -= bytesRead;
 
-                if (inPos >= entry.OffsetEnd)
+                if (remaining != 0 && inPos >= entry.OffsetEnd)
                 {
                     entry = entry.Next;
                     UpdateCounterSubsection(entry.Counter);

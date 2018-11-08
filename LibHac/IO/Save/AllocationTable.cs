@@ -6,8 +6,9 @@ namespace LibHac.IO.Save
     {
         public AllocationTableEntry[] Entries { get; }
 
-        public AllocationTable(Stream tableStream)
+        public AllocationTable(Storage storage)
         {
+            Stream tableStream = storage.AsStream();
             int blockCount = (int)(tableStream.Length / 8);
 
             Entries = new AllocationTableEntry[blockCount];

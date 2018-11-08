@@ -31,12 +31,12 @@ namespace LibHac.IO.Save
             Length = DataLayer.Length;
         }
 
-        protected override int ReadSpan(Span<byte> destination, long offset)
+        protected override int ReadImpl(Span<byte> destination, long offset)
         {
             return DataLayer.Read(destination, offset);
         }
 
-        protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
+        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
             DataLayer.Write(source, offset);
         }

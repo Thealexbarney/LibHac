@@ -9,8 +9,10 @@ namespace LibHac.IO.Save
         private Stream Data { get; }
         public BitArray Bitmap { get; }
 
-        public DuplexBitmap(Stream bitmapStream, int lengthBits)
+        public DuplexBitmap(Storage bitmapStorage, int lengthBits)
         {
+            Stream bitmapStream = bitmapStorage.AsStream();
+
             Data = bitmapStream;
             Bitmap = new BitArray(lengthBits);
             ReadBitmap(lengthBits);

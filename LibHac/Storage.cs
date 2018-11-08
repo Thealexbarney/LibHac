@@ -10,8 +10,8 @@ namespace LibHac
         private bool _isDisposed;
         protected List<IDisposable> ToDispose { get; } = new List<IDisposable>();
 
-        protected abstract int ReadSpan(Span<byte> destination, long offset);
-        protected abstract void WriteSpan(ReadOnlySpan<byte> source, long offset);
+        protected abstract int ReadImpl(Span<byte> destination, long offset);
+        protected abstract void WriteImpl(ReadOnlySpan<byte> source, long offset);
         public abstract void Flush();
         public abstract long Length { get; }
 
@@ -21,7 +21,7 @@ namespace LibHac
         {
             EnsureCanRead();
             ValidateSpanParameters(destination, offset);
-            return ReadSpan(destination, offset);
+            return ReadImpl(destination, offset);
         }
 
         public virtual int Read(byte[] buffer, long offset, int count, int bufferOffset)
@@ -34,7 +34,7 @@ namespace LibHac
         {
             EnsureCanWrite();
             ValidateSpanParameters(source, offset);
-            WriteSpan(source, offset);
+            WriteImpl(source, offset);
         }
 
         public virtual void Write(byte[] buffer, long offset, int count, int bufferOffset)

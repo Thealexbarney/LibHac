@@ -17,11 +17,11 @@ namespace LibHac.IO.Save
             BitmapStorage = bitmap;
             BlockSize = blockSize;
 
-            Bitmap = new DuplexBitmap(BitmapStorage.AsStream(), (int)(bitmap.Length * 8));
+            Bitmap = new DuplexBitmap(BitmapStorage, (int)(bitmap.Length * 8));
             Length = DataA.Length;
         }
 
-        protected override int ReadSpan(Span<byte> destination, long offset)
+        protected override int ReadImpl(Span<byte> destination, long offset)
         {
             long inPos = offset;
             int outPos = 0;
@@ -46,7 +46,7 @@ namespace LibHac.IO.Save
             return outPos;
         }
 
-        protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
+        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
             long inPos = offset;
             int outPos = 0;

@@ -38,7 +38,7 @@ namespace LibHac.IO
             }
         }
 
-        protected override int ReadSpan(Span<byte> destination, long offset)
+        protected override int ReadImpl(Span<byte> destination, long offset)
         {
 #if STREAM_SPAN
             lock (Locker)
@@ -63,7 +63,7 @@ namespace LibHac.IO
 #endif
         }
 
-        protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
+        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
 #if STREAM_SPAN
             lock (Locker)

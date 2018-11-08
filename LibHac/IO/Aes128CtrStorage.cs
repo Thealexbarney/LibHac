@@ -56,9 +56,9 @@ namespace LibHac.IO
             Counter = _decryptor.Counter;
         }
 
-        protected override int ReadSpan(Span<byte> destination, long offset)
+        protected override int ReadImpl(Span<byte> destination, long offset)
         {
-            int bytesRead = base.ReadSpan(destination, offset);
+            int bytesRead = base.ReadImpl(destination, offset);
             if (bytesRead == 0) return 0;
 
             UpdateCounter(_counterOffset + offset);
@@ -66,7 +66,7 @@ namespace LibHac.IO
             return _decryptor.TransformBlock(destination);
         }
 
-        protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
+        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
             byte[] encrypted = ArrayPool<byte>.Shared.Rent(source.Length);
             try
@@ -76,7 +76,7 @@ namespace LibHac.IO
 
                 UpdateCounter(_counterOffset + offset);
                 _decryptor.TransformBlock(encryptedSpan);
-                base.WriteSpan(encryptedSpan, offset);
+                base.WriteImpl(encryptedSpan, offset);
             }
             finally
             {

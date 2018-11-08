@@ -24,7 +24,7 @@ namespace LibHac.IO
             Length = length;
         }
 
-        protected override int ReadSpan(Span<byte> destination, long offset)
+        protected override int ReadImpl(Span<byte> destination, long offset)
         {
             long inPos = offset;
             int outPos = 0;
@@ -46,7 +46,7 @@ namespace LibHac.IO
             return outPos;
         }
 
-        protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
+        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
             long inPos = offset;
             int outPos = 0;

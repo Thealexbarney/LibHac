@@ -29,7 +29,7 @@ namespace LibHac.IO.Save
             Segments = InitSegments(Header, MapEntries);
         }
 
-        protected override int ReadSpan(Span<byte> destination, long offset)
+        protected override int ReadImpl(Span<byte> destination, long offset)
         {
             MapEntry entry = GetMapEntry(offset);
 
@@ -57,7 +57,7 @@ namespace LibHac.IO.Save
             return outPos;
         }
 
-        protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
+        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
             MapEntry entry = GetMapEntry(offset);
 

@@ -18,13 +18,13 @@ namespace LibHac.IO
             if (!keepOpen) ToDispose.Add(BaseStorage);
         }
 
-        protected override int ReadSpan(Span<byte> destination, long offset)
+        protected override int ReadImpl(Span<byte> destination, long offset)
         {
             ValidateSize(destination.Length, offset);
             return BaseStorage.Read(destination, offset);
         }
 
-        protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
+        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
             ValidateSize(source.Length, offset);
             BaseStorage.Write(source, offset);

@@ -16,7 +16,7 @@ namespace LibHac.IO.Save
         public SaveFs(Storage storage, Storage allocationTable, SaveHeader header)
         {
             BaseStorage = storage;
-            AllocationTable = new AllocationTable(allocationTable.AsStream());
+            AllocationTable = new AllocationTable(allocationTable);
             Header = header;
 
             ReadFileInfo();

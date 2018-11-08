@@ -95,7 +95,7 @@ namespace LibHac.IO
             }
         }
 
-        protected override int ReadSpan(Span<byte> destination, long offset)
+        protected override int ReadImpl(Span<byte> destination, long offset)
         {
             return ReadSpan(destination, offset, IntegrityCheckLevel);
         }
@@ -112,7 +112,7 @@ namespace LibHac.IO
             ReadSpan(buffer.AsSpan(bufferOffset, count), offset, integrityCheckLevel);
         }
 
-        protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
+        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
             long blockIndex = offset / SectorSize;
             long hashPos = blockIndex * DigestSize;

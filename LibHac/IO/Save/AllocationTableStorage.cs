@@ -20,7 +20,7 @@ namespace LibHac.IO.Save
             InitialBlock = initialBlock;
         }
 
-        protected override int ReadSpan(Span<byte> destination, long offset)
+        protected override int ReadImpl(Span<byte> destination, long offset)
         {
             var iterator = new AllocationTableIterator(Fat, InitialBlock);
 
@@ -49,7 +49,7 @@ namespace LibHac.IO.Save
             return outPos;
         }
 
-        protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
+        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
             var iterator = new AllocationTableIterator(Fat, InitialBlock);
 

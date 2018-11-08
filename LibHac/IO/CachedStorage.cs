@@ -29,7 +29,7 @@ namespace LibHac.IO
         public CachedStorage(SectorStorage baseStorage, int cacheSize, bool keepOpen)
             : this(baseStorage, baseStorage.SectorSize, cacheSize, keepOpen) { }
 
-        protected override int ReadSpan(Span<byte> destination, long offset)
+        protected override int ReadImpl(Span<byte> destination, long offset)
         {
             long remaining = destination.Length;
             long inOffset = offset;
@@ -56,7 +56,7 @@ namespace LibHac.IO
             return destination.Length;
         }
 
-        protected override void WriteSpan(ReadOnlySpan<byte> source, long offset)
+        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
             long remaining = source.Length;
             long inOffset = offset;
