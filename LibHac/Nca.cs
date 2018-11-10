@@ -14,7 +14,7 @@ namespace LibHac
         public byte[][] DecryptedKeys { get; } = Util.CreateJaggedArray<byte[][]>(4, 0x10);
         public byte[] TitleKey { get; }
         public byte[] TitleKeyDec { get; } = new byte[0x10];
-        private bool KeepOpen { get; }
+        private bool LeaveOpen { get; }
         private Nca BaseNca { get; set; }
         private Storage BaseStorage { get; }
 
@@ -23,9 +23,9 @@ namespace LibHac
 
         public NcaSection[] Sections { get; } = new NcaSection[4];
 
-        public Nca(Keyset keyset, Storage storage, bool keepOpen)
+        public Nca(Keyset keyset, Storage storage, bool leaveOpen)
         {
-            KeepOpen = keepOpen;
+            LeaveOpen = leaveOpen;
             BaseStorage = storage;
             DecryptHeader(keyset, BaseStorage);
 
@@ -81,7 +81,7 @@ namespace LibHac
             return sect.Header.EncryptionType == NcaEncryptionType.None || !IsMissingTitleKey && string.IsNullOrWhiteSpace(MissingKeyName);
         }
 
-        private Storage OpenRawSection(int index)
+        private Storage OpenRawSection(int index, bool leaveOpen = true)
         {
             if (index < 0 || index > 3) throw new ArgumentOutOfRangeException(nameof(index));
 
@@ -120,7 +120,7 @@ namespace LibHac
                 case NcaEncryptionType.XTS:
                     throw new NotImplementedException("NCA sections using XTS are not supported");
                 case NcaEncryptionType.AesCtr:
-                    return new CachedStorage(new Aes128CtrStorage(rawStorage, DecryptedKeys[2], offset, sect.Header.Ctr, KeepOpen), 0x4000, 4, false);
+                    return new CachedStorage(new Aes128CtrStorage(rawStorage, DecryptedKeys[2], offset, sect.Header.Ctr, leaveOpen), 0x4000, 4, leaveOpen);
                 case NcaEncryptionType.AesCtrEx:
                     BktrPatchInfo info = sect.Header.BktrInfo;
 
@@ -129,13 +129,13 @@ namespace LibHac
                     long dataSize = info.RelocationHeader.Offset;
 
                     Storage bucketTreeHeader = new MemoryStorage(sect.Header.BktrInfo.EncryptionHeader.Header);
-                    Storage bucketTreeData = new CachedStorage(new Aes128CtrStorage(rawStorage.Slice(bktrOffset, bktrSize), DecryptedKeys[2], bktrOffset + offset, sect.Header.Ctr, true), 4, true);
+                    Storage bucketTreeData = new CachedStorage(new Aes128CtrStorage(rawStorage.Slice(bktrOffset, bktrSize), DecryptedKeys[2], bktrOffset + offset, sect.Header.Ctr, leaveOpen), 4, leaveOpen);
 
                     Storage encryptionBucketTreeData = bucketTreeData.Slice(info.EncryptionHeader.Offset - bktrOffset);
-                    Storage decStorage = new Aes128CtrExStorage(rawStorage.Slice(0, dataSize), bucketTreeHeader, encryptionBucketTreeData, DecryptedKeys[2], offset, sect.Header.Ctr, true);
-                    decStorage = new CachedStorage(decStorage, 0x4000, 4, true);
+                    Storage decStorage = new Aes128CtrExStorage(rawStorage.Slice(0, dataSize), bucketTreeHeader, encryptionBucketTreeData, DecryptedKeys[2], offset, sect.Header.Ctr, leaveOpen);
+                    decStorage = new CachedStorage(decStorage, 0x4000, 4, leaveOpen);
 
-                    return new ConcatenationStorage(new[] { decStorage, bucketTreeData }, true);
+                    return new ConcatenationStorage(new[] { decStorage, bucketTreeData }, leaveOpen);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -148,9 +148,10 @@ namespace LibHac
         /// <param name="raw"><see langword="true"/> to open the raw section with hash metadata.</param>
         /// <param name="integrityCheckLevel">The level of integrity checks to be performed when reading the section.
         /// Always <see cref="IntegrityCheckLevel.None"/> if <paramref name="raw"/> is <see langword="false"/>.</param>
+        /// <param name="leaveOpen"><see langword="true"/> to leave the storage open after the <see cref="Nca"/> object is disposed; otherwise, <see langword="false"/>.</param>
         /// <returns>A <see cref="Stream"/> that provides access to the specified section. <see langword="null"/> if the section does not exist.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="index"/> is outside the valid range.</exception>
-        public Storage OpenSection(int index, bool raw, IntegrityCheckLevel integrityCheckLevel)
+        public Storage OpenSection(int index, bool raw, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         {
             Storage rawStorage = OpenRawSection(index);
 
@@ -166,11 +167,11 @@ namespace LibHac
 
                 if (BaseNca == null) return patchStorage;
 
-                Storage baseStorage = BaseNca.OpenSection(ProgramPartitionType.Data, true, IntegrityCheckLevel.None);
+                Storage baseStorage = BaseNca.OpenSection(ProgramPartitionType.Data, true, IntegrityCheckLevel.None, leaveOpen);
                 Storage bktrHeader = new MemoryStorage(bktrInfo.Header);
                 Storage bktrData = rawStorage.Slice(bktrInfo.Offset, bktrInfo.Size);
 
-                rawStorage = new IndirectStorage(bktrHeader, bktrData, baseStorage, patchStorage);
+                rawStorage = new IndirectStorage(bktrHeader, bktrData, leaveOpen, baseStorage, patchStorage);
             }
 
             if (raw || rawStorage == null) return rawStorage;
@@ -178,9 +179,9 @@ namespace LibHac
             switch (header.HashType)
             {
                 case NcaHashType.Sha256:
-                    return InitIvfcForPartitionfs(header.Sha256Info, rawStorage, integrityCheckLevel);
+                    return InitIvfcForPartitionfs(header.Sha256Info, rawStorage, integrityCheckLevel, leaveOpen);
                 case NcaHashType.Ivfc:
-                    return InitIvfcForRomfs(header.IvfcInfo, rawStorage, integrityCheckLevel);
+                    return InitIvfcForRomfs(header.IvfcInfo, rawStorage, integrityCheckLevel, leaveOpen);
 
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -193,11 +194,12 @@ namespace LibHac
         /// </summary>
         /// <param name="index">The index of the NCA section to open. Valid indexes are 0-3.</param>
         /// <param name="integrityCheckLevel">The level of integrity checks to be performed when reading the section.</param>
+        /// <param name="leaveOpen"><see langword="true"/> to leave the storage open after the <see cref="Nca"/> object is disposed; otherwise, <see langword="false"/>.</param>
         /// <returns>A <see cref="Stream"/> that provides access to the specified section. <see langword="null"/> if the section does not exist,
         /// or is has no hash metadata.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="index"/> is outside the valid range.</exception>
-        public HierarchicalIntegrityVerificationStorage OpenHashedSection(int index, IntegrityCheckLevel integrityCheckLevel) =>
-            OpenSection(index, false, integrityCheckLevel) as HierarchicalIntegrityVerificationStorage;
+        public HierarchicalIntegrityVerificationStorage OpenHashedSection(int index, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen) =>
+            OpenSection(index, false, integrityCheckLevel, leaveOpen) as HierarchicalIntegrityVerificationStorage;
 
         /// <summary>
         /// Opens one of the sections in the current <see cref="Nca"/>. For use with <see cref="ContentType.Program"/> type NCAs.
@@ -206,13 +208,14 @@ namespace LibHac
         /// <param name="raw"><see langword="true"/> to open the raw section with hash metadata.</param>
         /// <param name="integrityCheckLevel">The level of integrity checks to be performed when reading the section.
         /// Always <see cref="IntegrityCheckLevel.None"/> if <paramref name="raw"/> is <see langword="false"/>.</param>
+        /// <param name="leaveOpen"><see langword="true"/> to leave the storage open after the <see cref="Nca"/> object is disposed; otherwise, <see langword="false"/>.</param>
         /// <returns>A <see cref="Stream"/> that provides access to the specified section. <see langword="null"/> if the section does not exist.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="type"/> is outside the valid range.</exception>
-        public Storage OpenSection(ProgramPartitionType type, bool raw, IntegrityCheckLevel integrityCheckLevel) =>
-            OpenSection((int)type, raw, integrityCheckLevel);
+        public Storage OpenSection(ProgramPartitionType type, bool raw, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen) =>
+            OpenSection((int)type, raw, integrityCheckLevel, leaveOpen);
 
         private static HierarchicalIntegrityVerificationStorage InitIvfcForRomfs(IvfcHeader ivfc,
-            Storage romfsStorage, IntegrityCheckLevel integrityCheckLevel)
+            Storage romfsStorage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         {
             var initInfo = new IntegrityVerificationInfoStorage[ivfc.NumLevels];
 
@@ -236,11 +239,11 @@ namespace LibHac
                 };
             }
 
-            return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel);
+            return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel, leaveOpen);
         }
 
         private static HierarchicalIntegrityVerificationStorage InitIvfcForPartitionfs(Sha256Info sb,
-            Storage pfsStorage, IntegrityCheckLevel integrityCheckLevel)
+            Storage pfsStorage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         {
             Storage hashStorage = pfsStorage.Slice(sb.HashTableOffset, sb.HashTableSize);
             Storage dataStorage = pfsStorage.Slice(sb.DataOffset, sb.DataSize);
@@ -270,7 +273,7 @@ namespace LibHac
                 Type = IntegrityStorageType.PartitionFs
             };
 
-            return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel);
+            return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel, leaveOpen);
         }
 
         /// <summary>
@@ -387,7 +390,7 @@ namespace LibHac
                     break;
             }
 
-            Storage storage = OpenSection(index, true, IntegrityCheckLevel.None);
+            Storage storage = OpenSection(index, true, IntegrityCheckLevel.None, true);
 
             var hashTable = new byte[size];
             storage.Read(hashTable, offset);
@@ -395,12 +398,26 @@ namespace LibHac
             sect.MasterHashValidity = Crypto.CheckMemoryHashTable(hashTable, expected, 0, hashTable.Length);
         }
 
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                BaseStorage?.Flush();
+                BaseNca?.BaseStorage?.Flush();
+
+                if (!LeaveOpen)
+                {
+                    BaseStorage?.Dispose();
+                    BaseNca?.Dispose();
+                }
+
+            }
+        }
+
         public void Dispose()
         {
-            if (!KeepOpen)
-            {
-                BaseStorage?.Dispose();
-            }
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 
@@ -452,7 +469,7 @@ namespace LibHac
             if (index < 0 || index > 3) throw new IndexOutOfRangeException();
             if (nca.Sections[index] == null) return;
 
-            Storage storage = nca.OpenSection(index, raw, integrityCheckLevel);
+            Storage storage = nca.OpenSection(index, raw, integrityCheckLevel, true);
             string dir = Path.GetDirectoryName(filename);
             if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
 
@@ -468,7 +485,7 @@ namespace LibHac
             if (nca.Sections[index] == null) return;
 
             NcaSection section = nca.Sections[index];
-            Storage storage = nca.OpenSection(index, false, integrityCheckLevel);
+            Storage storage = nca.OpenSection(index, false, integrityCheckLevel, true);
 
             switch (section.Type)
             {
@@ -510,7 +527,7 @@ namespace LibHac
             NcaHashType hashType = sect.Header.HashType;
             if (hashType != NcaHashType.Sha256 && hashType != NcaHashType.Ivfc) return Validity.Unchecked;
 
-            HierarchicalIntegrityVerificationStorage stream = nca.OpenHashedSection(index, IntegrityCheckLevel.IgnoreOnInvalid);
+            HierarchicalIntegrityVerificationStorage stream = nca.OpenHashedSection(index, IntegrityCheckLevel.IgnoreOnInvalid, true);
             if (stream == null) return Validity.Unchecked;
 
             if (!quiet) logger?.LogMessage($"Verifying section {index}...");

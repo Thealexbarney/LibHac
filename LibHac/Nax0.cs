@@ -8,28 +8,28 @@ namespace LibHac
 {
     public class Nax0 : IDisposable
     {
+        private const int SectorSize = 0x4000;
+
         public byte[] Hmac { get; private set; }
         public byte[][] EncKeys { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x10);
         public byte[][] Keys { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x10);
         public byte[] Key { get; } = new byte[0x20];
         public long Length { get; private set; }
         public Storage BaseStorage { get; }
-        private bool KeepOpen { get; }
+        private bool LeaveOpen { get; }
 
-        public Nax0(Keyset keyset, Storage storage, string sdPath, bool keepOpen)
+        public Nax0(Keyset keyset, Storage storage, string sdPath, bool leaveOpen)
         {
-            KeepOpen = keepOpen;
+            LeaveOpen = leaveOpen;
             ReadHeader(storage.AsStream());
             DeriveKeys(keyset, sdPath, storage);
 
-            BaseStorage = new CachedStorage(new Aes128XtsStorage(storage.Slice(0x4000), Key, 0x4000, true), 4, true);
+            BaseStorage = new CachedStorage(new Aes128XtsStorage(storage.Slice(SectorSize), Key, SectorSize, leaveOpen), 4, leaveOpen);
         }
 
         private void ReadHeader(Stream stream)
         {
-            var header = new byte[0x60];
-            stream.Read(header, 0, 0x60);
-            var reader = new BinaryReader(new MemoryStream(header));
+            var reader = new BinaryReader(stream);
 
             Hmac = reader.ReadBytes(0x20);
             string magic = reader.ReadAscii(4);
@@ -84,7 +84,7 @@ namespace LibHac
 
         public void Dispose()
         {
-            if (!KeepOpen)
+            if (!LeaveOpen)
             {
                 BaseStorage?.Dispose();
             }

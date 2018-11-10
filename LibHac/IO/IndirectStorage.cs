@@ -12,9 +12,11 @@ namespace LibHac.IO
         private List<Storage> Sources { get; } = new List<Storage>();
         private BucketTree<RelocationEntry> BucketTree { get; }
 
-        public IndirectStorage(Storage bucketTreeHeader, Storage bucketTreeData, params Storage[] sources)
+        public IndirectStorage(Storage bucketTreeHeader, Storage bucketTreeData, bool leaveOpen, params Storage[] sources)
         {
             Sources.AddRange(sources);
+
+            if(!leaveOpen) ToDispose.AddRange(sources);
 
             BucketTree = new BucketTree<RelocationEntry>(bucketTreeHeader, bucketTreeData);
 

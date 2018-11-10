@@ -86,12 +86,12 @@ namespace LibHac
 
         private void EnsureCanRead()
         {
-            if(!CanRead) throw new InvalidOperationException("Storage is not readable");
+            if (!CanRead) throw new InvalidOperationException("Storage is not readable");
         }
 
         private void EnsureCanWrite()
         {
-            if(!CanWrite) throw new InvalidOperationException("Storage is not writable");
+            if (!CanWrite) throw new InvalidOperationException("Storage is not writable");
         }
 
         public void Dispose()
@@ -102,6 +102,7 @@ namespace LibHac
 
         protected void ValidateArrayParameters(byte[] buffer, long offset, int count, int bufferOffset)
         {
+            if (_isDisposed) throw new ObjectDisposedException(null);
             if (buffer == null) throw new ArgumentNullException(nameof(buffer));
             if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), "Argument must be non-negative.");
             if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), "Argument must be non-negative.");
@@ -116,6 +117,7 @@ namespace LibHac
 
         protected void ValidateSpanParameters(ReadOnlySpan<byte> destination, long offset)
         {
+            if (_isDisposed) throw new ObjectDisposedException(null);
             if (destination == null) throw new ArgumentNullException(nameof(destination));
             if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), "Argument must be non-negative.");
 

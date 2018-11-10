@@ -10,12 +10,12 @@ namespace LibHac.IO
         private List<long> SubsectionOffsets { get; }
         private BucketTree<AesSubsectionEntry> BucketTree { get; }
 
-        public Aes128CtrExStorage(Storage baseStorage, Storage bucketTreeHeader, Storage bucketTreeData, byte[] key, long counterOffset, byte[] ctrHi, bool keepOpen)
-            : base(baseStorage, key, counterOffset, ctrHi, keepOpen)
+        public Aes128CtrExStorage(Storage baseStorage, Storage bucketTreeHeader, Storage bucketTreeData, byte[] key, long counterOffset, byte[] ctrHi, bool leaveOpen)
+            : base(baseStorage, key, counterOffset, ctrHi, leaveOpen)
         {
             BucketTree = new BucketTree<AesSubsectionEntry>(bucketTreeHeader, bucketTreeData);
-            SubsectionEntries = BucketTree.GetEntryList();
 
+            SubsectionEntries = BucketTree.GetEntryList();
             SubsectionOffsets = SubsectionEntries.Select(x => x.Offset).ToList();
         }
 

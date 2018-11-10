@@ -9,13 +9,14 @@ namespace LibHac.IO
         public int SectorSize { get; }
         public int SectorCount { get; }
 
-        public SectorStorage(Storage baseStorage, int sectorSize, bool keepOpen)
+        public SectorStorage(Storage baseStorage, int sectorSize, bool leaveOpen)
         {
             BaseStorage = baseStorage;
             SectorSize = sectorSize;
             SectorCount = (int)Util.DivideByRoundUp(BaseStorage.Length, sectorSize);
             Length = baseStorage.Length;
-            if (!keepOpen) ToDispose.Add(BaseStorage);
+
+            if (!leaveOpen) ToDispose.Add(BaseStorage);
         }
 
         protected override int ReadImpl(Span<byte> destination, long offset)

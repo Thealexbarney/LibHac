@@ -1,13 +1,15 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace LibHac.IO.Save
 {
-    public class Savefile
+    public class Savefile : IDisposable
     {
         public Header Header { get; }
         public Storage BaseStorage { get; }
+        public bool LeaveOpen { get; }
 
         public HierarchicalIntegrityVerificationStorage IvfcStorage { get; }
         public SaveFs SaveFs { get; }
@@ -22,19 +24,20 @@ namespace LibHac.IO.Save
         public FileEntry[] Files => SaveFs.Files;
         public DirectoryEntry[] Directories => SaveFs.Directories;
 
-        public Savefile(Keyset keyset, Storage storage, IntegrityCheckLevel integrityCheckLevel)
+        public Savefile(Keyset keyset, Storage storage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         {
             BaseStorage = storage;
+            LeaveOpen = leaveOpen;
 
             Header = new Header(keyset, BaseStorage);
             FsLayout layout = Header.Layout;
 
             DataRemapStorage = new RemapStorage(BaseStorage.Slice(layout.FileMapDataOffset, layout.FileMapDataSize),
-                    Header.FileRemap, Header.FileMapEntries);
+                    Header.FileRemap, Header.FileMapEntries, leaveOpen);
 
             DuplexStorage = InitDuplexStorage(DataRemapStorage, Header);
 
-            MetaRemapStorage = new RemapStorage(DuplexStorage, Header.MetaRemap, Header.MetaMapEntries);
+            MetaRemapStorage = new RemapStorage(DuplexStorage, Header.MetaRemap, Header.MetaMapEntries, leaveOpen);
 
             Storage journalTable = MetaRemapStorage.Slice(layout.JournalTableOffset, layout.JournalTableSize);
 
@@ -43,7 +46,7 @@ namespace LibHac.IO.Save
             Storage journalData = DataRemapStorage.Slice(layout.JournalDataOffset,
                 layout.JournalDataSizeB + layout.SizeReservedArea);
 
-            JournalStorage = new JournalStorage(journalData, journalMap, (int)Header.Journal.BlockSize);
+            JournalStorage = new JournalStorage(journalData, journalMap, (int)Header.Journal.BlockSize, leaveOpen);
 
             IvfcStorage = InitIvfcStorage(integrityCheckLevel);
 
@@ -110,7 +113,7 @@ namespace LibHac.IO.Save
                 };
             }
 
-            return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel);
+            return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel, LeaveOpen);
         }
 
         public Storage OpenFile(string filename)
@@ -173,6 +176,20 @@ namespace LibHac.IO.Save
             "HierarchicalIntegrityVerificationStorage::L4",
             "HierarchicalIntegrityVerificationStorage::L5"
         };
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing && !LeaveOpen)
+            {
+                BaseStorage?.Dispose();
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
     }
 
     public static class SavefileExtensions

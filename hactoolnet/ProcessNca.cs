@@ -43,7 +43,7 @@ namespace hactoolnet
 
                 if (ctx.Options.ListRomFs && nca.Sections[1] != null)
                 {
-                    var romfs = new Romfs(nca.OpenSection(1, false, ctx.Options.IntegrityLevel));
+                    var romfs = new Romfs(nca.OpenSection(1, false, ctx.Options.IntegrityLevel, true));
 
                     foreach (RomfsFile romfsFile in romfs.Files)
                     {
@@ -74,7 +74,7 @@ namespace hactoolnet
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        var romfs = new Romfs(nca.OpenSection(section.SectionNum, false, ctx.Options.IntegrityLevel));
+                        var romfs = new Romfs(nca.OpenSection(section.SectionNum, false, ctx.Options.IntegrityLevel, true));
                         romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
                     }
                 }

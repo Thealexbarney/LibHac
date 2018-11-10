@@ -14,8 +14,8 @@ namespace LibHac.IO
         private readonly byte[] _key1;
         private readonly byte[] _key2;
 
-        public Aes128XtsStorage(Storage baseStorage, Span<byte> key, int sectorSize, bool keepOpen)
-            : base(baseStorage, sectorSize, keepOpen)
+        public Aes128XtsStorage(Storage baseStorage, Span<byte> key, int sectorSize, bool leaveOpen)
+            : base(baseStorage, sectorSize, leaveOpen)
         {
             if (key == null) throw new NullReferenceException(nameof(key));
             if (key.Length != BlockSize * 2) throw new ArgumentException(nameof(key), $"Key must be {BlockSize * 2} bytes long");
@@ -27,8 +27,8 @@ namespace LibHac.IO
             Length = baseStorage.Length;
         }
 
-        public Aes128XtsStorage(Storage baseStorage, Span<byte> key1, Span<byte> key2, int sectorSize, bool keepOpen)
-            : base(baseStorage, sectorSize, keepOpen)
+        public Aes128XtsStorage(Storage baseStorage, Span<byte> key1, Span<byte> key2, int sectorSize, bool leaveOpen)
+            : base(baseStorage, sectorSize, leaveOpen)
         {
             if (key1 == null) throw new NullReferenceException(nameof(key1));
             if (key2 == null) throw new NullReferenceException(nameof(key2));

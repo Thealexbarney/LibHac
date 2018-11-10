@@ -18,8 +18,8 @@ namespace LibHac.IO
 
         private readonly SHA256 _hash = SHA256.Create();
 
-        public IntegrityVerificationStorage(IntegrityVerificationInfoStorage info, Storage hashStorage, IntegrityCheckLevel integrityCheckLevel)
-            : base(info.Data, info.BlockSize, true)
+        public IntegrityVerificationStorage(IntegrityVerificationInfoStorage info, Storage hashStorage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
+            : base(info.Data, info.BlockSize, leaveOpen)
         {
             HashStorage = hashStorage;
             IntegrityCheckLevel = integrityCheckLevel;
@@ -29,7 +29,7 @@ namespace LibHac.IO
             BlockValidities = new Validity[SectorCount];
         }
 
-        private int ReadSpan(Span<byte> destination, long offset, IntegrityCheckLevel integrityCheckLevel)
+        private int ReadImpl(Span<byte> destination, long offset, IntegrityCheckLevel integrityCheckLevel)
         {
             int count = destination.Length;
 
@@ -97,19 +97,19 @@ namespace LibHac.IO
 
         protected override int ReadImpl(Span<byte> destination, long offset)
         {
-            return ReadSpan(destination, offset, IntegrityCheckLevel);
+            return ReadImpl(destination, offset, IntegrityCheckLevel);
         }
 
         public void Read(Span<byte> destination, long offset, IntegrityCheckLevel integrityCheckLevel)
         {
             ValidateSpanParameters(destination, offset);
-            ReadSpan(destination, offset, integrityCheckLevel);
+            ReadImpl(destination, offset, integrityCheckLevel);
         }
 
         public void Read(byte[] buffer, long offset, int count, int bufferOffset, IntegrityCheckLevel integrityCheckLevel)
         {
             ValidateArrayParameters(buffer, offset, count, bufferOffset);
-            ReadSpan(buffer.AsSpan(bufferOffset, count), offset, integrityCheckLevel);
+            ReadImpl(buffer.AsSpan(bufferOffset, count), offset, integrityCheckLevel);
         }
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)

@@ -8,7 +8,7 @@ namespace LibHac.IO
         private long Offset { get; }
         public override long Length { get; }
 
-        public SubStorage(Storage baseStorage, long offset, long length)
+        public SubStorage(Storage baseStorage, long offset, long length) // todo leaveOpen
         {
             BaseStorage = baseStorage;
             Offset = offset;

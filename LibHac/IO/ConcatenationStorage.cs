@@ -8,10 +8,10 @@ namespace LibHac.IO
         private ConcatSource[] Sources { get; }
         public override long Length { get; }
 
-        public ConcatenationStorage(IList<Storage> sources, bool keepOpen)
+        public ConcatenationStorage(IList<Storage> sources, bool leaveOpen)
         {
             Sources = new ConcatSource[sources.Count];
-            if (!keepOpen) ToDispose.AddRange(sources);
+            if (!leaveOpen) ToDispose.AddRange(sources);
 
             long length = 0;
             for (int i = 0; i < sources.Count; i++)

@@ -6,14 +6,12 @@ namespace LibHac.IO.Save
 {
     public class DuplexBitmap
     {
-        private Stream Data { get; }
+        private Storage Data { get; }
         public BitArray Bitmap { get; }
 
         public DuplexBitmap(Storage bitmapStorage, int lengthBits)
         {
-            Stream bitmapStream = bitmapStorage.AsStream();
-
-            Data = bitmapStream;
+            Data = bitmapStorage;
             Bitmap = new BitArray(lengthBits);
             ReadBitmap(lengthBits);
         }
@@ -21,7 +19,7 @@ namespace LibHac.IO.Save
         private void ReadBitmap(int lengthBits)
         {
             uint mask = unchecked((uint)(1 << 31));
-            var reader = new BinaryReader(Data);
+            var reader = new BinaryReader(Data.AsStream());
             int bitsRemaining = lengthBits;
             int bitmapPos = 0;
 

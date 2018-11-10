@@ -9,13 +9,16 @@ namespace LibHac.IO.Save
         public JournalMapEntry[] Map { get; }
         public int BlockSize { get; }
         public override long Length { get; }
-        
-        public JournalStorage(Storage baseStorage, JournalMapEntry[] map, int blockSize)
+
+        //todo map entry storage
+        public JournalStorage(Storage baseStorage, JournalMapEntry[] map, int blockSize, bool leaveOpen)
         {
             BaseStorage = baseStorage;
             Map = map;
             BlockSize = blockSize;
             Length = map.Length * BlockSize;
+
+            if (!leaveOpen) ToDispose.Add(baseStorage);
         }
 
         protected override int ReadImpl(Span<byte> destination, long offset)

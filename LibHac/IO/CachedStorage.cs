@@ -12,12 +12,13 @@ namespace LibHac.IO
         private LinkedList<CacheBlock> Blocks { get; } = new LinkedList<CacheBlock>();
         private Dictionary<long, LinkedListNode<CacheBlock>> BlockDict { get; } = new Dictionary<long, LinkedListNode<CacheBlock>>();
 
-        public CachedStorage(Storage baseStorage, int blockSize, int cacheSize, bool keepOpen)
+        public CachedStorage(Storage baseStorage, int blockSize, int cacheSize, bool leaveOpen)
         {
             BaseStorage = baseStorage;
             BlockSize = blockSize;
             Length = BaseStorage.Length;
-            if (!keepOpen) ToDispose.Add(BaseStorage);
+
+            if (!leaveOpen) ToDispose.Add(BaseStorage);
 
             for (int i = 0; i < cacheSize; i++)
             {
@@ -26,8 +27,8 @@ namespace LibHac.IO
             }
         }
 
-        public CachedStorage(SectorStorage baseStorage, int cacheSize, bool keepOpen)
-            : this(baseStorage, baseStorage.SectorSize, cacheSize, keepOpen) { }
+        public CachedStorage(SectorStorage baseStorage, int cacheSize, bool leaveOpen)
+            : this(baseStorage, baseStorage.SectorSize, cacheSize, leaveOpen) { }
 
         protected override int ReadImpl(Span<byte> destination, long offset)
         {
@@ -148,7 +149,7 @@ namespace LibHac.IO
             if (!block.Dirty) return;
 
             long offset = block.Index * BlockSize;
-            BaseStorage.Write(block.Buffer, offset, block.Buffer.Length, 0);
+            BaseStorage.Write(block.Buffer, offset, block.Length, 0);
             block.Dirty = false;
         }
 

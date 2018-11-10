@@ -16,7 +16,7 @@ namespace LibHac.IO
 
         private IntegrityVerificationStorage[] IntegrityStorages { get; }
 
-        public HierarchicalIntegrityVerificationStorage(IntegrityVerificationInfoStorage[] levelInfo, IntegrityCheckLevel integrityCheckLevel)
+        public HierarchicalIntegrityVerificationStorage(IntegrityVerificationInfoStorage[] levelInfo, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         {
             Levels = new Storage[levelInfo.Length];
             IntegrityCheckLevel = integrityCheckLevel;
@@ -27,9 +27,9 @@ namespace LibHac.IO
 
             for (int i = 1; i < Levels.Length; i++)
             {
-                var levelData = new IntegrityVerificationStorage(levelInfo[i], Levels[i - 1], integrityCheckLevel);
+                var levelData = new IntegrityVerificationStorage(levelInfo[i], Levels[i - 1], integrityCheckLevel, leaveOpen);
 
-                Levels[i] = new CachedStorage(levelData, 4, true);
+                Levels[i] = new CachedStorage(levelData, 4, leaveOpen);
                 LevelValidities[i - 1] = levelData.BlockValidities;
                 IntegrityStorages[i - 1] = levelData;
             }
@@ -62,7 +62,7 @@ namespace LibHac.IO
         public Validity Validate(bool returnOnError, IProgressReport logger = null)
         {
             Validity[] validities = LevelValidities[LevelValidities.Length - 1];
-            var storage = IntegrityStorages[IntegrityStorages.Length - 1];
+            IntegrityVerificationStorage storage = IntegrityStorages[IntegrityStorages.Length - 1];
 
             long blockSize = storage.SectorSize;
             int blockCount = (int)Util.DivideByRoundUp(Length, blockSize);
@@ -76,7 +76,7 @@ namespace LibHac.IO
             {
                 if (validities[i] == Validity.Unchecked)
                 {
-                    int toRead = (int) Math.Min(storage.Length - blockSize * i, buffer.Length);
+                    int toRead = (int)Math.Min(storage.Length - blockSize * i, buffer.Length);
                     storage.Read(buffer, blockSize * i, toRead, 0, IntegrityCheckLevel.IgnoreOnInvalid);
                 }
 

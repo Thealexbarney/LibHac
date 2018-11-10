@@ -17,14 +17,17 @@ namespace LibHac.IO.Save
         /// Creates a new <see cref="RemapStorage"/>
         /// </summary>
         /// <param name="storage">A <see cref="Storage"/> of the main data of the RemapStream.
-        /// The <see cref="RemapStorage"/> object takes complete ownership of the Stream.</param>
+        /// The <see cref="RemapStorage"/> object assumes complete ownership of the Storage.</param>
         /// <param name="header">The header for this RemapStorage.</param>
         /// <param name="mapEntries">The remapping entries for this RemapStorage.</param>
-        public RemapStorage(Storage storage, RemapHeader header, MapEntry[] mapEntries)
+        /// <param name="leaveOpen"><see langword="true"/> to leave the storage open after the <see cref="RemapStorage"/> object is disposed; otherwise, <see langword="false"/>.</param>
+        public RemapStorage(Storage storage, RemapHeader header, MapEntry[] mapEntries, bool leaveOpen)
         {
             BaseStorage = storage;
             Header = header;
             MapEntries = mapEntries;
+
+            if (!leaveOpen) ToDispose.Add(storage);
 
             Segments = InitSegments(Header, MapEntries);
         }
@@ -134,17 +137,17 @@ namespace LibHac.IO.Save
             throw new ArgumentOutOfRangeException(nameof(offset));
         }
 
-        private int GetSegmentFromVirtualOffset(long virtualOffset)
+        public int GetSegmentFromVirtualOffset(long virtualOffset)
         {
             return (int)((ulong)virtualOffset >> (64 - Header.SegmentBits));
         }
 
-        private long GetOffsetFromVirtualOffset(long virtualOffset)
+        public long GetOffsetFromVirtualOffset(long virtualOffset)
         {
             return virtualOffset & GetOffsetMask();
         }
 
-        private long ToVirtualOffset(int segment, long offset)
+        public long ToVirtualOffset(int segment, long offset)
         {
             long seg = (segment << (64 - Header.SegmentBits)) & GetSegmentMask();
             long off = offset & GetOffsetMask();

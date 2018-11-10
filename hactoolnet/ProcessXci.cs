@@ -109,7 +109,7 @@ namespace hactoolnet
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        var romfs = new Romfs(mainNca.OpenSection(romfsSection.SectionNum, false, ctx.Options.IntegrityLevel));
+                        var romfs = new Romfs(mainNca.OpenSection(romfsSection.SectionNum, false, ctx.Options.IntegrityLevel, true));
                         romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
                     }
 
