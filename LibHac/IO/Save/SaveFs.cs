@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+
 namespace LibHac.IO.Save
 {
     public class SaveFs
     {
-        public Storage BaseStorage { get; }
-        public Storage HeaderStorage { get; }
+        private Storage BaseStorage { get; }
+        private Storage HeaderStorage { get; }
 
         public AllocationTable AllocationTable { get; }
         private SaveHeader Header { get; }
@@ -55,6 +56,9 @@ namespace LibHac.IO.Save
         }
 
         public bool FileExists(string filename) => FileDictionary.ContainsKey(filename);
+
+        public Storage GetBaseStorage() => BaseStorage.Clone(true, FileAccess.Read);
+        public Storage GetHeaderStorage() => HeaderStorage.Clone(true, FileAccess.Read);
 
         private void ReadFileInfo()
         {

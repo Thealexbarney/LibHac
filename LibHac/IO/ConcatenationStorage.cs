@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace LibHac.IO
 {
@@ -74,22 +75,20 @@ namespace LibHac.IO
             }
         }
 
-        public override Storage Slice(long start, long length)
+        public override Storage Slice(long start, long length, bool leaveOpen, FileAccess access)
         {
             ConcatSource startSource = FindSource(start);
             ConcatSource endSource = FindSource(start + length - 1);
 
             if (startSource != endSource)
             {
-                return base.Slice(start, length);
+                return base.Slice(start, length, leaveOpen, access);
             }
 
-            if (startSource.StartOffset == start && startSource.Storage.Length == length)
-            {
-                return startSource.Storage;
-            }
+            Storage storage = startSource.Storage.Slice(start - startSource.StartOffset, length, true, access);
+            if (!leaveOpen) storage.ToDispose.Add(this);
 
-            return startSource.Storage.Slice(start - startSource.StartOffset, length);
+            return storage;
         }
 
         private ConcatSource FindSource(long offset)

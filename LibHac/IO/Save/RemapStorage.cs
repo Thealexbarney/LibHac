@@ -6,9 +6,9 @@ namespace LibHac.IO.Save
 {
     public class RemapStorage : Storage
     {
-        public Storage BaseStorage { get; }
-        public Storage HeaderStorage { get; }
-        public Storage MapEntryStorage { get; }
+        private Storage BaseStorage { get; }
+        private Storage HeaderStorage { get; }
+        private Storage MapEntryStorage { get; }
 
         private RemapHeader Header { get; }
         public MapEntry[] MapEntries { get; set; }
@@ -103,6 +103,10 @@ namespace LibHac.IO.Save
         {
             BaseStorage.Flush();
         }
+
+        public Storage GetBaseStorage() => BaseStorage.Clone(true, FileAccess.Read);
+        public Storage GetHeaderStorage() => HeaderStorage.Clone(true, FileAccess.Read);
+        public Storage GetMapEntryStorage() => MapEntryStorage.Clone(true, FileAccess.Read);
 
         private static RemapSegment[] InitSegments(RemapHeader header, MapEntry[] mapEntries)
         {

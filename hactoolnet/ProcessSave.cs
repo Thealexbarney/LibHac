@@ -32,64 +32,66 @@ namespace hactoolnet
                     string dir = ctx.Options.DebugOutDir;
                     Directory.CreateDirectory(dir);
 
-                    //FsLayout layout = save.Header.Layout;
+                    FsLayout layout = save.Header.Layout;
 
                     string mainRemapDir = Path.Combine(dir, "main_remap");
                     Directory.CreateDirectory(mainRemapDir);
 
-                    save.DataRemapStorage.BaseStorage.WriteAllBytes(Path.Combine(mainRemapDir, "Data"));
-                    save.DataRemapStorage.HeaderStorage.WriteAllBytes(Path.Combine(mainRemapDir, "Header"));
-                    save.DataRemapStorage.MapEntryStorage.WriteAllBytes(Path.Combine(mainRemapDir, "Map entries"));
+                    save.DataRemapStorage.GetBaseStorage().WriteAllBytes(Path.Combine(mainRemapDir, "Data"));
+                    save.DataRemapStorage.GetHeaderStorage().WriteAllBytes(Path.Combine(mainRemapDir, "Header"));
+                    save.DataRemapStorage.GetMapEntryStorage().WriteAllBytes(Path.Combine(mainRemapDir, "Map entries"));
 
                     string metadataRemapDir = Path.Combine(dir, "metadata_remap");
                     Directory.CreateDirectory(metadataRemapDir);
 
-                    save.MetaRemapStorage.BaseStorage.WriteAllBytes(Path.Combine(metadataRemapDir, "Data"));
-                    save.MetaRemapStorage.HeaderStorage.WriteAllBytes(Path.Combine(metadataRemapDir, "Header"));
-                    save.MetaRemapStorage.MapEntryStorage.WriteAllBytes(Path.Combine(metadataRemapDir, "Map entries"));
+                    save.MetaRemapStorage.GetBaseStorage().WriteAllBytes(Path.Combine(metadataRemapDir, "Data"));
+                    save.MetaRemapStorage.GetHeaderStorage().WriteAllBytes(Path.Combine(metadataRemapDir, "Header"));
+                    save.MetaRemapStorage.GetMapEntryStorage().WriteAllBytes(Path.Combine(metadataRemapDir, "Map entries"));
 
                     string journalDir = Path.Combine(dir, "journal");
                     Directory.CreateDirectory(journalDir);
 
-                    save.JournalStorage.BaseStorage.WriteAllBytes(Path.Combine(journalDir, "Data"));
-                    save.JournalStorage.HeaderStorage.WriteAllBytes(Path.Combine(journalDir, "Header"));
-                    save.JournalStorage.Map.HeaderStorage.WriteAllBytes(Path.Combine(journalDir, "Map_header"));
-                    save.JournalStorage.Map.MapStorage.WriteAllBytes(Path.Combine(journalDir, "Map"));
-                    save.JournalStorage.Map.ModifiedPhysicalBlocks.WriteAllBytes(Path.Combine(journalDir, "ModifiedPhysicalBlocks"));
-                    save.JournalStorage.Map.ModifiedVirtualBlocks.WriteAllBytes(Path.Combine(journalDir, "ModifiedVirtualBlocks"));
-                    save.JournalStorage.Map.FreeBlocks.WriteAllBytes(Path.Combine(journalDir, "FreeBlocks"));
+                    save.JournalStorage.GetBaseStorage().WriteAllBytes(Path.Combine(journalDir, "Data"));
+                    save.JournalStorage.GetHeaderStorage().WriteAllBytes(Path.Combine(journalDir, "Header"));
+                    save.JournalStorage.Map.GetHeaderStorage().WriteAllBytes(Path.Combine(journalDir, "Map_header"));
+                    save.JournalStorage.Map.GetMapStorage().WriteAllBytes(Path.Combine(journalDir, "Map"));
+                    save.JournalStorage.Map.GetModifiedPhysicalBlocksStorage().WriteAllBytes(Path.Combine(journalDir, "ModifiedPhysicalBlocks"));
+                    save.JournalStorage.Map.GetModifiedVirtualBlocksStorage().WriteAllBytes(Path.Combine(journalDir, "ModifiedVirtualBlocks"));
+                    save.JournalStorage.Map.GetFreeBlocksStorage().WriteAllBytes(Path.Combine(journalDir, "FreeBlocks"));
 
                     string saveDir = Path.Combine(dir, "save");
                     Directory.CreateDirectory(saveDir);
 
-                    save.SaveFs.HeaderStorage.WriteAllBytes(Path.Combine(saveDir, "Header"));
-                    save.SaveFs.BaseStorage.WriteAllBytes(Path.Combine(saveDir, "Data"));
-                    save.SaveFs.AllocationTable.HeaderStorage.WriteAllBytes(Path.Combine(saveDir, "FAT_header"));
-                    save.SaveFs.AllocationTable.BaseStorage.WriteAllBytes(Path.Combine(saveDir, "FAT"));
+                    save.SaveFs.GetHeaderStorage().WriteAllBytes(Path.Combine(saveDir, "Save_Header"));
+                    save.SaveFs.GetBaseStorage().WriteAllBytes(Path.Combine(saveDir, "Save_Data"));
+                    save.SaveFs.AllocationTable.GetHeaderStorage().WriteAllBytes(Path.Combine(saveDir, "FAT_header"));
+                    save.SaveFs.AllocationTable.GetBaseStorage().WriteAllBytes(Path.Combine(saveDir, "FAT_Data"));
 
-                    //File.WriteAllBytes(Path.Combine(dir, "L0_0_MasterHashA"), save.Header.MasterHashA);
-                    //File.WriteAllBytes(Path.Combine(dir, "L0_1_MasterHashB"), save.Header.MasterHashB);
-                    //File.WriteAllBytes(Path.Combine(dir, "L0_2_DuplexMasterA"), save.Header.DuplexMasterA);
-                    //File.WriteAllBytes(Path.Combine(dir, "L0_3_DuplexMasterB"), save.Header.DuplexMasterB);
+                    save.Header.DataIvfcMaster.WriteAllBytes(Path.Combine(saveDir, "Save_MasterHash"));
 
-                    //Stream duplexL1A = save.DataRemapStorage.OpenStream(layout.DuplexL1OffsetA, layout.DuplexL1Size);
-                    //Stream duplexL1B = save.DataRemapStorage.OpenStream(layout.DuplexL1OffsetB, layout.DuplexL1Size);
-                    //Stream duplexDataA = save.DataRemapStorage.OpenStream(layout.DuplexDataOffsetA, layout.DuplexDataSize);
-                    //Stream duplexDataB = save.DataRemapStorage.OpenStream(layout.DuplexDataOffsetB, layout.DuplexDataSize);
+                    Storage saveLayer1Hash = save.MetaRemapStorage.Slice(layout.IvfcL1Offset, layout.IvfcL1Size);
+                    Storage saveLayer2Hash = save.MetaRemapStorage.Slice(layout.IvfcL2Offset, layout.IvfcL2Size);
+                    Storage saveLayer3Hash = save.MetaRemapStorage.Slice(layout.IvfcL3Offset, layout.IvfcL3Size);
 
-                    //duplexL1A.WriteAllBytes(Path.Combine(dir, "L0_4_DuplexL1A"), ctx.Logger);
-                    //duplexL1B.WriteAllBytes(Path.Combine(dir, "L0_5_DuplexL1B"), ctx.Logger);
-                    //duplexDataA.WriteAllBytes(Path.Combine(dir, "L0_6_DuplexDataA"), ctx.Logger);
-                    //duplexDataB.WriteAllBytes(Path.Combine(dir, "L0_7_DuplexDataB"), ctx.Logger);
-                    //save.DuplexData.WriteAllBytes(Path.Combine(dir, "L1_0_DuplexData"), ctx.Logger);
+                    saveLayer1Hash.WriteAllBytes(Path.Combine(saveDir, "Save_Layer1Hash"), ctx.Logger);
+                    saveLayer2Hash.WriteAllBytes(Path.Combine(saveDir, "Save_Layer2Hash"), ctx.Logger);
+                    saveLayer3Hash.WriteAllBytes(Path.Combine(saveDir, "Save_Layer3Hash"), ctx.Logger);
 
-                    //Stream journalLayer1Hash = save.MetaRemapStorage.OpenStream(layout.IvfcL1Offset, layout.IvfcL1Size);
-                    //Stream journalLayer2Hash = save.MetaRemapStorage.OpenStream(layout.IvfcL2Offset, layout.IvfcL2Size);
-                    //Stream journalLayer3Hash = save.MetaRemapStorage.OpenStream(layout.IvfcL3Offset, layout.IvfcL3Size);
+                    string duplexDir = Path.Combine(dir, "duplex");
+                    Directory.CreateDirectory(duplexDir);
 
-                    //journalLayer1Hash.WriteAllBytes(Path.Combine(dir, "L2_4_Layer1Hash"), ctx.Logger);
-                    //journalLayer2Hash.WriteAllBytes(Path.Combine(dir, "L2_5_Layer2Hash"), ctx.Logger);
-                    //journalLayer3Hash.WriteAllBytes(Path.Combine(dir, "L2_6_Layer3Hash"), ctx.Logger);
+                    save.Header.DuplexMasterBitmapA.WriteAllBytes(Path.Combine(duplexDir, "MasterBitmapA"));
+                    save.Header.DuplexMasterBitmapB.WriteAllBytes(Path.Combine(duplexDir, "MasterBitmapB"));
+
+                    Storage duplexL1A = save.DataRemapStorage.Slice(layout.DuplexL1OffsetA, layout.DuplexL1Size);
+                    Storage duplexL1B = save.DataRemapStorage.Slice(layout.DuplexL1OffsetB, layout.DuplexL1Size);
+                    Storage duplexDataA = save.DataRemapStorage.Slice(layout.DuplexDataOffsetA, layout.DuplexDataSize);
+                    Storage duplexDataB = save.DataRemapStorage.Slice(layout.DuplexDataOffsetB, layout.DuplexDataSize);
+
+                    duplexL1A.WriteAllBytes(Path.Combine(duplexDir, "L1BitmapA"), ctx.Logger);
+                    duplexL1B.WriteAllBytes(Path.Combine(duplexDir, "L1BitmapB"), ctx.Logger);
+                    duplexDataA.WriteAllBytes(Path.Combine(duplexDir, "DataA"), ctx.Logger);
+                    duplexDataB.WriteAllBytes(Path.Combine(duplexDir, "DataB"), ctx.Logger);
                 }
 
                 if (ctx.Options.SignSave)

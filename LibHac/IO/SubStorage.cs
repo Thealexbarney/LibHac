@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace LibHac.IO
 {
@@ -8,11 +9,23 @@ namespace LibHac.IO
         private long Offset { get; }
         public override long Length { get; }
 
-        public SubStorage(Storage baseStorage, long offset, long length) // todo leaveOpen
+        public SubStorage(Storage baseStorage, long offset, long length)
         {
             BaseStorage = baseStorage;
             Offset = offset;
             Length = length;
+        }
+
+        public SubStorage(Storage baseStorage, long offset, long length, bool leaveOpen)
+            : this(baseStorage, offset, length)
+        {
+            if (!leaveOpen) ToDispose.Add(BaseStorage);
+        }
+
+        public SubStorage(Storage baseStorage, long offset, long length, bool leaveOpen, FileAccess access)
+            : this(baseStorage, offset, length, leaveOpen)
+        {
+            Access = access;
         }
 
         protected override int ReadImpl(Span<byte> destination, long offset)
@@ -30,9 +43,12 @@ namespace LibHac.IO
             BaseStorage.Flush();
         }
 
-        public override Storage Slice(long start, long length)
+        public override Storage Slice(long start, long length, bool leaveOpen, FileAccess access)
         {
-            return BaseStorage.Slice(Offset + start, length);
+            Storage storage = BaseStorage.Slice(Offset + start, length, true, access);
+            if (!leaveOpen) storage.ToDispose.Add(this);
+
+            return storage;
         }
     }
 }

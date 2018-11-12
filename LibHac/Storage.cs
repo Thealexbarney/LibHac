@@ -8,7 +8,7 @@ namespace LibHac
     public abstract class Storage : IDisposable
     {
         private bool _isDisposed;
-        protected List<IDisposable> ToDispose { get; } = new List<IDisposable>();
+        protected internal List<IDisposable> ToDispose { get; } = new List<IDisposable>();
 
         protected abstract int ReadImpl(Span<byte> destination, long offset);
         protected abstract void WriteImpl(ReadOnlySpan<byte> source, long offset);
@@ -45,19 +45,34 @@ namespace LibHac
 
         public Stream AsStream() => new StorageStream(this, true);
 
-        public virtual Storage Slice(long start, long length)
-        {
-            return new SubStorage(this, start, length);
-        }
-
         public Storage Slice(long start)
         {
             if (Length == -1)
             {
-                throw new InvalidOperationException();
+                return Slice(start, Length);
             }
 
             return Slice(start, Length - start);
+        }
+
+        public Storage Slice(long start, long length)
+        {
+            return Slice(start, length, true);
+        }
+
+        public Storage Slice(long start, long length, bool leaveOpen)
+        {
+            return Slice(start, length, leaveOpen, Access);
+        }
+
+        public virtual Storage Slice(long start, long length, bool leaveOpen, FileAccess access)
+        {
+            return new SubStorage(this, start, length, leaveOpen, access);
+        }
+
+        public Storage Clone(bool leaveOpen, FileAccess access)
+        {
+            return Slice(0, Length, leaveOpen, access);
         }
 
         protected virtual void Dispose(bool disposing)
@@ -76,10 +91,7 @@ namespace LibHac
             _isDisposed = true;
         }
 
-        public void SetAccess(FileAccess access)
-        {
-            Access = access;
-        }
+        public void SetReadOnly() => Access = FileAccess.Read;
 
         public virtual bool CanRead => (Access & FileAccess.Read) != 0;
         public virtual bool CanWrite => (Access & FileAccess.Write) != 0;

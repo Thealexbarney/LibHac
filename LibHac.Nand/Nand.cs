@@ -33,7 +33,7 @@ namespace LibHac.Nand
         {
             Storage encStorage = ProdInfo.Open().AsStorage();
             var decStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Keyset.BisKeys[0], 0x4000, true), 0x4000, 4, true);
-            decStorage.SetAccess(FileAccess.Read);
+            decStorage.SetReadOnly();
             return decStorage.AsStream();
         }
 
@@ -41,7 +41,7 @@ namespace LibHac.Nand
         {
             Storage encStorage = ProdInfoF.Open().AsStorage();
             var decStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Keyset.BisKeys[0], 0x4000, true), 0x4000, 4, true);
-            decStorage.SetAccess(FileAccess.Read);
+            decStorage.SetReadOnly();
             var fat = new FatFileSystem(decStorage.AsStream(), Ownership.None);
             return new NandPartition(fat);
         }
@@ -50,7 +50,7 @@ namespace LibHac.Nand
         {
             Storage encStorage = Safe.Open().AsStorage();
             var decStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Keyset.BisKeys[1], 0x4000, true), 0x4000, 4, true);
-            decStorage.SetAccess(FileAccess.Read);
+            decStorage.SetReadOnly();
             var fat = new FatFileSystem(decStorage.AsStream(), Ownership.None);
             return new NandPartition(fat);
         }
@@ -59,7 +59,7 @@ namespace LibHac.Nand
         {
             Storage encStorage = System.Open().AsStorage();
             var decStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Keyset.BisKeys[2], 0x4000, true), 0x4000, 4, true);
-            decStorage.SetAccess(FileAccess.Read);
+            decStorage.SetReadOnly();
             var fat = new FatFileSystem(decStorage.AsStream(), Ownership.None);
             return new NandPartition(fat);
         }
@@ -68,7 +68,7 @@ namespace LibHac.Nand
         {
             Storage encStorage = User.Open().AsStorage();
             var decStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Keyset.BisKeys[3], 0x4000, true), 0x4000, 4, true);
-            decStorage.SetAccess(FileAccess.Read);
+            decStorage.SetReadOnly();
             var fat = new FatFileSystem(decStorage.AsStream(), Ownership.None);
             return new NandPartition(fat);
         }

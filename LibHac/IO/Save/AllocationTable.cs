@@ -4,8 +4,8 @@ namespace LibHac.IO.Save
 {
     public class AllocationTable
     {
-        public Storage BaseStorage { get; }
-        public Storage HeaderStorage { get; }
+        private Storage BaseStorage { get; }
+        private Storage HeaderStorage { get; }
 
         public AllocationTableEntry[] Entries { get; }
         public AllocationTableHeader Header { get; }
@@ -31,6 +31,9 @@ namespace LibHac.IO.Save
                 Entries[i] = new AllocationTableEntry { Next = child, Prev = parent };
             }
         }
+
+        public Storage GetBaseStorage() => BaseStorage.Clone(true, FileAccess.Read);
+        public Storage GetHeaderStorage() => HeaderStorage.Clone(true, FileAccess.Read);
     }
 
     public class AllocationTableEntry

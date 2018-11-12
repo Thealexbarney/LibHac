@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.ComponentModel;
+using System.IO;
 
 namespace LibHac.IO.Save
 {
@@ -7,11 +8,11 @@ namespace LibHac.IO.Save
         public JournalMapHeader Header { get; }
         private JournalMapEntry[] Entries { get; }
 
-        public Storage HeaderStorage { get; }
-        public Storage MapStorage { get; }
-        public Storage ModifiedPhysicalBlocks { get; }
-        public Storage ModifiedVirtualBlocks { get; }
-        public Storage FreeBlocks { get; }
+        private Storage HeaderStorage { get; }
+        private Storage MapStorage { get; }
+        private Storage ModifiedPhysicalBlocks { get; }
+        private Storage ModifiedVirtualBlocks { get; }
+        private Storage FreeBlocks { get; }
 
         public JournalMap(Storage header, JournalMapParams mapInfo)
         {
@@ -49,6 +50,13 @@ namespace LibHac.IO.Save
 
             return map;
         }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public Storage GetMapStorage() => MapStorage.Clone(true, FileAccess.Read);
+        public Storage GetHeaderStorage() => HeaderStorage.Clone(true, FileAccess.Read);
+        public Storage GetModifiedPhysicalBlocksStorage() => ModifiedPhysicalBlocks.Clone(true, FileAccess.Read);
+        public Storage GetModifiedVirtualBlocksStorage() => ModifiedVirtualBlocks.Clone(true, FileAccess.Read);
+        public Storage GetFreeBlocksStorage() => FreeBlocks.Clone(true, FileAccess.Read);
     }
 
     public class JournalMapHeader

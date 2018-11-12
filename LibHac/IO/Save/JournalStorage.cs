@@ -5,8 +5,8 @@ namespace LibHac.IO.Save
 {
     public class JournalStorage : Storage
     {
-        public Storage BaseStorage { get; }
-        public Storage HeaderStorage { get; }
+        private Storage BaseStorage { get; }
+        private Storage HeaderStorage { get; }
         public JournalMap Map { get; }
 
         public JournalHeader Header { get; }
@@ -81,6 +81,9 @@ namespace LibHac.IO.Save
         {
             BaseStorage.Flush();
         }
+
+        public Storage GetBaseStorage() => BaseStorage.Clone(true, FileAccess.Read);
+        public Storage GetHeaderStorage() => HeaderStorage.Clone(true, FileAccess.Read);
     }
 
     public class JournalHeader
