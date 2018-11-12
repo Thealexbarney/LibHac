@@ -5,18 +5,26 @@ namespace LibHac.IO.Save
 {
     public class JournalStorage : Storage
     {
-        private Storage BaseStorage { get; }
-        public JournalMapEntry[] Map { get; }
+        public Storage BaseStorage { get; }
+        public Storage HeaderStorage { get; }
+        public JournalMap Map { get; }
+
+        public JournalHeader Header { get; }
+
         public int BlockSize { get; }
         public override long Length { get; }
 
-        //todo map entry storage
-        public JournalStorage(Storage baseStorage, JournalMapEntry[] map, int blockSize, bool leaveOpen)
+        public JournalStorage(Storage baseStorage, Storage header, JournalMapParams mapInfo, bool leaveOpen)
         {
             BaseStorage = baseStorage;
-            Map = map;
-            BlockSize = blockSize;
-            Length = map.Length * BlockSize;
+            HeaderStorage = header;
+            Header = new JournalHeader(HeaderStorage);
+
+            Storage mapHeader = header.Slice(0x20, 0x10);
+            Map = new JournalMap(mapHeader, mapInfo);
+
+            BlockSize = (int)Header.BlockSize;
+            Length = Header.TotalSize - Header.JournalSize;
 
             if (!leaveOpen) ToDispose.Add(baseStorage);
         }
@@ -32,8 +40,7 @@ namespace LibHac.IO.Save
                 int blockNum = (int)(inPos / BlockSize);
                 int blockPos = (int)(inPos % BlockSize);
 
-                JournalMapEntry entry = Map[blockNum];
-                long physicalOffset = entry.PhysicalIndex * BlockSize + blockPos;
+                long physicalOffset = Map.GetPhysicalBlock(blockNum) * BlockSize + blockPos;
 
                 int bytesToRead = Math.Min(remaining, BlockSize - blockPos);
 
@@ -58,8 +65,7 @@ namespace LibHac.IO.Save
                 int blockNum = (int)(inPos / BlockSize);
                 int blockPos = (int)(inPos % BlockSize);
 
-                JournalMapEntry entry = Map[blockNum];
-                long physicalOffset = entry.PhysicalIndex * BlockSize + blockPos;
+                long physicalOffset = Map.GetPhysicalBlock(blockNum) * BlockSize + blockPos;
 
                 int bytesToWrite = Math.Min(remaining, BlockSize - blockPos);
 
@@ -75,25 +81,25 @@ namespace LibHac.IO.Save
         {
             BaseStorage.Flush();
         }
+    }
 
-        public static JournalMapEntry[] ReadMapEntries(Storage mapTable, int count)
+    public class JournalHeader
+    {
+        public string Magic { get; }
+        public uint Version { get; }
+        public long TotalSize { get; }
+        public long JournalSize { get; }
+        public long BlockSize { get; }
+
+        public JournalHeader(Storage storage)
         {
-            var tableReader = new BinaryReader(mapTable.AsStream());
-            var map = new JournalMapEntry[count];
+            var reader = new BinaryReader(storage.AsStream());
 
-            for (int i = 0; i < count; i++)
-            {
-                var entry = new JournalMapEntry
-                {
-                    VirtualIndex = i,
-                    PhysicalIndex = tableReader.ReadInt32() & 0x7FFFFFFF
-                };
-
-                map[i] = entry;
-                tableReader.BaseStream.Position += 4;
-            }
-
-            return map;
+            Magic = reader.ReadAscii(4);
+            Version = reader.ReadUInt32();
+            TotalSize = reader.ReadInt64();
+            JournalSize = reader.ReadInt64();
+            BlockSize = reader.ReadInt64();
         }
     }
 

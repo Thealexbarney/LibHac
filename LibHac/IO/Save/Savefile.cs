@@ -32,47 +32,54 @@ namespace LibHac.IO.Save
             Header = new Header(keyset, BaseStorage);
             FsLayout layout = Header.Layout;
 
-            DataRemapStorage = new RemapStorage(BaseStorage.Slice(layout.FileMapDataOffset, layout.FileMapDataSize),
-                    Header.FileRemap, Header.FileMapEntries, leaveOpen);
+            Storage dataRemapBase = BaseStorage.Slice(layout.FileMapDataOffset, layout.FileMapDataSize);
+            Storage dataRemapEntries = BaseStorage.Slice(layout.FileMapEntryOffset, layout.FileMapEntrySize);
+            Storage metadataRemapEntries = BaseStorage.Slice(layout.MetaMapEntryOffset, layout.MetaMapEntrySize);
+
+            DataRemapStorage = new RemapStorage(dataRemapBase, Header.MainRemapHeader, dataRemapEntries, leaveOpen);
 
             DuplexStorage = InitDuplexStorage(DataRemapStorage, Header);
 
-            MetaRemapStorage = new RemapStorage(DuplexStorage, Header.MetaRemap, Header.MetaMapEntries, leaveOpen);
+            MetaRemapStorage = new RemapStorage(DuplexStorage, Header.MetaDataRemapHeader, metadataRemapEntries, leaveOpen);
 
-            Storage journalTable = MetaRemapStorage.Slice(layout.JournalTableOffset, layout.JournalTableSize);
-
-            JournalMapEntry[] journalMap = JournalStorage.ReadMapEntries(journalTable, Header.Journal.MainDataBlockCount);
+            var journalMapInfo = new JournalMapParams
+            {
+                MapStorage = MetaRemapStorage.Slice(layout.JournalMapTableOffset, layout.JournalMapTableSize),
+                PhysicalBlockBitmap = MetaRemapStorage.Slice(layout.JournalPhysicalBitmapOffset, layout.JournalPhysicalBitmapSize),
+                VirtualBlockBitmap = MetaRemapStorage.Slice(layout.JournalVirtualBitmapOffset, layout.JournalVirtualBitmapSize),
+                FreeBlockBitmap = MetaRemapStorage.Slice(layout.JournalFreeBitmapOffset, layout.JournalFreeBitmapSize),
+            };
 
             Storage journalData = DataRemapStorage.Slice(layout.JournalDataOffset,
-                layout.JournalDataSizeB + layout.SizeReservedArea);
+                layout.JournalDataSizeB + layout.JournalSize);
 
-            JournalStorage = new JournalStorage(journalData, journalMap, (int)Header.Journal.BlockSize, leaveOpen);
+            JournalStorage = new JournalStorage(journalData, Header.JournalHeader, journalMapInfo, leaveOpen);
 
             IvfcStorage = InitIvfcStorage(integrityCheckLevel);
 
-            SaveFs = new SaveFs(IvfcStorage, MetaRemapStorage.Slice(layout.FatOffset, layout.FatSize), Header.Save);
+            SaveFs = new SaveFs(IvfcStorage, MetaRemapStorage.Slice(layout.FatOffset, layout.FatSize), Header.SaveHeader);
         }
 
         private static HierarchicalDuplexStorage InitDuplexStorage(Storage baseStorage, Header header)
         {
             FsLayout layout = header.Layout;
-            var duplexLayers = new DuplexFsLayerInfo2[3];
+            var duplexLayers = new DuplexFsLayerInfo[3];
 
-            duplexLayers[0] = new DuplexFsLayerInfo2
+            duplexLayers[0] = new DuplexFsLayerInfo
             {
-                DataA = new MemoryStorage(header.DuplexMasterA),
-                DataB = new MemoryStorage(header.DuplexMasterB),
+                DataA = header.DuplexMasterBitmapA,
+                DataB = header.DuplexMasterBitmapB,
                 Info = header.Duplex.Layers[0]
             };
 
-            duplexLayers[1] = new DuplexFsLayerInfo2
+            duplexLayers[1] = new DuplexFsLayerInfo
             {
                 DataA = baseStorage.Slice(layout.DuplexL1OffsetA, layout.DuplexL1Size),
                 DataB = baseStorage.Slice(layout.DuplexL1OffsetB, layout.DuplexL1Size),
                 Info = header.Duplex.Layers[1]
             };
 
-            duplexLayers[2] = new DuplexFsLayerInfo2
+            duplexLayers[2] = new DuplexFsLayerInfo
             {
                 DataA = baseStorage.Slice(layout.DuplexDataOffsetA, layout.DuplexDataSize),
                 DataB = baseStorage.Slice(layout.DuplexDataOffsetB, layout.DuplexDataSize),

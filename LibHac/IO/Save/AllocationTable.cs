@@ -4,12 +4,20 @@ namespace LibHac.IO.Save
 {
     public class AllocationTable
     {
-        public AllocationTableEntry[] Entries { get; }
+        public Storage BaseStorage { get; }
+        public Storage HeaderStorage { get; }
 
-        public AllocationTable(Storage storage)
+        public AllocationTableEntry[] Entries { get; }
+        public AllocationTableHeader Header { get; }
+
+        public AllocationTable(Storage storage, Storage header)
         {
+            BaseStorage = storage;
+            HeaderStorage = header;
+            Header = new AllocationTableHeader(HeaderStorage);
+
             Stream tableStream = storage.AsStream();
-            int blockCount = (int)(tableStream.Length / 8);
+            int blockCount = (int)(Header.AllocationTableBlockCount);
 
             Entries = new AllocationTableEntry[blockCount];
             tableStream.Position = 0;
@@ -48,6 +56,35 @@ namespace LibHac.IO.Save
         public bool IsSingleBlockSegment()
         {
             return Next >= 0;
+        }
+    }
+
+    public class AllocationTableHeader
+    {
+        public long BlockSize { get; }
+        public long AllocationTableOffset { get; }
+        public long AllocationTableBlockCount { get; }
+        public long DataOffset { get; }
+        public long DataBlockCount { get; }
+        public int DirectoryTableBlock { get; }
+        public int FileTableBlock { get; }
+
+        public AllocationTableHeader(Storage storage)
+        {
+            var reader = new BinaryReader(storage.AsStream());
+
+            BlockSize = reader.ReadInt64();
+
+            AllocationTableOffset = reader.ReadInt64();
+            AllocationTableBlockCount = reader.ReadInt32();
+            reader.BaseStream.Position += 4;
+
+            DataOffset = reader.ReadInt64();
+            DataBlockCount = reader.ReadInt32();
+            reader.BaseStream.Position += 4;
+
+            DirectoryTableBlock = reader.ReadInt32();
+            FileTableBlock = reader.ReadInt32();
         }
     }
 }

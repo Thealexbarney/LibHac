@@ -4,8 +4,10 @@ namespace LibHac.IO.Save
 {
     public class SaveFs
     {
-        private Storage BaseStorage { get; }
-        private AllocationTable AllocationTable { get; }
+        public Storage BaseStorage { get; }
+        public Storage HeaderStorage { get; }
+
+        public AllocationTable AllocationTable { get; }
         private SaveHeader Header { get; }
 
         public DirectoryEntry RootDirectory { get; private set; }
@@ -13,11 +15,13 @@ namespace LibHac.IO.Save
         public DirectoryEntry[] Directories { get; private set; }
         public Dictionary<string, FileEntry> FileDictionary { get; }
 
-        public SaveFs(Storage storage, Storage allocationTable, SaveHeader header)
+        public SaveFs(Storage storage, Storage allocationTable, Storage header)
         {
+            HeaderStorage = header;
             BaseStorage = storage;
-            AllocationTable = new AllocationTable(allocationTable);
-            Header = header;
+            AllocationTable = new AllocationTable(allocationTable, header.Slice(0x18, 0x30));
+
+            Header = new SaveHeader(HeaderStorage);
 
             ReadFileInfo();
             var dictionary = new Dictionary<string, FileEntry>();
@@ -51,12 +55,12 @@ namespace LibHac.IO.Save
         }
 
         public bool FileExists(string filename) => FileDictionary.ContainsKey(filename);
-        
+
         private void ReadFileInfo()
         {
             // todo: Query the FAT for the file size when none is given
-            AllocationTableStorage dirTableStream = OpenFatBlock(Header.DirectoryTableBlock, 1000000);
-            AllocationTableStorage fileTableStream = OpenFatBlock(Header.FileTableBlock, 1000000);
+            AllocationTableStorage dirTableStream = OpenFatBlock(AllocationTable.Header.DirectoryTableBlock, 1000000);
+            AllocationTableStorage fileTableStream = OpenFatBlock(AllocationTable.Header.FileTableBlock, 1000000);
 
             DirectoryEntry[] dirEntries = ReadDirEntries(dirTableStream);
             FileEntry[] fileEntries = ReadFileEntries(fileTableStream);
@@ -139,6 +143,25 @@ namespace LibHac.IO.Save
         private AllocationTableStorage OpenFatBlock(int blockIndex, long size)
         {
             return new AllocationTableStorage(BaseStorage, AllocationTable, (int)Header.BlockSize, blockIndex, size);
+        }
+    }
+
+    public class SaveHeader
+    {
+        public string Magic { get; }
+        public uint Version { get; }
+        public long BlockCount { get; }
+        public long BlockSize { get; }
+
+
+        public SaveHeader(Storage storage)
+        {
+            var reader = new BinaryReader(storage.AsStream());
+
+            Magic = reader.ReadAscii(4);
+            Version = reader.ReadUInt32();
+            BlockCount = reader.ReadInt64();
+            BlockSize = reader.ReadInt64();
         }
     }
 }

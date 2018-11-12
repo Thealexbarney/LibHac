@@ -6,7 +6,10 @@ namespace LibHac.IO.Save
 {
     public class RemapStorage : Storage
     {
-        private Storage BaseStorage { get; }
+        public Storage BaseStorage { get; }
+        public Storage HeaderStorage { get; }
+        public Storage MapEntryStorage { get; }
+
         private RemapHeader Header { get; }
         public MapEntry[] MapEntries { get; set; }
         public RemapSegment[] Segments { get; set; }
@@ -21,13 +24,23 @@ namespace LibHac.IO.Save
         /// <param name="header">The header for this RemapStorage.</param>
         /// <param name="mapEntries">The remapping entries for this RemapStorage.</param>
         /// <param name="leaveOpen"><see langword="true"/> to leave the storage open after the <see cref="RemapStorage"/> object is disposed; otherwise, <see langword="false"/>.</param>
-        public RemapStorage(Storage storage, RemapHeader header, MapEntry[] mapEntries, bool leaveOpen)
+        public RemapStorage(Storage storage, Storage header, Storage mapEntries, bool leaveOpen)
         {
             BaseStorage = storage;
-            Header = header;
-            MapEntries = mapEntries;
+            HeaderStorage = header;
+            MapEntryStorage = mapEntries;
 
-            if (!leaveOpen) ToDispose.Add(storage);
+            Header = new RemapHeader(HeaderStorage);
+
+            MapEntries = new MapEntry[Header.MapEntryCount];
+            var reader = new BinaryReader(MapEntryStorage.AsStream());
+
+            for (int i = 0; i < Header.MapEntryCount; i++)
+            {
+                MapEntries[i] = new MapEntry(reader);
+            }
+
+            if (!leaveOpen) ToDispose.Add(BaseStorage);
 
             Segments = InitSegments(Header, MapEntries);
         }
@@ -162,6 +175,26 @@ namespace LibHac.IO.Save
         private long GetSegmentMask()
         {
             return ~GetOffsetMask();
+        }
+    }
+
+    public class RemapHeader
+    {
+        public string Magic { get; }
+        public uint Verison { get; }
+        public int MapEntryCount { get; }
+        public int MapSegmentCount { get; }
+        public int SegmentBits { get; }
+
+        public RemapHeader(Storage storage)
+        {
+            var reader = new BinaryReader(storage.AsStream());
+
+            Magic = reader.ReadAscii(4);
+            Verison = reader.ReadUInt32();
+            MapEntryCount = reader.ReadInt32();
+            MapSegmentCount = reader.ReadInt32();
+            SegmentBits = reader.ReadInt32();
         }
     }
 

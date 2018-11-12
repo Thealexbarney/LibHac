@@ -55,13 +55,15 @@ namespace LibHac.IO
             var buffer = new byte[bufferSize];
             progress?.SetTotal(length);
 
-            int read;
-            while ((read = input.Read(buffer, inOffset, (int)Math.Min(buffer.Length, remaining), 0)) > 0)
+            while (remaining > 0)
             {
-                output.Write(buffer, 0, read);
-                remaining -= read;
-                inOffset += read;
-                progress?.ReportAdd(read);
+                int toWrite = (int) Math.Min(buffer.Length, remaining);
+                input.Read(buffer, inOffset, toWrite, 0);
+
+                output.Write(buffer, 0, toWrite);
+                remaining -= toWrite;
+                inOffset += toWrite;
+                progress?.ReportAdd(toWrite);
             }
         }
 

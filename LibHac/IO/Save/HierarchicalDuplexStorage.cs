@@ -7,7 +7,7 @@ namespace LibHac.IO.Save
         private DuplexStorage[] Layers { get; }
         private DuplexStorage DataLayer { get; }
 
-        public HierarchicalDuplexStorage(DuplexFsLayerInfo2[] layers, bool masterBit)
+        public HierarchicalDuplexStorage(DuplexFsLayerInfo[] layers, bool masterBit)
         {
             Layers = new DuplexStorage[layers.Length - 1];
 
@@ -49,7 +49,7 @@ namespace LibHac.IO.Save
         public override long Length { get; }
     }
 
-    public class DuplexFsLayerInfo2
+    public class DuplexFsLayerInfo
     {
         public Storage DataA { get; set; }
         public Storage DataB { get; set; }
