@@ -18,7 +18,8 @@ namespace LibHac.IO
 
         private readonly SHA256 _hash = SHA256.Create();
 
-        public IntegrityVerificationStorage(IntegrityVerificationInfoStorage info, Storage hashStorage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
+        public IntegrityVerificationStorage(IntegrityVerificationInfo info, Storage hashStorage,
+            IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
             : base(info.Data, info.BlockSize, leaveOpen)
         {
             HashStorage = hashStorage;
@@ -174,7 +175,7 @@ namespace LibHac.IO
     /// <summary>
     /// Information for creating an <see cref="IntegrityVerificationStorage"/>
     /// </summary>
-    public class IntegrityVerificationInfoStorage
+    public class IntegrityVerificationInfo
     {
         public Storage Data { get; set; }
         public int BlockSize { get; set; }

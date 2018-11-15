@@ -24,6 +24,7 @@ namespace LibHac.IO.Save
         public FsLayout Layout { get; set; }
         public DuplexHeader Duplex { get; set; }
         public IvfcHeader Ivfc { get; set; }
+        public IvfcHeader FatIvfc { get; set; }
 
         public ExtraData ExtraData { get; set; }
 
@@ -39,13 +40,13 @@ namespace LibHac.IO.Save
             MainStorage = storage;
             MainHeader = MainStorage.Slice(0x100, 0x200);
             DuplexHeader = MainStorage.Slice(0x300, 0x44);
-            DataIvfcHeader = MainStorage.Slice(0x344, 0xC4);
+            DataIvfcHeader = MainStorage.Slice(0x344, 0xC0);
             JournalHeader = MainStorage.Slice(0x408, 0x200);
             SaveHeader = MainStorage.Slice(0x608, 0x48);
             MainRemapHeader = MainStorage.Slice(0x650, 0x40);
             MetaDataRemapHeader = MainStorage.Slice(0x690, 0x40);
             ExtraDataStorage = MainStorage.Slice(0x6D8, 0x400);
-            FatIvfcHeader = MainStorage.Slice(0xAD8, 0xC4);
+            FatIvfcHeader = MainStorage.Slice(0xAD8, 0xC0);
 
             Layout = new FsLayout(MainHeader);
 
@@ -67,11 +68,15 @@ namespace LibHac.IO.Save
             reader.BaseStream.Position = 0x300;
             Duplex = new DuplexHeader(reader);
 
-            reader.BaseStream.Position = 0x344;
-            Ivfc = new IvfcHeader(reader);
-
             reader.BaseStream.Position = 0x6D8;
             ExtraData = new ExtraData(reader);
+
+            Ivfc = new IvfcHeader(DataIvfcHeader) { NumLevels = 5 };
+
+            if (Layout.Version >= 0x50000)
+            {
+                FatIvfc = new IvfcHeader(FatIvfcHeader) { NumLevels = 4 };
+            }
 
             MasterHash = storage.Slice(Layout.IvfcMasterHashOffsetA, Layout.IvfcMasterHashSize);
 
@@ -200,13 +205,13 @@ namespace LibHac.IO.Save
     public class DuplexHeader
     {
         public string Magic { get; }
-        public uint MagicNum { get; }
+        public uint Version { get; }
         public DuplexInfo[] Layers { get; } = new DuplexInfo[3];
 
         public DuplexHeader(BinaryReader reader)
         {
             Magic = reader.ReadAscii(4);
-            MagicNum = reader.ReadUInt32();
+            Version = reader.ReadUInt32();
 
             for (int i = 0; i < Layers.Length; i++)
             {

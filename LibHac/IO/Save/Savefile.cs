@@ -1,7 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace LibHac.IO.Save
 {
@@ -55,9 +54,16 @@ namespace LibHac.IO.Save
 
             JournalStorage = new JournalStorage(journalData, Header.JournalHeader, journalMapInfo, leaveOpen);
 
-            IvfcStorage = InitIvfcStorage(integrityCheckLevel);
+            IvfcStorage = InitJournalIvfcStorage(integrityCheckLevel);
 
-            SaveFs = new SaveFs(IvfcStorage, MetaRemapStorage.Slice(layout.FatOffset, layout.FatSize), Header.SaveHeader);
+            Storage fatStorage = MetaRemapStorage.Slice(layout.FatOffset, layout.FatSize);
+
+            if (Header.Layout.Version >= 0x50000)
+            {
+                fatStorage = InitFatIvfcStorage(integrityCheckLevel);
+            }
+
+            SaveFs = new SaveFs(IvfcStorage, fatStorage, Header.SaveHeader);
         }
 
         private static HierarchicalDuplexStorage InitDuplexStorage(Storage baseStorage, Header header)
@@ -89,38 +95,28 @@ namespace LibHac.IO.Save
             return new HierarchicalDuplexStorage(duplexLayers, layout.DuplexIndex == 1);
         }
 
-        private HierarchicalIntegrityVerificationStorage InitIvfcStorage(IntegrityCheckLevel integrityCheckLevel)
+        private HierarchicalIntegrityVerificationStorage InitJournalIvfcStorage(IntegrityCheckLevel integrityCheckLevel)
         {
-            IvfcHeader ivfc = Header.Ivfc;
-
             const int ivfcLevels = 5;
-            var initInfo = new IntegrityVerificationInfoStorage[ivfcLevels];
+            IvfcHeader ivfc = Header.Ivfc;
+            var levels = new List<Storage> { Header.DataIvfcMaster };
 
-            initInfo[0] = new IntegrityVerificationInfoStorage
+            for (int i = 0; i < ivfcLevels - 2; i++)
             {
-                Data = Header.MasterHash,
-                BlockSize = 0,
-                Type = IntegrityStorageType.Save
-            };
-
-            for (int i = 1; i < ivfcLevels; i++)
-            {
-                IvfcLevelHeader level = ivfc.LevelHeaders[i - 1];
-
-                Storage data = i == ivfcLevels - 1
-                    ? JournalStorage
-                    : MetaRemapStorage.Slice(level.LogicalOffset, level.HashDataSize);
-
-                initInfo[i] = new IntegrityVerificationInfoStorage
-                {
-                    Data = data,
-                    BlockSize = 1 << level.BlockSizePower,
-                    Salt = new HMACSHA256(Encoding.ASCII.GetBytes(SaltSources[i - 1])).ComputeHash(ivfc.SaltSource),
-                    Type = IntegrityStorageType.Save
-                };
+                IvfcLevelHeader level = ivfc.LevelHeaders[i];
+                levels.Add(MetaRemapStorage.Slice(level.Offset, level.Size));
             }
 
-            return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel, LeaveOpen);
+            IvfcLevelHeader dataLevel = ivfc.LevelHeaders[ivfcLevels - 2];
+            levels.Add(JournalStorage.Slice(dataLevel.Offset, dataLevel.Size));
+
+            return new HierarchicalIntegrityVerificationStorage(ivfc, levels, IntegrityStorageType.Save, integrityCheckLevel, LeaveOpen);
+        }
+
+        private HierarchicalIntegrityVerificationStorage InitFatIvfcStorage(IntegrityCheckLevel integrityCheckLevel)
+        {
+            return new HierarchicalIntegrityVerificationStorage(Header.FatIvfc, Header.FatIvfcMaster, MetaRemapStorage,
+                IntegrityStorageType.Save, integrityCheckLevel, LeaveOpen);
         }
 
         public Storage OpenFile(string filename)
@@ -173,16 +169,6 @@ namespace LibHac.IO.Save
 
             return validity;
         }
-
-        private string[] SaltSources =
-        {
-            "HierarchicalIntegrityVerificationStorage::Master",
-            "HierarchicalIntegrityVerificationStorage::L1",
-            "HierarchicalIntegrityVerificationStorage::L2",
-            "HierarchicalIntegrityVerificationStorage::L3",
-            "HierarchicalIntegrityVerificationStorage::L4",
-            "HierarchicalIntegrityVerificationStorage::L5"
-        };
 
         protected virtual void Dispose(bool disposing)
         {

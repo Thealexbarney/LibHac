@@ -181,8 +181,8 @@ namespace LibHac
                 case NcaHashType.Sha256:
                     return InitIvfcForPartitionfs(header.Sha256Info, rawStorage, integrityCheckLevel, leaveOpen);
                 case NcaHashType.Ivfc:
-                    return InitIvfcForRomfs(header.IvfcInfo, rawStorage, integrityCheckLevel, leaveOpen);
-
+                    return new HierarchicalIntegrityVerificationStorage(header.IvfcInfo, new MemoryStorage(header.IvfcInfo.MasterHash), rawStorage,
+                        IntegrityStorageType.RomFs, integrityCheckLevel, leaveOpen);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -214,44 +214,16 @@ namespace LibHac
         public Storage OpenSection(ProgramPartitionType type, bool raw, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen) =>
             OpenSection((int)type, raw, integrityCheckLevel, leaveOpen);
 
-        private static HierarchicalIntegrityVerificationStorage InitIvfcForRomfs(IvfcHeader ivfc,
-            Storage romfsStorage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
-        {
-            var initInfo = new IntegrityVerificationInfoStorage[ivfc.NumLevels];
-
-            // Set the master hash
-            initInfo[0] = new IntegrityVerificationInfoStorage
-            {
-                Data = new StreamStorage(new MemoryStream(ivfc.MasterHash), true),
-                BlockSize = 0
-            };
-
-            for (int i = 1; i < ivfc.NumLevels; i++)
-            {
-                IvfcLevelHeader level = ivfc.LevelHeaders[i - 1];
-                Storage data = romfsStorage.Slice(level.LogicalOffset, level.HashDataSize);
-
-                initInfo[i] = new IntegrityVerificationInfoStorage
-                {
-                    Data = data,
-                    BlockSize = 1 << level.BlockSizePower,
-                    Type = IntegrityStorageType.RomFs
-                };
-            }
-
-            return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel, leaveOpen);
-        }
-
         private static HierarchicalIntegrityVerificationStorage InitIvfcForPartitionfs(Sha256Info sb,
             Storage pfsStorage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         {
             Storage hashStorage = pfsStorage.Slice(sb.HashTableOffset, sb.HashTableSize);
             Storage dataStorage = pfsStorage.Slice(sb.DataOffset, sb.DataSize);
 
-            var initInfo = new IntegrityVerificationInfoStorage[3];
+            var initInfo = new IntegrityVerificationInfo[3];
 
             // Set the master hash
-            initInfo[0] = new IntegrityVerificationInfoStorage
+            initInfo[0] = new IntegrityVerificationInfo
             {
                 Data = new StreamStorage(new MemoryStream(sb.MasterHash), true),
 
@@ -259,14 +231,14 @@ namespace LibHac
                 Type = IntegrityStorageType.PartitionFs
             };
 
-            initInfo[1] = new IntegrityVerificationInfoStorage
+            initInfo[1] = new IntegrityVerificationInfo
             {
                 Data = hashStorage,
                 BlockSize = (int)sb.HashTableSize,
                 Type = IntegrityStorageType.PartitionFs
             };
 
-            initInfo[2] = new IntegrityVerificationInfoStorage
+            initInfo[2] = new IntegrityVerificationInfo
             {
                 Data = dataStorage,
                 BlockSize = sb.BlockSize,
@@ -385,7 +357,7 @@ namespace LibHac
                     CheckBktrKey(sect);
                     return;
                 case NcaHashType.Ivfc:
-                    offset = sect.Header.IvfcInfo.LevelHeaders[0].LogicalOffset;
+                    offset = sect.Header.IvfcInfo.LevelHeaders[0].Offset;
                     size = 1 << sect.Header.IvfcInfo.LevelHeaders[0].BlockSizePower;
                     break;
             }

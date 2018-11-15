@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace LibHac.IO
 {
@@ -16,7 +20,7 @@ namespace LibHac.IO
 
         private IntegrityVerificationStorage[] IntegrityStorages { get; }
 
-        public HierarchicalIntegrityVerificationStorage(IntegrityVerificationInfoStorage[] levelInfo, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
+        public HierarchicalIntegrityVerificationStorage(IntegrityVerificationInfo[] levelInfo, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         {
             Levels = new Storage[levelInfo.Length];
             IntegrityCheckLevel = integrityCheckLevel;
@@ -36,6 +40,51 @@ namespace LibHac.IO
 
             DataLevel = Levels[Levels.Length - 1];
             Length = DataLevel.Length;
+        }
+
+        public HierarchicalIntegrityVerificationStorage(IvfcHeader header, Storage masterHash, Storage data,
+            IntegrityStorageType type, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
+            : this(header, ToStorageList(header, masterHash, data), type, integrityCheckLevel, leaveOpen) { }
+
+        public HierarchicalIntegrityVerificationStorage(IvfcHeader header, IList<Storage> levels,
+            IntegrityStorageType type, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
+            : this(GetIvfcInfo(header, levels, type), integrityCheckLevel, leaveOpen) { }
+
+        private static List<Storage> ToStorageList(IvfcHeader header, Storage masterHash, Storage data)
+        {
+            var levels = new List<Storage> { masterHash };
+
+            for (int i = 0; i < header.NumLevels - 1; i++)
+            {
+                IvfcLevelHeader level = header.LevelHeaders[i];
+                levels.Add(data.Slice(level.Offset, level.Size));
+            }
+
+            return levels;
+        }
+
+        private static IntegrityVerificationInfo[] GetIvfcInfo(IvfcHeader ivfc, IList<Storage> levels, IntegrityStorageType type)
+        {
+            var initInfo = new IntegrityVerificationInfo[ivfc.NumLevels];
+
+            initInfo[0] = new IntegrityVerificationInfo
+            {
+                Data = levels[0],
+                BlockSize = 0
+            };
+
+            for (int i = 1; i < ivfc.NumLevels; i++)
+            {
+                initInfo[i] = new IntegrityVerificationInfo
+                {
+                    Data = levels[i],
+                    BlockSize = 1 << ivfc.LevelHeaders[i - 1].BlockSizePower,
+                    Salt = new HMACSHA256(Encoding.ASCII.GetBytes(SaltSources[i - 1])).ComputeHash(ivfc.SaltSource),
+                    Type = type
+                };
+            }
+
+            return initInfo;
         }
 
         protected override int ReadImpl(Span<byte> destination, long offset)
@@ -92,6 +141,16 @@ namespace LibHac.IO
             logger?.SetTotal(0);
             return result;
         }
+
+        private static readonly string[] SaltSources =
+        {
+            "HierarchicalIntegrityVerificationStorage::Master",
+            "HierarchicalIntegrityVerificationStorage::L1",
+            "HierarchicalIntegrityVerificationStorage::L2",
+            "HierarchicalIntegrityVerificationStorage::L3",
+            "HierarchicalIntegrityVerificationStorage::L4",
+            "HierarchicalIntegrityVerificationStorage::L5"
+        };
     }
 
     public static class HierarchicalIntegrityVerificationStorageExtensions
@@ -119,6 +178,58 @@ namespace LibHac.IO
 
                 header.LevelHeaders[i].HashValidity = levelValidity;
             }
+        }
+    }
+
+    public class IvfcHeader
+    {
+        public string Magic;
+        public int Version;
+        public int MasterHashSize;
+        public int NumLevels;
+        public IvfcLevelHeader[] LevelHeaders = new IvfcLevelHeader[6];
+        public byte[] SaltSource;
+        public byte[] MasterHash;
+
+        public IvfcHeader() { }
+
+        public IvfcHeader(BinaryReader reader)
+        {
+            Magic = reader.ReadAscii(4);
+            reader.BaseStream.Position += 2;
+            Version = reader.ReadInt16();
+            MasterHashSize = reader.ReadInt32();
+            NumLevels = reader.ReadInt32();
+
+            for (int i = 0; i < LevelHeaders.Length; i++)
+            {
+                LevelHeaders[i] = new IvfcLevelHeader(reader);
+            }
+
+            SaltSource = reader.ReadBytes(0x20);
+            MasterHash = reader.ReadBytes(0x20);
+        }
+
+        public IvfcHeader(Storage storage) : this(new BinaryReader(storage.AsStream())) { }
+    }
+
+    public class IvfcLevelHeader
+    {
+        public long Offset;
+        public long Size;
+        public int BlockSizePower;
+        public uint Reserved;
+
+        public Validity HashValidity = Validity.Unchecked;
+
+        public IvfcLevelHeader() { }
+
+        public IvfcLevelHeader(BinaryReader reader)
+        {
+            Offset = reader.ReadInt64();
+            Size = reader.ReadInt64();
+            BlockSizePower = reader.ReadInt32();
+            Reserved = reader.ReadUInt32();
         }
     }
 }

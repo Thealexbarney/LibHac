@@ -55,12 +55,12 @@ namespace hactoolnet
 
                 if (i != 0)
                 {
-                    hashOffset = ivfcInfo.LevelHeaders[i - 1].LogicalOffset;
+                    hashOffset = ivfcInfo.LevelHeaders[i - 1].Offset;
                 }
 
                 sb.AppendLine($"{prefix}Level {i}{level.HashValidity.GetValidityString()}:");
-                PrintItem(sb, colLen, $"{prefix2}Data Offset:", $"0x{level.LogicalOffset.ToString($"x{offsetLen}")}");
-                PrintItem(sb, colLen, $"{prefix2}Data Size:", $"0x{level.HashDataSize.ToString($"x{offsetLen}")}");
+                PrintItem(sb, colLen, $"{prefix2}Data Offset:", $"0x{level.Offset.ToString($"x{offsetLen}")}");
+                PrintItem(sb, colLen, $"{prefix2}Data Size:", $"0x{level.Size.ToString($"x{offsetLen}")}");
                 PrintItem(sb, colLen, $"{prefix2}Hash Offset:", $"0x{hashOffset.ToString($"x{offsetLen}")}");
                 PrintItem(sb, colLen, $"{prefix2}Hash BlockSize:", $"0x{1 << level.BlockSizePower:x8}");
             }

@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Linq;
+using LibHac.IO;
 
 namespace LibHac
 {
@@ -152,52 +153,6 @@ namespace LibHac
     {
         public BktrHeader RelocationHeader;
         public BktrHeader EncryptionHeader;
-    }
-
-    public class IvfcHeader
-    {
-        public string Magic;
-        public int Version;
-        public int MasterHashSize;
-        public int NumLevels;
-        public IvfcLevelHeader[] LevelHeaders = new IvfcLevelHeader[6];
-        public byte[] SaltSource;
-        public byte[] MasterHash;
-
-        public IvfcHeader(BinaryReader reader)
-        {
-            Magic = reader.ReadAscii(4);
-            reader.BaseStream.Position += 2;
-            Version = reader.ReadInt16();
-            MasterHashSize = reader.ReadInt32();
-            NumLevels = reader.ReadInt32();
-
-            for (int i = 0; i < LevelHeaders.Length; i++)
-            {
-                LevelHeaders[i] = new IvfcLevelHeader(reader);
-            }
-
-            SaltSource = reader.ReadBytes(0x20);
-            MasterHash = reader.ReadBytes(0x20);
-        }
-    }
-
-    public class IvfcLevelHeader
-    {
-        public long LogicalOffset;
-        public long HashDataSize;
-        public int BlockSizePower;
-        public uint Reserved;
-
-        public Validity HashValidity = Validity.Unchecked;
-
-        public IvfcLevelHeader(BinaryReader reader)
-        {
-            LogicalOffset = reader.ReadInt64();
-            HashDataSize = reader.ReadInt64();
-            BlockSizePower = reader.ReadInt32();
-            Reserved = reader.ReadUInt32();
-        }
     }
 
     public class Sha256Info
