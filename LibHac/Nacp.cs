@@ -5,7 +5,7 @@ namespace LibHac
 {
     public class Nacp
     {
-        public NacpLang[] Languages { get; } = new NacpLang[0x10];
+        public NacpDescription[] Descriptions { get; } = new NacpDescription[0x10];
         public string Isbn { get; }
         public byte StartupUserAccount { get; }
         public byte TouchScreenUsageMode { get; }
@@ -54,20 +54,21 @@ namespace LibHac
         public byte RepairFlag { get; }
         public byte ProgramIndex { get; }
 
-
         public long TotalSaveDataSize { get; }
         public long UserTotalSaveDataSize { get; }
         public long DeviceTotalSaveDataSize { get; }
 
         public Nacp() { }
 
-        public Nacp(BinaryReader reader)
+        public Nacp(Stream file)
         {
-            long start = reader.BaseStream.Position;
+            long start = file.Position;
+
+            BinaryReader reader = new BinaryReader(file);
 
             for (int i = 0; i < 16; i++)
             {
-                Languages[i] = new NacpLang(reader);
+                Descriptions[i] = new NacpDescription(reader, i);
             }
 
             Isbn = reader.ReadUtf8Z(37);
@@ -146,20 +147,42 @@ namespace LibHac
         }
     }
 
-    public class NacpLang
+    public class NacpDescription
     {
         public string Title { get; }
         public string Developer { get; }
 
-        public NacpLang() { }
+        public TitleLanguage Language;
 
-        public NacpLang(BinaryReader reader)
+        public NacpDescription() { }
+
+        public NacpDescription(BinaryReader reader, int index)
         {
+            Language = (TitleLanguage)index;
             long start = reader.BaseStream.Position;
             Title = reader.ReadUtf8Z();
             reader.BaseStream.Position = start + 0x200;
             Developer = reader.ReadUtf8Z();
             reader.BaseStream.Position = start + 0x300;
         }
+    }
+
+    public enum TitleLanguage
+    {
+        AmericanEnglish = 0,
+        BritishEnglish,
+        Japanese,
+        French,
+        German,
+        LatinAmericanSpanish,
+        Spanish,
+        Italian,
+        Dutch,
+        CanadianFrench,
+        Portuguese,
+        Russian,
+        Korean,
+        Taiwanese,
+        Chinese
     }
 }
