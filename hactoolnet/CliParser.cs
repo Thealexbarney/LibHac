@@ -32,6 +32,7 @@ namespace hactoolnet
             new CliOption("debugoutdir", 1, (o, a) => o.DebugOutDir = a[0]),
             new CliOption("savedir", 1, (o, a) => o.SaveOutDir = a[0]),
             new CliOption("outdir", 1, (o, a) => o.OutDir = a[0]),
+            new CliOption("plaintext", 1, (o, a) => o.PlaintextOut = a[0]),
             new CliOption("nspout", 1, (o, a) => o.NspOut = a[0]),
             new CliOption("sdseed", 1, (o, a) => o.SdSeed = a[0]),
             new CliOption("sdpath", 1, (o, a) => o.SdPath = a[0]),

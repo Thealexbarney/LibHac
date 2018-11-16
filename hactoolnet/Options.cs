@@ -23,6 +23,7 @@ namespace hactoolnet
         public string DebugOutDir;
         public string SaveOutDir;
         public string OutDir;
+        public string PlaintextOut;
         public string SdSeed;
         public string NspOut;
         public string SdPath;

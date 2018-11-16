@@ -106,6 +106,11 @@ namespace hactoolnet
                     }
                 }
 
+                if (ctx.Options.PlaintextOut != null)
+                {
+                    nca.OpenDecryptedNca().WriteAllBytes(ctx.Options.PlaintextOut, ctx.Logger);
+                }
+
                 ctx.Logger.LogMessage(nca.Print());
             }
         }

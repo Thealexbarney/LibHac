@@ -1,12 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using LibHac.IO;
 
 namespace LibHac
 {
     public class Nca : IDisposable
     {
-        public NcaHeader Header { get; private set; }
+        public NcaHeader Header { get; }
         public string NcaId { get; set; }
         public string Filename { get; set; }
         public bool HasRightsId { get; }
@@ -17,6 +19,7 @@ namespace LibHac
         private bool LeaveOpen { get; }
         private Nca BaseNca { get; set; }
         private Storage BaseStorage { get; }
+        private Keyset Keyset { get; }
 
         private bool IsMissingTitleKey { get; set; }
         private string MissingKeyName { get; set; }
@@ -27,7 +30,9 @@ namespace LibHac
         {
             LeaveOpen = leaveOpen;
             BaseStorage = storage;
-            DecryptHeader(keyset, BaseStorage);
+            Keyset = keyset;
+
+            Header = DecryptHeader();
 
             CryptoType = Math.Max(Header.CryptoType, Header.CryptoType2);
             if (CryptoType > 0) CryptoType--;
@@ -266,18 +271,37 @@ namespace LibHac
             }
         }
 
-        private void DecryptHeader(Keyset keyset, Storage storage)
+        public Storage OpenDecryptedNca()
         {
-            if (keyset.HeaderKey.IsEmpty())
+            var list = new List<Storage> { OpenHeaderStorage() };
+
+            foreach (NcaSection section in Sections.Where(x => x != null).OrderBy(x => x.Offset))
+            {
+                list.Add(OpenRawSection(section.SectionNum));
+            }
+
+            return new ConcatenationStorage(list, true);
+        }
+
+        private NcaHeader DecryptHeader()
+        {
+            if (Keyset.HeaderKey.IsEmpty())
             {
                 throw new MissingKeyException("Unable to decrypt NCA header.", "header_key", KeyType.Common);
             }
 
-            var headerStorage = new CachedStorage(new Aes128XtsStorage(storage.Slice(0, 0xC00), keyset.HeaderKey, 0x200, true), 1, true);
+            return new NcaHeader(new BinaryReader(OpenHeaderStorage().AsStream()));
+        }
 
-            var reader = new BinaryReader(headerStorage.AsStream());
+        private CachedStorage OpenHeaderStorage()
+        {
+            int size = 0x4000;
 
-            Header = new NcaHeader(reader);
+            // Support reading headers that are only 0xC00 bytes long, but still return
+            // the entire header if available.
+            if (BaseStorage.Length >= 0xC00 && BaseStorage.Length < 0x4000) size = 0xC00;
+
+            return new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, size), Keyset.HeaderKey, 0x200, true), 1, true);
         }
 
         private void DecryptKeyArea(Keyset keyset)

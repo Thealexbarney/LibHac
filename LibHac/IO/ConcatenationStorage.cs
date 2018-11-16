@@ -33,7 +33,7 @@ namespace LibHac.IO
 
             while (remaining > 0)
             {
-                ConcatSource entry = FindSource(offset);
+                ConcatSource entry = FindSource(inPos);
                 long sourcePos = inPos - entry.StartOffset;
 
                 int bytesToRead = (int)Math.Min(entry.EndOffset - inPos, remaining);
@@ -55,7 +55,7 @@ namespace LibHac.IO
 
             while (remaining > 0)
             {
-                ConcatSource storage = FindSource(offset);
+                ConcatSource storage = FindSource(inPos);
                 long sourcePos = inPos - storage.StartOffset;
 
                 int bytesToWrite = (int)Math.Min(storage.EndOffset - inPos, remaining);
