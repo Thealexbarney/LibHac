@@ -40,24 +40,26 @@ namespace LibHac.IO
 
             DataLevel = Levels[Levels.Length - 1];
             Length = DataLevel.Length;
+
+            if (!leaveOpen) ToDispose.Add(DataLevel);
         }
 
         public HierarchicalIntegrityVerificationStorage(IvfcHeader header, Storage masterHash, Storage data,
             IntegrityStorageType type, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
-            : this(header, ToStorageList(header, masterHash, data), type, integrityCheckLevel, leaveOpen) { }
+            : this(header, ToStorageList(header, masterHash, data, leaveOpen), type, integrityCheckLevel, leaveOpen) { }
 
         public HierarchicalIntegrityVerificationStorage(IvfcHeader header, IList<Storage> levels,
             IntegrityStorageType type, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
             : this(GetIvfcInfo(header, levels, type), integrityCheckLevel, leaveOpen) { }
 
-        private static List<Storage> ToStorageList(IvfcHeader header, Storage masterHash, Storage data)
+        private static List<Storage> ToStorageList(IvfcHeader header, Storage masterHash, Storage data, bool leaveOpen)
         {
             var levels = new List<Storage> { masterHash };
 
             for (int i = 0; i < header.NumLevels - 1; i++)
             {
                 IvfcLevelHeader level = header.LevelHeaders[i];
-                levels.Add(data.Slice(level.Offset, level.Size));
+                levels.Add(data.Slice(level.Offset, level.Size, leaveOpen));
             }
 
             return levels;

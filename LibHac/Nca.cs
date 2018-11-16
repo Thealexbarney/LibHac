@@ -86,7 +86,7 @@ namespace LibHac
             return sect.Header.EncryptionType == NcaEncryptionType.None || !IsMissingTitleKey && string.IsNullOrWhiteSpace(MissingKeyName);
         }
 
-        private Storage OpenRawSection(int index, bool leaveOpen = true)
+        private Storage OpenRawSection(int index, bool leaveOpen)
         {
             if (index < 0 || index > 3) throw new ArgumentOutOfRangeException(nameof(index));
 
@@ -116,7 +116,7 @@ namespace LibHac
             //        $"Section offset (0x{offset:x}) and length (0x{size:x}) fall outside the total NCA length (0x{StreamSource.Length:x}).");
             //}
 
-            Storage rawStorage = BaseStorage.Slice(offset, size);
+            Storage rawStorage = BaseStorage.Slice(offset, size, leaveOpen);
 
             switch (sect.Header.EncryptionType)
             {
@@ -134,10 +134,10 @@ namespace LibHac
                     long dataSize = info.RelocationHeader.Offset;
 
                     Storage bucketTreeHeader = new MemoryStorage(sect.Header.BktrInfo.EncryptionHeader.Header);
-                    Storage bucketTreeData = new CachedStorage(new Aes128CtrStorage(rawStorage.Slice(bktrOffset, bktrSize), DecryptedKeys[2], bktrOffset + offset, sect.Header.Ctr, leaveOpen), 4, leaveOpen);
+                    Storage bucketTreeData = new CachedStorage(new Aes128CtrStorage(rawStorage.Slice(bktrOffset, bktrSize, leaveOpen), DecryptedKeys[2], bktrOffset + offset, sect.Header.Ctr, leaveOpen), 4, leaveOpen);
 
                     Storage encryptionBucketTreeData = bucketTreeData.Slice(info.EncryptionHeader.Offset - bktrOffset);
-                    Storage decStorage = new Aes128CtrExStorage(rawStorage.Slice(0, dataSize), bucketTreeHeader, encryptionBucketTreeData, DecryptedKeys[2], offset, sect.Header.Ctr, leaveOpen);
+                    Storage decStorage = new Aes128CtrExStorage(rawStorage.Slice(0, dataSize, leaveOpen), bucketTreeHeader, encryptionBucketTreeData, DecryptedKeys[2], offset, sect.Header.Ctr, leaveOpen);
                     decStorage = new CachedStorage(decStorage, 0x4000, 4, leaveOpen);
 
                     return new ConcatenationStorage(new[] { decStorage, bucketTreeData }, leaveOpen);
@@ -158,7 +158,7 @@ namespace LibHac
         /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="index"/> is outside the valid range.</exception>
         public Storage OpenSection(int index, bool raw, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         {
-            Storage rawStorage = OpenRawSection(index);
+            Storage rawStorage = OpenRawSection(index, leaveOpen);
 
             NcaSection sect = Sections[index];
             NcaFsHeader header = sect.Header;
@@ -168,13 +168,13 @@ namespace LibHac
                 if (raw && BaseNca == null) return rawStorage;
 
                 BktrHeader bktrInfo = header.BktrInfo.RelocationHeader;
-                Storage patchStorage = rawStorage.Slice(0, bktrInfo.Offset);
+                Storage patchStorage = rawStorage.Slice(0, bktrInfo.Offset, leaveOpen);
 
                 if (BaseNca == null) return patchStorage;
 
                 Storage baseStorage = BaseNca.OpenSection(ProgramPartitionType.Data, true, IntegrityCheckLevel.None, leaveOpen);
                 Storage bktrHeader = new MemoryStorage(bktrInfo.Header);
-                Storage bktrData = rawStorage.Slice(bktrInfo.Offset, bktrInfo.Size);
+                Storage bktrData = rawStorage.Slice(bktrInfo.Offset, bktrInfo.Size, leaveOpen);
 
                 rawStorage = new IndirectStorage(bktrHeader, bktrData, leaveOpen, baseStorage, patchStorage);
             }
@@ -222,8 +222,8 @@ namespace LibHac
         private static HierarchicalIntegrityVerificationStorage InitIvfcForPartitionfs(Sha256Info sb,
             Storage pfsStorage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         {
-            Storage hashStorage = pfsStorage.Slice(sb.HashTableOffset, sb.HashTableSize);
-            Storage dataStorage = pfsStorage.Slice(sb.DataOffset, sb.DataSize);
+            Storage hashStorage = pfsStorage.Slice(sb.HashTableOffset, sb.HashTableSize, leaveOpen);
+            Storage dataStorage = pfsStorage.Slice(sb.DataOffset, sb.DataSize, leaveOpen);
 
             var initInfo = new IntegrityVerificationInfo[3];
 
@@ -277,7 +277,7 @@ namespace LibHac
 
             foreach (NcaSection section in Sections.Where(x => x != null).OrderBy(x => x.Offset))
             {
-                list.Add(OpenRawSection(section.SectionNum));
+                list.Add(OpenRawSection(section.SectionNum, true));
             }
 
             return new ConcatenationStorage(list, true);
