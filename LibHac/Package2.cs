@@ -37,12 +37,19 @@ namespace LibHac
             }
         }
 
-        public Storage OpenHeaderPart1()
+        public Storage OpenDecryptedPackage()
+        {
+            Storage[] storages = { OpenHeaderPart1(), OpenHeaderPart2(), OpenKernel(), OpenIni1() };
+
+            return new ConcatenationStorage(storages, true);
+        }
+
+        private Storage OpenHeaderPart1()
         {
             return Storage.Slice(0, 0x110);
         }
 
-        public Storage OpenHeaderPart2()
+        private Storage OpenHeaderPart2()
         {
             Storage encStorage = Storage.Slice(0x110, 0xF0);
 

@@ -22,12 +22,7 @@ namespace hactoolnet
                     package1.Pk11.OpenWarmboot().WriteAllBytes(Path.Combine(outDir, "Warmboot.bin"), ctx.Logger);
                     package1.Pk11.OpenNxBootloader().WriteAllBytes(Path.Combine(outDir, "NX_Bootloader.bin"), ctx.Logger);
                     package1.Pk11.OpenSecureMonitor().WriteAllBytes(Path.Combine(outDir, "Secure_Monitor.bin"), ctx.Logger);
-
-                    using (var decFile = new FileStream(Path.Combine(outDir, "Decrypted.bin"), FileMode.Create))
-                    {
-                        package1.OpenPackage1Ldr().CopyToStream(decFile);
-                        package1.Pk11.OpenDecryptedPk11().CopyToStream(decFile);
-                    }
+                    package1.OpenDecryptedPackage().WriteAllBytes(Path.Combine(outDir, "Decrypted.bin"), ctx.Logger);
                 }
             }
         }
@@ -48,14 +43,7 @@ namespace hactoolnet
 
                     package2.OpenKernel().WriteAllBytes(Path.Combine(outDir, "Kernel.bin"), ctx.Logger);
                     package2.OpenIni1().WriteAllBytes(Path.Combine(outDir, "INI1.bin"), ctx.Logger);
-
-                    using (var decFile = new FileStream(Path.Combine(outDir, "Decrypted.bin"), FileMode.Create))
-                    {
-                        package2.OpenHeaderPart1().CopyToStream(decFile);
-                        package2.OpenHeaderPart2().CopyToStream(decFile);
-                        package2.OpenKernel().CopyToStream(decFile);
-                        package2.OpenIni1().CopyToStream(decFile);
-                    }
+                    package2.OpenDecryptedPackage().WriteAllBytes(Path.Combine(outDir, "Decrypted.bin"), ctx.Logger);
                 }
             }
         }

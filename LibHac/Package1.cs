@@ -55,6 +55,13 @@ namespace LibHac
             throw new InvalidDataException("Failed to decrypt PK11! Is the correct key present?");
         }
 
+        public Storage OpenDecryptedPackage()
+        {
+            Storage[] storages = { OpenPackage1Ldr(), Pk11.OpenDecryptedPk11() };
+
+            return new ConcatenationStorage(storages, true);
+        }
+
         public Storage OpenPackage1Ldr() => Storage.Slice(0, 0x4000);
     }
 
