@@ -146,22 +146,31 @@ namespace LibHac
             }
         }
 
-        public static bool Rsa2048Pkcs1Verify(byte[] data, byte[] signature, byte[] modulus)
+        public static Validity Rsa2048Pkcs1Verify(byte[] data, byte[] signature, byte[] modulus)
         {
-            byte[] hash;
-            using (SHA256 sha256 = SHA256.Create())
+            using (RSA rsa = RSA.Create())
             {
-                hash = sha256.ComputeHash(data);
+                rsa.ImportParameters(new RSAParameters { Exponent = new byte[] { 1, 0, 1 }, Modulus = modulus });
+
+                return rsa.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
+                    ? Validity.Valid
+                    : Validity.Invalid;
             }
+        }
 
-            using (var rsa = new RSACryptoServiceProvider())
+        public static Validity Rsa2048PssVerify(byte[] data, byte[] signature, byte[] modulus)
+        {
+#if USE_RSA_CNG
+            using (RSA rsa = new RSACng())
+#else
+            using (RSA rsa = RSA.Create())
+#endif
             {
-                rsa.ImportParameters(new RSAParameters() { Exponent = new byte[] { 1, 0, 1 }, Modulus = modulus });
+                rsa.ImportParameters(new RSAParameters { Exponent = new byte[] { 1, 0, 1 }, Modulus = modulus });
 
-                var rsaFormatter = new RSAPKCS1SignatureDeformatter(rsa);
-                rsaFormatter.SetHashAlgorithm("SHA256");
-
-                return rsaFormatter.VerifySignature(hash, signature);
+                return rsa.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss)
+                    ? Validity.Valid
+                    : Validity.Invalid;
             }
         }
 

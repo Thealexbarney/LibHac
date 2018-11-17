@@ -9,7 +9,7 @@ namespace LibHac.Npdm
         public string Magic;
         public byte[] Rsa2048Signature { get; }
         public byte[] Rsa2048Modulus { get; }
-        public int Unknown1 { get; }
+        public int Size { get; }
         public int Flags { get; }
 
         public long TitleIdRangeMin { get; }
@@ -19,7 +19,9 @@ namespace LibHac.Npdm
         public ServiceAccessControl ServiceAccess { get; }
         public KernelAccessControl KernelAccess { get; }
 
-        public Acid(Stream stream, int offset)
+        public Validity SignatureValidity { get; }
+
+        public Acid(Stream stream, int offset, Keyset keyset)
         {
             stream.Seek(offset, SeekOrigin.Begin);
 
@@ -34,9 +36,13 @@ namespace LibHac.Npdm
                 throw new Exception("ACID Stream doesn't contain ACID section!");
             }
 
-            //Size field used with the above signature (?).
-            Unknown1 = reader.ReadInt32();
+            Size = reader.ReadInt32();
 
+            reader.BaseStream.Position = offset + 0x100;
+            byte[] signatureData = reader.ReadBytes(Size);
+            SignatureValidity = Crypto.Rsa2048PssVerify(signatureData, Rsa2048Signature, keyset.AcidFixedKeyModulus);
+
+            reader.BaseStream.Position = offset + 0x208;
             reader.ReadInt32();
 
             //Bit0 must be 1 on retail, on devunit 0 is also allowed. Bit1 is unknown.

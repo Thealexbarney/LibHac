@@ -24,7 +24,7 @@ namespace LibHac
             KeyRevision = FindKeyGeneration(keyset, headerStorage);
             Key = keyset.Package2Keys[KeyRevision];
 
-            Header = new Package2Header(headerStorage, Key);
+            Header = new Package2Header(headerStorage, keyset, KeyRevision);
 
             PackageSize = BitConverter.ToInt32(Header.Counter, 0) ^ BitConverter.ToInt32(Header.Counter, 8) ^
                           BitConverter.ToInt32(Header.Counter, 12);
@@ -115,11 +115,18 @@ namespace LibHac
         public int VersionMax { get; }
         public int VersionMin { get; }
 
-        public Package2Header(Storage storage, byte[] key)
+        public Validity SignatureValidity { get; }
+
+        public Package2Header(Storage storage, Keyset keyset, int keyGeneration)
         {
             var reader = new BinaryReader(storage.AsStream());
+            byte[] key = keyset.Package2Keys[keyGeneration];
 
             Signature = reader.ReadBytes(0x100);
+            byte[] sigData = reader.ReadBytes(0x100);
+            SignatureValidity = Crypto.Rsa2048PssVerify(sigData, Signature, keyset.Package2FixedKeyModulus);
+
+            reader.BaseStream.Position -= 0x100;
             Counter = reader.ReadBytes(0x10);
 
             Stream headerStream = new CachedStorage(new Aes128CtrStorage(storage.Slice(0x100), key, Counter, true), 0x4000, 4, true).AsStream();

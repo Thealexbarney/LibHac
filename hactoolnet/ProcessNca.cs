@@ -15,6 +15,7 @@ namespace hactoolnet
             {
                 var nca = new Nca(ctx.Keyset, file, false);
                 nca.ValidateMasterHashes();
+                nca.ParseNpdm();
 
                 if (ctx.Options.BaseNca != null)
                 {
@@ -123,8 +124,8 @@ namespace hactoolnet
 
             sb.AppendLine("NCA:");
             PrintItem(sb, colLen, "Magic:", nca.Header.Magic);
-            PrintItem(sb, colLen, "Fixed-Key Signature:", nca.Header.Signature1);
-            PrintItem(sb, colLen, "NPDM Signature:", nca.Header.Signature2);
+            PrintItem(sb, colLen, $"Fixed-Key Signature{nca.Header.FixedSigValidity.GetValidityString()}:", nca.Header.Signature1);
+            PrintItem(sb, colLen, $"NPDM Signature{nca.Header.NpdmSigValidity.GetValidityString()}:", nca.Header.Signature2);
             PrintItem(sb, colLen, "Content Size:", $"0x{nca.Header.NcaSize:x12}");
             PrintItem(sb, colLen, "TitleID:", $"{nca.Header.TitleId:X16}");
             PrintItem(sb, colLen, "SDK Version:", nca.Header.SdkVersion);

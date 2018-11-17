@@ -26,12 +26,22 @@ namespace LibHac
 
         public NcaFsHeader[] FsHeaders = new NcaFsHeader[4];
 
-        public NcaHeader(BinaryReader reader)
+        private byte[] SignatureData { get; }
+        public Validity FixedSigValidity { get; }
+        public Validity NpdmSigValidity { get; private set; }
+
+        public NcaHeader(BinaryReader reader, Keyset keyset)
         {
             Signature1 = reader.ReadBytes(0x100);
             Signature2 = reader.ReadBytes(0x100);
             Magic = reader.ReadAscii(4);
             if (Magic != "NCA3") throw new InvalidDataException("Not an NCA3 file");
+
+            reader.BaseStream.Position -= 4;
+            SignatureData = reader.ReadBytes(0x200);
+            FixedSigValidity = Crypto.Rsa2048PssVerify(SignatureData, Signature1, keyset.NcaHdrFixedKeyModulus);
+
+            reader.BaseStream.Position -= 0x200 - 4;
             Distribution = (DistributionType)reader.ReadByte();
             ContentType = (ContentType)reader.ReadByte();
             CryptoType = reader.ReadByte();
@@ -67,6 +77,11 @@ namespace LibHac
             {
                 FsHeaders[i] = new NcaFsHeader(reader);
             }
+        }
+
+        internal void ValidateNpdmSignature(byte[] modulus)
+        {
+            NpdmSigValidity = Crypto.Rsa2048PssVerify(SignatureData, Signature2, modulus);
         }
     }
 

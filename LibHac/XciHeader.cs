@@ -68,8 +68,8 @@ namespace LibHac
 
         public XciHeader(Keyset keyset, Stream stream)
         {
-
-            using (var reader = new BinaryReader(stream, Encoding.Default, true)) {
+            using (var reader = new BinaryReader(stream, Encoding.Default, true))
+            {
 
                 Signature = reader.ReadBytes(SignatureSize);
                 Magic = reader.ReadAscii(4);
@@ -82,14 +82,7 @@ namespace LibHac
                 byte[] sigData = reader.ReadBytes(SignatureSize);
                 reader.BaseStream.Position = SignatureSize + 4;
 
-                if (Crypto.Rsa2048Pkcs1Verify(sigData, Signature, _xciHeaderPubk))
-                {
-                    SignatureValidity = Validity.Valid;
-                }
-                else
-                {
-                    SignatureValidity = Validity.Invalid;
-                }
+                SignatureValidity = Crypto.Rsa2048Pkcs1Verify(sigData, Signature, _xciHeaderPubk);
 
                 RomAreaStartPage = reader.ReadInt32();
                 BackupAreaStartPage = reader.ReadInt32();
@@ -112,13 +105,15 @@ namespace LibHac
                 SelKey = reader.ReadInt32();
                 LimAreaPage = reader.ReadInt32();
 
-                if (!keyset.XciHeaderKey.IsEmpty()) {
+                if (!keyset.XciHeaderKey.IsEmpty())
+                {
 
                     byte[] encHeader = reader.ReadBytes(EncryptedHeaderSize);
                     var decHeader = new byte[EncryptedHeaderSize];
                     Crypto.DecryptCbc(keyset.XciHeaderKey, AesCbcIv, encHeader, decHeader, EncryptedHeaderSize);
 
-                    using (var decreader = new BinaryReader(new MemoryStream(decHeader))) {
+                    using (var decreader = new BinaryReader(new MemoryStream(decHeader)))
+                    {
                         FwVersion = decreader.ReadUInt64();
                         AccCtrl1 = (CardClockRate)decreader.ReadInt32();
                         Wait1TimeRead = decreader.ReadInt32();

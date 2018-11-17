@@ -21,6 +21,8 @@ namespace LibHac
         private Storage BaseStorage { get; }
         private Keyset Keyset { get; }
 
+        public Npdm.Npdm Npdm { get; private set; }
+
         private bool IsMissingTitleKey { get; set; }
         private string MissingKeyName { get; set; }
 
@@ -271,6 +273,19 @@ namespace LibHac
             }
         }
 
+        public void ParseNpdm()
+        {
+            if (Header.ContentType != ContentType.Program) return;
+
+            var pfs = new Pfs(OpenSection(ProgramPartitionType.Code, false, IntegrityCheckLevel.ErrorOnInvalid, true));
+
+            if (!pfs.TryOpenFile("main.npdm", out Storage npdmStorage)) return;
+
+            Npdm = new Npdm.Npdm(npdmStorage.AsStream(), Keyset);
+
+            Header.ValidateNpdmSignature(Npdm.AciD.Rsa2048Modulus);
+        }
+
         public Storage OpenDecryptedNca()
         {
             var list = new List<Storage> { OpenHeaderStorage() };
@@ -290,7 +305,7 @@ namespace LibHac
                 throw new MissingKeyException("Unable to decrypt NCA header.", "header_key", KeyType.Common);
             }
 
-            return new NcaHeader(new BinaryReader(OpenHeaderStorage().AsStream()));
+            return new NcaHeader(new BinaryReader(OpenHeaderStorage().AsStream()), Keyset);
         }
 
         private CachedStorage OpenHeaderStorage()

@@ -57,7 +57,7 @@ namespace hactoolnet
             sb.AppendLine();
 
             sb.AppendLine("PK21:");
-            PrintItem(sb, colLen, "Signature:", package2.Header.Signature);
+            PrintItem(sb, colLen, $"Signature{package2.Header.SignatureValidity.GetValidityString()}:", package2.Header.Signature);
             PrintItem(sb, colLen, "Header Version:", $"{package2.HeaderVersion:x2}");
 
             for (int i = 0; i < 3; i++)

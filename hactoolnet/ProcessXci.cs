@@ -155,8 +155,8 @@ namespace hactoolnet
             sb.AppendLine("XCI:");
 
             PrintItem(sb, colLen, "Magic:", xci.Header.Magic);
-            PrintItem(sb, colLen, $"Header Signature:{xci.Header.SignatureValidity.GetValidityString()}", xci.Header.Signature);
-            PrintItem(sb, colLen, $"Header Hash:{xci.Header.PartitionFsHeaderValidity.GetValidityString()}", xci.Header.PartitionFsHeaderHash);
+            PrintItem(sb, colLen, $"Header Signature{xci.Header.SignatureValidity.GetValidityString()}:", xci.Header.Signature);
+            PrintItem(sb, colLen, $"Header Hash{xci.Header.PartitionFsHeaderValidity.GetValidityString()}:", xci.Header.PartitionFsHeaderHash);
             PrintItem(sb, colLen, "Cartridge Type:", GetCartridgeType(xci.Header.RomSize));
             PrintItem(sb, colLen, "Cartridge Size:", $"0x{Util.MediaToReal(xci.Header.ValidDataEndPage + 1):x12}");
             PrintItem(sb, colLen, "Header IV:", xci.Header.AesCbcIv);
@@ -164,7 +164,6 @@ namespace hactoolnet
             foreach (XciPartition partition in xci.Partitions.OrderBy(x => x.Offset))
             {
                 PrintPartition(sb, colLen, partition);
-
             }
 
             return sb.ToString();

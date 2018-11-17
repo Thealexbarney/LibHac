@@ -24,7 +24,7 @@ namespace LibHac.Npdm
         public Aci0 Aci0 { get; }
         public Acid AciD { get; }
 
-        public Npdm(Stream stream)
+        public Npdm(Stream stream, Keyset keyset)
         {
             var reader = new BinaryReader(stream);
 
@@ -71,7 +71,7 @@ namespace LibHac.Npdm
             int acidSize   = reader.ReadInt32();
 
             Aci0 = new Aci0(stream, aci0Offset);
-            AciD = new Acid(stream, acidOffset);
+            AciD = new Acid(stream, acidOffset, keyset);
         }
     }
 }
