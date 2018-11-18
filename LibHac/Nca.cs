@@ -21,7 +21,7 @@ namespace LibHac
         private Storage BaseStorage { get; }
         private Keyset Keyset { get; }
 
-        public Npdm.Npdm Npdm { get; private set; }
+        public Npdm.NpdmBinary Npdm { get; private set; }
 
         private bool IsMissingTitleKey { get; set; }
         private string MissingKeyName { get; set; }
@@ -281,7 +281,7 @@ namespace LibHac
 
             if (!pfs.TryOpenFile("main.npdm", out Storage npdmStorage)) return;
 
-            Npdm = new Npdm.Npdm(npdmStorage.AsStream(), Keyset);
+            Npdm = new Npdm.NpdmBinary(npdmStorage.AsStream(), Keyset);
 
             Header.ValidateNpdmSignature(Npdm.AciD.Rsa2048Modulus);
         }

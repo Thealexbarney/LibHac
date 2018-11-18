@@ -8,7 +8,7 @@ namespace LibHac.Npdm
     //https://github.com/SciresM/hactool/blob/master/npdm.c
     //https://github.com/SciresM/hactool/blob/master/npdm.h
     //http://switchbrew.org/index.php?title=NPDM
-    public class Npdm
+    public class NpdmBinary
     {
         public string Magic;
         public bool   Is64Bits                { get; }
@@ -24,7 +24,7 @@ namespace LibHac.Npdm
         public Aci0 Aci0 { get; }
         public Acid AciD { get; }
 
-        public Npdm(Stream stream, Keyset keyset)
+        public NpdmBinary(Stream stream, Keyset keyset)
         {
             var reader = new BinaryReader(stream);
 
