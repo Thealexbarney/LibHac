@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.IO;
+using LibHac.IO;
 
 namespace LibHac
 {

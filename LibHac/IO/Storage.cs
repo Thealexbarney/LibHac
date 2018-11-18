@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using LibHac.IO;
 
-namespace LibHac
+namespace LibHac.IO
 {
     public abstract class Storage : IDisposable
     {
