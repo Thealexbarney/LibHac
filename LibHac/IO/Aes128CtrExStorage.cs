@@ -10,6 +10,8 @@ namespace LibHac.IO
         private List<long> SubsectionOffsets { get; }
         private BucketTree<AesSubsectionEntry> BucketTree { get; }
 
+        private readonly object _locker = new object();
+
         public Aes128CtrExStorage(Storage baseStorage, Storage bucketTreeHeader, Storage bucketTreeData, byte[] key, long counterOffset, byte[] ctrHi, bool leaveOpen)
             : base(baseStorage, key, counterOffset, ctrHi, leaveOpen)
         {
@@ -22,7 +24,6 @@ namespace LibHac.IO
         protected override int ReadImpl(Span<byte> destination, long offset)
         {
             AesSubsectionEntry entry = GetSubsectionEntry(offset);
-            UpdateCounterSubsection(entry.Counter);
 
             long inPos = offset;
             int outPos = 0;
@@ -31,7 +32,13 @@ namespace LibHac.IO
             while (remaining > 0)
             {
                 int bytesToRead = (int)Math.Min(entry.OffsetEnd - inPos, remaining);
-                int bytesRead = base.ReadImpl(destination.Slice(outPos, bytesToRead), inPos);
+                int bytesRead;
+
+                lock (_locker)
+                {
+                    UpdateCounterSubsection(entry.Counter);
+                    bytesRead = base.ReadImpl(destination.Slice(outPos, bytesToRead), inPos);
+                }
 
                 outPos += bytesRead;
                 inPos += bytesRead;
@@ -40,12 +47,23 @@ namespace LibHac.IO
                 if (remaining != 0 && inPos >= entry.OffsetEnd)
                 {
                     entry = entry.Next;
-                    UpdateCounterSubsection(entry.Counter);
                 }
             }
 
             return outPos;
         }
+
+        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void Flush()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool CanWrite => false;
 
         private AesSubsectionEntry GetSubsectionEntry(long offset)
         {

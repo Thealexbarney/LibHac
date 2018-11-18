@@ -64,6 +64,8 @@ namespace LibHac.IO
             throw new NotImplementedException();
         }
 
+        public override bool CanWrite => false;
+        
         public override long Length { get; }
 
         private RelocationEntry GetRelocationEntry(long offset)

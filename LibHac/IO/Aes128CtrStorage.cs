@@ -11,6 +11,7 @@ namespace LibHac.IO
         private readonly Aes128CtrTransform _decryptor;
 
         protected readonly byte[] Counter;
+        private readonly object _locker = new object();
 
         public Aes128CtrStorage(Storage baseStorage, byte[] key, byte[] counter, bool leaveOpen)
             : base(baseStorage, BlockSize, leaveOpen)
@@ -61,9 +62,11 @@ namespace LibHac.IO
             int bytesRead = base.ReadImpl(destination, offset);
             if (bytesRead == 0) return 0;
 
-            UpdateCounter(_counterOffset + offset);
-
-            return _decryptor.TransformBlock(destination);
+            lock (_locker)
+            {
+                UpdateCounter(_counterOffset + offset);
+                return _decryptor.TransformBlock(destination);
+            }
         }
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
@@ -74,8 +77,12 @@ namespace LibHac.IO
                 Span<byte> encryptedSpan = encrypted.AsSpan(0, source.Length);
                 source.CopyTo(encryptedSpan);
 
-                UpdateCounter(_counterOffset + offset);
-                _decryptor.TransformBlock(encryptedSpan);
+                lock (_locker)
+                {
+                    UpdateCounter(_counterOffset + offset);
+                    _decryptor.TransformBlock(encryptedSpan);
+                }
+
                 base.WriteImpl(encryptedSpan, offset);
             }
             finally

@@ -17,6 +17,7 @@ namespace LibHac.IO
         private IntegrityStorageType Type { get; }
 
         private readonly SHA256 _hash = SHA256.Create();
+        private readonly object _locker = new object();
 
         public IntegrityVerificationStorage(IntegrityVerificationInfo info, Storage hashStorage,
             IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
@@ -144,25 +145,28 @@ namespace LibHac.IO
 
         private byte[] DoHash(byte[] buffer, int offset, int count)
         {
-            _hash.Initialize();
-
-            if (Type == IntegrityStorageType.Save)
+            lock (_locker)
             {
-                _hash.TransformBlock(Salt, 0, Salt.Length, null, 0);
+                _hash.Initialize();
+
+                if (Type == IntegrityStorageType.Save)
+                {
+                    _hash.TransformBlock(Salt, 0, Salt.Length, null, 0);
+                }
+
+                _hash.TransformBlock(buffer, offset, count, null, 0);
+                _hash.TransformFinalBlock(buffer, 0, 0);
+
+                byte[] hash = _hash.Hash;
+
+                if (Type == IntegrityStorageType.Save)
+                {
+                    // This bit is set on all save hashes
+                    hash[0x1F] |= 0x80;
+                }
+
+                return hash;
             }
-
-            _hash.TransformBlock(buffer, offset, count, null, 0);
-            _hash.TransformFinalBlock(buffer, 0, 0);
-
-            byte[] hash = _hash.Hash;
-
-            if (Type == IntegrityStorageType.Save)
-            {
-                // This bit is set on all save hashes
-                hash[0x1F] |= 0x80;
-            }
-
-            return hash;
         }
 
         public override void Flush()
