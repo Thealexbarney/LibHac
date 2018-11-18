@@ -31,7 +31,7 @@ namespace LibHac.IO
             BlockValidities = new Validity[SectorCount];
         }
 
-        private int ReadImpl(Span<byte> destination, long offset, IntegrityCheckLevel integrityCheckLevel)
+        private void ReadImpl(Span<byte> destination, long offset, IntegrityCheckLevel integrityCheckLevel)
         {
             int count = destination.Length;
 
@@ -53,7 +53,7 @@ namespace LibHac.IO
             {
                 destination.Clear();
                 BlockValidities[blockIndex] = Validity.Valid;
-                return 0;
+                return;
             }
 
             byte[] dataBuffer = ArrayPool<byte>.Shared.Rent(SectorSize);
@@ -62,8 +62,8 @@ namespace LibHac.IO
                 BaseStorage.Read(dataBuffer, offset, count, 0);
                 dataBuffer.AsSpan(0, count).CopyTo(destination);
 
-                if (integrityCheckLevel == IntegrityCheckLevel.None) return 0;
-                if (BlockValidities[blockIndex] != Validity.Unchecked) return 0;
+                if (integrityCheckLevel == IntegrityCheckLevel.None) return;
+                if (BlockValidities[blockIndex] != Validity.Unchecked) return;
 
                 int bytesToHash = SectorSize;
 
@@ -88,8 +88,6 @@ namespace LibHac.IO
                 {
                     throw new InvalidDataException("Hash error!");
                 }
-
-                return 0;
             }
             finally
             {
@@ -97,9 +95,9 @@ namespace LibHac.IO
             }
         }
 
-        protected override int ReadImpl(Span<byte> destination, long offset)
+        protected override void ReadImpl(Span<byte> destination, long offset)
         {
-            return ReadImpl(destination, offset, IntegrityCheckLevel);
+            ReadImpl(destination, offset, IntegrityCheckLevel);
         }
 
         public void Read(Span<byte> destination, long offset, IntegrityCheckLevel integrityCheckLevel)

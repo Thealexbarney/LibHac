@@ -18,10 +18,10 @@ namespace LibHac.IO
         public override int Read(byte[] buffer, int offset, int count)
         {
             int toRead = (int) Math.Min(count, Length - Position);
-            int bytesRead = BaseStorage.Read(buffer, Position, toRead, offset);
+            BaseStorage.Read(buffer, Position, toRead, offset);
 
-            Position += bytesRead;
-            return bytesRead;
+            Position += toRead;
+            return toRead;
         }
 
         public override void Write(byte[] buffer, int offset, int count)

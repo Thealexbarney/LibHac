@@ -29,7 +29,7 @@ namespace LibHac.IO.Save
             if (!leaveOpen) ToDispose.Add(baseStorage);
         }
 
-        protected override int ReadImpl(Span<byte> destination, long offset)
+        protected override void ReadImpl(Span<byte> destination, long offset)
         {
             long inPos = offset;
             int outPos = 0;
@@ -44,14 +44,12 @@ namespace LibHac.IO.Save
 
                 int bytesToRead = Math.Min(remaining, BlockSize - blockPos);
 
-                int bytesRead = BaseStorage.Read(destination.Slice(outPos, bytesToRead), physicalOffset);
+                BaseStorage.Read(destination.Slice(outPos, bytesToRead), physicalOffset);
 
-                outPos += bytesRead;
-                inPos += bytesRead;
-                remaining -= bytesRead;
+                outPos += bytesToRead;
+                inPos += bytesToRead;
+                remaining -= bytesToRead;
             }
-
-            return outPos;
         }
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)

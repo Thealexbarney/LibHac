@@ -89,9 +89,9 @@ namespace LibHac.IO
             return initInfo;
         }
 
-        protected override int ReadImpl(Span<byte> destination, long offset)
+        protected override void ReadImpl(Span<byte> destination, long offset)
         {
-            return DataLevel.Read(destination, offset);
+            DataLevel.Read(destination, offset);
         }
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)

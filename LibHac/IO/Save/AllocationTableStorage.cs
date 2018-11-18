@@ -20,7 +20,7 @@ namespace LibHac.IO.Save
             InitialBlock = initialBlock;
         }
 
-        protected override int ReadImpl(Span<byte> destination, long offset)
+        protected override void ReadImpl(Span<byte> destination, long offset)
         {
             var iterator = new AllocationTableIterator(Fat, InitialBlock);
 
@@ -39,14 +39,12 @@ namespace LibHac.IO.Save
                 int remainingInSegment = iterator.CurrentSegmentSize * BlockSize - segmentPos;
                 int bytesToRead = Math.Min(remaining, remainingInSegment);
 
-                int bytesRead = BaseStorage.Read(destination.Slice(outPos, bytesToRead), physicalOffset);
+                BaseStorage.Read(destination.Slice(outPos, bytesToRead), physicalOffset);
 
-                outPos += bytesRead;
-                inPos += bytesRead;
-                remaining -= bytesRead;
+                outPos += bytesToRead;
+                inPos += bytesToRead;
+                remaining -= bytesToRead;
             }
-
-            return outPos;
         }
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)

@@ -20,12 +20,12 @@ namespace LibHac.IO
             if (!leaveOpen) ToDispose.Add(BaseStream);
         }
 
-        public override int Read(byte[] buffer, long offset, int count, int bufferOffset)
+        public override void Read(byte[] buffer, long offset, int count, int bufferOffset)
         {
             lock (Locker)
             {
                 BaseStream.Position = offset;
-                return BaseStream.Read(buffer, bufferOffset, count);
+                BaseStream.Read(buffer, bufferOffset, count);
             }
         }
 
@@ -38,7 +38,7 @@ namespace LibHac.IO
             }
         }
 
-        protected override int ReadImpl(Span<byte> destination, long offset)
+        protected override void ReadImpl(Span<byte> destination, long offset)
         {
 #if STREAM_SPAN
             lock (Locker)
@@ -48,16 +48,15 @@ namespace LibHac.IO
                     BaseStream.Position = offset;
                 }
 
-                return BaseStream.Read(destination);
+                BaseStream.Read(destination);
             }
 #else
             byte[] buffer = ArrayPool<byte>.Shared.Rent(destination.Length);
             try
             {
-                int numRead = Read(buffer, offset, destination.Length, 0);
+                Read(buffer, offset, destination.Length, 0);
 
-                new Span<byte>(buffer, 0, numRead).CopyTo(destination);
-                return numRead;
+                new Span<byte>(buffer, 0, destination.Length).CopyTo(destination);
             }
             finally { ArrayPool<byte>.Shared.Return(buffer); }
 #endif

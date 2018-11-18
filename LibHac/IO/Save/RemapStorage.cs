@@ -45,7 +45,7 @@ namespace LibHac.IO.Save
             Segments = InitSegments(Header, MapEntries);
         }
 
-        protected override int ReadImpl(Span<byte> destination, long offset)
+        protected override void ReadImpl(Span<byte> destination, long offset)
         {
             MapEntry entry = GetMapEntry(offset);
 
@@ -58,19 +58,17 @@ namespace LibHac.IO.Save
                 long entryPos = inPos - entry.VirtualOffset;
 
                 int bytesToRead = (int)Math.Min(entry.VirtualOffsetEnd - inPos, remaining);
-                int bytesRead = BaseStorage.Read(destination.Slice(outPos, bytesToRead), entry.PhysicalOffset + entryPos);
+                BaseStorage.Read(destination.Slice(outPos, bytesToRead), entry.PhysicalOffset + entryPos);
 
-                outPos += bytesRead;
-                inPos += bytesRead;
-                remaining -= bytesRead;
+                outPos += bytesToRead;
+                inPos += bytesToRead;
+                remaining -= bytesToRead;
 
                 if (inPos >= entry.VirtualOffsetEnd)
                 {
                     entry = entry.Next;
                 }
             }
-
-            return outPos;
         }
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)

@@ -11,10 +11,9 @@ namespace LibHac.IO
         public NullStorage(long length) => Length = length;
 
         public override long Length { get; }
-        protected override int ReadImpl(Span<byte> destination, long offset)
+        protected override void ReadImpl(Span<byte> destination, long offset)
         {
             destination.Clear();
-            return destination.Length;
         }
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)

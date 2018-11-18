@@ -28,9 +28,9 @@ namespace LibHac.IO
             Access = access;
         }
 
-        protected override int ReadImpl(Span<byte> destination, long offset)
+        protected override void ReadImpl(Span<byte> destination, long offset)
         {
-            return BaseStorage.Read(destination, offset + Offset);
+            BaseStorage.Read(destination, offset + Offset);
         }
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)

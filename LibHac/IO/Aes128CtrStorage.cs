@@ -57,15 +57,14 @@ namespace LibHac.IO
             Counter = _decryptor.Counter;
         }
 
-        protected override int ReadImpl(Span<byte> destination, long offset)
+        protected override void ReadImpl(Span<byte> destination, long offset)
         {
-            int bytesRead = base.ReadImpl(destination, offset);
-            if (bytesRead == 0) return 0;
+            base.ReadImpl(destination, offset);
 
             lock (_locker)
             {
                 UpdateCounter(_counterOffset + offset);
-                return _decryptor.TransformBlock(destination);
+                _decryptor.TransformBlock(destination);
             }
         }
 

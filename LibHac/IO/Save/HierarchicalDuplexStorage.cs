@@ -31,9 +31,9 @@ namespace LibHac.IO.Save
             Length = DataLayer.Length;
         }
 
-        protected override int ReadImpl(Span<byte> destination, long offset)
+        protected override void ReadImpl(Span<byte> destination, long offset)
         {
-            return DataLayer.Read(destination, offset);
+            DataLayer.Read(destination, offset);
         }
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)

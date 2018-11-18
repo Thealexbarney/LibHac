@@ -25,7 +25,7 @@ namespace LibHac.IO
             Length = length;
         }
 
-        protected override int ReadImpl(Span<byte> destination, long offset)
+        protected override void ReadImpl(Span<byte> destination, long offset)
         {
             long inPos = offset;
             int outPos = 0;
@@ -37,14 +37,12 @@ namespace LibHac.IO
                 long sourcePos = inPos - entry.StartOffset;
 
                 int bytesToRead = (int)Math.Min(entry.EndOffset - inPos, remaining);
-                int bytesRead = entry.Storage.Read(destination.Slice(outPos, bytesToRead), sourcePos);
+                entry.Storage.Read(destination.Slice(outPos, bytesToRead), sourcePos);
 
-                outPos += bytesRead;
-                inPos += bytesRead;
-                remaining -= bytesRead;
+                outPos += bytesToRead;
+                inPos += bytesToRead;
+                remaining -= bytesToRead;
             }
-
-            return outPos;
         }
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)

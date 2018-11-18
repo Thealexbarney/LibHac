@@ -10,24 +10,24 @@ namespace LibHac
         private bool _isDisposed;
         protected internal List<IDisposable> ToDispose { get; } = new List<IDisposable>();
 
-        protected abstract int ReadImpl(Span<byte> destination, long offset);
+        protected abstract void ReadImpl(Span<byte> destination, long offset);
         protected abstract void WriteImpl(ReadOnlySpan<byte> source, long offset);
         public abstract void Flush();
         public abstract long Length { get; }
 
         protected FileAccess Access { get; set; } = FileAccess.ReadWrite;
 
-        public int Read(Span<byte> destination, long offset)
+        public void Read(Span<byte> destination, long offset)
         {
             EnsureCanRead();
             ValidateSpanParameters(destination, offset);
-            return ReadImpl(destination, offset);
+            ReadImpl(destination, offset);
         }
 
-        public virtual int Read(byte[] buffer, long offset, int count, int bufferOffset)
+        public virtual void Read(byte[] buffer, long offset, int count, int bufferOffset)
         {
             ValidateArrayParameters(buffer, offset, count, bufferOffset);
-            return Read(buffer.AsSpan(bufferOffset, count), offset);
+            Read(buffer.AsSpan(bufferOffset, count), offset);
         }
 
         public void Write(ReadOnlySpan<byte> source, long offset)

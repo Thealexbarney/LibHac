@@ -21,7 +21,7 @@ namespace LibHac.IO.Save
             Length = DataA.Length;
         }
 
-        protected override int ReadImpl(Span<byte> destination, long offset)
+        protected override void ReadImpl(Span<byte> destination, long offset)
         {
             long inPos = offset;
             int outPos = 0;
@@ -36,14 +36,12 @@ namespace LibHac.IO.Save
 
                 Storage data = Bitmap.Bitmap[blockNum] ? DataB : DataA;
 
-                int bytesRead = data.Read(destination.Slice(outPos, bytesToRead), inPos);
+                data.Read(destination.Slice(outPos, bytesToRead), inPos);
 
-                outPos += bytesRead;
-                inPos += bytesRead;
-                remaining -= bytesRead;
+                outPos += bytesToRead;
+                inPos += bytesToRead;
+                remaining -= bytesToRead;
             }
-
-            return outPos;
         }
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)

@@ -42,7 +42,7 @@ namespace LibHac.IO
         }
 
         public override long Length { get; }
-        protected override int ReadImpl(Span<byte> destination, long offset)
+        protected override void ReadImpl(Span<byte> destination, long offset)
         {
             int size = destination.Length;
             long sectorIndex = offset / SectorSize;
@@ -53,8 +53,6 @@ namespace LibHac.IO
 
             _decryptor.TransformBlock(_tempBuffer, 0, size, (ulong)sectorIndex);
             _tempBuffer.AsSpan(0, size).CopyTo(destination);
-
-            return size;
         }
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)

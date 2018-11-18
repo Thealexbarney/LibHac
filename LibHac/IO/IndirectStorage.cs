@@ -16,7 +16,7 @@ namespace LibHac.IO
         {
             Sources.AddRange(sources);
 
-            if(!leaveOpen) ToDispose.AddRange(sources);
+            if (!leaveOpen) ToDispose.AddRange(sources);
 
             BucketTree = new BucketTree<RelocationEntry>(bucketTreeHeader, bucketTreeData);
 
@@ -26,7 +26,7 @@ namespace LibHac.IO
             Length = BucketTree.BucketOffsets.OffsetEnd;
         }
 
-        protected override int ReadImpl(Span<byte> destination, long offset)
+        protected override void ReadImpl(Span<byte> destination, long offset)
         {
             RelocationEntry entry = GetRelocationEntry(offset);
 
@@ -39,19 +39,17 @@ namespace LibHac.IO
                 long entryPos = inPos - entry.Offset;
 
                 int bytesToRead = (int)Math.Min(entry.OffsetEnd - inPos, remaining);
-                int bytesRead = Sources[entry.SourceIndex].Read(destination.Slice(outPos, bytesToRead), entry.SourceOffset + entryPos);
+                Sources[entry.SourceIndex].Read(destination.Slice(outPos, bytesToRead), entry.SourceOffset + entryPos);
 
-                outPos += bytesRead;
-                inPos += bytesRead;
-                remaining -= bytesRead;
+                outPos += bytesToRead;
+                inPos += bytesToRead;
+                remaining -= bytesToRead;
 
                 if (inPos >= entry.OffsetEnd)
                 {
                     entry = entry.Next;
                 }
             }
-
-            return outPos;
         }
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
@@ -65,7 +63,7 @@ namespace LibHac.IO
         }
 
         public override bool CanWrite => false;
-        
+
         public override long Length { get; }
 
         private RelocationEntry GetRelocationEntry(long offset)
