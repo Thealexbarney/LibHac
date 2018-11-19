@@ -3,17 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27703.2026
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibHac", "LibHac\LibHac.csproj", "{FFCA6C31-D9D4-4ED8-A06D-0CC6B94422B8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibHac", "src\LibHac\LibHac.csproj", "{FFCA6C31-D9D4-4ED8-A06D-0CC6B94422B8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "hactoolnet", "hactoolnet\hactoolnet.csproj", "{B1633A64-125F-40A3-9E15-654B4DE5FD98}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "hactoolnet", "src\hactoolnet\hactoolnet.csproj", "{B1633A64-125F-40A3-9E15-654B4DE5FD98}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibHac.Nand", "LibHac.Nand\LibHac.Nand.csproj", "{AB503D24-F702-4E6E-B615-A9C7BDA218D1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibHac.Nand", "src\LibHac.Nand\LibHac.Nand.csproj", "{AB503D24-F702-4E6E-B615-A9C7BDA218D1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NandReader", "NandReader\NandReader.csproj", "{9889C467-284F-4061-B4DB-EC94051C29C0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NandReader", "src\NandReader\NandReader.csproj", "{9889C467-284F-4061-B4DB-EC94051C29C0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NandReaderGui", "NandReaderGui\NandReaderGui.csproj", "{3CBD38B0-6575-4768-8E94-A8AF2D2C9F43}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NandReaderGui", "src\NandReaderGui\NandReaderGui.csproj", "{3CBD38B0-6575-4768-8E94-A8AF2D2C9F43}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibHac.Tests", "LibHac.Tests\LibHac.Tests.csproj", "{679C89BD-5FDF-4CC2-9129-ABABD759035B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibHac.Tests", "tests\LibHac.Tests\LibHac.Tests.csproj", "{679C89BD-5FDF-4CC2-9129-ABABD759035B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
