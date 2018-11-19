@@ -32,6 +32,7 @@ namespace hactoolnet
             new CliOption("debugoutdir", 1, (o, a) => o.DebugOutDir = a[0]),
             new CliOption("savedir", 1, (o, a) => o.SaveOutDir = a[0]),
             new CliOption("outdir", 1, (o, a) => o.OutDir = a[0]),
+            new CliOption("plaintext", 1, (o, a) => o.PlaintextOut = a[0]),
             new CliOption("nspout", 1, (o, a) => o.NspOut = a[0]),
             new CliOption("sdseed", 1, (o, a) => o.SdSeed = a[0]),
             new CliOption("sdpath", 1, (o, a) => o.SdPath = a[0]),
@@ -47,6 +48,7 @@ namespace hactoolnet
             new CliOption("listfiles", 0, (o, a) => o.ListFiles = true),
             new CliOption("sign", 0, (o, a) => o.SignSave = true),
             new CliOption("title", 1, (o, a) => o.TitleId = ParseTitleId(a[0])),
+            new CliOption("bench", 1, (o, a) => o.BenchType = a[0]),
         };
 
         public static Options Parse(string[] args)
@@ -99,7 +101,7 @@ namespace hactoolnet
                 i += option.ArgsNeeded;
             }
 
-            if (!inputSpecified && options.InFileType != FileType.Keygen && !options.RunCustom)
+            if (!inputSpecified && options.InFileType != FileType.Keygen && options.InFileType != FileType.Bench && !options.RunCustom)
             {
                 PrintWithUsage("Input file must be specified");
                 return null;

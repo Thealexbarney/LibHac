@@ -2,6 +2,7 @@
 using System.Reflection;
 using System.Text;
 using LibHac;
+using LibHac.IO;
 using static hactoolnet.Print;
 
 namespace hactoolnet
@@ -12,7 +13,7 @@ namespace hactoolnet
         {
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
             {
-                Pfs pfs = new Pfs(file);
+                Pfs pfs = new Pfs(file.AsStorage());
                 ctx.Logger.LogMessage(pfs.Print());
 
                 if (ctx.Options.OutDir != null)
@@ -68,7 +69,7 @@ namespace hactoolnet
 
             foreach (Nca nca in title.Ncas)
             {
-                builder.AddFile(nca.Filename, nca.GetStream());
+                builder.AddFile(nca.Filename, nca.GetStorage().AsStream());
             }
 
             var ticket = new Ticket

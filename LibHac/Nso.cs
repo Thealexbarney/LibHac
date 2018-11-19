@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 using System.IO;
-using LibHac.Streams;
+using LibHac.IO;
 
 namespace LibHac
 {
@@ -11,20 +11,20 @@ namespace LibHac
         public uint BssSize { get; }
         public byte[] BuildId { get; } = new byte[0x20];
 
-        private SharedStreamSource StreamSource { get; }
+        private IStorage Storage { get; }
 
-        public Nso(Stream stream)
+        public Nso(IStorage storage)
         {
-            StreamSource = new SharedStreamSource(stream);
-            var reader = new BinaryReader(StreamSource.CreateStream());
+            Storage = storage;
+            var reader = new BinaryReader(Storage.AsStream());
             if (reader.ReadAscii(4) != "NSO0")
                 throw new InvalidDataException("NSO magic is incorrect!");
             reader.ReadUInt32(); // Version
             reader.ReadUInt32(); // Reserved/Unused
             var flags = new BitArray(new[] { (int)reader.ReadUInt32() });
-            var textSection = new NsoSection(StreamSource);
-            var rodataSection = new NsoSection(StreamSource);
-            var dataSection = new NsoSection(StreamSource);
+            var textSection = new NsoSection(Storage);
+            var rodataSection = new NsoSection(Storage);
+            var dataSection = new NsoSection(Storage);
             textSection.IsCompressed = flags[0];
             rodataSection.IsCompressed = flags[1];
             dataSection.IsCompressed = flags[2];
@@ -58,7 +58,7 @@ namespace LibHac
 
         public class NsoSection
         {
-            private SharedStreamSource StreamSource { get; }
+            private IStorage Storage { get; }
 
             public bool IsCompressed { get; set; }
             public bool CheckHash { get; set; }
@@ -69,20 +69,20 @@ namespace LibHac
 
             public byte[] Hash { get; } = new byte[0x20];
 
-            public NsoSection(SharedStreamSource streamSource)
+            public NsoSection(IStorage storage)
             {
-                StreamSource = streamSource;
+                Storage = storage;
             }
 
-            public Stream OpenSection()
+            public IStorage OpenSection()
             {
-                return StreamSource.CreateStream(FileOffset, CompressedSize);
+                return Storage.Slice(FileOffset, CompressedSize);
             }
 
             public byte[] DecompressSection()
             {
                 var compressed = new byte[CompressedSize];
-                OpenSection().Read(compressed, 0, (int)CompressedSize);
+                OpenSection().Read(compressed, 0);
 
                 if (IsCompressed)
                     return Lz4.Decompress(compressed, (int)DecompressedSize);

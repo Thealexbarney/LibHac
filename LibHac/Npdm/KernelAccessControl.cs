@@ -66,7 +66,7 @@ namespace LibHac.Npdm
 
                             for (int sysCall = 0; sysCall < 0x18 && sysCallBase + sysCall < 0x80; sysCall++)
                             {
-                                Items[index].AllowedSvcs[sysCallBase + sysCall] = (descriptor & 1) != 0;
+                                items[index].AllowedSvcs[sysCallBase + sysCall] = (descriptor & 1) != 0;
 
                                 descriptor >>= 1;
                             }

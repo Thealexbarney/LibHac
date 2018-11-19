@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Text;
 using LibHac;
+using LibHac.IO;
 using static hactoolnet.Print;
 
 namespace hactoolnet
@@ -10,14 +11,15 @@ namespace hactoolnet
     {
         public static void Process(Context ctx)
         {
-            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
+            using (var file = new StreamStorage(new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read), false))
             {
                 var nca = new Nca(ctx.Keyset, file, false);
                 nca.ValidateMasterHashes();
+                nca.ParseNpdm();
 
                 if (ctx.Options.BaseNca != null)
                 {
-                    var baseFile = new FileStream(ctx.Options.BaseNca, FileMode.Open, FileAccess.Read);
+                    var baseFile = new StreamStorage(new FileStream(ctx.Options.BaseNca, FileMode.Open, FileAccess.Read), false);
                     var baseNca = new Nca(ctx.Keyset, baseFile, false);
                     nca.SetBaseNca(baseNca);
                 }
@@ -42,7 +44,7 @@ namespace hactoolnet
 
                 if (ctx.Options.ListRomFs && nca.Sections[1] != null)
                 {
-                    var romfs = new Romfs(nca.OpenSection(1, false, ctx.Options.IntegrityLevel));
+                    var romfs = new Romfs(nca.OpenSection(1, false, ctx.Options.IntegrityLevel, true));
 
                     foreach (RomfsFile romfsFile in romfs.Files)
                     {
@@ -73,7 +75,7 @@ namespace hactoolnet
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        var romfs = new Romfs(nca.OpenSection(section.SectionNum, false, ctx.Options.IntegrityLevel));
+                        var romfs = new Romfs(nca.OpenSection(section.SectionNum, false, ctx.Options.IntegrityLevel, true));
                         romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
                     }
                 }
@@ -105,6 +107,11 @@ namespace hactoolnet
                     }
                 }
 
+                if (ctx.Options.PlaintextOut != null)
+                {
+                    nca.OpenDecryptedNca().WriteAllBytes(ctx.Options.PlaintextOut, ctx.Logger);
+                }
+
                 ctx.Logger.LogMessage(nca.Print());
             }
         }
@@ -117,8 +124,8 @@ namespace hactoolnet
 
             sb.AppendLine("NCA:");
             PrintItem(sb, colLen, "Magic:", nca.Header.Magic);
-            PrintItem(sb, colLen, "Fixed-Key Signature:", nca.Header.Signature1);
-            PrintItem(sb, colLen, "NPDM Signature:", nca.Header.Signature2);
+            PrintItem(sb, colLen, $"Fixed-Key Signature{nca.Header.FixedSigValidity.GetValidityString()}:", nca.Header.Signature1);
+            PrintItem(sb, colLen, $"NPDM Signature{nca.Header.NpdmSigValidity.GetValidityString()}:", nca.Header.Signature2);
             PrintItem(sb, colLen, "Content Size:", $"0x{nca.Header.NcaSize:x12}");
             PrintItem(sb, colLen, "TitleID:", $"{nca.Header.TitleId:X16}");
             PrintItem(sb, colLen, "SDK Version:", nca.Header.SdkVersion);
@@ -174,7 +181,7 @@ namespace hactoolnet
                             PrintSha256Hash(sect);
                             break;
                         case NcaHashType.Ivfc:
-                            PrintIvfcHash(sb, colLen, 8, sect.Header.IvfcInfo, IntegrityStreamType.RomFs);
+                            PrintIvfcHash(sb, colLen, 8, sect.Header.IvfcInfo, IntegrityStorageType.RomFs);
                             break;
                         default:
                             sb.AppendLine("        Unknown/invalid superblock!");

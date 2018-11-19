@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace LibHac
@@ -46,19 +48,58 @@ namespace LibHac
             return true;
         }
 
-        public static bool IsEmpty(this byte[] array)
+        public static bool SpansEqual<T>(Span<T> a1, Span<T> a2)
         {
-            if (array == null) throw new ArgumentNullException(nameof(array));
+            if (a1 == a2) return true;
+            if (a1.Length != a2.Length) return false;
 
-            for (int i = 0; i < array.Length; i++)
+            for (int i = 0; i < a1.Length; i++)
             {
-                if (array[i] != 0)
+                if (!a1[i].Equals(a2[i]))
                 {
                     return false;
                 }
             }
 
             return true;
+        }
+
+        public static bool IsEmpty(this byte[] array) => ((ReadOnlySpan<byte>)array).IsEmpty();
+
+        public static bool IsEmpty(this ReadOnlySpan<byte> span)
+        {
+            if (span == null) throw new ArgumentNullException(nameof(span));
+
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (span[i] != 0)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public static void XorArrays(Span<byte> transformData, Span<byte> xorData)
+        {
+            int sisdStart = 0;
+            if (Vector.IsHardwareAccelerated)
+            {
+                Span<Vector<byte>> dataVec = MemoryMarshal.Cast<byte, Vector<byte>>(transformData);
+                Span<Vector<byte>> xorVec = MemoryMarshal.Cast<byte, Vector<byte>>(xorData);
+                sisdStart = dataVec.Length * Vector<byte>.Count;
+
+                for (int i = 0; i < dataVec.Length; i++)
+                {
+                    dataVec[i] ^= xorVec[i];
+                }
+            }
+
+            for (int i = sisdStart; i < transformData.Length; i++)
+            {
+                transformData[i] ^= xorData[i];
+            }
         }
 
         public static void CopyStream(this Stream input, Stream output, long length, IProgressReport progress = null)

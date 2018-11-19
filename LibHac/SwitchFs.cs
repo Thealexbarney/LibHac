@@ -4,8 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using LibHac.Save;
-using LibHac.Streams;
+using LibHac.IO;
+using LibHac.IO.Save;
 
 namespace LibHac
 {
@@ -66,25 +66,25 @@ namespace LibHac
                 try
                 {
                     bool isNax0;
-                    Stream stream = OpenSplitNcaStream(Fs, file);
-                    if (stream == null) continue;
+                    IStorage storage = OpenSplitNcaStream(Fs, file);
+                    if (storage == null) continue;
 
-                    using (var reader = new BinaryReader(stream, Encoding.Default, true))
+                    using (var reader = new BinaryReader(storage.AsStream(), Encoding.Default, true))
                     {
-                        stream.Position = 0x20;
+                        reader.BaseStream.Position = 0x20;
                         isNax0 = reader.ReadUInt32() == 0x3058414E; // NAX0
-                        stream.Position = 0;
+                        reader.BaseStream.Position = 0;
                     }
 
                     if (isNax0)
                     {
                         string sdPath = "/" + Util.GetRelativePath(file, ContentsDir).Replace('\\', '/');
-                        var nax0 = new Nax0(Keyset, stream, sdPath, false);
-                        nca = new Nca(Keyset, nax0.Stream, false);
+                        var nax0 = new Nax0(Keyset, storage, sdPath, false);
+                        nca = new Nca(Keyset, nax0.BaseStorage, false);
                     }
                     else
                     {
-                        nca = new Nca(Keyset, stream, false);
+                        nca = new Nca(Keyset, storage, false);
                     }
 
                     nca.NcaId = Path.GetFileNameWithoutExtension(file);
@@ -123,11 +123,11 @@ namespace LibHac
 
                 try
                 {
-                    Stream stream = Fs.OpenFile(file, FileMode.Open);
+                    IStorage storage = Fs.OpenFile(file, FileMode.Open).AsStorage();
 
                     string sdPath = "/" + Util.GetRelativePath(file, SaveDir).Replace('\\', '/');
-                    var nax0 = new Nax0(Keyset, stream, sdPath, false);
-                    save = new Savefile(Keyset, nax0.Stream, IntegrityCheckLevel.None);
+                    var nax0 = new Nax0(Keyset, storage, sdPath, false);
+                    save = new Savefile(Keyset, nax0.BaseStorage, IntegrityCheckLevel.None, true);
                 }
                 catch (Exception ex)
                 {
@@ -148,11 +148,11 @@ namespace LibHac
                 var title = new Title();
 
                 // Meta contents always have 1 Partition FS section with 1 file in it
-                Stream sect = nca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid);
+                IStorage sect = nca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid, true);
                 var pfs0 = new Pfs(sect);
-                Stream file = pfs0.OpenFile(pfs0.Files[0]);
+                IStorage file = pfs0.OpenFile(pfs0.Files[0]);
 
-                var metadata = new Cnmt(file);
+                var metadata = new Cnmt(file.AsStream());
                 title.Id = metadata.TitleId;
                 title.Version = metadata.TitleVersion;
                 title.Metadata = metadata;
@@ -188,10 +188,10 @@ namespace LibHac
         {
             foreach (Title title in Titles.Values.Where(x => x.ControlNca != null))
             {
-                var romfs = new Romfs(title.ControlNca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid));
-                Stream control = romfs.OpenFile("/control.nacp");
+                var romfs = new Romfs(title.ControlNca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid, true));
+                IStorage control = romfs.OpenFile("/control.nacp");
 
-                title.Control = new Nacp(control);
+                title.Control = new Nacp(control.AsStream());
 
                 foreach (NacpDescription desc in title.Control.Descriptions)
                 {
@@ -232,10 +232,10 @@ namespace LibHac
             }
         }
 
-        internal static Stream OpenSplitNcaStream(IFileSystem fs, string path)
+        internal static IStorage OpenSplitNcaStream(IFileSystem fs, string path)
         {
             var files = new List<string>();
-            var streams = new List<Stream>();
+            var storages = new List<IStorage>();
 
             if (fs.DirectoryExists(path))
             {
@@ -251,7 +251,7 @@ namespace LibHac
             {
                 if (Path.GetFileName(path) != "00")
                 {
-                    return fs.OpenFile(path, FileMode.Open, FileAccess.Read);
+                    return fs.OpenFile(path, FileMode.Open, FileAccess.Read).AsStorage();
                 }
                 files.Add(path);
             }
@@ -260,15 +260,19 @@ namespace LibHac
                 throw new FileNotFoundException("Could not find the input file or directory");
             }
 
-            foreach (string file in files)
+            if (files.Count == 1)
             {
-                streams.Add(fs.OpenFile(file, FileMode.Open, FileAccess.Read));
+                return fs.OpenFile(files[0], FileMode.Open, FileAccess.Read).AsStorage();
             }
 
-            if (streams.Count == 0) return null;
+            foreach (string file in files)
+            {
+                storages.Add(fs.OpenFile(file, FileMode.Open, FileAccess.Read).AsStorage());
+            }
 
-            var stream = new CombinationStream(streams);
-            return stream;
+            if (storages.Count == 0) return null; //todo
+
+            return new ConcatenationStorage(storages, true);
         }
 
         private void DisposeNcas()

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.IO;
-using LibHac.Streams;
+using LibHac.IO;
 
 namespace LibHac
 {
@@ -14,17 +14,17 @@ namespace LibHac
         public int PackageSize { get; }
         public int HeaderVersion { get; }
 
-        private SharedStreamSource StreamSource { get; }
+        private IStorage Storage { get; }
 
-        public Package2(Keyset keyset, Stream stream)
+        public Package2(Keyset keyset, IStorage storage)
         {
-            StreamSource = new SharedStreamSource(stream);
-            SharedStream headerStream = StreamSource.CreateStream(0, 0x200);
+            Storage = storage;
+            IStorage headerStorage = Storage.Slice(0, 0x200);
 
-            KeyRevision = FindKeyGeneration(keyset, headerStream);
+            KeyRevision = FindKeyGeneration(keyset, headerStorage);
             Key = keyset.Package2Keys[KeyRevision];
 
-            Header = new Package2Header(headerStream, Key);
+            Header = new Package2Header(headerStorage, keyset, KeyRevision);
 
             PackageSize = BitConverter.ToInt32(Header.Counter, 0) ^ BitConverter.ToInt32(Header.Counter, 8) ^
                           BitConverter.ToInt32(Header.Counter, 12);
@@ -37,14 +37,21 @@ namespace LibHac
             }
         }
 
-        public Stream OpenHeaderPart1()
+        public IStorage OpenDecryptedPackage()
         {
-            return StreamSource.CreateStream(0, 0x110);
+            IStorage[] storages = { OpenHeaderPart1(), OpenHeaderPart2(), OpenKernel(), OpenIni1() };
+
+            return new ConcatenationStorage(storages, true);
         }
 
-        public Stream OpenHeaderPart2()
+        private IStorage OpenHeaderPart1()
         {
-            SharedStream encStream = StreamSource.CreateStream(0x110, 0xF0);
+            return Storage.Slice(0, 0x110);
+        }
+
+        private IStorage OpenHeaderPart2()
+        {
+            IStorage encStorage = Storage.Slice(0x110, 0xF0);
 
             // The counter starts counting at 0x100, but the block at 0x100 isn't encrypted.
             // Increase the counter by one and start decrypting at 0x110.
@@ -52,42 +59,39 @@ namespace LibHac
             Array.Copy(Header.Counter, counter, 0x10);
             Util.IncrementByteArray(counter);
 
-            return new RandomAccessSectorStream(new Aes128CtrStream(encStream, Key, counter));
+            return new CachedStorage(new Aes128CtrStorage(encStorage, Key, counter, true), 0x4000, 4, true);
         }
 
-        public Stream OpenKernel()
+        public IStorage OpenKernel()
         {
             int offset = 0x200;
-            SharedStream encStream = StreamSource.CreateStream(offset, Header.SectionSizes[0]);
+            IStorage encStorage = Storage.Slice(offset, Header.SectionSizes[0]);
 
-            return new RandomAccessSectorStream(new Aes128CtrStream(encStream, Key, Header.SectionCounters[0]));
+            return new CachedStorage(new Aes128CtrStorage(encStorage, Key, Header.SectionCounters[0], true), 0x4000, 4, true);
         }
 
-        public Stream OpenIni1()
+        public IStorage OpenIni1()
         {
             int offset = 0x200 + Header.SectionSizes[0];
-            SharedStream encStream = StreamSource.CreateStream(offset, Header.SectionSizes[1]);
+            IStorage encStorage = Storage.Slice(offset, Header.SectionSizes[1]);
 
-            return new RandomAccessSectorStream(new Aes128CtrStream(encStream, Key, Header.SectionCounters[1]));
+            return new CachedStorage(new Aes128CtrStorage(encStorage, Key, Header.SectionCounters[1], true), 0x4000, 4, true);
         }
 
-        private int FindKeyGeneration(Keyset keyset, Stream stream)
+        private int FindKeyGeneration(Keyset keyset, IStorage storage)
         {
             var counter = new byte[0x10];
             var decBuffer = new byte[0x10];
 
-            stream.Position = 0x100;
-            stream.Read(counter, 0, 0x10);
+            storage.Read(counter, 0x100);
 
             for (int i = 0; i < 0x20; i++)
             {
-                var dec = new Aes128CtrStream(stream, keyset.Package2Keys[i], 0x100, 0x100, counter);
-                dec.Position = 0x50;
-                dec.Read(decBuffer, 0, 0x10);
+                var dec = new Aes128CtrStorage(storage.Slice(0x100), keyset.Package2Keys[i], counter, false);
+                dec.Read(decBuffer, 0x50);
 
                 if (BitConverter.ToUInt32(decBuffer, 0) == Pk21Magic)
                 {
-                    stream.Position = 0;
                     return i;
                 }
             }
@@ -111,14 +115,21 @@ namespace LibHac
         public int VersionMax { get; }
         public int VersionMin { get; }
 
-        public Package2Header(Stream stream, byte[] key)
+        public Validity SignatureValidity { get; }
+
+        public Package2Header(IStorage storage, Keyset keyset, int keyGeneration)
         {
-            var reader = new BinaryReader(stream);
+            var reader = new BinaryReader(storage.AsStream());
+            byte[] key = keyset.Package2Keys[keyGeneration];
 
             Signature = reader.ReadBytes(0x100);
+            byte[] sigData = reader.ReadBytes(0x100);
+            SignatureValidity = Crypto.Rsa2048PssVerify(sigData, Signature, keyset.Package2FixedKeyModulus);
+
+            reader.BaseStream.Position -= 0x100;
             Counter = reader.ReadBytes(0x10);
 
-            var headerStream = new RandomAccessSectorStream(new Aes128CtrStream(stream, key, 0x100, 0x100, Counter));
+            Stream headerStream = new CachedStorage(new Aes128CtrStorage(storage.Slice(0x100), key, Counter, true), 0x4000, 4, true).AsStream();
 
             headerStream.Position = 0x10;
             reader = new BinaryReader(headerStream);

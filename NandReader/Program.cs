@@ -3,8 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using LibHac;
+using LibHac.IO;
+using LibHac.IO.Save;
 using LibHac.Nand;
-using LibHac.Save;
 
 namespace NandReader
 {
@@ -102,9 +103,9 @@ namespace NandReader
         private static List<Ticket> ReadTickets(Keyset keyset, Stream savefile)
         {
             var tickets = new List<Ticket>();
-            var save = new Savefile(keyset, savefile, IntegrityCheckLevel.None);
-            var ticketList = new BinaryReader(save.OpenFile("/ticket_list.bin"));
-            var ticketFile = new BinaryReader(save.OpenFile("/ticket.bin"));
+            var save = new Savefile(keyset, savefile.AsStorage(), IntegrityCheckLevel.None, true);
+            var ticketList = new BinaryReader(save.OpenFile("/ticket_list.bin").AsStream());
+            var ticketFile = new BinaryReader(save.OpenFile("/ticket.bin").AsStream());
 
             ulong titleId = ticketList.ReadUInt64();
             while (titleId != ulong.MaxValue)

@@ -1,3 +1,4 @@
+// ReSharper disable InconsistentNaming
 namespace LibHac.Npdm
 {
     public enum FsPermissionRw : ulong

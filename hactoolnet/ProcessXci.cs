@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Text;
 using LibHac;
+using LibHac.IO;
 using static hactoolnet.Print;
 
 namespace hactoolnet
@@ -12,7 +13,7 @@ namespace hactoolnet
         {
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
             {
-                var xci = new Xci(ctx.Keyset, file);
+                var xci = new Xci(ctx.Keyset, file.AsStorage());
 
                 ctx.Logger.LogMessage(xci.Print());
 
@@ -108,7 +109,7 @@ namespace hactoolnet
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        var romfs = new Romfs(mainNca.OpenSection(romfsSection.SectionNum, false, ctx.Options.IntegrityLevel));
+                        var romfs = new Romfs(mainNca.OpenSection(romfsSection.SectionNum, false, ctx.Options.IntegrityLevel, true));
                         romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
                     }
 
@@ -132,8 +133,8 @@ namespace hactoolnet
 
             foreach (PfsFileEntry fileEntry in xci.SecurePartition.Files.Where(x => x.Name.EndsWith(".nca")))
             {
-                Stream ncaStream = xci.SecurePartition.OpenFile(fileEntry);
-                var nca = new Nca(ctx.Keyset, ncaStream, true);
+                IStorage ncaStorage = xci.SecurePartition.OpenFile(fileEntry);
+                var nca = new Nca(ctx.Keyset, ncaStorage, true);
 
                 if (nca.Header.ContentType == ContentType.Program)
                 {
@@ -154,8 +155,8 @@ namespace hactoolnet
             sb.AppendLine("XCI:");
 
             PrintItem(sb, colLen, "Magic:", xci.Header.Magic);
-            PrintItem(sb, colLen, $"Header Signature:{xci.Header.SignatureValidity.GetValidityString()}", xci.Header.Signature);
-            PrintItem(sb, colLen, $"Header Hash:{xci.Header.PartitionFsHeaderValidity.GetValidityString()}", xci.Header.PartitionFsHeaderHash);
+            PrintItem(sb, colLen, $"Header Signature{xci.Header.SignatureValidity.GetValidityString()}:", xci.Header.Signature);
+            PrintItem(sb, colLen, $"Header Hash{xci.Header.PartitionFsHeaderValidity.GetValidityString()}:", xci.Header.PartitionFsHeaderHash);
             PrintItem(sb, colLen, "Cartridge Type:", GetCartridgeType(xci.Header.RomSize));
             PrintItem(sb, colLen, "Cartridge Size:", $"0x{Util.MediaToReal(xci.Header.ValidDataEndPage + 1):x12}");
             PrintItem(sb, colLen, "Header IV:", xci.Header.AesCbcIv);
@@ -163,7 +164,6 @@ namespace hactoolnet
             foreach (XciPartition partition in xci.Partitions.OrderBy(x => x.Offset))
             {
                 PrintPartition(sb, colLen, partition);
-
             }
 
             return sb.ToString();

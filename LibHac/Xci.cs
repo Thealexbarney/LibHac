@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using LibHac.Streams;
+using LibHac.IO;
 
 namespace LibHac
 {
@@ -23,29 +22,29 @@ namespace LibHac
 
         public List<XciPartition> Partitions { get; } = new List<XciPartition>();
 
-        public Xci(Keyset keyset, Stream stream)
+        public Xci(Keyset keyset, IStorage storage)
         {
-            Header = new XciHeader(keyset, stream);
-            var hfs0Stream = new SubStream(stream, Header.PartitionFsHeaderAddress);
+            Header = new XciHeader(keyset, storage.AsStream());
+            IStorage hfs0Stream = storage.Slice(Header.PartitionFsHeaderAddress);
 
             RootPartition = new XciPartition(hfs0Stream)
             {
                 Name = RootPartitionName,
                 Offset = Header.PartitionFsHeaderAddress,
-                HashValidity = Header.PartitionFsHeaderValidity 
+                HashValidity = Header.PartitionFsHeaderValidity
             };
 
             Partitions.Add(RootPartition);
 
             foreach (PfsFileEntry file in RootPartition.Files)
             {
-                Stream partitionStream = RootPartition.OpenFile(file);
+                IStorage partitionStorage = RootPartition.OpenFile(file);
 
-                var partition = new XciPartition(partitionStream)
+                var partition = new XciPartition(partitionStorage)
                 {
                     Name = file.Name,
                     Offset = Header.PartitionFsHeaderAddress + RootPartition.HeaderSize + file.Offset,
-                   HashValidity = file.HashValidity
+                    HashValidity = file.HashValidity
                 };
 
                 Partitions.Add(partition);
@@ -64,6 +63,6 @@ namespace LibHac
         public long Offset { get; internal set; }
         public Validity HashValidity { get; set; } = Validity.Unchecked;
 
-        public XciPartition(Stream stream) : base(stream) { }
+        public XciPartition(IStorage storage) : base(storage) { }
     }
 }

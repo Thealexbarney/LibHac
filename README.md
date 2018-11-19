@@ -1,8 +1,8 @@
 # LibHac
 
-LibHac is a .NET or .NET Core library for opening, decrypting and extracting common content file formats used by the Nintendo Switch.
+LibHac is a .NET and .NET Core library for opening, decrypting and extracting common content file formats used by the Nintendo Switch.
 
-All content is imported and exported as .NET streams. This means that reading nested file types and encryptions can easily be done by linking different file readers together.  
+Most content is imported and exported using a standard `IStorage` interface. This means that reading nested file types and encryptions can easily be done by linking different file readers together.  
 For example, the files from a title stored on the external SD card can be read or extracted in this way.  
 `NAX0 Reader` -> `NCA Reader` -> `RomFS Reader` -> `Individual Files`
 

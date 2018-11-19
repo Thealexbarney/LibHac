@@ -1,4 +1,5 @@
 ﻿using LibHac;
+using LibHac.IO;
 
 namespace hactoolnet
 {
@@ -22,6 +23,7 @@ namespace hactoolnet
         public string DebugOutDir;
         public string SaveOutDir;
         public string OutDir;
+        public string PlaintextOut;
         public string SdSeed;
         public string NspOut;
         public string SdPath;
@@ -37,6 +39,7 @@ namespace hactoolnet
         public bool ListFiles;
         public bool SignSave;
         public ulong TitleId;
+        public string BenchType;
 
         public IntegrityCheckLevel IntegrityLevel
         {
@@ -63,7 +66,8 @@ namespace hactoolnet
         Pk11,
         Pk21,
         Kip1,
-        Ini1
+        Ini1,
+        Bench
     }
 
     internal class Context

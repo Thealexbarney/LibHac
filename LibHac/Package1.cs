@@ -1,6 +1,6 @@
 ﻿using System;
 using System.IO;
-using LibHac.Streams;
+using LibHac.IO;
 
 namespace LibHac
 {
@@ -16,12 +16,12 @@ namespace LibHac
         public int KeyRevision { get; }
         public Pk11 Pk11 { get; }
 
-        private SharedStreamSource StreamSource { get; }
+        private IStorage Storage { get; }
 
-        public Package1(Keyset keyset, Stream stream)
+        public Package1(Keyset keyset, IStorage storage)
         {
-            StreamSource = new SharedStreamSource(stream);
-            var reader = new BinaryReader(stream);
+            Storage = storage;
+            var reader = new BinaryReader(storage.AsStream());
 
             BuildHash = reader.ReadBytes(0x10);
             BuildDate = reader.ReadAscii(0xE);
@@ -34,20 +34,19 @@ namespace LibHac
             Counter = reader.ReadBytes(0x10);
 
             // Try decrypting the PK11 blob with all known package1 keys
-            Stream encStream = StreamSource.CreateStream(0x4000, Pk11Size);
+            IStorage encStorage = Storage.Slice(0x4000, Pk11Size);
             var decBuffer = new byte[0x10];
 
             for (int i = 0; i < 0x20; i++)
             {
-                var dec = new Aes128CtrStream(encStream, keyset.Package1Keys[i], Counter);
-                dec.Read(decBuffer, 0, 0x10);
+                var dec = new Aes128CtrStorage(encStorage, keyset.Package1Keys[i], Counter, true);
+                dec.Read(decBuffer, 0);
 
                 if (BitConverter.ToUInt32(decBuffer, 0) == Pk11Magic)
                 {
                     KeyRevision = i;
 
-                    dec.Position = 0;
-                    Pk11 = new Pk11(new RandomAccessSectorStream(dec));
+                    Pk11 = new Pk11(new CachedStorage(dec, 4, true));
 
                     return;
                 }
@@ -56,7 +55,14 @@ namespace LibHac
             throw new InvalidDataException("Failed to decrypt PK11! Is the correct key present?");
         }
 
-        public Stream OpenPackage1Ldr() => StreamSource.CreateStream(0, 0x4000);
+        public IStorage OpenDecryptedPackage()
+        {
+            IStorage[] storages = { OpenPackage1Ldr(), Pk11.OpenDecryptedPk11() };
+
+            return new ConcatenationStorage(storages, true);
+        }
+
+        public IStorage OpenPackage1Ldr() => Storage.Slice(0, 0x4000);
     }
 
     public class Pk11
@@ -67,12 +73,12 @@ namespace LibHac
         public int[] SectionSizes { get; } = new int[3];
         public int[] SectionOffsets { get; } = new int[3];
 
-        private SharedStreamSource StreamSource { get; }
+        private IStorage Storage { get; }
 
-        public Pk11(Stream stream)
+        public Pk11(IStorage storage)
         {
-            StreamSource = new SharedStreamSource(stream);
-            var reader = new BinaryReader(stream);
+            Storage = storage;
+            var reader = new BinaryReader(storage.AsStream());
 
             Magic = reader.ReadAscii(4);
             SectionSizes[0] = reader.ReadInt32();
@@ -89,21 +95,21 @@ namespace LibHac
             SectionOffsets[2] = SectionOffsets[1] + SectionSizes[1];
         }
 
-        public Stream OpenSection(int index)
+        public IStorage OpenSection(int index)
         {
             if (index < 0 || index > 2)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), "Section index must be one of: 0, 1, 2");
             }
 
-            return StreamSource.CreateStream(SectionOffsets[index], SectionSizes[index]);
+            return Storage.Slice(SectionOffsets[index], SectionSizes[index]);
         }
 
-        public Stream OpenDecryptedPk11() => StreamSource.CreateStream();
+        public IStorage OpenDecryptedPk11() => Storage;
 
-        public Stream OpenWarmboot() => OpenSection(GetWarmbootSection());
-        public Stream OpenNxBootloader() => OpenSection(GetNxBootloaderSection());
-        public Stream OpenSecureMonitor() => OpenSection(GetSecureMonitorSection());
+        public IStorage OpenWarmboot() => OpenSection(GetWarmbootSection());
+        public IStorage OpenNxBootloader() => OpenSection(GetNxBootloaderSection());
+        public IStorage OpenSecureMonitor() => OpenSection(GetSecureMonitorSection());
 
         // todo: Handle the old layout from before 2.0.0
         private int GetWarmbootSection() => 0;

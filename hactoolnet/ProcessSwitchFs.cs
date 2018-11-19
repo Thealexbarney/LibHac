@@ -4,7 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using LibHac;
-using LibHac.Save;
+using LibHac.IO;
+using LibHac.IO.Save;
 
 namespace hactoolnet
 {
@@ -95,7 +96,7 @@ namespace hactoolnet
 
                 if (ctx.Options.RomfsOutDir != null)
                 {
-                    var romfs = new Romfs(title.MainNca.OpenSection(section.SectionNum, false, ctx.Options.IntegrityLevel));
+                    var romfs = new Romfs(title.MainNca.OpenSection(section.SectionNum, false, ctx.Options.IntegrityLevel, true));
                     romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
                 }
 
@@ -202,7 +203,7 @@ namespace hactoolnet
 
             foreach (Nca nca in title.Ncas)
             {
-                Stream stream = nca.GetStream();
+                Stream stream = nca.GetStorage().AsStream();
                 string outFile = Path.Combine(saveDir, nca.Filename);
                 ctx.Logger.LogMessage(nca.Filename);
                 using (var outStream = new FileStream(outFile, FileMode.Create, FileAccess.ReadWrite))

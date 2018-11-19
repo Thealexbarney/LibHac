@@ -90,6 +90,9 @@ namespace hactoolnet
                 case FileType.Ini1:
                     ProcessKip.ProcessIni1(ctx);
                     break;
+                case FileType.Bench:
+                    ProcessBench.Process(ctx);
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -146,7 +149,7 @@ namespace hactoolnet
         // ReSharper disable once UnusedParameter.Local
         private static void CustomTask(Context ctx)
         {
-
+           
         }
     }
 }
