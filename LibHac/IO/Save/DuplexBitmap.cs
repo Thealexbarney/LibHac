@@ -6,10 +6,10 @@ namespace LibHac.IO.Save
 {
     public class DuplexBitmap
     {
-        private Storage Data { get; }
+        private IStorage Data { get; }
         public BitArray Bitmap { get; }
 
-        public DuplexBitmap(Storage bitmapStorage, int lengthBits)
+        public DuplexBitmap(IStorage bitmapStorage, int lengthBits)
         {
             Data = bitmapStorage;
             Bitmap = new BitArray(lengthBits);

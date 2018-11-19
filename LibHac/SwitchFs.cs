@@ -66,7 +66,7 @@ namespace LibHac
                 try
                 {
                     bool isNax0;
-                    Storage storage = OpenSplitNcaStream(Fs, file);
+                    IStorage storage = OpenSplitNcaStream(Fs, file);
                     if (storage == null) continue;
 
                     using (var reader = new BinaryReader(storage.AsStream(), Encoding.Default, true))
@@ -123,7 +123,7 @@ namespace LibHac
 
                 try
                 {
-                    Storage storage = Fs.OpenFile(file, FileMode.Open).AsStorage();
+                    IStorage storage = Fs.OpenFile(file, FileMode.Open).AsStorage();
 
                     string sdPath = "/" + Util.GetRelativePath(file, SaveDir).Replace('\\', '/');
                     var nax0 = new Nax0(Keyset, storage, sdPath, false);
@@ -148,9 +148,9 @@ namespace LibHac
                 var title = new Title();
 
                 // Meta contents always have 1 Partition FS section with 1 file in it
-                Storage sect = nca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid, true);
+                IStorage sect = nca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid, true);
                 var pfs0 = new Pfs(sect);
-                Storage file = pfs0.OpenFile(pfs0.Files[0]);
+                IStorage file = pfs0.OpenFile(pfs0.Files[0]);
 
                 var metadata = new Cnmt(file.AsStream());
                 title.Id = metadata.TitleId;
@@ -189,7 +189,7 @@ namespace LibHac
             foreach (Title title in Titles.Values.Where(x => x.ControlNca != null))
             {
                 var romfs = new Romfs(title.ControlNca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid, true));
-                Storage control = romfs.OpenFile("/control.nacp");
+                IStorage control = romfs.OpenFile("/control.nacp");
 
                 title.Control = new Nacp(control.AsStream());
 
@@ -232,10 +232,10 @@ namespace LibHac
             }
         }
 
-        internal static Storage OpenSplitNcaStream(IFileSystem fs, string path)
+        internal static IStorage OpenSplitNcaStream(IFileSystem fs, string path)
         {
             var files = new List<string>();
-            var storages = new List<Storage>();
+            var storages = new List<IStorage>();
 
             if (fs.DirectoryExists(path))
             {

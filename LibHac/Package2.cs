@@ -14,12 +14,12 @@ namespace LibHac
         public int PackageSize { get; }
         public int HeaderVersion { get; }
 
-        private Storage Storage { get; }
+        private IStorage Storage { get; }
 
-        public Package2(Keyset keyset, Storage storage)
+        public Package2(Keyset keyset, IStorage storage)
         {
             Storage = storage;
-            Storage headerStorage = Storage.Slice(0, 0x200);
+            IStorage headerStorage = Storage.Slice(0, 0x200);
 
             KeyRevision = FindKeyGeneration(keyset, headerStorage);
             Key = keyset.Package2Keys[KeyRevision];
@@ -37,21 +37,21 @@ namespace LibHac
             }
         }
 
-        public Storage OpenDecryptedPackage()
+        public IStorage OpenDecryptedPackage()
         {
-            Storage[] storages = { OpenHeaderPart1(), OpenHeaderPart2(), OpenKernel(), OpenIni1() };
+            IStorage[] storages = { OpenHeaderPart1(), OpenHeaderPart2(), OpenKernel(), OpenIni1() };
 
             return new ConcatenationStorage(storages, true);
         }
 
-        private Storage OpenHeaderPart1()
+        private IStorage OpenHeaderPart1()
         {
             return Storage.Slice(0, 0x110);
         }
 
-        private Storage OpenHeaderPart2()
+        private IStorage OpenHeaderPart2()
         {
-            Storage encStorage = Storage.Slice(0x110, 0xF0);
+            IStorage encStorage = Storage.Slice(0x110, 0xF0);
 
             // The counter starts counting at 0x100, but the block at 0x100 isn't encrypted.
             // Increase the counter by one and start decrypting at 0x110.
@@ -62,23 +62,23 @@ namespace LibHac
             return new CachedStorage(new Aes128CtrStorage(encStorage, Key, counter, true), 0x4000, 4, true);
         }
 
-        public Storage OpenKernel()
+        public IStorage OpenKernel()
         {
             int offset = 0x200;
-            Storage encStorage = Storage.Slice(offset, Header.SectionSizes[0]);
+            IStorage encStorage = Storage.Slice(offset, Header.SectionSizes[0]);
 
             return new CachedStorage(new Aes128CtrStorage(encStorage, Key, Header.SectionCounters[0], true), 0x4000, 4, true);
         }
 
-        public Storage OpenIni1()
+        public IStorage OpenIni1()
         {
             int offset = 0x200 + Header.SectionSizes[0];
-            Storage encStorage = Storage.Slice(offset, Header.SectionSizes[1]);
+            IStorage encStorage = Storage.Slice(offset, Header.SectionSizes[1]);
 
             return new CachedStorage(new Aes128CtrStorage(encStorage, Key, Header.SectionCounters[1], true), 0x4000, 4, true);
         }
 
-        private int FindKeyGeneration(Keyset keyset, Storage storage)
+        private int FindKeyGeneration(Keyset keyset, IStorage storage)
         {
             var counter = new byte[0x10];
             var decBuffer = new byte[0x10];
@@ -117,7 +117,7 @@ namespace LibHac
 
         public Validity SignatureValidity { get; }
 
-        public Package2Header(Storage storage, Keyset keyset, int keyGeneration)
+        public Package2Header(IStorage storage, Keyset keyset, int keyGeneration)
         {
             var reader = new BinaryReader(storage.AsStream());
             byte[] key = keyset.Package2Keys[keyGeneration];

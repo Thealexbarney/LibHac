@@ -18,7 +18,7 @@ namespace LibHac
         public byte[] TitleKeyDec { get; } = new byte[0x10];
         private bool LeaveOpen { get; }
         private Nca BaseNca { get; set; }
-        private Storage BaseStorage { get; }
+        private IStorage BaseStorage { get; }
         private Keyset Keyset { get; }
 
         public Npdm.NpdmBinary Npdm { get; private set; }
@@ -28,7 +28,7 @@ namespace LibHac
 
         public NcaSection[] Sections { get; } = new NcaSection[4];
 
-        public Nca(Keyset keyset, Storage storage, bool leaveOpen)
+        public Nca(Keyset keyset, IStorage storage, bool leaveOpen)
         {
             LeaveOpen = leaveOpen;
             BaseStorage = storage;
@@ -70,12 +70,12 @@ namespace LibHac
         }
 
         /// <summary>
-        /// Opens a <see cref="Storage"/> of the underlying NCA file.
+        /// Opens the <see cref="IStorage"/> of the underlying NCA file.
         /// </summary>
-        /// <returns>A <see cref="Storage"/> that provides access to the entire raw NCA file.</returns>
-        public Storage GetStorage()
+        /// <returns>The <see cref="IStorage"/> that provides access to the entire raw NCA file.</returns>
+        public IStorage GetStorage()
         {
-            return BaseStorage;
+            return BaseStorage.WithAccess(FileAccess.Read);
         }
 
         public bool CanOpenSection(int index)
@@ -88,7 +88,7 @@ namespace LibHac
             return sect.Header.EncryptionType == NcaEncryptionType.None || !IsMissingTitleKey && string.IsNullOrWhiteSpace(MissingKeyName);
         }
 
-        private Storage OpenRawSection(int index, bool leaveOpen)
+        private IStorage OpenRawSection(int index, bool leaveOpen)
         {
             if (index < 0 || index > 3) throw new ArgumentOutOfRangeException(nameof(index));
 
@@ -118,7 +118,7 @@ namespace LibHac
             //        $"Section offset (0x{offset:x}) and length (0x{size:x}) fall outside the total NCA length (0x{StreamSource.Length:x}).");
             //}
 
-            Storage rawStorage = BaseStorage.Slice(offset, size, leaveOpen);
+            IStorage rawStorage = BaseStorage.Slice(offset, size, leaveOpen);
 
             switch (sect.Header.EncryptionType)
             {
@@ -135,11 +135,11 @@ namespace LibHac
                     long bktrSize = size - bktrOffset;
                     long dataSize = info.RelocationHeader.Offset;
 
-                    Storage bucketTreeHeader = new MemoryStorage(sect.Header.BktrInfo.EncryptionHeader.Header);
-                    Storage bucketTreeData = new CachedStorage(new Aes128CtrStorage(rawStorage.Slice(bktrOffset, bktrSize, leaveOpen), DecryptedKeys[2], bktrOffset + offset, sect.Header.Ctr, leaveOpen), 4, leaveOpen);
+                    IStorage bucketTreeHeader = new MemoryStorage(sect.Header.BktrInfo.EncryptionHeader.Header);
+                    IStorage bucketTreeData = new CachedStorage(new Aes128CtrStorage(rawStorage.Slice(bktrOffset, bktrSize, leaveOpen), DecryptedKeys[2], bktrOffset + offset, sect.Header.Ctr, leaveOpen), 4, leaveOpen);
 
-                    Storage encryptionBucketTreeData = bucketTreeData.Slice(info.EncryptionHeader.Offset - bktrOffset);
-                    Storage decStorage = new Aes128CtrExStorage(rawStorage.Slice(0, dataSize, leaveOpen), bucketTreeHeader, encryptionBucketTreeData, DecryptedKeys[2], offset, sect.Header.Ctr, leaveOpen);
+                    IStorage encryptionBucketTreeData = bucketTreeData.Slice(info.EncryptionHeader.Offset - bktrOffset);
+                    IStorage decStorage = new Aes128CtrExStorage(rawStorage.Slice(0, dataSize, leaveOpen), bucketTreeHeader, encryptionBucketTreeData, DecryptedKeys[2], offset, sect.Header.Ctr, leaveOpen);
                     decStorage = new CachedStorage(decStorage, 0x4000, 4, leaveOpen);
 
                     return new ConcatenationStorage(new[] { decStorage, bucketTreeData }, leaveOpen);
@@ -158,9 +158,9 @@ namespace LibHac
         /// <param name="leaveOpen"><see langword="true"/> to leave the storage open after the <see cref="Nca"/> object is disposed; otherwise, <see langword="false"/>.</param>
         /// <returns>A <see cref="Stream"/> that provides access to the specified section. <see langword="null"/> if the section does not exist.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="index"/> is outside the valid range.</exception>
-        public Storage OpenSection(int index, bool raw, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
+        public IStorage OpenSection(int index, bool raw, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         {
-            Storage rawStorage = OpenRawSection(index, leaveOpen);
+            IStorage rawStorage = OpenRawSection(index, leaveOpen);
 
             NcaSection sect = Sections[index];
             NcaFsHeader header = sect.Header;
@@ -170,13 +170,13 @@ namespace LibHac
                 if (raw && BaseNca == null) return rawStorage;
 
                 BktrHeader bktrInfo = header.BktrInfo.RelocationHeader;
-                Storage patchStorage = rawStorage.Slice(0, bktrInfo.Offset, leaveOpen);
+                IStorage patchStorage = rawStorage.Slice(0, bktrInfo.Offset, leaveOpen);
 
                 if (BaseNca == null) return patchStorage;
 
-                Storage baseStorage = BaseNca.OpenSection(ProgramPartitionType.Data, true, IntegrityCheckLevel.None, leaveOpen);
-                Storage bktrHeader = new MemoryStorage(bktrInfo.Header);
-                Storage bktrData = rawStorage.Slice(bktrInfo.Offset, bktrInfo.Size, leaveOpen);
+                IStorage baseStorage = BaseNca.OpenSection(ProgramPartitionType.Data, true, IntegrityCheckLevel.None, leaveOpen);
+                IStorage bktrHeader = new MemoryStorage(bktrInfo.Header);
+                IStorage bktrData = rawStorage.Slice(bktrInfo.Offset, bktrInfo.Size, leaveOpen);
 
                 rawStorage = new IndirectStorage(bktrHeader, bktrData, leaveOpen, baseStorage, patchStorage);
             }
@@ -218,14 +218,14 @@ namespace LibHac
         /// <param name="leaveOpen"><see langword="true"/> to leave the storage open after the <see cref="Nca"/> object is disposed; otherwise, <see langword="false"/>.</param>
         /// <returns>A <see cref="Stream"/> that provides access to the specified section. <see langword="null"/> if the section does not exist.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="type"/> is outside the valid range.</exception>
-        public Storage OpenSection(ProgramPartitionType type, bool raw, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen) =>
+        public IStorage OpenSection(ProgramPartitionType type, bool raw, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen) =>
             OpenSection((int)type, raw, integrityCheckLevel, leaveOpen);
 
         private static HierarchicalIntegrityVerificationStorage InitIvfcForPartitionfs(Sha256Info sb,
-            Storage pfsStorage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
+            IStorage pfsStorage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         {
-            Storage hashStorage = pfsStorage.Slice(sb.HashTableOffset, sb.HashTableSize, leaveOpen);
-            Storage dataStorage = pfsStorage.Slice(sb.DataOffset, sb.DataSize, leaveOpen);
+            IStorage hashStorage = pfsStorage.Slice(sb.HashTableOffset, sb.HashTableSize, leaveOpen);
+            IStorage dataStorage = pfsStorage.Slice(sb.DataOffset, sb.DataSize, leaveOpen);
 
             var initInfo = new IntegrityVerificationInfo[3];
 
@@ -279,16 +279,16 @@ namespace LibHac
 
             var pfs = new Pfs(OpenSection(ProgramPartitionType.Code, false, IntegrityCheckLevel.ErrorOnInvalid, true));
 
-            if (!pfs.TryOpenFile("main.npdm", out Storage npdmStorage)) return;
+            if (!pfs.TryOpenFile("main.npdm", out IStorage npdmStorage)) return;
 
             Npdm = new Npdm.NpdmBinary(npdmStorage.AsStream(), Keyset);
 
             Header.ValidateNpdmSignature(Npdm.AciD.Rsa2048Modulus);
         }
 
-        public Storage OpenDecryptedNca()
+        public IStorage OpenDecryptedNca()
         {
-            var list = new List<Storage> { OpenHeaderStorage() };
+            var list = new List<IStorage> { OpenHeaderStorage() };
 
             foreach (NcaSection section in Sections.Where(x => x != null).OrderBy(x => x.Offset))
             {
@@ -401,7 +401,7 @@ namespace LibHac
                     break;
             }
 
-            Storage storage = OpenSection(index, true, IntegrityCheckLevel.None, true);
+            IStorage storage = OpenSection(index, true, IntegrityCheckLevel.None, true);
 
             var hashTable = new byte[size];
             storage.Read(hashTable, offset);
@@ -480,7 +480,7 @@ namespace LibHac
             if (index < 0 || index > 3) throw new IndexOutOfRangeException();
             if (nca.Sections[index] == null) return;
 
-            Storage storage = nca.OpenSection(index, raw, integrityCheckLevel, true);
+            IStorage storage = nca.OpenSection(index, raw, integrityCheckLevel, true);
             string dir = Path.GetDirectoryName(filename);
             if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
 
@@ -496,7 +496,7 @@ namespace LibHac
             if (nca.Sections[index] == null) return;
 
             NcaSection section = nca.Sections[index];
-            Storage storage = nca.OpenSection(index, false, integrityCheckLevel, true);
+            IStorage storage = nca.OpenSection(index, false, integrityCheckLevel, true);
 
             switch (section.Type)
             {

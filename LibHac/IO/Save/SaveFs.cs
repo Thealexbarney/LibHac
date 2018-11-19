@@ -5,8 +5,8 @@ namespace LibHac.IO.Save
 {
     public class SaveFs
     {
-        private Storage BaseStorage { get; }
-        private Storage HeaderStorage { get; }
+        private IStorage BaseStorage { get; }
+        private IStorage HeaderStorage { get; }
 
         public AllocationTable AllocationTable { get; }
         private SaveHeader Header { get; }
@@ -16,7 +16,7 @@ namespace LibHac.IO.Save
         public DirectoryEntry[] Directories { get; private set; }
         public Dictionary<string, FileEntry> FileDictionary { get; }
 
-        public SaveFs(Storage storage, Storage allocationTable, Storage header)
+        public SaveFs(IStorage storage, IStorage allocationTable, IStorage header)
         {
             HeaderStorage = header;
             BaseStorage = storage;
@@ -34,7 +34,7 @@ namespace LibHac.IO.Save
             FileDictionary = dictionary;
         }
 
-        public Storage OpenFile(string filename)
+        public IStorage OpenFile(string filename)
         {
             if (!FileDictionary.TryGetValue(filename, out FileEntry file))
             {
@@ -44,7 +44,7 @@ namespace LibHac.IO.Save
             return OpenFile(file);
         }
 
-        public Storage OpenFile(FileEntry file)
+        public IStorage OpenFile(FileEntry file)
         {
             if (file.BlockIndex < 0)
             {
@@ -57,8 +57,8 @@ namespace LibHac.IO.Save
 
         public bool FileExists(string filename) => FileDictionary.ContainsKey(filename);
 
-        public Storage GetBaseStorage() => BaseStorage.Clone(true, FileAccess.Read);
-        public Storage GetHeaderStorage() => HeaderStorage.Clone(true, FileAccess.Read);
+        public IStorage GetBaseStorage() => BaseStorage.WithAccess(FileAccess.Read);
+        public IStorage GetHeaderStorage() => HeaderStorage.WithAccess(FileAccess.Read);
 
         private void ReadFileInfo()
         {
@@ -112,7 +112,7 @@ namespace LibHac.IO.Save
             FsEntry.ResolveFilenames(Directories);
         }
 
-        private FileEntry[] ReadFileEntries(Storage storage)
+        private FileEntry[] ReadFileEntries(IStorage storage)
         {
             var reader = new BinaryReader(storage.AsStream());
             int count = reader.ReadInt32();
@@ -128,7 +128,7 @@ namespace LibHac.IO.Save
             return entries;
         }
 
-        private DirectoryEntry[] ReadDirEntries(Storage storage)
+        private DirectoryEntry[] ReadDirEntries(IStorage storage)
         {
             var reader = new BinaryReader(storage.AsStream());
             int count = reader.ReadInt32();
@@ -158,7 +158,7 @@ namespace LibHac.IO.Save
         public long BlockSize { get; }
 
 
-        public SaveHeader(Storage storage)
+        public SaveHeader(IStorage storage)
         {
             var reader = new BinaryReader(storage.AsStream());
 

@@ -7,7 +7,7 @@ namespace LibHac.IO.Save
     public class Savefile : IDisposable
     {
         public Header Header { get; }
-        public Storage BaseStorage { get; }
+        public IStorage BaseStorage { get; }
         public bool LeaveOpen { get; }
 
         public HierarchicalIntegrityVerificationStorage IvfcStorage { get; }
@@ -23,7 +23,7 @@ namespace LibHac.IO.Save
         public FileEntry[] Files => SaveFs.Files;
         public DirectoryEntry[] Directories => SaveFs.Directories;
 
-        public Savefile(Keyset keyset, Storage storage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
+        public Savefile(Keyset keyset, IStorage storage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         {
             BaseStorage = storage;
             LeaveOpen = leaveOpen;
@@ -31,9 +31,9 @@ namespace LibHac.IO.Save
             Header = new Header(keyset, BaseStorage);
             FsLayout layout = Header.Layout;
 
-            Storage dataRemapBase = BaseStorage.Slice(layout.FileMapDataOffset, layout.FileMapDataSize);
-            Storage dataRemapEntries = BaseStorage.Slice(layout.FileMapEntryOffset, layout.FileMapEntrySize);
-            Storage metadataRemapEntries = BaseStorage.Slice(layout.MetaMapEntryOffset, layout.MetaMapEntrySize);
+            IStorage dataRemapBase = BaseStorage.Slice(layout.FileMapDataOffset, layout.FileMapDataSize);
+            IStorage dataRemapEntries = BaseStorage.Slice(layout.FileMapEntryOffset, layout.FileMapEntrySize);
+            IStorage metadataRemapEntries = BaseStorage.Slice(layout.MetaMapEntryOffset, layout.MetaMapEntrySize);
 
             DataRemapStorage = new RemapStorage(dataRemapBase, Header.MainRemapHeader, dataRemapEntries, leaveOpen);
 
@@ -49,14 +49,14 @@ namespace LibHac.IO.Save
                 FreeBlockBitmap = MetaRemapStorage.Slice(layout.JournalFreeBitmapOffset, layout.JournalFreeBitmapSize),
             };
 
-            Storage journalData = DataRemapStorage.Slice(layout.JournalDataOffset,
+            IStorage journalData = DataRemapStorage.Slice(layout.JournalDataOffset,
                 layout.JournalDataSizeB + layout.JournalSize);
 
             JournalStorage = new JournalStorage(journalData, Header.JournalHeader, journalMapInfo, leaveOpen);
 
             IvfcStorage = InitJournalIvfcStorage(integrityCheckLevel);
 
-            Storage fatStorage = MetaRemapStorage.Slice(layout.FatOffset, layout.FatSize);
+            IStorage fatStorage = MetaRemapStorage.Slice(layout.FatOffset, layout.FatSize);
 
             if (Header.Layout.Version >= 0x50000)
             {
@@ -66,7 +66,7 @@ namespace LibHac.IO.Save
             SaveFs = new SaveFs(IvfcStorage, fatStorage, Header.SaveHeader);
         }
 
-        private static HierarchicalDuplexStorage InitDuplexStorage(Storage baseStorage, Header header)
+        private static HierarchicalDuplexStorage InitDuplexStorage(IStorage baseStorage, Header header)
         {
             FsLayout layout = header.Layout;
             var duplexLayers = new DuplexFsLayerInfo[3];
@@ -99,7 +99,7 @@ namespace LibHac.IO.Save
         {
             const int ivfcLevels = 5;
             IvfcHeader ivfc = Header.Ivfc;
-            var levels = new List<Storage> { Header.DataIvfcMaster };
+            var levels = new List<IStorage> { Header.DataIvfcMaster };
 
             for (int i = 0; i < ivfcLevels - 2; i++)
             {
@@ -119,12 +119,12 @@ namespace LibHac.IO.Save
                 IntegrityStorageType.Save, integrityCheckLevel, LeaveOpen);
         }
 
-        public Storage OpenFile(string filename)
+        public IStorage OpenFile(string filename)
         {
             return SaveFs.OpenFile(filename);
         }
 
-        public Storage OpenFile(FileEntry file)
+        public IStorage OpenFile(FileEntry file)
         {
             return SaveFs.OpenFile(file);
         }
@@ -191,7 +191,7 @@ namespace LibHac.IO.Save
         {
             foreach (FileEntry file in save.Files)
             {
-                Storage storage = save.OpenFile(file);
+                IStorage storage = save.OpenFile(file);
                 string outName = outDir + file.FullPath;
                 string dir = Path.GetDirectoryName(outName);
                 if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);

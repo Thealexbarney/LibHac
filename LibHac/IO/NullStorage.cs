@@ -3,7 +3,7 @@
 namespace LibHac.IO
 {
     /// <summary>
-    /// A <see cref="Storage"/> that returns all zeros when read, and does nothing on write.
+    /// An <see cref="IStorage"/> that returns all zeros when read, and does nothing on write.
     /// </summary>
     public class NullStorage : Storage
     {

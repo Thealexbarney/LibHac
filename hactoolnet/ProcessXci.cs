@@ -133,7 +133,7 @@ namespace hactoolnet
 
             foreach (PfsFileEntry fileEntry in xci.SecurePartition.Files.Where(x => x.Name.EndsWith(".nca")))
             {
-                Storage ncaStorage = xci.SecurePartition.OpenFile(fileEntry);
+                IStorage ncaStorage = xci.SecurePartition.OpenFile(fileEntry);
                 var nca = new Nca(ctx.Keyset, ncaStorage, true);
 
                 if (nca.Header.ContentType == ContentType.Program)

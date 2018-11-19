@@ -11,9 +11,9 @@ namespace LibHac
         public uint BssSize { get; }
         public byte[] BuildId { get; } = new byte[0x20];
 
-        private Storage Storage { get; }
+        private IStorage Storage { get; }
 
-        public Nso(Storage storage)
+        public Nso(IStorage storage)
         {
             Storage = storage;
             var reader = new BinaryReader(Storage.AsStream());
@@ -58,7 +58,7 @@ namespace LibHac
 
         public class NsoSection
         {
-            private Storage Storage { get; }
+            private IStorage Storage { get; }
 
             public bool IsCompressed { get; set; }
             public bool CheckHash { get; set; }
@@ -69,12 +69,12 @@ namespace LibHac
 
             public byte[] Hash { get; } = new byte[0x20];
 
-            public NsoSection(Storage storage)
+            public NsoSection(IStorage storage)
             {
                 Storage = storage;
             }
 
-            public Storage OpenSection()
+            public IStorage OpenSection()
             {
                 return Storage.Slice(FileOffset, CompressedSize);
             }

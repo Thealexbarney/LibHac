@@ -13,7 +13,7 @@ namespace LibHac.IO
         protected readonly byte[] Counter;
         private readonly object _locker = new object();
 
-        public Aes128CtrStorage(Storage baseStorage, byte[] key, byte[] counter, bool leaveOpen)
+        public Aes128CtrStorage(IStorage baseStorage, byte[] key, byte[] counter, bool leaveOpen)
             : base(baseStorage, BlockSize, leaveOpen)
         {
             if (key == null) throw new NullReferenceException(nameof(key));
@@ -34,12 +34,12 @@ namespace LibHac.IO
         /// <summary>
         /// Creates a new AES storage
         /// </summary>
-        /// <param name="baseStorage">The input <see cref="Storage"/>.</param>
+        /// <param name="baseStorage">The input <see cref="IStorage"/>.</param>
         /// <param name="key">The decryption key.</param>
         /// <param name="counterOffset">Offset to add to the counter.</param>
         /// <param name="counterHi">The value of the upper 64 bits of the counter. Can be null.</param>
         /// <param name="leaveOpen"><see langword="true"/> to leave the storage open after the <see cref="Aes128CtrStorage"/> object is disposed; otherwise, <see langword="false"/>.</param>
-        public Aes128CtrStorage(Storage baseStorage, byte[] key, long counterOffset, byte[] counterHi, bool leaveOpen)
+        public Aes128CtrStorage(IStorage baseStorage, byte[] key, long counterOffset, byte[] counterHi, bool leaveOpen)
             : base(baseStorage, BlockSize, leaveOpen)
         {
             if (key == null) throw new NullReferenceException(nameof(key));

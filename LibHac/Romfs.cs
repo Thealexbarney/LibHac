@@ -15,9 +15,9 @@ namespace LibHac
         public RomfsDir RootDir { get; }
 
         public Dictionary<string, RomfsFile> FileDict { get; }
-        private Storage BaseStorage { get; }
+        private IStorage BaseStorage { get; }
 
-        public Romfs(Storage storage)
+        public Romfs(IStorage storage)
         {
             BaseStorage = storage;
 
@@ -61,7 +61,7 @@ namespace LibHac
             FileDict = Files.ToDictionary(x => x.FullPath, x => x);
         }
 
-        public Storage OpenFile(string filename)
+        public IStorage OpenFile(string filename)
         {
             if (!FileDict.TryGetValue(filename, out RomfsFile file))
             {
@@ -71,14 +71,14 @@ namespace LibHac
             return OpenFile(file);
         }
 
-        public Storage OpenFile(RomfsFile file)
+        public IStorage OpenFile(RomfsFile file)
         {
             return BaseStorage.Slice(Header.DataOffset + file.DataOffset, file.DataLength);
         }
 
         public byte[] GetFile(string filename)
         {
-            Storage storage = OpenFile(filename);
+            IStorage storage = OpenFile(filename);
             var file = new byte[storage.Length];
 
             storage.Read(file, 0);
@@ -88,7 +88,7 @@ namespace LibHac
 
         public bool FileExists(string filename) => FileDict.ContainsKey(filename);
 
-        public Storage OpenRawStream() => BaseStorage.Slice(0);
+        public IStorage OpenRawStream() => BaseStorage.Slice(0);
 
         private void SetReferences()
         {
@@ -147,7 +147,7 @@ namespace LibHac
         {
             foreach (RomfsFile file in romfs.Files)
             {
-                Storage storage = romfs.OpenFile(file);
+                IStorage storage = romfs.OpenFile(file);
                 string outName = outDir + file.FullPath;
                 string dir = Path.GetDirectoryName(outName);
                 if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);

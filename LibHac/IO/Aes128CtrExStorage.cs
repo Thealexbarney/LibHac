@@ -12,7 +12,7 @@ namespace LibHac.IO
 
         private readonly object _locker = new object();
 
-        public Aes128CtrExStorage(Storage baseStorage, Storage bucketTreeHeader, Storage bucketTreeData, byte[] key, long counterOffset, byte[] ctrHi, bool leaveOpen)
+        public Aes128CtrExStorage(IStorage baseStorage, IStorage bucketTreeHeader, IStorage bucketTreeData, byte[] key, long counterOffset, byte[] ctrHi, bool leaveOpen)
             : base(baseStorage, key, counterOffset, ctrHi, leaveOpen)
         {
             BucketTree = new BucketTree<AesSubsectionEntry>(bucketTreeHeader, bucketTreeData);

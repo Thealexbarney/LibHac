@@ -22,10 +22,10 @@ namespace LibHac
 
         public List<XciPartition> Partitions { get; } = new List<XciPartition>();
 
-        public Xci(Keyset keyset, Storage storage)
+        public Xci(Keyset keyset, IStorage storage)
         {
             Header = new XciHeader(keyset, storage.AsStream());
-            Storage hfs0Stream = storage.Slice(Header.PartitionFsHeaderAddress);
+            IStorage hfs0Stream = storage.Slice(Header.PartitionFsHeaderAddress);
 
             RootPartition = new XciPartition(hfs0Stream)
             {
@@ -38,7 +38,7 @@ namespace LibHac
 
             foreach (PfsFileEntry file in RootPartition.Files)
             {
-                Storage partitionStorage = RootPartition.OpenFile(file);
+                IStorage partitionStorage = RootPartition.OpenFile(file);
 
                 var partition = new XciPartition(partitionStorage)
                 {
@@ -63,6 +63,6 @@ namespace LibHac
         public long Offset { get; internal set; }
         public Validity HashValidity { get; set; } = Validity.Unchecked;
 
-        public XciPartition(Storage storage) : base(storage) { }
+        public XciPartition(IStorage storage) : base(storage) { }
     }
 }

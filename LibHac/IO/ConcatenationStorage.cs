@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace LibHac.IO
 {
@@ -9,7 +8,7 @@ namespace LibHac.IO
         private ConcatSource[] Sources { get; }
         public override long Length { get; }
 
-        public ConcatenationStorage(IList<Storage> sources, bool leaveOpen)
+        public ConcatenationStorage(IList<IStorage> sources, bool leaveOpen)
         {
             Sources = new ConcatSource[sources.Count];
             if (!leaveOpen) ToDispose.AddRange(sources);
@@ -73,17 +72,17 @@ namespace LibHac.IO
             }
         }
 
-        public override Storage Slice(long start, long length, bool leaveOpen, FileAccess access)
+        public override Storage Slice(long start, long length, bool leaveOpen)
         {
             ConcatSource startSource = FindSource(start);
             ConcatSource endSource = FindSource(start + length - 1);
 
             if (startSource != endSource)
             {
-                return base.Slice(start, length, leaveOpen, access);
+                return base.Slice(start, length, leaveOpen);
             }
 
-            Storage storage = startSource.Storage.Slice(start - startSource.StartOffset, length, true, access);
+            Storage storage = startSource.Storage.Slice(start - startSource.StartOffset, length, true);
             if (!leaveOpen) storage.ToDispose.Add(this);
 
             return storage;
@@ -101,11 +100,11 @@ namespace LibHac.IO
 
         private class ConcatSource
         {
-            public Storage Storage { get; }
+            public IStorage Storage { get; }
             public long StartOffset { get; }
             public long EndOffset { get; }
 
-            public ConcatSource(Storage storage, long startOffset, long length)
+            public ConcatSource(IStorage storage, long startOffset, long length)
             {
                 Storage = storage;
                 StartOffset = startOffset;

@@ -5,8 +5,8 @@ namespace LibHac.IO.Save
 {
     public class JournalStorage : Storage
     {
-        private Storage BaseStorage { get; }
-        private Storage HeaderStorage { get; }
+        private IStorage BaseStorage { get; }
+        private IStorage HeaderStorage { get; }
         public JournalMap Map { get; }
 
         public JournalHeader Header { get; }
@@ -14,13 +14,13 @@ namespace LibHac.IO.Save
         public int BlockSize { get; }
         public override long Length { get; }
 
-        public JournalStorage(Storage baseStorage, Storage header, JournalMapParams mapInfo, bool leaveOpen)
+        public JournalStorage(IStorage baseStorage, IStorage header, JournalMapParams mapInfo, bool leaveOpen)
         {
             BaseStorage = baseStorage;
             HeaderStorage = header;
             Header = new JournalHeader(HeaderStorage);
 
-            Storage mapHeader = header.Slice(0x20, 0x10);
+            IStorage mapHeader = header.Slice(0x20, 0x10);
             Map = new JournalMap(mapHeader, mapInfo);
 
             BlockSize = (int)Header.BlockSize;
@@ -80,8 +80,8 @@ namespace LibHac.IO.Save
             BaseStorage.Flush();
         }
 
-        public Storage GetBaseStorage() => BaseStorage.Clone(true, FileAccess.Read);
-        public Storage GetHeaderStorage() => HeaderStorage.Clone(true, FileAccess.Read);
+        public IStorage GetBaseStorage() => BaseStorage.WithAccess(FileAccess.Read);
+        public IStorage GetHeaderStorage() => HeaderStorage.WithAccess(FileAccess.Read);
     }
 
     public class JournalHeader
@@ -92,7 +92,7 @@ namespace LibHac.IO.Save
         public long JournalSize { get; }
         public long BlockSize { get; }
 
-        public JournalHeader(Storage storage)
+        public JournalHeader(IStorage storage)
         {
             var reader = new BinaryReader(storage.AsStream());
 

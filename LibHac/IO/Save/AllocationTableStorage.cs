@@ -4,14 +4,14 @@ namespace LibHac.IO.Save
 {
     public class AllocationTableStorage : Storage
     {
-        private Storage BaseStorage { get; }
+        private IStorage BaseStorage { get; }
         private int BlockSize { get; }
         private int InitialBlock { get; }
         private AllocationTable Fat { get; }
 
         public override long Length { get; }
 
-        public AllocationTableStorage(Storage data, AllocationTable table, int blockSize, int initialBlock, long length)
+        public AllocationTableStorage(IStorage data, AllocationTable table, int blockSize, int initialBlock, long length)
         {
             BaseStorage = data;
             BlockSize = blockSize;

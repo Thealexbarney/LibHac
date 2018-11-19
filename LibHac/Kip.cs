@@ -13,9 +13,9 @@ namespace LibHac
         public int[] SectionOffsets { get; } = new int[6];
         public int Size { get; }
 
-        private Storage Storage { get; }
+        private IStorage Storage { get; }
 
-        public Kip(Storage storage)
+        public Kip(IStorage storage)
         {
             Storage = storage;
             Header = new KipHeader(Storage);
@@ -30,7 +30,7 @@ namespace LibHac
             }
         }
 
-        public Storage OpenSection(int index)
+        public IStorage OpenSection(int index)
         {
             if (index < 0 || index > 5)
             {
@@ -42,14 +42,14 @@ namespace LibHac
 
         public byte[] DecompressSection(int index)
         {
-            Storage compStream = OpenSection(index);
+            IStorage compStream = OpenSection(index);
             var compressed = new byte[compStream.Length];
             compStream.Read(compressed, 0);
 
             return DecompressBlz(compressed);
         }
 
-        public Storage OpenRawFile() => Storage;
+        public IStorage OpenRawFile() => Storage;
 
         private static byte[] DecompressBlz(byte[] compressed)
         {
@@ -119,7 +119,7 @@ namespace LibHac
         public KipSectionHeader[] Sections { get; } = new KipSectionHeader[6];
         public byte[] Capabilities { get; }
 
-        public KipHeader(Storage storage)
+        public KipHeader(IStorage storage)
         {
             var reader = new BinaryReader(storage.AsStream());
 
@@ -172,9 +172,9 @@ namespace LibHac
         public int Size { get; }
         public int KipCount { get; }
 
-        private Storage Storage { get; }
+        private IStorage Storage { get; }
 
-        public Ini1(Storage storage)
+        public Ini1(IStorage storage)
         {
             Storage = storage;
 

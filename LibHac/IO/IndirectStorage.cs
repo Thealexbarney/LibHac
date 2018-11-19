@@ -9,10 +9,10 @@ namespace LibHac.IO
         private List<RelocationEntry> RelocationEntries { get; }
         private List<long> RelocationOffsets { get; }
 
-        private List<Storage> Sources { get; } = new List<Storage>();
+        private List<IStorage> Sources { get; } = new List<IStorage>();
         private BucketTree<RelocationEntry> BucketTree { get; }
 
-        public IndirectStorage(Storage bucketTreeHeader, Storage bucketTreeData, bool leaveOpen, params Storage[] sources)
+        public IndirectStorage(IStorage bucketTreeHeader, IStorage bucketTreeData, bool leaveOpen, params IStorage[] sources)
         {
             Sources.AddRange(sources);
 

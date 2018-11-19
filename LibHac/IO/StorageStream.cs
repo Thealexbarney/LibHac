@@ -5,10 +5,10 @@ namespace LibHac.IO
 {
     public class StorageStream : Stream
     {
-        private Storage BaseStorage { get; }
+        private IStorage BaseStorage { get; }
         private bool LeaveOpen { get; }
 
-        public StorageStream(Storage baseStorage, bool leaveOpen)
+        public StorageStream(IStorage baseStorage, bool leaveOpen)
         {
             BaseStorage = baseStorage;
             LeaveOpen = leaveOpen;
@@ -58,9 +58,9 @@ namespace LibHac.IO
             throw new NotImplementedException();
         }
 
-        public override bool CanRead => BaseStorage.CanRead;
+        public override bool CanRead => true;
         public override bool CanSeek => true;
-        public override bool CanWrite => BaseStorage.CanWrite;
+        public override bool CanWrite => true;
         public override long Length { get; }
         public override long Position { get; set; }
 

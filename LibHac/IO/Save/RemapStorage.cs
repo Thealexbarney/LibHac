@@ -6,9 +6,9 @@ namespace LibHac.IO.Save
 {
     public class RemapStorage : Storage
     {
-        private Storage BaseStorage { get; }
-        private Storage HeaderStorage { get; }
-        private Storage MapEntryStorage { get; }
+        private IStorage BaseStorage { get; }
+        private IStorage HeaderStorage { get; }
+        private IStorage MapEntryStorage { get; }
 
         private RemapHeader Header { get; }
         public MapEntry[] MapEntries { get; set; }
@@ -19,12 +19,12 @@ namespace LibHac.IO.Save
         /// <summary>
         /// Creates a new <see cref="RemapStorage"/>
         /// </summary>
-        /// <param name="storage">A <see cref="Storage"/> of the main data of the RemapStream.
+        /// <param name="storage">A <see cref="IStorage"/> of the main data of the RemapStream.
         /// The <see cref="RemapStorage"/> object assumes complete ownership of the Storage.</param>
         /// <param name="header">The header for this RemapStorage.</param>
         /// <param name="mapEntries">The remapping entries for this RemapStorage.</param>
         /// <param name="leaveOpen"><see langword="true"/> to leave the storage open after the <see cref="RemapStorage"/> object is disposed; otherwise, <see langword="false"/>.</param>
-        public RemapStorage(Storage storage, Storage header, Storage mapEntries, bool leaveOpen)
+        public RemapStorage(IStorage storage, IStorage header, IStorage mapEntries, bool leaveOpen)
         {
             BaseStorage = storage;
             HeaderStorage = header;
@@ -102,9 +102,9 @@ namespace LibHac.IO.Save
             BaseStorage.Flush();
         }
 
-        public Storage GetBaseStorage() => BaseStorage.Clone(true, FileAccess.Read);
-        public Storage GetHeaderStorage() => HeaderStorage.Clone(true, FileAccess.Read);
-        public Storage GetMapEntryStorage() => MapEntryStorage.Clone(true, FileAccess.Read);
+        public IStorage GetBaseStorage() => BaseStorage.WithAccess(FileAccess.Read);
+        public IStorage GetHeaderStorage() => HeaderStorage.WithAccess(FileAccess.Read);
+        public IStorage GetMapEntryStorage() => MapEntryStorage.WithAccess(FileAccess.Read);
 
         private static RemapSegment[] InitSegments(RemapHeader header, MapEntry[] mapEntries)
         {
@@ -188,7 +188,7 @@ namespace LibHac.IO.Save
         public int MapSegmentCount { get; }
         public int SegmentBits { get; }
 
-        public RemapHeader(Storage storage)
+        public RemapHeader(IStorage storage)
         {
             var reader = new BinaryReader(storage.AsStream());
 

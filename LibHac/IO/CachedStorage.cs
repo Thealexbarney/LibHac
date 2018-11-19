@@ -6,13 +6,13 @@ namespace LibHac.IO
 {
     public class CachedStorage : Storage
     {
-        private Storage BaseStorage { get; }
+        private IStorage BaseStorage { get; }
         private int BlockSize { get; }
 
         private LinkedList<CacheBlock> Blocks { get; } = new LinkedList<CacheBlock>();
         private Dictionary<long, LinkedListNode<CacheBlock>> BlockDict { get; } = new Dictionary<long, LinkedListNode<CacheBlock>>();
 
-        public CachedStorage(Storage baseStorage, int blockSize, int cacheSize, bool leaveOpen)
+        public CachedStorage(IStorage baseStorage, int blockSize, int cacheSize, bool leaveOpen)
         {
             BaseStorage = baseStorage;
             BlockSize = blockSize;

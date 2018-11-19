@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using System.IO;
+﻿using System.IO;
 
 namespace LibHac.IO.Save
 {
@@ -8,13 +7,13 @@ namespace LibHac.IO.Save
         public JournalMapHeader Header { get; }
         private JournalMapEntry[] Entries { get; }
 
-        private Storage HeaderStorage { get; }
-        private Storage MapStorage { get; }
-        private Storage ModifiedPhysicalBlocks { get; }
-        private Storage ModifiedVirtualBlocks { get; }
-        private Storage FreeBlocks { get; }
+        private IStorage HeaderStorage { get; }
+        private IStorage MapStorage { get; }
+        private IStorage ModifiedPhysicalBlocks { get; }
+        private IStorage ModifiedVirtualBlocks { get; }
+        private IStorage FreeBlocks { get; }
 
-        public JournalMap(Storage header, JournalMapParams mapInfo)
+        public JournalMap(IStorage header, JournalMapParams mapInfo)
         {
             HeaderStorage = header;
             MapStorage = mapInfo.MapStorage;
@@ -31,7 +30,7 @@ namespace LibHac.IO.Save
             return Entries[virtualBlock].PhysicalIndex;
         }
 
-        private static JournalMapEntry[] ReadMapEntries(Storage mapTable, int count)
+        private static JournalMapEntry[] ReadMapEntries(IStorage mapTable, int count)
         {
             var tableReader = new BinaryReader(mapTable.AsStream());
             var map = new JournalMapEntry[count];
@@ -51,12 +50,11 @@ namespace LibHac.IO.Save
             return map;
         }
 
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public Storage GetMapStorage() => MapStorage.Clone(true, FileAccess.Read);
-        public Storage GetHeaderStorage() => HeaderStorage.Clone(true, FileAccess.Read);
-        public Storage GetModifiedPhysicalBlocksStorage() => ModifiedPhysicalBlocks.Clone(true, FileAccess.Read);
-        public Storage GetModifiedVirtualBlocksStorage() => ModifiedVirtualBlocks.Clone(true, FileAccess.Read);
-        public Storage GetFreeBlocksStorage() => FreeBlocks.Clone(true, FileAccess.Read);
+        public IStorage GetMapStorage() => MapStorage.WithAccess(FileAccess.Read);
+        public IStorage GetHeaderStorage() => HeaderStorage.WithAccess(FileAccess.Read);
+        public IStorage GetModifiedPhysicalBlocksStorage() => ModifiedPhysicalBlocks.WithAccess(FileAccess.Read);
+        public IStorage GetModifiedVirtualBlocksStorage() => ModifiedVirtualBlocks.WithAccess(FileAccess.Read);
+        public IStorage GetFreeBlocksStorage() => FreeBlocks.WithAccess(FileAccess.Read);
     }
 
     public class JournalMapHeader
@@ -66,7 +64,7 @@ namespace LibHac.IO.Save
         public int JournalBlockCount { get; }
         public int FieldC { get; }
 
-        public JournalMapHeader(Storage storage)
+        public JournalMapHeader(IStorage storage)
         {
             var reader = new BinaryReader(storage.AsStream());
 
@@ -79,9 +77,9 @@ namespace LibHac.IO.Save
 
     public class JournalMapParams
     {
-        public Storage MapStorage { get; set; }
-        public Storage PhysicalBlockBitmap { get; set; }
-        public Storage VirtualBlockBitmap { get; set; }
-        public Storage FreeBlockBitmap { get; set; }
+        public IStorage MapStorage { get; set; }
+        public IStorage PhysicalBlockBitmap { get; set; }
+        public IStorage VirtualBlockBitmap { get; set; }
+        public IStorage FreeBlockBitmap { get; set; }
     }
 }

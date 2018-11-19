@@ -9,7 +9,7 @@ namespace LibHac.IO
     {
         private const int DigestSize = 0x20;
 
-        private Storage HashStorage { get; }
+        private IStorage HashStorage { get; }
         public IntegrityCheckLevel IntegrityCheckLevel { get; }
         public Validity[] BlockValidities { get; }
 
@@ -19,7 +19,7 @@ namespace LibHac.IO
         private readonly SHA256 _hash = SHA256.Create();
         private readonly object _locker = new object();
 
-        public IntegrityVerificationStorage(IntegrityVerificationInfo info, Storage hashStorage,
+        public IntegrityVerificationStorage(IntegrityVerificationInfo info, IStorage hashStorage,
             IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
             : base(info.Data, info.BlockSize, leaveOpen)
         {
@@ -179,7 +179,7 @@ namespace LibHac.IO
     /// </summary>
     public class IntegrityVerificationInfo
     {
-        public Storage Data { get; set; }
+        public IStorage Data { get; set; }
         public int BlockSize { get; set; }
         public byte[] Salt { get; set; }
         public IntegrityStorageType Type { get; set; }

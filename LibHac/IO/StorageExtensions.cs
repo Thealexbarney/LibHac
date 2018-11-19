@@ -6,7 +6,44 @@ namespace LibHac.IO
 {
     public static class StorageExtensions
     {
-        public static void CopyTo(this Storage input, Storage output, IProgressReport progress = null)
+        public static Storage Slice(this IStorage storage, long start)
+        {
+            if (storage.Length == -1)
+            {
+                return storage.Slice(start, storage.Length);
+            }
+
+            return storage.Slice(start, storage.Length - start);
+        }
+
+        public static Storage Slice(this IStorage storage, long start, long length)
+        {
+            return storage.Slice(start, length, true);
+        }
+
+        public static Storage Slice(this IStorage storage, long start, long length, bool leaveOpen)
+        {
+            if (storage is Storage s)
+            {
+                return s.Slice(start, length, leaveOpen);
+            }
+
+            return new SubStorage(storage, start, length, leaveOpen);
+        }
+
+        public static Storage WithAccess(this IStorage storage, FileAccess access)
+        {
+            return storage.WithAccess(access, true);
+        }
+
+        public static Storage WithAccess(this IStorage storage, FileAccess access, bool leaveOpen)
+        {
+            return new SubStorage(storage, 0, storage.Length, leaveOpen, access);
+        }
+
+        public static Stream AsStream(this IStorage storage) => new StorageStream(storage, true);
+
+        public static void CopyTo(this IStorage input, IStorage output, IProgressReport progress = null)
         {
             const int bufferSize = 81920;
             long remaining = Math.Min(input.Length, output.Length);
@@ -39,7 +76,7 @@ namespace LibHac.IO
             progress?.SetTotal(0);
         }
 
-        public static void WriteAllBytes(this Storage input, string filename, IProgressReport progress = null)
+        public static void WriteAllBytes(this IStorage input, string filename, IProgressReport progress = null)
         {
             using (var outFile = new FileStream(filename, FileMode.Create, FileAccess.Write))
             {
@@ -47,7 +84,7 @@ namespace LibHac.IO
             }
         }
 
-        public static void CopyToStream(this Storage input, Stream output, long length, IProgressReport progress = null)
+        public static void CopyToStream(this IStorage input, Stream output, long length, IProgressReport progress = null)
         {
             const int bufferSize = 0x8000;
             long remaining = length;
@@ -67,7 +104,7 @@ namespace LibHac.IO
             }
         }
 
-        public static void CopyToStream(this Storage input, Stream output) => CopyToStream(input, output, input.Length);
+        public static void CopyToStream(this IStorage input, Stream output) => CopyToStream(input, output, input.Length);
 
         public static Storage AsStorage(this Stream stream)
         {

@@ -4,12 +4,12 @@ namespace LibHac.IO
 {
     public class SectorStorage : Storage
     {
-        protected Storage BaseStorage { get; }
+        protected IStorage BaseStorage { get; }
 
         public int SectorSize { get; }
         public int SectorCount { get; }
 
-        public SectorStorage(Storage baseStorage, int sectorSize, bool leaveOpen)
+        public SectorStorage(IStorage baseStorage, int sectorSize, bool leaveOpen)
         {
             BaseStorage = baseStorage;
             SectorSize = sectorSize;

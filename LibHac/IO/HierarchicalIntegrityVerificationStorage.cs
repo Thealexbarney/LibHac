@@ -8,8 +8,8 @@ namespace LibHac.IO
 {
     public class HierarchicalIntegrityVerificationStorage : Storage
     {
-        public Storage[] Levels { get; }
-        public Storage DataLevel { get; }
+        public IStorage[] Levels { get; }
+        public IStorage DataLevel { get; }
         public IntegrityCheckLevel IntegrityCheckLevel { get; }
 
         /// <summary>
@@ -22,7 +22,7 @@ namespace LibHac.IO
 
         public HierarchicalIntegrityVerificationStorage(IntegrityVerificationInfo[] levelInfo, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         {
-            Levels = new Storage[levelInfo.Length];
+            Levels = new IStorage[levelInfo.Length];
             IntegrityCheckLevel = integrityCheckLevel;
             LevelValidities = new Validity[levelInfo.Length - 1][];
             IntegrityStorages = new IntegrityVerificationStorage[levelInfo.Length - 1];
@@ -44,17 +44,17 @@ namespace LibHac.IO
             if (!leaveOpen) ToDispose.Add(DataLevel);
         }
 
-        public HierarchicalIntegrityVerificationStorage(IvfcHeader header, Storage masterHash, Storage data,
+        public HierarchicalIntegrityVerificationStorage(IvfcHeader header, IStorage masterHash, IStorage data,
             IntegrityStorageType type, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
             : this(header, ToStorageList(header, masterHash, data, leaveOpen), type, integrityCheckLevel, leaveOpen) { }
 
-        public HierarchicalIntegrityVerificationStorage(IvfcHeader header, IList<Storage> levels,
+        public HierarchicalIntegrityVerificationStorage(IvfcHeader header, IList<IStorage> levels,
             IntegrityStorageType type, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
             : this(GetIvfcInfo(header, levels, type), integrityCheckLevel, leaveOpen) { }
 
-        private static List<Storage> ToStorageList(IvfcHeader header, Storage masterHash, Storage data, bool leaveOpen)
+        private static List<IStorage> ToStorageList(IvfcHeader header, IStorage masterHash, IStorage data, bool leaveOpen)
         {
-            var levels = new List<Storage> { masterHash };
+            var levels = new List<IStorage> { masterHash };
 
             for (int i = 0; i < header.NumLevels - 1; i++)
             {
@@ -65,7 +65,7 @@ namespace LibHac.IO
             return levels;
         }
 
-        private static IntegrityVerificationInfo[] GetIvfcInfo(IvfcHeader ivfc, IList<Storage> levels, IntegrityStorageType type)
+        private static IntegrityVerificationInfo[] GetIvfcInfo(IvfcHeader ivfc, IList<IStorage> levels, IntegrityStorageType type)
         {
             var initInfo = new IntegrityVerificationInfo[ivfc.NumLevels];
 
@@ -212,7 +212,7 @@ namespace LibHac.IO
             MasterHash = reader.ReadBytes(0x20);
         }
 
-        public IvfcHeader(Storage storage) : this(new BinaryReader(storage.AsStream())) { }
+        public IvfcHeader(IStorage storage) : this(new BinaryReader(storage.AsStream())) { }
     }
 
     public class IvfcLevelHeader

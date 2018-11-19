@@ -15,10 +15,10 @@ namespace LibHac
         public byte[][] Keys { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x10);
         public byte[] Key { get; } = new byte[0x20];
         public long Length { get; private set; }
-        public Storage BaseStorage { get; }
+        public IStorage BaseStorage { get; }
         private bool LeaveOpen { get; }
 
-        public Nax0(Keyset keyset, Storage storage, string sdPath, bool leaveOpen)
+        public Nax0(Keyset keyset, IStorage storage, string sdPath, bool leaveOpen)
         {
             LeaveOpen = leaveOpen;
             ReadHeader(storage.AsStream());
@@ -40,7 +40,7 @@ namespace LibHac
             Length = reader.ReadInt64();
         }
 
-        private void DeriveKeys(Keyset keyset, string sdPath, Storage storage)
+        private void DeriveKeys(Keyset keyset, string sdPath, IStorage storage)
         {
             var validationHashKey = new byte[0x60];
             storage.Read(validationHashKey, 0x20);

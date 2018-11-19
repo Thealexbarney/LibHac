@@ -16,9 +16,9 @@ namespace LibHac
         public int KeyRevision { get; }
         public Pk11 Pk11 { get; }
 
-        private Storage Storage { get; }
+        private IStorage Storage { get; }
 
-        public Package1(Keyset keyset, Storage storage)
+        public Package1(Keyset keyset, IStorage storage)
         {
             Storage = storage;
             var reader = new BinaryReader(storage.AsStream());
@@ -34,7 +34,7 @@ namespace LibHac
             Counter = reader.ReadBytes(0x10);
 
             // Try decrypting the PK11 blob with all known package1 keys
-            Storage encStorage = Storage.Slice(0x4000, Pk11Size);
+            IStorage encStorage = Storage.Slice(0x4000, Pk11Size);
             var decBuffer = new byte[0x10];
 
             for (int i = 0; i < 0x20; i++)
@@ -55,14 +55,14 @@ namespace LibHac
             throw new InvalidDataException("Failed to decrypt PK11! Is the correct key present?");
         }
 
-        public Storage OpenDecryptedPackage()
+        public IStorage OpenDecryptedPackage()
         {
-            Storage[] storages = { OpenPackage1Ldr(), Pk11.OpenDecryptedPk11() };
+            IStorage[] storages = { OpenPackage1Ldr(), Pk11.OpenDecryptedPk11() };
 
             return new ConcatenationStorage(storages, true);
         }
 
-        public Storage OpenPackage1Ldr() => Storage.Slice(0, 0x4000);
+        public IStorage OpenPackage1Ldr() => Storage.Slice(0, 0x4000);
     }
 
     public class Pk11
@@ -73,9 +73,9 @@ namespace LibHac
         public int[] SectionSizes { get; } = new int[3];
         public int[] SectionOffsets { get; } = new int[3];
 
-        private Storage Storage { get; }
+        private IStorage Storage { get; }
 
-        public Pk11(Storage storage)
+        public Pk11(IStorage storage)
         {
             Storage = storage;
             var reader = new BinaryReader(storage.AsStream());
@@ -95,7 +95,7 @@ namespace LibHac
             SectionOffsets[2] = SectionOffsets[1] + SectionSizes[1];
         }
 
-        public Storage OpenSection(int index)
+        public IStorage OpenSection(int index)
         {
             if (index < 0 || index > 2)
             {
@@ -105,11 +105,11 @@ namespace LibHac
             return Storage.Slice(SectionOffsets[index], SectionSizes[index]);
         }
 
-        public Storage OpenDecryptedPk11() => Storage;
+        public IStorage OpenDecryptedPk11() => Storage;
 
-        public Storage OpenWarmboot() => OpenSection(GetWarmbootSection());
-        public Storage OpenNxBootloader() => OpenSection(GetNxBootloaderSection());
-        public Storage OpenSecureMonitor() => OpenSection(GetSecureMonitorSection());
+        public IStorage OpenWarmboot() => OpenSection(GetWarmbootSection());
+        public IStorage OpenNxBootloader() => OpenSection(GetNxBootloaderSection());
+        public IStorage OpenSecureMonitor() => OpenSection(GetSecureMonitorSection());
 
         // todo: Handle the old layout from before 2.0.0
         private int GetWarmbootSection() => 0;

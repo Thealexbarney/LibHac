@@ -31,7 +31,7 @@ namespace LibHac.Nand
 
         public Stream OpenProdInfo()
         {
-            Storage encStorage = ProdInfo.Open().AsStorage();
+            IStorage encStorage = ProdInfo.Open().AsStorage();
             var decStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Keyset.BisKeys[0], 0x4000, true), 0x4000, 4, true);
             decStorage.SetReadOnly();
             return decStorage.AsStream();
@@ -39,7 +39,7 @@ namespace LibHac.Nand
 
         public NandPartition OpenProdInfoF()
         {
-            Storage encStorage = ProdInfoF.Open().AsStorage();
+            IStorage encStorage = ProdInfoF.Open().AsStorage();
             var decStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Keyset.BisKeys[0], 0x4000, true), 0x4000, 4, true);
             decStorage.SetReadOnly();
             var fat = new FatFileSystem(decStorage.AsStream(), Ownership.None);
@@ -48,7 +48,7 @@ namespace LibHac.Nand
 
         public NandPartition OpenSafePartition()
         {
-            Storage encStorage = Safe.Open().AsStorage();
+            IStorage encStorage = Safe.Open().AsStorage();
             var decStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Keyset.BisKeys[1], 0x4000, true), 0x4000, 4, true);
             decStorage.SetReadOnly();
             var fat = new FatFileSystem(decStorage.AsStream(), Ownership.None);
@@ -57,7 +57,7 @@ namespace LibHac.Nand
 
         public NandPartition OpenSystemPartition()
         {
-            Storage encStorage = System.Open().AsStorage();
+            IStorage encStorage = System.Open().AsStorage();
             var decStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Keyset.BisKeys[2], 0x4000, true), 0x4000, 4, true);
             decStorage.SetReadOnly();
             var fat = new FatFileSystem(decStorage.AsStream(), Ownership.None);
@@ -66,7 +66,7 @@ namespace LibHac.Nand
 
         public NandPartition OpenUserPartition()
         {
-            Storage encStorage = User.Open().AsStorage();
+            IStorage encStorage = User.Open().AsStorage();
             var decStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Keyset.BisKeys[3], 0x4000, true), 0x4000, 4, true);
             decStorage.SetReadOnly();
             var fat = new FatFileSystem(decStorage.AsStream(), Ownership.None);

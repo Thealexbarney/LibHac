@@ -5,24 +5,24 @@ namespace LibHac.IO
 {
     public class SubStorage : Storage
     {
-        private Storage BaseStorage { get; }
+        private IStorage BaseStorage { get; }
         private long Offset { get; }
         public override long Length { get; }
 
-        public SubStorage(Storage baseStorage, long offset, long length)
+        public SubStorage(IStorage baseStorage, long offset, long length)
         {
             BaseStorage = baseStorage;
             Offset = offset;
             Length = length;
         }
 
-        public SubStorage(Storage baseStorage, long offset, long length, bool leaveOpen)
+        public SubStorage(IStorage baseStorage, long offset, long length, bool leaveOpen)
             : this(baseStorage, offset, length)
         {
             if (!leaveOpen) ToDispose.Add(BaseStorage);
         }
 
-        public SubStorage(Storage baseStorage, long offset, long length, bool leaveOpen, FileAccess access)
+        public SubStorage(IStorage baseStorage, long offset, long length, bool leaveOpen, FileAccess access)
             : this(baseStorage, offset, length, leaveOpen)
         {
             Access = access;
@@ -43,9 +43,9 @@ namespace LibHac.IO
             BaseStorage.Flush();
         }
 
-        public override Storage Slice(long start, long length, bool leaveOpen, FileAccess access)
+        public override Storage Slice(long start, long length, bool leaveOpen)
         {
-            Storage storage = BaseStorage.Slice(Offset + start, length, true, access);
+            Storage storage = BaseStorage.Slice(Offset + start, length, true);
             if (!leaveOpen) storage.ToDispose.Add(this);
 
             return storage;

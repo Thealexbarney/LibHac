@@ -4,13 +4,13 @@ namespace LibHac.IO.Save
 {
     public class AllocationTable
     {
-        private Storage BaseStorage { get; }
-        private Storage HeaderStorage { get; }
+        private IStorage BaseStorage { get; }
+        private IStorage HeaderStorage { get; }
 
         public AllocationTableEntry[] Entries { get; }
         public AllocationTableHeader Header { get; }
 
-        public AllocationTable(Storage storage, Storage header)
+        public AllocationTable(IStorage storage, IStorage header)
         {
             BaseStorage = storage;
             HeaderStorage = header;
@@ -32,8 +32,8 @@ namespace LibHac.IO.Save
             }
         }
 
-        public Storage GetBaseStorage() => BaseStorage.Clone(true, FileAccess.Read);
-        public Storage GetHeaderStorage() => HeaderStorage.Clone(true, FileAccess.Read);
+        public IStorage GetBaseStorage() => BaseStorage.WithAccess(FileAccess.Read);
+        public IStorage GetHeaderStorage() => HeaderStorage.WithAccess(FileAccess.Read);
     }
 
     public class AllocationTableEntry
@@ -72,7 +72,7 @@ namespace LibHac.IO.Save
         public int DirectoryTableBlock { get; }
         public int FileTableBlock { get; }
 
-        public AllocationTableHeader(Storage storage)
+        public AllocationTableHeader(IStorage storage)
         {
             var reader = new BinaryReader(storage.AsStream());
 

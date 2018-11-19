@@ -14,9 +14,9 @@ namespace LibHac
         public PfsFileEntry[] Files { get; }
 
         private Dictionary<string, PfsFileEntry> FileDict { get; }
-        private Storage BaseStorage { get; }
+        private IStorage BaseStorage { get; }
 
-        public Pfs(Storage storage)
+        public Pfs(IStorage storage)
         {
             using (var reader = new BinaryReader(storage.AsStream(), Encoding.Default, true))
             {
@@ -29,7 +29,7 @@ namespace LibHac
             BaseStorage = storage;
         }
 
-        public Storage OpenFile(string filename)
+        public IStorage OpenFile(string filename)
         {
             if (!FileDict.TryGetValue(filename, out PfsFileEntry file))
             {
@@ -39,7 +39,7 @@ namespace LibHac
             return OpenFile(file);
         }
 
-        public bool TryOpenFile(string filename, out Storage storage)
+        public bool TryOpenFile(string filename, out IStorage storage)
         {
             if (!FileDict.TryGetValue(filename, out PfsFileEntry file))
             {
@@ -51,7 +51,7 @@ namespace LibHac
             return true;
         }
 
-        public Storage OpenFile(PfsFileEntry file)
+        public IStorage OpenFile(PfsFileEntry file)
         {
             return BaseStorage.Slice(HeaderSize + file.Offset, file.Size);
         }
@@ -175,7 +175,7 @@ namespace LibHac
         {
             foreach (PfsFileEntry file in pfs.Header.Files)
             {
-                Storage storage = pfs.OpenFile(file);
+                IStorage storage = pfs.OpenFile(file);
                 string outName = Path.Combine(outDir, file.Name);
                 string dir = Path.GetDirectoryName(outName);
                 if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);

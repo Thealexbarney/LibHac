@@ -13,7 +13,7 @@ namespace LibHac.IO.Save
 
             for (int i = 0; i < Layers.Length; i++)
             {
-                Storage bitmap;
+                IStorage bitmap;
 
                 if (i == 0)
                 {
@@ -51,8 +51,8 @@ namespace LibHac.IO.Save
 
     public class DuplexFsLayerInfo
     {
-        public Storage DataA { get; set; }
-        public Storage DataB { get; set; }
+        public IStorage DataA { get; set; }
+        public IStorage DataB { get; set; }
         public DuplexInfo Info { get; set; }
     }
 }

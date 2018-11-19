@@ -4,7 +4,7 @@ using System.IO;
 
 namespace LibHac.IO
 {
-    public abstract class Storage : IDisposable
+    public abstract class Storage : IStorage
     {
         private bool _isDisposed;
         protected internal List<IDisposable> ToDispose { get; } = new List<IDisposable>();
@@ -42,36 +42,9 @@ namespace LibHac.IO
             Write(buffer.AsSpan(bufferOffset, count), offset);
         }
 
-        public Stream AsStream() => new StorageStream(this, true);
-
-        public Storage Slice(long start)
+        public virtual Storage Slice(long start, long length, bool leaveOpen)
         {
-            if (Length == -1)
-            {
-                return Slice(start, Length);
-            }
-
-            return Slice(start, Length - start);
-        }
-
-        public Storage Slice(long start, long length)
-        {
-            return Slice(start, length, true);
-        }
-
-        public Storage Slice(long start, long length, bool leaveOpen)
-        {
-            return Slice(start, length, leaveOpen, Access);
-        }
-
-        public virtual Storage Slice(long start, long length, bool leaveOpen, FileAccess access)
-        {
-            return new SubStorage(this, start, length, leaveOpen, access);
-        }
-
-        public Storage Clone(bool leaveOpen, FileAccess access)
-        {
-            return Slice(0, Length, leaveOpen, access);
+            return new SubStorage(this, start, length, leaveOpen);
         }
 
         protected virtual void Dispose(bool disposing)

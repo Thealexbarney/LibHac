@@ -5,20 +5,20 @@ namespace LibHac.IO.Save
 {
     public class Header
     {
-        public Storage MainStorage { get; }
-        public Storage MainHeader { get; }
-        public Storage DuplexHeader { get; }
-        public Storage DataIvfcHeader { get; }
-        public Storage JournalHeader { get; }
-        public Storage SaveHeader { get; }
-        public Storage MainRemapHeader { get; }
-        public Storage MetaDataRemapHeader { get; }
-        public Storage ExtraDataStorage { get; }
-        public Storage FatIvfcHeader { get; }
-        public Storage DuplexMasterBitmapA { get; }
-        public Storage DuplexMasterBitmapB { get; }
-        public Storage DataIvfcMaster { get; }
-        public Storage FatIvfcMaster { get; }
+        public IStorage MainStorage { get; }
+        public IStorage MainHeader { get; }
+        public IStorage DuplexHeader { get; }
+        public IStorage DataIvfcHeader { get; }
+        public IStorage JournalHeader { get; }
+        public IStorage SaveHeader { get; }
+        public IStorage MainRemapHeader { get; }
+        public IStorage MetaDataRemapHeader { get; }
+        public IStorage ExtraDataStorage { get; }
+        public IStorage FatIvfcHeader { get; }
+        public IStorage DuplexMasterBitmapA { get; }
+        public IStorage DuplexMasterBitmapB { get; }
+        public IStorage DataIvfcMaster { get; }
+        public IStorage FatIvfcMaster { get; }
 
         public byte[] Cmac { get; set; }
         public FsLayout Layout { get; set; }
@@ -28,14 +28,14 @@ namespace LibHac.IO.Save
 
         public ExtraData ExtraData { get; set; }
 
-        public Storage MasterHash { get; }
+        public IStorage MasterHash { get; }
 
         public Validity SignatureValidity { get; }
         public Validity HeaderHashValidity { get; }
 
         public byte[] Data { get; }
 
-        public Header(Keyset keyset, Storage storage)
+        public Header(Keyset keyset, IStorage storage)
         {
             MainStorage = storage;
             MainHeader = MainStorage.Slice(0x100, 0x200);
@@ -145,7 +145,7 @@ namespace LibHac.IO.Save
         public long FatIvfcL2Offset { get; set; }
         public long FatIvfcL2Size { get; set; }
 
-        public FsLayout(Storage storage)
+        public FsLayout(IStorage storage)
         {
             var reader = new BinaryReader(storage.AsStream());
 

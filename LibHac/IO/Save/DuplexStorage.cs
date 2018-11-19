@@ -5,12 +5,12 @@ namespace LibHac.IO.Save
     public class DuplexStorage : Storage
     {
         private int BlockSize { get; }
-        private Storage BitmapStorage { get; }
-        private Storage DataA { get; }
-        private Storage DataB { get; }
+        private IStorage BitmapStorage { get; }
+        private IStorage DataA { get; }
+        private IStorage DataB { get; }
         private DuplexBitmap Bitmap { get; }
 
-        public DuplexStorage(Storage dataA, Storage dataB, Storage bitmap, int blockSize)
+        public DuplexStorage(IStorage dataA, IStorage dataB, IStorage bitmap, int blockSize)
         {
             DataA = dataA;
             DataB = dataB;
@@ -34,7 +34,7 @@ namespace LibHac.IO.Save
 
                 int bytesToRead = Math.Min(remaining, BlockSize - blockPos);
 
-                Storage data = Bitmap.Bitmap[blockNum] ? DataB : DataA;
+                IStorage data = Bitmap.Bitmap[blockNum] ? DataB : DataA;
 
                 data.Read(destination.Slice(outPos, bytesToRead), inPos);
 
@@ -57,7 +57,7 @@ namespace LibHac.IO.Save
 
                 int bytesToWrite = Math.Min(remaining, BlockSize - blockPos);
 
-                Storage data = Bitmap.Bitmap[blockNum] ? DataB : DataA;
+                IStorage data = Bitmap.Bitmap[blockNum] ? DataB : DataA;
 
                 data.Write(source.Slice(outPos, bytesToWrite), inPos);
 

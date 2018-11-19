@@ -9,7 +9,7 @@ namespace hactoolnet
         private const int Size = 1024 * 1024 * 10;
         private const int Iterations = 100;
 
-        private static void CopyBenchmark(Storage src, Storage dst, int iterations, string label, IProgressReport logger)
+        private static void CopyBenchmark(IStorage src, IStorage dst, int iterations, string label, IProgressReport logger)
         {
             // Warmup
             src.CopyTo(dst);
@@ -36,8 +36,8 @@ namespace hactoolnet
                 case "aesctr":
                     {
 
-                        Storage decStorage = new MemoryStorage(new byte[Size]);
-                        Storage encStorage = new Aes128CtrStorage(new MemoryStorage(new byte[Size]), new byte[0x10], new byte[0x10], true);
+                        IStorage decStorage = new MemoryStorage(new byte[Size]);
+                        IStorage encStorage = new Aes128CtrStorage(new MemoryStorage(new byte[Size]), new byte[0x10], new byte[0x10], true);
 
                         CopyBenchmark(decStorage, encStorage, Iterations, "MemoryStorage Encrypt: ", ctx.Logger);
                         CopyBenchmark(encStorage, decStorage, Iterations, "MemoryStorage Decrypt: ", ctx.Logger);
@@ -59,8 +59,8 @@ namespace hactoolnet
 
                 case "aesxts":
                     {
-                        Storage decStorage = new MemoryStorage(new byte[Size]);
-                        Storage encStorage = new Aes128XtsStorage(new MemoryStorage(new byte[Size]), new byte[0x20], 81920, true);
+                        IStorage decStorage = new MemoryStorage(new byte[Size]);
+                        IStorage encStorage = new Aes128XtsStorage(new MemoryStorage(new byte[Size]), new byte[0x20], 81920, true);
 
                         CopyBenchmark(decStorage, encStorage, Iterations, "MemoryStorage Encrypt: ", ctx.Logger);
                         CopyBenchmark(encStorage, decStorage, Iterations, "MemoryStorage Decrypt: ", ctx.Logger);

@@ -11,7 +11,7 @@ namespace LibHac.IO
         public BucketTreeBucket<OffsetEntry> BucketOffsets { get; }
         public BucketTreeBucket<T>[] Buckets { get; }
 
-        public BucketTree(Storage header, Storage data)
+        public BucketTree(IStorage header, IStorage data)
         {
             Header = new BucketTreeHeader(header);
             var reader = new BinaryReader(data.AsStream());
@@ -50,9 +50,9 @@ namespace LibHac.IO
         public int NumEntries;
         public int Field1C;
 
-        public BucketTreeHeader(Storage stream)
+        public BucketTreeHeader(IStorage storage)
         {
-            var reader = new BinaryReader(stream.AsStream());
+            var reader = new BinaryReader(storage.AsStream());
 
             Magic = reader.ReadAscii(4);
             Version = reader.ReadInt32();
