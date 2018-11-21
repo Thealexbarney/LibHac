@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -49,18 +50,26 @@ class Build : NukeBuild
         .DependsOn(Clean)
         .Executes(() =>
         {
-            DotNetRestore(s => s
-                .SetProjectFile(Solution));
+            var settings = new DotNetRestoreSettings()
+                .SetProjectFile(Solution);
+
+            if (EnvironmentInfo.IsUnix) settings = settings.RemoveRuntimes("net46");
+
+            DotNetRestore(s => settings);
         });
 
     Target Compile => _ => _
         .DependsOn(Restore)
         .Executes(() =>
         {
-            DotNetBuild(s => s
+            var buildSettings = new DotNetBuildSettings()
                 .SetProjectFile(Solution)
                 .EnableNoRestore()
-                .SetConfiguration(Configuration));
+                .SetConfiguration(Configuration);
+
+            if (EnvironmentInfo.IsUnix) buildSettings = buildSettings.SetFramework("netcoreapp2.1");
+
+            DotNetBuild(s => buildSettings);
 
             var publishSettings = new DotNetPublishSettings()
                 .EnableNoRestore()
@@ -71,22 +80,40 @@ class Build : NukeBuild
                 .SetFramework("netcoreapp2.1")
                 .SetOutput(CliCoreDir));
 
-            DotNetPublish(s => publishSettings
-                .SetProject(HactoolnetProject)
-                .SetFramework("net46")
-                .SetOutput(CliFrameworkDir));
+            if (EnvironmentInfo.IsWin)
+            {
+                DotNetPublish(s => publishSettings
+                    .SetProject(HactoolnetProject)
+                    .SetFramework("net46")
+                    .SetOutput(CliFrameworkDir));
+            }
+
+            // Hack around OS newline differences
+            if (EnvironmentInfo.IsUnix)
+            {
+                foreach (string filename in Directory.EnumerateFiles(CliCoreDir, "*.json"))
+                {
+                    ReplaceLineEndings(filename);
+                }
+            }
         });
 
     Target Pack => _ => _
         .DependsOn(Compile)
         .Executes(() =>
         {
-            DotNetPack(s => s
+            var settings = new DotNetPackSettings()
                 .SetProject(LibHacProject)
                 .EnableNoBuild()
                 .SetConfiguration(Configuration)
                 .EnableIncludeSymbols()
-                .SetOutputDirectory(ArtifactsDirectory));
+                .SetOutputDirectory(ArtifactsDirectory);
+
+            if (EnvironmentInfo.IsUnix)
+                settings = settings.SetProperties(
+                    new Dictionary<string, object> { ["TargetFrameworks"] = "netcoreapp2.1" });
+
+            DotNetPack(s => settings);
         });
 
     Target Zip => _ => _
@@ -101,7 +128,7 @@ class Build : NukeBuild
                 .Concat(Directory.EnumerateFiles(CliCoreDir, "*.dll"))
                 .ToArray();
 
-            ZipFiles(CliFrameworkZip, namesFx);
+            if (EnvironmentInfo.IsWin) ZipFiles(CliFrameworkZip, namesFx);
             ZipFiles(CliCoreZip, namesCore);
 
             if (Host == HostType.AppVeyor)
@@ -127,7 +154,7 @@ class Build : NukeBuild
                     }
                 }
 
-                System.Console.WriteLine();
+                Console.WriteLine();
                 foreach (string filename in Directory.EnumerateFiles(CliCoreDir))
                 {
                     using (var stream = new FileStream(filename, FileMode.Open))
@@ -137,7 +164,7 @@ class Build : NukeBuild
                     }
                 }
 
-                System.Console.WriteLine();
+                Console.WriteLine();
                 foreach (string filename in Directory.EnumerateFiles(CliFrameworkDir))
                 {
                     using (var stream = new FileStream(filename, FileMode.Open))
@@ -193,5 +220,11 @@ class Build : NukeBuild
         proc.Start();
 
         proc.WaitForExit();
+    }
+
+    public static void ReplaceLineEndings(string filename)
+    {
+        string text = File.ReadAllText(filename);
+        File.WriteAllText(filename, text.Replace("\n", "\r\n"));
     }
 }

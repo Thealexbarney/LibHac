@@ -37,10 +37,16 @@ export NUGET_XMLDOC_MODE="skip"
 function FirstJsonValue {
     perl -nle 'print $1 if m{"'$1'": "([^"\-]+)",?}' <<< ${@:2}
 }
+trap "rm -f $DOTNET_GLOBAL_FILE" INT TERM EXIT
+
+dotnetCliVersion=$(cat DotnetCliVersion.txt)
+
+json="{\"sdk\":{\"version\":\"$dotnetCliVersion\"}}"
+    echo "$json" > $DOTNET_GLOBAL_FILE
 
 # If global.json exists, load expected version
 if [ -f "$DOTNET_GLOBAL_FILE" ]; then
-    DOTNET_VERSION=$(FirstJsonValue "version" $(cat "$DOTNET_GLOBAL_FILE"))
+    DOTNET_VERSION=$dotnetCliVersion
 fi
 
 # If dotnet is installed locally, and expected version is not set or installation matches the expected version
