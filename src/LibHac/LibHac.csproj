@@ -12,7 +12,7 @@
     <Description>A library for reading content formats used by the Nintendo Switch.</Description>
     <PackageTags>Nintendo;Switch;nca;xci;savefile</PackageTags>
     <PackageProjectUrl>https://github.com/Thealexbarney/LibHac</PackageProjectUrl>
-    <PackageLicenseUrl>https://github.com/Thealexbarney/LibHac/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/Thealexbarney/LibHac</RepositoryUrl>
 
@@ -30,10 +30,10 @@
     <DefineConstants>$(DefineConstants);STREAM_SPAN</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" Condition=" '$(TargetFramework)' == 'net46' " />
-    <PackageReference Include="System.Memory" Version="4.5.1" Condition=" '$(TargetFramework)' == 'net46' " />
-    <PackageReference Include="System.Buffers" Version="4.5.0" Condition=" '$(TargetFramework)' == 'net46' " />
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
+    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
+    <PackageReference Include="System.Memory" Version="4.5.1" />
+    <PackageReference Include="System.Buffers" Version="4.5.0" />
   </ItemGroup>
 
 </Project>
