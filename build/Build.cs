@@ -36,6 +36,7 @@ class Build : NukeBuild
     AbsolutePath CliMergedExe => ArtifactsDirectory / "hactoolnet.exe";
 
     Project LibHacProject => Solution.GetProject("LibHac").NotNull();
+    Project LibHacTestProject => Solution.GetProject("LibHac.Tests").NotNull();
     Project HactoolnetProject => Solution.GetProject("hactoolnet").NotNull();
 
     Target Clean => _ => _
@@ -116,6 +117,13 @@ class Build : NukeBuild
                     new Dictionary<string, object> { ["TargetFrameworks"] = "netcoreapp2.1" });
 
             DotNetPack(s => settings);
+
+            if (Host != HostType.AppVeyor) return;
+
+            foreach (string filename in Directory.EnumerateFiles(ArtifactsDirectory, "*.nupkg"))
+            {
+                PushArtifact(filename);
+            }
         });
 
     Target Merge => _ => _
@@ -135,6 +143,25 @@ class Build : NukeBuild
             };
 
             new ILRepack(cliOptions).Repack();
+
+            if (Host == HostType.AppVeyor)
+            {
+                PushArtifact(CliMergedExe);
+            }
+        });
+
+    Target Test => _ => _
+        .DependsOn(Compile)
+        .Executes(() =>
+        {
+            var settings = new DotNetTestSettings()
+                .SetProjectFile(LibHacTestProject)
+                .EnableNoBuild()
+                .SetConfiguration(Configuration);
+
+            if (EnvironmentInfo.IsUnix) settings = settings.SetFramework("netcoreapp2.1");
+
+            DotNetTest(s => settings);
         });
 
     Target Zip => _ => _
@@ -149,8 +176,14 @@ class Build : NukeBuild
                 .Concat(Directory.EnumerateFiles(CliCoreDir, "*.dll"))
                 .ToArray();
 
-            if (EnvironmentInfo.IsWin) ZipFiles(CliFrameworkZip, namesFx);
+            if (EnvironmentInfo.IsWin)
+            {
+                ZipFiles(CliFrameworkZip, namesFx);
+                Console.WriteLine($"Created {CliFrameworkZip}");
+            }
+
             ZipFiles(CliCoreZip, namesCore);
+            Console.WriteLine($"Created {CliCoreZip}");
 
             if (Host == HostType.AppVeyor)
             {
@@ -161,7 +194,7 @@ class Build : NukeBuild
         });
 
     Target Results => _ => _
-        .DependsOn(Zip, Merge)
+        .DependsOn(Test, Zip, Merge)
         .Executes(() =>
         {
             Console.WriteLine("SHA-1:");
@@ -203,8 +236,7 @@ class Build : NukeBuild
     {
         if (!File.Exists(path))
         {
-
-            Console.WriteLine(path);
+            Console.WriteLine($"Unable to add artifact {path}");
         }
 
         var psi = new ProcessStartInfo
@@ -216,7 +248,7 @@ class Build : NukeBuild
             RedirectStandardError = true
         };
 
-        Process proc = new Process
+        var proc = new Process
         {
             StartInfo = psi
         };
@@ -224,6 +256,8 @@ class Build : NukeBuild
         proc.Start();
 
         proc.WaitForExit();
+
+        Console.WriteLine($"Added AppVeyor artifact {path}");
     }
 
     public static void ReplaceLineEndings(string filename)
