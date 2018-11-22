@@ -12,23 +12,13 @@
   <ItemGroup>
     <PackageReference Include="Nuke.Common" Version="0.12.0" />
     <PackageReference Include="SharpZipLib" Version="1.0.0" />
+    <PackageReference Include="ILRepack.Lib" Version="2.0.16" NoWarn="NU1701" />
   </ItemGroup>
 
   <ItemGroup>
     <NukeMetadata Include="**\*.json" Exclude="bin\**;obj\**" />
     <NukeExternalFiles Include="**\*.*.ext" Exclude="bin\**;obj\**" />
     <None Remove="*.csproj.DotSettings;*.ref.*.txt" />
-    
-    <!-- Common build related files -->
-    <None Include="..\src\build.ps1" />
-    <None Include="..\src\build.sh" />
-    <None Include="..\.nuke" />     
-    <None Include="..\global.json" Condition="Exists('..\global.json')" />
-    <None Include="..\nuget.config" Condition="Exists('..\nuget.config')" />
-    <None Include="..\Jenkinsfile" Condition="Exists('..\Jenkinsfile')" />
-    <None Include="..\appveyor.yml" Condition="Exists('..\appveyor.yml')" />
-    <None Include="..\.travis.yml" Condition="Exists('..\.travis.yml')" />
-    <None Include="..\GitVersion.yml" Condition="Exists('..\GitVersion.yml')" />
   </ItemGroup>
 
 </Project>

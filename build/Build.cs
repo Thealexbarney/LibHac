@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using ICSharpCode.SharpZipLib.Zip;
+using ILRepacking;
 using Nuke.Common;
 using Nuke.Common.Git;
 using Nuke.Common.ProjectModel;
@@ -32,6 +33,7 @@ class Build : NukeBuild
     AbsolutePath CliFrameworkZip => ArtifactsDirectory / "hactoolnet.zip";
     AbsolutePath CliCoreZip => ArtifactsDirectory / "hactoolnet_netcore.zip";
 
+    AbsolutePath CliMergedExe => ArtifactsDirectory / "hactoolnet.exe";
 
     Project LibHacProject => Solution.GetProject("LibHac").NotNull();
     Project HactoolnetProject => Solution.GetProject("hactoolnet").NotNull();
@@ -116,6 +118,25 @@ class Build : NukeBuild
             DotNetPack(s => settings);
         });
 
+    Target Merge => _ => _
+        .DependsOn(Compile)
+        .OnlyWhen(() => EnvironmentInfo.IsWin)
+        .Executes(() =>
+        {
+            string[] libraries = Directory.GetFiles(CliFrameworkDir, "*.dll");
+            var cliList = new List<string> { CliFrameworkDir / "hactoolnet.exe" };
+            cliList.AddRange(libraries);
+
+            var cliOptions = new RepackOptions
+            {
+                OutputFile = CliMergedExe,
+                InputAssemblies = cliList.ToArray(),
+                SearchDirectories = new[] { "." }
+            };
+
+            new ILRepack(cliOptions).Repack();
+        });
+
     Target Zip => _ => _
         .DependsOn(Pack)
         .Executes(() =>
@@ -135,37 +156,18 @@ class Build : NukeBuild
             {
                 PushArtifact(CliFrameworkZip);
                 PushArtifact(CliCoreZip);
+                PushArtifact(CliMergedExe);
             }
         });
 
     Target Results => _ => _
-        .DependsOn(Zip)
+        .DependsOn(Zip, Merge)
         .Executes(() =>
         {
             Console.WriteLine("SHA-1:");
             using (SHA1 sha = SHA1.Create())
             {
                 foreach (string filename in Directory.EnumerateFiles(ArtifactsDirectory))
-                {
-                    using (var stream = new FileStream(filename, FileMode.Open))
-                    {
-                        string hash = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "");
-                        Console.WriteLine($"{hash} - {Path.GetFileName(filename)}");
-                    }
-                }
-
-                Console.WriteLine();
-                foreach (string filename in Directory.EnumerateFiles(CliCoreDir))
-                {
-                    using (var stream = new FileStream(filename, FileMode.Open))
-                    {
-                        string hash = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "");
-                        Console.WriteLine($"{hash} - {Path.GetFileName(filename)}");
-                    }
-                }
-
-                Console.WriteLine();
-                foreach (string filename in Directory.EnumerateFiles(CliFrameworkDir))
                 {
                     using (var stream = new FileStream(filename, FileMode.Open))
                     {
@@ -205,12 +207,14 @@ class Build : NukeBuild
             Console.WriteLine(path);
         }
 
-        ProcessStartInfo psi = new ProcessStartInfo();
-        psi.FileName = "appveyor";
-        psi.Arguments = $"PushArtifact \"{path}\"";
-        psi.UseShellExecute = false;
-        psi.RedirectStandardOutput = true;
-        psi.RedirectStandardError = true;
+        var psi = new ProcessStartInfo
+        {
+            FileName = "appveyor",
+            Arguments = $"PushArtifact \"{path}\"",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
 
         Process proc = new Process
         {
