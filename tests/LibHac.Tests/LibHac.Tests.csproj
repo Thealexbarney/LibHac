@@ -4,6 +4,12 @@
     <TargetFrameworks>net46;netcoreapp2.1</TargetFrameworks>
 
     <IsPackable>false</IsPackable>
+
+    <ApplicationIcon />
+
+    <OutputType>Exe</OutputType>
+
+    <StartupObject>LibHac.Tests.FileSystemTests</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>

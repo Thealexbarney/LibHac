@@ -198,7 +198,7 @@ namespace LibHac
                 throw new ArgumentException($"{nameof(path)} is not a subpath of {nameof(basePath)}");
             }
 
-            return fullFile.Substring(fullDirectory.Length + 1);
+            return fullFile.Substring(fullDirectory.Length);
         }
 
         private static bool TryHexToInt(char c, out int value)

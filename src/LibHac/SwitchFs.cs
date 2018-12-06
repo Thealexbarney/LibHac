@@ -13,8 +13,8 @@ namespace LibHac
     {
         public Keyset Keyset { get; }
         public IFileSystem Fs { get; }
-        public string ContentsDir { get; }
-        public string SaveDir { get; }
+        public IDirectory ContentsDir { get; }
+        public IDirectory SaveDir { get; }
 
         public Dictionary<string, Nca> Ncas { get; } = new Dictionary<string, Nca>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, Savefile> Saves { get; } = new Dictionary<string, Savefile>(StringComparer.OrdinalIgnoreCase);
@@ -26,21 +26,21 @@ namespace LibHac
             Fs = fs;
             Keyset = keyset;
 
-            if (fs.DirectoryExists("Nintendo"))
+            if (fs.GetDirectory("Nintendo").Exists)
             {
-                ContentsDir = fs.GetFullPath(Path.Combine("Nintendo", "Contents"));
-                SaveDir = fs.GetFullPath(Path.Combine("Nintendo", "save"));
+                ContentsDir = fs.GetDirectory("Nintendo/Contents");
+                SaveDir = fs.GetDirectory("Nintendo/save");
             }
             else
             {
-                if (fs.DirectoryExists("Contents"))
+                if (fs.GetDirectory("Contents").Exists)
                 {
-                    ContentsDir = fs.GetFullPath("Contents");
+                    ContentsDir = fs.GetDirectory("Contents");
                 }
 
-                if (fs.DirectoryExists("save"))
+                if (fs.GetDirectory("save").Exists)
                 {
-                    SaveDir = fs.GetFullPath("save");
+                    SaveDir = fs.GetDirectory("save");
                 }
             }
 
@@ -58,15 +58,24 @@ namespace LibHac
 
         private void OpenAllNcas()
         {
-            string[] files = Fs.GetFileSystemEntries(ContentsDir, "*.nca", SearchOption.AllDirectories);
+            IFile[] files = ContentsDir.Files;
+            IDirectory[] directories = ContentsDir.Directories;
 
-            foreach (string file in files)
+            Dictionary<string, IStorage> storages = new Dictionary<string, IStorage>();
+
+            foreach (IFile file in files)
+                storages[file.Path] = file.Open(FileMode.Open, FileAccess.Read).AsStorage();
+            foreach(IDirectory directory in directories)
+                storages[directory.Path] = OpenSplitNcaStream(Fs, directory);
+
+            foreach (KeyValuePair<string, IStorage> kv in storages)
             {
                 Nca nca = null;
+                string path = kv.Key;
+                IStorage storage = kv.Value;
                 try
                 {
                     bool isNax0;
-                    IStorage storage = OpenSplitNcaStream(Fs, file);
                     if (storage == null) continue;
 
                     using (var reader = new BinaryReader(storage.AsStream(), Encoding.Default, true))
@@ -78,7 +87,7 @@ namespace LibHac
 
                     if (isNax0)
                     {
-                        string sdPath = "/" + Util.GetRelativePath(file, ContentsDir).Replace('\\', '/');
+                        string sdPath = "/" + path.Replace('\\', '/');
                         var nax0 = new Nax0(Keyset, storage, sdPath, false);
                         nca = new Nca(Keyset, nax0.BaseStorage, false);
                     }
@@ -87,23 +96,23 @@ namespace LibHac
                         nca = new Nca(Keyset, storage, false);
                     }
 
-                    nca.NcaId = Path.GetFileNameWithoutExtension(file);
+                    nca.NcaId = Path.GetFileNameWithoutExtension(path);
                     string extension = nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
                     nca.Filename = nca.NcaId + extension;
                 }
                 catch (MissingKeyException ex)
                 {
                     if (ex.Name == null)
-                    { Console.WriteLine($"{ex.Message} File:\n{file}"); }
+                    { Console.WriteLine($"{ex.Message} File:\n{path}"); }
                     else
                     {
                         string name = ex.Type == KeyType.Title ? $"Title key for rights ID {ex.Name}" : ex.Name;
-                        Console.WriteLine($"{ex.Message}\nKey: {name}\nFile: {file}");
+                        Console.WriteLine($"{ex.Message}\nKey: {name}\nFile: {path}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"{ex.Message} File: {file}");
+                    Console.WriteLine($"{ex.Message} File: {path}");
                 }
 
                 if (nca?.NcaId != null) Ncas.Add(nca.NcaId, nca);
@@ -114,18 +123,18 @@ namespace LibHac
         {
             if (SaveDir == null) return;
 
-            string[] files = Fs.GetFileSystemEntries(SaveDir, "*");
+            IFile[] files = Fs.GetFileSystemEntries(SaveDir, "*");
 
-            foreach (string file in files)
+            foreach (IFile file in files)
             {
                 Savefile save = null;
-                string saveName = Path.GetFileNameWithoutExtension(file);
+                string saveName = Path.GetFileNameWithoutExtension(file.Path);
 
                 try
                 {
                     IStorage storage = Fs.OpenFile(file, FileMode.Open).AsStorage();
 
-                    string sdPath = "/" + Util.GetRelativePath(file, SaveDir).Replace('\\', '/');
+                    string sdPath = file.Path.Replace('\\', '/');
                     var nax0 = new Nax0(Keyset, storage, sdPath, false);
                     save = new Savefile(Keyset, nax0.BaseStorage, IntegrityCheckLevel.None, true);
                 }
@@ -232,43 +241,30 @@ namespace LibHac
             }
         }
 
-        internal static IStorage OpenSplitNcaStream(IFileSystem fs, string path)
+        internal static IStorage OpenSplitNcaStream(IFileSystem fs, IDirectory directory)
         {
-            var files = new List<string>();
+            var files = new List<IFile>();
             var storages = new List<IStorage>();
 
-            if (fs.DirectoryExists(path))
+            if (directory.Exists)
             {
                 while (true)
                 {
-                    string partName = Path.Combine(path, $"{files.Count:D2}");
-                    if (!fs.FileExists(partName)) break;
+                    IFile partFile = directory.GetFile($"{files.Count:D2}");
+                    if (!partFile.Exists) break;
 
-                    files.Add(partName);
+                    files.Add(partFile);
                 }
-            }
-            else if (fs.FileExists(path))
-            {
-                if (Path.GetFileName(path) != "00")
-                {
-                    return fs.OpenFile(path, FileMode.Open, FileAccess.Read).AsStorage();
-                }
-                files.Add(path);
             }
             else
-            {
                 throw new FileNotFoundException("Could not find the input file or directory");
-            }
 
             if (files.Count == 1)
-            {
-                return fs.OpenFile(files[0], FileMode.Open, FileAccess.Read).AsStorage();
-            }
+                return files[0].Open(FileMode.Open, FileAccess.Read).AsStorage();
+            
 
-            foreach (string file in files)
-            {
-                storages.Add(fs.OpenFile(file, FileMode.Open, FileAccess.Read).AsStorage());
-            }
+            foreach (IFile file in files)
+                storages.Add(file.Open( FileMode.Open, FileAccess.Read).AsStorage());
 
             if (storages.Count == 0) return null; //todo
 
