@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace LibHac
 {
@@ -30,28 +31,18 @@ namespace LibHac
             return new FileStream(GetFullPath(file), mode, access);
         }
 
-        public override IFile[] GetFileSystemEntries(IDirectory path, string searchPattern, SearchOption searchOption)
+        public override IFileSytemEntry[] GetFileSystemEntries(IDirectory path, string searchPattern, SearchOption searchOption)
         {
-            //return Directory.GetFileSystemEntries(Path.Combine(Root, path), searchPattern, searchOption);
-            var result = new List<IFile>();
+            var result = new List<IFileSytemEntry>();
 
-            try
+            DirectoryInfo root = new DirectoryInfo(GetFullPath(path));
+            foreach(FileSystemInfo info in root.EnumerateFileSystemInfos(searchPattern, searchOption))
             {
-                result.AddRange(GetFileSystemEntries(path, searchPattern));
-            }
-            catch (UnauthorizedAccessException) { /* Skip this directory */ }
-
-            if (searchOption == SearchOption.TopDirectoryOnly)
-                return result.ToArray();
-
-            string[] searchDirectories = Directory.GetDirectories(GetFullPath(path));
-            foreach (string search in searchDirectories)
-            {
-                try
-                {
-                    result.AddRange(GetFileSystemEntries(FullPathToDirectory(search), searchPattern, searchOption));
-                }
-                catch (UnauthorizedAccessException) { /* Skip this result */ }
+                string relativePath = Util.GetRelativePath(info.FullName, Root);
+                if (info.Attributes.HasFlag(FileAttributes.Directory))
+                    result.Add(new IDirectory(this, relativePath));
+                else
+                    result.Add(new LocalFile(this, relativePath));
             }
 
             return result.ToArray();
@@ -74,6 +65,14 @@ namespace LibHac
             for (int i = 0; i < directories.Length; i++)
                 directories[i] = FullPathToDirectory(infos[i].FullName);
             return directories;
+        }
+
+        public override IFileSytemEntry[] GetEntries(IDirectory directory)
+        {
+            List<IFileSytemEntry> list = new List<IFileSytemEntry>();
+            list.AddRange(GetDirectories(directory));
+            list.AddRange(GetFiles(directory));
+            return list.ToArray();
         }
 
         protected override IDirectory GetPath(string path)

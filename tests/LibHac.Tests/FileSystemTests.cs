@@ -10,7 +10,7 @@ namespace LibHac.Tests
     {
         public static void Main(string[] args)
         {
-            LocalFileSystem fs = new LocalFileSystem("C:\\\\");
+            LocalFileSystem fs = new LocalFileSystem("G:\\\\");
             foreach(IFile file in fs.RootDirectory.Files)
             {
                 Console.WriteLine(file.Path);
@@ -20,6 +20,12 @@ namespace LibHac.Tests
             {
                 Console.WriteLine(directory.Path);
             }
+
+            string baseDir = "C:\\Users\\Somebody Whoisbored\\.switch\\";
+            Keyset keyset = ExternalKeys.ReadKeyFile(baseDir + "prod.keys", baseDir + "title.keys", baseDir + "console.keys");
+
+            SwitchFs sw = new SwitchFs(keyset, fs);
+            ;
 
             Console.ReadKey();
         }

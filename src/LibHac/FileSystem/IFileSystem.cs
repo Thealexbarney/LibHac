@@ -17,11 +17,11 @@ namespace LibHac
         }
         public abstract Stream OpenFile(IFile file, FileMode mode, FileAccess access);
 
-        public IFile[] GetFileSystemEntries(IDirectory directory, string searchPattern)
+        public IFileSytemEntry[] GetFileSystemEntries(IDirectory directory, string searchPattern)
         {
             return GetFileSystemEntries(directory, searchPattern, SearchOption.TopDirectoryOnly);
         }
-        public abstract IFile[] GetFileSystemEntries(IDirectory path, string searchPattern, SearchOption searchOption);
+        public abstract IFileSytemEntry[] GetFileSystemEntries(IDirectory path, string searchPattern, SearchOption searchOption);
 
         public IDirectory GetDirectory(string path)
         {
@@ -35,20 +35,28 @@ namespace LibHac
         {
             if (path.StartsWith(PathSeperator))
                 path = path.Substring(PathSeperator.Length);
-            return GetFile(path);
+            return GetFileImpl(path);
         }
         protected abstract IFile GetFileImpl(string path);
 
 
         public abstract IFile[] GetFiles(IDirectory directory);
         public abstract IDirectory[] GetDirectories(IDirectory directory);
+        public abstract IFileSytemEntry[] GetEntries(IDirectory directory);
 
     }
 
-    public class IDirectory
+    public interface IFileSytemEntry
     {
-        public IFileSystem FileSystem;
-        public string Path;
+        IFileSystem FileSystem { get; }
+        string Path { get; }
+        bool Exists { get; }
+    }
+
+    public class IDirectory : IFileSytemEntry
+    {
+        public IFileSystem FileSystem { get; }
+        public string Path { get; }
 
         public IDirectory Parent
         {
@@ -79,16 +87,27 @@ namespace LibHac
             return FileSystem.GetDirectory(Path + FileSystem.PathSeperator + path);
         }
 
+        public IFileSytemEntry[] GetFileSystemEntries(string searchOption)
+        {
+            return FileSystem.GetFileSystemEntries(this, searchOption);
+        }
+
+        public IFileSytemEntry[] GetFileSystemEntries(string searchPattern, SearchOption searchOption)
+        {
+            return FileSystem.GetFileSystemEntries(this, searchPattern, searchOption);
+        }
     }
 
-    public class IFile
+    public class IFile : IFileSytemEntry
     {
-        public IFileSystem FileSystem;
-        public string Path;
+        public IFileSystem FileSystem { get; }
+        public string Path { get; }
 
         public string Name => System.IO.Path.GetFileNameWithoutExtension(Path);
         public string Extension => System.IO.Path.GetExtension(Path);
         public string FileName => System.IO.Path.GetFileName(Path);
+
+        public bool Exists => FileSystem.FileExists(this);
 
         public IDirectory Parent {
             get
@@ -98,7 +117,6 @@ namespace LibHac
             }
         }
 
-        public bool Exists => FileSystem.FileExists(this);
 
         public IFile(IFileSystem filesystem, string path)
         {
