@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using DiscUtils.Fat;
+using LibHac.IO;
 
 namespace LibHac.Nand
 {
@@ -9,7 +10,7 @@ namespace LibHac.Nand
     {
         public FatFileSystem Fs { get; }
 
-        public override string PathSeperator => "/";
+        public override string PathSeperator => "\\";
         public override IDirectory RootDirectory => new IDirectory(this, "");
 
         public NandPartition(FatFileSystem fileSystem)
@@ -27,14 +28,14 @@ namespace LibHac.Nand
             return Fs.DirectoryExists(directory.Path);
         }
 
-        public new virtual Stream OpenFile(IFile file, FileMode mode)
+        public new virtual IStorage OpenFile(IFile file, FileMode mode)
         {
-            return Fs.OpenFile(file.Path, mode);
+            return Fs.OpenFile(file.Path, mode).AsStorage();
         }
 
-        public override Stream OpenFile(IFile file, FileMode mode, FileAccess access)
+        public override IStorage OpenFile(IFile file, FileMode mode, FileAccess access)
         {
-            return Fs.OpenFile(file.Path, mode, access);
+            return Fs.OpenFile(file.Path, mode, access).AsStorage();
         }
 
         public new virtual IFileSytemEntry[] GetFileSystemEntries(IDirectory directory, string searchPattern)
@@ -46,12 +47,12 @@ namespace LibHac.Nand
         {
             string[] files = Fs.GetFiles(directory.Path, searchPattern, searchOption);
             string[] dirs = Fs.GetDirectories(directory.Path, searchPattern, searchOption);
-            IFileSytemEntry[] entries = new IFileSytemEntry[files.Length + dirs.Length];
-            for (int i = 0; i < files.Length; i++)
-                entries[i] = new IFile(this, files[i]);
+            List<IFileSytemEntry> entries = new List<IFileSytemEntry>();
             for (int i = 0; i < dirs.Length; i++)
-                entries[i] = new IDirectory(this, files[i]);
-            return entries;
+                entries.Add(new IDirectory(this, dirs[i]));
+            for (int i = 0; i < files.Length; i++)
+                entries.Add(new IFile(this, files[i]));
+            return entries.ToArray();
         }
 
         public string GetFullPath(string path)

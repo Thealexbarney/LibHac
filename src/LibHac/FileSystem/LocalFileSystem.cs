@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LibHac.IO;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -26,9 +27,9 @@ namespace LibHac
             return Directory.Exists(Path.Combine(Root, directory.Path));
         }
 
-        public override Stream OpenFile(IFile file, FileMode mode, FileAccess access)
+        public override IStorage OpenFile(IFile file, FileMode mode, FileAccess access)
         {
-            return new FileStream(GetFullPath(file), mode, access);
+            return new FileStream(GetFullPath(file), mode, access).AsStorage();
         }
 
         public override IFileSytemEntry[] GetFileSystemEntries(IDirectory path, string searchPattern, SearchOption searchOption)

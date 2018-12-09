@@ -128,7 +128,7 @@ namespace LibHac
 
                 try
                 {
-                    IStorage storage = Fs.OpenFile(file, FileMode.Open).AsStorage();
+                    IStorage storage = Fs.OpenFile(file, FileMode.Open);
 
                     string sdPath = Util.GetRelativePath(file.Path, SaveDir.Path).Replace("\\", "/");
                     var nax0 = new Nax0(Keyset, storage, sdPath, false);
@@ -256,9 +256,8 @@ namespace LibHac
                 {
                     IFile file = (IFile)nca;
                     if (file.Name != "00")
-                    {
-                        return file.Open(FileMode.Open, FileAccess.Read).AsStorage();
-                    }
+                        return file.Open(FileMode.Open, FileAccess.Read);
+                    
                     files.Add(file);
                 }
                 else if (typeof(IDirectory).IsAssignableFrom(nca.GetType()))
@@ -277,10 +276,10 @@ namespace LibHac
                 throw new FileNotFoundException("Could not find the input file or directory");
 
             if (files.Count == 1)
-                return files[0].Open(FileMode.Open, FileAccess.Read).AsStorage();
+                return files[0].Open(FileMode.Open, FileAccess.Read);
 
             foreach (IFile file in files)
-                storages.Add(file.Open( FileMode.Open, FileAccess.Read).AsStorage());
+                storages.Add(file.Open( FileMode.Open, FileAccess.Read));
 
             if (storages.Count == 0) return null; //todo
 

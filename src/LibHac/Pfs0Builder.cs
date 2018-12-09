@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using LibHac.IO;
+using System.Collections.Generic;
 using System.IO;
 
 namespace LibHac
@@ -8,13 +9,13 @@ namespace LibHac
         private List<Entry> Entries { get; } = new List<Entry>();
         private long DataLength { get; set; }
 
-        public void AddFile(string filename, Stream stream)
+        public void AddFile(string filename, IStorage storage)
         {
             var entry = new Entry
             {
                 Name = filename,
-                Stream = stream,
-                Length = stream.Length,
+                Storage = storage,
+                Length = storage.Length,
                 Offset = DataLength
             };
 
@@ -57,8 +58,7 @@ namespace LibHac
             foreach (Entry entry in Entries)
             {
                 logger?.LogMessage(entry.Name);
-                entry.Stream.Position = 0;
-                entry.Stream.CopyStream(output, entry.Length, logger);
+                entry.Storage.CopyTo(output.AsStorage(), logger);
             }
             logger?.SetTotal(0);
         }
@@ -66,7 +66,7 @@ namespace LibHac
         private class Entry
         {
             public string Name;
-            public Stream Stream;
+            public IStorage Storage;
             public long Length;
             public long Offset;
             public int StringOffset;

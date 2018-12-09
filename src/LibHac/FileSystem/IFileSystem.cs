@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using LibHac.IO;
+using System.IO;
 
 namespace LibHac
 {
@@ -11,11 +12,11 @@ namespace LibHac
         public abstract bool FileExists(IFile path);
         public abstract bool DirectoryExists(IDirectory path);
 
-        public Stream OpenFile(IFile file, FileMode mode)
+        public IStorage OpenFile(IFile file, FileMode mode)
         {
             return OpenFile(file, mode, FileAccess.ReadWrite);
         }
-        public abstract Stream OpenFile(IFile file, FileMode mode, FileAccess access);
+        public abstract IStorage OpenFile(IFile file, FileMode mode, FileAccess access);
 
         public IFileSytemEntry[] GetFileSystemEntries(IDirectory directory, string searchPattern)
         {
@@ -46,30 +47,33 @@ namespace LibHac
 
     }
 
-    public interface IFileSytemEntry
+    public abstract class IFileSytemEntry
     {
-        IFileSystem FileSystem { get; }
-        string Path { get; }
-        bool Exists { get; }
-    }
-
-    public class IDirectory : IFileSytemEntry
-    {
-        public IFileSystem FileSystem { get; }
-        public string Path { get; }
+        public abstract IFileSystem FileSystem { get; }
+        public abstract string Path { get; }
+        public abstract bool Exists { get; }
 
         public IDirectory Parent
         {
             get
             {
                 int index = Path.LastIndexOf(FileSystem.PathSeperator);
-                return FileSystem.GetDirectory(Path.Substring(0, index));
+                if(index > 0)
+                    return FileSystem.GetDirectory(Path.Substring(0, index));
+                return null;
             }
         }
 
+    }
+
+    public class IDirectory : IFileSytemEntry
+    {
+        public override IFileSystem FileSystem { get; }
+        public override string Path { get; }
+        public override bool Exists => FileSystem.DirectoryExists(this);
+
         public IFile[] Files => FileSystem.GetFiles(this);
         public IDirectory[] Directories => FileSystem.GetDirectories(this);
-        public bool Exists => FileSystem.DirectoryExists(this);
 
         public IDirectory(IFileSystem filesystem, string path)
         {
@@ -100,23 +104,13 @@ namespace LibHac
 
     public class IFile : IFileSytemEntry
     {
-        public IFileSystem FileSystem { get; }
-        public string Path { get; }
+        public override IFileSystem FileSystem { get; }
+        public override string Path { get; }
+        public override bool Exists => FileSystem.FileExists(this);
 
         public string Name => System.IO.Path.GetFileNameWithoutExtension(Path);
         public string Extension => System.IO.Path.GetExtension(Path);
         public string FileName => System.IO.Path.GetFileName(Path);
-
-        public bool Exists => FileSystem.FileExists(this);
-
-        public IDirectory Parent {
-            get
-            {
-                int index = Path.LastIndexOf(FileSystem.PathSeperator);
-                return FileSystem.GetDirectory(Path.Substring(0, index));
-            }
-        }
-
 
         public IFile(IFileSystem filesystem, string path)
         {
@@ -124,12 +118,12 @@ namespace LibHac
             Path = path;
         }
 
-        public Stream Open(FileMode mode)
+        public IStorage Open(FileMode mode)
         {
             return FileSystem.OpenFile(this, mode);
         }
 
-        public Stream Open(FileMode mode, FileAccess access)
+        public IStorage Open(FileMode mode, FileAccess access)
         {
             return FileSystem.OpenFile(this, mode, access);
         }

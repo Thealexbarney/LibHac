@@ -12,6 +12,7 @@ namespace LibHac.Nand
     {
         private GuidPartitionInfo ProdInfo { get; }
         private GuidPartitionInfo ProdInfoF { get; }
+        private GuidPartitionInfo[] Package2 { get; }
         private GuidPartitionInfo Safe { get; }
         private GuidPartitionInfo System { get; }
         private GuidPartitionInfo User { get; }
@@ -23,6 +24,16 @@ namespace LibHac.Nand
             GuidPartitionInfo[] partitions = disc.Partitions.Select(x => (GuidPartitionInfo)x).ToArray();
             ProdInfo = partitions.FirstOrDefault(x => x.Name == "PRODINFO");
             ProdInfoF = partitions.FirstOrDefault(x => x.Name == "PRODINFOF");
+            Package2 = new GuidPartitionInfo[] 
+            {
+                partitions.FirstOrDefault(x => x.Name == "BCPKG2-1-Normal-Main"),
+                partitions.FirstOrDefault(x => x.Name == "BCPKG2-2-Normal-Sub"),
+                partitions.FirstOrDefault(x => x.Name == "BCPKG2-3-SafeMode-Main"),
+                partitions.FirstOrDefault(x => x.Name == "BCPKG2-4-SafeMode-Sub"),
+                partitions.FirstOrDefault(x => x.Name == "BCPKG2-5-Repair-Main"),
+                partitions.FirstOrDefault(x => x.Name == "BCPKG2-6-Repair-Sub")
+            };
+
             Safe = partitions.FirstOrDefault(x => x.Name == "SAFE");
             System = partitions.FirstOrDefault(x => x.Name == "SYSTEM");
             User = partitions.FirstOrDefault(x => x.Name == "USER");
@@ -44,6 +55,11 @@ namespace LibHac.Nand
             decStorage.SetReadOnly();
             var fat = new FatFileSystem(decStorage.AsStream(), Ownership.None);
             return new NandPartition(fat);
+        }
+
+        public IStorage OpenPackage2(int index)
+        {
+            return Package2[index].Open().AsStorage();
         }
 
         public NandPartition OpenSafePartition()
