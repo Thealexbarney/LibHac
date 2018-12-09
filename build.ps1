@@ -45,7 +45,7 @@ try {
     }
     # If dotnet is installed locally, and expected version is not set or installation matches the expected version
     if ($null -ne (Get-Command "dotnet" -ErrorAction SilentlyContinue) -and `
-        (!(Test-Path variable:DotNetVersion) -or $(& cmd /c 'dotnet --version 2>&1') -eq $DotNetVersion)) {
+        (!(Test-Path variable:DotNetVersion) -or $(& cmd.exe /c 'dotnet --version 2>&1') -eq $DotNetVersion)) {
         $env:DOTNET_EXE = (Get-Command "dotnet").Path
     }
     else {
