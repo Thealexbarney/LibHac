@@ -15,9 +15,14 @@ namespace hactoolnet
         {
             var switchFs = new SwitchFs(ctx.Keyset, new FileSystem(ctx.Options.InFile));
 
+            if (ctx.Options.ListNcas)
+            {
+                ctx.Logger.LogMessage(ListNcas(switchFs));
+            }
+
             if (ctx.Options.ListTitles)
             {
-                ListTitles(switchFs);
+                ctx.Logger.LogMessage(ListTitles(switchFs));
             }
 
             if (ctx.Options.ListApps)
@@ -213,31 +218,34 @@ namespace hactoolnet
             }
         }
 
-        static void ListTitles(SwitchFs sdfs)
+        static string ListTitles(SwitchFs sdfs)
         {
+            var table = new TableBuilder("Title ID", "Version", "", "Type", "Size", "Display Version", "Name");
+
             foreach (Title title in sdfs.Titles.Values.OrderBy(x => x.Id))
             {
-                Console.WriteLine($"{title.Name} {title.Control?.DisplayVersion}");
-                Console.WriteLine($"{title.Id:X16} v{title.Version.Version} ({title.Version}) {title.Metadata.Type}");
-
-                foreach (CnmtContentEntry content in title.Metadata.ContentEntries)
-                {
-                    Console.WriteLine(
-                        $"    {content.NcaId.ToHexString()}.nca {content.Type} {Util.GetBytesReadable(content.Size)}");
-                }
-
-                foreach (Nca nca in title.Ncas)
-                {
-                    Console.WriteLine($"      {nca.HasRightsId} {nca.NcaId} {nca.Header.ContentType}");
-
-                    foreach (NcaSection sect in nca.Sections.Where(x => x != null))
-                    {
-                        Console.WriteLine($"        {sect.SectionNum} {sect.Type} {sect.Header.EncryptionType} {sect.MasterHashValidity}");
-                    }
-                }
-
-                Console.WriteLine("");
+                table.AddRow($"{title.Id:X16}",
+                    $"v{title.Version?.Version}",
+                    title.Version?.ToString(),
+                    title.Metadata?.Type.ToString(),
+                    Util.GetBytesReadable(title.GetSize()),
+                    title.Control?.DisplayVersion,
+                    title.Name);
             }
+
+            return table.Print();
+        }
+
+        static string ListNcas(SwitchFs sdfs)
+        {
+            var table = new TableBuilder("NCA ID", "Type", "Title ID");
+
+            foreach (Nca nca in sdfs.Ncas.Values.OrderBy(x => x.NcaId))
+            {
+                table.AddRow(nca.NcaId, nca.Header.ContentType.ToString(), nca.Header.TitleId.ToString("X16"));
+            }
+
+            return table.Print();
         }
 
         static string ListApplications(SwitchFs sdfs)

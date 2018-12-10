@@ -44,6 +44,7 @@ namespace hactoolnet
             new CliOption("logodir", 1, (o, a) => o.LogoDir = a[0]),
             new CliOption("listapps", 0, (o, a) => o.ListApps = true),
             new CliOption("listtitles", 0, (o, a) => o.ListTitles = true),
+            new CliOption("listncas", 0, (o, a) => o.ListNcas = true),
             new CliOption("listromfs", 0, (o, a) => o.ListRomFs = true),
             new CliOption("listfiles", 0, (o, a) => o.ListFiles = true),
             new CliOption("sign", 0, (o, a) => o.SignSave = true),
@@ -194,6 +195,7 @@ namespace hactoolnet
             sb.AppendLine("  --sdseed <seed>      Set console unique seed for SD card NAX0 encryption.");
             sb.AppendLine("  --listapps           List application info.");
             sb.AppendLine("  --listtitles         List title info for all titles.");
+            sb.AppendLine("  --listncas           List info for all NCAs.");
             sb.AppendLine("  --title <title id>   Specify title ID to use.");
             sb.AppendLine("  --outdir <dir>       Specify directory path to save title NCAs to. (--title must be specified)");
             sb.AppendLine("  --exefs <file>       Specify ExeFS directory path. (--title must be specified)");

@@ -66,7 +66,7 @@ namespace LibHac
                 try
                 {
                     bool isNax0;
-                    IStorage storage = OpenSplitNcaStream(Fs, file);
+                    IStorage storage = OpenSplitNcaStorage(Fs, file);
                     if (storage == null) continue;
 
                     using (var reader = new BinaryReader(storage.AsStream(), Encoding.Default, true))
@@ -232,7 +232,7 @@ namespace LibHac
             }
         }
 
-        internal static IStorage OpenSplitNcaStream(IFileSystem fs, string path)
+        internal static IStorage OpenSplitNcaStorage(IFileSystem fs, string path)
         {
             var files = new List<string>();
             var storages = new List<IStorage>();
@@ -307,9 +307,7 @@ namespace LibHac
 
         public long GetSize()
         {
-            return Metadata.ContentEntries
-                .Where(x => x.Type < CnmtContentType.DeltaFragment)
-                .Sum(x => x.Size);
+            return Ncas.Sum(x => x.Header.NcaSize);
         }
     }
 
