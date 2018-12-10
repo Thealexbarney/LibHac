@@ -17,7 +17,9 @@ namespace LibHac.IO.Save
             Header = new AllocationTableHeader(HeaderStorage);
 
             Stream tableStream = storage.AsStream();
-            int blockCount = (int)(Header.AllocationTableBlockCount);
+
+            // The first entry in the table is reserved. Block 0 is at table index 1
+            int blockCount = (int)(Header.AllocationTableBlockCount) + 1;
 
             Entries = new AllocationTableEntry[blockCount];
             tableStream.Position = 0;
