@@ -17,7 +17,7 @@ namespace LibHac.IO
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            int toRead = (int) Math.Min(count, Length - Position);
+            int toRead = (int)Math.Min(count, Length - Position);
             BaseStorage.Read(buffer, Position, toRead, offset);
 
             Position += toRead;
@@ -58,9 +58,10 @@ namespace LibHac.IO
             throw new NotImplementedException();
         }
 
-        public override bool CanRead => true;
+        public override bool CanRead => (BaseStorage as Storage)?.CanRead ?? true;
         public override bool CanSeek => true;
-        public override bool CanWrite => true;
+        public override bool CanWrite => (BaseStorage as Storage)?.CanWrite ?? true;
+
         public override long Length { get; }
         public override long Position { get; set; }
 

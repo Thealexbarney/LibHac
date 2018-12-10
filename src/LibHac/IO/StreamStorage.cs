@@ -17,6 +17,15 @@ namespace LibHac.IO
         {
             BaseStream = baseStream;
             Length = BaseStream.Length;
+            if (baseStream.CanRead && baseStream.CanWrite)
+                Access = FileAccess.ReadWrite;
+            else if (baseStream.CanRead)
+                Access = FileAccess.Read;
+            else if (baseStream.CanWrite)
+                Access = FileAccess.Write;
+            else
+                Access = FileAccess.Read;
+                
             if (!leaveOpen) ToDispose.Add(BaseStream);
         }
 

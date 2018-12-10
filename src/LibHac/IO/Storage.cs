@@ -14,7 +14,7 @@ namespace LibHac.IO
         public abstract void Flush();
         public abstract long Length { get; }
 
-        protected FileAccess Access { get; set; } = FileAccess.ReadWrite;
+        public FileAccess Access { get; protected set; } = FileAccess.ReadWrite;
 
         public void Read(Span<byte> destination, long offset)
         {
