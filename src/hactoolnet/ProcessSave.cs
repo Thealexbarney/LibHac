@@ -14,7 +14,7 @@ namespace hactoolnet
         {
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.ReadWrite))
             {
-                var save = new Savefile(ctx.Keyset, file.AsStorage(), ctx.Options.IntegrityLevel, true);
+                var save = new SaveData(ctx.Keyset, file.AsStorage(), ctx.Options.IntegrityLevel, true);
 
                 if (ctx.Options.Validate)
                 {
@@ -62,10 +62,10 @@ namespace hactoolnet
                     string saveDir = Path.Combine(dir, "save");
                     Directory.CreateDirectory(saveDir);
 
-                    save.SaveFs.GetHeaderStorage().WriteAllBytes(Path.Combine(saveDir, "Save_Header"));
-                    save.SaveFs.GetBaseStorage().WriteAllBytes(Path.Combine(saveDir, "Save_Data"));
-                    save.SaveFs.AllocationTable.GetHeaderStorage().WriteAllBytes(Path.Combine(saveDir, "FAT_header"));
-                    save.SaveFs.AllocationTable.GetBaseStorage().WriteAllBytes(Path.Combine(saveDir, "FAT_Data"));
+                    save.SaveDataFileSystemCore.GetHeaderStorage().WriteAllBytes(Path.Combine(saveDir, "Save_Header"));
+                    save.SaveDataFileSystemCore.GetBaseStorage().WriteAllBytes(Path.Combine(saveDir, "Save_Data"));
+                    save.SaveDataFileSystemCore.AllocationTable.GetHeaderStorage().WriteAllBytes(Path.Combine(saveDir, "FAT_header"));
+                    save.SaveDataFileSystemCore.AllocationTable.GetBaseStorage().WriteAllBytes(Path.Combine(saveDir, "FAT_Data"));
 
                     save.Header.DataIvfcMaster.WriteAllBytes(Path.Combine(saveDir, "Save_MasterHash"));
 
@@ -118,7 +118,7 @@ namespace hactoolnet
             }
         }
 
-        private static string Print(this Savefile save)
+        private static string Print(this SaveData save)
         {
             int colLen = 25;
             var sb = new StringBuilder();

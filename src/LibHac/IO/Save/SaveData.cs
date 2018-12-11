@@ -4,14 +4,14 @@ using System.IO;
 
 namespace LibHac.IO.Save
 {
-    public class Savefile : IDisposable
+    public class SaveData : IDisposable
     {
         public Header Header { get; }
         public IStorage BaseStorage { get; }
         public bool LeaveOpen { get; }
 
         public HierarchicalIntegrityVerificationStorage IvfcStorage { get; }
-        public SaveFs SaveFs { get; }
+        public SaveDataFileSystemCore SaveDataFileSystemCore { get; }
 
         public RemapStorage DataRemapStorage { get; }
         public RemapStorage MetaRemapStorage { get; }
@@ -19,11 +19,11 @@ namespace LibHac.IO.Save
         public HierarchicalDuplexStorage DuplexStorage { get; }
         public JournalStorage JournalStorage { get; }
 
-        public DirectoryEntry RootDirectory => SaveFs.RootDirectory;
-        public FileEntry[] Files => SaveFs.Files;
-        public DirectoryEntry[] Directories => SaveFs.Directories;
+        public DirectoryEntry RootDirectory => SaveDataFileSystemCore.RootDirectory;
+        public FileEntry[] Files => SaveDataFileSystemCore.Files;
+        public DirectoryEntry[] Directories => SaveDataFileSystemCore.Directories;
 
-        public Savefile(Keyset keyset, IStorage storage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
+        public SaveData(Keyset keyset, IStorage storage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         {
             BaseStorage = storage;
             LeaveOpen = leaveOpen;
@@ -63,7 +63,7 @@ namespace LibHac.IO.Save
                 fatStorage = InitFatIvfcStorage(integrityCheckLevel);
             }
 
-            SaveFs = new SaveFs(IvfcStorage, fatStorage, Header.SaveHeader);
+            SaveDataFileSystemCore = new SaveDataFileSystemCore(IvfcStorage, fatStorage, Header.SaveHeader);
         }
 
         private static HierarchicalDuplexStorage InitDuplexStorage(IStorage baseStorage, Header header)
@@ -121,15 +121,15 @@ namespace LibHac.IO.Save
 
         public IStorage OpenFile(string filename)
         {
-            return SaveFs.OpenFile(filename);
+            return SaveDataFileSystemCore.OpenFile(filename);
         }
 
         public IStorage OpenFile(FileEntry file)
         {
-            return SaveFs.OpenFile(file);
+            return SaveDataFileSystemCore.OpenFile(file);
         }
 
-        public bool FileExists(string filename) => SaveFs.FileExists(filename);
+        public bool FileExists(string filename) => SaveDataFileSystemCore.FileExists(filename);
 
         public bool CommitHeader(Keyset keyset)
         {
@@ -187,7 +187,7 @@ namespace LibHac.IO.Save
 
     public static class SavefileExtensions
     {
-        public static void Extract(this Savefile save, string outDir, IProgressReport logger = null)
+        public static void Extract(this SaveData save, string outDir, IProgressReport logger = null)
         {
             foreach (FileEntry file in save.Files)
             {

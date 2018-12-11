@@ -3,7 +3,7 @@ using System.IO;
 
 namespace LibHac.IO.Save
 {
-    public class SaveFs
+    public class SaveDataFileSystemCore
     {
         private IStorage BaseStorage { get; }
         private IStorage HeaderStorage { get; }
@@ -16,7 +16,7 @@ namespace LibHac.IO.Save
         public DirectoryEntry[] Directories { get; private set; }
         public Dictionary<string, FileEntry> FileDictionary { get; }
 
-        public SaveFs(IStorage storage, IStorage allocationTable, IStorage header)
+        public SaveDataFileSystemCore(IStorage storage, IStorage allocationTable, IStorage header)
         {
             HeaderStorage = header;
             BaseStorage = storage;

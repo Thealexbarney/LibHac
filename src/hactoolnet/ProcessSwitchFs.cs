@@ -286,7 +286,7 @@ namespace hactoolnet
 
         private static void ExportSdSaves(Context ctx, SwitchFs switchFs)
         {
-            foreach (KeyValuePair<string, Savefile> save in switchFs.Saves)
+            foreach (KeyValuePair<string, SaveData> save in switchFs.Saves)
             {
                 string outDir = Path.Combine(ctx.Options.SaveOutDir, save.Key);
                 save.Value.Extract(outDir, ctx.Logger);
