@@ -42,6 +42,7 @@ namespace LibHac.IO
         }
 
         public static Stream AsStream(this IStorage storage) => new StorageStream(storage, true);
+        public static Stream AsStream(this IStorage storage, bool keepOpen) => new StorageStream(storage, keepOpen);
 
         public static void CopyTo(this IStorage input, IStorage output, IProgressReport progress = null)
         {
@@ -112,6 +113,12 @@ namespace LibHac.IO
             return new StreamStorage(stream, true);
         }
 
+        public static Storage AsStorage(this Stream stream, bool keepOpen)
+        {
+            if (stream == null) return null;
+            return new StreamStorage(stream, keepOpen);
+        }
+
         public static Storage AsStorage(this Stream stream, long start)
         {
             if (stream == null) return null;
@@ -122,6 +129,12 @@ namespace LibHac.IO
         {
             if (stream == null) return null;
             return new StreamStorage(stream, true).Slice(start, length);
+        }
+
+        public static Storage AsStorage(this Stream stream, long start, int length, bool keepOpen)
+        {
+            if (stream == null) return null;
+            return new StreamStorage(stream, keepOpen).Slice(start, length);
         }
     }
 }
