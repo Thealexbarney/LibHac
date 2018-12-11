@@ -13,7 +13,7 @@ namespace LibHac
         public ContentType ContentType;
         public byte CryptoType; // Which keyblob (field 1)
         public byte KaekInd; // Which kaek index?
-        public ulong NcaSize; // Entire archive size.
+        public long NcaSize; // Entire archive size.
         public ulong TitleId;
         public TitleVersion SdkVersion; // What SDK was this built with?
         public byte CryptoType2; // Which keyblob (field 2)
@@ -46,7 +46,7 @@ namespace LibHac
             ContentType = (ContentType)reader.ReadByte();
             CryptoType = reader.ReadByte();
             KaekInd = reader.ReadByte();
-            NcaSize = reader.ReadUInt64();
+            NcaSize = reader.ReadInt64();
             TitleId = reader.ReadUInt64();
             reader.BaseStream.Position += 4;
 

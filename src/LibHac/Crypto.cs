@@ -121,21 +121,17 @@ namespace LibHac
         {
             var counter = new byte[0x10];
             Array.Copy(encryptedKey, counter, 0x10);
-            var body = new byte[0x230];
-            Array.Copy(encryptedKey, 0x10, body, 0, 0x230);
-            var dec = new byte[0x230];
+            var key = new byte[0x230];
+            Array.Copy(encryptedKey, 0x10, key, 0, 0x230);
 
-            using (var storageDec = new Aes128CtrStorage(new MemoryStorage(body), kek, counter, false))
-            {
-                storageDec.Read(dec, 0);
-            }
+            new Aes128CtrTransform(kek, counter).TransformBlock(key);
 
             var d = new byte[0x100];
             var n = new byte[0x100];
             var e = new byte[4];
-            Array.Copy(dec, 0, d, 0, 0x100);
-            Array.Copy(dec, 0x100, n, 0, 0x100);
-            Array.Copy(dec, 0x200, e, 0, 4);
+            Array.Copy(key, 0, d, 0, 0x100);
+            Array.Copy(key, 0x100, n, 0, 0x100);
+            Array.Copy(key, 0x200, e, 0, 4);
 
             BigInteger dInt = GetBigInteger(d);
             BigInteger nInt = GetBigInteger(n);

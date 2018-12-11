@@ -35,6 +35,7 @@ namespace hactoolnet
         public string LogoDir;
         public bool ListApps;
         public bool ListTitles;
+        public bool ListNcas;
         public bool ListRomFs;
         public bool ListFiles;
         public bool SignSave;

@@ -149,7 +149,7 @@ namespace hactoolnet
         // ReSharper disable once UnusedParameter.Local
         private static void CustomTask(Context ctx)
         {
-           
+
         }
     }
 }
