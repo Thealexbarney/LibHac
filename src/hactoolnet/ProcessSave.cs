@@ -94,6 +94,39 @@ namespace hactoolnet
                     duplexDataB.WriteAllBytes(Path.Combine(duplexDir, "DataB"), ctx.Logger);
                 }
 
+                if (ctx.Options.ReplaceFileDest != null && ctx.Options.ReplaceFileSource != null)
+                {
+                    string destFilename = ctx.Options.ReplaceFileDest;
+                    if (!destFilename.StartsWith("/")) destFilename = '/' + destFilename;
+
+                    using (IStorage inFile = new FileStream(ctx.Options.ReplaceFileSource, FileMode.Open, FileAccess.Read).AsStorage(false))
+                    {
+                        using (IStorage outFile = save.OpenFile(destFilename))
+                        {
+                            if (inFile.Length != outFile.Length)
+                            {
+                                ctx.Logger.LogMessage($"Replacement file must be the same size as the original file. ({outFile.Length} bytes)");
+                                return;
+                            }
+
+                            inFile.CopyTo(outFile, ctx.Logger);
+
+                            ctx.Logger.LogMessage($"Replaced file {destFilename}");
+                        }
+                    }
+
+                    if (save.CommitHeader(ctx.Keyset))
+                    {
+                        ctx.Logger.LogMessage("Successfully signed save file");
+                    }
+                    else
+                    {
+                        ctx.Logger.LogMessage("ERROR: Unable to sign save file. Do you have all the required keys?");
+                    }
+
+                    return;
+                }
+
                 if (ctx.Options.SignSave)
                 {
                     if (save.CommitHeader(ctx.Keyset))
@@ -104,6 +137,8 @@ namespace hactoolnet
                     {
                         ctx.Logger.LogMessage("Unable to sign save file. Do you have all the required keys?");
                     }
+
+                    return;
                 }
 
                 if (ctx.Options.ListFiles)

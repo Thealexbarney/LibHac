@@ -50,6 +50,12 @@ namespace hactoolnet
             new CliOption("sign", 0, (o, a) => o.SignSave = true),
             new CliOption("title", 1, (o, a) => o.TitleId = ParseTitleId(a[0])),
             new CliOption("bench", 1, (o, a) => o.BenchType = a[0]),
+
+            new CliOption("replacefile", 2, (o, a) =>
+            {
+                o.ReplaceFileDest = a[0];
+                o.ReplaceFileSource = a[1];
+            })
         };
 
         public static Options Parse(string[] args)
@@ -204,11 +210,12 @@ namespace hactoolnet
             sb.AppendLine("  --romfsdir <dir>     Specify RomFS directory path. (--title must be specified)");
             sb.AppendLine("  --savedir <dir>      Specify save file directory path.");
             sb.AppendLine("  -y, --verify         Verify all titles, or verify a single title if --title is set.");
-            sb.AppendLine("Savefile options:");
+            sb.AppendLine("Save data options:");
             sb.AppendLine("  --outdir <dir>       Specify directory path to save contents to.");
             sb.AppendLine("  --debugoutdir <dir>  Specify directory path to save intermediate data to for debugging.");
             sb.AppendLine("  --sign               Sign the save file. (Requires device_key in key file)");
             sb.AppendLine("  --listfiles          List files in save file.");
+            sb.AppendLine("  --replacefile <filename in save> <file> Replaces a file in the save data");
             sb.AppendLine("Keygen options:");
             sb.AppendLine("  --outdir <dir>       Specify directory path to save key files to.");
 

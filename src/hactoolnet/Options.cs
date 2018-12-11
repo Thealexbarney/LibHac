@@ -33,6 +33,8 @@ namespace hactoolnet
         public string NormalDir;
         public string SecureDir;
         public string LogoDir;
+        public string ReplaceFileSource;
+        public string ReplaceFileDest;
         public bool ListApps;
         public bool ListTitles;
         public bool ListNcas;
