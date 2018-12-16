@@ -347,9 +347,24 @@ namespace LibHac
         {
             var keyset = new Keyset();
 
-            if (filename != null) ReadMainKeys(keyset, filename, AllKeyDict, logger);
-            if (consoleKeysFilename != null) ReadMainKeys(keyset, consoleKeysFilename, AllKeyDict, logger);
-            if (titleKeysFilename != null) ReadTitleKeys(keyset, titleKeysFilename, logger);
+            try
+            {
+                if (filename != null) ReadMainKeys(keyset, filename, AllKeyDict, logger);
+            }
+            catch (FileNotFoundException) { }
+
+            try
+            {
+                if (consoleKeysFilename != null) ReadMainKeys(keyset, consoleKeysFilename, AllKeyDict, logger);
+            }
+            catch (FileNotFoundException) { }
+
+            try
+            {
+                if (titleKeysFilename != null) ReadTitleKeys(keyset, titleKeysFilename, logger);
+            }
+            catch (FileNotFoundException) { }
+
             keyset.DeriveKeys(logger);
 
             return keyset;
