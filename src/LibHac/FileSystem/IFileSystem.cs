@@ -11,6 +11,7 @@ namespace LibHac
 
         public abstract bool FileExists(IFile path);
         public abstract bool DirectoryExists(IDirectory path);
+        public abstract long GetSize(IFile file);
 
         public IStorage OpenFile(IFile file, FileMode mode)
         {
@@ -51,6 +52,7 @@ namespace LibHac
     {
         public abstract IFileSystem FileSystem { get; }
         public abstract string Path { get; }
+        public virtual string Name => System.IO.Path.GetFileName(Path);
         public abstract bool Exists { get; }
 
         public IDirectory Parent
@@ -108,9 +110,9 @@ namespace LibHac
         public override string Path { get; }
         public override bool Exists => FileSystem.FileExists(this);
 
-        public string Name => System.IO.Path.GetFileNameWithoutExtension(Path);
         public string Extension => System.IO.Path.GetExtension(Path);
         public string FileName => System.IO.Path.GetFileName(Path);
+        public long Length => FileSystem.GetSize(this);
 
         public IFile(IFileSystem filesystem, string path)
         {
@@ -126,6 +128,17 @@ namespace LibHac
         public IStorage Open(FileMode mode, FileAccess access)
         {
             return FileSystem.OpenFile(this, mode, access);
+        }
+
+        public override bool Equals(object obj)
+        {
+            IFile other = (IFile) obj;
+            return other.FileSystem == FileSystem && other.Path == Path;
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
         }
     }
 }

@@ -27,23 +27,28 @@ namespace LibHac
             return Directory.Exists(Path.Combine(Root, directory.Path));
         }
 
+        public override long GetSize(IFile file)
+        {
+            return new FileInfo(GetFullPath(file)).Length;
+        }
+
         public override IStorage OpenFile(IFile file, FileMode mode, FileAccess access)
         {
-            return new FileStream(GetFullPath(file), mode, access).AsStorage();
+            return new StreamStorage(new FileStream(GetFullPath(file), mode, access), false);
         }
 
         public override IFileSytemEntry[] GetFileSystemEntries(IDirectory path, string searchPattern, SearchOption searchOption)
         {
             var result = new List<IFileSytemEntry>();
-
+            Console.WriteLine(searchPattern);
             DirectoryInfo root = new DirectoryInfo(GetFullPath(path));
             foreach(FileSystemInfo info in root.EnumerateFileSystemInfos(searchPattern, searchOption))
             {
                 string relativePath = Util.GetRelativePath(info.FullName, Root);
                 if (info.Attributes.HasFlag(FileAttributes.Directory))
-                    result.Add(new IDirectory(this, relativePath));
+                    result.Add(GetDirectory(relativePath));
                 else
-                    result.Add(new LocalFile(this, relativePath));
+                    result.Add(GetFile(relativePath));
             }
 
             return result.ToArray();

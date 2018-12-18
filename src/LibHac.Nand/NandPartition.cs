@@ -28,6 +28,11 @@ namespace LibHac.Nand
             return Fs.DirectoryExists(directory.Path);
         }
 
+        public override long GetSize(IFile file)
+        {
+            return Fs.GetFileInfo(file.Path).Length;
+        }
+
         public new virtual IStorage OpenFile(IFile file, FileMode mode)
         {
             return Fs.OpenFile(file.Path, mode).AsStorage();
@@ -49,15 +54,10 @@ namespace LibHac.Nand
             string[] dirs = Fs.GetDirectories(directory.Path, searchPattern, searchOption);
             List<IFileSytemEntry> entries = new List<IFileSytemEntry>();
             for (int i = 0; i < dirs.Length; i++)
-                entries.Add(new IDirectory(this, dirs[i]));
+                entries.Add(GetDirectory(dirs[i]));
             for (int i = 0; i < files.Length; i++)
-                entries.Add(new IFile(this, files[i]));
+                entries.Add(GetFile(files[i]));
             return entries.ToArray();
-        }
-
-        public string GetFullPath(string path)
-        {
-            return path;
         }
 
         protected override IDirectory GetPath(string path)

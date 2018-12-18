@@ -545,7 +545,6 @@ namespace LibHac
                 new KeyValue("bis_kek_source", 0x10, set => set.BisKekSource),
                 new KeyValue("save_mac_kek_source", 0x10, set => set.SaveMacKekSource),
                 new KeyValue("save_mac_key_source", 0x10, set => set.SaveMacKeySource),
-                new KeyValue("save_mac_key", 0x10, set => set.SaveMacKey)
             };
 
             for (int slot = 0; slot < 0x20; slot++)
@@ -585,7 +584,8 @@ namespace LibHac
                 new KeyValue("secure_boot_key", 0x10, set => set.SecureBootKey),
                 new KeyValue("tsec_key", 0x10, set => set.TsecKey),
                 new KeyValue("device_key", 0x10, set => set.DeviceKey),
-                new KeyValue("sd_seed", 0x10, set => set.SdSeed)
+                new KeyValue("sd_seed", 0x10, set => set.SdSeed),
+                new KeyValue("save_mac_key", 0x10, set => set.SaveMacKey)
             };
 
             for (int slot = 0; slot < 0x20; slot++)

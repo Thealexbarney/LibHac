@@ -435,7 +435,11 @@ namespace DiscUtils.Internal
                 pattern += ".";
             }
 
-            string query = "^" + Regex.Escape(pattern).Replace(@"\*", ".*").Replace(@"\?", "[^.]") + "$";
+            string query;
+            if (pattern == "*.")
+                query = ".*";
+            else
+                query = "^" + Regex.Escape(pattern).Replace(@"\*", ".*").Replace(@"\?", "[^.]") + "$";
             return new Regex(query, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         }
 
