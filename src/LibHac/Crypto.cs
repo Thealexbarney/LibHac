@@ -94,7 +94,7 @@ namespace LibHac
             }
         }
 
-        private static BigInteger GetBigInteger(byte[] bytes)
+        internal static BigInteger GetBigInteger(byte[] bytes)
         {
             var signPadded = new byte[bytes.Length + 1];
             Buffer.BlockCopy(bytes, 0, signPadded, 1, bytes.Length);
@@ -156,6 +156,15 @@ namespace LibHac
 
         public static Validity Rsa2048PssVerify(byte[] data, byte[] signature, byte[] modulus)
         {
+#if NETFRAMEWORK
+            if (true)
+            {
+                return Compat.Rsa2048PssVerifyMono(data, signature, modulus)
+                    ? Validity.Valid
+                    : Validity.Invalid;
+            }
+#endif
+
 #if USE_RSA_CNG
             using (RSA rsa = new RSACng())
 #else
@@ -172,6 +181,7 @@ namespace LibHac
 
         public static byte[] DecryptTitleKey(byte[] titleKeyblock, RSAParameters rsaParams)
         {
+            // todo: Does this work on Mono?
 #if USE_RSA_CNG
             RSA rsa = new RSACng();
 #else
