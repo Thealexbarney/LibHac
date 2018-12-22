@@ -94,7 +94,7 @@ namespace LibHac
             }
         }
 
-        private static BigInteger GetBigInteger(byte[] bytes)
+        internal static BigInteger GetBigInteger(byte[] bytes)
         {
             var signPadded = new byte[bytes.Length + 1];
             Buffer.BlockCopy(bytes, 0, signPadded, 1, bytes.Length);
@@ -156,6 +156,15 @@ namespace LibHac
 
         public static Validity Rsa2048PssVerify(byte[] data, byte[] signature, byte[] modulus)
         {
+#if NETFRAMEWORK
+            if (true)
+            {
+                return Compat.Rsa2048PssVerifyMono(data, signature, modulus)
+                    ? Validity.Valid
+                    : Validity.Invalid;
+            }
+#endif
+
 #if USE_RSA_CNG
             using (RSA rsa = new RSACng())
 #else
@@ -172,6 +181,7 @@ namespace LibHac
 
         public static byte[] DecryptTitleKey(byte[] titleKeyblock, RSAParameters rsaParams)
         {
+            // todo: Does this work on Mono?
 #if USE_RSA_CNG
             RSA rsa = new RSACng();
 #else
@@ -334,11 +344,12 @@ namespace LibHac
             return t;
         }
 
-        // https://stackoverflow.com/questions/29163493/aes-cmac-calculation-c-sharp
         public static void CalculateAesCmac(byte[] key, byte[] src, int srcIndex, byte[] dest, int destIndex, int length)
         {
             var l = new byte[16];
             EncryptCbc(key, new byte[16], new byte[16], l, 0x10);
+            byte[] paddedMessage = src;
+            int paddedLength = length;
 
             byte[] firstSubkey = Rol(l);
             if ((l[0] & 0x80) == 0x80)
@@ -348,28 +359,26 @@ namespace LibHac
             if ((firstSubkey[0] & 0x80) == 0x80)
                 secondSubkey[15] ^= 0x87;
 
-            int paddingBytes = 16 - length % 16;
-            var srcPadded = new byte[length + paddingBytes];
-
-            Array.Copy(src, srcIndex, srcPadded, 0, length);
-
-            if (paddingBytes > 0)
+            if (length != 0 && length % 16 == 0)
             {
-                srcPadded[length] = 0x80;
-
                 for (int j = 0; j < firstSubkey.Length; j++)
-                    srcPadded[length - 16 + j] ^= firstSubkey[j];
+                    src[length - 16 + j] ^= firstSubkey[j];
             }
             else
             {
+                paddedLength += 16 - length % 16;
+                paddedMessage = new byte[paddedLength];
+                paddedMessage[length] = 0x80;
+                Array.Copy(src, srcIndex, paddedMessage, 0, length);
+
                 for (int j = 0; j < secondSubkey.Length; j++)
-                    srcPadded[length - 16 + j] ^= secondSubkey[j];
+                    paddedMessage[paddedLength - 16 + j] ^= secondSubkey[j];
             }
 
-            var encResult = new byte[length];
-            EncryptCbc(key, new byte[16], srcPadded, encResult, length);
+            var encResult = new byte[paddedMessage.Length];
+            EncryptCbc(key, new byte[16], paddedMessage, encResult, paddedLength);
 
-            Array.Copy(encResult, length - 0x10, dest, destIndex, 0x10);
+            Array.Copy(encResult, paddedLength - 0x10, dest, destIndex, 0x10);
         }
 
         private static byte[] Rol(byte[] b)
