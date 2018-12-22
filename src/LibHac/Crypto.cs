@@ -3,11 +3,6 @@ using System.IO;
 using System.Numerics;
 using System.Security.Cryptography;
 using LibHac.IO;
-using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Digests;
-using Org.BouncyCastle.Crypto.Engines;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Crypto.Signers;
 
 namespace LibHac
 {
@@ -161,36 +156,17 @@ namespace LibHac
 
         public static Validity Rsa2048PssVerify(byte[] data, byte[] signature, byte[] modulus)
         {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-            {
 #if USE_RSA_CNG
-                using (RSA rsa = new RSACng())
+            using (RSA rsa = new RSACng())
 #else
-                using (RSA rsa = RSA.Create())
+            using (RSA rsa = RSA.Create())
 #endif
-                {
-                    rsa.ImportParameters(new RSAParameters { Exponent = new byte[] { 1, 0, 1 }, Modulus = modulus });
-
-                    return rsa.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss)
-                        ? Validity.Valid
-                        : Validity.Invalid;
-                }
-            }
-            else
             {
-                try
-                {
-                    PssSigner pss = new PssSigner(new RsaEngine(), new Sha256Digest());
-                    pss.Init(false, new RsaKeyParameters(false, new Org.BouncyCastle.Math.BigInteger(1, modulus), new Org.BouncyCastle.Math.BigInteger(1, new byte[] { 1, 0, 1 })));
-                    pss.BlockUpdate(data, 0, data.Length);
-                    return pss.VerifySignature(signature)
-                        ? Validity.Valid
-                        : Validity.Invalid;
-                }
-                catch (DataLengthException)
-                {
-                    return Validity.Unchecked;
-                }
+                rsa.ImportParameters(new RSAParameters { Exponent = new byte[] { 1, 0, 1 }, Modulus = modulus });
+
+                return rsa.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss)
+                    ? Validity.Valid
+                    : Validity.Invalid;
             }
         }
 
