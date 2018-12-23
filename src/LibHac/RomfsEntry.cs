@@ -31,6 +31,9 @@ namespace LibHac
                     dir = dir.ParentDir;
                 }
 
+                //todo
+                if (list.Count == 1) list.Add("/");
+
                 for (int i = list.Count - 1; i >= 0; i--)
                 {
                     sb.Append(list[i]);

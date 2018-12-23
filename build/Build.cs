@@ -53,7 +53,7 @@ class Build : NukeBuild
         .DependsOn(Clean)
         .Executes(() =>
         {
-            var settings = new DotNetRestoreSettings()
+            DotNetRestoreSettings settings = new DotNetRestoreSettings()
                 .SetProjectFile(Solution);
 
             if (EnvironmentInfo.IsUnix) settings = settings.RemoveRuntimes("net46");
@@ -65,7 +65,7 @@ class Build : NukeBuild
         .DependsOn(Restore)
         .Executes(() =>
         {
-            var buildSettings = new DotNetBuildSettings()
+            DotNetBuildSettings buildSettings = new DotNetBuildSettings()
                 .SetProjectFile(Solution)
                 .EnableNoRestore()
                 .SetConfiguration(Configuration);
@@ -74,7 +74,7 @@ class Build : NukeBuild
 
             DotNetBuild(s => buildSettings);
 
-            var publishSettings = new DotNetPublishSettings()
+            DotNetPublishSettings publishSettings = new DotNetPublishSettings()
                 .EnableNoRestore()
                 .SetConfiguration(Configuration);
 
@@ -105,7 +105,7 @@ class Build : NukeBuild
         .DependsOn(Compile)
         .Executes(() =>
         {
-            var settings = new DotNetPackSettings()
+            DotNetPackSettings settings = new DotNetPackSettings()
                 .SetProject(LibHacProject)
                 .EnableNoBuild()
                 .SetConfiguration(Configuration)
@@ -154,7 +154,7 @@ class Build : NukeBuild
         .DependsOn(Compile)
         .Executes(() =>
         {
-            var settings = new DotNetTestSettings()
+            DotNetTestSettings settings = new DotNetTestSettings()
                 .SetProjectFile(LibHacTestProject)
                 .EnableNoBuild()
                 .SetConfiguration(Configuration);

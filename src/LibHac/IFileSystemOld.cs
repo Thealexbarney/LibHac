@@ -2,7 +2,7 @@
 
 namespace LibHac
 {
-    public interface IFileSystem
+    public interface IFileSystemOld
     {
         bool FileExists(string path);
         bool DirectoryExists(string path);

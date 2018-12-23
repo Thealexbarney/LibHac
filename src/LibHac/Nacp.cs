@@ -64,7 +64,7 @@ namespace LibHac
         {
             long start = file.Position;
 
-            BinaryReader reader = new BinaryReader(file);
+            var reader = new BinaryReader(file);
 
             for (int i = 0; i < 16; i++)
             {
