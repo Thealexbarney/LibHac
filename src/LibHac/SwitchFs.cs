@@ -12,7 +12,7 @@ namespace LibHac
     public class SwitchFs : IDisposable
     {
         public Keyset Keyset { get; }
-        public IFileSystem Fs { get; }
+        public IFileSystemOld Fs { get; }
         public string ContentsDir { get; }
         public string SaveDir { get; }
 
@@ -21,7 +21,7 @@ namespace LibHac
         public Dictionary<ulong, Title> Titles { get; } = new Dictionary<ulong, Title>();
         public Dictionary<ulong, Application> Applications { get; } = new Dictionary<ulong, Application>();
 
-        public SwitchFs(Keyset keyset, IFileSystem fs)
+        public SwitchFs(Keyset keyset, IFileSystemOld fs)
         {
             Fs = fs;
             Keyset = keyset;
@@ -232,7 +232,7 @@ namespace LibHac
             }
         }
 
-        internal static IStorage OpenSplitNcaStorage(IFileSystem fs, string path)
+        internal static IStorage OpenSplitNcaStorage(IFileSystemOld fs, string path)
         {
             var files = new List<string>();
             var storages = new List<IStorage>();
