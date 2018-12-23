@@ -157,7 +157,7 @@ namespace LibHac
         public static Validity Rsa2048PssVerify(byte[] data, byte[] signature, byte[] modulus)
         {
 #if NETFRAMEWORK
-            if (true)
+            if (Compat.IsMono)
             {
                 return Compat.Rsa2048PssVerifyMono(data, signature, modulus)
                     ? Validity.Valid
