@@ -136,7 +136,7 @@ namespace LibHac.IO
                 length = (int)Math.Min(Length - offset, length);
             }
 
-            BaseStorage.Read(block.Buffer, offset, length, 0);
+            BaseStorage.Read(block.Buffer.AsSpan(0, length), offset);
             block.Length = length;
             block.Index = index;
             block.Dirty = false;

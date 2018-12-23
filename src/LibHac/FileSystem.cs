@@ -4,7 +4,7 @@ using System.IO;
 
 namespace LibHac
 {
-    public class FileSystem : IFileSystem
+    public class FileSystem : IFileSystemOld
     {
         public string Root { get; }
 

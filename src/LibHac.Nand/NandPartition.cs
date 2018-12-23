@@ -4,7 +4,7 @@ using DiscUtils.Fat;
 
 namespace LibHac.Nand
 {
-    public class NandPartition : IFileSystem
+    public class NandPartition : IFileSystemOld
     {
         public FatFileSystem Fs { get; }
 

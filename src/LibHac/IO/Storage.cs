@@ -95,7 +95,7 @@ namespace LibHac.IO
 
             if (Length != -1)
             {
-                if (offset + count > Length) throw new ArgumentException();
+                if (offset + count > Length) throw new ArgumentException("The given offset and count exceed the length of the Storage");
             }
         }
 
@@ -107,7 +107,7 @@ namespace LibHac.IO
 
             if (Length != -1)
             {
-                if (offset + destination.Length > Length) throw new ArgumentException("Storage");
+                if (offset + destination.Length > Length) throw new ArgumentException("The given offset and count exceed the length of the Storage");
             }
         }
     }
