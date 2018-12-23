@@ -50,10 +50,10 @@ namespace LibHac
 
     public abstract class IFileSytemEntry
     {
-        public abstract IFileSystem FileSystem { get; }
-        public abstract string Path { get; }
+        public abstract IFileSystem FileSystem { get; protected set; }
+        public abstract string Path { get; protected set; }
         public virtual string Name => System.IO.Path.GetFileName(Path);
-        public abstract bool Exists { get; }
+        public virtual bool Exists { get; protected set; }
 
         public IDirectory Parent
         {
@@ -68,19 +68,18 @@ namespace LibHac
 
     }
 
-    public class IDirectory : IFileSytemEntry
+    public abstract class IDirectory : IFileSytemEntry
     {
-        public override IFileSystem FileSystem { get; }
-        public override string Path { get; }
+        public override IFileSystem FileSystem { get; protected set; }
+        public override string Path { get; protected set; }
         public override bool Exists => FileSystem.DirectoryExists(this);
 
         public IFile[] Files => FileSystem.GetFiles(this);
         public IDirectory[] Directories => FileSystem.GetDirectories(this);
 
-        public IDirectory(IFileSystem filesystem, string path)
+        public IDirectory(IFileSystem filesystem)
         {
             FileSystem = filesystem;
-            Path = path;
         }
 
         public IFile GetFile(string path)
@@ -104,20 +103,27 @@ namespace LibHac
         }
     }
 
+    public class Directory : IDirectory
+    {
+        public Directory(IFileSystem fileSystem, string path) : base(fileSystem)
+        {
+            Path = path;
+        }
+    }
+
     public class IFile : IFileSytemEntry
     {
-        public override IFileSystem FileSystem { get; }
-        public override string Path { get; }
+        public override IFileSystem FileSystem { get; protected set; }
+        public override string Path { get; protected set; }
         public override bool Exists => FileSystem.FileExists(this);
 
         public string Extension => System.IO.Path.GetExtension(Path);
         public string FileName => System.IO.Path.GetFileName(Path);
         public long Length => FileSystem.GetSize(this);
 
-        public IFile(IFileSystem filesystem, string path)
+        public IFile(IFileSystem filesystem)
         {
             FileSystem = filesystem;
-            Path = path;
         }
 
         public IStorage Open(FileMode mode)
@@ -139,6 +145,14 @@ namespace LibHac
         public override int GetHashCode()
         {
             return base.GetHashCode();
+        }
+
+        public class File : IFile
+        {
+            public File(IFileSystem fileSystem, string path) : base(fileSystem)
+            {
+                Path = path;
+            }
         }
     }
 }

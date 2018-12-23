@@ -5,30 +5,31 @@ using System.Text;
 
 namespace LibHac
 {
-    public abstract class RomfsEntry
+    public abstract class RomfsEntry : IFileSytemEntry
     {
+        private const string PathSeperator = "/";
         public int Offset { get; set; }
         public int ParentDirOffset { get; protected set; }
         public int NameLength { get; protected set; }
-        public string Name { get; protected set; }
+        public new string Name { get; protected set; }
 
-        public RomfsDir ParentDir { get; internal set; }
-        public string FullPath { get; private set; }
+        public new IDirectory Parent { get; internal set; }
+        public override string Path { get; protected set; }
 
         internal static void ResolveFilenames(IEnumerable<RomfsEntry> entries)
         {
             var list = new List<string>();
             var sb = new StringBuilder();
-            const string delimiter = "/";
+            const string delimiter = RomfsEntry.PathSeperator;
             foreach (RomfsEntry file in entries)
             {
                 list.Add(file.Name);
-                RomfsDir dir = file.ParentDir;
+                RomfsDir dir = file.Parent as RomfsDir;
                 while (dir != null)
                 {
                     list.Add(delimiter);
                     list.Add(dir.Name);
-                    dir = dir.ParentDir;
+                    dir = dir.Parent as RomfsDir;
                 }
 
                 for (int i = list.Count - 1; i >= 0; i--)
@@ -36,7 +37,7 @@ namespace LibHac
                     sb.Append(list[i]);
                 }
 
-                file.FullPath = sb.ToString();
+                file.Path = sb.ToString();
                 list.Clear();
                 sb.Clear();
             }
@@ -44,7 +45,7 @@ namespace LibHac
     }
 
     [DebuggerDisplay("{" + nameof(Name) + "}")]
-    public class RomfsDir : RomfsEntry
+    public class RomfsDir : Directory
     {
         public int NextSiblingOffset { get; }
         public int FirstChildOffset { get; }
@@ -56,8 +57,9 @@ namespace LibHac
         public RomfsFile FirstFile { get; internal set; }
         public RomfsDir NextDirHash { get; internal set; }
 
-        public RomfsDir(BinaryReader reader)
+        public RomfsDir(BinaryReader reader, IFileSystem fs) : base(fs)
         {
+            FileSystem = fs;
             ParentDirOffset = reader.ReadInt32();
             NextSiblingOffset = reader.ReadInt32();
             FirstChildOffset = reader.ReadInt32();
