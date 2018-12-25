@@ -255,6 +255,15 @@ namespace LibHac
             return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel, leaveOpen);
         }
 
+        public IFileSystem OpenSectionFileSystem(int index)
+        {
+            IStorage storage = OpenSection(index, false, IntegrityCheckLevel.ErrorOnInvalid, true);
+
+            var fs = new RomFsFileSystem(storage);
+
+            return fs;
+        }
+
         /// <summary>
         /// Sets a base <see cref="Nca"/> to use when reading patches.
         /// </summary>
