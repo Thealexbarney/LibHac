@@ -6,10 +6,8 @@ using LibHac.IO;
 
 namespace LibHac
 {
-    public class Romfs : IFileSystem
+    public class Romfs
     {
-        public const string Delimiter = "/";
-        public new string PathSeperator = Romfs.Delimiter;
         public const int IvfcMaxLevel = 6;
         public RomfsHeader Header { get; }
         public List<RomfsDir> Directories { get; } = new List<RomfsDir>();
@@ -39,7 +37,7 @@ namespace LibHac
                 int position = 0;
                 while (position + 20 < Header.DirMetaTableSize)
                 {
-                    var dir = new RomfsDir(reader, this) { Offset = position };
+                    var dir = new RomfsDir(reader) { Offset = position };
                     Directories.Add(dir);
                     if (dir.ParentDirOffset == position) RootDir = dir;
                     position = (int)reader.BaseStream.Position;
