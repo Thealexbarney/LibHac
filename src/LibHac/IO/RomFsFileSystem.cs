@@ -17,6 +17,7 @@ namespace LibHac.IO
         public Dictionary<string, RomfsDir> DirectoryDict { get; }
         private IStorage BaseStorage { get; }
 
+        // todo Don't parse entire table when opening
         public RomFsFileSystem(IStorage storage)
         {
             BaseStorage = storage;

@@ -4,19 +4,20 @@ using System.IO;
 
 namespace LibHac.IO
 {
-    public static class IFileSystemExtensions
+    public static class FileSystemExtensions
     {
         public static void Extract(this IFileSystem fs, string outDir)
         {
-            var root = fs.OpenDirectory("/", OpenDirectoryMode.All);
+            IDirectory root = fs.OpenDirectory("/", OpenDirectoryMode.All);
 
-            foreach (var filename in root.EnumerateFiles())
+            foreach (string filename in root.EnumerateFiles())
             {
                 //Console.WriteLine(filename);
                 IFile file = fs.OpenFile(filename);
                 string outPath = Path.Combine(outDir, filename.TrimStart('/'));
 
-                Directory.CreateDirectory(Path.GetDirectoryName(outPath));
+                string directoryName = Path.GetDirectoryName(outPath);
+                if(!string.IsNullOrWhiteSpace(directoryName)) Directory.CreateDirectory(directoryName);
 
                 using (var outFile = new FileStream(outPath, FileMode.Create, FileAccess.ReadWrite))
                 {
@@ -27,9 +28,9 @@ namespace LibHac.IO
 
         public static IEnumerable<string> EnumerateFiles(this IDirectory directory)
         {
-            var entries = directory.Read();
+            DirectoryEntry[] entries = directory.Read();
 
-            foreach (var entry in entries)
+            foreach (DirectoryEntry entry in entries)
             {
                 if (entry.Type == DirectoryEntryType.Directory)
                 {
