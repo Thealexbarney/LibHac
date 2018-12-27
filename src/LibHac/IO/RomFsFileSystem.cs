@@ -86,32 +86,32 @@ namespace LibHac.IO
 
         public void Commit()
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public void CreateDirectory(string path)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public void CreateFile(string path, long size)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public void DeleteDirectory(string path)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public void DeleteFile(string path)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
-        public IDirectory OpenDirectory(string path)
+        public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
         {
-            return new RomFsDirectory(this, path);
+            return new RomFsDirectory(this, path, mode);
         }
 
         public IFile OpenFile(string path)
@@ -131,17 +131,17 @@ namespace LibHac.IO
 
         public void RenameDirectory(string srcPath, string dstPath)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public void RenameFile(string srcPath, string dstPath)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public bool DirectoryExists(string path)
         {
-            throw new NotImplementedException();
+            return DirectoryDict.ContainsKey(path);
         }
 
         public bool FileExists(string path)

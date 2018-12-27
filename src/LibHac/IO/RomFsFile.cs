@@ -39,7 +39,7 @@ namespace LibHac.IO
 
         public long SetSize()
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
     }
 }

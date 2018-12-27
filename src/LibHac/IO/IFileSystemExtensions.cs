@@ -8,7 +8,7 @@ namespace LibHac.IO
     {
         public static void Extract(this IFileSystem fs, string outDir)
         {
-            var root = fs.OpenDirectory("/");
+            var root = fs.OpenDirectory("/", OpenDirectoryMode.All);
 
             foreach (var filename in root.EnumerateFiles())
             {
@@ -33,7 +33,7 @@ namespace LibHac.IO
             {
                 if (entry.Type == DirectoryEntryType.Directory)
                 {
-                    foreach(string a in EnumerateFiles(directory.ParentFileSystem.OpenDirectory(entry.Name)))
+                    foreach (string a in EnumerateFiles(directory.ParentFileSystem.OpenDirectory(entry.Name, OpenDirectoryMode.All)))
                     {
                         yield return a;
                     }

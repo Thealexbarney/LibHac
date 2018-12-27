@@ -7,8 +7,9 @@ namespace LibHac.IO
         public IFileSystem ParentFileSystem { get; }
 
         private RomfsDir Directory { get; }
+        private OpenDirectoryMode Mode { get; }
 
-        public RomFsDirectory(RomFsFileSystem fs, string path)
+        public RomFsDirectory(RomFsFileSystem fs, string path, OpenDirectoryMode mode)
         {
             if (!fs.DirectoryDict.TryGetValue(path, out RomfsDir dir))
             {
@@ -17,6 +18,7 @@ namespace LibHac.IO
 
             ParentFileSystem = fs;
             Directory = dir;
+            Mode = mode;
         }
 
         public DirectoryEntry[] Read()
@@ -26,22 +28,29 @@ namespace LibHac.IO
             var entries = new DirectoryEntry[count];
             int index = 0;
 
-            var dirEntry = Directory.FirstChild;
-
-            while (dirEntry != null)
+            if (Mode.HasFlag(OpenDirectoryMode.Directories))
             {
-                entries[index] = new DirectoryEntry(dirEntry.FullPath, DirectoryEntryType.Directory, 0);
-                dirEntry = dirEntry.NextSibling;
-                index++;
+                RomfsDir dirEntry = Directory.FirstChild;
+
+                while (dirEntry != null)
+                {
+                    entries[index] = new DirectoryEntry(dirEntry.FullPath, DirectoryEntryType.Directory, 0);
+                    dirEntry = dirEntry.NextSibling;
+                    index++;
+                }
             }
 
-            RomfsFile fileEntry = Directory.FirstFile;
-
-            while (fileEntry != null)
+            if (Mode.HasFlag(OpenDirectoryMode.Files))
             {
-                entries[index] = new DirectoryEntry(fileEntry.FullPath, DirectoryEntryType.File, fileEntry.DataLength);
-                fileEntry = fileEntry.NextSibling;
-                index++;
+                RomfsFile fileEntry = Directory.FirstFile;
+
+                while (fileEntry != null)
+                {
+                    entries[index] =
+                        new DirectoryEntry(fileEntry.FullPath, DirectoryEntryType.File, fileEntry.DataLength);
+                    fileEntry = fileEntry.NextSibling;
+                    index++;
+                }
             }
 
             return entries;
@@ -50,20 +59,27 @@ namespace LibHac.IO
         public int GetEntryCount()
         {
             int count = 0;
-            RomfsDir dirEntry = Directory.FirstChild;
 
-            while (dirEntry != null)
+            if (Mode.HasFlag(OpenDirectoryMode.Directories))
             {
-                count++;
-                dirEntry = dirEntry.NextSibling;
+                RomfsDir dirEntry = Directory.FirstChild;
+
+                while (dirEntry != null)
+                {
+                    count++;
+                    dirEntry = dirEntry.NextSibling;
+                }
             }
 
-            RomfsFile fileEntry = Directory.FirstFile;
-
-            while (fileEntry != null)
+            if (Mode.HasFlag(OpenDirectoryMode.Files))
             {
-                count++;
-                fileEntry = fileEntry.NextSibling;
+                RomfsFile fileEntry = Directory.FirstFile;
+
+                while (fileEntry != null)
+                {
+                    count++;
+                    fileEntry = fileEntry.NextSibling;
+                }
             }
 
             return count;
