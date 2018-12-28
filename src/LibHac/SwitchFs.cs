@@ -89,7 +89,7 @@ namespace LibHac
 
                     nca.NcaId = Path.GetFileNameWithoutExtension(file);
                     string extension = nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
-                    nca.Filename = nca.NcaId + extension;
+                    nca.Filename = file;
                 }
                 catch (MissingKeyException ex)
                 {
