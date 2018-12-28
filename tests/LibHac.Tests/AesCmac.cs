@@ -4,56 +4,71 @@ namespace LibHac.Tests
 {
     public class AesCmac
     {
-        private static readonly byte[] CmacKey = "2b7e151628aed2a6abf7158809cf4f3c".ToBytes();
-
-        private static readonly TestData[] TestVectors =
+        public static readonly TheoryData<TestData> TestVectors = new TheoryData<TestData>
         {
             new TestData
             {
-                Key = CmacKey,
+                Key = "2B7E151628AED2A6ABF7158809CF4F3C".ToBytes(),
                 Message = "".ToBytes(),
-                Expected = "bb1d6929e95937287fa37d129b756746".ToBytes()
+                Expected = "BB1D6929E95937287FA37D129B756746".ToBytes()
             },
             new TestData
             {
-                Key = CmacKey,
-                Message = "6bc1bee22e409f96e93d7e117393172a".ToBytes(),
-                Expected = "070a16b46b4d4144f79bdd9dd04a287c".ToBytes()
+                Key = "2B7E151628AED2A6ABF7158809CF4F3C".ToBytes(),
+                Message = "6BC1BEE22E409F96E93D7E117393172A".ToBytes(),
+                Expected = "070A16B46B4D4144F79BDD9DD04A287C".ToBytes(),
+                Length = 0x10
             },
             new TestData
             {
-                Key = CmacKey,
-                Message = "6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e5130c81c46a35ce411".ToBytes(),
-                Expected = "dfa66747de9ae63030ca32611497c827".ToBytes()
+                Key = "2B7E151628AED2A6ABF7158809CF4F3C".ToBytes(),
+                Message = "6BC1BEE22E409F96E93D7E117393172AAE2D8A571E03AC9C9EB76FAC45AF8E5130C81C46A35CE411".ToBytes(),
+                Expected = "DFA66747DE9AE63030CA32611497C827".ToBytes(),
+                Length = 0x28
             },
             new TestData
             {
-                Key = CmacKey,
-                Message = "6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e5130c81c46a35ce411e5fbc1191a0a52eff69f2445df4f9b17ad2b417be66c3710".ToBytes(),
-                Expected = "51f0bebf7e3b9d92fc49741779363cfe".ToBytes()
+                Key = "2B7E151628AED2A6ABF7158809CF4F3C".ToBytes(),
+                Message = "6BC1BEE22E409F96E93D7E117393172AAE2D8A571E03AC9C9EB76FAC45AF8E5130C81C46A35CE411E5FBC1191A0A52EFF69F2445DF4F9B17AD2B417BE66C3710".ToBytes(),
+                Expected = "51F0BEBF7E3B9D92FC49741779363CFE".ToBytes(),
+                Length = 0x40
+            },
+            new TestData
+            {
+                Key = "2B7E151628AED2A6ABF7158809CF4F3C".ToBytes(),
+                Message = "00000000006BC1BEE22E409F96E93D7E117393172A0000000000".ToBytes(),
+                Expected = "070A16B46B4D4144F79BDD9DD04A287C".ToBytes(),
+                Start = 5,
+                Length = 0x10
+            },
+            new TestData
+            {
+                Key = "2B7E151628AED2A6ABF7158809CF4F3C".ToBytes(),
+                Message = "00000000006BC1BEE22E409F96E93D7E117393172A0000000000000000000000".ToBytes(),
+                Expected = "070A16B46B4D4144F79BDD9DD04A287C".ToBytes(),
+                Start = 5,
+                Length = 0x10
             }
         };
 
         [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(2)]
-        [InlineData(3)]
-        public static void Encrypt(int index)
+        [MemberData(nameof(TestVectors))]
+        public static void TestCmacTestVectors(TestData data)
         {
-            TestData data = TestVectors[index];
             var actual = new byte[0x10];
 
-            Crypto.CalculateAesCmac(data.Key, data.Message, 0, actual, 0, data.Message.Length);
+            Crypto.CalculateAesCmac(data.Key, data.Message, data.Start, actual, 0, data.Length);
 
             Assert.Equal(data.Expected, actual);
         }
 
-        private struct TestData
+        public struct TestData
         {
             public byte[] Key;
             public byte[] Message;
             public byte[] Expected;
+            public int Start;
+            public int Length;
         }
     }
 }
