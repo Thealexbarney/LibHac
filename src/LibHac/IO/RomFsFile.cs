@@ -2,7 +2,7 @@
 
 namespace LibHac.IO
 {
-    public class RomFsFile : IFile
+    public class RomFsFile : FileBase
     {
         private IStorage BaseStorage { get; }
         private long Offset { get; }
@@ -15,29 +15,32 @@ namespace LibHac.IO
             Size = size;
         }
 
-        public void Read(Span<byte> destination, long offset)
+        public override int Read(Span<byte> destination, long offset)
         {
             long storageOffset = Offset + offset;
+            int toRead = GetAvailableSizeAndValidate(destination, offset);
 
-            BaseStorage.Read(destination, storageOffset);
+            BaseStorage.Read(destination.Slice(0, toRead), storageOffset);
+
+            return toRead;
         }
 
-        public void Write(ReadOnlySpan<byte> source, long offset)
+        public override void Write(ReadOnlySpan<byte> source, long offset)
         {
             throw new NotImplementedException();
         }
 
-        public void Flush()
+        public override void Flush()
         {
             throw new NotImplementedException();
         }
 
-        public long GetSize()
+        public override long GetSize()
         {
             return Size;
         }
 
-        public long SetSize()
+        public override long SetSize()
         {
             throw new NotSupportedException();
         }
