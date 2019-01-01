@@ -13,7 +13,7 @@ namespace hactoolnet
         {
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
             {
-                var pfs = new Pfs(file.AsStorage());
+                var pfs = new PartitionFileSystem(file.AsStorage());
                 ctx.Logger.LogMessage(pfs.Print());
 
                 if (ctx.Options.OutDir != null)
@@ -23,7 +23,7 @@ namespace hactoolnet
             }
         }
 
-        private static string Print(this Pfs pfs)
+        private static string Print(this PartitionFileSystem pfs)
         {
             const int colLen = 36;
             const int fileNameLen = 39;
@@ -38,7 +38,7 @@ namespace hactoolnet
 
             for (int i = 0; i < pfs.Files.Length; i++)
             {
-                PfsFileEntry file = pfs.Files[i];
+                PartitionFileEntry file = pfs.Files[i];
 
                 string label = i == 0 ? "Files:" : "";
                 string offsets = $"{file.Offset:x12}-{file.Offset + file.Size:x12}{file.HashValidity.GetValidityString()}";
