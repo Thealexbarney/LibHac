@@ -22,6 +22,7 @@ namespace LibHac.IO
 
             for (int i = 0; i < cacheSize; i++)
             {
+                // todo why is this rented?
                 var block = new CacheBlock { Buffer = ArrayPool<byte>.Shared.Rent(blockSize) };
                 Blocks.AddLast(block);
             }

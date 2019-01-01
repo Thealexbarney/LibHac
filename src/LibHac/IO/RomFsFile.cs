@@ -10,6 +10,7 @@ namespace LibHac.IO
 
         public RomFsFile(IStorage baseStorage, long offset, long size)
         {
+            Mode = OpenMode.Read;
             BaseStorage = baseStorage;
             Offset = offset;
             Size = size;
@@ -17,9 +18,9 @@ namespace LibHac.IO
 
         public override int Read(Span<byte> destination, long offset)
         {
-            long storageOffset = Offset + offset;
-            int toRead = GetAvailableSizeAndValidate(destination, offset);
+            int toRead = ValidateReadParamsAndGetSize(destination, offset);
 
+            long storageOffset = Offset + offset;
             BaseStorage.Read(destination.Slice(0, toRead), storageOffset);
 
             return toRead;
@@ -32,7 +33,6 @@ namespace LibHac.IO
 
         public override void Flush()
         {
-            throw new NotImplementedException();
         }
 
         public override long GetSize()
@@ -40,7 +40,7 @@ namespace LibHac.IO
             return Size;
         }
 
-        public override long SetSize()
+        public override void SetSize(long size)
         {
             throw new NotSupportedException();
         }
