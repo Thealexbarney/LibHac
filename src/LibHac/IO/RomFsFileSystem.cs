@@ -24,6 +24,7 @@ namespace LibHac.IO
 
             byte[] dirMetaTable;
             byte[] fileMetaTable;
+
             using (var reader = new BinaryReader(BaseStorage.AsStream(), Encoding.Default, true))
             {
                 Header = new RomfsHeader(reader);
@@ -117,6 +118,8 @@ namespace LibHac.IO
 
         public IFile OpenFile(string path, OpenMode mode)
         {
+            path = PathTools.Normalize(path);
+
             if (!FileDict.TryGetValue(path, out RomfsFile file))
             {
                 throw new FileNotFoundException();
@@ -147,11 +150,15 @@ namespace LibHac.IO
 
         public bool DirectoryExists(string path)
         {
+            path = PathTools.Normalize(path);
+
             return DirectoryDict.ContainsKey(path);
         }
 
         public bool FileExists(string path)
         {
+            path = PathTools.Normalize(path);
+
             return FileDict.ContainsKey(path);
         }
     }

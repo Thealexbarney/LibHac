@@ -255,13 +255,24 @@ namespace LibHac
             return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel, leaveOpen);
         }
 
-        public IFileSystem OpenSectionFileSystem(int index)
+        public IFileSystem OpenSectionFileSystem(int index, IntegrityCheckLevel integrityCheckLevel)
         {
-            IStorage storage = OpenSection(index, false, IntegrityCheckLevel.ErrorOnInvalid, true);
+            if (Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
+            NcaFsHeader header = Sections[index].Header;
 
-            var fs = new RomFsFileSystem(storage);
+            IStorage storage = OpenSection(index, false, integrityCheckLevel, true);
 
-            return fs;
+            switch (header.Type)
+            {
+                case SectionType.Pfs0:
+                    return new PartitionFileSystem(storage);
+                case SectionType.Romfs:
+                    return new RomFsFileSystem(storage);
+                case SectionType.Bktr:
+                    return new RomFsFileSystem(storage);
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
         /// <summary>
