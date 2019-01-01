@@ -115,11 +115,16 @@ namespace LibHac.IO
             return new RomFsDirectory(this, path, mode);
         }
 
-        public IFile OpenFile(string path)
+        public IFile OpenFile(string path, OpenMode mode)
         {
             if (!FileDict.TryGetValue(path, out RomfsFile file))
             {
                 throw new FileNotFoundException();
+            }
+
+            if (mode != OpenMode.Read)
+            {
+                throw new ArgumentOutOfRangeException(nameof(mode), "RomFs files must be opened read-only.");
             }
 
             return OpenFile(file);

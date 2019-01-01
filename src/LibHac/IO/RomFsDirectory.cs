@@ -1,16 +1,20 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 
 namespace LibHac.IO
 {
     public class RomFsDirectory : IDirectory
     {
         public IFileSystem ParentFileSystem { get; }
+        public string FullPath { get; }
 
         private RomfsDir Directory { get; }
         private OpenDirectoryMode Mode { get; }
 
         public RomFsDirectory(RomFsFileSystem fs, string path, OpenDirectoryMode mode)
         {
+            path = PathTools.Normalize(path);
+
             if (!fs.DirectoryDict.TryGetValue(path, out RomfsDir dir))
             {
                 throw new DirectoryNotFoundException(path);
@@ -18,25 +22,20 @@ namespace LibHac.IO
 
             ParentFileSystem = fs;
             Directory = dir;
+            FullPath = path;
             Mode = mode;
         }
 
-        public DirectoryEntry[] Read()
+        public IEnumerable<DirectoryEntry> Read()
         {
-            int count = GetEntryCount();
-
-            var entries = new DirectoryEntry[count];
-            int index = 0;
-
             if (Mode.HasFlag(OpenDirectoryMode.Directories))
             {
                 RomfsDir dirEntry = Directory.FirstChild;
 
                 while (dirEntry != null)
                 {
-                    entries[index] = new DirectoryEntry(dirEntry.FullPath, DirectoryEntryType.Directory, 0);
+                    yield return new DirectoryEntry(dirEntry.Name, FullPath + '/' + dirEntry.Name, DirectoryEntryType.Directory, 0);
                     dirEntry = dirEntry.NextSibling;
-                    index++;
                 }
             }
 
@@ -46,14 +45,10 @@ namespace LibHac.IO
 
                 while (fileEntry != null)
                 {
-                    entries[index] =
-                        new DirectoryEntry(fileEntry.FullPath, DirectoryEntryType.File, fileEntry.DataLength);
+                    yield return new DirectoryEntry(fileEntry.Name, FullPath + '/' + fileEntry.Name, DirectoryEntryType.File, fileEntry.DataLength);
                     fileEntry = fileEntry.NextSibling;
-                    index++;
                 }
             }
-
-            return entries;
         }
 
         public int GetEntryCount()
