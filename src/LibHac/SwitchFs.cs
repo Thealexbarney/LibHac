@@ -125,18 +125,23 @@ namespace LibHac
             {
                 Savefile save = null;
                 string saveName = Path.GetFileNameWithoutExtension(file.Path);
-
+                IStorage storage = Fs.OpenFile(file, FileMode.Open);
                 try
                 {
-                    IStorage storage = Fs.OpenFile(file, FileMode.Open);
-
                     string sdPath = Util.GetRelativePath(file.Path, SaveDir.Path).Replace("\\", "/");
                     var nax0 = new Nax0(Keyset, storage, sdPath, false);
                     save = new Savefile(Keyset, nax0.BaseStorage, IntegrityCheckLevel.None, true);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Console.WriteLine($"{ex.Message} File: {file}");
+                    try
+                    {
+                        save = new Savefile(Keyset, storage, IntegrityCheckLevel.None, false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"{ex.Message} File: {file}");
+                    }
                 }
 
                 if (save != null && saveName != null)

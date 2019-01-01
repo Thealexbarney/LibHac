@@ -69,7 +69,7 @@ namespace hactoolnet
 
             foreach (Nca nca in title.Ncas)
             {
-                builder.AddFile(nca.Filename, nca.GetStorage().AsStream());
+                builder.AddFile(nca.Filename, nca.GetStorage());
             }
 
             var ticket = new Ticket
@@ -84,11 +84,11 @@ namespace hactoolnet
                 SectHeaderOffset = 0x2C0
             };
             byte[] ticketBytes = ticket.GetBytes();
-            builder.AddFile($"{ticket.RightsId.ToHexString()}.tik", new MemoryStream(ticketBytes));
+            builder.AddFile($"{ticket.RightsId.ToHexString()}.tik", new MemoryStream(ticketBytes).AsStorage());
 
             Assembly thisAssembly = Assembly.GetExecutingAssembly();
             Stream cert = thisAssembly.GetManifestResourceStream("hactoolnet.CA00000003_XS00000020");
-            builder.AddFile($"{ticket.RightsId.ToHexString()}.cert", cert);
+            builder.AddFile($"{ticket.RightsId.ToHexString()}.cert", cert.AsStorage());
 
 
             using (var outStream = new FileStream(ctx.Options.NspOut, FileMode.Create, FileAccess.ReadWrite))

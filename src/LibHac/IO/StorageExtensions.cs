@@ -84,13 +84,15 @@ namespace LibHac.IO
             }
         }
 
-        public static void CopyToStream(this IStorage input, Stream output, long length, IProgressReport progress = null)
+        public static void CopyToStream(this IStorage input, Stream output, long length, IProgressReport progress = null, long sublength = -1)
         {
+            if (sublength < 0)
+                sublength = length;
             const int bufferSize = 0x8000;
             long remaining = length;
             long inOffset = 0;
             var buffer = new byte[bufferSize];
-            progress?.SetTotal(length);
+            progress?.SetTotal(sublength);
 
             while (remaining > 0)
             {

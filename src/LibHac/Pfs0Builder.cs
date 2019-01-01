@@ -24,7 +24,7 @@ namespace LibHac
             Entries.Add(entry);
         }
 
-        public void Build(Stream output, IProgressReport logger = null)
+        public void Build(Stream output, IProgressReport logger = null, bool leaveOpen = true)
         {
             var strings = new MemoryStream();
             var stringWriter = new BinaryWriter(strings);
@@ -58,9 +58,12 @@ namespace LibHac
             foreach (Entry entry in Entries)
             {
                 logger?.LogMessage(entry.Name);
-                entry.Storage.CopyTo(output.AsStorage(), logger);
+                entry.Storage.CopyToStream(output, entry.Length, logger, DataLength);
             }
             logger?.SetTotal(0);
+
+            if (!leaveOpen)
+                output.Close();
         }
 
         private class Entry

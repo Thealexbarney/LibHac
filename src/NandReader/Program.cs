@@ -89,10 +89,10 @@ namespace NandReader
             var tickets = new List<Ticket>();
             NandPartition system = nand.OpenSystemPartition();
 
-            Stream saveE1File = system.OpenFile("save\\80000000000000E1", FileMode.Open, FileAccess.Read);
+            IStorage saveE1File = system.GetFile("save\\80000000000000E1").Open(FileMode.Open, FileAccess.Read);
             tickets.AddRange(ReadTickets(keyset, saveE1File));
 
-            Stream saveE2 = system.OpenFile("save\\80000000000000E2", FileMode.Open, FileAccess.Read);
+            IStorage saveE2 = system.GetFile("save\\80000000000000E2").Open(FileMode.Open, FileAccess.Read);
             tickets.AddRange(ReadTickets(keyset, saveE2));
 
             logger?.LogMessage($"Found {tickets.Count} tickets");
@@ -100,10 +100,10 @@ namespace NandReader
             return tickets.ToArray();
         }
 
-        private static List<Ticket> ReadTickets(Keyset keyset, Stream savefile)
+        private static List<Ticket> ReadTickets(Keyset keyset, IStorage savefile)
         {
             var tickets = new List<Ticket>();
-            var save = new Savefile(keyset, savefile.AsStorage(), IntegrityCheckLevel.None, true);
+            var save = new Savefile(keyset, savefile, IntegrityCheckLevel.None, true);
             var ticketList = new BinaryReader(save.OpenFile("/ticket_list.bin").AsStream());
             var ticketFile = new BinaryReader(save.OpenFile("/ticket.bin").AsStream());
 
