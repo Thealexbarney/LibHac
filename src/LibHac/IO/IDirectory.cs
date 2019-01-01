@@ -1,10 +1,13 @@
-﻿namespace LibHac.IO
+﻿using System.Collections.Generic;
+
+namespace LibHac.IO
 {
     public interface IDirectory
     {
         IFileSystem ParentFileSystem { get; }
+        string FullPath { get; }
 
-        DirectoryEntry[] Read();
+        IEnumerable<DirectoryEntry> Read();
         int GetEntryCount();
     }
 }

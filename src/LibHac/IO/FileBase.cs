@@ -4,20 +4,80 @@ namespace LibHac.IO
 {
     public abstract class FileBase : IFile
     {
+        private bool _isDisposed;
+
         public abstract int Read(Span<byte> destination, long offset);
         public abstract void Write(ReadOnlySpan<byte> source, long offset);
         public abstract void Flush();
         public abstract long GetSize();
-        public abstract long SetSize();
+        public abstract void SetSize(long size);
 
-        protected int GetAvailableSizeAndValidate(ReadOnlySpan<byte> span, long offset)
+        protected OpenMode Mode { get; set; }
+
+        protected int ValidateReadParamsAndGetSize(ReadOnlySpan<byte> span, long offset)
         {
-            long fileLength = GetSize();
+            if (_isDisposed) throw new ObjectDisposedException(null);
+
+            if ((Mode & OpenMode.Read) == 0) throw new NotSupportedException("File does not allow reading.");
+            if (span == null) throw new ArgumentNullException(nameof(span));
+            if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), "Argument must be non-negative.");
+
+            long fileSize = GetSize();
+            int size = span.Length;
+
+            if (offset > fileSize) throw new ArgumentOutOfRangeException(nameof(offset), "Offset must be less than the file size.");
+
+            return (int)Math.Min(fileSize - offset, size);
+        }
+
+        protected void ValidateWriteParams(ReadOnlySpan<byte> span, long offset)
+        {
+            if (_isDisposed) throw new ObjectDisposedException(null);
+
+            if ((Mode & OpenMode.Write) == 0) throw new NotSupportedException("File does not allow writing.");
 
             if (span == null) throw new ArgumentNullException(nameof(span));
             if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), "Argument must be non-negative.");
 
-            return (int)Math.Min(fileLength - offset, span.Length);
+            long fileSize = GetSize();
+            int size = span.Length;
+
+            if (offset + size > fileSize)
+            {
+                if ((Mode & OpenMode.Append) == 0)
+                {
+                    throw new NotSupportedException("File does not allow appending.");
+                }
+
+                SetSize(offset + size);
+            }
         }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_isDisposed) return;
+
+            if (disposing)
+            {
+                Flush();
+            }
+
+            _isDisposed = true;
+        }
+    }
+
+    [Flags]
+    public enum OpenMode
+    {
+        Read = 1,
+        Write = 2,
+        Append = 4,
+        ReadWrite = Read | Write
     }
 }

@@ -1,68 +1,80 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
-using System.IO;
 
 namespace LibHac.IO
 {
     public static class FileSystemExtensions
     {
-        public static void Extract(this IFileSystem fs, string outDir)
+        // todo add progress logging
+        public static void CopyDirectory(this IDirectory source, IDirectory dest)
         {
-            IDirectory root = fs.OpenDirectory("/", OpenDirectoryMode.All);
+            IFileSystem sourceFs = source.ParentFileSystem;
+            IFileSystem destFs = dest.ParentFileSystem;
 
-            foreach (string filename in root.EnumerateFiles())
+            foreach (DirectoryEntry entry in source.Read())
             {
-                //Console.WriteLine(filename);
-                IFile file = fs.OpenFile(filename);
-                string outPath = Path.Combine(outDir, filename.TrimStart('/'));
+                string subSrcPath = source.FullPath + '/' + entry.Name;
+                string subDstPath = dest.FullPath + '/' + entry.Name;
 
-                string directoryName = Path.GetDirectoryName(outPath);
-                if(!string.IsNullOrWhiteSpace(directoryName)) Directory.CreateDirectory(directoryName);
-
-                using (var outFile = new FileStream(outPath, FileMode.Create, FileAccess.ReadWrite))
-                {
-                    file.CopyTo(outFile);
-                }
-            }
-        }
-
-        public static IEnumerable<string> EnumerateFiles(this IDirectory directory)
-        {
-            DirectoryEntry[] entries = directory.Read();
-
-            foreach (DirectoryEntry entry in entries)
-            {
                 if (entry.Type == DirectoryEntryType.Directory)
                 {
-                    foreach (string a in EnumerateFiles(directory.ParentFileSystem.OpenDirectory(entry.Name, OpenDirectoryMode.All)))
-                    {
-                        yield return a;
-                    }
+                    destFs.CreateDirectory(subDstPath);
+                    IDirectory subSrcDir = sourceFs.OpenDirectory(subSrcPath, OpenDirectoryMode.All);
+                    IDirectory subDstDir = destFs.OpenDirectory(subDstPath, OpenDirectoryMode.All);
+
+                    subSrcDir.CopyDirectory(subDstDir);
                 }
 
                 if (entry.Type == DirectoryEntryType.File)
                 {
-                    yield return entry.Name;
+                    destFs.CreateFile(subDstPath, entry.Size);
+
+                    using (IFile srcFile = sourceFs.OpenFile(subSrcPath, OpenMode.Read))
+                    using (IFile dstFile = destFs.OpenFile(subDstPath, OpenMode.Write))
+                    {
+                        srcFile.CopyTo(dstFile);
+                    }
                 }
             }
         }
 
-        public static void CopyTo(this IFile file, Stream output)
+        public static IEnumerable<DirectoryEntry> EnumerateEntries(this IDirectory directory)
+        {
+            IFileSystem fs = directory.ParentFileSystem;
+
+            foreach (DirectoryEntry entry in directory.Read())
+            {
+                yield return entry;
+                if (entry.Type != DirectoryEntryType.Directory) continue;
+
+                IDirectory subDir = fs.OpenDirectory(directory.FullPath + '/' + entry.Name, OpenDirectoryMode.All);
+
+                foreach (DirectoryEntry subEntry in subDir.EnumerateEntries())
+                {
+                    yield return subEntry;
+                }
+            }
+        }
+
+        // todo add progress logging
+        public static void CopyTo(this IFile file, IFile dest)
         {
             const int bufferSize = 0x8000;
-            long remaining = file.GetSize();
-            long inOffset = 0;
-            var buffer = new byte[bufferSize];
 
-            while (remaining > 0)
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+            try
             {
-                int toWrite = (int)Math.Min(buffer.Length, remaining);
-                file.Read(buffer.AsSpan(0, toWrite), inOffset);
+                long inOffset = 0;
 
-                output.Write(buffer, 0, toWrite);
-                remaining -= toWrite;
-                inOffset += toWrite;
+                int bytesRead;
+                while ((bytesRead = file.Read(buffer, inOffset)) != 0)
+                {
+                    dest.Write(buffer.AsSpan(0, bytesRead), inOffset);
+                    inOffset += bytesRead;
+                }
             }
+            finally { ArrayPool<byte>.Shared.Return(buffer); }
         }
     }
 }
