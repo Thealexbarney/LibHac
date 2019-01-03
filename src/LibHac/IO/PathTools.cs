@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Runtime.CompilerServices;
 
 namespace LibHac.IO
@@ -13,14 +12,13 @@ namespace LibHac.IO
         // See the LICENSE file in the project root for more information.
         public static string Normalize(string inPath)
         {
+            // Relative paths aren't a thing for IFileSystem, so assume all paths are absolute
+            // and add a '/' to the beginning of the path if it doesn't already begin with one
+            if (inPath.Length == 0 || !IsDirectorySeparator(inPath[0])) inPath = DirectorySeparator + inPath;
+
             ReadOnlySpan<char> path = inPath.AsSpan();
 
             if (path.Length == 0) return DirectorySeparator.ToString();
-
-            if (path[0] != DirectorySeparator)
-            {
-                throw new InvalidDataException($"{nameof(path)} must begin with '{DirectorySeparator}'");
-            }
 
             Span<char> initialBuffer = stackalloc char[0x200];
             var sb = new ValueStringBuilder(initialBuffer);

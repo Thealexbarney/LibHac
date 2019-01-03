@@ -44,7 +44,7 @@ namespace hactoolnet
 
                 if (ctx.Options.ListRomFs && nca.Sections[1] != null)
                 {
-                    var romfs = new Romfs(nca.OpenSection(1, false, ctx.Options.IntegrityLevel, true));
+                    var romfs = new RomFsFileSystem(nca.OpenSection(1, false, ctx.Options.IntegrityLevel, true));
 
                     foreach (RomfsFile romfsFile in romfs.Files)
                     {

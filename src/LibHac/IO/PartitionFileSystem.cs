@@ -101,8 +101,8 @@ namespace LibHac.IO
 
     public enum PartitionFileSystemType
     {
-        Pfs0,
-        Hfs0
+        Standard,
+        Hashed
     }
 
     public class PartitionFileSystemHeader
@@ -125,10 +125,10 @@ namespace LibHac.IO
             switch (Magic)
             {
                 case "PFS0":
-                    Type = PartitionFileSystemType.Pfs0;
+                    Type = PartitionFileSystemType.Standard;
                     break;
                 case "HFS0":
-                    Type = PartitionFileSystemType.Hfs0;
+                    Type = PartitionFileSystemType.Hashed;
                     break;
                 default:
                     throw new InvalidDataException($"Invalid Partition FS type \"{Magic}\"");
@@ -151,7 +151,7 @@ namespace LibHac.IO
             }
 
 
-            if (Type == PartitionFileSystemType.Hfs0)
+            if (Type == PartitionFileSystemType.Hashed)
             {
                 for (int i = 0; i < NumFiles; i++)
                 {
@@ -166,9 +166,9 @@ namespace LibHac.IO
         {
             switch (type)
             {
-                case PartitionFileSystemType.Pfs0:
+                case PartitionFileSystemType.Standard:
                     return 24;
-                case PartitionFileSystemType.Hfs0:
+                case PartitionFileSystemType.Hashed:
                     return 0x40;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type), type, null);
@@ -193,7 +193,7 @@ namespace LibHac.IO
             Offset = reader.ReadInt64();
             Size = reader.ReadInt64();
             StringTableOffset = reader.ReadUInt32();
-            if (type == PartitionFileSystemType.Hfs0)
+            if (type == PartitionFileSystemType.Hashed)
             {
                 HashedRegionSize = reader.ReadInt32();
                 Reserved = reader.ReadInt64();
