@@ -51,9 +51,9 @@ namespace hactoolnet
                         return;
                     }
 
-                    foreach (PfsFileEntry sub in root.Files)
+                    foreach (PartitionFileEntry sub in root.Files)
                     {
-                        var subPfs = new Pfs(root.OpenFile(sub));
+                        var subPfs = new PartitionFileSystem(new FileStorage(root.OpenFile(sub, OpenMode.Read)));
                         string subDir = Path.Combine(ctx.Options.OutDir, sub.Name);
 
                         subPfs.Extract(subDir, ctx.Logger);
@@ -109,7 +109,7 @@ namespace hactoolnet
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        var romfs = new Romfs(mainNca.OpenSection(romfsSection.SectionNum, false, ctx.Options.IntegrityLevel, true));
+                        var romfs = new RomFsFileSystem(mainNca.OpenSection(romfsSection.SectionNum, false, ctx.Options.IntegrityLevel, true));
                         romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
                     }
 
@@ -131,9 +131,9 @@ namespace hactoolnet
 
             Nca mainNca = null;
 
-            foreach (PfsFileEntry fileEntry in xci.SecurePartition.Files.Where(x => x.Name.EndsWith(".nca")))
+            foreach (PartitionFileEntry fileEntry in xci.SecurePartition.Files.Where(x => x.Name.EndsWith(".nca")))
             {
-                IStorage ncaStorage = xci.SecurePartition.OpenFile(fileEntry);
+                IStorage ncaStorage = new FileStorage(xci.SecurePartition.OpenFile(fileEntry, OpenMode.Read));
                 var nca = new Nca(ctx.Keyset, ncaStorage, true);
 
                 if (nca.Header.ContentType == ContentType.Program)
@@ -182,7 +182,7 @@ namespace hactoolnet
             {
                 for (int i = 0; i < partition.Files.Length; i++)
                 {
-                    PfsFileEntry file = partition.Files[i];
+                    PartitionFileEntry file = partition.Files[i];
 
                     string label = i == 0 ? "    Files:" : "";
                     string offsets = $"{file.Offset:x12}-{file.Offset + file.Size:x12}{file.HashValidity.GetValidityString()}";

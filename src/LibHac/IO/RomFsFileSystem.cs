@@ -161,5 +161,38 @@ namespace LibHac.IO
 
             return FileDict.ContainsKey(path);
         }
+
+        public IStorage GetBaseStorage()
+        {
+            return BaseStorage;
+        }
+    }
+
+    public class RomfsHeader
+    {
+        public long HeaderSize { get; }
+        public long DirHashTableOffset { get; }
+        public long DirHashTableSize { get; }
+        public long DirMetaTableOffset { get; }
+        public long DirMetaTableSize { get; }
+        public long FileHashTableOffset { get; }
+        public long FileHashTableSize { get; }
+        public long FileMetaTableOffset { get; }
+        public long FileMetaTableSize { get; }
+        public long DataOffset { get; }
+
+        public RomfsHeader(BinaryReader reader)
+        {
+            HeaderSize = reader.ReadInt64();
+            DirHashTableOffset = reader.ReadInt64();
+            DirHashTableSize = reader.ReadInt64();
+            DirMetaTableOffset = reader.ReadInt64();
+            DirMetaTableSize = reader.ReadInt64();
+            FileHashTableOffset = reader.ReadInt64();
+            FileHashTableSize = reader.ReadInt64();
+            FileMetaTableOffset = reader.ReadInt64();
+            FileMetaTableSize = reader.ReadInt64();
+            DataOffset = reader.ReadInt64();
+        }
     }
 }

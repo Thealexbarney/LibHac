@@ -297,9 +297,11 @@ namespace LibHac
         {
             if (Header.ContentType != ContentType.Program) return;
 
-            var pfs = new Pfs(OpenSection(ProgramPartitionType.Code, false, IntegrityCheckLevel.ErrorOnInvalid, true));
+            var pfs = new PartitionFileSystem(OpenSection(ProgramPartitionType.Code, false, IntegrityCheckLevel.ErrorOnInvalid, true));
 
-            if (!pfs.TryOpenFile("main.npdm", out IStorage npdmStorage)) return;
+            if (!pfs.FileExists("main.npdm")) return;
+
+            var npdmStorage = new FileStorage(pfs.OpenFile("main.npdm", OpenMode.Read));
 
             Npdm = new Npdm.NpdmBinary(npdmStorage.AsStream(), Keyset);
 
@@ -523,11 +525,11 @@ namespace LibHac
                 case SectionType.Invalid:
                     break;
                 case SectionType.Pfs0:
-                    var pfs0 = new Pfs(storage);
+                    var pfs0 = new PartitionFileSystem(storage);
                     pfs0.Extract(outputDir, logger);
                     break;
                 case SectionType.Romfs:
-                    var romfs = new Romfs(storage);
+                    var romfs = new RomFsFileSystem(storage);
                     romfs.Extract(outputDir, logger);
                     break;
                 case SectionType.Bktr:
