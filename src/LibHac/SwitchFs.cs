@@ -149,10 +149,10 @@ namespace LibHac
 
                 // Meta contents always have 1 Partition FS section with 1 file in it
                 IStorage sect = nca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid, true);
-                var pfs0 = new Pfs(sect);
-                IStorage file = pfs0.OpenFile(pfs0.Files[0]);
+                var pfs0 = new PartitionFileSystem(sect);
+                IFile file = pfs0.OpenFile(pfs0.Files[0], OpenMode.Read);
 
-                var metadata = new Cnmt(file.AsStream());
+                var metadata = new Cnmt(new FileStorage(file).AsStream());
                 title.Id = metadata.TitleId;
                 title.Version = metadata.TitleVersion;
                 title.Metadata = metadata;
@@ -188,8 +188,8 @@ namespace LibHac
         {
             foreach (Title title in Titles.Values.Where(x => x.ControlNca != null))
             {
-                var romfs = new Romfs(title.ControlNca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid, true));
-                IStorage control = romfs.OpenFile("/control.nacp");
+                var romfs = new RomFsFileSystem(title.ControlNca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid, true));
+                IStorage control = new FileStorage(romfs.OpenFile("control.nacp", OpenMode.Read));
 
                 title.Control = new Nacp(control.AsStream());
 
