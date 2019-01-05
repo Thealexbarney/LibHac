@@ -6,6 +6,7 @@ namespace LibHac.IO
     {
         IFileSystem ParentFileSystem { get; }
         string FullPath { get; }
+        OpenDirectoryMode Mode { get; }
 
         IEnumerable<DirectoryEntry> Read();
         int GetEntryCount();

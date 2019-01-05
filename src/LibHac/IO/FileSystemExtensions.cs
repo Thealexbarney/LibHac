@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.IO;
 
 namespace LibHac.IO
 {
@@ -95,6 +96,30 @@ namespace LibHac.IO
                 ArrayPool<byte>.Shared.Return(buffer);
                 logger?.SetTotal(0);
             }
+        }
+
+        public static Stream AsStream(this IFile storage) => new NxFileStream(storage, true);
+        public static Stream AsStream(this IFile storage, bool keepOpen) => new NxFileStream(storage, keepOpen);
+
+        public static int GetEntryCount(this IFileSystem fs, OpenDirectoryMode mode)
+        {
+            return fs.OpenDirectory("/", OpenDirectoryMode.All).GetEntryCountRecursive(mode);
+        }
+
+        public static int GetEntryCountRecursive(this IDirectory directory, OpenDirectoryMode mode)
+        {
+            int count = 0;
+
+            foreach (DirectoryEntry entry in directory.EnumerateEntries())
+            {
+                if (entry.Type == DirectoryEntryType.Directory && (mode & OpenDirectoryMode.Directories) != 0 ||
+                    entry.Type == DirectoryEntryType.File && (mode & OpenDirectoryMode.Files) != 0)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
     }
 }

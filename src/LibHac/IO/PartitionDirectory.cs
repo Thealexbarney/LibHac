@@ -9,7 +9,7 @@ namespace LibHac.IO
         public PartitionFileSystem ParentFileSystem { get; }
         public string FullPath { get; }
 
-        private OpenDirectoryMode Mode { get; }
+        public OpenDirectoryMode Mode { get; }
 
         public PartitionDirectory(PartitionFileSystem fs, string path, OpenDirectoryMode mode)
         {

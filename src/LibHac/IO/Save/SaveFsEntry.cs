@@ -6,23 +6,23 @@ using System.Text;
 namespace LibHac.IO.Save
 {
     [DebuggerDisplay("{" + nameof(FullPath) + "}")]
-    public abstract class FsEntry
+    public abstract class SaveFsEntry
     {
         public int ParentDirIndex { get; protected set; }
         public string Name { get; protected set; }
 
         public string FullPath { get; private set; }
-        public DirectoryEntry ParentDir { get; internal set; }
+        public SaveDirectoryEntry ParentDir { get; internal set; }
 
-        internal static void ResolveFilenames(IEnumerable<FsEntry> entries)
+        internal static void ResolveFilenames(IEnumerable<SaveFsEntry> entries)
         {
             var list = new List<string>();
             var sb = new StringBuilder();
             string delimiter = "/";
-            foreach (FsEntry file in entries)
+            foreach (SaveFsEntry file in entries)
             {
                 list.Add(file.Name);
-                DirectoryEntry dir = file.ParentDir;
+                SaveDirectoryEntry dir = file.ParentDir;
                 while (dir != null)
                 {
                     list.Add(delimiter);
@@ -35,14 +35,14 @@ namespace LibHac.IO.Save
                     sb.Append(list[i]);
                 }
 
-                file.FullPath = sb.ToString();
+                file.FullPath = sb.Length == 0 ? delimiter : sb.ToString();
                 list.Clear();
                 sb.Clear();
             }
         }
     }
 
-    public class FileEntry : FsEntry
+    public class SaveFileEntry : SaveFsEntry
     {
         public int NextSiblingIndex { get; }
         public int BlockIndex { get; }
@@ -50,10 +50,10 @@ namespace LibHac.IO.Save
         public long Field54 { get; }
         public int NextInChainIndex { get; }
 
-        public FileEntry NextSibling { get; internal set; }
-        public FileEntry NextInChain { get; internal set; }
+        public SaveFileEntry NextSibling { get; internal set; }
+        public SaveFileEntry NextInChain { get; internal set; }
 
-        public FileEntry(BinaryReader reader)
+        public SaveFileEntry(BinaryReader reader)
         {
             long start = reader.BaseStream.Position;
             ParentDirIndex = reader.ReadInt32();
@@ -68,7 +68,7 @@ namespace LibHac.IO.Save
         }
     }
 
-    public class DirectoryEntry : FsEntry
+    public class SaveDirectoryEntry : SaveFsEntry
     {
         public int NextSiblingIndex { get; }
         public int FirstChildIndex { get; }
@@ -76,12 +76,12 @@ namespace LibHac.IO.Save
         public long Field54 { get; }
         public int NextInChainIndex { get; }
 
-        public DirectoryEntry NextSibling { get; internal set; }
-        public DirectoryEntry FirstChild { get; internal set; }
-        public FileEntry FirstFile { get; internal set; }
-        public DirectoryEntry NextInChain { get; internal set; }
+        public SaveDirectoryEntry NextSibling { get; internal set; }
+        public SaveDirectoryEntry FirstChild { get; internal set; }
+        public SaveFileEntry FirstFile { get; internal set; }
+        public SaveDirectoryEntry NextInChain { get; internal set; }
 
-        public DirectoryEntry(BinaryReader reader)
+        public SaveDirectoryEntry(BinaryReader reader)
         {
             long start = reader.BaseStream.Position;
             ParentDirIndex = reader.ReadInt32();

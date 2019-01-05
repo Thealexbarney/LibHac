@@ -17,7 +17,7 @@ namespace LibHac
         public string SaveDir { get; }
 
         public Dictionary<string, Nca> Ncas { get; } = new Dictionary<string, Nca>(StringComparer.OrdinalIgnoreCase);
-        public Dictionary<string, SaveData> Saves { get; } = new Dictionary<string, SaveData>(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, SaveDataFileSystem> Saves { get; } = new Dictionary<string, SaveDataFileSystem>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<ulong, Title> Titles { get; } = new Dictionary<ulong, Title>();
         public Dictionary<ulong, Application> Applications { get; } = new Dictionary<ulong, Application>();
 
@@ -118,7 +118,7 @@ namespace LibHac
 
             foreach (string file in files)
             {
-                SaveData save = null;
+                SaveDataFileSystem save = null;
                 string saveName = Path.GetFileNameWithoutExtension(file);
 
                 try
@@ -127,7 +127,7 @@ namespace LibHac
 
                     string sdPath = "/" + Util.GetRelativePath(file, SaveDir).Replace('\\', '/');
                     var nax0 = new Nax0(Keyset, storage, sdPath, false);
-                    save = new SaveData(Keyset, nax0.BaseStorage, IntegrityCheckLevel.None, true);
+                    save = new SaveDataFileSystem(Keyset, nax0.BaseStorage, IntegrityCheckLevel.None, true);
                 }
                 catch (Exception ex)
                 {
