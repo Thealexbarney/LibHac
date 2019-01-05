@@ -35,7 +35,7 @@ namespace LibHac.IO.Save
 
         public byte[] Data { get; }
 
-        public Header(Keyset keyset, IStorage storage)
+        public Header(IStorage storage, Keyset keyset)
         {
             MainStorage = storage;
             MainHeader = MainStorage.Slice(0x100, 0x200);

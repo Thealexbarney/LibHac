@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 
 namespace LibHac.IO.Save
 {
-    public class SaveData : IDisposable
+    public class SaveDataFileSystem : IFileSystem
     {
         public Header Header { get; }
         public IStorage BaseStorage { get; }
@@ -19,16 +18,15 @@ namespace LibHac.IO.Save
         public HierarchicalDuplexStorage DuplexStorage { get; }
         public JournalStorage JournalStorage { get; }
 
-        public DirectoryEntry RootDirectory => SaveDataFileSystemCore.RootDirectory;
-        public FileEntry[] Files => SaveDataFileSystemCore.Files;
-        public DirectoryEntry[] Directories => SaveDataFileSystemCore.Directories;
+        private Keyset Keyset { get; }
 
-        public SaveData(Keyset keyset, IStorage storage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
+        public SaveDataFileSystem(Keyset keyset, IStorage storage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         {
             BaseStorage = storage;
             LeaveOpen = leaveOpen;
+            Keyset = keyset;
 
-            Header = new Header(keyset, BaseStorage);
+            Header = new Header(BaseStorage, keyset);
             FsLayout layout = Header.Layout;
 
             IStorage dataRemapBase = BaseStorage.Slice(layout.FileMapDataOffset, layout.FileMapDataSize);
@@ -119,21 +117,56 @@ namespace LibHac.IO.Save
                 IntegrityStorageType.Save, integrityCheckLevel, LeaveOpen);
         }
 
-        public IStorage OpenFile(string filename)
+        public void CreateDirectory(string path)
         {
-            return SaveDataFileSystemCore.OpenFile(filename);
+            throw new System.NotImplementedException();
         }
 
-        public IStorage OpenFile(FileEntry file)
+        public void CreateFile(string path, long size)
         {
-            return SaveDataFileSystemCore.OpenFile(file);
+            throw new System.NotImplementedException();
         }
 
+        public void DeleteDirectory(string path)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void DeleteFile(string path)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
+        {
+            return SaveDataFileSystemCore.OpenDirectory(path, mode);
+        }
+
+        public IFile OpenFile(string path, OpenMode mode)
+        {
+            return SaveDataFileSystemCore.OpenFile(path, mode);
+        }
+
+        public void RenameDirectory(string srcPath, string dstPath)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void RenameFile(string srcPath, string dstPath)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public bool DirectoryExists(string path) => SaveDataFileSystemCore.DirectoryExists(path);
         public bool FileExists(string filename) => SaveDataFileSystemCore.FileExists(filename);
 
-        public bool CommitHeader(Keyset keyset)
+        public void Commit()
         {
-            // todo
+            Commit(Keyset);
+        }
+
+        public bool Commit(Keyset keyset)
+        {
             Stream headerStream = BaseStorage.AsStream();
 
             var hashData = new byte[0x3d00];
@@ -145,7 +178,7 @@ namespace LibHac.IO.Save
             headerStream.Position = 0x108;
             headerStream.Write(hash, 0, hash.Length);
 
-            if (keyset.SaveMacKey.IsEmpty()) return false;
+            if (keyset == null || keyset.SaveMacKey.IsEmpty()) return false;
 
             var cmacData = new byte[0x200];
             var cmac = new byte[0x10];
@@ -168,40 +201,6 @@ namespace LibHac.IO.Save
             IvfcStorage.SetLevelValidities(Header.Ivfc);
 
             return validity;
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing && !LeaveOpen)
-            {
-                BaseStorage?.Dispose();
-            }
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-    }
-
-    public static class SavefileExtensions
-    {
-        public static void Extract(this SaveData save, string outDir, IProgressReport logger = null)
-        {
-            foreach (FileEntry file in save.Files)
-            {
-                IStorage storage = save.OpenFile(file);
-                string outName = outDir + file.FullPath;
-                string dir = Path.GetDirectoryName(outName);
-                if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
-
-                using (var outFile = new FileStream(outName, FileMode.Create, FileAccess.ReadWrite))
-                {
-                    logger?.LogMessage(file.FullPath);
-                    storage.CopyToStream(outFile, storage.Length, logger);
-                }
-            }
         }
     }
 }

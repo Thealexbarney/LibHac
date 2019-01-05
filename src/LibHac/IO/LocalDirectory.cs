@@ -10,7 +10,7 @@ namespace LibHac.IO
         public string FullPath { get; }
 
         private string LocalPath { get; }
-        private OpenDirectoryMode Mode { get; }
+        public OpenDirectoryMode Mode { get; }
         private DirectoryInfo DirInfo { get; }
 
         public LocalDirectory(LocalFileSystem fs, string path, OpenDirectoryMode mode)

@@ -1,25 +1,17 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 
-namespace LibHac.IO
+namespace LibHac.IO.Save
 {
-    public class RomFsDirectory : IDirectory
+    class SaveDataDirectory : IDirectory
     {
         public IFileSystem ParentFileSystem { get; }
         public string FullPath { get; }
 
-        private RomfsDir Directory { get; }
         public OpenDirectoryMode Mode { get; }
+        private SaveDirectoryEntry Directory { get; }
 
-        public RomFsDirectory(RomFsFileSystem fs, string path, OpenDirectoryMode mode)
+        public SaveDataDirectory(SaveDataFileSystemCore fs, string path, SaveDirectoryEntry dir, OpenDirectoryMode mode)
         {
-            path = PathTools.Normalize(path);
-
-            if (!fs.DirectoryDict.TryGetValue(path, out RomfsDir dir))
-            {
-                throw new DirectoryNotFoundException(path);
-            }
-
             ParentFileSystem = fs;
             Directory = dir;
             FullPath = path;
@@ -30,7 +22,7 @@ namespace LibHac.IO
         {
             if (Mode.HasFlag(OpenDirectoryMode.Directories))
             {
-                RomfsDir dirEntry = Directory.FirstChild;
+                SaveDirectoryEntry dirEntry = Directory.FirstChild;
 
                 while (dirEntry != null)
                 {
@@ -41,11 +33,11 @@ namespace LibHac.IO
 
             if (Mode.HasFlag(OpenDirectoryMode.Files))
             {
-                RomfsFile fileEntry = Directory.FirstFile;
+                SaveFileEntry fileEntry = Directory.FirstFile;
 
                 while (fileEntry != null)
                 {
-                    yield return new DirectoryEntry(fileEntry.Name, FullPath + '/' + fileEntry.Name, DirectoryEntryType.File, fileEntry.DataLength);
+                    yield return new DirectoryEntry(fileEntry.Name, FullPath + '/' + fileEntry.Name, DirectoryEntryType.File, fileEntry.FileSize);
                     fileEntry = fileEntry.NextSibling;
                 }
             }
@@ -57,7 +49,7 @@ namespace LibHac.IO
 
             if (Mode.HasFlag(OpenDirectoryMode.Directories))
             {
-                RomfsDir dirEntry = Directory.FirstChild;
+                SaveDirectoryEntry dirEntry = Directory.FirstChild;
 
                 while (dirEntry != null)
                 {
@@ -68,7 +60,7 @@ namespace LibHac.IO
 
             if (Mode.HasFlag(OpenDirectoryMode.Files))
             {
-                RomfsFile fileEntry = Directory.FirstFile;
+                SaveFileEntry fileEntry = Directory.FirstFile;
 
                 while (fileEntry != null)
                 {

@@ -14,7 +14,7 @@ namespace hactoolnet
         {
             using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.ReadWrite))
             {
-                var save = new SaveData(ctx.Keyset, file.AsStorage(), ctx.Options.IntegrityLevel, true);
+                var save = new SaveDataFileSystem(ctx.Keyset, file.AsStorage(), ctx.Options.IntegrityLevel, true);
 
                 if (ctx.Options.Validate)
                 {
@@ -23,7 +23,7 @@ namespace hactoolnet
 
                 if (ctx.Options.OutDir != null)
                 {
-                    save.Extract(ctx.Options.OutDir, ctx.Logger);
+                    save.SaveDataFileSystemCore.Extract(ctx.Options.OutDir, ctx.Logger);
                 }
 
                 if (ctx.Options.DebugOutDir != null)
@@ -99,13 +99,13 @@ namespace hactoolnet
                     string destFilename = ctx.Options.ReplaceFileDest;
                     if (!destFilename.StartsWith("/")) destFilename = '/' + destFilename;
 
-                    using (IStorage inFile = new FileStream(ctx.Options.ReplaceFileSource, FileMode.Open, FileAccess.Read).AsStorage(false))
+                    using (IFile inFile = new StorageFile(new FileStream(ctx.Options.ReplaceFileSource, FileMode.Open, FileAccess.Read).AsStorage(false), OpenMode.ReadWrite))
                     {
-                        using (IStorage outFile = save.OpenFile(destFilename))
+                        using (IFile outFile = save.OpenFile(destFilename, OpenMode.ReadWrite))
                         {
-                            if (inFile.Length != outFile.Length)
+                            if (inFile.GetSize() != outFile.GetSize())
                             {
-                                ctx.Logger.LogMessage($"Replacement file must be the same size as the original file. ({outFile.Length} bytes)");
+                                ctx.Logger.LogMessage($"Replacement file must be the same size as the original file. ({outFile.GetSize()} bytes)");
                                 return;
                             }
 
@@ -115,7 +115,7 @@ namespace hactoolnet
                         }
                     }
 
-                    if (save.CommitHeader(ctx.Keyset))
+                    if (save.Commit(ctx.Keyset))
                     {
                         ctx.Logger.LogMessage("Successfully signed save file");
                     }
@@ -129,7 +129,7 @@ namespace hactoolnet
 
                 if (ctx.Options.SignSave)
                 {
-                    if (save.CommitHeader(ctx.Keyset))
+                    if (save.Commit(ctx.Keyset))
                     {
                         ctx.Logger.LogMessage("Successfully signed save file");
                     }
@@ -143,9 +143,11 @@ namespace hactoolnet
 
                 if (ctx.Options.ListFiles)
                 {
-                    foreach (FileEntry fileEntry in save.Files)
+                    IDirectory dir = save.SaveDataFileSystemCore.OpenDirectory("/", OpenDirectoryMode.All);
+                    foreach (DirectoryEntry entry in dir.EnumerateEntries())
                     {
-                        ctx.Logger.LogMessage(fileEntry.FullPath);
+                        ctx.Logger.LogMessage(entry.FullPath);
+
                     }
                 }
 
@@ -153,7 +155,7 @@ namespace hactoolnet
             }
         }
 
-        private static string Print(this SaveData save)
+        private static string Print(this SaveDataFileSystem save)
         {
             int colLen = 25;
             var sb = new StringBuilder();
@@ -170,7 +172,7 @@ namespace hactoolnet
             PrintItem(sb, colLen, "Save Data Size:", $"0x{save.Header.ExtraData.DataSize:x16} ({Util.GetBytesReadable(save.Header.ExtraData.DataSize)})");
             PrintItem(sb, colLen, "Journal Size:", $"0x{save.Header.ExtraData.JournalSize:x16} ({Util.GetBytesReadable(save.Header.ExtraData.JournalSize)})");
             PrintItem(sb, colLen, $"Header Hash{save.Header.HeaderHashValidity.GetValidityString()}:", save.Header.Layout.Hash);
-            PrintItem(sb, colLen, "Number of Files:", save.Files.Length);
+            PrintItem(sb, colLen, "Number of Files:", save.GetEntryCount(OpenDirectoryMode.Files));
 
             PrintIvfcHash(sb, colLen, 4, save.Header.Ivfc, IntegrityStorageType.Save);
 

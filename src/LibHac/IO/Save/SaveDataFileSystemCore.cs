@@ -3,7 +3,7 @@ using System.IO;
 
 namespace LibHac.IO.Save
 {
-    public class SaveDataFileSystemCore
+    public class SaveDataFileSystemCore : IFileSystem
     {
         private IStorage BaseStorage { get; }
         private IStorage HeaderStorage { get; }
@@ -11,10 +11,11 @@ namespace LibHac.IO.Save
         public AllocationTable AllocationTable { get; }
         private SaveHeader Header { get; }
 
-        public DirectoryEntry RootDirectory { get; private set; }
-        public FileEntry[] Files { get; private set; }
-        public DirectoryEntry[] Directories { get; private set; }
-        public Dictionary<string, FileEntry> FileDictionary { get; }
+        public SaveDirectoryEntry RootDirectory { get; private set; }
+        private SaveFileEntry[] Files { get; set; }
+        private SaveDirectoryEntry[] Directories { get; set; }
+        private Dictionary<string, SaveFileEntry> FileDictionary { get; }
+        private Dictionary<string, SaveDirectoryEntry> DirDictionary { get; }
 
         public SaveDataFileSystemCore(IStorage storage, IStorage allocationTable, IStorage header)
         {
@@ -25,18 +26,23 @@ namespace LibHac.IO.Save
             Header = new SaveHeader(HeaderStorage);
 
             ReadFileInfo();
-            var dictionary = new Dictionary<string, FileEntry>();
-            foreach (FileEntry entry in Files)
+
+            FileDictionary = new Dictionary<string, SaveFileEntry>();
+            foreach (SaveFileEntry entry in Files)
             {
-                dictionary[entry.FullPath] = entry;
+                FileDictionary[entry.FullPath] = entry;
             }
 
-            FileDictionary = dictionary;
+            DirDictionary = new Dictionary<string, SaveDirectoryEntry>();
+            foreach (SaveDirectoryEntry entry in Directories)
+            {
+                DirDictionary[entry.FullPath] = entry;
+            }
         }
 
         public IStorage OpenFile(string filename)
         {
-            if (!FileDictionary.TryGetValue(filename, out FileEntry file))
+            if (!FileDictionary.TryGetValue(filename, out SaveFileEntry file))
             {
                 throw new FileNotFoundException();
             }
@@ -44,7 +50,7 @@ namespace LibHac.IO.Save
             return OpenFile(file);
         }
 
-        public IStorage OpenFile(FileEntry file)
+        public IStorage OpenFile(SaveFileEntry file)
         {
             if (file.BlockIndex < 0)
             {
@@ -55,7 +61,76 @@ namespace LibHac.IO.Save
             return OpenFatBlock(file.BlockIndex, file.FileSize);
         }
 
+        public void CreateDirectory(string path)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void CreateFile(string path, long size)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void DeleteDirectory(string path)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void DeleteFile(string path)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
+        {
+            path = PathTools.Normalize(path);
+
+            if (!DirDictionary.TryGetValue(path, out SaveDirectoryEntry dir))
+            {
+                throw new DirectoryNotFoundException(path);
+            }
+
+            return new SaveDataDirectory(this, path, dir, mode);
+        }
+
+        public IFile OpenFile(string path, OpenMode mode)
+        {
+            if (!FileDictionary.TryGetValue(path, out SaveFileEntry file))
+            {
+                throw new FileNotFoundException();
+            }
+
+            if (file.BlockIndex < 0)
+            {
+                // todo
+                return new StorageFile(new MemoryStorage(new byte[0]), OpenMode.ReadWrite);
+            }
+
+            AllocationTableStorage storage = OpenFatBlock(file.BlockIndex, file.FileSize);
+
+            return new SaveDataFile(storage, 0, file.FileSize, mode);
+        }
+
+        public void RenameDirectory(string srcPath, string dstPath)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void RenameFile(string srcPath, string dstPath)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public bool DirectoryExists(string path)
+        {
+            throw new System.NotImplementedException();
+        }
+
         public bool FileExists(string filename) => FileDictionary.ContainsKey(filename);
+        public void Commit()
+        {
+            throw new System.NotImplementedException();
+        }
 
         public IStorage GetBaseStorage() => BaseStorage.WithAccess(FileAccess.Read);
         public IStorage GetHeaderStorage() => HeaderStorage.WithAccess(FileAccess.Read);
@@ -66,10 +141,10 @@ namespace LibHac.IO.Save
             AllocationTableStorage dirTableStream = OpenFatBlock(AllocationTable.Header.DirectoryTableBlock, 1000000);
             AllocationTableStorage fileTableStream = OpenFatBlock(AllocationTable.Header.FileTableBlock, 1000000);
 
-            DirectoryEntry[] dirEntries = ReadDirEntries(dirTableStream);
-            FileEntry[] fileEntries = ReadFileEntries(fileTableStream);
+            SaveDirectoryEntry[] dirEntries = ReadDirEntries(dirTableStream);
+            SaveFileEntry[] fileEntries = ReadFileEntries(fileTableStream);
 
-            foreach (DirectoryEntry dir in dirEntries)
+            foreach (SaveDirectoryEntry dir in dirEntries)
             {
                 if (dir.NextSiblingIndex != 0) dir.NextSibling = dirEntries[dir.NextSiblingIndex];
                 if (dir.FirstChildIndex != 0) dir.FirstChild = dirEntries[dir.FirstChildIndex];
@@ -79,7 +154,7 @@ namespace LibHac.IO.Save
                     dir.ParentDir = dirEntries[dir.ParentDirIndex];
             }
 
-            foreach (FileEntry file in fileEntries)
+            foreach (SaveFileEntry file in fileEntries)
             {
                 if (file.NextSiblingIndex != 0) file.NextSibling = fileEntries[file.NextSiblingIndex];
                 if (file.NextInChainIndex != 0) file.NextInChain = fileEntries[file.NextInChainIndex];
@@ -89,16 +164,16 @@ namespace LibHac.IO.Save
 
             RootDirectory = dirEntries[2];
 
-            FileEntry fileChain = fileEntries[1].NextInChain;
-            var files = new List<FileEntry>();
+            SaveFileEntry fileChain = fileEntries[1].NextInChain;
+            var files = new List<SaveFileEntry>();
             while (fileChain != null)
             {
                 files.Add(fileChain);
                 fileChain = fileChain.NextInChain;
             }
 
-            DirectoryEntry dirChain = dirEntries[1].NextInChain;
-            var dirs = new List<DirectoryEntry>();
+            SaveDirectoryEntry dirChain = dirEntries[1].NextInChain;
+            var dirs = new List<SaveDirectoryEntry>();
             while (dirChain != null)
             {
                 dirs.Add(dirChain);
@@ -108,37 +183,37 @@ namespace LibHac.IO.Save
             Files = files.ToArray();
             Directories = dirs.ToArray();
 
-            FsEntry.ResolveFilenames(Files);
-            FsEntry.ResolveFilenames(Directories);
+            SaveFsEntry.ResolveFilenames(Files);
+            SaveFsEntry.ResolveFilenames(Directories);
         }
 
-        private FileEntry[] ReadFileEntries(IStorage storage)
+        private SaveFileEntry[] ReadFileEntries(IStorage storage)
         {
             var reader = new BinaryReader(storage.AsStream());
             int count = reader.ReadInt32();
 
             reader.BaseStream.Position -= 4;
 
-            var entries = new FileEntry[count];
+            var entries = new SaveFileEntry[count];
             for (int i = 0; i < count; i++)
             {
-                entries[i] = new FileEntry(reader);
+                entries[i] = new SaveFileEntry(reader);
             }
 
             return entries;
         }
 
-        private DirectoryEntry[] ReadDirEntries(IStorage storage)
+        private SaveDirectoryEntry[] ReadDirEntries(IStorage storage)
         {
             var reader = new BinaryReader(storage.AsStream());
             int count = reader.ReadInt32();
 
             reader.BaseStream.Position -= 4;
 
-            var entries = new DirectoryEntry[count];
+            var entries = new SaveDirectoryEntry[count];
             for (int i = 0; i < count; i++)
             {
-                entries[i] = new DirectoryEntry(reader);
+                entries[i] = new SaveDirectoryEntry(reader);
             }
 
             return entries;
