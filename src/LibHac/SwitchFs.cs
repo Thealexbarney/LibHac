@@ -145,42 +145,55 @@ namespace LibHac
         {
             foreach (Nca nca in Ncas.Values.Where(x => x.Header.ContentType == ContentType.Meta))
             {
-                var title = new Title();
-
-                // Meta contents always have 1 Partition FS section with 1 file in it
-                IStorage sect = nca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid, true);
-                var pfs0 = new Pfs(sect);
-                IStorage file = pfs0.OpenFile(pfs0.Files[0]);
-
-                var metadata = new Cnmt(file.AsStream());
-                title.Id = metadata.TitleId;
-                title.Version = metadata.TitleVersion;
-                title.Metadata = metadata;
-                title.MetaNca = nca;
-                title.Ncas.Add(nca);
-
-                foreach (CnmtContentEntry content in metadata.ContentEntries)
+                try
                 {
-                    string ncaId = content.NcaId.ToHexString();
+                    var title = new Title();
 
-                    if (Ncas.TryGetValue(ncaId, out Nca contentNca))
+                    // Meta contents always have 1 Partition FS section with 1 file in it
+                    IStorage sect = nca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid, true);
+                    var pfs0 = new Pfs(sect);
+                    IStorage file = pfs0.OpenFile(pfs0.Files[0]);
+
+                    var metadata = new Cnmt(file.AsStream());
+                    title.Id = metadata.TitleId;
+                    title.Version = metadata.TitleVersion;
+                    title.Metadata = metadata;
+                    title.MetaNca = nca;
+                    title.Ncas.Add(nca);
+
+                    foreach (CnmtContentEntry content in metadata.ContentEntries)
                     {
-                        title.Ncas.Add(contentNca);
+                        string ncaId = content.NcaId.ToHexString();
+
+                        if (Ncas.TryGetValue(ncaId, out Nca contentNca))
+                        {
+                            title.Ncas.Add(contentNca);
+                        }
+
+                        switch (content.Type)
+                        {
+                            case CnmtContentType.Program:
+                            case CnmtContentType.Data:
+                                title.MainNca = contentNca;
+                                break;
+                            case CnmtContentType.Control:
+                                title.ControlNca = contentNca;
+                                break;
+                        }
                     }
 
-                    switch (content.Type)
+                    Titles[title.Id] = title;
+                }
+                catch (MissingKeyException ex)
+                {
+                    if (ex.Name == null)
+                    { Console.WriteLine($"{ex.Message} File:\n{nca.Filename}"); }
+                    else
                     {
-                        case CnmtContentType.Program:
-                        case CnmtContentType.Data:
-                            title.MainNca = contentNca;
-                            break;
-                        case CnmtContentType.Control:
-                            title.ControlNca = contentNca;
-                            break;
+                        string name = ex.Type == KeyType.Title ? $"Title key for rights ID {ex.Name}" : ex.Name;
+                        Console.WriteLine($"{ex.Message}\nKey: {name}\nFile: {nca.Filename}");
                     }
                 }
-
-                Titles[title.Id] = title;
             }
         }
 
