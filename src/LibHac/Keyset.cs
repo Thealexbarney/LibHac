@@ -115,6 +115,8 @@ namespace LibHac
         };
 
         public Dictionary<byte[], byte[]> TitleKeys { get; } = new Dictionary<byte[], byte[]>(new ByteArray128BitComparer());
+        public Dictionary<byte[], string> TitleNames { get; } = new Dictionary<byte[], string>(new ByteArray128BitComparer());
+        public Dictionary<byte[], uint> TitleVersions { get; } = new Dictionary<byte[], uint>(new ByteArray128BitComparer());
 
         public void SetSdSeed(byte[] sdseed)
         {
@@ -420,6 +422,8 @@ namespace LibHac
         {
             if (filename == null) return;
 
+            int rightsIdIdx = 0, titleKeyIdx = 1, titleNameIdx = 2, titleVersionIdx = 8;
+
             using (var reader = new StreamReader(new FileStream(filename, FileMode.Open, FileAccess.Read)))
             {
                 string line;
@@ -439,31 +443,78 @@ namespace LibHac
 
                     if (splitLine.Length < 2) continue;
 
-                    if (!splitLine[0].Trim().TryToBytes(out byte[] rightsId))
+                    if (!splitLine[0].Trim().TryToBytes(out byte[] _))
                     {
-                        progress?.LogMessage($"Invalid rights ID \"{splitLine[0].Trim()}\" in title key file");
-                        continue;
+                        if (splitLine.Contains("rightsId", StringComparer.OrdinalIgnoreCase))
+                        {
+                            rightsIdIdx = Array.FindIndex(splitLine, x => x.Equals("rightsId", StringComparison.OrdinalIgnoreCase));
+                        }
+                        if (splitLine.Contains("key", StringComparer.OrdinalIgnoreCase))
+                        {
+                            titleKeyIdx = Array.FindIndex(splitLine, x => x.Equals("key", StringComparison.OrdinalIgnoreCase));
+                        }
+                        else if (splitLine.Contains("titleKey", StringComparer.OrdinalIgnoreCase))
+                        {
+                            titleKeyIdx = Array.FindIndex(splitLine, x => x.Equals("titleKey", StringComparison.OrdinalIgnoreCase));
+                        }
+                        if (splitLine.Contains("name", StringComparer.OrdinalIgnoreCase))
+                        {
+                            titleNameIdx = Array.FindIndex(splitLine, x => x.Equals("name", StringComparison.OrdinalIgnoreCase));
+                        }
+                        if (splitLine.Contains("version", StringComparer.OrdinalIgnoreCase))
+                        {
+                            titleVersionIdx = Array.FindIndex(splitLine, x => x.Equals("version", StringComparison.OrdinalIgnoreCase));
+                        }
                     }
 
-                    if (!splitLine[1].Trim().TryToBytes(out byte[] titleKey))
+                    try
                     {
-                        progress?.LogMessage($"Invalid title key \"{splitLine[1].Trim()}\" in title key file");
-                        continue;
-                    }
+                        if (!splitLine[rightsIdIdx].Trim().TryToBytes(out byte[] rightsId))
+                        {
+                            progress?.LogMessage($"Invalid rights ID \"{splitLine[rightsIdIdx].Trim()}\" in title key file");
+                            continue;
+                        }
 
-                    if (rightsId.Length != TitleKeySize)
-                    {
-                        progress?.LogMessage($"Rights ID {rightsId.ToHexString()} had incorrect size {rightsId.Length}. (Expected {TitleKeySize})");
-                        continue;
-                    }
+                        if (!splitLine[titleKeyIdx].Trim().TryToBytes(out byte[] titleKey))
+                        {
+                            progress?.LogMessage($"Invalid title key \"{splitLine[titleKeyIdx].Trim()}\" in title key file");
+                            continue;
+                        }
 
-                    if (titleKey.Length != TitleKeySize)
-                    {
-                        progress?.LogMessage($"Title key {titleKey.ToHexString()} had incorrect size {titleKey.Length}. (Expected {TitleKeySize})");
-                        continue;
-                    }
+                        if (rightsId.Length != TitleKeySize)
+                        {
+                            progress?.LogMessage($"Rights ID {rightsId.ToHexString()} had incorrect size {rightsId.Length}. (Expected {TitleKeySize})");
+                            continue;
+                        }
 
-                    keyset.TitleKeys[rightsId] = titleKey;
+                        if (titleKey.Length != TitleKeySize)
+                        {
+                            progress?.LogMessage($"Title key {titleKey.ToHexString()} had incorrect size {titleKey.Length}. (Expected {TitleKeySize})");
+                            continue;
+                        }
+
+                        keyset.TitleKeys[rightsId] = titleKey;
+
+                        try
+                        {
+                            string titleName = splitLine[titleNameIdx].Trim();
+                            if (!String.IsNullOrEmpty(titleName))
+                            {
+                                keyset.TitleNames[rightsId] = titleName;
+                            }
+                        }
+                        catch (IndexOutOfRangeException) { }
+
+                        try
+                        {
+                            if (UInt32.TryParse(splitLine[titleVersionIdx].Trim(), out uint titleVersion))
+                            {
+                                keyset.TitleVersions[rightsId] = titleVersion;
+                            }
+                        }
+                        catch (IndexOutOfRangeException) { }
+                    }
+                    catch (IndexOutOfRangeException) { }
                 }
             }
         }

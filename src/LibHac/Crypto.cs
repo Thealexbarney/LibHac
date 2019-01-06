@@ -347,8 +347,8 @@ namespace LibHac
         public static void CalculateAesCmac(byte[] key, byte[] src, int srcIndex, byte[] dest, int destIndex, int length)
         {
             var l = new byte[16];
-            EncryptCbc(key, new byte[16], new byte[16], l, 0x10);
-            byte[] paddedMessage = src;
+            EncryptCbc(key, l, l, l, 0x10);
+            byte[] paddedMessage;
             int paddedLength = length;
 
             byte[] firstSubkey = Rol(l);
@@ -361,8 +361,11 @@ namespace LibHac
 
             if (length != 0 && length % 16 == 0)
             {
+                paddedMessage = new byte[paddedLength];
+                Array.Copy(src, srcIndex, paddedMessage, 0, length);
+
                 for (int j = 0; j < firstSubkey.Length; j++)
-                    src[length - 16 + j] ^= firstSubkey[j];
+                    paddedMessage[length - 16 + j] ^= firstSubkey[j];
             }
             else
             {
