@@ -25,13 +25,11 @@ namespace LibHac.IO
 
         public IEnumerable<DirectoryEntry> Read()
         {
-            var entries = new List<DirectoryEntry>();
-
             if (Mode.HasFlag(OpenDirectoryMode.Directories))
             {
                 foreach (DirectoryInfo dir in DirInfo.EnumerateDirectories())
                 {
-                    entries.Add(new DirectoryEntry(dir.Name, FullPath + '/' + dir.Name, DirectoryEntryType.Directory, 0));
+                    yield return new DirectoryEntry(dir.Name, FullPath + '/' + dir.Name, DirectoryEntryType.Directory, 0);
                 }
             }
 
@@ -39,11 +37,9 @@ namespace LibHac.IO
             {
                 foreach (FileInfo file in DirInfo.EnumerateFiles())
                 {
-                    entries.Add(new DirectoryEntry(file.Name, FullPath + '/' + file.Name, DirectoryEntryType.File, file.Length));
+                    yield return new DirectoryEntry(file.Name, FullPath + '/' + file.Name, DirectoryEntryType.File, file.Length);
                 }
             }
-
-            return entries.ToArray();
         }
 
         public int GetEntryCount()
