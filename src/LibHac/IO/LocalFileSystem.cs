@@ -3,7 +3,7 @@ using System.IO;
 
 namespace LibHac.IO
 {
-    public class LocalFileSystem : IFileSystem
+    public class LocalFileSystem : IAttributeFileSystem
     {
         private string BasePath { get; }
 
@@ -15,6 +15,19 @@ namespace LibHac.IO
         internal string ResolveLocalPath(string path)
         {
             return Path.Combine(BasePath, path.TrimStart('/'));
+        }
+
+        public FileAttributes GetFileAttributes(string path)
+        {
+            path = PathTools.Normalize(path);
+            return File.GetAttributes(ResolveLocalPath(path));
+        }
+
+        public long GetFileSize(string path)
+        {
+            path = PathTools.Normalize(path);
+            var info = new FileInfo(ResolveLocalPath(path));
+            return info.Length;
         }
 
         public void CreateDirectory(string path)
