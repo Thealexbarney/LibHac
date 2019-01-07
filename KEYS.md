@@ -28,14 +28,33 @@ header_key_source = 343795270AAD5D19EBE2956C9BC71F4C41836B21DC6ACD7BACD4F6AF4816
 
 #### Title Keys
 
-`title.keys` should be in the following format with one key per line:  
-`rights_id,hexadecimal_key_value`.
+`title.keys` should be in either one of the following formats with one key per line:  
+
+`rights_id,hexadecimal_key_value`
 
 e.g. (Not actual keys)
 ```
 01000000000100000000000000000003,B4A1F5575D7D8A81624ED36D4E4BD8FD
 01000000000108000000000000000003,C8AD76F8C78E241ADFEE6EB12E33F1BD
 01000000000108000000000000000004,F9C8EAD30BB594434E4AF62C483CD796
+```
+
+`rights_id|hexadecimal_key_value|title_name`
+
+e.g. (Not actual keys)
+```
+01000000000100000000000000000003|B4A1F5575D7D8A81624ED36D4E4BD8FD|Best Video Game Title
+01000000000108000000000000000003|C8AD76F8C78E241ADFEE6EB12E33F1BD|Game of the Year
+01000000000108000000000000000004|F9C8EAD30BB594434E4AF62C483CD796|Most Anticipated Video Game Sequel
+```
+
+`title_id|rights_id|hexadecimal_key_value|is_update|is_dlc|is_demo|base_name|title_name|version|region`
+
+e.g. (Not actual keys)
+```
+0100000000010000|01000000000100000000000000000003|B4A1F5575D7D8A81624ED36D4E4BD8FD|0|0|0|Best Video Game Title|Best Video Game Title|0|US
+0100000000010800|01000000000108000000000000000003|C8AD76F8C78E241ADFEE6EB12E33F1BD|1|0|0|Game of the Year|Game of the Year|0|US
+0100000000010800|01000000000108000000000000000004|F9C8EAD30BB594434E4AF62C483CD796|1|0|0|Most Anticipated Video Game Sequel|Most Anticipated Video Game Sequel|0|US
 ```
 
 ## Keyfile templates
