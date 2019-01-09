@@ -23,6 +23,8 @@ namespace LibHac.IO
 
         public override void Write(ReadOnlySpan<byte> source, long offset)
         {
+            ValidateWriteParams(source, offset);
+
             BaseStorage.Write(source, offset);
         }
 
