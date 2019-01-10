@@ -9,7 +9,7 @@ namespace LibHac.IO
         private IFile[] Sources { get; }
         private long SplitFileSize { get; }
 
-        public ConcatenationFile(IList<IFile> sources, long splitFileSize, OpenMode mode)
+        internal ConcatenationFile(IList<IFile> sources, long splitFileSize, OpenMode mode)
         {
             Sources = sources.ToArray();
             SplitFileSize = splitFileSize;
@@ -22,6 +22,8 @@ namespace LibHac.IO
                     throw new ArgumentException($"Source file must have size {splitFileSize}");
                 }
             }
+
+            ToDispose.AddRange(Sources);
         }
 
         public override int Read(Span<byte> destination, long offset)

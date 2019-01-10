@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace LibHac.IO
 {
     public abstract class FileBase : IFile
     {
         private bool _isDisposed;
+        protected List<IDisposable> ToDispose { get; } = new List<IDisposable>();
 
         public abstract int Read(Span<byte> destination, long offset);
         public abstract void Write(ReadOnlySpan<byte> source, long offset);
@@ -12,7 +14,7 @@ namespace LibHac.IO
         public abstract long GetSize();
         public abstract void SetSize(long size);
 
-        protected OpenMode Mode { get; set; }
+        public OpenMode Mode { get; protected set; }
 
         protected int ValidateReadParamsAndGetSize(ReadOnlySpan<byte> span, long offset)
         {
@@ -66,6 +68,11 @@ namespace LibHac.IO
             if (disposing)
             {
                 Flush();
+
+                foreach (IDisposable item in ToDispose)
+                {
+                    item?.Dispose();
+                }
             }
 
             _isDisposed = true;

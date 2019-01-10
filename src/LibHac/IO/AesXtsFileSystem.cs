@@ -28,7 +28,7 @@ namespace LibHac.IO
 
         public void CreateDirectory(string path)
         {
-            throw new NotImplementedException();
+            BaseFileSystem.CreateDirectory(path);
         }
 
         public void CreateFile(string path, long size)
@@ -38,12 +38,12 @@ namespace LibHac.IO
 
         public void DeleteDirectory(string path)
         {
-            throw new NotImplementedException();
+            BaseFileSystem.DeleteDirectory(path);
         }
 
         public void DeleteFile(string path)
         {
-            throw new NotImplementedException();
+            BaseFileSystem.DeleteFile(path);
         }
 
         public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
@@ -77,17 +77,17 @@ namespace LibHac.IO
 
         public bool DirectoryExists(string path)
         {
-            throw new NotImplementedException();
+            return BaseFileSystem.DirectoryExists(path);
         }
 
         public bool FileExists(string path)
         {
-            throw new NotImplementedException();
+            return BaseFileSystem.FileExists(path);
         }
 
         public void Commit()
         {
-            throw new NotImplementedException();
+            BaseFileSystem.Commit();
         }
     }
 }
