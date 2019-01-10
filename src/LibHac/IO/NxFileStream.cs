@@ -60,9 +60,9 @@ namespace LibHac.IO
         }
 
         // todo access
-        public override bool CanRead => true;
+        public override bool CanRead => BaseFile.Mode.HasFlag(OpenMode.Read);
         public override bool CanSeek => true;
-        public override bool CanWrite => true;
+        public override bool CanWrite => BaseFile.Mode.HasFlag(OpenMode.Write);
         public override long Length { get; }
         public override long Position { get; set; }
 

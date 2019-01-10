@@ -6,20 +6,25 @@ namespace LibHac.IO
     public class LocalFile : FileBase
     {
         private string Path { get; }
-        private StreamStorage Storage { get; }
+        private FileStream Stream { get; }
+        private StreamFile File { get; }
 
         public LocalFile(string path, OpenMode mode)
         {
             Path = path;
             Mode = mode;
-            Storage = new StreamStorage(new FileStream(Path, FileMode.Open), false);
+            Stream = new FileStream(Path, FileMode.Open, GetFileAccess(mode));
+            File = new StreamFile(Stream, mode);
+
+            ToDispose.Add(File);
+            ToDispose.Add(Stream);
         }
 
         public override int Read(Span<byte> destination, long offset)
         {
             int toRead = ValidateReadParamsAndGetSize(destination, offset);
 
-            Storage.Read(destination.Slice(0, toRead), offset);
+            File.Read(destination.Slice(0, toRead), offset);
 
             return toRead;
         }
@@ -28,22 +33,28 @@ namespace LibHac.IO
         {
             ValidateWriteParams(source, offset);
             
-            Storage.Write(source, offset);
+            File.Write(source, offset);
         }
 
         public override void Flush()
         {
-            Storage.Flush();
+            File.Flush();
         }
 
         public override long GetSize()
         {
-            return Storage.Length;
+            return File.GetSize();
         }
 
         public override void SetSize(long size)
         {
-            throw new NotImplementedException();
+            File.SetSize(size);
+        }
+
+        private static FileAccess GetFileAccess(OpenMode mode)
+        {
+            // FileAccess and OpenMode have the same flags
+            return (FileAccess)(mode & OpenMode.ReadWrite);
         }
     }
 }
