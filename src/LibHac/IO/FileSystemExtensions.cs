@@ -98,8 +98,10 @@ namespace LibHac.IO
             }
         }
 
-        public static Stream AsStream(this IFile storage) => new NxFileStream(storage, true);
-        public static Stream AsStream(this IFile storage, bool keepOpen) => new NxFileStream(storage, keepOpen);
+        public static Stream AsStream(this IFile file) => new NxFileStream(file, true);
+        public static Stream AsStream(this IFile file, bool keepOpen) => new NxFileStream(file, keepOpen);
+
+        public static IFile AsIFile(this Stream stream, OpenMode mode) => new StreamFile(stream, mode);
 
         public static int GetEntryCount(this IFileSystem fs, OpenDirectoryMode mode)
         {
