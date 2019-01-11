@@ -4,12 +4,10 @@ using System;
 using System.Numerics;
 using System.Security.Cryptography;
 
-namespace LibHac
+namespace LibHac.Compatibility
 {
-    internal class Compat
+    internal static class Rsa
     {
-        public static bool IsMono { get; } = Type.GetType("Mono.Runtime") != null;
-
         public static bool Rsa2048PssVerifyMono(byte[] data, byte[] signature, byte[] modulus)
         {
             const int rsaLen = 0x100;

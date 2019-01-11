@@ -3,6 +3,10 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 
+#if !NETFRAMEWORK
+using System.IO.Enumeration;
+#endif
+
 namespace LibHac.IO
 {
     public static class FileSystemExtensions
@@ -55,18 +59,35 @@ namespace LibHac.IO
             source.CopyFileSystem(destFs, logger);
         }
 
+        public static IEnumerable<DirectoryEntry> EnumerateEntries(this IFileSystem fileSystem)
+        {
+            return fileSystem.OpenDirectory("/", OpenDirectoryMode.All).EnumerateEntries();
+        }
+
         public static IEnumerable<DirectoryEntry> EnumerateEntries(this IDirectory directory)
         {
+            return directory.EnumerateEntries("*", SearchOptions.Default);
+        }
+
+        public static IEnumerable<DirectoryEntry> EnumerateEntries(this IDirectory directory, string searchPattern, SearchOptions searchOptions)
+        {
+            bool ignoreCase = searchOptions.HasFlag(SearchOptions.CaseInsensitive);
+            bool recurse = searchOptions.HasFlag(SearchOptions.RecurseSubdirectories);
+
             IFileSystem fs = directory.ParentFileSystem;
 
             foreach (DirectoryEntry entry in directory.Read())
             {
-                yield return entry;
-                if (entry.Type != DirectoryEntryType.Directory) continue;
+                if (MatchesPattern(searchPattern, entry.Name, ignoreCase))
+                {
+                    yield return entry;
+                }
+
+                if (entry.Type != DirectoryEntryType.Directory || !recurse) continue;
 
                 IDirectory subDir = fs.OpenDirectory(directory.FullPath + '/' + entry.Name, OpenDirectoryMode.All);
 
-                foreach (DirectoryEntry subEntry in subDir.EnumerateEntries())
+                foreach (DirectoryEntry subEntry in subDir.EnumerateEntries(searchPattern, searchOptions))
                 {
                     yield return subEntry;
                 }
@@ -123,5 +144,24 @@ namespace LibHac.IO
 
             return count;
         }
+
+        public static bool MatchesPattern(string searchPattern, string name, bool ignoreCase)
+        {
+#if NETFRAMEWORK
+            return Compatibility.FileSystemName.MatchesSimpleExpression(searchPattern.AsSpan(),
+                name.AsSpan(), ignoreCase);
+#else
+            return FileSystemName.MatchesSimpleExpression(searchPattern.AsSpan(),
+                name.AsSpan(), ignoreCase);
+#endif
+        }
+    }
+
+    [Flags]
+    public enum SearchOptions
+    {
+        Default = 0,
+        RecurseSubdirectories = 1 << 0,
+        CaseInsensitive = 1 << 1
     }
 }
