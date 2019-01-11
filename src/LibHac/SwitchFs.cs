@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using LibHac.IO;
 using LibHac.IO.Save;
 
@@ -12,44 +11,23 @@ namespace LibHac
     public class SwitchFs : IDisposable
     {
         public Keyset Keyset { get; }
-        public IFileSystemOld Fs { get; }
-        public string ContentsDir { get; }
-        public string SaveDir { get; }
+        public IAttributeFileSystem BaseFs { get; }
+        public AesXtsFileSystem Fs { get; }
 
         public Dictionary<string, Nca> Ncas { get; } = new Dictionary<string, Nca>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, SaveDataFileSystem> Saves { get; } = new Dictionary<string, SaveDataFileSystem>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<ulong, Title> Titles { get; } = new Dictionary<ulong, Title>();
         public Dictionary<ulong, Application> Applications { get; } = new Dictionary<ulong, Application>();
 
-        public SwitchFs(Keyset keyset, IFileSystemOld fs)
+        public SwitchFs(Keyset keyset, IAttributeFileSystem fs)
         {
-            Fs = fs;
+            BaseFs = fs;
             Keyset = keyset;
 
-            if (fs.DirectoryExists("Nintendo"))
-            {
-                ContentsDir = fs.GetFullPath(Path.Combine("Nintendo", "Contents"));
-                SaveDir = fs.GetFullPath(Path.Combine("Nintendo", "save"));
-            }
-            else
-            {
-                if (fs.DirectoryExists("Contents"))
-                {
-                    ContentsDir = fs.GetFullPath("Contents");
-                }
+            var concatFs = new ConcatenationFileSystem(BaseFs);
+            Fs = new AesXtsFileSystem(concatFs, keyset.SdCardKeys[1], 0x4000);
 
-                if (fs.DirectoryExists("save"))
-                {
-                    SaveDir = fs.GetFullPath("save");
-                }
-            }
-
-            if (ContentsDir == null)
-            {
-                throw new DirectoryNotFoundException("Could not find \"Contents\" directory");
-            }
-
-            OpenAllSaves();
+           // OpenAllSaves();
             OpenAllNcas();
             ReadTitles();
             ReadControls();
@@ -58,88 +36,70 @@ namespace LibHac
 
         private void OpenAllNcas()
         {
-            string[] files = Fs.GetFileSystemEntries(ContentsDir, "*.nca", SearchOption.AllDirectories);
+            IEnumerable<DirectoryEntry> files = Fs.OpenDirectory("/", OpenDirectoryMode.All).EnumerateEntries("*.nca", SearchOptions.RecurseSubdirectories);
 
-            foreach (string file in files)
+            foreach (DirectoryEntry fileEntry in files)
             {
                 Nca nca = null;
                 try
                 {
-                    bool isNax0;
-                    IStorage storage = OpenSplitNcaStorage(Fs, file);
-                    if (storage == null) continue;
+                    var storage = new FileStorage(Fs.OpenFile(fileEntry.FullPath, OpenMode.Read));
 
-                    using (var reader = new BinaryReader(storage.AsStream(), Encoding.Default, true))
-                    {
-                        reader.BaseStream.Position = 0x20;
-                        isNax0 = reader.ReadUInt32() == 0x3058414E; // NAX0
-                        reader.BaseStream.Position = 0;
-                    }
+                    nca = new Nca(Keyset, storage, false);
 
-                    if (isNax0)
-                    {
-                        string sdPath = "/" + Util.GetRelativePath(file, ContentsDir).Replace('\\', '/');
-                        var nax0 = new Nax0(Keyset, storage, sdPath, false);
-                        nca = new Nca(Keyset, nax0.BaseStorage, false);
-                    }
-                    else
-                    {
-                        nca = new Nca(Keyset, storage, false);
-                    }
-
-                    nca.NcaId = Path.GetFileNameWithoutExtension(file);
+                    nca.NcaId = Path.GetFileNameWithoutExtension(fileEntry.Name);
                     string extension = nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
                     nca.Filename = nca.NcaId + extension;
                 }
                 catch (MissingKeyException ex)
                 {
                     if (ex.Name == null)
-                    { Console.WriteLine($"{ex.Message} File:\n{file}"); }
+                    { Console.WriteLine($"{ex.Message} File:\n{fileEntry}"); }
                     else
                     {
                         string name = ex.Type == KeyType.Title ? $"Title key for rights ID {ex.Name}" : ex.Name;
-                        Console.WriteLine($"{ex.Message}\nKey: {name}\nFile: {file}");
+                        Console.WriteLine($"{ex.Message}\nKey: {name}\nFile: {fileEntry}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"{ex.Message} File: {file}");
+                    Console.WriteLine($"{ex.Message} File: {fileEntry}");
                 }
 
                 if (nca?.NcaId != null) Ncas.Add(nca.NcaId, nca);
             }
         }
 
-        private void OpenAllSaves()
-        {
-            if (SaveDir == null) return;
+        //private void OpenAllSaves()
+        //{
+        //    if (SaveDir == null) return;
 
-            string[] files = Fs.GetFileSystemEntries(SaveDir, "*");
+        //    string[] files = Fs.GetFileSystemEntries(SaveDir, "*");
 
-            foreach (string file in files)
-            {
-                SaveDataFileSystem save = null;
-                string saveName = Path.GetFileNameWithoutExtension(file);
+        //    foreach (string file in files)
+        //    {
+        //        SaveDataFileSystem save = null;
+        //        string saveName = Path.GetFileNameWithoutExtension(file);
 
-                try
-                {
-                    IStorage storage = Fs.OpenFile(file, FileMode.Open).AsStorage();
+        //        try
+        //        {
+        //            IStorage storage = Fs.OpenFile(file, FileMode.Open).AsStorage();
 
-                    string sdPath = "/" + Util.GetRelativePath(file, SaveDir).Replace('\\', '/');
-                    var nax0 = new Nax0(Keyset, storage, sdPath, false);
-                    save = new SaveDataFileSystem(Keyset, nax0.BaseStorage, IntegrityCheckLevel.None, true);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"{ex.Message} File: {file}");
-                }
+        //            string sdPath = "/" + Util.GetRelativePath(file, SaveDir).Replace('\\', '/');
+        //            var nax0 = new Nax0(Keyset, storage, sdPath, false);
+        //            save = new SaveDataFileSystem(Keyset, nax0.BaseStorage, IntegrityCheckLevel.None, true);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            Console.WriteLine($"{ex.Message} File: {file}");
+        //        }
 
-                if (save != null && saveName != null)
-                {
-                    Saves[saveName] = save;
-                }
-            }
-        }
+        //        if (save != null && saveName != null)
+        //        {
+        //            Saves[saveName] = save;
+        //        }
+        //    }
+        //}
 
         private void ReadTitles()
         {
@@ -230,49 +190,6 @@ namespace LibHac
                     patch?.SetBaseNca(main);
                 }
             }
-        }
-
-        internal static IStorage OpenSplitNcaStorage(IFileSystemOld fs, string path)
-        {
-            var files = new List<string>();
-            var storages = new List<IStorage>();
-
-            if (fs.DirectoryExists(path))
-            {
-                while (true)
-                {
-                    string partName = Path.Combine(path, $"{files.Count:D2}");
-                    if (!fs.FileExists(partName)) break;
-
-                    files.Add(partName);
-                }
-            }
-            else if (fs.FileExists(path))
-            {
-                if (Path.GetFileName(path) != "00")
-                {
-                    return fs.OpenFile(path, FileMode.Open, FileAccess.Read).AsStorage();
-                }
-                files.Add(path);
-            }
-            else
-            {
-                throw new FileNotFoundException("Could not find the input file or directory");
-            }
-
-            if (files.Count == 1)
-            {
-                return fs.OpenFile(files[0], FileMode.Open, FileAccess.Read).AsStorage();
-            }
-
-            foreach (string file in files)
-            {
-                storages.Add(fs.OpenFile(file, FileMode.Open, FileAccess.Read).AsStorage());
-            }
-
-            if (storages.Count == 0) return null; //todo
-
-            return new ConcatenationStorage(storages, true);
         }
 
         private void DisposeNcas()
