@@ -1,33 +1,34 @@
 ﻿using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+using DiscUtils;
+using LibHac.IO;
+using DirectoryEntry = LibHac.IO.DirectoryEntry;
+using IFileSystem = LibHac.IO.IFileSystem;
 
-namespace LibHac.IO
+namespace LibHac.Nand
 {
-    public class LocalDirectory : IDirectory
+    public class FatFileSystemDirectory : IDirectory
     {
         public IFileSystem ParentFileSystem { get; }
         public string FullPath { get; }
-
-        private string LocalPath { get; }
         public OpenDirectoryMode Mode { get; }
-        private DirectoryInfo DirInfo { get; }
-
-        public LocalDirectory(LocalFileSystem fs, string path, OpenDirectoryMode mode)
+        private DiscDirectoryInfo DirInfo { get; }
+        
+        public FatFileSystemDirectory(FatFileSystemProvider fs, string path, OpenDirectoryMode mode)
         {
             ParentFileSystem = fs;
             FullPath = path;
-            LocalPath = fs.ResolveLocalPath(path);
             Mode = mode;
 
-            DirInfo = new DirectoryInfo(LocalPath);
+            path = FatFileSystemProvider.ToDiscUtilsPath(PathTools.Normalize(path));
+
+            DirInfo = fs.Fs.GetDirectoryInfo(path);
         }
 
         public IEnumerable<DirectoryEntry> Read()
         {
             if (Mode.HasFlag(OpenDirectoryMode.Directories))
             {
-                foreach (DirectoryInfo dir in DirInfo.EnumerateDirectories())
+                foreach (DiscDirectoryInfo dir in DirInfo.GetDirectories())
                 {
                     yield return new DirectoryEntry(dir.Name, FullPath + '/' + dir.Name, DirectoryEntryType.Directory, 0);
                 }
@@ -35,7 +36,7 @@ namespace LibHac.IO
 
             if (Mode.HasFlag(OpenDirectoryMode.Files))
             {
-                foreach (FileInfo file in DirInfo.EnumerateFiles())
+                foreach (DiscFileInfo file in DirInfo.GetFiles())
                 {
                     yield return new DirectoryEntry(file.Name, FullPath + '/' + file.Name, DirectoryEntryType.File, file.Length);
                 }
@@ -48,12 +49,12 @@ namespace LibHac.IO
 
             if (Mode.HasFlag(OpenDirectoryMode.Directories))
             {
-                count += DirInfo.EnumerateDirectories().Count();
+                count += DirInfo.GetDirectories().Length;
             }
 
             if (Mode.HasFlag(OpenDirectoryMode.Files))
             {
-                count += DirInfo.EnumerateFiles().Count();
+                count += DirInfo.GetFiles().Length;
             }
 
             return count;
