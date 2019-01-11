@@ -13,7 +13,7 @@ namespace hactoolnet
     {
         public static void Process(Context ctx)
         {
-            var switchFs = new SwitchFs(ctx.Keyset, new FileSystem(ctx.Options.InFile));
+            var switchFs = new SwitchFs(ctx.Keyset, new LocalFileSystem($"{ctx.Options.InFile}/Nintendo/Contents"));
 
             if (ctx.Options.ListNcas)
             {
