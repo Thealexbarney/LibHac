@@ -49,8 +49,9 @@ namespace NandReader
             {
                 Keyset keyset = OpenKeyset();
                 var nand = new Nand(stream, keyset);
-                NandPartition user = nand.OpenSystemPartition();
-                var sdfs = new SwitchFs(keyset, user);
+                FatFileSystemProvider user = nand.OpenSystemPartition();
+                // todo
+                //var sdfs = new SwitchFs(keyset, user);
             }
         }
 
@@ -87,13 +88,13 @@ namespace NandReader
         private static Ticket[] GetTickets(Keyset keyset, Nand nand, IProgressReport logger = null)
         {
             var tickets = new List<Ticket>();
-            NandPartition system = nand.OpenSystemPartition();
+            FatFileSystemProvider system = nand.OpenSystemPartition();
 
-            Stream saveE1File = system.OpenFile("save\\80000000000000E1", FileMode.Open, FileAccess.Read);
-            tickets.AddRange(ReadTickets(keyset, saveE1File));
+            IFile saveE1File = system.OpenFile("/save/80000000000000E1", OpenMode.Read);
+            tickets.AddRange(ReadTickets(keyset, saveE1File.AsStream()));
 
-            Stream saveE2 = system.OpenFile("save\\80000000000000E2", FileMode.Open, FileAccess.Read);
-            tickets.AddRange(ReadTickets(keyset, saveE2));
+            IFile saveE2 = system.OpenFile("/save/80000000000000E2", OpenMode.Read);
+            tickets.AddRange(ReadTickets(keyset, saveE2.AsStream()));
 
             logger?.LogMessage($"Found {tickets.Count} tickets");
 
