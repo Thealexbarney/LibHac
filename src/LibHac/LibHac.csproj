@@ -4,6 +4,8 @@
     <OutputType>Library</OutputType>
     <TargetFrameworks>net471;netcoreapp2.2</TargetFrameworks>
     <LangVersion>7.3</LangVersion>
+    <ReleaseVersion>0.2.0</ReleaseVersion>
+    <SynchReleaseVersion>false</SynchReleaseVersion>
   </PropertyGroup>
 
   <PropertyGroup>
