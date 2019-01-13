@@ -50,8 +50,7 @@ namespace NandReader
                 Keyset keyset = OpenKeyset();
                 var nand = new Nand(stream, keyset);
                 FatFileSystemProvider user = nand.OpenSystemPartition();
-                // todo
-                //var sdfs = new SwitchFs(keyset, user);
+                SwitchFs sdfs = SwitchFs.OpenNandPartition(keyset, user);
             }
         }
 
