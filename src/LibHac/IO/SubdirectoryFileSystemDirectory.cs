@@ -20,7 +20,10 @@ namespace LibHac.IO
 
         public IEnumerable<DirectoryEntry> Read()
         {
-            return BaseDirectory.Read();
+            foreach (DirectoryEntry entry in BaseDirectory.Read())
+            {
+                yield return new DirectoryEntry(entry.Name, FullPath + '/' + entry.Name, entry.Type, entry.Size);
+            }
         }
 
         public int GetEntryCount()

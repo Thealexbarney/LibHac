@@ -13,7 +13,24 @@ namespace hactoolnet
     {
         public static void Process(Context ctx)
         {
-            var switchFs = new SwitchFs(ctx.Keyset, new LocalFileSystem($"{ctx.Options.InFile}/Nintendo/Contents"));
+            SwitchFs switchFs;
+            var baseFs = new LocalFileSystem(ctx.Options.InFile);
+
+            if (Directory.Exists(Path.Combine(ctx.Options.InFile, "Nintendo", "Contents", "registered")))
+            {
+                ctx.Logger.LogMessage("Treating path as SD card storage");
+                switchFs = SwitchFs.OpenSdCard(ctx.Keyset, baseFs);
+            }
+            else if (Directory.Exists(Path.Combine(ctx.Options.InFile, "Contents", "registered")))
+            {
+                ctx.Logger.LogMessage("Treating path as NAND storage");
+                switchFs = SwitchFs.OpenNandPartition(ctx.Keyset, baseFs);
+            }
+            else
+            {
+                ctx.Logger.LogMessage("Treating path as a directory of loose NCAs");
+                switchFs = SwitchFs.OpenNcaDirectory(ctx.Keyset, baseFs);
+            }
 
             if (ctx.Options.ListNcas)
             {
