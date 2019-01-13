@@ -11,39 +11,63 @@ namespace LibHac
     public class SwitchFs : IDisposable
     {
         public Keyset Keyset { get; }
-        public IAttributeFileSystem BaseFs { get; }
-        public AesXtsFileSystem Fs { get; }
+        public IFileSystem ContentFs { get; }
+        public IFileSystem SaveFs { get; }
 
         public Dictionary<string, Nca> Ncas { get; } = new Dictionary<string, Nca>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, SaveDataFileSystem> Saves { get; } = new Dictionary<string, SaveDataFileSystem>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<ulong, Title> Titles { get; } = new Dictionary<ulong, Title>();
         public Dictionary<ulong, Application> Applications { get; } = new Dictionary<ulong, Application>();
 
-        public SwitchFs(Keyset keyset, IAttributeFileSystem fs)
+        public SwitchFs(Keyset keyset, IFileSystem contentFileSystem, IFileSystem saveFileSystem)
         {
-            BaseFs = fs;
             Keyset = keyset;
+            ContentFs = contentFileSystem;
+            SaveFs = saveFileSystem;
 
-            var concatFs = new ConcatenationFileSystem(BaseFs);
-            Fs = new AesXtsFileSystem(concatFs, keyset.SdCardKeys[1], 0x4000);
-
-           // OpenAllSaves();
+            OpenAllSaves();
             OpenAllNcas();
             ReadTitles();
             ReadControls();
             CreateApplications();
         }
 
+        public static SwitchFs OpenSdCard(Keyset keyset, IAttributeFileSystem fileSystem)
+        {
+            var concatFs = new ConcatenationFileSystem(fileSystem);
+            var saveDirFs = new SubdirectoryFileSystem(concatFs, "/Nintendo/save");
+            var contentDirFs = new SubdirectoryFileSystem(concatFs, "/Nintendo/Contents");
+
+            var encSaveFs = new AesXtsFileSystem(saveDirFs, keyset.SdCardKeys[0], 0x4000);
+            var encContentFs = new AesXtsFileSystem(contentDirFs, keyset.SdCardKeys[1], 0x4000);
+
+            return new SwitchFs(keyset, encContentFs, encSaveFs);
+        }
+
+        public static SwitchFs OpenNandPartition(Keyset keyset, IAttributeFileSystem fileSystem)
+        {
+            var concatFs = new ConcatenationFileSystem(fileSystem);
+            var saveDirFs = new SubdirectoryFileSystem(concatFs, "/save");
+            var contentDirFs = new SubdirectoryFileSystem(concatFs, "/Contents");
+
+            return new SwitchFs(keyset, contentDirFs, saveDirFs);
+        }
+
+        public static SwitchFs OpenNcaDirectory(Keyset keyset, IFileSystem fileSystem)
+        {
+            return new SwitchFs(keyset, fileSystem, null);
+        }
+
         private void OpenAllNcas()
         {
-            IEnumerable<DirectoryEntry> files = Fs.OpenDirectory("/", OpenDirectoryMode.All).EnumerateEntries("*.nca", SearchOptions.RecurseSubdirectories);
+            IEnumerable<DirectoryEntry> files = ContentFs.OpenDirectory("/", OpenDirectoryMode.All).EnumerateEntries("*.nca", SearchOptions.RecurseSubdirectories);
 
             foreach (DirectoryEntry fileEntry in files)
             {
                 Nca nca = null;
                 try
                 {
-                    var storage = new FileStorage(Fs.OpenFile(fileEntry.FullPath, OpenMode.Read));
+                    var storage = new FileStorage(ContentFs.OpenFile(fileEntry.FullPath, OpenMode.Read));
 
                     nca = new Nca(Keyset, storage, false);
 
@@ -63,43 +87,38 @@ namespace LibHac
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"{ex.Message} File: {fileEntry}");
+                    Console.WriteLine($"{ex.Message} File: {fileEntry.FullPath}");
                 }
 
                 if (nca?.NcaId != null) Ncas.Add(nca.NcaId, nca);
             }
         }
 
-        //private void OpenAllSaves()
-        //{
-        //    if (SaveDir == null) return;
+        private void OpenAllSaves()
+        {
+            if (SaveFs == null) return;
 
-        //    string[] files = Fs.GetFileSystemEntries(SaveDir, "*");
+            foreach (DirectoryEntry fileEntry in SaveFs.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File))
+            {
+                SaveDataFileSystem save = null;
+                string saveName = Path.GetFileNameWithoutExtension(fileEntry.Name);
 
-        //    foreach (string file in files)
-        //    {
-        //        SaveDataFileSystem save = null;
-        //        string saveName = Path.GetFileNameWithoutExtension(file);
+                try
+                {
+                    IFile file = SaveFs.OpenFile(fileEntry.FullPath, OpenMode.Read);
+                    save = new SaveDataFileSystem(Keyset, new FileStorage(file), IntegrityCheckLevel.None, true);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"{ex.Message} File: {fileEntry.FullPath}");
+                }
 
-        //        try
-        //        {
-        //            IStorage storage = Fs.OpenFile(file, FileMode.Open).AsStorage();
-
-        //            string sdPath = "/" + Util.GetRelativePath(file, SaveDir).Replace('\\', '/');
-        //            var nax0 = new Nax0(Keyset, storage, sdPath, false);
-        //            save = new SaveDataFileSystem(Keyset, nax0.BaseStorage, IntegrityCheckLevel.None, true);
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            Console.WriteLine($"{ex.Message} File: {file}");
-        //        }
-
-        //        if (save != null && saveName != null)
-        //        {
-        //            Saves[saveName] = save;
-        //        }
-        //    }
-        //}
+                if (save != null && saveName != null)
+                {
+                    Saves[saveName] = save;
+                }
+            }
+        }
 
         private void ReadTitles()
         {
