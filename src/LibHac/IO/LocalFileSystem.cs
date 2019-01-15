@@ -121,6 +121,24 @@ namespace LibHac.IO
             return File.Exists(ResolveLocalPath(path));
         }
 
+        public DirectoryEntryType GetEntryType(string path)
+        {
+            path = PathTools.Normalize(path);
+            string localPath = ResolveLocalPath(path);
+
+            if (Directory.Exists(localPath))
+            {
+                return DirectoryEntryType.Directory;
+            }
+
+            if (File.Exists(localPath))
+            {
+                return DirectoryEntryType.File;
+            }
+
+            throw new FileNotFoundException("path");
+        }
+
         public void Commit()
         {
             throw new NotImplementedException();

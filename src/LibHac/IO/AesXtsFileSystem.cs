@@ -85,6 +85,11 @@ namespace LibHac.IO
             return BaseFileSystem.FileExists(path);
         }
 
+        public DirectoryEntryType GetEntryType(string path)
+        {
+            return BaseFileSystem.GetEntryType(path);
+        }
+
         public void Commit()
         {
             BaseFileSystem.Commit();

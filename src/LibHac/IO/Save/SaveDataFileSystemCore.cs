@@ -95,6 +95,8 @@ namespace LibHac.IO.Save
 
         public IFile OpenFile(string path, OpenMode mode)
         {
+            path = PathTools.Normalize(path);
+
             if (!FileDictionary.TryGetValue(path, out SaveFileEntry file))
             {
                 throw new FileNotFoundException();
@@ -123,10 +125,28 @@ namespace LibHac.IO.Save
 
         public bool DirectoryExists(string path)
         {
-            throw new System.NotImplementedException();
+            path = PathTools.Normalize(path);
+
+            return DirDictionary.ContainsKey(path);
         }
 
-        public bool FileExists(string filename) => FileDictionary.ContainsKey(filename);
+        public bool FileExists(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            return FileDictionary.ContainsKey(path);
+        }
+
+        public DirectoryEntryType GetEntryType(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            if (DirDictionary.ContainsKey(path)) return DirectoryEntryType.Directory;
+            if (FileDictionary.ContainsKey(path)) return DirectoryEntryType.File;
+
+            throw new FileNotFoundException(path);
+        }
+
         public void Commit()
         {
             throw new System.NotImplementedException();

@@ -120,6 +120,15 @@ namespace LibHac.IO
             return BaseFileSystem.FileExists(path) || BaseFileSystem.DirectoryExists(path) && IsSplitFile(path);
         }
 
+        public DirectoryEntryType GetEntryType(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            if (IsSplitFile(path)) return DirectoryEntryType.File;
+
+            return BaseFileSystem.GetEntryType(path);
+        }
+
         public void Commit()
         {
             BaseFileSystem.Commit();

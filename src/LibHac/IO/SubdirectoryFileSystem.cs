@@ -91,6 +91,13 @@
             return ParentFileSystem.FileExists(ResolveFullPath(path));
         }
 
+        public DirectoryEntryType GetEntryType(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            return ParentFileSystem.GetEntryType(ResolveFullPath(path));
+        }
+
         public void Commit()
         {
             ParentFileSystem.Commit();

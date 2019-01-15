@@ -14,6 +14,7 @@ namespace LibHac.IO
         void RenameFile(string srcPath, string dstPath);
         bool DirectoryExists(string path);
         bool FileExists(string path);
+        DirectoryEntryType GetEntryType(string path);
         void Commit();
     }
 
