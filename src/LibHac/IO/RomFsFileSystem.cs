@@ -86,27 +86,17 @@ namespace LibHac.IO
             }
         }
 
+        public DirectoryEntryType GetEntryType(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            if (FileDict.ContainsKey(path)) return DirectoryEntryType.File;
+            if (DirectoryDict.ContainsKey(path)) return DirectoryEntryType.Directory;
+
+            throw new FileNotFoundException(path);
+        }
+
         public void Commit()
-        {
-            throw new NotSupportedException();
-        }
-
-        public void CreateDirectory(string path)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void CreateFile(string path, long size)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void DeleteDirectory(string path)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void DeleteFile(string path)
         {
             throw new NotSupportedException();
         }
@@ -138,16 +128,6 @@ namespace LibHac.IO
             return new RomFsFile(BaseStorage, Header.DataOffset + file.DataOffset, file.DataLength);
         }
 
-        public void RenameDirectory(string srcPath, string dstPath)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void RenameFile(string srcPath, string dstPath)
-        {
-            throw new NotSupportedException();
-        }
-
         public bool DirectoryExists(string path)
         {
             path = PathTools.Normalize(path);
@@ -166,6 +146,13 @@ namespace LibHac.IO
         {
             return BaseStorage;
         }
+
+        public void CreateDirectory(string path) => throw new NotSupportedException();
+        public void CreateFile(string path, long size) => throw new NotSupportedException();
+        public void DeleteDirectory(string path) => throw new NotSupportedException();
+        public void DeleteFile(string path) => throw new NotSupportedException();
+        public void RenameDirectory(string srcPath, string dstPath) => throw new NotSupportedException();
+        public void RenameFile(string srcPath, string dstPath) => throw new NotSupportedException();
     }
 
     public class RomfsHeader

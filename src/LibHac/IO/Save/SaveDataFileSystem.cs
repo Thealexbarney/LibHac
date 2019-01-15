@@ -160,6 +160,11 @@ namespace LibHac.IO.Save
         public bool DirectoryExists(string path) => SaveDataFileSystemCore.DirectoryExists(path);
         public bool FileExists(string filename) => SaveDataFileSystemCore.FileExists(filename);
 
+        public DirectoryEntryType GetEntryType(string path)
+        {
+            return SaveDataFileSystemCore.GetEntryType(path);
+        }
+
         public void Commit()
         {
             Commit(Keyset);

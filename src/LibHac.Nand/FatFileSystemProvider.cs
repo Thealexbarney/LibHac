@@ -57,6 +57,17 @@ namespace LibHac.Nand
             return Fs.FileExists(path);
         }
 
+        public DirectoryEntryType GetEntryType(string path)
+        {
+            path = PathTools.Normalize(path);
+            string discUtilsPath = ToDiscUtilsPath(path);
+
+            if (Fs.FileExists(discUtilsPath)) return DirectoryEntryType.File;
+            if (Fs.DirectoryExists(discUtilsPath)) return DirectoryEntryType.Directory;
+
+            throw new FileNotFoundException(path);
+        }
+
         public FileAttributes GetFileAttributes(string path)
         {
             path = ToDiscUtilsPath(PathTools.Normalize(path));

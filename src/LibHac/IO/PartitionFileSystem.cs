@@ -93,6 +93,17 @@ namespace LibHac.IO
             return FileDict.ContainsKey(path);
         }
 
+        public DirectoryEntryType GetEntryType(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            if (path == "/") return DirectoryEntryType.Directory;
+
+            if (FileDict.ContainsKey(path)) return DirectoryEntryType.File;
+
+            throw new FileNotFoundException(path);
+        }
+
         public void Commit()
         {
             throw new NotSupportedException();
