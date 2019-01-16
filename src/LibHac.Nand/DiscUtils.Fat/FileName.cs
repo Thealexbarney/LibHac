@@ -63,6 +63,11 @@ namespace DiscUtils.Fat
             _raw = new byte[11];
             byte[] bytes = encoding.GetBytes(name.ToUpperInvariant());
 
+            if (useLongName)
+            {
+                LongName = name;
+            }
+
             int nameIdx = 0;
             int rawIdx = 0;
             while (nameIdx < bytes.Length && bytes[nameIdx] != '.' && rawIdx < _raw.Length)
@@ -80,7 +85,6 @@ namespace DiscUtils.Fat
             {
                 if(!useLongName)
                     throw new ArgumentException("File name too long '" + name + "'", nameof(name));
-                LongName = name;
             }
             if (rawIdx == 0)
             {
