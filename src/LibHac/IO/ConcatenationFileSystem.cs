@@ -6,12 +6,16 @@ namespace LibHac.IO
 {
     public class ConcatenationFileSystem : IFileSystem
     {
+        private const long DefaultSplitFileSize = 0xFFFF0000; // Hard-coded value used by FS
         private IAttributeFileSystem BaseFileSystem { get; }
-        private long SplitFileSize { get; } = 0xFFFF0000; // Hard-coded value used by FS
+        private long SplitFileSize { get; }
 
-        public ConcatenationFileSystem(IAttributeFileSystem baseFileSystem)
+        public ConcatenationFileSystem(IAttributeFileSystem baseFileSystem) : this(baseFileSystem, DefaultSplitFileSize) { }
+
+        public ConcatenationFileSystem(IAttributeFileSystem baseFileSystem, long splitFileSize)
         {
             BaseFileSystem = baseFileSystem;
+            SplitFileSize = splitFileSize;
         }
 
         internal bool IsSplitFile(string path)
@@ -23,22 +27,78 @@ namespace LibHac.IO
 
         public void CreateDirectory(string path)
         {
-            throw new NotImplementedException();
+            path = PathTools.Normalize(path);
+
+            if (FileExists(path))
+            {
+                throw new IOException("Cannot create directory because a file with this name already exists.");
+            }
+
+            BaseFileSystem.CreateDirectory(path);
         }
 
-        public void CreateFile(string path, long size)
+        public void CreateFile(string path, long size, CreateFileOptions options)
         {
-            throw new NotImplementedException();
+            path = PathTools.Normalize(path);
+
+            CreateFileOptions newOptions = options & ~CreateFileOptions.CreateConcatenationFile;
+
+            if (!options.HasFlag(CreateFileOptions.CreateConcatenationFile))
+            {
+                BaseFileSystem.CreateFile(path, size, newOptions);
+                return;
+            }
+
+            // A concatenation file directory can't contain normal files
+            string parentDir = PathTools.GetParentDirectory(path);
+            if (IsSplitFile(parentDir)) throw new IOException("Cannot create files inside of a concatenation file");
+
+            BaseFileSystem.CreateDirectory(path);
+            FileAttributes attributes = BaseFileSystem.GetFileAttributes(path) | FileAttributes.Archive;
+            BaseFileSystem.SetFileAttributes(path, attributes);
+
+            long remaining = size;
+
+            for (int i = 0; remaining > 0; i++)
+            {
+                long fileSize = Math.Min(SplitFileSize, remaining);
+                string fileName = GetSplitFilePath(path, i);
+
+                BaseFileSystem.CreateFile(fileName, fileSize, CreateFileOptions.None);
+
+                remaining -= fileSize;
+            }
         }
 
         public void DeleteDirectory(string path)
         {
-            throw new NotImplementedException();
+            path = PathTools.Normalize(path);
+
+            if (IsSplitFile(path))
+            {
+                throw new DirectoryNotFoundException(path);
+            }
+
+            BaseFileSystem.DeleteDirectory(path);
         }
 
         public void DeleteFile(string path)
         {
-            throw new NotImplementedException();
+            path = PathTools.Normalize(path);
+
+            if (!IsSplitFile(path))
+            {
+                BaseFileSystem.DeleteFile(path);
+            }
+
+            int count = GetSplitFileCount(path);
+
+            for (int i = 0; i < count; i++)
+            {
+                BaseFileSystem.DeleteFile(GetSplitFilePath(path, i));
+            }
+
+            BaseFileSystem.DeleteDirectory(path);
         }
 
         public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
@@ -151,7 +211,7 @@ namespace LibHac.IO
             return $"{dirPath}/{index:D2}";
         }
 
-        internal long GetSplitFileSize(string path)
+        internal long GetConcatenationFileSize(string path)
         {
             int fileCount = GetSplitFileCount(path);
             long size = 0;

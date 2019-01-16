@@ -11,7 +11,7 @@ namespace LibHac.IO
 {
     public static class FileSystemExtensions
     {
-        public static void CopyDirectory(this IDirectory source, IDirectory dest, IProgressReport logger = null)
+        public static void CopyDirectory(this IDirectory source, IDirectory dest, IProgressReport logger = null, CreateFileOptions options = CreateFileOptions.None)
         {
             IFileSystem sourceFs = source.ParentFileSystem;
             IFileSystem destFs = dest.ParentFileSystem;
@@ -27,12 +27,12 @@ namespace LibHac.IO
                     IDirectory subSrcDir = sourceFs.OpenDirectory(subSrcPath, OpenDirectoryMode.All);
                     IDirectory subDstDir = destFs.OpenDirectory(subDstPath, OpenDirectoryMode.All);
 
-                    subSrcDir.CopyDirectory(subDstDir, logger);
+                    subSrcDir.CopyDirectory(subDstDir, logger, options);
                 }
 
                 if (entry.Type == DirectoryEntryType.File)
                 {
-                    destFs.CreateFile(subDstPath, entry.Size);
+                    destFs.CreateFile(subDstPath, entry.Size, options);
 
                     using (IFile srcFile = sourceFs.OpenFile(subSrcPath, OpenMode.Read))
                     using (IFile dstFile = destFs.OpenFile(subDstPath, OpenMode.Write))
@@ -44,12 +44,12 @@ namespace LibHac.IO
             }
         }
 
-        public static void CopyFileSystem(this IFileSystem source, IFileSystem dest, IProgressReport logger = null)
+        public static void CopyFileSystem(this IFileSystem source, IFileSystem dest, IProgressReport logger = null, CreateFileOptions options = CreateFileOptions.None)
         {
             IDirectory sourceRoot = source.OpenDirectory("/", OpenDirectoryMode.All);
             IDirectory destRoot = dest.OpenDirectory("/", OpenDirectoryMode.All);
 
-            sourceRoot.CopyDirectory(destRoot, logger);
+            sourceRoot.CopyDirectory(destRoot, logger, options);
         }
 
         public static void Extract(this IFileSystem source, string destinationPath, IProgressReport logger = null)

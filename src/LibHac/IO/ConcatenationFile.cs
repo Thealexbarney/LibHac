@@ -54,7 +54,26 @@ namespace LibHac.IO
 
         public override void Write(ReadOnlySpan<byte> source, long offset)
         {
-            throw new NotImplementedException();
+            ValidateWriteParams(source, offset);
+
+            long inPos = offset;
+            int outPos = 0;
+            int remaining = source.Length;
+
+            while (remaining > 0)
+            {
+                int fileIndex = GetFileIndexFromOffset(offset);
+                IFile file = Sources[fileIndex];
+                long fileOffset = offset - fileIndex * SplitFileSize;
+
+                long fileEndOffset = Math.Min((fileIndex + 1) * SplitFileSize, GetSize());
+                int bytesToWrite = (int)Math.Min(fileEndOffset - inPos, remaining);
+                file.Write(source.Slice(outPos, bytesToWrite), fileOffset);
+
+                outPos += bytesToWrite;
+                inPos += bytesToWrite;
+                remaining -= bytesToWrite;
+            }
         }
 
         public override void Flush()

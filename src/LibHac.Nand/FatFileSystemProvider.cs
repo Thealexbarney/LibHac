@@ -75,6 +75,13 @@ namespace LibHac.Nand
             return Fs.GetAttributes(path);
         }
 
+        public void SetFileAttributes(string path, FileAttributes attributes)
+        {
+            path = ToDiscUtilsPath(PathTools.Normalize(path));
+
+            Fs.SetAttributes(path, attributes);
+        }
+
         public long GetFileSize(string path)
         {
             path = ToDiscUtilsPath(PathTools.Normalize(path));
@@ -83,9 +90,9 @@ namespace LibHac.Nand
         }
 
         public void Commit() { }
-        
+
         public void CreateDirectory(string path) => throw new NotSupportedException();
-        public void CreateFile(string path, long size) => throw new NotSupportedException();
+        public void CreateFile(string path, long size, CreateFileOptions options) => throw new NotSupportedException();
         public void RenameDirectory(string srcPath, string dstPath) => throw new NotSupportedException();
         public void RenameFile(string srcPath, string dstPath) => throw new NotSupportedException();
 
