@@ -104,7 +104,7 @@ namespace LibHac.Nand
 
         internal static string ToDiscUtilsPath(string path)
         {
-            return path.Replace("/", @"\\");
+            return path.Replace("/", @"\");
         }
     }
 }
