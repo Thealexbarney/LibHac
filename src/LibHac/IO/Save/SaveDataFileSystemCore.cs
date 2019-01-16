@@ -66,7 +66,7 @@ namespace LibHac.IO.Save
             throw new System.NotImplementedException();
         }
 
-        public void CreateFile(string path, long size)
+        public void CreateFile(string path, long size, CreateFileOptions options)
         {
             throw new System.NotImplementedException();
         }

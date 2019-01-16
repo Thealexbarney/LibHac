@@ -5,7 +5,7 @@ namespace LibHac.IO
     public interface IFileSystem
     {
         void CreateDirectory(string path);
-        void CreateFile(string path, long size);
+        void CreateFile(string path, long size, CreateFileOptions options);
         void DeleteDirectory(string path);
         void DeleteFile(string path);
         IDirectory OpenDirectory(string path, OpenDirectoryMode mode);
@@ -24,5 +24,12 @@ namespace LibHac.IO
         Directories = 1,
         Files = 2,
         All = Directories | Files
+    }
+
+    [Flags]
+    public enum CreateFileOptions
+    { 
+        None = 0,
+        CreateConcatenationFile = 1 << 0
     }
 }

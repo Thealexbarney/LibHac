@@ -31,7 +31,7 @@ namespace LibHac.IO
             BaseFileSystem.CreateDirectory(path);
         }
 
-        public void CreateFile(string path, long size)
+        public void CreateFile(string path, long size, CreateFileOptions options)
         {
             throw new NotImplementedException();
         }

@@ -33,7 +33,7 @@ namespace LibHac.IO
             throw new NotSupportedException();
         }
 
-        public void CreateFile(string path, long size)
+        public void CreateFile(string path, long size, CreateFileOptions options)
         {
             throw new NotSupportedException();
         }

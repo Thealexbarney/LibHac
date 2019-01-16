@@ -24,11 +24,11 @@
             ParentFileSystem.CreateDirectory(ResolveFullPath(path));
         }
 
-        public void CreateFile(string path, long size)
+        public void CreateFile(string path, long size, CreateFileOptions options)
         {
             path = PathTools.Normalize(path);
 
-            ParentFileSystem.CreateFile(ResolveFullPath(path), size);
+            ParentFileSystem.CreateFile(ResolveFullPath(path), size, options);
         }
 
         public void DeleteDirectory(string path)

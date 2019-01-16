@@ -23,6 +23,12 @@ namespace LibHac.IO
             return File.GetAttributes(ResolveLocalPath(path));
         }
 
+        public void SetFileAttributes(string path, FileAttributes attributes)
+        {
+            path = PathTools.Normalize(path);
+            File.SetAttributes(ResolveLocalPath(path), attributes);
+        }
+
         public long GetFileSize(string path)
         {
             path = PathTools.Normalize(path);
@@ -36,7 +42,7 @@ namespace LibHac.IO
             Directory.CreateDirectory(ResolveLocalPath(path));
         }
 
-        public void CreateFile(string path, long size)
+        public void CreateFile(string path, long size, CreateFileOptions options)
         {
             path = PathTools.Normalize(path);
             string localPath = ResolveLocalPath(path);

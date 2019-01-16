@@ -76,6 +76,21 @@ namespace LibHac.IO
             return sb.ToString();
         }
 
+        public static string GetParentDirectory(string path)
+        {
+            if (path.Length == 0) return "/";
+
+            int i = path.Length - 1;
+
+            // A trailing separator should be ignored
+            if (path[i] == '/') i--;
+
+            while (i >= 0 && path[i] != '/') i--;
+
+            if (i < 1) return "/";
+            return path.Substring(0, i);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsDirectorySeparator(char c)
         {

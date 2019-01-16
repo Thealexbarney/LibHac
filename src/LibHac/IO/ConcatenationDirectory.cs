@@ -33,7 +33,7 @@ namespace LibHac.IO
                 }
                 else
                 {
-                    long size = ParentFileSystem.GetSplitFileSize(entry.FullPath);
+                    long size = ParentFileSystem.GetConcatenationFileSize(entry.FullPath);
                     yield return new DirectoryEntry(entry.Name, entry.FullPath, DirectoryEntryType.File, size);
                 }
             }
