@@ -6,7 +6,7 @@ namespace LibHac.IO
     public abstract class FileBase : IFile
     {
         private bool _isDisposed;
-        protected List<IDisposable> ToDispose { get; } = new List<IDisposable>();
+        internal List<IDisposable> ToDispose { get; } = new List<IDisposable>();
 
         public abstract int Read(Span<byte> destination, long offset);
         public abstract void Write(ReadOnlySpan<byte> source, long offset);
