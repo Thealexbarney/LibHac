@@ -33,7 +33,15 @@ namespace LibHac.IO
 
         public void CreateFile(string path, long size, CreateFileOptions options)
         {
-            throw new NotImplementedException();
+            long containerSize = AesXtsFile.HeaderLength + Util.AlignUp(size, 0x16);
+            BaseFileSystem.CreateFile(path, containerSize, options);
+
+            var header = new AesXtsFileHeader(new byte[0x10], new byte[0x10], size, path, KekSource, ValidationKey);
+
+            using (IFile baseFile = BaseFileSystem.OpenFile(path, OpenMode.Write))
+            {
+                baseFile.Write(header.ToBytes(false), 0);
+            }
         }
 
         public void DeleteDirectory(string path)
@@ -60,8 +68,10 @@ namespace LibHac.IO
         {
             path = PathTools.Normalize(path);
 
-            IFile baseFile = BaseFileSystem.OpenFile(path, mode);
+            IFile baseFile = BaseFileSystem.OpenFile(path, mode | OpenMode.Read);
             var file = new AesXtsFile(mode, baseFile, path, KekSource, ValidationKey, BlockSize);
+
+            file.ToDispose.Add(baseFile);
             return file;
         }
 

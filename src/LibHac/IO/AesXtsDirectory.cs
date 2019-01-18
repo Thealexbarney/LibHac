@@ -46,9 +46,9 @@ namespace LibHac.IO
         {
             using (IFile file = BaseFileSystem.OpenFile(path, OpenMode.Read))
             {
-                var buffer = new byte[8];
+                var buffer = new byte[8]; 
 
-                file.Read(buffer, 0);
+                file.Read(buffer, 0x20);
                 if (BitConverter.ToUInt32(buffer, 0) != 0x3058414E) return 0;
 
                 file.Read(buffer, 0x48);

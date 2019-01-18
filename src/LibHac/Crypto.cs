@@ -44,6 +44,21 @@ namespace LibHac
         public static void DecryptEcb(byte[] key, byte[] src, byte[] dest, int length) =>
             DecryptEcb(key, src, 0, dest, 0, length);
 
+        public static void EncryptEcb(byte[] key, byte[] src, int srcIndex, byte[] dest, int destIndex, int length)
+        {
+            using (Aes aes = Aes.Create())
+            {
+                if (aes == null) throw new CryptographicException("Unable to create AES object");
+                aes.Key = key;
+                aes.Mode = CipherMode.ECB;
+                aes.Padding = PaddingMode.None;
+                Array.Copy(aes.CreateEncryptor().TransformFinalBlock(src, srcIndex, length), 0, dest, destIndex, length);
+            }
+        }
+
+        public static void EncryptEcb(byte[] key, byte[] src, byte[] dest, int length) =>
+            EncryptEcb(key, src, 0, dest, 0, length);
+
         public static void DecryptCbc(byte[] key, byte[] iv, byte[] src, int srcIndex, byte[] dest, int destIndex, int length)
         {
             using (Aes aes = Aes.Create())
