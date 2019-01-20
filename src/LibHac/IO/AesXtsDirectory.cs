@@ -44,15 +44,22 @@ namespace LibHac.IO
 
         private long GetAesXtsFileSize(string path)
         {
-            using (IFile file = BaseFileSystem.OpenFile(path, OpenMode.Read))
+            try
             {
-                var buffer = new byte[8]; 
+                using (IFile file = BaseFileSystem.OpenFile(path, OpenMode.Read))
+                {
+                    var buffer = new byte[8];
 
-                file.Read(buffer, 0x20);
-                if (BitConverter.ToUInt32(buffer, 0) != 0x3058414E) return 0;
+                    file.Read(buffer, 0x20);
+                    if (BitConverter.ToUInt32(buffer, 0) != 0x3058414E) return 0;
 
-                file.Read(buffer, 0x48);
-                return BitConverter.ToInt32(buffer, 0);
+                    file.Read(buffer, 0x48);
+                    return BitConverter.ToInt32(buffer, 0);
+                }
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return 0;
             }
         }
     }
