@@ -23,11 +23,13 @@ namespace hactoolnet
         public string DebugOutDir;
         public string SaveOutDir;
         public string OutDir;
+        public string OutFile;
         public string PlaintextOut;
         public string SdSeed;
         public string NspOut;
         public string SdPath;
         public string BaseNca;
+        public string BaseFile;
         public string RootDir;
         public string UpdateDir;
         public string NormalDir;
@@ -70,6 +72,7 @@ namespace hactoolnet
         Pk21,
         Kip1,
         Ini1,
+        Ndv0,
         Bench
     }
 

@@ -90,6 +90,9 @@ namespace hactoolnet
                 case FileType.Ini1:
                     ProcessKip.ProcessIni1(ctx);
                     break;
+                case FileType.Ndv0:
+                    ProcessDelta.Process(ctx);
+                    break;
                 case FileType.Bench:
                     ProcessBench.Process(ctx);
                     break;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace LibHac.IO
 {
@@ -62,6 +63,20 @@ namespace LibHac.IO
             return MemoryMarshal.Read<short>(_buffer);
         }
 
+        public int ReadUInt24(long offset, bool updatePosition)
+        {
+            FillBuffer(offset, 3, updatePosition);
+
+            return MemoryMarshal.Read<int>(_buffer) & 0xFFFFFF;
+        }
+
+        public int ReadInt24(long offset, bool updatePosition)
+        {
+            FillBuffer(offset, 3, updatePosition);
+
+            return BitTools.SignExtend32(MemoryMarshal.Read<int>(_buffer), 24);
+        }
+
         public uint ReadUInt32(long offset, bool updatePosition)
         {
             FillBuffer(offset, sizeof(uint), updatePosition);
@@ -120,10 +135,21 @@ namespace LibHac.IO
             if (updatePosition) Position = offset + destination.Length;
         }
 
+        public string ReadAscii(long offset, int length, bool updatePosition)
+        {
+            var bytes = new byte[length];
+            _file.Read(bytes, offset);
+
+            if (updatePosition) Position = offset + length;
+            return Encoding.ASCII.GetString(bytes);
+        }
+
         public byte ReadUInt8(long offset) => ReadUInt8(offset, true);
         public sbyte ReadInt8(long offset) => ReadInt8(offset, true);
         public ushort ReadUInt16(long offset) => ReadUInt16(offset, true);
         public short ReadInt16(long offset) => ReadInt16(offset, true);
+        public int ReadUInt24(long offset) => ReadUInt24(offset, true);
+        public int ReadInt24(long offset) => ReadInt24(offset, true);
         public uint ReadUInt32(long offset) => ReadUInt32(offset, true);
         public int ReadInt32(long offset) => ReadInt32(offset, true);
         public ulong ReadUInt64(long offset) => ReadUInt64(offset, true);
@@ -132,11 +158,14 @@ namespace LibHac.IO
         public double ReadDouble(long offset) => ReadDouble(offset, true);
         public byte[] ReadBytes(long offset, int length) => ReadBytes(offset, length, true);
         public void ReadBytes(Span<byte> destination, long offset) => ReadBytes(destination, offset, true);
+        public string ReadAscii(long offset, int length) => ReadAscii(offset, length, true);
 
         public byte ReadUInt8() => ReadUInt8(Position, true);
         public sbyte ReadInt8() => ReadInt8(Position, true);
         public ushort ReadUInt16() => ReadUInt16(Position, true);
         public short ReadInt16() => ReadInt16(Position, true);
+        public int ReadUInt24() => ReadUInt24(Position, true);
+        public int ReadInt24() => ReadInt24(Position, true);
         public uint ReadUInt32() => ReadUInt32(Position, true);
         public int ReadInt32() => ReadInt32(Position, true);
         public ulong ReadUInt64() => ReadUInt64(Position, true);
@@ -145,5 +174,6 @@ namespace LibHac.IO
         public double ReadDouble() => ReadDouble(Position, true);
         public byte[] ReadBytes(int length) => ReadBytes(Position, length, true);
         public void ReadBytes(Span<byte> destination) => ReadBytes(destination, Position, true);
+        public string ReadAscii(int length) => ReadAscii(Position, length, true);
     }
 }

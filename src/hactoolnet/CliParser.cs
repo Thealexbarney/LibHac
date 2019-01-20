@@ -32,11 +32,13 @@ namespace hactoolnet
             new CliOption("debugoutdir", 1, (o, a) => o.DebugOutDir = a[0]),
             new CliOption("savedir", 1, (o, a) => o.SaveOutDir = a[0]),
             new CliOption("outdir", 1, (o, a) => o.OutDir = a[0]),
+            new CliOption("outfile", 1, (o, a) => o.OutFile = a[0]),
             new CliOption("plaintext", 1, (o, a) => o.PlaintextOut = a[0]),
             new CliOption("nspout", 1, (o, a) => o.NspOut = a[0]),
             new CliOption("sdseed", 1, (o, a) => o.SdSeed = a[0]),
             new CliOption("sdpath", 1, (o, a) => o.SdPath = a[0]),
             new CliOption("basenca", 1, (o, a) => o.BaseNca = a[0]),
+            new CliOption("basefile", 1, (o, a) => o.BaseFile = a[0]),
             new CliOption("rootdir", 1, (o, a) => o.RootDir = a[0]),
             new CliOption("updatedir", 1, (o, a) => o.UpdateDir = a[0]),
             new CliOption("normaldir", 1, (o, a) => o.NormalDir = a[0]),
@@ -159,9 +161,10 @@ namespace hactoolnet
             sb.AppendLine("  -y, --verify         Verify all hashes in the input file.");
             sb.AppendLine("  -h, --enablehash     Enable hash checks when reading the input file.");
             sb.AppendLine("  -k, --keyset         Load keys from an external file.");
-            sb.AppendLine("  -t, --intype=type    Specify input file type [nca, xci, romfs, pk11, pk21, ini1, kip1, switchfs, save, keygen]");
+            sb.AppendLine("  -t, --intype=type    Specify input file type [nca, xci, romfs, pk11, pk21, ini1, kip1, switchfs, save, ndv0 keygen]");
             sb.AppendLine("  --titlekeys <file>   Load title keys from an external file.");
             sb.AppendLine("NCA options:");
+            sb.AppendLine("  --plaintext <file>   Specify file path for saving a decrypted copy of the NCA.");
             sb.AppendLine("  --section0 <file>    Specify Section 0 file path.");
             sb.AppendLine("  --section1 <file>    Specify Section 1 file path.");
             sb.AppendLine("  --section2 <file>    Specify Section 2 file path.");
@@ -216,6 +219,10 @@ namespace hactoolnet
             sb.AppendLine("  --sign               Sign the save file. (Requires device_key in key file)");
             sb.AppendLine("  --listfiles          List files in save file.");
             sb.AppendLine("  --replacefile <filename in save> <file> Replaces a file in the save data");
+            sb.AppendLine("NDV0 (Delta) options:");
+            sb.AppendLine("                       Input delta patch can be a delta NCA file or a delta fragment file.");
+            sb.AppendLine("  --basefile <file>    Specify base file path.");
+            sb.AppendLine("  --outfile            Specify patched file path.");
             sb.AppendLine("Keygen options:");
             sb.AppendLine("  --outdir <dir>       Specify directory path to save key files to.");
 
