@@ -2,7 +2,7 @@
 
 namespace LibHac.IO
 {
-    public class FileStorage : Storage
+    public class FileStorage : StorageBase
     {
         private IFile BaseFile { get; }
 

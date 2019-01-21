@@ -34,8 +34,8 @@ namespace LibHac.IO.Save
             }
         }
 
-        public IStorage GetBaseStorage() => BaseStorage.WithAccess(FileAccess.Read);
-        public IStorage GetHeaderStorage() => HeaderStorage.WithAccess(FileAccess.Read);
+        public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
+        public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
     }
 
     public class AllocationTableEntry

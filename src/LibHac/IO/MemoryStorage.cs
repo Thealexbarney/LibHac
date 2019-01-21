@@ -2,7 +2,7 @@
 
 namespace LibHac.IO
 {
-    public class MemoryStorage : Storage
+    public class MemoryStorage : StorageBase
     {
         private byte[] Buffer { get; }
         private int Start { get; }

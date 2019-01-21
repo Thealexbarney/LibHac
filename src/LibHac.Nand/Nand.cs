@@ -33,16 +33,14 @@ namespace LibHac.Nand
         {
             IStorage encStorage = ProdInfo.Open().AsStorage();
             var decStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Keyset.BisKeys[0], 0x4000, true), 0x4000, 4, true);
-            decStorage.SetReadOnly();
-            return decStorage.AsStream();
+            return decStorage.AsStream(FileAccess.Read);
         }
 
         public FatFileSystemProvider OpenProdInfoF()
         {
             IStorage encStorage = ProdInfoF.Open().AsStorage();
             var decStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Keyset.BisKeys[0], 0x4000, true), 0x4000, 4, true);
-            decStorage.SetReadOnly();
-            var fat = new FatFileSystem(decStorage.AsStream(), Ownership.None);
+            var fat = new FatFileSystem(decStorage.AsStream(FileAccess.Read), Ownership.None);
             return new FatFileSystemProvider(fat);
         }
 
@@ -50,8 +48,7 @@ namespace LibHac.Nand
         {
             IStorage encStorage = Safe.Open().AsStorage();
             var decStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Keyset.BisKeys[1], 0x4000, true), 0x4000, 4, true);
-            decStorage.SetReadOnly();
-            var fat = new FatFileSystem(decStorage.AsStream(), Ownership.None);
+            var fat = new FatFileSystem(decStorage.AsStream(FileAccess.Read), Ownership.None);
             return new FatFileSystemProvider(fat);
         }
 
@@ -59,8 +56,7 @@ namespace LibHac.Nand
         {
             IStorage encStorage = System.Open().AsStorage();
             var decStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Keyset.BisKeys[2], 0x4000, true), 0x4000, 4, true);
-            decStorage.SetReadOnly();
-            var fat = new FatFileSystem(decStorage.AsStream(), Ownership.None);
+            var fat = new FatFileSystem(decStorage.AsStream(FileAccess.Read), Ownership.None);
             return new FatFileSystemProvider(fat);
         }
 
@@ -68,8 +64,7 @@ namespace LibHac.Nand
         {
             IStorage encStorage = User.Open().AsStorage();
             var decStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Keyset.BisKeys[3], 0x4000, true), 0x4000, 4, true);
-            decStorage.SetReadOnly();
-            var fat = new FatFileSystem(decStorage.AsStream(), Ownership.None);
+            var fat = new FatFileSystem(decStorage.AsStream(FileAccess.Read), Ownership.None);
             return new FatFileSystemProvider(fat);
         }
     }

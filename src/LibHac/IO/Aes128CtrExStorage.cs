@@ -60,8 +60,6 @@ namespace LibHac.IO
             throw new NotImplementedException();
         }
 
-        public override bool CanWrite => false;
-
         private AesSubsectionEntry GetSubsectionEntry(long offset)
         {
             int index = SubsectionOffsets.BinarySearch(offset);

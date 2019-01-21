@@ -2,7 +2,7 @@
 
 namespace LibHac.IO
 {
-    public class SectorStorage : Storage
+    public class SectorStorage : StorageBase
     {
         protected IStorage BaseStorage { get; }
 

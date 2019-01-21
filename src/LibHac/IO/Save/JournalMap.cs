@@ -50,11 +50,11 @@ namespace LibHac.IO.Save
             return map;
         }
 
-        public IStorage GetMapStorage() => MapStorage.WithAccess(FileAccess.Read);
-        public IStorage GetHeaderStorage() => HeaderStorage.WithAccess(FileAccess.Read);
-        public IStorage GetModifiedPhysicalBlocksStorage() => ModifiedPhysicalBlocks.WithAccess(FileAccess.Read);
-        public IStorage GetModifiedVirtualBlocksStorage() => ModifiedVirtualBlocks.WithAccess(FileAccess.Read);
-        public IStorage GetFreeBlocksStorage() => FreeBlocks.WithAccess(FileAccess.Read);
+        public IStorage GetMapStorage() => MapStorage.AsReadOnly();
+        public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
+        public IStorage GetModifiedPhysicalBlocksStorage() => ModifiedPhysicalBlocks.AsReadOnly();
+        public IStorage GetModifiedVirtualBlocksStorage() => ModifiedVirtualBlocks.AsReadOnly();
+        public IStorage GetFreeBlocksStorage() => FreeBlocks.AsReadOnly();
     }
 
     public class JournalMapHeader

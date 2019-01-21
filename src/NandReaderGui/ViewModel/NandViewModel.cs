@@ -46,8 +46,7 @@ namespace NandReaderGui.ViewModel
         {
             DiskInfo disk = SelectedDisk;
             var storage = new CachedStorage(new DeviceStream(disk.PhysicalName, disk.Length).AsStorage(), disk.SectorSize * 100, 4, true);
-            storage.SetReadOnly();
-            Stream stream = storage.AsStream();
+            Stream stream = storage.AsStream(FileAccess.Read);
 
             Keyset keyset = OpenKeyset();
             var nand = new Nand(stream, keyset);

@@ -75,7 +75,7 @@ namespace LibHac
         /// <returns>The <see cref="IStorage"/> that provides access to the entire raw NCA file.</returns>
         public IStorage GetStorage()
         {
-            return BaseStorage.WithAccess(FileAccess.Read);
+            return BaseStorage.AsReadOnly();
         }
 
         public bool CanOpenSection(int index)

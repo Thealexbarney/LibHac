@@ -5,7 +5,7 @@ namespace LibHac.IO
     /// <summary>
     /// An <see cref="IStorage"/> that returns all zeros when read, and does nothing on write.
     /// </summary>
-    public class NullStorage : Storage
+    public class NullStorage : StorageBase
     {
         public NullStorage() { }
         public NullStorage(long length) => Length = length;

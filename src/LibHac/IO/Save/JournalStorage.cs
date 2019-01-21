@@ -3,7 +3,7 @@ using System.IO;
 
 namespace LibHac.IO.Save
 {
-    public class JournalStorage : Storage
+    public class JournalStorage : StorageBase
     {
         private IStorage BaseStorage { get; }
         private IStorage HeaderStorage { get; }
@@ -80,8 +80,8 @@ namespace LibHac.IO.Save
             BaseStorage.Flush();
         }
 
-        public IStorage GetBaseStorage() => BaseStorage.WithAccess(FileAccess.Read);
-        public IStorage GetHeaderStorage() => HeaderStorage.WithAccess(FileAccess.Read);
+        public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
+        public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
     }
 
     public class JournalHeader

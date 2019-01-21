@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace LibHac.IO
 {
-    public class IndirectStorage : Storage
+    public class IndirectStorage : StorageBase
     {
         private List<RelocationEntry> RelocationEntries { get; }
         private List<long> RelocationOffsets { get; }
@@ -61,8 +61,6 @@ namespace LibHac.IO
         {
             throw new NotImplementedException();
         }
-
-        public override bool CanWrite => false;
 
         public override long Length { get; }
 
