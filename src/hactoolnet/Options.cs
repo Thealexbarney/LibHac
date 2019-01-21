@@ -43,6 +43,7 @@ namespace hactoolnet
         public bool ListRomFs;
         public bool ListFiles;
         public bool SignSave;
+        public bool ReadBench;
         public ulong TitleId;
         public string BenchType;
 
@@ -80,6 +81,6 @@ namespace hactoolnet
     {
         public Options Options;
         public Keyset Keyset;
-        public IProgressReport Logger;
+        public ProgressBar Logger;
     }
 }

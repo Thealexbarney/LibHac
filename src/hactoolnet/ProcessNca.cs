@@ -52,7 +52,7 @@ namespace hactoolnet
                     }
                 }
 
-                if (ctx.Options.RomfsOutDir != null || ctx.Options.RomfsOut != null)
+                if (ctx.Options.RomfsOutDir != null || ctx.Options.RomfsOut != null || ctx.Options.ReadBench)
                 {
                     NcaSection section = nca.Sections.FirstOrDefault(x => x?.Type == SectionType.Romfs || x?.Type == SectionType.Bktr);
 
@@ -77,6 +77,27 @@ namespace hactoolnet
                     {
                         IFileSystem romfs = nca.OpenSectionFileSystem(section.SectionNum, ctx.Options.IntegrityLevel);
                         romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
+                    }
+
+                    if (ctx.Options.ReadBench)
+                    {
+                        long bytesToRead = 1024L * 1024 * 1024 * 5;
+                        IStorage storage = nca.OpenSection(section.SectionNum, false, ctx.Options.IntegrityLevel, true);
+                        var dest = new NullStorage(storage.Length);
+
+                        int iterations = (int)(bytesToRead / storage.Length) + 1;
+                        ctx.Logger.LogMessage(iterations.ToString());
+
+                        ctx.Logger.StartNewStopWatch();
+
+                        for (int i = 0; i < iterations; i++)
+                        {
+                            storage.CopyTo(dest, ctx.Logger);
+                            ctx.Logger.LogMessage(ctx.Logger.GetRateString());
+                        }
+
+                        ctx.Logger.PauseStopWatch();
+                        ctx.Logger.LogMessage(ctx.Logger.GetRateString());
                     }
                 }
 
@@ -113,7 +134,7 @@ namespace hactoolnet
                     nca.OpenDecryptedNca().WriteAllBytes(ctx.Options.PlaintextOut, ctx.Logger);
                 }
 
-                ctx.Logger.LogMessage(nca.Print());
+                if (!ctx.Options.ReadBench) ctx.Logger.LogMessage(nca.Print());
             }
         }
 

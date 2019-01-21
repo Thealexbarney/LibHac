@@ -50,6 +50,7 @@ namespace hactoolnet
             new CliOption("listromfs", 0, (o, a) => o.ListRomFs = true),
             new CliOption("listfiles", 0, (o, a) => o.ListFiles = true),
             new CliOption("sign", 0, (o, a) => o.SignSave = true),
+            new CliOption("readbench", 0, (o, a) => o.ReadBench = true),
             new CliOption("title", 1, (o, a) => o.TitleId = ParseTitleId(a[0])),
             new CliOption("bench", 1, (o, a) => o.BenchType = a[0]),
 
@@ -161,7 +162,7 @@ namespace hactoolnet
             sb.AppendLine("  -y, --verify         Verify all hashes in the input file.");
             sb.AppendLine("  -h, --enablehash     Enable hash checks when reading the input file.");
             sb.AppendLine("  -k, --keyset         Load keys from an external file.");
-            sb.AppendLine("  -t, --intype=type    Specify input file type [nca, xci, romfs, pk11, pk21, ini1, kip1, switchfs, save, ndv0 keygen]");
+            sb.AppendLine("  -t, --intype=type    Specify input file type [nca, xci, romfs, pk11, pk21, ini1, kip1, switchfs, save, ndv0, keygen]");
             sb.AppendLine("  --titlekeys <file>   Load title keys from an external file.");
             sb.AppendLine("NCA options:");
             sb.AppendLine("  --plaintext <file>   Specify file path for saving a decrypted copy of the NCA.");

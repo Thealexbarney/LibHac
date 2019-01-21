@@ -1,6 +1,7 @@
 ﻿// Adapted from https://gist.github.com/0ab6a96899cc5377bf54
 
 using System;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 
@@ -12,6 +13,10 @@ namespace LibHac
         private long _progress;
         private long _total;
         private readonly Timer _timer;
+
+        private bool _isMeasuringSpeed;
+        private Stopwatch _watch;
+        private long _timedBytes;
 
         private readonly TimeSpan _animationInterval = TimeSpan.FromSeconds(1.0 / 30);
         private const string Animation = @"|/-\";
@@ -36,6 +41,7 @@ namespace LibHac
         public void ReportAdd(long value)
         {
             Interlocked.Add(ref _progress, value);
+            if (_isMeasuringSpeed) Interlocked.Add(ref _timedBytes, value);
         }
 
         public void LogMessage(string message)
@@ -52,6 +58,38 @@ namespace LibHac
             Report(0);
         }
 
+        public void StartNewStopWatch()
+        {
+            _isMeasuringSpeed = true;
+            _timedBytes = 0;
+            _watch = Stopwatch.StartNew();
+        }
+
+        public void PauseStopWatch()
+        {
+            _isMeasuringSpeed = false;
+            _watch.Stop();
+        }
+
+        public void ResumeStopWatch()
+        {
+            _isMeasuringSpeed = true;
+
+            if (_watch == null)
+            {
+                _watch = Stopwatch.StartNew();
+            }
+            else
+            {
+                _watch.Start();
+            }
+        }
+
+        public string GetRateString()
+        {
+            return Util.GetBytesReadable((long) (_timedBytes / _watch.Elapsed.TotalSeconds)) + "/s";
+        }
+
         private void TimerHandler(object state)
         {
             lock (_timer)
@@ -59,12 +97,18 @@ namespace LibHac
                 if (_disposed) return;
 
                 string text = string.Empty;
+                string speed = string.Empty;
+
+                if (_isMeasuringSpeed)
+                {
+                    speed = $" {GetRateString()}";
+                }
 
                 if (_total > 0)
                 {
                     double progress = _total == 0 ? 0 : (double)_progress / _total;
                     int progressBlockCount = (int)Math.Min(progress * BlockCount, BlockCount);
-                    text = $"[{new string('#', progressBlockCount)}{new string('-', BlockCount - progressBlockCount)}] {_progress}/{_total} {progress:P1} {Animation[_animationIndex++ % Animation.Length]}";
+                    text = $"[{new string('#', progressBlockCount)}{new string('-', BlockCount - progressBlockCount)}] {_progress}/{_total} {progress:P1} {Animation[_animationIndex++ % Animation.Length]}{speed}";
                 }
                 UpdateText(text);
 
