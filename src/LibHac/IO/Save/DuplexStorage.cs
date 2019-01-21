@@ -2,7 +2,7 @@
 
 namespace LibHac.IO.Save
 {
-    public class DuplexStorage : Storage
+    public class DuplexStorage : StorageBase
     {
         private int BlockSize { get; }
         private IStorage BitmapStorage { get; }

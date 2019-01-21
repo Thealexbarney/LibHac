@@ -57,7 +57,7 @@ namespace LibHac.IO
                 IStorage source = segment.IsInOriginal ? Original : Delta;
 
                 // todo Do this without tons of SubStorages
-                Storage sub = source.Slice(segment.SourceOffset, segment.Size);
+                IStorage sub = source.Slice(segment.SourceOffset, segment.Size);
 
                 storages.Add(sub);
             }

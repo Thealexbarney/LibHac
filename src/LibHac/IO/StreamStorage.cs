@@ -7,7 +7,7 @@ using System.Buffers;
 
 namespace LibHac.IO
 {
-    public class StreamStorage : Storage
+    public class StreamStorage : StorageBase
     {
         private Stream BaseStream { get; }
         private object Locker { get; } = new object();
@@ -18,24 +18,6 @@ namespace LibHac.IO
             BaseStream = baseStream;
             Length = BaseStream.Length;
             if (!leaveOpen) ToDispose.Add(BaseStream);
-        }
-
-        public override void Read(byte[] buffer, long offset, int count, int bufferOffset)
-        {
-            lock (Locker)
-            {
-                BaseStream.Position = offset;
-                BaseStream.Read(buffer, bufferOffset, count);
-            }
-        }
-
-        public override void Write(byte[] buffer, long offset, int count, int bufferOffset)
-        {
-            lock (Locker)
-            {
-                BaseStream.Position = offset;
-                BaseStream.Write(buffer, bufferOffset, count);
-            }
         }
 
         protected override void ReadImpl(Span<byte> destination, long offset)
@@ -54,9 +36,17 @@ namespace LibHac.IO
             byte[] buffer = ArrayPool<byte>.Shared.Rent(destination.Length);
             try
             {
-                Read(buffer, offset, destination.Length, 0);
+                lock (Locker)
+                {
+                    if (BaseStream.Position != offset)
+                    {
+                        BaseStream.Position = offset;
+                    }
 
-                new Span<byte>(buffer, 0, destination.Length).CopyTo(destination);
+                    BaseStream.Read(buffer, 0, destination.Length);
+                }
+
+                buffer.AsSpan(0, destination.Length).CopyTo(destination);
             }
             finally { ArrayPool<byte>.Shared.Return(buffer); }
 #endif
@@ -67,7 +57,11 @@ namespace LibHac.IO
 #if STREAM_SPAN
             lock (Locker)
             {
-                BaseStream.Position = offset;
+                if (BaseStream.Position != offset)
+                {
+                    BaseStream.Position = offset;
+                }
+
                 BaseStream.Write(source);
             }
 #else
@@ -75,7 +69,16 @@ namespace LibHac.IO
             try
             {
                 source.CopyTo(buffer);
-                Write(buffer, offset, source.Length, 0);
+
+                lock (Locker)
+                {
+                    if (BaseStream.Position != offset)
+                    {
+                        BaseStream.Position = offset;
+                    }
+
+                    BaseStream.Write(buffer, 0, source.Length);
+                }
             }
             finally { ArrayPool<byte>.Shared.Return(buffer); }
 #endif

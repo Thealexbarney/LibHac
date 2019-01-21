@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace LibHac.IO
 {
-    public class CachedStorage : Storage
+    public class CachedStorage : StorageBase
     {
         private IStorage BaseStorage { get; }
         private int BlockSize { get; }
@@ -148,7 +148,7 @@ namespace LibHac.IO
             if (!block.Dirty) return;
 
             long offset = block.Index * BlockSize;
-            BaseStorage.Write(block.Buffer, offset, block.Length, 0);
+            BaseStorage.Write(block.Buffer.AsSpan(0, block.Length), offset);
             block.Dirty = false;
         }
 

@@ -2,7 +2,7 @@
 
 namespace LibHac.IO.Save
 {
-    public class HierarchicalDuplexStorage : Storage
+    public class HierarchicalDuplexStorage : StorageBase
     {
         private DuplexStorage[] Layers { get; }
         private DuplexStorage DataLayer { get; }

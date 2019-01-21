@@ -6,7 +6,7 @@ using System.Text;
 
 namespace LibHac.IO
 {
-    public class HierarchicalIntegrityVerificationStorage : Storage
+    public class HierarchicalIntegrityVerificationStorage : StorageBase
     {
         public IStorage[] Levels { get; }
         public IStorage DataLevel { get; }
@@ -128,7 +128,7 @@ namespace LibHac.IO
                 if (validities[i] == Validity.Unchecked)
                 {
                     int toRead = (int)Math.Min(storage.Length - blockSize * i, buffer.Length);
-                    storage.Read(buffer, blockSize * i, toRead, 0, IntegrityCheckLevel.IgnoreOnInvalid);
+                    storage.Read(buffer.AsSpan(0, toRead), blockSize * i, IntegrityCheckLevel.IgnoreOnInvalid);
                 }
 
                 if (validities[i] == Validity.Invalid)
@@ -209,6 +209,9 @@ namespace LibHac.IO
             }
 
             SaltSource = reader.ReadBytes(0x20);
+
+            if (reader.BaseStream.Position + 0x20 >= reader.BaseStream.Length) return;
+
             MasterHash = reader.ReadBytes(0x20);
         }
 

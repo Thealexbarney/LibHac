@@ -4,7 +4,7 @@ using System.IO;
 
 namespace LibHac.IO.Save
 {
-    public class RemapStorage : Storage
+    public class RemapStorage : StorageBase
     {
         private IStorage BaseStorage { get; }
         private IStorage HeaderStorage { get; }
@@ -102,9 +102,9 @@ namespace LibHac.IO.Save
             BaseStorage.Flush();
         }
 
-        public IStorage GetBaseStorage() => BaseStorage.WithAccess(FileAccess.Read);
-        public IStorage GetHeaderStorage() => HeaderStorage.WithAccess(FileAccess.Read);
-        public IStorage GetMapEntryStorage() => MapEntryStorage.WithAccess(FileAccess.Read);
+        public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
+        public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
+        public IStorage GetMapEntryStorage() => MapEntryStorage.AsReadOnly();
 
         private static RemapSegment[] InitSegments(RemapHeader header, MapEntry[] mapEntries)
         {

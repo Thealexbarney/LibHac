@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace LibHac.IO
 {
-    public class ConcatenationStorage : Storage
+    public class ConcatenationStorage : StorageBase
     {
         private ConcatSource[] Sources { get; }
         public override long Length { get; }
@@ -70,22 +70,6 @@ namespace LibHac.IO
             {
                 source.Storage.Flush();
             }
-        }
-
-        public override Storage Slice(long start, long length, bool leaveOpen)
-        {
-            ConcatSource startSource = FindSource(start);
-            ConcatSource endSource = FindSource(start + length - 1);
-
-            if (startSource != endSource)
-            {
-                return base.Slice(start, length, leaveOpen);
-            }
-
-            Storage storage = startSource.Storage.Slice(start - startSource.StartOffset, length, true);
-            if (!leaveOpen) storage.ToDispose.Add(this);
-
-            return storage;
         }
 
         private ConcatSource FindSource(long offset)

@@ -116,14 +116,8 @@ namespace LibHac.IO
 
         public void Read(Span<byte> destination, long offset, IntegrityCheckLevel integrityCheckLevel)
         {
-            ValidateSpanParameters(destination, offset);
+            ValidateParameters(destination, offset);
             ReadImpl(destination, offset, integrityCheckLevel);
-        }
-
-        public void Read(byte[] buffer, long offset, int count, int bufferOffset, IntegrityCheckLevel integrityCheckLevel)
-        {
-            ValidateArrayParameters(buffer, offset, count, bufferOffset);
-            ReadImpl(buffer.AsSpan(bufferOffset, count), offset, integrityCheckLevel);
         }
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)

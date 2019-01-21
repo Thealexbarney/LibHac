@@ -2,7 +2,7 @@
 
 namespace LibHac.IO.Save
 {
-    public class AllocationTableStorage : Storage
+    public class AllocationTableStorage : StorageBase
     {
         private IStorage BaseStorage { get; }
         private int BlockSize { get; }
