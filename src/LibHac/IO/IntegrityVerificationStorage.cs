@@ -31,6 +31,7 @@ namespace LibHac.IO
             BlockValidities = new Validity[SectorCount];
         }
 
+        // todo Take short path when integrity checks are disabled
         private void ReadImpl(Span<byte> destination, long offset, IntegrityCheckLevel integrityCheckLevel)
         {
             int count = destination.Length;
@@ -38,15 +39,29 @@ namespace LibHac.IO
             if (count < 0 || count > SectorSize)
                 throw new ArgumentOutOfRangeException(nameof(destination), "Length is invalid.");
 
-            Span<byte> hashBuffer = stackalloc byte[DigestSize];
+
+
             long blockIndex = offset / SectorSize;
-            long hashPos = blockIndex * DigestSize;
 
             if (BlockValidities[blockIndex] == Validity.Invalid && integrityCheckLevel == IntegrityCheckLevel.ErrorOnInvalid)
             {
                 throw new InvalidDataException("Hash error!");
             }
 
+            if (Type != IntegrityStorageType.Save && integrityCheckLevel == IntegrityCheckLevel.None)
+            {
+                BaseStorage.Read(destination, offset);
+                return;
+            }
+
+            if (BlockValidities[blockIndex] != Validity.Unchecked)
+            {
+                BaseStorage.Read(destination, offset);
+                return;
+            }
+
+            Span<byte> hashBuffer = stackalloc byte[DigestSize];
+            long hashPos = blockIndex * DigestSize;
             HashStorage.Read(hashBuffer, hashPos);
 
             if (Type == IntegrityStorageType.Save && Util.IsEmpty(hashBuffer))
@@ -59,10 +74,9 @@ namespace LibHac.IO
             byte[] dataBuffer = ArrayPool<byte>.Shared.Rent(SectorSize);
             try
             {
-                BaseStorage.Read(dataBuffer, offset, count, 0);
-                dataBuffer.AsSpan(0, count).CopyTo(destination);
+                BaseStorage.Read(destination, offset);
+                destination.CopyTo(dataBuffer);
 
-                if (integrityCheckLevel == IntegrityCheckLevel.None) return;
                 if (BlockValidities[blockIndex] != Validity.Unchecked) return;
 
                 int bytesToHash = SectorSize;
