@@ -54,8 +54,7 @@ namespace LibHac.IO.Save
         {
             if (file.BlockIndex < 0)
             {
-                // todo
-                return new MemoryStorage(new byte[0]);
+                return new NullStorage(0);
             }
 
             return OpenFatBlock(file.BlockIndex, file.FileSize);

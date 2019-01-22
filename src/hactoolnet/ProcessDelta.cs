@@ -15,7 +15,7 @@ namespace hactoolnet
 
         public static void Process(Context ctx)
         {
-            using (IStorage deltaFile = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read).AsStorage(false))
+            using (IStorage deltaFile = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
                 IStorage deltaStorage = deltaFile;
                 Span<byte> magic = stackalloc byte[4];
@@ -42,7 +42,7 @@ namespace hactoolnet
 
                 if (ctx.Options.BaseFile != null)
                 {
-                    using (IStorage baseFile = new FileStream(ctx.Options.BaseFile, FileMode.Open, FileAccess.Read).AsStorage(false))
+                    using (IStorage baseFile = new LocalStorage(ctx.Options.BaseFile, FileAccess.Read))
                     {
                         delta.SetBaseStorage(baseFile);
 

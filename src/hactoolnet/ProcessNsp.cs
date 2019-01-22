@@ -11,9 +11,9 @@ namespace hactoolnet
     {
         public static void Process(Context ctx)
         {
-            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
+            using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
-                var pfs = new PartitionFileSystem(file.AsStorage());
+                var pfs = new PartitionFileSystem(file);
                 ctx.Logger.LogMessage(pfs.Print());
 
                 if (ctx.Options.OutDir != null)
