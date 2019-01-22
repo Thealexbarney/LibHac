@@ -11,9 +11,9 @@ namespace hactoolnet
     {
         public static void Process(Context ctx)
         {
-            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
+            using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
-                var xci = new Xci(ctx.Keyset, file.AsStorage());
+                var xci = new Xci(ctx.Keyset, file);
 
                 ctx.Logger.LogMessage(xci.Print());
 

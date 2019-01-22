@@ -10,9 +10,9 @@ namespace hactoolnet
     {
         public static void ProcessPk11(Context ctx)
         {
-            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
+            using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
-                var package1 = new Package1(ctx.Keyset, file.AsStorage());
+                var package1 = new Package1(ctx.Keyset, file);
                 string outDir = ctx.Options.OutDir;
 
                 if (outDir != null)
@@ -29,7 +29,7 @@ namespace hactoolnet
 
         public static void ProcessPk21(Context ctx)
         {
-            using (var file = new CachedStorage(new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read).AsStorage(), 0x4000, 4, false))
+            using (var file = new CachedStorage(new LocalStorage(ctx.Options.InFile, FileAccess.Read), 0x4000, 4, false))
             {
                 var package2 = new Package2(ctx.Keyset, file);
 

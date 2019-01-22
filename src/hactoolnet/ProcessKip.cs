@@ -8,18 +8,18 @@ namespace hactoolnet
     {
         public static void ProcessKip1(Context ctx)
         {
-            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
+            using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
-                var kip = new Kip(file.AsStorage());
+                var kip = new Kip(file);
                 kip.OpenRawFile();
             }
         }
 
         public static void ProcessIni1(Context ctx)
         {
-            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
+            using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
-                var ini1 = new Ini1(file.AsStorage());
+                var ini1 = new Ini1(file);
 
                 string outDir = ctx.Options.OutDir;
 

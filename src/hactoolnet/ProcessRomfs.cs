@@ -8,9 +8,9 @@ namespace hactoolnet
     {
         public static void Process(Context ctx)
         {
-            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read))
+            using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
-                var romfs = new RomFsFileSystem(file.AsStorage());
+                var romfs = new RomFsFileSystem(file);
                 Process(ctx, romfs);
             }
         }

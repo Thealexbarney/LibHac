@@ -12,9 +12,9 @@ namespace hactoolnet
     {
         public static void Process(Context ctx)
         {
-            using (var file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.ReadWrite))
+            using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.ReadWrite))
             {
-                var save = new SaveDataFileSystem(ctx.Keyset, file.AsStorage(), ctx.Options.IntegrityLevel, true);
+                var save = new SaveDataFileSystem(ctx.Keyset, file, ctx.Options.IntegrityLevel, true);
 
                 if (ctx.Options.Validate)
                 {
@@ -99,7 +99,7 @@ namespace hactoolnet
                     string destFilename = ctx.Options.ReplaceFileDest;
                     if (!destFilename.StartsWith("/")) destFilename = '/' + destFilename;
 
-                    using (IFile inFile = new FileStream(ctx.Options.ReplaceFileSource, FileMode.Open, FileAccess.Read).AsIFile(OpenMode.ReadWrite))
+                    using (IFile inFile = new LocalFile(ctx.Options.ReplaceFileSource, OpenMode.Read))
                     {
                         using (IFile outFile = save.OpenFile(destFilename, OpenMode.ReadWrite))
                         {
