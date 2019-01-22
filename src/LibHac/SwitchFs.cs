@@ -67,7 +67,7 @@ namespace LibHac
                 Nca nca = null;
                 try
                 {
-                    var storage = new FileStorage(ContentFs.OpenFile(fileEntry.FullPath, OpenMode.Read));
+                    IStorage storage = ContentFs.OpenFile(fileEntry.FullPath, OpenMode.Read).AsStorage();
 
                     nca = new Nca(Keyset, storage, false);
 
@@ -106,7 +106,7 @@ namespace LibHac
                 try
                 {
                     IFile file = SaveFs.OpenFile(fileEntry.FullPath, OpenMode.Read);
-                    save = new SaveDataFileSystem(Keyset, new FileStorage(file), IntegrityCheckLevel.None, true);
+                    save = new SaveDataFileSystem(Keyset, file.AsStorage(), IntegrityCheckLevel.None, true);
                 }
                 catch (Exception ex)
                 {
@@ -131,7 +131,7 @@ namespace LibHac
                 var pfs0 = new PartitionFileSystem(sect);
                 IFile file = pfs0.OpenFile(pfs0.Files[0], OpenMode.Read);
 
-                var metadata = new Cnmt(new FileStorage(file).AsStream());
+                var metadata = new Cnmt(file.AsStream());
                 title.Id = metadata.TitleId;
                 title.Version = metadata.TitleVersion;
                 title.Metadata = metadata;
@@ -168,7 +168,7 @@ namespace LibHac
             foreach (Title title in Titles.Values.Where(x => x.ControlNca != null))
             {
                 var romfs = new RomFsFileSystem(title.ControlNca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid, true));
-                IStorage control = new FileStorage(romfs.OpenFile("control.nacp", OpenMode.Read));
+                IFile control = romfs.OpenFile("control.nacp", OpenMode.Read);
 
                 title.Control = new Nacp(control.AsStream());
 

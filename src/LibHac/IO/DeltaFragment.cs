@@ -23,7 +23,7 @@ namespace LibHac.IO
 
             if (Delta.Length < 0x40) throw new InvalidDataException("Delta file is too small.");
 
-            Header = new DeltaFragmentHeader(new StorageFile(delta, OpenMode.Read));
+            Header = new DeltaFragmentHeader(delta.AsFile(OpenMode.Read));
 
             if (Header.Magic != Ndv0Magic) throw new InvalidDataException("NDV0 magic value is missing.");
 
@@ -67,7 +67,7 @@ namespace LibHac.IO
 
         private void ParseDeltaStructure()
         {
-            var reader = new FileReader(new StorageFile(Delta, OpenMode.Read));
+            var reader = new FileReader(Delta.AsFile(OpenMode.Read));
 
             reader.Position = Header.FragmentHeaderSize;
 

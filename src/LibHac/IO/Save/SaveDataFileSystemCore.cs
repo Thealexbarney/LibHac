@@ -104,8 +104,7 @@ namespace LibHac.IO.Save
 
             if (file.BlockIndex < 0)
             {
-                // todo
-                return new StorageFile(new MemoryStorage(new byte[0]), OpenMode.ReadWrite);
+                return new NullFile();
             }
 
             AllocationTableStorage storage = OpenFatBlock(file.BlockIndex, file.FileSize);

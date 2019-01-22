@@ -99,7 +99,7 @@ namespace hactoolnet
                     string destFilename = ctx.Options.ReplaceFileDest;
                     if (!destFilename.StartsWith("/")) destFilename = '/' + destFilename;
 
-                    using (IFile inFile = new StorageFile(new FileStream(ctx.Options.ReplaceFileSource, FileMode.Open, FileAccess.Read).AsStorage(false), OpenMode.ReadWrite))
+                    using (IFile inFile = new FileStream(ctx.Options.ReplaceFileSource, FileMode.Open, FileAccess.Read).AsIFile(OpenMode.ReadWrite))
                     {
                         using (IFile outFile = save.OpenFile(destFilename, OpenMode.ReadWrite))
                         {

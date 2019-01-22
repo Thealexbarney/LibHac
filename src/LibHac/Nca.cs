@@ -232,7 +232,8 @@ namespace LibHac
             // Set the master hash
             initInfo[0] = new IntegrityVerificationInfo
             {
-                Data = new StreamStorage(new MemoryStream(sb.MasterHash), true),
+                // todo Get hash directly from header
+                Data = new MemoryStorage(sb.MasterHash),
 
                 BlockSize = 0,
                 Type = IntegrityStorageType.PartitionFs
@@ -301,7 +302,7 @@ namespace LibHac
 
             if (!pfs.FileExists("main.npdm")) return;
 
-            var npdmStorage = new FileStorage(pfs.OpenFile("main.npdm", OpenMode.Read));
+            IStorage npdmStorage = pfs.OpenFile("main.npdm", OpenMode.Read).AsStorage();
 
             Npdm = new Npdm.NpdmBinary(npdmStorage.AsStream(), Keyset);
 

@@ -15,9 +15,8 @@ namespace hactoolnet
 
         public static void Process(Context ctx)
         {
-            using (var deltaFile = new StreamStorage(new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read), false))
+            using (IStorage deltaFile = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read).AsStorage(false))
             {
-
                 IStorage deltaStorage = deltaFile;
                 Span<byte> magic = stackalloc byte[4];
                 deltaFile.Read(magic, 0);
@@ -34,7 +33,7 @@ namespace hactoolnet
                             throw new FileNotFoundException("Specified NCA does not contain a delta fragment");
                         }
 
-                        deltaStorage = new FileStorage(fs.OpenFile(FragmentFileName, OpenMode.Read));
+                        deltaStorage = fs.OpenFile(FragmentFileName, OpenMode.Read).AsStorage();
                     }
                     catch (InvalidDataException) { } // Ignore non-NCA3 files
                 }
@@ -43,7 +42,7 @@ namespace hactoolnet
 
                 if (ctx.Options.BaseFile != null)
                 {
-                    using (var baseFile = new StreamStorage(new FileStream(ctx.Options.BaseFile, FileMode.Open, FileAccess.Read), false))
+                    using (IStorage baseFile = new FileStream(ctx.Options.BaseFile, FileMode.Open, FileAccess.Read).AsStorage(false))
                     {
                         delta.SetBaseStorage(baseFile);
 
