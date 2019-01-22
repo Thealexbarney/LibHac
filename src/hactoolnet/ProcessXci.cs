@@ -53,7 +53,7 @@ namespace hactoolnet
 
                     foreach (PartitionFileEntry sub in root.Files)
                     {
-                        var subPfs = new PartitionFileSystem(new FileStorage(root.OpenFile(sub, OpenMode.Read)));
+                        var subPfs = new PartitionFileSystem(root.OpenFile(sub, OpenMode.Read).AsStorage());
                         string subDir = Path.Combine(ctx.Options.OutDir, sub.Name);
 
                         subPfs.Extract(subDir, ctx.Logger);
@@ -133,7 +133,7 @@ namespace hactoolnet
 
             foreach (PartitionFileEntry fileEntry in xci.SecurePartition.Files.Where(x => x.Name.EndsWith(".nca")))
             {
-                IStorage ncaStorage = new FileStorage(xci.SecurePartition.OpenFile(fileEntry, OpenMode.Read));
+                IStorage ncaStorage = xci.SecurePartition.OpenFile(fileEntry, OpenMode.Read).AsStorage();
                 var nca = new Nca(ctx.Keyset, ncaStorage, true);
 
                 if (nca.Header.ContentType == ContentType.Program)

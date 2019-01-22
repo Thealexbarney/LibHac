@@ -11,7 +11,7 @@ namespace hactoolnet
     {
         public static void Process(Context ctx)
         {
-            using (var file = new StreamStorage(new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read), false))
+            using (IStorage file = new FileStream(ctx.Options.InFile, FileMode.Open, FileAccess.Read).AsStorage(false))
             {
                 var nca = new Nca(ctx.Keyset, file, false);
                 nca.ValidateMasterHashes();
@@ -19,7 +19,7 @@ namespace hactoolnet
 
                 if (ctx.Options.BaseNca != null)
                 {
-                    var baseFile = new StreamStorage(new FileStream(ctx.Options.BaseNca, FileMode.Open, FileAccess.Read), false);
+                    IStorage baseFile = new FileStream(ctx.Options.BaseNca, FileMode.Open, FileAccess.Read).AsStorage(false);
                     var baseNca = new Nca(ctx.Keyset, baseFile, false);
                     nca.SetBaseNca(baseNca);
                 }

@@ -40,6 +40,8 @@ namespace LibHac.IO
         public static Stream AsStream(this IStorage storage, FileAccess access) => new StorageStream(storage, access, true);
         public static Stream AsStream(this IStorage storage, FileAccess access, bool keepOpen) => new StorageStream(storage, access, keepOpen);
 
+        public static IFile AsFile(this IStorage storage, OpenMode mode) => new StorageFile(storage, mode);
+
         public static void CopyTo(this IStorage input, IStorage output, IProgressReport progress = null)
         {
             const int bufferSize = 81920;

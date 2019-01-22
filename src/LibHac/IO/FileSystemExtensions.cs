@@ -119,6 +119,7 @@ namespace LibHac.IO
             }
         }
 
+        public static IStorage AsStorage(this IFile file) => new FileStorage(file);
         public static Stream AsStream(this IFile file) => new NxFileStream(file, true);
         public static Stream AsStream(this IFile file, bool keepOpen) => new NxFileStream(file, keepOpen);
 

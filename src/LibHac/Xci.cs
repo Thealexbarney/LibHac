@@ -40,7 +40,7 @@ namespace LibHac
             {
                 IFile partitionFile = RootPartition.OpenFile(file, OpenMode.Read);
 
-                var partition = new XciPartition(new FileStorage(partitionFile))
+                var partition = new XciPartition(partitionFile.AsStorage())
                 {
                     Name = file.Name,
                     Offset = Header.PartitionFsHeaderAddress + RootPartition.HeaderSize + file.Offset,

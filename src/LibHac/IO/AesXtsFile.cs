@@ -31,7 +31,7 @@ namespace LibHac.IO
                 throw new ArgumentException("NAX0 key derivation failed.");
             }
 
-            IStorage encStorage = new FileStorage(BaseFile).Slice(HeaderLength, Header.Size);
+            IStorage encStorage = BaseFile.AsStorage().Slice(HeaderLength, Header.Size);
             BaseStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Header.DecryptedKey1, Header.DecryptedKey2, BlockSize, true), 4, true);
         }
 
