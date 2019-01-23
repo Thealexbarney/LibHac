@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 
-namespace LibHac
+namespace LibHac.IO
 {
     public abstract class RomfsEntry
     {
