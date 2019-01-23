@@ -6,6 +6,25 @@ namespace LibHac.IO
 {
     public static class StorageExtensions
     {
+        public static void Read(this IStorage storage, byte[] buffer, long offset, int count, int bufferOffset)
+        {
+            ValidateStorageParameters(buffer, offset, count, bufferOffset);
+            storage.Read(buffer.AsSpan(bufferOffset, count), offset);
+        }
+        public static void Write(this IStorage storage, byte[] buffer, long offset, int count, int bufferOffset)
+        {
+            ValidateStorageParameters(buffer, offset, count, bufferOffset);
+            storage.Write(buffer.AsSpan(bufferOffset, count), offset);
+        }
+
+        private static void ValidateStorageParameters(byte[] buffer, long offset, int count, int bufferOffset)
+        {
+            if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+            if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), "Argument must be non-negative.");
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), "Argument must be non-negative.");
+            if (bufferOffset < 0) throw new ArgumentOutOfRangeException(nameof(bufferOffset), "Argument must be non-negative.");
+        }
+
         public static IStorage Slice(this IStorage storage, long start)
         {
             if (storage.Length == -1)
@@ -93,7 +112,7 @@ namespace LibHac.IO
 
             while (remaining > 0)
             {
-                int toWrite = (int) Math.Min(buffer.Length, remaining);
+                int toWrite = (int)Math.Min(buffer.Length, remaining);
                 input.Read(buffer.AsSpan(0, toWrite), inOffset);
 
                 output.Write(buffer, 0, toWrite);
