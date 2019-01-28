@@ -33,7 +33,9 @@ namespace LibHac.IO
             {
                 var levelData = new IntegrityVerificationStorage(levelInfo[i], Levels[i - 1], integrityCheckLevel, leaveOpen);
 
-                Levels[i] = new CachedStorage(levelData, 4, leaveOpen);
+                int cacheCount = Math.Min((int)Util.DivideByRoundUp(levelData.Length, levelInfo[i].BlockSize), 4);
+
+                Levels[i] = new CachedStorage(levelData, cacheCount, leaveOpen);
                 LevelValidities[i - 1] = levelData.BlockValidities;
                 IntegrityStorages[i - 1] = levelData;
             }

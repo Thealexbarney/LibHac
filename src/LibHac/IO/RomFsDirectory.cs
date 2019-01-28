@@ -1,52 +1,43 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 
 namespace LibHac.IO
 {
     public class RomFsDirectory : IDirectory
     {
-        public IFileSystem ParentFileSystem { get; }
+        IFileSystem IDirectory.ParentFileSystem => ParentFileSystem;
+        public RomFsFileSystem ParentFileSystem { get; }
         public string FullPath { get; }
 
-        private RomfsDir Directory { get; }
         public OpenDirectoryMode Mode { get; }
 
-        public RomFsDirectory(RomFsFileSystem fs, string path, OpenDirectoryMode mode)
+        private FindPosition InitialPosition { get; }
+
+        public RomFsDirectory(RomFsFileSystem fs, string path, FindPosition position, OpenDirectoryMode mode)
         {
-            path = PathTools.Normalize(path);
-
-            if (!fs.DirectoryDict.TryGetValue(path, out RomfsDir dir))
-            {
-                throw new DirectoryNotFoundException(path);
-            }
-
             ParentFileSystem = fs;
-            Directory = dir;
+            InitialPosition = position;
             FullPath = path;
             Mode = mode;
         }
 
         public IEnumerable<DirectoryEntry> Read()
         {
+            FindPosition position = InitialPosition;
+            HierarchicalRomFileTable tab = ParentFileSystem.FileTable;
+
             if (Mode.HasFlag(OpenDirectoryMode.Directories))
             {
-                RomfsDir dirEntry = Directory.FirstChild;
-
-                while (dirEntry != null)
+                while (tab.FindNextDirectory(ref position, out string name))
                 {
-                    yield return new DirectoryEntry(dirEntry.Name, FullPath + '/' + dirEntry.Name, DirectoryEntryType.Directory, 0);
-                    dirEntry = dirEntry.NextSibling;
+                    yield return new DirectoryEntry(name, FullPath + '/' + name, DirectoryEntryType.Directory, 0);
                 }
             }
 
             if (Mode.HasFlag(OpenDirectoryMode.Files))
             {
-                RomfsFile fileEntry = Directory.FirstFile;
-
-                while (fileEntry != null)
+                while (tab.FindNextFile(ref position, out RomFileInfo info, out string name))
                 {
-                    yield return new DirectoryEntry(fileEntry.Name, FullPath + '/' + fileEntry.Name, DirectoryEntryType.File, fileEntry.DataLength);
-                    fileEntry = fileEntry.NextSibling;
+                    yield return new DirectoryEntry(name, FullPath + '/' + name, DirectoryEntryType.File, info.Length);
                 }
             }
         }
@@ -55,25 +46,22 @@ namespace LibHac.IO
         {
             int count = 0;
 
+            FindPosition position = InitialPosition;
+            HierarchicalRomFileTable tab = ParentFileSystem.FileTable;
+
             if (Mode.HasFlag(OpenDirectoryMode.Directories))
             {
-                RomfsDir dirEntry = Directory.FirstChild;
-
-                while (dirEntry != null)
+                while (tab.FindNextDirectory(ref position, out string _))
                 {
                     count++;
-                    dirEntry = dirEntry.NextSibling;
                 }
             }
 
             if (Mode.HasFlag(OpenDirectoryMode.Files))
             {
-                RomfsFile fileEntry = Directory.FirstFile;
-
-                while (fileEntry != null)
+                while (tab.FindNextFile(ref position, out RomFileInfo _, out string _))
                 {
                     count++;
-                    fileEntry = fileEntry.NextSibling;
                 }
             }
 
