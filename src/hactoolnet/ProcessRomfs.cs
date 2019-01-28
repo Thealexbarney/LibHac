@@ -18,9 +18,9 @@ namespace hactoolnet
         {
             if (ctx.Options.ListRomFs)
             {
-                foreach (RomfsFile romfsFile in romfs.Files)
+                foreach (DirectoryEntry entry in romfs.EnumerateEntries())
                 {
-                    ctx.Logger.LogMessage(romfsFile.FullPath);
+                    ctx.Logger.LogMessage(entry.FullPath);
                 }
             }
 

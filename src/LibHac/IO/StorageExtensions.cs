@@ -102,6 +102,15 @@ namespace LibHac.IO
             }
         }
 
+        public static byte[] ToArray(this IStorage storage)
+        {
+            if (storage == null) return new byte[0];
+
+            var arr = new byte[storage.Length];
+            storage.CopyTo(new MemoryStorage(arr));
+            return arr;
+        }
+
         public static void CopyToStream(this IStorage input, Stream output, long length, IProgressReport progress = null)
         {
             const int bufferSize = 0x8000;

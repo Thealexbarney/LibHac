@@ -91,6 +91,35 @@ namespace LibHac.IO
             return path.Substring(0, i);
         }
 
+        public static bool IsNormalized(ReadOnlySpan<char> path)
+        {
+            var state = NormalizeState.Initial;
+
+            foreach (char c in path)
+            {
+                switch (state)
+                {
+                    case NormalizeState.Initial when c == '/': state = NormalizeState.Delimiter; break;
+                    case NormalizeState.Initial: return false;
+
+                    case NormalizeState.Normal when c == '/': state = NormalizeState.Delimiter; break;
+
+                    case NormalizeState.Delimiter when c == '/': return false;
+                    case NormalizeState.Delimiter when c == '.': state = NormalizeState.Dot; break;
+                    case NormalizeState.Delimiter: state = NormalizeState.Normal; break;
+
+                    case NormalizeState.Dot when c == '/': return false;
+                    case NormalizeState.Dot when c == '.': state = NormalizeState.DoubleDot; break;
+                    case NormalizeState.Dot: state = NormalizeState.Normal; break;
+                        
+                    case NormalizeState.DoubleDot when c == '/': return false;
+                    case NormalizeState.DoubleDot: state = NormalizeState.Normal; break;
+                }
+            }
+
+            return state == NormalizeState.Normal || state == NormalizeState.Delimiter;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsDirectorySeparator(char c)
         {
@@ -110,6 +139,15 @@ namespace LibHac.IO
             return index + 2 < path.Length &&
                    (index + 3 == path.Length || IsDirectorySeparator(path[index + 3])) &&
                    path[index + 1] == '.' && path[index + 2] == '.';
+        }
+
+        private enum NormalizeState
+        {
+            Initial,
+            Normal,
+            Delimiter,
+            Dot,
+            DoubleDot
         }
     }
 }

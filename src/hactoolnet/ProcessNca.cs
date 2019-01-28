@@ -46,9 +46,9 @@ namespace hactoolnet
                 {
                     var romfs = new RomFsFileSystem(nca.OpenSection(1, false, ctx.Options.IntegrityLevel, true));
 
-                    foreach (RomfsFile romfsFile in romfs.Files)
+                    foreach (DirectoryEntry entry in romfs.EnumerateEntries())
                     {
-                        ctx.Logger.LogMessage(romfsFile.FullPath);
+                        ctx.Logger.LogMessage(entry.FullPath);
                     }
                 }
 
