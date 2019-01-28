@@ -32,6 +32,8 @@ namespace LibHac.IO
                 else
                 {
                     long size = GetAesXtsFileSize(entry.FullPath);
+                    if (size == -1) continue;
+
                     yield return new DirectoryEntry(entry.Name, entry.FullPath, entry.Type, size);
                 }
             }
@@ -42,12 +44,22 @@ namespace LibHac.IO
             return BaseDirectory.GetEntryCount();
         }
 
+        /// <summary>
+        /// Reads the size of a NAX0 file from its header. Returns -1 on error.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
         private long GetAesXtsFileSize(string path)
         {
             try
             {
                 using (IFile file = BaseFileSystem.OpenFile(path, OpenMode.Read))
                 {
+                    if (file.GetSize() < 0x50)
+                    {
+                        return -1;
+                    }
+
                     var buffer = new byte[8];
 
                     file.Read(buffer, 0x20);
@@ -59,7 +71,7 @@ namespace LibHac.IO
             }
             catch (ArgumentOutOfRangeException)
             {
-                return 0;
+                return -1;
             }
         }
     }
