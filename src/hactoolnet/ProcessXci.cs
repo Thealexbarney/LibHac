@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using System.Text;
 using LibHac;
@@ -19,32 +20,32 @@ namespace hactoolnet
 
                 if (ctx.Options.RootDir != null)
                 {
-                    xci.RootPartition?.Extract(ctx.Options.RootDir, ctx.Logger);
+                    xci.OpenPartition(XciPartitionType.Root).Extract(ctx.Options.RootDir, ctx.Logger);
                 }
 
-                if (ctx.Options.UpdateDir != null)
+                if (ctx.Options.UpdateDir != null && xci.HasPartition(XciPartitionType.Update))
                 {
-                    xci.UpdatePartition?.Extract(ctx.Options.UpdateDir, ctx.Logger);
+                    xci.OpenPartition(XciPartitionType.Update).Extract(ctx.Options.UpdateDir, ctx.Logger);
                 }
 
-                if (ctx.Options.NormalDir != null)
+                if (ctx.Options.NormalDir != null && xci.HasPartition(XciPartitionType.Normal))
                 {
-                    xci.NormalPartition?.Extract(ctx.Options.NormalDir, ctx.Logger);
+                    xci.OpenPartition(XciPartitionType.Normal).Extract(ctx.Options.NormalDir, ctx.Logger);
                 }
 
-                if (ctx.Options.SecureDir != null)
+                if (ctx.Options.SecureDir != null && xci.HasPartition(XciPartitionType.Secure))
                 {
-                    xci.SecurePartition?.Extract(ctx.Options.SecureDir, ctx.Logger);
+                    xci.OpenPartition(XciPartitionType.Secure).Extract(ctx.Options.SecureDir, ctx.Logger);
                 }
 
-                if (ctx.Options.LogoDir != null)
+                if (ctx.Options.LogoDir != null && xci.HasPartition(XciPartitionType.Logo))
                 {
-                    xci.LogoPartition?.Extract(ctx.Options.LogoDir, ctx.Logger);
+                    xci.OpenPartition(XciPartitionType.Logo).Extract(ctx.Options.LogoDir, ctx.Logger);
                 }
 
-                if (ctx.Options.OutDir != null && xci.RootPartition != null)
+                if (ctx.Options.OutDir != null)
                 {
-                    XciPartition root = xci.RootPartition;
+                    XciPartition root = xci.OpenPartition(XciPartitionType.Root);
                     if (root == null)
                     {
                         ctx.Logger.LogMessage("Could not find root partition");
@@ -123,7 +124,9 @@ namespace hactoolnet
 
         private static Nca GetXciMainNca(Xci xci, Context ctx)
         {
-            if (xci.SecurePartition == null)
+            XciPartition partition = xci.OpenPartition(XciPartitionType.Secure);
+
+            if (partition == null)
             {
                 ctx.Logger.LogMessage("Could not find secure partition");
                 return null;
@@ -131,9 +134,9 @@ namespace hactoolnet
 
             Nca mainNca = null;
 
-            foreach (PartitionFileEntry fileEntry in xci.SecurePartition.Files.Where(x => x.Name.EndsWith(".nca")))
+            foreach (PartitionFileEntry fileEntry in partition.Files.Where(x => x.Name.EndsWith(".nca")))
             {
-                IStorage ncaStorage = xci.SecurePartition.OpenFile(fileEntry, OpenMode.Read).AsStorage();
+                IStorage ncaStorage = partition.OpenFile(fileEntry, OpenMode.Read).AsStorage();
                 var nca = new Nca(ctx.Keyset, ncaStorage, true);
 
                 if (nca.Header.ContentType == ContentType.Program)
@@ -156,27 +159,34 @@ namespace hactoolnet
 
             PrintItem(sb, colLen, "Magic:", xci.Header.Magic);
             PrintItem(sb, colLen, $"Header Signature{xci.Header.SignatureValidity.GetValidityString()}:", xci.Header.Signature);
-            PrintItem(sb, colLen, $"Header Hash{xci.Header.PartitionFsHeaderValidity.GetValidityString()}:", xci.Header.PartitionFsHeaderHash);
+            PrintItem(sb, colLen, $"Header Hash{xci.Header.PartitionFsHeaderValidity.GetValidityString()}:", xci.Header.RootPartitionHeaderHash);
             PrintItem(sb, colLen, "Cartridge Type:", GetCartridgeType(xci.Header.RomSize));
             PrintItem(sb, colLen, "Cartridge Size:", $"0x{Util.MediaToReal(xci.Header.ValidDataEndPage + 1):x12}");
             PrintItem(sb, colLen, "Header IV:", xci.Header.AesCbcIv);
 
-            foreach (XciPartition partition in xci.Partitions.OrderBy(x => x.Offset))
+            PrintPartition(sb, colLen, xci.OpenPartition(XciPartitionType.Root), XciPartitionType.Root);
+
+            foreach (XciPartitionType type in Enum.GetValues(typeof(XciPartitionType)))
             {
-                PrintPartition(sb, colLen, partition);
+                if (type == XciPartitionType.Root || !xci.HasPartition(type)) continue;
+
+                XciPartition partition = xci.OpenPartition(type);
+                PrintPartition(sb, colLen, partition, type);
             }
 
             return sb.ToString();
         }
 
-        private static void PrintPartition(StringBuilder sb, int colLen, XciPartition partition)
+        private static void PrintPartition(StringBuilder sb, int colLen, XciPartition partition, XciPartitionType type)
         {
             const int fileNameLen = 57;
 
-            sb.AppendLine($"{GetDisplayName(partition.Name)} Partition:{partition.HashValidity.GetValidityString()}");
+            sb.AppendLine($"{type.ToString()} Partition:{partition.HashValidity.GetValidityString()}");
             PrintItem(sb, colLen, "    Magic:", partition.Header.Magic);
             PrintItem(sb, colLen, "    Offset:", $"{partition.Offset:x12}");
             PrintItem(sb, colLen, "    Number of files:", partition.Files.Length);
+
+            string name = type.GetFileName();
 
             if (partition.Files.Length > 0 && partition.Files.Length < 100)
             {
@@ -186,23 +196,10 @@ namespace hactoolnet
 
                     string label = i == 0 ? "    Files:" : "";
                     string offsets = $"{file.Offset:x12}-{file.Offset + file.Size:x12}{file.HashValidity.GetValidityString()}";
-                    string data = $"{partition.Name}:/{file.Name}".PadRight(fileNameLen) + offsets;
+                    string data = $"{name}:/{file.Name}".PadRight(fileNameLen) + offsets;
 
                     PrintItem(sb, colLen, label, data);
                 }
-            }
-        }
-
-        private static string GetDisplayName(string name)
-        {
-            switch (name)
-            {
-                case "rootpt": return "Root";
-                case "update": return "Update";
-                case "normal": return "Normal";
-                case "secure": return "Secure";
-                case "logo": return "Logo";
-                default: return name;
             }
         }
 

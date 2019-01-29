@@ -1,65 +1,65 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using LibHac.IO;
+﻿using LibHac.IO;
 
 namespace LibHac
 {
     public class Xci
     {
-        private const string RootPartitionName = "rootpt";
-        private const string UpdatePartitionName = "update";
-        private const string NormalPartitionName = "normal";
-        private const string SecurePartitionName = "secure";
-        private const string LogoPartitionName = "logo";
-
         public XciHeader Header { get; }
 
-        public XciPartition RootPartition { get; }
-        public XciPartition UpdatePartition { get; }
-        public XciPartition NormalPartition { get; }
-        public XciPartition SecurePartition { get; }
-        public XciPartition LogoPartition { get; }
-
-        public List<XciPartition> Partitions { get; } = new List<XciPartition>();
+        private IStorage BaseStorage { get; }
+        private object InitLocker { get; } = new object();
+        private XciPartition RootPartition { get; set; }
 
         public Xci(Keyset keyset, IStorage storage)
         {
+            BaseStorage = storage;
             Header = new XciHeader(keyset, storage.AsStream());
-            IStorage hfs0Storage = storage.Slice(Header.PartitionFsHeaderAddress);
+        }
 
-            RootPartition = new XciPartition(hfs0Storage)
+        public bool HasPartition(XciPartitionType type)
+        {
+            if (type == XciPartitionType.Root) return true;
+
+            return GetRootPartition().FileExists(type.GetFileName());
+        }
+
+        public XciPartition OpenPartition(XciPartitionType type)
+        {
+            XciPartition root = GetRootPartition();
+            if (type == XciPartitionType.Root) return root;
+
+            IStorage partitionStorage = root.OpenFile(type.GetFileName(), OpenMode.Read).AsStorage();
+            return new XciPartition(partitionStorage);
+        }
+
+        private XciPartition GetRootPartition()
+        {
+            if (RootPartition != null) return RootPartition;
+
+            InitializeRootPartition();
+
+            return RootPartition;
+        }
+
+        private void InitializeRootPartition()
+        {
+            lock (InitLocker)
             {
-                Name = RootPartitionName,
-                Offset = Header.PartitionFsHeaderAddress,
-                HashValidity = Header.PartitionFsHeaderValidity
-            };
+                if (RootPartition != null) return;
 
-            Partitions.Add(RootPartition);
+                IStorage rootStorage = BaseStorage.Slice(Header.RootPartitionOffset);
 
-            foreach (PartitionFileEntry file in RootPartition.Files)
-            {
-                IFile partitionFile = RootPartition.OpenFile(file, OpenMode.Read);
-
-                var partition = new XciPartition(partitionFile.AsStorage())
+                RootPartition = new XciPartition(rootStorage)
                 {
-                    Name = file.Name,
-                    Offset = Header.PartitionFsHeaderAddress + RootPartition.HeaderSize + file.Offset,
-                    HashValidity = file.HashValidity
+                    Offset = Header.RootPartitionOffset,
+                    HashValidity = Header.PartitionFsHeaderValidity
                 };
-
-                Partitions.Add(partition);
             }
-
-            UpdatePartition = Partitions.FirstOrDefault(x => x.Name == UpdatePartitionName);
-            NormalPartition = Partitions.FirstOrDefault(x => x.Name == NormalPartitionName);
-            SecurePartition = Partitions.FirstOrDefault(x => x.Name == SecurePartitionName);
-            LogoPartition = Partitions.FirstOrDefault(x => x.Name == LogoPartitionName);
         }
     }
 
     public class XciPartition : PartitionFileSystem
     {
-        public string Name { get; internal set; }
         public long Offset { get; internal set; }
         public Validity HashValidity { get; set; } = Validity.Unchecked;
 
