@@ -8,6 +8,7 @@ namespace LibHac.IO
 {
     public class PartitionFileSystem : IFileSystem
     {
+        // todo Re-add way of checking a file hash
         public PartitionFileSystemHeader Header { get; }
         public int HeaderSize { get; }
         public PartitionFileEntry[] Files { get; }
@@ -26,26 +27,6 @@ namespace LibHac.IO
             Files = Header.Files;
             FileDict = Header.Files.ToDictionary(x => x.Name, x => x);
             BaseStorage = storage;
-        }
-
-        public void CreateDirectory(string path)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void CreateFile(string path, long size, CreateFileOptions options)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void DeleteDirectory(string path)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void DeleteFile(string path)
-        {
-            throw new NotSupportedException();
         }
 
         public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
@@ -68,16 +49,6 @@ namespace LibHac.IO
         public IFile OpenFile(PartitionFileEntry entry, OpenMode mode)
         {
             return new PartitionFile(BaseStorage, HeaderSize + entry.Offset, entry.Size, mode);
-        }
-
-        public void RenameDirectory(string srcPath, string dstPath)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void RenameFile(string srcPath, string dstPath)
-        {
-            throw new NotSupportedException();
         }
 
         public bool DirectoryExists(string path)
@@ -104,10 +75,13 @@ namespace LibHac.IO
             throw new FileNotFoundException(path);
         }
 
-        public void Commit()
-        {
-            throw new NotSupportedException();
-        }
+        public void CreateDirectory(string path) => throw new NotSupportedException();
+        public void CreateFile(string path, long size, CreateFileOptions options) => throw new NotSupportedException();
+        public void DeleteDirectory(string path) => throw new NotSupportedException();
+        public void DeleteFile(string path) => throw new NotSupportedException();
+        public void RenameDirectory(string srcPath, string dstPath) => throw new NotSupportedException();
+        public void RenameFile(string srcPath, string dstPath) => throw new NotSupportedException();
+        public void Commit() => throw new NotSupportedException();
     }
 
     public enum PartitionFileSystemType
@@ -160,17 +134,6 @@ namespace LibHac.IO
                 reader.BaseStream.Position = stringTableOffset + Files[i].StringTableOffset;
                 Files[i].Name = reader.ReadAsciiZ();
             }
-
-
-            if (Type == PartitionFileSystemType.Hashed)
-            {
-                for (int i = 0; i < NumFiles; i++)
-                {
-                    reader.BaseStream.Position = HeaderSize + Files[i].Offset;
-                    Files[i].HashValidity = Crypto.CheckMemoryHashTable(reader.ReadBytes(Files[i].HashedRegionSize), Files[i].Hash, 0, Files[i].HashedRegionSize);
-                }
-            }
-
         }
 
         private static int GetFileEntrySize(PartitionFileSystemType type)
@@ -193,7 +156,7 @@ namespace LibHac.IO
         public long Offset;
         public long Size;
         public uint StringTableOffset;
-        public long Reserved;
+        public long HashedRegionOffset;
         public int HashedRegionSize;
         public byte[] Hash;
         public string Name;
@@ -207,12 +170,12 @@ namespace LibHac.IO
             if (type == PartitionFileSystemType.Hashed)
             {
                 HashedRegionSize = reader.ReadInt32();
-                Reserved = reader.ReadInt64();
+                HashedRegionOffset = reader.ReadInt64();
                 Hash = reader.ReadBytes(Crypto.Sha256DigestSize);
             }
             else
             {
-                Reserved = reader.ReadUInt32();
+                reader.BaseStream.Position += 4;
             }
         }
     }

@@ -42,9 +42,9 @@ namespace LibHac
         public ulong PackageId { get; set; }
         public long ValidDataEndPage { get; set; }
         public byte[] AesCbcIv { get; set; }
-        public long PartitionFsHeaderAddress { get; set; }
-        public long PartitionFsHeaderSize { get; set; }
-        public byte[] PartitionFsHeaderHash { get; set; }
+        public long RootPartitionOffset { get; set; }
+        public long RootPartitionHeaderSize { get; set; }
+        public byte[] RootPartitionHeaderHash { get; set; }
         public byte[] InitialDataHash { get; set; }
         public int SelSec { get; set; }
         public int SelT1Key { get; set; }
@@ -70,7 +70,6 @@ namespace LibHac
         {
             using (var reader = new BinaryReader(stream, Encoding.Default, true))
             {
-
                 Signature = reader.ReadBytes(SignatureSize);
                 Magic = reader.ReadAscii(4);
                 if (Magic != HeaderMagic)
@@ -96,9 +95,9 @@ namespace LibHac
                 ValidDataEndPage = reader.ReadInt64();
                 AesCbcIv = reader.ReadBytes(Crypto.Aes128Size);
                 Array.Reverse(AesCbcIv);
-                PartitionFsHeaderAddress = reader.ReadInt64();
-                PartitionFsHeaderSize = reader.ReadInt64();
-                PartitionFsHeaderHash = reader.ReadBytes(Crypto.Sha256DigestSize);
+                RootPartitionOffset = reader.ReadInt64();
+                RootPartitionHeaderSize = reader.ReadInt64();
+                RootPartitionHeaderHash = reader.ReadBytes(Crypto.Sha256DigestSize);
                 InitialDataHash = reader.ReadBytes(Crypto.Sha256DigestSize);
                 SelSec = reader.ReadInt32();
                 SelT1Key = reader.ReadInt32();
@@ -107,7 +106,6 @@ namespace LibHac
 
                 if (!keyset.XciHeaderKey.IsEmpty())
                 {
-
                     byte[] encHeader = reader.ReadBytes(EncryptedHeaderSize);
                     var decHeader = new byte[EncryptedHeaderSize];
                     Crypto.DecryptCbc(keyset.XciHeaderKey, AesCbcIv, encHeader, decHeader, EncryptedHeaderSize);
@@ -128,12 +126,9 @@ namespace LibHac
                     }
                 }
 
-                reader.BaseStream.Position = PartitionFsHeaderAddress;
-                PartitionFsHeaderValidity = Crypto.CheckMemoryHashTable(reader.ReadBytes((int)PartitionFsHeaderSize), PartitionFsHeaderHash, 0, (int)PartitionFsHeaderSize);
-
+                reader.BaseStream.Position = RootPartitionOffset;
+                PartitionFsHeaderValidity = Crypto.CheckMemoryHashTable(reader.ReadBytes((int)RootPartitionHeaderSize), RootPartitionHeaderHash, 0, (int)RootPartitionHeaderSize);
             }
-
-
         }
     }
 
@@ -159,5 +154,31 @@ namespace LibHac
     {
         ClockRate25 = 10551312,
         ClockRate50
+    }
+
+    public enum XciPartitionType
+    {
+        Update,
+        Normal,
+        Secure,
+        Logo,
+        Root
+    }
+
+    public static class XciExtensions
+    {
+        public static string GetFileName(this XciPartitionType type)
+        {
+            switch (type)
+            {
+                case XciPartitionType.Update: return "update";
+                case XciPartitionType.Normal: return "normal";
+                case XciPartitionType.Secure: return "secure";
+                case XciPartitionType.Logo: return "logo";
+                case XciPartitionType.Root: return "root";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
+            }
+        }
     }
 }
