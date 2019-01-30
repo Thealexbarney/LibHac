@@ -4,7 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace LibHac.IO
+namespace LibHac.IO.RomFs
 {
     internal class RomFsDictionary<T> where T : unmanaged
     {

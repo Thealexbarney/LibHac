@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using LibHac;
 using LibHac.IO;
+using LibHac.IO.RomFs;
 using static hactoolnet.Print;
 
 namespace hactoolnet

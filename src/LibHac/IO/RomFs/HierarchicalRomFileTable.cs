@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace LibHac.IO
+namespace LibHac.IO.RomFs
 {
     public class HierarchicalRomFileTable
     {
