@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace LibHac.IO
 {
@@ -108,6 +109,17 @@ namespace LibHac.IO
 
             var arr = new byte[storage.Length];
             storage.CopyTo(new MemoryStorage(arr));
+            return arr;
+        }
+
+        public static T[] ToArray<T>(this IStorage storage) where T : unmanaged
+        {
+            if (storage == null) return new T[0];
+
+            var arr = new T[storage.Length / Marshal.SizeOf<T>()];
+            Span<byte> dest = MemoryMarshal.Cast<T, byte>(arr.AsSpan());
+
+            storage.Read(dest, 0);
             return arr;
         }
 

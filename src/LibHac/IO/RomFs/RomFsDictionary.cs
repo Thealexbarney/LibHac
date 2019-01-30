@@ -1,36 +1,32 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace LibHac.IO.RomFs
 {
     internal class RomFsDictionary<T> where T : unmanaged
     {
-        private int HashBucketCount { get; }
-        private IStorage BucketStorage { get; }
-        private IStorage EntryStorage { get; }
+        private int[] BucketTable { get; }
+        private byte[] EntryTable { get; }
 
         // Hack around not being able to get the size of generic structures
         private readonly int _sizeOfEntry = 12 + Marshal.SizeOf<T>();
 
         public RomFsDictionary(IStorage bucketStorage, IStorage entryStorage)
         {
-            BucketStorage = bucketStorage;
-            EntryStorage = entryStorage;
-            HashBucketCount = (int)(bucketStorage.Length / 4);
+            BucketTable = bucketStorage.ToArray<int>();
+            EntryTable = entryStorage.ToArray();
         }
 
-        public bool TryGetValue(ref RomEntryKey key, out T value, out int offset)
+        public bool TryGetValue(ref RomEntryKey key, out RomKeyValuePair<T> value)
         {
             int i = FindEntry(ref key);
-            offset = i;
 
             if (i >= 0)
             {
                 GetEntryInternal(i, out RomFsEntry<T> entry);
-                value = entry.Value;
+
+                value = new RomKeyValuePair<T> { Key = key, Value = entry.Value, Offset = i };
                 return true;
             }
 
@@ -38,43 +34,32 @@ namespace LibHac.IO.RomFs
             return false;
         }
 
-        public bool TryGetValue(int offset, out T value, out string entryName)
+        public bool TryGetValue(int offset, out RomKeyValuePair<T> value)
         {
-            if (offset < 0 || offset + _sizeOfEntry >= EntryStorage.Length)
-            {
-                value = default;
-                entryName = default;
-                return false;
-            }
-
-            GetEntryInternal(offset, out RomFsEntry<T> entry, out entryName);
-            value = entry.Value;
-            return true;
-        }
-
-        public bool TryGetValue(int offset, out T value)
-        {
-            if (offset < 0 || offset + _sizeOfEntry >= EntryStorage.Length)
+            if (offset < 0 || offset + _sizeOfEntry >= EntryTable.Length)
             {
                 value = default;
                 return false;
             }
 
-            GetEntryInternal(offset, out RomFsEntry<T> entry);
-            value = entry.Value;
+            value = new RomKeyValuePair<T>();
+
+            GetEntryInternal(offset, out RomFsEntry<T> entry, out value.Key.Name);
+            value.Value = entry.Value;
             return true;
         }
 
         private int FindEntry(ref RomEntryKey key)
         {
             uint hashCode = key.GetRomHashCode();
-            int i = GetBucket((int)(hashCode % HashBucketCount));
+            int index = (int)(hashCode % BucketTable.Length);
+            int i = BucketTable[index];
 
             while (i != -1)
             {
-                GetEntryInternal(i, out RomFsEntry<T> entry);
+                GetEntryInternal(i, out RomFsEntry<T> entry, out ReadOnlySpan<byte> name);
 
-                if (IsEqual(ref key, ref entry, i))
+                if (key.Parent == entry.Parent && key.Name.SequenceEqual(name))
                 {
                     break;
                 }
@@ -85,24 +70,12 @@ namespace LibHac.IO.RomFs
             return i;
         }
 
-        private bool IsEqual(ref RomEntryKey key, ref RomFsEntry<T> entry, int entryOffset)
-        {
-            if (key.Parent != entry.Parent) return false;
-            if (key.Name.Length != entry.KeyLength) return false;
-
-            GetEntryInternal(entryOffset, out RomFsEntry<T> _, out string name);
-
-            return key.Name.Equals(name.AsSpan(), StringComparison.Ordinal);
-        }
-
         private void GetEntryInternal(int offset, out RomFsEntry<T> outEntry)
         {
-            Span<byte> b = stackalloc byte[_sizeOfEntry];
-            EntryStorage.Read(b, offset);
-            outEntry = MemoryMarshal.Read<RomFsEntry<T>>(b);
+            outEntry = MemoryMarshal.Read<RomFsEntry<T>>(EntryTable.AsSpan(offset));
         }
 
-        private void GetEntryInternal(int offset, out RomFsEntry<T> outEntry, out string entryName)
+        private void GetEntryInternal(int offset, out RomFsEntry<T> outEntry, out ReadOnlySpan<byte> entryName)
         {
             GetEntryInternal(offset, out outEntry);
 
@@ -111,18 +84,7 @@ namespace LibHac.IO.RomFs
                 throw new InvalidDataException("Rom entry name is too long.");
             }
 
-            var buf = new byte[outEntry.KeyLength];
-            EntryStorage.Read(buf, offset + _sizeOfEntry);
-            entryName = Encoding.ASCII.GetString(buf);
-        }
-
-        private int GetBucket(int index)
-        {
-            Debug.Assert(index < HashBucketCount);
-
-            Span<byte> buf = stackalloc byte[4];
-            BucketStorage.Read(buf, index * 4);
-            return MemoryMarshal.Read<int>(buf);
+            entryName = EntryTable.AsSpan(offset + _sizeOfEntry, outEntry.KeyLength);
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Runtime.InteropServices;
+using System.Text;
 
 namespace LibHac.IO.RomFs
 {
@@ -27,11 +27,11 @@ namespace LibHac.IO.RomFs
 
         public bool OpenFile(string path, out RomFileInfo fileInfo)
         {
-            FindFileRecursive(path.AsSpan(), out RomEntryKey key);
+            FindFileRecursive(GetUtf8Bytes(path), out RomEntryKey key);
 
-            if (FileTable.TryGetValue(ref key, out FileRomEntry entry, out int _))
+            if (FileTable.TryGetValue(ref key, out RomKeyValuePair<FileRomEntry> keyValuePair))
             {
-                fileInfo = entry.Info;
+                fileInfo = keyValuePair.Value.Info;
                 return true;
             }
 
@@ -41,9 +41,9 @@ namespace LibHac.IO.RomFs
 
         public bool OpenFile(int offset, out RomFileInfo fileInfo)
         {
-            if (FileTable.TryGetValue(offset, out FileRomEntry entry))
+            if (FileTable.TryGetValue(offset, out RomKeyValuePair<FileRomEntry> keyValuePair))
             {
-                fileInfo = entry.Info;
+                fileInfo = keyValuePair.Value.Info;
                 return true;
             }
 
@@ -53,11 +53,11 @@ namespace LibHac.IO.RomFs
 
         public bool OpenDirectory(string path, out FindPosition position)
         {
-            FindDirectoryRecursive(path.AsSpan(), out RomEntryKey key);
+            FindDirectoryRecursive(GetUtf8Bytes(path), out RomEntryKey key);
 
-            if (DirectoryTable.TryGetValue(ref key, out DirectoryRomEntry entry, out int _))
+            if (DirectoryTable.TryGetValue(ref key, out RomKeyValuePair<DirectoryRomEntry> keyValuePair))
             {
-                position = entry.Pos;
+                position = keyValuePair.Value.Pos;
                 return true;
             }
 
@@ -67,9 +67,9 @@ namespace LibHac.IO.RomFs
 
         public bool OpenDirectory(int offset, out FindPosition position)
         {
-            if (DirectoryTable.TryGetValue(offset, out DirectoryRomEntry entry))
+            if (DirectoryTable.TryGetValue(offset, out RomKeyValuePair<DirectoryRomEntry> keyValuePair))
             {
-                position = entry.Pos;
+                position = keyValuePair.Value.Pos;
                 return true;
             }
 
@@ -77,121 +77,68 @@ namespace LibHac.IO.RomFs
             return false;
         }
 
+        private static ReadOnlySpan<byte> GetUtf8Bytes(string value)
+        {
+            return Encoding.UTF8.GetBytes(value).AsSpan();
+        }
+
         public bool FindNextFile(ref FindPosition position, out RomFileInfo info, out string name)
         {
-            if (FileTable.TryGetValue(position.NextFile, out FileRomEntry entry, out name))
+            if (FileTable.TryGetValue(position.NextFile, out RomKeyValuePair<FileRomEntry> keyValuePair))
             {
-                position.NextFile = entry.NextSibling;
-                info = entry.Info;
+                position.NextFile = keyValuePair.Value.NextSibling;
+                info = keyValuePair.Value.Info;
+                name = Encoding.UTF8.GetString(keyValuePair.Key.Name.ToArray());
                 return true;
             }
 
             info = default;
+            name = default;
             return false;
         }
 
         public bool FindNextDirectory(ref FindPosition position, out string name)
         {
-            if (DirectoryTable.TryGetValue(position.NextDirectory, out DirectoryRomEntry entry, out name))
+            if (DirectoryTable.TryGetValue(position.NextDirectory, out RomKeyValuePair<DirectoryRomEntry> keyValuePair))
             {
-                position.NextDirectory = entry.NextSibling;
+                position.NextDirectory = keyValuePair.Value.NextSibling;
+                name = Encoding.UTF8.GetString(keyValuePair.Key.Name.ToArray());
                 return true;
             }
 
+            name = default;
             return false;
         }
 
-        private void FindFileRecursive(ReadOnlySpan<char> path, out RomEntryKey key)
+        private void FindFileRecursive(ReadOnlySpan<byte> path, out RomEntryKey key)
         {
             var parser = new PathParser(path);
-            FindParentDirectoryRecursive(ref parser, out DirectoryRomEntry _, out int parentOffset);
+            FindParentDirectoryRecursive(ref parser, out RomKeyValuePair<DirectoryRomEntry> keyValuePair);
 
-            key = new RomEntryKey(parser.GetCurrent(), parentOffset);
+            key = keyValuePair.Key;
         }
 
-        private void FindDirectoryRecursive(ReadOnlySpan<char> path, out RomEntryKey key)
+        private void FindDirectoryRecursive(ReadOnlySpan<byte> path, out RomEntryKey key)
         {
             var parser = new PathParser(path);
-            FindParentDirectoryRecursive(ref parser, out DirectoryRomEntry _, out int parentOffset);
+            FindParentDirectoryRecursive(ref parser, out RomKeyValuePair<DirectoryRomEntry> keyValuePair);
 
-            ReadOnlySpan<char> name = parser.GetCurrent();
-            if (name.Length == 0) parentOffset = 0;
+            ReadOnlySpan<byte> name = parser.GetCurrent();
+            int parentOffset = name.Length == 0 ? 0 : keyValuePair.Offset;
 
             key = new RomEntryKey(name, parentOffset);
         }
 
-        private void FindParentDirectoryRecursive(ref PathParser parser, out DirectoryRomEntry parentEntry, out int parentOffset)
+        private void FindParentDirectoryRecursive(ref PathParser parser, out RomKeyValuePair<DirectoryRomEntry> keyValuePair)
         {
-            parentEntry = default;
-            parentOffset = default;
+            keyValuePair = default;
             RomEntryKey key = default;
 
             while (parser.TryGetNext(out key.Name) && !parser.IsFinished())
             {
-                DirectoryTable.TryGetValue(ref key, out parentEntry, out parentOffset);
-                key.Parent = parentOffset;
+                DirectoryTable.TryGetValue(ref key, out keyValuePair);
+                key.Parent = keyValuePair.Offset;
             }
         }
-    }
-
-    internal ref struct RomEntryKey
-    {
-        public ReadOnlySpan<char> Name;
-        public int Parent;
-
-        public RomEntryKey(ReadOnlySpan<char> name, int parent)
-        {
-            Name = name;
-            Parent = parent;
-        }
-
-        public uint GetRomHashCode()
-        {
-            uint hash = 123456789 ^ (uint)Parent;
-
-            foreach (char c in Name)
-            {
-                hash = c ^ ((hash << 27) | (hash >> 5));
-            }
-
-            return hash;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct RomFsEntry<T> where T : unmanaged
-    {
-        public int Parent;
-        public T Value;
-        public int Next;
-        public int KeyLength;
-    }
-
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct FileRomEntry
-    {
-        public int NextSibling;
-        public RomFileInfo Info;
-    }
-
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct RomFileInfo
-    {
-        public long Offset;
-        public long Length;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DirectoryRomEntry
-    {
-        public int NextSibling;
-        public FindPosition Pos;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct FindPosition
-    {
-        public int NextDirectory;
-        public int NextFile;
     }
 }

@@ -5,12 +5,12 @@ namespace LibHac.IO
 {
     public ref struct PathParser
     {
-        private ReadOnlySpan<char> _path;
+        private ReadOnlySpan<byte> _path;
         private int _offset;
         private int _length;
         private bool _finished;
 
-        public PathParser(ReadOnlySpan<char> path)
+        public PathParser(ReadOnlySpan<byte> path)
         {
             Debug.Assert(PathTools.IsNormalized(path));
 
@@ -25,7 +25,7 @@ namespace LibHac.IO
             _finished = false;
         }
 
-        public bool TryGetNext(out ReadOnlySpan<char> name)
+        public bool TryGetNext(out ReadOnlySpan<byte> name)
         {
             bool success = MoveNext();
             name = GetCurrent();
@@ -50,7 +50,7 @@ namespace LibHac.IO
             return true;
         }
 
-        public ReadOnlySpan<char> GetCurrent()
+        public ReadOnlySpan<byte> GetCurrent()
         {
             return _path.Slice(_offset, _length);
         }
