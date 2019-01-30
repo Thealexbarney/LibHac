@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using LibHac.IO;
+using LibHac.IO.RomFs;
 
 namespace LibHac
 {

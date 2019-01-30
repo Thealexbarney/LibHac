@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using LibHac.IO;
+using LibHac.IO.RomFs;
 using LibHac.IO.Save;
 
 namespace LibHac

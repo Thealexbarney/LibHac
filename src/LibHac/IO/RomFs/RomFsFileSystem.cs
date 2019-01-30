@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace LibHac.IO
+namespace LibHac.IO.RomFs
 {
     public class RomFsFileSystem : IFileSystem
     {
