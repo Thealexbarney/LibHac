@@ -7,10 +7,16 @@ namespace LibHac.IO
     {
         public static readonly char DirectorySeparator = '/';
 
+        public static string Normalize(string inPath)
+        {
+            if (IsNormalized(inPath.AsSpan())) return inPath;
+            return NormalizeInternal(inPath);
+        }
+
         // Licensed to the .NET Foundation under one or more agreements.
         // The .NET Foundation licenses this file to you under the MIT license.
         // See the LICENSE file in the project root for more information.
-        public static string Normalize(string inPath)
+        public static string NormalizeInternal(string inPath)
         {
             // Relative paths aren't a thing for IFileSystem, so assume all paths are absolute
             // and add a '/' to the beginning of the path if it doesn't already begin with one
@@ -111,7 +117,36 @@ namespace LibHac.IO
                     case NormalizeState.Dot when c == '/': return false;
                     case NormalizeState.Dot when c == '.': state = NormalizeState.DoubleDot; break;
                     case NormalizeState.Dot: state = NormalizeState.Normal; break;
-                        
+
+                    case NormalizeState.DoubleDot when c == '/': return false;
+                    case NormalizeState.DoubleDot: state = NormalizeState.Normal; break;
+                }
+            }
+
+            return state == NormalizeState.Normal || state == NormalizeState.Delimiter;
+        }
+
+        public static bool IsNormalized(ReadOnlySpan<byte> path)
+        {
+            var state = NormalizeState.Initial;
+
+            foreach (byte c in path)
+            {
+                switch (state)
+                {
+                    case NormalizeState.Initial when c == '/': state = NormalizeState.Delimiter; break;
+                    case NormalizeState.Initial: return false;
+
+                    case NormalizeState.Normal when c == '/': state = NormalizeState.Delimiter; break;
+
+                    case NormalizeState.Delimiter when c == '/': return false;
+                    case NormalizeState.Delimiter when c == '.': state = NormalizeState.Dot; break;
+                    case NormalizeState.Delimiter: state = NormalizeState.Normal; break;
+
+                    case NormalizeState.Dot when c == '/': return false;
+                    case NormalizeState.Dot when c == '.': state = NormalizeState.DoubleDot; break;
+                    case NormalizeState.Dot: state = NormalizeState.Normal; break;
+
                     case NormalizeState.DoubleDot when c == '/': return false;
                     case NormalizeState.DoubleDot: state = NormalizeState.Normal; break;
                 }
