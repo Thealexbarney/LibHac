@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -6,6 +7,7 @@ namespace LibHac.IO.RomFs
 {
     internal class RomFsDictionary<T> where T : unmanaged
     {
+        private int _count;
         private int _length;
         private int _capacity;
 
@@ -22,6 +24,8 @@ namespace LibHac.IO.RomFs
 
             _length = Entries.Length;
             _capacity = Entries.Length;
+
+            _count = CountEntries();
         }
 
         public RomFsDictionary(int capacity)
@@ -30,7 +34,7 @@ namespace LibHac.IO.RomFs
 
             Buckets = new int[size];
             Buckets.AsSpan().Fill(-1);
-            Entries = new byte[(_sizeOfEntry + 0x10) * size]; // Estimate 0x10 bytes per name
+            Entries = new byte[EstimateEntryTableSize(size)];
             _capacity = Entries.Length;
         }
 
@@ -104,6 +108,7 @@ namespace LibHac.IO.RomFs
             SetEntryInternal(newOffset, ref entry, ref key.Name);
 
             Buckets[bucket] = newOffset;
+            _count++;
             return newOffset;
         }
 
@@ -113,7 +118,7 @@ namespace LibHac.IO.RomFs
 
             if (_length + bytesNeeded > _capacity)
             {
-                EnsureEntryTableCapacity(_length + bytesNeeded);
+                EnsureCapacityBytes(_length + bytesNeeded);
             }
 
             int offset = _length;
@@ -172,7 +177,7 @@ namespace LibHac.IO.RomFs
             entryName.CopyTo(Entries.AsSpan(offset + _sizeOfEntry, entry.KeyLength));
         }
 
-        private void EnsureEntryTableCapacity(int value)
+        private void EnsureCapacityBytes(int value)
         {
             if (value < 0) throw new ArgumentOutOfRangeException(nameof(value));
             if (value <= _capacity) return;
@@ -197,5 +202,80 @@ namespace LibHac.IO.RomFs
                 _capacity = value;
             }
         }
+
+        public int CountEntries()
+        {
+            int count = 0;
+            int nextStructOffset = (sizeof(int) + Marshal.SizeOf<T>()) / 4;
+            Span<int> data = MemoryMarshal.Cast<byte, int>(Entries.AsSpan());
+
+            for (int i = 0; i < Buckets.Length; i++)
+            {
+                int next = Buckets[i];
+
+                while (next != -1)
+                {
+                    next = data[next / 4 + nextStructOffset];
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        public void Resize(int newSize)
+        {
+            var newBuckets = new int[newSize];
+            newBuckets.AsSpan().Fill(-1);
+
+            List<int> offsets = GetEntryOffsets();
+            var key = new RomEntryKey();
+
+            for (int i = 0; i < offsets.Count; i++)
+            {
+                ref RomFsEntry<T> entry = ref GetEntryReference(offsets[i], out key.Name);
+                key.Parent = entry.Parent;
+
+                uint hashCode = key.GetRomHashCode();
+                int bucket = (int)(hashCode % newSize);
+
+                entry.Next = newBuckets[bucket];
+                newBuckets[bucket] = offsets[i];
+            }
+
+            Buckets = newBuckets;
+        }
+
+        private ref RomFsEntry<T> GetEntryReference(int offset, out ReadOnlySpan<byte> name)
+        {
+            ref RomFsEntry<T> entry = ref MemoryMarshal.Cast<byte, RomFsEntry<T>>(Entries.AsSpan(offset))[0];
+
+            name = Entries.AsSpan(offset + _sizeOfEntry, entry.KeyLength);
+            return ref entry;
+        }
+
+        private List<int> GetEntryOffsets()
+        {
+            var offsets = new List<int>(_count);
+
+            int nextStructOffset = (sizeof(int) + Marshal.SizeOf<T>()) / 4;
+            Span<int> data = MemoryMarshal.Cast<byte, int>(Entries.AsSpan());
+
+            for (int i = 0; i < Buckets.Length; i++)
+            {
+                int next = Buckets[i];
+
+                while (next != -1)
+                {
+                    offsets.Add(next);
+                    next = data[next / 4 + nextStructOffset];
+                }
+            }
+
+            offsets.Sort();
+            return offsets;
+        }
+
+        private int EstimateEntryTableSize(int count) => (_sizeOfEntry + 0x10) * count; // Estimate 0x10 bytes per name
     }
 }

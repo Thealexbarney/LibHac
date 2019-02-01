@@ -34,7 +34,7 @@ namespace LibHac.IO.RomFs
         public T Value;
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     public struct RomFsEntry<T> where T : unmanaged
     {
         public int Parent;
@@ -43,7 +43,7 @@ namespace LibHac.IO.RomFs
         public int KeyLength;
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     public struct FileRomEntry
     {
         public int NextSibling;
@@ -57,7 +57,7 @@ namespace LibHac.IO.RomFs
         public long Length;
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     public struct DirectoryRomEntry
     {
         public int NextSibling;
