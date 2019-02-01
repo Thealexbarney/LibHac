@@ -308,5 +308,19 @@ namespace LibHac.IO.RomFs
             return DirectoryTable.ContainsKey(ref key) ||
                    FileTable.ContainsKey(ref key);
         }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 4)]
+        private struct DirectoryRomEntry
+        {
+            public int NextSibling;
+            public FindPosition Pos;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 4)]
+        private struct FileRomEntry
+        {
+            public int NextSibling;
+            public RomFileInfo Info;
+        }
     }
 }
