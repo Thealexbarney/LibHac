@@ -7,6 +7,7 @@ namespace LibHac.IO
     {
         private bool _isDisposed;
         protected internal List<IDisposable> ToDispose { get; } = new List<IDisposable>();
+        protected bool CanAutoExpand { get; set; }
 
         protected abstract void ReadImpl(Span<byte> destination, long offset);
         protected abstract void WriteImpl(ReadOnlySpan<byte> source, long offset);
@@ -53,7 +54,7 @@ namespace LibHac.IO
             if (span == null) throw new ArgumentNullException(nameof(span));
             if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), "Argument must be non-negative.");
 
-            if (Length != -1)
+            if (Length != -1 && !CanAutoExpand)
             {
                 if (offset + span.Length > Length) throw new ArgumentException("The given offset and count exceed the length of the Storage");
             }

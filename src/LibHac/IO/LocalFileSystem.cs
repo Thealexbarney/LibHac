@@ -142,7 +142,7 @@ namespace LibHac.IO
                 return DirectoryEntryType.File;
             }
 
-            throw new FileNotFoundException("path");
+            throw new FileNotFoundException(path);
         }
 
         public void Commit()
