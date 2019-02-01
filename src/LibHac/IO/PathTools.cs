@@ -97,6 +97,19 @@ namespace LibHac.IO
             return path.Substring(0, i);
         }
 
+        public static ReadOnlySpan<byte> GetParentDirectory(ReadOnlySpan<byte> path)
+        {
+            int i = path.Length - 1;
+
+            // A trailing separator should be ignored
+            if (path.Length > 0 && path[i] == '/') i--;
+
+            while (i >= 0 && path[i] != '/') i--;
+
+            if (i < 1) return new ReadOnlySpan<byte>(new[] { (byte)'/' });
+            return path.Slice(0, i);
+        }
+
         public static bool IsNormalized(ReadOnlySpan<char> path)
         {
             var state = NormalizeState.Initial;
