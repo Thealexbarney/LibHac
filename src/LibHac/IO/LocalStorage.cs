@@ -36,6 +36,6 @@ namespace LibHac.IO
             Storage.Flush();
         }
 
-        public override long Length => Stream.Length;
+        public override long Length => Storage.Length;
     }
 }
