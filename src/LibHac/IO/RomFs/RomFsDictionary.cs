@@ -27,9 +27,11 @@ namespace LibHac.IO.RomFs
             _count = CountEntries();
         }
 
+        public RomFsDictionary() : this(0) { }
+
         public RomFsDictionary(int capacity)
         {
-            int size = HashHelpers.GetHashTableEntryCount(capacity);
+            int size = HashHelpers.GetRomFsPrime(capacity);
 
             Buckets = new int[size];
             Buckets.AsSpan().Fill(-1);
@@ -83,7 +85,7 @@ namespace LibHac.IO.RomFs
         public int Add(ref RomEntryKey key, ref T value)
         {
             ref T entry = ref AddOrGet(ref key, out int offset, out bool alreadyExists, out _);
-            
+
             if (alreadyExists)
             {
                 throw new ArgumentException("Key already exists in dictionary.");
@@ -123,6 +125,12 @@ namespace LibHac.IO.RomFs
                 entry.Next = Buckets[bucket];
                 Buckets[bucket] = newOffset;
                 _count++;
+
+                if (Buckets.Length < _count)
+                {
+                    Resize();
+                    entry = ref GetEntryReference(newOffset, out name, key.Name.Length);
+                }
 
                 return ref entry.Value;
             }
@@ -210,7 +218,9 @@ namespace LibHac.IO.RomFs
             return count;
         }
 
-        public void Resize(int newSize)
+        private void Resize() => Resize(HashHelpers.ExpandPrime(_count));
+
+        private void Resize(int newSize)
         {
             var newBuckets = new int[newSize];
             newBuckets.AsSpan().Fill(-1);
@@ -229,6 +239,12 @@ namespace LibHac.IO.RomFs
             }
 
             Buckets = newBuckets;
+        }
+
+        public void TrimExcess()
+        {
+            Resize(HashHelpers.GetRomFsPrime(_count));
+            SetCapacity(_length);
         }
 
         private ref RomFsEntry GetEntryReference(int offset)

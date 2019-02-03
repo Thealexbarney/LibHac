@@ -52,40 +52,20 @@ namespace LibHac
             return (candidate == 2);
         }
 
-        public static int GetHashTableEntryCount(int entries)
-        {
-            uint count = (uint) entries;
-            if (entries < 3)
-                count = 3;
-            else if (count < 19)
-                count |= 1;
-            else
-            {
-                while (count % 2 == 0 || count % 3 == 0 || count % 5 == 0 || count % 7 == 0 || count % 11 == 0 || count % 13 == 0 || count % 17 == 0)
-                {
-                    count++;
-                }
-            }
-            return (int) count;
-        }
-
         public static int GetPrime(int min)
         {
             if (min < 0)
                 throw new ArgumentException(nameof(min));
 
-            // RomFS dictionaries choose from all possible primes
-
-            //for (int i = 0; i < Primes.Length; i++)
-            //{
-            //    int prime = Primes[i];
-            //    if (prime >= min)
-            //        return prime;
-            //}
+            for (int i = 0; i < Primes.Length; i++)
+            {
+                int prime = Primes[i];
+                if (prime >= min)
+                    return prime;
+            }
 
             //outside of our predefined table. 
             //compute the hard way. 
-
             for (int i = (min | 1); i < int.MaxValue; i += 2)
             {
                 if (IsPrime(i) && ((i - 1) % HashPrime != 0))
@@ -108,6 +88,20 @@ namespace LibHac
             }
 
             return GetPrime(newSize);
+        }
+
+        public static int GetRomFsPrime(int min)
+        {
+            if (min < 3) return 3;
+            if (min < 19) return min | 1;
+
+            for (int i = (min | 1); i < int.MaxValue; i += 2)
+            {
+                if (i % 2 != 0 && i % 3 != 0 && i % 5 != 0 && i % 7 != 0 && i % 11 != 0 && i % 13 != 0 && i % 17 != 0)
+                    return i;
+            }
+
+            return min;
         }
     }
 }
