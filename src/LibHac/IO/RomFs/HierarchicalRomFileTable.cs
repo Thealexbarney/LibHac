@@ -27,6 +27,8 @@ namespace LibHac.IO.RomFs
             DirectoryTable = new RomFsDictionary<DirectoryRomEntry>(DirHashTableStorage, DirEntryTableStorage);
         }
 
+        public HierarchicalRomFileTable() : this(0, 0) { }
+
         public HierarchicalRomFileTable(int directoryCapacity, int fileCapacity)
         {
             FileTable = new RomFsDictionary<FileRomEntry>(fileCapacity);
@@ -153,6 +155,12 @@ namespace LibHac.IO.RomFs
             path = PathTools.Normalize(path);
 
             CreateDirectoryRecursive(GetUtf8Bytes(path));
+        }
+
+        public void TrimExcess()
+        {
+            DirectoryTable.TrimExcess();
+            FileTable.TrimExcess();
         }
 
         private static ReadOnlySpan<byte> GetUtf8Bytes(string value)

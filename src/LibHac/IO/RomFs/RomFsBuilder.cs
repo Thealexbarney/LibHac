@@ -16,17 +16,14 @@ namespace LibHac.IO.RomFs
 
         public RomFsBuilder(IFileSystem input)
         {
-            DirectoryEntry[] entries = input.EnumerateEntries().ToArray();
-            int fileCount = entries.Count(x => x.Type == DirectoryEntryType.File);
-            int dirCount = entries.Count(x => x.Type == DirectoryEntryType.Directory);
-
-            FileTable = new HierarchicalRomFileTable(dirCount, fileCount);
+            FileTable = new HierarchicalRomFileTable();
+            var fileInfo = new RomFileInfo();
 
             long offset = 0;
 
-            foreach (DirectoryEntry file in entries.Where(x => x.Type == DirectoryEntryType.File).OrderBy(x => x.FullPath, StringComparer.Ordinal))
+            foreach (DirectoryEntry file in input.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File)
+                .OrderBy(x => x.FullPath, StringComparer.Ordinal))
             {
-                var fileInfo = new RomFileInfo();
                 fileInfo.Offset = offset;
                 fileInfo.Length = file.Size;
 
@@ -41,6 +38,8 @@ namespace LibHac.IO.RomFs
 
                 FileTable.CreateFile(file.FullPath, ref fileInfo);
             }
+
+            FileTable.TrimExcess();
         }
 
         public IStorage Build()
