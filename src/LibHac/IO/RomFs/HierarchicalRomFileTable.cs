@@ -55,7 +55,7 @@ namespace LibHac.IO.RomFs
             return FileTable.GetEntryData().ToArray();
         }
 
-        public bool OpenFile(string path, out RomFileInfo fileInfo)
+        public bool TryOpenFile(string path, out RomFileInfo fileInfo)
         {
             FindFileRecursive(GetUtf8Bytes(path), out RomEntryKey key);
 
@@ -69,9 +69,9 @@ namespace LibHac.IO.RomFs
             return false;
         }
 
-        public bool OpenFile(int offset, out RomFileInfo fileInfo)
+        public bool TryOpenFile(int fileId, out RomFileInfo fileInfo)
         {
-            if (FileTable.TryGetValue(offset, out RomKeyValuePair<FileRomEntry> keyValuePair))
+            if (FileTable.TryGetValue(fileId, out RomKeyValuePair<FileRomEntry> keyValuePair))
             {
                 fileInfo = keyValuePair.Value.Info;
                 return true;
@@ -81,7 +81,7 @@ namespace LibHac.IO.RomFs
             return false;
         }
 
-        public bool OpenDirectory(string path, out FindPosition position)
+        public bool TryOpenDirectory(string path, out FindPosition position)
         {
             FindDirectoryRecursive(GetUtf8Bytes(path), out RomEntryKey key);
 
@@ -95,9 +95,9 @@ namespace LibHac.IO.RomFs
             return false;
         }
 
-        public bool OpenDirectory(int offset, out FindPosition position)
+        public bool TryOpenDirectory(int directoryId, out FindPosition position)
         {
-            if (DirectoryTable.TryGetValue(offset, out RomKeyValuePair<DirectoryRomEntry> keyValuePair))
+            if (DirectoryTable.TryGetValue(directoryId, out RomKeyValuePair<DirectoryRomEntry> keyValuePair))
             {
                 position = keyValuePair.Value.Pos;
                 return true;
@@ -105,11 +105,6 @@ namespace LibHac.IO.RomFs
 
             position = default;
             return false;
-        }
-
-        private static ReadOnlySpan<byte> GetUtf8Bytes(string value)
-        {
-            return Encoding.UTF8.GetBytes(value).AsSpan();
         }
 
         public bool FindNextFile(ref FindPosition position, out RomFileInfo info, out string name)
@@ -145,6 +140,26 @@ namespace LibHac.IO.RomFs
             return true;
         }
 
+        public void CreateFile(string path, ref RomFileInfo fileInfo)
+        {
+            path = PathTools.Normalize(path);
+            ReadOnlySpan<byte> pathBytes = GetUtf8Bytes(path);
+
+            CreateFileRecursiveInternal(pathBytes, ref fileInfo);
+        }
+
+        public void CreateDirectory(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            CreateDirectoryRecursive(GetUtf8Bytes(path));
+        }
+
+        private static ReadOnlySpan<byte> GetUtf8Bytes(string value)
+        {
+            return Encoding.UTF8.GetBytes(value).AsSpan();
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static string GetUtf8String(ReadOnlySpan<byte> value)
         {
@@ -163,22 +178,7 @@ namespace LibHac.IO.RomFs
             entry.Pos.NextDirectory = -1;
             entry.Pos.NextFile = -1;
 
-            DirectoryTable.Insert(ref key, ref entry);
-        }
-
-        public void CreateFile(string path, ref RomFileInfo fileInfo)
-        {
-            path = PathTools.Normalize(path);
-            ReadOnlySpan<byte> pathBytes = GetUtf8Bytes(path);
-
-            CreateFileRecursiveInternal(pathBytes, ref fileInfo);
-        }
-
-        public void CreateDirectory(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            CreateDirectoryRecursive(GetUtf8Bytes(path));
+            DirectoryTable.Add(ref key, ref entry);
         }
 
         private void CreateDirectoryRecursive(ReadOnlySpan<byte> path)
@@ -193,7 +193,7 @@ namespace LibHac.IO.RomFs
                 int offset = DirectoryTable.GetOffsetFromKey(ref key);
                 if (offset < 0)
                 {
-                    ref DirectoryRomEntry entry = ref DirectoryTable.Insert(ref key, out offset, out _);
+                    ref DirectoryRomEntry entry = ref DirectoryTable.AddOrGet(ref key, out offset, out _, out _);
                     entry.NextSibling = -1;
                     entry.Pos.NextDirectory = -1;
                     entry.Pos.NextFile = -1;
@@ -235,7 +235,7 @@ namespace LibHac.IO.RomFs
                 int offset = DirectoryTable.GetOffsetFromKey(ref key);
                 if (offset < 0)
                 {
-                    ref DirectoryRomEntry entry = ref DirectoryTable.Insert(ref key, out offset, out _);
+                    ref DirectoryRomEntry entry = ref DirectoryTable.AddOrGet(ref key, out offset, out _, out _);
                     entry.NextSibling = -1;
                     entry.Pos.NextDirectory = -1;
                     entry.Pos.NextFile = -1;
@@ -265,7 +265,7 @@ namespace LibHac.IO.RomFs
             }
 
             {
-                ref FileRomEntry entry = ref FileTable.Insert(ref key, out int offset, out _);
+                ref FileRomEntry entry = ref FileTable.AddOrGet(ref key, out int offset, out _, out _);
                 entry.NextSibling = -1;
                 entry.Info = fileInfo;
 

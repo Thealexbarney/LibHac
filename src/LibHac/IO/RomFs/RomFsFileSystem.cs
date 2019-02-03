@@ -43,7 +43,7 @@ namespace LibHac.IO.RomFs
         {
             path = PathTools.Normalize(path);
 
-            if (!FileTable.OpenDirectory(path, out FindPosition position))
+            if (!FileTable.TryOpenDirectory(path, out FindPosition position))
             {
                 throw new DirectoryNotFoundException();
             }
@@ -55,7 +55,7 @@ namespace LibHac.IO.RomFs
         {
             path = PathTools.Normalize(path);
 
-            if (!FileTable.OpenFile(path, out RomFileInfo info))
+            if (!FileTable.TryOpenFile(path, out RomFileInfo info))
             {
                 throw new FileNotFoundException();
             }
@@ -72,14 +72,14 @@ namespace LibHac.IO.RomFs
         {
             path = PathTools.Normalize(path);
 
-            return FileTable.OpenDirectory(path, out FindPosition _);
+            return FileTable.TryOpenDirectory(path, out FindPosition _);
         }
 
         public bool FileExists(string path)
         {
             path = PathTools.Normalize(path);
 
-            return FileTable.OpenFile(path, out RomFileInfo _);
+            return FileTable.TryOpenFile(path, out RomFileInfo _);
         }
 
         public IStorage GetBaseStorage()
