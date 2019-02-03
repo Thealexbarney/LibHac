@@ -42,18 +42,7 @@ namespace LibHac.IO.RomFs
 
         public bool TryGetValue(ref RomEntryKey key, out RomKeyValuePair<T> value)
         {
-            int i = FindEntry(ref key);
-
-            if (i >= 0)
-            {
-                ref RomFsEntry entry = ref GetEntryReference(i);
-
-                value = new RomKeyValuePair<T> { Key = key, Value = entry.Value, Offset = i };
-                return true;
-            }
-
-            value = default;
-            return false;
+            return TryGetValue(GetOffsetFromKey(ref key), out value);
         }
 
         public bool TryGetValue(int offset, out RomKeyValuePair<T> value)
@@ -71,78 +60,75 @@ namespace LibHac.IO.RomFs
             value.Key.Name = name;
             value.Value = entry.Value;
             value.Key.Parent = entry.Parent;
+            value.Offset = offset;
             return true;
         }
 
-        public bool TrySetValue(ref RomEntryKey key, ref T value)
+        public ref T GetValueReference(int offset)
         {
-            int i = FindEntry(ref key);
-            if (i < 0) return false;
-
-            ref RomFsEntry entry = ref GetEntryReference(i);
-            entry.Value = value;
-
-            return true;
-        }
-
-        public ref T GetValue(int offset, out Span<byte> name)
-        {
-            ref RomFsEntry entry = ref GetEntryReference(offset, out name);
-
+            ref RomFsEntry entry = ref MemoryMarshal.Cast<byte, RomFsEntry>(Entries.AsSpan(offset))[0];
             return ref entry.Value;
         }
 
-        public bool ContainsKey(ref RomEntryKey key) => FindEntry(ref key) >= 0;
-
-        public int Insert(ref RomEntryKey key, ref T value)
+        public ref T GetValueReference(int offset, out Span<byte> name)
         {
-            if (ContainsKey(ref key))
+            ref RomFsEntry entry = ref MemoryMarshal.Cast<byte, RomFsEntry>(Entries.AsSpan(offset))[0];
+
+            name = Entries.AsSpan(offset + _sizeOfEntry, entry.KeyLength);
+            return ref entry.Value;
+        }
+
+        public bool ContainsKey(ref RomEntryKey key) => GetOffsetFromKey(ref key) >= 0;
+
+        public int Add(ref RomEntryKey key, ref T value)
+        {
+            ref T entry = ref AddOrGet(ref key, out int offset, out bool alreadyExists, out _);
+            
+            if (alreadyExists)
             {
                 throw new ArgumentException("Key already exists in dictionary.");
             }
 
-            uint hashCode = key.GetRomHashCode();
+            entry = value;
 
-            int bucket = (int)(hashCode % Buckets.Length);
-            int newOffset = FindOffsetForInsert(key.Name.Length);
-
-            ref RomFsEntry entry = ref GetEntryReference(newOffset, out Span<byte> name, key.Name.Length);
-
-            entry.Next = Buckets[bucket];
-            entry.Parent = key.Parent;
-            entry.KeyLength = key.Name.Length;
-            entry.Value = value;
-
-            key.Name.CopyTo(name);
-
-            Buckets[bucket] = newOffset;
-            _count++;
-            return newOffset;
+            return offset;
         }
 
-        public ref T Insert(ref RomEntryKey key, out int offset, out Span<byte> name)
+        public ref T AddOrGet(ref RomEntryKey key, out int offset, out bool alreadyExists, out Span<byte> name)
         {
-            uint hashCode = key.GetRomHashCode();
+            int oldOffset = GetOffsetFromKey(ref key);
 
-            int bucket = (int)(hashCode % Buckets.Length);
-            int newOffset = FindOffsetForInsert(key.Name.Length);
+            if (oldOffset >= 0)
+            {
+                alreadyExists = true;
+                offset = oldOffset;
 
-            ref RomFsEntry entry = ref GetEntryReference(newOffset, out name, key.Name.Length);
+                ref RomFsEntry entry = ref GetEntryReference(oldOffset, out name);
+                return ref entry.Value;
+            }
+            else
+            {
+                int newOffset = CreateNewEntry(key.Name.Length);
+                alreadyExists = false;
+                offset = newOffset;
 
-            entry.KeyLength = key.Name.Length;
+                ref RomFsEntry entry = ref GetEntryReference(newOffset, out name, key.Name.Length);
 
-            entry.Next = Buckets[bucket];
-            entry.Parent = key.Parent;
-            key.Name.CopyTo(name);
+                entry.Parent = key.Parent;
+                entry.KeyLength = key.Name.Length;
+                key.Name.CopyTo(name);
 
-            Buckets[bucket] = newOffset;
-            _count++;
+                int bucket = (int)(key.GetRomHashCode() % Buckets.Length);
 
-            offset = newOffset;
-            return ref entry.Value;
+                entry.Next = Buckets[bucket];
+                Buckets[bucket] = newOffset;
+                _count++;
+
+                return ref entry.Value;
+            }
         }
 
-        private int FindOffsetForInsert(int nameLength)
+        private int CreateNewEntry(int nameLength)
         {
             int bytesNeeded = Util.AlignUp(_sizeOfEntry + nameLength, 4);
 
@@ -155,27 +141,6 @@ namespace LibHac.IO.RomFs
             _length += bytesNeeded;
 
             return offset;
-        }
-
-        private int FindEntry(ref RomEntryKey key)
-        {
-            uint hashCode = key.GetRomHashCode();
-            int index = (int)(hashCode % Buckets.Length);
-            int i = Buckets[index];
-
-            while (i != -1)
-            {
-                ref RomFsEntry entry = ref GetEntryReference(i, out Span<byte> name);
-
-                if (key.Parent == entry.Parent && key.Name.SequenceEqual(name))
-                {
-                    break;
-                }
-
-                i = entry.Next;
-            }
-
-            return i;
         }
 
         public int GetOffsetFromKey(ref RomEntryKey key)
@@ -225,7 +190,7 @@ namespace LibHac.IO.RomFs
             }
         }
 
-        public int CountEntries()
+        private int CountEntries()
         {
             int count = 0;
             int nextStructOffset = (sizeof(int) + Marshal.SizeOf<T>()) / 4;
@@ -264,20 +229,6 @@ namespace LibHac.IO.RomFs
             }
 
             Buckets = newBuckets;
-        }
-
-        public ref T GetValueReference(int offset)
-        {
-            ref RomFsEntry entry = ref MemoryMarshal.Cast<byte, RomFsEntry>(Entries.AsSpan(offset))[0];
-            return ref entry.Value;
-        }
-
-        public ref T GetValueReference(int offset, out Span<byte> name)
-        {
-            ref RomFsEntry entry = ref MemoryMarshal.Cast<byte, RomFsEntry>(Entries.AsSpan(offset))[0];
-
-            name = Entries.AsSpan(offset + _sizeOfEntry, entry.KeyLength);
-            return ref entry.Value;
         }
 
         private ref RomFsEntry GetEntryReference(int offset)
