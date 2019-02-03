@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -56,7 +57,7 @@ namespace LibHac.IO.RomFs
 
         public bool OpenFile(string path, out RomFileInfo fileInfo)
         {
-            FindFileRecursive(GetUtf8Bytes(path), out RomEntryKey key, out _);
+            FindFileRecursive(GetUtf8Bytes(path), out RomEntryKey key);
 
             if (FileTable.TryGetValue(ref key, out RomKeyValuePair<FileRomEntry> keyValuePair))
             {
@@ -82,7 +83,7 @@ namespace LibHac.IO.RomFs
 
         public bool OpenDirectory(string path, out FindPosition position)
         {
-            FindDirectoryRecursive(GetUtf8Bytes(path), out RomEntryKey key, out _);
+            FindDirectoryRecursive(GetUtf8Bytes(path), out RomEntryKey key);
 
             if (DirectoryTable.TryGetValue(ref key, out RomKeyValuePair<DirectoryRomEntry> keyValuePair))
             {
@@ -113,33 +114,48 @@ namespace LibHac.IO.RomFs
 
         public bool FindNextFile(ref FindPosition position, out RomFileInfo info, out string name)
         {
-            if (FileTable.TryGetValue(position.NextFile, out RomKeyValuePair<FileRomEntry> keyValuePair))
+            if (position.NextFile == -1)
             {
-                position.NextFile = keyValuePair.Value.NextSibling;
-                info = keyValuePair.Value.Info;
-                name = Encoding.UTF8.GetString(keyValuePair.Key.Name.ToArray());
-                return true;
+                info = default;
+                name = default;
+                return false;
             }
 
-            info = default;
-            name = default;
-            return false;
+            ref FileRomEntry entry = ref FileTable.GetValueReference(position.NextFile, out Span<byte> nameBytes);
+            position.NextFile = entry.NextSibling;
+            info = entry.Info;
+
+            name = GetUtf8String(nameBytes);
+
+            return true;
         }
 
         public bool FindNextDirectory(ref FindPosition position, out string name)
         {
-            if (DirectoryTable.TryGetValue(position.NextDirectory, out RomKeyValuePair<DirectoryRomEntry> keyValuePair))
+            if (position.NextDirectory == -1)
             {
-                position.NextDirectory = keyValuePair.Value.NextSibling;
-                name = Encoding.UTF8.GetString(keyValuePair.Key.Name.ToArray());
-                return true;
+                name = default;
+                return false;
             }
 
-            name = default;
-            return false;
+            ref DirectoryRomEntry entry = ref DirectoryTable.GetValueReference(position.NextDirectory, out Span<byte> nameBytes);
+            position.NextDirectory = entry.NextSibling;
+            name = GetUtf8String(nameBytes);
+
+            return true;
         }
 
-        public void CreateRootDirectory()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static string GetUtf8String(ReadOnlySpan<byte> value)
+        {
+#if NETFRAMEWORK
+            return Encoding.UTF8.GetString(value.ToArray());
+#else
+            return Encoding.UTF8.GetString(value);
+#endif
+        }
+
+        private void CreateRootDirectory()
         {
             var key = new RomEntryKey(ReadOnlySpan<byte>.Empty, 0);
             var entry = new DirectoryRomEntry();
@@ -155,158 +171,144 @@ namespace LibHac.IO.RomFs
             path = PathTools.Normalize(path);
             ReadOnlySpan<byte> pathBytes = GetUtf8Bytes(path);
 
-            ReadOnlySpan<byte> parentPath = PathTools.GetParentDirectory(pathBytes);
-            CreateDirectoryRecursiveInternal(parentPath);
-
-            FindFileRecursive(pathBytes, out RomEntryKey key, out RomKeyValuePair<DirectoryRomEntry> parentEntry);
-
-            if (EntryExists(ref key))
-            {
-                throw new ArgumentException("Path already exists.");
-            }
-
-            var entry = new FileRomEntry();
-            entry.NextSibling = -1;
-            entry.Info = fileInfo;
-
-            int offset = FileTable.Insert(ref key, ref entry);
-
-            if (parentEntry.Value.Pos.NextFile == -1)
-            {
-                parentEntry.Value.Pos.NextFile = offset;
-
-                DirectoryTable.TrySetValue(ref parentEntry.Key, ref parentEntry.Value);
-                return;
-            }
-
-            int nextOffset = parentEntry.Value.Pos.NextFile;
-
-            while (FileTable.TryGetValue(nextOffset, out RomKeyValuePair<FileRomEntry> chainEntry))
-            {
-                if (chainEntry.Value.NextSibling == -1)
-                {
-                    chainEntry.Value.NextSibling = offset;
-                    FileTable.TrySetValue(ref chainEntry.Key, ref chainEntry.Value);
-
-                    return;
-                }
-
-                nextOffset = chainEntry.Value.NextSibling;
-            }
-        }
-
-        public void CreateDirectoryRecursive(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            CreateDirectoryRecursiveInternal(GetUtf8Bytes(path));
-        }
-
-        private void CreateDirectoryRecursiveInternal(ReadOnlySpan<byte> path)
-        {
-            for (int i = 1; i < path.Length; i++)
-            {
-                if (path[i] == '/')
-                {
-                    ReadOnlySpan<byte> subPath = path.Slice(0, i);
-                    CreateDirectoryInternal(subPath);
-                }
-            }
-
-            CreateDirectoryInternal(path);
+            CreateFileRecursiveInternal(pathBytes, ref fileInfo);
         }
 
         public void CreateDirectory(string path)
         {
             path = PathTools.Normalize(path);
 
-            CreateDirectoryInternal(GetUtf8Bytes(path));
+            CreateDirectoryRecursive(GetUtf8Bytes(path));
         }
 
-        private void CreateDirectoryInternal(ReadOnlySpan<byte> path)
+        private void CreateDirectoryRecursive(ReadOnlySpan<byte> path)
         {
-            FindDirectoryRecursive(path, out RomEntryKey key, out RomKeyValuePair<DirectoryRomEntry> parentEntry);
+            var parser = new PathParser(path);
+            var key = new RomEntryKey();
 
-            if (EntryExists(ref key))
+            int prevOffset = 0;
+
+            while (parser.TryGetNext(out key.Name))
             {
-                return;
-                // throw new ArgumentException("Path already exists.");
-            }
-
-            var entry = new DirectoryRomEntry();
-            entry.NextSibling = -1;
-            entry.Pos.NextDirectory = -1;
-            entry.Pos.NextFile = -1;
-
-            int offset = DirectoryTable.Insert(ref key, ref entry);
-
-            if (parentEntry.Value.Pos.NextDirectory == -1)
-            {
-                parentEntry.Value.Pos.NextDirectory = offset;
-
-                DirectoryTable.TrySetValue(ref parentEntry.Key, ref parentEntry.Value);
-                return;
-            }
-
-            int nextOffset = parentEntry.Value.Pos.NextDirectory;
-
-            while (nextOffset != -1)
-            {
-                DirectoryTable.TryGetValue(nextOffset, out RomKeyValuePair<DirectoryRomEntry> chainEntry);
-                if (chainEntry.Value.NextSibling == -1)
+                int offset = DirectoryTable.GetOffsetFromKey(ref key);
+                if (offset < 0)
                 {
-                    chainEntry.Value.NextSibling = offset;
-                    DirectoryTable.TrySetValue(ref chainEntry.Key, ref chainEntry.Value);
+                    ref DirectoryRomEntry entry = ref DirectoryTable.Insert(ref key, out offset, out _);
+                    entry.NextSibling = -1;
+                    entry.Pos.NextDirectory = -1;
+                    entry.Pos.NextFile = -1;
 
-                    return;
+                    ref DirectoryRomEntry parent = ref DirectoryTable.GetValueReference(prevOffset);
+
+                    if (parent.Pos.NextDirectory == -1)
+                    {
+                        parent.Pos.NextDirectory = offset;
+                    }
+                    else
+                    {
+                        ref DirectoryRomEntry chain = ref DirectoryTable.GetValueReference(parent.Pos.NextDirectory);
+
+                        while (chain.NextSibling != -1)
+                        {
+                            chain = ref DirectoryTable.GetValueReference(chain.NextSibling);
+                        }
+
+                        chain.NextSibling = offset;
+                    }
                 }
 
-                nextOffset = chainEntry.Value.NextSibling;
+                prevOffset = offset;
+                key.Parent = offset;
             }
         }
 
-        private void FindFileRecursive(ReadOnlySpan<byte> path, out RomEntryKey key, out RomKeyValuePair<DirectoryRomEntry> parentEntry)
+        private void CreateFileRecursiveInternal(ReadOnlySpan<byte> path, ref RomFileInfo fileInfo)
         {
             var parser = new PathParser(path);
-            FindParentDirectoryRecursive(ref parser, out parentEntry);
+            var key = new RomEntryKey();
 
-            key = new RomEntryKey(parser.GetCurrent(), parentEntry.Offset);
+            parser.TryGetNext(out key.Name);
+            int prevOffset = 0;
+
+            while (!parser.IsFinished())
+            {
+                int offset = DirectoryTable.GetOffsetFromKey(ref key);
+                if (offset < 0)
+                {
+                    ref DirectoryRomEntry entry = ref DirectoryTable.Insert(ref key, out offset, out _);
+                    entry.NextSibling = -1;
+                    entry.Pos.NextDirectory = -1;
+                    entry.Pos.NextFile = -1;
+
+                    ref DirectoryRomEntry parent = ref DirectoryTable.GetValueReference(prevOffset);
+
+                    if (parent.Pos.NextDirectory == -1)
+                    {
+                        parent.Pos.NextDirectory = offset;
+                    }
+                    else
+                    {
+                        ref DirectoryRomEntry chain = ref DirectoryTable.GetValueReference(parent.Pos.NextDirectory);
+
+                        while (chain.NextSibling != -1)
+                        {
+                            chain = ref DirectoryTable.GetValueReference(chain.NextSibling);
+                        }
+
+                        chain.NextSibling = offset;
+                    }
+                }
+
+                prevOffset = offset;
+                key.Parent = offset;
+                parser.TryGetNext(out key.Name);
+            }
+
+            {
+                ref FileRomEntry entry = ref FileTable.Insert(ref key, out int offset, out _);
+                entry.NextSibling = -1;
+                entry.Info = fileInfo;
+
+                ref DirectoryRomEntry parent = ref DirectoryTable.GetValueReference(prevOffset);
+
+                if (parent.Pos.NextFile == -1)
+                {
+                    parent.Pos.NextFile = offset;
+                }
+                else
+                {
+                    ref FileRomEntry chain = ref FileTable.GetValueReference(parent.Pos.NextFile);
+
+                    while (chain.NextSibling != -1)
+                    {
+                        chain = ref FileTable.GetValueReference(chain.NextSibling);
+                    }
+
+                    chain.NextSibling = offset;
+                }
+            }
         }
 
-        private void FindDirectoryRecursive(ReadOnlySpan<byte> path, out RomEntryKey key, out RomKeyValuePair<DirectoryRomEntry> parentEntry)
+        private void FindFileRecursive(ReadOnlySpan<byte> path, out RomEntryKey key)
         {
             var parser = new PathParser(path);
-            FindParentDirectoryRecursive(ref parser, out parentEntry);
-
-            ReadOnlySpan<byte> name = parser.GetCurrent();
-            int parentOffset = name.Length == 0 ? 0 : parentEntry.Offset;
-
-            key = new RomEntryKey(name, parentOffset);
-        }
-
-        private void FindParentDirectoryRecursive(ref PathParser parser, out RomKeyValuePair<DirectoryRomEntry> keyValuePair)
-        {
-            keyValuePair = default;
-            RomEntryKey key = default;
+            key = default;
 
             while (parser.TryGetNext(out key.Name) && !parser.IsFinished())
             {
-                DirectoryTable.TryGetValue(ref key, out keyValuePair);
-                key.Parent = keyValuePair.Offset;
-            }
-
-            // The above loop won't run for top-level directories, so 
-            // manually return the root directory for them
-            if (key.Parent == 0)
-            {
-                DirectoryTable.TryGetValue(0, out keyValuePair);
+                key.Parent = DirectoryTable.GetOffsetFromKey(ref key);
             }
         }
 
-        private bool EntryExists(ref RomEntryKey key)
+        private void FindDirectoryRecursive(ReadOnlySpan<byte> path, out RomEntryKey key)
         {
-            return DirectoryTable.ContainsKey(ref key) ||
-                   FileTable.ContainsKey(ref key);
+            var parser = new PathParser(path);
+            key = default;
+
+            while (parser.TryGetNext(out key.Name) && !parser.IsFinished())
+            {
+                key.Parent = DirectoryTable.GetOffsetFromKey(ref key);
+            }
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]

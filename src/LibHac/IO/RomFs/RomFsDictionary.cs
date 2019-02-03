@@ -29,7 +29,7 @@ namespace LibHac.IO.RomFs
 
         public RomFsDictionary(int capacity)
         {
-            int size = HashHelpers.GetPrime(capacity);
+            int size = HashHelpers.GetHashTableEntryCount(capacity);
 
             Buckets = new int[size];
             Buckets.AsSpan().Fill(-1);
@@ -85,6 +85,13 @@ namespace LibHac.IO.RomFs
             return true;
         }
 
+        public ref T GetValue(int offset, out Span<byte> name)
+        {
+            ref RomFsEntry entry = ref GetEntryReference(offset, out name);
+
+            return ref entry.Value;
+        }
+
         public bool ContainsKey(ref RomEntryKey key) => FindEntry(ref key) >= 0;
 
         public int Insert(ref RomEntryKey key, ref T value)
@@ -97,7 +104,7 @@ namespace LibHac.IO.RomFs
             uint hashCode = key.GetRomHashCode();
 
             int bucket = (int)(hashCode % Buckets.Length);
-            int newOffset = FindOffsetForInsert(ref key);
+            int newOffset = FindOffsetForInsert(key.Name.Length);
 
             ref RomFsEntry entry = ref GetEntryReference(newOffset, out Span<byte> name, key.Name.Length);
 
@@ -113,9 +120,31 @@ namespace LibHac.IO.RomFs
             return newOffset;
         }
 
-        private int FindOffsetForInsert(ref RomEntryKey key)
+        public ref T Insert(ref RomEntryKey key, out int offset, out Span<byte> name)
         {
-            int bytesNeeded = Util.AlignUp(_sizeOfEntry + key.Name.Length, 4);
+            uint hashCode = key.GetRomHashCode();
+
+            int bucket = (int)(hashCode % Buckets.Length);
+            int newOffset = FindOffsetForInsert(key.Name.Length);
+
+            ref RomFsEntry entry = ref GetEntryReference(newOffset, out name, key.Name.Length);
+
+            entry.KeyLength = key.Name.Length;
+
+            entry.Next = Buckets[bucket];
+            entry.Parent = key.Parent;
+            key.Name.CopyTo(name);
+
+            Buckets[bucket] = newOffset;
+            _count++;
+
+            offset = newOffset;
+            return ref entry.Value;
+        }
+
+        private int FindOffsetForInsert(int nameLength)
+        {
+            int bytesNeeded = Util.AlignUp(_sizeOfEntry + nameLength, 4);
 
             if (_length + bytesNeeded > _capacity)
             {
@@ -129,6 +158,27 @@ namespace LibHac.IO.RomFs
         }
 
         private int FindEntry(ref RomEntryKey key)
+        {
+            uint hashCode = key.GetRomHashCode();
+            int index = (int)(hashCode % Buckets.Length);
+            int i = Buckets[index];
+
+            while (i != -1)
+            {
+                ref RomFsEntry entry = ref GetEntryReference(i, out Span<byte> name);
+
+                if (key.Parent == entry.Parent && key.Name.SequenceEqual(name))
+                {
+                    break;
+                }
+
+                i = entry.Next;
+            }
+
+            return i;
+        }
+
+        public int GetOffsetFromKey(ref RomEntryKey key)
         {
             uint hashCode = key.GetRomHashCode();
             int index = (int)(hashCode % Buckets.Length);
@@ -214,6 +264,20 @@ namespace LibHac.IO.RomFs
             }
 
             Buckets = newBuckets;
+        }
+
+        public ref T GetValueReference(int offset)
+        {
+            ref RomFsEntry entry = ref MemoryMarshal.Cast<byte, RomFsEntry>(Entries.AsSpan(offset))[0];
+            return ref entry.Value;
+        }
+
+        public ref T GetValueReference(int offset, out Span<byte> name)
+        {
+            ref RomFsEntry entry = ref MemoryMarshal.Cast<byte, RomFsEntry>(Entries.AsSpan(offset))[0];
+
+            name = Entries.AsSpan(offset + _sizeOfEntry, entry.KeyLength);
+            return ref entry.Value;
         }
 
         private ref RomFsEntry GetEntryReference(int offset)
