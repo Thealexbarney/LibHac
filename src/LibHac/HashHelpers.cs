@@ -52,6 +52,23 @@ namespace LibHac
             return (candidate == 2);
         }
 
+        public static int GetHashTableEntryCount(int entries)
+        {
+            uint count = (uint) entries;
+            if (entries < 3)
+                count = 3;
+            else if (count < 19)
+                count |= 1;
+            else
+            {
+                while (count % 2 == 0 || count % 3 == 0 || count % 5 == 0 || count % 7 == 0 || count % 11 == 0 || count % 13 == 0 || count % 17 == 0)
+                {
+                    count++;
+                }
+            }
+            return (int) count;
+        }
+
         public static int GetPrime(int min)
         {
             if (min < 0)
@@ -68,6 +85,7 @@ namespace LibHac
 
             //outside of our predefined table. 
             //compute the hard way. 
+
             for (int i = (min | 1); i < int.MaxValue; i += 2)
             {
                 if (IsPrime(i) && ((i - 1) % HashPrime != 0))

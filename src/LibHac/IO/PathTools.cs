@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace LibHac.IO
@@ -99,14 +100,16 @@ namespace LibHac.IO
 
         public static ReadOnlySpan<byte> GetParentDirectory(ReadOnlySpan<byte> path)
         {
+            Debug.Assert(IsNormalized(path));
+
             int i = path.Length - 1;
 
             // A trailing separator should be ignored
-            if (path.Length > 0 && path[i] == '/') i--;
+            if (path[i] == '/') i--;
 
-            while (i >= 0 && path[i] != '/') i--;
+            while (i >= 1 && path[i] != '/') i--;
 
-            if (i < 1) return new ReadOnlySpan<byte>(new[] { (byte)'/' });
+            i = Math.Max(i, 1);
             return path.Slice(0, i);
         }
 
