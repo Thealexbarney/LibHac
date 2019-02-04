@@ -7,24 +7,14 @@ namespace LibHac.IO.RomFs
 {
     public class HierarchicalRomFileTable
     {
-        private IStorage DirHashTableStorage { get; }
-        private IStorage DirEntryTableStorage { get; }
-        private IStorage FileHashTableStorage { get; }
-        private IStorage FileEntryTableStorage { get; }
-
         private RomFsDictionary<FileRomEntry> FileTable { get; }
         private RomFsDictionary<DirectoryRomEntry> DirectoryTable { get; }
 
         public HierarchicalRomFileTable(IStorage dirHashTable, IStorage dirEntryTable, IStorage fileHashTable,
             IStorage fileEntryTable)
         {
-            DirHashTableStorage = dirHashTable;
-            DirEntryTableStorage = dirEntryTable;
-            FileHashTableStorage = fileHashTable;
-            FileEntryTableStorage = fileEntryTable;
-
-            FileTable = new RomFsDictionary<FileRomEntry>(FileHashTableStorage, FileEntryTableStorage);
-            DirectoryTable = new RomFsDictionary<DirectoryRomEntry>(DirHashTableStorage, DirEntryTableStorage);
+            FileTable = new RomFsDictionary<FileRomEntry>(fileHashTable, fileEntryTable);
+            DirectoryTable = new RomFsDictionary<DirectoryRomEntry>(dirHashTable, dirEntryTable);
         }
 
         public HierarchicalRomFileTable() : this(0, 0) { }

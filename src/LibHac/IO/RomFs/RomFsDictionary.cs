@@ -247,11 +247,6 @@ namespace LibHac.IO.RomFs
             SetCapacity(_length);
         }
 
-        private ref RomFsEntry GetEntryReference(int offset)
-        {
-            return ref MemoryMarshal.Cast<byte, RomFsEntry>(Entries.AsSpan(offset))[0];
-        }
-
         private ref RomFsEntry GetEntryReference(int offset, out Span<byte> name)
         {
             ref RomFsEntry entry = ref MemoryMarshal.Cast<byte, RomFsEntry>(Entries.AsSpan(offset))[0];
