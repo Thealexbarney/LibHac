@@ -64,6 +64,7 @@ namespace hactoolnet
         Pfs0,
         Nsp,
         Romfs,
+        RomfsBuild,
         Nax0,
         Xci,
         SwitchFs,
