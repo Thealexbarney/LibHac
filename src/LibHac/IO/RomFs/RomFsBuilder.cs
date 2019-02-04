@@ -12,38 +12,44 @@ namespace LibHac.IO.RomFs
         private const int HeaderWithPaddingSize = 0x200;
 
         public List<IStorage> Sources { get; } = new List<IStorage>();
-        public HierarchicalRomFileTable FileTable { get; }
+        public HierarchicalRomFileTable FileTable { get; } = new HierarchicalRomFileTable();
+        private long CurrentOffset { get; set; }
+
+        public RomFsBuilder() { }
 
         public RomFsBuilder(IFileSystem input)
         {
-            FileTable = new HierarchicalRomFileTable();
-            var fileInfo = new RomFileInfo();
-
-            long offset = 0;
-
             foreach (DirectoryEntry file in input.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File)
                 .OrderBy(x => x.FullPath, StringComparer.Ordinal))
             {
-                fileInfo.Offset = offset;
-                fileInfo.Length = file.Size;
-
-                IStorage fileStorage = input.OpenFile(file.FullPath, OpenMode.Read).AsStorage();
-                Sources.Add(fileStorage);
-
-                long newOffset = offset + file.Size;
-                offset = Util.AlignUp(newOffset, FileAlignment);
-
-                var padding = new NullStorage(offset - newOffset);
-                Sources.Add(padding);
-
-                FileTable.CreateFile(file.FullPath, ref fileInfo);
+                AddFile(file.FullPath, input.OpenFile(file.FullPath, OpenMode.Read));
             }
+        }
 
-            FileTable.TrimExcess();
+        public void AddFile(string path, IFile file)
+        {
+            var fileInfo = new RomFileInfo();
+            long fileSize = file.GetSize();
+
+            fileInfo.Offset = CurrentOffset;
+            fileInfo.Length = fileSize;
+
+            IStorage fileStorage = file.AsStorage();
+            Sources.Add(fileStorage);
+
+            long newOffset = CurrentOffset + fileSize;
+            CurrentOffset = Util.AlignUp(newOffset, FileAlignment);
+
+            var padding = new NullStorage(CurrentOffset - newOffset);
+            Sources.Add(padding);
+
+            FileTable.CreateFile(path, ref fileInfo);
         }
 
         public IStorage Build()
         {
+            FileTable.TrimExcess();
+
             var header = new byte[HeaderWithPaddingSize];
             var headerWriter = new BinaryWriter(new MemoryStream(header));
 
