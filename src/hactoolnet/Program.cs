@@ -64,6 +64,9 @@ namespace hactoolnet
                 case FileType.Romfs:
                     ProcessRomfs.Process(ctx);
                     break;
+                case FileType.RomfsBuild:
+                    ProcessRomFsBuild.Process(ctx);
+                    break;
                 case FileType.Nax0:
                     break;
                 case FileType.SwitchFs:
