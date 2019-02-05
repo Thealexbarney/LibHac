@@ -79,6 +79,9 @@ namespace LibHac.IO
         }
     }
 
+    /// <summary>
+    /// Specifies which operations are available on an <see cref="IFile"/>.
+    /// </summary>
     [Flags]
     public enum OpenMode
     {

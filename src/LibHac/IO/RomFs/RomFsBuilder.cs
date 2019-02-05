@@ -5,6 +5,12 @@ using System.Linq;
 
 namespace LibHac.IO.RomFs
 {
+    /// <summary>
+    /// Builds a RomFS from a collection of files.
+    /// </summary>
+    /// <remarks>A <see cref="RomFsBuilder"/> produces a view of a RomFS archive.
+    /// When doing so, it will create an <see cref="IStorage"/> instance that will
+    /// provide the RomFS data when read. Random seek is supported.</remarks>
     public class RomFsBuilder
     {
         private const int FileAlignment = 0x10;
@@ -15,8 +21,15 @@ namespace LibHac.IO.RomFs
         private HierarchicalRomFileTable FileTable { get; } = new HierarchicalRomFileTable();
         private long CurrentOffset { get; set; }
 
+        /// <summary>
+        /// Creates a new, empty <see cref="RomFsBuilder"/>
+        /// </summary>
         public RomFsBuilder() { }
 
+        /// <summary>
+        /// Creates a new <see cref="RomFsBuilder"/> and populates it with all
+        /// the files in the specified <see cref="IFileSystem"/>.
+        /// </summary>
         public RomFsBuilder(IFileSystem input)
         {
             foreach (DirectoryEntry file in input.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File)
@@ -26,6 +39,11 @@ namespace LibHac.IO.RomFs
             }
         }
 
+        /// <summary>
+        /// Adds a file to the RomFS.
+        /// </summary>
+        /// <param name="path">The full path in the RomFS</param>
+        /// <param name="file">An <see cref="IFile"/> of the file data to add.</param>
         public void AddFile(string path, IFile file)
         {
             var fileInfo = new RomFileInfo();
@@ -43,9 +61,15 @@ namespace LibHac.IO.RomFs
             var padding = new NullStorage(CurrentOffset - newOffset);
             Sources.Add(padding);
 
-            FileTable.CreateFile(path, ref fileInfo);
+            FileTable.AddFile(path, ref fileInfo);
         }
 
+        /// <summary>
+        /// Returns a view of a RomFS containing all the currently added files.
+        /// Additional files may be added and a new view produced without
+        /// invalidating previously built RomFS views.
+        /// </summary>
+        /// <returns></returns>
         public IStorage Build()
         {
             FileTable.TrimExcess();

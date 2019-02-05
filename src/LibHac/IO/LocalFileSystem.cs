@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 
 namespace LibHac.IO
 {
@@ -145,9 +144,6 @@ namespace LibHac.IO
             throw new FileNotFoundException(path);
         }
 
-        public void Commit()
-        {
-            throw new NotImplementedException();
-        }
+        public void Commit() { }
     }
 }

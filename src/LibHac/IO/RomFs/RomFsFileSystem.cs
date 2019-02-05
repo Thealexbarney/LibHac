@@ -34,10 +34,7 @@ namespace LibHac.IO.RomFs
             throw new FileNotFoundException(path);
         }
 
-        public void Commit()
-        {
-            throw new NotSupportedException();
-        }
+        public void Commit() { }
 
         public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
         {
