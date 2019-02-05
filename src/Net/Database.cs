@@ -19,7 +19,7 @@ namespace Net
 
         public static Database Deserialize(string filename)
         {
-            var text = File.ReadAllText(filename);
+            string text = File.ReadAllText(filename);
             return JsonConvert.DeserializeObject<Database>(text);
         }
 

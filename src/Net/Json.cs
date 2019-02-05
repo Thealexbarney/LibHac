@@ -10,7 +10,7 @@ namespace Net
     {
         public static VersionList ReadVersionList(string filename)
         {
-            var text = File.ReadAllText(filename);
+            string text = File.ReadAllText(filename);
             var versionList = JsonConvert.DeserializeObject<VersionList>(text);
             return versionList;
         }

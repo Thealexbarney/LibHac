@@ -55,15 +55,15 @@ namespace Net
             int ver = ctx.Options.Version;
 
             var net = new NetContext(ctx);
-            var cnmt = net.GetCnmt(tid, ver);
+            Cnmt cnmt = net.GetCnmt(tid, ver);
             if (cnmt == null) return;
             ctx.Logger.LogMessage($"Title is of type {cnmt.Type} and has {cnmt.ContentEntries.Length} content entries");
-            var control = net.GetControl(tid, ver);
+            Nacp control = net.GetControl(tid, ver);
             if (control != null)
             {
                 ctx.Logger.LogMessage($"Title has name {control.Descriptions[0].Title}");
             }
-            foreach (var entry in cnmt.ContentEntries)
+            foreach (CnmtContentEntry entry in cnmt.ContentEntries)
             {
                 ctx.Logger.LogMessage($"{entry.NcaId.ToHexString()} {entry.Type}");
                 net.GetNcaFile(tid, ver, entry.NcaId.ToHexString());
@@ -149,13 +149,13 @@ namespace Net
 
         private static void OpenKeyset(Context ctx)
         {
-            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            var homeKeyFile = Path.Combine(home, ".switch", "prod.keys");
-            var homeTitleKeyFile = Path.Combine(home, ".switch", "title.keys");
-            var homeConsoleKeyFile = Path.Combine(home, ".switch", "console.keys");
-            var keyFile = ctx.Options.Keyfile;
-            var titleKeyFile = ctx.Options.TitleKeyFile;
-            var consoleKeyFile = ctx.Options.ConsoleKeyFile;
+            string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string homeKeyFile = Path.Combine(home, ".switch", "prod.keys");
+            string homeTitleKeyFile = Path.Combine(home, ".switch", "title.keys");
+            string homeConsoleKeyFile = Path.Combine(home, ".switch", "console.keys");
+            string keyFile = ctx.Options.Keyfile;
+            string titleKeyFile = ctx.Options.TitleKeyFile;
+            string consoleKeyFile = ctx.Options.ConsoleKeyFile;
 
             if (keyFile == null && File.Exists(homeKeyFile))
             {
@@ -184,7 +184,7 @@ namespace Net
                 string line;
                 while ((line = reader.ReadLine()) != null)
                 {
-                    if (ulong.TryParse(line, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var id))
+                    if (ulong.TryParse(line, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong id))
                     {
                         titles.Add(id);
                     }

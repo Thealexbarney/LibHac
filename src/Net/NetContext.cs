@@ -41,7 +41,7 @@ namespace Net
             }
 
             Directory.CreateDirectory(CachePath);
-            var databaseFile = Path.Combine(CachePath, "database.json");
+            string databaseFile = Path.Combine(CachePath, "database.json");
             if (!File.Exists(databaseFile))
             {
                 File.WriteAllText(databaseFile, new Database().Serialize());
@@ -51,7 +51,7 @@ namespace Net
 
         public void Save()
         {
-            var databaseFile = Path.Combine(CachePath, "database.json");
+            string databaseFile = Path.Combine(CachePath, "database.json");
 
             File.WriteAllText(databaseFile, Db.Serialize());
         }
@@ -63,7 +63,7 @@ namespace Net
 
         public Cnmt GetCnmt(ulong titleId, int version)
         {
-            using (var stream = GetCnmtFile(titleId, version))
+            using (IStorage stream = GetCnmtFile(titleId, version))
             {
                 if (stream == null) return null;
 
@@ -79,7 +79,7 @@ namespace Net
 
         public IStorage GetCnmtFile(ulong titleId, int version)
         {
-            var cnmt = GetCnmtFileFromCache(titleId, version);
+            IStorage cnmt = GetCnmtFileFromCache(titleId, version);
             if (cnmt != null) return cnmt;
 
             if (Certificate == null) return null;
@@ -93,7 +93,7 @@ namespace Net
             string titleDir = GetTitleDir(titleId, version);
             if (!Directory.Exists(titleDir)) return null;
 
-            var cnmtFiles = Directory.GetFiles(titleDir, "*.cnmt.nca").ToArray();
+            string[] cnmtFiles = Directory.GetFiles(titleDir, "*.cnmt.nca").ToArray();
 
             if (cnmtFiles.Length == 1)
             {
@@ -110,11 +110,11 @@ namespace Net
 
         public Nacp GetControl(ulong titleId, int version)
         {
-            var cnmt = GetCnmt(titleId, version);
-            var controlEntry = cnmt?.ContentEntries.FirstOrDefault(x => x.Type == CnmtContentType.Control);
+            Cnmt cnmt = GetCnmt(titleId, version);
+            CnmtContentEntry controlEntry = cnmt?.ContentEntries.FirstOrDefault(x => x.Type == CnmtContentType.Control);
             if (controlEntry == null) return null;
 
-            var controlNca = GetNcaFile(titleId, version, controlEntry.NcaId.ToHexString());
+            IStorage controlNca = GetNcaFile(titleId, version, controlEntry.NcaId.ToHexString());
             if (controlNca == null) return null;
 
             var nca = new Nca(ToolCtx.Keyset, controlNca, true);
@@ -130,7 +130,7 @@ namespace Net
             string titleDir = GetTitleDir(titleId, version);
             if (!Directory.Exists(titleDir)) return null;
 
-            var filePath = Path.Combine(titleDir, $"{ncaId.ToLower()}.nca");
+            string filePath = Path.Combine(titleDir, $"{ncaId.ToLower()}.nca");
             if (!File.Exists(filePath))
             {
                 DownloadFile(GetContentUrl(ncaId), filePath);
@@ -143,7 +143,7 @@ namespace Net
 
         public List<SuperflyInfo> GetSuperfly(ulong titleId)
         {
-            var filename = GetSuperflyFile(titleId);
+            string filename = GetSuperflyFile(titleId);
             return Json.ReadSuperfly(filename);
         }
 
@@ -151,7 +151,7 @@ namespace Net
         {
             string titleDir = GetTitleDir(titleId);
 
-            var filePath = Path.Combine(titleDir, $"{titleId:x16}.json");
+            string filePath = Path.Combine(titleDir, $"{titleId:x16}.json");
             if (!File.Exists(filePath))
             {
                 DownloadFile(GetSuperflyUrl(titleId), filePath);
@@ -164,31 +164,31 @@ namespace Net
 
         private void DownloadCnmt(ulong titleId, int version)
         {
-            var titleDir = GetTitleDir(titleId, version);
+            string titleDir = GetTitleDir(titleId, version);
 
-            var ncaId = GetMetadataNcaId(titleId, version);
+            string ncaId = GetMetadataNcaId(titleId, version);
             if (ncaId == null)
             {
                 Console.WriteLine($"Could not get {titleId:x16}v{version} metadata");
                 return;
             }
 
-            var filename = $"{ncaId.ToLower()}.cnmt.nca";
-            var filePath = Path.Combine(titleDir, filename);
+            string filename = $"{ncaId.ToLower()}.cnmt.nca";
+            string filePath = Path.Combine(titleDir, filename);
             DownloadFile(GetMetaUrl(ncaId), filePath);
         }
 
         public void DownloadFile(string url, string filePath)
         {
-            var response = Request("GET", url);
+            WebResponse response = Request("GET", url);
             if (response == null) return;
 
-            var dir = Path.GetDirectoryName(filePath) ?? throw new DirectoryNotFoundException();
+            string dir = Path.GetDirectoryName(filePath) ?? throw new DirectoryNotFoundException();
             Directory.CreateDirectory(dir);
 
             try
             {
-                using (var responseStream = response.GetResponseStream())
+                using (Stream responseStream = response.GetResponseStream())
                 using (var outStream = new FileStream(filePath, FileMode.Create, FileAccess.ReadWrite))
                 {
                     responseStream.CopyStream(outStream, response.ContentLength, ToolCtx.Logger);
@@ -245,7 +245,7 @@ namespace Net
 
         public VersionList GetVersionList()
         {
-            var filename = Path.Combine(CachePath, "hac_versionlist");
+            string filename = Path.Combine(CachePath, "hac_versionlist");
             VersionList list = null;
             if (Db.IsVersionListCurrent() && File.Exists(filename))
             {
@@ -274,7 +274,7 @@ namespace Net
 
         public WebResponse Request(string method, string url)
         {
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+            var request = (HttpWebRequest)WebRequest.Create(url);
             request.ClientCertificates.Add(Certificate);
             request.Accept = "*/*";
             request.UserAgent = $"NintendoSDK Firmware/{Firmware} (platform:NX; did:{Did}; eid:{Eid})";

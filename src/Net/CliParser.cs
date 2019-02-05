@@ -43,7 +43,7 @@ namespace Net
                     return null;
                 }
 
-                var option = CliOptions.FirstOrDefault(x => x.Long == arg || x.Short == arg);
+                CliOption option = CliOptions.FirstOrDefault(x => x.Long == arg || x.Short == arg);
                 if (option == null)
                 {
                     PrintWithUsage($"Unknown option {args[i]}");
@@ -74,7 +74,7 @@ namespace Net
                 PrintWithUsage("Title ID must be 16 hex characters long");
             }
 
-            if (!ulong.TryParse(input, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var id))
+            if (!ulong.TryParse(input, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong id))
             {
                 PrintWithUsage("Could not parse title ID");
             }
@@ -84,7 +84,7 @@ namespace Net
 
         private static int ParseVersion(string input)
         {
-            if (!int.TryParse(input, out var version))
+            if (!int.TryParse(input, out int version))
             {
                 PrintWithUsage("Could not parse version");
             }
