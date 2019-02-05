@@ -5,11 +5,34 @@ using System.Text;
 
 namespace LibHac.IO.RomFs
 {
+    /// <summary>
+    /// Represents the file table used by the RomFS format.
+    /// </summary>
+    /// <remarks>
+    /// This file table stores the structure of the file tree in a RomFS.
+    /// Each file or directory entry is stored in the table using its full path as a key.
+    /// Once added, a file or directory is assigned an ID that can also be used to retrieve it.
+    /// Each file entry contains the size of the file and its offset in the RomFS.
+    /// Each directory entry contains the IDs for its first child file and first child directory.
+    ///
+    /// The table is represented by four byte arrays. Two of the arrays contain the hash buckets and
+    /// entries for the files, and the other two for the directories.
+    /// 
+    /// Once all files have been added to the table, <see cref="TrimExcess"/> should be called
+    /// to optimize the size of the table.
+    /// </remarks>
     public class HierarchicalRomFileTable
     {
         private RomFsDictionary<FileRomEntry> FileTable { get; }
         private RomFsDictionary<DirectoryRomEntry> DirectoryTable { get; }
 
+        /// <summary>
+        /// Initializes a <see cref="HierarchicalRomFileTable"/> from an existing table.
+        /// </summary>
+        /// <param name="dirHashTable"></param>
+        /// <param name="dirEntryTable"></param>
+        /// <param name="fileHashTable"></param>
+        /// <param name="fileEntryTable"></param>
         public HierarchicalRomFileTable(IStorage dirHashTable, IStorage dirEntryTable, IStorage fileHashTable,
             IStorage fileEntryTable)
         {
@@ -17,8 +40,18 @@ namespace LibHac.IO.RomFs
             DirectoryTable = new RomFsDictionary<DirectoryRomEntry>(dirHashTable, dirEntryTable);
         }
 
+        /// <summary>
+        /// Initializes a new <see cref="HierarchicalRomFileTable"/> that has the default initial capacity.
+        /// </summary>
         public HierarchicalRomFileTable() : this(0, 0) { }
 
+        /// <summary>
+        /// Initializes a new <see cref="HierarchicalRomFileTable"/> that has the specified initial capacity.
+        /// </summary>
+        /// <param name="directoryCapacity">The initial number of directories that the
+        /// <see cref="HierarchicalRomFileTable"/> can contain.</param>
+        /// <param name="fileCapacity">The initial number of files that the
+        /// <see cref="HierarchicalRomFileTable"/> can contain.</param>
         public HierarchicalRomFileTable(int directoryCapacity, int fileCapacity)
         {
             FileTable = new RomFsDictionary<FileRomEntry>(fileCapacity);
@@ -73,6 +106,13 @@ namespace LibHac.IO.RomFs
             return false;
         }
 
+        /// <summary>
+        /// Opens a directory for enumeration.
+        /// </summary>
+        /// <param name="path">The full path of the directory to open.</param>
+        /// <param name="position">The initial position of the directory enumerator.</param>
+        /// <returns><see langword="true"/> if the table contains a directory with the specified path;
+        /// otherwise, <see langword="false"/>.</returns>
         public bool TryOpenDirectory(string path, out FindPosition position)
         {
             FindDirectoryRecursive(GetUtf8Bytes(path), out RomEntryKey key);
@@ -87,6 +127,13 @@ namespace LibHac.IO.RomFs
             return false;
         }
 
+        /// <summary>
+        /// Opens a directory for enumeration.
+        /// </summary>
+        /// <param name="directoryId">The ID of the directory to open.</param>
+        /// <param name="position">When this method returns, contains the initial position of the directory enumerator.</param>
+        /// <returns><see langword="true"/> if the table contains a directory with the specified path;
+        /// otherwise, <see langword="false"/>.</returns>
         public bool TryOpenDirectory(int directoryId, out FindPosition position)
         {
             if (DirectoryTable.TryGetValue(directoryId, out RomKeyValuePair<DirectoryRomEntry> keyValuePair))
@@ -99,6 +146,15 @@ namespace LibHac.IO.RomFs
             return false;
         }
 
+        /// <summary>
+        /// Returns the next file in a directory and updates the enumerator's position.
+        /// </summary>
+        /// <param name="position">The current position of the directory enumerator.
+        /// This position will be updated when the method returns.</param>
+        /// <param name="info">When this method returns, contains the file's metadata.</param>
+        /// <param name="name">When this method returns, contains the file's name (Not the full path).</param>
+        /// <returns><see langword="true"/> if the next file was successfully returned.
+        /// <see langword="false"/> if there are no more files to enumerate.</returns>
         public bool FindNextFile(ref FindPosition position, out RomFileInfo info, out string name)
         {
             if (position.NextFile == -1)
@@ -117,6 +173,14 @@ namespace LibHac.IO.RomFs
             return true;
         }
 
+        /// <summary>
+        /// Returns the next child directory in a directory and updates the enumerator's position.
+        /// </summary>
+        /// <param name="position">The current position of the directory enumerator.
+        /// This position will be updated when the method returns.</param>
+        /// <param name="name">When this method returns, contains the directory's name (Not the full path).</param>
+        /// <returns><see langword="true"/> if the next directory was successfully returned.
+        /// <see langword="false"/> if there are no more directories to enumerate.</returns>
         public bool FindNextDirectory(ref FindPosition position, out string name)
         {
             if (position.NextDirectory == -1)
@@ -132,7 +196,13 @@ namespace LibHac.IO.RomFs
             return true;
         }
 
-        public void CreateFile(string path, ref RomFileInfo fileInfo)
+        /// <summary>
+        /// Adds a file to the file table. If the file already exists
+        /// its <see cref="RomFileInfo"/> will be updated.
+        /// </summary>
+        /// <param name="path">The full path of the file to be added.</param>
+        /// <param name="fileInfo">The file information to be stored.</param>
+        public void AddFile(string path, ref RomFileInfo fileInfo)
         {
             path = PathTools.Normalize(path);
             ReadOnlySpan<byte> pathBytes = GetUtf8Bytes(path);
@@ -140,13 +210,25 @@ namespace LibHac.IO.RomFs
             CreateFileRecursiveInternal(pathBytes, ref fileInfo);
         }
 
-        public void CreateDirectory(string path)
+        /// <summary>
+        /// Adds a directory to the file table. If the directory already exists,
+        /// no action is performed.
+        /// </summary>
+        /// <param name="path">The full path of the directory to be added.</param>
+        public void AddDirectory(string path)
         {
             path = PathTools.Normalize(path);
 
             CreateDirectoryRecursive(GetUtf8Bytes(path));
         }
 
+        /// <summary>
+        /// Sets the capacity of this dictionary to what it would be if
+        /// it had been originally initialized with all its entries.
+        /// 
+        /// This method can be used to minimize the memory overhead 
+        /// once it is known that no new elements will be added.
+        /// </summary>
         public void TrimExcess()
         {
             DirectoryTable.TrimExcess();
@@ -263,9 +345,9 @@ namespace LibHac.IO.RomFs
             }
 
             {
-                ref FileRomEntry entry = ref FileTable.AddOrGet(ref key, out int offset, out _, out _);
-                entry.NextSibling = -1;
+                ref FileRomEntry entry = ref FileTable.AddOrGet(ref key, out int offset, out bool alreadyExists, out _);
                 entry.Info = fileInfo;
+                if (alreadyExists) entry.NextSibling = -1;
 
                 ref DirectoryRomEntry parent = ref DirectoryTable.GetValueReference(prevOffset);
 
