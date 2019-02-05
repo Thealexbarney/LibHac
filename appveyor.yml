@@ -1,0 +1,5 @@
+version: 0.1.3-{build}
+image: Visual Studio 2017
+build_script:
+  - ps: .\build.ps1
+test: off
