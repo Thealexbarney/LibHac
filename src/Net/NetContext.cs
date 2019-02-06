@@ -17,7 +17,7 @@ namespace Net
         private string Token { get; }
         private string Eid { get; } = "lp1";
         private ulong Did { get; }
-        private string Firmware { get; } = "6.0.0-5.0";
+        private string Firmware { get; } = "7.0.0-1.0";
         private string CachePath { get; } = "titles";
         private Context ToolCtx { get; }
         public Database Db { get; }
@@ -284,8 +284,9 @@ namespace Net
 
             try
             {
-                if (((HttpWebResponse)request.GetResponse()).StatusCode == HttpStatusCode.OK)
-                    return request.GetResponse();
+                var response = (HttpWebResponse) request.GetResponse();
+                if (response.StatusCode == HttpStatusCode.OK)
+                    return response;
             }
             catch (WebException ex)
             {

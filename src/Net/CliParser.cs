@@ -9,15 +9,8 @@ namespace Net
     {
         private static readonly CliOption[] CliOptions =
         {
-            new CliOption("keyset", 'k', 1, (o, a) => o.Keyfile = a[0]),
-            new CliOption("titlekeys", 1, (o, a) => o.TitleKeyFile = a[0]),
-            new CliOption("consolekeys", 1, (o, a) => o.ConsoleKeyFile = a[0]),
             new CliOption("title", 1, (o, a) => o.TitleId = ParseTitleId(a[0])),
             new CliOption("version", 1, (o, a) => o.Version = ParseVersion(a[0])),
-            new CliOption("did", 1, (o, a) => o.DeviceId = ParseTitleId(a[0])),
-            new CliOption("cert", 1, (o, a) => o.CertFile = a[0]),
-            new CliOption("commoncert", 1, (o, a) => o.CommonCertFile = a[0]),
-            new CliOption("token", 1, (o, a) => o.Token = a[0]),
             new CliOption("metadata", 0, (o, a) => o.GetMetadata = true)
         };
 
@@ -62,12 +55,11 @@ namespace Net
                 option.Assigner(options, optionArgs);
                 i += option.ArgsNeeded;
             }
-
-
+            
             return options;
         }
 
-        private static ulong ParseTitleId(string input)
+        public static ulong ParseTitleId(string input)
         {
             if (input.Length != 16)
             {

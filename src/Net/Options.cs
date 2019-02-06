@@ -4,9 +4,6 @@ namespace Net
 {
     internal class Options
     {
-        public string Keyfile;
-        public string TitleKeyFile;
-        public string ConsoleKeyFile;
         public ulong TitleId;
         public int Version;
         public ulong DeviceId;

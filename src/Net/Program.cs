@@ -10,11 +10,22 @@ namespace Net
 {
     public static class Program
     {
+        private const string DidFile = "device_id.txt";
+        private const string TokenFile = "edge_token.txt";
+        private const string CertFile = "nx_tls_client_cert.pfx";
+        private const string CommonCertFile = "ShopN.p12";
+
         public static void Main(string[] args)
         {
             Console.OutputEncoding = Encoding.UTF8;
             var ctx = new Context();
             ctx.Options = CliParser.Parse(args);
+
+            ctx.Options.DeviceId = CliParser.ParseTitleId(File.ReadAllText(DidFile));
+            ctx.Options.Token = File.ReadAllText(TokenFile);
+            ctx.Options.CertFile = CertFile;
+            ctx.Options.CommonCertFile = CommonCertFile;
+            
             if (ctx.Options == null) return;
 
             using (var logger = new ProgressBar())
@@ -153,26 +164,8 @@ namespace Net
             string homeKeyFile = Path.Combine(home, ".switch", "prod.keys");
             string homeTitleKeyFile = Path.Combine(home, ".switch", "title.keys");
             string homeConsoleKeyFile = Path.Combine(home, ".switch", "console.keys");
-            string keyFile = ctx.Options.Keyfile;
-            string titleKeyFile = ctx.Options.TitleKeyFile;
-            string consoleKeyFile = ctx.Options.ConsoleKeyFile;
 
-            if (keyFile == null && File.Exists(homeKeyFile))
-            {
-                keyFile = homeKeyFile;
-            }
-
-            if (titleKeyFile == null && File.Exists(homeTitleKeyFile))
-            {
-                titleKeyFile = homeTitleKeyFile;
-            }
-
-            if (consoleKeyFile == null && File.Exists(homeConsoleKeyFile))
-            {
-                consoleKeyFile = homeConsoleKeyFile;
-            }
-
-            ctx.Keyset = ExternalKeys.ReadKeyFile(keyFile, titleKeyFile, consoleKeyFile, ctx.Logger);
+            ctx.Keyset = ExternalKeys.ReadKeyFile(homeKeyFile, homeTitleKeyFile, homeConsoleKeyFile, ctx.Logger);
         }
 
         private static List<ulong> GetTitleIds(string filename)
