@@ -33,10 +33,23 @@ namespace LibHac.IO
 
         public void CreateFile(string path, long size, CreateFileOptions options)
         {
-            long containerSize = AesXtsFile.HeaderLength + Util.AlignUp(size, 0x16);
+            CreateFile(path, size, options, new byte[0x20]);
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="AesXtsFile"/> using the provided key.
+        /// </summary>
+        /// <param name="path">The full path of the file to create.</param>
+        /// <param name="size">The initial size of the created file.</param>
+        /// <param name="options">Flags to control how the file is created.
+        /// Should usually be <see cref="CreateFileOptions.None"/></param>
+        /// <param name="key">The 256-bit key containing a 128-bit data key followed by a 128-bit tweak key.</param>
+        public void CreateFile(string path, long size, CreateFileOptions options, byte[] key)
+        {
+            long containerSize = AesXtsFile.HeaderLength + Util.AlignUp(size, 0x10);
             BaseFileSystem.CreateFile(path, containerSize, options);
 
-            var header = new AesXtsFileHeader(new byte[0x10], new byte[0x10], size, path, KekSource, ValidationKey);
+            var header = new AesXtsFileHeader(key, size, path, KekSource, ValidationKey);
 
             using (IFile baseFile = BaseFileSystem.OpenFile(path, OpenMode.Write))
             {
