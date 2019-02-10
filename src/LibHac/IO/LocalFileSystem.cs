@@ -6,9 +6,19 @@ namespace LibHac.IO
     {
         private string BasePath { get; }
 
+        /// <summary>
+        /// Opens a directory on local storage as an <see cref="IFileSystem"/>.
+        /// The directory will be created if it does not exist.
+        /// </summary>
+        /// <param name="basePath">The path that will be the root of the <see cref="LocalFileSystem"/>.</param>
         public LocalFileSystem(string basePath)
         {
             BasePath = Path.GetFullPath(basePath);
+
+            if (!Directory.Exists(BasePath))
+            {
+                Directory.CreateDirectory(BasePath);
+            }
         }
 
         internal string ResolveLocalPath(string path)

@@ -35,7 +35,7 @@ namespace LibHac.IO
                     destFs.CreateFile(subDstPath, entry.Size, options);
 
                     using (IFile srcFile = sourceFs.OpenFile(subSrcPath, OpenMode.Read))
-                    using (IFile dstFile = destFs.OpenFile(subDstPath, OpenMode.Write))
+                    using (IFile dstFile = destFs.OpenFile(subDstPath, OpenMode.Write | OpenMode.Append))
                     {
                         logger?.LogMessage(subSrcPath);
                         srcFile.CopyTo(dstFile, logger);
