@@ -72,6 +72,8 @@ namespace LibHac.IO
 
         public override void SetSize(long size)
         {
+            Header.SetSize(size, VerificationKey);
+
             throw new NotImplementedException();
         }
     }
