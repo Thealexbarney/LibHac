@@ -4,12 +4,14 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using ICSharpCode.SharpZipLib.Zip;
 using ILRepacking;
 using Nuke.Common;
 using Nuke.Common.Git;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tools.DotNet;
+using Nuke.Common.Tools.SignTool;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
@@ -27,6 +29,7 @@ class Build : NukeBuild
     AbsolutePath SourceDirectory => RootDirectory / "src";
     AbsolutePath TestsDirectory => RootDirectory / "tests";
     AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
+    AbsolutePath SignedArtifactsDirectory => ArtifactsDirectory / "signed";
     AbsolutePath TempDirectory => RootDirectory / ".tmp";
     AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_netcoreapp2.1";
     AbsolutePath CliFrameworkDir => TempDirectory / "hactoolnet_net46";
@@ -38,6 +41,8 @@ class Build : NukeBuild
     Project LibHacProject => Solution.GetProject("LibHac").NotNull();
     Project LibHacTestProject => Solution.GetProject("LibHac.Tests").NotNull();
     Project HactoolnetProject => Solution.GetProject("hactoolnet").NotNull();
+
+    const string CertFileName = "cert.pfx";
 
     Target Clean => _ => _
         .Executes(() =>
@@ -55,8 +60,6 @@ class Build : NukeBuild
         {
             DotNetRestoreSettings settings = new DotNetRestoreSettings()
                 .SetProjectFile(Solution);
-
-            if (EnvironmentInfo.IsUnix) settings = settings.RemoveRuntimes("net46");
 
             DotNetRestore(s => settings);
         });
@@ -110,6 +113,7 @@ class Build : NukeBuild
                 .EnableNoBuild()
                 .SetConfiguration(Configuration)
                 .EnableIncludeSymbols()
+                .SetSymbolPackageFormat(DotNetSymbolPackageFormat.snupkg)
                 .SetOutputDirectory(ArtifactsDirectory);
 
             if (EnvironmentInfo.IsUnix)
@@ -128,7 +132,7 @@ class Build : NukeBuild
 
     Target Merge => _ => _
         .DependsOn(Compile)
-        .OnlyWhen(() => EnvironmentInfo.IsWin)
+        .OnlyWhenStatic(() => EnvironmentInfo.IsWin)
         .Executes(() =>
         {
             string[] libraries = Directory.GetFiles(CliFrameworkDir, "*.dll");
@@ -194,7 +198,7 @@ class Build : NukeBuild
         });
 
     Target Results => _ => _
-        .DependsOn(Test, Zip, Merge)
+        .DependsOn(Test, Zip, Merge, Sign)
         .Executes(() =>
         {
             Console.WriteLine("SHA-1:");
@@ -209,6 +213,23 @@ class Build : NukeBuild
                     }
                 }
             }
+        });
+
+    Target Sign => _ => _
+        .DependsOn(Test, Zip, Merge)
+        .OnlyWhenStatic(() => EnvironmentInfo.IsWin)
+        .OnlyWhenStatic(() => File.Exists(CertFileName))
+        .Executes(() =>
+        {
+            string pwd = ReadPassword();
+
+            if (pwd == string.Empty)
+            {
+                Console.WriteLine("Skipping sign task");
+                return;
+            }
+
+            SignAndReZip(pwd);
         });
 
     public static void ZipFiles(string outFile, string[] files)
@@ -227,6 +248,57 @@ class Build : NukeBuild
                     entry.Size = fs.Length;
                     s.PutNextEntry(entry);
                     fs.CopyTo(s);
+                }
+            }
+        }
+    }
+
+    public static void ZipDirectory(string outFile, string directory)
+    {
+        using (var s = new ZipOutputStream(File.Create(outFile)))
+        {
+            s.SetLevel(9);
+
+            foreach (string filePath in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
+            {
+                string relativePath = Path.GetRelativePath(directory, filePath);
+
+                var entry = new ZipEntry(relativePath);
+                entry.DateTime = DateTime.UnixEpoch;
+
+                using (FileStream fs = File.OpenRead(filePath))
+                {
+                    entry.Size = fs.Length;
+                    s.PutNextEntry(entry);
+                    fs.CopyTo(s);
+                }
+            }
+        }
+    }
+
+    public static void UnzipFiles(string zipFile, string outDir)
+    {
+        using (var s = new ZipInputStream(File.OpenRead(zipFile)))
+        {
+            ZipEntry entry;
+            while ((entry = s.GetNextEntry()) != null)
+            {
+                string outPath = Path.Combine(outDir, entry.Name);
+
+                string directoryName = Path.GetDirectoryName(outPath);
+                string fileName = Path.GetFileName(outPath);
+
+                if (!string.IsNullOrWhiteSpace(directoryName))
+                {
+                    Directory.CreateDirectory(directoryName);
+                }
+
+                if (!string.IsNullOrWhiteSpace(fileName))
+                {
+                    using (FileStream outFile = File.Create(outPath))
+                    {
+                        s.CopyTo(outFile);
+                    }
                 }
             }
         }
@@ -264,5 +336,93 @@ class Build : NukeBuild
     {
         string text = File.ReadAllText(filename);
         File.WriteAllText(filename, text.Replace("\n", "\r\n"));
+    }
+
+    public static void SignAssemblies(string password, params string[] fileNames)
+    {
+        SignToolSettings settings = new SignToolSettings()
+            .SetFileDigestAlgorithm("SHA256")
+            .SetFile(CertFileName)
+            .SetFiles(fileNames)
+            .SetPassword(password)
+            .SetTimestampServerDigestAlgorithm("SHA256")
+            .SetRfc3161TimestampServerUrl("http://timestamp.digicert.com")
+            ;
+
+        SignToolTasks.SignTool(settings);
+    }
+
+    public void SignAndReZip(string password)
+    {
+        AbsolutePath nupkgFile = ArtifactsDirectory.GlobFiles("*.nupkg").First();
+        AbsolutePath nupkgDir = ArtifactsDirectory / $"{Path.GetFileName(nupkgFile)}_extract";
+        AbsolutePath netFxDir = ArtifactsDirectory / Path.GetFileNameWithoutExtension(CliFrameworkZip);
+        AbsolutePath coreFxDir = ArtifactsDirectory / Path.GetFileNameWithoutExtension(CliCoreZip);
+        AbsolutePath signedMergedExe = SignedArtifactsDirectory / Path.GetFileName(CliMergedExe);
+
+        try
+        {
+            UnzipFiles(CliFrameworkZip, netFxDir);
+            UnzipFiles(CliCoreZip, coreFxDir);
+            UnzipFiles(nupkgFile, nupkgDir);
+
+            var toSign = new List<AbsolutePath>();
+            toSign.AddRange(nupkgDir.GlobFiles("**/LibHac.dll"));
+            toSign.Add(netFxDir / "hactoolnet.exe");
+            toSign.Add(coreFxDir / "hactoolnet.dll");
+            toSign.Add(signedMergedExe);
+
+            Directory.CreateDirectory(SignedArtifactsDirectory);
+            File.Copy(CliMergedExe, signedMergedExe, true);
+
+            ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(nupkgFile), nupkgDir);
+            ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliFrameworkZip), netFxDir);
+            ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliCoreZip), coreFxDir);
+
+            SignAssemblies(password, toSign.Select(x => x.ToString()).ToArray());
+
+            // Avoid having multiple signed versions of the same file
+            File.Copy(nupkgDir / "lib" / "net46" / "LibHac.dll", netFxDir / "LibHac.dll", true);
+            File.Copy(nupkgDir / "lib" / "netcoreapp2.1" / "LibHac.dll", coreFxDir / "LibHac.dll", true);
+
+            ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(nupkgFile), nupkgDir);
+            ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliFrameworkZip), netFxDir);
+            ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliCoreZip), coreFxDir);
+        }
+        catch (Exception)
+        {
+            Directory.Delete(SignedArtifactsDirectory, true);
+            throw;
+        }
+        finally
+        {
+            Directory.Delete(nupkgDir, true);
+            Directory.Delete(netFxDir, true);
+            Directory.Delete(coreFxDir, true);
+        }
+    }
+
+    public static string ReadPassword()
+    {
+        var pwd = new StringBuilder();
+        ConsoleKeyInfo key;
+
+        Console.Write("Enter certificate password (Empty password to skip): ");
+        do
+        {
+            key = Console.ReadKey(true);
+
+            // Ignore any key out of range.
+            if (((int)key.Key) >= '!' && ((int)key.Key <= '~'))
+            {
+                // Append the character to the password.
+                pwd.Append(key.KeyChar);
+                Console.Write("*");
+            }
+            // Exit if Enter key is pressed.
+        } while (key.Key != ConsoleKey.Enter);
+        Console.WriteLine();
+
+        return pwd.ToString();
     }
 }

@@ -10,8 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Nuke.Common" Version="0.12.0" />
-    <PackageReference Include="SharpZipLib" Version="1.0.0" />
+    <PackageReference Include="Nuke.Common" Version="0.16.0" />
+    <PackageReference Include="SharpZipLib" Version="1.1.0" />
     <PackageReference Include="ILRepack.Lib" Version="2.0.16" NoWarn="NU1701" />
   </ItemGroup>
 
