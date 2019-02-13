@@ -19,6 +19,7 @@
     <VersionPrefix>0.2.0</VersionPrefix>
     <PathMap>$(MSBuildProjectDirectory)=C:/LibHac/</PathMap>
     <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <IncludeSource>true</IncludeSource>
     <NoWarn>$(NoWarn);1591</NoWarn>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
