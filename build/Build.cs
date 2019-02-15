@@ -43,7 +43,7 @@ namespace LibHacBuild
         Project LibHacProject => Solution.GetProject("LibHac").NotNull();
         Project LibHacTestProject => Solution.GetProject("LibHac.Tests").NotNull();
         Project HactoolnetProject => Solution.GetProject("hactoolnet").NotNull();
-        string AppVeyorVersion => $"{GitVersion.AssemblySemVer}-{GitVersion.PreReleaseTag}-{GitVersion.Sha.Substring(0, 8)}";
+        string AppVeyorVersion => $"{GitVersion.AssemblySemVer}-{GitVersion.PreReleaseTag}+{GitVersion.Sha.Substring(0, 8)}";
 
         Dictionary<string, object> VersionProps;
 
