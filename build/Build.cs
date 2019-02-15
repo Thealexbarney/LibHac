@@ -159,7 +159,7 @@ namespace LibHacBuild
 
                 if (Host != HostType.AppVeyor) return;
 
-                foreach (string filename in Directory.EnumerateFiles(ArtifactsDirectory, "*.nupkg"))
+                foreach (string filename in Directory.EnumerateFiles(ArtifactsDirectory, "*.*nupkg"))
                 {
                     PushArtifact(filename);
                 }
@@ -237,8 +237,27 @@ namespace LibHacBuild
                 }
             });
 
+        Target Publish => _ => _
+            .DependsOn(Test)
+            .OnlyWhenStatic(() => Host == HostType.AppVeyor)
+            .Executes(() =>
+            {
+                AbsolutePath nupkgFile = ArtifactsDirectory.GlobFiles("*.nupkg").Single();
+                AbsolutePath snupkgFile = ArtifactsDirectory.GlobFiles("*.snupkg").Single();
+
+                string apiKey = EnvironmentInfo.Variable("myget_api_key");
+                DotNetNuGetPushSettings settings = new DotNetNuGetPushSettings()
+                    .SetApiKey(apiKey)
+                    .SetSymbolApiKey(apiKey)
+                    .SetSource("https://www.myget.org/F/libhac/api/v2/package")
+                    .SetSymbolSource("https://www.myget.org/F/libhac/symbols/api/v2/package");
+
+                DotNetNuGetPush(settings.SetTargetPath(nupkgFile));
+                DotNetNuGetPush(settings.SetTargetPath(snupkgFile));
+            });
+
         Target Results => _ => _
-            .DependsOn(Test, Zip, Merge, Sign)
+            .DependsOn(Test, Zip, Merge, Sign, Publish)
             .Executes(() =>
             {
                 Console.WriteLine("SHA-1:");
@@ -468,7 +487,7 @@ namespace LibHacBuild
                 ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(nupkgFile), nupkgDir, pkgFileList);
                 ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliFrameworkZip), netFxDir);
                 ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliCoreZip), coreFxDir);
-                
+
                 File.Copy(snupkgFile, SignedArtifactsDirectory / Path.GetFileName(snupkgFile));
 
                 SignNupkg(SignedArtifactsDirectory / Path.GetFileName(nupkgFile), password);
