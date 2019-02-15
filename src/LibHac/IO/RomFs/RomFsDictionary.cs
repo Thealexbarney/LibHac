@@ -49,7 +49,7 @@ namespace LibHac.IO.RomFs
 
         public bool TryGetValue(int offset, out RomKeyValuePair<T> value)
         {
-            if (offset < 0 || offset + _sizeOfEntry >= Entries.Length)
+            if (offset < 0 || offset + _sizeOfEntry > Entries.Length)
             {
                 value = default;
                 return false;
