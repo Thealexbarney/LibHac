@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Xml.Linq;
 using ICSharpCode.SharpZipLib.Zip;
+using Nuke.Common.Tools.NuGet;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
 
@@ -106,6 +107,13 @@ namespace LibHacBuild
             }
 
             doc.Save(path);
+        }
+
+        public void SignNupkg(string pkgPath, string password)
+        {
+            NuGetTasks.NuGet(
+                $"sign \"{pkgPath}\" -CertificatePath cert.pfx -CertificatePassword {password} -Timestamper http://timestamp.digicert.com",
+                outputFilter: x => x.Replace(password, "hunter2"));
         }
 
         public static string ToHexString(byte[] arr)

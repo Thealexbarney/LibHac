@@ -10,6 +10,7 @@ using ILRepacking;
 using Nuke.Common;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tools.DotNet;
+using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.SignTool;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
@@ -25,6 +26,7 @@ namespace LibHacBuild
         readonly string Configuration = IsLocalBuild ? "Debug" : "Release";
 
         [Solution("LibHac.sln")] readonly Solution Solution;
+        [GitVersion(DisableOnUnix = true)] readonly GitVersion GitVersion;
 
         AbsolutePath SourceDirectory => RootDirectory / "src";
         AbsolutePath TestsDirectory => RootDirectory / "tests";
@@ -41,8 +43,22 @@ namespace LibHacBuild
         Project LibHacProject => Solution.GetProject("LibHac").NotNull();
         Project LibHacTestProject => Solution.GetProject("LibHac.Tests").NotNull();
         Project HactoolnetProject => Solution.GetProject("hactoolnet").NotNull();
+        string AppVeyorVersion => $"{GitVersion.AssemblySemVer}-{GitVersion.PreReleaseTag}-{GitVersion.Sha.Substring(0, 8)}";
+
+        Dictionary<string, object> VersionProps;
 
         const string CertFileName = "cert.pfx";
+
+        Target SetVersion => _ => _
+            .Executes(() =>
+            {
+                Console.WriteLine($"Building version {AppVeyorVersion}");
+
+                if (Host == HostType.AppVeyor)
+                {
+                    SetAppVeyorVersion(AppVeyorVersion);
+                }
+            });
 
         Target Clean => _ => _
             .Executes(() =>
@@ -58,6 +74,11 @@ namespace LibHacBuild
             .DependsOn(Clean)
             .Executes(() =>
             {
+                if (Host == HostType.AppVeyor)
+                {
+                    SetAppVeyorVersion(AppVeyorVersion);
+                }
+
                 DotNetRestoreSettings settings = new DotNetRestoreSettings()
                     .SetProjectFile(Solution);
 
@@ -65,13 +86,20 @@ namespace LibHacBuild
             });
 
         Target Compile => _ => _
-            .DependsOn(Restore)
+            .DependsOn(Restore, SetVersion)
             .Executes(() =>
             {
+                VersionProps = new Dictionary<string, object>
+                {
+                    ["VersionPrefix"] = GitVersion.AssemblySemVer,
+                    ["VersionSuffix"] = GitVersion.PreReleaseTag
+                };
+
                 DotNetBuildSettings buildSettings = new DotNetBuildSettings()
                     .SetProjectFile(Solution)
                     .EnableNoRestore()
-                    .SetConfiguration(Configuration);
+                    .SetConfiguration(Configuration)
+                    .SetProperties(VersionProps);
 
                 if (EnvironmentInfo.IsUnix) buildSettings = buildSettings.SetFramework("netcoreapp2.1");
 
@@ -84,14 +112,16 @@ namespace LibHacBuild
                 DotNetPublish(s => publishSettings
                     .SetProject(HactoolnetProject)
                     .SetFramework("netcoreapp2.1")
-                    .SetOutput(CliCoreDir));
+                    .SetOutput(CliCoreDir)
+                    .SetProperties(VersionProps));
 
                 if (EnvironmentInfo.IsWin)
                 {
                     DotNetPublish(s => publishSettings
                         .SetProject(HactoolnetProject)
                         .SetFramework("net46")
-                        .SetOutput(CliFrameworkDir));
+                        .SetOutput(CliFrameworkDir)
+                        .SetProperties(VersionProps));
                 }
 
                 // Hack around OS newline differences
@@ -114,11 +144,11 @@ namespace LibHacBuild
                     .SetConfiguration(Configuration)
                     .EnableIncludeSymbols()
                     .SetSymbolPackageFormat(DotNetSymbolPackageFormat.snupkg)
-                    .SetOutputDirectory(ArtifactsDirectory);
+                    .SetOutputDirectory(ArtifactsDirectory)
+                    .SetProperties(VersionProps);
 
                 if (EnvironmentInfo.IsUnix)
-                    settings = settings.SetProperties(
-                        new Dictionary<string, object> { ["TargetFrameworks"] = "netcoreapp2.1" });
+                    settings = settings.SetProperty("TargetFrameworks", "netcoreapp2.1");
 
                 DotNetPack(s => settings);
 
@@ -365,6 +395,27 @@ namespace LibHacBuild
             Console.WriteLine($"Added AppVeyor artifact {path}");
         }
 
+        public static void SetAppVeyorVersion(string version)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "appveyor",
+                Arguments = $"UpdateBuild -Version \"{version}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            var proc = new Process
+            {
+                StartInfo = psi
+            };
+
+            proc.Start();
+
+            proc.WaitForExit();
+        }
+
         public static void ReplaceLineEndings(string filename)
         {
             string text = File.ReadAllText(filename);
@@ -387,6 +438,7 @@ namespace LibHacBuild
         public void SignAndReZip(string password)
         {
             AbsolutePath nupkgFile = ArtifactsDirectory.GlobFiles("*.nupkg").Single();
+            AbsolutePath snupkgFile = ArtifactsDirectory.GlobFiles("*.snupkg").Single();
             AbsolutePath nupkgDir = TempDirectory / ("sign_" + Path.GetFileName(nupkgFile));
             AbsolutePath netFxDir = TempDirectory / ("sign_" + Path.GetFileName(CliFrameworkZip));
             AbsolutePath coreFxDir = TempDirectory / ("sign_" + Path.GetFileName(CliCoreZip));
@@ -416,6 +468,11 @@ namespace LibHacBuild
                 ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(nupkgFile), nupkgDir, pkgFileList);
                 ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliFrameworkZip), netFxDir);
                 ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliCoreZip), coreFxDir);
+                
+                File.Copy(snupkgFile, SignedArtifactsDirectory / Path.GetFileName(snupkgFile));
+
+                SignNupkg(SignedArtifactsDirectory / Path.GetFileName(nupkgFile), password);
+                SignNupkg(SignedArtifactsDirectory / Path.GetFileName(snupkgFile), password);
             }
             catch (Exception)
             {
