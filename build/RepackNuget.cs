@@ -33,6 +33,18 @@ namespace LibHacBuild
                 int index = fileList.FindIndex(x => x.Contains(".psmdcp"));
                 fileList[index] = newPsmdcpPath;
 
+                IEnumerable<string> files = Directory.EnumerateFiles(tempDir, "*.json", SearchOption.AllDirectories)
+                    .Concat(Directory.EnumerateFiles(tempDir, "*.xml", SearchOption.AllDirectories))
+                    .Concat(Directory.EnumerateFiles(tempDir, "*.rels", SearchOption.AllDirectories))
+                    .Concat(Directory.EnumerateFiles(tempDir, "*.psmdcp", SearchOption.AllDirectories))
+                    .Concat(Directory.EnumerateFiles(tempDir, "*.nuspec", SearchOption.AllDirectories));
+
+                foreach (string filename in files)
+                {
+                    Console.WriteLine(filename);
+                    ReplaceLineEndings(filename);
+                }
+
                 ZipDirectory(path, tempDir, fileList);
             }
             finally
