@@ -60,7 +60,11 @@ namespace LibHacBuild
             .OnlyWhenStatic(() => GitRepository != null)
             .Executes(() =>
             {
-                AppVeyorVersion = $"{GitVersion.AssemblySemVer}-{GitVersion.PreReleaseTag}+{GitVersion.Sha.Substring(0, 8)}";
+                AppVeyorVersion = $"{GitVersion.AssemblySemVer}";
+                if (!string.IsNullOrWhiteSpace(GitVersion.PreReleaseTag))
+                {
+                    AppVeyorVersion += $"-{GitVersion.PreReleaseTag}+{GitVersion.Sha.Substring(0, 8)}";
+                }
 
                 string suffix = GitVersion.PreReleaseTag;
 

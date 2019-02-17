@@ -56,22 +56,22 @@ export DOTNET_EXE="$DOTNET_DIRECTORY/dotnet"
 if [[ -x "$(command -v dotnet)" && (-z ${DOTNET_VERSION+x} || $(dotnet --version) == "$DOTNET_VERSION") ]]; then
     export DOTNET_EXE="$(command -v dotnet)"
 elif [[ ! (-x "$DOTNET_EXE" && (-z ${DOTNET_VERSION+x} || $($DOTNET_EXE --version) == "$DOTNET_VERSION")) ]]; then
-		
-	# Download install script
-	DOTNET_INSTALL_FILE="$TEMP_DIRECTORY/dotnet-install.sh"
-	mkdir -p "$TEMP_DIRECTORY"
+        
+    # Download install script
+    DOTNET_INSTALL_FILE="$TEMP_DIRECTORY/dotnet-install.sh"
+    mkdir -p "$TEMP_DIRECTORY"
 
-	if [ ! -x "$DOTNET_INSTALL_FILE" ]; then
-		curl -Lsfo "$DOTNET_INSTALL_FILE" "$DOTNET_INSTALL_URL"
-		chmod +x "$DOTNET_INSTALL_FILE"
-	fi
+    if [ ! -x "$DOTNET_INSTALL_FILE" ]; then
+        curl -Lsfo "$DOTNET_INSTALL_FILE" "$DOTNET_INSTALL_URL"
+        chmod +x "$DOTNET_INSTALL_FILE"
+    fi
     
-	# Install by channel or version
-	if [ -z ${DOTNET_VERSION+x} ]; then
-		"$DOTNET_INSTALL_FILE" --install-dir "$DOTNET_DIRECTORY" --channel "$DOTNET_CHANNEL" --no-path
-	else
-		"$DOTNET_INSTALL_FILE" --install-dir "$DOTNET_DIRECTORY" --version "$DOTNET_VERSION" --no-path
-	fi	
+    # Install by channel or version
+    if [ -z ${DOTNET_VERSION+x} ]; then
+        "$DOTNET_INSTALL_FILE" --install-dir "$DOTNET_DIRECTORY" --channel "$DOTNET_CHANNEL" --no-path
+    else
+        "$DOTNET_INSTALL_FILE" --install-dir "$DOTNET_DIRECTORY" --version "$DOTNET_VERSION" --no-path
+    fi
 fi
 
 echo "Microsoft (R) .NET Core SDK version $("$DOTNET_EXE" --version)"
