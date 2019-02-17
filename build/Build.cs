@@ -29,7 +29,7 @@ namespace LibHacBuild
         readonly string Configuration = IsLocalBuild ? "Debug" : "Release";
 
         [Parameter("Build only .NET Core targets if true. Default is false on Windows")]
-        readonly bool DoCoreBuildOnly = !EnvironmentInfo.IsWin;
+        readonly bool DoCoreBuildOnly;
 
         [Solution("LibHac.sln")] readonly Solution Solution;
         [GitRepository] readonly GitRepository GitRepository;

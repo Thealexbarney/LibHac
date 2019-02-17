@@ -3,7 +3,7 @@
 echo $(bash --version 2>&1 | head -n 1)
 
 #CUSTOMPARAM=0
-BUILD_ARGUMENTS=()
+BUILD_ARGUMENTS=("-DoCoreBuildOnly")
 for i in "$@"; do
     case $(echo $1 | awk '{print tolower($0)}') in
         # -custom-param) CUSTOMPARAM=1;;
