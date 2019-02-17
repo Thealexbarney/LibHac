@@ -62,10 +62,22 @@ namespace LibHacBuild
             {
                 AppVeyorVersion = $"{GitVersion.AssemblySemVer}-{GitVersion.PreReleaseTag}+{GitVersion.Sha.Substring(0, 8)}";
 
+                string suffix = GitVersion.PreReleaseTag;
+
+                if (!string.IsNullOrWhiteSpace(suffix))
+                {
+                    if (!GitRepository.IsOnMasterBranch())
+                    {
+                        suffix = $"-{suffix}";
+                    }
+
+                    suffix += $"+{GitVersion.Sha.Substring(0, 8)}";
+                }
+
                 VersionProps = new Dictionary<string, object>
                 {
                     ["VersionPrefix"] = GitVersion.AssemblySemVer,
-                    ["VersionSuffix"] = GitVersion.PreReleaseTag
+                    ["VersionSuffix"] = suffix
                 };
 
                 Console.WriteLine($"Building version {AppVeyorVersion}");
