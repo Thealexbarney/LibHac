@@ -1,5 +1,8 @@
 version: 0.1.3-{build}
 image: Visual Studio 2017
+environment:
+  myget_api_key:
+    secure: 0xJoYAtR6psXCRvk1qm5czDObkeRjHKPjfe5gIExXVFPwA0VVODYv/hBZYUtz2F3
 build_script:
   - ps: .\build.ps1
 test: off

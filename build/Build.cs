@@ -4,265 +4,538 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 using ICSharpCode.SharpZipLib.Zip;
 using ILRepacking;
 using Nuke.Common;
+using Nuke.Common.BuildServers;
 using Nuke.Common.Git;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tools.DotNet;
+using Nuke.Common.Tools.GitVersion;
+using Nuke.Common.Tools.SignTool;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 
-class Build : NukeBuild
+namespace LibHacBuild
 {
-    public static int Main() => Execute<Build>(x => x.Results);
+    partial class Build : NukeBuild
+    {
+        public static int Main() => Execute<Build>(x => x.Results);
 
-    [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
-    readonly string Configuration = IsLocalBuild ? "Debug" : "Release";
+        [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
+        readonly string Configuration = IsLocalBuild ? "Debug" : "Release";
 
-    [Solution("LibHac.sln")] readonly Solution Solution;
-    [GitRepository] readonly GitRepository GitRepository;
+        [Parameter("Build only .NET Core targets if true. Default is false on Windows")]
+        readonly bool DoCoreBuildOnly;
 
-    AbsolutePath SourceDirectory => RootDirectory / "src";
-    AbsolutePath TestsDirectory => RootDirectory / "tests";
-    AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
-    AbsolutePath TempDirectory => RootDirectory / ".tmp";
-    AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_netcoreapp2.1";
-    AbsolutePath CliFrameworkDir => TempDirectory / "hactoolnet_net46";
-    AbsolutePath CliFrameworkZip => ArtifactsDirectory / "hactoolnet.zip";
-    AbsolutePath CliCoreZip => ArtifactsDirectory / "hactoolnet_netcore.zip";
+        [Solution("LibHac.sln")] readonly Solution Solution;
+        [GitRepository] readonly GitRepository GitRepository;
+        [GitVersion] readonly GitVersion GitVersion;
 
-    AbsolutePath CliMergedExe => ArtifactsDirectory / "hactoolnet.exe";
+        AbsolutePath SourceDirectory => RootDirectory / "src";
+        AbsolutePath TestsDirectory => RootDirectory / "tests";
+        AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
+        AbsolutePath SignedArtifactsDirectory => ArtifactsDirectory / "signed";
+        AbsolutePath TempDirectory => RootDirectory / ".tmp";
+        AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_netcoreapp2.1";
+        AbsolutePath CliFrameworkDir => TempDirectory / "hactoolnet_net46";
+        AbsolutePath CliFrameworkZip => ArtifactsDirectory / "hactoolnet.zip";
+        AbsolutePath CliCoreZip => ArtifactsDirectory / "hactoolnet_netcore.zip";
 
-    Project LibHacProject => Solution.GetProject("LibHac").NotNull();
-    Project LibHacTestProject => Solution.GetProject("LibHac.Tests").NotNull();
-    Project HactoolnetProject => Solution.GetProject("hactoolnet").NotNull();
+        AbsolutePath CliMergedExe => ArtifactsDirectory / "hactoolnet.exe";
 
-    Target Clean => _ => _
-        .Executes(() =>
-        {
-            DeleteDirectories(GlobDirectories(SourceDirectory, "**/bin", "**/obj"));
-            DeleteDirectories(GlobDirectories(TestsDirectory, "**/bin", "**/obj"));
-            EnsureCleanDirectory(ArtifactsDirectory);
-            EnsureCleanDirectory(CliCoreDir);
-            EnsureCleanDirectory(CliFrameworkDir);
-        });
+        Project LibHacProject => Solution.GetProject("LibHac").NotNull();
+        Project LibHacTestProject => Solution.GetProject("LibHac.Tests").NotNull();
+        Project HactoolnetProject => Solution.GetProject("hactoolnet").NotNull();
 
-    Target Restore => _ => _
-        .DependsOn(Clean)
-        .Executes(() =>
-        {
-            DotNetRestoreSettings settings = new DotNetRestoreSettings()
-                .SetProjectFile(Solution);
+        string AppVeyorVersion { get; set; }
+        Dictionary<string, object> VersionProps { get; set; } = new Dictionary<string, object>();
 
-            if (EnvironmentInfo.IsUnix) settings = settings.RemoveRuntimes("net46");
+        const string CertFileName = "cert.pfx";
 
-            DotNetRestore(s => settings);
-        });
-
-    Target Compile => _ => _
-        .DependsOn(Restore)
-        .Executes(() =>
-        {
-            DotNetBuildSettings buildSettings = new DotNetBuildSettings()
-                .SetProjectFile(Solution)
-                .EnableNoRestore()
-                .SetConfiguration(Configuration);
-
-            if (EnvironmentInfo.IsUnix) buildSettings = buildSettings.SetFramework("netcoreapp2.1");
-
-            DotNetBuild(s => buildSettings);
-
-            DotNetPublishSettings publishSettings = new DotNetPublishSettings()
-                .EnableNoRestore()
-                .SetConfiguration(Configuration);
-
-            DotNetPublish(s => publishSettings
-                .SetProject(HactoolnetProject)
-                .SetFramework("netcoreapp2.1")
-                .SetOutput(CliCoreDir));
-
-            if (EnvironmentInfo.IsWin)
+        Target SetVersion => _ => _
+            .OnlyWhenStatic(() => GitRepository != null)
+            .Executes(() =>
             {
+                AppVeyorVersion = $"{GitVersion.AssemblySemVer}-{GitVersion.PreReleaseTag}+{GitVersion.Sha.Substring(0, 8)}";
+
+                VersionProps = new Dictionary<string, object>
+                {
+                    ["VersionPrefix"] = GitVersion.AssemblySemVer,
+                    ["VersionSuffix"] = GitVersion.PreReleaseTag
+                };
+
+                Console.WriteLine($"Building version {AppVeyorVersion}");
+
+                if (Host == HostType.AppVeyor)
+                {
+                    SetAppVeyorVersion(AppVeyorVersion);
+                }
+            });
+
+        Target Clean => _ => _
+            .Executes(() =>
+            {
+                DeleteDirectories(GlobDirectories(SourceDirectory, "**/bin", "**/obj"));
+                DeleteDirectories(GlobDirectories(TestsDirectory, "**/bin", "**/obj"));
+                EnsureCleanDirectory(ArtifactsDirectory);
+                EnsureCleanDirectory(CliCoreDir);
+                EnsureCleanDirectory(CliFrameworkDir);
+            });
+
+        Target Restore => _ => _
+            .DependsOn(Clean)
+            .Executes(() =>
+            {
+                DotNetRestoreSettings settings = new DotNetRestoreSettings()
+                    .SetProjectFile(Solution);
+
+                DotNetRestore(s => settings);
+            });
+
+        Target Compile => _ => _
+            .DependsOn(Restore, SetVersion)
+            .Executes(() =>
+            {
+                DotNetBuildSettings buildSettings = new DotNetBuildSettings()
+                    .SetProjectFile(Solution)
+                    .EnableNoRestore()
+                    .SetConfiguration(Configuration)
+                    .SetProperties(VersionProps);
+
+                if (DoCoreBuildOnly) buildSettings = buildSettings.SetFramework("netcoreapp2.1");
+
+                DotNetBuild(s => buildSettings);
+
+                DotNetPublishSettings publishSettings = new DotNetPublishSettings()
+                    .EnableNoRestore()
+                    .SetConfiguration(Configuration);
+
                 DotNetPublish(s => publishSettings
                     .SetProject(HactoolnetProject)
-                    .SetFramework("net46")
-                    .SetOutput(CliFrameworkDir));
-            }
+                    .SetFramework("netcoreapp2.1")
+                    .SetOutput(CliCoreDir)
+                    .SetProperties(VersionProps));
 
-            // Hack around OS newline differences
-            if (EnvironmentInfo.IsUnix)
-            {
-                foreach (string filename in Directory.EnumerateFiles(CliCoreDir, "*.json"))
+                if (!DoCoreBuildOnly)
                 {
-                    ReplaceLineEndings(filename);
+                    DotNetPublish(s => publishSettings
+                        .SetProject(HactoolnetProject)
+                        .SetFramework("net46")
+                        .SetOutput(CliFrameworkDir)
+                        .SetProperties(VersionProps));
                 }
-            }
-        });
 
-    Target Pack => _ => _
-        .DependsOn(Compile)
-        .Executes(() =>
-        {
-            DotNetPackSettings settings = new DotNetPackSettings()
-                .SetProject(LibHacProject)
-                .EnableNoBuild()
-                .SetConfiguration(Configuration)
-                .EnableIncludeSymbols()
-                .SetOutputDirectory(ArtifactsDirectory);
-
-            if (EnvironmentInfo.IsUnix)
-                settings = settings.SetProperties(
-                    new Dictionary<string, object> { ["TargetFrameworks"] = "netcoreapp2.1" });
-
-            DotNetPack(s => settings);
-
-            if (Host != HostType.AppVeyor) return;
-
-            foreach (string filename in Directory.EnumerateFiles(ArtifactsDirectory, "*.nupkg"))
-            {
-                PushArtifact(filename);
-            }
-        });
-
-    Target Merge => _ => _
-        .DependsOn(Compile)
-        .OnlyWhen(() => EnvironmentInfo.IsWin)
-        .Executes(() =>
-        {
-            string[] libraries = Directory.GetFiles(CliFrameworkDir, "*.dll");
-            var cliList = new List<string> { CliFrameworkDir / "hactoolnet.exe" };
-            cliList.AddRange(libraries);
-
-            var cliOptions = new RepackOptions
-            {
-                OutputFile = CliMergedExe,
-                InputAssemblies = cliList.ToArray(),
-                SearchDirectories = new[] { "." }
-            };
-
-            new ILRepack(cliOptions).Repack();
-
-            if (Host == HostType.AppVeyor)
-            {
-                PushArtifact(CliMergedExe);
-            }
-        });
-
-    Target Test => _ => _
-        .DependsOn(Compile)
-        .Executes(() =>
-        {
-            DotNetTestSettings settings = new DotNetTestSettings()
-                .SetProjectFile(LibHacTestProject)
-                .EnableNoBuild()
-                .SetConfiguration(Configuration);
-
-            if (EnvironmentInfo.IsUnix) settings = settings.SetFramework("netcoreapp2.1");
-
-            DotNetTest(s => settings);
-        });
-
-    Target Zip => _ => _
-        .DependsOn(Pack)
-        .Executes(() =>
-        {
-            string[] namesFx = Directory.EnumerateFiles(CliFrameworkDir, "*.exe")
-                .Concat(Directory.EnumerateFiles(CliFrameworkDir, "*.dll"))
-                .ToArray();
-
-            string[] namesCore = Directory.EnumerateFiles(CliCoreDir, "*.json")
-                .Concat(Directory.EnumerateFiles(CliCoreDir, "*.dll"))
-                .ToArray();
-
-            if (EnvironmentInfo.IsWin)
-            {
-                ZipFiles(CliFrameworkZip, namesFx);
-                Console.WriteLine($"Created {CliFrameworkZip}");
-            }
-
-            ZipFiles(CliCoreZip, namesCore);
-            Console.WriteLine($"Created {CliCoreZip}");
-
-            if (Host == HostType.AppVeyor)
-            {
-                PushArtifact(CliFrameworkZip);
-                PushArtifact(CliCoreZip);
-                PushArtifact(CliMergedExe);
-            }
-        });
-
-    Target Results => _ => _
-        .DependsOn(Test, Zip, Merge)
-        .Executes(() =>
-        {
-            Console.WriteLine("SHA-1:");
-            using (SHA1 sha = SHA1.Create())
-            {
-                foreach (string filename in Directory.EnumerateFiles(ArtifactsDirectory))
+                // Hack around OS newline differences
+                if (EnvironmentInfo.IsUnix)
                 {
-                    using (var stream = new FileStream(filename, FileMode.Open))
+                    foreach (string filename in Directory.EnumerateFiles(CliCoreDir, "*.json"))
                     {
-                        string hash = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "");
-                        Console.WriteLine($"{hash} - {Path.GetFileName(filename)}");
+                        ReplaceLineEndings(filename);
+                    }
+                }
+            });
+
+        Target Pack => _ => _
+            .DependsOn(Compile)
+            .Executes(() =>
+            {
+                DotNetPackSettings settings = new DotNetPackSettings()
+                    .SetProject(LibHacProject)
+                    .EnableNoBuild()
+                    .SetConfiguration(Configuration)
+                    .EnableIncludeSymbols()
+                    .SetSymbolPackageFormat(DotNetSymbolPackageFormat.snupkg)
+                    .SetOutputDirectory(ArtifactsDirectory)
+                    .SetProperties(VersionProps);
+
+                if (DoCoreBuildOnly)
+                    settings = settings.SetProperty("TargetFrameworks", "netcoreapp2.1");
+
+                DotNetPack(s => settings);
+
+                foreach (string filename in Directory.EnumerateFiles(ArtifactsDirectory, "*.*nupkg"))
+                {
+                    RepackNugetPackage(filename);
+                }
+
+                if (Host != HostType.AppVeyor) return;
+
+                foreach (string filename in Directory.EnumerateFiles(ArtifactsDirectory, "*.*nupkg"))
+                {
+                    PushArtifact(filename);
+                }
+            });
+
+        Target Merge => _ => _
+            .DependsOn(Compile)
+            .OnlyWhenStatic(() => !DoCoreBuildOnly)
+            .Executes(() =>
+            {
+                string[] libraries = Directory.GetFiles(CliFrameworkDir, "*.dll");
+                var cliList = new List<string> { CliFrameworkDir / "hactoolnet.exe" };
+                cliList.AddRange(libraries);
+
+                var cliOptions = new RepackOptions
+                {
+                    OutputFile = CliMergedExe,
+                    InputAssemblies = cliList.ToArray(),
+                    SearchDirectories = new[] { "." }
+                };
+
+                new ILRepack(cliOptions).Repack();
+
+                foreach (AbsolutePath file in ArtifactsDirectory.GlobFiles("*.exe.config"))
+                {
+                    File.Delete(file);
+                }
+
+                if (Host == HostType.AppVeyor)
+                {
+                    PushArtifact(CliMergedExe);
+                }
+            });
+
+        Target Test => _ => _
+            .DependsOn(Compile)
+            .Executes(() =>
+            {
+                DotNetTestSettings settings = new DotNetTestSettings()
+                    .SetProjectFile(LibHacTestProject)
+                    .EnableNoBuild()
+                    .SetConfiguration(Configuration);
+
+                if (DoCoreBuildOnly) settings = settings.SetFramework("netcoreapp2.1");
+
+                DotNetTest(s => settings);
+            });
+
+        Target Zip => _ => _
+            .DependsOn(Pack)
+            .Executes(() =>
+            {
+                string[] namesFx = Directory.EnumerateFiles(CliFrameworkDir, "*.exe")
+                    .Concat(Directory.EnumerateFiles(CliFrameworkDir, "*.dll"))
+                    .ToArray();
+
+                string[] namesCore = Directory.EnumerateFiles(CliCoreDir, "*.json")
+                    .Concat(Directory.EnumerateFiles(CliCoreDir, "*.dll"))
+                    .ToArray();
+
+                if (!DoCoreBuildOnly)
+                {
+                    ZipFiles(CliFrameworkZip, namesFx);
+                    Console.WriteLine($"Created {CliFrameworkZip}");
+                }
+
+                ZipFiles(CliCoreZip, namesCore);
+                Console.WriteLine($"Created {CliCoreZip}");
+
+                if (Host == HostType.AppVeyor)
+                {
+                    PushArtifact(CliFrameworkZip);
+                    PushArtifact(CliCoreZip);
+                    PushArtifact(CliMergedExe);
+                }
+            });
+
+        Target Publish => _ => _
+            .DependsOn(Test)
+            .OnlyWhenStatic(() => Host == HostType.AppVeyor)
+            .OnlyWhenStatic(() => AppVeyor.Instance.PullRequestTitle == null)
+            .Executes(() =>
+            {
+                AbsolutePath nupkgFile = ArtifactsDirectory.GlobFiles("*.nupkg").Single();
+                AbsolutePath snupkgFile = ArtifactsDirectory.GlobFiles("*.snupkg").Single();
+
+                string apiKey = EnvironmentInfo.Variable("myget_api_key");
+                DotNetNuGetPushSettings settings = new DotNetNuGetPushSettings()
+                    .SetApiKey(apiKey)
+                    .SetSymbolApiKey(apiKey)
+                    .SetSource("https://www.myget.org/F/libhac/api/v2/package")
+                    .SetSymbolSource("https://www.myget.org/F/libhac/symbols/api/v2/package");
+
+                DotNetNuGetPush(settings.SetTargetPath(nupkgFile));
+                DotNetNuGetPush(settings.SetTargetPath(snupkgFile));
+            });
+
+        Target Results => _ => _
+            .DependsOn(Test, Zip, Merge, Sign, Publish)
+            .Executes(() =>
+            {
+                Console.WriteLine("SHA-1:");
+                using (SHA1 sha = SHA1.Create())
+                {
+                    foreach (string filename in Directory.EnumerateFiles(ArtifactsDirectory))
+                    {
+                        using (var stream = new FileStream(filename, FileMode.Open))
+                        {
+                            string hash = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "");
+                            Console.WriteLine($"{hash} - {Path.GetFileName(filename)}");
+                        }
+                    }
+                }
+            });
+
+        Target Sign => _ => _
+            .DependsOn(Test, Zip, Merge)
+            .OnlyWhenStatic(() => !DoCoreBuildOnly)
+            .OnlyWhenStatic(() => File.Exists(CertFileName))
+            .Executes(() =>
+            {
+                string pwd = ReadPassword();
+
+                if (pwd == string.Empty)
+                {
+                    Console.WriteLine("Skipping sign task");
+                    return;
+                }
+
+                SignAndReZip(pwd);
+            });
+
+        public static void ZipFiles(string outFile, IEnumerable<string> files)
+        {
+            using (var s = new ZipOutputStream(File.Create(outFile)))
+            {
+                s.SetLevel(9);
+
+                foreach (string file in files)
+                {
+                    var entry = new ZipEntry(Path.GetFileName(file));
+                    entry.DateTime = DateTime.UnixEpoch;
+
+                    using (FileStream fs = File.OpenRead(file))
+                    {
+                        entry.Size = fs.Length;
+                        s.PutNextEntry(entry);
+                        fs.CopyTo(s);
                     }
                 }
             }
-        });
+        }
 
-    public static void ZipFiles(string outFile, string[] files)
-    {
-        using (var s = new ZipOutputStream(File.Create(outFile)))
+        public static void ZipDirectory(string outFile, string directory)
         {
-            s.SetLevel(9);
-
-            foreach (string file in files)
+            using (var s = new ZipOutputStream(File.Create(outFile)))
             {
-                var entry = new ZipEntry(Path.GetFileName(file));
-                entry.DateTime = DateTime.UnixEpoch;
+                s.SetLevel(9);
 
-                using (FileStream fs = File.OpenRead(file))
+                foreach (string filePath in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
                 {
-                    entry.Size = fs.Length;
-                    s.PutNextEntry(entry);
-                    fs.CopyTo(s);
+                    string relativePath = Path.GetRelativePath(directory, filePath);
+
+                    var entry = new ZipEntry(relativePath);
+                    entry.DateTime = DateTime.UnixEpoch;
+
+                    using (FileStream fs = File.OpenRead(filePath))
+                    {
+                        entry.Size = fs.Length;
+                        s.PutNextEntry(entry);
+                        fs.CopyTo(s);
+                    }
                 }
             }
         }
-    }
 
-    public static void PushArtifact(string path)
-    {
-        if (!File.Exists(path))
+        public static void ZipDirectory(string outFile, string directory, IEnumerable<string> files)
         {
-            Console.WriteLine($"Unable to add artifact {path}");
+            using (var s = new ZipOutputStream(File.Create(outFile)))
+            {
+                s.SetLevel(9);
+
+                foreach (string filePath in files)
+                {
+                    string absolutePath = Path.Combine(directory, filePath);
+
+                    var entry = new ZipEntry(filePath);
+                    entry.DateTime = DateTime.UnixEpoch;
+
+                    using (FileStream fs = File.OpenRead(absolutePath))
+                    {
+                        entry.Size = fs.Length;
+                        s.PutNextEntry(entry);
+                        fs.CopyTo(s);
+                    }
+                }
+            }
         }
 
-        var psi = new ProcessStartInfo
+        public static void UnzipFiles(string zipFile, string outDir)
         {
-            FileName = "appveyor",
-            Arguments = $"PushArtifact \"{path}\"",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
+            using (var s = new ZipInputStream(File.OpenRead(zipFile)))
+            {
+                ZipEntry entry;
+                while ((entry = s.GetNextEntry()) != null)
+                {
+                    string outPath = Path.Combine(outDir, entry.Name);
 
-        var proc = new Process
+                    string directoryName = Path.GetDirectoryName(outPath);
+                    string fileName = Path.GetFileName(outPath);
+
+                    if (!string.IsNullOrWhiteSpace(directoryName))
+                    {
+                        Directory.CreateDirectory(directoryName);
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(fileName))
+                    {
+                        using (FileStream outFile = File.Create(outPath))
+                        {
+                            s.CopyTo(outFile);
+                        }
+                    }
+                }
+            }
+        }
+
+        public static void PushArtifact(string path)
         {
-            StartInfo = psi
-        };
+            if (!File.Exists(path))
+            {
+                Console.WriteLine($"Unable to add artifact {path}");
+            }
 
-        proc.Start();
+            var psi = new ProcessStartInfo
+            {
+                FileName = "appveyor",
+                Arguments = $"PushArtifact \"{path}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
 
-        proc.WaitForExit();
+            var proc = new Process
+            {
+                StartInfo = psi
+            };
 
-        Console.WriteLine($"Added AppVeyor artifact {path}");
-    }
+            proc.Start();
 
-    public static void ReplaceLineEndings(string filename)
-    {
-        string text = File.ReadAllText(filename);
-        File.WriteAllText(filename, text.Replace("\n", "\r\n"));
+            proc.WaitForExit();
+
+            Console.WriteLine($"Added AppVeyor artifact {path}");
+        }
+
+        public static void SetAppVeyorVersion(string version)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "appveyor",
+                Arguments = $"UpdateBuild -Version \"{version}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            var proc = new Process
+            {
+                StartInfo = psi
+            };
+
+            proc.Start();
+
+            proc.WaitForExit();
+        }
+
+        public static void ReplaceLineEndings(string filename)
+        {
+            string text = File.ReadAllText(filename);
+            File.WriteAllText(filename, Regex.Replace(text, @"\r\n|\n\r|\n|\r", "\r\n"));
+        }
+
+        public static void SignAssemblies(string password, params string[] fileNames)
+        {
+            SignToolSettings settings = new SignToolSettings()
+                .SetFileDigestAlgorithm("SHA256")
+                .SetFile(CertFileName)
+                .SetFiles(fileNames)
+                .SetPassword(password)
+                .SetTimestampServerDigestAlgorithm("SHA256")
+                .SetRfc3161TimestampServerUrl("http://timestamp.digicert.com");
+
+            SignToolTasks.SignTool(settings);
+        }
+
+        public void SignAndReZip(string password)
+        {
+            AbsolutePath nupkgFile = ArtifactsDirectory.GlobFiles("*.nupkg").Single();
+            AbsolutePath snupkgFile = ArtifactsDirectory.GlobFiles("*.snupkg").Single();
+            AbsolutePath nupkgDir = TempDirectory / ("sign_" + Path.GetFileName(nupkgFile));
+            AbsolutePath netFxDir = TempDirectory / ("sign_" + Path.GetFileName(CliFrameworkZip));
+            AbsolutePath coreFxDir = TempDirectory / ("sign_" + Path.GetFileName(CliCoreZip));
+            AbsolutePath signedMergedExe = SignedArtifactsDirectory / Path.GetFileName(CliMergedExe);
+
+            try
+            {
+                UnzipFiles(CliFrameworkZip, netFxDir);
+                UnzipFiles(CliCoreZip, coreFxDir);
+                List<string> pkgFileList = UnzipPackage(nupkgFile, nupkgDir);
+
+                var toSign = new List<AbsolutePath>();
+                toSign.AddRange(nupkgDir.GlobFiles("**/LibHac.dll"));
+                toSign.Add(netFxDir / "hactoolnet.exe");
+                toSign.Add(coreFxDir / "hactoolnet.dll");
+                toSign.Add(signedMergedExe);
+
+                Directory.CreateDirectory(SignedArtifactsDirectory);
+                File.Copy(CliMergedExe, signedMergedExe, true);
+
+                SignAssemblies(password, toSign.Select(x => x.ToString()).ToArray());
+
+                // Avoid having multiple signed versions of the same file
+                File.Copy(nupkgDir / "lib" / "net46" / "LibHac.dll", netFxDir / "LibHac.dll", true);
+                File.Copy(nupkgDir / "lib" / "netcoreapp2.1" / "LibHac.dll", coreFxDir / "LibHac.dll", true);
+
+                ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(nupkgFile), nupkgDir, pkgFileList);
+                ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliFrameworkZip), netFxDir);
+                ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliCoreZip), coreFxDir);
+
+                File.Copy(snupkgFile, SignedArtifactsDirectory / Path.GetFileName(snupkgFile));
+
+                SignNupkg(SignedArtifactsDirectory / Path.GetFileName(nupkgFile), password);
+                SignNupkg(SignedArtifactsDirectory / Path.GetFileName(snupkgFile), password);
+            }
+            catch (Exception)
+            {
+                Directory.Delete(SignedArtifactsDirectory, true);
+                throw;
+            }
+            finally
+            {
+                Directory.Delete(nupkgDir, true);
+                Directory.Delete(netFxDir, true);
+                Directory.Delete(coreFxDir, true);
+            }
+        }
+
+        public static string ReadPassword()
+        {
+            var pwd = new StringBuilder();
+            ConsoleKeyInfo key;
+
+            Console.Write("Enter certificate password (Empty password to skip): ");
+            do
+            {
+                key = Console.ReadKey(true);
+
+                // Ignore any key out of range.
+                if (((int)key.Key) >= '!' && ((int)key.Key <= '~'))
+                {
+                    // Append the character to the password.
+                    pwd.Append(key.KeyChar);
+                    Console.Write("*");
+                }
+
+                // Exit if Enter key is pressed.
+            } while (key.Key != ConsoleKey.Enter);
+
+            Console.WriteLine();
+
+            return pwd.ToString();
+        }
     }
 }
