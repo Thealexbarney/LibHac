@@ -424,8 +424,6 @@ namespace LibHac
                 case 3: return "4.0.0-4.1.0";
                 case 4: return "5.0.0-5.1.0";
                 case 5: return "6.0.0-6.0.1";
-                case 6: return "6.2.0";
-                case 7: return "7.0.0";
                 default: return "Unknown";
             }
         }

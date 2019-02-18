@@ -48,13 +48,13 @@ namespace LibHac
             }
             else if (keyset.TitleKeys.TryGetValue(Header.RightsId, out byte[] titleKey))
             {
-                if (keyset.TitleKeks[CryptoType].IsEmpty())
+                if (keyset.Titlekeks[CryptoType].IsEmpty())
                 {
                     MissingKeyName = $"titlekek_{CryptoType:x2}";
                 }
 
                 TitleKey = titleKey;
-                Crypto.DecryptEcb(keyset.TitleKeks[CryptoType], titleKey, TitleKeyDec, 0x10);
+                Crypto.DecryptEcb(keyset.Titlekeks[CryptoType], titleKey, TitleKeyDec, 0x10);
                 DecryptedKeys[2] = TitleKeyDec;
             }
             else
