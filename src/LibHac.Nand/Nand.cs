@@ -59,7 +59,6 @@ namespace LibHac.Nand
             return Package2[index].Open().AsStorage().AsReadOnly();
         }
 
-
         public FatFileSystemProvider OpenSafePartition()
         {
             IStorage encStorage = Safe.Open().AsStorage();
