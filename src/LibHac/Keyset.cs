@@ -268,9 +268,7 @@ namespace LibHac
 
             Crypto.DecryptEcb(kek, BisKeySource[1], BisKeys[1], 0x20);
             Crypto.DecryptEcb(kek, BisKeySource[2], BisKeys[2], 0x20);
-
-            // BIS keys 2 and 3 are the same
-            Array.Copy(BisKeys[2], BisKeys[3], 0x20);
+            Crypto.DecryptEcb(kek, BisKeySource[3], BisKeys[3], 0x20);
         }
 
         private void DerivePerFirmwareKeys()
@@ -485,11 +483,18 @@ namespace LibHac
 
             var sb = new StringBuilder();
             int maxNameLength = dict.Values.Max(x => x.Name.Length);
+            int currentGroup = 0;
 
-            foreach (KeyValue keySlot in dict.Values.OrderBy(x => x.Name))
+            foreach (KeyValue keySlot in dict.Values.Where(x => x.Group >= 0).OrderBy(x => x.Group).ThenBy(x => x.Name))
             {
                 byte[] key = keySlot.GetKey(keyset);
                 if (key.IsEmpty()) continue;
+
+                if (keySlot.Group > currentGroup)
+                {
+                    if (currentGroup > 0) sb.AppendLine();
+                    currentGroup = keySlot.Group;
+                }
 
                 string line = $"{keySlot.Name.PadRight(maxNameLength)} = {key.ToHexString()}";
                 sb.AppendLine(line);
@@ -517,7 +522,7 @@ namespace LibHac
         {
             var sb = new StringBuilder();
 
-            foreach (KeyValuePair<byte[], byte[]> kv in keyset.TitleKeys)
+            foreach (KeyValuePair<byte[], byte[]> kv in keyset.TitleKeys.OrderBy(x => x.Key.ToHexString()))
             {
                 string line = $"{kv.Key.ToHexString()} = {kv.Value.ToHexString()}";
                 sb.AppendLine(line);
@@ -530,52 +535,63 @@ namespace LibHac
         {
             var keys = new List<KeyValue>
             {
-                new KeyValue("aes_kek_generation_source", 0x10, set => set.AesKekGenerationSource),
-                new KeyValue("aes_key_generation_source", 0x10, set => set.AesKeyGenerationSource),
-                new KeyValue("key_area_key_application_source", 0x10, set => set.KeyAreaKeyApplicationSource),
-                new KeyValue("key_area_key_ocean_source", 0x10, set => set.KeyAreaKeyOceanSource),
-                new KeyValue("key_area_key_system_source", 0x10, set => set.KeyAreaKeySystemSource),
-                new KeyValue("titlekek_source", 0x10, set => set.TitleKekSource),
-                new KeyValue("header_kek_source", 0x10, set => set.HeaderKekSource),
-                new KeyValue("header_key_source", 0x20, set => set.HeaderKeySource),
-                new KeyValue("header_key", 0x20, set => set.HeaderKey),
-                new KeyValue("xci_header_key", 0x10, set => set.XciHeaderKey),
-                new KeyValue("package2_key_source", 0x10, set => set.Package2KeySource),
-                new KeyValue("sd_card_kek_source", 0x10, set => set.SdCardKekSource),
-                new KeyValue("sd_card_nca_key_source", 0x20, set => set.SdCardKeySources[1]),
-                new KeyValue("sd_card_save_key_source", 0x20, set => set.SdCardKeySources[0]),
-                new KeyValue("master_key_source", 0x10, set => set.MasterKeySource),
-                new KeyValue("keyblob_mac_key_source", 0x10, set => set.KeyblobMacKeySource),
-                new KeyValue("eticket_rsa_kek", 0x10, set => set.EticketRsaKek),
-                new KeyValue("retail_specific_aes_key_source", 0x10, set => set.RetailSpecificAesKeySource),
-                new KeyValue("per_console_key_source", 0x10, set => set.PerConsoleKeySource),
-                new KeyValue("bis_kek_source", 0x10, set => set.BisKekSource),
-                new KeyValue("save_mac_kek_source", 0x10, set => set.SaveMacKekSource),
-                new KeyValue("save_mac_key_source", 0x10, set => set.SaveMacKeySource),
-                new KeyValue("ssl_rsa_kek", 0x10, set => set.SslRsaKek)
+                new KeyValue("keyblob_mac_key_source", 0x10, 0, set => set.KeyblobMacKeySource),
+
+                new KeyValue("master_key_source", 0x10, 60, set => set.MasterKeySource),
+                new KeyValue("package2_key_source", 0x10, 60, set => set.Package2KeySource),
+
+                new KeyValue("aes_kek_generation_source", 0x10, 70, set => set.AesKekGenerationSource),
+                new KeyValue("aes_key_generation_source", 0x10, 70, set => set.AesKeyGenerationSource),
+
+                new KeyValue("bis_kek_source", 0x10, 80, set => set.BisKekSource),
+
+                new KeyValue("retail_specific_aes_key_source", 0x10, 90, set => set.RetailSpecificAesKeySource),
+                new KeyValue("per_console_key_source", 0x10, 90, set => set.PerConsoleKeySource),
+
+                new KeyValue("header_kek_source", 0x10, 100, set => set.HeaderKekSource),
+                new KeyValue("header_key_source", 0x20, 100, set => set.HeaderKeySource),
+                new KeyValue("key_area_key_application_source", 0x10, 100, set => set.KeyAreaKeyApplicationSource),
+                new KeyValue("key_area_key_ocean_source", 0x10, 100, set => set.KeyAreaKeyOceanSource),
+                new KeyValue("key_area_key_system_source", 0x10, 100, set => set.KeyAreaKeySystemSource),
+                new KeyValue("titlekek_source", 0x10, 100, set => set.TitleKekSource),
+
+                new KeyValue("save_mac_kek_source", 0x10, 110, set => set.SaveMacKekSource),
+                new KeyValue("save_mac_key_source", 0x10, 110, set => set.SaveMacKeySource),
+                new KeyValue("sd_card_kek_source", 0x10, 110, set => set.SdCardKekSource),
+                new KeyValue("sd_card_nca_key_source", 0x20, 110, set => set.SdCardKeySources[1]),
+                new KeyValue("sd_card_save_key_source", 0x20, 110, set => set.SdCardKeySources[0]),
+
+                new KeyValue("eticket_rsa_kek", 0x10, 120, set => set.EticketRsaKek),
+                new KeyValue("ssl_rsa_kek", 0x10, 120, set => set.SslRsaKek),
+                new KeyValue("xci_header_key", 0x10, 130, set => set.XciHeaderKey),
+
+                new KeyValue("header_key", 0x20, 220, set => set.HeaderKey),
+
+                new KeyValue("tsec_root_key", 0x10, -1, set => set.TsecRootKeys[6])
             };
 
             for (int slot = 0; slot < 0x20; slot++)
             {
                 int i = slot;
-                keys.Add(new KeyValue($"keyblob_key_source_{i:x2}", 0x10, set => set.KeyblobKeySources[i]));
-                keys.Add(new KeyValue($"keyblob_{i:x2}", 0x90, set => set.Keyblobs[i]));
-                keys.Add(new KeyValue($"tsec_root_key_{i:x2}", 0x10, set => set.TsecRootKeys[i]));
-                keys.Add(new KeyValue($"master_key_{i:x2}", 0x10, set => set.MasterKeys[i]));
-                keys.Add(new KeyValue($"master_kek_{i:x2}", 0x10, set => set.MasterKeks[i]));
-                keys.Add(new KeyValue($"master_kek_source_{i:x2}", 0x10, set => set.MasterKekSources[i]));
-                keys.Add(new KeyValue($"package1_key_{i:x2}", 0x10, set => set.Package1Keys[i]));
-                keys.Add(new KeyValue($"package2_key_{i:x2}", 0x10, set => set.Package2Keys[i]));
-                keys.Add(new KeyValue($"titlekek_{i:x2}", 0x10, set => set.TitleKeks[i]));
-                keys.Add(new KeyValue($"key_area_key_application_{i:x2}", 0x10, set => set.KeyAreaKeys[i][0]));
-                keys.Add(new KeyValue($"key_area_key_ocean_{i:x2}", 0x10, set => set.KeyAreaKeys[i][1]));
-                keys.Add(new KeyValue($"key_area_key_system_{i:x2}", 0x10, set => set.KeyAreaKeys[i][2]));
+                keys.Add(new KeyValue($"keyblob_key_source_{i:x2}", 0x10, 0, set => set.KeyblobKeySources[i]));
+                keys.Add(new KeyValue($"keyblob_{i:x2}", 0x90, 10, set => set.Keyblobs[i]));
+                keys.Add(new KeyValue($"tsec_root_key_{i:x2}", 0x10, 20, set => set.TsecRootKeys[i]));
+                keys.Add(new KeyValue($"master_kek_source_{i:x2}", 0x10, 30, set => set.MasterKekSources[i]));
+                keys.Add(new KeyValue($"master_kek_{i:x2}", 0x10, 40, set => set.MasterKeks[i]));
+                keys.Add(new KeyValue($"package1_key_{i:x2}", 0x10, 50, set => set.Package1Keys[i]));
+
+                keys.Add(new KeyValue($"master_key_{i:x2}", 0x10, 200, set => set.MasterKeys[i]));
+                keys.Add(new KeyValue($"package2_key_{i:x2}", 0x10, 210, set => set.Package2Keys[i]));
+                keys.Add(new KeyValue($"titlekek_{i:x2}", 0x10, 230, set => set.TitleKeks[i]));
+                keys.Add(new KeyValue($"key_area_key_application_{i:x2}", 0x10, 240, set => set.KeyAreaKeys[i][0]));
+                keys.Add(new KeyValue($"key_area_key_ocean_{i:x2}", 0x10, 250, set => set.KeyAreaKeys[i][1]));
+                keys.Add(new KeyValue($"key_area_key_system_{i:x2}", 0x10, 260, set => set.KeyAreaKeys[i][2]));
             }
 
             for (int slot = 0; slot < 4; slot++)
             {
                 int i = slot;
-                keys.Add(new KeyValue($"bis_key_source_{i:x2}", 0x20, set => set.BisKeySource[i]));
+                keys.Add(new KeyValue($"bis_key_source_{i:x2}", 0x20, 80, set => set.BisKeySource[i]));
             }
 
             return keys;
@@ -585,25 +601,26 @@ namespace LibHac
         {
             var keys = new List<KeyValue>
             {
-                new KeyValue("secure_boot_key", 0x10, set => set.SecureBootKey),
-                new KeyValue("tsec_key", 0x10, set => set.TsecKey),
-                new KeyValue("device_key", 0x10, set => set.DeviceKey),
-                new KeyValue("sd_seed", 0x10, set => set.SdSeed),
-                new KeyValue("save_mac_key", 0x10, set => set.SaveMacKey)
+                new KeyValue("secure_boot_key", 0x10, 0, set => set.SecureBootKey),
+                new KeyValue("tsec_key", 0x10, 0, set => set.TsecKey),
+                new KeyValue("sd_seed", 0x10, 10, set => set.SdSeed),
+
+                new KeyValue("device_key", 0x10, 40, set => set.DeviceKey),
+                new KeyValue("save_mac_key", 0x10, 60, set => set.SaveMacKey)
             };
 
             for (int slot = 0; slot < 0x20; slot++)
             {
                 int i = slot;
-                keys.Add(new KeyValue($"keyblob_key_{i:x2}", 0x10, set => set.KeyblobKeys[i]));
-                keys.Add(new KeyValue($"keyblob_mac_key_{i:x2}", 0x10, set => set.KeyblobMacKeys[i]));
-                keys.Add(new KeyValue($"encrypted_keyblob_{i:x2}", 0xB0, set => set.EncryptedKeyblobs[i]));
+                keys.Add(new KeyValue($"keyblob_mac_key_{i:x2}", 0x10, 20, set => set.KeyblobMacKeys[i]));
+                keys.Add(new KeyValue($"keyblob_key_{i:x2}", 0x10, 30, set => set.KeyblobKeys[i]));
+                keys.Add(new KeyValue($"encrypted_keyblob_{i:x2}", 0xB0, 100, set => set.EncryptedKeyblobs[i]));
             }
 
             for (int slot = 0; slot < 4; slot++)
             {
                 int i = slot;
-                keys.Add(new KeyValue($"bis_key_{i:x2}", 0x20, set => set.BisKeys[i]));
+                keys.Add(new KeyValue($"bis_key_{i:x2}", 0x20, 50, set => set.BisKeys[i]));
             }
 
             return keys;
@@ -613,12 +630,14 @@ namespace LibHac
         {
             public readonly string Name;
             public readonly int Size;
+            public readonly int Group;
             public readonly Func<Keyset, byte[]> GetKey;
 
-            public KeyValue(string name, int size, Func<Keyset, byte[]> retrieveFunc)
+            public KeyValue(string name, int size, int group, Func<Keyset, byte[]> retrieveFunc)
             {
                 Name = name;
                 Size = size;
+                Group = group;
                 GetKey = retrieveFunc;
             }
         }
