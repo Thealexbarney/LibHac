@@ -369,14 +369,19 @@ namespace LibHac
             AllKeyDict = uniqueKeys.Concat(commonKeys).ToDictionary(k => k.Name, k => k);
         }
 
-        public static Keyset ReadKeyFile(string filename, string titleKeysFilename = null, string consoleKeysFilename = null, IProgressReport logger = null)
+        public static void ReadKeyFile(Keyset keyset, string filename, string titleKeysFilename = null, string consoleKeysFilename = null, IProgressReport logger = null)
         {
-            var keyset = new Keyset();
-
             if (filename != null) ReadMainKeys(keyset, filename, AllKeyDict, logger);
             if (consoleKeysFilename != null) ReadMainKeys(keyset, consoleKeysFilename, AllKeyDict, logger);
             if (titleKeysFilename != null) ReadTitleKeys(keyset, titleKeysFilename, logger);
             keyset.DeriveKeys(logger);
+        }
+
+        public static Keyset ReadKeyFile(string filename, string titleKeysFilename = null, string consoleKeysFilename = null, IProgressReport logger = null)
+        {
+            var keyset = new Keyset();
+
+            ReadKeyFile(filename, titleKeysFilename, consoleKeysFilename, logger);
 
             return keyset;
         }
