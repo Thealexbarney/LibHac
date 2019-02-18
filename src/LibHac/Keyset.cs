@@ -10,12 +10,20 @@ namespace LibHac
 {
     public class Keyset
     {
+        /// <summary>
+        /// The number of keyblobs that were used for &lt; 6.2.0 crypto
+        /// </summary>
+        private const int UsedKeyblobCount = 6;
+
         public byte[][] KeyblobKeys { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
         public byte[][] KeyblobMacKeys { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
         public byte[][] EncryptedKeyblobs { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0xB0);
         public byte[][] Keyblobs { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x90);
         public byte[][] KeyblobKeySources { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
         public byte[] KeyblobMacKeySource { get; } = new byte[0x10];
+        public byte[][] TsecRootKeys { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
+        public byte[][] MasterKekSources { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
+        public byte[][] MasterKeks { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
         public byte[] MasterKeySource { get; } = new byte[0x10];
         public byte[][] MasterKeys { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
         public byte[][] Package1Keys { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
@@ -28,29 +36,31 @@ namespace LibHac
         public byte[] KeyAreaKeySystemSource { get; } = new byte[0x10];
         public byte[] SaveMacKekSource { get; } = new byte[0x10];
         public byte[] SaveMacKeySource { get; } = new byte[0x10];
-        public byte[] TitlekekSource { get; } = new byte[0x10];
+        public byte[] TitleKekSource { get; } = new byte[0x10];
         public byte[] HeaderKekSource { get; } = new byte[0x10];
         public byte[] SdCardKekSource { get; } = new byte[0x10];
         public byte[][] SdCardKeySources { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
-        public byte[][] SdCardKeySourcesSpecific { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
         public byte[] HeaderKeySource { get; } = new byte[0x20];
         public byte[] HeaderKey { get; } = new byte[0x20];
         public byte[] XciHeaderKey { get; } = new byte[0x10];
-        public byte[][] Titlekeks { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
+        public byte[][] TitleKeks { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
         public byte[][][] KeyAreaKeys { get; } = Util.CreateJaggedArray<byte[][][]>(0x20, 3, 0x10);
-        public byte[] SaveMacKey { get; } = new byte[0x10];
-        public byte[][] SdCardKeys { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
         public byte[] EticketRsaKek { get; } = new byte[0x10];
         public byte[] RetailSpecificAesKeySource { get; } = new byte[0x10];
         public byte[] PerConsoleKeySource { get; } = new byte[0x10];
         public byte[] BisKekSource { get; } = new byte[0x10];
-        public byte[][] BisKeySource { get; } = Util.CreateJaggedArray<byte[][]>(3, 0x20);
+        public byte[][] BisKeySource { get; } = Util.CreateJaggedArray<byte[][]>(4, 0x20);
+        public byte[] SslRsaKek { get; } = new byte[0x10];
 
+        // Device-specific keys
         public byte[] SecureBootKey { get; } = new byte[0x10];
         public byte[] TsecKey { get; } = new byte[0x10];
         public byte[] DeviceKey { get; } = new byte[0x10];
         public byte[][] BisKeys { get; } = Util.CreateJaggedArray<byte[][]>(4, 0x20);
+        public byte[] SaveMacKey { get; } = new byte[0x10];
         public byte[] SdSeed { get; } = new byte[0x10];
+        public byte[][] SdCardKeySourcesSpecific { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
+        public byte[][] SdCardKeys { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
 
         public RSAParameters EticketExtKeyRsa { get; set; }
 
@@ -128,6 +138,9 @@ namespace LibHac
             DecryptKeyblobs(logger);
             ReadKeyblobs();
 
+            Derive620MasterKeks();
+            DeriveMasterKeys();
+
             DerivePerConsoleKeys();
             DerivePerFirmwareKeys();
             DeriveNcaHeaderKey();
@@ -141,7 +154,7 @@ namespace LibHac
             bool haveKeyblobMacKeySource = !MasterKeySource.IsEmpty();
             var temp = new byte[0x10];
 
-            for (int i = 0; i < 0x20; i++)
+            for (int i = 0; i < UsedKeyblobCount; i++)
             {
                 if (KeyblobKeySources[i].IsEmpty()) continue;
 
@@ -160,7 +173,7 @@ namespace LibHac
             var expectedCmac = new byte[0x10];
             var counter = new byte[0x10];
 
-            for (int i = 0; i < 0x20; i++)
+            for (int i = 0; i < UsedKeyblobCount; i++)
             {
                 if (KeyblobKeys[i].IsEmpty() || KeyblobMacKeys[i].IsEmpty() || EncryptedKeyblobs[i].IsEmpty())
                 {
@@ -187,21 +200,34 @@ namespace LibHac
 
         private void ReadKeyblobs()
         {
-            var masterKek = new byte[0x10];
-
-            bool haveMasterKeySource = !MasterKeySource.IsEmpty();
-
-            for (int i = 0; i < 0x20; i++)
+            for (int i = 0; i < UsedKeyblobCount; i++)
             {
                 if (Keyblobs[i].IsEmpty()) continue;
 
                 Array.Copy(Keyblobs[i], 0x80, Package1Keys[i], 0, 0x10);
+                Array.Copy(Keyblobs[i], MasterKeks[i], 0x10);
+            }
+        }
 
-                if (!haveMasterKeySource) continue;
+        private void Derive620MasterKeks()
+        {
+            for (int i = UsedKeyblobCount; i < 0x20; i++)
+            {
+                if (TsecRootKeys[i].IsEmpty() || MasterKekSources[i].IsEmpty()) continue;
 
-                Array.Copy(Keyblobs[i], masterKek, 0x10);
+                Crypto.DecryptEcb(TsecRootKeys[i], MasterKekSources[i], MasterKeks[i], 0x10);
+            }
+        }
 
-                Crypto.DecryptEcb(masterKek, MasterKeySource, MasterKeys[i], 0x10);
+        private void DeriveMasterKeys()
+        {
+            if (MasterKeySource.IsEmpty()) return;
+
+            for (int i = 0; i < 0x20; i++)
+            {
+                if (MasterKeks[i].IsEmpty()) continue;
+
+                Crypto.DecryptEcb(MasterKeks[i], MasterKeySource, MasterKeys[i], 0x10);
             }
         }
 
@@ -252,7 +278,7 @@ namespace LibHac
             bool haveKakSource0 = !KeyAreaKeyApplicationSource.IsEmpty();
             bool haveKakSource1 = !KeyAreaKeyOceanSource.IsEmpty();
             bool haveKakSource2 = !KeyAreaKeySystemSource.IsEmpty();
-            bool haveTitleKekSource = !TitlekekSource.IsEmpty();
+            bool haveTitleKekSource = !TitleKekSource.IsEmpty();
             bool havePackage2KeySource = !Package2KeySource.IsEmpty();
 
             for (int i = 0; i < 0x20; i++)
@@ -282,7 +308,7 @@ namespace LibHac
 
                 if (haveTitleKekSource)
                 {
-                    Crypto.DecryptEcb(MasterKeys[i], TitlekekSource, Titlekeks[i], 0x10);
+                    Crypto.DecryptEcb(MasterKeys[i], TitleKekSource, TitleKeks[i], 0x10);
                 }
 
                 if (havePackage2KeySource)
@@ -322,7 +348,7 @@ namespace LibHac
             }
         }
 
-        internal static readonly string[] KakNames = {"application", "ocean", "system"};
+        internal static readonly string[] KakNames = { "application", "ocean", "system" };
     }
 
     public static class ExternalKeys
@@ -509,7 +535,7 @@ namespace LibHac
                 new KeyValue("key_area_key_application_source", 0x10, set => set.KeyAreaKeyApplicationSource),
                 new KeyValue("key_area_key_ocean_source", 0x10, set => set.KeyAreaKeyOceanSource),
                 new KeyValue("key_area_key_system_source", 0x10, set => set.KeyAreaKeySystemSource),
-                new KeyValue("titlekek_source", 0x10, set => set.TitlekekSource),
+                new KeyValue("titlekek_source", 0x10, set => set.TitleKekSource),
                 new KeyValue("header_kek_source", 0x10, set => set.HeaderKekSource),
                 new KeyValue("header_key_source", 0x20, set => set.HeaderKeySource),
                 new KeyValue("header_key", 0x20, set => set.HeaderKey),
@@ -526,7 +552,7 @@ namespace LibHac
                 new KeyValue("bis_kek_source", 0x10, set => set.BisKekSource),
                 new KeyValue("save_mac_kek_source", 0x10, set => set.SaveMacKekSource),
                 new KeyValue("save_mac_key_source", 0x10, set => set.SaveMacKeySource),
-                new KeyValue("save_mac_key", 0x10, set => set.SaveMacKey)
+                new KeyValue("ssl_rsa_kek", 0x10, set => set.SslRsaKek)
             };
 
             for (int slot = 0; slot < 0x20; slot++)
@@ -534,16 +560,19 @@ namespace LibHac
                 int i = slot;
                 keys.Add(new KeyValue($"keyblob_key_source_{i:x2}", 0x10, set => set.KeyblobKeySources[i]));
                 keys.Add(new KeyValue($"keyblob_{i:x2}", 0x90, set => set.Keyblobs[i]));
+                keys.Add(new KeyValue($"tsec_root_key_{i:x2}", 0x10, set => set.TsecRootKeys[i]));
                 keys.Add(new KeyValue($"master_key_{i:x2}", 0x10, set => set.MasterKeys[i]));
+                keys.Add(new KeyValue($"master_kek_{i:x2}", 0x10, set => set.MasterKeks[i]));
+                keys.Add(new KeyValue($"master_kek_source_{i:x2}", 0x10, set => set.MasterKekSources[i]));
                 keys.Add(new KeyValue($"package1_key_{i:x2}", 0x10, set => set.Package1Keys[i]));
                 keys.Add(new KeyValue($"package2_key_{i:x2}", 0x10, set => set.Package2Keys[i]));
-                keys.Add(new KeyValue($"titlekek_{i:x2}", 0x10, set => set.Titlekeks[i]));
+                keys.Add(new KeyValue($"titlekek_{i:x2}", 0x10, set => set.TitleKeks[i]));
                 keys.Add(new KeyValue($"key_area_key_application_{i:x2}", 0x10, set => set.KeyAreaKeys[i][0]));
                 keys.Add(new KeyValue($"key_area_key_ocean_{i:x2}", 0x10, set => set.KeyAreaKeys[i][1]));
                 keys.Add(new KeyValue($"key_area_key_system_{i:x2}", 0x10, set => set.KeyAreaKeys[i][2]));
             }
 
-            for (int slot = 0; slot < 3; slot++)
+            for (int slot = 0; slot < 4; slot++)
             {
                 int i = slot;
                 keys.Add(new KeyValue($"bis_key_source_{i:x2}", 0x20, set => set.BisKeySource[i]));
@@ -559,7 +588,8 @@ namespace LibHac
                 new KeyValue("secure_boot_key", 0x10, set => set.SecureBootKey),
                 new KeyValue("tsec_key", 0x10, set => set.TsecKey),
                 new KeyValue("device_key", 0x10, set => set.DeviceKey),
-                new KeyValue("sd_seed", 0x10, set => set.SdSeed)
+                new KeyValue("sd_seed", 0x10, set => set.SdSeed),
+                new KeyValue("save_mac_key", 0x10, set => set.SaveMacKey)
             };
 
             for (int slot = 0; slot < 0x20; slot++)
