@@ -46,7 +46,7 @@ namespace LibHac.Nand
             path = ToDiscUtilsPath(PathTools.Normalize(path));
 
             if (path == @"\\") return true;
-            if (path == "\\") return true;
+            if (path == @"\") return true;
 
             return Fs.DirectoryExists(path);
         }

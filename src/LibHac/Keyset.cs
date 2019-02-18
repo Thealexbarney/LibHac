@@ -381,7 +381,7 @@ namespace LibHac
         {
             var keyset = new Keyset();
 
-            ReadKeyFile(filename, titleKeysFilename, consoleKeysFilename, logger);
+            ReadKeyFile(keyset, filename, titleKeysFilename, consoleKeysFilename, logger);
 
             return keyset;
         }

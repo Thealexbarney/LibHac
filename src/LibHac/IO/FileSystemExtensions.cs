@@ -61,7 +61,17 @@ namespace LibHac.IO
 
         public static IEnumerable<DirectoryEntry> EnumerateEntries(this IFileSystem fileSystem)
         {
-            return fileSystem.OpenDirectory("/", OpenDirectoryMode.All).EnumerateEntries("*", SearchOptions.RecurseSubdirectories);
+            return fileSystem.EnumerateEntries("*");
+        }
+
+        public static IEnumerable<DirectoryEntry> EnumerateEntries(this IFileSystem fileSystem, string searchPattern)
+        {
+            return fileSystem.EnumerateEntries(searchPattern, SearchOptions.RecurseSubdirectories);
+        }
+
+        public static IEnumerable<DirectoryEntry> EnumerateEntries(this IFileSystem fileSystem, string searchPattern, SearchOptions searchOptions)
+        {
+            return fileSystem.OpenDirectory("/", OpenDirectoryMode.All).EnumerateEntries(searchPattern, searchOptions);
         }
 
         public static IEnumerable<DirectoryEntry> EnumerateEntries(this IDirectory directory)
