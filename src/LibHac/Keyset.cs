@@ -213,9 +213,9 @@ namespace LibHac
         {
             for (int i = UsedKeyblobCount; i < 0x20; i++)
             {
-                if (TsecRootKeys[i].IsEmpty() || MasterKekSources[i].IsEmpty()) continue;
+                if (TsecRootKeys[i - UsedKeyblobCount].IsEmpty() || MasterKekSources[i].IsEmpty()) continue;
 
-                Crypto.DecryptEcb(TsecRootKeys[i], MasterKekSources[i], MasterKeks[i], 0x10);
+                Crypto.DecryptEcb(TsecRootKeys[i - UsedKeyblobCount], MasterKekSources[i], MasterKeks[i], 0x10);
             }
         }
 
@@ -570,9 +570,7 @@ namespace LibHac
                 new KeyValue("ssl_rsa_kek", 0x10, 120, set => set.SslRsaKek),
                 new KeyValue("xci_header_key", 0x10, 130, set => set.XciHeaderKey),
 
-                new KeyValue("header_key", 0x20, 220, set => set.HeaderKey),
-
-                new KeyValue("tsec_root_key", 0x10, -1, set => set.TsecRootKeys[6])
+                new KeyValue("header_key", 0x20, 220, set => set.HeaderKey)
             };
 
             for (int slot = 0; slot < 0x20; slot++)

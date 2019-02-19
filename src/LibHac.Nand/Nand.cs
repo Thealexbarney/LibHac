@@ -24,7 +24,7 @@ namespace LibHac.Nand
             GuidPartitionInfo[] partitions = disc.Partitions.Select(x => (GuidPartitionInfo)x).ToArray();
             ProdInfo = partitions.FirstOrDefault(x => x.Name == "PRODINFO");
             ProdInfoF = partitions.FirstOrDefault(x => x.Name == "PRODINFOF");
-            Package2 = new GuidPartitionInfo[]
+            Package2 = new[]
             {
                 partitions.FirstOrDefault(x => x.Name == "BCPKG2-1-Normal-Main"),
                 partitions.FirstOrDefault(x => x.Name == "BCPKG2-2-Normal-Sub"),
