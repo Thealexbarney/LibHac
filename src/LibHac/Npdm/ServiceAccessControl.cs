@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace LibHac.Npdm
 {
     public class ServiceAccessControl
     {
-        public Dictionary<string, bool> Services { get; } = new Dictionary<string, bool>();
+        public List<Tuple<string, bool>> Services { get; } = new List<Tuple<string, bool>>();
 
         public ServiceAccessControl(Stream stream, int offset, int size)
         {
@@ -27,7 +28,7 @@ namespace LibHac.Npdm
                 int  length          = ((controlByte & 0x07)) + 1;
                 bool registerAllowed = ((controlByte & 0x80) != 0);
 
-                Services.Add(reader.ReadAscii(length), registerAllowed);
+                Services.Add(new Tuple<string, bool>(reader.ReadAscii(length), registerAllowed));
 
                 bytesRead += length + 1;
             }

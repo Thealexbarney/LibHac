@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace LibHac.Npdm
 {
-    public struct KernelAccessControlItem
+    public class KernelAccessControlItem
     {
         public bool HasKernelFlags        { get; set; }
         public uint LowestThreadPriority  { get; set; }
@@ -29,5 +29,13 @@ namespace LibHac.Npdm
         public bool HasDebugFlags { get; set; }
         public bool AllowDebug    { get; set; }
         public bool ForceDebug    { get; set; }
+
+        public KernelAccessControlItem()
+        {
+            NormalMmio = new List<KernelAccessControlMmio>();
+            PageMmio = new List<KernelAccessControlMmio>();
+            Irq = new List<KernelAccessControlIrq>();
+        }
     }
+
 }
