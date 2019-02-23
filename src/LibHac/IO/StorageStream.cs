@@ -21,7 +21,7 @@ namespace LibHac.IO
         public override int Read(byte[] buffer, int offset, int count)
         {
             int toRead = (int) Math.Min(count, Length - Position);
-            BaseStorage.Read(buffer.AsSpan(offset, count), Position);
+            BaseStorage.Read(buffer.AsSpan(offset, toRead), Position);
 
             Position += toRead;
             return toRead;
