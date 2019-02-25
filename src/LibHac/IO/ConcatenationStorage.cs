@@ -29,18 +29,21 @@ namespace LibHac.IO
             long inPos = offset;
             int outPos = 0;
             int remaining = destination.Length;
+            int sourceIndex = FindSource(inPos);
 
             while (remaining > 0)
             {
-                ConcatSource entry = FindSource(inPos);
-                long sourcePos = inPos - entry.StartOffset;
+                ConcatSource entry = Sources[sourceIndex];
+                long entryPos = inPos - entry.StartOffset;
+                long entryRemain = entry.StartOffset + entry.Size - inPos;
 
-                int bytesToRead = (int)Math.Min(entry.EndOffset - inPos, remaining);
-                entry.Storage.Read(destination.Slice(outPos, bytesToRead), sourcePos);
+                int bytesToRead = (int)Math.Min(entryRemain, remaining);
+                entry.Storage.Read(destination.Slice(outPos, bytesToRead), entryPos);
 
                 outPos += bytesToRead;
                 inPos += bytesToRead;
                 remaining -= bytesToRead;
+                sourceIndex++;
             }
         }
 
@@ -49,18 +52,21 @@ namespace LibHac.IO
             long inPos = offset;
             int outPos = 0;
             int remaining = source.Length;
+            int sourceIndex = FindSource(inPos);
 
             while (remaining > 0)
             {
-                ConcatSource storage = FindSource(inPos);
-                long sourcePos = inPos - storage.StartOffset;
+                ConcatSource entry = Sources[sourceIndex];
+                long entryPos = inPos - entry.StartOffset;
+                long entryRemain = entry.StartOffset + entry.Size - inPos;
 
-                int bytesToWrite = (int)Math.Min(storage.EndOffset - inPos, remaining);
-                storage.Storage.Write(source.Slice(outPos, bytesToWrite), sourcePos);
+                int bytesToWrite = (int)Math.Min(entryRemain, remaining);
+                entry.Storage.Write(source.Slice(outPos, bytesToWrite), entryPos);
 
                 outPos += bytesToWrite;
                 inPos += bytesToWrite;
                 remaining -= bytesToWrite;
+                sourceIndex++;
             }
         }
 
@@ -72,27 +78,46 @@ namespace LibHac.IO
             }
         }
 
-        private ConcatSource FindSource(long offset)
+        private int FindSource(long offset)
         {
-            foreach (ConcatSource info in Sources)
+            if (offset < 0 || offset >= Length)
+                throw new ArgumentOutOfRangeException(nameof(offset), offset, "The Storage does not contain this offset.");
+
+            int lo = 0;
+            int hi = Sources.Length - 1;
+
+            while (lo <= hi)
             {
-                if (info.EndOffset > offset) return info;
+                int mid = lo + ((hi - lo) >> 1);
+
+                long val = Sources[mid].StartOffset;
+
+                if (val == offset) return mid;
+
+                if (val < offset)
+                {
+                    lo = mid + 1;
+                }
+                else
+                {
+                    hi = mid - 1;
+                }
             }
 
-            throw new ArgumentOutOfRangeException(nameof(offset), offset, "The Storage does not contain this offset.");
+            return lo - 1;
         }
 
         private class ConcatSource
         {
             public IStorage Storage { get; }
             public long StartOffset { get; }
-            public long EndOffset { get; }
+            public long Size { get; }
 
             public ConcatSource(IStorage storage, long startOffset, long length)
             {
                 Storage = storage;
                 StartOffset = startOffset;
-                EndOffset = startOffset + length;
+                Size = length;
             }
         }
     }
