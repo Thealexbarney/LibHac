@@ -1,5 +1,9 @@
 # LibHac
 
+[![NuGet](https://img.shields.io/nuget/v/LibHac.svg?style=flat-square)](https://www.nuget.org/packages/LibHac)
+[![MyGet](https://img.shields.io/myget/libhac/vpre/libhac.svg?label=myget&style=flat-square)](https://www.myget.org/feed/libhac/package/nuget/LibHac)
+[![AppVeyor Build Status](https://img.shields.io/appveyor/ci/thealexbarney/LibHac/master.svg?style=flat-square)](https://ci.appveyor.com/project/Thealexbarney/libhac/history)
+
 LibHac is a .NET and .NET Core library for opening, decrypting and extracting common content file formats used by the Nintendo Switch.
 
 Most content is imported and exported using a standard `IStorage` interface. This means that reading nested file types and encryptions can easily be done by linking different file readers together.  
