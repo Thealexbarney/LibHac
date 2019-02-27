@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace LibHac.IO
@@ -38,7 +39,9 @@ namespace LibHac.IO
                 File = file,
                 Length = file.GetSize(),
                 Offset = CurrentOffset,
-                NameLength = Encoding.UTF8.GetByteCount(filename)
+                NameLength = Encoding.UTF8.GetByteCount(filename),
+                HashOffset = 0,
+                HashLength = 0x200
             };
 
             CurrentOffset += entry.Length;
@@ -60,8 +63,10 @@ namespace LibHac.IO
 
         private byte[] BuildMetaData(PartitionFileSystemType type)
         {
+            if (type == PartitionFileSystemType.Hashed) CalculateHashes();
+
             int entryTableSize = Entries.Count * PartitionFileEntry.GetEntrySize(type);
-            int stringTableSize = CalcStringTableSize(HeaderSize + entryTableSize);
+            int stringTableSize = CalcStringTableSize(HeaderSize + entryTableSize, type);
             int metaDataSize = HeaderSize + entryTableSize + stringTableSize;
 
             var metaData = new byte[metaDataSize];
@@ -79,7 +84,17 @@ namespace LibHac.IO
                 writer.Write(entry.Offset);
                 writer.Write(entry.Length);
                 writer.Write(stringOffset);
-                writer.Write(0);
+
+                if (type == PartitionFileSystemType.Standard)
+                {
+                    writer.Write(0);
+                }
+                else
+                {
+                    writer.Write(entry.HashLength);
+                    writer.Write(entry.HashOffset);
+                    writer.Write(entry.Hash);
+                }
 
                 stringOffset += entry.NameLength + 1;
             }
@@ -92,7 +107,7 @@ namespace LibHac.IO
             return metaData;
         }
 
-        private int CalcStringTableSize(int startOffset)
+        private int CalcStringTableSize(int startOffset, PartitionFileSystemType type)
         {
             int size = 0;
 
@@ -101,7 +116,7 @@ namespace LibHac.IO
                 size += entry.NameLength + 1;
             }
 
-            int endOffset = Util.AlignUp(startOffset + size, MetaDataAlignment);
+            int endOffset = Util.AlignUp(startOffset + size, GetMetaDataAlignment(type));
             return endOffset - startOffset;
         }
 
@@ -115,6 +130,32 @@ namespace LibHac.IO
             }
         }
 
+        private int GetMetaDataAlignment(PartitionFileSystemType type)
+        {
+            switch (type)
+            {
+                case PartitionFileSystemType.Standard: return 0x20;
+                case PartitionFileSystemType.Hashed: return 0x200;
+                default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
+            }
+        }
+
+        private void CalculateHashes()
+        {
+            using (SHA256 sha = SHA256.Create())
+            {
+                foreach (Entry entry in Entries)
+                {
+                    if (entry.HashLength == 0) entry.HashLength = 0x200;
+
+                    var data = new byte[entry.HashLength];
+                    entry.File.Read(data, entry.HashOffset);
+
+                    entry.Hash = sha.ComputeHash(data);
+                }
+            }
+        }
+
         private class Entry
         {
             public string Name;
@@ -122,6 +163,10 @@ namespace LibHac.IO
             public long Length;
             public long Offset;
             public int NameLength;
+
+            public int HashLength;
+            public long HashOffset;
+            public byte[] Hash;
         }
     }
 }

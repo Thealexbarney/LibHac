@@ -37,10 +37,14 @@ namespace hactoolnet
                 return;
             }
 
+            PartitionFileSystemType type = ctx.Options.BuildHfs
+                ? PartitionFileSystemType.Hashed
+                : PartitionFileSystemType.Standard;
+
             var localFs = new LocalFileSystem(ctx.Options.InFile);
 
             var builder = new PartitionFileSystemBuilder(localFs);
-            IStorage partitionFs = builder.Build(PartitionFileSystemType.Standard);
+            IStorage partitionFs = builder.Build(type);
 
             ctx.Logger.LogMessage($"Building Partition FS as {ctx.Options.OutFile}");
 
