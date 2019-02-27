@@ -119,7 +119,7 @@ namespace LibHac.IO
                     throw new InvalidDataException($"Invalid Partition FS type \"{Magic}\"");
             }
 
-            int entrySize = GetFileEntrySize(Type);
+            int entrySize = PartitionFileEntry.GetEntrySize(Type);
             int stringTableOffset = 16 + entrySize * NumFiles;
             HeaderSize = stringTableOffset + StringTableSize;
 
@@ -133,19 +133,6 @@ namespace LibHac.IO
             {
                 reader.BaseStream.Position = stringTableOffset + Files[i].StringTableOffset;
                 Files[i].Name = reader.ReadAsciiZ();
-            }
-        }
-
-        private static int GetFileEntrySize(PartitionFileSystemType type)
-        {
-            switch (type)
-            {
-                case PartitionFileSystemType.Standard:
-                    return 24;
-                case PartitionFileSystemType.Hashed:
-                    return 0x40;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
         }
     }
@@ -176,6 +163,19 @@ namespace LibHac.IO
             else
             {
                 reader.BaseStream.Position += 4;
+            }
+        }
+
+        public static int GetEntrySize(PartitionFileSystemType type)
+        {
+            switch (type)
+            {
+                case PartitionFileSystemType.Standard:
+                    return 0x18;
+                case PartitionFileSystemType.Hashed:
+                    return 0x40;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
         }
     }

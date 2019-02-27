@@ -61,11 +61,14 @@ namespace hactoolnet
                 case FileType.Nsp:
                     ProcessNsp.Process(ctx);
                     break;
+                case FileType.PfsBuild:
+                    ProcessFsBuild.ProcessPartitionFs(ctx);
+                    break;
                 case FileType.Romfs:
                     ProcessRomfs.Process(ctx);
                     break;
                 case FileType.RomfsBuild:
-                    ProcessRomFsBuild.Process(ctx);
+                    ProcessFsBuild.ProcessRomFs(ctx);
                     break;
                 case FileType.Nax0:
                     break;
