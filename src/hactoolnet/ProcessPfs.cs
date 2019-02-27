@@ -7,7 +7,7 @@ using static hactoolnet.Print;
 
 namespace hactoolnet
 {
-    internal static class ProcessNsp
+    internal static class ProcessPfs
     {
         public static void Process(Context ctx)
         {
@@ -65,11 +65,11 @@ namespace hactoolnet
                 return;
             }
 
-            var builder = new Pfs0Builder();
+            var builder = new PartitionFileSystemBuilder();
 
             foreach (Nca nca in title.Ncas)
             {
-                builder.AddFile(nca.Filename, nca.GetStorage().AsStream());
+                builder.AddFile(nca.Filename, nca.GetStorage().AsFile(OpenMode.Read));
             }
 
             var ticket = new Ticket
@@ -84,16 +84,16 @@ namespace hactoolnet
                 SectHeaderOffset = 0x2C0
             };
             byte[] ticketBytes = ticket.GetBytes();
-            builder.AddFile($"{ticket.RightsId.ToHexString()}.tik", new MemoryStream(ticketBytes));
+            builder.AddFile($"{ticket.RightsId.ToHexString()}.tik", new MemoryStream(ticketBytes).AsIFile(OpenMode.ReadWrite));
 
             Assembly thisAssembly = Assembly.GetExecutingAssembly();
             Stream cert = thisAssembly.GetManifestResourceStream("hactoolnet.CA00000003_XS00000020");
-            builder.AddFile($"{ticket.RightsId.ToHexString()}.cert", cert);
-
-
+            builder.AddFile($"{ticket.RightsId.ToHexString()}.cert", cert.AsIFile(OpenMode.Read));
+            
             using (var outStream = new FileStream(ctx.Options.NspOut, FileMode.Create, FileAccess.ReadWrite))
             {
-                builder.Build(outStream, ctx.Logger);
+                IStorage builtPfs = builder.Build(PartitionFileSystemType.Standard);
+                builtPfs.CopyToStream(outStream, builtPfs.Length, ctx.Logger);
             }
         }
     }

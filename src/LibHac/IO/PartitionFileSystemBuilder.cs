@@ -14,6 +14,8 @@ namespace LibHac.IO
         private List<Entry> Entries { get; } = new List<Entry>();
         private long CurrentOffset { get; set; }
 
+        public PartitionFileSystemBuilder() { }
+
         /// <summary>
         /// Creates a new <see cref="PartitionFileSystemBuilder"/> and populates it with all
         /// the files in the root directory.

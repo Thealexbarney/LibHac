@@ -59,7 +59,7 @@ namespace hactoolnet
                     break;
                 case FileType.Pfs0:
                 case FileType.Nsp:
-                    ProcessNsp.Process(ctx);
+                    ProcessPfs.Process(ctx);
                     break;
                 case FileType.PfsBuild:
                     ProcessFsBuild.ProcessPartitionFs(ctx);
