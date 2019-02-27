@@ -31,8 +31,17 @@ namespace LibHac.IO
                 throw new ArgumentException("NAX0 key derivation failed.");
             }
 
-            IStorage encStorage = BaseFile.AsStorage().Slice(HeaderLength, Header.Size);
+            IStorage encStorage = BaseFile.AsStorage().Slice(HeaderLength, Util.AlignUp(Header.Size, 0x10));
             BaseStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Header.DecryptedKey1, Header.DecryptedKey2, BlockSize, true), 4, true);
+        }
+
+        public byte[] GetKey()
+        {
+            var key = new byte[0x20];
+            Array.Copy(Header.DecryptedKey1, 0, key, 0, 0x10);
+            Array.Copy(Header.DecryptedKey2, 0, key, 0x10, 0x10);
+
+            return key;
         }
 
         public override int Read(Span<byte> destination, long offset)
@@ -63,6 +72,8 @@ namespace LibHac.IO
 
         public override void SetSize(long size)
         {
+            Header.SetSize(size, VerificationKey);
+
             throw new NotImplementedException();
         }
     }

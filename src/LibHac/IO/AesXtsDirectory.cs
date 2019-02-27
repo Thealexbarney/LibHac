@@ -5,14 +5,16 @@ namespace LibHac.IO
 {
     public class AesXtsDirectory : IDirectory
     {
-        public IFileSystem ParentFileSystem { get; }
+        IFileSystem IDirectory.ParentFileSystem => ParentFileSystem;
+        public AesXtsFileSystem ParentFileSystem { get; }
+
         public string FullPath { get; }
         public OpenDirectoryMode Mode { get; }
 
         private IFileSystem BaseFileSystem { get; }
         private IDirectory BaseDirectory { get; }
 
-        public AesXtsDirectory(IFileSystem parentFs, IDirectory baseDir, OpenDirectoryMode mode)
+        public AesXtsDirectory(AesXtsFileSystem parentFs, IDirectory baseDir, OpenDirectoryMode mode)
         {
             ParentFileSystem = parentFs;
             BaseDirectory = baseDir;
@@ -66,7 +68,7 @@ namespace LibHac.IO
                     if (BitConverter.ToUInt32(buffer, 0) != 0x3058414E) return 0;
 
                     file.Read(buffer, 0x48);
-                    return BitConverter.ToInt32(buffer, 0);
+                    return BitConverter.ToInt64(buffer, 0);
                 }
             }
             catch (ArgumentOutOfRangeException)

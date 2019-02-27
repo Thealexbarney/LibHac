@@ -122,7 +122,7 @@ namespace LibHac
         /// <remarks>Example:
         /// A 4-bit offset binary value with a positive bias can store
         /// the values 8 through -7 inclusive.
-        /// A 4-bit offset binary value with a positive bias can store
+        /// A 4-bit offset binary value with a negative bias can store
         /// the values 7 through -8 inclusive.</remarks>
         public enum OffsetBias
         {

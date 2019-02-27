@@ -268,13 +268,13 @@ namespace LibHac
         Control,
         Manual,
         Data,
-        AocData
+        PublicData
     }
 
     public enum DistributionType
     {
         Download,
-        Gamecard
+        GameCard
     }
 
     public enum NcaEncryptionType

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace LibHac.IO.RomFs
@@ -13,8 +14,7 @@ namespace LibHac.IO.RomFs
         private int[] Buckets { get; set; }
         private byte[] Entries { get; set; }
 
-        // Hack around not being able to get the size of generic structures
-        private readonly int _sizeOfEntry = 12 + Marshal.SizeOf<T>();
+        private readonly int _sizeOfEntry = Unsafe.SizeOf<RomFsEntry>();
 
         public RomFsDictionary(IStorage bucketStorage, IStorage entryStorage)
         {
@@ -49,7 +49,7 @@ namespace LibHac.IO.RomFs
 
         public bool TryGetValue(int offset, out RomKeyValuePair<T> value)
         {
-            if (offset < 0 || offset + _sizeOfEntry >= Entries.Length)
+            if (offset < 0 || offset + _sizeOfEntry > Entries.Length)
             {
                 value = default;
                 return false;
@@ -68,13 +68,12 @@ namespace LibHac.IO.RomFs
 
         public ref T GetValueReference(int offset)
         {
-            ref RomFsEntry entry = ref MemoryMarshal.Cast<byte, RomFsEntry>(Entries.AsSpan(offset))[0];
-            return ref entry.Value;
+            return ref Unsafe.As<byte, RomFsEntry>(ref Entries[offset]).Value;
         }
 
         public ref T GetValueReference(int offset, out Span<byte> name)
         {
-            ref RomFsEntry entry = ref MemoryMarshal.Cast<byte, RomFsEntry>(Entries.AsSpan(offset))[0];
+            ref RomFsEntry entry = ref Unsafe.As<byte, RomFsEntry>(ref Entries[offset]);
 
             name = Entries.AsSpan(offset + _sizeOfEntry, entry.KeyLength);
             return ref entry.Value;
@@ -249,7 +248,7 @@ namespace LibHac.IO.RomFs
 
         private ref RomFsEntry GetEntryReference(int offset, out Span<byte> name)
         {
-            ref RomFsEntry entry = ref MemoryMarshal.Cast<byte, RomFsEntry>(Entries.AsSpan(offset))[0];
+            ref RomFsEntry entry = ref Unsafe.As<byte, RomFsEntry>(ref Entries[offset]);
 
             name = Entries.AsSpan(offset + _sizeOfEntry, entry.KeyLength);
             return ref entry;
@@ -257,7 +256,7 @@ namespace LibHac.IO.RomFs
 
         private ref RomFsEntry GetEntryReference(int offset, out Span<byte> name, int nameLength)
         {
-            ref RomFsEntry entry = ref MemoryMarshal.Cast<byte, RomFsEntry>(Entries.AsSpan(offset))[0];
+            ref RomFsEntry entry = ref Unsafe.As<byte, RomFsEntry>(ref Entries[offset]);
 
             name = Entries.AsSpan(offset + _sizeOfEntry, nameLength);
             return ref entry;

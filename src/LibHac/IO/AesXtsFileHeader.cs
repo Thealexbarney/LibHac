@@ -13,7 +13,7 @@ namespace LibHac.IO
         public uint Magic { get; }
         public byte[] EncryptedKey1 { get; } = new byte[0x10];
         public byte[] EncryptedKey2 { get; } = new byte[0x10];
-        public long Size { get; }
+        public long Size { get; private set; }
 
         public byte[] DecryptedKey1 { get; } = new byte[0x10];
         public byte[] DecryptedKey2 { get; } = new byte[0x10];
@@ -37,10 +37,10 @@ namespace LibHac.IO
             }
         }
 
-        public AesXtsFileHeader(byte[] key1, byte[] key2, long fileSize, string path, byte[] kekSeed, byte[] verificationKey)
+        public AesXtsFileHeader(byte[] key, long fileSize, string path, byte[] kekSeed, byte[] verificationKey)
         {
-            Array.Copy(key1, DecryptedKey1, 0x10);
-            Array.Copy(key2, DecryptedKey2, 0x10);
+            Array.Copy(key, 0, DecryptedKey1, 0, 0x10);
+            Array.Copy(key, 0x10, DecryptedKey2, 0, 0x10);
             Magic = AesXtsFileMagic;
             Size = fileSize;
 
@@ -61,6 +61,12 @@ namespace LibHac.IO
 
             byte[] hmac = CalculateHmac(verificationKey);
             return Util.ArraysEqual(hmac, Signature);
+        }
+
+        public void SetSize(long size, byte[] verificationKey)
+        {
+            Size = size;
+            Signature = CalculateHmac(verificationKey);
         }
 
         private void DecryptKeys()

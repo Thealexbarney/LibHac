@@ -207,6 +207,8 @@ namespace LibHac.IO.RomFs
             path = PathTools.Normalize(path);
             ReadOnlySpan<byte> pathBytes = GetUtf8Bytes(path);
 
+            if(path == "/") throw new ArgumentException("Path cannot be empty");
+
             CreateFileRecursiveInternal(pathBytes, ref fileInfo);
         }
 
@@ -347,7 +349,7 @@ namespace LibHac.IO.RomFs
             {
                 ref FileRomEntry entry = ref FileTable.AddOrGet(ref key, out int offset, out bool alreadyExists, out _);
                 entry.Info = fileInfo;
-                if (alreadyExists) entry.NextSibling = -1;
+                if (!alreadyExists) entry.NextSibling = -1;
 
                 ref DirectoryRomEntry parent = ref DirectoryTable.GetValueReference(prevOffset);
 
