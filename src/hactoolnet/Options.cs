@@ -62,6 +62,7 @@ namespace hactoolnet
     {
         Nca,
         Pfs0,
+        PfsBuild,
         Nsp,
         Romfs,
         RomfsBuild,
