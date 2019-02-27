@@ -136,7 +136,7 @@ namespace hactoolnet
 
             if (ctx.Options.NspOut != null)
             {
-                ProcessNsp.CreateNsp(ctx, switchFs);
+                ProcessPfs.CreateNsp(ctx, switchFs);
             }
 
             if (ctx.Options.SaveOutDir != null)
