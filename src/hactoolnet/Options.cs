@@ -44,6 +44,7 @@ namespace hactoolnet
         public bool ListFiles;
         public bool SignSave;
         public bool ReadBench;
+        public bool BuildHfs;
         public ulong TitleId;
         public string BenchType;
 
