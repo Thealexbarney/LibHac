@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Linq;
 
 namespace LibHac
 {
@@ -21,6 +22,8 @@ namespace LibHac
         public TitleVersion MinimumApplicationVersion { get; }
 
         public CnmtExtended ExtendedData { get; }
+
+        public byte[] Hash { get; }
 
         public Cnmt() { }
 
@@ -74,6 +77,8 @@ namespace LibHac
                 {
                     ExtendedData = new CnmtExtended(reader);
                 }
+
+                Hash = reader.ReadBytes(0x20);
             }
         }
     }
@@ -118,33 +123,34 @@ namespace LibHac
     public class CnmtExtended
     {
         public int PrevMetaCount { get; }
-        public int PrevDeltaCount { get; }
-        public int DeltaInfoCount { get; }
-        public int DeltaApplyCount { get; }
+        public int PrevDeltaSetCount { get; }
+        public int DeltaSetCount { get; }
+        public int FragmentSetCount { get; }
         public int PrevContentCount { get; }
         public int DeltaContentCount { get; }
 
         public CnmtPrevMetaEntry[] PrevMetas { get; }
-        public CnmtPrevDelta[] PrevDeltas { get; }
-        public CnmtDeltaInfo[] DeltaInfos { get; }
-        public CnmtDeltaApplyInfo[] DeltaApplyInfos { get; }
+        public CnmtPrevDelta[] PrevDeltaSets { get; }
+        public CnmtDeltaSetInfo[] DeltaSets { get; }
+        public CnmtFragmentSetInfo[] FragmentSets { get; }
         public CnmtPrevContent[] PrevContents { get; }
         public CnmtContentEntry[] DeltaContents { get; }
+        public FragmentMapEntry[] FragmentMap { get; }
 
         public CnmtExtended(BinaryReader reader)
         {
-            PrevMetaCount = reader.ReadInt32();
-            PrevDeltaCount = reader.ReadInt32();
-            DeltaInfoCount = reader.ReadInt32();
-            DeltaApplyCount = reader.ReadInt32();
-            PrevContentCount = reader.ReadInt32();
-            DeltaContentCount = reader.ReadInt32();
+            PrevMetaCount = reader.ReadInt32(); // Lists all previous content meta files
+            PrevDeltaSetCount = reader.ReadInt32(); // Lists all previous delta sets
+            DeltaSetCount = reader.ReadInt32(); // Lists the delta set for the current title version
+            FragmentSetCount = reader.ReadInt32(); // Groups fragments into full deltas
+            PrevContentCount = reader.ReadInt32(); // Lists all previous NCAs for the title
+            DeltaContentCount = reader.ReadInt32(); // Lists all NCAs containing delta fragments
             reader.BaseStream.Position += 4;
 
             PrevMetas = new CnmtPrevMetaEntry[PrevMetaCount];
-            PrevDeltas = new CnmtPrevDelta[PrevDeltaCount];
-            DeltaInfos = new CnmtDeltaInfo[DeltaInfoCount];
-            DeltaApplyInfos = new CnmtDeltaApplyInfo[DeltaApplyCount];
+            PrevDeltaSets = new CnmtPrevDelta[PrevDeltaSetCount];
+            DeltaSets = new CnmtDeltaSetInfo[DeltaSetCount];
+            FragmentSets = new CnmtFragmentSetInfo[FragmentSetCount];
             PrevContents = new CnmtPrevContent[PrevContentCount];
             DeltaContents = new CnmtContentEntry[DeltaContentCount];
 
@@ -153,19 +159,19 @@ namespace LibHac
                 PrevMetas[i] = new CnmtPrevMetaEntry(reader);
             }
 
-            for (int i = 0; i < PrevDeltaCount; i++)
+            for (int i = 0; i < PrevDeltaSetCount; i++)
             {
-                PrevDeltas[i] = new CnmtPrevDelta(reader);
+                PrevDeltaSets[i] = new CnmtPrevDelta(reader);
             }
 
-            for (int i = 0; i < DeltaInfoCount; i++)
+            for (int i = 0; i < DeltaSetCount; i++)
             {
-                DeltaInfos[i] = new CnmtDeltaInfo(reader);
+                DeltaSets[i] = new CnmtDeltaSetInfo(reader);
             }
 
-            for (int i = 0; i < DeltaApplyCount; i++)
+            for (int i = 0; i < FragmentSetCount; i++)
             {
-                DeltaApplyInfos[i] = new CnmtDeltaApplyInfo(reader);
+                FragmentSets[i] = new CnmtFragmentSetInfo(reader);
             }
 
             for (int i = 0; i < PrevContentCount; i++)
@@ -177,6 +183,14 @@ namespace LibHac
             {
                 DeltaContents[i] = new CnmtContentEntry(reader);
             }
+
+            int fragmentCount = FragmentSets.Sum(x => x.FragmentCount);
+            FragmentMap = new FragmentMapEntry[fragmentCount];
+
+            for (int i = 0; i < fragmentCount; i++)
+            {
+                FragmentMap[i] = new FragmentMapEntry(reader);
+            }
         }
     }
 
@@ -186,9 +200,9 @@ namespace LibHac
         public TitleVersion Version { get; }
         public TitleType Type { get; }
         public byte[] Hash { get; }
-        public short Field30 { get; }
-        public short Field32 { get; }
-        public int Field34 { get; }
+        public short ContentCount { get; }
+        public short CnmtPrevMetaEntryField32 { get; }
+        public int CnmtPrevMetaEntryField34 { get; }
 
         public CnmtPrevMetaEntry(BinaryReader reader)
         {
@@ -197,9 +211,9 @@ namespace LibHac
             Type = (TitleType)reader.ReadByte();
             reader.BaseStream.Position += 3;
             Hash = reader.ReadBytes(0x20);
-            Field30 = reader.ReadInt16();
-            Field32 = reader.ReadInt16();
-            Field34 = reader.ReadInt32();
+            ContentCount = reader.ReadInt16();
+            CnmtPrevMetaEntryField32 = reader.ReadInt16();
+            CnmtPrevMetaEntryField34 = reader.ReadInt32();
         }
     }
 
@@ -210,7 +224,7 @@ namespace LibHac
         public TitleVersion VersionOld { get; }
         public TitleVersion VersionNew { get; }
         public long Size { get; }
-        public long Field20 { get; }
+        public long CnmtPrevDeltaField20 { get; }
 
         public CnmtPrevDelta(BinaryReader reader)
         {
@@ -219,43 +233,43 @@ namespace LibHac
             VersionOld = new TitleVersion(reader.ReadUInt32());
             VersionNew = new TitleVersion(reader.ReadUInt32());
             Size = reader.ReadInt64();
-            Field20 = reader.ReadInt64();
+            CnmtPrevDeltaField20 = reader.ReadInt64();
         }
     }
 
-    public class CnmtDeltaInfo
+    public class CnmtDeltaSetInfo
     {
         public ulong TitleIdOld { get; }
         public ulong TitleIdNew { get; }
         public TitleVersion VersionOld { get; }
         public TitleVersion VersionNew { get; }
-        public long Field18 { get; }
-        public long Field20 { get; }
+        public long FragmentSetCount { get; }
+        public long DeltaContentCount { get; }
 
-        public CnmtDeltaInfo(BinaryReader reader)
+        public CnmtDeltaSetInfo(BinaryReader reader)
         {
             TitleIdOld = reader.ReadUInt64();
             TitleIdNew = reader.ReadUInt64();
             VersionOld = new TitleVersion(reader.ReadUInt32());
             VersionNew = new TitleVersion(reader.ReadUInt32());
-            Field18 = reader.ReadInt64();
-            Field20 = reader.ReadInt64();
+            FragmentSetCount = reader.ReadInt64();
+            DeltaContentCount = reader.ReadInt64();
         }
     }
 
-    public class CnmtDeltaApplyInfo
+    public class CnmtFragmentSetInfo
     {
         public byte[] NcaIdOld { get; }
         public byte[] NcaIdNew { get; }
         public long SizeOld { get; }
         public long SizeNew { get; }
-        public short Field2C { get; }
+        public short FragmentCount { get; }
         public CnmtContentType Type { get; }
-        public short Field2F { get; }
-        public int Field30 { get; }
+        public CnmtDeltaType DeltaType { get; }
+        public int FragmentSetInfoField30 { get; }
 
 
-        public CnmtDeltaApplyInfo(BinaryReader reader)
+        public CnmtFragmentSetInfo(BinaryReader reader)
         {
             NcaIdOld = reader.ReadBytes(0x10);
             NcaIdNew = reader.ReadBytes(0x10);
@@ -265,10 +279,10 @@ namespace LibHac
             SizeNew |= (long)reader.ReadUInt16() << 32;
             SizeNew = reader.ReadUInt32();
 
-            Field2C = reader.ReadInt16();
+            FragmentCount = reader.ReadInt16();
             Type = (CnmtContentType)reader.ReadByte();
-            Field2F = reader.ReadByte();
-            Field30 = reader.ReadInt32();
+            DeltaType = (CnmtDeltaType)reader.ReadByte();
+            FragmentSetInfoField30 = reader.ReadInt32();
         }
     }
 
@@ -288,6 +302,18 @@ namespace LibHac
         }
     }
 
+    public class FragmentMapEntry
+    {
+        public short ContentIndex { get; }
+        public short FragmentIndex { get; }
+
+        public FragmentMapEntry(BinaryReader reader)
+        {
+            ContentIndex = reader.ReadInt16();
+            FragmentIndex = reader.ReadInt16();
+        }
+    }
+
     public enum CnmtContentType
     {
         Meta,
@@ -297,6 +323,13 @@ namespace LibHac
         HtmlDocument,
         LegalInformation,
         DeltaFragment
+    }
+
+    public enum CnmtDeltaType
+    {
+        Delta,
+        Replace,
+        NewContent
     }
 
     public enum TitleType
