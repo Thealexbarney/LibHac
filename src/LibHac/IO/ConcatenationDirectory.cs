@@ -23,19 +23,18 @@ namespace LibHac.IO
         {
             foreach (DirectoryEntry entry in ParentDirectory.Read())
             {
-                bool isSplit = ParentFileSystem.IsSplitFile(entry.FullPath);
+                bool isSplit = ConcatenationFileSystem.HasConcatenationFileAttribute(entry.Attributes);
 
                 if (!CanReturnEntry(entry, isSplit)) continue;
 
-                if (!isSplit)
+                if (isSplit)
                 {
-                    yield return entry;
+                    entry.Type = DirectoryEntryType.File;
+                    entry.Size = ParentFileSystem.GetConcatenationFileSize(entry.FullPath);
+                    entry.Attributes = NxFileAttributes.None;
                 }
-                else
-                {
-                    long size = ParentFileSystem.GetConcatenationFileSize(entry.FullPath);
-                    yield return new DirectoryEntry(entry.Name, entry.FullPath, DirectoryEntryType.File, size);
-                }
+
+                yield return entry;
             }
         }
 
@@ -45,7 +44,7 @@ namespace LibHac.IO
 
             foreach (DirectoryEntry entry in ParentDirectory.Read())
             {
-                bool isSplit = ParentFileSystem.IsSplitFile(entry.FullPath);
+                bool isSplit = ConcatenationFileSystem.HasConcatenationFileAttribute(entry.Attributes);
 
                 if (CanReturnEntry(entry, isSplit)) count++;
             }

@@ -1,11 +1,9 @@
-﻿using System.IO;
-
-namespace LibHac.IO
+﻿namespace LibHac.IO
 {
     public interface IAttributeFileSystem : IFileSystem
     {
-        FileAttributes GetFileAttributes(string path);
-        void SetFileAttributes(string path, FileAttributes attributes);
+        NxFileAttributes GetFileAttributes(string path);
+        void SetFileAttributes(string path, NxFileAttributes attributes);
         long GetFileSize(string path);
     }
 }

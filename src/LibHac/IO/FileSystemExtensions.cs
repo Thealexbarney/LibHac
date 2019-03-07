@@ -166,6 +166,17 @@ namespace LibHac.IO
                 name.AsSpan(), ignoreCase);
 #endif
         }
+
+        public static NxFileAttributes ToNxAttributes(this FileAttributes attributes)
+        {
+            return (NxFileAttributes)(((int)attributes >> 4) & 3);
+        }
+
+        public static FileAttributes ApplyNxAttributes(this FileAttributes attributes, NxFileAttributes nxAttributes)
+        {
+            var nxAttributeBits = (FileAttributes)(((int)attributes & 3) << 4);
+            return attributes | nxAttributeBits;
+        }
     }
 
     [Flags]

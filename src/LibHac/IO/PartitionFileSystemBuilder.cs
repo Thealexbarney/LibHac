@@ -10,7 +10,6 @@ namespace LibHac.IO
     public class PartitionFileSystemBuilder
     {
         private const int HeaderSize = 0x10;
-        private const int MetaDataAlignment = 0x20;
 
         private List<Entry> Entries { get; } = new List<Entry>();
         private long CurrentOffset { get; set; }

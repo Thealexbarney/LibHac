@@ -68,18 +68,21 @@ namespace LibHac.Nand
             throw new FileNotFoundException(path);
         }
 
-        public FileAttributes GetFileAttributes(string path)
+        public NxFileAttributes GetFileAttributes(string path)
         {
             path = ToDiscUtilsPath(PathTools.Normalize(path));
 
-            return Fs.GetAttributes(path);
+            return Fs.GetAttributes(path).ToNxAttributes();
         }
 
-        public void SetFileAttributes(string path, FileAttributes attributes)
+        public void SetFileAttributes(string path, NxFileAttributes attributes)
         {
             path = ToDiscUtilsPath(PathTools.Normalize(path));
 
-            Fs.SetAttributes(path, attributes);
+            FileAttributes attributesOld = File.GetAttributes(path);
+            FileAttributes attributesNew = attributesOld.ApplyNxAttributes(attributes);
+
+            Fs.SetAttributes(path, attributesNew);
         }
 
         public long GetFileSize(string path)

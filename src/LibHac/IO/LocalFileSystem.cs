@@ -26,16 +26,21 @@ namespace LibHac.IO
             return Path.Combine(BasePath, path.TrimStart('/'));
         }
 
-        public FileAttributes GetFileAttributes(string path)
+        public NxFileAttributes GetFileAttributes(string path)
         {
             path = PathTools.Normalize(path);
-            return File.GetAttributes(ResolveLocalPath(path));
+            return File.GetAttributes(ResolveLocalPath(path)).ToNxAttributes();
         }
 
-        public void SetFileAttributes(string path, FileAttributes attributes)
+        public void SetFileAttributes(string path, NxFileAttributes attributes)
         {
             path = PathTools.Normalize(path);
-            File.SetAttributes(ResolveLocalPath(path), attributes);
+            string localPath = ResolveLocalPath(path);
+
+            FileAttributes attributesOld = File.GetAttributes(localPath);
+            FileAttributes attributesNew = attributesOld.ApplyNxAttributes(attributes);
+
+            File.SetAttributes(localPath, attributesNew);
         }
 
         public long GetFileSize(string path)

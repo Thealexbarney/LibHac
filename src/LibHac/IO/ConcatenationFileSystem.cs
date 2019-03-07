@@ -18,11 +18,14 @@ namespace LibHac.IO
             SplitFileSize = splitFileSize;
         }
 
-        internal bool IsSplitFile(string path)
+        internal bool IsConcatenationFile(string path)
         {
-            FileAttributes attributes = BaseFileSystem.GetFileAttributes(path);
+            return HasConcatenationFileAttribute(BaseFileSystem.GetFileAttributes(path));
+        }
 
-            return (attributes & FileAttributes.Directory) != 0 && (attributes & FileAttributes.Archive) != 0;
+        internal static bool HasConcatenationFileAttribute(NxFileAttributes attributes)
+        {
+            return (attributes & NxFileAttributes.Directory) != 0 && (attributes & NxFileAttributes.Archive) != 0;
         }
 
         public void CreateDirectory(string path)
@@ -51,10 +54,10 @@ namespace LibHac.IO
 
             // A concatenation file directory can't contain normal files
             string parentDir = PathTools.GetParentDirectory(path);
-            if (IsSplitFile(parentDir)) throw new IOException("Cannot create files inside of a concatenation file");
+            if (IsConcatenationFile(parentDir)) throw new IOException("Cannot create files inside of a concatenation file");
 
             BaseFileSystem.CreateDirectory(path);
-            FileAttributes attributes = BaseFileSystem.GetFileAttributes(path) | FileAttributes.Archive;
+            NxFileAttributes attributes = BaseFileSystem.GetFileAttributes(path) | NxFileAttributes.Archive;
             BaseFileSystem.SetFileAttributes(path, attributes);
 
             long remaining = size;
@@ -74,7 +77,7 @@ namespace LibHac.IO
         {
             path = PathTools.Normalize(path);
 
-            if (IsSplitFile(path))
+            if (IsConcatenationFile(path))
             {
                 throw new DirectoryNotFoundException(path);
             }
@@ -86,7 +89,7 @@ namespace LibHac.IO
         {
             path = PathTools.Normalize(path);
 
-            if (!IsSplitFile(path))
+            if (!IsConcatenationFile(path))
             {
                 BaseFileSystem.DeleteFile(path);
             }
@@ -105,7 +108,7 @@ namespace LibHac.IO
         {
             path = PathTools.Normalize(path);
 
-            if (IsSplitFile(path))
+            if (IsConcatenationFile(path))
             {
                 throw new DirectoryNotFoundException(path);
             }
@@ -119,7 +122,7 @@ namespace LibHac.IO
         {
             path = PathTools.Normalize(path);
 
-            if (!IsSplitFile(path))
+            if (!IsConcatenationFile(path))
             {
                 return BaseFileSystem.OpenFile(path, mode);
             }
@@ -143,7 +146,7 @@ namespace LibHac.IO
             srcPath = PathTools.Normalize(srcPath);
             dstPath = PathTools.Normalize(dstPath);
 
-            if (IsSplitFile(srcPath))
+            if (IsConcatenationFile(srcPath))
             {
                 throw new DirectoryNotFoundException();
             }
@@ -156,7 +159,7 @@ namespace LibHac.IO
             srcPath = PathTools.Normalize(srcPath);
             dstPath = PathTools.Normalize(dstPath);
 
-            if (IsSplitFile(srcPath))
+            if (IsConcatenationFile(srcPath))
             {
                 BaseFileSystem.RenameDirectory(srcPath, dstPath);
             }
@@ -170,21 +173,21 @@ namespace LibHac.IO
         {
             path = PathTools.Normalize(path);
 
-            return BaseFileSystem.DirectoryExists(path) && !IsSplitFile(path);
+            return BaseFileSystem.DirectoryExists(path) && !IsConcatenationFile(path);
         }
 
         public bool FileExists(string path)
         {
             path = PathTools.Normalize(path);
 
-            return BaseFileSystem.FileExists(path) || BaseFileSystem.DirectoryExists(path) && IsSplitFile(path);
+            return BaseFileSystem.FileExists(path) || BaseFileSystem.DirectoryExists(path) && IsConcatenationFile(path);
         }
 
         public DirectoryEntryType GetEntryType(string path)
         {
             path = PathTools.Normalize(path);
 
-            if (IsSplitFile(path)) return DirectoryEntryType.File;
+            if (IsConcatenationFile(path)) return DirectoryEntryType.File;
 
             return BaseFileSystem.GetEntryType(path);
         }

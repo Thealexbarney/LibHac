@@ -1,6 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.IO;
+using System.Runtime.CompilerServices;
 using DiscUtils;
 using LibHac.IO;
+
 using DirectoryEntry = LibHac.IO.DirectoryEntry;
 using IFileSystem = LibHac.IO.IFileSystem;
 
@@ -26,20 +29,19 @@ namespace LibHac.Nand
 
         public IEnumerable<DirectoryEntry> Read()
         {
-            if (Mode.HasFlag(OpenDirectoryMode.Directories))
+            foreach (DiscFileSystemInfo entry in DirInfo.GetFileSystemInfos())
             {
-                foreach (DiscDirectoryInfo dir in DirInfo.GetDirectories())
-                {
-                    yield return new DirectoryEntry(dir.Name, FullPath + '/' + dir.Name, DirectoryEntryType.Directory, 0);
-                }
-            }
+                bool isDir = (entry.Attributes & FileAttributes.Directory) != 0;
 
-            if (Mode.HasFlag(OpenDirectoryMode.Files))
-            {
-                foreach (DiscFileInfo file in DirInfo.GetFiles())
+                if (!CanReturnEntry(isDir, Mode)) continue;
+
+                DirectoryEntryType type = isDir ? DirectoryEntryType.File : DirectoryEntryType.Directory;
+                long length = isDir ? 0 : ((DiscFileInfo)entry).Length;
+
+                yield return new DirectoryEntry(entry.Name, FullPath + '/' + entry.Name, type, length)
                 {
-                    yield return new DirectoryEntry(file.Name, FullPath + '/' + file.Name, DirectoryEntryType.File, file.Length);
-                }
+                    Attributes = entry.Attributes.ToNxAttributes()
+                };
             }
         }
 
@@ -47,17 +49,21 @@ namespace LibHac.Nand
         {
             int count = 0;
 
-            if (Mode.HasFlag(OpenDirectoryMode.Directories))
+            foreach (DiscFileSystemInfo entry in DirInfo.GetFileSystemInfos())
             {
-                count += DirInfo.GetDirectories().Length;
-            }
+                bool isDir = (entry.Attributes & FileAttributes.Directory) != 0;
 
-            if (Mode.HasFlag(OpenDirectoryMode.Files))
-            {
-                count += DirInfo.GetFiles().Length;
+                if (CanReturnEntry(isDir, Mode)) count++;
             }
 
             return count;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool CanReturnEntry(bool isDir, OpenDirectoryMode mode)
+        {
+            return isDir && (mode & OpenDirectoryMode.Directories) != 0 ||
+                   !isDir && (mode & OpenDirectoryMode.Files) != 0;
         }
     }
 }
