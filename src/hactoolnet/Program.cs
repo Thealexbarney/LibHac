@@ -7,11 +7,11 @@ namespace hactoolnet
 {
     public static class Program
     {
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
             try
             {
-                Run(args);
+                if (Run(args)) return 0;
             }
             catch (MissingKeyException ex)
             {
@@ -26,14 +26,16 @@ namespace hactoolnet
                 Console.WriteLine(ex.GetType().FullName);
                 Console.WriteLine(ex.StackTrace);
             }
+
+            return 1;
         }
 
-        private static void Run(string[] args)
+        private static bool Run(string[] args)
         {
             Console.OutputEncoding = Encoding.UTF8;
             var ctx = new Context();
             ctx.Options = CliParser.Parse(args);
-            if (ctx.Options == null) return;
+            if (ctx.Options == null) return false;
 
             using (var logger = new ProgressBar())
             {
@@ -43,11 +45,13 @@ namespace hactoolnet
                 if (ctx.Options.RunCustom)
                 {
                     CustomTask(ctx);
-                    return;
+                    return true;
                 }
 
                 RunTask(ctx);
             }
+
+            return true;
         }
 
         private static void RunTask(Context ctx)
