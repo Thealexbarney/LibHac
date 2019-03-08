@@ -16,15 +16,15 @@ namespace hactoolnet
             catch (MissingKeyException ex)
             {
                 string name = ex.Type == KeyType.Title ? $"Title key for rights ID {ex.Name}" : ex.Name;
-                Console.WriteLine($"\nERROR: {ex.Message}\nA required key is missing.\nKey name: {name}\n");
+                Console.Error.WriteLine($"\nERROR: {ex.Message}\nA required key is missing.\nKey name: {name}\n");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"\nERROR: {ex.Message}\n");
+                Console.Error.WriteLine($"\nERROR: {ex.Message}\n");
 
-                Console.WriteLine("Additional information:");
-                Console.WriteLine(ex.GetType().FullName);
-                Console.WriteLine(ex.StackTrace);
+                Console.Error.WriteLine("Additional information:");
+                Console.Error.WriteLine(ex.GetType().FullName);
+                Console.Error.WriteLine(ex.StackTrace);
             }
 
             return 1;
