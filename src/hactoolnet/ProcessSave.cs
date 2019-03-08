@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using LibHac;
 using LibHac.IO;
@@ -143,11 +144,9 @@ namespace hactoolnet
 
                 if (ctx.Options.ListFiles)
                 {
-                    IDirectory dir = save.SaveDataFileSystemCore.OpenDirectory("/", OpenDirectoryMode.All);
-                    foreach (DirectoryEntry entry in dir.EnumerateEntries())
+                    foreach (DirectoryEntry entry in save.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File))
                     {
                         ctx.Logger.LogMessage(entry.FullPath);
-
                     }
                 }
 
@@ -172,7 +171,7 @@ namespace hactoolnet
             PrintItem(sb, colLen, "Save Data Size:", $"0x{save.Header.ExtraData.DataSize:x16} ({Util.GetBytesReadable(save.Header.ExtraData.DataSize)})");
             PrintItem(sb, colLen, "Journal Size:", $"0x{save.Header.ExtraData.JournalSize:x16} ({Util.GetBytesReadable(save.Header.ExtraData.JournalSize)})");
             PrintItem(sb, colLen, $"Header Hash{save.Header.HeaderHashValidity.GetValidityString()}:", save.Header.Layout.Hash);
-            PrintItem(sb, colLen, "Number of Files:", save.GetEntryCount(OpenDirectoryMode.Files));
+            PrintItem(sb, colLen, "Number of Files:", save.EnumerateEntries().Count(x => x.Type == DirectoryEntryType.File));
 
             PrintIvfcHash(sb, colLen, 4, save.Header.Ivfc, IntegrityStorageType.Save);
 
