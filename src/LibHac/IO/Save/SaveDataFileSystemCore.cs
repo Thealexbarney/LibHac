@@ -152,6 +152,7 @@ namespace LibHac.IO.Save
 
         public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
         public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
+        public SaveFileEntry GetFileEntry(string path) => FileDictionary[path];
 
         private void ReadFileInfo()
         {
