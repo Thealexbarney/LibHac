@@ -18,7 +18,7 @@ namespace NandReader
                 Console.WriteLine("Usage: NandReader raw_nand_dump_file");
                 return;
             }
-            GetTitleKeys(args[0]);
+            ReadSwitchFs(args[0]);
         }
 
         private static void GetTitleKeys(string nandFile)
@@ -51,6 +51,7 @@ namespace NandReader
                 var nand = new Nand(stream, keyset);
                 FatFileSystemProvider user = nand.OpenSystemPartition();
                 SwitchFs sdfs = SwitchFs.OpenNandPartition(keyset, user);
+                ;
             }
         }
 

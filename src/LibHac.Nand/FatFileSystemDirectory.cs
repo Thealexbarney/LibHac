@@ -35,8 +35,8 @@ namespace LibHac.Nand
 
                 if (!CanReturnEntry(isDir, Mode)) continue;
 
-                DirectoryEntryType type = isDir ? DirectoryEntryType.File : DirectoryEntryType.Directory;
-                long length = isDir ? 0 : ((DiscFileInfo)entry).Length;
+                DirectoryEntryType type = isDir ? DirectoryEntryType.Directory : DirectoryEntryType.File;
+                long length = isDir ? 0 : entry.FileSystem.GetFileLength(entry.FullName);
 
                 yield return new DirectoryEntry(entry.Name, FullPath + '/' + entry.Name, type, length)
                 {
