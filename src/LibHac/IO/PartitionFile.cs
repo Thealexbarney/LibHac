@@ -5,15 +5,17 @@ namespace LibHac.IO
     public class PartitionFile : FileBase
     {
         private IStorage BaseStorage { get; }
-        private long Offset { get; }
+        public long Offset { get; }
         private long Size { get; }
+        public Validity Validity { get; } = Validity.Unchecked;
 
-        public PartitionFile(IStorage baseStorage, long offset, long size, OpenMode mode)
+        public PartitionFile(IStorage baseStorage, long offset, long size , Validity validity, OpenMode mode)
         {
             Mode = mode;
             BaseStorage = baseStorage;
             Offset = offset;
             Size = size;
+            Validity = validity;
         }
 
         public override int Read(Span<byte> destination, long offset)

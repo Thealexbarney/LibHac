@@ -48,7 +48,7 @@ namespace LibHac.IO
 
         public IFile OpenFile(PartitionFileEntry entry, OpenMode mode)
         {
-            return new PartitionFile(BaseStorage, HeaderSize + entry.Offset, entry.Size, mode);
+            return new PartitionFile(BaseStorage, HeaderSize + entry.Offset, entry.Size, entry.HashValidity , mode);
         }
 
         public bool DirectoryExists(string path)
@@ -134,20 +134,29 @@ namespace LibHac.IO
                 reader.BaseStream.Position = stringTableOffset + Files[i].StringTableOffset;
                 Files[i].Name = reader.ReadAsciiZ();
             }
+
+            if (Type == PartitionFileSystemType.Hashed)
+            {
+                for (int i = 0; i < NumFiles; i++)
+                {
+                    reader.BaseStream.Position = HeaderSize + Files[i].Offset;
+                    Files[i].HashValidity = Crypto.CheckMemoryHashTable(reader.ReadBytes(Files[i].HashedRegionSize), Files[i].Hash, 0, Files[i].HashedRegionSize);
+                }
+            }
         }
     }
 
     public class PartitionFileEntry
     {
-        public int Index;
-        public long Offset;
-        public long Size;
-        public uint StringTableOffset;
-        public long HashedRegionOffset;
-        public int HashedRegionSize;
-        public byte[] Hash;
-        public string Name;
-        public Validity HashValidity = Validity.Unchecked;
+        public int Index { get; set; }
+        public long Offset { get; }
+        public long Size { get; }
+        public uint StringTableOffset { get; }
+        public long HashedRegionOffset { get; }
+        public int HashedRegionSize { get; }
+        public byte[] Hash { get; }
+        public string Name { get; set; }
+        public Validity HashValidity { get; set; } = Validity.Unchecked;
 
         public PartitionFileEntry(BinaryReader reader, PartitionFileSystemType type)
         {
@@ -165,6 +174,7 @@ namespace LibHac.IO
                 reader.BaseStream.Position += 4;
             }
         }
+
 
         public static int GetEntrySize(PartitionFileSystemType type)
         {
