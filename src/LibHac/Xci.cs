@@ -28,10 +28,15 @@ namespace LibHac
             XciPartition root = GetRootPartition();
             if (type == XciPartitionType.Root) return root;
 
-            IStorage partitionStorage = root.OpenFile(type.GetFileName(), OpenMode.Read).AsStorage();
-            return new XciPartition(partitionStorage);
+            PartitionFile partitionfile = (PartitionFile) root.OpenFile(type.GetFileName(), OpenMode.Read);
+            return new XciPartition(partitionfile.AsStorage())
+            {
+                Offset= partitionfile.Offset,
+                HashValidity = partitionfile.Validity
+            };
         }
 
+ 
         private XciPartition GetRootPartition()
         {
             if (RootPartition != null) return RootPartition;
