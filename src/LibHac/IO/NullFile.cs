@@ -4,8 +4,12 @@ namespace LibHac.IO
 {
     public class NullFile : FileBase
     {
-        public NullFile() { }
-        public NullFile(long length) => Length = length;
+        public NullFile()
+        {
+            Mode = OpenMode.ReadWrite;
+        }
+
+        public NullFile(long length) : this() => Length = length;
 
         private long Length { get; }
 
