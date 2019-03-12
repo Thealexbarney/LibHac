@@ -163,11 +163,10 @@ namespace hactoolnet
 
             foreach (DirectoryEntry entry in save.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File))
             {
-                SaveFileEntry saveEntry = save.SaveDataFileSystemCore.GetFileEntry(entry.FullPath);
+                save.SaveDataFileSystemCore.FileTable.TryOpenFile(entry.FullPath, out SaveFileInfo fileInfo);
+                if (fileInfo.StartBlock < 0) continue;
 
-                if (saveEntry.BlockIndex < 0) continue;
-
-                IEnumerable<(int block, int length)> chain = save.SaveDataFileSystemCore.AllocationTable.DumpChain(saveEntry.BlockIndex);
+                IEnumerable<(int block, int length)> chain = save.SaveDataFileSystemCore.AllocationTable.DumpChain(fileInfo.StartBlock);
 
                 sb.AppendLine(entry.FullPath);
                 sb.AppendLine(PrintBlockChain(chain));
