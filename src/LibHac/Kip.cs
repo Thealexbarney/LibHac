@@ -194,12 +194,8 @@ namespace LibHac
 
             for (int i = 0; i < KipCount; i++)
             {
-                // How to get the KIP's size the lazy way
-                var kip = new Kip(Storage.Slice(offset));
-
-                Kips[i] = new Kip(Storage.Slice(offset, kip.Size));
-
-                offset += kip.Size;
+                Kips[i] = new Kip(Storage.Slice(offset));
+                offset += Kips[i].Size;
             }
         }
     }
