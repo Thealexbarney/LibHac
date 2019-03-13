@@ -92,13 +92,13 @@ namespace LibHac.IO
 
     public class PartitionFileSystemHeader
     {
-        public string Magic;
-        public int NumFiles;
-        public int StringTableSize;
-        public long Reserved;
-        public PartitionFileSystemType Type;
-        public int HeaderSize;
-        public PartitionFileEntry[] Files;
+        public string Magic { get; }
+        public int NumFiles { get; }
+        public int StringTableSize { get; }
+        public long Reserved { get; }
+        public PartitionFileSystemType Type { get; }
+        public int HeaderSize { get; }
+        public PartitionFileEntry[] Files { get; }
 
         public PartitionFileSystemHeader(BinaryReader reader)
         {
