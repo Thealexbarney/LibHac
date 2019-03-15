@@ -2,8 +2,8 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using LibHac;
 using LibHac.IO;
+using LibHac.IO.NcaUtils;
 using static hactoolnet.Print;
 
 namespace hactoolnet
@@ -26,7 +26,7 @@ namespace hactoolnet
                     try
                     {
                         var nca = new Nca(ctx.Keyset, deltaStorage, true);
-                        IFileSystem fs = nca.OpenSectionFileSystem(0, IntegrityCheckLevel.ErrorOnInvalid);
+                        IFileSystem fs = nca.OpenFileSystem(0, IntegrityCheckLevel.ErrorOnInvalid);
 
                         if (!fs.FileExists(FragmentFileName))
                         {

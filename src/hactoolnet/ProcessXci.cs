@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using LibHac;
 using LibHac.IO;
-using LibHac.IO.RomFs;
+using LibHac.IO.NcaUtils;
 using static hactoolnet.Print;
 
 namespace hactoolnet
@@ -111,7 +111,7 @@ namespace hactoolnet
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        var romfs = new RomFsFileSystem(mainNca.OpenSection(romfsSection.SectionNum, false, ctx.Options.IntegrityLevel, true));
+                        IFileSystem romfs = mainNca.OpenFileSystem(romfsSection.SectionNum, ctx.Options.IntegrityLevel);
                         romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
                     }
 

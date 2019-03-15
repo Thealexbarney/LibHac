@@ -3,7 +3,7 @@ using System.Linq;
 using System.Text;
 using LibHac;
 using LibHac.IO;
-using LibHac.IO.RomFs;
+using LibHac.IO.NcaUtils;
 using static hactoolnet.Print;
 
 namespace hactoolnet
@@ -45,7 +45,7 @@ namespace hactoolnet
 
                 if (ctx.Options.ListRomFs && nca.Sections[1] != null)
                 {
-                    var romfs = new RomFsFileSystem(nca.OpenSection(1, false, ctx.Options.IntegrityLevel, true));
+                    IFileSystem romfs = nca.OpenFileSystem(NcaSectionType.Data, ctx.Options.IntegrityLevel);
 
                     foreach (DirectoryEntry entry in romfs.EnumerateEntries())
                     {
@@ -76,14 +76,14 @@ namespace hactoolnet
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        IFileSystem romfs = nca.OpenSectionFileSystem(section.SectionNum, ctx.Options.IntegrityLevel);
+                        IFileSystem romfs = nca.OpenFileSystem(section.SectionNum, ctx.Options.IntegrityLevel);
                         romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
                     }
 
                     if (ctx.Options.ReadBench)
                     {
                         long bytesToRead = 1024L * 1024 * 1024 * 5;
-                        IStorage storage = nca.OpenSection(section.SectionNum, false, ctx.Options.IntegrityLevel, true);
+                        IStorage storage = nca.OpenStorage(section.SectionNum, ctx.Options.IntegrityLevel);
                         var dest = new NullStorage(storage.Length);
 
                         int iterations = (int)(bytesToRead / storage.Length) + 1;
@@ -125,7 +125,7 @@ namespace hactoolnet
 
                     if (ctx.Options.ExefsOutDir != null)
                     {
-                        IFileSystem pfs = nca.OpenSectionFileSystem(section.SectionNum, ctx.Options.IntegrityLevel);
+                        IFileSystem pfs = nca.OpenFileSystem(section.SectionNum, ctx.Options.IntegrityLevel);
                         pfs.Extract(ctx.Options.ExefsOutDir, ctx.Logger);
                     }
                 }

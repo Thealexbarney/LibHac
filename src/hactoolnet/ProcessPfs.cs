@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Text;
 using LibHac;
 using LibHac.IO;
+using LibHac.IO.NcaUtils;
 using static hactoolnet.Print;
 
 namespace hactoolnet

@@ -1,8 +1,6 @@
 ﻿using System.IO;
-using System.Linq;
-using LibHac.IO;
 
-namespace LibHac
+namespace LibHac.IO.NcaUtils
 {
     public class NcaHeader
     {
@@ -98,72 +96,6 @@ namespace LibHac
         }
     }
 
-    public class NcaFsHeader
-    {
-        public short Version;
-        public NcaFormatType FormatType;
-        public NcaHashType HashType;
-        public NcaEncryptionType EncryptionType;
-        public SectionType Type;
-
-        public IvfcHeader IvfcInfo;
-        public Sha256Info Sha256Info;
-        public BktrPatchInfo BktrInfo;
-
-        public byte[] Ctr;
-
-        public NcaFsHeader(BinaryReader reader)
-        {
-            long start = reader.BaseStream.Position;
-            Version = reader.ReadInt16();
-            FormatType = (NcaFormatType)reader.ReadByte();
-            HashType = (NcaHashType)reader.ReadByte();
-            EncryptionType = (NcaEncryptionType)reader.ReadByte();
-            reader.BaseStream.Position += 3;
-
-            switch (HashType)
-            {
-                case NcaHashType.Sha256:
-                    Sha256Info = new Sha256Info(reader);
-                    break;
-                case NcaHashType.Ivfc:
-                    IvfcInfo = new IvfcHeader(reader);
-                    break;
-            }
-
-            if (EncryptionType == NcaEncryptionType.AesCtrEx)
-            {
-                BktrInfo = new BktrPatchInfo();
-
-                reader.BaseStream.Position = start + 0x100;
-
-                BktrInfo.RelocationHeader = new BktrHeader(reader);
-                BktrInfo.EncryptionHeader = new BktrHeader(reader);
-            }
-
-            if (FormatType == NcaFormatType.Pfs0)
-            {
-                Type = SectionType.Pfs0;
-            }
-            else if (FormatType == NcaFormatType.Romfs)
-            {
-                if (EncryptionType == NcaEncryptionType.AesCtrEx)
-                {
-                    Type = SectionType.Bktr;
-                }
-                else
-                {
-                    Type = SectionType.Romfs;
-                }
-            }
-
-            reader.BaseStream.Position = start + 0x140;
-            Ctr = reader.ReadBytes(8).Reverse().ToArray();
-
-            reader.BaseStream.Position = start + 512;
-        }
-    }
-
     public class BktrPatchInfo
     {
         public BktrHeader RelocationHeader;
@@ -174,7 +106,7 @@ namespace LibHac
     {
         public byte[] MasterHash;
         public int BlockSize; // In bytes
-        public uint Always2;
+        public uint LevelCount;
         public long HashTableOffset;
         public long HashTableSize;
         public long DataOffset;
@@ -187,7 +119,7 @@ namespace LibHac
         {
             MasterHash = reader.ReadBytes(0x20);
             BlockSize = reader.ReadInt32();
-            Always2 = reader.ReadUInt32();
+            LevelCount = reader.ReadUInt32();
             HashTableOffset = reader.ReadInt64();
             HashTableSize = reader.ReadInt64();
             DataOffset = reader.ReadInt64();
@@ -261,6 +193,13 @@ namespace LibHac
         Logo
     };
 
+    public enum NcaSectionType
+    {
+        Code,
+        Data,
+        Logo
+    };
+
     public enum ContentType
     {
         Program,
@@ -306,13 +245,5 @@ namespace LibHac
         Pfs0,
         Romfs,
         Bktr
-    }
-
-    public enum Validity : byte
-    {
-        Unchecked,
-        Invalid,
-        Valid,
-        MissingKey
     }
 }

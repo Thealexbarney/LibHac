@@ -48,7 +48,7 @@ namespace LibHac.IO
         public string Magic;
         public int Version;
         public int NumEntries;
-        public int Field1C;
+        public int FieldC;
 
         public BucketTreeHeader(IStorage storage)
         {
@@ -57,7 +57,7 @@ namespace LibHac.IO
             Magic = reader.ReadAscii(4);
             Version = reader.ReadInt32();
             NumEntries = reader.ReadInt32();
-            Field1C = reader.ReadInt32();
+            FieldC = reader.ReadInt32();
         }
     }
 
