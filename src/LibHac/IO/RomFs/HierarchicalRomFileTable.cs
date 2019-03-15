@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace LibHac.IO.RomFs
 {
@@ -82,7 +80,7 @@ namespace LibHac.IO.RomFs
 
         public bool TryOpenFile(string path, out RomFileInfo fileInfo)
         {
-            FindFileRecursive(GetUtf8Bytes(path), out RomEntryKey key);
+            FindPathRecursive(Util.GetUtf8Bytes(path), out RomEntryKey key);
 
             if (FileTable.TryGetValue(ref key, out RomKeyValuePair<FileRomEntry> keyValuePair))
             {
@@ -115,7 +113,7 @@ namespace LibHac.IO.RomFs
         /// otherwise, <see langword="false"/>.</returns>
         public bool TryOpenDirectory(string path, out FindPosition position)
         {
-            FindDirectoryRecursive(GetUtf8Bytes(path), out RomEntryKey key);
+            FindPathRecursive(Util.GetUtf8Bytes(path), out RomEntryKey key);
 
             if (DirectoryTable.TryGetValue(ref key, out RomKeyValuePair<DirectoryRomEntry> keyValuePair))
             {
@@ -168,7 +166,7 @@ namespace LibHac.IO.RomFs
             position.NextFile = entry.NextSibling;
             info = entry.Info;
 
-            name = GetUtf8String(nameBytes);
+            name = Util.GetUtf8String(nameBytes);
 
             return true;
         }
@@ -191,7 +189,8 @@ namespace LibHac.IO.RomFs
 
             ref DirectoryRomEntry entry = ref DirectoryTable.GetValueReference(position.NextDirectory, out Span<byte> nameBytes);
             position.NextDirectory = entry.NextSibling;
-            name = GetUtf8String(nameBytes);
+
+            name = Util.GetUtf8String(nameBytes);
 
             return true;
         }
@@ -205,7 +204,7 @@ namespace LibHac.IO.RomFs
         public void AddFile(string path, ref RomFileInfo fileInfo)
         {
             path = PathTools.Normalize(path);
-            ReadOnlySpan<byte> pathBytes = GetUtf8Bytes(path);
+            ReadOnlySpan<byte> pathBytes = Util.GetUtf8Bytes(path);
 
             if(path == "/") throw new ArgumentException("Path cannot be empty");
 
@@ -221,7 +220,7 @@ namespace LibHac.IO.RomFs
         {
             path = PathTools.Normalize(path);
 
-            CreateDirectoryRecursive(GetUtf8Bytes(path));
+            CreateDirectoryRecursive(Util.GetUtf8Bytes(path));
         }
 
         /// <summary>
@@ -235,21 +234,6 @@ namespace LibHac.IO.RomFs
         {
             DirectoryTable.TrimExcess();
             FileTable.TrimExcess();
-        }
-
-        private static ReadOnlySpan<byte> GetUtf8Bytes(string value)
-        {
-            return Encoding.UTF8.GetBytes(value).AsSpan();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static string GetUtf8String(ReadOnlySpan<byte> value)
-        {
-#if NETFRAMEWORK
-            return Encoding.UTF8.GetString(value.ToArray());
-#else
-            return Encoding.UTF8.GetString(value);
-#endif
         }
 
         private void CreateRootDirectory()
@@ -371,26 +355,15 @@ namespace LibHac.IO.RomFs
             }
         }
 
-        private void FindFileRecursive(ReadOnlySpan<byte> path, out RomEntryKey key)
+        private void FindPathRecursive(ReadOnlySpan<byte> path, out RomEntryKey key)
         {
             var parser = new PathParser(path);
             key = default;
 
-            while (parser.TryGetNext(out key.Name) && !parser.IsFinished())
+            do
             {
                 key.Parent = DirectoryTable.GetOffsetFromKey(ref key);
-            }
-        }
-
-        private void FindDirectoryRecursive(ReadOnlySpan<byte> path, out RomEntryKey key)
-        {
-            var parser = new PathParser(path);
-            key = default;
-
-            while (parser.TryGetNext(out key.Name) && !parser.IsFinished())
-            {
-                key.Parent = DirectoryTable.GetOffsetFromKey(ref key);
-            }
+            } while (parser.TryGetNext(out key.Name) && !parser.IsFinished());
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]

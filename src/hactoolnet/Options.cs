@@ -10,6 +10,7 @@ namespace hactoolnet
         public FileType InFileType = FileType.Nca;
         public bool Raw;
         public bool Validate;
+        public bool UseDevKeys;
         public bool EnableHash;
         public string Keyfile;
         public string TitleKeyFile;

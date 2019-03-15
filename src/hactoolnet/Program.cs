@@ -113,8 +113,10 @@ namespace hactoolnet
 
         private static void OpenKeyset(Context ctx)
         {
+            string keyFileName = ctx.Options.UseDevKeys ? "dev.keys" : "prod.keys";
+
             string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            string homeKeyFile = Path.Combine(home, ".switch", "prod.keys");
+            string homeKeyFile = Path.Combine(home, ".switch", keyFileName);
             string homeTitleKeyFile = Path.Combine(home, ".switch", "title.keys");
             string homeConsoleKeyFile = Path.Combine(home, ".switch", "console.keys");
             string keyFile = ctx.Options.Keyfile;
@@ -147,7 +149,7 @@ namespace hactoolnet
                 string dir = ctx.Options.OutDir;
                 Directory.CreateDirectory(dir);
 
-                File.WriteAllText(Path.Combine(dir, "prod.keys"), ExternalKeys.PrintCommonKeys(ctx.Keyset));
+                File.WriteAllText(Path.Combine(dir, keyFileName), ExternalKeys.PrintCommonKeys(ctx.Keyset));
                 File.WriteAllText(Path.Combine(dir, "console.keys"), ExternalKeys.PrintUniqueKeys(ctx.Keyset));
                 File.WriteAllText(Path.Combine(dir, "title.keys"), ExternalKeys.PrintTitleKeys(ctx.Keyset));
             }

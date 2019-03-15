@@ -250,9 +250,6 @@ namespace LibHac
 
             // Derive BIS keys
             if (DeviceKey.IsEmpty()
-                || BisKeySource[0].IsEmpty()
-                || BisKeySource[1].IsEmpty()
-                || BisKeySource[2].IsEmpty()
                 || BisKekSource.IsEmpty()
                 || AesKekGenerationSource.IsEmpty()
                 || AesKeyGenerationSource.IsEmpty()
@@ -261,14 +258,21 @@ namespace LibHac
                 return;
             }
 
+            // If the user doesn't provide bis_key_source_03 we can assume it's the same as bis_key_source_02
+            if (BisKeySource[3].IsEmpty() && !BisKeySource[2].IsEmpty())
+            {
+                Array.Copy(BisKeySource[2], BisKeySource[3], 0x20);
+            }
+
             Crypto.DecryptEcb(DeviceKey, RetailSpecificAesKeySource, kek, 0x10);
-            Crypto.DecryptEcb(kek, BisKeySource[0], BisKeys[0], 0x20);
+            if (!BisKeySource[0].IsEmpty()) Crypto.DecryptEcb(kek, BisKeySource[0], BisKeys[0], 0x20);
 
             Crypto.GenerateKek(DeviceKey, BisKekSource, kek, AesKekGenerationSource, AesKeyGenerationSource);
 
-            Crypto.DecryptEcb(kek, BisKeySource[1], BisKeys[1], 0x20);
-            Crypto.DecryptEcb(kek, BisKeySource[2], BisKeys[2], 0x20);
-            Crypto.DecryptEcb(kek, BisKeySource[3], BisKeys[3], 0x20);
+            for (int i = 1; i < 4; i++)
+            {
+                if (!BisKeySource[i].IsEmpty()) Crypto.DecryptEcb(kek, BisKeySource[i], BisKeys[i], 0x20);
+            }
         }
 
         private void DerivePerFirmwareKeys()

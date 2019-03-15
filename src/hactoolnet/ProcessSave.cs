@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -151,6 +152,86 @@ namespace hactoolnet
                 }
 
                 ctx.Logger.LogMessage(save.Print());
+                //ctx.Logger.LogMessage(PrintFatLayout(save));
+            }
+        }
+
+        // ReSharper disable once UnusedMember.Local
+        private static string PrintFatLayout(this SaveDataFileSystem save)
+        {
+            var sb = new StringBuilder();
+
+            foreach (DirectoryEntry entry in save.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File))
+            {
+                save.SaveDataFileSystemCore.FileTable.TryOpenFile(entry.FullPath, out SaveFileInfo fileInfo);
+                if (fileInfo.StartBlock < 0) continue;
+
+                IEnumerable<(int block, int length)> chain = save.SaveDataFileSystemCore.AllocationTable.DumpChain(fileInfo.StartBlock);
+
+                sb.AppendLine(entry.FullPath);
+                sb.AppendLine(PrintBlockChain(chain));
+            }
+
+            sb.AppendLine("Directory Table");
+            sb.AppendLine(PrintBlockChain(save.SaveDataFileSystemCore.AllocationTable.DumpChain(0)));
+
+            sb.AppendLine("File Table");
+            sb.AppendLine(PrintBlockChain(save.SaveDataFileSystemCore.AllocationTable.DumpChain(1)));
+
+            sb.AppendLine("Free blocks");
+            sb.AppendLine(PrintBlockChain(save.SaveDataFileSystemCore.AllocationTable.DumpChain(-1)));
+
+            return sb.ToString();
+        }
+
+        private static string PrintBlockChain(IEnumerable<(int block, int length)> chain)
+        {
+            var sb = new StringBuilder();
+            int segmentCount = 0;
+            int segmentStart = -1;
+            int segmentEnd = -1;
+
+            foreach ((int block, int length) in chain)
+            {
+                if (segmentStart == -1)
+                {
+                    segmentStart = block;
+                    segmentEnd = block + length - 1;
+                    continue;
+                }
+
+                if (block == segmentEnd + 1)
+                {
+                    segmentEnd += length;
+                    continue;
+                }
+
+                PrintSegment();
+
+                segmentStart = block;
+                segmentEnd = block + length - 1;
+            }
+
+            PrintSegment();
+
+            return sb.ToString();
+
+            void PrintSegment()
+            {
+                if (segmentCount > 0) sb.Append(", ");
+
+                if (segmentStart == segmentEnd)
+                {
+                    sb.Append(segmentStart);
+                }
+                else
+                {
+                    sb.Append($"{segmentStart}-{segmentEnd}");
+                }
+
+                segmentCount++;
+                segmentStart = -1;
+                segmentEnd = -1;
             }
         }
 

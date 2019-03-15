@@ -16,7 +16,7 @@ namespace LibHac.IO.Save
 
             if (!BeginIteration(initialBlock))
             {
-                throw new ArgumentException($"Attempted to start FAT iteration from an invalid block. ({initialBlock}");
+                throw new ArgumentException($"Attempted to start FAT iteration from an invalid block. ({initialBlock})");
             }
         }
 
@@ -24,9 +24,9 @@ namespace LibHac.IO.Save
         {
             AllocationTableEntry tableEntry = Fat.Entries[initialBlock + 1];
 
-            if (!tableEntry.IsListStart())
+            if (!tableEntry.IsListStart() && initialBlock != -1)
             {
-                return false;
+               return false;
             }
 
             if (tableEntry.IsSingleBlockSegment())

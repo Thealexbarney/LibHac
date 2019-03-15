@@ -2,43 +2,42 @@
 
 namespace LibHac.IO.Save
 {
-    class SaveDataDirectory : IDirectory
+    public class SaveDataDirectory : IDirectory
     {
-        public IFileSystem ParentFileSystem { get; }
+        IFileSystem IDirectory.ParentFileSystem => ParentFileSystem;
+        public SaveDataFileSystemCore ParentFileSystem { get; }
         public string FullPath { get; }
 
         public OpenDirectoryMode Mode { get; }
-        private SaveDirectoryEntry Directory { get; }
 
-        public SaveDataDirectory(SaveDataFileSystemCore fs, string path, SaveDirectoryEntry dir, OpenDirectoryMode mode)
+        private SaveFindPosition InitialPosition { get; }
+
+        public SaveDataDirectory(SaveDataFileSystemCore fs, string path, SaveFindPosition position, OpenDirectoryMode mode)
         {
             ParentFileSystem = fs;
-            Directory = dir;
+            InitialPosition = position;
             FullPath = path;
             Mode = mode;
         }
 
         public IEnumerable<DirectoryEntry> Read()
         {
+            SaveFindPosition position = InitialPosition;
+            HierarchicalSaveFileTable tab = ParentFileSystem.FileTable;
+
             if (Mode.HasFlag(OpenDirectoryMode.Directories))
             {
-                SaveDirectoryEntry dirEntry = Directory.FirstChild;
-
-                while (dirEntry != null)
+                while (tab.FindNextDirectory(ref position, out string name))
                 {
-                    yield return new DirectoryEntry(dirEntry.Name, FullPath + '/' + dirEntry.Name, DirectoryEntryType.Directory, 0);
-                    dirEntry = dirEntry.NextSibling;
+                    yield return new DirectoryEntry(name, FullPath + '/' + name, DirectoryEntryType.Directory, 0);
                 }
             }
 
             if (Mode.HasFlag(OpenDirectoryMode.Files))
             {
-                SaveFileEntry fileEntry = Directory.FirstFile;
-
-                while (fileEntry != null)
+                while (tab.FindNextFile(ref position, out SaveFileInfo info, out string name))
                 {
-                    yield return new DirectoryEntry(fileEntry.Name, FullPath + '/' + fileEntry.Name, DirectoryEntryType.File, fileEntry.FileSize);
-                    fileEntry = fileEntry.NextSibling;
+                    yield return new DirectoryEntry(name, FullPath + '/' + name, DirectoryEntryType.File, info.Length);
                 }
             }
         }
@@ -47,25 +46,22 @@ namespace LibHac.IO.Save
         {
             int count = 0;
 
+            SaveFindPosition position = InitialPosition;
+            HierarchicalSaveFileTable tab = ParentFileSystem.FileTable;
+
             if (Mode.HasFlag(OpenDirectoryMode.Directories))
             {
-                SaveDirectoryEntry dirEntry = Directory.FirstChild;
-
-                while (dirEntry != null)
+                while (tab.FindNextDirectory(ref position, out string _))
                 {
                     count++;
-                    dirEntry = dirEntry.NextSibling;
                 }
             }
 
             if (Mode.HasFlag(OpenDirectoryMode.Files))
             {
-                SaveFileEntry fileEntry = Directory.FirstFile;
-
-                while (fileEntry != null)
+                while (tab.FindNextFile(ref position, out SaveFileInfo _, out string _))
                 {
                     count++;
-                    fileEntry = fileEntry.NextSibling;
                 }
             }
 
