@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using LibHac.IO;
-using LibHac.IO.RomFs;
+using LibHac.IO.NcaUtils;
 using LibHac.IO.Save;
 
 namespace LibHac
@@ -127,10 +127,10 @@ namespace LibHac
             {
                 var title = new Title();
 
-                // Meta contents always have 1 Partition FS section with 1 file in it
-                IStorage sect = nca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid, true);
-                var pfs0 = new PartitionFileSystem(sect);
-                IFile file = pfs0.OpenFile(pfs0.Files[0], OpenMode.Read);
+                IFileSystem fs = nca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
+                string cnmtPath = fs.EnumerateEntries("*.cnmt").Single().FullPath;
+
+                IFile file = fs.OpenFile(cnmtPath, OpenMode.Read);
 
                 var metadata = new Cnmt(file.AsStream());
                 title.Id = metadata.TitleId;
@@ -168,7 +168,7 @@ namespace LibHac
         {
             foreach (Title title in Titles.Values.Where(x => x.ControlNca != null))
             {
-                var romfs = new RomFsFileSystem(title.ControlNca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid, true));
+                IFileSystem romfs = title.ControlNca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
                 IFile control = romfs.OpenFile("control.nacp", OpenMode.Read);
 
                 title.Control = new Nacp(control.AsStream());

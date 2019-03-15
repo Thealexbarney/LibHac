@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using LibHac.IO;
 using LibHac.IO.RomFs;
 
-namespace LibHac
+namespace LibHac.IO.NcaUtils
 {
     public class Nca : IDisposable
     {
@@ -89,13 +88,27 @@ namespace LibHac
             return sect.Header.EncryptionType == NcaEncryptionType.None || !IsMissingTitleKey && string.IsNullOrWhiteSpace(MissingKeyName);
         }
 
-        private IStorage OpenRawSection(int index, bool leaveOpen)
+        private IStorage OpenEncryptedStorage(int index)
         {
             if (index < 0 || index > 3) throw new ArgumentOutOfRangeException(nameof(index));
 
             NcaSection sect = Sections[index];
-            if (sect == null) return null;
+            if (sect == null) throw new ArgumentOutOfRangeException(nameof(index), "Section is empty");
 
+            long offset = sect.Offset;
+            long size = sect.Size;
+
+            if (!Util.IsSubRange(offset, size, BaseStorage.Length))
+            {
+                throw new InvalidDataException(
+                    $"Section offset (0x{offset:x}) and length (0x{size:x}) fall outside the total NCA length (0x{BaseStorage.Length:x}).");
+            }
+
+            return BaseStorage.Slice(offset, size);
+        }
+
+        private IStorage OpenDecryptedStorage(IStorage baseStorage, NcaSection sect)
+        {
             if (sect.Header.EncryptionType != NcaEncryptionType.None)
             {
                 if (IsMissingTitleKey)
@@ -109,118 +122,113 @@ namespace LibHac
                 }
             }
 
-            long offset = sect.Offset;
-            long size = sect.Size;
-
-            // todo
-            //if (!Util.IsSubRange(offset, size, StreamSource.Length))
-            //{
-            //    throw new InvalidDataException(
-            //        $"Section offset (0x{offset:x}) and length (0x{size:x}) fall outside the total NCA length (0x{StreamSource.Length:x}).");
-            //}
-
-            IStorage rawStorage = BaseStorage.Slice(offset, size, leaveOpen);
-
             switch (sect.Header.EncryptionType)
             {
                 case NcaEncryptionType.None:
-                    return rawStorage;
+                    return baseStorage;
                 case NcaEncryptionType.XTS:
                     throw new NotImplementedException("NCA sections using XTS are not supported");
                 case NcaEncryptionType.AesCtr:
-                    return new CachedStorage(new Aes128CtrStorage(rawStorage, DecryptedKeys[2], offset, sect.Header.Ctr, leaveOpen), 0x4000, 4, leaveOpen);
+                    return new CachedStorage(new Aes128CtrStorage(baseStorage, DecryptedKeys[2], sect.Offset, sect.Header.Ctr, true), 0x4000, 4, true);
                 case NcaEncryptionType.AesCtrEx:
                     BktrPatchInfo info = sect.Header.BktrInfo;
 
                     long bktrOffset = info.RelocationHeader.Offset;
-                    long bktrSize = size - bktrOffset;
+                    long bktrSize = sect.Size - bktrOffset;
                     long dataSize = info.RelocationHeader.Offset;
 
                     IStorage bucketTreeHeader = new MemoryStorage(sect.Header.BktrInfo.EncryptionHeader.Header);
-                    IStorage bucketTreeData = new CachedStorage(new Aes128CtrStorage(rawStorage.Slice(bktrOffset, bktrSize, leaveOpen), DecryptedKeys[2], bktrOffset + offset, sect.Header.Ctr, leaveOpen), 4, leaveOpen);
+                    IStorage bucketTreeData = new CachedStorage(new Aes128CtrStorage(baseStorage.Slice(bktrOffset, bktrSize), DecryptedKeys[2], bktrOffset + sect.Offset, sect.Header.Ctr, true), 4, true);
 
                     IStorage encryptionBucketTreeData = bucketTreeData.Slice(info.EncryptionHeader.Offset - bktrOffset);
-                    IStorage decStorage = new Aes128CtrExStorage(rawStorage.Slice(0, dataSize, leaveOpen), bucketTreeHeader, encryptionBucketTreeData, DecryptedKeys[2], offset, sect.Header.Ctr, leaveOpen);
-                    decStorage = new CachedStorage(decStorage, 0x4000, 4, leaveOpen);
+                    IStorage decStorage = new Aes128CtrExStorage(baseStorage.Slice(0, dataSize), bucketTreeHeader, encryptionBucketTreeData, DecryptedKeys[2], sect.Offset, sect.Header.Ctr, true);
+                    decStorage = new CachedStorage(decStorage, 0x4000, 4, true);
 
-                    return new ConcatenationStorage(new[] { decStorage, bucketTreeData }, leaveOpen);
+                    return new ConcatenationStorage(new[] { decStorage, bucketTreeData }, true);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
 
-        /// <summary>
-        /// Opens one of the sections in the current <see cref="Nca"/>.
-        /// </summary>
-        /// <param name="index">The index of the NCA section to open. Valid indexes are 0-3.</param>
-        /// <param name="raw"><see langword="true"/> to open the raw section with hash metadata.</param>
-        /// <param name="integrityCheckLevel">The level of integrity checks to be performed when reading the section.
-        /// Always <see cref="IntegrityCheckLevel.None"/> if <paramref name="raw"/> is <see langword="false"/>.</param>
-        /// <param name="leaveOpen"><see langword="true"/> to leave the storage open after the <see cref="Nca"/> object is disposed; otherwise, <see langword="false"/>.</param>
-        /// <returns>A <see cref="Stream"/> that provides access to the specified section. <see langword="null"/> if the section does not exist.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="index"/> is outside the valid range.</exception>
-        public IStorage OpenSection(int index, bool raw, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
+        public IStorage OpenRawStorage(int index)
         {
-            IStorage rawStorage = OpenRawSection(index, leaveOpen);
+            IStorage encryptedStorage = OpenEncryptedStorage(index);
+            IStorage decryptedStorage = OpenDecryptedStorage(encryptedStorage, Sections[index]);
+
+            return decryptedStorage;
+        }
+
+        public IStorage OpenRawStorage(NcaSectionType type)
+        {
+            return OpenRawStorage(GetSectionIndexFromType(type));
+        }
+
+        public IStorage OpenStorage(int index, IntegrityCheckLevel integrityCheckLevel)
+        {
+            IStorage rawStorage = OpenRawStorage(index);
 
             NcaSection sect = Sections[index];
             NcaFsHeader header = sect.Header;
 
+            // todo don't assume that ctr ex means it's a patch
             if (header.EncryptionType == NcaEncryptionType.AesCtrEx)
             {
-                if (raw && BaseNca == null) return rawStorage;
-
-                BktrHeader bktrInfo = header.BktrInfo.RelocationHeader;
-                IStorage patchStorage = rawStorage.Slice(0, bktrInfo.Offset, leaveOpen);
-
-                if (BaseNca == null) return patchStorage;
-
-                IStorage baseStorage = BaseNca.OpenSection(ProgramPartitionType.Data, true, IntegrityCheckLevel.None, leaveOpen);
-                IStorage bktrHeader = new MemoryStorage(bktrInfo.Header);
-                IStorage bktrData = rawStorage.Slice(bktrInfo.Offset, bktrInfo.Size, leaveOpen);
-
-                rawStorage = new IndirectStorage(bktrHeader, bktrData, leaveOpen, baseStorage, patchStorage);
+                return rawStorage.Slice(0, header.BktrInfo.RelocationHeader.Offset);
             }
-
-            if (raw || rawStorage == null) return rawStorage;
 
             switch (header.HashType)
             {
                 case NcaHashType.Sha256:
-                    return InitIvfcForPartitionfs(header.Sha256Info, rawStorage, integrityCheckLevel, leaveOpen);
+                    return InitIvfcForPartitionfs(header.Sha256Info, rawStorage, integrityCheckLevel, true);
                 case NcaHashType.Ivfc:
                     return new HierarchicalIntegrityVerificationStorage(header.IvfcInfo, new MemoryStorage(header.IvfcInfo.MasterHash), rawStorage,
-                        IntegrityStorageType.RomFs, integrityCheckLevel, leaveOpen);
+                        IntegrityStorageType.RomFs, integrityCheckLevel, true);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
 
-        /// <summary>
-        /// Opens one of the sections in the current <see cref="Nca"/> as a <see cref="HierarchicalIntegrityVerificationStorage"/>
-        /// Only works with sections that have a <see cref="NcaFsHeader.HashType"/> of <see cref="NcaHashType.Ivfc"/> or <see cref="NcaHashType.Sha256"/>.
-        /// </summary>
-        /// <param name="index">The index of the NCA section to open. Valid indexes are 0-3.</param>
-        /// <param name="integrityCheckLevel">The level of integrity checks to be performed when reading the section.</param>
-        /// <param name="leaveOpen"><see langword="true"/> to leave the storage open after the <see cref="Nca"/> object is disposed; otherwise, <see langword="false"/>.</param>
-        /// <returns>A <see cref="Stream"/> that provides access to the specified section. <see langword="null"/> if the section does not exist,
-        /// or is has no hash metadata.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="index"/> is outside the valid range.</exception>
-        public HierarchicalIntegrityVerificationStorage OpenHashedSection(int index, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen) =>
-            OpenSection(index, false, integrityCheckLevel, leaveOpen) as HierarchicalIntegrityVerificationStorage;
+        public IStorage OpenStorage(NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
+        {
+            return OpenStorage(GetSectionIndexFromType(type), integrityCheckLevel);
+        }
 
-        /// <summary>
-        /// Opens one of the sections in the current <see cref="Nca"/>. For use with <see cref="ContentType.Program"/> type NCAs.
-        /// </summary>
-        /// <param name="type">The type of section to open.</param>
-        /// <param name="raw"><see langword="true"/> to open the raw section with hash metadata.</param>
-        /// <param name="integrityCheckLevel">The level of integrity checks to be performed when reading the section.
-        /// Always <see cref="IntegrityCheckLevel.None"/> if <paramref name="raw"/> is <see langword="false"/>.</param>
-        /// <param name="leaveOpen"><see langword="true"/> to leave the storage open after the <see cref="Nca"/> object is disposed; otherwise, <see langword="false"/>.</param>
-        /// <returns>A <see cref="Stream"/> that provides access to the specified section. <see langword="null"/> if the section does not exist.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="type"/> is outside the valid range.</exception>
-        public IStorage OpenSection(ProgramPartitionType type, bool raw, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen) =>
-            OpenSection((int)type, raw, integrityCheckLevel, leaveOpen);
+        public IFileSystem OpenFileSystem(int index, IntegrityCheckLevel integrityCheckLevel)
+        {
+            IStorage storage = OpenStorage(index, integrityCheckLevel);
+
+            switch (Sections[index].Header.Type)
+            {
+                case SectionType.Pfs0:
+                    return new PartitionFileSystem(storage);
+                case SectionType.Romfs:
+                    return new RomFsFileSystem(storage);
+                case SectionType.Bktr:
+                    // todo Possibly check if a patch completely replaces the original
+                    throw new InvalidOperationException("Cannot open a patched section without the original");
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public IFileSystem OpenFileSystem(NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
+        {
+            return OpenFileSystem(GetSectionIndexFromType(type), integrityCheckLevel);
+        }
+
+        private int GetSectionIndexFromType(NcaSectionType type)
+        {
+            ContentType contentType = Header.ContentType;
+
+            switch (type)
+            {
+                case NcaSectionType.Code when contentType == ContentType.Program: return 0;
+                case NcaSectionType.Data when contentType == ContentType.Program: return 1;
+                case NcaSectionType.Logo when contentType == ContentType.Program: return 2;
+                case NcaSectionType.Data: return 0;
+                default: throw new ArgumentOutOfRangeException(nameof(type), "NCA does not contain this section type.");
+            }
+        }
 
         private static HierarchicalIntegrityVerificationStorage InitIvfcForPartitionfs(Sha256Info sb,
             IStorage pfsStorage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
@@ -257,24 +265,18 @@ namespace LibHac
             return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel, leaveOpen);
         }
 
-        public IFileSystem OpenSectionFileSystem(int index, IntegrityCheckLevel integrityCheckLevel)
+        public bool SectionExists(int index)
         {
-            if (Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
-            NcaFsHeader header = Sections[index].Header;
+            if (index < 0 || index > 3) return false;
 
-            IStorage storage = OpenSection(index, false, integrityCheckLevel, true);
+            return Sections[index] != null;
+        }
 
-            switch (header.Type)
-            {
-                case SectionType.Pfs0:
-                    return new PartitionFileSystem(storage);
-                case SectionType.Romfs:
-                    return new RomFsFileSystem(storage);
-                case SectionType.Bktr:
-                    return new RomFsFileSystem(storage);
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+        public bool SectionIsDecryptable(int index)
+        {
+            if (!SectionExists(index)) return false;
+
+            return Sections[index].Header.EncryptionType == NcaEncryptionType.None || !IsMissingTitleKey && string.IsNullOrWhiteSpace(MissingKeyName);
         }
 
         /// <summary>
@@ -299,11 +301,11 @@ namespace LibHac
         {
             if (Header.ContentType != ContentType.Program) return;
 
-            var pfs = new PartitionFileSystem(OpenSection(ProgramPartitionType.Code, false, IntegrityCheckLevel.ErrorOnInvalid, true));
+            IFileSystem pfs = OpenFileSystem(NcaSectionType.Code, IntegrityCheckLevel.ErrorOnInvalid);
 
             if (!pfs.FileExists("main.npdm")) return;
 
-            IStorage npdmStorage = pfs.OpenFile("main.npdm", OpenMode.Read).AsStorage();
+            IFile npdmStorage = pfs.OpenFile("main.npdm", OpenMode.Read);
 
             Npdm = new Npdm.NpdmBinary(npdmStorage.AsStream(), Keyset);
 
@@ -316,7 +318,7 @@ namespace LibHac
 
             foreach (NcaSection section in Sections.Where(x => x != null).OrderBy(x => x.Offset))
             {
-                list.Add(OpenRawSection(section.SectionNum, true));
+                list.Add(OpenRawStorage(section.SectionNum));
             }
 
             return new ConcatenationStorage(list, true);
@@ -425,7 +427,7 @@ namespace LibHac
                     break;
             }
 
-            IStorage storage = OpenSection(index, true, IntegrityCheckLevel.None, true);
+            IStorage storage = OpenRawStorage(index);
 
             var hashTable = new byte[size];
             storage.Read(hashTable, offset);
@@ -494,90 +496,6 @@ namespace LibHac
             }
 
             return hash;
-        }
-    }
-
-    public static class NcaExtensions
-    {
-        public static void ExportSection(this Nca nca, int index, string filename, bool raw = false, IntegrityCheckLevel integrityCheckLevel = IntegrityCheckLevel.None, IProgressReport logger = null)
-        {
-            if (index < 0 || index > 3) throw new IndexOutOfRangeException();
-            if (nca.Sections[index] == null) return;
-
-            IStorage storage = nca.OpenSection(index, raw, integrityCheckLevel, true);
-            string dir = Path.GetDirectoryName(filename);
-            if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
-
-            using (var outFile = new FileStream(filename, FileMode.Create, FileAccess.ReadWrite))
-            {
-                storage.CopyToStream(outFile, storage.Length, logger);
-            }
-        }
-
-        public static void ExtractSection(this Nca nca, int index, string outputDir, IntegrityCheckLevel integrityCheckLevel = IntegrityCheckLevel.None, IProgressReport logger = null)
-        {
-            if (index < 0 || index > 3) throw new IndexOutOfRangeException();
-            if (nca.Sections[index] == null) return;
-
-            NcaSection section = nca.Sections[index];
-            IStorage storage = nca.OpenSection(index, false, integrityCheckLevel, true);
-
-            switch (section.Type)
-            {
-                case SectionType.Invalid:
-                    break;
-                case SectionType.Pfs0:
-                    var pfs0 = new PartitionFileSystem(storage);
-                    pfs0.Extract(outputDir, logger);
-                    break;
-                case SectionType.Romfs:
-                    var romfs = new RomFsFileSystem(storage);
-                    romfs.Extract(outputDir, logger);
-                    break;
-                case SectionType.Bktr:
-                    break;
-            }
-        }
-
-        public static Validity VerifyNca(this Nca nca, IProgressReport logger = null, bool quiet = false)
-        {
-            for (int i = 0; i < 3; i++)
-            {
-                if (nca.Sections[i] != null)
-                {
-                    Validity sectionValidity = VerifySection(nca, i, logger, quiet);
-
-                    if (sectionValidity == Validity.Invalid) return Validity.Invalid;
-                }
-            }
-
-            return Validity.Valid;
-        }
-
-        public static Validity VerifySection(this Nca nca, int index, IProgressReport logger = null, bool quiet = false)
-        {
-            if (nca.Sections[index] == null) throw new ArgumentOutOfRangeException(nameof(index));
-
-            NcaSection sect = nca.Sections[index];
-            NcaHashType hashType = sect.Header.HashType;
-            if (hashType != NcaHashType.Sha256 && hashType != NcaHashType.Ivfc) return Validity.Unchecked;
-
-            HierarchicalIntegrityVerificationStorage stream = nca.OpenHashedSection(index, IntegrityCheckLevel.IgnoreOnInvalid, true);
-            if (stream == null) return Validity.Unchecked;
-
-            if (!quiet) logger?.LogMessage($"Verifying section {index}...");
-            Validity validity = stream.Validate(true, logger);
-
-            if (hashType == NcaHashType.Ivfc)
-            {
-                stream.SetLevelValidities(sect.Header.IvfcInfo);
-            }
-            else if (hashType == NcaHashType.Sha256)
-            {
-                sect.Header.Sha256Info.HashValidity = validity;
-            }
-
-            return validity;
         }
     }
 }
