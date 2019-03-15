@@ -31,15 +31,12 @@ namespace LibHac.IO
             BlockValidities = new Validity[SectorCount];
         }
 
-        // todo Take short path when integrity checks are disabled
         private void ReadImpl(Span<byte> destination, long offset, IntegrityCheckLevel integrityCheckLevel)
         {
             int count = destination.Length;
 
             if (count < 0 || count > SectorSize)
                 throw new ArgumentOutOfRangeException(nameof(destination), "Length is invalid.");
-
-
 
             long blockIndex = offset / SectorSize;
 
@@ -48,13 +45,10 @@ namespace LibHac.IO
                 throw new InvalidDataException("Hash error!");
             }
 
-            if (Type != IntegrityStorageType.Save && integrityCheckLevel == IntegrityCheckLevel.None)
-            {
-                BaseStorage.Read(destination, offset);
-                return;
-            }
+            bool needsHashCheck = integrityCheckLevel != IntegrityCheckLevel.None &&
+                                  BlockValidities[blockIndex] == Validity.Unchecked;
 
-            if (BlockValidities[blockIndex] != Validity.Unchecked)
+            if (Type != IntegrityStorageType.Save && !needsHashCheck)
             {
                 BaseStorage.Read(destination, offset);
                 return;
@@ -64,11 +58,20 @@ namespace LibHac.IO
             long hashPos = blockIndex * DigestSize;
             HashStorage.Read(hashBuffer, hashPos);
 
-            if (Type == IntegrityStorageType.Save && Util.IsEmpty(hashBuffer))
+            if (Type == IntegrityStorageType.Save)
             {
-                destination.Clear();
-                BlockValidities[blockIndex] = Validity.Valid;
-                return;
+                if (Util.IsEmpty(hashBuffer))
+                {
+                    destination.Clear();
+                    BlockValidities[blockIndex] = Validity.Valid;
+                    return;
+                }
+
+                if (!needsHashCheck)
+                {
+                    BaseStorage.Read(destination, offset);
+                    return;
+                }
             }
 
             byte[] dataBuffer = ArrayPool<byte>.Shared.Rent(SectorSize);
