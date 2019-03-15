@@ -120,7 +120,8 @@ namespace LibHacBuild
                     .SetProjectFile(Solution)
                     .EnableNoRestore()
                     .SetConfiguration(Configuration)
-                    .SetProperties(VersionProps);
+                    .SetProperties(VersionProps)
+                    .SetProperty("BuildType", "Release");
 
                 if (DoCoreBuildOnly) buildSettings = buildSettings.SetFramework("netcoreapp2.1");
 

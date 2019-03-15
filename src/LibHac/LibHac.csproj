@@ -17,7 +17,7 @@
     <RepositoryUrl>https://github.com/Thealexbarney/LibHac</RepositoryUrl>
 
     <VersionPrefix>0.3.1</VersionPrefix>
-    <PathMap>$(MSBuildProjectDirectory)=C:/LibHac/</PathMap>
+    <PathMap Condition=" '$(BuildType)' == 'Release' ">$(MSBuildProjectDirectory)=C:/LibHac/</PathMap>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <IncludeSource>true</IncludeSource>
