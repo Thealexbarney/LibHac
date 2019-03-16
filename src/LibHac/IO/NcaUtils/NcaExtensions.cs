@@ -4,13 +4,15 @@ namespace LibHac.IO.NcaUtils
 {
     public static class NcaExtensions
     {
-        public static IStorage OpenStorage(this Nca nca, int index, IntegrityCheckLevel integrityCheckLevel, bool openRaw)
+        public static IStorage OpenStorage(this Nca nca, int index, IntegrityCheckLevel integrityCheckLevel,
+            bool openRaw)
         {
             if (openRaw) return nca.OpenRawStorage(index);
             return nca.OpenStorage(index, integrityCheckLevel);
         }
 
-        public static IStorage OpenStorage(this Nca nca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel, bool openRaw)
+        public static IStorage OpenStorage(this Nca nca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel,
+            bool openRaw)
         {
             if (openRaw) return nca.OpenRawStorage(type);
             return nca.OpenStorage(type, integrityCheckLevel);
@@ -23,7 +25,8 @@ namespace LibHac.IO.NcaUtils
                 .WriteAllBytes(filename, logger);
         }
 
-        public static void ExtractSection(this Nca nca, int index, string outputDir, IntegrityCheckLevel integrityCheckLevel = IntegrityCheckLevel.None, IProgressReport logger = null)
+        public static void ExtractSection(this Nca nca, int index, string outputDir,
+            IntegrityCheckLevel integrityCheckLevel = IntegrityCheckLevel.None, IProgressReport logger = null)
         {
             if (index < 0 || index > 3) throw new IndexOutOfRangeException();
             if (!nca.SectionIsDecryptable(index)) return;
@@ -55,7 +58,8 @@ namespace LibHac.IO.NcaUtils
             NcaHashType hashType = sect.Header.HashType;
             if (hashType != NcaHashType.Sha256 && hashType != NcaHashType.Ivfc) return Validity.Unchecked;
 
-            var stream = nca.OpenStorage(index, IntegrityCheckLevel.IgnoreOnInvalid, false) as HierarchicalIntegrityVerificationStorage;
+            var stream = nca.OpenStorage(index, IntegrityCheckLevel.IgnoreOnInvalid, false)
+                as HierarchicalIntegrityVerificationStorage;
             if (stream == null) return Validity.Unchecked;
 
             if (!quiet) logger?.LogMessage($"Verifying section {index}...");
