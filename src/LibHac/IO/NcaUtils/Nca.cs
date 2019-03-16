@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using LibHac.IO.RomFs;
@@ -314,14 +313,15 @@ namespace LibHac.IO.NcaUtils
 
         public IStorage OpenDecryptedNca()
         {
-            var list = new List<IStorage> { OpenHeaderStorage() };
+            var builder = new ConcatenationStorageBuilder();
+            builder.Add(OpenHeaderStorage(), 0);
 
-            foreach (NcaSection section in Sections.Where(x => x != null).OrderBy(x => x.Offset))
+            foreach (NcaSection section in Sections.Where(x => x != null))
             {
-                list.Add(OpenRawStorage(section.SectionNum));
+                builder.Add(OpenRawStorage(section.SectionNum), section.Offset);
             }
 
-            return new ConcatenationStorage(list, true);
+            return builder.Build();
         }
 
         private NcaHeader DecryptHeader()
@@ -336,11 +336,13 @@ namespace LibHac.IO.NcaUtils
 
         private CachedStorage OpenHeaderStorage()
         {
-            int size = 0x4000;
+            long size = 0xc00;
 
-            // Support reading headers that are only 0xC00 bytes long, but still return
-            // the entire header if available.
-            if (BaseStorage.Length >= 0xC00 && BaseStorage.Length < 0x4000) size = 0xC00;
+            // Encrypted portion continues until the first section
+            if (Sections.Any(x => x != null))
+            {
+                size = Sections.Where(x => x != null).Min(x => x.Offset);
+            }
 
             return new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, size), Keyset.HeaderKey, 0x200, true), 1, true);
         }
