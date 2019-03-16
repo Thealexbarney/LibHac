@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using System.Linq;
 using System.Text;
 using LibHac;
 using LibHac.IO;
@@ -46,13 +45,13 @@ namespace hactoolnet
                         nca.ExtractSection(i, ctx.Options.SectionOutDir[i], ctx.Options.IntegrityLevel, ctx.Logger);
                     }
 
-                    if (ctx.Options.Validate && nca.Sections[i] != null)
+                    if (ctx.Options.Validate && nca.SectionExists(i))
                     {
                         nca.VerifySection(i, ctx.Logger);
                     }
                 }
 
-                if (ctx.Options.ListRomFs && nca.Sections[1] != null)
+                if (ctx.Options.ListRomFs && nca.CanOpenSection(NcaSectionType.Data))
                 {
                     IFileSystem romfs = nca.OpenFileSystem(NcaSectionType.Data, ctx.Options.IntegrityLevel);
 
@@ -64,35 +63,26 @@ namespace hactoolnet
 
                 if (ctx.Options.RomfsOutDir != null || ctx.Options.RomfsOut != null || ctx.Options.ReadBench)
                 {
-                    NcaSection section = nca.Sections.FirstOrDefault(x => x?.Type == SectionType.Romfs || x?.Type == SectionType.Bktr);
-
-                    if (section == null)
+                    if (!nca.SectionExists(NcaSectionType.Data))
                     {
                         ctx.Logger.LogMessage("NCA has no RomFS section");
                         return;
                     }
 
-                    if (section.Type == SectionType.Bktr && ctx.Options.BaseNca == null)
-                    {
-                        ctx.Logger.LogMessage("Cannot save BKTR section without base RomFS");
-                        return;
-                    }
-
                     if (ctx.Options.RomfsOut != null)
                     {
-                        nca.ExportSection(section.SectionNum, ctx.Options.RomfsOut, ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
+                        nca.ExportSection(NcaSectionType.Data, ctx.Options.RomfsOut, ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
                     }
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        IFileSystem romfs = nca.OpenFileSystem(section.SectionNum, ctx.Options.IntegrityLevel);
-                        romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
+                        nca.ExtractSection(NcaSectionType.Data, ctx.Options.RomfsOutDir, ctx.Options.IntegrityLevel, ctx.Logger);
                     }
 
                     if (ctx.Options.ReadBench)
                     {
                         long bytesToRead = 1024L * 1024 * 1024 * 5;
-                        IStorage storage = nca.OpenStorage(section.SectionNum, ctx.Options.IntegrityLevel);
+                        IStorage storage = nca.OpenStorage(NcaSectionType.Data, ctx.Options.IntegrityLevel);
                         var dest = new NullStorage(storage.Length);
 
                         int iterations = (int)(bytesToRead / storage.Length) + 1;
@@ -119,9 +109,7 @@ namespace hactoolnet
                         return;
                     }
 
-                    NcaSection section = nca.Sections[(int)ProgramPartitionType.Code];
-
-                    if (section == null)
+                    if (!nca.SectionExists(NcaSectionType.Code))
                     {
                         ctx.Logger.LogMessage("Could not find an ExeFS section");
                         return;
@@ -129,13 +117,12 @@ namespace hactoolnet
 
                     if (ctx.Options.ExefsOut != null)
                     {
-                        nca.ExportSection(section.SectionNum, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
+                        nca.ExportSection(NcaSectionType.Code, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
                     }
 
                     if (ctx.Options.ExefsOutDir != null)
                     {
-                        IFileSystem pfs = nca.OpenFileSystem(section.SectionNum, ctx.Options.IntegrityLevel);
-                        pfs.Extract(ctx.Options.ExefsOutDir, ctx.Logger);
+                        nca.ExtractSection(NcaSectionType.Code, ctx.Options.ExefsOutDir, ctx.Options.IntegrityLevel, ctx.Logger);
                     }
                 }
 
@@ -199,7 +186,7 @@ namespace hactoolnet
                     NcaSection sect = nca.Sections[i];
                     if (sect == null) continue;
 
-                    bool isExefs = nca.Header.ContentType == ContentType.Program && i == (int)ProgramPartitionType.Code;
+                    bool isExefs = nca.Header.ContentType == ContentType.Program && i == 0;
 
                     sb.AppendLine($"    Section {i}:");
                     PrintItem(sb, colLen, "        Offset:", $"0x{sect.Offset:x12}");

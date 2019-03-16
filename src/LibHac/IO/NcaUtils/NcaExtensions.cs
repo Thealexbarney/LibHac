@@ -25,13 +25,24 @@ namespace LibHac.IO.NcaUtils
                 .WriteAllBytes(filename, logger);
         }
 
+        public static void ExportSection(this Nca nca, NcaSectionType type, string filename, bool raw = false,
+            IntegrityCheckLevel integrityCheckLevel = IntegrityCheckLevel.None, IProgressReport logger = null)
+        {
+            nca.OpenStorage(type, integrityCheckLevel, raw)
+                .WriteAllBytes(filename, logger);
+        }
+
         public static void ExtractSection(this Nca nca, int index, string outputDir,
             IntegrityCheckLevel integrityCheckLevel = IntegrityCheckLevel.None, IProgressReport logger = null)
         {
-            if (index < 0 || index > 3) throw new IndexOutOfRangeException();
-            if (!nca.SectionIsDecryptable(index)) return;
-
             IFileSystem fs = nca.OpenFileSystem(index, integrityCheckLevel);
+            fs.Extract(outputDir, logger);
+        }
+
+        public static void ExtractSection(this Nca nca, NcaSectionType type, string outputDir,
+            IntegrityCheckLevel integrityCheckLevel = IntegrityCheckLevel.None, IProgressReport logger = null)
+        {
+            IFileSystem fs = nca.OpenFileSystem(type, integrityCheckLevel);
             fs.Extract(outputDir, logger);
         }
 

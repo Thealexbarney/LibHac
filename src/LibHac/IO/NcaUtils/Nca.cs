@@ -10,7 +10,7 @@ namespace LibHac.IO.NcaUtils
     {
         private const int HeaderSize = 0xc00;
         private const int HeaderSectorSize = 0x200;
-        
+
         public NcaHeader Header { get; }
         public string NcaId { get; set; }
         public string Filename { get; set; }
@@ -89,6 +89,11 @@ namespace LibHac.IO.NcaUtils
             if (sect == null) return false;
 
             return sect.Header.EncryptionType == NcaEncryptionType.None || !IsMissingTitleKey && string.IsNullOrWhiteSpace(MissingKeyName);
+        }
+
+        public bool CanOpenSection(NcaSectionType type)
+        {
+            return CanOpenSection(GetSectionIndexFromType(type));
         }
 
         private IStorage OpenEncryptedStorage(int index)
@@ -275,11 +280,9 @@ namespace LibHac.IO.NcaUtils
             return Sections[index] != null;
         }
 
-        public bool SectionIsDecryptable(int index)
+        public bool SectionExists(NcaSectionType type)
         {
-            if (!SectionExists(index)) return false;
-
-            return Sections[index].Header.EncryptionType == NcaEncryptionType.None || !IsMissingTitleKey && string.IsNullOrWhiteSpace(MissingKeyName);
+            return SectionExists(GetSectionIndexFromType(type));
         }
 
         /// <summary>
@@ -363,7 +366,7 @@ namespace LibHac.IO.NcaUtils
         {
             if (Header != null)
             {
-               return Header.Version;
+                return Header.Version;
             }
             else
             {
