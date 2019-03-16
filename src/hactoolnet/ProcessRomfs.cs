@@ -10,13 +10,14 @@ namespace hactoolnet
         {
             using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
-                var romfs = new RomFsFileSystem(file);
-                Process(ctx, romfs);
+                Process(ctx, file);
             }
         }
 
-        public static void Process(Context ctx, RomFsFileSystem romfs)
+        public static void Process(Context ctx, IStorage romfsStorage)
         {
+            var romfs = new RomFsFileSystem(romfsStorage);
+
             if (ctx.Options.ListRomFs)
             {
                 foreach (DirectoryEntry entry in romfs.EnumerateEntries())
@@ -29,7 +30,6 @@ namespace hactoolnet
             {
                 using (var outFile = new FileStream(ctx.Options.RomfsOut, FileMode.Create, FileAccess.ReadWrite))
                 {
-                    IStorage romfsStorage = romfs.GetBaseStorage();
                     romfsStorage.CopyToStream(outFile, romfsStorage.Length, ctx.Logger);
                 }
             }

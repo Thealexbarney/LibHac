@@ -193,13 +193,6 @@ namespace LibHac.IO.NcaUtils
         }
     }
 
-    public enum ProgramPartitionType
-    {
-        Code,
-        Data,
-        Logo
-    };
-
     public enum NcaSectionType
     {
         Code,

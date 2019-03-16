@@ -69,9 +69,7 @@ namespace hactoolnet
                     return;
                 }
 
-                NcaSection section = title.MainNca.Sections[(int)ProgramPartitionType.Code];
-
-                if (section == null)
+                if (!title.MainNca.SectionExists(NcaSectionType.Code))
                 {
                     ctx.Logger.LogMessage($"Main NCA for title {id:X16} has no ExeFS section");
                     return;
@@ -79,12 +77,12 @@ namespace hactoolnet
 
                 if (ctx.Options.ExefsOutDir != null)
                 {
-                    title.MainNca.ExtractSection(section.SectionNum, ctx.Options.ExefsOutDir, ctx.Options.IntegrityLevel, ctx.Logger);
+                    title.MainNca.ExtractSection(NcaSectionType.Code, ctx.Options.ExefsOutDir, ctx.Options.IntegrityLevel, ctx.Logger);
                 }
 
                 if (ctx.Options.ExefsOut != null)
                 {
-                    title.MainNca.ExportSection(section.SectionNum, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
+                    title.MainNca.ExportSection(NcaSectionType.Code, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
                 }
             }
 
@@ -109,24 +107,13 @@ namespace hactoolnet
                     return;
                 }
 
-                NcaSection section = title.MainNca.Sections.FirstOrDefault(x => x?.Type == SectionType.Romfs || x?.Type == SectionType.Bktr);
-
-                if (section == null)
+                if (!title.MainNca.SectionExists(NcaSectionType.Data))
                 {
                     ctx.Logger.LogMessage($"Main NCA for title {id:X16} has no RomFS section");
                     return;
                 }
 
-                if (ctx.Options.RomfsOutDir != null)
-                {
-                    IFileSystem romfs = title.MainNca.OpenFileSystem(section.SectionNum, ctx.Options.IntegrityLevel);
-                    romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
-                }
-
-                if (ctx.Options.RomfsOut != null)
-                {
-                    title.MainNca.ExportSection(section.SectionNum, ctx.Options.RomfsOut, ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
-                }
+                ProcessRomfs.Process(ctx, title.MainNca.OpenStorage(NcaSectionType.Data, ctx.Options.IntegrityLevel, false));
             }
 
             if (ctx.Options.OutDir != null)
