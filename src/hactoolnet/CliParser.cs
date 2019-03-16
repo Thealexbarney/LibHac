@@ -26,6 +26,7 @@ namespace hactoolnet
             new CliOption("section1dir", 1, (o, a) => o.SectionOutDir[1] = a[0]),
             new CliOption("section2dir", 1, (o, a) => o.SectionOutDir[2] = a[0]),
             new CliOption("section3dir", 1, (o, a) => o.SectionOutDir[3] = a[0]),
+            new CliOption("header", 1, (o, a) => o.HeaderOut = a[0]),
             new CliOption("exefs", 1, (o, a) => o.ExefsOut = a[0]),
             new CliOption("exefsdir", 1, (o, a) => o.ExefsOutDir = a[0]),
             new CliOption("romfs", 1, (o, a) => o.RomfsOut = a[0]),
@@ -169,6 +170,7 @@ namespace hactoolnet
             sb.AppendLine("  --titlekeys <file>   Load title keys from an external file.");
             sb.AppendLine("NCA options:");
             sb.AppendLine("  --plaintext <file>   Specify file path for saving a decrypted copy of the NCA.");
+            sb.AppendLine("  --header <file>      Specify Header file path.");
             sb.AppendLine("  --section0 <file>    Specify Section 0 file path.");
             sb.AppendLine("  --section1 <file>    Specify Section 1 file path.");
             sb.AppendLine("  --section2 <file>    Specify Section 2 file path.");

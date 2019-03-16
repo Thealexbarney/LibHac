@@ -15,6 +15,15 @@ namespace hactoolnet
             using (IStorage file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
                 var nca = new Nca(ctx.Keyset, file, false);
+
+                if (ctx.Options.HeaderOut != null)
+                {
+                    using (var outHeader = new FileStream(ctx.Options.HeaderOut, FileMode.Create, FileAccess.ReadWrite))
+                    {
+                        nca.OpenHeaderStorage().Slice(0, 0xc00).CopyToStream(outHeader);
+                    }
+                }
+
                 nca.ValidateMasterHashes();
                 nca.ParseNpdm();
 

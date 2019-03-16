@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using LibHac.IO.RomFs;
@@ -7,6 +8,9 @@ namespace LibHac.IO.NcaUtils
 {
     public class Nca : IDisposable
     {
+        private const int HeaderSize = 0xc00;
+        private const int HeaderSectorSize = 0x200;
+        
         public NcaHeader Header { get; }
         public string NcaId { get; set; }
         public string Filename { get; set; }
@@ -334,9 +338,9 @@ namespace LibHac.IO.NcaUtils
             return new NcaHeader(new BinaryReader(OpenHeaderStorage().AsStream()), Keyset);
         }
 
-        private CachedStorage OpenHeaderStorage()
+        public IStorage OpenHeaderStorage()
         {
-            long size = 0xc00;
+            long size = HeaderSize;
 
             // Encrypted portion continues until the first section
             if (Sections.Any(x => x != null))
@@ -344,7 +348,42 @@ namespace LibHac.IO.NcaUtils
                 size = Sections.Where(x => x != null).Min(x => x.Offset);
             }
 
-            return new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, size), Keyset.HeaderKey, 0x200, true), 1, true);
+            IStorage header = new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, size), Keyset.HeaderKey, HeaderSectorSize, true), 1, true);
+            int version = ReadHeaderVersion(header);
+
+            if (version == 2)
+            {
+                header = OpenNca2Header(size);
+            }
+
+            return header;
+        }
+
+        private int ReadHeaderVersion(IStorage header)
+        {
+            if (Header != null)
+            {
+               return Header.Version;
+            }
+            else
+            {
+                Span<byte> buf = stackalloc byte[1];
+                header.Read(buf, 0x203);
+                return buf[0] - '0';
+            }
+        }
+
+        private IStorage OpenNca2Header(long size)
+        {
+            var sources = new List<IStorage>();
+            sources.Add(new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, 0x400), Keyset.HeaderKey, HeaderSectorSize, true), 1, true));
+
+            for (int i = 0x400; i < size; i += HeaderSectorSize)
+            {
+                sources.Add(new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(i, HeaderSectorSize), Keyset.HeaderKey, HeaderSectorSize, true), 1, true));
+            }
+
+            return new ConcatenationStorage(sources, true);
         }
 
         private void DecryptKeyArea(Keyset keyset)

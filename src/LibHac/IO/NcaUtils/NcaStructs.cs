@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace LibHac.IO.NcaUtils
 {
@@ -7,6 +8,7 @@ namespace LibHac.IO.NcaUtils
         public byte[] Signature1; // RSA-PSS signature over header with fixed key.
         public byte[] Signature2; // RSA-PSS signature over header with key in NPDM.
         public string Magic;
+        public int Version;
         public DistributionType Distribution; // System vs gamecard.
         public ContentType ContentType;
         public byte CryptoType; // Which keyblob (field 1)
@@ -33,7 +35,12 @@ namespace LibHac.IO.NcaUtils
             Signature1 = reader.ReadBytes(0x100);
             Signature2 = reader.ReadBytes(0x100);
             Magic = reader.ReadAscii(4);
-            if (Magic != "NCA3") throw new InvalidDataException("Not an NCA3 file");
+
+            if (!Magic.StartsWith("NCA") || Magic[3] < '0' || Magic[3] > '9')
+                throw new InvalidDataException("Unable to decrypt NCA header, or the file is not an NCA file.");
+
+            Version = Magic[3] - '0';
+            if (Version != 2 && Version != 3) throw new NotSupportedException($"NCA version {Version} is not supported.");
 
             reader.BaseStream.Position -= 4;
             SignatureData = reader.ReadBytes(0x200);

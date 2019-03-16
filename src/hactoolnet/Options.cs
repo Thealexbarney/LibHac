@@ -17,6 +17,7 @@ namespace hactoolnet
         public string ConsoleKeyFile;
         public string[] SectionOut = new string[4];
         public string[] SectionOutDir = new string[4];
+        public string HeaderOut;
         public string ExefsOut;
         public string ExefsOutDir;
         public string RomfsOut;
