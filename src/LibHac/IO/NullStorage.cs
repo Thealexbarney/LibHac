@@ -8,9 +8,10 @@ namespace LibHac.IO
     public class NullStorage : StorageBase
     {
         public NullStorage() { }
-        public NullStorage(long length) => Length = length;
+        public NullStorage(long length) => _length = length;
 
-        public override long Length { get; }
+        private long _length;
+
         protected override void ReadImpl(Span<byte> destination, long offset)
         {
             destination.Clear();
@@ -23,5 +24,7 @@ namespace LibHac.IO
         public override void Flush()
         {
         }
+
+        public override long GetSize() => _length;
     }
 }

@@ -21,14 +21,14 @@ namespace LibHac.IO
         {
             Delta = delta;
 
-            if (Delta.Length < 0x40) throw new InvalidDataException("Delta file is too small.");
+            if (Delta.GetSize() < 0x40) throw new InvalidDataException("Delta file is too small.");
 
             Header = new DeltaFragmentHeader(delta.AsFile(OpenMode.Read));
 
             if (Header.Magic != Ndv0Magic) throw new InvalidDataException("NDV0 magic value is missing.");
 
             long fragmentSize = Header.FragmentHeaderSize + Header.FragmentBodySize;
-            if (Delta.Length < fragmentSize)
+            if (Delta.GetSize() < fragmentSize)
             {
                 throw new InvalidDataException($"Delta file is smaller than the header indicates. (0x{fragmentSize} bytes)");
             }
@@ -40,7 +40,7 @@ namespace LibHac.IO
         {
             Original = baseStorage;
 
-            if (Original.Length != Header.OriginalSize)
+            if (Original.GetSize() != Header.OriginalSize)
             {
                 throw new InvalidDataException($"Original file size does not match the size in the delta header. (0x{Header.OriginalSize} bytes)");
             }

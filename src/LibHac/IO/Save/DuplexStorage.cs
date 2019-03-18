@@ -10,6 +10,8 @@ namespace LibHac.IO.Save
         private IStorage DataB { get; }
         private DuplexBitmap Bitmap { get; }
 
+        private long _length;
+
         public DuplexStorage(IStorage dataA, IStorage dataB, IStorage bitmap, int blockSize)
         {
             DataA = dataA;
@@ -17,8 +19,8 @@ namespace LibHac.IO.Save
             BitmapStorage = bitmap;
             BlockSize = blockSize;
 
-            Bitmap = new DuplexBitmap(BitmapStorage, (int)(bitmap.Length * 8));
-            Length = DataA.Length;
+            Bitmap = new DuplexBitmap(BitmapStorage, (int)(bitmap.GetSize() * 8));
+            _length = DataA.GetSize();
         }
 
         protected override void ReadImpl(Span<byte> destination, long offset)
@@ -74,6 +76,6 @@ namespace LibHac.IO.Save
             DataB?.Flush();
         }
 
-        public override long Length { get; }
+        public override long GetSize() => _length;
     }
 }

@@ -128,7 +128,7 @@ namespace LibHac.IO
             long blockIndex = offset / SectorSize;
             long hashPos = blockIndex * DigestSize;
 
-            int toWrite = (int)Math.Min(source.Length, Length - offset);
+            int toWrite = (int)Math.Min(source.Length, GetSize() - offset);
 
             byte[] dataBuffer = ArrayPool<byte>.Shared.Rent(SectorSize);
             try

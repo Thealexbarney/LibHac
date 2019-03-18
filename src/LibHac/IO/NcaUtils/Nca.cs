@@ -106,10 +106,10 @@ namespace LibHac.IO.NcaUtils
             long offset = sect.Offset;
             long size = sect.Size;
 
-            if (!Util.IsSubRange(offset, size, BaseStorage.Length))
+            if (!Util.IsSubRange(offset, size, BaseStorage.GetSize()))
             {
                 throw new InvalidDataException(
-                    $"Section offset (0x{offset:x}) and length (0x{size:x}) fall outside the total NCA length (0x{BaseStorage.Length:x}).");
+                    $"Section offset (0x{offset:x}) and length (0x{size:x}) fall outside the total NCA length (0x{BaseStorage.GetSize():x}).");
             }
 
             return BaseStorage.Slice(offset, size);

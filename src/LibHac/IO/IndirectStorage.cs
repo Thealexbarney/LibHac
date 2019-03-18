@@ -11,6 +11,7 @@ namespace LibHac.IO
 
         private List<IStorage> Sources { get; } = new List<IStorage>();
         private BucketTree<RelocationEntry> BucketTree { get; }
+        private long _length;
 
         public IndirectStorage(IStorage bucketTreeHeader, IStorage bucketTreeData, bool leaveOpen, params IStorage[] sources)
         {
@@ -23,7 +24,7 @@ namespace LibHac.IO
             RelocationEntries = BucketTree.GetEntryList();
             RelocationOffsets = RelocationEntries.Select(x => x.Offset).ToList();
 
-            Length = BucketTree.BucketOffsets.OffsetEnd;
+            _length = BucketTree.BucketOffsets.OffsetEnd;
         }
 
         protected override void ReadImpl(Span<byte> destination, long offset)
@@ -62,7 +63,7 @@ namespace LibHac.IO
             throw new NotImplementedException();
         }
 
-        public override long Length { get; }
+        public override long GetSize() => _length;
 
         private RelocationEntry GetRelocationEntry(long offset)
         {

@@ -8,6 +8,7 @@ namespace LibHac.IO
     {
         private IStorage BaseStorage { get; }
         private int BlockSize { get; }
+        private readonly long _length;
 
         private LinkedList<CacheBlock> Blocks { get; } = new LinkedList<CacheBlock>();
         private Dictionary<long, LinkedListNode<CacheBlock>> BlockDict { get; } = new Dictionary<long, LinkedListNode<CacheBlock>>();
@@ -16,7 +17,7 @@ namespace LibHac.IO
         {
             BaseStorage = baseStorage;
             BlockSize = blockSize;
-            Length = BaseStorage.Length;
+            _length = BaseStorage.GetSize();
 
             if (!leaveOpen) ToDispose.Add(BaseStorage);
 
@@ -30,7 +31,7 @@ namespace LibHac.IO
 
         public CachedStorage(SectorStorage baseStorage, int cacheSize, bool leaveOpen)
             : this(baseStorage, baseStorage.SectorSize, cacheSize, leaveOpen) { }
-
+        
         protected override void ReadImpl(Span<byte> destination, long offset)
         {
             long remaining = destination.Length;
@@ -96,7 +97,7 @@ namespace LibHac.IO
             BaseStorage.Flush();
         }
 
-        public override long Length { get; }
+        public override long GetSize() => _length;
 
         private CacheBlock GetBlock(long blockIndex)
         {
@@ -132,9 +133,9 @@ namespace LibHac.IO
             long offset = index * BlockSize;
             int length = BlockSize;
 
-            if (Length != -1)
+            if (_length != -1)
             {
-                length = (int)Math.Min(Length - offset, length);
+                length = (int)Math.Min(_length - offset, length);
             }
 
             BaseStorage.Read(block.Buffer.AsSpan(0, length), offset);

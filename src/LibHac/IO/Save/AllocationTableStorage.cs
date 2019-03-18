@@ -9,13 +9,13 @@ namespace LibHac.IO.Save
         private int InitialBlock { get; }
         private AllocationTable Fat { get; }
 
-        public override long Length { get; }
+        private long _length;
 
         public AllocationTableStorage(IStorage data, AllocationTable table, int blockSize, int initialBlock, long length)
         {
             BaseStorage = data;
             BlockSize = blockSize;
-            Length = length;
+            _length = length;
             Fat = table;
             InitialBlock = initialBlock;
         }
@@ -78,5 +78,7 @@ namespace LibHac.IO.Save
         {
             BaseStorage.Flush();
         }
+
+        public override long GetSize() => _length;
     }
 }

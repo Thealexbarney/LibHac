@@ -6,7 +6,7 @@ namespace LibHac.IO
     public class ConcatenationStorage : StorageBase
     {
         private ConcatSource[] Sources { get; }
-        public override long Length { get; }
+        private long _length;
 
         public ConcatenationStorage(IList<IStorage> sources, bool leaveOpen)
         {
@@ -16,12 +16,12 @@ namespace LibHac.IO
             long length = 0;
             for (int i = 0; i < sources.Count; i++)
             {
-                if (sources[i].Length < 0) throw new ArgumentException("Sources must have an explicit length.");
-                Sources[i] = new ConcatSource(sources[i], length, sources[i].Length);
-                length += sources[i].Length;
+                if (sources[i].GetSize() < 0) throw new ArgumentException("Sources must have an explicit length.");
+                Sources[i] = new ConcatSource(sources[i], length, sources[i].GetSize());
+                length += sources[i].GetSize();
             }
 
-            Length = length;
+            _length = length;
         }
 
         protected override void ReadImpl(Span<byte> destination, long offset)
@@ -78,9 +78,11 @@ namespace LibHac.IO
             }
         }
 
+        public override long GetSize() => _length;
+
         private int FindSource(long offset)
         {
-            if (offset < 0 || offset >= Length)
+            if (offset < 0 || offset >= _length)
                 throw new ArgumentOutOfRangeException(nameof(offset), offset, "The Storage does not contain this offset.");
 
             int lo = 0;

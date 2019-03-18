@@ -16,7 +16,8 @@ namespace LibHac.IO
         /// An array of the hash statuses of every block in each level.
         /// </summary>
         public Validity[][] LevelValidities { get; }
-        public override long Length { get; }
+
+        private long _length;
 
         private IntegrityVerificationStorage[] IntegrityStorages { get; }
 
@@ -33,7 +34,7 @@ namespace LibHac.IO
             {
                 var levelData = new IntegrityVerificationStorage(levelInfo[i], Levels[i - 1], integrityCheckLevel, leaveOpen);
 
-                int cacheCount = Math.Min((int)Util.DivideByRoundUp(levelData.Length, levelInfo[i].BlockSize), 4);
+                int cacheCount = Math.Min((int)Util.DivideByRoundUp(levelData.GetSize(), levelInfo[i].BlockSize), 4);
 
                 Levels[i] = new CachedStorage(levelData, cacheCount, leaveOpen);
                 LevelValidities[i - 1] = levelData.BlockValidities;
@@ -41,7 +42,7 @@ namespace LibHac.IO
             }
 
             DataLevel = Levels[Levels.Length - 1];
-            Length = DataLevel.Length;
+            _length = DataLevel.GetSize();
 
             if (!leaveOpen) ToDispose.Add(DataLevel);
         }
@@ -106,6 +107,8 @@ namespace LibHac.IO
             DataLevel.Flush();
         }
 
+        public override long GetSize() => _length;
+
         /// <summary>
         /// Checks the hashes of any unchecked blocks and returns the <see cref="Validity"/> of the data.
         /// </summary>
@@ -118,7 +121,7 @@ namespace LibHac.IO
             IntegrityVerificationStorage storage = IntegrityStorages[IntegrityStorages.Length - 1];
 
             long blockSize = storage.SectorSize;
-            int blockCount = (int)Util.DivideByRoundUp(Length, blockSize);
+            int blockCount = (int)Util.DivideByRoundUp(_length, blockSize);
 
             var buffer = new byte[blockSize];
             var result = Validity.Valid;
@@ -129,7 +132,7 @@ namespace LibHac.IO
             {
                 if (validities[i] == Validity.Unchecked)
                 {
-                    int toRead = (int)Math.Min(storage.Length - blockSize * i, buffer.Length);
+                    int toRead = (int)Math.Min(storage.GetSize() - blockSize * i, buffer.Length);
                     storage.Read(buffer.AsSpan(0, toRead), blockSize * i, IntegrityCheckLevel.IgnoreOnInvalid);
                 }
 

@@ -12,7 +12,7 @@ namespace LibHac.IO
         protected abstract void ReadImpl(Span<byte> destination, long offset);
         protected abstract void WriteImpl(ReadOnlySpan<byte> source, long offset);
         public abstract void Flush();
-        public abstract long Length { get; }
+        public abstract long GetSize();
 
         public void Read(Span<byte> destination, long offset)
         {
@@ -24,6 +24,11 @@ namespace LibHac.IO
         {
             ValidateParameters(source, offset);
             WriteImpl(source, offset);
+        }
+
+        public virtual void SetSize(long size)
+        {
+            throw new NotSupportedException();
         }
 
         protected virtual void Dispose(bool disposing)
@@ -53,10 +58,11 @@ namespace LibHac.IO
             if (_isDisposed) throw new ObjectDisposedException(null);
             if (span == null) throw new ArgumentNullException(nameof(span));
             if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), "Argument must be non-negative.");
+            long length = GetSize();
 
-            if (Length != -1 && !CanAutoExpand)
+            if (length != -1 && !CanAutoExpand)
             {
-                if (offset + span.Length > Length) throw new ArgumentException("The given offset and count exceed the length of the Storage");
+                if (offset + span.Length > length) throw new ArgumentException("The given offset and count exceed the length of the Storage");
             }
         }
     }

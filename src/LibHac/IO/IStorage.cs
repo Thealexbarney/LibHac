@@ -31,9 +31,16 @@ namespace LibHac.IO
         void Flush();
 
         /// <summary>
-        /// The length of the <see cref="IStorage"/>. -1 will be returned if
+        /// Sets the size of the current IStorage.
+        /// </summary>
+        /// <param name="size">The desired size of the current IStorage in bytes.</param>
+        void SetSize(long size);
+
+        /// <summary>
+        /// The size of the<see cref="IStorage"/>. -1 will be returned if
         /// the <see cref="IStorage"/> cannot be represented as a sequence of contiguous bytes.
         /// </summary>
-        long Length { get; }
+        /// <returns>The size of the <see cref="IStorage"/> in bytes.</returns>
+        long GetSize();
     }
 }

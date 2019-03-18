@@ -83,9 +83,9 @@ namespace hactoolnet
                     {
                         long bytesToRead = 1024L * 1024 * 1024 * 5;
                         IStorage storage = nca.OpenStorage(NcaSectionType.Data, ctx.Options.IntegrityLevel);
-                        var dest = new NullStorage(storage.Length);
+                        var dest = new NullStorage(storage.GetSize());
 
-                        int iterations = (int)(bytesToRead / storage.Length) + 1;
+                        int iterations = (int)(bytesToRead / storage.GetSize()) + 1;
                         ctx.Logger.LogMessage(iterations.ToString());
 
                         ctx.Logger.StartNewStopWatch();

@@ -25,7 +25,7 @@ namespace hactoolnet
             encryptWatch.Stop();
             logger.SetTotal(0);
 
-            string rate = Util.GetBytesReadable((long)(src.Length * iterations / encryptWatch.Elapsed.TotalSeconds));
+            string rate = Util.GetBytesReadable((long)(src.GetSize() * iterations / encryptWatch.Elapsed.TotalSeconds));
             logger.LogMessage($"{label}{rate}/s");
         }
 

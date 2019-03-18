@@ -28,12 +28,14 @@ namespace LibHac.IO
 
         public static IStorage Slice(this IStorage storage, long start)
         {
-            if (storage.Length == -1)
+            long length = storage.GetSize();
+
+            if (length == -1)
             {
-                return storage.Slice(start, storage.Length);
+                return storage.Slice(start, length);
             }
 
-            return storage.Slice(start, storage.Length - start);
+            return storage.Slice(start, length - start);
         }
 
         public static IStorage Slice(this IStorage storage, long start, long length)
@@ -53,7 +55,7 @@ namespace LibHac.IO
 
         public static IStorage AsReadOnly(this IStorage storage, bool leaveOpen)
         {
-            return new SubStorage(storage, 0, storage.Length, leaveOpen, FileAccess.Read);
+            return new SubStorage(storage, 0, storage.GetSize(), leaveOpen, FileAccess.Read);
         }
 
         public static Stream AsStream(this IStorage storage) => new StorageStream(storage, FileAccess.ReadWrite, true);
@@ -65,7 +67,7 @@ namespace LibHac.IO
         public static void CopyTo(this IStorage input, IStorage output, IProgressReport progress = null)
         {
             const int bufferSize = 81920;
-            long remaining = Math.Min(input.Length, output.Length);
+            long remaining = Math.Min(input.GetSize(), output.GetSize());
             if (remaining < 0) throw new ArgumentException("Storage must have an explicit length");
             progress?.SetTotal(remaining);
 
@@ -99,7 +101,7 @@ namespace LibHac.IO
         {
             using (var outFile = new FileStream(filename, FileMode.Create, FileAccess.Write))
             {
-                input.CopyToStream(outFile, input.Length, progress);
+                input.CopyToStream(outFile, input.GetSize(), progress);
             }
         }
 
@@ -107,7 +109,7 @@ namespace LibHac.IO
         {
             if (storage == null) return new byte[0];
 
-            var arr = new byte[storage.Length];
+            var arr = new byte[storage.GetSize()];
             storage.CopyTo(new MemoryStorage(arr));
             return arr;
         }
@@ -116,7 +118,7 @@ namespace LibHac.IO
         {
             if (storage == null) return new T[0];
 
-            var arr = new T[storage.Length / Marshal.SizeOf<T>()];
+            var arr = new T[storage.GetSize() / Marshal.SizeOf<T>()];
             Span<byte> dest = MemoryMarshal.Cast<T, byte>(arr.AsSpan());
 
             storage.Read(dest, 0);
@@ -143,7 +145,7 @@ namespace LibHac.IO
             }
         }
 
-        public static void CopyToStream(this IStorage input, Stream output) => CopyToStream(input, output, input.Length);
+        public static void CopyToStream(this IStorage input, Stream output) => CopyToStream(input, output, input.GetSize());
 
         public static IStorage AsStorage(this Stream stream)
         {

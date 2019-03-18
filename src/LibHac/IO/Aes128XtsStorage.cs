@@ -23,8 +23,6 @@ namespace LibHac.IO
             _tempBuffer = new byte[sectorSize];
             _key1 = key.Slice(0, BlockSize).ToArray();
             _key2 = key.Slice(BlockSize, BlockSize).ToArray();
-
-            Length = baseStorage.Length;
         }
 
         public Aes128XtsStorage(IStorage baseStorage, Span<byte> key1, Span<byte> key2, int sectorSize, bool leaveOpen)
@@ -37,11 +35,8 @@ namespace LibHac.IO
             _tempBuffer = new byte[sectorSize];
             _key1 = key1.ToArray();
             _key2 = key2.ToArray();
-
-            Length = baseStorage.Length;
         }
 
-        public override long Length { get; }
         protected override void ReadImpl(Span<byte> destination, long offset)
         {
             int size = destination.Length;
