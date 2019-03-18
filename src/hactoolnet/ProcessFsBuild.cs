@@ -23,7 +23,7 @@ namespace hactoolnet
 
             using (var outFile = new FileStream(ctx.Options.OutFile, FileMode.Create, FileAccess.ReadWrite))
             {
-                romfs.CopyToStream(outFile, romfs.Length, ctx.Logger);
+                romfs.CopyToStream(outFile, romfs.GetSize(), ctx.Logger);
             }
 
             ctx.Logger.LogMessage($"Finished writing {ctx.Options.OutFile}");
@@ -50,7 +50,7 @@ namespace hactoolnet
 
             using (var outFile = new FileStream(ctx.Options.OutFile, FileMode.Create, FileAccess.ReadWrite))
             {
-                partitionFs.CopyToStream(outFile, partitionFs.Length, ctx.Logger);
+                partitionFs.CopyToStream(outFile, partitionFs.GetSize(), ctx.Logger);
             }
 
             ctx.Logger.LogMessage($"Finished writing {ctx.Options.OutFile}");

@@ -94,7 +94,7 @@ namespace hactoolnet
             using (var outStream = new FileStream(ctx.Options.NspOut, FileMode.Create, FileAccess.ReadWrite))
             {
                 IStorage builtPfs = builder.Build(PartitionFileSystemType.Standard);
-                builtPfs.CopyToStream(outStream, builtPfs.Length, ctx.Logger);
+                builtPfs.CopyToStream(outStream, builtPfs.GetSize(), ctx.Logger);
             }
         }
     }

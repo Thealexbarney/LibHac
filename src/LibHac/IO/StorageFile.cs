@@ -35,7 +35,7 @@ namespace LibHac.IO
 
         public override long GetSize()
         {
-            return BaseStorage.Length;
+            return BaseStorage.GetSize();
         }
 
         public override void SetSize(long size)

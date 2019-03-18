@@ -12,7 +12,7 @@ namespace LibHac.IO
         {
             BaseStorage = baseStorage;
             LeaveOpen = leaveOpen;
-            Length = baseStorage.Length;
+            Length = baseStorage.GetSize();
 
             CanRead = access.HasFlag(FileAccess.Read);
             CanWrite = access.HasFlag(FileAccess.Write);

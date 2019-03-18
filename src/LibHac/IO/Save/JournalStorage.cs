@@ -12,7 +12,8 @@ namespace LibHac.IO.Save
         public JournalHeader Header { get; }
 
         public int BlockSize { get; }
-        public override long Length { get; }
+
+        private long _length;
 
         public JournalStorage(IStorage baseStorage, IStorage header, JournalMapParams mapInfo, bool leaveOpen)
         {
@@ -24,7 +25,7 @@ namespace LibHac.IO.Save
             Map = new JournalMap(mapHeader, mapInfo);
 
             BlockSize = (int)Header.BlockSize;
-            Length = Header.TotalSize - Header.JournalSize;
+            _length = Header.TotalSize - Header.JournalSize;
 
             if (!leaveOpen) ToDispose.Add(baseStorage);
         }
@@ -79,6 +80,8 @@ namespace LibHac.IO.Save
         {
             BaseStorage.Flush();
         }
+
+        public override long GetSize() => _length;
 
         public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
         public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();

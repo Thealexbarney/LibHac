@@ -26,6 +26,6 @@ namespace LibHac.IO
             BaseFile.Flush();
         }
 
-        public override long Length => BaseFile.GetSize();
+        public override long GetSize() => BaseFile.GetSize();
     }
 }

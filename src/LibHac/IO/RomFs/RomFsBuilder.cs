@@ -81,7 +81,7 @@ namespace LibHac.IO.RomFs
             sources.Add(new MemoryStorage(header));
             sources.AddRange(Sources);
 
-            long fileLength = sources.Sum(x => x.Length);
+            long fileLength = sources.Sum(x => x.GetSize());
 
             headerWriter.Write((long)HeaderSize);
 

@@ -42,7 +42,7 @@ namespace LibHac.IO
                 }
 
                 sources.Add(segment.Storage);
-                offset = segment.Offset + segment.Storage.Length;
+                offset = segment.Offset + segment.Storage.GetSize();
             }
 
             return new ConcatenationStorage(sources, true);

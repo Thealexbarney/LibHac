@@ -77,7 +77,7 @@ namespace LibHac.IO
 
         private void SetCapacity(int value)
         {
-            if (value < Length)
+            if (value < _length)
                 throw new ArgumentOutOfRangeException(nameof(value), "Capacity is smaller than the current length.");
 
             if (!_isExpandable && value != _capacity) throw new NotSupportedException("MemoryStorage is not expandable.");
@@ -85,7 +85,7 @@ namespace LibHac.IO
             if (_isExpandable && value != _capacity)
             {
                 var newBuffer = new byte[value];
-                Buffer.BlockCopy(_buffer, 0, newBuffer, 0, (int)Length);
+                Buffer.BlockCopy(_buffer, 0, newBuffer, 0, _length);
 
                 _buffer = newBuffer;
                 _capacity = value;
@@ -94,6 +94,6 @@ namespace LibHac.IO
 
         public override void Flush() { }
 
-        public override long Length => _length;
+        public override long GetSize() => _length;
     }
 }

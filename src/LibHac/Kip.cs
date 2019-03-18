@@ -44,7 +44,7 @@ namespace LibHac
         public byte[] DecompressSection(int index)
         {
             IStorage compStream = OpenSection(index);
-            var compressed = new byte[compStream.Length];
+            var compressed = new byte[compStream.GetSize()];
             compStream.Read(compressed, 0);
 
             return DecompressBlz(compressed);

@@ -51,7 +51,7 @@ namespace hactoolnet
                             using (var outFile = new FileStream(ctx.Options.OutFile, FileMode.OpenOrCreate, FileAccess.ReadWrite))
                             {
                                 IStorage patchedStorage = delta.GetPatchedStorage();
-                                patchedStorage.CopyToStream(outFile, patchedStorage.Length, ctx.Logger);
+                                patchedStorage.CopyToStream(outFile, patchedStorage.GetSize(), ctx.Logger);
                             }
                         }
                     }

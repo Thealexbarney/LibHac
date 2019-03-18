@@ -7,21 +7,21 @@ namespace LibHac.IO
     {
         private IStorage BaseStorage { get; }
         private long Offset { get; }
-        public override long Length { get; }
         private FileAccess Access { get; } = FileAccess.ReadWrite;
+        private long _length;
 
         public SubStorage(IStorage baseStorage, long offset, long length)
         {
             BaseStorage = baseStorage;
             Offset = offset;
-            Length = length;
+            _length = length;
         }
 
         public SubStorage(SubStorage baseStorage, long offset, long length)
         {
             BaseStorage = baseStorage.BaseStorage;
             Offset = baseStorage.Offset + offset;
-            Length = length;
+            _length = length;
         }
 
         public SubStorage(IStorage baseStorage, long offset, long length, bool leaveOpen)
@@ -38,13 +38,13 @@ namespace LibHac.IO
 
         protected override void ReadImpl(Span<byte> destination, long offset)
         {
-            if((Access & FileAccess.Read) == 0) throw new InvalidOperationException("Storage is not readable");
+            if ((Access & FileAccess.Read) == 0) throw new InvalidOperationException("Storage is not readable");
             BaseStorage.Read(destination, offset + Offset);
         }
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
-            if((Access & FileAccess.Write) == 0) throw new InvalidOperationException("Storage is not writable");
+            if ((Access & FileAccess.Write) == 0) throw new InvalidOperationException("Storage is not writable");
             BaseStorage.Write(source, offset + Offset);
         }
 
@@ -52,5 +52,7 @@ namespace LibHac.IO
         {
             BaseStorage.Flush();
         }
+
+        public override long GetSize() => _length;
     }
 }

@@ -11,12 +11,12 @@ namespace LibHac.IO
     {
         private Stream BaseStream { get; }
         private object Locker { get; } = new object();
-        public override long Length { get; }
+        private long _length;
 
         public StreamStorage(Stream baseStream, bool leaveOpen)
         {
             BaseStream = baseStream;
-            Length = BaseStream.Length;
+            _length = BaseStream.Length;
             if (!leaveOpen) ToDispose.Add(BaseStream);
         }
 
@@ -91,5 +91,7 @@ namespace LibHac.IO
                 BaseStream.Flush();
             }
         }
+
+        public override long GetSize() => _length;
     }
 }

@@ -14,8 +14,6 @@ namespace LibHac.IO.Save
         public MapEntry[] MapEntries { get; set; }
         public RemapSegment[] Segments { get; set; }
 
-        public override long Length { get; } = -1;
-
         /// <summary>
         /// Creates a new <see cref="RemapStorage"/>
         /// </summary>
@@ -101,6 +99,8 @@ namespace LibHac.IO.Save
         {
             BaseStorage.Flush();
         }
+
+        public override long GetSize() => -1;
 
         public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
         public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
