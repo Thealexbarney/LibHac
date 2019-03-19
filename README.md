@@ -10,6 +10,10 @@ Most content is imported and exported using a standard `IStorage` interface. Thi
 For example, the files from a title stored on the external SD card can be read or extracted in this way.  
 `NAX0 Reader` -> `NCA Reader` -> `RomFS Reader` -> `Individual Files`
 
+## Getting Started
+
+[Library Overview and Samples](docs/getting-started.md)
+
 # hactoolnet
 
 hactoolnet is an example program that uses LibHac. It is used in a similar manner to [hactool](https://github.com/SciresM/hactool).
