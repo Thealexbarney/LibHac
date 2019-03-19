@@ -14,7 +14,7 @@ An `IStorage` is similar to a .NET `Stream`, but an `IStorage` does not keep tra
 ### IFile
 
 `IFile` is similar to `IStorage` with slight differences. 
-- `IFile` can automatically grow if data is written past the end of the file, and `IStorage` does not grow by default.
+- `IFile` can automatically grow if data is written past the end of the file. `IStorage` does not grow by default.
 - When more bytes are requested than there are bytes available,
 `IFile` will read as many bytes as it can and return the number of bytes read. `IStorage` will throw an exception.
 
@@ -26,7 +26,7 @@ This is an interface for representing a standard file system. It provides functi
 
 ### Loading Keys
 
-Most of LibHac's functionality requires a `Keyset` object that holds the required encryption keys for reading content.
+Most of LibHac's functionality requires a `Keyset` object that holds encryption keys required for reading content.
 
 This can be done by loading keys from an external text file, or by creating a new `Keyset` and copying the keys into it.
 ```
