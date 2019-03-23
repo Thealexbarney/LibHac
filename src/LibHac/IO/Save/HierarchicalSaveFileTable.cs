@@ -100,12 +100,13 @@ namespace LibHac.IO.Save
         private void FindPathRecursive(ReadOnlySpan<byte> path, out SaveEntryKey key)
         {
             var parser = new PathParser(path);
-            key = default;
+            key = new SaveEntryKey(parser.GetCurrent(), 0);
 
-            do
+            while (!parser.IsFinished())
             {
                 key.Parent = DirectoryTable.GetOffsetFromKey(ref key);
-            } while (parser.TryGetNext(out key.Name) && !parser.IsFinished());
+                parser.TryGetNext(out key.Name);
+            }
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]

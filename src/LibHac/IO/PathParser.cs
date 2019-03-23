@@ -3,6 +3,11 @@ using System.Diagnostics;
 
 namespace LibHac.IO
 {
+    /// <summary>
+    /// Enumerates a file or directory path one segment at a time.
+    /// </summary>
+    /// <remarks>When the parser is initialized <see cref="GetCurrent"/>
+    /// will return the root directory name, i.e. an empty string.</remarks>
     public ref struct PathParser
     {
         private ReadOnlySpan<byte> _path;
@@ -22,9 +27,16 @@ namespace LibHac.IO
             _path = path;
             _offset = 0;
             _length = 0;
-            _finished = false;
+            _finished = path.Length == 1;
         }
 
+        /// <summary>
+        /// Moves the iterator to the next segment in the path and gets the name of that segment.
+        /// </summary>
+        /// <param name="name">When this method returns, contains the path segment's name.</param>
+        /// <returns><see langword="true"/> if the <see cref="PathParser"/> was able to
+        /// move to the next path segment.
+        /// <see langword="false"/> if there are no remaining path segments.</returns>
         public bool TryGetNext(out ReadOnlySpan<byte> name)
         {
             bool success = MoveNext();
@@ -32,6 +44,12 @@ namespace LibHac.IO
             return success;
         }
 
+        /// <summary>
+        /// Moves the iterator to the next segment in the path.
+        /// </summary>
+        /// <returns><see langword="true"/> if the <see cref="PathParser"/> was able to
+        /// move to the next path segment.
+        /// <see langword="false"/> if there are no remaining path segments.</returns>
         public bool MoveNext()
         {
             if (_finished) return false;
@@ -50,11 +68,19 @@ namespace LibHac.IO
             return true;
         }
 
+        /// <summary>
+        /// Gets the current path segment's name.
+        /// </summary>
+        /// <returns>The current path segment.</returns>
         public ReadOnlySpan<byte> GetCurrent()
         {
             return _path.Slice(_offset, _length);
         }
 
+        /// <summary>
+        /// Checks if the current path segment is the final one.
+        /// </summary>
+        /// <returns><see langword="true"/> if the current path segment is the final one.</returns>
         public bool IsFinished() => _finished;
     }
 }

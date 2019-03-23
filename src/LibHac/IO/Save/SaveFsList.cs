@@ -27,7 +27,6 @@ namespace LibHac.IO.Save
             ref SaveFsEntry entry = ref GetEntryFromBytes(entryBytes);
 
             int capacity = GetListCapacity();
-            int entryId = -1;
 
             ReadEntry(UsedListHeadIndex, entryBytes);
 
@@ -35,16 +34,16 @@ namespace LibHac.IO.Save
             {
                 if (entry.Next > capacity) throw new IndexOutOfRangeException("Save entry index out of range");
 
-                entryId = entry.Next;
+                int entryId = entry.Next;
                 ReadEntry(entry.Next, out entry);
 
                 if (entry.Parent == key.Parent && Util.StringSpansEqual(name, key.Name))
                 {
-                    break;
+                    return entryId;
                 }
             }
 
-            return entryId;
+            return -1;
         }
 
         public bool TryGetValue(ref SaveEntryKey key, out T value)

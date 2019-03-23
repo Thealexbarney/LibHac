@@ -206,7 +206,7 @@ namespace LibHac.IO.RomFs
             path = PathTools.Normalize(path);
             ReadOnlySpan<byte> pathBytes = Util.GetUtf8Bytes(path);
 
-            if(path == "/") throw new ArgumentException("Path cannot be empty");
+            if (path == "/") throw new ArgumentException("Path cannot be empty");
 
             CreateFileRecursiveInternal(pathBytes, ref fileInfo);
         }
@@ -358,12 +358,13 @@ namespace LibHac.IO.RomFs
         private void FindPathRecursive(ReadOnlySpan<byte> path, out RomEntryKey key)
         {
             var parser = new PathParser(path);
-            key = default;
+            key = new RomEntryKey(parser.GetCurrent(), 0);
 
-            do
+            while (!parser.IsFinished())
             {
                 key.Parent = DirectoryTable.GetOffsetFromKey(ref key);
-            } while (parser.TryGetNext(out key.Name) && !parser.IsFinished());
+                parser.TryGetNext(out key.Name);
+            }
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
