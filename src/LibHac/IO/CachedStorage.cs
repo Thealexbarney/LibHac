@@ -8,7 +8,7 @@ namespace LibHac.IO
     {
         private IStorage BaseStorage { get; }
         private int BlockSize { get; }
-        private readonly long _length;
+        private long _length;
 
         private LinkedList<CacheBlock> Blocks { get; } = new LinkedList<CacheBlock>();
         private Dictionary<long, LinkedListNode<CacheBlock>> BlockDict { get; } = new Dictionary<long, LinkedListNode<CacheBlock>>();
@@ -98,6 +98,13 @@ namespace LibHac.IO
         }
 
         public override long GetSize() => _length;
+
+        public override void SetSize(long size)
+        {
+            BaseStorage.SetSize(size);
+
+            _length = BaseStorage.GetSize();
+        }
 
         private CacheBlock GetBlock(long blockIndex)
         {
