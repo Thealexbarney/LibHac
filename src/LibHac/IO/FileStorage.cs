@@ -27,5 +27,10 @@ namespace LibHac.IO
         }
 
         public override long GetSize() => BaseFile.GetSize();
+
+        public override void SetSize(long size)
+        {
+            BaseFile.SetSize(size);
+        }
     }
 }

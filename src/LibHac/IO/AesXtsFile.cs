@@ -74,7 +74,9 @@ namespace LibHac.IO
         {
             Header.SetSize(size, VerificationKey);
 
-            throw new NotImplementedException();
+            BaseFile.Write(Header.ToBytes(false), 0);
+
+            BaseStorage.SetSize(size);
         }
     }
 }

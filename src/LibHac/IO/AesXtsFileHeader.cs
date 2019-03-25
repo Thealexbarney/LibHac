@@ -47,7 +47,7 @@ namespace LibHac.IO
             EncryptHeader(path, kekSeed, verificationKey);
         }
 
-        private void EncryptHeader(string path, byte[] kekSeed, byte[] verificationKey)
+        public void EncryptHeader(string path, byte[] kekSeed, byte[] verificationKey)
         {
             GenerateKek(kekSeed, path);
             EncryptKeys();
@@ -84,7 +84,7 @@ namespace LibHac.IO
         private void GenerateKek(byte[] kekSeed, string path)
         {
             var hash = new HMACSHA256(kekSeed);
-            byte[] pathBytes = Encoding.ASCII.GetBytes(path);
+            byte[] pathBytes = Encoding.UTF8.GetBytes(path);
 
             byte[] checksum = hash.ComputeHash(pathBytes, 0, pathBytes.Length);
             Array.Copy(checksum, 0, Kek1, 0, 0x10);

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.IO;
 
 namespace LibHac.IO
 {
@@ -95,7 +97,24 @@ namespace LibHac.IO
 
         public void RenameFile(string srcPath, string dstPath)
         {
-            throw new NotImplementedException();
+            srcPath = PathTools.Normalize(srcPath);
+            dstPath = PathTools.Normalize(dstPath);
+
+            AesXtsFileHeader header = ReadXtsHeader(srcPath);
+
+            BaseFileSystem.RenameFile(srcPath, dstPath);
+
+            try
+            {
+                WriteXtsHeader(header, dstPath);
+            }
+            catch (Exception)
+            {
+                BaseFileSystem.RenameFile(dstPath, srcPath);
+                WriteXtsHeader(header, srcPath);
+
+                throw;
+            }
         }
 
         public bool DirectoryExists(string path)
@@ -116,6 +135,35 @@ namespace LibHac.IO
         public void Commit()
         {
             BaseFileSystem.Commit();
+        }
+
+        private AesXtsFileHeader ReadXtsHeader(string path)
+        {
+            Debug.Assert(PathTools.IsNormalized(path.AsSpan()));
+
+            using (IFile file = BaseFileSystem.OpenFile(path, OpenMode.Read))
+            {
+                var header = new AesXtsFileHeader(file);
+
+                if (!header.TryDecryptHeader(path, KekSource, ValidationKey))
+                {
+                    throw new InvalidDataException("Could not decrypt AES-XTS keys");
+                }
+
+                return header;
+            }
+        }
+
+        private void WriteXtsHeader(AesXtsFileHeader header, string path)
+        {
+            Debug.Assert(PathTools.IsNormalized(path.AsSpan()));
+
+            header.EncryptHeader(path, KekSource, ValidationKey);
+
+            using (IFile file = BaseFileSystem.OpenFile(path, OpenMode.ReadWrite))
+            {
+                file.Write(header.ToBytes(false), 0);
+            }
         }
     }
 }

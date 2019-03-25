@@ -54,5 +54,23 @@ namespace LibHac.IO
         }
 
         public override long GetSize() => _length;
+
+        public override void SetSize(long size)
+        {
+            //if (!IsResizable)
+            //    return 0x313802;
+
+            //if (Offset < 0 || size < 0)
+            //    return 0x2F5C02;
+
+            if (BaseStorage.GetSize() != Offset + _length)
+            {
+                throw new NotSupportedException("SubStorage cannot be resized unless it is located at the end of the base storage.");
+            }
+
+            BaseStorage.SetSize(Offset + size);
+
+            _length = size;
+        }
     }
 }
