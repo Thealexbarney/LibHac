@@ -174,7 +174,7 @@ namespace LibHac.IO
 
         public static FileAttributes ApplyNxAttributes(this FileAttributes attributes, NxFileAttributes nxAttributes)
         {
-            var nxAttributeBits = (FileAttributes)(((int)attributes & 3) << 4);
+            var nxAttributeBits = (FileAttributes)(((int)nxAttributes & 3) << 4);
             return attributes | nxAttributeBits;
         }
     }

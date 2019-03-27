@@ -6,16 +6,16 @@ namespace LibHac.IO
 {
     public class ConcatenationFileSystem : IFileSystem
     {
-        private const long DefaultSplitFileSize = 0xFFFF0000; // Hard-coded value used by FS
+        private const long DefaultSubFileSize = 0xFFFF0000; // Hard-coded value used by FS
         private IAttributeFileSystem BaseFileSystem { get; }
-        private long SplitFileSize { get; }
+        private long SubFileSize { get; }
 
-        public ConcatenationFileSystem(IAttributeFileSystem baseFileSystem) : this(baseFileSystem, DefaultSplitFileSize) { }
+        public ConcatenationFileSystem(IAttributeFileSystem baseFileSystem) : this(baseFileSystem, DefaultSubFileSize) { }
 
-        public ConcatenationFileSystem(IAttributeFileSystem baseFileSystem, long splitFileSize)
+        public ConcatenationFileSystem(IAttributeFileSystem baseFileSystem, long subFileSize)
         {
             BaseFileSystem = baseFileSystem;
-            SplitFileSize = splitFileSize;
+            SubFileSize = subFileSize;
         }
 
         internal bool IsConcatenationFile(string path)
@@ -64,8 +64,8 @@ namespace LibHac.IO
 
             for (int i = 0; remaining > 0; i++)
             {
-                long fileSize = Math.Min(SplitFileSize, remaining);
-                string fileName = GetSplitFilePath(path, i);
+                long fileSize = Math.Min(SubFileSize, remaining);
+                string fileName = GetSubFilePath(path, i);
 
                 BaseFileSystem.CreateFile(fileName, fileSize, CreateFileOptions.None);
 
@@ -94,11 +94,11 @@ namespace LibHac.IO
                 BaseFileSystem.DeleteFile(path);
             }
 
-            int count = GetSplitFileCount(path);
+            int count = GetSubFileCount(path);
 
             for (int i = 0; i < count; i++)
             {
-                BaseFileSystem.DeleteFile(GetSplitFilePath(path, i));
+                BaseFileSystem.DeleteFile(GetSubFilePath(path, i));
             }
 
             BaseFileSystem.DeleteDirectory(path);
@@ -127,18 +127,18 @@ namespace LibHac.IO
                 return BaseFileSystem.OpenFile(path, mode);
             }
 
-            int fileCount = GetSplitFileCount(path);
+            int fileCount = GetSubFileCount(path);
 
             var files = new List<IFile>();
 
             for (int i = 0; i < fileCount; i++)
             {
-                string filePath = GetSplitFilePath(path, i);
+                string filePath = GetSubFilePath(path, i);
                 IFile file = BaseFileSystem.OpenFile(filePath, mode);
                 files.Add(file);
             }
 
-            return new ConcatenationFile(files, SplitFileSize, mode);
+            return new ConcatenationFile(BaseFileSystem, path, files, SubFileSize, mode);
         }
 
         public void RenameDirectory(string srcPath, string dstPath)
@@ -197,11 +197,11 @@ namespace LibHac.IO
             BaseFileSystem.Commit();
         }
 
-        private int GetSplitFileCount(string dirPath)
+        private int GetSubFileCount(string dirPath)
         {
             int count = 0;
 
-            while (BaseFileSystem.FileExists(GetSplitFilePath(dirPath, count)))
+            while (BaseFileSystem.FileExists(GetSubFilePath(dirPath, count)))
             {
                 count++;
             }
@@ -209,19 +209,19 @@ namespace LibHac.IO
             return count;
         }
 
-        private static string GetSplitFilePath(string dirPath, int index)
+        internal static string GetSubFilePath(string dirPath, int index)
         {
             return $"{dirPath}/{index:D2}";
         }
 
         internal long GetConcatenationFileSize(string path)
         {
-            int fileCount = GetSplitFileCount(path);
+            int fileCount = GetSubFileCount(path);
             long size = 0;
 
             for (int i = 0; i < fileCount; i++)
             {
-                size += BaseFileSystem.GetFileSize(GetSplitFilePath(path, i));
+                size += BaseFileSystem.GetFileSize(GetSubFilePath(path, i));
             }
 
             return size;
