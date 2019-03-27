@@ -40,7 +40,7 @@ namespace LibHac.IO
 
         public override void SetSize(long size)
         {
-            throw new NotImplementedException();
+            BaseStorage.SetSize(size);
         }
     }
 }

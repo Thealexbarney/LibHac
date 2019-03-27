@@ -7,12 +7,13 @@ namespace LibHac.IO
     {
         private IStorage BaseStorage { get; }
         private bool LeaveOpen { get; }
+        private long _length;
 
         public StorageStream(IStorage baseStorage, FileAccess access, bool leaveOpen)
         {
             BaseStorage = baseStorage;
             LeaveOpen = leaveOpen;
-            Length = baseStorage.GetSize();
+            _length = baseStorage.GetSize();
 
             CanRead = access.HasFlag(FileAccess.Read);
             CanWrite = access.HasFlag(FileAccess.Write);
@@ -20,7 +21,7 @@ namespace LibHac.IO
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            int toRead = (int) Math.Min(count, Length - Position);
+            int toRead = (int)Math.Min(count, Length - Position);
             BaseStorage.Read(buffer.AsSpan(offset, toRead), Position);
 
             Position += toRead;
@@ -58,13 +59,15 @@ namespace LibHac.IO
 
         public override void SetLength(long value)
         {
-            throw new NotImplementedException();
+            BaseStorage.SetSize(value);
+
+            _length = BaseStorage.GetSize();
         }
 
         public override bool CanRead { get; }
         public override bool CanSeek => true;
         public override bool CanWrite { get; }
-        public override long Length { get; }
+        public override long Length => _length;
         public override long Position { get; set; }
 
         protected override void Dispose(bool disposing)

@@ -7,12 +7,13 @@ namespace LibHac.IO
     {
         private IFile BaseFile { get; }
         private bool LeaveOpen { get; }
+        private long _length;
 
         public NxFileStream(IFile baseFile, bool leaveOpen)
         {
             BaseFile = baseFile;
             LeaveOpen = leaveOpen;
-            Length = baseFile.GetSize();
+            _length = baseFile.GetSize();
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -56,14 +57,15 @@ namespace LibHac.IO
 
         public override void SetLength(long value)
         {
-            throw new NotImplementedException();
+            BaseFile.SetSize(value);
+
+            _length = BaseFile.GetSize();
         }
 
-        // todo access
         public override bool CanRead => BaseFile.Mode.HasFlag(OpenMode.Read);
         public override bool CanSeek => true;
         public override bool CanWrite => BaseFile.Mode.HasFlag(OpenMode.Write);
-        public override long Length { get; }
+        public override long Length => _length;
         public override long Position { get; set; }
 
         protected override void Dispose(bool disposing)
