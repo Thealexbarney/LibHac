@@ -10,7 +10,6 @@ namespace LibHac.IO.RomFs
         public HierarchicalRomFileTable FileTable { get; }
         private IStorage BaseStorage { get; }
 
-        // todo Don't parse entire table when opening
         public RomFsFileSystem(IStorage storage)
         {
             BaseStorage = storage;
