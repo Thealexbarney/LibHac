@@ -92,7 +92,54 @@ namespace LibHac.IO
 
         public void RenameDirectory(string srcPath, string dstPath)
         {
-            throw new NotImplementedException();
+            srcPath = PathTools.Normalize(srcPath);
+            dstPath = PathTools.Normalize(dstPath);
+
+            BaseFileSystem.RenameDirectory(srcPath, dstPath);
+
+            try
+            {
+                RenameDirectoryImpl(srcPath, dstPath, false);
+            }
+            catch (Exception)
+            {
+                RenameDirectoryImpl(srcPath, dstPath, true);
+                BaseFileSystem.RenameDirectory(dstPath, srcPath);
+
+                throw;
+            }
+        }
+
+        private void RenameDirectoryImpl(string srcDir, string dstDir, bool doRollback)
+        {
+            IDirectory dir = OpenDirectory(dstDir, OpenDirectoryMode.All);
+
+            foreach (DirectoryEntry entry in dir.Read())
+            {
+                string subSrcPath = $"{srcDir}/{entry.Name}";
+                string subDstPath = $"{dstDir}/{entry.Name}";
+
+                if (entry.Type == DirectoryEntryType.Directory)
+                {
+                    RenameDirectoryImpl(subSrcPath, subDstPath, doRollback);
+                }
+
+                if (entry.Type == DirectoryEntryType.File)
+                {
+                    if (doRollback)
+                    {
+                        if (TryReadXtsHeader(subDstPath, subDstPath, out AesXtsFileHeader header))
+                        {
+                            WriteXtsHeader(header, subDstPath, subSrcPath);
+                        }
+                    }
+                    else
+                    {
+                        AesXtsFileHeader header = ReadXtsHeader(subDstPath, subSrcPath);
+                        WriteXtsHeader(header, subDstPath, subDstPath);
+                    }
+                }
+            }
         }
 
         public void RenameFile(string srcPath, string dstPath)
@@ -100,18 +147,18 @@ namespace LibHac.IO
             srcPath = PathTools.Normalize(srcPath);
             dstPath = PathTools.Normalize(dstPath);
 
-            AesXtsFileHeader header = ReadXtsHeader(srcPath);
+            AesXtsFileHeader header = ReadXtsHeader(srcPath, srcPath);
 
             BaseFileSystem.RenameFile(srcPath, dstPath);
 
             try
             {
-                WriteXtsHeader(header, dstPath);
+                WriteXtsHeader(header, dstPath, dstPath);
             }
             catch (Exception)
             {
                 BaseFileSystem.RenameFile(dstPath, srcPath);
-                WriteXtsHeader(header, srcPath);
+                WriteXtsHeader(header, srcPath, srcPath);
 
                 throw;
             }
@@ -137,30 +184,37 @@ namespace LibHac.IO
             BaseFileSystem.Commit();
         }
 
-        private AesXtsFileHeader ReadXtsHeader(string path)
+        private AesXtsFileHeader ReadXtsHeader(string filePath, string keyPath)
         {
-            Debug.Assert(PathTools.IsNormalized(path.AsSpan()));
-
-            using (IFile file = BaseFileSystem.OpenFile(path, OpenMode.Read))
+            if (!TryReadXtsHeader(filePath, keyPath, out AesXtsFileHeader header))
             {
-                var header = new AesXtsFileHeader(file);
+                throw new InvalidDataException("Could not decrypt AES-XTS keys");
+            }
 
-                if (!header.TryDecryptHeader(path, KekSource, ValidationKey))
-                {
-                    throw new InvalidDataException("Could not decrypt AES-XTS keys");
-                }
+            return header;
+        }
 
-                return header;
+        private bool TryReadXtsHeader(string filePath, string keyPath, out AesXtsFileHeader header)
+        {
+            Debug.Assert(PathTools.IsNormalized(filePath.AsSpan()));
+            Debug.Assert(PathTools.IsNormalized(keyPath.AsSpan()));
+
+            using (IFile file = BaseFileSystem.OpenFile(filePath, OpenMode.Read))
+            {
+                header = new AesXtsFileHeader(file);
+
+                return header.TryDecryptHeader(keyPath, KekSource, ValidationKey);
             }
         }
 
-        private void WriteXtsHeader(AesXtsFileHeader header, string path)
+        private void WriteXtsHeader(AesXtsFileHeader header, string filePath, string keyPath)
         {
-            Debug.Assert(PathTools.IsNormalized(path.AsSpan()));
+            Debug.Assert(PathTools.IsNormalized(filePath.AsSpan()));
+            Debug.Assert(PathTools.IsNormalized(keyPath.AsSpan()));
 
-            header.EncryptHeader(path, KekSource, ValidationKey);
+            header.EncryptHeader(keyPath, KekSource, ValidationKey);
 
-            using (IFile file = BaseFileSystem.OpenFile(path, OpenMode.ReadWrite))
+            using (IFile file = BaseFileSystem.OpenFile(filePath, OpenMode.ReadWrite))
             {
                 file.Write(header.ToBytes(false), 0);
             }
