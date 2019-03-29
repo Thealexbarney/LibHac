@@ -16,7 +16,11 @@ namespace LibHac.IO.Save
 
         public bool TryOpenFile(string path, out SaveFileInfo fileInfo)
         {
-            FindPathRecursive(Util.GetUtf8Bytes(path), out SaveEntryKey key);
+            if (!FindPathRecursive(Util.GetUtf8Bytes(path), out SaveEntryKey key))
+            {
+                fileInfo = default;
+                return false;
+            }
 
             if (FileTable.TryGetValue(ref key, out FileSaveEntry value))
             {
@@ -83,9 +87,77 @@ namespace LibHac.IO.Save
             return true;
         }
 
+        public void AddFile(string path, ref SaveFileInfo fileInfo)
+        {
+            path = PathTools.Normalize(path);
+            ReadOnlySpan<byte> pathBytes = Util.GetUtf8Bytes(path);
+
+            if (path == "/") throw new ArgumentException("Path cannot be empty");
+
+            CreateFileRecursiveInternal(pathBytes, ref fileInfo);
+        }
+
+        private void CreateFileRecursiveInternal(ReadOnlySpan<byte> path, ref SaveFileInfo fileInfo)
+        {
+            var parser = new PathParser(path);
+            var key = new SaveEntryKey(parser.GetCurrent(), 0);
+
+            int prevIndex = 0;
+
+            while (!parser.IsFinished())
+            {
+                int index = DirectoryTable.GetIndexFromKey(ref key).Index;
+
+                if (index < 0)
+                {
+                    var newEntry = new DirectorySaveEntry();
+                    index = DirectoryTable.Add(ref key, ref newEntry);
+
+                    if (prevIndex > 0)
+                    {
+                        DirectoryTable.GetValue(prevIndex, out DirectorySaveEntry parentEntry);
+
+                        newEntry.NextSibling = parentEntry.Pos.NextDirectory;
+                        parentEntry.Pos.NextDirectory = index;
+
+                        DirectoryTable.SetValue(prevIndex, ref parentEntry);
+                        DirectoryTable.SetValue(index, ref newEntry);
+                    }
+                }
+
+                prevIndex = index;
+                key.Parent = index;
+                parser.TryGetNext(out key.Name);
+            }
+
+            {
+                int index = FileTable.GetIndexFromKey(ref key).Index;
+                var fileEntry = new FileSaveEntry();
+
+                if (index < 0)
+                {
+                    index = FileTable.Add(ref key, ref fileEntry);
+
+                    DirectoryTable.GetValue(prevIndex, out DirectorySaveEntry parentEntry);
+
+                    fileEntry.NextSibling = (int)parentEntry.Pos.NextFile;
+                    parentEntry.Pos.NextFile = index;
+
+                    DirectoryTable.SetValue(prevIndex, ref parentEntry);
+                }
+
+                fileEntry.Info = fileInfo;
+                FileTable.SetValue(index, ref fileEntry);
+            }
+        }
+
         public bool TryOpenDirectory(string path, out SaveFindPosition position)
         {
-            FindPathRecursive(Util.GetUtf8Bytes(path), out SaveEntryKey key);
+            if (!FindPathRecursive(Util.GetUtf8Bytes(path), out SaveEntryKey key))
+            {
+                position = default;
+                return false;
+            }
 
             if (DirectoryTable.TryGetValue(ref key, out DirectorySaveEntry value))
             {
@@ -97,16 +169,21 @@ namespace LibHac.IO.Save
             return false;
         }
 
-        private void FindPathRecursive(ReadOnlySpan<byte> path, out SaveEntryKey key)
+        private bool FindPathRecursive(ReadOnlySpan<byte> path, out SaveEntryKey key)
         {
             var parser = new PathParser(path);
             key = new SaveEntryKey(parser.GetCurrent(), 0);
 
             while (!parser.IsFinished())
             {
-                key.Parent = DirectoryTable.GetOffsetFromKey(ref key);
+                key.Parent = DirectoryTable.GetIndexFromKey(ref key).Index;
+
+                if (key.Parent < 0) return false;
+
                 parser.TryGetNext(out key.Name);
             }
+
+            return true;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
