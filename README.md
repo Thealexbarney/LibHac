@@ -117,3 +117,9 @@ Console-unique keys can be loaded from a text file by specifying a filename with
 Title keys can be loaded from a text file by specifying a filename with the `--titlekeys` argument. The file should contain one key per line in the form `rights_id,HEXADECIMALKEY`.
 
 If a keyfile is not set at the command line, hactoolnet will search for and load keyfiles in `$HOME/.switch/prod.keys`, `$HOME/.switch/console.keys` and `$HOME/.switch/title.keys`.
+
+## Special Thanks
+
+This project uses NDepend for static code analysis.
+
+[![NDepend link](img/NDependLogo.png)](https://www.ndepend.com/)
