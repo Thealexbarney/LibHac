@@ -22,11 +22,11 @@ namespace LibHac.IO.Save
 
         public bool BeginIteration(int initialBlock)
         {
-            AllocationTableEntry tableEntry = Fat.Entries[initialBlock + 1];
+            Fat.ReadEntry(initialBlock + 1, out AllocationTableEntry tableEntry);
 
             if (!tableEntry.IsListStart() && initialBlock != -1)
             {
-               return false;
+                return false;
             }
 
             if (tableEntry.IsSingleBlockSegment())
@@ -35,7 +35,7 @@ namespace LibHac.IO.Save
             }
             else
             {
-                AllocationTableEntry lengthEntry = Fat.Entries[initialBlock + 2];
+                Fat.ReadEntry(initialBlock + 2, out AllocationTableEntry lengthEntry);
                 CurrentSegmentSize = lengthEntry.Next - initialBlock;
             }
 
@@ -46,11 +46,11 @@ namespace LibHac.IO.Save
 
         public bool MoveNext()
         {
-            AllocationTableEntry currentEntry = Fat.Entries[PhysicalBlock + 1];
+            Fat.ReadEntry(PhysicalBlock + 1, out AllocationTableEntry currentEntry);
             if (currentEntry.IsListEnd()) return false;
             int newBlock = currentEntry.Next & 0x7FFFFFFF;
 
-            AllocationTableEntry newEntry = Fat.Entries[newBlock];
+            Fat.ReadEntry(newBlock, out AllocationTableEntry newEntry);
             VirtualBlock += CurrentSegmentSize;
 
             if (newEntry.IsSingleBlockSegment())
@@ -59,7 +59,7 @@ namespace LibHac.IO.Save
             }
             else
             {
-                AllocationTableEntry lengthEntry = Fat.Entries[newBlock + 1];
+                Fat.ReadEntry(newBlock + 1, out AllocationTableEntry lengthEntry);
                 CurrentSegmentSize = lengthEntry.Next - (newBlock - 1);
             }
 
@@ -69,11 +69,11 @@ namespace LibHac.IO.Save
 
         public bool MovePrevious()
         {
-            AllocationTableEntry currentEntry = Fat.Entries[PhysicalBlock + 1];
+            Fat.ReadEntry(PhysicalBlock + 1, out AllocationTableEntry currentEntry);
             if (currentEntry.IsListStart()) return false;
             int newBlock = currentEntry.Prev & 0x7FFFFFFF;
 
-            AllocationTableEntry newEntry = Fat.Entries[newBlock];
+            Fat.ReadEntry(newBlock, out AllocationTableEntry newEntry);
 
             if (newEntry.IsSingleBlockSegment())
             {
@@ -81,7 +81,7 @@ namespace LibHac.IO.Save
             }
             else
             {
-                AllocationTableEntry lengthEntry = Fat.Entries[newBlock + 1];
+                Fat.ReadEntry(newBlock + 1, out AllocationTableEntry lengthEntry);
                 CurrentSegmentSize = lengthEntry.Next - (newBlock - 1);
             }
 

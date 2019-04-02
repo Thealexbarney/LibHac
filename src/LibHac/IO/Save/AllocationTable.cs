@@ -1,13 +1,16 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Runtime.InteropServices;
 
 namespace LibHac.IO.Save
 {
     public class AllocationTable
     {
+        private const int EntrySize = 8;
+
         private IStorage BaseStorage { get; }
         private IStorage HeaderStorage { get; }
 
-        public AllocationTableEntry[] Entries { get; }
         public AllocationTableHeader Header { get; }
 
         public AllocationTable(IStorage storage, IStorage header)
@@ -15,33 +18,43 @@ namespace LibHac.IO.Save
             BaseStorage = storage;
             HeaderStorage = header;
             Header = new AllocationTableHeader(HeaderStorage);
+        }
 
-            Stream tableStream = storage.AsStream();
+        public void ReadEntry(int index, out AllocationTableEntry entry)
+        {
+            Span<byte> bytes = stackalloc byte[EntrySize];
+            int offset = index * EntrySize;
 
-            // The first entry in the table is reserved. Block 0 is at table index 1
-            int blockCount = (int)(Header.AllocationTableBlockCount) + 1;
+            BaseStorage.Read(bytes, offset);
 
-            Entries = new AllocationTableEntry[blockCount];
-            tableStream.Position = 0;
-            var reader = new BinaryReader(tableStream);
+            entry = GetEntryFromBytes(bytes);
+        }
 
-            for (int i = 0; i < blockCount; i++)
-            {
-                int parent = reader.ReadInt32();
-                int child = reader.ReadInt32();
+        public void WriteEntry(int index, ref AllocationTableEntry entry)
+        {
+            Span<byte> bytes = stackalloc byte[EntrySize];
+            int offset = index * EntrySize;
 
-                Entries[i] = new AllocationTableEntry { Next = child, Prev = parent };
-            }
+            ref AllocationTableEntry newEntry = ref GetEntryFromBytes(bytes);
+            newEntry = entry;
+
+            BaseStorage.Write(bytes, offset);
+        }
+
+        private ref AllocationTableEntry GetEntryFromBytes(Span<byte> entry)
+        {
+            return ref MemoryMarshal.Cast<byte, AllocationTableEntry>(entry)[0];
         }
 
         public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
         public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
     }
 
-    public class AllocationTableEntry
+    [StructLayout(LayoutKind.Sequential)]
+    public struct AllocationTableEntry
     {
-        public int Prev { get; set; }
-        public int Next { get; set; }
+        public int Prev;
+        public int Next;
 
         public bool IsListStart()
         {
