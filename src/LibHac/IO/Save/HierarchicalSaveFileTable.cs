@@ -5,13 +5,13 @@ namespace LibHac.IO.Save
 {
     public class HierarchicalSaveFileTable
     {
-        private SaveFsList<FileSaveEntry> FileTable { get; }
-        private SaveFsList<DirectorySaveEntry> DirectoryTable { get; }
+        private SaveFsList<TableEntry<SaveFileInfo>> FileTable { get; }
+        private SaveFsList<TableEntry<SaveFindPosition>> DirectoryTable { get; }
 
         public HierarchicalSaveFileTable(IStorage dirTable, IStorage fileTable)
         {
-            FileTable = new SaveFsList<FileSaveEntry>(fileTable);
-            DirectoryTable = new SaveFsList<DirectorySaveEntry>(dirTable);
+            FileTable = new SaveFsList<TableEntry<SaveFileInfo>>(fileTable);
+            DirectoryTable = new SaveFsList<TableEntry<SaveFindPosition>>(dirTable);
         }
 
         public bool TryOpenFile(string path, out SaveFileInfo fileInfo)
@@ -22,9 +22,9 @@ namespace LibHac.IO.Save
                 return false;
             }
 
-            if (FileTable.TryGetValue(ref key, out FileSaveEntry value))
+            if (FileTable.TryGetValue(ref key, out TableEntry<SaveFileInfo> value))
             {
-                fileInfo = value.Info;
+                fileInfo = value.Value;
                 return true;
             }
 
@@ -43,7 +43,7 @@ namespace LibHac.IO.Save
 
             Span<byte> nameBytes = stackalloc byte[FileTable.MaxNameLength];
 
-            bool success = FileTable.TryGetValue((int)position.NextFile, out FileSaveEntry entry, ref nameBytes);
+            bool success = FileTable.TryGetValue((int)position.NextFile, out TableEntry<SaveFileInfo> entry, ref nameBytes);
 
             // todo error message
             if (!success)
@@ -54,7 +54,7 @@ namespace LibHac.IO.Save
             }
 
             position.NextFile = entry.NextSibling;
-            info = entry.Info;
+            info = entry.Value;
 
             name = Util.GetUtf8StringNullTerminated(nameBytes);
 
@@ -69,9 +69,9 @@ namespace LibHac.IO.Save
                 return false;
             }
 
-            Span<byte> nameBytes = stackalloc byte[FileTable.MaxNameLength];
+            Span<byte> nameBytes = stackalloc byte[DirectoryTable.MaxNameLength];
 
-            bool success = DirectoryTable.TryGetValue(position.NextDirectory, out DirectorySaveEntry entry, ref nameBytes);
+            bool success = DirectoryTable.TryGetValue(position.NextDirectory, out TableEntry<SaveFindPosition> entry, ref nameBytes);
 
             // todo error message
             if (!success)
@@ -110,15 +110,15 @@ namespace LibHac.IO.Save
 
                 if (index < 0)
                 {
-                    var newEntry = new DirectorySaveEntry();
+                    var newEntry = new TableEntry<SaveFindPosition>();
                     index = DirectoryTable.Add(ref key, ref newEntry);
 
                     if (prevIndex > 0)
                     {
-                        DirectoryTable.GetValue(prevIndex, out DirectorySaveEntry parentEntry);
+                        DirectoryTable.GetValue(prevIndex, out TableEntry<SaveFindPosition> parentEntry);
 
-                        newEntry.NextSibling = parentEntry.Pos.NextDirectory;
-                        parentEntry.Pos.NextDirectory = index;
+                        newEntry.NextSibling = parentEntry.Value.NextDirectory;
+                        parentEntry.Value.NextDirectory = index;
 
                         DirectoryTable.SetValue(prevIndex, ref parentEntry);
                         DirectoryTable.SetValue(index, ref newEntry);
@@ -132,21 +132,21 @@ namespace LibHac.IO.Save
 
             {
                 int index = FileTable.GetIndexFromKey(ref key).Index;
-                var fileEntry = new FileSaveEntry();
+                var fileEntry = new TableEntry<SaveFileInfo>();
 
                 if (index < 0)
                 {
                     index = FileTable.Add(ref key, ref fileEntry);
 
-                    DirectoryTable.GetValue(prevIndex, out DirectorySaveEntry parentEntry);
+                    DirectoryTable.GetValue(prevIndex, out TableEntry<SaveFindPosition> parentEntry);
 
-                    fileEntry.NextSibling = (int)parentEntry.Pos.NextFile;
-                    parentEntry.Pos.NextFile = index;
+                    fileEntry.NextSibling = (int)parentEntry.Value.NextFile;
+                    parentEntry.Value.NextFile = index;
 
                     DirectoryTable.SetValue(prevIndex, ref parentEntry);
                 }
 
-                fileEntry.Info = fileInfo;
+                fileEntry.Value = fileInfo;
                 FileTable.SetValue(index, ref fileEntry);
             }
         }
@@ -159,9 +159,9 @@ namespace LibHac.IO.Save
                 return false;
             }
 
-            if (DirectoryTable.TryGetValue(ref key, out DirectorySaveEntry value))
+            if (DirectoryTable.TryGetValue(ref key, out TableEntry<SaveFindPosition> entry))
             {
-                position = value.Pos;
+                position = entry.Value;
                 return true;
             }
 
@@ -187,19 +187,10 @@ namespace LibHac.IO.Save
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct DirectorySaveEntry
+        private struct TableEntry<T> where T : struct
         {
             public int NextSibling;
-            public SaveFindPosition Pos;
-            public long Field10;
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct FileSaveEntry
-        {
-            public int NextSibling;
-            public SaveFileInfo Info;
-            public long Field10;
+            public T Value;
         }
     }
 }

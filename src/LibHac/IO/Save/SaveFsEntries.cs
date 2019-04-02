@@ -15,17 +15,18 @@ namespace LibHac.IO.Save
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 0x14)]
     public struct SaveFileInfo
     {
         public int StartBlock;
         public long Length;
+        public long Reserved;
     }
 
     /// <summary>
     /// Represents the current position when enumerating a directory's contents.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 0x14)]
     public struct SaveFindPosition
     {
         /// <summary>The ID of the next directory to be enumerated.</summary>

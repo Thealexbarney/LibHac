@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace LibHac.IO.Save
 {
-    internal class SaveFsList<T> where T : unmanaged
+    internal class SaveFsList<T> where T : struct
     {
         private const int FreeListHeadIndex = 0;
         private const int UsedListHeadIndex = 1;
