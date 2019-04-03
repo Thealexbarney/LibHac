@@ -59,6 +59,47 @@ namespace LibHac.IO.Save
             }
         }
 
+        public void Join(int frontListBlockIndex, int backListBlockIndex)
+        {
+            int frontEntryIndex = BlockToEntryIndex(frontListBlockIndex);
+            int backEntryIndex = BlockToEntryIndex(backListBlockIndex);
+
+            int frontTailIndex = GetListTail(frontEntryIndex);
+
+            AllocationTableEntry frontTail = ReadEntry(frontTailIndex);
+            AllocationTableEntry backHead = ReadEntry(backEntryIndex);
+
+            frontTail.SetNext(backEntryIndex);
+            backHead.SetPrev(frontTailIndex);
+
+            WriteEntry(frontTailIndex, frontTail);
+            WriteEntry(backEntryIndex, backHead);
+        }
+
+        public int GetListLength(int blockIndex)
+        {
+            int index = blockIndex;
+            int totalLength = 0;
+
+            int tableSize = Header.AllocationTableBlockCount;
+            int nodesIterated = 0;
+
+            while (index != -1)
+            {
+                ReadEntry(index, out index, out int _, out int length);
+
+                totalLength += length;
+                nodesIterated++;
+
+                if (nodesIterated > tableSize)
+                {
+                    throw new InvalidDataException("Cycle detected in allocation table.");
+                }
+            }
+
+            return totalLength;
+        }
+
         private void ReadEntries(int entryIndex, Span<AllocationTableEntry> entries)
         {
             Debug.Assert(entries.Length >= 2);
@@ -72,17 +113,17 @@ namespace LibHac.IO.Save
             BaseStorage.Read(buffer, offset);
         }
 
-        private void ReadEntry(int entryIndex, out AllocationTableEntry entry)
+        private AllocationTableEntry ReadEntry(int entryIndex)
         {
             Span<byte> bytes = stackalloc byte[EntrySize];
             int offset = entryIndex * EntrySize;
 
             BaseStorage.Read(bytes, offset);
 
-            entry = GetEntryFromBytes(bytes);
+            return GetEntryFromBytes(bytes);
         }
 
-        private void WriteEntry(int entryIndex, ref AllocationTableEntry entry)
+        private void WriteEntry(int entryIndex, AllocationTableEntry entry)
         {
             Span<byte> bytes = stackalloc byte[EntrySize];
             int offset = entryIndex * EntrySize;
@@ -91,6 +132,52 @@ namespace LibHac.IO.Save
             newEntry = entry;
 
             BaseStorage.Write(bytes, offset);
+        }
+
+        private int GetListHead(int entryIndex)
+        {
+            int headIndex = entryIndex;
+            int tableSize = Header.AllocationTableBlockCount;
+            int nodesTraversed = 0;
+
+            AllocationTableEntry entry = ReadEntry(entryIndex);
+
+            while (!entry.IsListStart())
+            {
+                nodesTraversed++;
+                headIndex = entry.Prev & 0x7FFFFFFF;
+                entry = ReadEntry(headIndex);
+
+                if (nodesTraversed > tableSize)
+                {
+                    throw new InvalidDataException("Cycle detected in allocation table.");
+                }
+            }
+
+            return headIndex;
+        }
+
+        private int GetListTail(int entryIndex)
+        {
+            int tailIndex = entryIndex;
+            int tableSize = Header.AllocationTableBlockCount;
+            int nodesTraversed = 0;
+
+            AllocationTableEntry entry = ReadEntry(entryIndex);
+
+            while (!entry.IsListEnd())
+            {
+                nodesTraversed++;
+                tailIndex = entry.Next & 0x7FFFFFFF;
+                entry = ReadEntry(tailIndex);
+
+                if (nodesTraversed > tableSize)
+                {
+                    throw new InvalidDataException("Cycle detected in allocation table.");
+                }
+            }
+
+            return tailIndex;
         }
 
         private static ref AllocationTableEntry GetEntryFromBytes(Span<byte> entry)
@@ -123,9 +210,43 @@ namespace LibHac.IO.Save
             return Next < 0;
         }
 
+        public void MakeMultiBlockSegment()
+        {
+            Next |= unchecked((int)0x80000000);
+        }
+
+        public void MakeSingleBlockSegment()
+        {
+            Next &= 0x7FFFFFFF;
+        }
+
         public bool IsSingleBlockSegment()
         {
             return Next >= 0;
+        }
+
+        public void MakeListStart()
+        {
+            Prev = int.MinValue;
+        }
+
+        public void MakeRangeEntry()
+        {
+            Prev |= unchecked((int)0x80000000);
+        }
+
+        public void SetNext(int value)
+        {
+            Debug.Assert(value >= 0);
+
+            Next = Next & unchecked((int)0x80000000) | value;
+        }
+
+        public void SetPrev(int value)
+        {
+            Debug.Assert(value >= 0);
+
+            Prev = value;
         }
     }
 
