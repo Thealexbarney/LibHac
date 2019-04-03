@@ -8,7 +8,11 @@ namespace LibHac.IO.Save
 
         public int VirtualBlock { get; private set; }
         public int PhysicalBlock { get; private set; }
-        public int CurrentSegmentSize { get; private set; }
+        public int CurrentSegmentSize => _currentSegmentSize;
+
+        private int _nextBlock;
+        private int _prevBlock;
+        private int _currentSegmentSize;
 
         public AllocationTableIterator(AllocationTable table, int initialBlock)
         {
@@ -22,71 +26,34 @@ namespace LibHac.IO.Save
 
         public bool BeginIteration(int initialBlock)
         {
-            Fat.ReadEntry(initialBlock + 1, out AllocationTableEntry tableEntry);
-
-            if (!tableEntry.IsListStart() && initialBlock != -1)
-            {
-                return false;
-            }
-
-            if (tableEntry.IsSingleBlockSegment())
-            {
-                CurrentSegmentSize = 1;
-            }
-            else
-            {
-                Fat.ReadEntry(initialBlock + 2, out AllocationTableEntry lengthEntry);
-                CurrentSegmentSize = lengthEntry.Next - initialBlock;
-            }
-
             PhysicalBlock = initialBlock;
+            Fat.ReadEntry(initialBlock, out _nextBlock, out _prevBlock, out _currentSegmentSize);
 
-            return true;
+            return _prevBlock == -1;
         }
 
         public bool MoveNext()
         {
-            Fat.ReadEntry(PhysicalBlock + 1, out AllocationTableEntry currentEntry);
-            if (currentEntry.IsListEnd()) return false;
-            int newBlock = currentEntry.Next & 0x7FFFFFFF;
+            if (_nextBlock == -1) return false;
 
-            Fat.ReadEntry(newBlock, out AllocationTableEntry newEntry);
-            VirtualBlock += CurrentSegmentSize;
+            VirtualBlock += _currentSegmentSize;
+            PhysicalBlock = _nextBlock;
 
-            if (newEntry.IsSingleBlockSegment())
-            {
-                CurrentSegmentSize = 1;
-            }
-            else
-            {
-                Fat.ReadEntry(newBlock + 1, out AllocationTableEntry lengthEntry);
-                CurrentSegmentSize = lengthEntry.Next - (newBlock - 1);
-            }
-
-            PhysicalBlock = newBlock - 1;
+            Fat.ReadEntry(_nextBlock, out _nextBlock, out _prevBlock, out _currentSegmentSize);
+            
             return true;
         }
 
         public bool MovePrevious()
         {
-            Fat.ReadEntry(PhysicalBlock + 1, out AllocationTableEntry currentEntry);
-            if (currentEntry.IsListStart()) return false;
-            int newBlock = currentEntry.Prev & 0x7FFFFFFF;
+            if (_prevBlock == -1) return false;
 
-            Fat.ReadEntry(newBlock, out AllocationTableEntry newEntry);
+            PhysicalBlock = _prevBlock;
 
-            if (newEntry.IsSingleBlockSegment())
-            {
-                CurrentSegmentSize = 1;
-            }
-            else
-            {
-                Fat.ReadEntry(newBlock + 1, out AllocationTableEntry lengthEntry);
-                CurrentSegmentSize = lengthEntry.Next - (newBlock - 1);
-            }
+            Fat.ReadEntry(_prevBlock, out _nextBlock, out _prevBlock, out _currentSegmentSize);
 
-            VirtualBlock -= CurrentSegmentSize;
-            PhysicalBlock = newBlock - 1;
+            VirtualBlock -= _currentSegmentSize;
+            
             return true;
         }
 
