@@ -7,6 +7,7 @@ namespace LibHac.IO.Save
 {
     public class AllocationTable
     {
+        private const int FreeListEntryIndex = 0;
         private const int EntrySize = 8;
 
         private IStorage BaseStorage { get; }
@@ -37,7 +38,7 @@ namespace LibHac.IO.Save
             }
             else
             {
-                length = entries[1].Next - entryIndex;
+                length = entries[1].Next - entryIndex + 1;
             }
 
             if (entries[0].IsListEnd())
@@ -46,7 +47,7 @@ namespace LibHac.IO.Save
             }
             else
             {
-                next = EntryIndexToBlock(entries[0].Next & 0x7FFFFFFF);
+                next = EntryIndexToBlock(entries[0].GetNext());
             }
 
             if (entries[0].IsListStart())
@@ -55,10 +56,44 @@ namespace LibHac.IO.Save
             }
             else
             {
-                previous = EntryIndexToBlock(entries[0].Prev & 0x7FFFFFFF);
+                previous = EntryIndexToBlock(entries[0].GetPrev());
             }
         }
 
+        public int GetFreeListBlockIndex()
+        {
+            AllocationTableEntry freeList = ReadEntry(FreeListEntryIndex);
+            return EntryIndexToBlock(freeList.GetNext());
+        }
+
+        public void SetFreeListBlockIndex(int headBlockIndex)
+        {
+            var freeList = new AllocationTableEntry() { Next = BlockToEntryIndex(headBlockIndex) };
+            WriteEntry(FreeListEntryIndex, freeList);
+        }
+
+        public int Allocate(int blockCount)
+        {
+            if (blockCount <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(blockCount));
+            }
+
+            int freeList = GetFreeListBlockIndex();
+
+            int newFreeList = Trim(freeList, blockCount);
+            if (newFreeList == -1) return -1;
+
+            SetFreeListBlockIndex(newFreeList);
+
+            return freeList;
+        }
+
+        /// <summary>
+        /// Combines 2 lists into one list. The second list will be attached to the end of the first list.
+        /// </summary>
+        /// <param name="frontListBlockIndex">The index of the first block.</param>
+        /// <param name="backListBlockIndex">The index of the second block.</param>
         public void Join(int frontListBlockIndex, int backListBlockIndex)
         {
             int frontEntryIndex = BlockToEntryIndex(frontListBlockIndex);
@@ -74,6 +109,136 @@ namespace LibHac.IO.Save
 
             WriteEntry(frontTailIndex, frontTail);
             WriteEntry(backEntryIndex, backHead);
+        }
+
+        /// <summary>
+        /// Trims an existing list to the specified length and returns the excess blocks as a new list.
+        /// </summary>
+        /// <param name="listHeadBlockIndex">The starting block of the list to trim.</param>
+        /// <param name="newListLength">The length in blocks that the list will be shortened to.</param>
+        /// <returns>The index of the head node of the removed blocks.</returns>
+        public int Trim(int listHeadBlockIndex, int newListLength)
+        {
+            int blocksRemaining = newListLength;
+            int next = BlockToEntryIndex(listHeadBlockIndex);
+            int listAIndex = -1;
+            int listBIndex = -1;
+
+            while (blocksRemaining > 0)
+            {
+                if (next < 0)
+                {
+                    return -1;
+                }
+
+                int currentEntryIndex = next;
+
+                ReadEntry(EntryIndexToBlock(currentEntryIndex), out next, out int _, out int segmentLength);
+
+                int start = EntryIndexToBlock(currentEntryIndex);
+                int end = start + segmentLength - 1;
+
+                next = BlockToEntryIndex(next);
+
+                if (segmentLength == blocksRemaining)
+                {
+                    listAIndex = currentEntryIndex;
+                    listBIndex = next;
+                }
+                else if (segmentLength > blocksRemaining)
+                {
+                    Split(EntryIndexToBlock(currentEntryIndex), blocksRemaining);
+
+                    listAIndex = currentEntryIndex;
+                    listBIndex = currentEntryIndex + blocksRemaining;
+                }
+
+                blocksRemaining -= segmentLength;
+            }
+
+            if (listAIndex == -1 || listBIndex == -1) return -1;
+
+            AllocationTableEntry listANode = ReadEntry(listAIndex);
+            AllocationTableEntry listBNode = ReadEntry(listBIndex);
+
+            listANode.SetNext(0);
+            listBNode.MakeListStart();
+
+            WriteEntry(listAIndex, listANode);
+            WriteEntry(listBIndex, listBNode);
+
+            return EntryIndexToBlock(listBIndex);
+        }
+
+        /// <summary>
+        /// Splits a single list segment into 2 segments. The sequence of blocks in the full list will remain the same.
+        /// </summary>
+        /// <param name="segmentBlockIndex">The block index of the segment to split.</param>
+        /// <param name="firstSubSegmentLength">The length of the first subsegment.</param>
+        public void Split(int segmentBlockIndex, int firstSubSegmentLength)
+        {
+            Debug.Assert(firstSubSegmentLength > 0);
+
+            int segAIndex = BlockToEntryIndex(segmentBlockIndex);
+
+            AllocationTableEntry segA = ReadEntry(segAIndex);
+            if (!segA.IsMultiBlockSegment()) throw new ArgumentException("Cannot split a single-entry segment.");
+
+            AllocationTableEntry segARange = ReadEntry(segAIndex + 1);
+            int originalLength = segARange.GetNext() - segARange.GetPrev() + 1;
+
+            if (firstSubSegmentLength >= originalLength)
+            {
+                throw new ArgumentOutOfRangeException(nameof(firstSubSegmentLength),
+                    $"Requested sub-segment length ({firstSubSegmentLength}) must be less than the full segment length ({originalLength})");
+            }
+
+            int segBIndex = segAIndex + firstSubSegmentLength;
+
+            int segALength = firstSubSegmentLength;
+            int segBLength = originalLength - segALength;
+
+            var segB = new AllocationTableEntry();
+
+            // Insert segment B between segments A and C
+            segB.SetPrev(segAIndex);
+            segB.SetNext(segA.GetNext());
+            segA.SetNext(segBIndex);
+
+            if (!segB.IsListEnd())
+            {
+                AllocationTableEntry segC = ReadEntry(segB.GetNext());
+                segC.SetPrev(segBIndex);
+                WriteEntry(segB.GetNext(), segC);
+            }
+
+            // Write the new range entries if needed
+            if (segBLength > 1)
+            {
+                segB.MakeMultiBlockSegment();
+
+                var segBRange = new AllocationTableEntry();
+                segBRange.SetRange(segBIndex, segBIndex + segBLength - 1);
+
+                WriteEntry(segBIndex + 1, segBRange);
+                WriteEntry(segBIndex + segBLength - 1, segBRange);
+            }
+
+            WriteEntry(segBIndex, segB);
+
+            if (segALength == 1)
+            {
+                segA.MakeSingleBlockSegment();
+            }
+            else
+            {
+                segARange.SetRange(segAIndex, segAIndex + segALength - 1);
+
+                WriteEntry(segAIndex + 1, segARange);
+                WriteEntry(segAIndex + segALength - 1, segARange);
+            }
+
+            WriteEntry(segAIndex, segA);
         }
 
         public int GetListLength(int blockIndex)
@@ -195,6 +360,16 @@ namespace LibHac.IO.Save
         public int Prev;
         public int Next;
 
+        public int GetPrev()
+        {
+            return Prev & 0x7FFFFFFF;
+        }
+
+        public int GetNext()
+        {
+            return Next & 0x7FFFFFFF;
+        }
+
         public bool IsListStart()
         {
             return Prev == int.MinValue;
@@ -247,6 +422,16 @@ namespace LibHac.IO.Save
             Debug.Assert(value >= 0);
 
             Prev = value;
+        }
+
+        public void SetRange(int startIndex, int endIndex)
+        {
+            Debug.Assert(startIndex > 0);
+            Debug.Assert(endIndex > 0);
+
+            Next = endIndex;
+            Prev = startIndex;
+            MakeRangeEntry();
         }
     }
 

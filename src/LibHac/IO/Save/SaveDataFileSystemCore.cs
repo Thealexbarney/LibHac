@@ -19,7 +19,7 @@ namespace LibHac.IO.Save
             AllocationTable = new AllocationTable(allocationTable, header.Slice(0x18, 0x30));
 
             Header = new SaveHeader(HeaderStorage);
-            
+
             // todo: Query the FAT for the file size when none is given
             AllocationTableStorage dirTableStorage = OpenFatBlock(AllocationTable.Header.DirectoryTableBlock, 1000000);
             AllocationTableStorage fileTableStorage = OpenFatBlock(AllocationTable.Header.FileTableBlock, 1000000);
@@ -34,7 +34,14 @@ namespace LibHac.IO.Save
 
         public void CreateFile(string path, long size, CreateFileOptions options)
         {
-            throw new System.NotImplementedException();
+            path = PathTools.Normalize(path);
+
+            int blockCount = (int)Util.DivideByRoundUp(size, AllocationTable.Header.BlockSize);
+            int startBlock = AllocationTable.Allocate(blockCount);
+
+            var fileEntry = new SaveFileInfo { StartBlock = startBlock, Length = size };
+
+            FileTable.AddFile(path, ref fileEntry);
         }
 
         public void DeleteDirectory(string path)
