@@ -32,6 +32,6 @@ namespace LibHac.IO.Save
         /// <summary>The ID of the next directory to be enumerated.</summary>
         public int NextDirectory;
         /// <summary>The ID of the next file to be enumerated.</summary>
-        public long NextFile;
+        public int NextFile;
     }
 }

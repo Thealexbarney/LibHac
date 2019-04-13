@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace LibHac.IO.Save
@@ -43,7 +44,7 @@ namespace LibHac.IO.Save
 
             Span<byte> nameBytes = stackalloc byte[FileTable.MaxNameLength];
 
-            bool success = FileTable.TryGetValue((int)position.NextFile, out TableEntry<SaveFileInfo> entry, ref nameBytes);
+            bool success = FileTable.TryGetValue(position.NextFile, out TableEntry<SaveFileInfo> entry, ref nameBytes);
 
             // todo error message
             if (!success)
@@ -140,7 +141,7 @@ namespace LibHac.IO.Save
 
                     DirectoryTable.GetValue(prevIndex, out TableEntry<SaveFindPosition> parentEntry);
 
-                    fileEntry.NextSibling = (int)parentEntry.Value.NextFile;
+                    fileEntry.NextSibling = parentEntry.Value.NextFile;
                     parentEntry.Value.NextFile = index;
 
                     DirectoryTable.SetValue(prevIndex, ref parentEntry);
@@ -149,6 +150,54 @@ namespace LibHac.IO.Save
                 fileEntry.Value = fileInfo;
                 FileTable.SetValue(index, ref fileEntry);
             }
+        }
+
+        public void DeleteFile(string path)
+        {
+            path = PathTools.Normalize(path);
+            ReadOnlySpan<byte> pathBytes = Util.GetUtf8Bytes(path);
+
+            FindPathRecursive(pathBytes, out SaveEntryKey key);
+            int parentIndex = key.Parent;
+
+            DirectoryTable.GetValue(parentIndex, out TableEntry<SaveFindPosition> parentEntry);
+
+            int toDeleteIndex = FileTable.GetIndexFromKey(ref key).Index;
+            if (toDeleteIndex < 0) throw new FileNotFoundException();
+
+            FileTable.GetValue(toDeleteIndex, out TableEntry<SaveFileInfo> toDeleteEntry);
+
+            if (parentEntry.Value.NextFile == toDeleteIndex)
+            {
+                parentEntry.Value.NextFile = toDeleteEntry.NextSibling;
+                DirectoryTable.SetValue(parentIndex, ref parentEntry);
+                FileTable.Remove(ref key);
+                return;
+            }
+
+            int prevIndex = parentEntry.Value.NextFile;
+            FileTable.GetValue(prevIndex, out TableEntry<SaveFileInfo> prevEntry);
+            int curIndex = prevEntry.NextSibling;
+
+            while (curIndex != 0)
+            {
+                FileTable.GetValue(curIndex, out TableEntry<SaveFileInfo> curEntry);
+
+                if (curIndex == toDeleteIndex)
+                {
+                    prevEntry.NextSibling = curEntry.NextSibling;
+                    FileTable.SetValue(prevIndex, ref prevEntry);
+
+                    FileTable.Remove(ref key);
+                    return;
+                }
+
+                prevIndex = curIndex;
+                prevEntry = curEntry;
+                curIndex = prevEntry.NextSibling;
+            }
+
+            throw new FileNotFoundException();
         }
 
         public bool TryOpenDirectory(string path, out SaveFindPosition position)

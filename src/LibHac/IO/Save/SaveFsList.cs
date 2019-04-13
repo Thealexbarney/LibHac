@@ -112,6 +112,18 @@ namespace LibHac.IO.Save
             return length;
         }
 
+        private void Free(int entryIndex)
+        {
+            ReadEntry(FreeListHeadIndex, out SaveFsEntry freeEntry);
+            ReadEntry(entryIndex, out SaveFsEntry entry);
+
+            entry.Next = freeEntry.Next;
+            freeEntry.Next = entryIndex;
+
+            WriteEntry(FreeListHeadIndex, ref freeEntry);
+            WriteEntry(entryIndex, ref entry);
+        }
+
         public bool TryGetValue(ref SaveEntryKey key, out T value)
         {
             int index = GetIndexFromKey(ref key).Index;
@@ -199,6 +211,19 @@ namespace LibHac.IO.Save
             entry.Value = value;
 
             WriteEntry(index, ref entry);
+        }
+
+        public void Remove(ref SaveEntryKey key)
+        {
+            (int index, int previousIndex) = GetIndexFromKey(ref key);
+
+            ReadEntry(previousIndex, out SaveFsEntry prevEntry);
+            ReadEntry(index, out SaveFsEntry entryToDel);
+
+            prevEntry.Next = entryToDel.Next;
+            WriteEntry(previousIndex, ref prevEntry);
+
+            Free(index);
         }
 
         private int GetListCapacity()

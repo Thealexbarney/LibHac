@@ -51,7 +51,19 @@ namespace LibHac.IO.Save
 
         public void DeleteFile(string path)
         {
-            throw new System.NotImplementedException();
+            path = PathTools.Normalize(path);
+
+            if (!FileTable.TryOpenFile(path, out SaveFileInfo fileInfo))
+            {
+                throw new FileNotFoundException();
+            }
+
+            if (fileInfo.StartBlock != int.MinValue)
+            {
+                AllocationTable.Free(fileInfo.StartBlock);
+            }
+
+            FileTable.DeleteFile(path);
         }
 
         public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)

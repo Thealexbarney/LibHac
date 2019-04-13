@@ -62,13 +62,23 @@ namespace LibHac.IO.Save
 
         public int GetFreeListBlockIndex()
         {
-            AllocationTableEntry freeList = ReadEntry(FreeListEntryIndex);
-            return EntryIndexToBlock(freeList.GetNext());
+            return EntryIndexToBlock(GetFreeListEntryIndex());
         }
 
         public void SetFreeListBlockIndex(int headBlockIndex)
         {
-            var freeList = new AllocationTableEntry() { Next = BlockToEntryIndex(headBlockIndex) };
+            SetFreeListEntryIndex(BlockToEntryIndex(headBlockIndex));
+        }
+
+        public int GetFreeListEntryIndex()
+        {
+            AllocationTableEntry freeList = ReadEntry(FreeListEntryIndex);
+            return freeList.GetNext();
+        }
+
+        public void SetFreeListEntryIndex(int headBlockIndex)
+        {
+            var freeList = new AllocationTableEntry { Next = headBlockIndex };
             WriteEntry(FreeListEntryIndex, freeList);
         }
 
@@ -89,11 +99,35 @@ namespace LibHac.IO.Save
             return freeList;
         }
 
+        public void Free(int listBlockIndex)
+        {
+            int listEntryIndex = BlockToEntryIndex(listBlockIndex);
+            AllocationTableEntry listEntry = ReadEntry(listEntryIndex);
+
+            if (!listEntry.IsListStart())
+            {
+                throw new ArgumentOutOfRangeException(nameof(listBlockIndex), "The block to free must be the start of a list.");
+            }
+
+            int freeListIndex = GetFreeListEntryIndex();
+
+            // Free list is empty
+            if (freeListIndex == 0)
+            {
+                SetFreeListEntryIndex(listEntryIndex);
+                return;
+            }
+
+            Join(listBlockIndex, EntryIndexToBlock(freeListIndex));
+
+            SetFreeListBlockIndex(listBlockIndex);
+        }
+
         /// <summary>
         /// Combines 2 lists into one list. The second list will be attached to the end of the first list.
         /// </summary>
-        /// <param name="frontListBlockIndex">The index of the first block.</param>
-        /// <param name="backListBlockIndex">The index of the second block.</param>
+        /// <param name="frontListBlockIndex">The index of the start block of the first list.</param>
+        /// <param name="backListBlockIndex">The index of the start block of the second list.</param>
         public void Join(int frontListBlockIndex, int backListBlockIndex)
         {
             int frontEntryIndex = BlockToEntryIndex(frontListBlockIndex);
