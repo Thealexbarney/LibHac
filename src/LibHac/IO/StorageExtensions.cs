@@ -97,6 +97,59 @@ namespace LibHac.IO
             progress?.SetTotal(0);
         }
 
+        public static void Fill(this IStorage input, byte value, IProgressReport progress = null)
+        {
+            const int threshold = 0x400;
+
+            long length = input.GetSize();
+            if (length > threshold)
+            {
+                input.FillLarge(value, progress);
+                return;
+            }
+
+            Span<byte> buf = stackalloc byte[(int)length];
+            buf.Fill(value);
+
+            input.Write(buf, 0);
+        }
+
+        private static void FillLarge(this IStorage input, byte value, IProgressReport progress = null)
+        {
+            const int bufferSize = 0x4000;
+
+            long remaining = input.GetSize();
+            if (remaining < 0) throw new ArgumentException("Storage must have an explicit length");
+            progress?.SetTotal(remaining);
+
+            long pos = 0;
+
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+            try
+            {
+                buffer.AsSpan(0, (int)Math.Min(remaining, bufferSize)).Fill(value);
+
+                while (remaining > 0)
+                {
+                    int toFill = (int)Math.Min(bufferSize, remaining);
+                    Span<byte> buf = buffer.AsSpan(0, toFill);
+
+                    input.Write(buf, pos);
+
+                    remaining -= toFill;
+                    pos += toFill;
+
+                    progress?.ReportAdd(toFill);
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+
+            progress?.SetTotal(0);
+        }
+
         public static void WriteAllBytes(this IStorage input, string filename, IProgressReport progress = null)
         {
             using (var outFile = new FileStream(filename, FileMode.Create, FileAccess.Write))

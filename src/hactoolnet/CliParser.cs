@@ -52,6 +52,7 @@ namespace hactoolnet
             new CliOption("listromfs", 0, (o, a) => o.ListRomFs = true),
             new CliOption("listfiles", 0, (o, a) => o.ListFiles = true),
             new CliOption("sign", 0, (o, a) => o.SignSave = true),
+            new CliOption("trim", 0, (o, a) => o.TrimSave = true),
             new CliOption("readbench", 0, (o, a) => o.ReadBench = true),
             new CliOption("hashedfs", 0, (o, a) => o.BuildHfs = true),
             new CliOption("title", 1, (o, a) => o.TitleId = ParseTitleId(a[0])),
@@ -232,6 +233,7 @@ namespace hactoolnet
             sb.AppendLine("  --outdir <dir>       Specify directory path to save contents to.");
             sb.AppendLine("  --debugoutdir <dir>  Specify directory path to save intermediate data to for debugging.");
             sb.AppendLine("  --sign               Sign the save file. (Requires device_key in key file)");
+            sb.AppendLine("  --trim               Trim garbage data in the save file. (Requires device_key in key file)");
             sb.AppendLine("  --listfiles          List files in save file.");
             sb.AppendLine("  --replacefile <filename in save> <file> Replaces a file in the save data");
             sb.AppendLine("NDV0 (Delta) options:");

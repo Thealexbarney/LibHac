@@ -20,9 +20,8 @@ namespace LibHac.IO.Save
 
             Header = new SaveHeader(HeaderStorage);
 
-            // todo: Query the FAT for the file size when none is given
-            AllocationTableStorage dirTableStorage = OpenFatBlock(AllocationTable.Header.DirectoryTableBlock, 1000000);
-            AllocationTableStorage fileTableStorage = OpenFatBlock(AllocationTable.Header.FileTableBlock, 1000000);
+            AllocationTableStorage dirTableStorage = OpenFatStorage(AllocationTable.Header.DirectoryTableBlock);
+            AllocationTableStorage fileTableStorage = OpenFatStorage(AllocationTable.Header.FileTableBlock);
 
             FileTable = new HierarchicalSaveFileTable(dirTableStorage, fileTableStorage);
         }
@@ -92,7 +91,7 @@ namespace LibHac.IO.Save
                 return new NullFile();
             }
 
-            AllocationTableStorage storage = OpenFatBlock(file.StartBlock, file.Length);
+            AllocationTableStorage storage = OpenFatStorage(file.StartBlock);
 
             return new SaveDataFile(storage, 0, file.Length, mode);
         }
@@ -139,9 +138,31 @@ namespace LibHac.IO.Save
         public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
         public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
 
-        private AllocationTableStorage OpenFatBlock(int blockIndex, long size)
+        public void FsTrim()
         {
-            return new AllocationTableStorage(BaseStorage, AllocationTable, (int)Header.BlockSize, blockIndex, size);
+            AllocationTable.FsTrim();
+
+            foreach (DirectoryEntry file in this.EnumerateEntries("*", SearchOptions.RecurseSubdirectories))
+            {
+                if (FileTable.TryOpenFile(file.FullPath, out SaveFileInfo fileInfo) && fileInfo.StartBlock >= 0)
+                {
+                    AllocationTable.FsTrimList(fileInfo.StartBlock);
+
+                    OpenFatStorage(fileInfo.StartBlock).Slice(fileInfo.Length).Fill(0);
+                }
+            }
+
+            int freeIndex = AllocationTable.GetFreeListBlockIndex();
+            if (freeIndex == 0) return;
+
+            AllocationTable.FsTrimList(freeIndex);
+
+            OpenFatStorage(freeIndex).Fill(0);
+        }
+
+        private AllocationTableStorage OpenFatStorage(int blockIndex)
+        {
+            return new AllocationTableStorage(BaseStorage, AllocationTable, (int)Header.BlockSize, blockIndex);
         }
     }
 

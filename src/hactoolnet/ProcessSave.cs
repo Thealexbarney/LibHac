@@ -129,8 +129,14 @@ namespace hactoolnet
                     return;
                 }
 
-                if (ctx.Options.SignSave)
+                if (ctx.Options.SignSave || ctx.Options.TrimSave)
                 {
+                    if (ctx.Options.TrimSave)
+                    {
+                        save.FsTrim();
+                        ctx.Logger.LogMessage("Trimmed save file");
+                    }
+
                     if (save.Commit(ctx.Keyset))
                     {
                         ctx.Logger.LogMessage("Successfully signed save file");

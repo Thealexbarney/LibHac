@@ -200,6 +200,11 @@ namespace LibHac.IO.Save
             return true;
         }
 
+        public void FsTrim()
+        {
+            SaveDataFileSystemCore.FsTrim();
+        }
+
         public Validity Verify(IProgressReport logger = null)
         {
             Validity validity = IvfcStorage.Validate(true, logger);

@@ -45,6 +45,7 @@ namespace hactoolnet
         public bool ListRomFs;
         public bool ListFiles;
         public bool SignSave;
+        public bool TrimSave;
         public bool ReadBench;
         public bool BuildHfs;
         public ulong TitleId;

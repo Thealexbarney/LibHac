@@ -299,6 +299,42 @@ namespace LibHac.IO.Save
             return totalLength;
         }
 
+        public void FsTrimList(int blockIndex)
+        {
+            int index = blockIndex;
+
+            int tableSize = Header.AllocationTableBlockCount;
+            int nodesIterated = 0;
+
+            while (index != -1)
+            {
+                ReadEntry(index, out int next, out int _, out int length);
+
+                if (length > 3)
+                {
+                    int fillOffset = BlockToEntryIndex(index + 2) * EntrySize;
+                    int fillLength = (length - 3) * EntrySize;
+
+                    BaseStorage.Slice(fillOffset, fillLength).Fill(0x00);
+                }
+
+                nodesIterated++;
+
+                if (nodesIterated > tableSize)
+                {
+                    return;
+                }
+
+                index = next;
+            }
+        }
+
+        public void FsTrim()
+        {
+            int tableSize = BlockToEntryIndex(Header.AllocationTableBlockCount) * EntrySize;
+            BaseStorage.Slice(tableSize).Fill(0x00);
+        }
+
         private void ReadEntries(int entryIndex, Span<AllocationTableEntry> entries)
         {
             Debug.Assert(entries.Length >= 2);

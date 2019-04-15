@@ -11,13 +11,14 @@ namespace LibHac.IO.Save
 
         private long _length;
 
-        public AllocationTableStorage(IStorage data, AllocationTable table, int blockSize, int initialBlock, long length)
+        public AllocationTableStorage(IStorage data, AllocationTable table, int blockSize, int initialBlock)
         {
             BaseStorage = data;
             BlockSize = blockSize;
-            _length = length;
             Fat = table;
             InitialBlock = initialBlock;
+
+            _length = table.GetListLength(initialBlock) * blockSize;
         }
 
         protected override void ReadImpl(Span<byte> destination, long offset)
