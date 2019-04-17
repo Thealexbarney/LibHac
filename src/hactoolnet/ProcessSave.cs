@@ -22,7 +22,7 @@ namespace hactoolnet
                     .Replace("{userid}", save.Header.ExtraData.UserId.ToString()).Replace("{titleid}", $"{save.Header.ExtraData.TitleId:x16}")
                     .Replace("{saveid}", $"{save.Header.ExtraData.SaveId:x16}")
                     .Replace("{ownerid", $"{save.Header.ExtraData.SaveOwnerId:x16}")
-                    .Replace("{timestamp}", $"{DateTimeOffset.FromUnixTimeSeconds(save.Header.ExtraData.Timestamp):yyyy-MM-dd HH:mm:ss} UTC");
+                    .Replace("{timestamp}", $"{DateTimeOffset.FromUnixTimeSeconds(save.Header.ExtraData.Timestamp):yyyy-MM-dd HHmmss} UTC");
                 
                 if (ctx.Options.Validate)
                 {
