@@ -17,7 +17,13 @@ namespace hactoolnet
             using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.ReadWrite))
             {
                 var save = new SaveDataFileSystem(ctx.Keyset, file, ctx.Options.IntegrityLevel, true);
-
+                var outdir = ctx.Options.OutDir.ToLower();
+                outdir = outdir
+                    .Replace("{userid}", save.Header.ExtraData.UserId.ToString()).Replace("{titleid}", $"{save.Header.ExtraData.TitleId:x16}")
+                    .Replace("{saveid}", $"{save.Header.ExtraData.SaveId:x16}")
+                    .Replace("{ownerid", $"{save.Header.ExtraData.SaveOwnerId:x16}")
+                    .Replace("{timestamp}", $"{DateTimeOffset.FromUnixTimeSeconds(save.Header.ExtraData.Timestamp):yyyy-MM-dd HH:mm:ss} UTC");
+                
                 if (ctx.Options.Validate)
                 {
                     save.Verify(ctx.Logger);
@@ -25,7 +31,7 @@ namespace hactoolnet
 
                 if (ctx.Options.OutDir != null)
                 {
-                    save.SaveDataFileSystemCore.Extract(ctx.Options.OutDir, ctx.Logger);
+                    save.SaveDataFileSystemCore.Extract(outdir, ctx.Logger);
                 }
 
                 if (ctx.Options.DebugOutDir != null)
