@@ -26,14 +26,14 @@ namespace LibHacBuild
         public static int Main() => Execute<Build>(x => x.Results);
 
         [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
-        readonly string Configuration = IsLocalBuild ? "Debug" : "Release";
+        readonly string _configuration = IsLocalBuild ? "Debug" : "Release";
 
         [Parameter("Build only .NET Core targets if true. Default is false on Windows")]
-        readonly bool DoCoreBuildOnly;
+        readonly bool _doCoreBuildOnly;
 
-        [Solution("LibHac.sln")] readonly Solution Solution;
-        [GitRepository] readonly GitRepository GitRepository;
-        [GitVersion] readonly GitVersion GitVersion;
+        [Solution("LibHac.sln")] readonly Solution _solution;
+        [GitRepository] readonly GitRepository _gitRepository;
+        [GitVersion] readonly GitVersion _gitVersion;
 
         AbsolutePath SourceDirectory => RootDirectory / "src";
         AbsolutePath TestsDirectory => RootDirectory / "tests";
@@ -47,9 +47,9 @@ namespace LibHacBuild
 
         AbsolutePath CliMergedExe => ArtifactsDirectory / "hactoolnet.exe";
 
-        Project LibHacProject => Solution.GetProject("LibHac").NotNull();
-        Project LibHacTestProject => Solution.GetProject("LibHac.Tests").NotNull();
-        Project HactoolnetProject => Solution.GetProject("hactoolnet").NotNull();
+        Project LibHacProject => _solution.GetProject("LibHac").NotNull();
+        Project LibHacTestProject => _solution.GetProject("LibHac.Tests").NotNull();
+        Project HactoolnetProject => _solution.GetProject("hactoolnet").NotNull();
 
         string AppVeyorVersion { get; set; }
         Dictionary<string, object> VersionProps { get; set; } = new Dictionary<string, object>();
@@ -57,30 +57,30 @@ namespace LibHacBuild
         const string CertFileName = "cert.pfx";
 
         Target SetVersion => _ => _
-            .OnlyWhenStatic(() => GitRepository != null)
+            .OnlyWhenStatic(() => _gitRepository != null)
             .Executes(() =>
             {
-                AppVeyorVersion = $"{GitVersion.AssemblySemVer}";
-                if (!string.IsNullOrWhiteSpace(GitVersion.PreReleaseTag))
+                AppVeyorVersion = $"{_gitVersion.AssemblySemVer}";
+                if (!string.IsNullOrWhiteSpace(_gitVersion.PreReleaseTag))
                 {
-                    AppVeyorVersion += $"-{GitVersion.PreReleaseTag}+{GitVersion.Sha.Substring(0, 8)}";
+                    AppVeyorVersion += $"-{_gitVersion.PreReleaseTag}+{_gitVersion.Sha.Substring(0, 8)}";
                 }
 
-                string suffix = GitVersion.PreReleaseTag;
+                string suffix = _gitVersion.PreReleaseTag;
 
                 if (!string.IsNullOrWhiteSpace(suffix))
                 {
-                    if (!GitRepository.IsOnMasterBranch())
+                    if (!_gitRepository.IsOnMasterBranch())
                     {
                         suffix = $"-{suffix}";
                     }
 
-                    suffix += $"+{GitVersion.Sha.Substring(0, 8)}";
+                    suffix += $"+{_gitVersion.Sha.Substring(0, 8)}";
                 }
 
                 VersionProps = new Dictionary<string, object>
                 {
-                    ["VersionPrefix"] = GitVersion.AssemblySemVer,
+                    ["VersionPrefix"] = _gitVersion.AssemblySemVer,
                     ["VersionSuffix"] = suffix
                 };
 
@@ -107,7 +107,7 @@ namespace LibHacBuild
             .Executes(() =>
             {
                 DotNetRestoreSettings settings = new DotNetRestoreSettings()
-                    .SetProjectFile(Solution);
+                    .SetProjectFile(_solution);
 
                 DotNetRestore(s => settings);
             });
@@ -117,19 +117,19 @@ namespace LibHacBuild
             .Executes(() =>
             {
                 DotNetBuildSettings buildSettings = new DotNetBuildSettings()
-                    .SetProjectFile(Solution)
+                    .SetProjectFile(_solution)
                     .EnableNoRestore()
-                    .SetConfiguration(Configuration)
+                    .SetConfiguration(_configuration)
                     .SetProperties(VersionProps)
                     .SetProperty("BuildType", "Release");
 
-                if (DoCoreBuildOnly) buildSettings = buildSettings.SetFramework("netcoreapp2.1");
+                if (_doCoreBuildOnly) buildSettings = buildSettings.SetFramework("netcoreapp2.1");
 
                 DotNetBuild(s => buildSettings);
 
                 DotNetPublishSettings publishSettings = new DotNetPublishSettings()
                     .EnableNoRestore()
-                    .SetConfiguration(Configuration);
+                    .SetConfiguration(_configuration);
 
                 DotNetPublish(s => publishSettings
                     .SetProject(HactoolnetProject)
@@ -137,7 +137,7 @@ namespace LibHacBuild
                     .SetOutput(CliCoreDir)
                     .SetProperties(VersionProps));
 
-                if (!DoCoreBuildOnly)
+                if (!_doCoreBuildOnly)
                 {
                     DotNetPublish(s => publishSettings
                         .SetProject(HactoolnetProject)
@@ -163,13 +163,13 @@ namespace LibHacBuild
                 DotNetPackSettings settings = new DotNetPackSettings()
                     .SetProject(LibHacProject)
                     .EnableNoBuild()
-                    .SetConfiguration(Configuration)
+                    .SetConfiguration(_configuration)
                     .EnableIncludeSymbols()
                     .SetSymbolPackageFormat(DotNetSymbolPackageFormat.snupkg)
                     .SetOutputDirectory(ArtifactsDirectory)
                     .SetProperties(VersionProps);
 
-                if (DoCoreBuildOnly)
+                if (_doCoreBuildOnly)
                     settings = settings.SetProperty("TargetFrameworks", "netcoreapp2.1");
 
                 DotNetPack(s => settings);
@@ -189,7 +189,7 @@ namespace LibHacBuild
 
         Target Merge => _ => _
             .DependsOn(Compile)
-            .OnlyWhenStatic(() => !DoCoreBuildOnly)
+            .OnlyWhenStatic(() => !_doCoreBuildOnly)
             .Executes(() =>
             {
                 string[] libraries = Directory.GetFiles(CliFrameworkDir, "*.dll");
@@ -223,9 +223,9 @@ namespace LibHacBuild
                 DotNetTestSettings settings = new DotNetTestSettings()
                     .SetProjectFile(LibHacTestProject)
                     .EnableNoBuild()
-                    .SetConfiguration(Configuration);
+                    .SetConfiguration(_configuration);
 
-                if (DoCoreBuildOnly) settings = settings.SetFramework("netcoreapp2.1");
+                if (_doCoreBuildOnly) settings = settings.SetFramework("netcoreapp2.1");
 
                 DotNetTest(s => settings);
             });
@@ -242,7 +242,7 @@ namespace LibHacBuild
                     .Concat(Directory.EnumerateFiles(CliCoreDir, "*.dll"))
                     .ToArray();
 
-                if (!DoCoreBuildOnly)
+                if (!_doCoreBuildOnly)
                 {
                     ZipFiles(CliFrameworkZip, namesFx);
                     Console.WriteLine($"Created {CliFrameworkZip}");
@@ -299,7 +299,7 @@ namespace LibHacBuild
 
         Target Sign => _ => _
             .DependsOn(Test, Zip, Merge)
-            .OnlyWhenStatic(() => !DoCoreBuildOnly)
+            .OnlyWhenStatic(() => !_doCoreBuildOnly)
             .OnlyWhenStatic(() => File.Exists(CertFileName))
             .Executes(() =>
             {
