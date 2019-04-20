@@ -86,14 +86,9 @@ namespace LibHac.IO.Save
                 throw new FileNotFoundException();
             }
 
-            if (file.StartBlock < 0)
-            {
-                return new NullFile();
-            }
-
             AllocationTableStorage storage = OpenFatStorage(file.StartBlock);
 
-            return new SaveDataFile(storage, 0, file.Length, mode);
+            return new SaveDataFile(storage, path, FileTable, file.Length, mode);
         }
 
         public void RenameDirectory(string srcPath, string dstPath)

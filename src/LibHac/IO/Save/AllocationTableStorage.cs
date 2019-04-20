@@ -6,7 +6,7 @@ namespace LibHac.IO.Save
     {
         private IStorage BaseStorage { get; }
         private int BlockSize { get; }
-        private int InitialBlock { get; }
+        internal int InitialBlock { get; private set; }
         private AllocationTable Fat { get; }
 
         private long _length;
@@ -18,7 +18,7 @@ namespace LibHac.IO.Save
             Fat = table;
             InitialBlock = initialBlock;
 
-            _length = table.GetListLength(initialBlock) * blockSize;
+            _length = initialBlock == -1 ? 0 : table.GetListLength(initialBlock) * blockSize;
         }
 
         protected override void ReadImpl(Span<byte> destination, long offset)
@@ -81,5 +81,44 @@ namespace LibHac.IO.Save
         }
 
         public override long GetSize() => _length;
+
+        public override void SetSize(long size)
+        {
+            int oldBlockCount = (int)Util.DivideByRoundUp(_length, BlockSize);
+            int newBlockCount = (int)Util.DivideByRoundUp(size, BlockSize);
+
+            if (oldBlockCount == newBlockCount) return;
+
+            if (oldBlockCount == 0)
+            {
+                InitialBlock = Fat.Allocate(newBlockCount);
+                _length = newBlockCount * BlockSize;
+
+                return;
+            }
+
+            if (newBlockCount == 0)
+            {
+                Fat.Free(InitialBlock);
+
+                InitialBlock = -1;
+                _length = 0;
+
+                return;
+            }
+
+            if (newBlockCount > oldBlockCount)
+            {
+                int newBlocks = Fat.Allocate(newBlockCount - oldBlockCount);
+                Fat.Join(InitialBlock, newBlocks);
+            }
+            else
+            {
+                int oldBlocks = Fat.Trim(InitialBlock, newBlockCount);
+                Fat.Free(oldBlocks);
+            }
+
+            _length = newBlockCount * BlockSize;
+        }
     }
 }
