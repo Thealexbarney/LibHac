@@ -119,22 +119,22 @@ namespace LibHac.IO.Save
 
         public void CreateDirectory(string path)
         {
-            throw new System.NotImplementedException();
+            SaveDataFileSystemCore.CreateDirectory(path);
         }
 
         public void CreateFile(string path, long size, CreateFileOptions options)
         {
-            throw new System.NotImplementedException();
+            SaveDataFileSystemCore.CreateFile(path, size, options);
         }
 
         public void DeleteDirectory(string path)
         {
-            throw new System.NotImplementedException();
+            SaveDataFileSystemCore.DeleteDirectory(path);
         }
 
         public void DeleteFile(string path)
         {
-            throw new System.NotImplementedException();
+            SaveDataFileSystemCore.DeleteFile(path);
         }
 
         public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
@@ -149,12 +149,12 @@ namespace LibHac.IO.Save
 
         public void RenameDirectory(string srcPath, string dstPath)
         {
-            throw new System.NotImplementedException();
+            SaveDataFileSystemCore.RenameDirectory(srcPath, dstPath);
         }
 
         public void RenameFile(string srcPath, string dstPath)
         {
-            throw new System.NotImplementedException();
+            SaveDataFileSystemCore.RenameFile(srcPath, dstPath);
         }
 
         public bool DirectoryExists(string path) => SaveDataFileSystemCore.DirectoryExists(path);
