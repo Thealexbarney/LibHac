@@ -39,9 +39,18 @@ namespace LibHac
 
         public IStorage OpenDecryptedPackage()
         {
-            IStorage[] storages = { OpenHeaderPart1(), OpenHeaderPart2(), OpenKernel(), OpenIni1() };
+            if (Header.SectionSizes[1] == 0)
+            {
+                IStorage[] storages = { OpenHeaderPart1(), OpenHeaderPart2(), OpenKernel() };
 
-            return new ConcatenationStorage(storages, true);
+                return new ConcatenationStorage(storages, true);
+            }
+            else
+            {
+                IStorage[] storages = { OpenHeaderPart1(), OpenHeaderPart2(), OpenKernel(), OpenIni1() };
+
+                return new ConcatenationStorage(storages, true);
+            }
         }
 
         private IStorage OpenHeaderPart1()
@@ -72,7 +81,27 @@ namespace LibHac
 
         public IStorage OpenIni1()
         {
-            int offset = 0x200 + Header.SectionSizes[0];
+            int offset;
+
+            // Handle 8.0.0+ INI1 embedded within Kernel
+            if (Header.SectionSizes[1] == 0)
+            {
+                IStorage kernelStorage = OpenKernel();
+
+                var reader = new BinaryReader(kernelStorage.AsStream());
+
+                reader.BaseStream.Position = 0x168;
+                offset = reader.ReadInt32();
+
+                reader.BaseStream.Position = offset + 4;
+                int size = reader.ReadInt32();
+
+                IStorage ini1Storage = kernelStorage.Slice(offset, size);
+
+                return new CachedStorage(ini1Storage, 0x4000, 4, true);
+            }
+
+            offset = 0x200 + Header.SectionSizes[0];
             IStorage encStorage = Storage.Slice(offset, Header.SectionSizes[1]);
 
             return new CachedStorage(new Aes128CtrStorage(encStorage, Key, Header.SectionCounters[1], true), 0x4000, 4, true);
