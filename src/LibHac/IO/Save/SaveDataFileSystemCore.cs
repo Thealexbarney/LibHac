@@ -127,7 +127,7 @@ namespace LibHac.IO.Save
 
         public void Commit()
         {
-            throw new System.NotImplementedException();
+
         }
 
         public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();

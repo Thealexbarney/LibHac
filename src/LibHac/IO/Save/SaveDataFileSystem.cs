@@ -9,7 +9,6 @@ namespace LibHac.IO.Save
         public IStorage BaseStorage { get; }
         public bool LeaveOpen { get; }
 
-        public HierarchicalIntegrityVerificationStorage IvfcStorage { get; }
         public SaveDataFileSystemCore SaveDataFileSystemCore { get; }
 
         public RemapStorage DataRemapStorage { get; }
@@ -17,6 +16,9 @@ namespace LibHac.IO.Save
 
         public HierarchicalDuplexStorage DuplexStorage { get; }
         public JournalStorage JournalStorage { get; }
+
+        public HierarchicalIntegrityVerificationStorage JournalIvfcStorage { get; }
+        public HierarchicalIntegrityVerificationStorage FatIvfcStorage { get; }
 
         private Keyset Keyset { get; }
 
@@ -52,16 +54,17 @@ namespace LibHac.IO.Save
 
             JournalStorage = new JournalStorage(journalData, Header.JournalHeader, journalMapInfo, leaveOpen);
 
-            IvfcStorage = InitJournalIvfcStorage(integrityCheckLevel);
+            JournalIvfcStorage = InitJournalIvfcStorage(integrityCheckLevel);
 
             IStorage fatStorage = MetaRemapStorage.Slice(layout.FatOffset, layout.FatSize);
 
             if (Header.Layout.Version >= 0x50000)
             {
-                fatStorage = InitFatIvfcStorage(integrityCheckLevel);
+                FatIvfcStorage = InitFatIvfcStorage(integrityCheckLevel);
+                fatStorage = FatIvfcStorage;
             }
 
-            SaveDataFileSystemCore = new SaveDataFileSystemCore(IvfcStorage, fatStorage, Header.SaveHeader);
+            SaveDataFileSystemCore = new SaveDataFileSystemCore(JournalIvfcStorage, fatStorage, Header.SaveHeader);
         }
 
         private static HierarchicalDuplexStorage InitDuplexStorage(IStorage baseStorage, Header header)
@@ -172,6 +175,9 @@ namespace LibHac.IO.Save
 
         public bool Commit(Keyset keyset)
         {
+            JournalIvfcStorage.Flush();
+            FatIvfcStorage.Flush();
+
             Stream headerStream = BaseStorage.AsStream();
 
             var hashData = new byte[0x3d00];
@@ -207,10 +213,18 @@ namespace LibHac.IO.Save
 
         public Validity Verify(IProgressReport logger = null)
         {
-            Validity validity = IvfcStorage.Validate(true, logger);
-            IvfcStorage.SetLevelValidities(Header.Ivfc);
+            Validity journalValidity = JournalIvfcStorage.Validate(true, logger);
+            JournalIvfcStorage.SetLevelValidities(Header.Ivfc);
 
-            return validity;
+            if (FatIvfcStorage == null)return journalValidity;
+
+            Validity fatValidity = FatIvfcStorage.Validate(true, logger);
+            FatIvfcStorage.SetLevelValidities(Header.Ivfc);
+
+            if (journalValidity != Validity.Valid) return journalValidity;
+            if (fatValidity != Validity.Valid) return fatValidity;
+
+            return journalValidity;
         }
     }
 }
