@@ -47,8 +47,7 @@ namespace hactoolnet
                         {
                             if (inFile.GetSize() != outFile.GetSize())
                             {
-                                ctx.Logger.LogMessage($"Replacement file must be the same size as the original file. ({outFile.GetSize()} bytes)");
-                                return;
+                                outFile.SetSize(inFile.GetSize());
                             }
 
                             inFile.CopyTo(outFile, ctx.Logger);
