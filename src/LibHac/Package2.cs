@@ -81,27 +81,24 @@ namespace LibHac
 
         public IStorage OpenIni1()
         {
-            int offset;
-
             // Handle 8.0.0+ INI1 embedded within Kernel
+            // Todo: Figure out how to better deal with this once newer versions are released
             if (Header.SectionSizes[1] == 0)
             {
                 IStorage kernelStorage = OpenKernel();
 
                 var reader = new BinaryReader(kernelStorage.AsStream());
-
                 reader.BaseStream.Position = 0x168;
-                offset = reader.ReadInt32();
 
-                reader.BaseStream.Position = offset + 4;
+                int embeddedIniOffset = (int)reader.ReadInt64();
+
+                reader.BaseStream.Position = embeddedIniOffset + 4;
                 int size = reader.ReadInt32();
 
-                IStorage ini1Storage = kernelStorage.Slice(offset, size);
-
-                return new CachedStorage(ini1Storage, 0x4000, 4, true);
+                return kernelStorage.Slice(embeddedIniOffset, size);
             }
 
-            offset = 0x200 + Header.SectionSizes[0];
+            int offset = 0x200 + Header.SectionSizes[0];
             IStorage encStorage = Storage.Slice(offset, Header.SectionSizes[1]);
 
             return new CachedStorage(new Aes128CtrStorage(encStorage, Key, Header.SectionCounters[1], true), 0x4000, 4, true);
