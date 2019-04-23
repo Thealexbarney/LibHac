@@ -39,9 +39,18 @@ namespace LibHac
 
         public IStorage OpenDecryptedPackage()
         {
-            IStorage[] storages = { OpenHeaderPart1(), OpenHeaderPart2(), OpenKernel(), OpenIni1() };
+            if (Header.SectionSizes[1] == 0)
+            {
+                IStorage[] storages = { OpenHeaderPart1(), OpenHeaderPart2(), OpenKernel() };
 
-            return new ConcatenationStorage(storages, true);
+                return new ConcatenationStorage(storages, true);
+            }
+            else
+            {
+                IStorage[] storages = { OpenHeaderPart1(), OpenHeaderPart2(), OpenKernel(), OpenIni1() };
+
+                return new ConcatenationStorage(storages, true);
+            }
         }
 
         private IStorage OpenHeaderPart1()
@@ -72,6 +81,23 @@ namespace LibHac
 
         public IStorage OpenIni1()
         {
+            // Handle 8.0.0+ INI1 embedded within Kernel
+            // Todo: Figure out how to better deal with this once newer versions are released
+            if (Header.SectionSizes[1] == 0)
+            {
+                IStorage kernelStorage = OpenKernel();
+
+                var reader = new BinaryReader(kernelStorage.AsStream());
+                reader.BaseStream.Position = 0x168;
+
+                int embeddedIniOffset = (int)reader.ReadInt64();
+
+                reader.BaseStream.Position = embeddedIniOffset + 4;
+                int size = reader.ReadInt32();
+
+                return kernelStorage.Slice(embeddedIniOffset, size);
+            }
+
             int offset = 0x200 + Header.SectionSizes[0];
             IStorage encStorage = Storage.Slice(offset, Header.SectionSizes[1]);
 
