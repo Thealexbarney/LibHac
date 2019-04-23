@@ -169,9 +169,6 @@ namespace LibHac.IO.Save
 
                 ReadEntry(EntryIndexToBlock(currentEntryIndex), out next, out int _, out int segmentLength);
 
-                int start = EntryIndexToBlock(currentEntryIndex);
-                int end = start + segmentLength - 1;
-
                 next = BlockToEntryIndex(next);
 
                 if (segmentLength == blocksRemaining)
@@ -369,6 +366,7 @@ namespace LibHac.IO.Save
             BaseStorage.Write(bytes, offset);
         }
 
+        // ReSharper disable once UnusedMember.Local
         private int GetListHead(int entryIndex)
         {
             int headIndex = entryIndex;

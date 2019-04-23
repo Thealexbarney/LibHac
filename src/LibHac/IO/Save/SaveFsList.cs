@@ -242,6 +242,7 @@ namespace LibHac.IO.Save
             return MemoryMarshal.Read<int>(buf);
         }
 
+        // ReSharper disable once UnusedMember.Local
         private void SetListCapacity(int capacity)
         {
             Span<byte> buf = stackalloc byte[sizeof(int)];
