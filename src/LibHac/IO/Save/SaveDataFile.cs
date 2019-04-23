@@ -1,18 +1,21 @@
 ﻿using System;
+using System.IO;
 
 namespace LibHac.IO.Save
 {
     public class SaveDataFile : FileBase
     {
         private AllocationTableStorage BaseStorage { get; }
-        private long Offset { get; }
-        private long Size { get; }
+        private string Path { get; }
+        private HierarchicalSaveFileTable FileTable { get; }
+        private long Size { get; set; }
 
-        public SaveDataFile(AllocationTableStorage baseStorage, long offset, long size, OpenMode mode)
+        public SaveDataFile(AllocationTableStorage baseStorage, string path, HierarchicalSaveFileTable fileTable, long size, OpenMode mode)
         {
             Mode = mode;
             BaseStorage = baseStorage;
-            Offset = offset;
+            Path = path;
+            FileTable = fileTable;
             Size = size;
         }
 
@@ -20,8 +23,7 @@ namespace LibHac.IO.Save
         {
             int toRead = ValidateReadParamsAndGetSize(destination, offset);
 
-            long storageOffset = Offset + offset;
-            BaseStorage.Read(destination.Slice(0, toRead), storageOffset);
+            BaseStorage.Read(destination.Slice(0, toRead), offset);
 
             return toRead;
         }
@@ -45,7 +47,22 @@ namespace LibHac.IO.Save
 
         public override void SetSize(long size)
         {
-            throw new NotImplementedException();
+            if (size < 0) throw new ArgumentOutOfRangeException(nameof(size));
+            if (Size == size) return;
+
+            BaseStorage.SetSize(size);
+
+            if (!FileTable.TryOpenFile(Path, out SaveFileInfo fileInfo))
+            {
+                throw new FileNotFoundException();
+            }
+
+            fileInfo.StartBlock = BaseStorage.InitialBlock;
+            fileInfo.Length = size;
+
+            FileTable.AddFile(Path, ref fileInfo);
+
+            Size = size;
         }
     }
 }

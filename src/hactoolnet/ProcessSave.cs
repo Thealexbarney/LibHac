@@ -32,68 +32,8 @@ namespace hactoolnet
                 {
                     // todo
                     string dir = ctx.Options.DebugOutDir;
-                    Directory.CreateDirectory(dir);
 
-                    FsLayout layout = save.Header.Layout;
-
-                    string mainRemapDir = Path.Combine(dir, "main_remap");
-                    Directory.CreateDirectory(mainRemapDir);
-
-                    save.DataRemapStorage.GetBaseStorage().WriteAllBytes(Path.Combine(mainRemapDir, "Data"));
-                    save.DataRemapStorage.GetHeaderStorage().WriteAllBytes(Path.Combine(mainRemapDir, "Header"));
-                    save.DataRemapStorage.GetMapEntryStorage().WriteAllBytes(Path.Combine(mainRemapDir, "Map entries"));
-
-                    string metadataRemapDir = Path.Combine(dir, "metadata_remap");
-                    Directory.CreateDirectory(metadataRemapDir);
-
-                    save.MetaRemapStorage.GetBaseStorage().WriteAllBytes(Path.Combine(metadataRemapDir, "Data"));
-                    save.MetaRemapStorage.GetHeaderStorage().WriteAllBytes(Path.Combine(metadataRemapDir, "Header"));
-                    save.MetaRemapStorage.GetMapEntryStorage().WriteAllBytes(Path.Combine(metadataRemapDir, "Map entries"));
-
-                    string journalDir = Path.Combine(dir, "journal");
-                    Directory.CreateDirectory(journalDir);
-
-                    save.JournalStorage.GetBaseStorage().WriteAllBytes(Path.Combine(journalDir, "Data"));
-                    save.JournalStorage.GetHeaderStorage().WriteAllBytes(Path.Combine(journalDir, "Header"));
-                    save.JournalStorage.Map.GetHeaderStorage().WriteAllBytes(Path.Combine(journalDir, "Map_header"));
-                    save.JournalStorage.Map.GetMapStorage().WriteAllBytes(Path.Combine(journalDir, "Map"));
-                    save.JournalStorage.Map.GetModifiedPhysicalBlocksStorage().WriteAllBytes(Path.Combine(journalDir, "ModifiedPhysicalBlocks"));
-                    save.JournalStorage.Map.GetModifiedVirtualBlocksStorage().WriteAllBytes(Path.Combine(journalDir, "ModifiedVirtualBlocks"));
-                    save.JournalStorage.Map.GetFreeBlocksStorage().WriteAllBytes(Path.Combine(journalDir, "FreeBlocks"));
-
-                    string saveDir = Path.Combine(dir, "save");
-                    Directory.CreateDirectory(saveDir);
-
-                    save.SaveDataFileSystemCore.GetHeaderStorage().WriteAllBytes(Path.Combine(saveDir, "Save_Header"));
-                    save.SaveDataFileSystemCore.GetBaseStorage().WriteAllBytes(Path.Combine(saveDir, "Save_Data"));
-                    save.SaveDataFileSystemCore.AllocationTable.GetHeaderStorage().WriteAllBytes(Path.Combine(saveDir, "FAT_header"));
-                    save.SaveDataFileSystemCore.AllocationTable.GetBaseStorage().WriteAllBytes(Path.Combine(saveDir, "FAT_Data"));
-
-                    save.Header.DataIvfcMaster.WriteAllBytes(Path.Combine(saveDir, "Save_MasterHash"));
-
-                    IStorage saveLayer1Hash = save.MetaRemapStorage.Slice(layout.IvfcL1Offset, layout.IvfcL1Size);
-                    IStorage saveLayer2Hash = save.MetaRemapStorage.Slice(layout.IvfcL2Offset, layout.IvfcL2Size);
-                    IStorage saveLayer3Hash = save.MetaRemapStorage.Slice(layout.IvfcL3Offset, layout.IvfcL3Size);
-
-                    saveLayer1Hash.WriteAllBytes(Path.Combine(saveDir, "Save_Layer1Hash"), ctx.Logger);
-                    saveLayer2Hash.WriteAllBytes(Path.Combine(saveDir, "Save_Layer2Hash"), ctx.Logger);
-                    saveLayer3Hash.WriteAllBytes(Path.Combine(saveDir, "Save_Layer3Hash"), ctx.Logger);
-
-                    string duplexDir = Path.Combine(dir, "duplex");
-                    Directory.CreateDirectory(duplexDir);
-
-                    save.Header.DuplexMasterBitmapA.WriteAllBytes(Path.Combine(duplexDir, "MasterBitmapA"));
-                    save.Header.DuplexMasterBitmapB.WriteAllBytes(Path.Combine(duplexDir, "MasterBitmapB"));
-
-                    IStorage duplexL1A = save.DataRemapStorage.Slice(layout.DuplexL1OffsetA, layout.DuplexL1Size);
-                    IStorage duplexL1B = save.DataRemapStorage.Slice(layout.DuplexL1OffsetB, layout.DuplexL1Size);
-                    IStorage duplexDataA = save.DataRemapStorage.Slice(layout.DuplexDataOffsetA, layout.DuplexDataSize);
-                    IStorage duplexDataB = save.DataRemapStorage.Slice(layout.DuplexDataOffsetB, layout.DuplexDataSize);
-
-                    duplexL1A.WriteAllBytes(Path.Combine(duplexDir, "L1BitmapA"), ctx.Logger);
-                    duplexL1B.WriteAllBytes(Path.Combine(duplexDir, "L1BitmapB"), ctx.Logger);
-                    duplexDataA.WriteAllBytes(Path.Combine(duplexDir, "DataA"), ctx.Logger);
-                    duplexDataB.WriteAllBytes(Path.Combine(duplexDir, "DataB"), ctx.Logger);
+                    ExportSaveDebug(ctx, dir, save);
                 }
 
                 if (ctx.Options.ReplaceFileDest != null && ctx.Options.ReplaceFileSource != null)
@@ -107,8 +47,7 @@ namespace hactoolnet
                         {
                             if (inFile.GetSize() != outFile.GetSize())
                             {
-                                ctx.Logger.LogMessage($"Replacement file must be the same size as the original file. ({outFile.GetSize()} bytes)");
-                                return;
+                                outFile.SetSize(inFile.GetSize());
                             }
 
                             inFile.CopyTo(outFile, ctx.Logger);
@@ -129,8 +68,14 @@ namespace hactoolnet
                     return;
                 }
 
-                if (ctx.Options.SignSave)
+                if (ctx.Options.SignSave || ctx.Options.TrimSave)
                 {
+                    if (ctx.Options.TrimSave)
+                    {
+                        save.FsTrim();
+                        ctx.Logger.LogMessage("Trimmed save file");
+                    }
+
                     if (save.Commit(ctx.Keyset))
                     {
                         ctx.Logger.LogMessage("Successfully signed save file");
@@ -156,30 +101,113 @@ namespace hactoolnet
             }
         }
 
+        internal static void ExportSaveDebug(Context ctx, string dir, SaveDataFileSystem save)
+        {
+            Directory.CreateDirectory(dir);
+
+            FsLayout layout = save.Header.Layout;
+
+            string mainRemapDir = Path.Combine(dir, "main_remap");
+            Directory.CreateDirectory(mainRemapDir);
+
+            save.DataRemapStorage.GetBaseStorage().WriteAllBytes(Path.Combine(mainRemapDir, "Data"));
+            save.DataRemapStorage.GetHeaderStorage().WriteAllBytes(Path.Combine(mainRemapDir, "Header"));
+            save.DataRemapStorage.GetMapEntryStorage().WriteAllBytes(Path.Combine(mainRemapDir, "Map entries"));
+
+            string metadataRemapDir = Path.Combine(dir, "metadata_remap");
+            Directory.CreateDirectory(metadataRemapDir);
+
+            save.MetaRemapStorage.GetBaseStorage().WriteAllBytes(Path.Combine(metadataRemapDir, "Data"));
+            save.MetaRemapStorage.GetHeaderStorage().WriteAllBytes(Path.Combine(metadataRemapDir, "Header"));
+            save.MetaRemapStorage.GetMapEntryStorage().WriteAllBytes(Path.Combine(metadataRemapDir, "Map entries"));
+
+            string journalDir = Path.Combine(dir, "journal");
+            Directory.CreateDirectory(journalDir);
+
+            save.JournalStorage.GetBaseStorage().WriteAllBytes(Path.Combine(journalDir, "Data"));
+            save.JournalStorage.GetHeaderStorage().WriteAllBytes(Path.Combine(journalDir, "Header"));
+            save.JournalStorage.Map.GetHeaderStorage().WriteAllBytes(Path.Combine(journalDir, "Map_header"));
+            save.JournalStorage.Map.GetMapStorage().WriteAllBytes(Path.Combine(journalDir, "Map"));
+            save.JournalStorage.Map.GetModifiedPhysicalBlocksStorage()
+                .WriteAllBytes(Path.Combine(journalDir, "ModifiedPhysicalBlocks"));
+            save.JournalStorage.Map.GetModifiedVirtualBlocksStorage()
+                .WriteAllBytes(Path.Combine(journalDir, "ModifiedVirtualBlocks"));
+            save.JournalStorage.Map.GetFreeBlocksStorage().WriteAllBytes(Path.Combine(journalDir, "FreeBlocks"));
+
+            string saveDir = Path.Combine(dir, "save");
+            Directory.CreateDirectory(saveDir);
+
+            save.SaveDataFileSystemCore.GetHeaderStorage().WriteAllBytes(Path.Combine(saveDir, "Save_Header"));
+            save.SaveDataFileSystemCore.GetBaseStorage().WriteAllBytes(Path.Combine(saveDir, "Save_Data"));
+            save.SaveDataFileSystemCore.AllocationTable.GetHeaderStorage().WriteAllBytes(Path.Combine(saveDir, "FAT_header"));
+            save.SaveDataFileSystemCore.AllocationTable.GetBaseStorage().WriteAllBytes(Path.Combine(saveDir, "FAT_Data"));
+
+            save.Header.DataIvfcMaster.WriteAllBytes(Path.Combine(saveDir, "Save_MasterHash"));
+
+            IStorage saveLayer1Hash = save.MetaRemapStorage.Slice(layout.IvfcL1Offset, layout.IvfcL1Size);
+            IStorage saveLayer2Hash = save.MetaRemapStorage.Slice(layout.IvfcL2Offset, layout.IvfcL2Size);
+            IStorage saveLayer3Hash = save.MetaRemapStorage.Slice(layout.IvfcL3Offset, layout.IvfcL3Size);
+
+            saveLayer1Hash.WriteAllBytes(Path.Combine(saveDir, "Save_Layer1Hash"), ctx.Logger);
+            saveLayer2Hash.WriteAllBytes(Path.Combine(saveDir, "Save_Layer2Hash"), ctx.Logger);
+            saveLayer3Hash.WriteAllBytes(Path.Combine(saveDir, "Save_Layer3Hash"), ctx.Logger);
+
+            if (layout.Version >= 0x50000)
+            {
+                save.Header.FatIvfcMaster.WriteAllBytes(Path.Combine(saveDir, "Fat_MasterHash"));
+
+                IStorage fatLayer1Hash = save.MetaRemapStorage.Slice(layout.FatIvfcL1Offset, layout.FatIvfcL1Size);
+                IStorage fatLayer2Hash = save.MetaRemapStorage.Slice(layout.FatIvfcL2Offset, layout.FatIvfcL1Size);
+
+                fatLayer1Hash.WriteAllBytes(Path.Combine(saveDir, "Fat_Layer1Hash"), ctx.Logger);
+                fatLayer2Hash.WriteAllBytes(Path.Combine(saveDir, "Fat_Layer2Hash"), ctx.Logger);
+            }
+
+            string duplexDir = Path.Combine(dir, "duplex");
+            Directory.CreateDirectory(duplexDir);
+
+            save.Header.DuplexMasterBitmapA.WriteAllBytes(Path.Combine(duplexDir, "MasterBitmapA"));
+            save.Header.DuplexMasterBitmapB.WriteAllBytes(Path.Combine(duplexDir, "MasterBitmapB"));
+
+            IStorage duplexL1A = save.DataRemapStorage.Slice(layout.DuplexL1OffsetA, layout.DuplexL1Size);
+            IStorage duplexL1B = save.DataRemapStorage.Slice(layout.DuplexL1OffsetB, layout.DuplexL1Size);
+            IStorage duplexDataA = save.DataRemapStorage.Slice(layout.DuplexDataOffsetA, layout.DuplexDataSize);
+            IStorage duplexDataB = save.DataRemapStorage.Slice(layout.DuplexDataOffsetB, layout.DuplexDataSize);
+
+            duplexL1A.WriteAllBytes(Path.Combine(duplexDir, "L1BitmapA"), ctx.Logger);
+            duplexL1B.WriteAllBytes(Path.Combine(duplexDir, "L1BitmapB"), ctx.Logger);
+            duplexDataA.WriteAllBytes(Path.Combine(duplexDir, "DataA"), ctx.Logger);
+            duplexDataB.WriteAllBytes(Path.Combine(duplexDir, "DataB"), ctx.Logger);
+        }
+
         // ReSharper disable once UnusedMember.Local
-        private static string PrintFatLayout(this SaveDataFileSystem save)
+        public static string PrintFatLayout(this SaveDataFileSystemCore save)
         {
             var sb = new StringBuilder();
 
             foreach (DirectoryEntry entry in save.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File))
             {
-                save.SaveDataFileSystemCore.FileTable.TryOpenFile(entry.FullPath, out SaveFileInfo fileInfo);
+                save.FileTable.TryOpenFile(entry.FullPath, out SaveFileInfo fileInfo);
                 if (fileInfo.StartBlock < 0) continue;
 
-                IEnumerable<(int block, int length)> chain = save.SaveDataFileSystemCore.AllocationTable.DumpChain(fileInfo.StartBlock);
+                IEnumerable<(int block, int length)> chain = save.AllocationTable.DumpChain(fileInfo.StartBlock);
 
                 sb.AppendLine(entry.FullPath);
                 sb.AppendLine(PrintBlockChain(chain));
+                sb.AppendLine();
             }
 
             sb.AppendLine("Directory Table");
-            sb.AppendLine(PrintBlockChain(save.SaveDataFileSystemCore.AllocationTable.DumpChain(0)));
+            sb.AppendLine(PrintBlockChain(save.AllocationTable.DumpChain(0)));
+            sb.AppendLine();
 
             sb.AppendLine("File Table");
-            sb.AppendLine(PrintBlockChain(save.SaveDataFileSystemCore.AllocationTable.DumpChain(1)));
+            sb.AppendLine(PrintBlockChain(save.AllocationTable.DumpChain(1)));
+            sb.AppendLine();
 
             sb.AppendLine("Free blocks");
-            sb.AppendLine(PrintBlockChain(save.SaveDataFileSystemCore.AllocationTable.DumpChain(-1)));
+            sb.AppendLine(PrintBlockChain(save.AllocationTable.DumpChain(-1)));
+            sb.AppendLine();
 
             return sb.ToString();
         }

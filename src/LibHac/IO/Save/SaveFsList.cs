@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace LibHac.IO.Save
 {
-    internal class SaveFsList<T> where T : unmanaged
+    internal class SaveFsList<T> where T : struct
     {
         private const int FreeListHeadIndex = 0;
         private const int UsedListHeadIndex = 1;
@@ -20,7 +20,7 @@ namespace LibHac.IO.Save
             Storage = tableStorage;
         }
 
-        public int GetOffsetFromKey(ref SaveEntryKey key)
+        public (int Index, int PreviousIndex) GetIndexFromKey(ref SaveEntryKey key)
         {
             Span<byte> entryBytes = stackalloc byte[_sizeOfEntry];
             Span<byte> name = entryBytes.Slice(4, MaxNameLength);
@@ -29,26 +29,104 @@ namespace LibHac.IO.Save
             int capacity = GetListCapacity();
 
             ReadEntry(UsedListHeadIndex, entryBytes);
+            int prevIndex = UsedListHeadIndex;
+            int index = entry.Next;
 
-            while (entry.Next > 0)
+            while (index > 0)
             {
-                if (entry.Next > capacity) throw new IndexOutOfRangeException("Save entry index out of range");
+                if (index > capacity) throw new IndexOutOfRangeException("Save entry index out of range");
 
-                int entryId = entry.Next;
-                ReadEntry(entry.Next, out entry);
+                ReadEntry(index, out entry);
 
                 if (entry.Parent == key.Parent && Util.StringSpansEqual(name, key.Name))
                 {
-                    return entryId;
+                    return (index, prevIndex);
                 }
+
+                prevIndex = index;
+                index = entry.Next;
             }
 
-            return -1;
+            return (-1, -1);
+        }
+
+        public int Add(ref SaveEntryKey key, ref T value)
+        {
+            int index = GetIndexFromKey(ref key).Index;
+
+            if (index != -1)
+            {
+                SetValue(index, ref value);
+                return index;
+            }
+
+            index = AllocateEntry();
+
+            ReadEntry(index, out SaveFsEntry entry);
+            entry.Value = value;
+            WriteEntry(index, ref entry, ref key);
+
+            return index;
+        }
+
+        private int AllocateEntry()
+        {
+            ReadEntry(FreeListHeadIndex, out SaveFsEntry freeListHead);
+            ReadEntry(UsedListHeadIndex, out SaveFsEntry usedListHead);
+
+            if (freeListHead.Next != 0)
+            {
+                ReadEntry(freeListHead.Next, out SaveFsEntry firstFreeEntry);
+
+                int allocatedIndex = freeListHead.Next;
+
+                freeListHead.Next = firstFreeEntry.Next;
+                firstFreeEntry.Next = usedListHead.Next;
+                usedListHead.Next = allocatedIndex;
+
+                WriteEntry(FreeListHeadIndex, ref freeListHead);
+                WriteEntry(UsedListHeadIndex, ref usedListHead);
+                WriteEntry(allocatedIndex, ref firstFreeEntry);
+
+                return allocatedIndex;
+            }
+
+            int length = GetListLength();
+            int capacity = GetListCapacity();
+
+            if (capacity == 0 || length >= capacity)
+            {
+                throw new NotImplementedException();
+            }
+
+            SetListLength(length + 1);
+
+            ReadEntry(length, out SaveFsEntry newEntry);
+
+            newEntry.Next = usedListHead.Next;
+            usedListHead.Next = length;
+
+            WriteEntry(UsedListHeadIndex, ref usedListHead);
+            WriteEntry(length, ref newEntry);
+
+            return length;
+        }
+
+        private void Free(int entryIndex)
+        {
+            ReadEntry(FreeListHeadIndex, out SaveFsEntry freeEntry);
+            ReadEntry(entryIndex, out SaveFsEntry entry);
+
+            entry.Next = freeEntry.Next;
+            freeEntry.Next = entryIndex;
+
+            WriteEntry(FreeListHeadIndex, ref freeEntry);
+            WriteEntry(entryIndex, ref entry);
         }
 
         public bool TryGetValue(ref SaveEntryKey key, out T value)
         {
-            int index = GetOffsetFromKey(ref key);
+            int index = GetIndexFromKey(ref key).Index;
 
             if (index < 0)
             {
@@ -123,6 +201,31 @@ namespace LibHac.IO.Save
             value = entry.Value;
         }
 
+        public void SetValue(int index, ref T value)
+        {
+            Span<byte> entryBytes = stackalloc byte[_sizeOfEntry];
+            ref SaveFsEntry entry = ref GetEntryFromBytes(entryBytes);
+
+            ReadEntry(index, out entry);
+
+            entry.Value = value;
+
+            WriteEntry(index, ref entry);
+        }
+
+        public void Remove(ref SaveEntryKey key)
+        {
+            (int index, int previousIndex) = GetIndexFromKey(ref key);
+
+            ReadEntry(previousIndex, out SaveFsEntry prevEntry);
+            ReadEntry(index, out SaveFsEntry entryToDel);
+
+            prevEntry.Next = entryToDel.Next;
+            WriteEntry(previousIndex, ref prevEntry);
+
+            Free(index);
+        }
+
         private int GetListCapacity()
         {
             Span<byte> buf = stackalloc byte[sizeof(int)];
@@ -139,6 +242,23 @@ namespace LibHac.IO.Save
             return MemoryMarshal.Read<int>(buf);
         }
 
+        // ReSharper disable once UnusedMember.Local
+        private void SetListCapacity(int capacity)
+        {
+            Span<byte> buf = stackalloc byte[sizeof(int)];
+            MemoryMarshal.Write(buf, ref capacity);
+
+            Storage.Write(buf, 4);
+        }
+
+        private void SetListLength(int length)
+        {
+            Span<byte> buf = stackalloc byte[sizeof(int)];
+            MemoryMarshal.Write(buf, ref length);
+
+            Storage.Write(buf, 0);
+        }
+
         private void ReadEntry(int index, out SaveFsEntry entry)
         {
             Span<byte> bytes = stackalloc byte[_sizeOfEntry];
@@ -147,12 +267,48 @@ namespace LibHac.IO.Save
             entry = GetEntryFromBytes(bytes);
         }
 
+        private void WriteEntry(int index, ref SaveFsEntry entry, ref SaveEntryKey key)
+        {
+            Span<byte> bytes = stackalloc byte[_sizeOfEntry];
+            Span<byte> nameSpan = bytes.Slice(4, MaxNameLength);
+
+            // Copy needed for .NET Framework compat
+            ref SaveFsEntry newEntry = ref GetEntryFromBytes(bytes);
+            newEntry = entry;
+
+            newEntry.Parent = key.Parent;
+            key.Name.CopyTo(nameSpan);
+
+            nameSpan.Slice(key.Name.Length).Fill(0);
+
+            WriteEntry(index, bytes);
+        }
+
+        private void WriteEntry(int index, ref SaveFsEntry entry)
+        {
+            Span<byte> bytes = stackalloc byte[_sizeOfEntry];
+
+            // Copy needed for .NET Framework compat
+            ref SaveFsEntry newEntry = ref GetEntryFromBytes(bytes);
+            newEntry = entry;
+
+            WriteEntry(index, bytes);
+        }
+
         private void ReadEntry(int index, Span<byte> entry)
         {
             Debug.Assert(entry.Length == _sizeOfEntry);
 
             int offset = index * _sizeOfEntry;
             Storage.Read(entry, offset);
+        }
+
+        private void WriteEntry(int index, Span<byte> entry)
+        {
+            Debug.Assert(entry.Length == _sizeOfEntry);
+
+            int offset = index * _sizeOfEntry;
+            Storage.Write(entry, offset);
         }
 
         private ref SaveFsEntry GetEntryFromBytes(Span<byte> entry)
