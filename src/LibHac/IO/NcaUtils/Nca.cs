@@ -181,7 +181,16 @@ namespace LibHac.IO.NcaUtils
             // todo don't assume that ctr ex means it's a patch
             if (header.EncryptionType == NcaEncryptionType.AesCtrEx)
             {
-                return rawStorage.Slice(0, header.BktrInfo.RelocationHeader.Offset);
+                BktrHeader bktrInfo = header.BktrInfo.RelocationHeader;
+                IStorage patchStorage = rawStorage.Slice(0, bktrInfo.Offset);
+
+                if (BaseNca == null) return patchStorage;
+
+                IStorage baseStorage = BaseNca.OpenStorage(BaseNca.GetSectionIndexFromType(NcaSectionType.Data), IntegrityCheckLevel.None, true);
+                IStorage bktrHeader = new MemoryStorage(bktrInfo.Header);
+                IStorage bktrData = rawStorage.Slice(bktrInfo.Offset, bktrInfo.Size, LeaveOpen);
+
+                rawStorage = new IndirectStorage(bktrHeader, bktrData, LeaveOpen, baseStorage, patchStorage);
             }
 
             switch (header.HashType)

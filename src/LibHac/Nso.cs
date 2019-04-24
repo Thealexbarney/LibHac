@@ -8,6 +8,8 @@ namespace LibHac
     {
         public NsoSection[] Sections { get; }
         public RodataRelativeExtent[] RodataRelativeExtents { get; }
+        public NsoModule Module { get; }
+
         public uint BssSize { get; }
         public byte[] BuildId { get; } = new byte[0x20];
 
@@ -32,10 +34,11 @@ namespace LibHac
             rodataSection.CheckHash = flags[4];
             dataSection.CheckHash = flags[5];
 
+            Module = new NsoModule(Storage);
             textSection.ReadSegmentHeader(reader);
-            reader.ReadUInt32(); // Module offset (TODO)
+            Module.Offset = reader.ReadUInt32();
             rodataSection.ReadSegmentHeader(reader);
-            reader.ReadUInt32(); // Module file size
+            Module.Size = reader.ReadUInt32();
             dataSection.ReadSegmentHeader(reader);
             BssSize = reader.ReadUInt32();
             reader.Read(BuildId, 0, 0x20);
@@ -53,7 +56,49 @@ namespace LibHac
             reader.Read(dataSection.Hash, 0, 0x20);
 
             Sections = new[] { textSection, rodataSection, dataSection };
+
+            Module.Read(reader);
+
             reader.Close();
+        }
+
+        public class NsoModule
+        {
+            private IStorage Storage { get; }
+
+            public uint Offset { get; set; }
+            public uint Size { get; set; }
+            public uint DynamicOffset { get; set; }
+            public uint BssStartOffset { get; set; }
+            public uint BssEndOffset { get; set; }
+            public uint BssSize => BssEndOffset - BssStartOffset;
+            public uint EhFrameHdrStartOffset { get; set; }
+            public uint EhFrameHdrEndOffset { get; set; }
+            public uint EhFrameHdrSize => EhFrameHdrEndOffset - EhFrameHdrStartOffset;
+            public uint RuntimeModOffset { get; set; }
+
+
+            public NsoModule(IStorage storage)
+            {
+                Storage = storage;
+            }
+
+            public void Read(BinaryReader reader)
+            {
+                reader.BaseStream.Seek(Offset, SeekOrigin.Begin);
+                if (reader.ReadUInt32() != 0)
+                    throw new InvalidDataException("MOD0 is missing padding!");
+                var magicOffset = reader.ReadUInt32();
+                reader.BaseStream.Seek(Offset + magicOffset, SeekOrigin.Begin);
+                if (reader.ReadAscii(4) != "MOD0")
+                    throw new InvalidDataException("MOD0 magic is missing!");
+                DynamicOffset = reader.ReadUInt32();
+                BssStartOffset = reader.ReadUInt32();
+                BssEndOffset = reader.ReadUInt32();
+                EhFrameHdrStartOffset = reader.ReadUInt32();
+                EhFrameHdrEndOffset = reader.ReadUInt32();
+                RuntimeModOffset = reader.ReadUInt32();
+            }
         }
 
         public class NsoSection
