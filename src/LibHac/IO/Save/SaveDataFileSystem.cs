@@ -176,7 +176,7 @@ namespace LibHac.IO.Save
         public bool Commit(Keyset keyset)
         {
             JournalIvfcStorage.Flush();
-            FatIvfcStorage.Flush();
+            FatIvfcStorage?.Flush();
 
             Stream headerStream = BaseStorage.AsStream();
 
