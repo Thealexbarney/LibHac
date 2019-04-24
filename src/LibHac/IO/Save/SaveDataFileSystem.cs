@@ -208,6 +208,8 @@ namespace LibHac.IO.Save
 
         public void FsTrim()
         {
+            JournalIvfcStorage.FsTrim();
+            FatIvfcStorage?.FsTrim();
             SaveDataFileSystemCore.FsTrim();
         }
 
@@ -216,7 +218,7 @@ namespace LibHac.IO.Save
             Validity journalValidity = JournalIvfcStorage.Validate(true, logger);
             JournalIvfcStorage.SetLevelValidities(Header.Ivfc);
 
-            if (FatIvfcStorage == null)return journalValidity;
+            if (FatIvfcStorage == null) return journalValidity;
 
             Validity fatValidity = FatIvfcStorage.Validate(true, logger);
             FatIvfcStorage.SetLevelValidities(Header.Ivfc);

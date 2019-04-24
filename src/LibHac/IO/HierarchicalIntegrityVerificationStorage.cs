@@ -149,6 +149,14 @@ namespace LibHac.IO
             return result;
         }
 
+        public void FsTrim()
+        {
+            foreach (IntegrityVerificationStorage level in IntegrityStorages)
+            {
+                level.FsTrim();
+            }
+        }
+
         private static readonly string[] SaltSources =
         {
             "HierarchicalIntegrityVerificationStorage::Master",
