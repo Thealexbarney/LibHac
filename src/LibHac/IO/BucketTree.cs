@@ -7,13 +7,11 @@ namespace LibHac.IO
     public class BucketTree<T> where T : BucketTreeEntry<T>, new()
     {
         private const int BucketAlignment = 0x4000;
-        public BucketTreeHeader Header { get; }
         public BucketTreeBucket<OffsetEntry> BucketOffsets { get; }
         public BucketTreeBucket<T>[] Buckets { get; }
 
-        public BucketTree(IStorage header, IStorage data)
+        public BucketTree(IStorage data)
         {
-            Header = new BucketTreeHeader(header);
             var reader = new BinaryReader(data.AsStream());
 
             BucketOffsets = new BucketTreeBucket<OffsetEntry>(reader);

@@ -12,10 +12,19 @@ namespace LibHac.IO
 
         private readonly object _locker = new object();
 
-        public Aes128CtrExStorage(IStorage baseStorage, IStorage bucketTreeHeader, IStorage bucketTreeData, byte[] key, long counterOffset, byte[] ctrHi, bool leaveOpen)
+        public Aes128CtrExStorage(IStorage baseStorage, IStorage bucketTreeData, byte[] key, long counterOffset, byte[] ctrHi, bool leaveOpen)
             : base(baseStorage, key, counterOffset, ctrHi, leaveOpen)
         {
-            BucketTree = new BucketTree<AesSubsectionEntry>(bucketTreeHeader, bucketTreeData);
+            BucketTree = new BucketTree<AesSubsectionEntry>(bucketTreeData);
+
+            SubsectionEntries = BucketTree.GetEntryList();
+            SubsectionOffsets = SubsectionEntries.Select(x => x.Offset).ToList();
+        }
+
+        public Aes128CtrExStorage(IStorage baseStorage, IStorage bucketTreeData, byte[] key, byte[] counter, bool leaveOpen)
+            : base(baseStorage, key, counter, leaveOpen)
+        {
+            BucketTree = new BucketTree<AesSubsectionEntry>(bucketTreeData);
 
             SubsectionEntries = BucketTree.GetEntryList();
             SubsectionOffsets = SubsectionEntries.Select(x => x.Offset).ToList();

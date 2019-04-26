@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Buffers.Binary;
 
 namespace LibHac.IO
 {
@@ -102,6 +103,16 @@ namespace LibHac.IO
             // Because the value stored in the counter is offset >> 4, the top 4 bits 
             // of byte 8 need to have their original value preserved
             Counter[8] = (byte)((Counter[8] & 0xF0) | (int)(off & 0x0F));
+        }
+
+        public static byte[] CreateCounter(ulong hiBytes, long offset)
+        {
+            var counter = new byte[0x10];
+
+            BinaryPrimitives.WriteUInt64BigEndian(counter, hiBytes);
+            BinaryPrimitives.WriteInt64BigEndian(counter.AsSpan(8), offset / 0x10);
+
+            return counter;
         }
     }
 }

@@ -145,11 +145,10 @@ namespace LibHac.IO.NcaUtils
                     long bktrSize = sect.Size - bktrOffset;
                     long dataSize = info.RelocationHeader.Offset;
 
-                    IStorage bucketTreeHeader = new MemoryStorage(sect.Header.BktrInfo.EncryptionHeader.Header);
                     IStorage bucketTreeData = new CachedStorage(new Aes128CtrStorage(baseStorage.Slice(bktrOffset, bktrSize), DecryptedKeys[2], bktrOffset + sect.Offset, sect.Header.Ctr, true), 4, true);
 
                     IStorage encryptionBucketTreeData = bucketTreeData.Slice(info.EncryptionHeader.Offset - bktrOffset);
-                    IStorage decStorage = new Aes128CtrExStorage(baseStorage.Slice(0, dataSize), bucketTreeHeader, encryptionBucketTreeData, DecryptedKeys[2], sect.Offset, sect.Header.Ctr, true);
+                    IStorage decStorage = new Aes128CtrExStorage(baseStorage.Slice(0, dataSize), encryptionBucketTreeData, DecryptedKeys[2], sect.Offset, sect.Header.Ctr, true);
                     decStorage = new CachedStorage(decStorage, 0x4000, 4, true);
 
                     return new ConcatenationStorage(new[] { decStorage, bucketTreeData }, true);
