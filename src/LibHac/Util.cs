@@ -134,8 +134,6 @@ namespace LibHac
 
         public static bool IsEmpty(this ReadOnlySpan<byte> span)
         {
-            if (span == null) throw new ArgumentNullException(nameof(span));
-
             for (int i = 0; i < span.Length; i++)
             {
                 if (span[i] != 0)

@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.IO;
 using System.Security.Cryptography;
+using LibHac.IO.Save;
 
 namespace LibHac.IO
 {
@@ -171,7 +172,7 @@ namespace LibHac.IO
                 if (Type == IntegrityStorageType.Save)
                 {
                     // This bit is set on all save hashes
-                    hash[0x1F] |= 0x80;
+                    hash[0x1F] |= 0b10000000;
                 }
 
                 return hash;
@@ -182,6 +183,24 @@ namespace LibHac.IO
         {
             HashStorage.Flush();
             base.Flush();
+        }
+
+        public void FsTrim()
+        {
+            if (Type != IntegrityStorageType.Save) return;
+
+            Span<byte> digest = stackalloc byte[DigestSize];
+
+            for (int i = 0; i < SectorCount; i++)
+            {
+                long hashPos = i * DigestSize;
+                HashStorage.Read(digest, hashPos);
+
+                if (!Util.IsEmpty(digest)) continue;
+
+                int dataOffset = i * SectorSize;
+                BaseStorage.Fill(SaveDataFileSystem.TrimFillValue, dataOffset, SectorSize);
+            }
         }
     }
 

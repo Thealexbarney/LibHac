@@ -226,6 +226,30 @@ namespace LibHac.IO.Save
             Free(index);
         }
 
+        public void TrimFreeEntries()
+        {
+            Span<byte> entryBytes = stackalloc byte[_sizeOfEntry];
+            Span<byte> name = entryBytes.Slice(4, MaxNameLength);
+            ref SaveFsEntry entry = ref GetEntryFromBytes(entryBytes);
+
+            ReadEntry(FreeListHeadIndex, out entry);
+
+            int index = entry.Next;
+
+            while (entry.Next > 0)
+            {
+                ReadEntry(index, out entry);
+
+                entry.Parent = 0;
+                entry.Value = default;
+                name.Fill(SaveDataFileSystem.TrimFillValue);
+
+                WriteEntry(index, ref entry);
+
+                index = entry.Next;
+            }
+        }
+
         private int GetListCapacity()
         {
             Span<byte> buf = stackalloc byte[sizeof(int)];

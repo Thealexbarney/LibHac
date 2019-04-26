@@ -99,30 +99,34 @@ namespace LibHac.IO
 
         public static void Fill(this IStorage input, byte value, IProgressReport progress = null)
         {
+            input.Fill(value, 0, input.GetSize(), progress);
+        }
+
+        public static void Fill(this IStorage input, byte value, long offset, long count, IProgressReport progress = null)
+        {
             const int threshold = 0x400;
 
-            long length = input.GetSize();
-            if (length > threshold)
+            if (count > threshold)
             {
-                input.FillLarge(value, progress);
+                input.FillLarge(value, offset, count, progress);
                 return;
             }
 
-            Span<byte> buf = stackalloc byte[(int)length];
+            Span<byte> buf = stackalloc byte[(int)count];
             buf.Fill(value);
 
-            input.Write(buf, 0);
+            input.Write(buf, offset);
         }
 
-        private static void FillLarge(this IStorage input, byte value, IProgressReport progress = null)
+        private static void FillLarge(this IStorage input, byte value, long offset, long count, IProgressReport progress = null)
         {
             const int bufferSize = 0x4000;
 
-            long remaining = input.GetSize();
+            long remaining = count;
             if (remaining < 0) throw new ArgumentException("Storage must have an explicit length");
             progress?.SetTotal(remaining);
 
-            long pos = 0;
+            long pos = offset;
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             try
