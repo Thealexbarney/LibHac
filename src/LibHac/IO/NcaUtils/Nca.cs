@@ -222,7 +222,7 @@ namespace LibHac.IO.NcaUtils
                     return new RomFsFileSystem(storage);
                 case SectionType.Bktr:
                     // todo Possibly check if a patch completely replaces the original
-                    throw new InvalidOperationException("Cannot open a patched section without the original");
+                    return new RomFsFileSystem(storage);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
