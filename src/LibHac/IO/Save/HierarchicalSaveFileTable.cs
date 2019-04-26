@@ -235,6 +235,12 @@ namespace LibHac.IO.Save
             return true;
         }
 
+        public void TrimFreeEntries()
+        {
+            DirectoryTable.TrimFreeEntries();
+            FileTable.TrimFreeEntries();
+        }
+
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct TableEntry<T> where T : struct
         {

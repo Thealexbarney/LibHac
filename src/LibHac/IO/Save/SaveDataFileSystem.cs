@@ -5,7 +5,11 @@ namespace LibHac.IO.Save
 {
     public class SaveDataFileSystem : IFileSystem
     {
+        internal const byte TrimFillValue = 0;
+
         public Header Header { get; }
+        private bool IsFirstHeaderInUse { get; }
+
         public IStorage BaseStorage { get; }
         public bool LeaveOpen { get; }
 
@@ -17,7 +21,7 @@ namespace LibHac.IO.Save
         public HierarchicalDuplexStorage DuplexStorage { get; }
         public JournalStorage JournalStorage { get; }
 
-        public HierarchicalIntegrityVerificationStorage JournalIvfcStorage { get; }
+        public HierarchicalIntegrityVerificationStorage CoreDataIvfcStorage { get; }
         public HierarchicalIntegrityVerificationStorage FatIvfcStorage { get; }
 
         private Keyset Keyset { get; }
@@ -28,7 +32,24 @@ namespace LibHac.IO.Save
             LeaveOpen = leaveOpen;
             Keyset = keyset;
 
-            Header = new Header(BaseStorage, keyset);
+            var headerA = new Header(BaseStorage, keyset);
+            var headerB = new Header(BaseStorage.Slice(0x4000), keyset);
+
+            if (headerA.HeaderHashValidity == Validity.Valid)
+            {
+                IsFirstHeaderInUse = true;
+            }
+            else if (headerB.HeaderHashValidity == Validity.Valid)
+            {
+                IsFirstHeaderInUse = false;
+            }
+            else
+            {
+                throw new InvalidDataException("Savedata header is not valid.");
+            }
+
+            Header = IsFirstHeaderInUse ? headerA : headerB;
+
             FsLayout layout = Header.Layout;
 
             IStorage dataRemapBase = BaseStorage.Slice(layout.FileMapDataOffset, layout.FileMapDataSize);
@@ -54,7 +75,7 @@ namespace LibHac.IO.Save
 
             JournalStorage = new JournalStorage(journalData, Header.JournalHeader, journalMapInfo, leaveOpen);
 
-            JournalIvfcStorage = InitJournalIvfcStorage(integrityCheckLevel);
+            CoreDataIvfcStorage = InitJournalIvfcStorage(integrityCheckLevel);
 
             IStorage fatStorage = MetaRemapStorage.Slice(layout.FatOffset, layout.FatSize);
 
@@ -64,7 +85,7 @@ namespace LibHac.IO.Save
                 fatStorage = FatIvfcStorage;
             }
 
-            SaveDataFileSystemCore = new SaveDataFileSystemCore(JournalIvfcStorage, fatStorage, Header.SaveHeader);
+            SaveDataFileSystemCore = new SaveDataFileSystemCore(CoreDataIvfcStorage, fatStorage, Header.SaveHeader);
         }
 
         private static HierarchicalDuplexStorage InitDuplexStorage(IStorage baseStorage, Header header)
@@ -175,7 +196,7 @@ namespace LibHac.IO.Save
 
         public bool Commit(Keyset keyset)
         {
-            JournalIvfcStorage.Flush();
+            CoreDataIvfcStorage.Flush();
             FatIvfcStorage?.Flush();
 
             Stream headerStream = BaseStorage.AsStream();
@@ -208,15 +229,22 @@ namespace LibHac.IO.Save
 
         public void FsTrim()
         {
-            JournalIvfcStorage.FsTrim();
+            MetaRemapStorage.FsTrim();
+            DataRemapStorage.FsTrim();
+            DuplexStorage.FsTrim();
+            JournalStorage.FsTrim();
+            CoreDataIvfcStorage.FsTrim();
             FatIvfcStorage?.FsTrim();
             SaveDataFileSystemCore.FsTrim();
+
+            int unusedHeaderOffset = IsFirstHeaderInUse ? 0x4000 : 0;
+            BaseStorage.Slice(unusedHeaderOffset, 0x4000).Fill(TrimFillValue);
         }
 
         public Validity Verify(IProgressReport logger = null)
         {
-            Validity journalValidity = JournalIvfcStorage.Validate(true, logger);
-            JournalIvfcStorage.SetLevelValidities(Header.Ivfc);
+            Validity journalValidity = CoreDataIvfcStorage.Validate(true, logger);
+            CoreDataIvfcStorage.SetLevelValidities(Header.Ivfc);
 
             if (FatIvfcStorage == null) return journalValidity;
 

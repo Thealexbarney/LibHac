@@ -143,7 +143,7 @@ namespace LibHac.IO.Save
                 {
                     AllocationTable.FsTrimList(fileInfo.StartBlock);
 
-                    OpenFatStorage(fileInfo.StartBlock).Slice(fileInfo.Length).Fill(0);
+                    OpenFatStorage(fileInfo.StartBlock).Slice(fileInfo.Length).Fill(SaveDataFileSystem.TrimFillValue);
                 }
             }
 
@@ -152,7 +152,9 @@ namespace LibHac.IO.Save
 
             AllocationTable.FsTrimList(freeIndex);
 
-            OpenFatStorage(freeIndex).Fill(0);
+            OpenFatStorage(freeIndex).Fill(SaveDataFileSystem.TrimFillValue);
+
+            FileTable.TrimFreeEntries();
         }
 
         private AllocationTableStorage OpenFatStorage(int blockIndex)

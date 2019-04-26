@@ -4,6 +4,7 @@ namespace LibHac.IO.Save
 {
     public class JournalMap
     {
+        private int MapEntryLength = 8;
         public JournalMapHeader Header { get; }
         private JournalMapEntry[] Entries { get; }
 
@@ -55,6 +56,21 @@ namespace LibHac.IO.Save
         public IStorage GetModifiedPhysicalBlocksStorage() => ModifiedPhysicalBlocks.AsReadOnly();
         public IStorage GetModifiedVirtualBlocksStorage() => ModifiedVirtualBlocks.AsReadOnly();
         public IStorage GetFreeBlocksStorage() => FreeBlocks.AsReadOnly();
+
+        public void FsTrim()
+        {
+            int virtualBlockCount = Header.MainDataBlockCount;
+            int physicalBlockCount = virtualBlockCount + Header.JournalBlockCount;
+
+            int blockMapLength = virtualBlockCount * MapEntryLength;
+            int physicalBitmapLength = Util.AlignUp(physicalBlockCount, 32) / 8;
+            int virtualBitmapLength = Util.AlignUp(virtualBlockCount, 32) / 8;
+
+            MapStorage.Slice(blockMapLength).Fill(SaveDataFileSystem.TrimFillValue);
+            FreeBlocks.Slice(physicalBitmapLength).Fill(SaveDataFileSystem.TrimFillValue);
+            ModifiedPhysicalBlocks.Slice(physicalBitmapLength).Fill(SaveDataFileSystem.TrimFillValue);
+            ModifiedVirtualBlocks.Slice(virtualBitmapLength).Fill(SaveDataFileSystem.TrimFillValue);
+        }
     }
 
     public class JournalMapHeader

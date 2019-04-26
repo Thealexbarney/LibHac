@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.IO;
 using System.Security.Cryptography;
+using LibHac.IO.Save;
 
 namespace LibHac.IO
 {
@@ -198,7 +199,7 @@ namespace LibHac.IO
                 if (!Util.IsEmpty(digest)) continue;
 
                 int dataOffset = i * SectorSize;
-                BaseStorage.Fill(0, dataOffset, SectorSize);
+                BaseStorage.Fill(SaveDataFileSystem.TrimFillValue, dataOffset, SectorSize);
             }
         }
     }
