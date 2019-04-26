@@ -123,7 +123,7 @@ namespace LibHac
 
         private void ReadTitles()
         {
-            foreach (Nca nca in Ncas.Values.Where(x => x.Header.ContentType == ContentType.Meta))
+            foreach (Nca nca in Ncas.Values.Where(x => x.Header.ContentType == ContentType.Meta && x.CanOpenSection(NcaSectionType.Data)))
             {
                 var title = new Title();
 
