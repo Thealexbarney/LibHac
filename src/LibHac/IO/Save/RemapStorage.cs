@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace LibHac.IO.Save
 {
     public class RemapStorage : StorageBase
     {
+        private const int MapEntryLength = 0x20;
+
         private IStorage BaseStorage { get; }
         private IStorage HeaderStorage { get; }
         private IStorage MapEntryStorage { get; }
@@ -45,6 +48,8 @@ namespace LibHac.IO.Save
 
         protected override void ReadImpl(Span<byte> destination, long offset)
         {
+            if (destination.Length == 0) return;
+
             MapEntry entry = GetMapEntry(offset);
 
             long inPos = offset;
@@ -71,6 +76,8 @@ namespace LibHac.IO.Save
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
+            if (source.Length == 0) return;
+
             MapEntry entry = GetMapEntry(offset);
 
             long inPos = offset;
@@ -177,6 +184,15 @@ namespace LibHac.IO.Save
         private long GetSegmentMask()
         {
             return ~GetOffsetMask();
+        }
+
+        public void FsTrim()
+        {
+            int mapEntriesLength = Header.MapEntryCount * MapEntryLength;
+            long dataEnd = MapEntries.Max(x => x.PhysicalOffsetEnd);
+
+            MapEntryStorage.Slice(mapEntriesLength).Fill(SaveDataFileSystem.TrimFillValue);
+            BaseStorage.Slice(dataEnd).Fill(SaveDataFileSystem.TrimFillValue);
         }
     }
 

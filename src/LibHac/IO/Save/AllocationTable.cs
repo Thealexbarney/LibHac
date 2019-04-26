@@ -312,7 +312,7 @@ namespace LibHac.IO.Save
                     int fillOffset = BlockToEntryIndex(index + 2) * EntrySize;
                     int fillLength = (length - 3) * EntrySize;
 
-                    BaseStorage.Slice(fillOffset, fillLength).Fill(0x00);
+                    BaseStorage.Slice(fillOffset, fillLength).Fill(SaveDataFileSystem.TrimFillValue);
                 }
 
                 nodesIterated++;
@@ -329,7 +329,7 @@ namespace LibHac.IO.Save
         public void FsTrim()
         {
             int tableSize = BlockToEntryIndex(Header.AllocationTableBlockCount) * EntrySize;
-            BaseStorage.Slice(tableSize).Fill(0x00);
+            BaseStorage.Slice(tableSize).Fill(SaveDataFileSystem.TrimFillValue);
         }
 
         private void ReadEntries(int entryIndex, Span<AllocationTableEntry> entries)

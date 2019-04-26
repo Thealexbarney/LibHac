@@ -56,8 +56,8 @@ namespace LibHac.IO
         protected void ValidateParameters(ReadOnlySpan<byte> span, long offset)
         {
             if (_isDisposed) throw new ObjectDisposedException(null);
-            if (span == null) throw new ArgumentNullException(nameof(span));
             if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), "Argument must be non-negative.");
+
             long length = GetSize();
 
             if (length != -1 && !CanAutoExpand)

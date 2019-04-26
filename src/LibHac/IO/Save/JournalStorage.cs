@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.IO;
 
 namespace LibHac.IO.Save
@@ -85,6 +86,22 @@ namespace LibHac.IO.Save
 
         public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
         public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
+
+        public void FsTrim()
+        {
+            // todo replace with a bitmap reader class when added
+            BitArray bitmap = new DuplexBitmap(Map.GetFreeBlocksStorage(),
+                Map.Header.JournalBlockCount + Map.Header.MainDataBlockCount).Bitmap;
+
+            for (int i = 0; i < bitmap.Length; i++)
+            {
+                if (!bitmap[i]) continue;
+
+                BaseStorage.Fill(SaveDataFileSystem.TrimFillValue, i * BlockSize, BlockSize);
+            }
+
+            Map.FsTrim();
+        }
     }
 
     public class JournalHeader

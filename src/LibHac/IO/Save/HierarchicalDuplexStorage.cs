@@ -48,6 +48,14 @@ namespace LibHac.IO.Save
         }
 
         public override long GetSize() => _length;
+
+        public void FsTrim()
+        {
+            foreach (DuplexStorage layer in Layers)
+            {
+                layer.FsTrim();
+            }
+        }
     }
 
     public class DuplexFsLayerInfo

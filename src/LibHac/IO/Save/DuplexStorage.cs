@@ -77,5 +77,17 @@ namespace LibHac.IO.Save
         }
 
         public override long GetSize() => _length;
+
+        public void FsTrim()
+        {
+            int blockCount = (int)(DataA.GetSize() / BlockSize);
+
+            for (int i = 0; i < blockCount; i++)
+            {
+                IStorage dataToClear = Bitmap.Bitmap[i] ? DataA : DataB;
+
+                dataToClear.Slice(i * BlockSize, BlockSize).Fill(SaveDataFileSystem.TrimFillValue);
+            }
+        }
     }
 }
