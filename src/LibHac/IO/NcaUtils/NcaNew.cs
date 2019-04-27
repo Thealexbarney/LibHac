@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using LibHac.IO.RomFs;
@@ -11,16 +12,12 @@ namespace LibHac.IO.NcaUtils
         private IStorage BaseStorage { get; }
 
         public NcaHeaderNew Header { get; }
-        public byte[] TitleKey { get; }
 
         public NcaNew(Keyset keyset, IStorage storage)
         {
             Keyset = keyset;
             BaseStorage = storage;
             Header = new NcaHeaderNew(keyset, storage);
-
-            keyset.TitleKeys.TryGetValue(Header.RightsId.ToArray(), out byte[] titleKey);
-            TitleKey = titleKey;
         }
 
         public byte[] GetDecryptedKey(int index)
@@ -69,7 +66,7 @@ namespace LibHac.IO.NcaUtils
 
         internal byte[] GetContentKey(NcaKeyType type)
         {
-            return Util.IsEmpty(Header.RightsId) ? GetDecryptedKey((int)type) : GetDecryptedTitleKey();
+            return Header.HasRightsId ? GetDecryptedKey((int)type) : GetDecryptedTitleKey();
         }
 
         private IStorage OpenEncryptedStorage(int index)
@@ -176,7 +173,6 @@ namespace LibHac.IO.NcaUtils
         public IStorage OpenStorage(int index, IntegrityCheckLevel integrityCheckLevel)
         {
             IStorage rawStorage = OpenRawStorage(index);
-
             NcaFsHeaderNew header = Header.GetFsHeader(index);
 
             if (header.EncryptionType == NcaEncryptionType.AesCtrEx)
@@ -198,7 +194,6 @@ namespace LibHac.IO.NcaUtils
         public IStorage OpenStorageWithPatch(NcaNew patchNca, int index, IntegrityCheckLevel integrityCheckLevel)
         {
             IStorage rawStorage = OpenRawStorageWithPatch(patchNca, index);
-
             NcaFsHeaderNew header = patchNca.Header.GetFsHeader(index);
 
             switch (header.HashType)
@@ -234,47 +229,10 @@ namespace LibHac.IO.NcaUtils
             {
                 case NcaFormatType.Pfs0:
                     return new PartitionFileSystem(storage);
-                case NcaFormatType.Romfs when header.EncryptionType == NcaEncryptionType.AesCtrEx:
-                    // todo Remove special handling for this case
-                    throw new InvalidOperationException("Cannot open a patched section without the original");
                 case NcaFormatType.Romfs:
                     return new RomFsFileSystem(storage);
                 default:
                     throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        public IStorage OpenStorage(NcaNew patchNca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
-        {
-            return OpenStorage(GetSectionIndexFromType(type), integrityCheckLevel);
-        }
-
-        public IStorage OpenStorageWithPatch(NcaNew patchNca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
-        {
-            return OpenStorageWithPatch(patchNca, GetSectionIndexFromType(type), integrityCheckLevel);
-        }
-
-        public IFileSystem OpenFileSystem(NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
-        {
-            return OpenFileSystem(GetSectionIndexFromType(type), integrityCheckLevel);
-        }
-
-        public IFileSystem OpenFileSystemWithPatch(NcaNew patchNca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
-        {
-            return OpenFileSystemWithPatch(patchNca, GetSectionIndexFromType(type), integrityCheckLevel);
-        }
-
-        private int GetSectionIndexFromType(NcaSectionType type)
-        {
-            ContentType contentType = Header.ContentType;
-
-            switch (type)
-            {
-                case NcaSectionType.Code when contentType == ContentType.Program: return 0;
-                case NcaSectionType.Data when contentType == ContentType.Program: return 1;
-                case NcaSectionType.Logo when contentType == ContentType.Program: return 2;
-                case NcaSectionType.Data: return 0;
-                default: throw new ArgumentOutOfRangeException(nameof(type), "NCA does not contain this section type.");
             }
         }
 
@@ -337,6 +295,63 @@ namespace LibHac.IO.NcaUtils
             }
 
             return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel, leaveOpen);
+        }
+
+        public IStorage OpenDecryptedHeaderStorage()
+        {
+            long firstSectionOffset = long.MaxValue;
+            bool hasEnabledSection = false;
+
+            // Encrypted portion continues until the first section
+            for (int i = 0; i < NcaHeaderNew.SectionCount; i++)
+            {
+                if (Header.IsSectionEnabled(i))
+                {
+                    hasEnabledSection = true;
+                    firstSectionOffset = Math.Min(firstSectionOffset, Header.GetSectionStartOffset(i));
+                }
+            }
+
+            long headerSize = hasEnabledSection ? NcaHeaderNew.HeaderSize : firstSectionOffset;
+
+            IStorage header = new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, headerSize), Keyset.HeaderKey, NcaHeaderNew.HeaderSectorSize, true), 1, true);
+            int version = ReadHeaderVersion(header);
+
+            if (version == 2)
+            {
+                header = OpenNca2Header(headerSize);
+            }
+
+            return header;
+        }
+
+        private int ReadHeaderVersion(IStorage header)
+        {
+            if (Header != null)
+            {
+                return Header.Version;
+            }
+            else
+            {
+                Span<byte> buf = stackalloc byte[1];
+                header.Read(buf, 0x203);
+                return buf[0] - '0';
+            }
+        }
+
+        private IStorage OpenNca2Header(long size)
+        {
+            const int sectorSize = NcaHeaderNew.HeaderSectorSize;
+
+            var sources = new List<IStorage>();
+            sources.Add(new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, 0x400), Keyset.HeaderKey, sectorSize, true), 1, true));
+
+            for (int i = 0x400; i < size; i += sectorSize)
+            {
+                sources.Add(new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(i, sectorSize), Keyset.HeaderKey, sectorSize, true), 1, true));
+            }
+
+            return new ConcatenationStorage(sources, true);
         }
     }
 }

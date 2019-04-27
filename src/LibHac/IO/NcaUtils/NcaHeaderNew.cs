@@ -7,9 +7,10 @@ namespace LibHac.IO.NcaUtils
 {
     public class NcaHeaderNew
     {
-        private const int HeaderSize = 0xC00;
-        private const int HeaderSectorSize = 0x200;
-        private const int BlockSize = 0x200;
+        internal const int HeaderSize = 0xC00;
+        internal const int HeaderSectorSize = 0x200;
+        internal const int BlockSize = 0x200;
+        internal const int SectionCount = 4;
 
         private const int RightsIdOffset = 0x230;
         private const int RightsIdSize = 0x10;
@@ -110,6 +111,8 @@ namespace LibHac.IO.NcaUtils
 
         public Span<byte> RightsId => _header.Span.Slice(RightsIdOffset, RightsIdSize);
 
+        public bool HasRightsId => !Util.IsEmpty(RightsId);
+
         private ref NcaSectionEntryStruct GetSectionEntry(int index)
         {
             ValidateSectionIndex(index);
@@ -149,7 +152,7 @@ namespace LibHac.IO.NcaUtils
 
         public Span<byte> GetEncryptedKey(int index)
         {
-            if (index < 0 || index > 3)
+            if (index < 0 || index >= SectionCount)
             {
                 throw new ArgumentOutOfRangeException($"Key index must be between 0 and 3. Actual: {index}");
             }
@@ -177,7 +180,7 @@ namespace LibHac.IO.NcaUtils
 
         private static void ValidateSectionIndex(int index)
         {
-            if (index < 0 || index > 3)
+            if (index < 0 || index >= SectionCount)
             {
                 throw new ArgumentOutOfRangeException($"NCA section index must be between 0 and 3. Actual: {index}");
             }
