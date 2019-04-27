@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using LibHac.IO.RomFs;
 
 namespace LibHac.IO.NcaUtils
 {
@@ -68,7 +69,7 @@ namespace LibHac.IO.NcaUtils
 
         internal byte[] GetContentKey(NcaKeyType type)
         {
-            return Header.RightsId.IsEmpty ? GetDecryptedKey((int)type) : GetDecryptedTitleKey();
+            return Util.IsEmpty(Header.RightsId) ? GetDecryptedKey((int)type) : GetDecryptedTitleKey();
         }
 
         private IStorage OpenEncryptedStorage(int index)
@@ -154,14 +155,30 @@ namespace LibHac.IO.NcaUtils
             return decryptedStorage;
         }
 
+        public IStorage OpenRawStorageWithPatch(NcaNew patchNca, int index)
+        {
+            IStorage patchStorage = patchNca.OpenRawStorage(index);
+            IStorage baseStorage = OpenRawStorage(index);
+
+            NcaFsHeaderNew header = patchNca.Header.GetFsHeader(index);
+            NcaFsPatchInfo patchInfo = header.GetPatchInfo();
+
+            if (patchInfo.RelocationTreeSize == 0)
+            {
+                return baseStorage;
+            }
+
+            IStorage relocationTableStorage = patchStorage.Slice(patchInfo.RelocationTreeOffset, patchInfo.RelocationTreeSize);
+
+            return new IndirectStorage(relocationTableStorage, true, baseStorage, patchStorage);
+        }
+
         public IStorage OpenStorage(int index, IntegrityCheckLevel integrityCheckLevel)
         {
             IStorage rawStorage = OpenRawStorage(index);
 
             NcaFsHeaderNew header = Header.GetFsHeader(index);
-            header.GetIntegrityInfoSha256();
 
-            // todo don't assume that ctr ex means it's a patch
             if (header.EncryptionType == NcaEncryptionType.AesCtrEx)
             {
                 return rawStorage.Slice(0, header.GetPatchInfo().RelocationTreeOffset);
@@ -176,6 +193,75 @@ namespace LibHac.IO.NcaUtils
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+        }
+
+        public IStorage OpenStorageWithPatch(NcaNew patchNca, int index, IntegrityCheckLevel integrityCheckLevel)
+        {
+            IStorage rawStorage = OpenRawStorageWithPatch(patchNca, index);
+
+            NcaFsHeaderNew header = patchNca.Header.GetFsHeader(index);
+
+            switch (header.HashType)
+            {
+                case NcaHashType.Sha256:
+                    return InitIvfcForPartitionFs(header.GetIntegrityInfoSha256(), rawStorage, integrityCheckLevel, true);
+                case NcaHashType.Ivfc:
+                    return InitIvfcForRomFs(header.GetIntegrityInfoIvfc(), rawStorage, integrityCheckLevel, true);
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public IFileSystem OpenFileSystem(int index, IntegrityCheckLevel integrityCheckLevel)
+        {
+            IStorage storage = OpenStorage(index, integrityCheckLevel);
+            NcaFsHeaderNew header = Header.GetFsHeader(index);
+
+            return OpenFileSystem(storage, header);
+        }
+
+        public IFileSystem OpenFileSystemWithPatch(NcaNew patchNca, int index, IntegrityCheckLevel integrityCheckLevel)
+        {
+            IStorage storage = OpenStorageWithPatch(patchNca, index, integrityCheckLevel);
+            NcaFsHeaderNew header = Header.GetFsHeader(index);
+
+            return OpenFileSystem(storage, header);
+        }
+
+        private IFileSystem OpenFileSystem(IStorage storage, NcaFsHeaderNew header)
+        {
+            switch (header.FormatType)
+            {
+                case NcaFormatType.Pfs0:
+                    return new PartitionFileSystem(storage);
+                case NcaFormatType.Romfs when header.EncryptionType == NcaEncryptionType.AesCtrEx:
+                    // todo Remove special handling for this case
+                    throw new InvalidOperationException("Cannot open a patched section without the original");
+                case NcaFormatType.Romfs:
+                    return new RomFsFileSystem(storage);
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public IStorage OpenStorage(NcaNew patchNca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
+        {
+            return OpenStorage(GetSectionIndexFromType(type), integrityCheckLevel);
+        }
+
+        public IStorage OpenStorageWithPatch(NcaNew patchNca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
+        {
+            return OpenStorageWithPatch(patchNca, GetSectionIndexFromType(type), integrityCheckLevel);
+        }
+
+        public IFileSystem OpenFileSystem(NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
+        {
+            return OpenFileSystem(GetSectionIndexFromType(type), integrityCheckLevel);
+        }
+
+        public IFileSystem OpenFileSystemWithPatch(NcaNew patchNca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
+        {
+            return OpenFileSystemWithPatch(patchNca, GetSectionIndexFromType(type), integrityCheckLevel);
         }
 
         private int GetSectionIndexFromType(NcaSectionType type)
