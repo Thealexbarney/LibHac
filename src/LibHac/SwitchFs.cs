@@ -61,7 +61,10 @@ namespace LibHac
 
         private void OpenAllNcas()
         {
-            IEnumerable<DirectoryEntry> files = ContentFs.OpenDirectory("/", OpenDirectoryMode.All).EnumerateEntries("*.nca", SearchOptions.RecurseSubdirectories);
+            // Todo: give warning if directories named "*.nca" are found or manually fix the archive bit
+            IEnumerable<DirectoryEntry> files = ContentFs.OpenDirectory("/", OpenDirectoryMode.All)
+                .EnumerateEntries("*.nca", SearchOptions.RecurseSubdirectories)
+                .Where(x => x.Type == DirectoryEntryType.File);
 
             foreach (DirectoryEntry fileEntry in files)
             {
