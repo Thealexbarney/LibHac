@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Buffers.Binary;
+using System.Diagnostics;
 
 namespace LibHac.IO.NcaUtils
 {
@@ -16,36 +18,6 @@ namespace LibHac.IO.NcaUtils
         {
             if (openRaw) return nca.OpenRawStorage(type);
             return nca.OpenStorage(type, integrityCheckLevel);
-        }
-
-        public static IFileSystem OpenFileSystem(this NcaNew nca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
-        {
-            return nca.OpenFileSystem(nca.GetSectionIndexFromType(type), integrityCheckLevel);
-        }
-
-        public static IFileSystem OpenFileSystemWithPatch(this NcaNew nca, NcaNew patchNca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
-        {
-            return nca.OpenFileSystemWithPatch(patchNca, nca.GetSectionIndexFromType(type), integrityCheckLevel);
-        }
-
-        public static IStorage OpenRawStorage(this NcaNew nca, NcaSectionType type)
-        {
-            return nca.OpenRawStorage(nca.GetSectionIndexFromType(type));
-        }
-
-        public static IStorage OpenRawStorageWithPatch(this NcaNew nca, NcaNew patchNca, NcaSectionType type)
-        {
-            return nca.OpenRawStorageWithPatch(patchNca, nca.GetSectionIndexFromType(type));
-        }
-
-        public static IStorage OpenStorage(this NcaNew nca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
-        {
-            return nca.OpenStorage(nca.GetSectionIndexFromType(type), integrityCheckLevel);
-        }
-
-        public static IStorage OpenStorageWithPatch(this NcaNew nca, NcaNew patchNca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
-        {
-            return nca.OpenStorageWithPatch(patchNca, nca.GetSectionIndexFromType(type), integrityCheckLevel);
         }
 
         public static void ExportSection(this NcaNew nca, int index, string filename, bool raw = false,
@@ -76,37 +48,80 @@ namespace LibHac.IO.NcaUtils
             fs.Extract(outputDir, logger);
         }
 
-        public static IStorage OpenDecryptedNca(this NcaNew nca)
+        public static Validity ValidateSectionMasterHash(this NcaNew nca, int index)
         {
-            var builder = new ConcatenationStorageBuilder();
-            builder.Add(nca.OpenDecryptedHeaderStorage(), 0);
+            if (!nca.SectionExists(index)) throw new ArgumentException(nameof(index), Messages.NcaSectionMissing);
+            if (!nca.CanOpenSection(index)) return Validity.MissingKey;
 
-            for (int i = 0; i < NcaHeaderNew.SectionCount; i++)
+            NcaFsHeaderNew header = nca.Header.GetFsHeader(index);
+
+            // The base data is needed to validate the hash, so use a trick involving the AES-CTR extended
+            // encryption table to check if the decryption is invalid.
+            // todo: If the patch replaces the data checked by the master hash, use that directly
+            if (header.IsPatchSection())
             {
-                if (nca.Header.IsSectionEnabled(i))
-                {
-                    builder.Add(nca.OpenRawStorage(i), nca.Header.GetSectionStartOffset(i));
-                }
+                if (header.EncryptionType != NcaEncryptionType.AesCtrEx) return Validity.Unchecked;
+
+                Validity ctrExValidity = ValidateCtrExDecryption(nca, index);
+                return ctrExValidity == Validity.Invalid ? Validity.Invalid : Validity.Unchecked;
             }
 
-            return builder.Build();
-        }
+            byte[] expectedHash;
+            long offset;
+            long size;
 
-        public static int GetSectionIndexFromType(this NcaNew nca, NcaSectionType type)
-        {
-            return SectionIndexFromType(type, nca.Header.ContentType);
-        }
-
-        public static int SectionIndexFromType(NcaSectionType type, ContentType contentType)
-        {
-            switch (type)
+            switch (header.HashType)
             {
-                case NcaSectionType.Code when contentType == ContentType.Program: return 0;
-                case NcaSectionType.Data when contentType == ContentType.Program: return 1;
-                case NcaSectionType.Logo when contentType == ContentType.Program: return 2;
-                case NcaSectionType.Data: return 0;
-                default: throw new ArgumentOutOfRangeException(nameof(type), "NCA does not contain this section type.");
+                case NcaHashType.Ivfc:
+                    NcaFsIntegrityInfoIvfc ivfcInfo = header.GetIntegrityInfoIvfc();
+
+                    expectedHash = ivfcInfo.MasterHash.ToArray();
+                    offset = ivfcInfo.GetLevelOffset(0);
+                    size = 1 << ivfcInfo.GetLevelBlockSize(0);
+
+                    break;
+                case NcaHashType.Sha256:
+                    NcaFsIntegrityInfoSha256 sha256Info = header.GetIntegrityInfoSha256();
+                    expectedHash = sha256Info.MasterHash.ToArray();
+
+                    offset = sha256Info.GetLevelOffset(0);
+                    size = sha256Info.GetLevelSize(0);
+
+                    break;
+                default:
+                    return Validity.Unchecked;
             }
+
+            IStorage storage = nca.OpenRawStorage(index);
+
+            var data = new byte[size];
+            storage.Read(data, offset);
+
+            byte[] actualHash = Crypto.ComputeSha256(data, 0, data.Length);
+
+            if (Util.ArraysEqual(expectedHash, actualHash)) return Validity.Valid;
+
+            return Validity.Invalid;
+        }
+
+        private static Validity ValidateCtrExDecryption(NcaNew nca, int index)
+        {
+            // The encryption subsection table in an AesCtrEx-encrypted partition contains the length of the entire partition.
+            // The encryption table is always located immediately following the partition data, so the offset value of the encryption
+            // table located in the NCA header should be the same as the size read from the encryption table.
+
+            Debug.Assert(nca.CanOpenSection(index));
+
+            NcaFsPatchInfo header = nca.Header.GetFsHeader(index).GetPatchInfo();
+            IStorage decryptedStorage = nca.OpenRawStorage(index);
+
+            Span<byte> buffer = stackalloc byte[sizeof(long)];
+            decryptedStorage.Read(buffer, header.EncryptionTreeOffset + 8);
+            long readDataSize = BinaryPrimitives.ReadInt64LittleEndian(buffer);
+
+            if (header.EncryptionTreeOffset != readDataSize) return Validity.Invalid;
+
+            return Validity.Valid;
         }
     }
 }

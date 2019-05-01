@@ -8,6 +8,8 @@ namespace LibHac.IO.NcaUtils
     {
         private const int IvfcLevelOffset = 0x10;
         private const int IvfcLevelSize = 0x18;
+        private const int SaltSourceOffset = 0xA0;
+        private const int SaltSourceSize = 0x20;
         private const int MasterHashOffset = 0xC0;
 
         private Memory<byte> _data;
@@ -51,6 +53,7 @@ namespace LibHac.IO.NcaUtils
             set => Data.LevelCount = value;
         }
 
+        public Span<byte> SaltSource => _data.Span.Slice(SaltSourceOffset, SaltSourceSize);
         public Span<byte> MasterHash => _data.Span.Slice(MasterHashOffset, MasterHashSize);
 
         public ref long GetLevelOffset(int index) => ref GetLevelInfo(index).Offset;

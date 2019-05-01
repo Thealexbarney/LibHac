@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Text;
 using LibHac;
 using LibHac.IO;
+using LibHac.IO.NcaUtils;
 
 namespace hactoolnet
 {
@@ -64,6 +66,50 @@ namespace hactoolnet
                 PrintItem(sb, colLen, $"{prefix2}Hash Offset:", $"0x{hashOffset.ToString($"x{offsetLen}")}");
                 PrintItem(sb, colLen, $"{prefix2}Hash BlockSize:", $"0x{1 << level.BlockSizePower:x8}");
             }
+        }
+
+        public static void PrintIvfcHashNew(StringBuilder sb, int colLen, int indentSize, NcaFsIntegrityInfoIvfc ivfcInfo, IntegrityStorageType type, Validity masterHashValidity)
+        {
+            string prefix = new string(' ', indentSize);
+            string prefix2 = new string(' ', indentSize + 4);
+
+            if (type == IntegrityStorageType.RomFs)
+                PrintItem(sb, colLen, $"{prefix}Master Hash{masterHashValidity.GetValidityString()}:", ivfcInfo.MasterHash.ToArray());
+
+            PrintItem(sb, colLen, $"{prefix}Magic:", MagicToString(ivfcInfo.Magic));
+            PrintItem(sb, colLen, $"{prefix}Version:", ivfcInfo.Version >> 16);
+
+            if (type == IntegrityStorageType.Save)
+                PrintItem(sb, colLen, $"{prefix}Salt Seed:", ivfcInfo.SaltSource.ToArray());
+
+            int levelCount = Math.Max(ivfcInfo.LevelCount - 1, 0);
+            if (type == IntegrityStorageType.Save) levelCount = 4;
+
+            int offsetLen = type == IntegrityStorageType.Save ? 16 : 12;
+
+            for (int i = 0; i < levelCount; i++)
+            {
+                long hashOffset = 0;
+
+                if (i != 0)
+                {
+                    hashOffset = ivfcInfo.GetLevelOffset(i - 1);
+                }
+
+                sb.AppendLine($"{prefix}Level {i}:");
+                PrintItem(sb, colLen, $"{prefix2}Data Offset:", $"0x{ivfcInfo.GetLevelOffset(i).ToString($"x{offsetLen}")}");
+                PrintItem(sb, colLen, $"{prefix2}Data Size:", $"0x{ivfcInfo.GetLevelSize(i).ToString($"x{offsetLen}")}");
+                PrintItem(sb, colLen, $"{prefix2}Hash Offset:", $"0x{hashOffset.ToString($"x{offsetLen}")}");
+                PrintItem(sb, colLen, $"{prefix2}Hash BlockSize:", $"0x{1 << ivfcInfo.GetLevelBlockSize(i):x8}");
+            }
+        }
+
+        public static string MagicToString(uint value)
+        {
+            var buf = new byte[4];
+            BinaryPrimitives.WriteUInt32LittleEndian(buf, value);
+
+            return Encoding.ASCII.GetString(buf);
         }
     }
 }

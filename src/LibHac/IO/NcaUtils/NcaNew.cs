@@ -24,12 +24,12 @@ namespace LibHac.IO.NcaUtils
         {
             if (index < 0 || index > 3) throw new ArgumentOutOfRangeException(nameof(index));
 
-            int generation = Util.GetMasterKeyRevision(Header.KeyGeneration);
-            byte[] keyAreaKey = Keyset.KeyAreaKeys[generation][Header.KeyAreaKeyIndex];
+            int keyRevision = Util.GetMasterKeyRevision(Header.KeyGeneration);
+            byte[] keyAreaKey = Keyset.KeyAreaKeys[keyRevision][Header.KeyAreaKeyIndex];
 
             if (keyAreaKey.IsEmpty())
             {
-                string keyName = $"key_area_key_{Keyset.KakNames[Header.KeyAreaKeyIndex]}_{generation:x2}";
+                string keyName = $"key_area_key_{Keyset.KakNames[Header.KeyAreaKeyIndex]}_{keyRevision:x2}";
                 throw new MissingKeyException("Unable to decrypt NCA section.", keyName, KeyType.Common);
             }
 
@@ -43,8 +43,8 @@ namespace LibHac.IO.NcaUtils
 
         public byte[] GetDecryptedTitleKey()
         {
-            int generation = Util.GetMasterKeyRevision(Header.KeyGeneration);
-            byte[] titleKek = Keyset.TitleKeks[generation];
+            int keyRevision = Util.GetMasterKeyRevision(Header.KeyGeneration);
+            byte[] titleKek = Keyset.TitleKeks[keyRevision];
 
             if (!Keyset.TitleKeys.TryGetValue(Header.RightsId.ToArray(), out byte[] encryptedKey))
             {
@@ -53,7 +53,7 @@ namespace LibHac.IO.NcaUtils
 
             if (titleKek.IsEmpty())
             {
-                string keyName = $"titlekek_{generation:x2}";
+                string keyName = $"titlekek_{keyRevision:x2}";
                 throw new MissingKeyException("Unable to decrypt title key.", keyName, KeyType.Common);
             }
 
@@ -66,12 +66,37 @@ namespace LibHac.IO.NcaUtils
 
         internal byte[] GetContentKey(NcaKeyType type)
         {
-            return Header.HasRightsId ? GetDecryptedKey((int)type) : GetDecryptedTitleKey();
+            return Header.HasRightsId ? GetDecryptedTitleKey() : GetDecryptedKey((int)type);
+        }
+
+        public bool CanOpenSection(NcaSectionType type) => CanOpenSection(GetSectionIndexFromType(type));
+
+        public bool CanOpenSection(int index)
+        {
+            if (!SectionExists(index)) return false;
+            if (Header.GetFsHeader(index).EncryptionType == NcaEncryptionType.None) return true;
+
+            int keyRevision = Util.GetMasterKeyRevision(Header.KeyGeneration);
+
+            if (Header.HasRightsId)
+            {
+                return Keyset.TitleKeys.ContainsKey(Header.RightsId.ToArray()) &&
+                       !Keyset.TitleKeks[keyRevision].IsEmpty();
+            }
+
+            return !Keyset.KeyAreaKeys[keyRevision][Header.KeyAreaKeyIndex].IsEmpty();
+        }
+
+        public bool SectionExists(NcaSectionType type) => SectionExists(GetSectionIndexFromType(type));
+
+        public bool SectionExists(int index)
+        {
+            return Header.IsSectionEnabled(index);
         }
 
         private IStorage OpenEncryptedStorage(int index)
         {
-            if (!Header.IsSectionEnabled(index)) throw new ArgumentOutOfRangeException(nameof(index), "Section is empty");
+            if (!SectionExists(index)) throw new ArgumentException(nameof(index), Messages.NcaSectionMissing);
 
             long offset = Header.GetSectionStartOffset(index);
             long size = Header.GetSectionSize(index);
@@ -233,6 +258,81 @@ namespace LibHac.IO.NcaUtils
                     return new RomFsFileSystem(storage);
                 default:
                     throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public IFileSystem OpenFileSystem(NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
+        {
+            return OpenFileSystem(GetSectionIndexFromType(type), integrityCheckLevel);
+        }
+
+        public IFileSystem OpenFileSystemWithPatch(NcaNew patchNca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
+        {
+            return OpenFileSystemWithPatch(patchNca, GetSectionIndexFromType(type), integrityCheckLevel);
+        }
+
+        public IStorage OpenRawStorage(NcaSectionType type)
+        {
+            return OpenRawStorage(GetSectionIndexFromType(type));
+        }
+
+        public IStorage OpenRawStorageWithPatch(NcaNew patchNca, NcaSectionType type)
+        {
+            return OpenRawStorageWithPatch(patchNca, GetSectionIndexFromType(type));
+        }
+
+        public IStorage OpenStorage(NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
+        {
+            return OpenStorage(GetSectionIndexFromType(type), integrityCheckLevel);
+        }
+
+        public IStorage OpenStorageWithPatch(NcaNew patchNca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
+        {
+            return OpenStorageWithPatch(patchNca, GetSectionIndexFromType(type), integrityCheckLevel);
+        }
+
+        public IStorage OpenDecryptedNca()
+        {
+            var builder = new ConcatenationStorageBuilder();
+            builder.Add(OpenDecryptedHeaderStorage(), 0);
+
+            for (int i = 0; i < NcaHeaderNew.SectionCount; i++)
+            {
+                if (Header.IsSectionEnabled(i))
+                {
+                    builder.Add(OpenRawStorage(i), Header.GetSectionStartOffset(i));
+                }
+            }
+
+            return builder.Build();
+        }
+
+        private int GetSectionIndexFromType(NcaSectionType type)
+        {
+            return SectionIndexFromType(type, Header.ContentType);
+        }
+
+        public static int SectionIndexFromType(NcaSectionType type, ContentType contentType)
+        {
+            switch (type)
+            {
+                case NcaSectionType.Code when contentType == ContentType.Program: return 0;
+                case NcaSectionType.Data when contentType == ContentType.Program: return 1;
+                case NcaSectionType.Logo when contentType == ContentType.Program: return 2;
+                case NcaSectionType.Data: return 0;
+                default: throw new ArgumentOutOfRangeException(nameof(type), "NCA does not contain this section type.");
+            }
+        }
+
+        public static NcaSectionType SectionTypeFromIndex(int index, ContentType contentType)
+        {
+            switch (index)
+            {
+                case 0 when contentType == ContentType.Program: return NcaSectionType.Code;
+                case 1 when contentType == ContentType.Program: return NcaSectionType.Data;
+                case 2 when contentType == ContentType.Program: return NcaSectionType.Logo;
+                case 0: return NcaSectionType.Data;
+                default: throw new ArgumentOutOfRangeException(nameof(index), "NCA type does not contain this index.");
             }
         }
 

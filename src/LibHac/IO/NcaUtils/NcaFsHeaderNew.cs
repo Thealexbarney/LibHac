@@ -59,6 +59,11 @@ namespace LibHac.IO.NcaUtils
             return new NcaFsPatchInfo(_header.Slice(PatchInfoOffset, PatchInfoSize));
         }
 
+        public bool IsPatchSection()
+        {
+            return GetPatchInfo().RelocationTreeSize != 0;
+        }
+
         public ulong Counter
         {
             get => Header.UpperCounter;

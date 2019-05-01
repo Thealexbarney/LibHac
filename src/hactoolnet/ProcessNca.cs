@@ -13,24 +13,23 @@ namespace hactoolnet
         {
             using (IStorage file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
-                var nca = new Nca(ctx.Keyset, file, false);
+                var nca = new NcaNew(ctx.Keyset, file);
 
                 if (ctx.Options.HeaderOut != null)
                 {
                     using (var outHeader = new FileStream(ctx.Options.HeaderOut, FileMode.Create, FileAccess.ReadWrite))
                     {
-                        nca.OpenHeaderStorage().Slice(0, 0xc00).CopyToStream(outHeader);
+                        nca.OpenDecryptedHeaderStorage().Slice(0, 0xc00).CopyToStream(outHeader);
                     }
                 }
 
-                nca.ValidateMasterHashes();
-                nca.ParseNpdm();
+                // nca.ParseNpdm();
 
                 if (ctx.Options.BaseNca != null)
                 {
                     IStorage baseFile = new LocalStorage(ctx.Options.BaseNca, FileAccess.Read);
-                    var baseNca = new Nca(ctx.Keyset, baseFile, false);
-                    nca.SetBaseNca(baseNca);
+                    var baseNca = new NcaNew(ctx.Keyset, baseFile);
+                    // nca.SetBaseNca(baseNca);
                 }
 
                 for (int i = 0; i < 3; i++)
@@ -47,7 +46,7 @@ namespace hactoolnet
 
                     if (ctx.Options.Validate && nca.SectionExists(i))
                     {
-                        nca.VerifySection(i, ctx.Logger);
+                        //nca.VerifySection(i, ctx.Logger);
                     }
                 }
 
@@ -135,41 +134,43 @@ namespace hactoolnet
             }
         }
 
-        private static string Print(this Nca nca)
+        private static string Print(this NcaNew nca)
         {
+            int masterKey = Keyset.GetMasterKeyRevisionFromKeyGeneration(nca.Header.KeyGeneration);
+
             int colLen = 36;
             var sb = new StringBuilder();
             sb.AppendLine();
 
             sb.AppendLine("NCA:");
-            PrintItem(sb, colLen, "Magic:", nca.Header.Magic);
-            PrintItem(sb, colLen, $"Fixed-Key Signature{nca.Header.FixedSigValidity.GetValidityString()}:", nca.Header.Signature1);
-            PrintItem(sb, colLen, $"NPDM Signature{nca.Header.NpdmSigValidity.GetValidityString()}:", nca.Header.Signature2);
+            PrintItem(sb, colLen, "Magic:", MagicToString(nca.Header.Magic));
+            //PrintItem(sb, colLen, $"Fixed-Key Signature{nca.Header.FixedSigValidity.GetValidityString()}:", nca.Header.Signature1.ToArray());
+            //PrintItem(sb, colLen, $"NPDM Signature{nca.Header.NpdmSigValidity.GetValidityString()}:", nca.Header.Signature2.ToArray());
             PrintItem(sb, colLen, "Content Size:", $"0x{nca.Header.NcaSize:x12}");
             PrintItem(sb, colLen, "TitleID:", $"{nca.Header.TitleId:X16}");
             PrintItem(sb, colLen, "SDK Version:", nca.Header.SdkVersion);
-            PrintItem(sb, colLen, "Distribution type:", nca.Header.Distribution);
+            PrintItem(sb, colLen, "Distribution type:", nca.Header.DistributionType);
             PrintItem(sb, colLen, "Content Type:", nca.Header.ContentType);
-            PrintItem(sb, colLen, "Master Key Revision:", $"{nca.CryptoType} ({Util.GetKeyRevisionSummary(nca.CryptoType)})");
-            PrintItem(sb, colLen, "Encryption Type:", $"{(nca.HasRightsId ? "Titlekey crypto" : "Standard crypto")}");
+            PrintItem(sb, colLen, "Master Key Revision:", $"{masterKey} ({Util.GetKeyRevisionSummary(masterKey)})");
+            PrintItem(sb, colLen, "Encryption Type:", $"{(nca.Header.HasRightsId ? "Titlekey crypto" : "Standard crypto")}");
 
-            if (nca.HasRightsId)
+            if (nca.Header.HasRightsId)
             {
-                PrintItem(sb, colLen, "Rights ID:", nca.Header.RightsId);
+                PrintItem(sb, colLen, "Rights ID:", nca.Header.RightsId.ToArray());
             }
             else
             {
-                PrintItem(sb, colLen, "Key Area Encryption Key:", nca.Header.KaekInd);
+                PrintItem(sb, colLen, "Key Area Encryption Key:", nca.Header.KeyAreaKeyIndex);
                 sb.AppendLine("Key Area (Encrypted):");
                 for (int i = 0; i < 4; i++)
                 {
-                    PrintItem(sb, colLen, $"    Key {i} (Encrypted):", nca.Header.EncryptedKeys[i]);
+                    PrintItem(sb, colLen, $"    Key {i} (Encrypted):", nca.Header.GetEncryptedKey(i).ToArray());
                 }
 
                 sb.AppendLine("Key Area (Decrypted):");
                 for (int i = 0; i < 4; i++)
                 {
-                    PrintItem(sb, colLen, $"    Key {i} (Decrypted):", nca.DecryptedKeys[i]);
+                    PrintItem(sb, colLen, $"    Key {i} (Decrypted):", nca.GetDecryptedKey(i));
                 }
             }
 
@@ -183,24 +184,26 @@ namespace hactoolnet
 
                 for (int i = 0; i < 4; i++)
                 {
-                    NcaSection sect = nca.Sections[i];
-                    if (sect == null) continue;
+                    if (!nca.Header.IsSectionEnabled(i)) continue;
 
+                    NcaFsHeaderNew sectHeader = nca.Header.GetFsHeader(i);
                     bool isExefs = nca.Header.ContentType == ContentType.Program && i == 0;
 
                     sb.AppendLine($"    Section {i}:");
-                    PrintItem(sb, colLen, "        Offset:", $"0x{sect.Offset:x12}");
-                    PrintItem(sb, colLen, "        Size:", $"0x{sect.Size:x12}");
-                    PrintItem(sb, colLen, "        Partition Type:", isExefs ? "ExeFS" : sect.Type.ToString());
-                    PrintItem(sb, colLen, "        Section CTR:", sect.Header.Ctr);
+                    PrintItem(sb, colLen, "        Offset:", $"0x{nca.Header.GetSectionStartOffset(i):x12}");
+                    PrintItem(sb, colLen, "        Size:", $"0x{nca.Header.GetSectionSize(i):x12}");
+                    PrintItem(sb, colLen, "        Partition Type:", isExefs ? "ExeFS" : sectHeader.FormatType.ToString());
+                    PrintItem(sb, colLen, "        Section CTR:", $"{sectHeader.Counter:x16}");
 
-                    switch (sect.Header.HashType)
+                    switch (sectHeader.HashType)
                     {
                         case NcaHashType.Sha256:
-                            PrintSha256Hash(sect);
+                            PrintSha256Hash(sectHeader, i);
                             break;
                         case NcaHashType.Ivfc:
-                            PrintIvfcHash(sb, colLen, 8, sect.Header.IvfcInfo, IntegrityStorageType.RomFs);
+                            Validity masterHashValidity = nca.ValidateSectionMasterHash(i);
+
+                            PrintIvfcHashNew(sb, colLen, 8, sectHeader.GetIntegrityInfoIvfc(), IntegrityStorageType.RomFs, masterHashValidity);
                             break;
                         default:
                             sb.AppendLine("        Unknown/invalid superblock!");
@@ -209,18 +212,18 @@ namespace hactoolnet
                 }
             }
 
-            void PrintSha256Hash(NcaSection sect)
+            void PrintSha256Hash(NcaFsHeaderNew sect, int index)
             {
-                Sha256Info hashInfo = sect.Header.Sha256Info;
+                NcaFsIntegrityInfoSha256 hashInfo = sect.GetIntegrityInfoSha256();
 
-                PrintItem(sb, colLen, $"        Master Hash{sect.MasterHashValidity.GetValidityString()}:", hashInfo.MasterHash);
-                sb.AppendLine($"        Hash Table{sect.Header.Sha256Info.HashValidity.GetValidityString()}:");
+                PrintItem(sb, colLen, $"        Master Hash{nca.ValidateSectionMasterHash(index).GetValidityString()}:", hashInfo.MasterHash.ToArray());
+                //sb.AppendLine($"        Hash Table{sect.Header.Sha256Info.HashValidity.GetValidityString()}:");
 
-                PrintItem(sb, colLen, "            Offset:", $"0x{hashInfo.HashTableOffset:x12}");
-                PrintItem(sb, colLen, "            Size:", $"0x{hashInfo.HashTableSize:x12}");
+                PrintItem(sb, colLen, "            Offset:", $"0x{hashInfo.GetLevelOffset(0):x12}");
+                PrintItem(sb, colLen, "            Size:", $"0x{hashInfo.GetLevelSize(0):x12}");
                 PrintItem(sb, colLen, "            Block Size:", $"0x{hashInfo.BlockSize:x}");
-                PrintItem(sb, colLen, "        PFS0 Offset:", $"0x{hashInfo.DataOffset:x12}");
-                PrintItem(sb, colLen, "        PFS0 Size:", $"0x{hashInfo.DataSize:x12}");
+                PrintItem(sb, colLen, "        PFS0 Offset:", $"0x{hashInfo.GetLevelOffset(1):x12}");
+                PrintItem(sb, colLen, "        PFS0 Size:", $"0x{hashInfo.GetLevelSize(1):x12}");
             }
         }
     }

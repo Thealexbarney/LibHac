@@ -8,8 +8,8 @@ namespace LibHac.IO.NcaUtils
     {
         private const int MasterHashOffset = 0;
         private const int MasterHashSize = 0x20;
-        private const int Sha256LevelOffset = 0x10;
-        private const int Sha256LevelSize = 0x18;
+        private const int Sha256LevelOffset = 0x28;
+        private const int Sha256LevelSize = 0x10;
 
         private Memory<byte> _data;
 
