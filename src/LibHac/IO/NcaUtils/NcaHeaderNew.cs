@@ -37,7 +37,6 @@ namespace LibHac.IO.NcaUtils
 
         private ref NcaHeaderStruct Header => ref Unsafe.As<byte, NcaHeaderStruct>(ref _header.Span[0]);
 
-
         public Span<byte> Signature1 => _header.Span.Slice(0, 0x100);
         public Span<byte> Signature2 => _header.Span.Slice(0x100, 0x100);
 
@@ -232,6 +231,16 @@ namespace LibHac.IO.NcaUtils
             }
 
             return buf;
+        }
+
+        public Validity VerifySignature1(byte[] modulus)
+        {
+            return Crypto.Rsa2048PssVerify(_header.Span.Slice(0x200, 0x200).ToArray(), Signature1.ToArray(), modulus);
+        }
+
+        public Validity VerifySignature2(byte[] modulus)
+        {
+            return Crypto.Rsa2048PssVerify(_header.Span.Slice(0x200, 0x200).ToArray(), Signature2.ToArray(), modulus);
         }
 
         [StructLayout(LayoutKind.Explicit, Size = 0xC00)]

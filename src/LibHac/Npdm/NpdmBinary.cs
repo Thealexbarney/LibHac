@@ -24,6 +24,8 @@ namespace LibHac.Npdm
         public Aci0 Aci0 { get; }
         public Acid AciD { get; }
 
+        public NpdmBinary(Stream stream) : this(stream, null) { }
+
         public NpdmBinary(Stream stream, Keyset keyset)
         {
             var reader = new BinaryReader(stream);

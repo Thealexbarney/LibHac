@@ -3,6 +3,7 @@ using System.Text;
 using LibHac;
 using LibHac.IO;
 using LibHac.IO.NcaUtils;
+using LibHac.Npdm;
 using static hactoolnet.Print;
 
 namespace hactoolnet
@@ -134,6 +135,19 @@ namespace hactoolnet
             }
         }
 
+        private static Validity VerifySignature2(this NcaNew nca)
+        {
+            if (nca.Header.ContentType != ContentType.Program) return Validity.Unchecked;
+
+            IFileSystem pfs = nca.OpenFileSystem(NcaSectionType.Code, IntegrityCheckLevel.ErrorOnInvalid);
+            if (!pfs.FileExists("main.npdm")) return Validity.Unchecked;
+
+            IFile npdmStorage = pfs.OpenFile("main.npdm", OpenMode.Read);
+            var npdm = new NpdmBinary(npdmStorage.AsStream());
+
+            return nca.Header.VerifySignature2(npdm.AciD.Rsa2048Modulus);
+        }
+
         private static string Print(this NcaNew nca)
         {
             int masterKey = Keyset.GetMasterKeyRevisionFromKeyGeneration(nca.Header.KeyGeneration);
@@ -144,8 +158,8 @@ namespace hactoolnet
 
             sb.AppendLine("NCA:");
             PrintItem(sb, colLen, "Magic:", MagicToString(nca.Header.Magic));
-            //PrintItem(sb, colLen, $"Fixed-Key Signature{nca.Header.FixedSigValidity.GetValidityString()}:", nca.Header.Signature1.ToArray());
-            //PrintItem(sb, colLen, $"NPDM Signature{nca.Header.NpdmSigValidity.GetValidityString()}:", nca.Header.Signature2.ToArray());
+            PrintItem(sb, colLen, $"Fixed-Key Signature{nca.VerifyHeaderSignature().GetValidityString()}:", nca.Header.Signature1.ToArray());
+            PrintItem(sb, colLen, $"NPDM Signature{nca.VerifySignature2().GetValidityString()}:", nca.Header.Signature2.ToArray());
             PrintItem(sb, colLen, "Content Size:", $"0x{nca.Header.NcaSize:x12}");
             PrintItem(sb, colLen, "TitleID:", $"{nca.Header.TitleId:X16}");
             PrintItem(sb, colLen, "SDK Version:", nca.Header.SdkVersion);
@@ -217,7 +231,7 @@ namespace hactoolnet
                 NcaFsIntegrityInfoSha256 hashInfo = sect.GetIntegrityInfoSha256();
 
                 PrintItem(sb, colLen, $"        Master Hash{nca.ValidateSectionMasterHash(index).GetValidityString()}:", hashInfo.MasterHash.ToArray());
-                //sb.AppendLine($"        Hash Table{sect.Header.Sha256Info.HashValidity.GetValidityString()}:");
+                sb.AppendLine($"        Hash Table:");
 
                 PrintItem(sb, colLen, "            Offset:", $"0x{hashInfo.GetLevelOffset(0):x12}");
                 PrintItem(sb, colLen, "            Size:", $"0x{hashInfo.GetLevelSize(0):x12}");

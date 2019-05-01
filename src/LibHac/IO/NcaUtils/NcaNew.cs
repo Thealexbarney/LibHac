@@ -453,5 +453,10 @@ namespace LibHac.IO.NcaUtils
 
             return new ConcatenationStorage(sources, true);
         }
+
+        public Validity VerifyHeaderSignature()
+        {
+            return Header.VerifySignature1(Keyset.NcaHdrFixedKeyModulus);
+        }
     }
 }
