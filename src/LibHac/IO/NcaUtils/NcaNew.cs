@@ -187,7 +187,7 @@ namespace LibHac.IO.NcaUtils
 
             if (patchInfo.RelocationTreeSize == 0)
             {
-                return baseStorage;
+                return patchStorage;
             }
 
             IStorage relocationTableStorage = patchStorage.Slice(patchInfo.RelocationTreeOffset, patchInfo.RelocationTreeSize);

@@ -15,6 +15,7 @@ namespace hactoolnet
             using (IStorage file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
                 var nca = new NcaNew(ctx.Keyset, file);
+                NcaNew baseNca = null;
 
                 if (ctx.Options.HeaderOut != null)
                 {
@@ -24,25 +25,23 @@ namespace hactoolnet
                     }
                 }
 
-                // nca.ParseNpdm();
-
                 if (ctx.Options.BaseNca != null)
                 {
                     IStorage baseFile = new LocalStorage(ctx.Options.BaseNca, FileAccess.Read);
-                    var baseNca = new NcaNew(ctx.Keyset, baseFile);
-                    // nca.SetBaseNca(baseNca);
+                    baseNca = new NcaNew(ctx.Keyset, baseFile);
                 }
 
                 for (int i = 0; i < 3; i++)
                 {
                     if (ctx.Options.SectionOut[i] != null)
                     {
-                        nca.ExportSection(i, ctx.Options.SectionOut[i], ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
+                        OpenStorage(i).WriteAllBytes(ctx.Options.SectionOut[i], ctx.Logger);
                     }
 
                     if (ctx.Options.SectionOutDir[i] != null)
                     {
-                        nca.ExtractSection(i, ctx.Options.SectionOutDir[i], ctx.Options.IntegrityLevel, ctx.Logger);
+                        IFileSystem fs = OpenFileSystem(i);
+                        fs.Extract(ctx.Options.SectionOutDir[i], ctx.Logger);
                     }
 
                     if (ctx.Options.Validate && nca.SectionExists(i))
@@ -53,7 +52,7 @@ namespace hactoolnet
 
                 if (ctx.Options.ListRomFs && nca.CanOpenSection(NcaSectionType.Data))
                 {
-                    IFileSystem romfs = nca.OpenFileSystem(NcaSectionType.Data, ctx.Options.IntegrityLevel);
+                    IFileSystem romfs = OpenFileSystemByType(NcaSectionType.Data);
 
                     foreach (DirectoryEntry entry in romfs.EnumerateEntries())
                     {
@@ -71,18 +70,19 @@ namespace hactoolnet
 
                     if (ctx.Options.RomfsOut != null)
                     {
-                        nca.ExportSection(NcaSectionType.Data, ctx.Options.RomfsOut, ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
+                        OpenStorageByType(NcaSectionType.Data).WriteAllBytes(ctx.Options.RomfsOut, ctx.Logger);
                     }
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        nca.ExtractSection(NcaSectionType.Data, ctx.Options.RomfsOutDir, ctx.Options.IntegrityLevel, ctx.Logger);
+                        IFileSystem fs = OpenFileSystemByType(NcaSectionType.Data);
+                        fs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
                     }
 
                     if (ctx.Options.ReadBench)
                     {
                         long bytesToRead = 1024L * 1024 * 1024 * 5;
-                        IStorage storage = nca.OpenStorage(NcaSectionType.Data, ctx.Options.IntegrityLevel);
+                        IStorage storage = OpenStorageByType(NcaSectionType.Data);
                         var dest = new NullStorage(storage.GetSize());
 
                         int iterations = (int)(bytesToRead / storage.GetSize()) + 1;
@@ -117,12 +117,13 @@ namespace hactoolnet
 
                     if (ctx.Options.ExefsOut != null)
                     {
-                        nca.ExportSection(NcaSectionType.Code, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
+                        OpenStorageByType(NcaSectionType.Code).WriteAllBytes(ctx.Options.ExefsOut, ctx.Logger);
                     }
 
                     if (ctx.Options.ExefsOutDir != null)
                     {
-                        nca.ExtractSection(NcaSectionType.Code, ctx.Options.ExefsOutDir, ctx.Options.IntegrityLevel, ctx.Logger);
+                        IFileSystem fs = OpenFileSystemByType(NcaSectionType.Code);
+                        fs.Extract(ctx.Options.ExefsOutDir, ctx.Logger);
                     }
                 }
 
@@ -132,6 +133,37 @@ namespace hactoolnet
                 }
 
                 if (!ctx.Options.ReadBench) ctx.Logger.LogMessage(nca.Print());
+
+                IStorage OpenStorage(int index)
+                {
+                    if (ctx.Options.Raw)
+                    {
+                        if (baseNca != null) return baseNca.OpenRawStorageWithPatch(nca, index);
+
+                        return nca.OpenRawStorage(index);
+                    }
+
+                    if (baseNca != null) return baseNca.OpenStorageWithPatch(nca, index, ctx.Options.IntegrityLevel);
+
+                    return nca.OpenStorage(index, ctx.Options.IntegrityLevel);
+                }
+
+                IFileSystem OpenFileSystem(int index)
+                {
+                    if (baseNca != null) return baseNca.OpenFileSystemWithPatch(nca, index, ctx.Options.IntegrityLevel);
+
+                    return nca.OpenFileSystem(index, ctx.Options.IntegrityLevel);
+                }
+
+                IStorage OpenStorageByType(NcaSectionType type)
+                {
+                    return OpenStorage(NcaNew.SectionIndexFromType(type, nca.Header.ContentType));
+                }
+
+                IFileSystem OpenFileSystemByType(NcaSectionType type)
+                {
+                    return OpenFileSystem(NcaNew.SectionIndexFromType(type, nca.Header.ContentType));
+                }
             }
         }
 
@@ -206,7 +238,7 @@ namespace hactoolnet
                     sb.AppendLine($"    Section {i}:");
                     PrintItem(sb, colLen, "        Offset:", $"0x{nca.Header.GetSectionStartOffset(i):x12}");
                     PrintItem(sb, colLen, "        Size:", $"0x{nca.Header.GetSectionSize(i):x12}");
-                    PrintItem(sb, colLen, "        Partition Type:", isExefs ? "ExeFS" : sectHeader.FormatType.ToString());
+                    PrintItem(sb, colLen, "        Partition Type:", (isExefs ? "ExeFS" : sectHeader.FormatType.ToString()) + (sectHeader.IsPatchSection() ? " patch" : ""));
                     PrintItem(sb, colLen, "        Section CTR:", $"{sectHeader.Counter:x16}");
 
                     switch (sectHeader.HashType)
