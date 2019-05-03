@@ -123,5 +123,36 @@ namespace LibHac.IO.NcaUtils
 
             return Validity.Valid;
         }
+
+        public static Validity VerifyNca(this NcaNew nca, IProgressReport logger = null, bool quiet = false)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                if (nca.CanOpenSection(i))
+                {
+                    Validity sectionValidity = VerifySection(nca, i, logger, quiet);
+
+                    if (sectionValidity == Validity.Invalid) return Validity.Invalid;
+                }
+            }
+
+            return Validity.Valid;
+        }
+
+        public static Validity VerifySection(this NcaNew nca, int index, IProgressReport logger = null, bool quiet = false)
+        {
+            NcaFsHeaderNew sect = nca.Header.GetFsHeader(index);
+            NcaHashType hashType = sect.HashType;
+            if (hashType != NcaHashType.Sha256 && hashType != NcaHashType.Ivfc) return Validity.Unchecked;
+
+            var stream = nca.OpenStorage(index, IntegrityCheckLevel.IgnoreOnInvalid, false)
+                as HierarchicalIntegrityVerificationStorage;
+            if (stream == null) return Validity.Unchecked;
+
+            if (!quiet) logger?.LogMessage($"Verifying section {index}...");
+            Validity validity = stream.Validate(true, logger);
+
+            return validity;
+        }
     }
 }

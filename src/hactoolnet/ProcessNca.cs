@@ -17,6 +17,8 @@ namespace hactoolnet
                 var nca = new NcaNew(ctx.Keyset, file);
                 NcaNew baseNca = null;
 
+                var ncaHolder = new NcaHolder { Nca = nca };
+
                 if (ctx.Options.HeaderOut != null)
                 {
                     using (var outHeader = new FileStream(ctx.Options.HeaderOut, FileMode.Create, FileAccess.ReadWrite))
@@ -29,6 +31,7 @@ namespace hactoolnet
                 {
                     IStorage baseFile = new LocalStorage(ctx.Options.BaseNca, FileAccess.Read);
                     baseNca = new NcaNew(ctx.Keyset, baseFile);
+                    ncaHolder.BaseNca = baseNca;
                 }
 
                 for (int i = 0; i < 3; i++)
@@ -46,7 +49,7 @@ namespace hactoolnet
 
                     if (ctx.Options.Validate && nca.SectionExists(i))
                     {
-                        //nca.VerifySection(i, ctx.Logger);
+                        ncaHolder.Validities[i] = nca.VerifySection(i, ctx.Logger);
                     }
                 }
 
@@ -132,7 +135,7 @@ namespace hactoolnet
                     nca.OpenDecryptedNca().WriteAllBytes(ctx.Options.PlaintextOut, ctx.Logger);
                 }
 
-                if (!ctx.Options.ReadBench) ctx.Logger.LogMessage(nca.Print());
+                if (!ctx.Options.ReadBench) ctx.Logger.LogMessage(ncaHolder.Print());
 
                 IStorage OpenStorage(int index)
                 {
@@ -180,8 +183,9 @@ namespace hactoolnet
             return nca.Header.VerifySignature2(npdm.AciD.Rsa2048Modulus);
         }
 
-        private static string Print(this NcaNew nca)
+        private static string Print(this NcaHolder ncaHolder)
         {
+            NcaNew nca = ncaHolder.Nca;
             int masterKey = Keyset.GetMasterKeyRevisionFromKeyGeneration(nca.Header.KeyGeneration);
 
             int colLen = 36;
@@ -240,6 +244,7 @@ namespace hactoolnet
                     PrintItem(sb, colLen, "        Size:", $"0x{nca.Header.GetSectionSize(i):x12}");
                     PrintItem(sb, colLen, "        Partition Type:", (isExefs ? "ExeFS" : sectHeader.FormatType.ToString()) + (sectHeader.IsPatchSection() ? " patch" : ""));
                     PrintItem(sb, colLen, "        Section CTR:", $"{sectHeader.Counter:x16}");
+                    PrintItem(sb, colLen, "        Section Validity:", $"{ncaHolder.Validities[i]}");
 
                     switch (sectHeader.HashType)
                     {
@@ -271,6 +276,13 @@ namespace hactoolnet
                 PrintItem(sb, colLen, "        PFS0 Offset:", $"0x{hashInfo.GetLevelOffset(1):x12}");
                 PrintItem(sb, colLen, "        PFS0 Size:", $"0x{hashInfo.GetLevelSize(1):x12}");
             }
+        }
+
+        private class NcaHolder
+        {
+            public NcaNew Nca;
+            public NcaNew BaseNca;
+            public Validity[] Validities = new Validity[4];
         }
     }
 }
