@@ -458,5 +458,50 @@ namespace LibHac.IO.NcaUtils
         {
             return Header.VerifySignature1(Keyset.NcaHdrFixedKeyModulus);
         }
+
+        internal void GenerateAesCounter(int sectionIndex, CnmtContentType type, int minorVersion)
+        {
+            int counterType;
+            int counterVersion;
+
+            NcaFsHeaderNew header = Header.GetFsHeader(sectionIndex);
+            if (header.EncryptionType != NcaEncryptionType.AesCtr &&
+                header.EncryptionType != NcaEncryptionType.AesCtrEx) return;
+
+            switch (type)
+            {
+                case CnmtContentType.Program:
+                    counterType = sectionIndex + 1;
+                    break;
+                case CnmtContentType.HtmlDocument:
+                    counterType = (int)CnmtContentType.HtmlDocument;
+                    break;
+                case CnmtContentType.LegalInformation:
+                    counterType = (int)CnmtContentType.LegalInformation;
+                    break;
+                default:
+                    counterType = 0;
+                    break;
+            }
+
+            // Version of firmware NCAs appears to always be 0
+            // Haven't checked delta fragment NCAs
+            switch (Header.ContentType)
+            {
+                case ContentType.Program:
+                case ContentType.Manual:
+                    counterVersion = Math.Max(minorVersion - 1, 0);
+                    break;
+                case ContentType.PublicData:
+                    counterVersion = minorVersion << 16;
+                    break;
+                default:
+                    counterVersion = 0;
+                    break;
+            }
+
+            header.CounterType = counterType;
+            header.CounterVersion = counterVersion;
+        }
     }
 }

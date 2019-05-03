@@ -70,6 +70,18 @@ namespace LibHac.IO.NcaUtils
             set => Header.UpperCounter = value;
         }
 
+        public int CounterType
+        {
+            get => Header.CounterType;
+            set => Header.CounterType = value;
+        }
+
+        public int CounterVersion
+        {
+            get => Header.CounterVersion;
+            set => Header.CounterVersion = value;
+        }
+
         [StructLayout(LayoutKind.Explicit)]
         private struct FsHeaderStruct
         {
@@ -78,6 +90,8 @@ namespace LibHac.IO.NcaUtils
             [FieldOffset(3)] public byte HashType;
             [FieldOffset(4)] public byte EncryptionType;
             [FieldOffset(0x140)] public ulong UpperCounter;
+            [FieldOffset(0x140)] public int CounterType;
+            [FieldOffset(0x144)] public int CounterVersion;
         }
     }
 }
