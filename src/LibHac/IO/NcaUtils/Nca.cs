@@ -428,16 +428,9 @@ namespace LibHac.IO.NcaUtils
 
         private int ReadHeaderVersion(IStorage header)
         {
-            if (Header != null)
-            {
-                return Header.Version;
-            }
-            else
-            {
-                Span<byte> buf = stackalloc byte[1];
-                header.Read(buf, 0x203);
-                return buf[0] - '0';
-            }
+            Span<byte> buf = stackalloc byte[1];
+            header.Read(buf, 0x203);
+            return buf[0] - '0';
         }
 
         private IStorage OpenNca2Header(long size)

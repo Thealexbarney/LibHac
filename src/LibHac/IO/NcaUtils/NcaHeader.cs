@@ -5,14 +5,14 @@ using System.Runtime.InteropServices;
 
 namespace LibHac.IO.NcaUtils
 {
-    public class NcaHeader
+    public struct NcaHeader
     {
         internal const int HeaderSize = 0xC00;
         internal const int HeaderSectorSize = 0x200;
         internal const int BlockSize = 0x200;
         internal const int SectionCount = 4;
 
-        private Memory<byte> _header;
+        private readonly Memory<byte> _header;
 
         public NcaHeader(IStorage headerStorage)
         {

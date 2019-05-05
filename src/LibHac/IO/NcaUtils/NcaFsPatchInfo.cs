@@ -4,9 +4,9 @@ using System.Runtime.InteropServices;
 
 namespace LibHac.IO.NcaUtils
 {
-    public class NcaFsPatchInfo
+    public struct NcaFsPatchInfo
     {
-        private Memory<byte> _data;
+        private readonly Memory<byte> _data;
 
         public NcaFsPatchInfo(Memory<byte> data)
         {

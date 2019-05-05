@@ -4,9 +4,9 @@ using System.Runtime.InteropServices;
 
 namespace LibHac.IO.NcaUtils
 {
-    public class NcaFsIntegrityInfoIvfc
+    public struct NcaFsIntegrityInfoIvfc
     {
-        private Memory<byte> _data;
+        private readonly Memory<byte> _data;
 
         public NcaFsIntegrityInfoIvfc(Memory<byte> data)
         {

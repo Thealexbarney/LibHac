@@ -4,9 +4,9 @@ using System.Runtime.InteropServices;
 
 namespace LibHac.IO.NcaUtils
 {
-    public class NcaFsHeader
+    public struct NcaFsHeader
     {
-        private Memory<byte> _header;
+        private readonly Memory<byte> _header;
 
         public NcaFsHeader(Memory<byte> headerData)
         {
