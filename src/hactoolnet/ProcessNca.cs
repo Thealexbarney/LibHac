@@ -49,7 +49,14 @@ namespace hactoolnet
 
                     if (ctx.Options.Validate && nca.SectionExists(i))
                     {
-                        ncaHolder.Validities[i] = nca.VerifySection(i, ctx.Logger);
+                        if (nca.Header.GetFsHeader(i).IsPatchSection() && baseNca != null)
+                        {
+                            ncaHolder.Validities[i] = baseNca.VerifySection(nca, i, ctx.Logger);
+                        }
+                        else
+                        {
+                            ncaHolder.Validities[i] = nca.VerifySection(i, ctx.Logger);
+                        }
                     }
                 }
 
