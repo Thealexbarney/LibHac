@@ -41,24 +41,6 @@ namespace LibHac.IO
         }
     }
 
-    public class BucketTreeHeader
-    {
-        public string Magic;
-        public int Version;
-        public int NumEntries;
-        public int FieldC;
-
-        public BucketTreeHeader(IStorage storage)
-        {
-            var reader = new BinaryReader(storage.AsStream());
-
-            Magic = reader.ReadAscii(4);
-            Version = reader.ReadInt32();
-            NumEntries = reader.ReadInt32();
-            FieldC = reader.ReadInt32();
-        }
-    }
-
     public class BucketTreeBucket<T> where T : BucketTreeEntry<T>, new()
     {
         public int Index;
