@@ -73,7 +73,7 @@ namespace LibHac
                 {
                     IStorage storage = ContentFs.OpenFile(fileEntry.FullPath, OpenMode.Read).AsStorage();
 
-                    nca = new SwitchFsNca(new NcaNew(Keyset, storage));
+                    nca = new SwitchFsNca(new Nca(Keyset, storage));
 
                     nca.NcaId = Path.GetFileNameWithoutExtension(fileEntry.Name);
                     string extension = nca.Nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
@@ -233,12 +233,12 @@ namespace LibHac
 
     public class SwitchFsNca
     {
-        public NcaNew Nca { get; set; }
-        public NcaNew BaseNca { get; set; }
+        public Nca Nca { get; set; }
+        public Nca BaseNca { get; set; }
         public string NcaId { get; set; }
         public string Filename { get; set; }
 
-        public SwitchFsNca(NcaNew nca)
+        public SwitchFsNca(Nca nca)
         {
             Nca = nca;
         }
@@ -259,12 +259,12 @@ namespace LibHac
 
         public IStorage OpenStorage(NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
         {
-            return OpenStorage(NcaNew.SectionIndexFromType(type, Nca.Header.ContentType), integrityCheckLevel);
+            return OpenStorage(Nca.SectionIndexFromType(type, Nca.Header.ContentType), integrityCheckLevel);
         }
 
         public IFileSystem OpenFileSystem(NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
         {
-            return OpenFileSystem(NcaNew.SectionIndexFromType(type, Nca.Header.ContentType), integrityCheckLevel);
+            return OpenFileSystem(Nca.SectionIndexFromType(type, Nca.Header.ContentType), integrityCheckLevel);
         }
 
         public Validity VerifyNca(IProgressReport logger = null, bool quiet = false)

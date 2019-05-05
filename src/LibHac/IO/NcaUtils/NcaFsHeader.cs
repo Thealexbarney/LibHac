@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace LibHac.IO.NcaUtils
 {
-    public class NcaFsHeaderNew
+    public class NcaFsHeader
     {
         private const int IntegrityInfoOffset = 8;
         private const int IntegrityInfoSize = 0xF8;
@@ -13,7 +13,7 @@ namespace LibHac.IO.NcaUtils
 
         private Memory<byte> _header;
 
-        public NcaFsHeaderNew(Memory<byte> headerData)
+        public NcaFsHeader(Memory<byte> headerData)
         {
             _header = headerData;
         }

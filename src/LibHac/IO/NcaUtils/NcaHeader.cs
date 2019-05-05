@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace LibHac.IO.NcaUtils
 {
-    public class NcaHeaderNew
+    public class NcaHeader
     {
         internal const int HeaderSize = 0xC00;
         internal const int HeaderSectorSize = 0x200;
@@ -24,13 +24,13 @@ namespace LibHac.IO.NcaUtils
 
         private Memory<byte> _header;
 
-        public NcaHeaderNew(IStorage headerStorage)
+        public NcaHeader(IStorage headerStorage)
         {
             _header = new byte[HeaderSize];
             headerStorage.Read(_header.Span, 0);
         }
 
-        public NcaHeaderNew(Keyset keyset, IStorage headerStorage)
+        public NcaHeader(Keyset keyset, IStorage headerStorage)
         {
             _header = DecryptHeader(keyset, headerStorage);
         }
@@ -160,7 +160,7 @@ namespace LibHac.IO.NcaUtils
             return _header.Span.Slice(offset, Crypto.Aes128Size);
         }
 
-        public NcaFsHeaderNew GetFsHeader(int index)
+        public NcaFsHeader GetFsHeader(int index)
         {
             Span<byte> expectedHash = GetFsHeaderHash(index);
 
@@ -174,7 +174,7 @@ namespace LibHac.IO.NcaUtils
                 throw new InvalidDataException("FS header hash is invalid.");
             }
 
-            return new NcaFsHeaderNew(headerData);
+            return new NcaFsHeader(headerData);
         }
 
         private static void ValidateSectionIndex(int index)

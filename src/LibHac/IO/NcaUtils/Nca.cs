@@ -6,18 +6,18 @@ using LibHac.IO.RomFs;
 
 namespace LibHac.IO.NcaUtils
 {
-    public class NcaNew
+    public class Nca
     {
         private Keyset Keyset { get; }
         public IStorage BaseStorage { get; }
 
-        public NcaHeaderNew Header { get; }
+        public NcaHeader Header { get; }
 
-        public NcaNew(Keyset keyset, IStorage storage)
+        public Nca(Keyset keyset, IStorage storage)
         {
             Keyset = keyset;
             BaseStorage = storage;
-            Header = new NcaHeaderNew(keyset, storage);
+            Header = new NcaHeader(keyset, storage);
         }
 
         public byte[] GetDecryptedKey(int index)
@@ -112,7 +112,7 @@ namespace LibHac.IO.NcaUtils
 
         private IStorage OpenDecryptedStorage(IStorage baseStorage, int index)
         {
-            NcaFsHeaderNew header = Header.GetFsHeader(index);
+            NcaFsHeader header = Header.GetFsHeader(index);
 
             switch (header.EncryptionType)
             {
@@ -137,7 +137,7 @@ namespace LibHac.IO.NcaUtils
 
         private IStorage OpenAesCtrStorage(IStorage baseStorage, int index)
         {
-            NcaFsHeaderNew fsHeader = Header.GetFsHeader(index);
+            NcaFsHeader fsHeader = Header.GetFsHeader(index);
             byte[] key = GetContentKey(NcaKeyType.AesCtr);
             byte[] counter = Aes128CtrStorage.CreateCounter(fsHeader.Counter, Header.GetSectionStartOffset(index));
 
@@ -147,7 +147,7 @@ namespace LibHac.IO.NcaUtils
 
         private IStorage OpenAesCtrExStorage(IStorage baseStorage, int index)
         {
-            NcaFsHeaderNew fsHeader = Header.GetFsHeader(index);
+            NcaFsHeader fsHeader = Header.GetFsHeader(index);
             NcaFsPatchInfo info = fsHeader.GetPatchInfo();
 
             long sectionOffset = Header.GetSectionStartOffset(index);
@@ -178,12 +178,12 @@ namespace LibHac.IO.NcaUtils
             return decryptedStorage;
         }
 
-        public IStorage OpenRawStorageWithPatch(NcaNew patchNca, int index)
+        public IStorage OpenRawStorageWithPatch(Nca patchNca, int index)
         {
             IStorage patchStorage = patchNca.OpenRawStorage(index);
             IStorage baseStorage = OpenRawStorage(index);
 
-            NcaFsHeaderNew header = patchNca.Header.GetFsHeader(index);
+            NcaFsHeader header = patchNca.Header.GetFsHeader(index);
             NcaFsPatchInfo patchInfo = header.GetPatchInfo();
 
             if (patchInfo.RelocationTreeSize == 0)
@@ -199,7 +199,7 @@ namespace LibHac.IO.NcaUtils
         public IStorage OpenStorage(int index, IntegrityCheckLevel integrityCheckLevel)
         {
             IStorage rawStorage = OpenRawStorage(index);
-            NcaFsHeaderNew header = Header.GetFsHeader(index);
+            NcaFsHeader header = Header.GetFsHeader(index);
 
             if (header.EncryptionType == NcaEncryptionType.AesCtrEx)
             {
@@ -217,10 +217,10 @@ namespace LibHac.IO.NcaUtils
             }
         }
 
-        public IStorage OpenStorageWithPatch(NcaNew patchNca, int index, IntegrityCheckLevel integrityCheckLevel)
+        public IStorage OpenStorageWithPatch(Nca patchNca, int index, IntegrityCheckLevel integrityCheckLevel)
         {
             IStorage rawStorage = OpenRawStorageWithPatch(patchNca, index);
-            NcaFsHeaderNew header = patchNca.Header.GetFsHeader(index);
+            NcaFsHeader header = patchNca.Header.GetFsHeader(index);
 
             switch (header.HashType)
             {
@@ -236,20 +236,20 @@ namespace LibHac.IO.NcaUtils
         public IFileSystem OpenFileSystem(int index, IntegrityCheckLevel integrityCheckLevel)
         {
             IStorage storage = OpenStorage(index, integrityCheckLevel);
-            NcaFsHeaderNew header = Header.GetFsHeader(index);
+            NcaFsHeader header = Header.GetFsHeader(index);
 
             return OpenFileSystem(storage, header);
         }
 
-        public IFileSystem OpenFileSystemWithPatch(NcaNew patchNca, int index, IntegrityCheckLevel integrityCheckLevel)
+        public IFileSystem OpenFileSystemWithPatch(Nca patchNca, int index, IntegrityCheckLevel integrityCheckLevel)
         {
             IStorage storage = OpenStorageWithPatch(patchNca, index, integrityCheckLevel);
-            NcaFsHeaderNew header = Header.GetFsHeader(index);
+            NcaFsHeader header = Header.GetFsHeader(index);
 
             return OpenFileSystem(storage, header);
         }
 
-        private IFileSystem OpenFileSystem(IStorage storage, NcaFsHeaderNew header)
+        private IFileSystem OpenFileSystem(IStorage storage, NcaFsHeader header)
         {
             switch (header.FormatType)
             {
@@ -267,7 +267,7 @@ namespace LibHac.IO.NcaUtils
             return OpenFileSystem(GetSectionIndexFromType(type), integrityCheckLevel);
         }
 
-        public IFileSystem OpenFileSystemWithPatch(NcaNew patchNca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
+        public IFileSystem OpenFileSystemWithPatch(Nca patchNca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
         {
             return OpenFileSystemWithPatch(patchNca, GetSectionIndexFromType(type), integrityCheckLevel);
         }
@@ -277,7 +277,7 @@ namespace LibHac.IO.NcaUtils
             return OpenRawStorage(GetSectionIndexFromType(type));
         }
 
-        public IStorage OpenRawStorageWithPatch(NcaNew patchNca, NcaSectionType type)
+        public IStorage OpenRawStorageWithPatch(Nca patchNca, NcaSectionType type)
         {
             return OpenRawStorageWithPatch(patchNca, GetSectionIndexFromType(type));
         }
@@ -287,7 +287,7 @@ namespace LibHac.IO.NcaUtils
             return OpenStorage(GetSectionIndexFromType(type), integrityCheckLevel);
         }
 
-        public IStorage OpenStorageWithPatch(NcaNew patchNca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
+        public IStorage OpenStorageWithPatch(Nca patchNca, NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
         {
             return OpenStorageWithPatch(patchNca, GetSectionIndexFromType(type), integrityCheckLevel);
         }
@@ -297,7 +297,7 @@ namespace LibHac.IO.NcaUtils
             var builder = new ConcatenationStorageBuilder();
             builder.Add(OpenDecryptedHeaderStorage(), 0);
 
-            for (int i = 0; i < NcaHeaderNew.SectionCount; i++)
+            for (int i = 0; i < NcaHeader.SectionCount; i++)
             {
                 if (Header.IsSectionEnabled(i))
                 {
@@ -404,7 +404,7 @@ namespace LibHac.IO.NcaUtils
             bool hasEnabledSection = false;
 
             // Encrypted portion continues until the first section
-            for (int i = 0; i < NcaHeaderNew.SectionCount; i++)
+            for (int i = 0; i < NcaHeader.SectionCount; i++)
             {
                 if (Header.IsSectionEnabled(i))
                 {
@@ -413,9 +413,9 @@ namespace LibHac.IO.NcaUtils
                 }
             }
 
-            long headerSize = hasEnabledSection ? NcaHeaderNew.HeaderSize : firstSectionOffset;
+            long headerSize = hasEnabledSection ? NcaHeader.HeaderSize : firstSectionOffset;
 
-            IStorage header = new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, headerSize), Keyset.HeaderKey, NcaHeaderNew.HeaderSectorSize, true), 1, true);
+            IStorage header = new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, headerSize), Keyset.HeaderKey, NcaHeader.HeaderSectorSize, true), 1, true);
             int version = ReadHeaderVersion(header);
 
             if (version == 2)
@@ -442,7 +442,7 @@ namespace LibHac.IO.NcaUtils
 
         private IStorage OpenNca2Header(long size)
         {
-            const int sectorSize = NcaHeaderNew.HeaderSectorSize;
+            const int sectorSize = NcaHeader.HeaderSectorSize;
 
             var sources = new List<IStorage>();
             sources.Add(new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, 0x400), Keyset.HeaderKey, sectorSize, true), 1, true));
@@ -465,7 +465,7 @@ namespace LibHac.IO.NcaUtils
             int counterType;
             int counterVersion;
 
-            NcaFsHeaderNew header = Header.GetFsHeader(sectionIndex);
+            NcaFsHeader header = Header.GetFsHeader(sectionIndex);
             if (header.EncryptionType != NcaEncryptionType.AesCtr &&
                 header.EncryptionType != NcaEncryptionType.AesCtrEx) return;
 

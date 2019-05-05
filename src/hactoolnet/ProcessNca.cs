@@ -14,8 +14,8 @@ namespace hactoolnet
         {
             using (IStorage file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
-                var nca = new NcaNew(ctx.Keyset, file);
-                NcaNew baseNca = null;
+                var nca = new Nca(ctx.Keyset, file);
+                Nca baseNca = null;
 
                 var ncaHolder = new NcaHolder { Nca = nca };
 
@@ -30,7 +30,7 @@ namespace hactoolnet
                 if (ctx.Options.BaseNca != null)
                 {
                     IStorage baseFile = new LocalStorage(ctx.Options.BaseNca, FileAccess.Read);
-                    baseNca = new NcaNew(ctx.Keyset, baseFile);
+                    baseNca = new Nca(ctx.Keyset, baseFile);
                     ncaHolder.BaseNca = baseNca;
                 }
 
@@ -160,17 +160,17 @@ namespace hactoolnet
 
                 IStorage OpenStorageByType(NcaSectionType type)
                 {
-                    return OpenStorage(NcaNew.SectionIndexFromType(type, nca.Header.ContentType));
+                    return OpenStorage(Nca.SectionIndexFromType(type, nca.Header.ContentType));
                 }
 
                 IFileSystem OpenFileSystemByType(NcaSectionType type)
                 {
-                    return OpenFileSystem(NcaNew.SectionIndexFromType(type, nca.Header.ContentType));
+                    return OpenFileSystem(Nca.SectionIndexFromType(type, nca.Header.ContentType));
                 }
             }
         }
 
-        private static Validity VerifySignature2(this NcaNew nca)
+        private static Validity VerifySignature2(this Nca nca)
         {
             if (nca.Header.ContentType != ContentType.Program) return Validity.Unchecked;
 
@@ -185,7 +185,7 @@ namespace hactoolnet
 
         private static string Print(this NcaHolder ncaHolder)
         {
-            NcaNew nca = ncaHolder.Nca;
+            Nca nca = ncaHolder.Nca;
             int masterKey = Keyset.GetMasterKeyRevisionFromKeyGeneration(nca.Header.KeyGeneration);
 
             int colLen = 36;
@@ -236,7 +236,7 @@ namespace hactoolnet
                 {
                     if (!nca.Header.IsSectionEnabled(i)) continue;
 
-                    NcaFsHeaderNew sectHeader = nca.Header.GetFsHeader(i);
+                    NcaFsHeader sectHeader = nca.Header.GetFsHeader(i);
                     bool isExefs = nca.Header.ContentType == ContentType.Program && i == 0;
 
                     sb.AppendLine($"    Section {i}:");
@@ -263,7 +263,7 @@ namespace hactoolnet
                 }
             }
 
-            void PrintSha256Hash(NcaFsHeaderNew sect, int index)
+            void PrintSha256Hash(NcaFsHeader sect, int index)
             {
                 NcaFsIntegrityInfoSha256 hashInfo = sect.GetIntegrityInfoSha256();
 
@@ -280,8 +280,8 @@ namespace hactoolnet
 
         private class NcaHolder
         {
-            public NcaNew Nca;
-            public NcaNew BaseNca;
+            public Nca Nca;
+            public Nca BaseNca;
             public Validity[] Validities = new Validity[4];
         }
     }
