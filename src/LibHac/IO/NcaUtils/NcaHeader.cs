@@ -12,16 +12,6 @@ namespace LibHac.IO.NcaUtils
         internal const int BlockSize = 0x200;
         internal const int SectionCount = 4;
 
-        private const int RightsIdOffset = 0x230;
-        private const int RightsIdSize = 0x10;
-        private const int SectionEntryOffset = 0x240;
-        private const int SectionEntrySize = 0x10;
-        private const int FsHeaderHashOffset = 0x280;
-        private const int FsHeaderHashSize = 0x20;
-        private const int KeyAreaOffset = 0x300;
-        private const int FsHeaderOffset = 0x400;
-        private const int FsHeaderSize = 0x200;
-
         private Memory<byte> _header;
 
         public NcaHeader(IStorage headerStorage)
@@ -108,7 +98,7 @@ namespace LibHac.IO.NcaUtils
             set => Header.SdkVersion = value.Version;
         }
 
-        public Span<byte> RightsId => _header.Span.Slice(RightsIdOffset, RightsIdSize);
+        public Span<byte> RightsId => _header.Span.Slice(NcaHeaderStruct.RightsIdOffset, NcaHeaderStruct.RightsIdSize);
 
         public bool HasRightsId => !Util.IsEmpty(RightsId);
 
@@ -116,7 +106,7 @@ namespace LibHac.IO.NcaUtils
         {
             ValidateSectionIndex(index);
 
-            int offset = SectionEntryOffset + SectionEntrySize * index;
+            int offset = NcaHeaderStruct.SectionEntriesOffset + NcaSectionEntryStruct.SectionEntrySize * index;
             return ref Unsafe.As<byte, NcaSectionEntryStruct>(ref _header.Span[offset]);
         }
 
@@ -145,8 +135,8 @@ namespace LibHac.IO.NcaUtils
         {
             ValidateSectionIndex(index);
 
-            int offset = FsHeaderHashOffset + FsHeaderHashSize * index;
-            return _header.Span.Slice(offset, FsHeaderHashSize);
+            int offset = NcaHeaderStruct.FsHeaderHashOffset + NcaHeaderStruct.FsHeaderHashSize * index;
+            return _header.Span.Slice(offset, NcaHeaderStruct.FsHeaderHashSize);
         }
 
         public Span<byte> GetEncryptedKey(int index)
@@ -156,7 +146,7 @@ namespace LibHac.IO.NcaUtils
                 throw new ArgumentOutOfRangeException($"Key index must be between 0 and 3. Actual: {index}");
             }
 
-            int offset = KeyAreaOffset + Crypto.Aes128Size * index;
+            int offset = NcaHeaderStruct.KeyAreaOffset + Crypto.Aes128Size * index;
             return _header.Span.Slice(offset, Crypto.Aes128Size);
         }
 
@@ -164,10 +154,10 @@ namespace LibHac.IO.NcaUtils
         {
             Span<byte> expectedHash = GetFsHeaderHash(index);
 
-            int offset = FsHeaderOffset + FsHeaderSize * index;
-            Memory<byte> headerData = _header.Slice(offset, FsHeaderSize);
+            int offset = NcaHeaderStruct.FsHeadersOffset + NcaHeaderStruct.FsHeaderSize * index;
+            Memory<byte> headerData = _header.Slice(offset, NcaHeaderStruct.FsHeaderSize);
 
-            byte[] actualHash = Crypto.ComputeSha256(headerData.ToArray(), 0, FsHeaderSize);
+            byte[] actualHash = Crypto.ComputeSha256(headerData.ToArray(), 0, NcaHeaderStruct.FsHeaderSize);
 
             if (!Util.SpansEqual(expectedHash, actualHash))
             {
@@ -246,6 +236,15 @@ namespace LibHac.IO.NcaUtils
         [StructLayout(LayoutKind.Explicit, Size = 0xC00)]
         private struct NcaHeaderStruct
         {
+            public const int RightsIdOffset = 0x230;
+            public const int RightsIdSize = 0x10;
+            public const int SectionEntriesOffset = 0x240;
+            public const int FsHeaderHashOffset = 0x280;
+            public const int FsHeaderHashSize = 0x20;
+            public const int KeyAreaOffset = 0x300;
+            public const int FsHeadersOffset = 0x400;
+            public const int FsHeaderSize = 0x200;
+
             [FieldOffset(0x000)] public byte Signature1;
             [FieldOffset(0x100)] public byte Signature2;
             [FieldOffset(0x200)] public uint Magic;
@@ -260,9 +259,11 @@ namespace LibHac.IO.NcaUtils
             [FieldOffset(0x220)] public byte KeyGeneration2;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 0x10)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1, Size = SectionEntrySize)]
         private struct NcaSectionEntryStruct
         {
+            public const int SectionEntrySize = 0x10;
+
             public int StartBlock;
             public int EndBlock;
             public bool IsEnabled;

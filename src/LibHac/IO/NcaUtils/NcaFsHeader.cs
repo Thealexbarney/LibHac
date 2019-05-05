@@ -6,11 +6,6 @@ namespace LibHac.IO.NcaUtils
 {
     public class NcaFsHeader
     {
-        private const int IntegrityInfoOffset = 8;
-        private const int IntegrityInfoSize = 0xF8;
-        private const int PatchInfoOffset = 0x100;
-        private const int PatchInfoSize = 0x40;
-
         private Memory<byte> _header;
 
         public NcaFsHeader(Memory<byte> headerData)
@@ -46,17 +41,17 @@ namespace LibHac.IO.NcaUtils
 
         public NcaFsIntegrityInfoIvfc GetIntegrityInfoIvfc()
         {
-            return new NcaFsIntegrityInfoIvfc(_header.Slice(IntegrityInfoOffset, IntegrityInfoSize));
+            return new NcaFsIntegrityInfoIvfc(_header.Slice(FsHeaderStruct.IntegrityInfoOffset, FsHeaderStruct.IntegrityInfoSize));
         }
 
         public NcaFsIntegrityInfoSha256 GetIntegrityInfoSha256()
         {
-            return new NcaFsIntegrityInfoSha256(_header.Slice(IntegrityInfoOffset, IntegrityInfoSize));
+            return new NcaFsIntegrityInfoSha256(_header.Slice(FsHeaderStruct.IntegrityInfoOffset, FsHeaderStruct.IntegrityInfoSize));
         }
 
         public NcaFsPatchInfo GetPatchInfo()
         {
-            return new NcaFsPatchInfo(_header.Slice(PatchInfoOffset, PatchInfoSize));
+            return new NcaFsPatchInfo(_header.Slice(FsHeaderStruct.PatchInfoOffset, FsHeaderStruct.PatchInfoSize));
         }
 
         public bool IsPatchSection()
@@ -85,6 +80,11 @@ namespace LibHac.IO.NcaUtils
         [StructLayout(LayoutKind.Explicit)]
         private struct FsHeaderStruct
         {
+            public const int IntegrityInfoOffset = 8;
+            public const int IntegrityInfoSize = 0xF8;
+            public const int PatchInfoOffset = 0x100;
+            public const int PatchInfoSize = 0x40;
+
             [FieldOffset(0)] public short Version;
             [FieldOffset(2)] public byte FormatType;
             [FieldOffset(3)] public byte HashType;

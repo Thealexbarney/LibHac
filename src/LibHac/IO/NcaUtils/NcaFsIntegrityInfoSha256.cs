@@ -6,11 +6,6 @@ namespace LibHac.IO.NcaUtils
 {
     public class NcaFsIntegrityInfoSha256
     {
-        private const int MasterHashOffset = 0;
-        private const int MasterHashSize = 0x20;
-        private const int Sha256LevelOffset = 0x28;
-        private const int Sha256LevelSize = 0x10;
-
         private Memory<byte> _data;
 
         public NcaFsIntegrityInfoSha256(Memory<byte> data)
@@ -24,7 +19,7 @@ namespace LibHac.IO.NcaUtils
         {
             ValidateLevelIndex(index);
 
-            int offset = Sha256LevelOffset + Sha256LevelSize * index;
+            int offset = Sha256Struct.Sha256LevelOffset + Sha256Level.Sha256LevelSize * index;
             return ref Unsafe.As<byte, Sha256Level>(ref _data.Span[offset]);
         }
 
@@ -40,7 +35,7 @@ namespace LibHac.IO.NcaUtils
             set => Data.LevelCount = value;
         }
 
-        public Span<byte> MasterHash => _data.Span.Slice(MasterHashOffset, MasterHashSize);
+        public Span<byte> MasterHash => _data.Span.Slice(Sha256Struct.MasterHashOffset, Sha256Struct.MasterHashSize);
 
         public ref long GetLevelOffset(int index) => ref GetLevelInfo(index).Offset;
         public ref long GetLevelSize(int index) => ref GetLevelInfo(index).Size;
@@ -56,6 +51,10 @@ namespace LibHac.IO.NcaUtils
         [StructLayout(LayoutKind.Explicit)]
         private struct Sha256Struct
         {
+            public const int MasterHashOffset = 0;
+            public const int MasterHashSize = 0x20;
+            public const int Sha256LevelOffset = 0x28;
+
             [FieldOffset(0x20)] public int BlockSize;
             [FieldOffset(0x24)] public int LevelCount;
         }
@@ -63,6 +62,8 @@ namespace LibHac.IO.NcaUtils
         [StructLayout(LayoutKind.Explicit)]
         private struct Sha256Level
         {
+            public const int Sha256LevelSize = 0x10;
+
             [FieldOffset(0)] public long Offset;
             [FieldOffset(8)] public long Size;
         }

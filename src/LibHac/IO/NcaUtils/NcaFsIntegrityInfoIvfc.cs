@@ -6,12 +6,6 @@ namespace LibHac.IO.NcaUtils
 {
     public class NcaFsIntegrityInfoIvfc
     {
-        private const int IvfcLevelOffset = 0x10;
-        private const int IvfcLevelSize = 0x18;
-        private const int SaltSourceOffset = 0xA0;
-        private const int SaltSourceSize = 0x20;
-        private const int MasterHashOffset = 0xC0;
-
         private Memory<byte> _data;
 
         public NcaFsIntegrityInfoIvfc(Memory<byte> data)
@@ -25,7 +19,7 @@ namespace LibHac.IO.NcaUtils
         {
             ValidateLevelIndex(index);
 
-            int offset = IvfcLevelOffset + IvfcLevelSize * index;
+            int offset = IvfcStruct.IvfcLevelsOffset + IvfcLevel.IvfcLevelSize * index;
             return ref Unsafe.As<byte, IvfcLevel>(ref _data.Span[offset]);
         }
 
@@ -53,8 +47,8 @@ namespace LibHac.IO.NcaUtils
             set => Data.LevelCount = value;
         }
 
-        public Span<byte> SaltSource => _data.Span.Slice(SaltSourceOffset, SaltSourceSize);
-        public Span<byte> MasterHash => _data.Span.Slice(MasterHashOffset, MasterHashSize);
+        public Span<byte> SaltSource => _data.Span.Slice(IvfcStruct.SaltSourceOffset, IvfcStruct.SaltSourceSize);
+        public Span<byte> MasterHash => _data.Span.Slice(IvfcStruct.MasterHashOffset, MasterHashSize);
 
         public ref long GetLevelOffset(int index) => ref GetLevelInfo(index).Offset;
         public ref long GetLevelSize(int index) => ref GetLevelInfo(index).Size;
@@ -71,15 +65,22 @@ namespace LibHac.IO.NcaUtils
         [StructLayout(LayoutKind.Explicit)]
         private struct IvfcStruct
         {
+            public const int IvfcLevelsOffset = 0x10;
+            public const int SaltSourceOffset = 0xA0;
+            public const int SaltSourceSize = 0x20;
+            public const int MasterHashOffset = 0xC0;
+
             [FieldOffset(0)] public uint Magic;
             [FieldOffset(4)] public int Version;
             [FieldOffset(8)] public int MasterHashSize;
             [FieldOffset(12)] public int LevelCount;
         }
 
-        [StructLayout(LayoutKind.Explicit, Size = 0x18)]
+        [StructLayout(LayoutKind.Explicit, Size = IvfcLevelSize)]
         private struct IvfcLevel
         {
+            public const int IvfcLevelSize = 0x18;
+
             [FieldOffset(0)] public long Offset;
             [FieldOffset(8)] public long Size;
             [FieldOffset(0x10)] public int BlockSize;
