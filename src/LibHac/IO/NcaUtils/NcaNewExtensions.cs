@@ -145,7 +145,38 @@ namespace LibHac.IO.NcaUtils
             NcaHashType hashType = sect.HashType;
             if (hashType != NcaHashType.Sha256 && hashType != NcaHashType.Ivfc) return Validity.Unchecked;
 
-            var stream = nca.OpenStorage(index, IntegrityCheckLevel.IgnoreOnInvalid, false)
+            var stream = nca.OpenStorage(index, IntegrityCheckLevel.IgnoreOnInvalid)
+                as HierarchicalIntegrityVerificationStorage;
+            if (stream == null) return Validity.Unchecked;
+
+            if (!quiet) logger?.LogMessage($"Verifying section {index}...");
+            Validity validity = stream.Validate(true, logger);
+
+            return validity;
+        }
+
+        public static Validity VerifyNca(this NcaNew nca, NcaNew patchNca, IProgressReport logger = null, bool quiet = false)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                if (patchNca.CanOpenSection(i))
+                {
+                    Validity sectionValidity = VerifySection(nca, patchNca, i, logger, quiet);
+
+                    if (sectionValidity == Validity.Invalid) return Validity.Invalid;
+                }
+            }
+
+            return Validity.Valid;
+        }
+
+        public static Validity VerifySection(this NcaNew nca, NcaNew patchNca, int index, IProgressReport logger = null, bool quiet = false)
+        {
+            NcaFsHeaderNew sect = nca.Header.GetFsHeader(index);
+            NcaHashType hashType = sect.HashType;
+            if (hashType != NcaHashType.Sha256 && hashType != NcaHashType.Ivfc) return Validity.Unchecked;
+
+            var stream = nca.OpenStorageWithPatch(patchNca, index, IntegrityCheckLevel.IgnoreOnInvalid)
                 as HierarchicalIntegrityVerificationStorage;
             if (stream == null) return Validity.Unchecked;
 

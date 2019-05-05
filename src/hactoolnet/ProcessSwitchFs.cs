@@ -69,7 +69,7 @@ namespace hactoolnet
                     return;
                 }
 
-                if (!title.MainNca.SectionExists(NcaSectionType.Code))
+                if (!title.MainNca.Nca.SectionExists(NcaSectionType.Code))
                 {
                     ctx.Logger.LogMessage($"Main NCA for title {id:X16} has no ExeFS section");
                     return;
@@ -77,12 +77,13 @@ namespace hactoolnet
 
                 if (ctx.Options.ExefsOutDir != null)
                 {
-                    title.MainNca.ExtractSection(NcaSectionType.Code, ctx.Options.ExefsOutDir, ctx.Options.IntegrityLevel, ctx.Logger);
+                    IFileSystem fs = title.MainNca.OpenFileSystem(NcaSectionType.Code, ctx.Options.IntegrityLevel);
+                    fs.Extract(ctx.Options.ExefsOutDir, ctx.Logger);
                 }
 
                 if (ctx.Options.ExefsOut != null)
                 {
-                    title.MainNca.ExportSection(NcaSectionType.Code, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
+                    title.MainNca.OpenStorage(NcaSectionType.Code, ctx.Options.IntegrityLevel).WriteAllBytes(ctx.Options.ExefsOut, ctx.Logger);
                 }
             }
 
@@ -107,13 +108,13 @@ namespace hactoolnet
                     return;
                 }
 
-                if (!title.MainNca.SectionExists(NcaSectionType.Data))
+                if (!title.MainNca.Nca.SectionExists(NcaSectionType.Data))
                 {
                     ctx.Logger.LogMessage($"Main NCA for title {id:X16} has no RomFS section");
                     return;
                 }
 
-                ProcessRomfs.Process(ctx, title.MainNca.OpenStorage(NcaSectionType.Data, ctx.Options.IntegrityLevel, false));
+                ProcessRomfs.Process(ctx, title.MainNca.OpenStorage(NcaSectionType.Data, ctx.Options.IntegrityLevel));
             }
 
             if (ctx.Options.OutDir != null)
@@ -178,9 +179,9 @@ namespace hactoolnet
             {
                 ctx.Logger.LogMessage($"  {caption} {title.Id:x16}");
 
-                foreach (Nca nca in title.Ncas)
+                foreach (SwitchFsNca nca in title.Ncas)
                 {
-                    ctx.Logger.LogMessage($"    {nca.Header.ContentType.ToString()}");
+                    ctx.Logger.LogMessage($"    {nca.Nca.Header.ContentType.ToString()}");
 
                     Validity validity = nca.VerifyNca(ctx.Logger, true);
 
@@ -211,9 +212,9 @@ namespace hactoolnet
             string saveDir = Path.Combine(ctx.Options.OutDir, $"{title.Id:X16}v{title.Version.Version}");
             Directory.CreateDirectory(saveDir);
 
-            foreach (Nca nca in title.Ncas)
+            foreach (SwitchFsNca nca in title.Ncas)
             {
-                Stream stream = nca.GetStorage().AsStream();
+                Stream stream = nca.Nca.BaseStorage.AsStream();
                 string outFile = Path.Combine(saveDir, nca.Filename);
                 ctx.Logger.LogMessage(nca.Filename);
                 using (var outStream = new FileStream(outFile, FileMode.Create, FileAccess.ReadWrite))
@@ -245,9 +246,9 @@ namespace hactoolnet
         {
             var table = new TableBuilder("NCA ID", "Type", "Title ID");
 
-            foreach (Nca nca in sdfs.Ncas.Values.OrderBy(x => x.NcaId))
+            foreach (SwitchFsNca nca in sdfs.Ncas.Values.OrderBy(x => x.NcaId))
             {
-                table.AddRow(nca.NcaId, nca.Header.ContentType.ToString(), nca.Header.TitleId.ToString("X16"));
+                table.AddRow(nca.NcaId, nca.Nca.Header.ContentType.ToString(), nca.Nca.Header.TitleId.ToString("X16"));
             }
 
             return table.Print();

@@ -15,7 +15,7 @@ namespace LibHac
         public IFileSystem ContentFs { get; }
         public IFileSystem SaveFs { get; }
 
-        public Dictionary<string, Nca> Ncas { get; } = new Dictionary<string, Nca>(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, SwitchFsNca> Ncas { get; } = new Dictionary<string, SwitchFsNca>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, SaveDataFileSystem> Saves { get; } = new Dictionary<string, SaveDataFileSystem>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<ulong, Title> Titles { get; } = new Dictionary<ulong, Title>();
         public Dictionary<ulong, Application> Applications { get; } = new Dictionary<ulong, Application>();
@@ -68,15 +68,15 @@ namespace LibHac
 
             foreach (DirectoryEntry fileEntry in files)
             {
-                Nca nca = null;
+                SwitchFsNca nca = null;
                 try
                 {
                     IStorage storage = ContentFs.OpenFile(fileEntry.FullPath, OpenMode.Read).AsStorage();
 
-                    nca = new Nca(Keyset, storage, false);
+                    nca = new SwitchFsNca(new NcaNew(Keyset, storage));
 
                     nca.NcaId = Path.GetFileNameWithoutExtension(fileEntry.Name);
-                    string extension = nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
+                    string extension = nca.Nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
                     nca.Filename = nca.NcaId + extension;
                 }
                 catch (MissingKeyException ex)
@@ -126,7 +126,7 @@ namespace LibHac
 
         private void ReadTitles()
         {
-            foreach (Nca nca in Ncas.Values.Where(x => x.Header.ContentType == ContentType.Meta))
+            foreach (SwitchFsNca nca in Ncas.Values.Where(x => x.Nca.Header.ContentType == ContentType.Meta))
             {
                 var title = new Title();
 
@@ -146,7 +146,7 @@ namespace LibHac
                 {
                     string ncaId = content.NcaId.ToHexString();
 
-                    if (Ncas.TryGetValue(ncaId, out Nca contentNca))
+                    if (Ncas.TryGetValue(ncaId, out SwitchFsNca contentNca))
                     {
                         title.Ncas.Add(contentNca);
                     }
@@ -205,22 +205,22 @@ namespace LibHac
 
             foreach (Application app in Applications.Values)
             {
-                Nca main = app.Main?.MainNca;
-                Nca patch = app.Patch?.MainNca;
+                SwitchFsNca main = app.Main?.MainNca;
+                SwitchFsNca patch = app.Patch?.MainNca;
 
-                if (main != null)
+                if (main != null && patch != null)
                 {
-                    patch?.SetBaseNca(main);
+                    patch.BaseNca = main.Nca;
                 }
             }
         }
 
         private void DisposeNcas()
         {
-            foreach (Nca nca in Ncas.Values)
-            {
-                nca.Dispose();
-            }
+            //foreach (SwitchFsNca nca in Ncas.Values)
+            //{
+            //    nca.Dispose();
+            //}
             Ncas.Clear();
             Titles.Clear();
         }
@@ -231,23 +231,72 @@ namespace LibHac
         }
     }
 
+    public class SwitchFsNca
+    {
+        public NcaNew Nca { get; set; }
+        public NcaNew BaseNca { get; set; }
+        public string NcaId { get; set; }
+        public string Filename { get; set; }
+
+        public SwitchFsNca(NcaNew nca)
+        {
+            Nca = nca;
+        }
+
+        public IStorage OpenStorage(int index, IntegrityCheckLevel integrityCheckLevel)
+        {
+            if (BaseNca != null) return BaseNca.OpenStorageWithPatch(Nca, index, integrityCheckLevel);
+
+            return Nca.OpenStorage(index, integrityCheckLevel);
+        }
+
+        public IFileSystem OpenFileSystem(int index, IntegrityCheckLevel integrityCheckLevel)
+        {
+            if (BaseNca != null) return BaseNca.OpenFileSystemWithPatch(Nca, index, integrityCheckLevel);
+
+            return Nca.OpenFileSystem(index, integrityCheckLevel);
+        }
+
+        public IStorage OpenStorage(NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
+        {
+            return OpenStorage(NcaNew.SectionIndexFromType(type, Nca.Header.ContentType), integrityCheckLevel);
+        }
+
+        public IFileSystem OpenFileSystem(NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
+        {
+            return OpenFileSystem(NcaNew.SectionIndexFromType(type, Nca.Header.ContentType), integrityCheckLevel);
+        }
+
+        public Validity VerifyNca(IProgressReport logger = null, bool quiet = false)
+        {
+            if (BaseNca != null)
+            {
+                return BaseNca.VerifyNca(Nca, logger, quiet);
+            }
+            else
+            {
+                return Nca.VerifyNca(logger, quiet);
+            }
+        }
+    }
+
     [DebuggerDisplay("{" + nameof(Name) + "}")]
     public class Title
     {
         public ulong Id { get; internal set; }
         public TitleVersion Version { get; internal set; }
-        public List<Nca> Ncas { get; } = new List<Nca>();
+        public List<SwitchFsNca> Ncas { get; } = new List<SwitchFsNca>();
         public Cnmt Metadata { get; internal set; }
 
         public string Name { get; internal set; }
         public Nacp Control { get; internal set; }
-        public Nca MetaNca { get; internal set; }
-        public Nca MainNca { get; internal set; }
-        public Nca ControlNca { get; internal set; }
+        public SwitchFsNca MetaNca { get; internal set; }
+        public SwitchFsNca MainNca { get; internal set; }
+        public SwitchFsNca ControlNca { get; internal set; }
 
         public long GetSize()
         {
-            return Ncas.Sum(x => x.Header.NcaSize);
+            return Ncas.Sum(x => x.Nca.Header.NcaSize);
         }
     }
 

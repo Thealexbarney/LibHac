@@ -64,7 +64,7 @@ namespace hactoolnet
 
                 if (ctx.Options.ExefsOutDir != null || ctx.Options.ExefsOut != null)
                 {
-                    Nca mainNca = GetXciMainNca(xci, ctx);
+                    NcaNew mainNca = GetXciMainNca(xci, ctx);
 
                     if (mainNca == null)
                     {
@@ -91,7 +91,7 @@ namespace hactoolnet
 
                 if (ctx.Options.RomfsOutDir != null || ctx.Options.RomfsOut != null)
                 {
-                    Nca mainNca = GetXciMainNca(xci, ctx);
+                    NcaNew mainNca = GetXciMainNca(xci, ctx);
 
                     if (mainNca == null)
                     {
@@ -110,7 +110,7 @@ namespace hactoolnet
             }
         }
 
-        private static Nca GetXciMainNca(Xci xci, Context ctx)
+        private static NcaNew GetXciMainNca(Xci xci, Context ctx)
         {
             XciPartition partition = xci.OpenPartition(XciPartitionType.Secure);
 
@@ -120,12 +120,12 @@ namespace hactoolnet
                 return null;
             }
 
-            Nca mainNca = null;
+            NcaNew mainNca = null;
 
             foreach (PartitionFileEntry fileEntry in partition.Files.Where(x => x.Name.EndsWith(".nca")))
             {
                 IStorage ncaStorage = partition.OpenFile(fileEntry, OpenMode.Read).AsStorage();
-                var nca = new Nca(ctx.Keyset, ncaStorage, true);
+                var nca = new NcaNew(ctx.Keyset, ncaStorage);
 
                 if (nca.Header.ContentType == ContentType.Program)
                 {

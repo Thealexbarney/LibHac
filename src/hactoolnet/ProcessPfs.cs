@@ -3,7 +3,6 @@ using System.Reflection;
 using System.Text;
 using LibHac;
 using LibHac.IO;
-using LibHac.IO.NcaUtils;
 using static hactoolnet.Print;
 
 namespace hactoolnet
@@ -68,9 +67,9 @@ namespace hactoolnet
 
             var builder = new PartitionFileSystemBuilder();
 
-            foreach (Nca nca in title.Ncas)
+            foreach (SwitchFsNca nca in title.Ncas)
             {
-                builder.AddFile(nca.Filename, nca.GetStorage().AsFile(OpenMode.Read));
+                builder.AddFile(nca.Filename, nca.Nca.BaseStorage.AsFile(OpenMode.Read));
             }
 
             var ticket = new Ticket
@@ -79,9 +78,9 @@ namespace hactoolnet
                 Signature = new byte[0x200],
                 Issuer = "Root-CA00000003-XS00000020",
                 FormatVersion = 2,
-                RightsId = title.MainNca.Header.RightsId,
-                TitleKeyBlock = title.MainNca.TitleKey,
-                CryptoType = title.MainNca.Header.CryptoType2,
+                RightsId = title.MainNca.Nca.Header.RightsId.ToArray(),
+                TitleKeyBlock = title.MainNca.Nca.GetDecryptedTitleKey(),
+                CryptoType = title.MainNca.Nca.Header.KeyGeneration,
                 SectHeaderOffset = 0x2C0
             };
             byte[] ticketBytes = ticket.GetBytes();

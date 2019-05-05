@@ -9,7 +9,7 @@ namespace LibHac.IO.NcaUtils
     public class NcaNew
     {
         private Keyset Keyset { get; }
-        private IStorage BaseStorage { get; }
+        public IStorage BaseStorage { get; }
 
         public NcaHeaderNew Header { get; }
 
@@ -129,6 +129,7 @@ namespace LibHac.IO.NcaUtils
             }
         }
 
+        // ReSharper disable once UnusedParameter.Local
         private IStorage OpenAesXtsStorage(IStorage baseStorage, int index)
         {
             throw new NotImplementedException("NCA sections using XTS are not supported yet.");
