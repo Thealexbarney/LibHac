@@ -1,71 +1,97 @@
-﻿using System.IO;
-using System.Linq;
+﻿using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace LibHac.IO.NcaUtils
 {
-    public class NcaFsHeader
+    public struct NcaFsHeader
     {
-        public short Version;
-        public NcaFormatType FormatType;
-        public NcaHashType HashType;
-        public NcaEncryptionType EncryptionType;
-        public SectionType Type;
+        private readonly Memory<byte> _header;
 
-        public IvfcHeader IvfcInfo;
-        public Sha256Info Sha256Info;
-        public BktrPatchInfo BktrInfo;
-
-        public byte[] Ctr;
-
-        public NcaFsHeader(BinaryReader reader)
+        public NcaFsHeader(Memory<byte> headerData)
         {
-            long start = reader.BaseStream.Position;
-            Version = reader.ReadInt16();
-            FormatType = (NcaFormatType)reader.ReadByte();
-            HashType = (NcaHashType)reader.ReadByte();
-            EncryptionType = (NcaEncryptionType)reader.ReadByte();
-            reader.BaseStream.Position += 3;
+            _header = headerData;
+        }
 
-            switch (HashType)
-            {
-                case NcaHashType.Sha256:
-                    Sha256Info = new Sha256Info(reader);
-                    break;
-                case NcaHashType.Ivfc:
-                    IvfcInfo = new IvfcHeader(reader);
-                    break;
-            }
+        private ref FsHeaderStruct Header => ref Unsafe.As<byte, FsHeaderStruct>(ref _header.Span[0]);
 
-            if (EncryptionType == NcaEncryptionType.AesCtrEx)
-            {
-                BktrInfo = new BktrPatchInfo();
+        public short Version
+        {
+            get => Header.Version;
+            set => Header.Version = value;
+        }
 
-                reader.BaseStream.Position = start + 0x100;
+        public NcaFormatType FormatType
+        {
+            get => (NcaFormatType)Header.FormatType;
+            set => Header.FormatType = (byte)value;
+        }
 
-                BktrInfo.RelocationHeader = new BktrHeader(reader);
-                BktrInfo.EncryptionHeader = new BktrHeader(reader);
-            }
+        public NcaHashType HashType
+        {
+            get => (NcaHashType)Header.HashType;
+            set => Header.HashType = (byte)value;
+        }
 
-            if (FormatType == NcaFormatType.Pfs0)
-            {
-                Type = SectionType.Pfs0;
-            }
-            else if (FormatType == NcaFormatType.Romfs)
-            {
-                if (EncryptionType == NcaEncryptionType.AesCtrEx)
-                {
-                    Type = SectionType.Bktr;
-                }
-                else
-                {
-                    Type = SectionType.Romfs;
-                }
-            }
+        public NcaEncryptionType EncryptionType
+        {
+            get => (NcaEncryptionType)Header.EncryptionType;
+            set => Header.EncryptionType = (byte)value;
+        }
 
-            reader.BaseStream.Position = start + 0x140;
-            Ctr = reader.ReadBytes(8).Reverse().ToArray();
+        public NcaFsIntegrityInfoIvfc GetIntegrityInfoIvfc()
+        {
+            return new NcaFsIntegrityInfoIvfc(_header.Slice(FsHeaderStruct.IntegrityInfoOffset, FsHeaderStruct.IntegrityInfoSize));
+        }
 
-            reader.BaseStream.Position = start + 512;
+        public NcaFsIntegrityInfoSha256 GetIntegrityInfoSha256()
+        {
+            return new NcaFsIntegrityInfoSha256(_header.Slice(FsHeaderStruct.IntegrityInfoOffset, FsHeaderStruct.IntegrityInfoSize));
+        }
+
+        public NcaFsPatchInfo GetPatchInfo()
+        {
+            return new NcaFsPatchInfo(_header.Slice(FsHeaderStruct.PatchInfoOffset, FsHeaderStruct.PatchInfoSize));
+        }
+
+        public bool IsPatchSection()
+        {
+            return GetPatchInfo().RelocationTreeSize != 0;
+        }
+
+        public ulong Counter
+        {
+            get => Header.UpperCounter;
+            set => Header.UpperCounter = value;
+        }
+
+        public int CounterType
+        {
+            get => Header.CounterType;
+            set => Header.CounterType = value;
+        }
+
+        public int CounterVersion
+        {
+            get => Header.CounterVersion;
+            set => Header.CounterVersion = value;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        private struct FsHeaderStruct
+        {
+            public const int IntegrityInfoOffset = 8;
+            public const int IntegrityInfoSize = 0xF8;
+            public const int PatchInfoOffset = 0x100;
+            public const int PatchInfoSize = 0x40;
+
+            [FieldOffset(0)] public short Version;
+            [FieldOffset(2)] public byte FormatType;
+            [FieldOffset(3)] public byte HashType;
+            [FieldOffset(4)] public byte EncryptionType;
+            [FieldOffset(0x140)] public ulong UpperCounter;
+            [FieldOffset(0x140)] public int CounterType;
+            [FieldOffset(0x144)] public int CounterVersion;
         }
     }
 }

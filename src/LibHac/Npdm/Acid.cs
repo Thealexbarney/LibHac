@@ -21,6 +21,8 @@ namespace LibHac.Npdm
 
         public Validity SignatureValidity { get; }
 
+        public Acid(Stream stream, int offset) : this(stream, offset, null) { }
+
         public Acid(Stream stream, int offset, Keyset keyset)
         {
             stream.Seek(offset, SeekOrigin.Begin);
@@ -38,9 +40,12 @@ namespace LibHac.Npdm
 
             Size = reader.ReadInt32();
 
-            reader.BaseStream.Position = offset + 0x100;
-            byte[] signatureData = reader.ReadBytes(Size);
-            SignatureValidity = Crypto.Rsa2048PssVerify(signatureData, Rsa2048Signature, keyset.AcidFixedKeyModulus);
+            if (keyset != null)
+            {
+                reader.BaseStream.Position = offset + 0x100;
+                byte[] signatureData = reader.ReadBytes(Size);
+                SignatureValidity = Crypto.Rsa2048PssVerify(signatureData, Rsa2048Signature, keyset.AcidFixedKeyModulus);
+            }
 
             reader.BaseStream.Position = offset + 0x208;
             reader.ReadInt32();

@@ -13,13 +13,13 @@ namespace LibHac.IO
         private BucketTree<RelocationEntry> BucketTree { get; }
         private long _length;
 
-        public IndirectStorage(IStorage bucketTreeHeader, IStorage bucketTreeData, bool leaveOpen, params IStorage[] sources)
+        public IndirectStorage(IStorage bucketTreeData, bool leaveOpen, params IStorage[] sources)
         {
             Sources.AddRange(sources);
 
             if (!leaveOpen) ToDispose.AddRange(sources);
 
-            BucketTree = new BucketTree<RelocationEntry>(bucketTreeHeader, bucketTreeData);
+            BucketTree = new BucketTree<RelocationEntry>(bucketTreeData);
 
             RelocationEntries = BucketTree.GetEntryList();
             RelocationOffsets = RelocationEntries.Select(x => x.Offset).ToList();

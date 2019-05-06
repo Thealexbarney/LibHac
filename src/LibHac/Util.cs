@@ -352,7 +352,9 @@ namespace LibHac
             return result;
         }
 
-        public static string ToHexString(this byte[] bytes)
+        public static string ToHexString(this byte[] bytes) => ToHexString(bytes.AsSpan());
+
+        public static string ToHexString(this Span<byte> bytes)
         {
             uint[] lookup32 = Lookup32;
             var result = new char[bytes.Length * 2];
@@ -508,6 +510,13 @@ namespace LibHac
                          ((uintVal >> 8) & 0x0000ff00) |
                          ((uintVal << 8) & 0x00ff0000) |
                          ((uintVal << 24) & 0xff000000));
+        }
+
+        public static int GetMasterKeyRevision(int keyGeneration)
+        {
+            if (keyGeneration == 0) return 0;
+
+            return keyGeneration - 1;
         }
     }
 

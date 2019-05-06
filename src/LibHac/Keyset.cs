@@ -351,6 +351,13 @@ namespace LibHac
         }
 
         internal static readonly string[] KakNames = { "application", "ocean", "system" };
+
+        public static int GetMasterKeyRevisionFromKeyGeneration(int keyGeneration)
+        {
+            if (keyGeneration == 0) return 0;
+
+            return keyGeneration - 1;
+        }
     }
 
     public static class ExternalKeys

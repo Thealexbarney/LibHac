@@ -7,13 +7,11 @@ namespace LibHac.IO
     public class BucketTree<T> where T : BucketTreeEntry<T>, new()
     {
         private const int BucketAlignment = 0x4000;
-        public BucketTreeHeader Header { get; }
         public BucketTreeBucket<OffsetEntry> BucketOffsets { get; }
         public BucketTreeBucket<T>[] Buckets { get; }
 
-        public BucketTree(IStorage header, IStorage data)
+        public BucketTree(IStorage data)
         {
-            Header = new BucketTreeHeader(header);
             var reader = new BinaryReader(data.AsStream());
 
             BucketOffsets = new BucketTreeBucket<OffsetEntry>(reader);
@@ -40,24 +38,6 @@ namespace LibHac.IO
             list[list.Count - 1].OffsetEnd = BucketOffsets.OffsetEnd;
 
             return list;
-        }
-    }
-
-    public class BucketTreeHeader
-    {
-        public string Magic;
-        public int Version;
-        public int NumEntries;
-        public int FieldC;
-
-        public BucketTreeHeader(IStorage storage)
-        {
-            var reader = new BinaryReader(storage.AsStream());
-
-            Magic = reader.ReadAscii(4);
-            Version = reader.ReadInt32();
-            NumEntries = reader.ReadInt32();
-            FieldC = reader.ReadInt32();
         }
     }
 
