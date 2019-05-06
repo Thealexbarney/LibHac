@@ -36,10 +36,15 @@ namespace LibHac
         public static SwitchFs OpenSdCard(Keyset keyset, IAttributeFileSystem fileSystem)
         {
             var concatFs = new ConcatenationFileSystem(fileSystem);
-            var saveDirFs = new SubdirectoryFileSystem(concatFs, "/Nintendo/save");
             var contentDirFs = new SubdirectoryFileSystem(concatFs, "/Nintendo/Contents");
 
-            var encSaveFs = new AesXtsFileSystem(saveDirFs, keyset.SdCardKeys[0], 0x4000);
+            AesXtsFileSystem encSaveFs = null;
+            if (fileSystem.DirectoryExists("/Nintendo/save"))
+            {
+                var saveDirFs = new SubdirectoryFileSystem(concatFs, "/Nintendo/save");
+                encSaveFs = new AesXtsFileSystem(saveDirFs, keyset.SdCardKeys[0], 0x4000);
+            }
+
             var encContentFs = new AesXtsFileSystem(contentDirFs, keyset.SdCardKeys[1], 0x4000);
 
             return new SwitchFs(keyset, encContentFs, encSaveFs);
@@ -48,7 +53,7 @@ namespace LibHac
         public static SwitchFs OpenNandPartition(Keyset keyset, IAttributeFileSystem fileSystem)
         {
             var concatFs = new ConcatenationFileSystem(fileSystem);
-            var saveDirFs = new SubdirectoryFileSystem(concatFs, "/save");
+            IFileSystem saveDirFs = concatFs.DirectoryExists("/save") ? new SubdirectoryFileSystem(concatFs, "/save") : null;
             var contentDirFs = new SubdirectoryFileSystem(concatFs, "/Contents");
 
             return new SwitchFs(keyset, contentDirFs, saveDirFs);
