@@ -128,7 +128,11 @@ namespace LibHac.IO.NcaUtils
 
         public bool IsSectionEnabled(int index)
         {
-            return GetSectionEntry(index).IsEnabled;
+            ref NcaSectionEntryStruct info = ref GetSectionEntry(index);
+
+            int sectStart = info.StartBlock;
+            int sectSize = info.EndBlock - sectStart;
+            return sectStart != 0 || sectSize != 0;
         }
 
         public Span<byte> GetFsHeaderHash(int index)
