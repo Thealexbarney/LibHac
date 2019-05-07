@@ -92,6 +92,20 @@ namespace LibHac.Nand
             return Fs.GetFileInfo(path).Length;
         }
 
+        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        {
+            path = PathTools.Normalize(path);
+            string localPath = ToDiscUtilsPath(path);
+
+            FileTimeStampRaw timeStamp = default;
+
+            timeStamp.Created = new DateTimeOffset(Fs.GetCreationTime(localPath)).ToUnixTimeSeconds();
+            timeStamp.Accessed = new DateTimeOffset(Fs.GetLastAccessTime(localPath)).ToUnixTimeSeconds();
+            timeStamp.Modified = new DateTimeOffset(Fs.GetLastWriteTime(localPath)).ToUnixTimeSeconds();
+
+            return timeStamp;
+        }
+
         public void Commit() { }
 
         public void CreateDirectory(string path) => throw new NotSupportedException();

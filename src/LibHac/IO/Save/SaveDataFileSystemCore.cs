@@ -131,6 +131,7 @@ namespace LibHac.IO.Save
 
         }
 
+        public FileTimeStampRaw GetFileTimeStampRaw(string path) => throw new NotSupportedException();
         public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();
 
         public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();

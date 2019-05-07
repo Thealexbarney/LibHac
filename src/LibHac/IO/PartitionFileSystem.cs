@@ -81,6 +81,7 @@ namespace LibHac.IO
         public void DeleteFile(string path) => throw new NotSupportedException();
         public void RenameDirectory(string srcPath, string dstPath) => throw new NotSupportedException();
         public void RenameFile(string srcPath, string dstPath) => throw new NotSupportedException();
+        public FileTimeStampRaw GetFileTimeStampRaw(string path) => throw new NotSupportedException();
         public void Commit() { }
         public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();
     }

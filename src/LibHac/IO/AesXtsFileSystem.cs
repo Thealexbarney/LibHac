@@ -179,6 +179,11 @@ namespace LibHac.IO
             return BaseFileSystem.GetEntryType(path);
         }
 
+        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        {
+            return BaseFileSystem.GetFileTimeStampRaw(path);
+        }
+
         public void Commit()
         {
             BaseFileSystem.Commit();

@@ -105,8 +105,17 @@ namespace LibHac.IO
             ParentFileSystem.Commit();
         }
 
+        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            return ParentFileSystem.GetFileTimeStampRaw(ResolveFullPath(path));
+        }
+
         public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId)
         {
+            path = PathTools.Normalize(path);
+
             ParentFileSystem.QueryEntry(outBuffer, inBuffer, ResolveFullPath(path), queryId);
         }
     }
