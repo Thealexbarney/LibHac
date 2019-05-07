@@ -195,6 +195,7 @@ namespace LibHac.IO.Save
             Commit(Keyset);
         }
 
+        public FileTimeStampRaw GetFileTimeStampRaw(string path) => throw new NotSupportedException();
         public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();
 
         public bool Commit(Keyset keyset)

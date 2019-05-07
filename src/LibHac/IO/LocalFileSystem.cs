@@ -160,6 +160,20 @@ namespace LibHac.IO
             throw new FileNotFoundException(path);
         }
 
+        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        {
+            path = PathTools.Normalize(path);
+            string localPath = ResolveLocalPath(path);
+
+            FileTimeStampRaw timeStamp = default;
+
+            timeStamp.Created = new DateTimeOffset(File.GetCreationTime(localPath)).ToUnixTimeSeconds();
+            timeStamp.Accessed = new DateTimeOffset(File.GetLastAccessTime(localPath)).ToUnixTimeSeconds();
+            timeStamp.Modified = new DateTimeOffset(File.GetLastWriteTime(localPath)).ToUnixTimeSeconds();
+
+            return timeStamp;
+        }
+
         public void Commit() { }
 
         public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();

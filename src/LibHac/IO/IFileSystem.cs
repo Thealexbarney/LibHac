@@ -33,6 +33,10 @@ namespace LibHac.IO
         /// <exception cref="IOException">An I/O error occurred while deleting the directory.</exception>
         void DeleteDirectory(string path);
 
+        //void DeleteDirectoryRecursively(string path);
+
+        //void CleanDirectoryRecursively(string path);
+
         /// <summary>
         /// Deletes the specified file.
         /// </summary>
@@ -100,6 +104,12 @@ namespace LibHac.IO
         /// <returns>The <see cref="DirectoryEntryType"/> of the file.</returns>
         /// <exception cref="FileNotFoundException">The specified path does not exist.</exception>
         DirectoryEntryType GetEntryType(string path);
+
+        //long GetFreeSpaceSize(string path);
+
+        //long GetTotalSpaceSize(string path);
+
+        FileTimeStampRaw GetFileTimeStampRaw(string path);
 
         /// <summary>
         /// Commits any changes to a transactional file system.
