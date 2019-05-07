@@ -155,6 +155,7 @@ namespace LibHac.IO.NcaUtils
             Span<byte> expectedHash = GetFsHeaderHash(index);
 
             int offset = NcaHeaderStruct.FsHeadersOffset + NcaHeaderStruct.FsHeaderSize * index;
+            // ReSharper disable once ImpureMethodCallOnReadonlyValueField
             Memory<byte> headerData = _header.Slice(offset, NcaHeaderStruct.FsHeaderSize);
 
             byte[] actualHash = Crypto.ComputeSha256(headerData.ToArray(), 0, NcaHeaderStruct.FsHeaderSize);
