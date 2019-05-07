@@ -21,11 +21,15 @@ namespace hactoolnet
             {
                 ctx.Logger.LogMessage("Treating path as SD card storage");
                 switchFs = SwitchFs.OpenSdCard(ctx.Keyset, baseFs);
+
+                CheckForNcaFolders(ctx, switchFs);
             }
             else if (Directory.Exists(Path.Combine(ctx.Options.InFile, "Contents", "registered")))
             {
                 ctx.Logger.LogMessage("Treating path as NAND storage");
                 switchFs = SwitchFs.OpenNandPartition(ctx.Keyset, baseFs);
+
+                CheckForNcaFolders(ctx, switchFs);
             }
             else
             {
@@ -296,6 +300,27 @@ namespace hactoolnet
             {
                 string outDir = Path.Combine(ctx.Options.SaveOutDir, save.Key);
                 save.Value.Extract(outDir, ctx.Logger);
+            }
+        }
+
+        private static void CheckForNcaFolders(Context ctx, SwitchFs switchFs)
+        {
+            IFileSystem fs = switchFs.ContentFs;
+
+            DirectoryEntry[] ncaDirs = fs.EnumerateEntries("*.nca", SearchOptions.RecurseSubdirectories)
+                .Where(x => x.Type == DirectoryEntryType.Directory)
+                .Where(x => fs.FileExists($"{x.FullPath}/00"))
+                .ToArray();
+
+            if (ncaDirs.Length > 0)
+            {
+                ctx.Logger.LogMessage("Warning: NCA folders without the archive flag were found. Fixing...");
+            }
+
+            foreach (DirectoryEntry file in ncaDirs)
+            {
+                fs.SetConcatenationFileAttribute(file.FullPath);
+                ctx.Logger.LogMessage($"{file.FullPath}");
             }
         }
     }
