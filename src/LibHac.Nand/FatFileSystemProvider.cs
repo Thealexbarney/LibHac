@@ -98,7 +98,8 @@ namespace LibHac.Nand
         public void CreateFile(string path, long size, CreateFileOptions options) => throw new NotSupportedException();
         public void RenameDirectory(string srcPath, string dstPath) => throw new NotSupportedException();
         public void RenameFile(string srcPath, string dstPath) => throw new NotSupportedException();
-
+        public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();
+        
         private static FileAccess GetFileAccess(OpenMode mode)
         {
             // FileAccess and OpenMode have the same flags

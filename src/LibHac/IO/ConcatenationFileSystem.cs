@@ -28,6 +28,13 @@ namespace LibHac.IO
             return (attributes & NxFileAttributes.Directory) != 0 && (attributes & NxFileAttributes.Archive) != 0;
         }
 
+        private void SetConcatenationFileAttribute(string path)
+        {
+            NxFileAttributes attributes = BaseFileSystem.GetFileAttributes(path);
+            attributes |= NxFileAttributes.Archive;
+            BaseFileSystem.SetFileAttributes(path, attributes);
+        }
+
         public void CreateDirectory(string path)
         {
             path = PathTools.Normalize(path);
@@ -57,8 +64,7 @@ namespace LibHac.IO
             if (IsConcatenationFile(parentDir)) throw new IOException("Cannot create files inside of a concatenation file");
 
             BaseFileSystem.CreateDirectory(path);
-            NxFileAttributes attributes = BaseFileSystem.GetFileAttributes(path) | NxFileAttributes.Archive;
-            BaseFileSystem.SetFileAttributes(path, attributes);
+            SetConcatenationFileAttribute(path);
 
             long remaining = size;
 
@@ -195,6 +201,13 @@ namespace LibHac.IO
         public void Commit()
         {
             BaseFileSystem.Commit();
+        }
+
+        public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId)
+        {
+            if(queryId != QueryId.MakeConcatFile) throw new NotSupportedException();
+
+            SetConcatenationFileAttribute(path);
         }
 
         private int GetSubFileCount(string dirPath)

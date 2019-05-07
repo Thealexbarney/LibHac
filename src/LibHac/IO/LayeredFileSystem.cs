@@ -97,6 +97,22 @@ namespace LibHac.IO
             throw new FileNotFoundException(path);
         }
 
+        public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId)
+        {
+            path = PathTools.Normalize(path);
+
+            foreach (IFileSystem fs in Sources)
+            {
+                if (fs.FileExists(path) || fs.DirectoryExists(path))
+                {
+                    fs.QueryEntry(outBuffer, inBuffer, path, queryId);
+                    return;
+                }
+            }
+
+            throw new FileNotFoundException(path);
+        }
+
         public void Commit() { }
 
         public void CreateDirectory(string path) => throw new NotSupportedException();

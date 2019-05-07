@@ -177,6 +177,11 @@ namespace LibHac.IO
             var nxAttributeBits = (FileAttributes)(((int)nxAttributes & 3) << 4);
             return attributes | nxAttributeBits;
         }
+
+        public static void SetConcatenationFileAttribute(this IFileSystem fs, string path)
+        {
+            fs.QueryEntry(Span<byte>.Empty, Span<byte>.Empty, path, QueryId.MakeConcatFile);
+        }
     }
 
     [Flags]

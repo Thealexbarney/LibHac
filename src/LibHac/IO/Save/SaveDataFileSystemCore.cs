@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace LibHac.IO.Save
 {
@@ -28,7 +29,7 @@ namespace LibHac.IO.Save
 
         public void CreateDirectory(string path)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public void CreateFile(string path, long size, CreateFileOptions options)
@@ -45,7 +46,7 @@ namespace LibHac.IO.Save
 
         public void DeleteDirectory(string path)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public void DeleteFile(string path)
@@ -93,12 +94,12 @@ namespace LibHac.IO.Save
 
         public void RenameDirectory(string srcPath, string dstPath)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public void RenameFile(string srcPath, string dstPath)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public bool DirectoryExists(string path)
@@ -129,6 +130,8 @@ namespace LibHac.IO.Save
         {
 
         }
+
+        public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();
 
         public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
         public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();

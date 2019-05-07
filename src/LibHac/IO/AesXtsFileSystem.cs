@@ -184,6 +184,11 @@ namespace LibHac.IO
             BaseFileSystem.Commit();
         }
 
+        public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId)
+        {
+            BaseFileSystem.QueryEntry(outBuffer, inBuffer, path, queryId);
+        }
+
         private AesXtsFileHeader ReadXtsHeader(string filePath, string keyPath)
         {
             if (!TryReadXtsHeader(filePath, keyPath, out AesXtsFileHeader header))

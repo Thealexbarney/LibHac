@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace LibHac.IO.Save
@@ -193,6 +194,8 @@ namespace LibHac.IO.Save
         {
             Commit(Keyset);
         }
+
+        public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();
 
         public bool Commit(Keyset keyset)
         {

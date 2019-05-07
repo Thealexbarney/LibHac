@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace LibHac.IO
 {
@@ -160,5 +161,7 @@ namespace LibHac.IO
         }
 
         public void Commit() { }
+
+        public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();
     }
 }

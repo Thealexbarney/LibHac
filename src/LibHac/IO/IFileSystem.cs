@@ -106,6 +106,8 @@ namespace LibHac.IO
         /// Does nothing if called on a non-transactional file system.
         /// </summary>
         void Commit();
+
+        void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId);
     }
 
     /// <summary>
@@ -124,11 +126,16 @@ namespace LibHac.IO
     /// </summary>
     [Flags]
     public enum CreateFileOptions
-    { 
+    {
         None = 0,
         /// <summary>
         /// On a <see cref="ConcatenationFileSystem"/>, creates a concatenation file.
         /// </summary>
         CreateConcatenationFile = 1 << 0
+    }
+
+    public enum QueryId
+    {
+        MakeConcatFile = 0
     }
 }

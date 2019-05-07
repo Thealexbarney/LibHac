@@ -1,4 +1,6 @@
-﻿namespace LibHac.IO
+﻿using System;
+
+namespace LibHac.IO
 {
     public class SubdirectoryFileSystem : IFileSystem
     {
@@ -101,6 +103,11 @@
         public void Commit()
         {
             ParentFileSystem.Commit();
+        }
+
+        public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId)
+        {
+            ParentFileSystem.QueryEntry(outBuffer, inBuffer, ResolveFullPath(path), queryId);
         }
     }
 }
