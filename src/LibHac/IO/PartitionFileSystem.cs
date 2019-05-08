@@ -85,7 +85,7 @@ namespace LibHac.IO
         public long GetTotalSpaceSize(string path) => throw new NotSupportedException();
         public FileTimeStampRaw GetFileTimeStampRaw(string path) => throw new NotSupportedException();
         public void Commit() { }
-        public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();
+        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();
     }
 
     public enum PartitionFileSystemType

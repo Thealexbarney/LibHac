@@ -112,7 +112,7 @@ namespace LibHac.IO
             throw new FileNotFoundException(path);
         }
 
-        public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId)
+        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
         {
             path = PathTools.Normalize(path);
 

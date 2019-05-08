@@ -126,7 +126,7 @@ namespace LibHac.IO
             return ParentFileSystem.GetFileTimeStampRaw(ResolveFullPath(path));
         }
 
-        public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId)
+        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
         {
             path = PathTools.Normalize(path);
 

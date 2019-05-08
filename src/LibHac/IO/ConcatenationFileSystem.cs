@@ -218,7 +218,7 @@ namespace LibHac.IO
             BaseFileSystem.Commit();
         }
 
-        public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId)
+        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
         {
             if(queryId != QueryId.MakeConcatFile) throw new NotSupportedException();
 

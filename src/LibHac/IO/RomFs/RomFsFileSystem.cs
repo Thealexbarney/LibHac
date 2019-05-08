@@ -92,7 +92,7 @@ namespace LibHac.IO.RomFs
         public long GetFreeSpaceSize(string path) => throw new NotSupportedException();
         public long GetTotalSpaceSize(string path) => throw new NotSupportedException();
         public FileTimeStampRaw GetFileTimeStampRaw(string path) => throw new NotSupportedException();
-        public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();
+        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();
     }
 
     public class RomfsHeader

@@ -117,7 +117,7 @@ namespace LibHac.IO
         /// </summary>
         void Commit();
 
-        void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId);
+        void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId);
     }
 
     /// <summary>
