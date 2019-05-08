@@ -16,6 +16,8 @@ namespace hactoolnet
         {
             using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.ReadWrite))
             {
+                bool signNeeded = ctx.Options.SignSave;
+
                 var save = new SaveDataFileSystem(ctx.Keyset, file, ctx.Options.IntegrityLevel, true);
 
                 if (ctx.Options.Validate)
@@ -30,52 +32,61 @@ namespace hactoolnet
 
                 if (ctx.Options.DebugOutDir != null)
                 {
-                    // todo
                     string dir = ctx.Options.DebugOutDir;
 
                     ExportSaveDebug(ctx, dir, save);
                 }
 
-                if (ctx.Options.ReplaceFileDest != null && ctx.Options.ReplaceFileSource != null)
+                try
                 {
-                    string destFilename = ctx.Options.ReplaceFileDest;
-                    if (!destFilename.StartsWith("/")) destFilename = '/' + destFilename;
-
-                    using (IFile inFile = new LocalFile(ctx.Options.ReplaceFileSource, OpenMode.Read))
+                    if (ctx.Options.ReplaceFileDest != null && ctx.Options.ReplaceFileSource != null)
                     {
-                        using (IFile outFile = save.OpenFile(destFilename, OpenMode.ReadWrite))
+                        string destFilename = ctx.Options.ReplaceFileDest;
+                        if (!destFilename.StartsWith("/")) destFilename = '/' + destFilename;
+
+                        using (IFile inFile = new LocalFile(ctx.Options.ReplaceFileSource, OpenMode.Read))
                         {
-                            if (inFile.GetSize() != outFile.GetSize())
+                            using (IFile outFile = save.OpenFile(destFilename, OpenMode.ReadWrite))
                             {
-                                outFile.SetSize(inFile.GetSize());
+                                if (inFile.GetSize() != outFile.GetSize())
+                                {
+                                    outFile.SetSize(inFile.GetSize());
+                                }
+
+                                inFile.CopyTo(outFile, ctx.Logger);
+
+                                ctx.Logger.LogMessage($"Replaced file {destFilename}");
                             }
-
-                            inFile.CopyTo(outFile, ctx.Logger);
-
-                            ctx.Logger.LogMessage($"Replaced file {destFilename}");
                         }
+
+                        signNeeded = true;
                     }
 
-                    if (save.Commit(ctx.Keyset))
+                    if (ctx.Options.RepackSource != null)
                     {
-                        ctx.Logger.LogMessage("Successfully signed save file");
-                    }
-                    else
-                    {
-                        ctx.Logger.LogMessage("ERROR: Unable to sign save file. Do you have all the required keys?");
-                    }
+                        var source = new LocalFileSystem(ctx.Options.RepackSource);
 
-                    return;
+                        save.CleanDirectoryRecursively("/");
+                        save.Commit(ctx.Keyset);
+                        source.CopyFileSystem(save);
+
+                        signNeeded = true;
+                    }
+                }
+                finally
+                {
+                    save.Commit(ctx.Keyset);
                 }
 
-                if (ctx.Options.SignSave || ctx.Options.TrimSave)
+                if (ctx.Options.TrimSave)
                 {
-                    if (ctx.Options.TrimSave)
-                    {
-                        save.FsTrim();
-                        ctx.Logger.LogMessage("Trimmed save file");
-                    }
+                    save.FsTrim();
+                    signNeeded = true;
+                    ctx.Logger.LogMessage("Trimmed save file");
+                }
 
+                if (signNeeded)
+                {
                     if (save.Commit(ctx.Keyset))
                     {
                         ctx.Logger.LogMessage("Successfully signed save file");
@@ -90,14 +101,14 @@ namespace hactoolnet
 
                 if (ctx.Options.ListFiles)
                 {
-                    foreach (DirectoryEntry entry in save.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File))
+                    foreach (DirectoryEntry entry in save.EnumerateEntries())
                     {
                         ctx.Logger.LogMessage(entry.FullPath);
                     }
                 }
 
                 ctx.Logger.LogMessage(save.Print());
-                //ctx.Logger.LogMessage(PrintFatLayout(save));
+                //ctx.Logger.LogMessage(PrintFatLayout(save.SaveDataFileSystemCore));
             }
         }
 
