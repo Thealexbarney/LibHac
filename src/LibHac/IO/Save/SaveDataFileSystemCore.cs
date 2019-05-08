@@ -39,6 +39,11 @@ namespace LibHac.IO.Save
             int blockCount = (int)Util.DivideByRoundUp(size, AllocationTable.Header.BlockSize);
             int startBlock = AllocationTable.Allocate(blockCount);
 
+            if (startBlock == -1)
+            {
+                throw new IOException("Not enough available space to create file.");
+            }
+
             var fileEntry = new SaveFileInfo { StartBlock = startBlock, Length = size };
 
             FileTable.AddFile(path, ref fileEntry);
