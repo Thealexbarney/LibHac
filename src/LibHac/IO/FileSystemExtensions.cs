@@ -182,6 +182,27 @@ namespace LibHac.IO
         {
             fs.QueryEntry(Span<byte>.Empty, Span<byte>.Empty, path, QueryId.MakeConcatFile);
         }
+
+        public static void CleanDirectoryRecursivelyGeneric(IDirectory directory)
+        {
+            IFileSystem fs = directory.ParentFileSystem;
+
+            foreach (DirectoryEntry entry in directory.Read())
+            {
+                if (entry.Type == DirectoryEntryType.Directory)
+                {
+                    string subPath = directory.FullPath + '/' + entry.Name;
+                    IDirectory subDir = fs.OpenDirectory(subPath, OpenDirectoryMode.All);
+
+                    CleanDirectoryRecursivelyGeneric(subDir);
+                    fs.DeleteDirectory(subPath);
+                }
+                else if (entry.Type == DirectoryEntryType.File)
+                {
+                    fs.DeleteFile(directory.FullPath + '/' + entry.Name);
+                }
+            }
+        }
     }
 
     [Flags]

@@ -20,6 +20,28 @@ namespace LibHac.Nand
             Fs.DeleteDirectory(path);
         }
 
+        public void DeleteDirectoryRecursively(string path)
+        {
+            path = ToDiscUtilsPath(PathTools.Normalize(path));
+
+            Fs.DeleteDirectory(path, true);
+        }
+
+        public void CleanDirectoryRecursively(string path)
+        {
+            path = ToDiscUtilsPath(PathTools.Normalize(path));
+
+            foreach (string file in Fs.GetFiles(path))
+            {
+                Fs.DeleteFile(file);
+            }
+
+            foreach (string file in Fs.GetDirectories(path))
+            {
+                Fs.DeleteDirectory(file, true);
+            }
+        }
+
         public void DeleteFile(string path)
         {
             path = ToDiscUtilsPath(PathTools.Normalize(path));
