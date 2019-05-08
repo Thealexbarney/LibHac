@@ -174,6 +174,16 @@ namespace LibHac.IO
             return timeStamp;
         }
 
+        public long GetFreeSpaceSize(string path)
+        {
+            return new DriveInfo(BasePath).AvailableFreeSpace;
+        }
+
+        public long GetTotalSpaceSize(string path)
+        {
+            return new DriveInfo(BasePath).TotalSize;
+        }
+
         public void Commit() { }
 
         public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();

@@ -272,6 +272,15 @@ namespace LibHac.IO.Save
             WriteEntry(segAIndex, segA);
         }
 
+        public int GetFreeListLength()
+        {
+            int freeListStart = GetFreeListBlockIndex();
+
+            if (freeListStart == -1) return 0;
+
+            return GetListLength(freeListStart);
+        }
+
         public int GetListLength(int blockIndex)
         {
             int index = blockIndex;

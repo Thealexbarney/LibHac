@@ -106,6 +106,16 @@ namespace LibHac.Nand
             return timeStamp;
         }
 
+        public long GetFreeSpaceSize(string path)
+        {
+            return Fs.AvailableSpace;
+        }
+
+        public long GetTotalSpaceSize(string path)
+        {
+            return Fs.Size;
+        }
+
         public void Commit() { }
 
         public void CreateDirectory(string path) => throw new NotSupportedException();
@@ -113,7 +123,7 @@ namespace LibHac.Nand
         public void RenameDirectory(string srcPath, string dstPath) => throw new NotSupportedException();
         public void RenameFile(string srcPath, string dstPath) => throw new NotSupportedException();
         public void QueryEntry(Span<byte> outBuffer, Span<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();
-        
+
         private static FileAccess GetFileAccess(OpenMode mode)
         {
             // FileAccess and OpenMode have the same flags

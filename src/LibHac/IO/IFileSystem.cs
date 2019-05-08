@@ -105,9 +105,9 @@ namespace LibHac.IO
         /// <exception cref="FileNotFoundException">The specified path does not exist.</exception>
         DirectoryEntryType GetEntryType(string path);
 
-        //long GetFreeSpaceSize(string path);
+        long GetFreeSpaceSize(string path);
 
-        //long GetTotalSpaceSize(string path);
+        long GetTotalSpaceSize(string path);
 
         FileTimeStampRaw GetFileTimeStampRaw(string path);
 

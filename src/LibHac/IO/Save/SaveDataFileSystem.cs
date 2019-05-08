@@ -190,6 +190,16 @@ namespace LibHac.IO.Save
             return SaveDataFileSystemCore.GetEntryType(path);
         }
 
+        public long GetFreeSpaceSize(string path)
+        {
+            return SaveDataFileSystemCore.GetFreeSpaceSize(path);
+        }
+
+        public long GetTotalSpaceSize(string path)
+        {
+            return SaveDataFileSystemCore.GetTotalSpaceSize(path);
+        }
+
         public void Commit()
         {
             Commit(Keyset);

@@ -126,6 +126,17 @@ namespace LibHac.IO.Save
             throw new FileNotFoundException(path);
         }
 
+        public long GetFreeSpaceSize(string path)
+        {
+            int freeBlockCount = AllocationTable.GetFreeListLength();
+            return Header.BlockSize * freeBlockCount;
+        }
+
+        public long GetTotalSpaceSize(string path)
+        {
+            return Header.BlockSize * Header.BlockCount;
+        }
+
         public void Commit()
         {
 

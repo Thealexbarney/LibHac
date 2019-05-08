@@ -198,6 +198,16 @@ namespace LibHac.IO
             return BaseFileSystem.GetEntryType(path);
         }
 
+        public long GetFreeSpaceSize(string path)
+        {
+            return BaseFileSystem.GetFreeSpaceSize(path);
+        }
+
+        public long GetTotalSpaceSize(string path)
+        {
+            return BaseFileSystem.GetTotalSpaceSize(path);
+        }
+
         public FileTimeStampRaw GetFileTimeStampRaw(string path)
         {
             return BaseFileSystem.GetFileTimeStampRaw(path);

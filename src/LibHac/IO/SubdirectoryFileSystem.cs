@@ -105,6 +105,20 @@ namespace LibHac.IO
             ParentFileSystem.Commit();
         }
 
+        public long GetFreeSpaceSize(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            return ParentFileSystem.GetFreeSpaceSize(ResolveFullPath(path));
+        }
+
+        public long GetTotalSpaceSize(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            return ParentFileSystem.GetTotalSpaceSize(ResolveFullPath(path));
+        }
+
         public FileTimeStampRaw GetFileTimeStampRaw(string path)
         {
             path = PathTools.Normalize(path);
