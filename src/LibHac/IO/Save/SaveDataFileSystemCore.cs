@@ -46,7 +46,9 @@ namespace LibHac.IO.Save
 
         public void DeleteDirectory(string path)
         {
-            throw new NotImplementedException();
+            path = PathTools.Normalize(path);
+
+            FileTable.DeleteDirectory(path);
         }
 
         public void DeleteDirectoryRecursively(string path)
