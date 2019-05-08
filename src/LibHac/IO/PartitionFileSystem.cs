@@ -78,6 +78,8 @@ namespace LibHac.IO
         public void CreateDirectory(string path) => throw new NotSupportedException();
         public void CreateFile(string path, long size, CreateFileOptions options) => throw new NotSupportedException();
         public void DeleteDirectory(string path) => throw new NotSupportedException();
+        public void DeleteDirectoryRecursively(string path) => throw new NotSupportedException();
+        public void CleanDirectoryRecursively(string path) => throw new NotSupportedException();
         public void DeleteFile(string path) => throw new NotSupportedException();
         public void RenameDirectory(string srcPath, string dstPath) => throw new NotSupportedException();
         public void RenameFile(string srcPath, string dstPath) => throw new NotSupportedException();

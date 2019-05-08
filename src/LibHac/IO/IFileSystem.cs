@@ -33,9 +33,9 @@ namespace LibHac.IO
         /// <exception cref="IOException">An I/O error occurred while deleting the directory.</exception>
         void DeleteDirectory(string path);
 
-        //void DeleteDirectoryRecursively(string path);
+        void DeleteDirectoryRecursively(string path);
 
-        //void CleanDirectoryRecursively(string path);
+        void CleanDirectoryRecursively(string path);
 
         /// <summary>
         /// Deletes the specified file.

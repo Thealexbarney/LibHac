@@ -49,6 +49,22 @@ namespace LibHac.IO.Save
             throw new NotImplementedException();
         }
 
+        public void DeleteDirectoryRecursively(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            CleanDirectoryRecursively(path);
+            DeleteDirectory(path);
+        }
+
+        public void CleanDirectoryRecursively(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            IDirectory dir = OpenDirectory(path, OpenDirectoryMode.All);
+            FileSystemExtensions.CleanDirectoryRecursivelyGeneric(dir);
+        }
+
         public void DeleteFile(string path)
         {
             path = PathTools.Normalize(path);

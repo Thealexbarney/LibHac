@@ -64,6 +64,16 @@ namespace LibHac.IO
             BaseFileSystem.DeleteDirectory(path);
         }
 
+        public void DeleteDirectoryRecursively(string path)
+        {
+            BaseFileSystem.DeleteDirectoryRecursively(path);
+        }
+
+        public void CleanDirectoryRecursively(string path)
+        {
+            BaseFileSystem.CleanDirectoryRecursively(path);
+        }
+
         public void DeleteFile(string path)
         {
             BaseFileSystem.DeleteFile(path);

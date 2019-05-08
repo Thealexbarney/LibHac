@@ -157,6 +157,16 @@ namespace LibHac.IO.Save
             SaveDataFileSystemCore.DeleteDirectory(path);
         }
 
+        public void DeleteDirectoryRecursively(string path)
+        {
+            SaveDataFileSystemCore.DeleteDirectoryRecursively(path);
+        }
+
+        public void CleanDirectoryRecursively(string path)
+        {
+            SaveDataFileSystemCore.CleanDirectoryRecursively(path);
+        }
+
         public void DeleteFile(string path)
         {
             SaveDataFileSystemCore.DeleteFile(path);

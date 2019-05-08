@@ -75,8 +75,30 @@ namespace LibHac.IO
         {
             path = PathTools.Normalize(path);
 
-            string resolveLocalPath = ResolveLocalPath(path);
-            Directory.Delete(resolveLocalPath);
+            Directory.Delete(ResolveLocalPath(path));
+        }
+
+        public void DeleteDirectoryRecursively(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            Directory.Delete(ResolveLocalPath(path), true);
+        }
+
+        public void CleanDirectoryRecursively(string path)
+        {
+            path = PathTools.Normalize(path);
+            string localPath = ResolveLocalPath(path);
+
+            foreach (string file in Directory.EnumerateFiles(localPath))
+            {
+                File.Delete(file);
+            }
+
+            foreach (string dir in Directory.EnumerateDirectories(localPath))
+            {
+                Directory.Delete(dir, true);
+            }
         }
 
         public void DeleteFile(string path)

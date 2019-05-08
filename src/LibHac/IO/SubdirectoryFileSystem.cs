@@ -40,6 +40,20 @@ namespace LibHac.IO
             ParentFileSystem.DeleteDirectory(ResolveFullPath(path));
         }
 
+        public void DeleteDirectoryRecursively(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            ParentFileSystem.DeleteDirectoryRecursively(ResolveFullPath(path));
+        }
+
+        public void CleanDirectoryRecursively(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            ParentFileSystem.CleanDirectoryRecursively(ResolveFullPath(path));
+        }
+
         public void DeleteFile(string path)
         {
             path = PathTools.Normalize(path);

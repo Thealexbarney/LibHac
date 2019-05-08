@@ -91,6 +91,24 @@ namespace LibHac.IO
             BaseFileSystem.DeleteDirectory(path);
         }
 
+        public void DeleteDirectoryRecursively(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            if (IsConcatenationFile(path)) throw new DirectoryNotFoundException();
+
+            BaseFileSystem.DeleteDirectoryRecursively(path);
+        }
+
+        public void CleanDirectoryRecursively(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            if (IsConcatenationFile(path)) throw new DirectoryNotFoundException();
+
+            BaseFileSystem.CleanDirectoryRecursively(path);
+        }
+
         public void DeleteFile(string path)
         {
             path = PathTools.Normalize(path);
@@ -220,7 +238,7 @@ namespace LibHac.IO
 
         public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
         {
-            if(queryId != QueryId.MakeConcatFile) throw new NotSupportedException();
+            if (queryId != QueryId.MakeConcatFile) throw new NotSupportedException();
 
             SetConcatenationFileAttribute(path);
         }
