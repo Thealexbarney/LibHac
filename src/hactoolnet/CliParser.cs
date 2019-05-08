@@ -46,6 +46,7 @@ namespace hactoolnet
             new CliOption("normaldir", 1, (o, a) => o.NormalDir = a[0]),
             new CliOption("securedir", 1, (o, a) => o.SecureDir = a[0]),
             new CliOption("logodir", 1, (o, a) => o.LogoDir = a[0]),
+            new CliOption("repack", 1, (o, a) => o.RepackSource = a[0]),
             new CliOption("listapps", 0, (o, a) => o.ListApps = true),
             new CliOption("listtitles", 0, (o, a) => o.ListTitles = true),
             new CliOption("listncas", 0, (o, a) => o.ListNcas = true),
@@ -235,6 +236,7 @@ namespace hactoolnet
             sb.AppendLine("  --sign               Sign the save file. (Requires device_key in key file)");
             sb.AppendLine("  --trim               Trim garbage data in the save file. (Requires device_key in key file)");
             sb.AppendLine("  --listfiles          List files in save file.");
+            sb.AppendLine("  --repack <dir>       Replaces the contents of the save data with the specified directory.");
             sb.AppendLine("  --replacefile <filename in save> <file> Replaces a file in the save data");
             sb.AppendLine("NDV0 (Delta) options:");
             sb.AppendLine("                       Input delta patch can be a delta NCA file or a delta fragment file.");

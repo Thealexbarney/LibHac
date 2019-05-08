@@ -39,6 +39,7 @@ namespace hactoolnet
         public string LogoDir;
         public string ReplaceFileSource;
         public string ReplaceFileDest;
+        public string RepackSource;
         public bool ListApps;
         public bool ListTitles;
         public bool ListNcas;
