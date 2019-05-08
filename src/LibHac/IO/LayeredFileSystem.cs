@@ -136,5 +136,7 @@ namespace LibHac.IO
         public void DeleteFile(string path) => throw new NotSupportedException();
         public void RenameDirectory(string srcPath, string dstPath) => throw new NotSupportedException();
         public void RenameFile(string srcPath, string dstPath) => throw new NotSupportedException();
+        public long GetFreeSpaceSize(string path) => throw new NotSupportedException();
+        public long GetTotalSpaceSize(string path) => throw new NotSupportedException();
     }
 }

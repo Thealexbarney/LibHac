@@ -269,6 +269,8 @@ namespace hactoolnet
             var sb = new StringBuilder();
             sb.AppendLine();
 
+            long freeSpace = save.GetFreeSpaceSize("");
+
             sb.AppendLine("Savefile:");
             PrintItem(sb, colLen, $"CMAC Signature{save.Header.SignatureValidity.GetValidityString()}:", save.Header.Cmac);
             PrintItem(sb, colLen, "Title ID:", $"{save.Header.ExtraData.TitleId:x16}");
@@ -279,6 +281,7 @@ namespace hactoolnet
             PrintItem(sb, colLen, "Timestamp:", $"{DateTimeOffset.FromUnixTimeSeconds(save.Header.ExtraData.Timestamp):yyyy-MM-dd HH:mm:ss} UTC");
             PrintItem(sb, colLen, "Save Data Size:", $"0x{save.Header.ExtraData.DataSize:x16} ({Util.GetBytesReadable(save.Header.ExtraData.DataSize)})");
             PrintItem(sb, colLen, "Journal Size:", $"0x{save.Header.ExtraData.JournalSize:x16} ({Util.GetBytesReadable(save.Header.ExtraData.JournalSize)})");
+            PrintItem(sb, colLen, "Free Space:", $"0x{freeSpace:x16} ({Util.GetBytesReadable(freeSpace)})");
             PrintItem(sb, colLen, $"Header Hash{save.Header.HeaderHashValidity.GetValidityString()}:", save.Header.Layout.Hash);
             PrintItem(sb, colLen, "Number of Files:", save.EnumerateEntries().Count(x => x.Type == DirectoryEntryType.File));
 
