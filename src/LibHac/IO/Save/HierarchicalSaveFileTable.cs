@@ -200,6 +200,59 @@ namespace LibHac.IO.Save
             throw new FileNotFoundException();
         }
 
+        public void DeleteDirectory(string path)
+        {
+            path = PathTools.Normalize(path);
+            ReadOnlySpan<byte> pathBytes = Util.GetUtf8Bytes(path);
+
+            FindPathRecursive(pathBytes, out SaveEntryKey key);
+            int parentIndex = key.Parent;
+
+            DirectoryTable.GetValue(parentIndex, out TableEntry<SaveFindPosition> parentEntry);
+
+            int toDeleteIndex = DirectoryTable.GetIndexFromKey(ref key).Index;
+            if (toDeleteIndex < 0) throw new DirectoryNotFoundException();
+
+            DirectoryTable.GetValue(toDeleteIndex, out TableEntry<SaveFindPosition> toDeleteEntry);
+
+            if (toDeleteEntry.Value.NextDirectory != 0 || toDeleteEntry.Value.NextFile != 0)
+            {
+                throw new IOException("Directory is not empty.");
+            }
+
+            if (parentEntry.Value.NextDirectory == toDeleteIndex)
+            {
+                parentEntry.Value.NextDirectory = toDeleteEntry.NextSibling;
+                DirectoryTable.SetValue(parentIndex, ref parentEntry);
+                DirectoryTable.Remove(ref key);
+                return;
+            }
+
+            int prevIndex = parentEntry.Value.NextDirectory;
+            DirectoryTable.GetValue(prevIndex, out TableEntry<SaveFindPosition> prevEntry);
+            int curIndex = prevEntry.NextSibling;
+
+            while (curIndex != 0)
+            {
+                DirectoryTable.GetValue(curIndex, out TableEntry<SaveFindPosition> curEntry);
+
+                if (curIndex == toDeleteIndex)
+                {
+                    prevEntry.NextSibling = curEntry.NextSibling;
+                    DirectoryTable.SetValue(prevIndex, ref prevEntry);
+
+                    DirectoryTable.Remove(ref key);
+                    return;
+                }
+
+                prevIndex = curIndex;
+                prevEntry = curEntry;
+                curIndex = prevEntry.NextSibling;
+            }
+
+            throw new DirectoryNotFoundException();
+        }
+
         public bool TryOpenDirectory(string path, out SaveFindPosition position)
         {
             if (!FindPathRecursive(Util.GetUtf8Bytes(path), out SaveEntryKey key))
