@@ -154,27 +154,27 @@ namespace LibHac.IO.Save
         public int Trim(int listHeadBlockIndex, int newListLength)
         {
             int blocksRemaining = newListLength;
-            int next = BlockToEntryIndex(listHeadBlockIndex);
+            int nextEntry = BlockToEntryIndex(listHeadBlockIndex);
             int listAIndex = -1;
             int listBIndex = -1;
 
             while (blocksRemaining > 0)
             {
-                if (next < 0)
+                if (nextEntry == 0)
                 {
                     return -1;
                 }
 
-                int currentEntryIndex = next;
+                int currentEntryIndex = nextEntry;
 
-                ReadEntry(EntryIndexToBlock(currentEntryIndex), out next, out int _, out int segmentLength);
+                ReadEntry(EntryIndexToBlock(currentEntryIndex), out int nextBlock, out int _, out int segmentLength);
 
-                next = BlockToEntryIndex(next);
+                nextEntry = BlockToEntryIndex(nextBlock);
 
                 if (segmentLength == blocksRemaining)
                 {
                     listAIndex = currentEntryIndex;
-                    listBIndex = next;
+                    listBIndex = nextEntry;
                 }
                 else if (segmentLength > blocksRemaining)
                 {
