@@ -33,8 +33,20 @@ namespace LibHac.IO
         /// <exception cref="IOException">An I/O error occurred while deleting the directory.</exception>
         void DeleteDirectory(string path);
 
+        /// <summary>
+        /// Deletes the specified directory and any subdirectories and files in the directory.
+        /// </summary>
+        /// <param name="path">The full path of the directory to delete.</param>
+        /// <exception cref="DirectoryNotFoundException">The specified directory does not exist.</exception>
+        /// <exception cref="IOException">An I/O error occurred while deleting the directory.</exception>
         void DeleteDirectoryRecursively(string path);
 
+        /// <summary>
+        /// Deletes any subdirectories and files in the specified directory.
+        /// </summary>
+        /// <param name="path">The full path of the directory to clean.</param>
+        /// <exception cref="DirectoryNotFoundException">The specified directory does not exist.</exception>
+        /// <exception cref="IOException">An I/O error occurred while deleting the directory.</exception>
         void CleanDirectoryRecursively(string path);
 
         /// <summary>
@@ -105,10 +117,26 @@ namespace LibHac.IO
         /// <exception cref="FileNotFoundException">The specified path does not exist.</exception>
         DirectoryEntryType GetEntryType(string path);
 
+        /// <summary>
+        /// Gets the amount of available free space on a drive, in bytes.
+        /// </summary>
+        /// <param name="path">The path of the drive to query. Unused in almost all cases.</param>
+        /// <returns>The amount of free space available on the drive, in bytes.</returns>
         long GetFreeSpaceSize(string path);
 
+        /// <summary>
+        /// Gets the total size of storage space on a drive, in bytes.
+        /// </summary>
+        /// <param name="path">The path of the drive to query. Unused in almost all cases.</param>
+        /// <returns>The total size of the drive, in bytes.</returns>
         long GetTotalSpaceSize(string path);
 
+        /// <summary>
+        /// Gets the creation, last accessed, and last modified timestamps of a file or directory.
+        /// </summary>
+        /// <param name="path">The path of the file or directory.</param>
+        /// <returns>The timestamps for the specified file or directory.
+        /// This value is expressed as a Unix timestamp</returns>
         FileTimeStampRaw GetFileTimeStampRaw(string path);
 
         /// <summary>
@@ -117,6 +145,17 @@ namespace LibHac.IO
         /// </summary>
         void Commit();
 
+        /// <summary>
+        /// Performs a query on the specified file.
+        /// </summary>
+        /// <remarks>This method allows implementers of <see cref="IFileSystem"/> to accept queries and operations
+        /// not included in the IFileSystem interface itself.</remarks>
+        /// <param name="outBuffer">The buffer for receiving data from the query operation.
+        /// May be unused depending on the query type.</param>
+        /// <param name="inBuffer">The buffer for sending data to the query operation.
+        /// May be unused depending on the query type.</param>
+        /// <param name="path">The full path of the file to query.</param>
+        /// <param name="queryId">The type of query to perform.</param>
         void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId);
     }
 
@@ -146,6 +185,10 @@ namespace LibHac.IO
 
     public enum QueryId
     {
+        /// <summary>
+        /// Turns a folder in a <see cref="ConcatenationFileSystem"/> into a concatenation file by
+        /// setting the directory's archive flag.
+        /// </summary>
         MakeConcatFile = 0
     }
 }
