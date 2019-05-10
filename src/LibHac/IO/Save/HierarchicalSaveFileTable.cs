@@ -95,14 +95,74 @@ namespace LibHac.IO.Save
 
             if (path == "/") throw new ArgumentException("Path cannot be empty");
 
-            CreateFileRecursiveInternal(pathBytes, ref fileInfo);
+            CreateFileRecursive(pathBytes, ref fileInfo);
         }
 
-        private void CreateFileRecursiveInternal(ReadOnlySpan<byte> path, ref SaveFileInfo fileInfo)
+        public void AddDirectory(string path)
+        {
+            path = PathTools.Normalize(path);
+            ReadOnlySpan<byte> pathBytes = Util.GetUtf8Bytes(path);
+
+            if (path == "/") throw new ArgumentException("Path cannot be empty");
+
+            SaveFindPosition emptyDir = default;
+            CreateDirectoryRecursive(pathBytes, ref emptyDir);
+        }
+
+        private void CreateFileRecursive(ReadOnlySpan<byte> path, ref SaveFileInfo fileInfo)
         {
             var parser = new PathParser(path);
             var key = new SaveEntryKey(parser.GetCurrent(), 0);
 
+            int parentIndex = CreateParentDirectoryRecursive(ref parser, ref key);
+
+            int index = FileTable.GetIndexFromKey(ref key).Index;
+            var fileEntry = new TableEntry<SaveFileInfo>();
+
+            if (index < 0)
+            {
+                index = FileTable.Add(ref key, ref fileEntry);
+
+                DirectoryTable.GetValue(parentIndex, out TableEntry<SaveFindPosition> parentEntry);
+
+                fileEntry.NextSibling = parentEntry.Value.NextFile;
+                parentEntry.Value.NextFile = index;
+
+                DirectoryTable.SetValue(parentIndex, ref parentEntry);
+            }
+
+            fileEntry.Value = fileInfo;
+            FileTable.SetValue(index, ref fileEntry);
+        }
+
+        private void CreateDirectoryRecursive(ReadOnlySpan<byte> path, ref SaveFindPosition dirInfo)
+        {
+            var parser = new PathParser(path);
+            var key = new SaveEntryKey(parser.GetCurrent(), 0);
+
+            int parentIndex = CreateParentDirectoryRecursive(ref parser, ref key);
+
+            int index = DirectoryTable.GetIndexFromKey(ref key).Index;
+            var dirEntry = new TableEntry<SaveFindPosition>();
+
+            if (index < 0)
+            {
+                index = DirectoryTable.Add(ref key, ref dirEntry);
+
+                DirectoryTable.GetValue(parentIndex, out TableEntry<SaveFindPosition> parentEntry);
+
+                dirEntry.NextSibling = parentEntry.Value.NextDirectory;
+                parentEntry.Value.NextDirectory = index;
+
+                DirectoryTable.SetValue(parentIndex, ref parentEntry);
+            }
+
+            dirEntry.Value = dirInfo;
+            DirectoryTable.SetValue(index, ref dirEntry);
+        }
+
+        private int CreateParentDirectoryRecursive(ref PathParser parser, ref SaveEntryKey key)
+        {
             int prevIndex = 0;
 
             while (!parser.IsFinished())
@@ -131,25 +191,7 @@ namespace LibHac.IO.Save
                 parser.TryGetNext(out key.Name);
             }
 
-            {
-                int index = FileTable.GetIndexFromKey(ref key).Index;
-                var fileEntry = new TableEntry<SaveFileInfo>();
-
-                if (index < 0)
-                {
-                    index = FileTable.Add(ref key, ref fileEntry);
-
-                    DirectoryTable.GetValue(prevIndex, out TableEntry<SaveFindPosition> parentEntry);
-
-                    fileEntry.NextSibling = parentEntry.Value.NextFile;
-                    parentEntry.Value.NextFile = index;
-
-                    DirectoryTable.SetValue(prevIndex, ref parentEntry);
-                }
-
-                fileEntry.Value = fileInfo;
-                FileTable.SetValue(index, ref fileEntry);
-            }
+            return prevIndex;
         }
 
         public void DeleteFile(string path)

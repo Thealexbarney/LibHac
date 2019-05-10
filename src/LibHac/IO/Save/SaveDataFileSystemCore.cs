@@ -29,7 +29,9 @@ namespace LibHac.IO.Save
 
         public void CreateDirectory(string path)
         {
-            throw new NotImplementedException();
+            path = PathTools.Normalize(path);
+
+            FileTable.AddDirectory(path);
         }
 
         public void CreateFile(string path, long size, CreateFileOptions options)
