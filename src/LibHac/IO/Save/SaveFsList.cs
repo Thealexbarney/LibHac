@@ -9,6 +9,8 @@ namespace LibHac.IO.Save
     {
         private const int FreeListHeadIndex = 0;
         private const int UsedListHeadIndex = 1;
+        private const int CapacityIncrement = 0x4000;
+
         public int MaxNameLength { get; } = 0x40;
 
         private IStorage Storage { get; }
@@ -96,7 +98,11 @@ namespace LibHac.IO.Save
 
             if (capacity == 0 || length >= capacity)
             {
-                throw new NotImplementedException();
+                long currentSize = Storage.GetSize();
+                Storage.SetSize(currentSize + CapacityIncrement);
+
+                long newSize = Storage.GetSize();
+                SetListCapacity((int)(newSize / _sizeOfEntry));
             }
 
             SetListLength(length + 1);
@@ -266,7 +272,6 @@ namespace LibHac.IO.Save
             return MemoryMarshal.Read<int>(buf);
         }
 
-        // ReSharper disable once UnusedMember.Local
         private void SetListCapacity(int capacity)
         {
             Span<byte> buf = stackalloc byte[sizeof(int)];
