@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
 
 namespace LibHac.IO
@@ -23,15 +22,14 @@ namespace LibHac.IO
 
             for (int i = 0; i < cacheSize; i++)
             {
-                // todo why is this rented?
-                var block = new CacheBlock { Buffer = ArrayPool<byte>.Shared.Rent(blockSize) };
+                var block = new CacheBlock { Buffer = new byte[blockSize], Index = -1 };
                 Blocks.AddLast(block);
             }
         }
 
         public CachedStorage(SectorStorage baseStorage, int cacheSize, bool leaveOpen)
             : this(baseStorage, baseStorage.SectorSize, cacheSize, leaveOpen) { }
-        
+
         protected override void ReadImpl(Span<byte> destination, long offset)
         {
             long remaining = destination.Length;
@@ -124,7 +122,11 @@ namespace LibHac.IO
 
             CacheBlock block = node.Value;
             Blocks.RemoveLast();
-            BlockDict.Remove(block.Index);
+
+            if (block.Index != -1)
+            {
+                BlockDict.Remove(block.Index);
+            }
 
             FlushBlock(block);
             ReadBlock(block, blockIndex);
