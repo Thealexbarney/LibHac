@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace LibHac.IO.Save
 {
@@ -92,6 +93,8 @@ namespace LibHac.IO.Save
             if (oldBlockCount == 0)
             {
                 InitialBlock = Fat.Allocate(newBlockCount);
+                if (InitialBlock == -1) throw new IOException("Not enough space to resize file.");
+
                 _length = newBlockCount * BlockSize;
 
                 return;
@@ -101,7 +104,7 @@ namespace LibHac.IO.Save
             {
                 Fat.Free(InitialBlock);
 
-                InitialBlock = -1;
+                InitialBlock = int.MinValue;
                 _length = 0;
 
                 return;
@@ -110,6 +113,8 @@ namespace LibHac.IO.Save
             if (newBlockCount > oldBlockCount)
             {
                 int newBlocks = Fat.Allocate(newBlockCount - oldBlockCount);
+                if (InitialBlock == -1) throw new IOException("Not enough space to resize file.");
+
                 Fat.Join(InitialBlock, newBlocks);
             }
             else

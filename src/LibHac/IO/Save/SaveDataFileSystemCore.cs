@@ -38,6 +38,14 @@ namespace LibHac.IO.Save
         {
             path = PathTools.Normalize(path);
 
+            if (size == 0)
+            {
+                var emptyFileEntry = new SaveFileInfo { StartBlock = int.MinValue, Length = size };
+                FileTable.AddFile(path, ref emptyFileEntry);
+
+                return;
+            }
+
             int blockCount = (int)Util.DivideByRoundUp(size, AllocationTable.Header.BlockSize);
             int startBlock = AllocationTable.Allocate(blockCount);
 
