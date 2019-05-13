@@ -105,8 +105,7 @@ namespace LibHac.IO.Save
 
             if (path == "/") throw new ArgumentException("Path cannot be empty");
 
-            SaveFindPosition emptyDir = default;
-            CreateDirectoryRecursive(pathBytes, ref emptyDir);
+            CreateDirectoryRecursive(pathBytes);
         }
 
         private void CreateFileRecursive(ReadOnlySpan<byte> path, ref SaveFileInfo fileInfo)
@@ -117,25 +116,24 @@ namespace LibHac.IO.Save
             int parentIndex = CreateParentDirectoryRecursive(ref parser, ref key);
 
             int index = FileTable.GetIndexFromKey(ref key).Index;
-            var fileEntry = new TableEntry<SaveFileInfo>();
+            TableEntry<SaveFileInfo> fileEntry = default;
 
-            if (index < 0)
+            // File already exists. Update file info.
+            if (index >= 0)
             {
-                index = FileTable.Add(ref key, ref fileEntry);
-
-                DirectoryTable.GetValue(parentIndex, out TableEntry<SaveFindPosition> parentEntry);
-
-                fileEntry.NextSibling = parentEntry.Value.NextFile;
-                parentEntry.Value.NextFile = index;
-
-                DirectoryTable.SetValue(parentIndex, ref parentEntry);
+                FileTable.GetValue(index, out fileEntry);
+                fileEntry.Value = fileInfo;
+                FileTable.SetValue(index, ref fileEntry);
+                return;
             }
 
             fileEntry.Value = fileInfo;
-            FileTable.SetValue(index, ref fileEntry);
+            index = FileTable.Add(ref key, ref fileEntry);
+
+            LinkFileToParent(parentIndex, index);
         }
 
-        private void CreateDirectoryRecursive(ReadOnlySpan<byte> path, ref SaveFindPosition dirInfo)
+        private void CreateDirectoryRecursive(ReadOnlySpan<byte> path)
         {
             var parser = new PathParser(path);
             var key = new SaveEntryKey(parser.GetCurrent(), 0);
@@ -143,22 +141,14 @@ namespace LibHac.IO.Save
             int parentIndex = CreateParentDirectoryRecursive(ref parser, ref key);
 
             int index = DirectoryTable.GetIndexFromKey(ref key).Index;
-            var dirEntry = new TableEntry<SaveFindPosition>();
+            TableEntry<SaveFindPosition> dirEntry = default;
 
-            if (index < 0)
-            {
-                index = DirectoryTable.Add(ref key, ref dirEntry);
+            // Directory already exists. Do nothing.
+            if (index >= 0) return;
 
-                DirectoryTable.GetValue(parentIndex, out TableEntry<SaveFindPosition> parentEntry);
+            index = DirectoryTable.Add(ref key, ref dirEntry);
 
-                dirEntry.NextSibling = parentEntry.Value.NextDirectory;
-                parentEntry.Value.NextDirectory = index;
-
-                DirectoryTable.SetValue(parentIndex, ref parentEntry);
-            }
-
-            dirEntry.Value = dirInfo;
-            DirectoryTable.SetValue(index, ref dirEntry);
+            LinkDirectoryToParent(parentIndex, index);
         }
 
         private int CreateParentDirectoryRecursive(ref PathParser parser, ref SaveEntryKey key)
@@ -176,13 +166,7 @@ namespace LibHac.IO.Save
 
                     if (prevIndex > 0)
                     {
-                        DirectoryTable.GetValue(prevIndex, out TableEntry<SaveFindPosition> parentEntry);
-
-                        newEntry.NextSibling = parentEntry.Value.NextDirectory;
-                        parentEntry.Value.NextDirectory = index;
-
-                        DirectoryTable.SetValue(prevIndex, ref parentEntry);
-                        DirectoryTable.SetValue(index, ref newEntry);
+                        LinkDirectoryToParent(prevIndex, index);
                     }
                 }
 
@@ -194,26 +178,39 @@ namespace LibHac.IO.Save
             return prevIndex;
         }
 
-        public void DeleteFile(string path)
+        private void LinkFileToParent(int parentIndex, int fileIndex)
         {
-            path = PathTools.Normalize(path);
-            ReadOnlySpan<byte> pathBytes = Util.GetUtf8Bytes(path);
-
-            FindPathRecursive(pathBytes, out SaveEntryKey key);
-            int parentIndex = key.Parent;
-
             DirectoryTable.GetValue(parentIndex, out TableEntry<SaveFindPosition> parentEntry);
+            FileTable.GetValue(fileIndex, out TableEntry<SaveFileInfo> fileEntry);
 
-            int toDeleteIndex = FileTable.GetIndexFromKey(ref key).Index;
-            if (toDeleteIndex < 0) throw new FileNotFoundException();
+            fileEntry.NextSibling = parentEntry.Value.NextFile;
+            parentEntry.Value.NextFile = fileIndex;
 
-            FileTable.GetValue(toDeleteIndex, out TableEntry<SaveFileInfo> toDeleteEntry);
+            DirectoryTable.SetValue(parentIndex, ref parentEntry);
+            FileTable.SetValue(fileIndex, ref fileEntry);
+        }
 
-            if (parentEntry.Value.NextFile == toDeleteIndex)
+        private void LinkDirectoryToParent(int parentIndex, int dirIndex)
+        {
+            DirectoryTable.GetValue(parentIndex, out TableEntry<SaveFindPosition> parentEntry);
+            DirectoryTable.GetValue(dirIndex, out TableEntry<SaveFindPosition> dirEntry);
+
+            dirEntry.NextSibling = parentEntry.Value.NextDirectory;
+            parentEntry.Value.NextDirectory = dirIndex;
+
+            DirectoryTable.SetValue(parentIndex, ref parentEntry);
+            DirectoryTable.SetValue(dirIndex, ref dirEntry);
+        }
+
+        private void UnlinkFileFromParent(int parentIndex, int fileIndex)
+        {
+            DirectoryTable.GetValue(parentIndex, out TableEntry<SaveFindPosition> parentEntry);
+            FileTable.GetValue(fileIndex, out TableEntry<SaveFileInfo> fileEntry);
+
+            if (parentEntry.Value.NextFile == fileIndex)
             {
-                parentEntry.Value.NextFile = toDeleteEntry.NextSibling;
+                parentEntry.Value.NextFile = fileEntry.NextSibling;
                 DirectoryTable.SetValue(parentIndex, ref parentEntry);
-                FileTable.Remove(ref key);
                 return;
             }
 
@@ -225,12 +222,10 @@ namespace LibHac.IO.Save
             {
                 FileTable.GetValue(curIndex, out TableEntry<SaveFileInfo> curEntry);
 
-                if (curIndex == toDeleteIndex)
+                if (curIndex == fileIndex)
                 {
                     prevEntry.NextSibling = curEntry.NextSibling;
                     FileTable.SetValue(prevIndex, ref prevEntry);
-
-                    FileTable.Remove(ref key);
                     return;
                 }
 
@@ -238,35 +233,17 @@ namespace LibHac.IO.Save
                 prevEntry = curEntry;
                 curIndex = prevEntry.NextSibling;
             }
-
-            throw new FileNotFoundException();
         }
 
-        public void DeleteDirectory(string path)
+        private void UnlinkDirectoryFromParent(int parentIndex, int dirIndex)
         {
-            path = PathTools.Normalize(path);
-            ReadOnlySpan<byte> pathBytes = Util.GetUtf8Bytes(path);
-
-            FindPathRecursive(pathBytes, out SaveEntryKey key);
-            int parentIndex = key.Parent;
-
             DirectoryTable.GetValue(parentIndex, out TableEntry<SaveFindPosition> parentEntry);
+            DirectoryTable.GetValue(dirIndex, out TableEntry<SaveFindPosition> dirEntry);
 
-            int toDeleteIndex = DirectoryTable.GetIndexFromKey(ref key).Index;
-            if (toDeleteIndex < 0) throw new DirectoryNotFoundException();
-
-            DirectoryTable.GetValue(toDeleteIndex, out TableEntry<SaveFindPosition> toDeleteEntry);
-
-            if (toDeleteEntry.Value.NextDirectory != 0 || toDeleteEntry.Value.NextFile != 0)
+            if (parentEntry.Value.NextDirectory == dirIndex)
             {
-                throw new IOException("Directory is not empty.");
-            }
-
-            if (parentEntry.Value.NextDirectory == toDeleteIndex)
-            {
-                parentEntry.Value.NextDirectory = toDeleteEntry.NextSibling;
+                parentEntry.Value.NextDirectory = dirEntry.NextSibling;
                 DirectoryTable.SetValue(parentIndex, ref parentEntry);
-                DirectoryTable.Remove(ref key);
                 return;
             }
 
@@ -278,12 +255,10 @@ namespace LibHac.IO.Save
             {
                 DirectoryTable.GetValue(curIndex, out TableEntry<SaveFindPosition> curEntry);
 
-                if (curIndex == toDeleteIndex)
+                if (curIndex == dirIndex)
                 {
                     prevEntry.NextSibling = curEntry.NextSibling;
                     DirectoryTable.SetValue(prevIndex, ref prevEntry);
-
-                    DirectoryTable.Remove(ref key);
                     return;
                 }
 
@@ -291,8 +266,112 @@ namespace LibHac.IO.Save
                 prevEntry = curEntry;
                 curIndex = prevEntry.NextSibling;
             }
+        }
 
-            throw new DirectoryNotFoundException();
+        public void DeleteFile(string path)
+        {
+            path = PathTools.Normalize(path);
+            ReadOnlySpan<byte> pathBytes = Util.GetUtf8Bytes(path);
+
+            FindPathRecursive(pathBytes, out SaveEntryKey key);
+            int parentIndex = key.Parent;
+
+            int toDeleteIndex = FileTable.GetIndexFromKey(ref key).Index;
+            if (toDeleteIndex < 0) throw new FileNotFoundException();
+
+            UnlinkFileFromParent(parentIndex, toDeleteIndex);
+
+            FileTable.Remove(ref key);
+        }
+
+        public void DeleteDirectory(string path)
+        {
+            path = PathTools.Normalize(path);
+            ReadOnlySpan<byte> pathBytes = Util.GetUtf8Bytes(path);
+
+            FindPathRecursive(pathBytes, out SaveEntryKey key);
+            int parentIndex = key.Parent;
+
+            int toDeleteIndex = DirectoryTable.GetIndexFromKey(ref key).Index;
+            if (toDeleteIndex < 0) throw new DirectoryNotFoundException();
+
+            DirectoryTable.GetValue(toDeleteIndex, out TableEntry<SaveFindPosition> toDeleteEntry);
+
+            if (toDeleteEntry.Value.NextDirectory != 0 || toDeleteEntry.Value.NextFile != 0)
+            {
+                throw new IOException("Directory is not empty.");
+            }
+
+            UnlinkDirectoryFromParent(parentIndex, toDeleteIndex);
+
+            DirectoryTable.Remove(ref key);
+        }
+
+        public void RenameFile(string srcPath, string dstPath)
+        {
+            if (srcPath == dstPath || TryOpenFile(dstPath, out _) || TryOpenDirectory(dstPath, out _))
+            {
+                throw new IOException("Destination path already exists.");
+            }
+
+            ReadOnlySpan<byte> oldPathBytes = Util.GetUtf8Bytes(srcPath);
+            ReadOnlySpan<byte> newPathBytes = Util.GetUtf8Bytes(dstPath);
+
+            if (!FindPathRecursive(oldPathBytes, out SaveEntryKey oldKey))
+            {
+                throw new FileNotFoundException();
+            }
+
+            int fileIndex = FileTable.GetIndexFromKey(ref oldKey).Index;
+
+            if (!FindPathRecursive(newPathBytes, out SaveEntryKey newKey))
+            {
+                throw new FileNotFoundException();
+            }
+
+            if (oldKey.Parent != newKey.Parent)
+            {
+                UnlinkFileFromParent(oldKey.Parent, fileIndex);
+                LinkFileToParent(newKey.Parent, fileIndex);
+            }
+
+            FileTable.ChangeKey(ref oldKey, ref newKey);
+        }
+
+        public void RenameDirectory(string srcPath, string dstPath)
+        {
+            if (srcPath == dstPath || TryOpenFile(dstPath, out _) || TryOpenDirectory(dstPath, out _))
+            {
+                throw new IOException(Messages.DestPathAlreadyExists);
+            }
+            
+            ReadOnlySpan<byte> oldPathBytes = Util.GetUtf8Bytes(srcPath);
+            ReadOnlySpan<byte> newPathBytes = Util.GetUtf8Bytes(dstPath);
+
+            if (!FindPathRecursive(oldPathBytes, out SaveEntryKey oldKey))
+            {
+                throw new DirectoryNotFoundException();
+            }
+
+            int dirIndex = DirectoryTable.GetIndexFromKey(ref oldKey).Index;
+
+            if (!FindPathRecursive(newPathBytes, out SaveEntryKey newKey))
+            {
+                throw new IOException(Messages.PartialPathNotFound);
+            }
+
+            if (PathTools.IsSubPath(oldPathBytes, newPathBytes))
+            {
+                throw new IOException(Messages.DestPathIsSubPath);
+            }
+
+            if (oldKey.Parent != newKey.Parent)
+            {
+                UnlinkDirectoryFromParent(oldKey.Parent, dirIndex);
+                LinkDirectoryToParent(newKey.Parent, dirIndex);
+            }
+
+            DirectoryTable.ChangeKey(ref oldKey, ref newKey);
         }
 
         public bool TryOpenDirectory(string path, out SaveFindPosition position)

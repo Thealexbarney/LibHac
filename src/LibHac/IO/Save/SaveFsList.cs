@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -230,6 +231,26 @@ namespace LibHac.IO.Save
             WriteEntry(previousIndex, ref prevEntry);
 
             Free(index);
+        }
+
+        public void ChangeKey(ref SaveEntryKey oldKey, ref SaveEntryKey newKey)
+        {
+            int index = GetIndexFromKey(ref oldKey).Index;
+            int newIndex = GetIndexFromKey(ref newKey).Index;
+
+            if (index == -1) throw new KeyNotFoundException("Old key was not found.");
+            if (newIndex != -1) throw new KeyNotFoundException("New key already exists.");
+
+            Span<byte> entryBytes = stackalloc byte[_sizeOfEntry];
+            Span<byte> name = entryBytes.Slice(4, MaxNameLength);
+            ref SaveFsEntry entry = ref GetEntryFromBytes(entryBytes);
+
+            ReadEntry(index, entryBytes);
+
+            entry.Parent = newKey.Parent;
+            newKey.Name.CopyTo(name);
+
+            WriteEntry(index, entryBytes);
         }
 
         public void TrimFreeEntries()

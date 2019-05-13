@@ -1,4 +1,5 @@
-﻿using LibHac.IO;
+﻿using System;
+using LibHac.IO;
 using Xunit;
 
 namespace LibHac.Tests
@@ -20,7 +21,6 @@ namespace LibHac.Tests
             new object[] {"/../a/b/c/.", "/a/b/c"},
             new object[] {"/./a/b/c/.", "/a/b/c"},
 
-
             new object[] {"/a/b/c/", "/a/b/c/"},
             new object[] {"/a/./b/../c/", "/a/c/"},
             new object[] {"/./b/../c/", "/c/"},
@@ -37,11 +37,39 @@ namespace LibHac.Tests
             new object[] {"./a/b/c/.", "/a/b/c"},
         };
 
+        public static object[][] SubPathTestItems =
+        {
+            new object[] {"/", "/", false},
+            new object[] {"/", "/a", true},
+            new object[] {"/", "/a/", true},
+
+            new object[] {"/a/b/c", "/a/b/c/d", true},
+            new object[] {"/a/b/c/", "/a/b/c/d", true},
+
+            new object[] {"/a/b/c", "/a/b/c", false},
+            new object[] {"/a/b/c/", "/a/b/c/", false},
+            new object[] {"/a/b/c/", "/a/b/c", false},
+            new object[] {"/a/b/c", "/a/b/c/", false},
+
+            new object[] {"/a/b/c/", "/a/b/cdef", false},
+            new object[] {"/a/b/c", "/a/b/cdef", false},
+            new object[] {"/a/b/c/", "/a/b/cd", false},
+        };
+
         [Theory]
         [MemberData(nameof(NormalizedPathTestItems))]
         public static void NormalizePath(string path, string expected)
         {
             string actual = PathTools.Normalize(path);
+
+            Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [MemberData(nameof(SubPathTestItems))]
+        public static void TestSubPath(string rootPath, string path, bool expected)
+        {
+            bool actual = PathTools.IsSubPath(rootPath.AsSpan(), path.AsSpan());
 
             Assert.Equal(expected, actual);
         }

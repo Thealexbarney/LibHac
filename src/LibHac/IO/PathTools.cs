@@ -171,6 +171,52 @@ namespace LibHac.IO
             return state == NormalizeState.Normal || state == NormalizeState.Delimiter;
         }
 
+        public static bool IsSubPath(ReadOnlySpan<char> rootPath, ReadOnlySpan<char> path)
+        {
+            Debug.Assert(IsNormalized(rootPath));
+            Debug.Assert(IsNormalized(path));
+
+            if (path.Length <= rootPath.Length) return false;
+
+            for (int i = 0; i < rootPath.Length; i++)
+            {
+                if (rootPath[i] != path[i]) return false;
+            }
+
+            // The input root path might or might not have a trailing slash.
+            // Both are treated the same.
+            int rootLength = rootPath[rootPath.Length - 1] == DirectorySeparator
+                ? rootPath.Length - 1
+                : rootPath.Length;
+
+            // Return true if the character after the root path is a separator,
+            // and if the possible sub path continues past that point.
+            return path[rootLength] == DirectorySeparator && path.Length > rootLength + 1;
+        }
+
+        public static bool IsSubPath(ReadOnlySpan<byte> rootPath, ReadOnlySpan<byte> path)
+        {
+            Debug.Assert(IsNormalized(rootPath));
+            Debug.Assert(IsNormalized(path));
+
+            if (path.Length <= rootPath.Length) return false;
+
+            for (int i = 0; i < rootPath.Length; i++)
+            {
+                if (rootPath[i] != path[i]) return false;
+            }
+
+            // The input root path might or might not have a trailing slash.
+            // Both are treated the same.
+            int rootLength = rootPath[rootPath.Length - 1] == DirectorySeparator
+                ? rootPath.Length - 1
+                : rootPath.Length;
+
+            // Return true if the character after the root path is a separator,
+            // and if the possible sub path continues past that point.
+            return path[rootLength] == DirectorySeparator && path.Length > rootLength + 1;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsDirectorySeparator(char c)
         {
