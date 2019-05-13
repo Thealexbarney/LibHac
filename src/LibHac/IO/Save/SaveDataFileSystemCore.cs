@@ -127,12 +127,18 @@ namespace LibHac.IO.Save
 
         public void RenameDirectory(string srcPath, string dstPath)
         {
-            throw new NotImplementedException();
+            srcPath = PathTools.Normalize(srcPath);
+            dstPath = PathTools.Normalize(dstPath);
+
+            FileTable.RenameDirectory(srcPath, dstPath);
         }
 
         public void RenameFile(string srcPath, string dstPath)
         {
-            throw new NotImplementedException();
+            srcPath = PathTools.Normalize(srcPath);
+            dstPath = PathTools.Normalize(dstPath);
+
+            FileTable.RenameFile(srcPath, dstPath);
         }
 
         public bool DirectoryExists(string path)
