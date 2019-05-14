@@ -181,7 +181,7 @@ namespace LibHac.Fs.NcaUtils
         public IStorage OpenRawStorageWithPatch(Nca patchNca, int index)
         {
             IStorage patchStorage = patchNca.OpenRawStorage(index);
-            IStorage baseStorage = OpenRawStorage(index);
+            IStorage baseStorage = SectionExists(index) ? OpenRawStorage(index) : new NullStorage();
 
             NcaFsHeader header = patchNca.Header.GetFsHeader(index);
             NcaFsPatchInfo patchInfo = header.GetPatchInfo();
