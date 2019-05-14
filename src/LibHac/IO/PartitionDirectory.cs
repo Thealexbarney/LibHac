@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class PartitionDirectory : IDirectory
     {

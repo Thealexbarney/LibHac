@@ -2,9 +2,9 @@
 using System.Buffers;
 using System.IO;
 using System.Security.Cryptography;
-using LibHac.IO.Save;
+using LibHac.Fs.Save;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class IntegrityVerificationStorage : SectorStorage
     {

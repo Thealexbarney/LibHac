@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class ConcatenationDirectory : IDirectory
     {

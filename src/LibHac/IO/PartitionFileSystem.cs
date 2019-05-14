@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class PartitionFileSystem : IFileSystem
     {

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using LibHac.IO;
-using LibHac.IO.NcaUtils;
-using LibHac.IO.Save;
+using LibHac.Fs;
+using LibHac.Fs.NcaUtils;
+using LibHac.Fs.Save;
 
 namespace LibHac
 {

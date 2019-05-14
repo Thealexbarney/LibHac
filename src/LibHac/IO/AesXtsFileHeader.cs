@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class AesXtsFileHeader
     {

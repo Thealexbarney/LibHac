@@ -4,7 +4,7 @@ using DiscUtils;
 using DiscUtils.Fat;
 using DiscUtils.Partitions;
 using DiscUtils.Streams;
-using LibHac.IO;
+using LibHac.Fs;
 
 namespace LibHac.Nand
 {

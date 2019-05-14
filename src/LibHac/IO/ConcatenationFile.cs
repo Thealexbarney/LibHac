@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class ConcatenationFile : FileBase
     {

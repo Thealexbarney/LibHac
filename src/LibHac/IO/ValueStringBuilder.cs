@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     internal ref struct ValueStringBuilder
     {

@@ -2,8 +2,8 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using LibHac.IO;
-using LibHac.IO.NcaUtils;
+using LibHac.Fs;
+using LibHac.Fs.NcaUtils;
 using static hactoolnet.Print;
 
 namespace hactoolnet

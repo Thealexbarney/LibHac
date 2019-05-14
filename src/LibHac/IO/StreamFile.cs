@@ -5,7 +5,7 @@ using System.IO;
 using System.Buffers;
 #endif
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     /// <summary>
     /// Provides an <see cref="IFile"/> interface for interacting with a <see cref="Stream"/>

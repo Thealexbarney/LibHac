@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace LibHac.IO.Save
+namespace LibHac.Fs.Save
 {
     internal class SaveFsList<T> where T : struct
     {

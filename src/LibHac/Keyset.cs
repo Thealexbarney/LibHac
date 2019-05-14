@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using LibHac.IO;
+using LibHac.Fs;
 
 namespace LibHac
 {

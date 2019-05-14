@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace LibHac.IO.Save
+namespace LibHac.Fs.Save
 {
     public class RemapStorage : StorageBase
     {

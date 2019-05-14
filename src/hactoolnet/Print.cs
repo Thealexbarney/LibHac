@@ -2,8 +2,8 @@
 using System.Buffers.Binary;
 using System.Text;
 using LibHac;
-using LibHac.IO;
-using LibHac.IO.NcaUtils;
+using LibHac.Fs;
+using LibHac.Fs.NcaUtils;
 
 namespace hactoolnet
 {

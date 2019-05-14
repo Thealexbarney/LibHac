@@ -1,4 +1,4 @@
-﻿namespace LibHac.IO.NcaUtils
+﻿namespace LibHac.Fs.NcaUtils
 {
     public class TitleVersion
     {

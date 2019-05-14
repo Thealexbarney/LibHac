@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     /// <summary>
     /// Enumerates a file or directory path one segment at a time.

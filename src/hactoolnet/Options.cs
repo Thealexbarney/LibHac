@@ -1,5 +1,5 @@
 ﻿using LibHac;
-using LibHac.IO;
+using LibHac.Fs;
 
 namespace hactoolnet
 {

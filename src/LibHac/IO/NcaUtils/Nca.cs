@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using LibHac.IO.RomFs;
+using LibHac.Fs.RomFs;
 
-namespace LibHac.IO.NcaUtils
+namespace LibHac.Fs.NcaUtils
 {
     public class Nca
     {

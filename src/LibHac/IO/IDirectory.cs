@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     /// <summary>
     /// Provides an interface for enumerating the child entries of a directory.

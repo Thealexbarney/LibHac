@@ -5,7 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class PartitionFileSystemBuilder
     {

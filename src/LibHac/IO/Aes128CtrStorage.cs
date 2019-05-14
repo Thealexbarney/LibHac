@@ -2,7 +2,7 @@
 using System.Buffers;
 using System.Buffers.Binary;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class Aes128CtrStorage : SectorStorage
     {

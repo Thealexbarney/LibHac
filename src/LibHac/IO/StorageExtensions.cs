@@ -3,7 +3,7 @@ using System.Buffers;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public static class StorageExtensions
     {

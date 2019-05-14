@@ -29,7 +29,7 @@ using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class Aes128XtsTransform
     {

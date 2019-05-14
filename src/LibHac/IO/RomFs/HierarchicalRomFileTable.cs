@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace LibHac.IO.RomFs
+namespace LibHac.Fs.RomFs
 {
     /// <summary>
     /// Represents the file table used by the RomFS format.

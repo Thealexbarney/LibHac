@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class LayeredFileSystemDirectory : IDirectory
     {

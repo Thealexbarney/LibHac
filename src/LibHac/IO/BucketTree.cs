@@ -2,7 +2,7 @@
 using System.IO;
 using System.Linq;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class BucketTree<T> where T : BucketTreeEntry<T>, new()
     {

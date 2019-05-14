@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace LibHac.IO.Save
+namespace LibHac.Fs.Save
 {
     public class JournalMap
     {

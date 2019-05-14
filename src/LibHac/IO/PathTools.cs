@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public static class PathTools
     {

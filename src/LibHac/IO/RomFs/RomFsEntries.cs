@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace LibHac.IO.RomFs
+namespace LibHac.Fs.RomFs
 {
     internal ref struct RomEntryKey
     {

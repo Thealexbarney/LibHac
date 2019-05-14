@@ -5,7 +5,7 @@ using System.IO;
 using System.Buffers;
 #endif
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class StreamStorage : StorageBase
     {

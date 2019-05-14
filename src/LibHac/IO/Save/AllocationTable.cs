@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace LibHac.IO.Save
+namespace LibHac.Fs.Save
 {
     public class AllocationTable
     {

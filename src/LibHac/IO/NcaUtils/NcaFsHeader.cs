@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 // ReSharper disable ImpureMethodCallOnReadonlyValueField
 
-namespace LibHac.IO.NcaUtils
+namespace LibHac.Fs.NcaUtils
 {
     public struct NcaFsHeader
     {

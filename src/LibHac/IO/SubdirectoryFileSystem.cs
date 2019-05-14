@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class SubdirectoryFileSystem : IFileSystem
     {

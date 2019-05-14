@@ -3,8 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using LibHac;
-using LibHac.IO;
-using LibHac.IO.NcaUtils;
+using LibHac.Fs;
+using LibHac.Fs.NcaUtils;
 using static hactoolnet.Print;
 
 namespace hactoolnet

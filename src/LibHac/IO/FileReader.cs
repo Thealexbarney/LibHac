@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class FileReader
     {

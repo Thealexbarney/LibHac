@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LibHac.IO.Save
+namespace LibHac.Fs.Save
 {
     public class DuplexStorage : StorageBase
     {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     /// <summary>
     /// An <see cref="IStorage"/> that returns all zeros when read, and does nothing on write.

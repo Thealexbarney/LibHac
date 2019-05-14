@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace LibHac.IO.RomFs
+namespace LibHac.Fs.RomFs
 {
     /// <summary>
     /// Builds a RomFS from a collection of files.

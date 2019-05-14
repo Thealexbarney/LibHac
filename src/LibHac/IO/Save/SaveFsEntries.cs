@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace LibHac.IO.Save
+namespace LibHac.Fs.Save
 {
     internal ref struct SaveEntryKey
     {

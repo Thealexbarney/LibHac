@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace LibHac.IO.RomFs
+namespace LibHac.Fs.RomFs
 {
     public class RomFsDirectory : IDirectory
     {

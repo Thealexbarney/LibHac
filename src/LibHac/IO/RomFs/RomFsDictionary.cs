@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace LibHac.IO.RomFs
+namespace LibHac.Fs.RomFs
 {
     internal class RomFsDictionary<T> where T : unmanaged
     {

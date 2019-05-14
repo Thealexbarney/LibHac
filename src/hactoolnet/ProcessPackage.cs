@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Text;
 using LibHac;
-using LibHac.IO;
+using LibHac.Fs;
 using static hactoolnet.Print;
 
 namespace hactoolnet

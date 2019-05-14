@@ -2,7 +2,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 
-namespace LibHac.IO.NcaUtils
+namespace LibHac.Fs.NcaUtils
 {
     public static class NcaExtensions
     {

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class AesXtsDirectory : IDirectory
     {

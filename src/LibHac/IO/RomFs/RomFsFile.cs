@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LibHac.IO.RomFs
+namespace LibHac.Fs.RomFs
 {
     public class RomFsFile : FileBase
     {

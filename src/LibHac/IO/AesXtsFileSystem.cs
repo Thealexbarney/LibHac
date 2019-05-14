@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class AesXtsFileSystem : IFileSystem
     {

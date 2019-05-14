@@ -7,7 +7,7 @@ using System.IO;
 using System.IO.Enumeration;
 #endif
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public static class FileSystemExtensions
     {

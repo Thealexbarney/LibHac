@@ -6,8 +6,8 @@ using System.Windows.Input;
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 using LibHac;
-using LibHac.IO;
-using LibHac.IO.Save;
+using LibHac.Fs;
+using LibHac.Fs.Save;
 using LibHac.Nand;
 
 namespace NandReaderGui.ViewModel
