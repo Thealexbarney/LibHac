@@ -1,8 +1,8 @@
 ﻿using System.IO;
 using System.Text;
 using LibHac;
-using LibHac.IO;
-using LibHac.IO.NcaUtils;
+using LibHac.Fs;
+using LibHac.Fs.NcaUtils;
 using LibHac.Npdm;
 using static hactoolnet.Print;
 

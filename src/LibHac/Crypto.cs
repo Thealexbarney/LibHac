@@ -2,7 +2,7 @@
 using System.IO;
 using System.Numerics;
 using System.Security.Cryptography;
-using LibHac.IO;
+using LibHac.Fs;
 
 namespace LibHac
 {

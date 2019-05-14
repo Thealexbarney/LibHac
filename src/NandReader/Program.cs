@@ -3,8 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using LibHac;
-using LibHac.IO;
-using LibHac.IO.Save;
+using LibHac.Fs;
+using LibHac.Fs.Save;
 using LibHac.Nand;
 
 namespace NandReader

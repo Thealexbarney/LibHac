@@ -2,10 +2,10 @@
 using System.IO;
 using System.Runtime.CompilerServices;
 using DiscUtils;
-using LibHac.IO;
+using LibHac.Fs;
 
-using DirectoryEntry = LibHac.IO.DirectoryEntry;
-using IFileSystem = LibHac.IO.IFileSystem;
+using DirectoryEntry = LibHac.Fs.DirectoryEntry;
+using IFileSystem = LibHac.Fs.IFileSystem;
 
 namespace LibHac.Nand
 {

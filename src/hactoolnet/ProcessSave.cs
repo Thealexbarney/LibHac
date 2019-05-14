@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using LibHac;
-using LibHac.IO;
-using LibHac.IO.Save;
+using LibHac.Fs;
+using LibHac.Fs.Save;
 using static hactoolnet.Print;
 
 namespace hactoolnet

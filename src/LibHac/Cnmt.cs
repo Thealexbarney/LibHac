@@ -1,6 +1,6 @@
 ﻿using System.IO;
 using System.Linq;
-using LibHac.IO.NcaUtils;
+using LibHac.Fs.NcaUtils;
 
 namespace LibHac
 {

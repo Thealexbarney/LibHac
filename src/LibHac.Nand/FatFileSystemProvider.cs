@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using DiscUtils.Fat;
-using LibHac.IO;
+using LibHac.Fs;
 
 namespace LibHac.Nand
 {
