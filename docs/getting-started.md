@@ -41,7 +41,7 @@ Open an NCA and get an `IStorage` of the decrypted file.
 ```
 using (IStorage inFile = new LocalStorage("filename.nca", FileAccess.Read))
 {
-    var nca = new Nca(keyset, inFile, false);
+    var nca = new Nca(keyset, inFile);
 
     IStorage decryptedNca = nca.OpenDecryptedNca();
 }
@@ -49,9 +49,9 @@ using (IStorage inFile = new LocalStorage("filename.nca", FileAccess.Read))
 
 Open an NCA's code section.
 ```
-using (IStorage file = new LocalStorage("filename.nca", FileAccess.Read))
+using (IStorage inFile = new LocalStorage("filename.nca", FileAccess.Read))
 {
-    var nca = new Nca(keyset, file, false);
+    var nca = new Nca(keyset, inFile);
 
     IStorage section = nca.OpenStorage(NcaSectionType.Code, IntegrityCheckLevel.ErrorOnInvalid);
 }
@@ -59,9 +59,9 @@ using (IStorage file = new LocalStorage("filename.nca", FileAccess.Read))
 
 Open an NCA's data section as an `IFileSystem`.
 ```
-using (IStorage file = new LocalStorage("filename.nca", FileAccess.Read))
+using (IStorage inFile = new LocalStorage("filename.nca", FileAccess.Read))
 {
-    var nca = new Nca(keyset, file, false);
+    var nca = new Nca(keyset, inFile);
 
     IFileSystem fileSystem = nca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.None);
 }
@@ -69,11 +69,11 @@ using (IStorage file = new LocalStorage("filename.nca", FileAccess.Read))
 
 Extension methods are provided for common operations on LibHac interfaces.
 
-`IFileSystem.OpenFileSystem` will fully copy the contents of one `IFileSystem` to another.
+`IFileSystem.CopyFileSystem` will fully copy the contents of one `IFileSystem` to another.
 ```
-using (IStorage file = new LocalStorage("filename.nca", FileAccess.Read))
+using (IStorage inFile = new LocalStorage("filename.nca", FileAccess.Read))
 {
-    var nca = new Nca(keyset, inFile, false);
+    var nca = new Nca(keyset, inFile);
     var outFileSystem = new LocalFileSystem("extracted_path");
 
     IFileSystem fileSystem = nca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
@@ -86,12 +86,11 @@ Open a patched NCA.
 using (IStorage baseFile = new LocalStorage("base.nca", FileAccess.Read))
 using (IStorage patchFile = new LocalStorage("base.nca", FileAccess.Read))
 {
-    var baseNca = new Nca(keyset, baseFile, false);
-    var patchNca = new Nca(keyset, patchFile, false);
+    var baseNca = new Nca(keyset, baseFile);
+    var patchNca = new Nca(keyset, patchFile);
 
-    patchNca.SetBaseNca(baseNca);
-
-    IFileSystem fileSystem = patchNca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
+    IFileSystem fileSystem = baseNca.OpenFileSystemWithPatch(patchNca, NcaSectionType.Data,
+        IntegrityCheckLevel.ErrorOnInvalid);
 }
 ```
 
@@ -101,7 +100,7 @@ Open a file and read the first 0x4000 bytes.
 ```
 using (IStorage inFile = new LocalStorage("filename.nca", FileAccess.Read))
 {
-    var nca = new Nca(keyset, inFile, false);
+    var nca = new Nca(keyset, inFile);
     IFileSystem fileSystem = nca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
 
     var buffer = new byte[0x4000];
