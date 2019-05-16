@@ -10,6 +10,10 @@ Most content is imported and exported using a standard `IStorage` interface. Thi
 For example, the files from a title stored on the external SD card can be read or extracted in this way.  
 `NAX0 Reader` -> `NCA Reader` -> `RomFS Reader` -> `Individual Files`
 
+## Getting Started
+
+[Library Overview and Samples](docs/getting-started.md)
+
 # hactoolnet
 
 hactoolnet is an example program that uses LibHac. It is used in a similar manner to [hactool](https://github.com/SciresM/hactool).
@@ -21,11 +25,13 @@ Options:
   -r, --raw            Keep raw data, don't unpack.
   -y, --verify         Verify all hashes in the input file.
   -h, --enablehash     Enable hash checks when reading the input file.
+  -d, --dev            Decrypt with development keys instead of retail.
   -k, --keyset         Load keys from an external file.
-  -t, --intype=type    Specify input file type [nca, xci, romfs, pk11, pk21, ini1, kip1, switchfs, save, ndv0, keygen, romfsbuild]
+  -t, --intype=type    Specify input file type [nca, xci, romfs, pfs0, pk11, pk21, ini1, kip1, switchfs, save, ndv0, keygen, romfsbuild, pfsbuild]
   --titlekeys <file>   Load title keys from an external file.
 NCA options:
   --plaintext <file>   Specify file path for saving a decrypted copy of the NCA.
+  --header <file>      Specify Header file path.
   --section0 <file>    Specify Section 0 file path.
   --section1 <file>    Specify Section 1 file path.
   --section2 <file>    Specify Section 2 file path.
@@ -46,6 +52,12 @@ RomFS options:
 RomFS creation options:
                        Input path must be a directory
   --outfile <file>     Specify created RomFS file path.
+Partition FS options:
+  --outdir <dir>       Specify extracted FS directory path.
+Partition FS creation options:
+                       Input path must be a directory
+  --outfile <file>     Specify created Partition FS file path.
+  --hashedfs           Create a hashed Partition FS (HFS0).
 XCI options:
   --rootdir <dir>      Specify root XCI directory path.
   --updatedir <dir>    Specify update XCI directory path.
@@ -81,7 +93,9 @@ Save data options:
   --outdir <dir>       Specify directory path to save contents to.
   --debugoutdir <dir>  Specify directory path to save intermediate data to for debugging.
   --sign               Sign the save file. (Requires device_key in key file)
+  --trim               Trim garbage data in the save file. (Requires device_key in key file)
   --listfiles          List files in save file.
+  --repack <dir>       Replaces the contents of the save data with the specified directory.
   --replacefile <filename in save> <file> Replaces a file in the save data
 NDV0 (Delta) options:
                        Input delta patch can be a delta NCA file or a delta fragment file.
