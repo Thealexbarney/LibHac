@@ -22,7 +22,7 @@ namespace LibHac.Fs
         {
             foreach (DirectoryEntry entry in BaseDirectory.Read())
             {
-                yield return new DirectoryEntry(entry.Name, FullPath + '/' + entry.Name, entry.Type, entry.Size);
+                yield return new DirectoryEntry(entry.Name, PathTools.Combine(FullPath, entry.Name), entry.Type, entry.Size);
             }
         }
 

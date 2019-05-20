@@ -9,8 +9,7 @@ namespace LibHac.Fs
 
         private string ResolveFullPath(string path)
         {
-            //todo
-            return RootPath + path;
+            return PathTools.Combine(RootPath, path);
         }
 
         public SubdirectoryFileSystem(IFileSystem fs, string rootPath)

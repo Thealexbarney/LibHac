@@ -29,7 +29,7 @@ namespace LibHac.Fs.Save
             {
                 while (tab.FindNextDirectory(ref position, out string name))
                 {
-                    yield return new DirectoryEntry(name, FullPath + '/' + name, DirectoryEntryType.Directory, 0);
+                    yield return new DirectoryEntry(name, PathTools.Combine(FullPath, name), DirectoryEntryType.Directory, 0);
                 }
             }
 
@@ -37,7 +37,7 @@ namespace LibHac.Fs.Save
             {
                 while (tab.FindNextFile(ref position, out SaveFileInfo info, out string name))
                 {
-                    yield return new DirectoryEntry(name, FullPath + '/' + name, DirectoryEntryType.File, info.Length);
+                    yield return new DirectoryEntry(name, PathTools.Combine(FullPath, name), DirectoryEntryType.File, info.Length);
                 }
             }
         }

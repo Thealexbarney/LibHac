@@ -15,7 +15,7 @@ namespace LibHac.Nand
         public string FullPath { get; }
         public OpenDirectoryMode Mode { get; }
         private DiscDirectoryInfo DirInfo { get; }
-        
+
         public FatFileSystemDirectory(FatFileSystemProvider fs, string path, OpenDirectoryMode mode)
         {
             ParentFileSystem = fs;
@@ -38,7 +38,7 @@ namespace LibHac.Nand
                 DirectoryEntryType type = isDir ? DirectoryEntryType.Directory : DirectoryEntryType.File;
                 long length = isDir ? 0 : entry.FileSystem.GetFileLength(entry.FullName);
 
-                yield return new DirectoryEntry(entry.Name, FullPath + '/' + entry.Name, type, length)
+                yield return new DirectoryEntry(entry.Name, PathTools.Combine(FullPath, entry.Name), type, length)
                 {
                     Attributes = entry.Attributes.ToNxAttributes()
                 };

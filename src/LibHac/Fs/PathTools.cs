@@ -217,6 +217,23 @@ namespace LibHac.Fs
             return path[rootLength] == DirectorySeparator && path.Length > rootLength + 1;
         }
 
+        public static string Combine(string path1, string path2)
+        {
+            if(path1 == null || path2 == null) throw new NullReferenceException();
+
+            if (string.IsNullOrEmpty(path1)) return path2;
+            if (string.IsNullOrEmpty(path2)) return path1;
+
+            bool hasSeparator = IsDirectorySeparator(path1[path1.Length - 1]) || IsDirectorySeparator(path2[0]);
+
+            if (hasSeparator)
+            {
+                return path1 + path2;
+            }
+
+            return path1 + DirectorySeparator + path2;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsDirectorySeparator(char c)
         {

@@ -34,7 +34,7 @@ namespace LibHac.Fs
                 DirectoryEntryType type = isDir ? DirectoryEntryType.Directory : DirectoryEntryType.File;
                 long length = isDir ? 0 : ((FileInfo)entry).Length;
 
-                yield return new DirectoryEntry(entry.Name, FullPath + '/' + entry.Name, type, length)
+                yield return new DirectoryEntry(entry.Name, PathTools.Combine(FullPath, entry.Name), type, length)
                 {
                     Attributes = entry.Attributes.ToNxAttributes()
                 };

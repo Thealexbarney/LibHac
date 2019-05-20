@@ -18,8 +18,8 @@ namespace LibHac.Fs
 
             foreach (DirectoryEntry entry in source.Read())
             {
-                string subSrcPath = PathTools.Normalize(source.FullPath + '/' + entry.Name);
-                string subDstPath = PathTools.Normalize(dest.FullPath + '/' + entry.Name);
+                string subSrcPath = PathTools.Normalize(PathTools.Combine(source.FullPath, entry.Name));
+                string subDstPath = PathTools.Normalize(PathTools.Combine(dest.FullPath, entry.Name));
 
                 if (entry.Type == DirectoryEntryType.Directory)
                 {
@@ -95,7 +95,7 @@ namespace LibHac.Fs
 
                 if (entry.Type != DirectoryEntryType.Directory || !recurse) continue;
 
-                IDirectory subDir = fs.OpenDirectory(directory.FullPath + '/' + entry.Name, OpenDirectoryMode.All);
+                IDirectory subDir = fs.OpenDirectory(PathTools.Combine(directory.FullPath, entry.Name), OpenDirectoryMode.All);
 
                 foreach (DirectoryEntry subEntry in subDir.EnumerateEntries(searchPattern, searchOptions))
                 {
@@ -189,9 +189,10 @@ namespace LibHac.Fs
 
             foreach (DirectoryEntry entry in directory.Read())
             {
+                string subPath = PathTools.Combine(directory.FullPath, entry.Name);
+
                 if (entry.Type == DirectoryEntryType.Directory)
                 {
-                    string subPath = directory.FullPath + '/' + entry.Name;
                     IDirectory subDir = fs.OpenDirectory(subPath, OpenDirectoryMode.All);
 
                     CleanDirectoryRecursivelyGeneric(subDir);
@@ -199,7 +200,7 @@ namespace LibHac.Fs
                 }
                 else if (entry.Type == DirectoryEntryType.File)
                 {
-                    fs.DeleteFile(directory.FullPath + '/' + entry.Name);
+                    fs.DeleteFile(subPath);
                 }
             }
         }

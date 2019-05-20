@@ -29,7 +29,7 @@ namespace LibHac.Fs.RomFs
             {
                 while (tab.FindNextDirectory(ref position, out string name))
                 {
-                    yield return new DirectoryEntry(name, FullPath + '/' + name, DirectoryEntryType.Directory, 0);
+                    yield return new DirectoryEntry(name, PathTools.Combine(FullPath, name), DirectoryEntryType.Directory, 0);
                 }
             }
 
@@ -37,7 +37,7 @@ namespace LibHac.Fs.RomFs
             {
                 while (tab.FindNextFile(ref position, out RomFileInfo info, out string name))
                 {
-                    yield return new DirectoryEntry(name, FullPath + '/' + name, DirectoryEntryType.File, info.Length);
+                    yield return new DirectoryEntry(name, PathTools.Combine(FullPath, name), DirectoryEntryType.File, info.Length);
                 }
             }
         }

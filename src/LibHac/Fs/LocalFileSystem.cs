@@ -24,7 +24,7 @@ namespace LibHac.Fs
 
         internal string ResolveLocalPath(string path)
         {
-            return Path.Combine(BasePath, path.TrimStart('/'));
+            return PathTools.Combine(BasePath, path);
         }
 
         public NxFileAttributes GetFileAttributes(string path)
