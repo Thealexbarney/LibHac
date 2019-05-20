@@ -13,7 +13,7 @@ namespace LibHac.Fs
         {
             Path = path;
             Mode = mode;
-            Stream = new FileStream(Path, FileMode.Open, GetFileAccess(mode));
+            Stream = new FileStream(Path, FileMode.Open, GetFileAccess(mode), GetFileShare(mode));
             File = new StreamFile(Stream, mode);
 
             ToDispose.Add(File);
@@ -55,6 +55,11 @@ namespace LibHac.Fs
         {
             // FileAccess and OpenMode have the same flags
             return (FileAccess)(mode & OpenMode.ReadWrite);
+        }
+
+        private static FileShare GetFileShare(OpenMode mode)
+        {
+            return mode.HasFlag(OpenMode.Write) ? FileShare.Read : FileShare.ReadWrite;
         }
     }
 }
