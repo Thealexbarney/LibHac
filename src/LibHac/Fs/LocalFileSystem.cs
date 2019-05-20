@@ -61,7 +61,7 @@ namespace LibHac.Fs
         {
             path = PathTools.Normalize(path);
             string localPath = ResolveLocalPath(path);
-            string localDir = Path.GetDirectoryName(localPath);
+            string localDir = ResolveLocalPath(PathTools.GetParentDirectory(path));
 
             if (localDir != null) Directory.CreateDirectory(localDir);
 
@@ -132,7 +132,7 @@ namespace LibHac.Fs
             string srcLocalPath = ResolveLocalPath(srcPath);
             string dstLocalPath = ResolveLocalPath(dstPath);
 
-            string directoryName = Path.GetDirectoryName(dstLocalPath);
+            string directoryName = ResolveLocalPath(PathTools.GetParentDirectory(dstPath));
             if (directoryName != null) Directory.CreateDirectory(directoryName);
             Directory.Move(srcLocalPath, dstLocalPath);
         }
@@ -144,7 +144,7 @@ namespace LibHac.Fs
 
             string srcLocalPath = ResolveLocalPath(srcPath);
             string dstLocalPath = ResolveLocalPath(dstPath);
-            string dstLocalDir = Path.GetDirectoryName(dstLocalPath);
+            string dstLocalDir = ResolveLocalPath(PathTools.GetParentDirectory(dstPath));
 
             if (dstLocalDir != null) Directory.CreateDirectory(dstLocalDir);
             File.Move(srcLocalPath, dstLocalPath);

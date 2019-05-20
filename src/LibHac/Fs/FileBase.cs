@@ -5,7 +5,7 @@ namespace LibHac.Fs
 {
     public abstract class FileBase : IFile
     {
-        private bool _isDisposed;
+        protected bool IsDisposed { get; private set; }
         internal List<IDisposable> ToDispose { get; } = new List<IDisposable>();
 
         public abstract int Read(Span<byte> destination, long offset);
@@ -18,7 +18,7 @@ namespace LibHac.Fs
 
         protected int ValidateReadParamsAndGetSize(ReadOnlySpan<byte> span, long offset)
         {
-            if (_isDisposed) throw new ObjectDisposedException(null);
+            if (IsDisposed) throw new ObjectDisposedException(null);
 
             if ((Mode & OpenMode.Read) == 0) throw new NotSupportedException("File does not allow reading.");
             if (span == null) throw new ArgumentNullException(nameof(span));
@@ -34,7 +34,7 @@ namespace LibHac.Fs
 
         protected void ValidateWriteParams(ReadOnlySpan<byte> span, long offset)
         {
-            if (_isDisposed) throw new ObjectDisposedException(null);
+            if (IsDisposed) throw new ObjectDisposedException(null);
 
             if ((Mode & OpenMode.Write) == 0) throw new NotSupportedException("File does not allow writing.");
 
@@ -63,7 +63,7 @@ namespace LibHac.Fs
 
         protected virtual void Dispose(bool disposing)
         {
-            if (_isDisposed) return;
+            if (IsDisposed) return;
 
             if (disposing)
             {
@@ -75,7 +75,7 @@ namespace LibHac.Fs
                 }
             }
 
-            _isDisposed = true;
+            IsDisposed = true;
         }
     }
 
