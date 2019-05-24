@@ -31,7 +31,6 @@ namespace hactoolnet
                 {
                     IStorage baseFile = new LocalStorage(ctx.Options.BaseNca, FileAccess.Read);
                     baseNca = new Nca(ctx.Keyset, baseFile);
-                    ncaHolder.BaseNca = baseNca;
                 }
 
                 for (int i = 0; i < 3; i++)
@@ -288,7 +287,6 @@ namespace hactoolnet
         private class NcaHolder
         {
             public Nca Nca;
-            public Nca BaseNca;
             public Validity[] Validities = new Validity[4];
         }
     }

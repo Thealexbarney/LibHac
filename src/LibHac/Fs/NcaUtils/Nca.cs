@@ -129,11 +129,12 @@ namespace LibHac.Fs.NcaUtils
             }
         }
 
-        // ReSharper disable once UnusedParameter.Local
+        // ReSharper disable UnusedParameter.Local
         private IStorage OpenAesXtsStorage(IStorage baseStorage, int index)
         {
             throw new NotImplementedException("NCA sections using XTS are not supported yet.");
         }
+        // ReSharper restore UnusedParameter.Local
 
         private IStorage OpenAesCtrStorage(IStorage baseStorage, int index)
         {

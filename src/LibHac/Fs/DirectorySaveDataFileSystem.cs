@@ -39,7 +39,7 @@ namespace LibHac.Fs
 
             lock (Locker)
             {
-                BaseFs.CreateDirectory(path);
+                BaseFs.CreateDirectory(fullPath);
             }
         }
 
