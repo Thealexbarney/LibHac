@@ -244,7 +244,7 @@ namespace LibHac.Fs.NcaUtils
         public IFileSystem OpenFileSystemWithPatch(Nca patchNca, int index, IntegrityCheckLevel integrityCheckLevel)
         {
             IStorage storage = OpenStorageWithPatch(patchNca, index, integrityCheckLevel);
-            NcaFsHeader header = Header.GetFsHeader(index);
+            NcaFsHeader header = patchNca.Header.GetFsHeader(index);
 
             return OpenFileSystem(storage, header);
         }
