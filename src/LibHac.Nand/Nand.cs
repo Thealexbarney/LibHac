@@ -20,12 +20,7 @@ namespace LibHac.Nand
 
         public FileAccess Access { get; }
 
-        public Nand(Stream stream, Keyset keyset) : this(stream, keyset, FileAccess.Read)
-        {
-
-        }
-
-        public Nand(Stream stream, Keyset keyset, FileAccess access)
+        public Nand(Stream stream, Keyset keyset, FileAccess access = FileAccess.Read)
         {
             var disc = new GuidPartitionTable(stream, Geometry.Null);
             GuidPartitionInfo[] partitions = disc.Partitions.Select(x => (GuidPartitionInfo)x).ToArray();
