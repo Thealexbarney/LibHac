@@ -11,6 +11,7 @@ using ILRepacking;
 using Nuke.Common;
 using Nuke.Common.BuildServers;
 using Nuke.Common.Git;
+using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
@@ -95,8 +96,14 @@ namespace LibHacBuild
         Target Clean => _ => _
             .Executes(() =>
             {
-                DeleteDirectories(GlobDirectories(SourceDirectory, "**/bin", "**/obj"));
-                DeleteDirectories(GlobDirectories(TestsDirectory, "**/bin", "**/obj"));
+                List<string> toDelete = GlobDirectories(SourceDirectory, "**/bin", "**/obj")
+                    .Concat(GlobDirectories(TestsDirectory, "**/bin", "**/obj")).ToList();
+
+                foreach (string dir in toDelete)
+                {
+                    DeleteDirectory(dir);
+                }
+
                 EnsureCleanDirectory(ArtifactsDirectory);
                 EnsureCleanDirectory(CliCoreDir);
                 EnsureCleanDirectory(CliFrameworkDir);
@@ -262,7 +269,7 @@ namespace LibHacBuild
         Target Publish => _ => _
             .DependsOn(Test)
             .OnlyWhenStatic(() => Host == HostType.AppVeyor)
-            .OnlyWhenStatic(() => AppVeyor.Instance.PullRequestTitle == null)
+            .OnlyWhenStatic(() => AppVeyor.Instance != null && AppVeyor.Instance.PullRequestTitle == null)
             .Executes(() =>
             {
                 AbsolutePath nupkgFile = ArtifactsDirectory.GlobFiles("*.nupkg").Single();
