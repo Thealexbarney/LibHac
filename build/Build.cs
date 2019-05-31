@@ -27,10 +27,10 @@ namespace LibHacBuild
         public static int Main() => Execute<Build>(x => x.Results);
 
         [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
-        readonly string _configuration = IsLocalBuild ? "Debug" : "Release";
+        public readonly string Configuration = IsLocalBuild ? "Debug" : "Release";
 
         [Parameter("Build only .NET Core targets if true. Default is false on Windows")]
-        readonly bool _doCoreBuildOnly;
+        public readonly bool DoCoreBuildOnly;
 
         [Solution("LibHac.sln")] readonly Solution _solution;
         [GitRepository] readonly GitRepository _gitRepository;
@@ -126,17 +126,17 @@ namespace LibHacBuild
                 DotNetBuildSettings buildSettings = new DotNetBuildSettings()
                     .SetProjectFile(_solution)
                     .EnableNoRestore()
-                    .SetConfiguration(_configuration)
+                    .SetConfiguration(Configuration)
                     .SetProperties(VersionProps)
                     .SetProperty("BuildType", "Release");
 
-                if (_doCoreBuildOnly) buildSettings = buildSettings.SetFramework("netcoreapp2.1");
+                if (DoCoreBuildOnly) buildSettings = buildSettings.SetFramework("netcoreapp2.1");
 
                 DotNetBuild(s => buildSettings);
 
                 DotNetPublishSettings publishSettings = new DotNetPublishSettings()
                     .EnableNoRestore()
-                    .SetConfiguration(_configuration);
+                    .SetConfiguration(Configuration);
 
                 DotNetPublish(s => publishSettings
                     .SetProject(HactoolnetProject)
@@ -144,7 +144,7 @@ namespace LibHacBuild
                     .SetOutput(CliCoreDir)
                     .SetProperties(VersionProps));
 
-                if (!_doCoreBuildOnly)
+                if (!DoCoreBuildOnly)
                 {
                     DotNetPublish(s => publishSettings
                         .SetProject(HactoolnetProject)
@@ -170,13 +170,13 @@ namespace LibHacBuild
                 DotNetPackSettings settings = new DotNetPackSettings()
                     .SetProject(LibHacProject)
                     .EnableNoBuild()
-                    .SetConfiguration(_configuration)
+                    .SetConfiguration(Configuration)
                     .EnableIncludeSymbols()
                     .SetSymbolPackageFormat(DotNetSymbolPackageFormat.snupkg)
                     .SetOutputDirectory(ArtifactsDirectory)
                     .SetProperties(VersionProps);
 
-                if (_doCoreBuildOnly)
+                if (DoCoreBuildOnly)
                     settings = settings.SetProperty("TargetFrameworks", "netcoreapp2.1");
 
                 DotNetPack(s => settings);
@@ -196,7 +196,7 @@ namespace LibHacBuild
 
         Target Merge => _ => _
             .DependsOn(Compile)
-            .OnlyWhenStatic(() => !_doCoreBuildOnly)
+            .OnlyWhenStatic(() => !DoCoreBuildOnly)
             .Executes(() =>
             {
                 string[] libraries = Directory.GetFiles(CliFrameworkDir, "*.dll");
@@ -230,9 +230,9 @@ namespace LibHacBuild
                 DotNetTestSettings settings = new DotNetTestSettings()
                     .SetProjectFile(LibHacTestProject)
                     .EnableNoBuild()
-                    .SetConfiguration(_configuration);
+                    .SetConfiguration(Configuration);
 
-                if (_doCoreBuildOnly) settings = settings.SetFramework("netcoreapp2.1");
+                if (DoCoreBuildOnly) settings = settings.SetFramework("netcoreapp2.1");
 
                 DotNetTest(s => settings);
             });
@@ -249,7 +249,7 @@ namespace LibHacBuild
                     .Concat(Directory.EnumerateFiles(CliCoreDir, "*.dll"))
                     .ToArray();
 
-                if (!_doCoreBuildOnly)
+                if (!DoCoreBuildOnly)
                 {
                     ZipFiles(CliFrameworkZip, namesFx);
                     Console.WriteLine($"Created {CliFrameworkZip}");
@@ -306,7 +306,7 @@ namespace LibHacBuild
 
         Target Sign => _ => _
             .DependsOn(Test, Zip, Merge)
-            .OnlyWhenStatic(() => !_doCoreBuildOnly)
+            .OnlyWhenStatic(() => !DoCoreBuildOnly)
             .OnlyWhenStatic(() => File.Exists(CertFileName))
             .Executes(() =>
             {
