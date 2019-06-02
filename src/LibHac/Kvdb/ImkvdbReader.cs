@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 using static LibHac.Results;
 using static LibHac.Kvdb.ResultsKvdb;
@@ -9,12 +8,12 @@ namespace LibHac.Kvdb
 {
     public ref struct ImkvdbReader
     {
-        private ReadOnlySpan<byte> Data;
+        private ReadOnlySpan<byte> _data;
         private int _position;
 
         public ImkvdbReader(ReadOnlySpan<byte> data)
         {
-            Data = data;
+            _data = data;
             _position = 0;
         }
 
@@ -22,9 +21,9 @@ namespace LibHac.Kvdb
         {
             entryCount = default;
 
-            if (_position + Unsafe.SizeOf<ImkvdbHeader>() > Data.Length) return ResultKvdbInvalidKeyValue;
+            if (_position + Unsafe.SizeOf<ImkvdbHeader>() > _data.Length) return ResultKvdbInvalidKeyValue;
 
-            ref ImkvdbHeader header = ref Unsafe.As<byte, ImkvdbHeader>(ref Unsafe.AsRef(Data[_position]));
+            ref ImkvdbHeader header = ref Unsafe.As<byte, ImkvdbHeader>(ref Unsafe.AsRef(_data[_position]));
 
             if (header.Magic != ImkvdbHeader.ExpectedMagic)
             {
@@ -42,9 +41,9 @@ namespace LibHac.Kvdb
             keySize = default;
             valueSize = default;
 
-            if (_position + Unsafe.SizeOf<ImkvdbHeader>() > Data.Length) return ResultKvdbInvalidKeyValue;
+            if (_position + Unsafe.SizeOf<ImkvdbHeader>() > _data.Length) return ResultKvdbInvalidKeyValue;
 
-            ref ImkvdbEntryHeader header = ref Unsafe.As<byte, ImkvdbEntryHeader>(ref Unsafe.AsRef(Data[_position]));
+            ref ImkvdbEntryHeader header = ref Unsafe.As<byte, ImkvdbEntryHeader>(ref Unsafe.AsRef(_data[_position]));
 
             if (header.Magic != ImkvdbEntryHeader.ExpectedMagic)
             {
@@ -67,34 +66,14 @@ namespace LibHac.Kvdb
 
             _position += Unsafe.SizeOf<ImkvdbEntryHeader>();
 
-            if (_position + keySize + valueSize > Data.Length) return ResultKvdbInvalidKeyValue;
+            if (_position + keySize + valueSize > _data.Length) return ResultKvdbInvalidKeyValue;
 
-            key = Data.Slice(_position, keySize);
-            value = Data.Slice(_position + keySize, valueSize);
+            key = _data.Slice(_position, keySize);
+            value = _data.Slice(_position + keySize, valueSize);
 
             _position += keySize + valueSize;
 
             return ResultSuccess;
         }
-    }
-
-    [StructLayout(LayoutKind.Sequential, Size = 0xC)]
-    internal struct ImkvdbHeader
-    {
-        public const uint ExpectedMagic = 0x564B4D49; // IMKV
-
-        public uint Magic;
-        public int Reserved;
-        public int EntryCount;
-    }
-
-    [StructLayout(LayoutKind.Sequential, Size = 0xC)]
-    internal struct ImkvdbEntryHeader
-    {
-        public const uint ExpectedMagic = 0x4E454D49; // IMEN
-
-        public uint Magic;
-        public int KeySize;
-        public int ValueSize;
     }
 }

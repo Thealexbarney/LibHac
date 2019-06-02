@@ -23,6 +23,6 @@
 
     public static class Results
     {
-        public static readonly Result ResultSuccess = new Result(0);
+        public static Result ResultSuccess => new Result(0);
     }
 }

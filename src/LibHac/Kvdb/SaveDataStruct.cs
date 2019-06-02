@@ -5,7 +5,7 @@ using LibHac.Fs.Save;
 
 namespace LibHac.Kvdb
 {
-    public class SaveDataInfo : IComparable<SaveDataInfo>, IComparable, IEquatable<SaveDataInfo>, IExportable
+    public class SaveDataStruct : IComparable<SaveDataStruct>, IComparable, IEquatable<SaveDataStruct>, IExportable
     {
         public ulong TitleId { get; private set; }
         public UserId UserId { get; private set; }
@@ -31,12 +31,12 @@ namespace LibHac.Kvdb
             TitleId = BinaryPrimitives.ReadUInt64LittleEndian(input);
             UserId = new UserId(input.Slice(8));
             SaveId = BinaryPrimitives.ReadUInt64LittleEndian(input.Slice(0x18));
-            Type = (SaveDataType) input[0x20];
+            Type = (SaveDataType)input[0x20];
             Rank = input[0x21];
             Index = BinaryPrimitives.ReadInt16LittleEndian(input.Slice(0x22));
         }
 
-        public bool Equals(SaveDataInfo other)
+        public bool Equals(SaveDataStruct other)
         {
             return TitleId == other.TitleId && UserId.Equals(other.UserId) && SaveId == other.SaveId &&
                    Type == other.Type && Rank == other.Rank && Index == other.Index;
@@ -44,7 +44,7 @@ namespace LibHac.Kvdb
 
         public override bool Equals(object obj)
         {
-            return obj is SaveDataInfo other && Equals(other);
+            return obj is SaveDataStruct other && Equals(other);
         }
 
         public override int GetHashCode()
@@ -61,16 +61,16 @@ namespace LibHac.Kvdb
             }
         }
 
-        public int CompareTo(SaveDataInfo other)
+        public int CompareTo(SaveDataStruct other)
         {
             int titleIdComparison = TitleId.CompareTo(other.TitleId);
             if (titleIdComparison != 0) return titleIdComparison;
+            int typeComparison = Type.CompareTo(other.Type);
+            if (typeComparison != 0) return typeComparison;
             int userIdComparison = UserId.CompareTo(other.UserId);
             if (userIdComparison != 0) return userIdComparison;
             int saveIdComparison = SaveId.CompareTo(other.SaveId);
             if (saveIdComparison != 0) return saveIdComparison;
-            int typeComparison = Type.CompareTo(other.Type);
-            if (typeComparison != 0) return typeComparison;
             int rankComparison = Rank.CompareTo(other.Rank);
             if (rankComparison != 0) return rankComparison;
             return Index.CompareTo(other.Index);
@@ -79,7 +79,7 @@ namespace LibHac.Kvdb
         public int CompareTo(object obj)
         {
             if (obj is null) return 1;
-            return obj is SaveDataInfo other ? CompareTo(other) : throw new ArgumentException($"Object must be of type {nameof(SaveDataInfo)}");
+            return obj is SaveDataStruct other ? CompareTo(other) : throw new ArgumentException($"Object must be of type {nameof(SaveDataStruct)}");
         }
     }
 }

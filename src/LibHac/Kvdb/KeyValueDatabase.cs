@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
 
 using static LibHac.Results;
 using static LibHac.Kvdb.ResultsKvdb;
@@ -12,7 +14,7 @@ namespace LibHac.Kvdb
     {
         private Dictionary<TKey, TValue> KvDict { get; } = new Dictionary<TKey, TValue>();
 
-        public Result ReadDatabase(ReadOnlySpan<byte> data)
+        public Result ReadDatabaseFromBuffer(ReadOnlySpan<byte> data)
         {
             var reader = new ImkvdbReader(data);
 
@@ -34,6 +36,34 @@ namespace LibHac.Kvdb
             }
 
             return ResultSuccess;
+        }
+
+        public Result WriteDatabaseToBuffer(Span<byte> output)
+        {
+            var writer = new ImkvdbWriter(output);
+
+            writer.WriteHeader(KvDict.Count);
+
+            foreach (KeyValuePair<TKey, TValue> entry in KvDict.OrderBy(x => x.Key))
+            {
+                writer.WriteEntry(entry.Key, entry.Value);
+            }
+
+            return ResultSuccess;
+        }
+
+        public int GetExportedSize()
+        {
+            int size = Unsafe.SizeOf<ImkvdbHeader>();
+
+            foreach (KeyValuePair<TKey, TValue> entry in KvDict)
+            {
+                size += Unsafe.SizeOf<ImkvdbEntryHeader>();
+                size += entry.Key.ExportSize;
+                size += entry.Value.ExportSize;
+            }
+
+            return size;
         }
     }
 }
