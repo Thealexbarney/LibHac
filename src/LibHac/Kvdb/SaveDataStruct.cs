@@ -5,7 +5,7 @@ using LibHac.Fs.Save;
 
 namespace LibHac.Kvdb
 {
-    public class SaveDataStruct : IComparable<SaveDataStruct>, IComparable, IEquatable<SaveDataStruct>, IExportable
+    public class SaveDataStruct : IComparable<SaveDataStruct>, IEquatable<SaveDataStruct>, IExportable
     {
         public ulong TitleId { get; private set; }
         public UserId UserId { get; private set; }
@@ -15,6 +15,7 @@ namespace LibHac.Kvdb
         public short Index { get; private set; }
 
         public int ExportSize => 0x40;
+        private bool _isFrozen;
 
         public void ToBytes(Span<byte> output)
         {
@@ -28,6 +29,8 @@ namespace LibHac.Kvdb
 
         public void FromBytes(ReadOnlySpan<byte> input)
         {
+            if (_isFrozen) throw new InvalidOperationException("Unable to modify frozen object.");
+
             TitleId = BinaryPrimitives.ReadUInt64LittleEndian(input);
             UserId = new UserId(input.Slice(8));
             SaveId = BinaryPrimitives.ReadUInt64LittleEndian(input.Slice(0x18));
@@ -36,9 +39,11 @@ namespace LibHac.Kvdb
             Index = BinaryPrimitives.ReadInt16LittleEndian(input.Slice(0x22));
         }
 
+        public void Freeze() => _isFrozen = true;
+
         public bool Equals(SaveDataStruct other)
         {
-            return TitleId == other.TitleId && UserId.Equals(other.UserId) && SaveId == other.SaveId &&
+            return other != null && TitleId == other.TitleId && UserId.Equals(other.UserId) && SaveId == other.SaveId &&
                    Type == other.Type && Rank == other.Rank && Index == other.Index;
         }
 
@@ -51,6 +56,7 @@ namespace LibHac.Kvdb
         {
             unchecked
             {
+                // ReSharper disable NonReadonlyMemberInGetHashCode
                 int hashCode = TitleId.GetHashCode();
                 hashCode = (hashCode * 397) ^ UserId.GetHashCode();
                 hashCode = (hashCode * 397) ^ SaveId.GetHashCode();
@@ -58,6 +64,7 @@ namespace LibHac.Kvdb
                 hashCode = (hashCode * 397) ^ Rank.GetHashCode();
                 hashCode = (hashCode * 397) ^ Index.GetHashCode();
                 return hashCode;
+                // ReSharper restore NonReadonlyMemberInGetHashCode
             }
         }
 

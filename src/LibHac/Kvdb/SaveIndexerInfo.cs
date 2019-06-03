@@ -11,6 +11,7 @@ namespace LibHac.Kvdb
         public byte Field19 { get; private set; }
 
         public int ExportSize => 0x40;
+        private bool _isFrozen;
 
         public void ToBytes(Span<byte> output)
         {
@@ -22,10 +23,14 @@ namespace LibHac.Kvdb
 
         public void FromBytes(ReadOnlySpan<byte> input)
         {
+            if(_isFrozen) throw new InvalidOperationException("Unable to modify frozen object.");
+
             SaveId = BinaryPrimitives.ReadUInt64LittleEndian(input);
             Size = BinaryPrimitives.ReadUInt64LittleEndian(input.Slice(8));
             SpaceId = input[0x18];
             Field19 = input[0x19];
         }
+
+        public void Freeze() => _isFrozen = true;
     }
 }

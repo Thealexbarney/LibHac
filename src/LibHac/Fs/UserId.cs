@@ -42,9 +42,11 @@ namespace LibHac.Fs
 
         public int CompareTo(UserId other)
         {
+            // ReSharper disable ImpureMethodCallOnReadonlyValueField
             int highComparison = High.CompareTo(other.High);
             if (highComparison != 0) return highComparison;
             return Low.CompareTo(other.Low);
+            // ReSharper restore ImpureMethodCallOnReadonlyValueField
         }
 
         public int CompareTo(object obj)

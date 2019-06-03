@@ -10,7 +10,7 @@ namespace LibHac.Kvdb
 {
     // Todo: Save and load from file
     public class KeyValueDatabase<TKey, TValue>
-        where TKey : IComparable<TKey>, IComparable, IEquatable<TKey>, IExportable, new()
+        where TKey : IComparable<TKey>, IEquatable<TKey>, IExportable, new()
         where TValue : IExportable, new()
     {
         private Dictionary<TKey, TValue> KvDict { get; } = new Dictionary<TKey, TValue>();
@@ -29,6 +29,8 @@ namespace LibHac.Kvdb
 
         public Result Set(TKey key, TValue value)
         {
+            key.Freeze();
+
             KvDict[key] = value;
 
             return ResultSuccess;
@@ -51,6 +53,8 @@ namespace LibHac.Kvdb
 
                 key.FromBytes(keyBytes);
                 value.FromBytes(valueBytes);
+
+                key.Freeze();
 
                 KvDict.Add(key, value);
             }
