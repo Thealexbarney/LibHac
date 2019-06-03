@@ -166,12 +166,12 @@ namespace hactoolnet
 
                 IStorage OpenStorageByType(NcaSectionType type)
                 {
-                    return OpenStorage(Nca.SectionIndexFromType(type, nca.Header.ContentType));
+                    return OpenStorage(Nca.GetSectionIndexFromType(type, nca.Header.ContentType));
                 }
 
                 IFileSystem OpenFileSystemByType(NcaSectionType type)
                 {
-                    return OpenFileSystem(Nca.SectionIndexFromType(type, nca.Header.ContentType));
+                    return OpenFileSystem(Nca.GetSectionIndexFromType(type, nca.Header.ContentType));
                 }
             }
         }
