@@ -53,26 +53,6 @@ namespace LibHac.Fs
             return obj is UserId other ? CompareTo(other) : throw new ArgumentException($"Object must be of type {nameof(UserId)}");
         }
 
-        public static bool operator <(UserId left, UserId right)
-        {
-            return left.CompareTo(right) < 0;
-        }
-
-        public static bool operator >(UserId left, UserId right)
-        {
-            return left.CompareTo(right) > 0;
-        }
-
-        public static bool operator <=(UserId left, UserId right)
-        {
-            return left.CompareTo(right) <= 0;
-        }
-
-        public static bool operator >=(UserId left, UserId right)
-        {
-            return left.CompareTo(right) >= 0;
-        }
-
         public void ToBytes(Span<byte> output)
         {
             Span<ulong> longs = MemoryMarshal.Cast<byte, ulong>(output);

@@ -8,11 +8,31 @@ using static LibHac.Kvdb.ResultsKvdb;
 
 namespace LibHac.Kvdb
 {
+    // Todo: Save and load from file
     public class KeyValueDatabase<TKey, TValue>
         where TKey : IComparable<TKey>, IComparable, IEquatable<TKey>, IExportable, new()
         where TValue : IExportable, new()
     {
         private Dictionary<TKey, TValue> KvDict { get; } = new Dictionary<TKey, TValue>();
+
+        public int Count => KvDict.Count;
+
+        public Result Get(TKey key, out TValue value)
+        {
+            if (!KvDict.TryGetValue(key, out value))
+            {
+                return ResultKvdbKeyNotFound;
+            }
+
+            return ResultSuccess;
+        }
+
+        public Result Set(TKey key, TValue value)
+        {
+            KvDict[key] = value;
+
+            return ResultSuccess;
+        }
 
         public Result ReadDatabaseFromBuffer(ReadOnlySpan<byte> data)
         {
