@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Buffers.Binary;
-using LibHac.Fs;
 using LibHac.Fs.Save;
+using LibHac.Kvdb;
 
-namespace LibHac.Kvdb
+namespace LibHac.Fs
 {
     public class SaveDataStruct : IComparable<SaveDataStruct>, IEquatable<SaveDataStruct>, IExportable
     {
@@ -19,6 +19,8 @@ namespace LibHac.Kvdb
 
         public void ToBytes(Span<byte> output)
         {
+            if (output.Length < ExportSize) throw new InvalidOperationException("Output buffer is too small.");
+
             BinaryPrimitives.WriteUInt64LittleEndian(output, TitleId);
             UserId.ToBytes(output.Slice(8));
             BinaryPrimitives.WriteUInt64LittleEndian(output.Slice(0x18), SaveId);
@@ -30,6 +32,7 @@ namespace LibHac.Kvdb
         public void FromBytes(ReadOnlySpan<byte> input)
         {
             if (_isFrozen) throw new InvalidOperationException("Unable to modify frozen object.");
+            if (input.Length < ExportSize) throw new InvalidOperationException("Input data is too short.");
 
             TitleId = BinaryPrimitives.ReadUInt64LittleEndian(input);
             UserId = new UserId(input.Slice(8));

@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Buffers.Binary;
+using LibHac.Kvdb;
 
-namespace LibHac.Kvdb
+namespace LibHac.Fs
 {
-    public class SaveIndexerInfo : IExportable
+    public class SaveIndexerStruct : IExportable
     {
         public ulong SaveId { get; private set; }
         public ulong Size { get; private set; }
@@ -15,6 +16,8 @@ namespace LibHac.Kvdb
 
         public void ToBytes(Span<byte> output)
         {
+            if(output.Length < ExportSize) throw new InvalidOperationException("Output buffer is too small.");
+
             BinaryPrimitives.WriteUInt64LittleEndian(output, SaveId);
             BinaryPrimitives.WriteUInt64LittleEndian(output.Slice(8), Size);
             output[0x18] = SpaceId;
@@ -24,6 +27,7 @@ namespace LibHac.Kvdb
         public void FromBytes(ReadOnlySpan<byte> input)
         {
             if(_isFrozen) throw new InvalidOperationException("Unable to modify frozen object.");
+            if (input.Length < ExportSize) throw new InvalidOperationException("Input data is too short.");
 
             SaveId = BinaryPrimitives.ReadUInt64LittleEndian(input);
             Size = BinaryPrimitives.ReadUInt64LittleEndian(input.Slice(8));
