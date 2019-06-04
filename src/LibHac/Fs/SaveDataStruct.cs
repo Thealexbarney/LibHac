@@ -5,7 +5,7 @@ using LibHac.Kvdb;
 
 namespace LibHac.Fs
 {
-    public class SaveDataStruct : IComparable<SaveDataStruct>, IEquatable<SaveDataStruct>, IExportable
+    public class SaveDataStruct : IComparable<SaveDataStruct>, IComparable, IEquatable<SaveDataStruct>, IExportable
     {
         public ulong TitleId { get; private set; }
         public UserId UserId { get; private set; }
