@@ -5,14 +5,14 @@ namespace LibHac.Fs
     public class StorageFile : FileBase
     {
         private IStorage BaseStorage { get; }
-        
+
         public StorageFile(IStorage baseStorage, OpenMode mode)
         {
             BaseStorage = baseStorage;
             Mode = mode;
         }
 
-        public override int Read(Span<byte> destination, long offset)
+        public override int Read(Span<byte> destination, long offset, ReadOption options)
         {
             int toRead = ValidateReadParamsAndGetSize(destination, offset);
 
@@ -21,11 +21,16 @@ namespace LibHac.Fs
             return toRead;
         }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset)
+        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
         {
             ValidateWriteParams(source, offset);
 
             BaseStorage.Write(source, offset);
+
+            if ((options & WriteOption.Flush) != 0)
+            {
+                Flush();
+            }
         }
 
         public override void Flush()

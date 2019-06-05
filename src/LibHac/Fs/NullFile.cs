@@ -13,14 +13,14 @@ namespace LibHac.Fs
 
         private long Length { get; }
 
-        public override int Read(Span<byte> destination, long offset)
+        public override int Read(Span<byte> destination, long offset, ReadOption options)
         {
             int toRead = ValidateReadParamsAndGetSize(destination, offset);
             destination.Slice(0, toRead).Clear();
             return toRead;
         }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset)
+        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
         {
         }
 

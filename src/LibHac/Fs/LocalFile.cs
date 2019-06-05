@@ -20,20 +20,20 @@ namespace LibHac.Fs
             ToDispose.Add(Stream);
         }
 
-        public override int Read(Span<byte> destination, long offset)
+        public override int Read(Span<byte> destination, long offset, ReadOption options)
         {
             int toRead = ValidateReadParamsAndGetSize(destination, offset);
 
-            File.Read(destination.Slice(0, toRead), offset);
+            File.Read(destination.Slice(0, toRead), offset, options);
 
             return toRead;
         }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset)
+        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
         {
             ValidateWriteParams(source, offset);
             
-            File.Write(source, offset);
+            File.Write(source, offset, options);
         }
 
         public override void Flush()
