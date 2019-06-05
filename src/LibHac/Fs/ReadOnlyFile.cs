@@ -11,9 +11,9 @@ namespace LibHac.Fs
             BaseFile = baseFile;
         }
 
-        public override int Read(Span<byte> destination, long offset)
+        public override int Read(Span<byte> destination, long offset, ReadOption options)
         {
-            return BaseFile.Read(destination, offset);
+            return BaseFile.Read(destination, offset, options);
         }
 
         public override long GetSize()
@@ -22,7 +22,7 @@ namespace LibHac.Fs
         }
 
         public override void Flush() { }
-        public override void Write(ReadOnlySpan<byte> source, long offset) => throw new NotSupportedException();
+        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options) => throw new NotSupportedException();
         public override void SetSize(long size) => throw new NotSupportedException();
     }
 }

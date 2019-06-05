@@ -29,20 +29,22 @@ namespace LibHac.Fs
         /// <param name="destination">The buffer where the read bytes will be stored.
         /// The number of bytes read will be no larger than the length of the buffer.</param>
         /// <param name="offset">The offset in the <see cref="IFile"/> at which to begin reading.</param>
+        /// <param name="options">Options for reading from the <see cref="IFile"/>.</param>
         /// <returns>The total number of bytes read into the buffer. This can be less than the
         /// size of the buffer if the IFile is too short to fulfill the request.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> is invalid.</exception>
         /// <exception cref="NotSupportedException">The file's <see cref="OpenMode"/> does not allow reading.</exception>
-        int Read(Span<byte> destination, long offset);
+        int Read(Span<byte> destination, long offset, ReadOption options);
 
         /// <summary>
         /// Writes a sequence of bytes to the current <see cref="IFile"/>.
         /// </summary>
         /// <param name="source">The buffer containing the bytes to be written.</param>
         /// <param name="offset">The offset in the <see cref="IStorage"/> at which to begin writing.</param>
+        /// <param name="options">Options for writing to the <see cref="IFile"/>.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> is negative.</exception>
         /// <exception cref="NotSupportedException">The file's <see cref="OpenMode"/> does not allow this request.</exception>
-        void Write(ReadOnlySpan<byte> source, long offset);
+        void Write(ReadOnlySpan<byte> source, long offset, WriteOption options);
 
         /// <summary>
         /// Causes any buffered data to be written to the underlying device.

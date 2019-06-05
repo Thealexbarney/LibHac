@@ -246,7 +246,7 @@ namespace LibHac.Fs
 
             using (IFile file = BaseFileSystem.OpenFile(filePath, OpenMode.ReadWrite))
             {
-                file.Write(header.ToBytes(false), 0);
+                file.Write(header.ToBytes(false), 0, WriteOption.Flush);
             }
         }
     }
