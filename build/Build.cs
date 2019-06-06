@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using ICSharpCode.SharpZipLib.Zip;
 using ILRepacking;
 using Nuke.Common;
@@ -43,10 +45,13 @@ namespace LibHacBuild
         AbsolutePath TempDirectory => RootDirectory / ".tmp";
         AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_netcoreapp2.1";
         AbsolutePath CliFrameworkDir => TempDirectory / "hactoolnet_net46";
+        AbsolutePath CliNativeDir => TempDirectory / "hactoolnet_native";
         AbsolutePath CliFrameworkZip => ArtifactsDirectory / "hactoolnet.zip";
         AbsolutePath CliCoreZip => ArtifactsDirectory / "hactoolnet_netcore.zip";
+        AbsolutePath NugetConfig => RootDirectory / "nuget.config";
 
         AbsolutePath CliMergedExe => ArtifactsDirectory / "hactoolnet.exe";
+        AbsolutePath CliNativeExe => ArtifactsDirectory / "hactoolnet_native.exe";
 
         Project LibHacProject => _solution.GetProject("LibHac").NotNull();
         Project LibHacTestProject => _solution.GetProject("LibHac.Tests").NotNull();
@@ -55,6 +60,7 @@ namespace LibHacBuild
         string AppVeyorVersion { get; set; }
         Dictionary<string, object> VersionProps { get; set; } = new Dictionary<string, object>();
 
+        private const string MyGetSource = "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json";
         const string CertFileName = "cert.pfx";
 
         Target SetVersion => _ => _
@@ -107,6 +113,7 @@ namespace LibHacBuild
                 EnsureCleanDirectory(ArtifactsDirectory);
                 EnsureCleanDirectory(CliCoreDir);
                 EnsureCleanDirectory(CliFrameworkDir);
+                EnsureCleanDirectory(CliNativeDir);
             });
 
         Target Restore => _ => _
@@ -268,7 +275,6 @@ namespace LibHacBuild
 
         Target Publish => _ => _
             .DependsOn(Test)
-            .OnlyWhenStatic(() => Host == HostType.AppVeyor)
             .OnlyWhenStatic(() => AppVeyor.Instance != null && AppVeyor.Instance.PullRequestTitle == null)
             .Executes(() =>
             {
@@ -286,8 +292,58 @@ namespace LibHacBuild
                 DotNetNuGetPush(settings.SetTargetPath(snupkgFile));
             });
 
+        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
+        Target Native => _ => _
+            .DependsOn(SetVersion)
+            .OnlyWhenStatic(() => AppVeyor.Instance != null)
+            .Executes(() =>
+            {
+                AbsolutePath nativeProject = HactoolnetProject.Path.Parent / "hactoolnet_native.csproj";
+
+                try
+                {
+                    File.Copy(HactoolnetProject, nativeProject, true);
+                    DotNet("new nuget --force");
+
+                    XDocument doc = XDocument.Load(NugetConfig);
+                    doc.Element("configuration").Element("packageSources").Add(new XElement("add",
+                        new XAttribute("key", "myget"), new XAttribute("value", MyGetSource)));
+
+                    doc.Save(NugetConfig);
+
+                    DotNet($"add {nativeProject} package Microsoft.DotNet.ILCompiler --version 1.0.0-alpha-*");
+
+                    DotNetPublishSettings publishSettings = new DotNetPublishSettings()
+                        .SetConfiguration(Configuration);
+
+                    DotNetPublish(s => publishSettings
+                        .SetProject(nativeProject)
+                        .SetFramework("netcoreapp2.1")
+                        .SetRuntime("win-x64")
+                        .SetOutput(CliNativeDir)
+                        .SetProperties(VersionProps));
+
+                    AbsolutePath tempExe = CliNativeDir / "hactoolnet_native.exe";
+
+                    File.Copy(tempExe, CliNativeExe, true);
+
+                    if (Host == HostType.AppVeyor)
+                    {
+                        AbsolutePath zipFile = CliNativeExe.Parent / "hactoolnet_native.zip";
+                        ZipFiles(zipFile, new[] {CliNativeExe.ToString()});
+
+                        PushArtifact(zipFile);
+                    }
+                }
+                finally
+                {
+                    File.Delete(nativeProject);
+                    File.Delete(NugetConfig);
+                }
+            });
+
         Target Results => _ => _
-            .DependsOn(Test, Zip, Merge, Sign, Publish)
+            .DependsOn(Test, Zip, Merge, Sign, Native, Publish)
             .Executes(() =>
             {
                 Console.WriteLine("SHA-1:");
