@@ -330,7 +330,7 @@ namespace LibHacBuild
                     if (Host == HostType.AppVeyor)
                     {
                         AbsolutePath zipFile = CliNativeExe.Parent / "hactoolnet_native.zip";
-                        ZipFiles(zipFile, new[] {CliNativeExe.ToString()});
+                        ZipFiles(zipFile, new[] { CliNativeExe.ToString() });
 
                         PushArtifact(zipFile);
                     }
