@@ -63,6 +63,8 @@ namespace LibHacBuild
         private const string MyGetSource = "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json";
         const string CertFileName = "cert.pfx";
 
+        private bool IsMasterBranch => _gitVersion?.BranchName.Equals("master") ?? false;
+
         Target SetVersion => _ => _
             .OnlyWhenStatic(() => _gitRepository != null)
             .Executes(() =>
@@ -295,7 +297,7 @@ namespace LibHacBuild
         [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         Target Native => _ => _
             .DependsOn(SetVersion)
-            .OnlyWhenStatic(() => AppVeyor.Instance != null && _gitVersion.BranchName.Equals("master"))
+            .OnlyWhenStatic(() => AppVeyor.Instance != null && IsMasterBranch)
             .Executes(() =>
             {
                 AbsolutePath nativeProject = HactoolnetProject.Path.Parent / "hactoolnet_native.csproj";
