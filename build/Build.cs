@@ -295,7 +295,7 @@ namespace LibHacBuild
         [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         Target Native => _ => _
             .DependsOn(SetVersion)
-            .OnlyWhenStatic(() => AppVeyor.Instance != null)
+            .OnlyWhenStatic(() => AppVeyor.Instance != null && _gitVersion.BranchName.Equals("master"))
             .Executes(() =>
             {
                 AbsolutePath nativeProject = HactoolnetProject.Path.Parent / "hactoolnet_native.csproj";
