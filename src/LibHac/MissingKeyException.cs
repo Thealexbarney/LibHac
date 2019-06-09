@@ -68,12 +68,15 @@ namespace LibHac
         protected MissingKeyException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            Name = info.GetString(nameof(Name));
+            Type = (KeyType)info.GetValue(nameof(Type), Type.GetType());
         }
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
             info.AddValue(nameof(Name), Name);
+            info.AddValue(nameof(Type), Type);
         }
 
         public override string Message
