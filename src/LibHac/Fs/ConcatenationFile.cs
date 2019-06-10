@@ -31,7 +31,7 @@ namespace LibHac.Fs
             ToDispose.AddRange(Sources);
         }
 
-        public override int Read(Span<byte> destination, long offset)
+        public override int Read(Span<byte> destination, long offset, ReadOption options)
         {
             long inPos = offset;
             int outPos = 0;
@@ -45,7 +45,7 @@ namespace LibHac.Fs
 
                 long fileEndOffset = Math.Min((fileIndex + 1) * SubFileSize, GetSize());
                 int bytesToRead = (int)Math.Min(fileEndOffset - inPos, remaining);
-                int bytesRead = file.Read(destination.Slice(outPos, bytesToRead), fileOffset);
+                int bytesRead = file.Read(destination.Slice(outPos, bytesToRead), fileOffset, options);
 
                 outPos += bytesRead;
                 inPos += bytesRead;
@@ -57,7 +57,7 @@ namespace LibHac.Fs
             return outPos;
         }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset)
+        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
         {
             ValidateWriteParams(source, offset);
 
@@ -73,11 +73,16 @@ namespace LibHac.Fs
 
                 long fileEndOffset = Math.Min((fileIndex + 1) * SubFileSize, GetSize());
                 int bytesToWrite = (int)Math.Min(fileEndOffset - outPos, remaining);
-                file.Write(source.Slice(inPos, bytesToWrite), fileOffset);
+                file.Write(source.Slice(inPos, bytesToWrite), fileOffset, options);
 
                 outPos += bytesToWrite;
                 inPos += bytesToWrite;
                 remaining -= bytesToWrite;
+            }
+
+            if ((options & WriteOption.Flush) != 0)
+            {
+                Flush();
             }
         }
 

@@ -16,14 +16,14 @@ namespace LibHac.Fs
             ToDispose.Add(BaseFile);
         }
 
-        public override int Read(Span<byte> destination, long offset)
+        public override int Read(Span<byte> destination, long offset, ReadOption options)
         {
-            return BaseFile.Read(destination, offset);
+            return BaseFile.Read(destination, offset, options);
         }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset)
+        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
         {
-            BaseFile.Write(source, offset);
+            BaseFile.Write(source, offset, options);
         }
 
         public override void Flush()

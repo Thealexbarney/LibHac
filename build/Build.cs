@@ -1,16 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using ICSharpCode.SharpZipLib.Zip;
 using ILRepacking;
 using Nuke.Common;
 using Nuke.Common.BuildServers;
 using Nuke.Common.Git;
+using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
@@ -26,10 +29,10 @@ namespace LibHacBuild
         public static int Main() => Execute<Build>(x => x.Results);
 
         [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
-        readonly string _configuration = IsLocalBuild ? "Debug" : "Release";
+        public readonly string Configuration = IsLocalBuild ? "Debug" : "Release";
 
         [Parameter("Build only .NET Core targets if true. Default is false on Windows")]
-        readonly bool _doCoreBuildOnly;
+        public readonly bool DoCoreBuildOnly;
 
         [Solution("LibHac.sln")] readonly Solution _solution;
         [GitRepository] readonly GitRepository _gitRepository;
@@ -42,10 +45,13 @@ namespace LibHacBuild
         AbsolutePath TempDirectory => RootDirectory / ".tmp";
         AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_netcoreapp2.1";
         AbsolutePath CliFrameworkDir => TempDirectory / "hactoolnet_net46";
+        AbsolutePath CliNativeDir => TempDirectory / "hactoolnet_native";
         AbsolutePath CliFrameworkZip => ArtifactsDirectory / "hactoolnet.zip";
         AbsolutePath CliCoreZip => ArtifactsDirectory / "hactoolnet_netcore.zip";
+        AbsolutePath NugetConfig => RootDirectory / "nuget.config";
 
         AbsolutePath CliMergedExe => ArtifactsDirectory / "hactoolnet.exe";
+        AbsolutePath CliNativeExe => ArtifactsDirectory / "hactoolnet_native.exe";
 
         Project LibHacProject => _solution.GetProject("LibHac").NotNull();
         Project LibHacTestProject => _solution.GetProject("LibHac.Tests").NotNull();
@@ -54,7 +60,10 @@ namespace LibHacBuild
         string AppVeyorVersion { get; set; }
         Dictionary<string, object> VersionProps { get; set; } = new Dictionary<string, object>();
 
+        private const string MyGetSource = "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json";
         const string CertFileName = "cert.pfx";
+
+        private bool IsMasterBranch => _gitVersion?.BranchName.Equals("master") ?? false;
 
         Target SetVersion => _ => _
             .OnlyWhenStatic(() => _gitRepository != null)
@@ -95,11 +104,18 @@ namespace LibHacBuild
         Target Clean => _ => _
             .Executes(() =>
             {
-                DeleteDirectories(GlobDirectories(SourceDirectory, "**/bin", "**/obj"));
-                DeleteDirectories(GlobDirectories(TestsDirectory, "**/bin", "**/obj"));
+                List<string> toDelete = GlobDirectories(SourceDirectory, "**/bin", "**/obj")
+                    .Concat(GlobDirectories(TestsDirectory, "**/bin", "**/obj")).ToList();
+
+                foreach (string dir in toDelete)
+                {
+                    DeleteDirectory(dir);
+                }
+
                 EnsureCleanDirectory(ArtifactsDirectory);
                 EnsureCleanDirectory(CliCoreDir);
                 EnsureCleanDirectory(CliFrameworkDir);
+                EnsureCleanDirectory(CliNativeDir);
             });
 
         Target Restore => _ => _
@@ -119,17 +135,17 @@ namespace LibHacBuild
                 DotNetBuildSettings buildSettings = new DotNetBuildSettings()
                     .SetProjectFile(_solution)
                     .EnableNoRestore()
-                    .SetConfiguration(_configuration)
+                    .SetConfiguration(Configuration)
                     .SetProperties(VersionProps)
                     .SetProperty("BuildType", "Release");
 
-                if (_doCoreBuildOnly) buildSettings = buildSettings.SetFramework("netcoreapp2.1");
+                if (DoCoreBuildOnly) buildSettings = buildSettings.SetFramework("netcoreapp2.1");
 
                 DotNetBuild(s => buildSettings);
 
                 DotNetPublishSettings publishSettings = new DotNetPublishSettings()
                     .EnableNoRestore()
-                    .SetConfiguration(_configuration);
+                    .SetConfiguration(Configuration);
 
                 DotNetPublish(s => publishSettings
                     .SetProject(HactoolnetProject)
@@ -137,7 +153,7 @@ namespace LibHacBuild
                     .SetOutput(CliCoreDir)
                     .SetProperties(VersionProps));
 
-                if (!_doCoreBuildOnly)
+                if (!DoCoreBuildOnly)
                 {
                     DotNetPublish(s => publishSettings
                         .SetProject(HactoolnetProject)
@@ -163,13 +179,13 @@ namespace LibHacBuild
                 DotNetPackSettings settings = new DotNetPackSettings()
                     .SetProject(LibHacProject)
                     .EnableNoBuild()
-                    .SetConfiguration(_configuration)
+                    .SetConfiguration(Configuration)
                     .EnableIncludeSymbols()
                     .SetSymbolPackageFormat(DotNetSymbolPackageFormat.snupkg)
                     .SetOutputDirectory(ArtifactsDirectory)
                     .SetProperties(VersionProps);
 
-                if (_doCoreBuildOnly)
+                if (DoCoreBuildOnly)
                     settings = settings.SetProperty("TargetFrameworks", "netcoreapp2.1");
 
                 DotNetPack(s => settings);
@@ -189,7 +205,7 @@ namespace LibHacBuild
 
         Target Merge => _ => _
             .DependsOn(Compile)
-            .OnlyWhenStatic(() => !_doCoreBuildOnly)
+            .OnlyWhenStatic(() => !DoCoreBuildOnly)
             .Executes(() =>
             {
                 string[] libraries = Directory.GetFiles(CliFrameworkDir, "*.dll");
@@ -223,9 +239,9 @@ namespace LibHacBuild
                 DotNetTestSettings settings = new DotNetTestSettings()
                     .SetProjectFile(LibHacTestProject)
                     .EnableNoBuild()
-                    .SetConfiguration(_configuration);
+                    .SetConfiguration(Configuration);
 
-                if (_doCoreBuildOnly) settings = settings.SetFramework("netcoreapp2.1");
+                if (DoCoreBuildOnly) settings = settings.SetFramework("netcoreapp2.1");
 
                 DotNetTest(s => settings);
             });
@@ -242,7 +258,7 @@ namespace LibHacBuild
                     .Concat(Directory.EnumerateFiles(CliCoreDir, "*.dll"))
                     .ToArray();
 
-                if (!_doCoreBuildOnly)
+                if (!DoCoreBuildOnly)
                 {
                     ZipFiles(CliFrameworkZip, namesFx);
                     Console.WriteLine($"Created {CliFrameworkZip}");
@@ -261,8 +277,7 @@ namespace LibHacBuild
 
         Target Publish => _ => _
             .DependsOn(Test)
-            .OnlyWhenStatic(() => Host == HostType.AppVeyor)
-            .OnlyWhenStatic(() => AppVeyor.Instance.PullRequestTitle == null)
+            .OnlyWhenStatic(() => AppVeyor.Instance != null && AppVeyor.Instance.PullRequestTitle == null)
             .Executes(() =>
             {
                 AbsolutePath nupkgFile = ArtifactsDirectory.GlobFiles("*.nupkg").Single();
@@ -279,8 +294,58 @@ namespace LibHacBuild
                 DotNetNuGetPush(settings.SetTargetPath(snupkgFile));
             });
 
+        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
+        Target Native => _ => _
+            .DependsOn(SetVersion)
+            .OnlyWhenStatic(() => AppVeyor.Instance != null && IsMasterBranch)
+            .Executes(() =>
+            {
+                AbsolutePath nativeProject = HactoolnetProject.Path.Parent / "hactoolnet_native.csproj";
+
+                try
+                {
+                    File.Copy(HactoolnetProject, nativeProject, true);
+                    DotNet("new nuget --force");
+
+                    XDocument doc = XDocument.Load(NugetConfig);
+                    doc.Element("configuration").Element("packageSources").Add(new XElement("add",
+                        new XAttribute("key", "myget"), new XAttribute("value", MyGetSource)));
+
+                    doc.Save(NugetConfig);
+
+                    DotNet($"add {nativeProject} package Microsoft.DotNet.ILCompiler --version 1.0.0-alpha-*");
+
+                    DotNetPublishSettings publishSettings = new DotNetPublishSettings()
+                        .SetConfiguration(Configuration);
+
+                    DotNetPublish(s => publishSettings
+                        .SetProject(nativeProject)
+                        .SetFramework("netcoreapp2.1")
+                        .SetRuntime("win-x64")
+                        .SetOutput(CliNativeDir)
+                        .SetProperties(VersionProps));
+
+                    AbsolutePath tempExe = CliNativeDir / "hactoolnet_native.exe";
+
+                    File.Copy(tempExe, CliNativeExe, true);
+
+                    if (Host == HostType.AppVeyor)
+                    {
+                        AbsolutePath zipFile = CliNativeExe.Parent / "hactoolnet_native.zip";
+                        ZipFiles(zipFile, new[] { CliNativeExe.ToString() });
+
+                        PushArtifact(zipFile);
+                    }
+                }
+                finally
+                {
+                    File.Delete(nativeProject);
+                    File.Delete(NugetConfig);
+                }
+            });
+
         Target Results => _ => _
-            .DependsOn(Test, Zip, Merge, Sign, Publish)
+            .DependsOn(Test, Zip, Merge, Sign, Native, Publish)
             .Executes(() =>
             {
                 Console.WriteLine("SHA-1:");
@@ -299,7 +364,7 @@ namespace LibHacBuild
 
         Target Sign => _ => _
             .DependsOn(Test, Zip, Merge)
-            .OnlyWhenStatic(() => !_doCoreBuildOnly)
+            .OnlyWhenStatic(() => !DoCoreBuildOnly)
             .OnlyWhenStatic(() => File.Exists(CertFileName))
             .Executes(() =>
             {

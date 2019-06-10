@@ -204,6 +204,16 @@ namespace LibHac.Fs
                 }
             }
         }
+
+        public static int Read(this IFile file, Span<byte> destination, long offset)
+        {
+            return file.Read(destination, offset, ReadOption.None);
+        }
+
+        public static void Write(this IFile file, ReadOnlySpan<byte> source, long offset)
+        {
+            file.Write(source, offset, WriteOption.None);
+        }
     }
 
     [Flags]

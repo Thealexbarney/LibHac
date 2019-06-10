@@ -21,7 +21,7 @@ namespace LibHac.Fs
             Mode = mode;
         }
 
-        public override int Read(Span<byte> destination, long offset)
+        public override int Read(Span<byte> destination, long offset, ReadOption options)
         {
 #if STREAM_SPAN
             lock (Locker)
@@ -56,7 +56,7 @@ namespace LibHac.Fs
 #endif
         }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset)
+        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
         {
 #if STREAM_SPAN
             lock (Locker)
@@ -78,6 +78,11 @@ namespace LibHac.Fs
             }
             finally { ArrayPool<byte>.Shared.Return(buffer); }
 #endif
+
+            if ((options & WriteOption.Flush) != 0)
+            {
+                Flush();
+            }
         }
 
         public override void Flush()

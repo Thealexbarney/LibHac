@@ -8,8 +8,8 @@ namespace LibHac.Fs
         protected bool IsDisposed { get; private set; }
         internal List<IDisposable> ToDispose { get; } = new List<IDisposable>();
 
-        public abstract int Read(Span<byte> destination, long offset);
-        public abstract void Write(ReadOnlySpan<byte> source, long offset);
+        public abstract int Read(Span<byte> destination, long offset, ReadOption options);
+        public abstract void Write(ReadOnlySpan<byte> source, long offset, WriteOption options);
         public abstract void Flush();
         public abstract long GetSize();
         public abstract void SetSize(long size);
@@ -89,5 +89,18 @@ namespace LibHac.Fs
         Write = 2,
         Append = 4,
         ReadWrite = Read | Write
+    }
+
+    [Flags]
+    public enum ReadOption
+    {
+        None = 0
+    }
+
+    [Flags]
+    public enum WriteOption
+    {
+        None = 0,
+        Flush = 1
     }
 }

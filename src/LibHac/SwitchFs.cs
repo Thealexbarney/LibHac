@@ -264,12 +264,12 @@ namespace LibHac
 
         public IStorage OpenStorage(NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
         {
-            return OpenStorage(Nca.SectionIndexFromType(type, Nca.Header.ContentType), integrityCheckLevel);
+            return OpenStorage(Nca.GetSectionIndexFromType(type, Nca.Header.ContentType), integrityCheckLevel);
         }
 
         public IFileSystem OpenFileSystem(NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
         {
-            return OpenFileSystem(Nca.SectionIndexFromType(type, Nca.Header.ContentType), integrityCheckLevel);
+            return OpenFileSystem(Nca.GetSectionIndexFromType(type, Nca.Header.ContentType), integrityCheckLevel);
         }
 
         public Validity VerifyNca(IProgressReport logger = null, bool quiet = false)

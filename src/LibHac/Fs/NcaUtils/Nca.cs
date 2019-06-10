@@ -69,7 +69,15 @@ namespace LibHac.Fs.NcaUtils
             return Header.HasRightsId ? GetDecryptedTitleKey() : GetDecryptedKey((int)type);
         }
 
-        public bool CanOpenSection(NcaSectionType type) => CanOpenSection(GetSectionIndexFromType(type));
+        public bool CanOpenSection(NcaSectionType type)
+        {
+            if (!TryGetSectionIndexFromType(type, Header.ContentType, out int index))
+            {
+                return false;
+            }
+
+            return CanOpenSection(index);
+        }
 
         public bool CanOpenSection(int index)
         {
@@ -87,7 +95,15 @@ namespace LibHac.Fs.NcaUtils
             return !Keyset.KeyAreaKeys[keyRevision][Header.KeyAreaKeyIndex].IsEmpty();
         }
 
-        public bool SectionExists(NcaSectionType type) => SectionExists(GetSectionIndexFromType(type));
+        public bool SectionExists(NcaSectionType type)
+        {
+            if (!TryGetSectionIndexFromType(type, Header.ContentType, out int index))
+            {
+                return false;
+            }
+
+            return SectionExists(index);
+        }
 
         public bool SectionExists(int index)
         {
@@ -311,30 +327,70 @@ namespace LibHac.Fs.NcaUtils
 
         private int GetSectionIndexFromType(NcaSectionType type)
         {
-            return SectionIndexFromType(type, Header.ContentType);
+            return GetSectionIndexFromType(type, Header.ContentType);
         }
 
-        public static int SectionIndexFromType(NcaSectionType type, ContentType contentType)
+        public static int GetSectionIndexFromType(NcaSectionType type, ContentType contentType)
+        {
+            if (!TryGetSectionIndexFromType(type, contentType, out int index))
+            {
+                throw new ArgumentOutOfRangeException(nameof(type), "NCA does not contain this section type.");
+            }
+
+            return index;
+        }
+
+        public static bool TryGetSectionIndexFromType(NcaSectionType type, ContentType contentType, out int index)
         {
             switch (type)
             {
-                case NcaSectionType.Code when contentType == ContentType.Program: return 0;
-                case NcaSectionType.Data when contentType == ContentType.Program: return 1;
-                case NcaSectionType.Logo when contentType == ContentType.Program: return 2;
-                case NcaSectionType.Data: return 0;
-                default: throw new ArgumentOutOfRangeException(nameof(type), "NCA does not contain this section type.");
+                case NcaSectionType.Code when contentType == ContentType.Program:
+                    index = 0;
+                    return true;
+                case NcaSectionType.Data when contentType == ContentType.Program:
+                    index = 1;
+                    return true;
+                case NcaSectionType.Logo when contentType == ContentType.Program:
+                    index = 2;
+                    return true;
+                case NcaSectionType.Data:
+                    index = 0;
+                    return true;
+                default:
+                    index = 0;
+                    return false;
             }
         }
 
-        public static NcaSectionType SectionTypeFromIndex(int index, ContentType contentType)
+        public static NcaSectionType GetSectionTypeFromIndex(int index, ContentType contentType)
+        {
+            if (!TryGetSectionTypeFromIndex(index, contentType, out NcaSectionType type))
+            {
+                throw new ArgumentOutOfRangeException(nameof(type), "NCA type does not contain this index.");
+            }
+
+            return type;
+        }
+
+        public static bool TryGetSectionTypeFromIndex(int index, ContentType contentType, out NcaSectionType type)
         {
             switch (index)
             {
-                case 0 when contentType == ContentType.Program: return NcaSectionType.Code;
-                case 1 when contentType == ContentType.Program: return NcaSectionType.Data;
-                case 2 when contentType == ContentType.Program: return NcaSectionType.Logo;
-                case 0: return NcaSectionType.Data;
-                default: throw new ArgumentOutOfRangeException(nameof(index), "NCA type does not contain this index.");
+                case 0 when contentType == ContentType.Program:
+                    type = NcaSectionType.Code;
+                    return true;
+                case 1 when contentType == ContentType.Program:
+                    type = NcaSectionType.Data;
+                    return true;
+                case 2 when contentType == ContentType.Program:
+                    type = NcaSectionType.Logo;
+                    return true;
+                case 0:
+                    type = NcaSectionType.Data;
+                    return true;
+                default:
+                    type = default;
+                    return false;
             }
         }
 
