@@ -2,85 +2,189 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
+using static LibHac.Results;
+using static LibHac.Fs.ResultsFs;
+
 namespace LibHac.Fs
 {
     public static class PathTools
     {
         public static readonly char DirectorySeparator = '/';
+        public static readonly char MountSeparator = ':';
+        internal const int MountNameLength = 0xF;
 
         public static string Normalize(string inPath)
         {
             if (IsNormalized(inPath.AsSpan())) return inPath;
-            return NormalizeInternal(inPath);
+
+            Span<char> initialBuffer = stackalloc char[0x200];
+            var sb = new ValueStringBuilder(initialBuffer);
+
+            int rootLen = 0;
+            int maxMountLen = Math.Min(inPath.Length, MountNameLength);
+
+            for (int i = 0; i < maxMountLen; i++)
+            {
+                if (inPath[i] == MountSeparator)
+                {
+                    rootLen = i + 1;
+                    break;
+                }
+
+                if (IsDirectorySeparator(inPath[i]))
+                {
+                    break;
+                }
+            }
+
+            bool isNormalized = NormalizeInternal(inPath.AsSpan(), rootLen, ref sb);
+
+            string normalized = isNormalized ? inPath : sb.ToString();
+
+            sb.Dispose();
+
+            return normalized;
         }
 
         // Licensed to the .NET Foundation under one or more agreements.
         // The .NET Foundation licenses this file to you under the MIT license.
         // See the LICENSE file in the project root for more information.
-        public static string NormalizeInternal(string inPath)
+        internal static bool NormalizeInternal(ReadOnlySpan<char> path, int rootLength, ref ValueStringBuilder sb)
         {
-            // Relative paths aren't a thing for IFileSystem, so assume all paths are absolute
-            // and add a '/' to the beginning of the path if it doesn't already begin with one
-            if (inPath.Length == 0 || !IsDirectorySeparator(inPath[0])) inPath = DirectorySeparator + inPath;
+            if (rootLength > 0)
+            {
+                sb.Append(path.Slice(0, rootLength));
+            }
 
-            ReadOnlySpan<char> path = inPath.AsSpan();
+            bool isNormalized = true;
 
-            if (path.Length == 0) return DirectorySeparator.ToString();
+            var state = NormalizeState.Initial;
 
-            Span<char> initialBuffer = stackalloc char[0x200];
-            var sb = new ValueStringBuilder(initialBuffer);
-
-            for (int i = 0; i < path.Length; i++)
+            for (int i = rootLength; i < path.Length; i++)
             {
                 char c = path[i];
 
-                if (IsDirectorySeparator(c) && i + 1 < path.Length)
+                switch (state)
                 {
-                    // Skip this character if it's a directory separator and if the next character is, too,
-                    // e.g. "parent//child" => "parent/child"
-                    if (IsDirectorySeparator(path[i + 1])) continue;
+                    case NormalizeState.Initial when IsDirectorySeparator(c):
+                        state = NormalizeState.Delimiter;
+                        sb.Append(c);
+                        break;
 
-                    // Skip this character and the next if it's referring to the current directory,
-                    // e.g. "parent/./child" => "parent/child"
-                    if (IsCurrentDirectory(path, i))
-                    {
-                        i++;
-                        continue;
-                    }
+                    case NormalizeState.Initial when c == '.':
+                        isNormalized = false;
+                        state = NormalizeState.Dot;
 
-                    // Skip this character and the next two if it's referring to the parent directory,
-                    // e.g. "parent/child/../grandchild" => "parent/grandchild"
-                    if (IsParentDirectory(path, i))
-                    {
-                        // Unwind back to the last slash (and if there isn't one, clear out everything).
-                        for (int s = sb.Length - 1; s >= 0; s--)
+                        sb.Append(DirectorySeparator);
+                        sb.Append(c);
+                        break;
+
+                    case NormalizeState.Initial:
+                        isNormalized = false;
+                        state = NormalizeState.Delimiter;
+
+                        sb.Append(DirectorySeparator);
+                        sb.Append(c);
+                        break;
+
+                    case NormalizeState.Normal when IsDirectorySeparator(c):
+                        state = NormalizeState.Delimiter;
+                        sb.Append(c);
+                        break;
+
+                    case NormalizeState.Delimiter when IsDirectorySeparator(c):
+                        isNormalized = false;
+                        break;
+
+                    case NormalizeState.Delimiter when c == '.':
+                        state = NormalizeState.Dot;
+                        sb.Append(c);
+                        break;
+
+                    case NormalizeState.Delimiter:
+                        state = NormalizeState.Normal;
+                        sb.Append(c);
+                        break;
+
+                    case NormalizeState.Dot when IsDirectorySeparator(c):
+                        isNormalized = false;
+                        state = NormalizeState.Delimiter;
+                        sb.Length -= 1;
+                        break;
+
+                    case NormalizeState.Dot when c == '.':
+                        state = NormalizeState.DoubleDot;
+                        sb.Append(c);
+                        break;
+
+                    case NormalizeState.Dot:
+                        state = NormalizeState.Normal;
+                        sb.Append(c);
+                        break;
+
+                    case NormalizeState.DoubleDot when IsDirectorySeparator(c):
+                        isNormalized = false;
+                        state = NormalizeState.Delimiter;
+
+                        int s = sb.Length - 1;
+                        int separators = 0;
+
+                        for (; s > rootLength; s--)
                         {
                             if (IsDirectorySeparator(sb[s]))
                             {
-                                sb.Length = s;
-                                break;
+                                separators++;
+
+                                if (separators == 2) break;
                             }
                         }
 
-                        i += 2;
-                        continue;
-                    }
+                        sb.Length = s + 1;
+
+                        break;
+
+                    case NormalizeState.DoubleDot:
+                        state = NormalizeState.Normal;
+                        break;
                 }
-                sb.Append(c);
             }
 
-            // If we haven't changed the source path, return the original
-            if (sb.Length == inPath.Length)
+            switch (state)
             {
-                return inPath;
+                case NormalizeState.Dot:
+                    isNormalized = false;
+                    sb.Length -= 2;
+                    break;
+
+                case NormalizeState.DoubleDot:
+                    isNormalized = false;
+
+                    int s = sb.Length - 1;
+                    int separators = 0;
+
+                    for (; s > rootLength; s--)
+                    {
+                        if (IsDirectorySeparator(sb[s]))
+                        {
+                            separators++;
+
+                            if (separators == 2) break;
+                        }
+                    }
+
+                    sb.Length = s;
+
+                    break;
             }
 
-            if (sb.Length == 0)
+            if (sb.Length == rootLength)
             {
                 sb.Append(DirectorySeparator);
+
+                return false;
             }
 
-            return sb.ToString();
+            return isNormalized;
         }
 
         public static string GetParentDirectory(string path)
@@ -219,7 +323,7 @@ namespace LibHac.Fs
 
         public static string Combine(string path1, string path2)
         {
-            if(path1 == null || path2 == null) throw new NullReferenceException();
+            if (path1 == null || path2 == null) throw new NullReferenceException();
 
             if (string.IsNullOrEmpty(path1)) return path2;
             if (string.IsNullOrEmpty(path2)) return path1;
@@ -240,19 +344,21 @@ namespace LibHac.Fs
             return c == DirectorySeparator;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsCurrentDirectory(ReadOnlySpan<char> path, int index)
+        public static Result GetMountName(string path, out string mountName)
         {
-            return (index + 2 == path.Length || IsDirectorySeparator(path[index + 2])) &&
-                   path[index + 1] == '.';
-        }
+            int maxLen = Math.Min(path.Length, MountNameLength);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsParentDirectory(ReadOnlySpan<char> path, int index)
-        {
-            return index + 2 < path.Length &&
-                   (index + 3 == path.Length || IsDirectorySeparator(path[index + 3])) &&
-                   path[index + 1] == '.' && path[index + 2] == '.';
+            for (int i = 0; i < maxLen; i++)
+            {
+                if (path[i] == MountSeparator)
+                {
+                    mountName = path.Substring(0, i);
+                    return ResultSuccess;
+                }
+            }
+
+            mountName = default;
+            return ResultFsInvalidMountName;
         }
 
         private enum NormalizeState
