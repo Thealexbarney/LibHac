@@ -8,7 +8,7 @@ namespace LibHac
         public NacpDescription[] Descriptions { get; } = new NacpDescription[0x10];
         public string Isbn { get; }
         public byte StartupUserAccount { get; }
-        public byte TouchScreenUsageMode { get; }
+        public byte UserAccountSwitchLock { get; }
         public byte AocRegistrationType { get; }
         public int AttributeFlag { get; }
         public uint SupportedLanguageFlag { get; }
@@ -74,7 +74,7 @@ namespace LibHac
             Isbn = reader.ReadUtf8Z(37);
             reader.BaseStream.Position = start + 0x3025;
             StartupUserAccount = reader.ReadByte();
-            TouchScreenUsageMode = reader.ReadByte();
+            UserAccountSwitchLock = reader.ReadByte();
             AocRegistrationType = reader.ReadByte();
             AttributeFlag = reader.ReadInt32();
             SupportedLanguageFlag = reader.ReadUInt32();
