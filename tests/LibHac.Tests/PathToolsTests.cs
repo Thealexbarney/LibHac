@@ -19,10 +19,10 @@ namespace LibHac.Tests
             new object[] {"/a/../../../a/b/c", "/a/b/c"},
             new object[] {"//a/b//.//c", "/a/b/c"},
             new object[] {"/../a/b/c/.", "/a/b/c"},
-            new object[] {"/./a/b/c/.", "/a/b/c"},
+            new object[] {"/./aaa/bbb/ccc/.", "/aaa/bbb/ccc"},
 
             new object[] {"/a/b/c/", "/a/b/c/"},
-            new object[] {"/a/./b/../c/", "/a/c/"},
+            new object[] {"/aa/./bb/../cc/", "/aa/cc/"},
             new object[] {"/./b/../c/", "/c/"},
             new object[] {"/a/../../../", "/"},
             new object[] {"//a/b//.//c/", "/a/b/c/"},
@@ -46,6 +46,7 @@ namespace LibHac.Tests
             new object[] {"abc:/", "abc:/"},
             new object[] {"abc://a/b//.//c", "abc:/a/b/c"},
             new object[] {"abc:/././/././a/b//.//c", "abc:/a/b/c"},
+            new object[] {"mount:/d./aa", "mount:/d./aa"},
         };
 
         public static object[][] SubPathTestItems =

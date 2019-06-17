@@ -92,6 +92,10 @@ namespace LibHac.Fs
                         sb.Append(c);
                         break;
 
+                    case NormalizeState.Normal:
+                        sb.Append(c);
+                        break;
+
                     case NormalizeState.Delimiter when IsDirectorySeparator(c):
                         isNormalized = false;
                         break;

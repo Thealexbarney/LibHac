@@ -1,0 +1,19 @@
+﻿using System;
+
+namespace LibHac.Fs.Accessors
+{
+    public struct FileHandle : IDisposable
+    {
+        internal readonly FileAccessor File;
+
+        internal FileHandle(FileAccessor file)
+        {
+            File = file;
+        }
+
+        public void Dispose()
+        {
+            File.Dispose();
+        }
+    }
+}
