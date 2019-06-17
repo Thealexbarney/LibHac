@@ -6,6 +6,7 @@
 
         public static Result ResultFsMountNameAlreadyExists => new Result(ModuleFs, 60);
         public static Result ResultFsInvalidMountName => new Result(ModuleFs, 6065);
+        public static Result ResultFsWriteStateUnflushed => new Result(ModuleFs, 6454);
         public static Result ResultFsWritableFileOpen => new Result(ModuleFs, 6457);
         public static Result ResultFsMountNameNotFound => new Result(ModuleFs, 6905);
     }

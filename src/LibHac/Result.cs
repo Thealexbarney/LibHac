@@ -23,6 +23,14 @@ namespace LibHac
 
         public bool IsSuccess() => Value == 0;
         public bool IsFailure() => Value != 0;
+
+        public void ThrowIfFailure()
+        {
+            if (IsFailure())
+            {
+                ThrowHelper.ThrowResult(this);
+            }
+        }
     }
 
     public static class Results
