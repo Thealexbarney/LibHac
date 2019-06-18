@@ -230,6 +230,7 @@ namespace LibHac.Fs
                 switch (state)
                 {
                     case NormalizeState.Initial when c == '/': state = NormalizeState.Delimiter; break;
+                    case NormalizeState.Initial when IsValidMountNameChar(c): state = NormalizeState.MountName; break;
                     case NormalizeState.Initial: return false;
 
                     case NormalizeState.Normal when c == '/': state = NormalizeState.Delimiter; break;
@@ -244,6 +245,13 @@ namespace LibHac.Fs
 
                     case NormalizeState.DoubleDot when c == '/': return false;
                     case NormalizeState.DoubleDot: state = NormalizeState.Normal; break;
+
+                    case NormalizeState.MountName when IsValidMountNameChar(c): break;
+                    case NormalizeState.MountName when c == ':': state = NormalizeState.MountDelimiter; break;
+                    case NormalizeState.MountName: return false;
+
+                    case NormalizeState.MountDelimiter when c == '/': state = NormalizeState.Delimiter; break;
+                    case NormalizeState.MountDelimiter: return false;
                 }
             }
 
@@ -259,6 +267,7 @@ namespace LibHac.Fs
                 switch (state)
                 {
                     case NormalizeState.Initial when c == '/': state = NormalizeState.Delimiter; break;
+                    case NormalizeState.Initial when IsValidMountNameChar(c): state = NormalizeState.MountName; break;
                     case NormalizeState.Initial: return false;
 
                     case NormalizeState.Normal when c == '/': state = NormalizeState.Delimiter; break;
@@ -273,6 +282,13 @@ namespace LibHac.Fs
 
                     case NormalizeState.DoubleDot when c == '/': return false;
                     case NormalizeState.DoubleDot: state = NormalizeState.Normal; break;
+
+                    case NormalizeState.MountName when IsValidMountNameChar(c): break;
+                    case NormalizeState.MountName when c == ':': state = NormalizeState.MountDelimiter; break;
+                    case NormalizeState.MountName: return false;
+
+                    case NormalizeState.MountDelimiter when c == '/': state = NormalizeState.Delimiter; break;
+                    case NormalizeState.MountDelimiter: return false;
                 }
             }
 
@@ -365,13 +381,23 @@ namespace LibHac.Fs
             return ResultFsInvalidMountName;
         }
 
+        private static bool IsValidMountNameChar(char c)
+        {
+            c |= (char)0x20;
+            return c >= 'a' && c <= 'z';
+        }
+
+        private static bool IsValidMountNameChar(byte c) => IsValidMountNameChar((char)c);
+
         private enum NormalizeState
         {
             Initial,
             Normal,
             Delimiter,
             Dot,
-            DoubleDot
+            DoubleDot,
+            MountName,
+            MountDelimiter
         }
     }
 }
