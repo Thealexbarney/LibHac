@@ -138,7 +138,7 @@ namespace LibHac.Fs
             return new DirectoryHandle(dir);
         }
 
-        long GetFreeSpaceSize(string path)
+        public long GetFreeSpaceSize(string path)
         {
             FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
                 .ThrowIfFailure();
@@ -146,7 +146,7 @@ namespace LibHac.Fs
             return fileSystem.GetFreeSpaceSize(subPath.ToString());
         }
 
-        long GetTotalSpaceSize(string path)
+        public long GetTotalSpaceSize(string path)
         {
             FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
                 .ThrowIfFailure();
@@ -154,7 +154,7 @@ namespace LibHac.Fs
             return fileSystem.GetTotalSpaceSize(subPath.ToString());
         }
 
-        FileTimeStampRaw GetFileTimeStamp(string path)
+        public FileTimeStampRaw GetFileTimeStamp(string path)
         {
             FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
                 .ThrowIfFailure();

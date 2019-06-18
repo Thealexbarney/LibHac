@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using LibHac.Fs;
 using Xunit;
 
@@ -68,62 +70,9 @@ namespace LibHac.Tests
             new object[] {"/a/b/c/", "/a/b/cd", false},
         };
 
-        public static object[][] IsNormalizedTestItems =
-        {
-            new object[] {"", "/"},
-            new object[] {"/"},
-            new object[] {"/a/b/c"},
-            new object[] {"/a/c"},
-            new object[] {"/a/b"},
-            new object[] {"/a/b/c"},
-            new object[] {"/"},
-            new object[] {"/a/b/c"},
+        public static object[][] IsNormalizedTestItems = GetNormalizedPaths(true);
 
-            new object[] {"/a/b/c/"},
-            new object[] {"/a/c/"},
-            new object[] {"/c/"},
-
-            new object[] {"/a"},
-
-            new object[] {"a:/a/b/c"},
-            new object[] {"mount:/a/c"},
-            new object[] {"mount:/"},
-        };
-
-        public static object[][] IsNotNormalizedTestItems =
-        {
-            new object[] {""},
-            new object[] {"/."},
-            new object[] {"/a/b/../c", "/a/c"},
-            new object[] {"/a/b/c/..", "/a/b"},
-            new object[] {"/a/b/c/.", "/a/b/c"},
-            new object[] {"/a/../../..", "/"},
-            new object[] {"/a/../../../a/b/c", "/a/b/c"},
-            new object[] {"//a/b//.//c", "/a/b/c"},
-            new object[] {"/../a/b/c/.", "/a/b/c"},
-            new object[] {"/./a/b/c/.", "/a/b/c"},
-
-            new object[] {"/a/b/c/", "/a/b/c/"},
-            new object[] {"/a/./b/../c/", "/a/c/"},
-            new object[] {"/./b/../c/", "/c/"},
-            new object[] {"/a/../../../", "/"},
-            new object[] {"//a/b//.//c/", "/a/b/c/"},
-            new object[] {"/tmp/../", "/"},
-
-            new object[] {"a", "/a"},
-            new object[] {"a/../../../a/b/c", "/a/b/c"},
-            new object[] {"./b/../c/", "/c/"},
-            new object[] {".", "/"},
-            new object[] {"..", "/"},
-            new object[] {"../a/b/c/.", "/a/b/c"},
-            new object[] {"./a/b/c/.", "/a/b/c"},
-
-            new object[] {"a:/a/b/c", "a:/a/b/c"},
-            new object[] {"mount:/a/b/../c", "mount:/a/c"},
-            new object[] {"mount:/a/b/../c", "mount:/a/c"},
-            new object[] {"mount:", "mount:/"},
-            new object[] {"abc:/a/../../../a/b/c", "abc:/a/b/c"},
-        };
+        public static object[][] IsNotNormalizedTestItems = GetNormalizedPaths(false);
 
         [Theory]
         [MemberData(nameof(NormalizedPathTestItems))]
@@ -135,12 +84,17 @@ namespace LibHac.Tests
         }
 
         [Theory]
-        [MemberData(nameof(NormalizedPathTestItems))]
-        public static void IsNormalized(string path, string expected)
+        [MemberData(nameof(IsNormalizedTestItems))]
+        public static void IsNormalized(string path)
         {
-            string actual = PathTools.Normalize(path);
+            Assert.True(PathTools.IsNormalized(path.AsSpan()));
+        }
 
-            Assert.Equal(expected, actual);
+        [Theory]
+        [MemberData(nameof(IsNotNormalizedTestItems))]
+        public static void IsNotNormalized(string path)
+        {
+            Assert.False(PathTools.IsNormalized(path.AsSpan()));
         }
 
         [Theory]
@@ -150,6 +104,25 @@ namespace LibHac.Tests
             bool actual = PathTools.IsSubPath(rootPath.AsSpan(), path.AsSpan());
 
             Assert.Equal(expected, actual);
+        }
+
+        private static object[][] GetNormalizedPaths(bool getNormalized)
+        {
+            var normalizedPaths = new HashSet<string>();
+            var notNormalizedPaths = new HashSet<string>();
+
+            foreach (object[] pair in NormalizedPathTestItems)
+            {
+                string pathNotNorm = (string)pair[0];
+                string pathNorm = (string)pair[1];
+
+                if (pathNorm != pathNotNorm) notNormalizedPaths.Add(pathNotNorm);
+                normalizedPaths.Add(pathNorm);
+            }
+
+            HashSet<string> paths = getNormalized ? normalizedPaths : notNormalizedPaths;
+
+            return paths.Select(x => new object[] { x }).ToArray();
         }
     }
 }
