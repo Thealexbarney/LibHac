@@ -22,7 +22,8 @@ namespace LibHac.Fs
     public enum DirectoryEntryType
     {
         Directory,
-        File
+        File,
+        NotFound
     }
 
     [Flags]
