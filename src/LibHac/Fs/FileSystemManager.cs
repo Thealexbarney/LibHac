@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using LibHac.Fs.Accessors;
 
 using static LibHac.Results;
@@ -26,7 +27,10 @@ namespace LibHac.Fs
 
         public void CreateDirectory(string path)
         {
-            throw new NotImplementedException();
+            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
+                .ThrowIfFailure();
+
+            fileSystem.CreateDirectory(subPath.ToString());
         }
 
         public void CreateFile(string path, long size)
@@ -44,38 +48,74 @@ namespace LibHac.Fs
 
         public void DeleteDirectory(string path)
         {
-            throw new NotImplementedException();
+            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
+                .ThrowIfFailure();
+
+            fileSystem.DeleteDirectory(subPath.ToString());
         }
 
         public void DeleteDirectoryRecursively(string path)
         {
-            throw new NotImplementedException();
+            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
+                .ThrowIfFailure();
+
+            fileSystem.DeleteDirectoryRecursively(subPath.ToString());
         }
 
         public void CleanDirectoryRecursively(string path)
         {
-            throw new NotImplementedException();
+            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
+                .ThrowIfFailure();
+
+            fileSystem.CleanDirectoryRecursively(subPath.ToString());
         }
 
         public void DeleteFile(string path)
         {
-            throw new NotImplementedException();
+            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
+                .ThrowIfFailure();
+
+            fileSystem.DeleteFile(subPath.ToString());
         }
 
         public void RenameDirectory(string oldPath, string newPath)
         {
-            throw new NotImplementedException();
+            FindFileSystem(oldPath.AsSpan(), out FileSystemAccessor oldFileSystem, out ReadOnlySpan<char> oldSubPath)
+                .ThrowIfFailure();
+
+            FindFileSystem(newPath.AsSpan(), out FileSystemAccessor newFileSystem, out ReadOnlySpan<char> newSubPath)
+                .ThrowIfFailure();
+
+            if (oldFileSystem != newFileSystem)
+            {
+                ThrowHelper.ThrowResult(ResultFsDifferentDestFileSystem);
+            }
+
+            oldFileSystem.RenameDirectory(oldSubPath.ToString(), newSubPath.ToString());
         }
 
         public void RenameFile(string oldPath, string newPath)
         {
-            throw new NotImplementedException();
+            FindFileSystem(oldPath.AsSpan(), out FileSystemAccessor oldFileSystem, out ReadOnlySpan<char> oldSubPath)
+                .ThrowIfFailure();
+
+            FindFileSystem(newPath.AsSpan(), out FileSystemAccessor newFileSystem, out ReadOnlySpan<char> newSubPath)
+                .ThrowIfFailure();
+
+            if (oldFileSystem != newFileSystem)
+            {
+                ThrowHelper.ThrowResult(ResultFsDifferentDestFileSystem);
+            }
+
+            oldFileSystem.RenameFile(oldSubPath.ToString(), newSubPath.ToString());
         }
 
-        // How to report when entry isn't found?
         public DirectoryEntryType GetEntryType(string path)
         {
-            throw new NotImplementedException();
+            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
+                .ThrowIfFailure();
+
+            return fileSystem.GetEntryType(subPath.ToString());
         }
 
         public FileHandle OpenFile(string path, OpenMode mode)
@@ -96,6 +136,37 @@ namespace LibHac.Fs
             DirectoryAccessor dir = fileSystem.OpenDirectory(subPath.ToString(), mode);
 
             return new DirectoryHandle(dir);
+        }
+
+        long GetFreeSpaceSize(string path)
+        {
+            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
+                .ThrowIfFailure();
+
+            return fileSystem.GetFreeSpaceSize(subPath.ToString());
+        }
+
+        long GetTotalSpaceSize(string path)
+        {
+            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
+                .ThrowIfFailure();
+
+            return fileSystem.GetTotalSpaceSize(subPath.ToString());
+        }
+
+        FileTimeStampRaw GetFileTimeStamp(string path)
+        {
+            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
+                .ThrowIfFailure();
+
+            return fileSystem.GetFileTimeStampRaw(subPath.ToString());
+        }
+
+        public void Commit(string mountName)
+        {
+            MountTable.Find(mountName, out FileSystemAccessor fileSystem).ThrowIfFailure();
+
+            fileSystem.Commit();
         }
 
         // ==========================
@@ -144,6 +215,19 @@ namespace LibHac.Fs
         public void CloseFile(FileHandle handle)
         {
             handle.File.Dispose();
+        }
+
+        // ==========================
+        // Operations on directory handles
+        // ==========================
+        public int GetDirectoryEntryCount(DirectoryHandle handle)
+        {
+            return handle.Directory.GetEntryCount();
+        }
+
+        public IEnumerable<DirectoryEntry> ReadDirectory(DirectoryHandle handle)
+        {
+            return handle.Directory.Read();
         }
 
         internal Result FindFileSystem(ReadOnlySpan<char> path, out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
