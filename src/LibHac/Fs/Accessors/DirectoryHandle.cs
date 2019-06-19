@@ -11,6 +11,8 @@ namespace LibHac.Fs.Accessors
             Directory = directory;
         }
 
+        public int GetId() => Directory.GetHashCode();
+
         public void Dispose()
         {
             Directory.Dispose();
