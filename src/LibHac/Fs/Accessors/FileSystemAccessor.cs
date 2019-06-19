@@ -11,26 +11,18 @@ namespace LibHac.Fs.Accessors
         public string Name { get; }
 
         private IFileSystem FileSystem { get; }
-        private IAccessLogger Logger { get; }
-        private ITimeSpanGenerator Timer { get; }
 
         private HashSet<FileAccessor> OpenFiles { get; } = new HashSet<FileAccessor>();
         private HashSet<DirectoryAccessor> OpenDirectories { get; } = new HashSet<DirectoryAccessor>();
 
         private readonly object _locker = new object();
 
+        internal bool IsAccessLogEnabled { get; set; }
+
         public FileSystemAccessor(string name, IFileSystem baseFileSystem)
         {
             Name = name;
             FileSystem = baseFileSystem;
-        }
-
-        public FileSystemAccessor(string name, IFileSystem baseFileSystem, IAccessLogger logger, ITimeSpanGenerator timer)
-        {
-            Name = name;
-            FileSystem = baseFileSystem;
-            Logger = logger;
-            Timer = timer;
         }
 
         public void CreateDirectory(string path)
