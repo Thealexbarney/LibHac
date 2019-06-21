@@ -85,7 +85,7 @@ namespace LibHac.Fs
 
                     case NormalizeState.Initial:
                         isNormalized = false;
-                        state = NormalizeState.Delimiter;
+                        state = NormalizeState.Normal;
 
                         sb.Append(DirectorySeparator);
                         sb.Append(c);
