@@ -15,7 +15,7 @@ namespace LibHac.Fs.Accessors
 
         public void Dispose()
         {
-            Directory.Dispose();
+            Directory.Parent.FsManager.CloseDirectory(this);
         }
     }
 }

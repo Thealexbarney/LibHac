@@ -45,10 +45,13 @@ namespace LibHac.Fs.Accessors
         {
             lock (_locker)
             {
-                if (!Table.Remove(name))
+                if (!Table.TryGetValue(name, out FileSystemAccessor fsAccessor))
                 {
                     return ResultFsMountNameNotFound;
                 }
+
+                Table.Remove(name);
+                fsAccessor.Close();
 
                 return ResultSuccess;
             }

@@ -3,10 +3,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 
-#if !NETFRAMEWORK
-using System.IO.Enumeration;
-#endif
-
 namespace LibHac.Fs
 {
     public static class FileSystemExtensions
@@ -88,7 +84,7 @@ namespace LibHac.Fs
 
             foreach (DirectoryEntry entry in directory.Read())
             {
-                if (MatchesPattern(searchPattern, entry.Name, ignoreCase))
+                if (PathTools.MatchesPattern(searchPattern, entry.Name, ignoreCase))
                 {
                     yield return entry;
                 }
@@ -154,17 +150,6 @@ namespace LibHac.Fs
             }
 
             return count;
-        }
-
-        public static bool MatchesPattern(string searchPattern, string name, bool ignoreCase)
-        {
-#if NETFRAMEWORK
-            return Compatibility.FileSystemName.MatchesSimpleExpression(searchPattern.AsSpan(),
-                name.AsSpan(), ignoreCase);
-#else
-            return FileSystemName.MatchesSimpleExpression(searchPattern.AsSpan(),
-                name.AsSpan(), ignoreCase);
-#endif
         }
 
         public static NxFileAttributes ToNxAttributes(this FileAttributes attributes)

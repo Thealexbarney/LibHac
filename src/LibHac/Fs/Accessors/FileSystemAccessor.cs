@@ -11,6 +11,7 @@ namespace LibHac.Fs.Accessors
         public string Name { get; }
 
         private IFileSystem FileSystem { get; }
+        internal FileSystemManager FsManager { get; }
 
         private HashSet<FileAccessor> OpenFiles { get; } = new HashSet<FileAccessor>();
         private HashSet<DirectoryAccessor> OpenDirectories { get; } = new HashSet<DirectoryAccessor>();
@@ -19,10 +20,11 @@ namespace LibHac.Fs.Accessors
 
         internal bool IsAccessLogEnabled { get; set; }
 
-        public FileSystemAccessor(string name, IFileSystem baseFileSystem)
+        public FileSystemAccessor(string name, IFileSystem baseFileSystem, FileSystemManager fsManager)
         {
             Name = name;
             FileSystem = baseFileSystem;
+            FsManager = fsManager;
         }
 
         public void CreateDirectory(string path)
@@ -152,6 +154,13 @@ namespace LibHac.Fs.Accessors
             {
                 OpenDirectories.Remove(directory);
             }
+        }
+
+        internal void Close()
+        {
+            // Todo: Possibly check for open files and directories
+            // Nintendo checks for them in DumpUnclosedAccessorList in
+            // FileSystemAccessor's destructor, but doesn't do anything with it
         }
     }
 }
