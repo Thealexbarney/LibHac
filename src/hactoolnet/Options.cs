@@ -15,6 +15,7 @@ namespace hactoolnet
         public string Keyfile;
         public string TitleKeyFile;
         public string ConsoleKeyFile;
+        public string AccessLog;
         public string[] SectionOut = new string[4];
         public string[] SectionOutDir = new string[4];
         public string HeaderOut;
@@ -89,5 +90,6 @@ namespace hactoolnet
         public Options Options;
         public Keyset Keyset;
         public ProgressBar Logger;
+        public Horizon Horizon;
     }
 }

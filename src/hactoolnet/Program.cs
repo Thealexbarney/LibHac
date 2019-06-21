@@ -37,18 +37,36 @@ namespace hactoolnet
             ctx.Options = CliParser.Parse(args);
             if (ctx.Options == null) return false;
 
-            using (var logger = new ProgressBar())
+            StreamWriter logWriter = null;
+
+            try
             {
-                ctx.Logger = logger;
-                OpenKeyset(ctx);
-
-                if (ctx.Options.RunCustom)
+                using (var logger = new ProgressBar())
                 {
-                    CustomTask(ctx);
-                    return true;
-                }
+                    ctx.Logger = logger;
+                    ctx.Horizon = new Horizon(new TimeSpanTimer());
 
-                RunTask(ctx);
+                    if (ctx.Options.AccessLog != null)
+                    {
+                        logWriter = new StreamWriter(ctx.Options.AccessLog);
+                        var accessLog = new TextWriterAccessLog(logWriter);
+                        ctx.Horizon.Fs.SetAccessLog(true, accessLog);
+                    }
+
+                    OpenKeyset(ctx);
+
+                    if (ctx.Options.RunCustom)
+                    {
+                        CustomTask(ctx);
+                        return true;
+                    }
+
+                    RunTask(ctx);
+                }
+            }
+            finally
+            {
+                logWriter?.Dispose();
             }
 
             return true;

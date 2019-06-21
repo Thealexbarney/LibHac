@@ -18,6 +18,7 @@ namespace hactoolnet
             new CliOption("keyset", 'k', 1, (o, a) => o.Keyfile = a[0]),
             new CliOption("titlekeys", 1, (o, a) => o.TitleKeyFile = a[0]),
             new CliOption("consolekeys", 1, (o, a) => o.ConsoleKeyFile = a[0]),
+            new CliOption("accesslog", 1, (o, a) => o.AccessLog = a[0]),
             new CliOption("section0", 1, (o, a) => o.SectionOut[0] = a[0]),
             new CliOption("section1", 1, (o, a) => o.SectionOut[1] = a[0]),
             new CliOption("section2", 1, (o, a) => o.SectionOut[2] = a[0]),
@@ -170,6 +171,7 @@ namespace hactoolnet
             sb.AppendLine("  -k, --keyset         Load keys from an external file.");
             sb.AppendLine("  -t, --intype=type    Specify input file type [nca, xci, romfs, pfs0, pk11, pk21, ini1, kip1, switchfs, save, ndv0, keygen, romfsbuild, pfsbuild]");
             sb.AppendLine("  --titlekeys <file>   Load title keys from an external file.");
+            sb.AppendLine("  --accesslog <file>   Specify the access log file path.");
             sb.AppendLine("NCA options:");
             sb.AppendLine("  --plaintext <file>   Specify file path for saving a decrypted copy of the NCA.");
             sb.AppendLine("  --header <file>      Specify Header file path.");
