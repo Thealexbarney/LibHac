@@ -42,8 +42,17 @@ namespace hactoolnet
 
                     if (ctx.Options.SectionOutDir[i] != null)
                     {
-                        IFileSystem fs = OpenFileSystem(i);
-                        fs.Extract(ctx.Options.SectionOutDir[i], ctx.Logger);
+                        FileSystemManager fs = ctx.Horizon.Fs;
+
+                        string mountName = $"section{i}";
+
+                        fs.Register(mountName, OpenFileSystem(i));
+                        fs.Register("output", new LocalFileSystem(ctx.Options.SectionOutDir[i]));
+
+                        FsUtils.CopyDirectoryWithProgress(fs, mountName + ":/", "output:/", logger: ctx.Logger);
+
+                        fs.Unmount(mountName);
+                        fs.Unmount("output");
                     }
 
                     if (ctx.Options.Validate && nca.SectionExists(i))
@@ -84,8 +93,15 @@ namespace hactoolnet
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        IFileSystem fs = OpenFileSystemByType(NcaSectionType.Data);
-                        fs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
+                        FileSystemManager fs = ctx.Horizon.Fs;
+
+                        fs.Register("rom", OpenFileSystemByType(NcaSectionType.Data));
+                        fs.Register("output", new LocalFileSystem(ctx.Options.RomfsOutDir));
+
+                        FsUtils.CopyDirectoryWithProgress(fs, "rom:/", "output:/", logger: ctx.Logger);
+
+                        fs.Unmount("rom");
+                        fs.Unmount("output");
                     }
 
                     if (ctx.Options.ReadBench)
@@ -131,8 +147,15 @@ namespace hactoolnet
 
                     if (ctx.Options.ExefsOutDir != null)
                     {
-                        IFileSystem fs = OpenFileSystemByType(NcaSectionType.Code);
-                        fs.Extract(ctx.Options.ExefsOutDir, ctx.Logger);
+                        FileSystemManager fs = ctx.Horizon.Fs;
+
+                        fs.Register("code", OpenFileSystemByType(NcaSectionType.Code));
+                        fs.Register("output", new LocalFileSystem(ctx.Options.ExefsOutDir));
+
+                        FsUtils.CopyDirectoryWithProgress(fs, "code:/", "output:/", logger: ctx.Logger);
+
+                        fs.Unmount("code");
+                        fs.Unmount("output");
                     }
                 }
 
