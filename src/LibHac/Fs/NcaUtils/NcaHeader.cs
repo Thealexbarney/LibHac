@@ -217,7 +217,7 @@ namespace LibHac.Fs.NcaUtils
             {
                 for (int i = 0x400; i < HeaderSize; i += HeaderSectorSize)
                 {
-                    transform.TransformBlock(buf, i, HeaderSectorSize, 1);
+                    transform.TransformBlock(buf, i, HeaderSectorSize, 0);
                 }
             }
             else
