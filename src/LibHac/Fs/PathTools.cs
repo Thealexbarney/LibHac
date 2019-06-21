@@ -5,6 +5,10 @@ using System.Runtime.CompilerServices;
 using static LibHac.Results;
 using static LibHac.Fs.ResultsFs;
 
+#if !NETFRAMEWORK
+using System.IO.Enumeration;
+#endif
+
 namespace LibHac.Fs
 {
     public static class PathTools
@@ -379,6 +383,17 @@ namespace LibHac.Fs
 
             mountName = default;
             return ResultFsInvalidMountName;
+        }
+
+        public static bool MatchesPattern(string searchPattern, string name, bool ignoreCase)
+        {
+#if NETFRAMEWORK
+            return Compatibility.FileSystemName.MatchesSimpleExpression(searchPattern.AsSpan(),
+                name.AsSpan(), ignoreCase);
+#else
+            return FileSystemName.MatchesSimpleExpression(searchPattern.AsSpan(),
+                name.AsSpan(), ignoreCase);
+#endif
         }
 
         private static bool IsValidMountNameChar(char c)

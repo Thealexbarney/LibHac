@@ -1,5 +1,4 @@
 ﻿using LibHac.Fs;
-using LibHac.Fs.Accessors;
 
 namespace LibHac
 {
@@ -14,11 +13,11 @@ namespace LibHac
             Fs = new FileSystemManager(this);
         }
 
-        public Horizon(IAccessLogger logger, ITimeSpanGenerator timer)
+        public Horizon(ITimeSpanGenerator timer)
         {
             Time = timer;
 
-            Fs = new FileSystemManager(this, logger, timer);
+            Fs = new FileSystemManager(this, timer);
         }
     }
 }

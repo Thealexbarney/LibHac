@@ -12,31 +12,55 @@ namespace LibHac.Fs
     {
         internal Horizon Os { get; }
         internal ITimeSpanGenerator Time { get; }
-        internal IAccessLogger Logger { get; }
+        private IAccessLog AccessLog { get; set; }
 
         internal MountTable MountTable { get; } = new MountTable();
 
-        private bool AccessLogEnabled { get; set; } = true;
+        private bool AccessLogEnabled { get; set; }
 
         public FileSystemManager(Horizon os)
         {
             Os = os;
         }
 
-        public FileSystemManager(Horizon os, IAccessLogger logger, ITimeSpanGenerator timer)
+        public FileSystemManager(Horizon os, ITimeSpanGenerator timer)
         {
             Os = os;
-            Logger = logger;
             Time = timer;
         }
 
         public void Register(string mountName, IFileSystem fileSystem)
         {
-            var accessor = new FileSystemAccessor(mountName, fileSystem);
+            var accessor = new FileSystemAccessor(mountName, fileSystem, this);
 
-            MountTable.Mount(accessor);
+            MountTable.Mount(accessor).ThrowIfFailure();
 
             accessor.IsAccessLogEnabled = IsEnabledAccessLog();
+        }
+
+        public void Unmount(string mountName)
+        {
+            MountTable.Find(mountName, out FileSystemAccessor fileSystem).ThrowIfFailure();
+
+            if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
+            {
+                TimeSpan startTime = Time.GetCurrent();
+                MountTable.Unmount(mountName);
+                TimeSpan endTime = Time.GetCurrent();
+
+                OutputAccessLog(startTime, endTime, $", name: \"{mountName}\"");
+            }
+            else
+            {
+                MountTable.Unmount(mountName);
+            }
+        }
+
+        public void SetAccessLog(bool isEnabled, IAccessLog accessLog = null)
+        {
+            AccessLogEnabled = isEnabled;
+
+            if (accessLog != null) AccessLog = accessLog;
         }
 
         public void CreateDirectory(string path)
@@ -425,14 +449,14 @@ namespace LibHac.Fs
             if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
             {
                 TimeSpan startTime = Time.GetCurrent();
-                handle.Dispose();
+                handle.File.Dispose();
                 TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(startTime, endTime, handle, string.Empty);
             }
             else
             {
-                handle.Dispose();
+                handle.File.Dispose();
             }
         }
 
@@ -459,6 +483,22 @@ namespace LibHac.Fs
             return handle.Directory.Read();
         }
 
+        public void CloseDirectory(DirectoryHandle handle)
+        {
+            if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
+            {
+                TimeSpan startTime = Time.GetCurrent();
+                handle.Directory.Dispose();
+                TimeSpan endTime = Time.GetCurrent();
+
+                OutputAccessLog(startTime, endTime, handle, string.Empty);
+            }
+            else
+            {
+                handle.Directory.Dispose();
+            }
+        }
+        
         internal Result FindFileSystem(ReadOnlySpan<char> path, out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
         {
             fileSystem = default;
@@ -510,7 +550,7 @@ namespace LibHac.Fs
 
         internal bool IsEnabledAccessLog()
         {
-            return AccessLogEnabled && Logger != null && Time != null;
+            return AccessLogEnabled && AccessLog != null && Time != null;
         }
 
         internal bool IsEnabledHandleAccessLog(FileHandle handle)
@@ -525,17 +565,17 @@ namespace LibHac.Fs
 
         internal void OutputAccessLog(TimeSpan startTime, TimeSpan endTime, string message, [CallerMemberName] string caller = "")
         {
-            Logger.Log(startTime, endTime, 0, message, caller);
+            AccessLog.Log(startTime, endTime, 0, message, caller);
         }
 
         internal void OutputAccessLog(TimeSpan startTime, TimeSpan endTime, FileHandle handle, string message, [CallerMemberName] string caller = "")
         {
-            Logger.Log(startTime, endTime, handle.GetId(), message, caller);
+            AccessLog.Log(startTime, endTime, handle.GetId(), message, caller);
         }
 
         internal void OutputAccessLog(TimeSpan startTime, TimeSpan endTime, DirectoryHandle handle, string message, [CallerMemberName] string caller = "")
         {
-            Logger.Log(startTime, endTime, handle.GetId(), message, caller);
+            AccessLog.Log(startTime, endTime, handle.GetId(), message, caller);
         }
     }
 }
