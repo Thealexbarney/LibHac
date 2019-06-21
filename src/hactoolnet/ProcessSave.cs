@@ -19,6 +19,9 @@ namespace hactoolnet
                 bool signNeeded = ctx.Options.SignSave;
 
                 var save = new SaveDataFileSystem(ctx.Keyset, file, ctx.Options.IntegrityLevel, true);
+                FileSystemManager fs = ctx.Horizon.Fs;
+
+                fs.Register("save", save);
 
                 if (ctx.Options.Validate)
                 {
@@ -27,7 +30,11 @@ namespace hactoolnet
 
                 if (ctx.Options.OutDir != null)
                 {
-                    save.SaveDataFileSystemCore.Extract(ctx.Options.OutDir, ctx.Logger);
+                    fs.Register("output", new LocalFileSystem(ctx.Options.OutDir));
+
+                    FsUtils.CopyDirectoryWithProgress(fs, "save:/", "output:/", logger: ctx.Logger);
+
+                    fs.Unmount("output");
                 }
 
                 if (ctx.Options.DebugOutDir != null)
@@ -64,11 +71,15 @@ namespace hactoolnet
 
                     if (ctx.Options.RepackSource != null)
                     {
-                        var source = new LocalFileSystem(ctx.Options.RepackSource);
+                        fs.Register("input", new LocalFileSystem(ctx.Options.RepackSource));
 
-                        save.CleanDirectoryRecursively("/");
-                        save.Commit(ctx.Keyset);
-                        source.CopyFileSystem(save);
+                        fs.CleanDirectoryRecursively("save:/");
+                        fs.Commit("save");
+
+                        FsUtils.CopyDirectoryWithProgress(fs, "input:/", "save:/", logger: ctx.Logger);
+
+                        fs.Commit("save");
+                        fs.Unmount("input");
 
                         signNeeded = true;
                     }
@@ -96,6 +107,7 @@ namespace hactoolnet
                         ctx.Logger.LogMessage("Unable to sign save file. Do you have all the required keys?");
                     }
 
+                    fs.Unmount("save");
                     return;
                 }
 
@@ -109,6 +121,8 @@ namespace hactoolnet
 
                 ctx.Logger.LogMessage(save.Print());
                 //ctx.Logger.LogMessage(PrintFatLayout(save.SaveDataFileSystemCore));
+
+                fs.Unmount("save");
             }
         }
 
