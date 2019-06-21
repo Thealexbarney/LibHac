@@ -24,6 +24,7 @@ namespace LibHac.Tests
             new object[] {"/./aaa/bbb/ccc/.", "/aaa/bbb/ccc"},
 
             new object[] {"/a/b/c/", "/a/b/c/"},
+            new object[] {"a/b/c/", "/a/b/c/"},
             new object[] {"/aa/./bb/../cc/", "/aa/cc/"},
             new object[] {"/./b/../c/", "/c/"},
             new object[] {"/a/../../../", "/"},
