@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using LibHac.Fs;
 using LibHac.Fs.NcaUtils;
 using LibHac.Fs.Save;
@@ -133,42 +134,49 @@ namespace LibHac
         {
             foreach (SwitchFsNca nca in Ncas.Values.Where(x => x.Nca.Header.ContentType == ContentType.Meta))
             {
-                var title = new Title();
-
-                IFileSystem fs = nca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
-                string cnmtPath = fs.EnumerateEntries("*.cnmt").Single().FullPath;
-
-                IFile file = fs.OpenFile(cnmtPath, OpenMode.Read);
-
-                var metadata = new Cnmt(file.AsStream());
-                title.Id = metadata.TitleId;
-                title.Version = metadata.TitleVersion;
-                title.Metadata = metadata;
-                title.MetaNca = nca;
-                title.Ncas.Add(nca);
-
-                foreach (CnmtContentEntry content in metadata.ContentEntries)
+                try
                 {
-                    string ncaId = content.NcaId.ToHexString();
+                    var title = new Title();
 
-                    if (Ncas.TryGetValue(ncaId, out SwitchFsNca contentNca))
+                    IFileSystem fs = nca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
+                    string cnmtPath = fs.EnumerateEntries("*.cnmt").Single().FullPath;
+
+                    IFile file = fs.OpenFile(cnmtPath, OpenMode.Read);
+
+                    var metadata = new Cnmt(file.AsStream());
+                    title.Id = metadata.TitleId;
+                    title.Version = metadata.TitleVersion;
+                    title.Metadata = metadata;
+                    title.MetaNca = nca;
+                    title.Ncas.Add(nca);
+
+                    foreach (CnmtContentEntry content in metadata.ContentEntries)
                     {
-                        title.Ncas.Add(contentNca);
+                        string ncaId = content.NcaId.ToHexString();
+
+                        if (Ncas.TryGetValue(ncaId, out SwitchFsNca contentNca))
+                        {
+                            title.Ncas.Add(contentNca);
+                        }
+
+                        switch (content.Type)
+                        {
+                            case CnmtContentType.Program:
+                            case CnmtContentType.Data:
+                                title.MainNca = contentNca;
+                                break;
+                            case CnmtContentType.Control:
+                                title.ControlNca = contentNca;
+                                break;
+                        }
                     }
 
-                    switch (content.Type)
-                    {
-                        case CnmtContentType.Program:
-                        case CnmtContentType.Data:
-                            title.MainNca = contentNca;
-                            break;
-                        case CnmtContentType.Control:
-                            title.ControlNca = contentNca;
-                            break;
-                    }
+                    Titles[title.Id] = title;
                 }
-
-                Titles[title.Id] = title;
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"{ex.Message} File: {nca.Filename}");
+                }
             }
         }
 

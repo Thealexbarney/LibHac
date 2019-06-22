@@ -148,7 +148,15 @@ namespace LibHac.Fs.NcaUtils
         // ReSharper disable UnusedParameter.Local
         private IStorage OpenAesXtsStorage(IStorage baseStorage, int index)
         {
-            throw new NotImplementedException("NCA sections using XTS are not supported yet.");
+            const int sectorSize = 0x200;
+
+            NcaFsHeader fsHeader = Header.GetFsHeader(index);
+
+            byte[] key0 = GetContentKey(NcaKeyType.AesXts0);
+            byte[] key1 = GetContentKey(NcaKeyType.AesXts1);
+
+            // todo: Handle xts for nca version 3
+            return new CachedStorage(new Aes128XtsStorage(baseStorage, key0, key1, sectorSize, true), 2, true);
         }
         // ReSharper restore UnusedParameter.Local
 
