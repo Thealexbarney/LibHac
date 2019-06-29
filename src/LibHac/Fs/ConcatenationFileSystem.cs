@@ -199,20 +199,6 @@ namespace LibHac.Fs
             }
         }
 
-        public bool DirectoryExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            return BaseFileSystem.DirectoryExists(path) && !IsConcatenationFile(path);
-        }
-
-        public bool FileExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            return BaseFileSystem.FileExists(path) || BaseFileSystem.DirectoryExists(path) && IsConcatenationFile(path);
-        }
-
         public DirectoryEntryType GetEntryType(string path)
         {
             path = PathTools.Normalize(path);

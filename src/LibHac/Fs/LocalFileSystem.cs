@@ -150,20 +150,6 @@ namespace LibHac.Fs
             File.Move(srcLocalPath, dstLocalPath);
         }
 
-        public bool DirectoryExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            return Directory.Exists(ResolveLocalPath(path));
-        }
-
-        public bool FileExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            return File.Exists(ResolveLocalPath(path));
-        }
-
         public DirectoryEntryType GetEntryType(string path)
         {
             path = PathTools.Normalize(path);
@@ -179,7 +165,6 @@ namespace LibHac.Fs
                 return DirectoryEntryType.File;
             }
 
-            ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             return DirectoryEntryType.NotFound;
         }
 

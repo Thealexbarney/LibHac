@@ -92,20 +92,6 @@ namespace LibHac.Fs
             ParentFileSystem.RenameFile(ResolveFullPath(srcPath), ResolveFullPath(dstPath));
         }
 
-        public bool DirectoryExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            return ParentFileSystem.DirectoryExists(ResolveFullPath(path));
-        }
-
-        public bool FileExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            return ParentFileSystem.FileExists(ResolveFullPath(path));
-        }
-
         public DirectoryEntryType GetEntryType(string path)
         {
             path = PathTools.Normalize(path);

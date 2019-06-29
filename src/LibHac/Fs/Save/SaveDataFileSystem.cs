@@ -192,9 +192,6 @@ namespace LibHac.Fs.Save
             SaveDataFileSystemCore.RenameFile(srcPath, dstPath);
         }
 
-        public bool DirectoryExists(string path) => SaveDataFileSystemCore.DirectoryExists(path);
-        public bool FileExists(string filename) => SaveDataFileSystemCore.FileExists(filename);
-
         public DirectoryEntryType GetEntryType(string path)
         {
             return SaveDataFileSystemCore.GetEntryType(path);

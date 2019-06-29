@@ -63,22 +63,6 @@ namespace LibHac.Nand
             return stream.AsIFile(mode);
         }
 
-        public bool DirectoryExists(string path)
-        {
-            path = ToDiscUtilsPath(PathTools.Normalize(path));
-
-            if (path == @"\") return true;
-
-            return Fs.DirectoryExists(path);
-        }
-
-        public bool FileExists(string path)
-        {
-            path = ToDiscUtilsPath(PathTools.Normalize(path));
-
-            return Fs.FileExists(path);
-        }
-
         public DirectoryEntryType GetEntryType(string path)
         {
             path = PathTools.Normalize(path);
@@ -87,7 +71,7 @@ namespace LibHac.Nand
             if (Fs.FileExists(discUtilsPath)) return DirectoryEntryType.File;
             if (Fs.DirectoryExists(discUtilsPath)) return DirectoryEntryType.Directory;
 
-            throw new FileNotFoundException(path);
+            return DirectoryEntryType.NotFound;
         }
 
         public NxFileAttributes GetFileAttributes(string path)

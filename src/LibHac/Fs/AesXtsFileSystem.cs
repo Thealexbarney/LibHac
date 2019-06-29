@@ -173,16 +173,6 @@ namespace LibHac.Fs
             }
         }
 
-        public bool DirectoryExists(string path)
-        {
-            return BaseFileSystem.DirectoryExists(path);
-        }
-
-        public bool FileExists(string path)
-        {
-            return BaseFileSystem.FileExists(path);
-        }
-
         public DirectoryEntryType GetEntryType(string path)
         {
             return BaseFileSystem.GetEntryType(path);

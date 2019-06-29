@@ -143,26 +143,6 @@ namespace LibHac.Fs
             }
         }
 
-        public bool DirectoryExists(string path)
-        {
-            string fullPath = GetFullPath(PathTools.Normalize(path));
-
-            lock (Locker)
-            {
-                return BaseFs.DirectoryExists(fullPath);
-            }
-        }
-
-        public bool FileExists(string path)
-        {
-            string fullPath = GetFullPath(PathTools.Normalize(path));
-
-            lock (Locker)
-            {
-                return BaseFs.FileExists(fullPath);
-            }
-        }
-
         public DirectoryEntryType GetEntryType(string path)
         {
             string fullPath = GetFullPath(PathTools.Normalize(path));
