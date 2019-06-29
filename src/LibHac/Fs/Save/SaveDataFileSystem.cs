@@ -46,7 +46,7 @@ namespace LibHac.Fs.Save
             }
             else
             {
-                throw new InvalidDataException("Savedata header is not valid.");
+                ThrowHelper.ThrowResult(ResultFs.InvalidSaveDataHeader, "Savedata header is not valid.");
             }
 
             Header = IsFirstHeaderInUse ? headerA : headerB;
@@ -215,8 +215,14 @@ namespace LibHac.Fs.Save
             Commit(Keyset);
         }
 
-        public FileTimeStampRaw GetFileTimeStampRaw(string path) => throw new NotSupportedException();
-        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();
+        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        {
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+            return default;
+        }
+
+        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) =>
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
 
         public bool Commit(Keyset keyset)
         {

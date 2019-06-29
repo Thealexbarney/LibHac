@@ -179,7 +179,8 @@ namespace LibHac.Fs
                 return DirectoryEntryType.File;
             }
 
-            throw new FileNotFoundException(path);
+            ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            return DirectoryEntryType.NotFound;
         }
 
         public FileTimeStampRaw GetFileTimeStampRaw(string path)
@@ -208,6 +209,7 @@ namespace LibHac.Fs
 
         public void Commit() { }
 
-        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();
+        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) =>
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
     }
 }

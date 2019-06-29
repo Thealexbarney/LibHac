@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using LibHac.Fs;
 using LibHac.Fs.NcaUtils;
 using LibHac.Fs.Save;

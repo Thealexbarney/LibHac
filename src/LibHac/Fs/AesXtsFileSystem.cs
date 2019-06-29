@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
 
 namespace LibHac.Fs
 {
@@ -218,7 +217,7 @@ namespace LibHac.Fs
         {
             if (!TryReadXtsHeader(filePath, keyPath, out AesXtsFileHeader header))
             {
-                throw new InvalidDataException("Could not decrypt AES-XTS keys");
+                ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderInvalidKeysInRenameFile, "Could not decrypt AES-XTS keys");
             }
 
             return header;

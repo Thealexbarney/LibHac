@@ -28,7 +28,12 @@ namespace LibHac.Fs
 
             if (!Header.TryDecryptHeader(Path, KekSeed, VerificationKey))
             {
-                throw new ArgumentException("NAX0 key derivation failed.");
+                ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderInvalidKeys, "NAX0 key derivation failed.");
+            }
+
+            if (HeaderLength + Util.AlignUp(Header.Size, 0x10) > baseFile.GetSize())
+            {
+                ThrowHelper.ThrowResult(ResultFs.AesXtsFileTooShort, "NAX0 key derivation failed.");
             }
 
             IStorage encStorage = BaseFile.AsStorage().Slice(HeaderLength, Util.AlignUp(Header.Size, 0x10));

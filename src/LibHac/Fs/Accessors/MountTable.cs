@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 
 using static LibHac.Results;
-using static LibHac.Fs.ResultsFs;
 
 namespace LibHac.Fs.Accessors
 {
@@ -19,7 +18,7 @@ namespace LibHac.Fs.Accessors
 
                 if (Table.ContainsKey(mountName))
                 {
-                    return ResultFsMountNameAlreadyExists;
+                    return ResultFs.MountNameAlreadyExists;
                 }
 
                 Table.Add(mountName, fileSystem);
@@ -34,7 +33,7 @@ namespace LibHac.Fs.Accessors
             {
                 if (!Table.TryGetValue(name, out fileSystem))
                 {
-                    return ResultFsMountNameNotFound;
+                    return ResultFs.MountNameNotFound;
                 }
 
                 return ResultSuccess;
@@ -47,7 +46,7 @@ namespace LibHac.Fs.Accessors
             {
                 if (!Table.TryGetValue(name, out FileSystemAccessor fsAccessor))
                 {
-                    return ResultFsMountNameNotFound;
+                    return ResultFs.MountNameNotFound;
                 }
 
                 Table.Remove(name);

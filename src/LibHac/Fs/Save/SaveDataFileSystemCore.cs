@@ -51,7 +51,8 @@ namespace LibHac.Fs.Save
 
             if (startBlock == -1)
             {
-                throw new IOException("Not enough available space to create file.");
+                ThrowHelper.ThrowResult(ResultFs.AllocationTableInsufficientFreeBlocks,
+                    "Not enough available space to create file.");
             }
 
             var fileEntry = new SaveFileInfo { StartBlock = startBlock, Length = size };
@@ -88,7 +89,7 @@ namespace LibHac.Fs.Save
 
             if (!FileTable.TryOpenFile(path, out SaveFileInfo fileInfo))
             {
-                throw new FileNotFoundException();
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             }
 
             if (fileInfo.StartBlock != int.MinValue)
@@ -105,7 +106,7 @@ namespace LibHac.Fs.Save
 
             if (!FileTable.TryOpenDirectory(path, out SaveFindPosition position))
             {
-                throw new DirectoryNotFoundException();
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             }
 
             return new SaveDataDirectory(this, path, position, mode);
@@ -117,7 +118,7 @@ namespace LibHac.Fs.Save
 
             if (!FileTable.TryOpenFile(path, out SaveFileInfo file))
             {
-                throw new FileNotFoundException();
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             }
 
             AllocationTableStorage storage = OpenFatStorage(file.StartBlock);
@@ -162,7 +163,8 @@ namespace LibHac.Fs.Save
             if (FileExists(path)) return DirectoryEntryType.File;
             if (DirectoryExists(path)) return DirectoryEntryType.Directory;
 
-            throw new FileNotFoundException(path);
+            ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            return DirectoryEntryType.NotFound;
         }
 
         public long GetFreeSpaceSize(string path)
@@ -181,8 +183,14 @@ namespace LibHac.Fs.Save
 
         }
 
-        public FileTimeStampRaw GetFileTimeStampRaw(string path) => throw new NotSupportedException();
-        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();
+        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        {
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+            return default;
+        }
+
+        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) =>
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
 
         public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
         public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();

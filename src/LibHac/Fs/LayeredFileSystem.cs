@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace LibHac.Fs
 {
@@ -44,7 +43,8 @@ namespace LibHac.Fs
                 }
             }
 
-            throw new FileNotFoundException();
+            ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            return default;
         }
 
         public bool DirectoryExists(string path)
@@ -94,7 +94,8 @@ namespace LibHac.Fs
                 }
             }
 
-            throw new FileNotFoundException(path);
+            ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            return DirectoryEntryType.NotFound;
         }
 
         public FileTimeStampRaw GetFileTimeStampRaw(string path)
@@ -109,7 +110,8 @@ namespace LibHac.Fs
                 }
             }
 
-            throw new FileNotFoundException(path);
+            ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            return default;
         }
 
         public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
@@ -125,20 +127,30 @@ namespace LibHac.Fs
                 }
             }
 
-            throw new FileNotFoundException(path);
+            ThrowHelper.ThrowResult(ResultFs.PathNotFound);
         }
 
         public void Commit() { }
 
-        public void CreateDirectory(string path) => throw new NotSupportedException();
-        public void CreateFile(string path, long size, CreateFileOptions options) => throw new NotSupportedException();
-        public void DeleteDirectory(string path) => throw new NotSupportedException();
-        public void DeleteDirectoryRecursively(string path) => throw new NotSupportedException();
-        public void CleanDirectoryRecursively(string path) => throw new NotSupportedException();
-        public void DeleteFile(string path) => throw new NotSupportedException();
-        public void RenameDirectory(string srcPath, string dstPath) => throw new NotSupportedException();
-        public void RenameFile(string srcPath, string dstPath) => throw new NotSupportedException();
-        public long GetFreeSpaceSize(string path) => throw new NotSupportedException();
-        public long GetTotalSpaceSize(string path) => throw new NotSupportedException();
+        public void CreateDirectory(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+        public void CreateFile(string path, long size, CreateFileOptions options) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+        public void DeleteDirectory(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+        public void DeleteDirectoryRecursively(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+        public void CleanDirectoryRecursively(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+        public void DeleteFile(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+        public void RenameDirectory(string srcPath, string dstPath) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+        public void RenameFile(string srcPath, string dstPath) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+
+        public long GetFreeSpaceSize(string path)
+        {
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+            return default;
+        }
+
+        public long GetTotalSpaceSize(string path)
+        {
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+            return default;
+        }
     }
 }

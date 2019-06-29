@@ -150,8 +150,6 @@ namespace LibHac.Fs.NcaUtils
         {
             const int sectorSize = 0x200;
 
-            NcaFsHeader fsHeader = Header.GetFsHeader(index);
-
             byte[] key0 = GetContentKey(NcaKeyType.AesXts0);
             byte[] key1 = GetContentKey(NcaKeyType.AesXts1);
 

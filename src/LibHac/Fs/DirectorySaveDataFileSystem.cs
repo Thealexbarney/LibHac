@@ -175,24 +175,28 @@ namespace LibHac.Fs
 
         public long GetFreeSpaceSize(string path)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+            return default;
         }
 
         public long GetTotalSpaceSize(string path)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+            return default;
         }
 
         public FileTimeStampRaw GetFileTimeStampRaw(string path)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+            return default;
         }
 
         public void Commit()
         {
             if (OpenWritableFileCount > 0)
             {
-                throw new InvalidOperationException("All files must be closed before commiting save data.");
+                ThrowHelper.ThrowResult(ResultFs.WritableFileOpen,
+                    "All files must be closed before commiting save data.");
             }
 
             SynchronizeDirectory(SyncDir, WorkingDir);
@@ -204,7 +208,7 @@ namespace LibHac.Fs
 
         public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
         }
 
         private string GetFullPath(string path)

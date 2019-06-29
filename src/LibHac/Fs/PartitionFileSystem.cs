@@ -40,7 +40,7 @@ namespace LibHac.Fs
 
             if (!FileDict.TryGetValue(path, out PartitionFileEntry entry))
             {
-                throw new FileNotFoundException();
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             }
 
             return OpenFile(entry, mode);
@@ -75,19 +75,35 @@ namespace LibHac.Fs
             throw new FileNotFoundException(path);
         }
 
-        public void CreateDirectory(string path) => throw new NotSupportedException();
-        public void CreateFile(string path, long size, CreateFileOptions options) => throw new NotSupportedException();
-        public void DeleteDirectory(string path) => throw new NotSupportedException();
-        public void DeleteDirectoryRecursively(string path) => throw new NotSupportedException();
-        public void CleanDirectoryRecursively(string path) => throw new NotSupportedException();
-        public void DeleteFile(string path) => throw new NotSupportedException();
-        public void RenameDirectory(string srcPath, string dstPath) => throw new NotSupportedException();
-        public void RenameFile(string srcPath, string dstPath) => throw new NotSupportedException();
-        public long GetFreeSpaceSize(string path) => throw new NotSupportedException();
-        public long GetTotalSpaceSize(string path) => throw new NotSupportedException();
-        public FileTimeStampRaw GetFileTimeStampRaw(string path) => throw new NotSupportedException();
+        public void CreateDirectory(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
+        public void CreateFile(string path, long size, CreateFileOptions options) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
+        public void DeleteDirectory(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
+        public void DeleteDirectoryRecursively(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
+        public void CleanDirectoryRecursively(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
+        public void DeleteFile(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
+        public void RenameDirectory(string srcPath, string dstPath) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
+        public void RenameFile(string srcPath, string dstPath) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
+
+        public long GetFreeSpaceSize(string path)
+        {
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+            return default;
+        }
+
+        public long GetTotalSpaceSize(string path)
+        {
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+            return default;
+        }
+
+        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        {
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+            return default;
+        }
+
         public void Commit() { }
-        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();
+        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) => ThrowHelper.ThrowResult(ResultFs.NotImplemented);
     }
 
     public enum PartitionFileSystemType
@@ -122,7 +138,8 @@ namespace LibHac.Fs
                     Type = PartitionFileSystemType.Hashed;
                     break;
                 default:
-                    throw new InvalidDataException($"Invalid Partition FS type \"{Magic}\"");
+                    ThrowHelper.ThrowResult(ResultFs.InvalidPartitionFileSystemMagic, $"Invalid Partition FS type \"{Magic}\"");
+                    break;
             }
 
             int entrySize = PartitionFileEntry.GetEntrySize(Type);

@@ -28,7 +28,7 @@ namespace LibHac.Fs.RomFs
 
         public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
         {
-            throw new NotImplementedException();
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFile);
         }
 
         public override void Flush()
@@ -42,7 +42,7 @@ namespace LibHac.Fs.RomFs
 
         public override void SetSize(long size)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFile);
         }
     }
 }
