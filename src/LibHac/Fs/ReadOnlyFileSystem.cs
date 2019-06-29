@@ -23,16 +23,6 @@ namespace LibHac.Fs
             return new ReadOnlyFile(baseFile);
         }
 
-        public bool DirectoryExists(string path)
-        {
-            return BaseFs.DirectoryExists(path);
-        }
-
-        public bool FileExists(string path)
-        {
-            return BaseFs.FileExists(path);
-        }
-
         public DirectoryEntryType GetEntryType(string path)
         {
             return BaseFs.GetEntryType(path);

@@ -20,7 +20,14 @@ namespace LibHac.Fs
 
             foreach (IFileSystem fs in Sources)
             {
-                if (fs.DirectoryExists(path))
+                DirectoryEntryType type = fs.GetEntryType(path);
+
+                if (type == DirectoryEntryType.File && dirs.Count == 0)
+                {
+                    ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+                }
+
+                if (fs.GetEntryType(path) == DirectoryEntryType.Directory)
                 {
                     dirs.Add(fs.OpenDirectory(path, mode));
                 }
@@ -37,44 +44,21 @@ namespace LibHac.Fs
 
             foreach (IFileSystem fs in Sources)
             {
-                if (fs.FileExists(path))
+                DirectoryEntryType type = fs.GetEntryType(path);
+
+                if (type == DirectoryEntryType.File)
                 {
                     return fs.OpenFile(path, mode);
+                }
+
+                if (type == DirectoryEntryType.Directory)
+                {
+                    ThrowHelper.ThrowResult(ResultFs.PathNotFound);
                 }
             }
 
             ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             return default;
-        }
-
-        public bool DirectoryExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            foreach (IFileSystem fs in Sources)
-            {
-                if (fs.DirectoryExists(path))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        public bool FileExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            foreach (IFileSystem fs in Sources)
-            {
-                if (fs.FileExists(path))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         public DirectoryEntryType GetEntryType(string path)
@@ -83,18 +67,11 @@ namespace LibHac.Fs
 
             foreach (IFileSystem fs in Sources)
             {
-                if (fs.FileExists(path))
-                {
-                    return DirectoryEntryType.File;
-                }
+                DirectoryEntryType type = fs.GetEntryType(path);
 
-                if (fs.DirectoryExists(path))
-                {
-                    return DirectoryEntryType.Directory;
-                }
+                if (type != DirectoryEntryType.NotFound) return type;
             }
 
-            ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             return DirectoryEntryType.NotFound;
         }
 
@@ -104,7 +81,7 @@ namespace LibHac.Fs
 
             foreach (IFileSystem fs in Sources)
             {
-                if (fs.FileExists(path) || fs.DirectoryExists(path))
+                if (fs.GetEntryType(path) != DirectoryEntryType.NotFound)
                 {
                     return fs.GetFileTimeStampRaw(path);
                 }
@@ -120,7 +97,7 @@ namespace LibHac.Fs
 
             foreach (IFileSystem fs in Sources)
             {
-                if (fs.FileExists(path) || fs.DirectoryExists(path))
+                if (fs.GetEntryType(path) != DirectoryEntryType.NotFound)
                 {
                     fs.QueryEntry(outBuffer, inBuffer, path, queryId);
                     return;

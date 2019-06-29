@@ -51,28 +51,15 @@ namespace LibHac.Fs
             return new PartitionFile(BaseStorage, HeaderSize + entry.Offset, entry.Size, mode);
         }
 
-        public bool DirectoryExists(string path)
-        {
-            path = PathTools.Normalize(path);
-            return path == "/";
-        }
-
-        public bool FileExists(string path)
-        {
-            path = PathTools.Normalize(path).TrimStart('/');
-
-            return FileDict.ContainsKey(path);
-        }
-
         public DirectoryEntryType GetEntryType(string path)
         {
             path = PathTools.Normalize(path);
 
             if (path == "/") return DirectoryEntryType.Directory;
 
-            if (FileDict.ContainsKey(path)) return DirectoryEntryType.File;
+            if (FileDict.ContainsKey(path.TrimStart('/'))) return DirectoryEntryType.File;
 
-            throw new FileNotFoundException(path);
+            return DirectoryEntryType.NotFound;
         }
 
         public void CreateDirectory(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);

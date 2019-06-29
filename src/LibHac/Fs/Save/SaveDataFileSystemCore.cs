@@ -142,28 +142,20 @@ namespace LibHac.Fs.Save
             FileTable.RenameFile(srcPath, dstPath);
         }
 
-        public bool DirectoryExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            return FileTable.TryOpenDirectory(path, out SaveFindPosition _);
-        }
-
-        public bool FileExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            return FileTable.TryOpenFile(path, out SaveFileInfo _);
-        }
-
         public DirectoryEntryType GetEntryType(string path)
         {
             path = PathTools.Normalize(path);
 
-            if (FileExists(path)) return DirectoryEntryType.File;
-            if (DirectoryExists(path)) return DirectoryEntryType.Directory;
+            if (FileTable.TryOpenFile(path, out SaveFileInfo _))
+            {
+                return DirectoryEntryType.File;
+            }
 
-            ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            if (FileTable.TryOpenDirectory(path, out SaveFindPosition _))
+            {
+                return DirectoryEntryType.Directory;
+            }
+
             return DirectoryEntryType.NotFound;
         }
 

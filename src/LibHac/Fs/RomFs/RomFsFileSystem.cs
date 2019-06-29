@@ -26,10 +26,16 @@ namespace LibHac.Fs.RomFs
         {
             path = PathTools.Normalize(path);
 
-            if (FileExists(path)) return DirectoryEntryType.File;
-            if (DirectoryExists(path)) return DirectoryEntryType.Directory;
+            if (FileTable.TryOpenFile(path, out RomFileInfo _))
+            {
+                return DirectoryEntryType.File;
+            }
 
-            ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            if (FileTable.TryOpenDirectory(path, out FindPosition _))
+            {
+                return DirectoryEntryType.Directory;
+            }
+
             return DirectoryEntryType.NotFound;
         }
 
@@ -62,20 +68,6 @@ namespace LibHac.Fs.RomFs
             }
 
             return new RomFsFile(BaseStorage, Header.DataOffset + info.Offset, info.Length);
-        }
-
-        public bool DirectoryExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            return FileTable.TryOpenDirectory(path, out FindPosition _);
-        }
-
-        public bool FileExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            return FileTable.TryOpenFile(path, out RomFileInfo _);
         }
 
         public IStorage GetBaseStorage()

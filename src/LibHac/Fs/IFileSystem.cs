@@ -95,21 +95,7 @@ namespace LibHac.Fs
         void RenameFile(string srcPath, string dstPath);
 
         /// <summary>
-        /// Determines whether the specified directory exists.
-        /// </summary>
-        /// <param name="path">The full path of the directory to check.</param>
-        /// <returns><see langword="true"/> if the directory exists, otherwise <see langword="false"/>.</returns>
-        bool DirectoryExists(string path);
-
-        /// <summary>
-        /// Determines whether the specified file exists.
-        /// </summary>
-        /// <param name="path">The full path of the file to check.</param>
-        /// <returns><see langword="true"/> if the file exists, otherwise <see langword="false"/>.</returns>
-        bool FileExists(string path);
-
-        /// <summary>
-        /// Determines whether the specified path is a file or directory. 
+        /// Determines whether the specified path is a file or directory, or does not exist.
         /// </summary>
         /// <param name="path">The full path to check.</param>
         /// <returns>The <see cref="DirectoryEntryType"/> of the file.</returns>

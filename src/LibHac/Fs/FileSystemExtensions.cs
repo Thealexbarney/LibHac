@@ -199,6 +199,16 @@ namespace LibHac.Fs
         {
             file.Write(source, offset, WriteOption.None);
         }
+
+        public static bool DirectoryExists(this IFileSystem fs, string path)
+        {
+            return fs.GetEntryType(path) == DirectoryEntryType.Directory;
+        }
+
+        public static bool FileExists(this IFileSystem fs, string path)
+        {
+            return fs.GetEntryType(path) == DirectoryEntryType.File;
+        }
     }
 
     [Flags]
