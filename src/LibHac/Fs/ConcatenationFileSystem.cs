@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace LibHac.Fs
 {
@@ -38,10 +37,12 @@ namespace LibHac.Fs
         public void CreateDirectory(string path)
         {
             path = PathTools.Normalize(path);
+            string parent = PathTools.GetParentDirectory(path);
 
-            if (FileExists(path))
+            if (IsConcatenationFile(parent))
             {
-                throw new IOException("Cannot create directory because a file with this name already exists.");
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound,
+                    "Cannot create a directory inside of a concatenation file");
             }
 
             BaseFileSystem.CreateDirectory(path);
@@ -61,7 +62,12 @@ namespace LibHac.Fs
 
             // A concatenation file directory can't contain normal files
             string parentDir = PathTools.GetParentDirectory(path);
-            if (IsConcatenationFile(parentDir)) throw new IOException("Cannot create files inside of a concatenation file");
+
+            if (IsConcatenationFile(parentDir))
+            {
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound,
+                    "Cannot create a concatenation file inside of a concatenation file");
+            }
 
             BaseFileSystem.CreateDirectory(path);
             SetConcatenationFileAttribute(path);
@@ -85,7 +91,7 @@ namespace LibHac.Fs
 
             if (IsConcatenationFile(path))
             {
-                throw new DirectoryNotFoundException(path);
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             }
 
             BaseFileSystem.DeleteDirectory(path);
@@ -95,7 +101,7 @@ namespace LibHac.Fs
         {
             path = PathTools.Normalize(path);
 
-            if (IsConcatenationFile(path)) throw new DirectoryNotFoundException();
+            if (IsConcatenationFile(path)) ThrowHelper.ThrowResult(ResultFs.PathNotFound);
 
             BaseFileSystem.DeleteDirectoryRecursively(path);
         }
@@ -104,7 +110,7 @@ namespace LibHac.Fs
         {
             path = PathTools.Normalize(path);
 
-            if (IsConcatenationFile(path)) throw new DirectoryNotFoundException();
+            if (IsConcatenationFile(path)) ThrowHelper.ThrowResult(ResultFs.PathNotFound);
 
             BaseFileSystem.CleanDirectoryRecursively(path);
         }
@@ -134,7 +140,7 @@ namespace LibHac.Fs
 
             if (IsConcatenationFile(path))
             {
-                throw new DirectoryNotFoundException(path);
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             }
 
             IDirectory parentDir = BaseFileSystem.OpenDirectory(path, OpenDirectoryMode.All);
@@ -172,7 +178,7 @@ namespace LibHac.Fs
 
             if (IsConcatenationFile(srcPath))
             {
-                throw new DirectoryNotFoundException();
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             }
 
             BaseFileSystem.RenameDirectory(srcPath, dstPath);
@@ -238,7 +244,7 @@ namespace LibHac.Fs
 
         public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
         {
-            if (queryId != QueryId.MakeConcatFile) throw new NotSupportedException();
+            if (queryId != QueryId.MakeConcatFile) ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationInConcatFsQueryEntry);
 
             SetConcatenationFileAttribute(path);
         }

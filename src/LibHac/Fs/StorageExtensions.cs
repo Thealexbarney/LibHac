@@ -53,6 +53,7 @@ namespace LibHac.Fs
             return storage.AsReadOnly(true);
         }
 
+        // Todo: Move out of SubStorage
         public static IStorage AsReadOnly(this IStorage storage, bool leaveOpen)
         {
             return new SubStorage(storage, 0, storage.GetSize(), leaveOpen, FileAccess.Read);

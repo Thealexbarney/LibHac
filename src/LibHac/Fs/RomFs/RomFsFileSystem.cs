@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 
 namespace LibHac.Fs.RomFs
 {
@@ -30,7 +29,8 @@ namespace LibHac.Fs.RomFs
             if (FileExists(path)) return DirectoryEntryType.File;
             if (DirectoryExists(path)) return DirectoryEntryType.Directory;
 
-            throw new FileNotFoundException(path);
+            ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            return DirectoryEntryType.NotFound;
         }
 
         public void Commit() { }
@@ -41,7 +41,7 @@ namespace LibHac.Fs.RomFs
 
             if (!FileTable.TryOpenDirectory(path, out FindPosition position))
             {
-                throw new DirectoryNotFoundException();
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             }
 
             return new RomFsDirectory(this, path, position, mode);
@@ -53,12 +53,12 @@ namespace LibHac.Fs.RomFs
 
             if (!FileTable.TryOpenFile(path, out RomFileInfo info))
             {
-                throw new FileNotFoundException();
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             }
 
             if (mode != OpenMode.Read)
             {
-                throw new ArgumentOutOfRangeException(nameof(mode), "RomFs files must be opened read-only.");
+                ThrowHelper.ThrowResult(ResultFs.InvalidInput, "RomFs files must be opened read-only.");
             }
 
             return new RomFsFile(BaseStorage, Header.DataOffset + info.Offset, info.Length);
@@ -83,18 +83,50 @@ namespace LibHac.Fs.RomFs
             return BaseStorage;
         }
 
-        public void CreateDirectory(string path) => throw new NotSupportedException();
-        public void CreateFile(string path, long size, CreateFileOptions options) => throw new NotSupportedException();
-        public void DeleteDirectory(string path) => throw new NotSupportedException();
-        public void DeleteDirectoryRecursively(string path) => throw new NotSupportedException();
-        public void CleanDirectoryRecursively(string path) => throw new NotSupportedException();
-        public void DeleteFile(string path) => throw new NotSupportedException();
-        public void RenameDirectory(string srcPath, string dstPath) => throw new NotSupportedException();
-        public void RenameFile(string srcPath, string dstPath) => throw new NotSupportedException();
-        public long GetFreeSpaceSize(string path) => throw new NotSupportedException();
-        public long GetTotalSpaceSize(string path) => throw new NotSupportedException();
-        public FileTimeStampRaw GetFileTimeStampRaw(string path) => throw new NotSupportedException();
-        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) => throw new NotSupportedException();
+        public void CreateDirectory(string path) =>
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFileSystem);
+
+        public void CreateFile(string path, long size, CreateFileOptions options) =>
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFileSystem);
+
+        public void DeleteDirectory(string path) =>
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFileSystem);
+
+        public void DeleteDirectoryRecursively(string path) =>
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFileSystem);
+
+        public void CleanDirectoryRecursively(string path) =>
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFileSystem);
+
+        public void DeleteFile(string path) =>
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFileSystem);
+
+        public void RenameDirectory(string srcPath, string dstPath) =>
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFileSystem);
+
+        public void RenameFile(string srcPath, string dstPath) =>
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFileSystem);
+
+        public long GetFreeSpaceSize(string path)
+        {
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationRomFsFileSystemGetSpace);
+            return default;
+        }
+
+        public long GetTotalSpaceSize(string path)
+        {
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationRomFsFileSystemGetSpace);
+            return default;
+        }
+
+        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        {
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+            return default;
+        }
+
+        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) =>
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
     }
 
     public class RomfsHeader

@@ -31,6 +31,11 @@ namespace LibHac.Fs
         {
             RelocationEntry entry = GetRelocationEntry(offset);
 
+            if (entry.SourceIndex > Sources.Count)
+            {
+                ThrowHelper.ThrowResult(ResultFs.InvalidIndirectStorageSource);
+            }
+
             long inPos = offset;
             int outPos = 0;
             int remaining = destination.Length;
@@ -55,15 +60,17 @@ namespace LibHac.Fs
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
-            throw new NotImplementedException();
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationInIndirectStorageWrite);
         }
 
-        public override void Flush()
-        {
-            throw new NotImplementedException();
-        }
+        public override void Flush() { }
 
         public override long GetSize() => _length;
+
+        public override void SetSize(long size)
+        {
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationInIndirectStorageSetSize);
+        }
 
         private RelocationEntry GetRelocationEntry(long offset)
         {

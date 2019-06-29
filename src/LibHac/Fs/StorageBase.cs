@@ -28,7 +28,7 @@ namespace LibHac.Fs
 
         public virtual void SetSize(long size)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
         }
 
         protected virtual void Dispose(bool disposing)

@@ -4,7 +4,6 @@ using System.Runtime.CompilerServices;
 using LibHac.Fs.Accessors;
 
 using static LibHac.Results;
-using static LibHac.Fs.ResultsFs;
 
 namespace LibHac.Fs
 {
@@ -192,7 +191,7 @@ namespace LibHac.Fs
 
             if (oldFileSystem != newFileSystem)
             {
-                ThrowHelper.ThrowResult(ResultFsDifferentDestFileSystem);
+                ThrowHelper.ThrowResult(ResultFs.DifferentDestFileSystem);
             }
 
             if (IsEnabledAccessLog() && oldFileSystem.IsAccessLogEnabled)
@@ -219,7 +218,7 @@ namespace LibHac.Fs
 
             if (oldFileSystem != newFileSystem)
             {
-                ThrowHelper.ThrowResult(ResultFsDifferentDestFileSystem);
+                ThrowHelper.ThrowResult(ResultFs.DifferentDestFileSystem);
             }
 
             if (IsEnabledAccessLog() && oldFileSystem.IsAccessLogEnabled)
@@ -531,7 +530,7 @@ namespace LibHac.Fs
                 mountName = default;
                 subPath = default;
 
-                return ResultFsInvalidMountName;
+                return ResultFs.InvalidMountName;
             }
 
             mountName = path.Slice(0, mountLen);

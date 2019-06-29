@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 using static LibHac.Results;
-using static LibHac.Fs.ResultsFs;
 
 #if !NETFRAMEWORK
 using System.IO.Enumeration;
@@ -382,7 +381,7 @@ namespace LibHac.Fs
             }
 
             mountName = default;
-            return ResultFsInvalidMountName;
+            return ResultFs.InvalidMountName;
         }
 
         public static bool MatchesPattern(string searchPattern, string name, bool ignoreCase)

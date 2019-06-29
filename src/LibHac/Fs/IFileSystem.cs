@@ -91,7 +91,6 @@ namespace LibHac.Fs
         /// </summary>
         /// <param name="srcPath">The full path of the file to rename.</param>
         /// <param name="dstPath">The new full path of the file.</param>
-        /// <exception cref="FileNotFoundException">The specified file does not exist.</exception>
         /// <exception cref="IOException">An I/O error occurred while deleting the file.</exception>
         void RenameFile(string srcPath, string dstPath);
 
@@ -114,7 +113,6 @@ namespace LibHac.Fs
         /// </summary>
         /// <param name="path">The full path to check.</param>
         /// <returns>The <see cref="DirectoryEntryType"/> of the file.</returns>
-        /// <exception cref="FileNotFoundException">The specified path does not exist.</exception>
         DirectoryEntryType GetEntryType(string path);
 
         /// <summary>

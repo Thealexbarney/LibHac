@@ -43,7 +43,8 @@ namespace LibHac.Fs
 
             if (BlockValidities[blockIndex] == Validity.Invalid && integrityCheckLevel == IntegrityCheckLevel.ErrorOnInvalid)
             {
-                throw new InvalidDataException("Hash error!");
+                // Todo: Differentiate between the top and lower layers
+                ThrowHelper.ThrowResult(ResultFs.InvalidHashInIvfc, "Hash error!");
             }
 
             bool needsHashCheck = integrityCheckLevel != IntegrityCheckLevel.None &&
@@ -104,7 +105,7 @@ namespace LibHac.Fs
 
                 if (validity == Validity.Invalid && integrityCheckLevel == IntegrityCheckLevel.ErrorOnInvalid)
                 {
-                    throw new InvalidDataException("Hash error!");
+                    ThrowHelper.ThrowResult(ResultFs.InvalidHashInIvfc, "Hash error!");
                 }
             }
             finally

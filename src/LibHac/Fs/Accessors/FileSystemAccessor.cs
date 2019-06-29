@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using static LibHac.Fs.ResultsFs;
-
 namespace LibHac.Fs.Accessors
 {
     public class FileSystemAccessor
@@ -129,7 +127,7 @@ namespace LibHac.Fs.Accessors
         {
             if (OpenFiles.Any(x => (x.OpenMode & OpenMode.Write) != 0))
             {
-                ThrowHelper.ThrowResult(ResultFsWritableFileOpen);
+                ThrowHelper.ThrowResult(ResultFs.WritableFileOpen);
             }
 
             FileSystem.Commit();

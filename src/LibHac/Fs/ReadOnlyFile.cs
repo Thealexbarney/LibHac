@@ -22,7 +22,11 @@ namespace LibHac.Fs
         }
 
         public override void Flush() { }
-        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options) => throw new NotSupportedException();
-        public override void SetSize(long size) => throw new NotSupportedException();
+
+        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options) =>
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyReadOnlyFile);
+
+        public override void SetSize(long size) =>
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyReadOnlyFile);
     }
 }

@@ -28,11 +28,22 @@ namespace LibHac.Fs
 
         public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
         {
-            throw new NotImplementedException();
+            ValidateWriteParams(source, offset);
+
+            BaseStorage.Write(source, offset);
+
+            if ((options & WriteOption.Flush) != 0)
+            {
+                BaseStorage.Flush();
+            }
         }
 
         public override void Flush()
         {
+            if ((Mode & OpenMode.Write) != 0)
+            {
+                BaseStorage.Flush();
+            }
         }
 
         public override long GetSize()
@@ -42,7 +53,7 @@ namespace LibHac.Fs
 
         public override void SetSize(long size)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationInPartitionFileSetSize);
         }
     }
 }

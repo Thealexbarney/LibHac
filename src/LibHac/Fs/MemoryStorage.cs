@@ -95,5 +95,10 @@ namespace LibHac.Fs
         public override void Flush() { }
 
         public override long GetSize() => _length;
+
+        public override void SetSize(long size)
+        {
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationInMemoryStorageSetSize);
+        }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -22,6 +21,11 @@ namespace LibHac.Fs
 
         public AesXtsFileHeader(IFile aesXtsFile)
         {
+            if (aesXtsFile.GetSize() < 0x80)
+            {
+                ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderTooShort);
+            }
+
             var reader = new FileReader(aesXtsFile);
 
             reader.ReadBytes(Signature);
@@ -33,7 +37,7 @@ namespace LibHac.Fs
 
             if (Magic != AesXtsFileMagic)
             {
-                throw new InvalidDataException("Invalid NAX0 magic value");
+                ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderInvalidMagic, "Invalid NAX0 magic value");
             }
         }
 
