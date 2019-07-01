@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using LibHac.Fs.Accessors;
 
-using static LibHac.Results;
-
 namespace LibHac.Fs
 {
     public class FileSystemManager
@@ -508,7 +506,7 @@ namespace LibHac.Fs
             result = MountTable.Find(mountName.ToString(), out fileSystem);
             if (result.IsFailure()) return result;
 
-            return ResultSuccess;
+            return Result.Success;
         }
 
         internal Result GetMountName(ReadOnlySpan<char> path, out ReadOnlySpan<char> mountName, out ReadOnlySpan<char> subPath)
@@ -544,7 +542,7 @@ namespace LibHac.Fs
                 subPath = default;
             }
 
-            return ResultSuccess;
+            return Result.Success;
         }
 
         internal bool IsEnabledAccessLog()

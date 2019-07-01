@@ -35,6 +35,11 @@ namespace LibHac.Fs.Save
             if (entries[0].IsSingleBlockSegment())
             {
                 length = 1;
+
+                if (entries[0].IsRangeEntry())
+                {
+                    ThrowHelper.ThrowResult(ResultFs.AllocationTableIteratedRangeEntryInternal);
+                }
             }
             else
             {
@@ -480,6 +485,11 @@ namespace LibHac.Fs.Save
         public void MakeListStart()
         {
             Prev = int.MinValue;
+        }
+
+        public bool IsRangeEntry()
+        {
+            return Prev != int.MinValue && Prev < 0;
         }
 
         public void MakeRangeEntry()

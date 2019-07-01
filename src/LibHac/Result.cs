@@ -3,7 +3,7 @@
 namespace LibHac
 {
     [Serializable]
-    public struct Result
+    public struct Result : IEquatable<Result>
     {
         public readonly int Value;
 
@@ -31,10 +31,32 @@ namespace LibHac
                 ThrowHelper.ThrowResult(this);
             }
         }
-    }
 
-    public static class Results
-    {
-        public static Result ResultSuccess => new Result(0);
+        public override bool Equals(object obj)
+        {
+            return obj is Result result && Equals(result);
+        }
+
+        public bool Equals(Result other)
+        {
+            return Value == other.Value;
+        }
+
+        public override int GetHashCode()
+        {
+            return Value.GetHashCode();
+        }
+
+        public static bool operator ==(Result left, Result right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(Result left, Result right)
+        {
+            return !left.Equals(right);
+        }
+
+        public static Result Success => new Result(0);
     }
 }

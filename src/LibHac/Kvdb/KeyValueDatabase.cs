@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-using static LibHac.Results;
-using static LibHac.Kvdb.ResultsKvdb;
-
 namespace LibHac.Kvdb
 {
     // Todo: Save and load from file
@@ -21,10 +18,10 @@ namespace LibHac.Kvdb
         {
             if (!KvDict.TryGetValue(key, out value))
             {
-                return ResultKvdbKeyNotFound;
+                return ResultKvdb.KeyNotFound;
             }
 
-            return ResultSuccess;
+            return Result.Success;
         }
 
         public Result Set(TKey key, TValue value)
@@ -33,7 +30,7 @@ namespace LibHac.Kvdb
 
             KvDict[key] = value;
 
-            return ResultSuccess;
+            return Result.Success;
         }
 
         public Result ReadDatabaseFromBuffer(ReadOnlySpan<byte> data)
@@ -59,7 +56,7 @@ namespace LibHac.Kvdb
                 KvDict.Add(key, value);
             }
 
-            return ResultSuccess;
+            return Result.Success;
         }
 
         public Result WriteDatabaseToBuffer(Span<byte> output)
@@ -73,7 +70,7 @@ namespace LibHac.Kvdb
                 writer.WriteEntry(entry.Key, entry.Value);
             }
 
-            return ResultSuccess;
+            return Result.Success;
         }
 
         public int GetExportedSize()

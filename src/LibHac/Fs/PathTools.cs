@@ -2,8 +2,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-using static LibHac.Results;
-
 #if !NETFRAMEWORK
 using System.IO.Enumeration;
 #endif
@@ -376,7 +374,7 @@ namespace LibHac.Fs
                 if (path[i] == MountSeparator)
                 {
                     mountName = path.Substring(0, i);
-                    return ResultSuccess;
+                    return Result.Success;
                 }
             }
 

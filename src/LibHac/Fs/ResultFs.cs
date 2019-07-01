@@ -5,9 +5,15 @@
         public const int ModuleFs = 2;
 
         public static Result PathNotFound => new Result(ModuleFs, 1);
+        public static Result PathAlreadyExists => new Result(ModuleFs, 2);
+        public static Result TargetLocked => new Result(ModuleFs, 7);
+        public static Result DirectoryNotEmpty => new Result(ModuleFs, 8);
+        public static Result InsufficientFreeSpace => new Result(ModuleFs, 30);
         public static Result MountNameAlreadyExists => new Result(ModuleFs, 60);
 
         public static Result NotImplemented => new Result(ModuleFs, 3001);
+        public static Result Result3002 => new Result(ModuleFs, 3002);
+        public static Result SaveDataPathAlreadyExists => new Result(ModuleFs, 3003);
         public static Result ValueOutOfRange => new Result(ModuleFs, 3005);
 
         public static Result AesXtsFileFileStorageAllocationError => new Result(ModuleFs, 3312);
@@ -18,15 +24,33 @@
 
         public static Result InvalidIndirectStorageSource => new Result(ModuleFs, 4023);
 
+        public static Result Result4302 => new Result(ModuleFs, 4302);
         public static Result InvalidSaveDataHeader => new Result(ModuleFs, 4315);
+        public static Result Result4362 => new Result(ModuleFs, 4362);
+        public static Result Result4363 => new Result(ModuleFs, 4363);
+        public static Result InvalidHashInSaveIvfc => new Result(ModuleFs, 4364);
+        public static Result SaveIvfcHashIsEmpty => new Result(ModuleFs, 4372);
+        public static Result InvalidHashInSaveIvfcTopLayer => new Result(ModuleFs, 4373);
 
+
+        public static Result Result4402 => new Result(ModuleFs, 4402);
+        public static Result Result4427 => new Result(ModuleFs, 4427);
+        public static Result SaveDataAllocationTableCorrupted => new Result(ModuleFs, 4462);
+        public static Result SaveDataFileTableCorrupted => new Result(ModuleFs, 4463);
+        public static Result AllocationTableIteratedRangeEntry => new Result(ModuleFs, 4464);
+
+        public static Result Result4602 => new Result(ModuleFs, 4602);
+        public static Result Result4603 => new Result(ModuleFs, 4603);
         public static Result InvalidHashInIvfc => new Result(ModuleFs, 4604);
         public static Result IvfcHashIsEmpty => new Result(ModuleFs, 4612);
         public static Result InvalidHashInIvfcTopLayer => new Result(ModuleFs, 4613);
         public static Result InvalidPartitionFileSystemMagic => new Result(ModuleFs, 4644);
         public static Result InvalidHashedPartitionFileSystemMagic => new Result(ModuleFs, 4645);
+        public static Result Result4662 => new Result(ModuleFs, 4662);
 
-
+        public static Result SaveDataAllocationTableCorruptedInternal => new Result(ModuleFs, 4722);
+        public static Result SaveDataFileTableCorruptedInternal => new Result(ModuleFs, 4723);
+        public static Result AllocationTableIteratedRangeEntryInternal => new Result(ModuleFs, 4724);
         public static Result AesXtsFileHeaderTooShort => new Result(ModuleFs, 4742);
         public static Result AesXtsFileHeaderInvalidKeys => new Result(ModuleFs, 4743);
         public static Result AesXtsFileHeaderInvalidMagic => new Result(ModuleFs, 4744);
@@ -35,7 +59,18 @@
         public static Result AesXtsFileHeaderInvalidKeysInRenameFile => new Result(ModuleFs, 4747);
         public static Result AesXtsFileHeaderInvalidKeysInSetSize => new Result(ModuleFs, 4748);
 
-        public static Result InvalidInput => new Result(ModuleFs, 6001);
+        public static Result Result4812 => new Result(ModuleFs, 4812);
+
+        public static Result PreconditionViolation => new Result(ModuleFs, 6000);
+        public static Result InvalidArgument => new Result(ModuleFs, 6001);
+        public static Result InvalidPath => new Result(ModuleFs, 6002);
+        public static Result TooLongPath => new Result(ModuleFs, 6003);
+        public static Result InvalidCharacter => new Result(ModuleFs, 6004);
+        public static Result InvalidPathFormat => new Result(ModuleFs, 6005);
+        public static Result DirectoryUnobtainable => new Result(ModuleFs, 6006);
+        public static Result NotNormalized => new Result(ModuleFs, 6007);
+
+        public static Result PathNotFoundInSaveDataFileTable => new Result(ModuleFs, 6033);
         public static Result DifferentDestFileSystem => new Result(ModuleFs, 6034);
         public static Result InvalidOffset => new Result(ModuleFs, 6061);
         public static Result InvalidSize => new Result(ModuleFs, 6062);
@@ -60,9 +95,10 @@
         public static Result UnsupportedOperationModifyPartitionFileSystem => new Result(ModuleFs, 6374);
         public static Result UnsupportedOperationInPartitionFileSetSize => new Result(ModuleFs, 6376);
 
+        public static Result PermissionDenied => new Result(ModuleFs, 6400);
         public static Result WriteStateUnflushed => new Result(ModuleFs, 6454);
         public static Result WritableFileOpen => new Result(ModuleFs, 6457);
-        
+
 
         public static Result AllocationTableInsufficientFreeBlocks => new Result(ModuleFs, 6707);
 
