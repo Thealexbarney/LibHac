@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
 
-using static LibHac.Results;
-
 namespace LibHac.Fs.Accessors
 {
     public class MountTable
@@ -23,7 +21,7 @@ namespace LibHac.Fs.Accessors
 
                 Table.Add(mountName, fileSystem);
 
-                return ResultSuccess;
+                return Result.Success;
             }
         }
 
@@ -36,7 +34,7 @@ namespace LibHac.Fs.Accessors
                     return ResultFs.MountNameNotFound;
                 }
 
-                return ResultSuccess;
+                return Result.Success;
             }
         }
 
@@ -52,7 +50,7 @@ namespace LibHac.Fs.Accessors
                 Table.Remove(name);
                 fsAccessor.Close();
 
-                return ResultSuccess;
+                return Result.Success;
             }
         }
     }

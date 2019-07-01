@@ -64,7 +64,7 @@ namespace LibHac.Fs.RomFs
 
             if (mode != OpenMode.Read)
             {
-                ThrowHelper.ThrowResult(ResultFs.InvalidInput, "RomFs files must be opened read-only.");
+                ThrowHelper.ThrowResult(ResultFs.InvalidArgument, "RomFs files must be opened read-only.");
             }
 
             return new RomFsFile(BaseStorage, Header.DataOffset + info.Offset, info.Length);
