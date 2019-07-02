@@ -18,6 +18,19 @@ namespace hactoolnet
                 string name = ex.Type == KeyType.Title ? $"Title key for rights ID {ex.Name}" : ex.Name;
                 Console.Error.WriteLine($"\nERROR: {ex.Message}\nA required key is missing.\nKey name: {name}\n");
             }
+            catch (HorizonResultException ex)
+            {
+                Console.Error.WriteLine($"\nERROR: {ex.Message}");
+
+                if (ex.ResultValue != ex.InternalResultValue)
+                {
+                    Console.Error.WriteLine($"Internal Code: {ex.InternalResultValue.ErrorCode}");
+                }
+
+                Console.Error.WriteLine();
+                Console.Error.WriteLine("Additional information:");
+                Console.Error.WriteLine(ex.StackTrace);
+            }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"\nERROR: {ex.Message}\n");
