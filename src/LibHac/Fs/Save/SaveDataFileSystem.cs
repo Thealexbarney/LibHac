@@ -144,72 +144,184 @@ namespace LibHac.Fs.Save
 
         public void CreateDirectory(string path)
         {
-            SaveDataFileSystemCore.CreateDirectory(path);
+            try
+            {
+                SaveDataFileSystemCore.CreateDirectory(path);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public void CreateFile(string path, long size, CreateFileOptions options)
         {
-            SaveDataFileSystemCore.CreateFile(path, size, options);
+            try
+            {
+                SaveDataFileSystemCore.CreateFile(path, size, options);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public void DeleteDirectory(string path)
         {
-            SaveDataFileSystemCore.DeleteDirectory(path);
+            try
+            {
+                SaveDataFileSystemCore.DeleteDirectory(path);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public void DeleteDirectoryRecursively(string path)
         {
-            SaveDataFileSystemCore.DeleteDirectoryRecursively(path);
+            try
+            {
+                SaveDataFileSystemCore.DeleteDirectoryRecursively(path);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public void CleanDirectoryRecursively(string path)
         {
-            SaveDataFileSystemCore.CleanDirectoryRecursively(path);
+            try
+            {
+                SaveDataFileSystemCore.CleanDirectoryRecursively(path);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public void DeleteFile(string path)
         {
-            SaveDataFileSystemCore.DeleteFile(path);
+            try
+            {
+                SaveDataFileSystemCore.DeleteFile(path);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
         {
-            return SaveDataFileSystemCore.OpenDirectory(path, mode);
+            try
+            {
+                return SaveDataFileSystemCore.OpenDirectory(path, mode);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public IFile OpenFile(string path, OpenMode mode)
         {
-            return SaveDataFileSystemCore.OpenFile(path, mode);
+            try
+            {
+                return SaveDataFileSystemCore.OpenFile(path, mode);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public void RenameDirectory(string srcPath, string dstPath)
         {
-            SaveDataFileSystemCore.RenameDirectory(srcPath, dstPath);
+            try
+            {
+                SaveDataFileSystemCore.RenameDirectory(srcPath, dstPath);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public void RenameFile(string srcPath, string dstPath)
         {
-            SaveDataFileSystemCore.RenameFile(srcPath, dstPath);
+            try
+            {
+                SaveDataFileSystemCore.RenameFile(srcPath, dstPath);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public DirectoryEntryType GetEntryType(string path)
         {
-            return SaveDataFileSystemCore.GetEntryType(path);
+            try
+            {
+                return SaveDataFileSystemCore.GetEntryType(path);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public long GetFreeSpaceSize(string path)
         {
-            return SaveDataFileSystemCore.GetFreeSpaceSize(path);
+            try
+            {
+                return SaveDataFileSystemCore.GetFreeSpaceSize(path);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public long GetTotalSpaceSize(string path)
         {
-            return SaveDataFileSystemCore.GetTotalSpaceSize(path);
+            try
+            {
+                return SaveDataFileSystemCore.GetTotalSpaceSize(path);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public void Commit()
         {
-            Commit(Keyset);
+            try
+            {
+                Commit(Keyset);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public FileTimeStampRaw GetFileTimeStampRaw(string path)
@@ -282,6 +394,11 @@ namespace LibHac.Fs.Save
             if (fatValidity != Validity.Valid) return fatValidity;
 
             return journalValidity;
+        }
+
+        private void ConvertResultException(HorizonResultException ex)
+        {
+            ex.ResultValue = SaveResults.ConvertToExternalResult(ex.ResultValue);
         }
     }
 }
