@@ -69,6 +69,32 @@ namespace LibHac.Tests
             new object[] {"/a/b/c/", "/a/b/cdef", false},
             new object[] {"/a/b/c", "/a/b/cdef", false},
             new object[] {"/a/b/c/", "/a/b/cd", false},
+
+            new object[] {"mount:/", "mount:/", false},
+            new object[] {"mount:/", "mount:/a", true},
+            new object[] {"mount:/", "mount:/a/", true},
+                           
+            new object[] {"mount:/a/b/c", "mount:/a/b/c/d", true},
+            new object[] {"mount:/a/b/c/", "mount:/a/b/c/d", true},
+                           
+            new object[] {"mount:/a/b/c", "mount:/a/b/c", false},
+            new object[] {"mount:/a/b/c/", "mount:/a/b/c/", false},
+            new object[] {"mount:/a/b/c/", "mount:/a/b/c", false},
+            new object[] {"mount:/a/b/c", "mount:/a/b/c/", false},
+                           
+            new object[] {"mount:/a/b/c/", "mount:/a/b/cdef", false},
+            new object[] {"mount:/a/b/c", "mount:/a/b/cdef", false},
+            new object[] { "mount:/a/b/c/", "mount:/a/b/cd", false},
+        };
+
+        public static object[][] ParentDirectoryTestItems =
+        {
+            new object[] {"/", ""},
+            new object[] {"/a", "/"},
+            new object[] {"/aa/aabc/f", "/aa/aabc"},
+            new object[] {"mount:/", ""},
+            new object[] {"mount:/a", "mount:/"},
+            new object[] {"mount:/aa/aabc/f", "mount:/aa/aabc"}
         };
 
         public static object[][] IsNormalizedTestItems = GetNormalizedPaths(true);
@@ -103,6 +129,24 @@ namespace LibHac.Tests
         public static void TestSubPath(string rootPath, string path, bool expected)
         {
             bool actual = PathTools.IsSubPath(rootPath.AsSpan(), path.AsSpan());
+
+            Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [MemberData(nameof(SubPathTestItems))]
+        public static void TestSubPathReverse(string rootPath, string path, bool expected)
+        {
+            bool actual = PathTools.IsSubPath(path.AsSpan(), rootPath.AsSpan());
+
+            Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [MemberData(nameof(ParentDirectoryTestItems))]
+        public static void TestParentDirectory(string path, string expected)
+        {
+            string actual = PathTools.GetParentDirectory(path);
 
             Assert.Equal(expected, actual);
         }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 
 namespace LibHac.Fs
 {
@@ -12,7 +11,13 @@ namespace LibHac.Fs
         /// Creates all directories and subdirectories in the specified path unless they already exist.
         /// </summary>
         /// <param name="path">The full path of the directory to create.</param>
-        /// <exception cref="IOException">An I/O error occurred while creating the directory.</exception>
+        /// <remarks>
+        /// A <see cref="HorizonResultException"/> will be thrown with the given <see cref="Result"/> under the following conditions:
+        /// 
+        /// The parent directory of the specified path does not exist: <see cref="ResultFs.PathNotFound"/>
+        /// Specified path already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
+        /// Insufficient free space to create the directory: <see cref="ResultFs.InsufficientFreeSpace"/>
+        /// </remarks>
         void CreateDirectory(string path);
 
         /// <summary>
@@ -22,39 +27,58 @@ namespace LibHac.Fs
         /// <param name="size">The initial size of the created file.</param>
         /// <param name="options">Flags to control how the file is created.
         /// Should usually be <see cref="CreateFileOptions.None"/></param>
-        /// <exception cref="IOException">An I/O error occurred while creating the file.</exception>
+        /// <remarks>
+        /// A <see cref="HorizonResultException"/> will be thrown with the given <see cref="Result"/> under the following conditions:
+        /// 
+        /// The parent directory of the specified path does not exist: <see cref="ResultFs.PathNotFound"/>
+        /// Specified path already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
+        /// Insufficient free space to create the file: <see cref="ResultFs.InsufficientFreeSpace"/>
+        /// </remarks>
         void CreateFile(string path, long size, CreateFileOptions options);
 
         /// <summary>
         /// Deletes the specified directory.
         /// </summary>
         /// <param name="path">The full path of the directory to delete.</param>
-        /// <exception cref="DirectoryNotFoundException">The specified directory does not exist.</exception>
-        /// <exception cref="IOException">An I/O error occurred while deleting the directory.</exception>
+        /// <remarks>
+        /// A <see cref="HorizonResultException"/> will be thrown with the given <see cref="Result"/> under the following conditions:
+        /// 
+        /// The specified path does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
+        /// The specified directory is not empty: <see cref="ResultFs.DirectoryNotEmpty"/>
+        /// </remarks>
         void DeleteDirectory(string path);
 
         /// <summary>
         /// Deletes the specified directory and any subdirectories and files in the directory.
         /// </summary>
         /// <param name="path">The full path of the directory to delete.</param>
-        /// <exception cref="DirectoryNotFoundException">The specified directory does not exist.</exception>
-        /// <exception cref="IOException">An I/O error occurred while deleting the directory.</exception>
+        /// <remarks>
+        /// A <see cref="HorizonResultException"/> will be thrown with the given <see cref="Result"/> under the following conditions:
+        /// 
+        /// The specified path does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
+        /// </remarks>
         void DeleteDirectoryRecursively(string path);
 
         /// <summary>
         /// Deletes any subdirectories and files in the specified directory.
         /// </summary>
         /// <param name="path">The full path of the directory to clean.</param>
-        /// <exception cref="DirectoryNotFoundException">The specified directory does not exist.</exception>
-        /// <exception cref="IOException">An I/O error occurred while deleting the directory.</exception>
+        /// <remarks>
+        /// A <see cref="HorizonResultException"/> will be thrown with the given <see cref="Result"/> under the following conditions:
+        /// 
+        /// The specified path does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
+        /// </remarks>
         void CleanDirectoryRecursively(string path);
 
         /// <summary>
         /// Deletes the specified file.
         /// </summary>
         /// <param name="path">The full path of the file to delete.</param>
-        /// <exception cref="FileNotFoundException">The specified file does not exist.</exception>
-        /// <exception cref="IOException">An I/O error occurred while deleting the file.</exception>
+        /// <remarks>
+        /// A <see cref="HorizonResultException"/> will be thrown with the given <see cref="Result"/> under the following conditions:
+        /// 
+        /// The specified path does not exist or is a directory: <see cref="ResultFs.PathNotFound"/>
+        /// </remarks>
         void DeleteFile(string path);
 
         /// <summary>
@@ -63,8 +87,11 @@ namespace LibHac.Fs
         /// <param name="path">The directory's full path.</param>
         /// <param name="mode">Specifies which sub-entries should be enumerated.</param>
         /// <returns>An <see cref="IDirectory"/> instance for the specified directory.</returns>
-        /// <exception cref="DirectoryNotFoundException">The specified directory does not exist.</exception>
-        /// <exception cref="IOException">An I/O error occurred while opening the directory.</exception>
+        /// <remarks>
+        /// A <see cref="HorizonResultException"/> will be thrown with the given <see cref="Result"/> under the following conditions:
+        /// 
+        /// The specified path does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
+        /// </remarks>
         IDirectory OpenDirectory(string path, OpenDirectoryMode mode);
 
         /// <summary>
@@ -73,8 +100,11 @@ namespace LibHac.Fs
         /// <param name="path">The full path of the file to open.</param>
         /// <param name="mode">Specifies the access permissions of the created <see cref="IFile"/>.</param>
         /// <returns>An <see cref="IFile"/> instance for the specified path.</returns>
-        /// <exception cref="FileNotFoundException">The specified file does not exist.</exception>
-        /// <exception cref="IOException">An I/O error occurred while deleting the file.</exception>
+        /// <remarks>
+        /// A <see cref="HorizonResultException"/> will be thrown with the given <see cref="Result"/> under the following conditions:
+        /// 
+        /// The specified path does not exist or is a directory: <see cref="ResultFs.PathNotFound"/>
+        /// </remarks>
         IFile OpenFile(string path, OpenMode mode);
 
         /// <summary>
@@ -82,8 +112,16 @@ namespace LibHac.Fs
         /// </summary>
         /// <param name="srcPath">The full path of the directory to rename.</param>
         /// <param name="dstPath">The new full path of the directory.</param>
-        /// <exception cref="DirectoryNotFoundException">The specified directory does not exist.</exception>
-        /// <exception cref="IOException">An I/O error occurred while deleting the directory.</exception>
+        /// <returns>An <see cref="IFile"/> instance for the specified path.</returns>
+        /// <remarks>
+        /// If <paramref name="srcPath"/> and <paramref name="dstPath"/> are the same, this function does nothing and returns successfully.
+        /// A <see cref="HorizonResultException"/> will be thrown with the given <see cref="Result"/> under the following conditions:
+        /// 
+        /// <paramref name="srcPath"/> does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
+        /// <paramref name="dstPath"/>'s parent directory does not exist: <see cref="ResultFs.PathNotFound"/>
+        /// <paramref name="dstPath"/> already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
+        /// Either <paramref name="srcPath"/> or <paramref name="dstPath"/> is a subpath of the other: <see cref="ResultFs.DestinationIsSubPathOfSource"/>
+        /// </remarks>
         void RenameDirectory(string srcPath, string dstPath);
 
         /// <summary>
@@ -91,7 +129,14 @@ namespace LibHac.Fs
         /// </summary>
         /// <param name="srcPath">The full path of the file to rename.</param>
         /// <param name="dstPath">The new full path of the file.</param>
-        /// <exception cref="IOException">An I/O error occurred while deleting the file.</exception>
+        /// <remarks>
+        /// If <paramref name="srcPath"/> and <paramref name="dstPath"/> are the same, this function does nothing and returns successfully.
+        /// A <see cref="HorizonResultException"/> will be thrown with the given <see cref="Result"/> under the following conditions:
+        /// 
+        /// <paramref name="srcPath"/> does not exist or is a directory: <see cref="ResultFs.PathNotFound"/>
+        /// <paramref name="dstPath"/>'s parent directory does not exist: <see cref="ResultFs.PathNotFound"/>
+        /// <paramref name="dstPath"/> already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
+        /// </remarks>
         void RenameFile(string srcPath, string dstPath);
 
         /// <summary>
@@ -99,6 +144,11 @@ namespace LibHac.Fs
         /// </summary>
         /// <param name="path">The full path to check.</param>
         /// <returns>The <see cref="DirectoryEntryType"/> of the file.</returns>
+        /// <remarks>
+        /// This function operates slightly differently than it does in Horizon OS.
+        /// Instead of returning <see cref="ResultFs.PathNotFound"/> when an entry is missing,
+        /// the function will return <see cref="DirectoryEntryType.NotFound"/>.
+        /// </remarks>
         DirectoryEntryType GetEntryType(string path);
 
         /// <summary>
@@ -121,6 +171,11 @@ namespace LibHac.Fs
         /// <param name="path">The path of the file or directory.</param>
         /// <returns>The timestamps for the specified file or directory.
         /// This value is expressed as a Unix timestamp</returns>
+        /// <remarks>
+        /// A <see cref="HorizonResultException"/> will be thrown with the given <see cref="Result"/> under the following conditions:
+        /// 
+        /// The specified path does not exist: <see cref="ResultFs.PathNotFound"/>
+        /// </remarks>
         FileTimeStampRaw GetFileTimeStampRaw(string path);
 
         /// <summary>

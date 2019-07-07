@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 
@@ -20,7 +21,21 @@ namespace LibHac.Fs
             LocalPath = fs.ResolveLocalPath(path);
             Mode = mode;
 
-            DirInfo = new DirectoryInfo(LocalPath);
+            try
+            {
+                DirInfo = new DirectoryInfo(LocalPath);
+            }
+            catch (Exception ex) when (ex is ArgumentNullException || ex is ArgumentException ||
+                                       ex is PathTooLongException)
+            {
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound, ex);
+                throw;
+            }
+
+            if (!DirInfo.Exists)
+            {
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            }
         }
 
         public IEnumerable<DirectoryEntry> Read()

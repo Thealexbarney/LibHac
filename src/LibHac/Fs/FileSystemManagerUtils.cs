@@ -19,7 +19,7 @@ namespace LibHac.Fs
 
                     if (entry.Type == DirectoryEntryType.Directory)
                     {
-                        fs.CreateDirectory(subDstPath);
+                        fs.EnsureDirectoryExists(subDstPath);
 
                         fs.CopyDirectory(subSrcPath, subDstPath, options, logger);
                     }
@@ -27,7 +27,7 @@ namespace LibHac.Fs
                     if (entry.Type == DirectoryEntryType.File)
                     {
                         logger?.LogMessage(subSrcPath);
-                        fs.CreateFile(subDstPath, entry.Size, options);
+                        fs.CreateOrOverwriteFile(subDstPath, entry.Size, options);
 
                         fs.CopyFile(subSrcPath, subDstPath, logger);
                     }
@@ -108,6 +108,68 @@ namespace LibHac.Fs
                     }
                 }
             }
+        }
+
+        public static bool DirectoryExists(this FileSystemManager fs, string path)
+        {
+            return fs.GetEntryType(path) == DirectoryEntryType.Directory;
+        }
+
+        public static bool FileExists(this FileSystemManager fs, string path)
+        {
+            return fs.GetEntryType(path) == DirectoryEntryType.File;
+        }
+
+        public static void EnsureDirectoryExists(this FileSystemManager fs, string path)
+        {
+            path = PathTools.Normalize(path);
+            if (fs.DirectoryExists(path)) return;
+
+            PathTools.GetMountNameLength(path, out int mountNameLength).ThrowIfFailure();
+
+            // Find the first subdirectory in the path that doesn't exist
+            int i;
+            for (i = path.Length - 1; i > mountNameLength + 2; i--)
+            {
+                if (path[i] == '/')
+                {
+                    string subPath = path.Substring(0, i);
+
+                    if (fs.DirectoryExists(subPath))
+                    {
+                        break;
+                    }
+                }
+            }
+
+            // path[i] will be a '/', so skip that character
+            i++;
+
+            for (; i < path.Length; i++)
+            {
+                if (path[i] == '/')
+                {
+                    string subPath = path.Substring(0, i);
+
+                    fs.CreateDirectory(subPath);
+                }
+            }
+
+            fs.CreateDirectory(path);
+        }
+
+        public static void CreateOrOverwriteFile(this FileSystemManager fs, string path, long size)
+        {
+            fs.CreateOrOverwriteFile(path, size, CreateFileOptions.None);
+        }
+
+        public static void CreateOrOverwriteFile(this FileSystemManager fs, string path, long size, CreateFileOptions options)
+        {
+            path = PathTools.Normalize(path);
+
+            if (fs.FileExists(path)) fs.DeleteFile(path);
+
+            fs.CreateFile(path, size, CreateFileOptions.None);
         }
     }
 }

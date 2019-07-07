@@ -344,7 +344,7 @@ namespace LibHac.Fs.Save
             {
                 throw new IOException(Messages.DestPathAlreadyExists);
             }
-            
+
             ReadOnlySpan<byte> oldPathBytes = Util.GetUtf8Bytes(srcPath);
             ReadOnlySpan<byte> newPathBytes = Util.GetUtf8Bytes(dstPath);
 
@@ -362,7 +362,7 @@ namespace LibHac.Fs.Save
 
             if (PathTools.IsSubPath(oldPathBytes, newPathBytes))
             {
-                throw new IOException(Messages.DestPathIsSubPath);
+                ThrowHelper.ThrowResult(ResultFs.DestinationIsSubPathOfSource);
             }
 
             if (oldKey.Parent != newKey.Parent)

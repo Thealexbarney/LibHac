@@ -19,7 +19,7 @@ namespace LibHac.Fs
 
                 if (entry.Type == DirectoryEntryType.Directory)
                 {
-                    destFs.CreateDirectory(subDstPath);
+                    destFs.EnsureDirectoryExists(subDstPath);
                     IDirectory subSrcDir = sourceFs.OpenDirectory(subSrcPath, OpenDirectoryMode.All);
                     IDirectory subDstDir = destFs.OpenDirectory(subDstPath, OpenDirectoryMode.All);
 
@@ -28,7 +28,7 @@ namespace LibHac.Fs
 
                 if (entry.Type == DirectoryEntryType.File)
                 {
-                    destFs.CreateFile(subDstPath, entry.Size, options);
+                    destFs.CreateOrOverwriteFile(subDstPath, entry.Size, options);
 
                     using (IFile srcFile = sourceFs.OpenFile(subSrcPath, OpenMode.Read))
                     using (IFile dstFile = destFs.OpenFile(subDstPath, OpenMode.Write | OpenMode.Append))
@@ -208,6 +208,54 @@ namespace LibHac.Fs
         public static bool FileExists(this IFileSystem fs, string path)
         {
             return fs.GetEntryType(path) == DirectoryEntryType.File;
+        }
+
+        public static void EnsureDirectoryExists(this IFileSystem fs, string path)
+        {
+            path = PathTools.Normalize(path);
+            if (fs.DirectoryExists(path)) return;
+
+            // Find the first subdirectory in the chain that doesn't exist
+            int i;
+            for (i = path.Length - 1; i > 0; i--)
+            {
+                if (path[i] == '/')
+                {
+                    string subPath = path.Substring(0, i);
+
+                    if (fs.DirectoryExists(subPath))
+                    {
+                        break;
+                    }
+                } 
+            }
+            
+            // path[i] will be a '/', so skip that character
+            i++;
+
+            for (; i < path.Length; i++)
+            {
+                if (path[i] == '/')
+                {
+                    string subPath = path.Substring(0, i);
+
+                    fs.CreateDirectory(subPath);
+                }
+            }
+        }
+
+        public static void CreateOrOverwriteFile(this IFileSystem fs, string path, long size)
+        {
+            fs.CreateOrOverwriteFile(path, size, CreateFileOptions.None);
+        }
+
+        public static void CreateOrOverwriteFile(this IFileSystem fs, string path, long size, CreateFileOptions options)
+        {
+            path = PathTools.Normalize(path);
+
+            if (fs.FileExists(path)) fs.DeleteFile(path);
+
+            fs.CreateFile(path, size, CreateFileOptions.None);
         }
     }
 

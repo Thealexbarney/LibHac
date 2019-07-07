@@ -20,7 +20,7 @@ namespace LibHac.Fs
         {
             if (IsDisposed) throw new ObjectDisposedException(null);
 
-            if ((Mode & OpenMode.Read) == 0) ThrowHelper.ThrowResult(ResultFs.InvalidOpenModeOperation, "File does not allow reading.");
+            if ((Mode & OpenMode.Read) == 0) ThrowHelper.ThrowResult(ResultFs.InvalidOpenModeForRead, "File does not allow reading.");
             if (span == null) throw new ArgumentNullException(nameof(span));
             if (offset < 0) ThrowHelper.ThrowResult(ResultFs.ValueOutOfRange, "Offset must be non-negative.");
 
@@ -36,7 +36,7 @@ namespace LibHac.Fs
         {
             if (IsDisposed) throw new ObjectDisposedException(null);
 
-            if ((Mode & OpenMode.Write) == 0) ThrowHelper.ThrowResult(ResultFs.InvalidOpenModeOperation, "File does not allow writing.");
+            if ((Mode & OpenMode.Write) == 0) ThrowHelper.ThrowResult(ResultFs.InvalidOpenModeForWrite, "File does not allow writing.");
 
             if (span == null) throw new ArgumentNullException(nameof(span));
             if (offset < 0) ThrowHelper.ThrowResult(ResultFs.ValueOutOfRange, "Offset must be non-negative.");

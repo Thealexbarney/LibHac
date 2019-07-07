@@ -35,7 +35,7 @@ namespace hactoolnet
 
                     if (entry.Type == DirectoryEntryType.Directory)
                     {
-                        fs.CreateDirectory(subDstPath);
+                        fs.EnsureDirectoryExists(subDstPath);
 
                         CopyDirectoryWithProgressInternal(fs, subSrcPath, subDstPath, options, logger);
                     }
@@ -43,7 +43,7 @@ namespace hactoolnet
                     if (entry.Type == DirectoryEntryType.File)
                     {
                         logger?.LogMessage(subSrcPath);
-                        fs.CreateFile(subDstPath, entry.Size, options);
+                        fs.CreateOrOverwriteFile(subDstPath, entry.Size, options);
 
                         CopyFileWithProgress(fs, subSrcPath, subDstPath, logger);
                     }
