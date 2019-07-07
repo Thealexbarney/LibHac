@@ -509,7 +509,7 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        internal Result GetMountName(ReadOnlySpan<char> path, out ReadOnlySpan<char> mountName, out ReadOnlySpan<char> subPath)
+        internal static Result GetMountName(ReadOnlySpan<char> path, out ReadOnlySpan<char> mountName, out ReadOnlySpan<char> subPath)
         {
             int mountLen = 0;
             int maxMountLen = Math.Min(path.Length, PathTools.MountNameLength);

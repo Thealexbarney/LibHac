@@ -70,6 +70,7 @@
         public static Result DirectoryUnobtainable => new Result(ModuleFs, 6006);
         public static Result NotNormalized => new Result(ModuleFs, 6007);
 
+        public static Result DestinationIsSubPathOfSource => new Result(ModuleFs, 6032);
         public static Result PathNotFoundInSaveDataFileTable => new Result(ModuleFs, 6033);
         public static Result DifferentDestFileSystem => new Result(ModuleFs, 6034);
         public static Result InvalidOffset => new Result(ModuleFs, 6061);
@@ -79,6 +80,8 @@
 
         public static Result InvalidOpenModeOperation => new Result(ModuleFs, 6200);
         public static Result AllowAppendRequiredForImplicitExtension => new Result(ModuleFs, 6201);
+        public static Result InvalidOpenModeForRead => new Result(ModuleFs, 6202);
+        public static Result InvalidOpenModeForWrite => new Result(ModuleFs, 6203);
 
         public static Result UnsupportedOperation => new Result(ModuleFs, 6300);
         public static Result UnsupportedOperationInMemoryStorageSetSize => new Result(ModuleFs, 6316);

@@ -194,16 +194,24 @@ namespace LibHac.Fs
 
         public static string GetParentDirectory(string path)
         {
-            if (path.Length == 0) return "/";
+            Debug.Assert(IsNormalized(path.AsSpan()));
 
             int i = path.Length - 1;
+
+            // Handles non-mounted root paths
+            if (i == 0) return string.Empty;
 
             // A trailing separator should be ignored
             if (path[i] == '/') i--;
 
+            // Handles mounted root paths
+            if (i >= 0 && path[i] == ':') return string.Empty;
+
             while (i >= 0 && path[i] != '/') i--;
 
-            if (i < 1) return "/";
+            // Leave the '/' if the parent is the root directory
+            if (i == 0 || i > 0 && path[i - 1] == ':') i++;
+
             return path.Substring(0, i);
         }
 
@@ -296,50 +304,74 @@ namespace LibHac.Fs
             return state == NormalizeState.Normal || state == NormalizeState.Delimiter;
         }
 
-        public static bool IsSubPath(ReadOnlySpan<char> rootPath, ReadOnlySpan<char> path)
+        /// <summary>
+        /// Checks if either of the 2 paths is a sub-path of the other. Input paths must be normalized.
+        /// </summary>
+        /// <param name="path1">The first path to be compared.</param>
+        /// <param name="path2">The second path to be compared.</param>
+        /// <returns></returns>
+        public static bool IsSubPath(ReadOnlySpan<char> path1, ReadOnlySpan<char> path2)
         {
-            Debug.Assert(IsNormalized(rootPath));
-            Debug.Assert(IsNormalized(path));
+            Debug.Assert(IsNormalized(path1));
+            Debug.Assert(IsNormalized(path2));
 
-            if (path.Length <= rootPath.Length) return false;
+            if (path1.Length == 0 || path2.Length == 0) return true;
 
-            for (int i = 0; i < rootPath.Length; i++)
+            //Ignore any trailing slashes
+            if (path1[path1.Length - 1] == DirectorySeparator)
             {
-                if (rootPath[i] != path[i]) return false;
+                path1 = path1.Slice(0, path1.Length - 1);
             }
 
-            // The input root path might or might not have a trailing slash.
-            // Both are treated the same.
-            int rootLength = rootPath[rootPath.Length - 1] == DirectorySeparator
-                ? rootPath.Length - 1
-                : rootPath.Length;
+            if (path2[path2.Length - 1] == DirectorySeparator)
+            {
+                path2 = path2.Slice(0, path2.Length - 1);
+            }
 
-            // Return true if the character after the root path is a separator,
-            // and if the possible sub path continues past that point.
-            return path[rootLength] == DirectorySeparator && path.Length > rootLength + 1;
+            ReadOnlySpan<char> shortPath = path1.Length < path2.Length ? path1 : path2;
+            ReadOnlySpan<char> longPath = path1.Length < path2.Length ? path2 : path1;
+
+            if (!shortPath.SequenceEqual(longPath.Slice(0, shortPath.Length)))
+            {
+                return false;
+            }
+
+            return longPath.Length > shortPath.Length + 1 && longPath[shortPath.Length] == DirectorySeparator;
         }
 
-        public static bool IsSubPath(ReadOnlySpan<byte> rootPath, ReadOnlySpan<byte> path)
+        /// <summary>
+        /// Checks if either of the 2 paths is a sub-path of the other. Input paths must be normalized.
+        /// </summary>
+        /// <param name="path1">The first path to be compared.</param>
+        /// <param name="path2">The second path to be compared.</param>
+        /// <returns></returns>
+        public static bool IsSubPath(ReadOnlySpan<byte> path1, ReadOnlySpan<byte> path2)
         {
-            Debug.Assert(IsNormalized(rootPath));
-            Debug.Assert(IsNormalized(path));
+            Debug.Assert(IsNormalized(path1));
+            Debug.Assert(IsNormalized(path2));
 
-            if (path.Length <= rootPath.Length) return false;
+            if (path1.Length == 0 || path2.Length == 0) return true;
 
-            for (int i = 0; i < rootPath.Length; i++)
+            //Ignore any trailing slashes
+            if (path1[path1.Length - 1] == DirectorySeparator)
             {
-                if (rootPath[i] != path[i]) return false;
+                path1 = path1.Slice(0, path1.Length - 1);
             }
 
-            // The input root path might or might not have a trailing slash.
-            // Both are treated the same.
-            int rootLength = rootPath[rootPath.Length - 1] == DirectorySeparator
-                ? rootPath.Length - 1
-                : rootPath.Length;
+            if (path2[path2.Length - 1] == DirectorySeparator)
+            {
+                path2 = path2.Slice(0, path2.Length - 1);
+            }
 
-            // Return true if the character after the root path is a separator,
-            // and if the possible sub path continues past that point.
-            return path[rootLength] == DirectorySeparator && path.Length > rootLength + 1;
+            ReadOnlySpan<byte> shortPath = path1.Length < path2.Length ? path1 : path2;
+            ReadOnlySpan<byte> longPath = path1.Length < path2.Length ? path2 : path1;
+
+            if (!shortPath.SequenceEqual(longPath.Slice(0, shortPath.Length)))
+            {
+                return false;
+            }
+
+            return longPath.Length > shortPath.Length + 1 && longPath[shortPath.Length] == DirectorySeparator;
         }
 
         public static string Combine(string path1, string path2)
@@ -367,18 +399,32 @@ namespace LibHac.Fs
 
         public static Result GetMountName(string path, out string mountName)
         {
+            Result rc = GetMountNameLength(path, out int length);
+
+            if (rc.IsFailure())
+            {
+                mountName = default;
+                return rc;
+            }
+
+            mountName = path.Substring(0, length);
+            return Result.Success;
+        }
+
+        public static Result GetMountNameLength(string path, out int length)
+        {
             int maxLen = Math.Min(path.Length, MountNameLength);
 
             for (int i = 0; i < maxLen; i++)
             {
                 if (path[i] == MountSeparator)
                 {
-                    mountName = path.Substring(0, i);
+                    length = i;
                     return Result.Success;
                 }
             }
 
-            mountName = default;
+            length = default;
             return ResultFs.InvalidMountName;
         }
 

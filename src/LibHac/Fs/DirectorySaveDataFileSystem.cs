@@ -19,7 +19,7 @@ namespace LibHac.Fs
             if (!BaseFs.DirectoryExists(WorkingDir))
             {
                 BaseFs.CreateDirectory(WorkingDir);
-                BaseFs.CreateDirectory(CommittedDir);
+                BaseFs.EnsureDirectoryExists(CommittedDir);
             }
 
             if (BaseFs.DirectoryExists(CommittedDir))
