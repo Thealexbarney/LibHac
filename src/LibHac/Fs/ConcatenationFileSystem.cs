@@ -7,14 +7,39 @@ using System.Runtime.InteropServices;
 
 namespace LibHac.Fs
 {
+    /// <summary>
+    /// An <see cref="IFileSystem"/> that stores large files as smaller, separate sub-files.
+    /// </summary>
+    /// <remarks>
+    /// This filesystem is mainly used to allow storing large files on filesystems that have low
+    /// limits on file size such as FAT filesystems. The underlying base filesystem must have
+    /// support for the "Archive" file attribute found in FAT or NTFS filesystems.
+    ///
+    /// A <see cref="ConcatenationFileSystem"/> may contain both standard files or Concatenation files.
+    /// If a directory has the archive attribute set, its contents will be concatenated and treated
+    /// as a single file. These sub-files must follow the naming scheme "00", "01", "02", ...
+    /// Each sub-file except the final one must have the size <see cref="SubFileSize"/> that was specified
+    /// at the creation of the <see cref="ConcatenationFileSystem"/>.
+    /// </remarks>
     public class ConcatenationFileSystem : IFileSystem
     {
         private const long DefaultSubFileSize = 0xFFFF0000; // Hard-coded value used by FS
         private IAttributeFileSystem BaseFileSystem { get; }
         private long SubFileSize { get; }
 
+        /// <summary>
+        /// Initializes a new <see cref="ConcatenationFileSystem"/>.
+        /// </summary>
+        /// <param name="baseFileSystem">The base <see cref="IAttributeFileSystem"/> for the
+        /// new <see cref="ConcatenationFileSystem"/>.</param>
         public ConcatenationFileSystem(IAttributeFileSystem baseFileSystem) : this(baseFileSystem, DefaultSubFileSize) { }
 
+        /// <summary>
+        /// Initializes a new <see cref="ConcatenationFileSystem"/>.
+        /// </summary>
+        /// <param name="baseFileSystem">The base <see cref="IAttributeFileSystem"/> for the
+        /// new <see cref="ConcatenationFileSystem"/>.</param>
+        /// <param name="subFileSize">The size of each sub-file. Once a file exceeds this size, a new sub-file will be created</param>
         public ConcatenationFileSystem(IAttributeFileSystem baseFileSystem, long subFileSize)
         {
             BaseFileSystem = baseFileSystem;
