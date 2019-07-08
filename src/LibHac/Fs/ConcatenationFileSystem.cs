@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 
+#if NETCOREAPP
+using System.Runtime.InteropServices;
+#endif
+
 namespace LibHac.Fs
 {
     public class ConcatenationFileSystem : IFileSystem
@@ -17,10 +21,38 @@ namespace LibHac.Fs
             SubFileSize = subFileSize;
         }
 
+        // .NET Core on platforms other than Windows doesn't support getting the
+        // archive flag in FAT file systems. Try to work around that for now for reading, 
+        // but writing still won't work properly on those platforms
         internal bool IsConcatenationFile(string path)
         {
+#if NETCOREAPP
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return HasConcatenationFileAttribute(BaseFileSystem.GetFileAttributes(path));
+            }
+            else
+            {
+                return IsConcatenationFileHeuristic(path);
+            }
+#else
             return HasConcatenationFileAttribute(BaseFileSystem.GetFileAttributes(path));
+#endif
         }
+
+#if NETCOREAPP
+        private bool IsConcatenationFileHeuristic(string path)
+        {
+            if (BaseFileSystem.GetEntryType(path) != DirectoryEntryType.Directory) return false;
+
+            if (BaseFileSystem.GetEntryType(PathTools.Combine(path, "00")) != DirectoryEntryType.File) return false;
+
+            if (BaseFileSystem.OpenDirectory(path, OpenDirectoryMode.Directories).GetEntryCount() > 0) return false;
+
+            // Should be enough checks to avoid most false positives. Maybe
+            return true;
+        }
+#endif
 
         internal static bool HasConcatenationFileAttribute(NxFileAttributes attributes)
         {
