@@ -1,5 +1,9 @@
 ﻿using System.Collections.Generic;
 
+#if NETCOREAPP
+using System.Runtime.InteropServices;
+#endif
+
 namespace LibHac.Fs
 {
     public class ConcatenationDirectory : IDirectory
@@ -23,7 +27,7 @@ namespace LibHac.Fs
         {
             foreach (DirectoryEntry entry in ParentDirectory.Read())
             {
-                bool isSplit = ConcatenationFileSystem.HasConcatenationFileAttribute(entry.Attributes);
+                bool isSplit = IsConcatenationFile(entry);
 
                 if (!CanReturnEntry(entry, isSplit)) continue;
 
@@ -44,7 +48,7 @@ namespace LibHac.Fs
 
             foreach (DirectoryEntry entry in ParentDirectory.Read())
             {
-                bool isSplit = ConcatenationFileSystem.HasConcatenationFileAttribute(entry.Attributes);
+                bool isSplit = IsConcatenationFile(entry);
 
                 if (CanReturnEntry(entry, isSplit)) count++;
             }
@@ -56,6 +60,22 @@ namespace LibHac.Fs
         {
             return Mode.HasFlag(OpenDirectoryMode.Files) && (entry.Type == DirectoryEntryType.File || isSplit) ||
                    Mode.HasFlag(OpenDirectoryMode.Directories) && entry.Type == DirectoryEntryType.Directory && !isSplit;
+        }
+
+        private bool IsConcatenationFile(DirectoryEntry entry)
+        {
+#if NETCOREAPP
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return ConcatenationFileSystem.HasConcatenationFileAttribute(entry.Attributes);
+            }
+            else
+            {
+                return ParentFileSystem.IsConcatenationFile(entry.FullPath);
+            }
+#else
+            return ConcatenationFileSystem.HasConcatenationFileAttribute(entry.Attributes);
+#endif
         }
     }
 }
