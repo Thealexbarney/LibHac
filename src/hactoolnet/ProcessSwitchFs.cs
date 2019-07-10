@@ -8,6 +8,10 @@ using LibHac.Fs;
 using LibHac.Fs.NcaUtils;
 using LibHac.Fs.Save;
 
+#if NETCOREAPP
+using System.Runtime.InteropServices;
+#endif
+
 namespace hactoolnet
 {
     internal static class ProcessSwitchFs
@@ -305,6 +309,11 @@ namespace hactoolnet
 
         private static void CheckForNcaFolders(Context ctx, SwitchFs switchFs)
         {
+#if NETCOREAPP
+            // Skip this until Linux gets FAT attribute support
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return;
+#endif
+
             IFileSystem fs = switchFs.ContentFs;
 
             DirectoryEntry[] ncaDirs = fs.EnumerateEntries("*.nca", SearchOptions.RecurseSubdirectories)
