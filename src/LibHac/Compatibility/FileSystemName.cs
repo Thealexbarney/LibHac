@@ -1,5 +1,5 @@
 ﻿
-#if NETFRAMEWORK
+#if !HAS_FILE_SYSTEM_NAME
 
 // This code was introduced in .NET Core 2.1
 

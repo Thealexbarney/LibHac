@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-#if NETCOREAPP
+#if CROSS_PLATFORM
 using System.Runtime.InteropServices;
 #endif
 
@@ -64,7 +64,7 @@ namespace LibHac.Fs
 
         private bool IsConcatenationFile(DirectoryEntry entry)
         {
-#if NETCOREAPP
+#if CROSS_PLATFORM
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 return ConcatenationFileSystem.HasConcatenationFileAttribute(entry.Attributes);

@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-#if !NETFRAMEWORK
+#if HAS_FILE_SYSTEM_NAME
 using System.IO.Enumeration;
 #endif
 
@@ -430,11 +430,11 @@ namespace LibHac.Fs
 
         public static bool MatchesPattern(string searchPattern, string name, bool ignoreCase)
         {
-#if NETFRAMEWORK
-            return Compatibility.FileSystemName.MatchesSimpleExpression(searchPattern.AsSpan(),
-                name.AsSpan(), ignoreCase);
-#else
+#if HAS_FILE_SYSTEM_NAME
             return FileSystemName.MatchesSimpleExpression(searchPattern.AsSpan(),
+                           name.AsSpan(), ignoreCase);
+#else
+            return Compatibility.FileSystemName.MatchesSimpleExpression(searchPattern.AsSpan(),
                 name.AsSpan(), ignoreCase);
 #endif
         }

@@ -109,10 +109,10 @@ namespace LibHac
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string GetUtf8String(ReadOnlySpan<byte> value)
         {
-#if NETFRAMEWORK
-            return Encoding.UTF8.GetString(value.ToArray());
-#else
+#if STRING_SPAN
             return Encoding.UTF8.GetString(value);
+#else
+            return Encoding.UTF8.GetString(value.ToArray());
 #endif
         }
 
@@ -123,10 +123,10 @@ namespace LibHac
 
             value = value.Slice(0, i);
 
-#if NETFRAMEWORK
-            return Encoding.UTF8.GetString(value.ToArray());
-#else
+#if STRING_SPAN
             return Encoding.UTF8.GetString(value);
+#else
+            return Encoding.UTF8.GetString(value.ToArray());
 #endif
         }
 
