@@ -62,6 +62,7 @@ namespace LibHacBuild
 
         private const string MyGetSource = "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json";
         const string CertFileName = "cert.pfx";
+        private const string CoreFrameworks = "netcoreapp2.1;netstandard2.0";
 
         private bool IsMasterBranch => _gitVersion?.BranchName.Equals("master") ?? false;
 
@@ -139,7 +140,7 @@ namespace LibHacBuild
                     .SetProperties(VersionProps)
                     .SetProperty("BuildType", "Release");
 
-                if (DoCoreBuildOnly) buildSettings = buildSettings.SetFramework("netcoreapp2.1");
+                if (DoCoreBuildOnly) buildSettings = buildSettings.SetProperty("TargetFrameworks", CoreFrameworks);
 
                 DotNetBuild(s => buildSettings);
 
@@ -186,7 +187,7 @@ namespace LibHacBuild
                     .SetProperties(VersionProps);
 
                 if (DoCoreBuildOnly)
-                    settings = settings.SetProperty("TargetFrameworks", "netcoreapp2.1");
+                    settings = settings.SetProperty("TargetFrameworks", CoreFrameworks);
 
                 DotNetPack(s => settings);
 
@@ -241,7 +242,7 @@ namespace LibHacBuild
                     .EnableNoBuild()
                     .SetConfiguration(Configuration);
 
-                if (DoCoreBuildOnly) settings = settings.SetFramework("netcoreapp2.1");
+                if (DoCoreBuildOnly) settings = settings.SetProperty("TargetFrameworks", CoreFrameworks);
 
                 DotNetTest(s => settings);
             });

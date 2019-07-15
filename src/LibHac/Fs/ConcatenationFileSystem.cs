@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-#if NETCOREAPP
+#if CROSS_PLATFORM
 using System.Runtime.InteropServices;
 #endif
 
@@ -51,7 +51,7 @@ namespace LibHac.Fs
         // but writing still won't work properly on those platforms
         internal bool IsConcatenationFile(string path)
         {
-#if NETCOREAPP
+#if CROSS_PLATFORM
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 return HasConcatenationFileAttribute(BaseFileSystem.GetFileAttributes(path));
@@ -65,7 +65,7 @@ namespace LibHac.Fs
 #endif
         }
 
-#if NETCOREAPP
+#if CROSS_PLATFORM
         private bool IsConcatenationFileHeuristic(string path)
         {
             if (BaseFileSystem.GetEntryType(path) != DirectoryEntryType.Directory) return false;
