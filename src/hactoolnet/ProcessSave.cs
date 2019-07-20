@@ -14,7 +14,15 @@ namespace hactoolnet
     {
         public static void Process(Context ctx)
         {
-            using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.ReadWrite))
+            FileAccess accessNeeded = FileAccess.Read;
+
+            if (ctx.Options.SignSave || ctx.Options.ReplaceFileDest != null && ctx.Options.ReplaceFileSource != null ||
+                ctx.Options.RepackSource != null || ctx.Options.TrimSave)
+            {
+                accessNeeded = FileAccess.ReadWrite;
+            }
+
+            using (var file = new LocalStorage(ctx.Options.InFile, accessNeeded))
             {
                 bool signNeeded = ctx.Options.SignSave;
 
@@ -86,7 +94,11 @@ namespace hactoolnet
                 }
                 finally
                 {
-                    save.Commit(ctx.Keyset);
+                    if (signNeeded)
+                    {
+                        save.Commit(ctx.Keyset);
+                        signNeeded = false;
+                    }
                 }
 
                 if (ctx.Options.TrimSave)
