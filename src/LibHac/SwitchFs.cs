@@ -6,6 +6,7 @@ using System.Linq;
 using LibHac.Fs;
 using LibHac.Fs.NcaUtils;
 using LibHac.Fs.Save;
+using LibHac.Ncm;
 
 namespace LibHac
 {
@@ -81,7 +82,7 @@ namespace LibHac
                     nca = new SwitchFsNca(new Nca(Keyset, storage));
 
                     nca.NcaId = GetNcaFilename(fileEntry.Name, nca);
-                    string extension = nca.Nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
+                    string extension = nca.Nca.Header.ContentType == Fs.NcaUtils.ContentType.Meta ? ".cnmt.nca" : ".nca";
                     nca.Filename = nca.NcaId + extension;
                 }
                 catch (MissingKeyException ex)
@@ -131,7 +132,7 @@ namespace LibHac
 
         private void ReadTitles()
         {
-            foreach (SwitchFsNca nca in Ncas.Values.Where(x => x.Nca.Header.ContentType == ContentType.Meta))
+            foreach (SwitchFsNca nca in Ncas.Values.Where(x => x.Nca.Header.ContentType == Fs.NcaUtils.ContentType.Meta))
             {
                 try
                 {
@@ -160,11 +161,11 @@ namespace LibHac
 
                         switch (content.Type)
                         {
-                            case CnmtContentType.Program:
-                            case CnmtContentType.Data:
+                            case Ncm.ContentType.Program:
+                            case Ncm.ContentType.Data:
                                 title.MainNca = contentNca;
                                 break;
-                            case CnmtContentType.Control:
+                            case Ncm.ContentType.Control:
                                 title.ControlNca = contentNca;
                                 break;
                         }
@@ -201,7 +202,7 @@ namespace LibHac
 
         private void CreateApplications()
         {
-            foreach (Title title in Titles.Values.Where(x => x.Metadata.Type >= TitleType.Application))
+            foreach (Title title in Titles.Values.Where(x => x.Metadata.Type >= ContentMetaType.Application))
             {
                 Cnmt meta = title.Metadata;
                 ulong appId = meta.ApplicationTitleId;
@@ -229,7 +230,7 @@ namespace LibHac
 
         private string GetNcaFilename(string name, SwitchFsNca nca)
         {
-            if (nca.Nca.Header.ContentType != ContentType.Meta || !name.EndsWith(".cnmt.nca"))
+            if (nca.Nca.Header.ContentType != Fs.NcaUtils.ContentType.Meta || !name.EndsWith(".cnmt.nca"))
             {
                 return Path.GetFileNameWithoutExtension(name);
             }
@@ -343,16 +344,16 @@ namespace LibHac
 
             switch (title.Metadata.Type)
             {
-                case TitleType.Application:
+                case ContentMetaType.Application:
                     Main = title;
                     break;
-                case TitleType.Patch:
+                case ContentMetaType.Patch:
                     Patch = title;
                     break;
-                case TitleType.AddOnContent:
+                case ContentMetaType.AddOnContent:
                     AddOnContent.Add(title);
                     break;
-                case TitleType.Delta:
+                case ContentMetaType.Delta:
                     break;
             }
 

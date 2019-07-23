@@ -8,8 +8,8 @@ namespace LibHac.Ncm
     {
         public ulong TitleId { get; private set; }
         public uint Version { get; private set; }
-        public byte Type { get; private set; }
-        public byte Flags { get; private set; }
+        public ContentMetaType Type { get; private set; }
+        public ContentMetaAttribute Attributes { get; private set; }
 
         public int ExportSize => 0x10;
         private bool _isFrozen;
@@ -20,8 +20,8 @@ namespace LibHac.Ncm
 
             BinaryPrimitives.WriteUInt64LittleEndian(output, TitleId);
             BinaryPrimitives.WriteUInt32LittleEndian(output.Slice(8), Version);
-            output[0xC] = Type;
-            output[0xD] = Flags;
+            output[0xC] = (byte)Type;
+            output[0xD] = (byte)Attributes;
         }
 
         public void FromBytes(ReadOnlySpan<byte> input)
@@ -31,8 +31,8 @@ namespace LibHac.Ncm
 
             TitleId = BinaryPrimitives.ReadUInt64LittleEndian(input);
             Version = BinaryPrimitives.ReadUInt32LittleEndian(input.Slice(8));
-            Type = input[0xC];
-            Flags = input[0xD];
+            Type = (ContentMetaType)input[0xC];
+            Attributes = (ContentMetaAttribute)input[0xD];
         }
 
         public void Freeze() => _isFrozen = true;
@@ -40,7 +40,7 @@ namespace LibHac.Ncm
         public bool Equals(ContentMetaKey other)
         {
             return other != null && TitleId == other.TitleId && Version == other.Version &&
-                   Type == other.Type && Flags == other.Flags;
+                   Type == other.Type && Attributes == other.Attributes;
         }
 
         public override bool Equals(object obj)
@@ -56,7 +56,7 @@ namespace LibHac.Ncm
                 int hashCode = TitleId.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)Version;
                 hashCode = (hashCode * 397) ^ Type.GetHashCode();
-                hashCode = (hashCode * 397) ^ Flags.GetHashCode();
+                hashCode = (hashCode * 397) ^ Attributes.GetHashCode();
                 return hashCode;
                 // ReSharper restore NonReadonlyMemberInGetHashCode
             }
@@ -72,7 +72,7 @@ namespace LibHac.Ncm
             if (versionComparison != 0) return versionComparison;
             int typeComparison = Type.CompareTo(other.Type);
             if (typeComparison != 0) return typeComparison;
-            return Flags.CompareTo(other.Flags);
+            return Attributes.CompareTo(other.Attributes);
         }
 
         public int CompareTo(object obj)

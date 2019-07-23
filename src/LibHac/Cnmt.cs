@@ -1,6 +1,8 @@
 ﻿using System.IO;
 using System.Linq;
 using LibHac.Fs.NcaUtils;
+using LibHac.Ncm;
+using ContentType = LibHac.Ncm.ContentType;
 
 namespace LibHac
 {
@@ -8,7 +10,7 @@ namespace LibHac
     {
         public ulong TitleId { get; }
         public TitleVersion TitleVersion { get; }
-        public TitleType Type { get; }
+        public ContentMetaType Type { get; }
         public byte FieldD { get; }
         public int TableOffset { get; }
         public int ContentEntryCount { get; }
@@ -34,8 +36,8 @@ namespace LibHac
             {
                 TitleId = reader.ReadUInt64();
                 uint version = reader.ReadUInt32();
-                Type = (TitleType)reader.ReadByte();
-                TitleVersion = new TitleVersion(version, Type < TitleType.Application);
+                Type = (ContentMetaType)reader.ReadByte();
+                TitleVersion = new TitleVersion(version, Type < ContentMetaType.Application);
                 FieldD = reader.ReadByte();
                 TableOffset = reader.ReadUInt16();
                 ContentEntryCount = reader.ReadUInt16();
@@ -44,16 +46,16 @@ namespace LibHac
 
                 switch (Type)
                 {
-                    case TitleType.Application:
+                    case ContentMetaType.Application:
                         ApplicationTitleId = TitleId;
                         PatchTitleId = reader.ReadUInt64();
                         MinimumSystemVersion = new TitleVersion(reader.ReadUInt32(), true);
                         break;
-                    case TitleType.Patch:
+                    case ContentMetaType.Patch:
                         ApplicationTitleId = reader.ReadUInt64();
                         MinimumSystemVersion = new TitleVersion(reader.ReadUInt32(), true);
                         break;
-                    case TitleType.AddOnContent:
+                    case ContentMetaType.AddOnContent:
                         ApplicationTitleId = reader.ReadUInt64();
                         MinimumApplicationVersion = new TitleVersion(reader.ReadUInt32());
                         break;
@@ -74,7 +76,7 @@ namespace LibHac
                     MetaEntries[i] = new CnmtContentMetaEntry(reader);
                 }
 
-                if (Type == TitleType.Patch)
+                if (Type == ContentMetaType.Patch)
                 {
                     ExtendedData = new CnmtExtended(reader);
                 }
@@ -89,7 +91,7 @@ namespace LibHac
         public byte[] Hash { get; set; }
         public byte[] NcaId { get; set; }
         public long Size { get; set; }
-        public CnmtContentType Type { get; set; }
+        public ContentType Type { get; set; }
 
         public CnmtContentEntry() { }
 
@@ -99,7 +101,7 @@ namespace LibHac
             NcaId = reader.ReadBytes(0x10);
             Size = reader.ReadUInt32();
             Size |= (long)reader.ReadUInt16() << 32;
-            Type = (CnmtContentType)reader.ReadByte();
+            Type = (ContentType)reader.ReadByte();
             reader.BaseStream.Position += 1;
         }
     }
@@ -108,7 +110,7 @@ namespace LibHac
     {
         public ulong TitleId { get; }
         public TitleVersion Version { get; }
-        public CnmtContentType Type { get; }
+        public ContentType Type { get; }
 
         public CnmtContentMetaEntry() { }
 
@@ -116,7 +118,7 @@ namespace LibHac
         {
             TitleId = reader.ReadUInt64();
             Version = new TitleVersion(reader.ReadUInt32(), true);
-            Type = (CnmtContentType)reader.ReadByte();
+            Type = (ContentType)reader.ReadByte();
             reader.BaseStream.Position += 3;
         }
     }
@@ -199,7 +201,7 @@ namespace LibHac
     {
         public ulong TitleId { get; }
         public TitleVersion Version { get; }
-        public TitleType Type { get; }
+        public ContentMetaType Type { get; }
         public byte[] Hash { get; }
         public short ContentCount { get; }
         public short CnmtPrevMetaEntryField32 { get; }
@@ -209,7 +211,7 @@ namespace LibHac
         {
             TitleId = reader.ReadUInt64();
             Version = new TitleVersion(reader.ReadUInt32());
-            Type = (TitleType)reader.ReadByte();
+            Type = (ContentMetaType)reader.ReadByte();
             reader.BaseStream.Position += 3;
             Hash = reader.ReadBytes(0x20);
             ContentCount = reader.ReadInt16();
@@ -265,8 +267,8 @@ namespace LibHac
         public long SizeOld { get; }
         public long SizeNew { get; }
         public short FragmentCount { get; }
-        public CnmtContentType Type { get; }
-        public CnmtDeltaType DeltaType { get; }
+        public ContentType Type { get; }
+        public UpdateType DeltaType { get; }
         public int FragmentSetInfoField30 { get; }
 
 
@@ -281,8 +283,8 @@ namespace LibHac
             SizeNew = reader.ReadUInt32();
 
             FragmentCount = reader.ReadInt16();
-            Type = (CnmtContentType)reader.ReadByte();
-            DeltaType = (CnmtDeltaType)reader.ReadByte();
+            Type = (ContentType)reader.ReadByte();
+            DeltaType = (UpdateType)reader.ReadByte();
             FragmentSetInfoField30 = reader.ReadInt32();
         }
     }
@@ -291,14 +293,14 @@ namespace LibHac
     {
         public byte[] NcaId { get; }
         public long Size { get; }
-        public CnmtContentType Type { get; }
+        public ContentType Type { get; }
 
         public CnmtPrevContent(BinaryReader reader)
         {
             NcaId = reader.ReadBytes(0x10);
             Size = reader.ReadUInt32();
             Size |= (long)reader.ReadUInt16() << 32;
-            Type = (CnmtContentType)reader.ReadByte();
+            Type = (ContentType)reader.ReadByte();
             reader.BaseStream.Position += 1;
         }
     }
@@ -313,36 +315,5 @@ namespace LibHac
             ContentIndex = reader.ReadInt16();
             FragmentIndex = reader.ReadInt16();
         }
-    }
-
-    public enum CnmtContentType
-    {
-        Meta,
-        Program,
-        Data,
-        Control,
-        HtmlDocument,
-        LegalInformation,
-        DeltaFragment
-    }
-
-    public enum CnmtDeltaType
-    {
-        Delta,
-        Replace,
-        NewContent
-    }
-
-    public enum TitleType
-    {
-        SystemProgram = 1,
-        SystemData,
-        SystemUpdate,
-        BootImagePackage,
-        BootImagePackageSafe,
-        Application = 0x80,
-        Patch,
-        AddOnContent,
-        Delta
     }
 }

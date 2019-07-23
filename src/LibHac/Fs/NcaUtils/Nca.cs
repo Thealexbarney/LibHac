@@ -516,7 +516,7 @@ namespace LibHac.Fs.NcaUtils
             return Header.VerifySignature1(Keyset.NcaHdrFixedKeyModulus);
         }
 
-        internal void GenerateAesCounter(int sectionIndex, CnmtContentType type, int minorVersion)
+        internal void GenerateAesCounter(int sectionIndex, Ncm.ContentType type, int minorVersion)
         {
             int counterType;
             int counterVersion;
@@ -527,14 +527,14 @@ namespace LibHac.Fs.NcaUtils
 
             switch (type)
             {
-                case CnmtContentType.Program:
+                case Ncm.ContentType.Program:
                     counterType = sectionIndex + 1;
                     break;
-                case CnmtContentType.HtmlDocument:
-                    counterType = (int)CnmtContentType.HtmlDocument;
+                case Ncm.ContentType.HtmlDocument:
+                    counterType = (int)Ncm.ContentType.HtmlDocument;
                     break;
-                case CnmtContentType.LegalInformation:
-                    counterType = (int)CnmtContentType.LegalInformation;
+                case Ncm.ContentType.LegalInformation:
+                    counterType = (int)Ncm.ContentType.LegalInformation;
                     break;
                 default:
                     counterType = 0;
