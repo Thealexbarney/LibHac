@@ -18,7 +18,7 @@ namespace LibHac.Fs.RomFs
         private const int HeaderWithPaddingSize = 0x200;
 
         private List<IStorage> Sources { get; } = new List<IStorage>();
-        private HierarchicalRomFileTable FileTable { get; } = new HierarchicalRomFileTable();
+        private HierarchicalRomFileTable<RomFileInfo> FileTable { get; } = new HierarchicalRomFileTable<RomFileInfo>();
         private long CurrentOffset { get; set; }
 
         /// <summary>

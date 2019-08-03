@@ -6,7 +6,7 @@ namespace LibHac.Fs.RomFs
     {
         public RomfsHeader Header { get; }
 
-        public HierarchicalRomFileTable FileTable { get; }
+        public HierarchicalRomFileTable<RomFileInfo> FileTable { get; }
         private IStorage BaseStorage { get; }
 
         public RomFsFileSystem(IStorage storage)
@@ -19,7 +19,7 @@ namespace LibHac.Fs.RomFs
             IStorage fileHashTable = storage.Slice(Header.FileHashTableOffset, Header.FileHashTableSize);
             IStorage fileEntryTable = storage.Slice(Header.FileMetaTableOffset, Header.FileMetaTableSize);
 
-            FileTable = new HierarchicalRomFileTable(dirHashTable, dirEntryTable, fileHashTable, fileEntryTable);
+            FileTable = new HierarchicalRomFileTable<RomFileInfo>(dirHashTable, dirEntryTable, fileHashTable, fileEntryTable);
         }
 
         public DirectoryEntryType GetEntryType(string path)

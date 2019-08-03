@@ -266,7 +266,7 @@ namespace LibHac.Fs.RomFs
         {
             var offsets = new List<int>(_count);
 
-            int nextStructOffset = (sizeof(int) + Marshal.SizeOf<T>()) / 4;
+            int nextStructOffset = (sizeof(int) + Unsafe.SizeOf<T>()) / 4;
             Span<int> data = MemoryMarshal.Cast<byte, int>(Entries.AsSpan());
 
             for (int i = 0; i < Buckets.Length; i++)
