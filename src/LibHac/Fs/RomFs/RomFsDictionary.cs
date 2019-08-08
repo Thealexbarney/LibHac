@@ -202,7 +202,7 @@ namespace LibHac.Fs.RomFs
         private int CountEntries()
         {
             int count = 0;
-            int nextStructOffset = (sizeof(int) + Marshal.SizeOf<T>()) / 4;
+            int nextStructOffset = (sizeof(int) + Unsafe.SizeOf<T>()) / 4;
             Span<int> data = MemoryMarshal.Cast<byte, int>(Entries.AsSpan());
 
             for (int i = 0; i < Buckets.Length; i++)
