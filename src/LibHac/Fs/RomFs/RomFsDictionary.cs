@@ -5,7 +5,9 @@ using System.Runtime.InteropServices;
 
 namespace LibHac.Fs.RomFs
 {
-    internal class RomFsDictionary<T> where T : unmanaged
+    // todo: Change constraint to "unmanaged" after updating to
+    // a newer SDK https://github.com/dotnet/csharplang/issues/1937
+    internal class RomFsDictionary<T> where T : struct
     {
         private int _count;
         private int _length;

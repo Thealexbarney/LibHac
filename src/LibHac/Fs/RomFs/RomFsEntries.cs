@@ -32,7 +32,9 @@ namespace LibHac.Fs.RomFs
         }
     }
 
-    internal ref struct RomKeyValuePair<T> where T : unmanaged
+    // todo: Change constraint to "unmanaged" after updating to
+    // a newer SDK https://github.com/dotnet/csharplang/issues/1937
+    internal ref struct RomKeyValuePair<T> where T : struct
     {
         public RomEntryKey Key;
         public int Offset;

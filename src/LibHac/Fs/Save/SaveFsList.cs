@@ -6,6 +6,8 @@ using System.Runtime.InteropServices;
 
 namespace LibHac.Fs.Save
 {
+    // todo: Change constraint to "unmanaged" after updating to
+    // a newer SDK https://github.com/dotnet/csharplang/issues/1937
     internal class SaveFsList<T> where T : struct
     {
         private const int FreeListHeadIndex = 0;
