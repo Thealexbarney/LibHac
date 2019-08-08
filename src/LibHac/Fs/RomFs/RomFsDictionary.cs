@@ -5,7 +5,9 @@ using System.Runtime.InteropServices;
 
 namespace LibHac.Fs.RomFs
 {
-    internal class RomFsDictionary<T> where T : unmanaged
+    // todo: Change constraint to "unmanaged" after updating to
+    // a newer SDK https://github.com/dotnet/csharplang/issues/1937
+    internal class RomFsDictionary<T> where T : struct
     {
         private int _count;
         private int _length;
@@ -266,7 +268,7 @@ namespace LibHac.Fs.RomFs
         {
             var offsets = new List<int>(_count);
 
-            int nextStructOffset = (sizeof(int) + Marshal.SizeOf<T>()) / 4;
+            int nextStructOffset = (sizeof(int) + Unsafe.SizeOf<T>()) / 4;
             Span<int> data = MemoryMarshal.Cast<byte, int>(Entries.AsSpan());
 
             for (int i = 0; i < Buckets.Length; i++)

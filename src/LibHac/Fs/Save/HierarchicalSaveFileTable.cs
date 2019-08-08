@@ -416,6 +416,8 @@ namespace LibHac.Fs.Save
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        // todo: Change constraint to "unmanaged" after updating to
+        // a newer SDK https://github.com/dotnet/csharplang/issues/1937
         private struct TableEntry<T> where T : struct
         {
             public int NextSibling;

@@ -11,7 +11,7 @@ namespace LibHac.Tests
         {
             const string path = "/a/b";
 
-            var table = new HierarchicalRomFileTable();
+            var table = new HierarchicalRomFileTable<RomFileInfo>();
             var item = new RomFileInfo { Length = 1, Offset = 1 };
 
             table.AddFile(path, ref item);
@@ -26,7 +26,7 @@ namespace LibHac.Tests
         {
             const string path = "/a/b";
 
-            var table = new HierarchicalRomFileTable();
+            var table = new HierarchicalRomFileTable<RomFileInfo>();
             var originalItem = new RomFileInfo { Length = 1, Offset = 1 };
             var newItem = new RomFileInfo { Length = 1, Offset = 1 };
 
@@ -42,7 +42,7 @@ namespace LibHac.Tests
         [Fact]
         public void AddingDirectory()
         {
-            var table = new HierarchicalRomFileTable();
+            var table = new HierarchicalRomFileTable<RomFileInfo>();
             var expectedPosition = new FindPosition { NextDirectory = -1, NextFile = -1 };
 
             table.AddDirectory("/dir");
@@ -55,7 +55,7 @@ namespace LibHac.Tests
         [Fact]
         public void AddingEmptyPathThrows()
         {
-            var table = new HierarchicalRomFileTable();
+            var table = new HierarchicalRomFileTable<RomFileInfo>();
             var item = new RomFileInfo();
 
             Assert.Throws<ArgumentException>(() => table.AddFile("", ref item));
@@ -64,7 +64,7 @@ namespace LibHac.Tests
         [Fact]
         public void OpeningNonexistentFileFails()
         {
-            var table = new HierarchicalRomFileTable();
+            var table = new HierarchicalRomFileTable<RomFileInfo>();
 
             bool success = table.TryOpenFile("/foo", out _);
             Assert.False(success);
@@ -73,7 +73,7 @@ namespace LibHac.Tests
         [Fact]
         public void OpeningNonexistentDirectoryFails()
         {
-            var table = new HierarchicalRomFileTable();
+            var table = new HierarchicalRomFileTable<RomFileInfo>();
 
             bool success = table.TryOpenDirectory("/foo", out _);
             Assert.False(success);
@@ -82,7 +82,7 @@ namespace LibHac.Tests
         [Fact]
         public void OpeningFileAsDirectoryFails()
         {
-            var table = new HierarchicalRomFileTable();
+            var table = new HierarchicalRomFileTable<RomFileInfo>();
             var fileInfo = new RomFileInfo();
             table.AddFile("/file", ref fileInfo);
 
@@ -93,7 +93,7 @@ namespace LibHac.Tests
         [Fact]
         public void OpeningDirectoryAsFileFails()
         {
-            var table = new HierarchicalRomFileTable();
+            var table = new HierarchicalRomFileTable<RomFileInfo>();
             table.AddDirectory("/dir");
 
             bool success = table.TryOpenFile("/dir", out _);
@@ -104,7 +104,7 @@ namespace LibHac.Tests
         public void ChildFileIteration()
         {
             const int fileCount = 10;
-            var table = new HierarchicalRomFileTable();
+            var table = new HierarchicalRomFileTable<RomFileInfo>();
 
             for (int i = 0; i < fileCount; i++)
             {
@@ -134,7 +134,7 @@ namespace LibHac.Tests
         [Fact]
         public void ChildFileIterationPeek()
         {
-            var table = new HierarchicalRomFileTable();
+            var table = new HierarchicalRomFileTable<RomFileInfo>();
 
             var itemA = new RomFileInfo { Length = 1, Offset = 1 };
             var itemB = new RomFileInfo { Length = 2, Offset = 2 };
@@ -160,7 +160,7 @@ namespace LibHac.Tests
         [Fact]
         public void AddingCousinFiles()
         {
-            var table = new HierarchicalRomFileTable();
+            var table = new HierarchicalRomFileTable<RomFileInfo>();
 
             var itemB1 = new RomFileInfo { Length = 1, Offset = 1 };
             var itemB2 = new RomFileInfo { Length = 2, Offset = 2 };
@@ -182,7 +182,7 @@ namespace LibHac.Tests
         [Fact]
         public void AddingSiblingFiles()
         {
-            var table = new HierarchicalRomFileTable();
+            var table = new HierarchicalRomFileTable<RomFileInfo>();
 
             var itemC1 = new RomFileInfo { Length = 1, Offset = 1 };
             var itemC2 = new RomFileInfo { Length = 2, Offset = 2 };
