@@ -14,7 +14,7 @@ namespace hactoolnet
     {
         public static void Process(Context ctx)
         {
-            FileAccess accessNeeded = FileAccess.Read;
+            var accessNeeded = FileAccess.Read;
 
             if (ctx.Options.SignSave || ctx.Options.ReplaceFileDest != null && ctx.Options.ReplaceFileSource != null ||
                 ctx.Options.RepackSource != null || ctx.Options.TrimSave)

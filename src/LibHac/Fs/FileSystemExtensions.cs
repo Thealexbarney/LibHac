@@ -227,13 +227,15 @@ namespace LibHac.Fs
                     {
                         break;
                     }
-                } 
+                }
             }
-            
+
             // path[i] will be a '/', so skip that character
             i++;
 
-            for (; i < path.Length; i++)
+            // loop until `path.Length - 1` so CreateDirectory won't be called multiple
+            // times on path if the last character in the path is a '/'
+            for (; i < path.Length - 1; i++)
             {
                 if (path[i] == '/')
                 {
@@ -242,6 +244,8 @@ namespace LibHac.Fs
                     fs.CreateDirectory(subPath);
                 }
             }
+
+            fs.CreateDirectory(path);
         }
 
         public static void CreateOrOverwriteFile(this IFileSystem fs, string path, long size)
