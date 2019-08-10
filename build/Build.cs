@@ -31,9 +31,6 @@ namespace LibHacBuild
         [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
         public readonly string Configuration = IsLocalBuild ? "Debug" : "Release";
 
-        [Parameter("Build only .NET Core targets if true. Default is false on Windows")]
-        public readonly bool DoCoreBuildOnly;
-
         [Solution("LibHac.sln")] readonly Solution _solution;
         [GitRepository] readonly GitRepository _gitRepository;
         [GitVersion] readonly GitVersion _gitVersion;
@@ -62,7 +59,6 @@ namespace LibHacBuild
 
         private const string MyGetSource = "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json";
         const string CertFileName = "cert.pfx";
-        private const string CoreFrameworks = "netcoreapp2.1;netstandard2.0";
 
         private bool IsMasterBranch => _gitVersion?.BranchName.Equals("master") ?? false;
 
@@ -140,8 +136,6 @@ namespace LibHacBuild
                     .SetProperties(VersionProps)
                     .SetProperty("BuildType", "Release");
 
-                if (DoCoreBuildOnly) buildSettings = buildSettings.SetProperty("TargetFrameworks", CoreFrameworks);
-
                 DotNetBuild(s => buildSettings);
 
                 DotNetPublishSettings publishSettings = new DotNetPublishSettings()
@@ -152,16 +146,15 @@ namespace LibHacBuild
                     .SetProject(HactoolnetProject)
                     .SetFramework("netcoreapp2.1")
                     .SetOutput(CliCoreDir)
+                    .SetNoBuild(true)
                     .SetProperties(VersionProps));
 
-                if (!DoCoreBuildOnly)
-                {
-                    DotNetPublish(s => publishSettings
-                        .SetProject(HactoolnetProject)
-                        .SetFramework("net46")
-                        .SetOutput(CliFrameworkDir)
-                        .SetProperties(VersionProps));
-                }
+                DotNetPublish(s => publishSettings
+                    .SetProject(HactoolnetProject)
+                    .SetFramework("net46")
+                    .SetOutput(CliFrameworkDir)
+                    .SetNoBuild(true)
+                    .SetProperties(VersionProps));
 
                 // Hack around OS newline differences
                 if (EnvironmentInfo.IsUnix)
@@ -186,9 +179,6 @@ namespace LibHacBuild
                     .SetOutputDirectory(ArtifactsDirectory)
                     .SetProperties(VersionProps);
 
-                if (DoCoreBuildOnly)
-                    settings = settings.SetProperty("TargetFrameworks", CoreFrameworks);
-
                 DotNetPack(s => settings);
 
                 foreach (string filename in Directory.EnumerateFiles(ArtifactsDirectory, "*.*nupkg"))
@@ -206,7 +196,8 @@ namespace LibHacBuild
 
         Target Merge => _ => _
             .DependsOn(Compile)
-            .OnlyWhenStatic(() => !DoCoreBuildOnly)
+            // Merging on Linux blocked by https://github.com/gluck/il-repack/issues/230
+            .OnlyWhenStatic(() => !EnvironmentInfo.IsUnix)
             .Executes(() =>
             {
                 string[] libraries = Directory.GetFiles(CliFrameworkDir, "*.dll");
@@ -242,7 +233,7 @@ namespace LibHacBuild
                     .EnableNoBuild()
                     .SetConfiguration(Configuration);
 
-                if (DoCoreBuildOnly) settings = settings.SetProperty("TargetFrameworks", CoreFrameworks);
+                if (EnvironmentInfo.IsUnix) settings = settings.SetProperty("TargetFramework", "netcoreapp2.1");
 
                 DotNetTest(s => settings);
             });
@@ -259,11 +250,8 @@ namespace LibHacBuild
                     .Concat(Directory.EnumerateFiles(CliCoreDir, "*.dll"))
                     .ToArray();
 
-                if (!DoCoreBuildOnly)
-                {
-                    ZipFiles(CliFrameworkZip, namesFx);
-                    Console.WriteLine($"Created {CliFrameworkZip}");
-                }
+                ZipFiles(CliFrameworkZip, namesFx);
+                Console.WriteLine($"Created {CliFrameworkZip}");
 
                 ZipFiles(CliCoreZip, namesCore);
                 Console.WriteLine($"Created {CliCoreZip}");
@@ -365,8 +353,8 @@ namespace LibHacBuild
 
         Target Sign => _ => _
             .DependsOn(Test, Zip, Merge)
-            .OnlyWhenStatic(() => !DoCoreBuildOnly)
             .OnlyWhenStatic(() => File.Exists(CertFileName))
+            .OnlyWhenStatic(() => !EnvironmentInfo.IsUnix)
             .Executes(() =>
             {
                 string pwd = ReadPassword();

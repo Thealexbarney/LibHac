@@ -16,4 +16,8 @@
     <ProjectReference Include="..\..\src\LibHac\LibHac.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="All" Version="1.0.0-preview.2" />
+  </ItemGroup>
+
 </Project>
