@@ -80,7 +80,7 @@ namespace LibHac
 
                     nca = new SwitchFsNca(new Nca(Keyset, storage));
 
-                    nca.NcaId = Path.GetFileNameWithoutExtension(fileEntry.Name);
+                    nca.NcaId = GetNcaFilename(fileEntry.Name, nca);
                     string extension = nca.Nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
                     nca.Filename = nca.NcaId + extension;
                 }
@@ -225,6 +225,16 @@ namespace LibHac
                     patch.BaseNca = main.Nca;
                 }
             }
+        }
+
+        private string GetNcaFilename(string name, SwitchFsNca nca)
+        {
+            if (nca.Nca.Header.ContentType != ContentType.Meta || !name.EndsWith(".cnmt.nca"))
+            {
+                return Path.GetFileNameWithoutExtension(name);
+            }
+
+            return name.Substring(0, name.Length - ".cnmt.nca".Length);
         }
 
         private void DisposeNcas()
