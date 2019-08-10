@@ -146,13 +146,14 @@ namespace LibHacBuild
                     .SetProject(HactoolnetProject)
                     .SetFramework("netcoreapp2.1")
                     .SetOutput(CliCoreDir)
+                    .SetNoBuild(true)
                     .SetProperties(VersionProps));
-
 
                 DotNetPublish(s => publishSettings
                     .SetProject(HactoolnetProject)
                     .SetFramework("net46")
                     .SetOutput(CliFrameworkDir)
+                    .SetNoBuild(true)
                     .SetProperties(VersionProps));
 
                 // Hack around OS newline differences
