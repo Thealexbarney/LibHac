@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="GitVersion.CommandLine.DotNetCore" Version="4.0.0" />
+    <PackageReference Include="GitVersion.CommandLine.DotNetCore" Version="5.0.0" />
     <PackageReference Include="ILRepack.Lib" Version="2.0.17" NoWarn="NU1701" />
     <PackageReference Include="NuGet.CommandLine" Version="5.0.2" />
     <PackageReference Include="Nuke.Common" Version="0.21.0" />
