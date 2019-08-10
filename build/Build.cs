@@ -354,6 +354,7 @@ namespace LibHacBuild
         Target Sign => _ => _
             .DependsOn(Test, Zip, Merge)
             .OnlyWhenStatic(() => File.Exists(CertFileName))
+            .OnlyWhenStatic(() => !EnvironmentInfo.IsUnix)
             .Executes(() =>
             {
                 string pwd = ReadPassword();
