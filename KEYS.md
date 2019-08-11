@@ -45,58 +45,61 @@ This template contains the keys needed to derive all the keys used by hactoolnet
 Fill out the template with the actual keys to get a working keyfile.
 
 ```
-master_key_source                = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-master_key_00                    = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-master_key_01                    = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-master_key_02                    = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-master_key_03                    = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-master_key_04                    = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-master_key_05                    = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+master_key_source                  = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+master_key_00                      = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+master_key_01                      = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+master_key_02                      = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+master_key_03                      = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+master_key_04                      = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+master_key_05                      = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                                     
+keyblob_mac_key_source             = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+keyblob_key_source_00              = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+keyblob_key_source_01              = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+keyblob_key_source_02              = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+keyblob_key_source_03              = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+keyblob_key_source_04              = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+keyblob_key_source_05              = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                                     
+package1_key_00                    = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+package1_key_01                    = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+package1_key_02                    = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+package1_key_03                    = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+package1_key_04                    = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                                     
+package2_key_source                = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                                     
+aes_kek_generation_source          = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+aes_key_generation_source          = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+titlekek_source                    = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                                     
+key_area_key_application_source    = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+key_area_key_ocean_source          = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+key_area_key_system_source         = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                                     
+sd_card_kek_source                 = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+sd_card_save_key_source            = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+sd_card_nca_key_source             = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+sd_card_custom_storage_key_source  = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-keyblob_mac_key_source           = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-keyblob_key_source_00            = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-keyblob_key_source_01            = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-keyblob_key_source_02            = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-keyblob_key_source_03            = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-keyblob_key_source_04            = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-keyblob_key_source_05            = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-package1_key_00                  = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-package1_key_01                  = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-package1_key_02                  = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-package1_key_03                  = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-package1_key_04                  = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-package2_key_source              = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-aes_kek_generation_source        = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-aes_key_generation_source        = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-titlekek_source                  = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-key_area_key_application_source  = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-key_area_key_ocean_source        = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-key_area_key_system_source       = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-sd_card_kek_source               = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-sd_card_save_key_source          = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-sd_card_nca_key_source           = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-header_kek_source                = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-header_key_source                = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-xci_header_key                   = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-retail_specific_aes_key_source   = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-per_console_key_source           = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-eticket_rsa_kek                  = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-bis_key_source_00                = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-bis_key_source_01                = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-bis_key_source_02                = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-bis_kek_source                   = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-save_mac_kek_source              = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-save_mac_key_source              = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+header_kek_source                  = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+header_key_source                  = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                                     
+xci_header_key                     = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                                     
+retail_specific_aes_key_source     = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+per_console_key_source             = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+eticket_rsa_kek                    = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                                     
+bis_key_source_00                  = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+bis_key_source_01                  = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+bis_key_source_02                  = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+bis_kek_source                     = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                                     
+save_mac_kek_source                = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+save_mac_key_source                = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+save_mac_sd_card_kek_source                = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+save_mac_sd_card_key_source                = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
 ### Console-unique keys

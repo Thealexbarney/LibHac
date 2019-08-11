@@ -15,6 +15,8 @@ namespace LibHac
         /// </summary>
         private const int UsedKeyblobCount = 6;
 
+        private const int SdCardKeyIdCount = 3;
+
         public byte[][] KeyblobKeys { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
         public byte[][] KeyblobMacKeys { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0x10);
         public byte[][] EncryptedKeyblobs { get; } = Util.CreateJaggedArray<byte[][]>(0x20, 0xB0);
@@ -35,11 +37,13 @@ namespace LibHac
         public byte[] KeyAreaKeyOceanSource { get; } = new byte[0x10];
         public byte[] KeyAreaKeySystemSource { get; } = new byte[0x10];
         public byte[] SaveMacKekSource { get; } = new byte[0x10];
+        public byte[] SaveMacSdCardKekSource { get; } = new byte[0x10];
         public byte[] SaveMacKeySource { get; } = new byte[0x10];
+        public byte[] SaveMacSdCardKeySource { get; } = new byte[0x10];
         public byte[] TitleKekSource { get; } = new byte[0x10];
         public byte[] HeaderKekSource { get; } = new byte[0x10];
         public byte[] SdCardKekSource { get; } = new byte[0x10];
-        public byte[][] SdCardKeySources { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
+        public byte[][] SdCardKeySources { get; } = Util.CreateJaggedArray<byte[][]>(SdCardKeyIdCount, 0x20);
         public byte[] HeaderKeySource { get; } = new byte[0x20];
         public byte[] HeaderKey { get; } = new byte[0x20];
         public byte[] XciHeaderKey { get; } = new byte[0x10];
@@ -58,9 +62,10 @@ namespace LibHac
         public byte[] DeviceKey { get; } = new byte[0x10];
         public byte[][] BisKeys { get; } = Util.CreateJaggedArray<byte[][]>(4, 0x20);
         public byte[] SaveMacKey { get; } = new byte[0x10];
+        public byte[] SaveMacSdCardKey { get; } = new byte[0x10];
         public byte[] SdSeed { get; } = new byte[0x10];
-        public byte[][] SdCardKeySourcesSpecific { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
-        public byte[][] SdCardKeys { get; } = Util.CreateJaggedArray<byte[][]>(2, 0x20);
+        public byte[][] SdCardKeySourcesSpecific { get; } = Util.CreateJaggedArray<byte[][]>(SdCardKeyIdCount, 0x20);
+        public byte[][] SdCardKeys { get; } = Util.CreateJaggedArray<byte[][]>(SdCardKeyIdCount, 0x20);
 
         public RSAParameters EticketExtKeyRsa { get; set; }
 
@@ -336,7 +341,7 @@ namespace LibHac
             var sdKek = new byte[0x10];
             Crypto.GenerateKek(MasterKeys[0], SdCardKekSource, sdKek, AesKekGenerationSource, AesKeyGenerationSource);
 
-            for (int k = 0; k < SdCardKeySources.Length; k++)
+            for (int k = 0; k < SdCardKeyIdCount; k++)
             {
                 for (int i = 0; i < 0x20; i++)
                 {
@@ -344,9 +349,23 @@ namespace LibHac
                 }
             }
 
-            for (int k = 0; k < SdCardKeySourcesSpecific.Length; k++)
+            for (int k = 0; k < SdCardKeyIdCount; k++)
             {
                 Crypto.DecryptEcb(sdKek, SdCardKeySourcesSpecific[k], SdCardKeys[k], 0x20);
+            }
+
+            // Derive sd card save key
+            if (!SaveMacSdCardKekSource.IsEmpty() && !SaveMacSdCardKeySource.IsEmpty())
+            {
+                var keySource = new byte[0x10];
+
+                for (int i = 0; i < 0x10; i++)
+                {
+                    keySource[i] = (byte)(SaveMacSdCardKeySource[i] ^ SdSeed[i]);
+                }
+
+                Crypto.GenerateKek(MasterKeys[0], SaveMacSdCardKekSource, sdKek, AesKekGenerationSource, null);
+                Crypto.DecryptEcb(sdKek, keySource, SaveMacSdCardKey, 0x10);
             }
         }
 
@@ -572,10 +591,13 @@ namespace LibHac
                 new KeyValue("titlekek_source", 0x10, 100, set => set.TitleKekSource),
 
                 new KeyValue("save_mac_kek_source", 0x10, 110, set => set.SaveMacKekSource),
+                new KeyValue("save_mac_sd_card_kek_source", 0x10, 110, set => set.SaveMacSdCardKekSource),
                 new KeyValue("save_mac_key_source", 0x10, 110, set => set.SaveMacKeySource),
+                new KeyValue("save_mac_sd_card_key_source", 0x10, 110, set => set.SaveMacSdCardKeySource),
                 new KeyValue("sd_card_kek_source", 0x10, 110, set => set.SdCardKekSource),
-                new KeyValue("sd_card_nca_key_source", 0x20, 110, set => set.SdCardKeySources[1]),
                 new KeyValue("sd_card_save_key_source", 0x20, 110, set => set.SdCardKeySources[0]),
+                new KeyValue("sd_card_nca_key_source", 0x20, 110, set => set.SdCardKeySources[1]),
+                new KeyValue("sd_card_custom_storage_key_source", 0x20, 110, set => set.SdCardKeySources[2]),
 
                 new KeyValue("eticket_rsa_kek", 0x10, 120, set => set.EticketRsaKek),
                 new KeyValue("ssl_rsa_kek", 0x10, 120, set => set.SslRsaKek),
@@ -620,7 +642,8 @@ namespace LibHac
                 new KeyValue("sd_seed", 0x10, 10, set => set.SdSeed),
 
                 new KeyValue("device_key", 0x10, 40, set => set.DeviceKey),
-                new KeyValue("save_mac_key", 0x10, 60, set => set.SaveMacKey)
+                new KeyValue("save_mac_key", 0x10, 60, set => set.SaveMacKey),
+                new KeyValue("save_mac_sd_card_key", 0x10, 60, set => set.SaveMacSdCardKey)
             };
 
             for (int slot = 0; slot < 0x20; slot++)
