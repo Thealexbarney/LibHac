@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <VersionPrefix>0.5.0</VersionPrefix>
+    <VersionPrefix>0.5.1</VersionPrefix>
     <PathMap Condition=" '$(BuildType)' == 'Release' ">$(MSBuildProjectDirectory)=C:/hactoolnet/</PathMap>
   </PropertyGroup>
 
