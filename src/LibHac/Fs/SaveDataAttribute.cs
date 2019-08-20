@@ -5,7 +5,7 @@ using LibHac.Kvdb;
 
 namespace LibHac.Fs
 {
-    public class SaveDataStruct : IComparable<SaveDataStruct>, IComparable, IEquatable<SaveDataStruct>, IExportable
+    public class SaveDataAttribute : IComparable<SaveDataAttribute>, IComparable, IEquatable<SaveDataAttribute>, IExportable
     {
         public ulong TitleId { get; private set; }
         public UserId UserId { get; private set; }
@@ -44,7 +44,7 @@ namespace LibHac.Fs
 
         public void Freeze() => _isFrozen = true;
 
-        public bool Equals(SaveDataStruct other)
+        public bool Equals(SaveDataAttribute other)
         {
             return other != null && TitleId == other.TitleId && UserId.Equals(other.UserId) && SaveId == other.SaveId &&
                    Type == other.Type && Rank == other.Rank && Index == other.Index;
@@ -52,7 +52,7 @@ namespace LibHac.Fs
 
         public override bool Equals(object obj)
         {
-            return obj is SaveDataStruct other && Equals(other);
+            return obj is SaveDataAttribute other && Equals(other);
         }
 
         public override int GetHashCode()
@@ -71,7 +71,7 @@ namespace LibHac.Fs
             }
         }
 
-        public int CompareTo(SaveDataStruct other)
+        public int CompareTo(SaveDataAttribute other)
         {
             int titleIdComparison = TitleId.CompareTo(other.TitleId);
             if (titleIdComparison != 0) return titleIdComparison;
@@ -89,7 +89,7 @@ namespace LibHac.Fs
         public int CompareTo(object obj)
         {
             if (obj is null) return 1;
-            return obj is SaveDataStruct other ? CompareTo(other) : throw new ArgumentException($"Object must be of type {nameof(SaveDataStruct)}");
+            return obj is SaveDataAttribute other ? CompareTo(other) : throw new ArgumentException($"Object must be of type {nameof(SaveDataAttribute)}");
         }
     }
 }

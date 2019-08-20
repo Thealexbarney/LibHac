@@ -4,31 +4,31 @@ using System.IO;
 
 namespace LibHac.Fs
 {
-    public class DeltaFragment
+    public class Delta
     {
         private const string Ndv0Magic = "NDV0";
-        private IStorage Original { get; set; }
-        private IStorage Delta { get; }
-        public DeltaFragmentHeader Header { get; }
-        private List<DeltaFragmentSegment> Segments { get; } = new List<DeltaFragmentSegment>();
+        private IStorage OriginalStorage { get; set; }
+        private IStorage DeltaStorage { get; }
+        public DeltaHeader Header { get; }
+        private List<DeltaSegment> Segments { get; } = new List<DeltaSegment>();
 
-        public DeltaFragment(IStorage delta, IStorage originalData) : this(delta)
+        public Delta(IStorage deltaStorage, IStorage originalData) : this(deltaStorage)
         {
             SetBaseStorage(originalData);
         }
 
-        public DeltaFragment(IStorage delta)
+        public Delta(IStorage deltaStorage)
         {
-            Delta = delta;
+            DeltaStorage = deltaStorage;
 
-            if (Delta.GetSize() < 0x40) throw new InvalidDataException("Delta file is too small.");
+            if (DeltaStorage.GetSize() < 0x40) throw new InvalidDataException("Delta file is too small.");
 
-            Header = new DeltaFragmentHeader(delta.AsFile(OpenMode.Read));
+            Header = new DeltaHeader(deltaStorage.AsFile(OpenMode.Read));
 
             if (Header.Magic != Ndv0Magic) throw new InvalidDataException("NDV0 magic value is missing.");
 
-            long fragmentSize = Header.FragmentHeaderSize + Header.FragmentBodySize;
-            if (Delta.GetSize() < fragmentSize)
+            long fragmentSize = Header.HeaderSize + Header.BodySize;
+            if (DeltaStorage.GetSize() < fragmentSize)
             {
                 throw new InvalidDataException($"Delta file is smaller than the header indicates. (0x{fragmentSize} bytes)");
             }
@@ -38,9 +38,9 @@ namespace LibHac.Fs
 
         public void SetBaseStorage(IStorage baseStorage)
         {
-            Original = baseStorage;
+            OriginalStorage = baseStorage;
 
-            if (Original.GetSize() != Header.OriginalSize)
+            if (OriginalStorage.GetSize() != Header.OriginalSize)
             {
                 throw new InvalidDataException($"Original file size does not match the size in the delta header. (0x{Header.OriginalSize} bytes)");
             }
@@ -48,13 +48,13 @@ namespace LibHac.Fs
 
         public IStorage GetPatchedStorage()
         {
-            if (Original == null) throw new InvalidOperationException("Cannot apply a delta patch without a base file.");
+            if (OriginalStorage == null) throw new InvalidOperationException("Cannot apply a delta patch without a base file.");
 
             var storages = new List<IStorage>();
 
-            foreach (DeltaFragmentSegment segment in Segments)
+            foreach (DeltaSegment segment in Segments)
             {
-                IStorage source = segment.IsInOriginal ? Original : Delta;
+                IStorage source = segment.IsInOriginal ? OriginalStorage : DeltaStorage;
 
                 // todo Do this without tons of SubStorages
                 IStorage sub = source.Slice(segment.SourceOffset, segment.Size);
@@ -67,9 +67,9 @@ namespace LibHac.Fs
 
         private void ParseDeltaStructure()
         {
-            var reader = new FileReader(Delta.AsFile(OpenMode.Read));
+            var reader = new FileReader(DeltaStorage.AsFile(OpenMode.Read));
 
-            reader.Position = Header.FragmentHeaderSize;
+            reader.Position = Header.HeaderSize;
 
             long offset = 0;
 
@@ -79,7 +79,7 @@ namespace LibHac.Fs
 
                 if (seek > 0)
                 {
-                    var segment = new DeltaFragmentSegment()
+                    var segment = new DeltaSegment()
                     {
                         SourceOffset = offset,
                         Size = seek,
@@ -92,7 +92,7 @@ namespace LibHac.Fs
 
                 if (size > 0)
                 {
-                    var segment = new DeltaFragmentSegment()
+                    var segment = new DeltaSegment()
                     {
                         SourceOffset = reader.Position,
                         Size = size,
@@ -131,30 +131,30 @@ namespace LibHac.Fs
         }
     }
 
-    internal class DeltaFragmentSegment
+    internal class DeltaSegment
     {
         public long SourceOffset { get; set; }
         public int Size { get; set; }
         public bool IsInOriginal { get; set; }
     }
 
-    public class DeltaFragmentHeader
+    public class DeltaHeader
     {
         public string Magic { get; }
         public long OriginalSize { get; }
         public long NewSize { get; }
-        public long FragmentHeaderSize { get; }
-        public long FragmentBodySize { get; }
+        public long HeaderSize { get; }
+        public long BodySize { get; }
 
-        public DeltaFragmentHeader(IFile header)
+        public DeltaHeader(IFile header)
         {
             var reader = new FileReader(header);
 
             Magic = reader.ReadAscii(4);
             OriginalSize = reader.ReadInt64(8);
             NewSize = reader.ReadInt64();
-            FragmentHeaderSize = reader.ReadInt64();
-            FragmentBodySize = reader.ReadInt64();
+            HeaderSize = reader.ReadInt64();
+            BodySize = reader.ReadInt64();
         }
     }
 }

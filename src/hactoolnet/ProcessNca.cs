@@ -128,7 +128,7 @@ namespace hactoolnet
 
                 if (ctx.Options.ExefsOutDir != null || ctx.Options.ExefsOut != null)
                 {
-                    if (nca.Header.ContentType != ContentType.Program)
+                    if (nca.Header.ContentType != NcaContentType.Program)
                     {
                         ctx.Logger.LogMessage("NCA's content type is not \"Program\"");
                         return;
@@ -201,7 +201,7 @@ namespace hactoolnet
 
         private static Validity VerifySignature2(this Nca nca)
         {
-            if (nca.Header.ContentType != ContentType.Program) return Validity.Unchecked;
+            if (nca.Header.ContentType != NcaContentType.Program) return Validity.Unchecked;
 
             IFileSystem pfs = nca.OpenFileSystem(NcaSectionType.Code, IntegrityCheckLevel.ErrorOnInvalid);
             if (!pfs.FileExists("main.npdm")) return Validity.Unchecked;
@@ -266,7 +266,7 @@ namespace hactoolnet
                     if (!nca.Header.IsSectionEnabled(i)) continue;
 
                     NcaFsHeader sectHeader = nca.Header.GetFsHeader(i);
-                    bool isExefs = nca.Header.ContentType == ContentType.Program && i == 0;
+                    bool isExefs = nca.Header.ContentType == NcaContentType.Program && i == 0;
 
                     sb.AppendLine($"    Section {i}:");
                     PrintItem(sb, colLen, "        Offset:", $"0x{nca.Header.GetSectionStartOffset(i):x12}");

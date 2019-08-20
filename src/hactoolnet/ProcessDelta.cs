@@ -38,7 +38,7 @@ namespace hactoolnet
                     catch (InvalidDataException) { } // Ignore non-NCA3 files
                 }
 
-                var delta = new DeltaFragment(deltaStorage);
+                var delta = new Delta(deltaStorage);
 
                 if (ctx.Options.BaseFile != null)
                 {
@@ -61,18 +61,18 @@ namespace hactoolnet
             }
         }
 
-        private static string Print(this DeltaFragment delta)
+        private static string Print(this Delta delta)
         {
             int colLen = 36;
             var sb = new StringBuilder();
             sb.AppendLine();
 
-            sb.AppendLine("Delta Fragment:");
+            sb.AppendLine("Delta File:");
             PrintItem(sb, colLen, "Magic:", delta.Header.Magic);
             PrintItem(sb, colLen, "Base file size:", $"0x{delta.Header.OriginalSize:x12}");
             PrintItem(sb, colLen, "New file size:", $"0x{delta.Header.NewSize:x12}");
-            PrintItem(sb, colLen, "Fragment header size:", $"0x{delta.Header.FragmentHeaderSize:x12}");
-            PrintItem(sb, colLen, "Fragment body size:", $"0x{delta.Header.FragmentBodySize:x12}");
+            PrintItem(sb, colLen, "Delta header size:", $"0x{delta.Header.HeaderSize:x12}");
+            PrintItem(sb, colLen, "Delta body size:", $"0x{delta.Header.BodySize:x12}");
 
             return sb.ToString();
         }

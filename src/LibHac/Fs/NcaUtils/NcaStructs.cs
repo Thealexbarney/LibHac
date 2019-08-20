@@ -41,7 +41,7 @@
         Logo
     };
 
-    public enum ContentType
+    public enum NcaContentType
     {
         Program,
         Meta,

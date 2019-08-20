@@ -127,7 +127,7 @@ namespace hactoolnet
                 IStorage ncaStorage = partition.OpenFile(fileEntry, OpenMode.Read).AsStorage();
                 var nca = new Nca(ctx.Keyset, ncaStorage);
 
-                if (nca.Header.ContentType == ContentType.Program)
+                if (nca.Header.ContentType == NcaContentType.Program)
                 {
                     mainNca = nca;
                 }

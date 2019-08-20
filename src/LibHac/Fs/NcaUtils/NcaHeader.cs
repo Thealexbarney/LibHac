@@ -44,9 +44,9 @@ namespace LibHac.Fs.NcaUtils
             set => Header.DistributionType = (byte)value;
         }
 
-        public ContentType ContentType
+        public NcaContentType ContentType
         {
-            get => (ContentType)Header.ContentType;
+            get => (NcaContentType)Header.ContentType;
             set => Header.ContentType = (byte)value;
         }
 

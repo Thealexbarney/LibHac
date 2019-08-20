@@ -336,7 +336,7 @@ namespace LibHac.Fs.NcaUtils
             return GetSectionIndexFromType(type, Header.ContentType);
         }
 
-        public static int GetSectionIndexFromType(NcaSectionType type, ContentType contentType)
+        public static int GetSectionIndexFromType(NcaSectionType type, NcaContentType contentType)
         {
             if (!TryGetSectionIndexFromType(type, contentType, out int index))
             {
@@ -346,17 +346,17 @@ namespace LibHac.Fs.NcaUtils
             return index;
         }
 
-        public static bool TryGetSectionIndexFromType(NcaSectionType type, ContentType contentType, out int index)
+        public static bool TryGetSectionIndexFromType(NcaSectionType type, NcaContentType contentType, out int index)
         {
             switch (type)
             {
-                case NcaSectionType.Code when contentType == ContentType.Program:
+                case NcaSectionType.Code when contentType == NcaContentType.Program:
                     index = 0;
                     return true;
-                case NcaSectionType.Data when contentType == ContentType.Program:
+                case NcaSectionType.Data when contentType == NcaContentType.Program:
                     index = 1;
                     return true;
-                case NcaSectionType.Logo when contentType == ContentType.Program:
+                case NcaSectionType.Logo when contentType == NcaContentType.Program:
                     index = 2;
                     return true;
                 case NcaSectionType.Data:
@@ -368,7 +368,7 @@ namespace LibHac.Fs.NcaUtils
             }
         }
 
-        public static NcaSectionType GetSectionTypeFromIndex(int index, ContentType contentType)
+        public static NcaSectionType GetSectionTypeFromIndex(int index, NcaContentType contentType)
         {
             if (!TryGetSectionTypeFromIndex(index, contentType, out NcaSectionType type))
             {
@@ -378,17 +378,17 @@ namespace LibHac.Fs.NcaUtils
             return type;
         }
 
-        public static bool TryGetSectionTypeFromIndex(int index, ContentType contentType, out NcaSectionType type)
+        public static bool TryGetSectionTypeFromIndex(int index, NcaContentType contentType, out NcaSectionType type)
         {
             switch (index)
             {
-                case 0 when contentType == ContentType.Program:
+                case 0 when contentType == NcaContentType.Program:
                     type = NcaSectionType.Code;
                     return true;
-                case 1 when contentType == ContentType.Program:
+                case 1 when contentType == NcaContentType.Program:
                     type = NcaSectionType.Data;
                     return true;
-                case 2 when contentType == ContentType.Program:
+                case 2 when contentType == NcaContentType.Program:
                     type = NcaSectionType.Logo;
                     return true;
                 case 0:
@@ -545,11 +545,11 @@ namespace LibHac.Fs.NcaUtils
             // Haven't checked delta fragment NCAs
             switch (Header.ContentType)
             {
-                case ContentType.Program:
-                case ContentType.Manual:
+                case NcaContentType.Program:
+                case NcaContentType.Manual:
                     counterVersion = Math.Max(minorVersion - 1, 0);
                     break;
-                case ContentType.PublicData:
+                case NcaContentType.PublicData:
                     counterVersion = minorVersion << 16;
                     break;
                 default:

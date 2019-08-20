@@ -82,7 +82,7 @@ namespace LibHac
                     nca = new SwitchFsNca(new Nca(Keyset, storage));
 
                     nca.NcaId = GetNcaFilename(fileEntry.Name, nca);
-                    string extension = nca.Nca.Header.ContentType == Fs.NcaUtils.ContentType.Meta ? ".cnmt.nca" : ".nca";
+                    string extension = nca.Nca.Header.ContentType == NcaContentType.Meta ? ".cnmt.nca" : ".nca";
                     nca.Filename = nca.NcaId + extension;
                 }
                 catch (MissingKeyException ex)
@@ -132,7 +132,7 @@ namespace LibHac
 
         private void ReadTitles()
         {
-            foreach (SwitchFsNca nca in Ncas.Values.Where(x => x.Nca.Header.ContentType == Fs.NcaUtils.ContentType.Meta))
+            foreach (SwitchFsNca nca in Ncas.Values.Where(x => x.Nca.Header.ContentType == NcaContentType.Meta))
             {
                 try
                 {
@@ -161,11 +161,11 @@ namespace LibHac
 
                         switch (content.Type)
                         {
-                            case Ncm.ContentType.Program:
-                            case Ncm.ContentType.Data:
+                            case ContentType.Program:
+                            case ContentType.Data:
                                 title.MainNca = contentNca;
                                 break;
-                            case Ncm.ContentType.Control:
+                            case ContentType.Control:
                                 title.ControlNca = contentNca;
                                 break;
                         }
@@ -230,7 +230,7 @@ namespace LibHac
 
         private string GetNcaFilename(string name, SwitchFsNca nca)
         {
-            if (nca.Nca.Header.ContentType != Fs.NcaUtils.ContentType.Meta || !name.EndsWith(".cnmt.nca"))
+            if (nca.Nca.Header.ContentType != NcaContentType.Meta || !name.EndsWith(".cnmt.nca"))
             {
                 return Path.GetFileNameWithoutExtension(name);
             }
