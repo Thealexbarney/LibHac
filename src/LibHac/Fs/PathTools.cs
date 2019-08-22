@@ -13,6 +13,7 @@ namespace LibHac.Fs
         public static readonly char DirectorySeparator = '/';
         public static readonly char MountSeparator = ':';
         internal const int MountNameLength = 0xF;
+        internal const int MaxPathLength = 0x300;
 
         public static string Normalize(string inPath)
         {

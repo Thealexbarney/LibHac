@@ -13,6 +13,6 @@ namespace LibHac.FsService.Creators
             IFileSystem sourceFileSystem, ulong saveDataId, bool allowDirectorySaveData, bool useDeviceUniqueMac,
             SaveDataType type, ITimeStampGenerator timeStampGenerator);
 
-        Result SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed);
+        void SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed);
     }
 }
