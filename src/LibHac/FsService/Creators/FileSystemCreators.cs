@@ -1,4 +1,6 @@
-﻿namespace LibHac.FsService.Creators
+﻿using LibHac.Fs;
+
+namespace LibHac.FsService.Creators
 {
     public class FileSystemCreators
     {
@@ -16,5 +18,17 @@
         public IMemoryStorageCreator MemoryStorageCreator { get; set; }
         public IBuiltInStorageFileSystemCreator BuiltInStorageFileSystemCreator { get; set; }
         public ISdFileSystemCreator SdFileSystemCreator { get; set; }
+
+        public static FileSystemCreators GetDefaultEmulatedCreators(IFileSystem rootFileSystem, Keyset keyset)
+        {
+            var creators = new FileSystemCreators();
+
+            creators.SubDirectoryFileSystemCreator = new SubDirectoryFileSystemCreator();
+            creators.EncryptedFileSystemCreator = new EncryptedFileSystemCreator(keyset);
+            creators.BuiltInStorageFileSystemCreator = new EmulatedBisFileSystemCreator(rootFileSystem);
+            creators.SdFileSystemCreator = new EmulatedSdFileSystemCreator(rootFileSystem);
+
+            return creators;
+        }
     }
 }

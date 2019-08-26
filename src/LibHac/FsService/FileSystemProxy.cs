@@ -13,6 +13,17 @@ namespace LibHac.FsService
         public string SaveDataRootPath { get; private set; }
         public bool AutoCreateSaveData { get; private set; }
 
+        internal FileSystemProxy(FileSystemProxyCore fsProxyCore)
+        {
+            FsProxyCore = fsProxyCore;
+
+            CurrentProcess = -1;
+            SaveDataSize = 0x2000000;
+            SaveDataJournalSize = 0x1000000;
+            SaveDataRootPath = string.Empty;
+            AutoCreateSaveData = true;
+        }
+
         public Result SetCurrentProcess(long processId)
         {
             CurrentProcess = processId;
