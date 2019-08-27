@@ -32,6 +32,17 @@ namespace LibHac
             }
         }
 
+        /// <summary>
+        /// A function that can contain code for logging or debugging returned results.
+        /// Intended to be used when returning a non-zero Result:
+        /// <code>return result.Log();</code>
+        /// </summary>
+        /// <returns>The called <see cref="Result"/> value.</returns>
+        public Result Log()
+        {
+            return this;
+        }
+
         public override bool Equals(object obj)
         {
             return obj is Result result && Equals(result);
