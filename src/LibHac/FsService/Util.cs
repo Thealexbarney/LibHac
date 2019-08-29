@@ -43,5 +43,14 @@ namespace LibHac.FsService
 
             return Result.Success;
         }
+
+        public static bool UseDeviceUniqueSaveMac(SaveDataSpaceId spaceId)
+        {
+            return spaceId == SaveDataSpaceId.System ||
+                   spaceId == SaveDataSpaceId.User ||
+                   spaceId == SaveDataSpaceId.TemporaryStorage ||
+                   spaceId == SaveDataSpaceId.ProperSystem ||
+                   spaceId == SaveDataSpaceId.Safe;
+        }
     }
 }

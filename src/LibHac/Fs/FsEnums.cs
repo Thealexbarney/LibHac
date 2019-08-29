@@ -42,4 +42,15 @@
         Secure = 1,
         Writable = 2
     }
+
+    public enum SaveDataSpaceId
+    {
+        System = 0,
+        User = 1,
+        SdSystem = 2,
+        TemporaryStorage = 3,
+        SdCache = 4,
+        ProperSystem = 100,
+        Safe = 101
+    }
 }

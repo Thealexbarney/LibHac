@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs;
 
 namespace LibHac.FsService
@@ -12,6 +13,8 @@ namespace LibHac.FsService
         public long SaveDataJournalSize { get; private set; }
         public string SaveDataRootPath { get; private set; }
         public bool AutoCreateSaveData { get; private set; }
+
+        private const ulong SaveIndexerId = 0x8000000000000000;
 
         internal FileSystemProxy(FileSystemProxyCore fsProxyCore)
         {
@@ -86,10 +89,29 @@ namespace LibHac.FsService
             return FsProxyCore.OpenContentStorageFileSystem(out fileSystem, storageId);
         }
 
+        public Result OpenSaveDataFileSystemBySystemSaveDataId(out IFileSystem fileSystem, SaveDataSpaceId spaceId,
+            SaveDataAttribute attribute)
+        {
+            // Missing permission check, speed emulation storage type wrapper, and FileSystemInterfaceAdapter
+            fileSystem = default;
+
+            if (!IsSystemSaveDataId(attribute.SaveId)) return ResultFs.InvalidArgument.Log();
+
+            Result saveFsResult = OpenSaveDataFileSystemImpl(out IFileSystem saveFs, out ulong saveDataId, spaceId,
+                attribute, false, true);
+            if (saveFsResult.IsFailure()) return saveFsResult.Log();
+
+            // Missing check if the current title owns the save data or can open it
+
+            fileSystem = saveFs;
+
+            return Result.Success;
+        }
+
         public Result SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed)
         {
             // todo: use struct instead of byte span
-            if (seed.Length != 0x16) return ResultFs.InvalidSize;
+            if (seed.Length != 0x10) return ResultFs.InvalidSize;
 
             // Missing permission check
 
@@ -99,6 +121,43 @@ namespace LibHac.FsService
             // todo: Reset save data indexer
 
             return Result.Success;
+        }
+
+        private Result OpenSaveDataFileSystemImpl(out IFileSystem fileSystem, out ulong saveDataId,
+            SaveDataSpaceId spaceId, SaveDataAttribute attribute, bool openReadOnly, bool cacheExtraData)
+        {
+            bool hasFixedId = attribute.SaveId != 0 && attribute.UserId.Id == Id128.InvalidId;
+
+            if (hasFixedId)
+            {
+                saveDataId = attribute.SaveId;
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+
+            Result saveFsResult = FsProxyCore.OpenSaveDataFileSystem(out fileSystem, spaceId, saveDataId,
+                SaveDataRootPath, openReadOnly, attribute.Type, cacheExtraData);
+
+            if (saveFsResult.IsSuccess()) return Result.Success;
+
+            if (saveFsResult == ResultFs.PathNotFound || saveFsResult == ResultFs.TargetNotFound) return saveFsResult;
+
+            if (saveDataId != SaveIndexerId)
+            {
+                if(hasFixedId)
+                {
+                    // todo: remove save indexer entry
+                }
+            }
+
+            return ResultFs.TargetNotFound;
+        }
+
+        private bool IsSystemSaveDataId(ulong id)
+        {
+            return (long)id < 0;
         }
     }
 }

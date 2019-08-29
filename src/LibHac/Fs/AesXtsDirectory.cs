@@ -33,6 +33,7 @@ namespace LibHac.Fs
                 }
                 else
                 {
+                    // todo: FS returns invalid file entries with a size of 0
                     long size = GetAesXtsFileSize(entry.FullPath);
                     if (size == -1) continue;
 

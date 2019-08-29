@@ -8,6 +8,8 @@ namespace LibHac.FsService.Creators
         public IPartitionFileSystemCreator PartitionFileSystemCreator { get; set; }
         public IStorageOnNcaCreator StorageOnNcaCreator { get; set; }
         public IFatFileSystemCreator FatFileSystemCreator { get; set; }
+        public IHostFileSystemCreator HostFileSystemCreator { get; set; }
+        public ITargetManagerFileSystemCreator TargetManagerFileSystemCreator { get; set; }
         public ISubDirectoryFileSystemCreator SubDirectoryFileSystemCreator { get; set; }
         public IBuiltInStorageCreator BuiltInStorageCreator { get; set; }
         public ISdStorageCreator SdStorageCreator { get; set; }

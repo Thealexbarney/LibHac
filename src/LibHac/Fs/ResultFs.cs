@@ -11,6 +11,9 @@
         public static Result InsufficientFreeSpace => new Result(ModuleFs, 30);
         public static Result MountNameAlreadyExists => new Result(ModuleFs, 60);
 
+        public static Result ResultPartitionNotFound => new Result(ModuleFs, 1002);
+        public static Result TargetNotFound => new Result(ModuleFs, 1002);
+
         public static Result NotImplemented => new Result(ModuleFs, 3001);
         public static Result Result3002 => new Result(ModuleFs, 3002);
         public static Result SaveDataPathAlreadyExists => new Result(ModuleFs, 3003);
