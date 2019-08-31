@@ -1,6 +1,7 @@
 ﻿using System;
+using LibHac.Fs;
 
-namespace LibHac.Fs.Accessors
+namespace LibHac.FsClient.Accessors
 {
     public class FileAccessor : IFile
     {

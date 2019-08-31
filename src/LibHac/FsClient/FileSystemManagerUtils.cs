@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
-using LibHac.Fs.Accessors;
+using LibHac.Fs;
+using LibHac.FsClient.Accessors;
 
-namespace LibHac.Fs
+namespace LibHac.FsClient
 {
     public static class FileSystemManagerUtils
     {

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
+using LibHac.Fs;
 
-namespace LibHac.Fs.Accessors
+namespace LibHac.FsClient.Accessors
 {
     public class MountTable
     {

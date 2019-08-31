@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using LibHac.Fs.Accessors;
+using LibHac.Fs;
+using LibHac.FsClient.Accessors;
 
-namespace LibHac.Fs
+namespace LibHac.FsClient
 {
     public class FileSystemManager
     {
@@ -23,6 +24,11 @@ namespace LibHac.Fs
         public FileSystemManager(Horizon os, ITimeSpanGenerator timer)
         {
             Os = os;
+            Time = timer;
+        }
+
+        public FileSystemManager(ITimeSpanGenerator timer)
+        {
             Time = timer;
         }
 

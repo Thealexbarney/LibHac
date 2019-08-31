@@ -2,7 +2,7 @@
 using System.IO;
 using System.Runtime.CompilerServices;
 using LibHac;
-using LibHac.Fs.Accessors;
+using LibHac.FsClient;
 
 namespace hactoolnet
 {

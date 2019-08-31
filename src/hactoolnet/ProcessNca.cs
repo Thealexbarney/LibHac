@@ -3,6 +3,7 @@ using System.Text;
 using LibHac;
 using LibHac.Fs;
 using LibHac.Fs.NcaUtils;
+using LibHac.FsClient;
 using LibHac.Npdm;
 using static hactoolnet.Print;
 

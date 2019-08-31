@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LibHac.Fs.Accessors
+namespace LibHac.FsClient.Accessors
 {
     public struct FileHandle : IDisposable
     {

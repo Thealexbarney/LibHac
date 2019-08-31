@@ -1,12 +1,17 @@
 ﻿using System;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.FsClient;
 
 namespace LibHac.FsService
 {
     public class FileSystemProxy
     {
         private FileSystemProxyCore FsProxyCore { get; }
+
+        /// <summary>The client instance to be used for internal operations like save indexer access.</summary>
+        private FileSystemClient FsClient { get; }
+
         public long CurrentProcess { get; private set; }
 
         public long SaveDataSize { get; private set; }
@@ -16,9 +21,10 @@ namespace LibHac.FsService
 
         private const ulong SaveIndexerId = 0x8000000000000000;
 
-        internal FileSystemProxy(FileSystemProxyCore fsProxyCore)
+        internal FileSystemProxy(FileSystemProxyCore fsProxyCore, FileSystemClient fsClient)
         {
             FsProxyCore = fsProxyCore;
+            FsClient = fsClient;
 
             CurrentProcess = -1;
             SaveDataSize = 0x2000000;
@@ -146,7 +152,7 @@ namespace LibHac.FsService
 
             if (saveDataId != SaveIndexerId)
             {
-                if(hasFixedId)
+                if (hasFixedId)
                 {
                     // todo: remove save indexer entry
                 }
