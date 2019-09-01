@@ -57,7 +57,7 @@ namespace hactoolnet
                 using (var logger = new ProgressBar())
                 {
                     ctx.Logger = logger;
-                    ctx.Horizon = new Horizon(new TimeSpanTimer());
+                    ctx.Horizon = new Horizon(new StopWatchTimeSpanGenerator());
 
                     if (ctx.Options.AccessLog != null)
                     {

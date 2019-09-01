@@ -58,8 +58,8 @@ namespace LibHac.Fs
 
         private bool CanReturnEntry(DirectoryEntry entry, bool isSplit)
         {
-            return Mode.HasFlag(OpenDirectoryMode.Files) && (entry.Type == DirectoryEntryType.File || isSplit) ||
-                   Mode.HasFlag(OpenDirectoryMode.Directories) && entry.Type == DirectoryEntryType.Directory && !isSplit;
+            return Mode.HasFlag(OpenDirectoryMode.File) && (entry.Type == DirectoryEntryType.File || isSplit) ||
+                   Mode.HasFlag(OpenDirectoryMode.Directory) && entry.Type == DirectoryEntryType.Directory && !isSplit;
         }
 
         private bool IsConcatenationFile(DirectoryEntry entry)

@@ -204,9 +204,9 @@ namespace LibHac.Fs
     [Flags]
     public enum OpenDirectoryMode
     {
-        Directories = 1,
-        Files = 2,
-        All = Directories | Files
+        Directory = 1,
+        File = 2,
+        All = Directory | File
     }
 
     /// <summary>

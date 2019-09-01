@@ -46,7 +46,7 @@ namespace LibHac.Fs
 
             if (offset + size > fileSize)
             {
-                if ((Mode & OpenMode.Append) == 0)
+                if ((Mode & OpenMode.AllowAppend) == 0)
                 {
                     ThrowHelper.ThrowResult(ResultFs.AllowAppendRequiredForImplicitExtension);
                 }
@@ -87,7 +87,7 @@ namespace LibHac.Fs
     {
         Read = 1,
         Write = 2,
-        Append = 4,
+        AllowAppend = 4,
         ReadWrite = Read | Write
     }
 

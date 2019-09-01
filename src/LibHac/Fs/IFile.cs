@@ -14,7 +14,7 @@ namespace LibHac.Fs
     /// or write as many bytes as it can and return that number of bytes to the caller.
     ///
     /// - If <see cref="Write"/> is called on an offset past the end of the <see cref="IFile"/>,
-    /// the <see cref="OpenMode.Append"/> mode is set and the file supports expansion,
+    /// the <see cref="OpenMode.AllowAppend"/> mode is set and the file supports expansion,
     /// the file will be expanded so that it is large enough to contain the written data.</remarks>
     public interface IFile : IDisposable
     {

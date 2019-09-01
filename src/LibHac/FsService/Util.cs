@@ -32,7 +32,7 @@ namespace LibHac.FsService
 
             try
             {
-                baseFileSystem.OpenDirectory(path, OpenDirectoryMode.Directories);
+                baseFileSystem.OpenDirectory(path, OpenDirectoryMode.Directory);
             }
             catch (HorizonResultException ex)
             {

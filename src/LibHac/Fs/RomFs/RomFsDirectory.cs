@@ -25,7 +25,7 @@ namespace LibHac.Fs.RomFs
             FindPosition position = InitialPosition;
             HierarchicalRomFileTable<RomFileInfo> tab = ParentFileSystem.FileTable;
 
-            if (Mode.HasFlag(OpenDirectoryMode.Directories))
+            if (Mode.HasFlag(OpenDirectoryMode.Directory))
             {
                 while (tab.FindNextDirectory(ref position, out string name))
                 {
@@ -33,7 +33,7 @@ namespace LibHac.Fs.RomFs
                 }
             }
 
-            if (Mode.HasFlag(OpenDirectoryMode.Files))
+            if (Mode.HasFlag(OpenDirectoryMode.File))
             {
                 while (tab.FindNextFile(ref position, out RomFileInfo info, out string name))
                 {
@@ -49,7 +49,7 @@ namespace LibHac.Fs.RomFs
             FindPosition position = InitialPosition;
             HierarchicalRomFileTable<RomFileInfo> tab = ParentFileSystem.FileTable;
 
-            if (Mode.HasFlag(OpenDirectoryMode.Directories))
+            if (Mode.HasFlag(OpenDirectoryMode.Directory))
             {
                 while (tab.FindNextDirectory(ref position, out string _))
                 {
@@ -57,7 +57,7 @@ namespace LibHac.Fs.RomFs
                 }
             }
 
-            if (Mode.HasFlag(OpenDirectoryMode.Files))
+            if (Mode.HasFlag(OpenDirectoryMode.File))
             {
                 while (tab.FindNextFile(ref position, out RomFileInfo _, out string _))
                 {

@@ -25,7 +25,7 @@ namespace LibHac.Fs
 
         public IEnumerable<DirectoryEntry> Read()
         {
-            if (Mode.HasFlag(OpenDirectoryMode.Files))
+            if (Mode.HasFlag(OpenDirectoryMode.File))
             {
                 foreach (PartitionFileEntry entry in ParentFileSystem.Files)
                 {
@@ -38,7 +38,7 @@ namespace LibHac.Fs
         {
             int count = 0;
 
-            if (Mode.HasFlag(OpenDirectoryMode.Files))
+            if (Mode.HasFlag(OpenDirectoryMode.File))
             {
                 count += ParentFileSystem.Files.Length;
             }

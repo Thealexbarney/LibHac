@@ -73,8 +73,8 @@ namespace LibHac.Fs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool CanReturnEntry(bool isDir, OpenDirectoryMode mode)
         {
-            return isDir && (mode & OpenDirectoryMode.Directories) != 0 ||
-                   !isDir && (mode & OpenDirectoryMode.Files) != 0;
+            return isDir && (mode & OpenDirectoryMode.Directory) != 0 ||
+                   !isDir && (mode & OpenDirectoryMode.File) != 0;
         }
     }
 }

@@ -67,7 +67,7 @@ namespace hactoolnet
         public static void CopyFileWithProgress(FileSystemManager fs, string sourcePath, string destPath, IProgressReport logger = null)
         {
             using (FileHandle sourceHandle = fs.OpenFile(sourcePath, OpenMode.Read))
-            using (FileHandle destHandle = fs.OpenFile(destPath, OpenMode.Write | OpenMode.Append))
+            using (FileHandle destHandle = fs.OpenFile(destPath, OpenMode.Write | OpenMode.AllowAppend))
             {
                 const int maxBufferSize = 1024 * 1024;
 

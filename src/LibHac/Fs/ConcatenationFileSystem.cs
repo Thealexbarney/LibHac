@@ -72,7 +72,7 @@ namespace LibHac.Fs
 
             if (BaseFileSystem.GetEntryType(PathTools.Combine(path, "00")) != DirectoryEntryType.File) return false;
 
-            if (BaseFileSystem.OpenDirectory(path, OpenDirectoryMode.Directories).GetEntryCount() > 0) return false;
+            if (BaseFileSystem.OpenDirectory(path, OpenDirectoryMode.Directory).GetEntryCount() > 0) return false;
 
             // Should be enough checks to avoid most false positives. Maybe
             return true;

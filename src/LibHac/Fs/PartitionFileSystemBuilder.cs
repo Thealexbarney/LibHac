@@ -22,7 +22,7 @@ namespace LibHac.Fs
         /// </summary>
         public PartitionFileSystemBuilder(IFileSystem input)
         {
-            IDirectory rootDir = input.OpenDirectory("/", OpenDirectoryMode.Files);
+            IDirectory rootDir = input.OpenDirectory("/", OpenDirectoryMode.File);
 
             foreach (DirectoryEntry file in rootDir.Read().OrderBy(x => x.FullPath, StringComparer.Ordinal))
             {

@@ -39,7 +39,7 @@ namespace LibHac.FsClient
         public static void CopyFile(this FileSystemManager fs, string sourcePath, string destPath, IProgressReport logger = null)
         {
             using (FileHandle sourceHandle = fs.OpenFile(sourcePath, OpenMode.Read))
-            using (FileHandle destHandle = fs.OpenFile(destPath, OpenMode.Write | OpenMode.Append))
+            using (FileHandle destHandle = fs.OpenFile(destPath, OpenMode.Write | OpenMode.AllowAppend))
             {
                 const int maxBufferSize = 0x10000;
 

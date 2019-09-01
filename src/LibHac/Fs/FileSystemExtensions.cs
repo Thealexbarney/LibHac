@@ -31,7 +31,7 @@ namespace LibHac.Fs
                     destFs.CreateOrOverwriteFile(subDstPath, entry.Size, options);
 
                     using (IFile srcFile = sourceFs.OpenFile(subSrcPath, OpenMode.Read))
-                    using (IFile dstFile = destFs.OpenFile(subDstPath, OpenMode.Write | OpenMode.Append))
+                    using (IFile dstFile = destFs.OpenFile(subDstPath, OpenMode.Write | OpenMode.AllowAppend))
                     {
                         logger?.LogMessage(subSrcPath);
                         srcFile.CopyTo(dstFile, logger);
@@ -142,8 +142,8 @@ namespace LibHac.Fs
 
             foreach (DirectoryEntry entry in directory.EnumerateEntries())
             {
-                if (entry.Type == DirectoryEntryType.Directory && (mode & OpenDirectoryMode.Directories) != 0 ||
-                    entry.Type == DirectoryEntryType.File && (mode & OpenDirectoryMode.Files) != 0)
+                if (entry.Type == DirectoryEntryType.Directory && (mode & OpenDirectoryMode.Directory) != 0 ||
+                    entry.Type == DirectoryEntryType.File && (mode & OpenDirectoryMode.File) != 0)
                 {
                     count++;
                 }

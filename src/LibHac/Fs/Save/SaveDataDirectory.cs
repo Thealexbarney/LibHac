@@ -25,7 +25,7 @@ namespace LibHac.Fs.Save
             SaveFindPosition position = InitialPosition;
             HierarchicalSaveFileTable tab = ParentFileSystem.FileTable;
 
-            if (Mode.HasFlag(OpenDirectoryMode.Directories))
+            if (Mode.HasFlag(OpenDirectoryMode.Directory))
             {
                 while (tab.FindNextDirectory(ref position, out string name))
                 {
@@ -33,7 +33,7 @@ namespace LibHac.Fs.Save
                 }
             }
 
-            if (Mode.HasFlag(OpenDirectoryMode.Files))
+            if (Mode.HasFlag(OpenDirectoryMode.File))
             {
                 while (tab.FindNextFile(ref position, out SaveFileInfo info, out string name))
                 {
@@ -49,7 +49,7 @@ namespace LibHac.Fs.Save
             SaveFindPosition position = InitialPosition;
             HierarchicalSaveFileTable tab = ParentFileSystem.FileTable;
 
-            if (Mode.HasFlag(OpenDirectoryMode.Directories))
+            if (Mode.HasFlag(OpenDirectoryMode.Directory))
             {
                 while (tab.FindNextDirectory(ref position, out string _))
                 {
@@ -57,7 +57,7 @@ namespace LibHac.Fs.Save
                 }
             }
 
-            if (Mode.HasFlag(OpenDirectoryMode.Files))
+            if (Mode.HasFlag(OpenDirectoryMode.File))
             {
                 while (tab.FindNextFile(ref position, out SaveFileInfo _, out string _))
                 {
