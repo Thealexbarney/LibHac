@@ -2,7 +2,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using LibHac.Fs;
-using LibHac.FsClient.Accessors;
 
 namespace LibHac.FsClient
 {

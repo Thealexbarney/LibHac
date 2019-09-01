@@ -3,7 +3,6 @@ using System.Buffers;
 using LibHac;
 using LibHac.Fs;
 using LibHac.FsClient;
-using LibHac.FsClient.Accessors;
 
 namespace hactoolnet
 {

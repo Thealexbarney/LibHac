@@ -2,7 +2,7 @@
 
 namespace LibHac.FsClient
 {
-    public class FileSystemClient
+    public partial class FileSystemClient
     {
         private FileSystemServer FsSrv { get; }
         private FileSystemProxy FsProxy { get; set; }
