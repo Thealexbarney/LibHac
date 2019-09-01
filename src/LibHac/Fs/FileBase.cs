@@ -8,11 +8,11 @@ namespace LibHac.Fs
         protected bool IsDisposed { get; private set; }
         internal List<IDisposable> ToDispose { get; } = new List<IDisposable>();
 
-        public abstract int Read(Span<byte> destination, long offset, ReadOption options);
-        public abstract void Write(ReadOnlySpan<byte> source, long offset, WriteOption options);
-        public abstract void Flush();
-        public abstract long GetSize();
-        public abstract void SetSize(long size);
+        public abstract Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options);
+        public abstract Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options);
+        public abstract Result Flush();
+        public abstract Result GetSize(out long size);
+        public abstract Result SetSize(long size);
 
         public OpenMode Mode { get; protected set; }
 
@@ -24,7 +24,9 @@ namespace LibHac.Fs
             if (span == null) throw new ArgumentNullException(nameof(span));
             if (offset < 0) ThrowHelper.ThrowResult(ResultFs.ValueOutOfRange, "Offset must be non-negative.");
 
-            long fileSize = GetSize();
+            Result sizeResult = GetSize(out long fileSize);
+            sizeResult.ThrowIfFailure();
+
             int size = span.Length;
 
             if (offset > fileSize) ThrowHelper.ThrowResult(ResultFs.ValueOutOfRange, "Offset must be less than the file size.");
@@ -41,7 +43,9 @@ namespace LibHac.Fs
             if (span == null) throw new ArgumentNullException(nameof(span));
             if (offset < 0) ThrowHelper.ThrowResult(ResultFs.ValueOutOfRange, "Offset must be non-negative.");
 
-            long fileSize = GetSize();
+            Result sizeResult = GetSize(out long fileSize);
+            sizeResult.ThrowIfFailure();
+
             int size = span.Length;
 
             if (offset + size > fileSize)

@@ -34,7 +34,7 @@ namespace LibHac.Fs
         /// size of the buffer if the IFile is too short to fulfill the request.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> is invalid.</exception>
         /// <exception cref="NotSupportedException">The file's <see cref="OpenMode"/> does not allow reading.</exception>
-        int Read(Span<byte> destination, long offset, ReadOption options);
+        Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options);
 
         /// <summary>
         /// Writes a sequence of bytes to the current <see cref="IFile"/>.
@@ -44,18 +44,18 @@ namespace LibHac.Fs
         /// <param name="options">Options for writing to the <see cref="IFile"/>.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> is negative.</exception>
         /// <exception cref="NotSupportedException">The file's <see cref="OpenMode"/> does not allow this request.</exception>
-        void Write(ReadOnlySpan<byte> source, long offset, WriteOption options);
+        Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options);
 
         /// <summary>
         /// Causes any buffered data to be written to the underlying device.
         /// </summary>
-        void Flush();
+        Result Flush();
 
         /// <summary>
         /// Gets the number of bytes in the file.
         /// </summary>
         /// <returns>The length of the file in bytes.</returns>
-        long GetSize();
+        Result GetSize(out long size);
 
         /// <summary>
         /// Sets the size of the file in bytes.
@@ -63,6 +63,6 @@ namespace LibHac.Fs
         /// <param name="size">The desired size of the file in bytes.</param>
         /// <exception cref="NotSupportedException">If increasing the file size, The file's
         /// <see cref="OpenMode"/> does not allow this appending.</exception>
-        void SetSize(long size);
+        Result SetSize(long size);
     }
 }

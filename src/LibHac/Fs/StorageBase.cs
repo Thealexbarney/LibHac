@@ -9,26 +9,26 @@ namespace LibHac.Fs
         protected internal List<IDisposable> ToDispose { get; } = new List<IDisposable>();
         protected bool CanAutoExpand { get; set; }
 
-        protected abstract void ReadImpl(Span<byte> destination, long offset);
-        protected abstract void WriteImpl(ReadOnlySpan<byte> source, long offset);
-        public abstract void Flush();
-        public abstract long GetSize();
+        protected abstract Result ReadImpl(long offset, Span<byte> destination);
+        protected abstract Result WriteImpl(long offset, ReadOnlySpan<byte> source);
+        public abstract Result Flush();
+        public abstract Result GetSize(out long size);
 
-        public void Read(Span<byte> destination, long offset)
+        public Result Read(long offset, Span<byte> destination)
         {
             ValidateParameters(destination, offset);
-            ReadImpl(destination, offset);
+            return ReadImpl(offset, destination);
         }
 
-        public void Write(ReadOnlySpan<byte> source, long offset)
+        public Result Write(long offset, ReadOnlySpan<byte> source)
         {
             ValidateParameters(source, offset);
-            WriteImpl(source, offset);
+            return WriteImpl(offset, source);
         }
 
-        public virtual void SetSize(long size)
+        public virtual Result SetSize(long size)
         {
-            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+            return ResultFs.NotImplemented.Log();
         }
 
         protected virtual void Dispose(bool disposing)
@@ -58,7 +58,8 @@ namespace LibHac.Fs
             if (_isDisposed) throw new ObjectDisposedException(null);
             if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), "Argument must be non-negative.");
 
-            long length = GetSize();
+            Result sizeResult = GetSize(out long length);
+            sizeResult.ThrowIfFailure();
 
             if (length != -1 && !CanAutoExpand)
             {
