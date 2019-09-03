@@ -37,13 +37,13 @@ namespace LibHac.Kvdb
         {
             var reader = new ImkvdbReader(data);
 
-            Result headerResult = reader.ReadHeader(out int entryCount);
-            if (headerResult.IsFailure()) return headerResult;
+            Result rc = reader.ReadHeader(out int entryCount);
+            if (rc.IsFailure()) return rc;
 
             for (int i = 0; i < entryCount; i++)
             {
-                Result entryResult = reader.ReadEntry(out ReadOnlySpan<byte> keyBytes, out ReadOnlySpan<byte> valueBytes);
-                if (entryResult.IsFailure()) return entryResult;
+                rc = reader.ReadEntry(out ReadOnlySpan<byte> keyBytes, out ReadOnlySpan<byte> valueBytes);
+                if (rc.IsFailure()) return rc;
 
                 var key = new TKey();
                 var value = new TValue();

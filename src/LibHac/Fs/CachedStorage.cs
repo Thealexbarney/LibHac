@@ -16,7 +16,7 @@ namespace LibHac.Fs
         {
             BaseStorage = baseStorage;
             BlockSize = blockSize;
-            _length = BaseStorage.GetSize();
+            BaseStorage.GetSize(out _length).ThrowIfFailure();
 
             if (!leaveOpen) ToDispose.Add(BaseStorage);
 
@@ -30,7 +30,7 @@ namespace LibHac.Fs
         public CachedStorage(SectorStorage baseStorage, int cacheSize, bool leaveOpen)
             : this(baseStorage, baseStorage.SectorSize, cacheSize, leaveOpen) { }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
             long remaining = destination.Length;
             long inOffset = offset;
@@ -53,9 +53,11 @@ namespace LibHac.Fs
                     remaining -= bytesToRead;
                 }
             }
+
+            return Result.Success;
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
             long remaining = source.Length;
             long inOffset = offset;
@@ -80,9 +82,11 @@ namespace LibHac.Fs
                     remaining -= bytesToWrite;
                 }
             }
+
+            return Result.Success;
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
             lock (Blocks)
             {
@@ -92,16 +96,26 @@ namespace LibHac.Fs
                 }
             }
 
-            BaseStorage.Flush();
+            return BaseStorage.Flush();
         }
 
-        public override long GetSize() => _length;
-
-        public override void SetSize(long size)
+        public override Result GetSize(out long size)
         {
-            BaseStorage.SetSize(size);
+            size = _length;
+            return Result.Success;
+        }
 
-            _length = BaseStorage.GetSize();
+        public override Result SetSize(long size)
+        {
+            Result rc = BaseStorage.SetSize(size);
+            if (rc.IsFailure()) return rc;
+
+            rc = BaseStorage.GetSize(out long newSize);
+            if (rc.IsFailure()) return rc;
+
+            _length = newSize;
+
+            return Result.Success;
         }
 
         private CacheBlock GetBlock(long blockIndex)
@@ -147,7 +161,7 @@ namespace LibHac.Fs
                 length = (int)Math.Min(_length - offset, length);
             }
 
-            BaseStorage.Read(block.Buffer.AsSpan(0, length), offset);
+            BaseStorage.Read(offset, block.Buffer.AsSpan(0, length)).ThrowIfFailure();
             block.Length = length;
             block.Index = index;
             block.Dirty = false;
@@ -158,7 +172,7 @@ namespace LibHac.Fs
             if (!block.Dirty) return;
 
             long offset = block.Index * BlockSize;
-            BaseStorage.Write(block.Buffer.AsSpan(0, block.Length), offset);
+            BaseStorage.Write(offset, block.Buffer.AsSpan(0, block.Length)).ThrowIfFailure();
             block.Dirty = false;
         }
 

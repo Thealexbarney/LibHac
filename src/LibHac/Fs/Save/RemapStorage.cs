@@ -46,9 +46,9 @@ namespace LibHac.Fs.Save
             Segments = InitSegments(Header, MapEntries);
         }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
-            if (destination.Length == 0) return;
+            if (destination.Length == 0) return Result.Success;
 
             MapEntry entry = GetMapEntry(offset);
 
@@ -61,7 +61,7 @@ namespace LibHac.Fs.Save
                 long entryPos = inPos - entry.VirtualOffset;
 
                 int bytesToRead = (int)Math.Min(entry.VirtualOffsetEnd - inPos, remaining);
-                BaseStorage.Read(destination.Slice(outPos, bytesToRead), entry.PhysicalOffset + entryPos);
+                BaseStorage.Read(entry.PhysicalOffset + entryPos, destination.Slice(outPos, bytesToRead));
 
                 outPos += bytesToRead;
                 inPos += bytesToRead;
@@ -72,11 +72,13 @@ namespace LibHac.Fs.Save
                     entry = entry.Next;
                 }
             }
+
+            return Result.Success;
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
-            if (source.Length == 0) return;
+            if (source.Length == 0) return Result.Success;
 
             MapEntry entry = GetMapEntry(offset);
 
@@ -89,7 +91,9 @@ namespace LibHac.Fs.Save
                 long entryPos = inPos - entry.VirtualOffset;
 
                 int bytesToWrite = (int)Math.Min(entry.VirtualOffsetEnd - inPos, remaining);
-                BaseStorage.Write(source.Slice(outPos, bytesToWrite), entry.PhysicalOffset + entryPos);
+
+                Result rc = BaseStorage.Write(entry.PhysicalOffset + entryPos, source.Slice(outPos, bytesToWrite));
+                if (rc.IsFailure()) return rc;
 
                 outPos += bytesToWrite;
                 inPos += bytesToWrite;
@@ -100,14 +104,21 @@ namespace LibHac.Fs.Save
                     entry = entry.Next;
                 }
             }
+
+            return Result.Success;
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
-            BaseStorage.Flush();
+            return BaseStorage.Flush();
         }
 
-        public override long GetSize() => -1;
+        public override Result GetSize(out long size)
+        {
+            // todo: Different result code
+            size = -1;
+            return Result.Success;
+        }
 
         public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
         public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
@@ -199,7 +210,7 @@ namespace LibHac.Fs.Save
     public class RemapHeader
     {
         public string Magic { get; }
-        public uint Verison { get; }
+        public uint Version { get; }
         public int MapEntryCount { get; }
         public int MapSegmentCount { get; }
         public int SegmentBits { get; }
@@ -209,7 +220,7 @@ namespace LibHac.Fs.Save
             var reader = new BinaryReader(storage.AsStream());
 
             Magic = reader.ReadAscii(4);
-            Verison = reader.ReadUInt32();
+            Version = reader.ReadUInt32();
             MapEntryCount = reader.ReadInt32();
             MapSegmentCount = reader.ReadInt32();
             SegmentBits = reader.ReadInt32();

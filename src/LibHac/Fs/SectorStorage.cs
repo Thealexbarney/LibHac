@@ -15,37 +15,50 @@ namespace LibHac.Fs
         {
             BaseStorage = baseStorage;
             SectorSize = sectorSize;
-            SectorCount = (int)Util.DivideByRoundUp(BaseStorage.GetSize(), SectorSize);
-            _length = BaseStorage.GetSize();
+
+            baseStorage.GetSize(out long baseSize).ThrowIfFailure();
+
+            SectorCount = (int)Util.DivideByRoundUp(baseSize, SectorSize);
+            _length = baseSize;
 
             if (!leaveOpen) ToDispose.Add(BaseStorage);
         }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
             ValidateSize(destination.Length, offset);
-            BaseStorage.Read(destination, offset);
+            return BaseStorage.Read(offset, destination);
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
             ValidateSize(source.Length, offset);
-            BaseStorage.Write(source, offset);
+            return BaseStorage.Write(offset, source);
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
-            BaseStorage.Flush();
+            return BaseStorage.Flush();
         }
 
-        public override long GetSize() => _length;
-
-        public override void SetSize(long size)
+        public override Result GetSize(out long size)
         {
-            BaseStorage.SetSize(size);
+            size = _length;
+            return Result.Success;
+        }
 
-            SectorCount = (int)Util.DivideByRoundUp(BaseStorage.GetSize(), SectorSize);
-            _length = BaseStorage.GetSize();
+        public override Result SetSize(long size)
+        {
+            Result rc = BaseStorage.SetSize(size);
+            if (rc.IsFailure()) return rc;
+
+            rc = BaseStorage.GetSize(out long newSize);
+            if (rc.IsFailure()) return rc;
+
+            SectorCount = (int)Util.DivideByRoundUp(newSize, SectorSize);
+            _length = newSize;
+
+            return Result.Success;
         }
 
         /// <summary>

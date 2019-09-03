@@ -40,7 +40,7 @@ namespace LibHac
             for (int i = 0; i < 0x20; i++)
             {
                 var dec = new Aes128CtrStorage(encStorage, keyset.Package1Keys[i], Counter, true);
-                dec.Read(decBuffer, 0);
+                dec.Read(0, decBuffer).ThrowIfFailure();
 
                 if (BitConverter.ToUInt32(decBuffer, 0) == Pk11Magic)
                 {

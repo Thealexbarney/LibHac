@@ -21,7 +21,9 @@ namespace LibHac.Fs
 
         public AesXtsFileHeader(IFile aesXtsFile)
         {
-            if (aesXtsFile.GetSize() < 0x80)
+            aesXtsFile.GetSize(out long fileSize).ThrowIfFailure();
+
+            if (fileSize < 0x80)
             {
                 ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderTooShort);
             }

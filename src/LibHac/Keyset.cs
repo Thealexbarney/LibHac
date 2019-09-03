@@ -198,7 +198,7 @@ namespace LibHac
                 using (var keyblobDec = new Aes128CtrStorage(
                     new MemoryStorage(EncryptedKeyblobs[i], 0x20, Keyblobs[i].Length), KeyblobKeys[i], counter, false))
                 {
-                    keyblobDec.Read(Keyblobs[i], 0);
+                    keyblobDec.Read(0, Keyblobs[i]).ThrowIfFailure();
                 }
             }
         }

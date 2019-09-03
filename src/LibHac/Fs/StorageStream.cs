@@ -13,7 +13,8 @@ namespace LibHac.Fs
         {
             BaseStorage = baseStorage;
             LeaveOpen = leaveOpen;
-            _length = baseStorage.GetSize();
+
+            baseStorage.GetSize(out _length).ThrowIfFailure();
 
             CanRead = access.HasFlag(FileAccess.Read);
             CanWrite = access.HasFlag(FileAccess.Write);
@@ -22,7 +23,7 @@ namespace LibHac.Fs
         public override int Read(byte[] buffer, int offset, int count)
         {
             int toRead = (int)Math.Min(count, Length - Position);
-            BaseStorage.Read(buffer.AsSpan(offset, toRead), Position);
+            BaseStorage.Read(Position, buffer.AsSpan(offset, toRead)).ThrowIfFailure();
 
             Position += toRead;
             return toRead;
@@ -30,7 +31,7 @@ namespace LibHac.Fs
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            BaseStorage.Write(buffer.AsSpan(offset, count), Position);
+            BaseStorage.Write(Position, buffer.AsSpan(offset, count)).ThrowIfFailure();
             Position += count;
         }
 
@@ -59,9 +60,9 @@ namespace LibHac.Fs
 
         public override void SetLength(long value)
         {
-            BaseStorage.SetSize(value);
+            BaseStorage.SetSize(value).ThrowIfFailure();
 
-            _length = BaseStorage.GetSize();
+            BaseStorage.GetSize(out _length).ThrowIfFailure();
         }
 
         public override bool CanRead { get; }

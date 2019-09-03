@@ -35,35 +35,35 @@ namespace LibHac.FsService
             string contentDirPath = default;
             IFileSystem baseFileSystem = default;
             bool isEncrypted = false;
-            Result baseFsResult;
+            Result rc;
 
             switch (storageId)
             {
                 case ContentStorageId.System:
-                    baseFsResult = OpenBisFileSystem(out baseFileSystem, string.Empty, BisPartitionId.System);
+                    rc = OpenBisFileSystem(out baseFileSystem, string.Empty, BisPartitionId.System);
                     contentDirPath = $"/{ContentDirectoryName}";
                     break;
                 case ContentStorageId.User:
-                    baseFsResult = OpenBisFileSystem(out baseFileSystem, string.Empty, BisPartitionId.User);
+                    rc = OpenBisFileSystem(out baseFileSystem, string.Empty, BisPartitionId.User);
                     contentDirPath = $"/{ContentDirectoryName}";
                     break;
                 case ContentStorageId.SdCard:
-                    baseFsResult = OpenSdCardFileSystem(out baseFileSystem);
+                    rc = OpenSdCardFileSystem(out baseFileSystem);
                     contentDirPath = $"/{NintendoDirectoryName}/{ContentDirectoryName}";
                     isEncrypted = true;
                     break;
                 default:
-                    baseFsResult = ResultFs.InvalidArgument;
+                    rc = ResultFs.InvalidArgument;
                     break;
             }
 
-            if (baseFsResult.IsFailure()) return baseFsResult;
+            if (rc.IsFailure()) return rc;
 
             baseFileSystem.EnsureDirectoryExists(contentDirPath);
 
-            Result subFsResult = FsCreators.SubDirectoryFileSystemCreator.Create(out IFileSystem subDirFileSystem,
+            rc = FsCreators.SubDirectoryFileSystemCreator.Create(out IFileSystem subDirFileSystem,
                 baseFileSystem, contentDirPath);
-            if (subFsResult.IsFailure()) return subFsResult;
+            if (rc.IsFailure()) return rc;
 
             if (!isEncrypted)
             {
@@ -93,8 +93,8 @@ namespace LibHac.FsService
         {
             fileSystem = default;
 
-            Result openSaveDirResult = OpenSaveDataDirectory(out IFileSystem saveDirFs, spaceId, saveDataRootPath, true);
-            if (openSaveDirResult.IsFailure()) return openSaveDirResult.Log();
+            Result rc = OpenSaveDataDirectory(out IFileSystem saveDirFs, spaceId, saveDataRootPath, true);
+            if (rc.IsFailure()) return rc;
 
             bool allowDirectorySaveData = AllowDirectorySaveData(spaceId, saveDataRootPath);
             bool useDeviceUniqueMac = Util.UseDeviceUniqueSaveMac(spaceId);
@@ -113,11 +113,11 @@ namespace LibHac.FsService
 
             // Missing save FS cache lookup
 
-            Result saveFsResult = FsCreators.SaveDataFileSystemCreator.Create(out IFileSystem saveFs,
+            rc = FsCreators.SaveDataFileSystemCreator.Create(out IFileSystem saveFs,
                 out ISaveDataExtraDataAccessor extraDataAccessor, saveDirFs, saveDataId, allowDirectorySaveData,
                 useDeviceUniqueMac, type, null);
 
-            if (saveFsResult.IsFailure()) return saveFsResult.Log();
+            if (rc.IsFailure()) return rc;
 
             if (cacheExtraData)
             {
@@ -133,12 +133,12 @@ namespace LibHac.FsService
         {
             if (openOnHostFs && AllowDirectorySaveData(spaceId, saveDataRootPath))
             {
-                Result hostFsResult = FsCreators.TargetManagerFileSystemCreator.Create(out IFileSystem hostFs, false);
+                Result rc = FsCreators.TargetManagerFileSystemCreator.Create(out IFileSystem hostFs, false);
 
-                if (hostFsResult.IsFailure())
+                if (rc.IsFailure())
                 {
                     fileSystem = default;
-                    return hostFsResult.Log();
+                    return rc;
                 }
 
                 return Util.CreateSubFileSystem(out fileSystem, hostFs, saveDataRootPath, true);
@@ -152,44 +152,45 @@ namespace LibHac.FsService
         public Result OpenSaveDataDirectoryImpl(out IFileSystem fileSystem, SaveDataSpaceId spaceId, string saveDirName, bool createIfMissing)
         {
             fileSystem = default;
+            Result rc;
 
             switch (spaceId)
             {
                 case SaveDataSpaceId.System:
-                    Result sysFsResult = OpenBisFileSystem(out IFileSystem sysFs, string.Empty, BisPartitionId.System);
-                    if (sysFsResult.IsFailure()) return sysFsResult.Log();
+                    rc = OpenBisFileSystem(out IFileSystem sysFs, string.Empty, BisPartitionId.System);
+                    if (rc.IsFailure()) return rc;
 
                     return Util.CreateSubFileSystem(out fileSystem, sysFs, saveDirName, createIfMissing);
 
                 case SaveDataSpaceId.User:
                 case SaveDataSpaceId.TemporaryStorage:
-                    Result userFsResult = OpenBisFileSystem(out IFileSystem userFs, string.Empty, BisPartitionId.System);
-                    if (userFsResult.IsFailure()) return userFsResult.Log();
+                    rc = OpenBisFileSystem(out IFileSystem userFs, string.Empty, BisPartitionId.User);
+                    if (rc.IsFailure()) return rc;
 
                     return Util.CreateSubFileSystem(out fileSystem, userFs, saveDirName, createIfMissing);
 
                 case SaveDataSpaceId.SdSystem:
                 case SaveDataSpaceId.SdCache:
-                    Result sdFsResult = OpenSdCardFileSystem(out IFileSystem sdFs);
-                    if (sdFsResult.IsFailure()) return sdFsResult.Log();
+                    rc = OpenSdCardFileSystem(out IFileSystem sdFs);
+                    if (rc.IsFailure()) return rc;
 
                     string sdSaveDirPath = $"/{NintendoDirectoryName}{saveDirName}";
 
-                    Result sdSubResult = Util.CreateSubFileSystem(out IFileSystem sdSubFs, sdFs, sdSaveDirPath, createIfMissing);
-                    if (sdSubResult.IsFailure()) return sdSubResult.Log();
+                    rc = Util.CreateSubFileSystem(out IFileSystem sdSubFs, sdFs, sdSaveDirPath, createIfMissing);
+                    if (rc.IsFailure()) return rc;
 
                     return FsCreators.EncryptedFileSystemCreator.Create(out fileSystem, sdSubFs,
                         EncryptedFsKeyId.Save, SdEncryptionSeed);
 
                 case SaveDataSpaceId.ProperSystem:
-                    Result sysProperFsResult = OpenBisFileSystem(out IFileSystem sysProperFs, string.Empty, BisPartitionId.SystemProperPartition);
-                    if (sysProperFsResult.IsFailure()) return sysProperFsResult.Log();
+                    rc = OpenBisFileSystem(out IFileSystem sysProperFs, string.Empty, BisPartitionId.SystemProperPartition);
+                    if (rc.IsFailure()) return rc;
 
                     return Util.CreateSubFileSystem(out fileSystem, sysProperFs, saveDirName, createIfMissing);
 
                 case SaveDataSpaceId.Safe:
-                    Result safeFsResult = OpenBisFileSystem(out IFileSystem safeFs, string.Empty, BisPartitionId.SafeMode);
-                    if (safeFsResult.IsFailure()) return safeFsResult.Log();
+                    rc = OpenBisFileSystem(out IFileSystem safeFs, string.Empty, BisPartitionId.SafeMode);
+                    if (rc.IsFailure()) return rc;
 
                     return Util.CreateSubFileSystem(out fileSystem, safeFs, saveDirName, createIfMissing);
 

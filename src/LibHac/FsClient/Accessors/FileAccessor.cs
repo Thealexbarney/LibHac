@@ -12,8 +12,9 @@ namespace LibHac.FsClient.Accessors
         public OpenMode OpenMode { get; }
 
         // Todo: Consider removing Mode from interface because OpenMode is in FileAccessor
+        // Todo: Set WriteState to Error based on returned results
         OpenMode IFile.Mode => OpenMode;
-        
+
         public FileAccessor(IFile baseFile, FileSystemAccessor parent, OpenMode mode)
         {
             File = baseFile;
@@ -21,14 +22,14 @@ namespace LibHac.FsClient.Accessors
             OpenMode = mode;
         }
 
-        public int Read(Span<byte> destination, long offset, ReadOption options)
+        public Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
             CheckIfDisposed();
 
-            return File.Read(destination, offset, options);
+            return File.Read(out bytesRead, offset, destination, options);
         }
 
-        public void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
+        public Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
             CheckIfDisposed();
 
@@ -36,35 +37,46 @@ namespace LibHac.FsClient.Accessors
             {
                 WriteState = (WriteState)(~options & WriteOption.Flush);
 
-                return;
+                return Result.Success;
             }
 
-            File.Write(source, offset, options);
+            // 
+            Result rc = File.Write(offset, source, options);
 
-            WriteState = (WriteState)(~options & WriteOption.Flush);
+            if (rc.IsSuccess())
+            {
+                WriteState = (WriteState)(~options & WriteOption.Flush);
+            }
+
+            return rc;
         }
 
-        public void Flush()
+        public Result Flush()
         {
             CheckIfDisposed();
 
-            File.Flush();
+            Result rc = File.Flush();
 
-            WriteState = WriteState.None;
+            if (rc.IsSuccess())
+            {
+                WriteState = WriteState.None;
+            }
+
+            return rc;
         }
 
-        public long GetSize()
+        public Result GetSize(out long size)
         {
             CheckIfDisposed();
 
-            return File.GetSize();
+            return File.GetSize(out size);
         }
 
-        public void SetSize(long size)
+        public Result SetSize(long size)
         {
             CheckIfDisposed();
 
-            File.SetSize(size);
+            return File.SetSize(size);
         }
 
         public void Dispose()
@@ -75,7 +87,7 @@ namespace LibHac.FsClient.Accessors
             {
                 // Original FS code would return an error:
                 // ThrowHelper.ThrowResult(ResultsFs.ResultFsWriteStateUnflushed);
-                
+
                 Flush();
             }
 

@@ -16,15 +16,17 @@ namespace LibHac.Fs
             long length = 0;
             for (int i = 0; i < sources.Count; i++)
             {
-                if (sources[i].GetSize() < 0) throw new ArgumentException("Sources must have an explicit length.");
-                Sources[i] = new ConcatSource(sources[i], length, sources[i].GetSize());
-                length += sources[i].GetSize();
+                sources[i].GetSize(out long sourceSize).ThrowIfFailure();
+
+                if (sourceSize < 0) throw new ArgumentException("Sources must have an explicit length.");
+                Sources[i] = new ConcatSource(sources[i], length, sourceSize);
+                length += sourceSize;
             }
 
             _length = length;
         }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
             long inPos = offset;
             int outPos = 0;
@@ -38,16 +40,20 @@ namespace LibHac.Fs
                 long entryRemain = entry.StartOffset + entry.Size - inPos;
 
                 int bytesToRead = (int)Math.Min(entryRemain, remaining);
-                entry.Storage.Read(destination.Slice(outPos, bytesToRead), entryPos);
+
+                Result rc = entry.Storage.Read(entryPos, destination.Slice(outPos, bytesToRead));
+                if (rc.IsFailure()) return rc;
 
                 outPos += bytesToRead;
                 inPos += bytesToRead;
                 remaining -= bytesToRead;
                 sourceIndex++;
             }
+
+            return Result.Success;
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
             long inPos = offset;
             int outPos = 0;
@@ -61,24 +67,35 @@ namespace LibHac.Fs
                 long entryRemain = entry.StartOffset + entry.Size - inPos;
 
                 int bytesToWrite = (int)Math.Min(entryRemain, remaining);
-                entry.Storage.Write(source.Slice(outPos, bytesToWrite), entryPos);
+
+                Result rc = entry.Storage.Write(entryPos, source.Slice(outPos, bytesToWrite));
+                if (rc.IsFailure()) return rc;
 
                 outPos += bytesToWrite;
                 inPos += bytesToWrite;
                 remaining -= bytesToWrite;
                 sourceIndex++;
             }
+
+            return Result.Success;
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
             foreach (ConcatSource source in Sources)
             {
-                source.Storage.Flush();
+                Result rc = source.Storage.Flush();
+                if (rc.IsFailure()) return rc;
             }
+
+            return Result.Success;
         }
 
-        public override long GetSize() => _length;
+        public override Result GetSize(out long size)
+        {
+            size = _length;
+            return Result.Success;
+        }
 
         private int FindSource(long offset)
         {

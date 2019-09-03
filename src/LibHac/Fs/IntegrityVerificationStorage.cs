@@ -32,7 +32,7 @@ namespace LibHac.Fs
             BlockValidities = new Validity[SectorCount];
         }
 
-        private void ReadImpl(Span<byte> destination, long offset, IntegrityCheckLevel integrityCheckLevel)
+        private Result ReadImpl(long offset, Span<byte> destination, IntegrityCheckLevel integrityCheckLevel)
         {
             int count = destination.Length;
 
@@ -52,13 +52,13 @@ namespace LibHac.Fs
 
             if (Type != IntegrityStorageType.Save && !needsHashCheck)
             {
-                BaseStorage.Read(destination, offset);
-                return;
+                BaseStorage.Read(offset, destination);
+                return Result.Success;
             }
 
             Span<byte> hashBuffer = stackalloc byte[DigestSize];
             long hashPos = blockIndex * DigestSize;
-            HashStorage.Read(hashBuffer, hashPos);
+            HashStorage.Read(hashPos, hashBuffer);
 
             if (Type == IntegrityStorageType.Save)
             {
@@ -66,23 +66,23 @@ namespace LibHac.Fs
                 {
                     destination.Clear();
                     BlockValidities[blockIndex] = Validity.Valid;
-                    return;
+                    return Result.Success;
                 }
 
                 if (!needsHashCheck)
                 {
-                    BaseStorage.Read(destination, offset);
-                    return;
+                    BaseStorage.Read(offset, destination);
+                    return Result.Success;
                 }
             }
 
             byte[] dataBuffer = ArrayPool<byte>.Shared.Rent(SectorSize);
             try
             {
-                BaseStorage.Read(destination, offset);
+                BaseStorage.Read(offset, destination);
                 destination.CopyTo(dataBuffer);
 
-                if (BlockValidities[blockIndex] != Validity.Unchecked) return;
+                if (BlockValidities[blockIndex] != Validity.Unchecked) return Result.Success;
 
                 int bytesToHash = SectorSize;
 
@@ -112,25 +112,30 @@ namespace LibHac.Fs
             {
                 ArrayPool<byte>.Shared.Return(dataBuffer);
             }
+
+            return Result.Success;
         }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
-            ReadImpl(destination, offset, IntegrityCheckLevel);
+            return ReadImpl(offset, destination, IntegrityCheckLevel);
         }
 
-        public void Read(Span<byte> destination, long offset, IntegrityCheckLevel integrityCheckLevel)
+        public Result Read(long offset, Span<byte> destination, IntegrityCheckLevel integrityCheckLevel)
         {
             ValidateParameters(destination, offset);
-            ReadImpl(destination, offset, integrityCheckLevel);
+            return ReadImpl(offset, destination, integrityCheckLevel);
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
             long blockIndex = offset / SectorSize;
             long hashPos = blockIndex * DigestSize;
 
-            int toWrite = (int)Math.Min(source.Length, GetSize() - offset);
+            Result rc = GetSize(out long storageSize);
+            if (rc.IsFailure()) return rc;
+
+            int toWrite = (int)Math.Min(source.Length, storageSize - offset);
 
             byte[] dataBuffer = ArrayPool<byte>.Shared.Rent(SectorSize);
             try
@@ -143,15 +148,17 @@ namespace LibHac.Fs
                     Array.Clear(hash, 0, DigestSize);
                 }
 
-                BaseStorage.Write(source, offset);
+                BaseStorage.Write(offset, source);
 
-                HashStorage.Write(hash, hashPos);
+                HashStorage.Write(hashPos, hash);
                 BlockValidities[blockIndex] = Validity.Unchecked;
             }
             finally
             {
                 ArrayPool<byte>.Shared.Return(dataBuffer);
             }
+
+            return Result.Success;
         }
 
         private byte[] DoHash(byte[] buffer, int offset, int count)
@@ -180,10 +187,12 @@ namespace LibHac.Fs
             }
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
-            HashStorage.Flush();
-            base.Flush();
+            Result rc = HashStorage.Flush();
+            if (rc.IsFailure()) return rc;
+
+            return base.Flush();
         }
 
         public void FsTrim()
@@ -195,7 +204,7 @@ namespace LibHac.Fs
             for (int i = 0; i < SectorCount; i++)
             {
                 long hashPos = i * DigestSize;
-                HashStorage.Read(digest, hashPos);
+                HashStorage.Read(hashPos, digest).ThrowIfFailure();
 
                 if (!Util.IsEmpty(digest)) continue;
 

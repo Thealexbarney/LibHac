@@ -103,9 +103,9 @@ namespace LibHac.FsService
 
             if (!IsSystemSaveDataId(attribute.SaveId)) return ResultFs.InvalidArgument.Log();
 
-            Result saveFsResult = OpenSaveDataFileSystemImpl(out IFileSystem saveFs, out ulong saveDataId, spaceId,
+            Result rc = OpenSaveDataFileSystemImpl(out IFileSystem saveFs, out ulong saveDataId, spaceId,
                 attribute, false, true);
-            if (saveFsResult.IsFailure()) return saveFsResult.Log();
+            if (rc.IsFailure()) return rc;
 
             // Missing check if the current title owns the save data or can open it
 
@@ -121,8 +121,8 @@ namespace LibHac.FsService
 
             // Missing permission check
 
-            Result res = FsProxyCore.SetSdCardEncryptionSeed(seed);
-            if (res.IsFailure()) return res;
+            Result rc = FsProxyCore.SetSdCardEncryptionSeed(seed);
+            if (rc.IsFailure()) return rc;
 
             // todo: Reset save data indexer
 

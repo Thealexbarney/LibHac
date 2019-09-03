@@ -16,29 +16,29 @@ namespace LibHac.Fs
             ToDispose.Add(BaseFile);
         }
 
-        public override int Read(Span<byte> destination, long offset, ReadOption options)
+        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
-            return BaseFile.Read(destination, offset, options);
+            return BaseFile.Read(out bytesRead, offset, destination, options);
         }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
+        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
-            BaseFile.Write(source, offset, options);
+            return BaseFile.Write(offset, source, options);
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
-            BaseFile.Flush();
+            return BaseFile.Flush();
         }
 
-        public override long GetSize()
+        public override Result GetSize(out long size)
         {
-            return BaseFile.GetSize();
+            return BaseFile.GetSize(out size);
         }
 
-        public override void SetSize(long size)
+        public override Result SetSize(long size)
         {
-            BaseFile.SetSize(size);
+            return BaseFile.SetSize(size);
         }
 
         protected override void Dispose(bool disposing)

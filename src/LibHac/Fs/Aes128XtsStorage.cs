@@ -37,20 +37,23 @@ namespace LibHac.Fs
             _key2 = key2.ToArray();
         }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
             int size = destination.Length;
             long sectorIndex = offset / SectorSize;
 
             if (_decryptor == null) _decryptor = new Aes128XtsTransform(_key1, _key2, true);
 
-            base.ReadImpl(_tempBuffer.AsSpan(0, size), offset);
+            Result rc = base.ReadImpl(offset, _tempBuffer.AsSpan(0, size));
+            if (rc.IsFailure()) return rc;
 
             _decryptor.TransformBlock(_tempBuffer, 0, size, (ulong)sectorIndex);
             _tempBuffer.AsSpan(0, size).CopyTo(destination);
+
+            return Result.Success;
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
             int size = source.Length;
             long sectorIndex = offset / SectorSize;
@@ -60,12 +63,12 @@ namespace LibHac.Fs
             source.CopyTo(_tempBuffer);
             _encryptor.TransformBlock(_tempBuffer, 0, size, (ulong)sectorIndex);
 
-            base.WriteImpl(_tempBuffer.AsSpan(0, size), offset);
+            return base.WriteImpl(offset, _tempBuffer.AsSpan(0, size));
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
-            BaseStorage.Flush();
+            return BaseStorage.Flush();
         }
     }
 }

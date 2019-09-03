@@ -16,44 +16,53 @@ namespace LibHac.Fs
             Size = size;
         }
 
-        public override int Read(Span<byte> destination, long offset, ReadOption options)
+        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
+            bytesRead = default;
+
             int toRead = ValidateReadParamsAndGetSize(destination, offset);
 
             long storageOffset = Offset + offset;
-            BaseStorage.Read(destination.Slice(0, toRead), storageOffset);
+            BaseStorage.Read(storageOffset, destination.Slice(0, toRead));
 
-            return toRead;
+            bytesRead = toRead;
+            return Result.Success;
         }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
+        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
             ValidateWriteParams(source, offset);
 
-            BaseStorage.Write(source, offset);
+            Result rc = BaseStorage.Write(offset, source);
+            if (rc.IsFailure()) return rc;
 
             if ((options & WriteOption.Flush) != 0)
             {
-                BaseStorage.Flush();
+                return BaseStorage.Flush();
             }
+
+            return Result.Success;
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
             if ((Mode & OpenMode.Write) != 0)
             {
-                BaseStorage.Flush();
+                return BaseStorage.Flush();
             }
+
+            return Result.Success;
         }
 
-        public override long GetSize()
+        public override Result GetSize(out long size)
         {
-            return Size;
+            size = Size;
+            return Result.Success;
         }
 
-        public override void SetSize(long size)
+        public override Result SetSize(long size)
         {
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationInPartitionFileSetSize);
+            return ResultFs.UnsupportedOperationInPartitionFileSetSize.Log();
         }
     }
 }

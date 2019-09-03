@@ -19,43 +19,51 @@ namespace LibHac.Fs.Save
             Size = size;
         }
 
-        public override int Read(Span<byte> destination, long offset, ReadOption options)
+        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
+            bytesRead = default;
+
             int toRead = ValidateReadParamsAndGetSize(destination, offset);
 
-            BaseStorage.Read(destination.Slice(0, toRead), offset);
+            Result rc = BaseStorage.Read(offset, destination.Slice(0, toRead));
+            if (rc.IsFailure()) return rc;
 
-            return toRead;
+            bytesRead = toRead;
+            return Result.Success;
         }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
+        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
             ValidateWriteParams(source, offset);
 
-            BaseStorage.Write(source, offset);
+            BaseStorage.Write(offset, source);
 
             if ((options & WriteOption.Flush) != 0)
             {
-                Flush();
+                return Flush();
             }
+
+            return Result.Success;
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
-            BaseStorage.Flush();
+            return BaseStorage.Flush();
         }
 
-        public override long GetSize()
+        public override Result GetSize(out long size)
         {
-            return Size;
+            size = Size;
+            return Result.Success;
         }
 
-        public override void SetSize(long size)
+        public override Result SetSize(long size)
         {
             if (size < 0) throw new ArgumentOutOfRangeException(nameof(size));
-            if (Size == size) return;
+            if (Size == size) return Result.Success;
 
-            BaseStorage.SetSize(size);
+            Result rc = BaseStorage.SetSize(size);
+            if (rc.IsFailure()) return rc;
 
             if (!FileTable.TryOpenFile(Path, out SaveFileInfo fileInfo))
             {
@@ -68,6 +76,8 @@ namespace LibHac.Fs.Save
             FileTable.AddFile(Path, ref fileInfo);
 
             Size = size;
+
+            return Result.Success;
         }
     }
 }

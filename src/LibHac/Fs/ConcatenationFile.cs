@@ -22,7 +22,9 @@ namespace LibHac.Fs
 
             for (int i = 0; i < Sources.Count - 1; i++)
             {
-                if (Sources[i].GetSize() != SubFileSize)
+                Sources[i].GetSize(out long actualSubFileSize).ThrowIfFailure();
+
+                if (actualSubFileSize != SubFileSize)
                 {
                     throw new ArgumentException($"Source file must have size {subFileSize}");
                 }
@@ -31,11 +33,15 @@ namespace LibHac.Fs
             ToDispose.AddRange(Sources);
         }
 
-        public override int Read(Span<byte> destination, long offset, ReadOption options)
+        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
+            bytesRead = default;
+
             long inPos = offset;
             int outPos = 0;
             int remaining = ValidateReadParamsAndGetSize(destination, offset);
+
+            GetSize(out long fileSize).ThrowIfFailure();
 
             while (remaining > 0)
             {
@@ -43,21 +49,25 @@ namespace LibHac.Fs
                 IFile file = Sources[fileIndex];
                 long fileOffset = offset - fileIndex * SubFileSize;
 
-                long fileEndOffset = Math.Min((fileIndex + 1) * SubFileSize, GetSize());
+                long fileEndOffset = Math.Min((fileIndex + 1) * SubFileSize, fileSize);
                 int bytesToRead = (int)Math.Min(fileEndOffset - inPos, remaining);
-                int bytesRead = file.Read(destination.Slice(outPos, bytesToRead), fileOffset, options);
 
-                outPos += bytesRead;
-                inPos += bytesRead;
-                remaining -= bytesRead;
+                Result rc = file.Read(out long subFileBytesRead, fileOffset, destination.Slice(outPos, bytesToRead), options);
+                if (rc.IsFailure()) return rc;
+
+                outPos += (int)subFileBytesRead;
+                inPos += subFileBytesRead;
+                remaining -= (int)subFileBytesRead;
 
                 if (bytesRead < bytesToRead) break;
             }
 
-            return outPos;
+            bytesRead = outPos;
+
+            return Result.Success;
         }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
+        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
             ValidateWriteParams(source, offset);
 
@@ -65,15 +75,19 @@ namespace LibHac.Fs
             long outPos = offset;
             int remaining = source.Length;
 
+            GetSize(out long fileSize).ThrowIfFailure();
+
             while (remaining > 0)
             {
                 int fileIndex = GetSubFileIndexFromOffset(outPos);
                 IFile file = Sources[fileIndex];
                 long fileOffset = outPos - fileIndex * SubFileSize;
 
-                long fileEndOffset = Math.Min((fileIndex + 1) * SubFileSize, GetSize());
+                long fileEndOffset = Math.Min((fileIndex + 1) * SubFileSize, fileSize);
                 int bytesToWrite = (int)Math.Min(fileEndOffset - outPos, remaining);
-                file.Write(source.Slice(inPos, bytesToWrite), fileOffset, options);
+
+                Result rc = file.Write(fileOffset, source.Slice(inPos, bytesToWrite), options);
+                if (rc.IsFailure()) return rc;
 
                 outPos += bytesToWrite;
                 inPos += bytesToWrite;
@@ -82,35 +96,43 @@ namespace LibHac.Fs
 
             if ((options & WriteOption.Flush) != 0)
             {
-                Flush();
+                return Flush();
             }
+
+            return Result.Success;
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
             foreach (IFile file in Sources)
             {
-                file.Flush();
+                Result rc = file.Flush();
+                if (rc.IsFailure()) return rc;
             }
+
+            return Result.Success;
         }
 
-        public override long GetSize()
+        public override Result GetSize(out long size)
         {
-            long size = 0;
+            size = default;
 
             foreach (IFile file in Sources)
             {
-                size += file.GetSize();
+                Result rc = file.GetSize(out long subFileSize);
+                if (rc.IsFailure()) return rc;
+
+                size += subFileSize;
             }
 
-            return size;
+            return Result.Success;
         }
 
-        public override void SetSize(long size)
+        public override Result SetSize(long size)
         {
-            long currentSize = GetSize();
+            GetSize(out long currentSize).ThrowIfFailure();
 
-            if (currentSize == size) return;
+            if (currentSize == size) return Result.Success;
 
             int currentSubFileCount = QuerySubFileCount(currentSize, SubFileSize);
             int newSubFileCount = QuerySubFileCount(size, SubFileSize);
@@ -120,7 +142,8 @@ namespace LibHac.Fs
                 IFile currentLastSubFile = Sources[currentSubFileCount - 1];
                 long newSubFileSize = QuerySubFileSize(currentSubFileCount - 1, size, SubFileSize);
 
-                currentLastSubFile.SetSize(newSubFileSize);
+                Result rc = currentLastSubFile.SetSize(newSubFileSize);
+                if (rc.IsFailure()) return rc;
 
                 for (int i = currentSubFileCount; i < newSubFileCount; i++)
                 {
@@ -143,8 +166,12 @@ namespace LibHac.Fs
                 }
 
                 long newLastFileSize = QuerySubFileSize(newSubFileCount - 1, size, SubFileSize);
-                Sources[newSubFileCount - 1].SetSize(newLastFileSize);
+
+                Result rc = Sources[newSubFileCount - 1].SetSize(newLastFileSize);
+                if (rc.IsFailure()) return rc;
             }
+
+            return Result.Success;
         }
 
         private int GetSubFileIndexFromOffset(long offset)

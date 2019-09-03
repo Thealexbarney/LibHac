@@ -21,21 +21,24 @@ namespace LibHac.Fs
             ToDispose.Add(Stream);
         }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
-            Storage.Read(destination, offset);
+            return Storage.Read(offset, destination);
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
-            Storage.Write(source, offset);
+            return Storage.Write(offset, source);
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
-            Storage.Flush();
+            return Storage.Flush();
         }
 
-        public override long GetSize() => Storage.GetSize();
+        public override Result GetSize(out long size)
+        {
+            return Storage.GetSize(out size);
+        }
     }
 }

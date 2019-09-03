@@ -38,12 +38,14 @@ namespace LibHac.Fs
             _isExpandable = false;
         }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
             _buffer.AsSpan((int)(_start + offset), destination.Length).CopyTo(destination);
+
+            return Result.Success;
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
             long requiredCapacity = _start + offset + source.Length;
 
@@ -54,6 +56,8 @@ namespace LibHac.Fs
             }
 
             source.CopyTo(_buffer.AsSpan((int)(_start + offset), source.Length));
+
+            return Result.Success;
         }
 
         public byte[] ToArray()
@@ -92,13 +96,17 @@ namespace LibHac.Fs
             }
         }
 
-        public override void Flush() { }
+        public override Result Flush() => Result.Success;
 
-        public override long GetSize() => _length;
-
-        public override void SetSize(long size)
+        public override Result GetSize(out long size)
         {
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationInMemoryStorageSetSize);
+            size = _length;
+            return Result.Success;
+        }
+
+        public override Result SetSize(long size)
+        {
+            return ResultFs.UnsupportedOperationInMemoryStorageSetSize.Log();
         }
     }
 }

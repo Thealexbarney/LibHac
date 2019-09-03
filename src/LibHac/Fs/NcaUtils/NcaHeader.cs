@@ -17,7 +17,7 @@ namespace LibHac.Fs.NcaUtils
         public NcaHeader(IStorage headerStorage)
         {
             _header = new byte[HeaderSize];
-            headerStorage.Read(_header.Span, 0);
+            headerStorage.Read(0, _header.Span);
         }
 
         public NcaHeader(Keyset keyset, IStorage headerStorage)
@@ -188,7 +188,7 @@ namespace LibHac.Fs.NcaUtils
         public static byte[] DecryptHeader(Keyset keyset, IStorage storage)
         {
             var buf = new byte[HeaderSize];
-            storage.Read(buf, 0);
+            storage.Read(0, buf);
 
             byte[] key1 = keyset.HeaderKey.AsSpan(0, 0x10).ToArray();
             byte[] key2 = keyset.HeaderKey.AsSpan(0x10, 0x10).ToArray();

@@ -58,18 +58,21 @@ namespace LibHac.Fs
             Counter = _decryptor.Counter;
         }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
-            base.ReadImpl(destination, offset);
+            Result rc = base.ReadImpl(offset, destination);
+            if (rc.IsFailure()) return rc;
 
             lock (_locker)
             {
                 UpdateCounter(_counterOffset + offset);
                 _decryptor.TransformBlock(destination);
             }
+
+            return Result.Success;
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
             byte[] encrypted = ArrayPool<byte>.Shared.Rent(source.Length);
             try
@@ -83,12 +86,15 @@ namespace LibHac.Fs
                     _decryptor.TransformBlock(encryptedSpan);
                 }
 
-                base.WriteImpl(encryptedSpan, offset);
+                Result rc = base.WriteImpl(offset, encryptedSpan);
+                if (rc.IsFailure()) return rc;
             }
             finally
             {
                 ArrayPool<byte>.Shared.Return(encrypted);
             }
+
+            return Result.Success;
         }
 
         private void UpdateCounter(long offset)

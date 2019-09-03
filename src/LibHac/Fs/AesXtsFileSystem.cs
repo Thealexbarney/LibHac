@@ -54,7 +54,7 @@ namespace LibHac.Fs
 
             using (IFile baseFile = BaseFileSystem.OpenFile(path, OpenMode.Write))
             {
-                baseFile.Write(header.ToBytes(false), 0);
+                baseFile.Write(0, header.ToBytes(false)).ThrowIfFailure();
             }
         }
 
@@ -235,7 +235,7 @@ namespace LibHac.Fs
 
             using (IFile file = BaseFileSystem.OpenFile(filePath, OpenMode.ReadWrite))
             {
-                file.Write(header.ToBytes(false), 0, WriteOption.Flush);
+                file.Write(0, header.ToBytes(false), WriteOption.Flush).ThrowIfFailure();
             }
         }
     }

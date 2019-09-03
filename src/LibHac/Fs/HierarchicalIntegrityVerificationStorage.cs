@@ -33,8 +33,9 @@ namespace LibHac.Fs
             for (int i = 1; i < Levels.Length; i++)
             {
                 var levelData = new IntegrityVerificationStorage(levelInfo[i], Levels[i - 1], integrityCheckLevel, leaveOpen);
+                levelData.GetSize(out long levelSize).ThrowIfFailure();
 
-                int cacheCount = Math.Min((int)Util.DivideByRoundUp(levelData.GetSize(), levelInfo[i].BlockSize), 4);
+                int cacheCount = Math.Min((int)Util.DivideByRoundUp(levelSize, levelInfo[i].BlockSize), 4);
 
                 Levels[i] = new CachedStorage(levelData, cacheCount, leaveOpen);
                 LevelValidities[i - 1] = levelData.BlockValidities;
@@ -42,7 +43,7 @@ namespace LibHac.Fs
             }
 
             DataLevel = Levels[Levels.Length - 1];
-            _length = DataLevel.GetSize();
+            DataLevel.GetSize(out _length).ThrowIfFailure();
 
             if (!leaveOpen) ToDispose.Add(DataLevel);
         }
@@ -92,22 +93,26 @@ namespace LibHac.Fs
             return initInfo;
         }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
-            DataLevel.Read(destination, offset);
+            return DataLevel.Read(offset, destination);
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
-            DataLevel.Write(source, offset);
+            return DataLevel.Write(offset, source);
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
-            DataLevel.Flush();
+            return DataLevel.Flush();
         }
 
-        public override long GetSize() => _length;
+        public override Result GetSize(out long size)
+        {
+            size = _length;
+            return Result.Success;
+        }
 
         /// <summary>
         /// Checks the hashes of any unchecked blocks and returns the <see cref="Validity"/> of the data.
@@ -132,8 +137,10 @@ namespace LibHac.Fs
             {
                 if (validities[i] == Validity.Unchecked)
                 {
-                    int toRead = (int)Math.Min(storage.GetSize() - blockSize * i, buffer.Length);
-                    storage.Read(buffer.AsSpan(0, toRead), blockSize * i, IntegrityCheckLevel.IgnoreOnInvalid);
+                    storage.GetSize(out long storageSize).ThrowIfFailure();
+                    int toRead = (int)Math.Min(storageSize - blockSize * i, buffer.Length);
+
+                    storage.Read(blockSize * i, buffer.AsSpan(0, toRead), IntegrityCheckLevel.IgnoreOnInvalid);
                 }
 
                 if (validities[i] == Validity.Invalid)

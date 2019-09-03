@@ -13,26 +13,34 @@ namespace LibHac.Fs
 
         private long Length { get; }
 
-        public override int Read(Span<byte> destination, long offset, ReadOption options)
+        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
             int toRead = ValidateReadParamsAndGetSize(destination, offset);
             destination.Slice(0, toRead).Clear();
-            return toRead;
+
+            bytesRead = toRead;
+            return Result.Success;
         }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
+        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
+            return Result.Success;
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
+            return Result.Success;
         }
 
-        public override long GetSize() => Length;
-
-        public override void SetSize(long size)
+        public override Result GetSize(out long size)
         {
-            throw new NotSupportedException();
+            size = Length;
+            return Result.Success;
+        }
+
+        public override Result SetSize(long size)
+        {
+            return ResultFs.UnsupportedOperation.Log();
         }
     }
 }

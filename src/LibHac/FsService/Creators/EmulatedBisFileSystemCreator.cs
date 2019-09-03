@@ -37,10 +37,10 @@ namespace LibHac.FsService.Creators
 
             string partitionPath = GetPartitionPath(partitionId);
 
-            Result subFsResult =
+            Result rc =
                 Util.CreateSubFileSystem(out IFileSystem subFileSystem, Config.RootFileSystem, partitionPath, true);
 
-            if (subFsResult.IsFailure()) return subFsResult;
+            if (rc.IsFailure()) return rc;
 
             if (rootPath == string.Empty)
             {

@@ -36,41 +36,53 @@ namespace LibHac.Fs
             Access = access;
         }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
             if ((Access & FileAccess.Read) == 0) throw new InvalidOperationException("Storage is not readable");
-            BaseStorage.Read(destination, offset + Offset);
+            return BaseStorage.Read(offset + Offset, destination);
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
             if ((Access & FileAccess.Write) == 0) throw new InvalidOperationException("Storage is not writable");
-            BaseStorage.Write(source, offset + Offset);
+            return BaseStorage.Write(offset + Offset, source);
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
-            BaseStorage.Flush();
+            return BaseStorage.Flush();
         }
 
-        public override long GetSize() => _length;
-
-        public override void SetSize(long size)
+        public override Result GetSize(out long size)
         {
-            //if (!IsResizable)
-            //    return 0x313802;
+            size = _length;
+            return Result.Success;
+        }
 
-            //if (Offset < 0 || size < 0)
-            //    return 0x2F5C02;
+        public override Result SetSize(long size)
+        {
+            if (BaseStorage == null) return ResultFs.Result6902.Log();
 
-            if (BaseStorage.GetSize() != Offset + _length)
+            // todo: Add IsResizable member
+            // if (!IsResizable) return ResultFs.SubStorageNotResizable.Log();
+
+            if (Offset < 0 || size < 0) return ResultFs.InvalidSize.Log();
+
+            Result rc = BaseStorage.GetSize(out long baseSize);
+            if (rc.IsFailure()) return rc;
+
+            if (baseSize != Offset + _length)
             {
-                throw new NotSupportedException("SubStorage cannot be resized unless it is located at the end of the base storage.");
+                // SubStorage cannot be resized unless it is located at the end of the base storage.
+                return ResultFs.SubStorageNotResizableMiddleOfFile.Log();
             }
 
-            BaseStorage.SetSize(Offset + size);
+            rc = BaseStorage.SetSize(Offset + size);
+            if (rc.IsFailure()) return rc;
 
             _length = size;
+
+            return Result.Success;
         }
     }
 }

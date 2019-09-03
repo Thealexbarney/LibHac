@@ -89,11 +89,13 @@ namespace hactoolnet
             Assembly thisAssembly = Assembly.GetExecutingAssembly();
             Stream cert = thisAssembly.GetManifestResourceStream("hactoolnet.CA00000003_XS00000020");
             builder.AddFile($"{ticket.RightsId.ToHexString()}.cert", cert.AsIFile(OpenMode.Read));
-            
+
             using (var outStream = new FileStream(ctx.Options.NspOut, FileMode.Create, FileAccess.ReadWrite))
             {
                 IStorage builtPfs = builder.Build(PartitionFileSystemType.Standard);
-                builtPfs.CopyToStream(outStream, builtPfs.GetSize(), ctx.Logger);
+                builtPfs.GetSize(out long pfsSize).ThrowIfFailure();
+
+                builtPfs.CopyToStream(outStream, pfsSize, ctx.Logger);
             }
         }
     }

@@ -103,17 +103,23 @@ namespace LibHac.Fs
         public static void CopyTo(this IFile file, IFile dest, IProgressReport logger = null)
         {
             const int bufferSize = 0x8000;
-            logger?.SetTotal(file.GetSize());
+
+            file.GetSize(out long fileSize).ThrowIfFailure();
+
+            logger?.SetTotal(fileSize);
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             try
             {
                 long inOffset = 0;
 
-                int bytesRead;
-                while ((bytesRead = file.Read(buffer, inOffset)) != 0)
+                // todo: use result for loop condition
+                while (true)
                 {
-                    dest.Write(buffer.AsSpan(0, bytesRead), inOffset);
+                    file.Read(out long bytesRead, inOffset, buffer).ThrowIfFailure();
+                    if (bytesRead == 0) break;
+
+                    dest.Write(inOffset, buffer.AsSpan(0, (int)bytesRead)).ThrowIfFailure();
                     inOffset += bytesRead;
                     logger?.ReportAdd(bytesRead);
                 }
@@ -190,14 +196,14 @@ namespace LibHac.Fs
             }
         }
 
-        public static int Read(this IFile file, Span<byte> destination, long offset)
+        public static Result Read(this IFile file, out long bytesRead, long offset, Span<byte> destination)
         {
-            return file.Read(destination, offset, ReadOption.None);
+            return file.Read(out bytesRead, offset, destination, ReadOption.None);
         }
 
-        public static void Write(this IFile file, ReadOnlySpan<byte> source, long offset)
+        public static Result Write(this IFile file, long offset, ReadOnlySpan<byte> source)
         {
-            file.Write(source, offset, WriteOption.None);
+            return file.Write(offset, source, WriteOption.None);
         }
 
         public static bool DirectoryExists(this IFileSystem fs, string path)

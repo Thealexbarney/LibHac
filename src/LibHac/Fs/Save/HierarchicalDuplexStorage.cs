@@ -29,25 +29,29 @@ namespace LibHac.Fs.Save
             }
 
             DataLayer = Layers[Layers.Length - 1];
-            _length = DataLayer.GetSize();
+            DataLayer.GetSize(out _length).ThrowIfFailure();
         }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
-            DataLayer.Read(destination, offset);
+            return DataLayer.Read(offset, destination);
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
-            DataLayer.Write(source, offset);
+            return DataLayer.Write(offset, source);
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
-            DataLayer.Flush();
+            return DataLayer.Flush();
         }
 
-        public override long GetSize() => _length;
+        public override Result GetSize(out long size)
+        {
+            size = _length;
+            return Result.Success;
+        }
 
         public void FsTrim()
         {

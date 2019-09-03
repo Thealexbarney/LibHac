@@ -9,6 +9,8 @@ namespace LibHac.Fs
 {
     public class StreamStorage : StorageBase
     {
+        // todo: handle Stream exceptions
+
         private Stream BaseStream { get; }
         private object Locker { get; } = new object();
         private long _length;
@@ -20,7 +22,7 @@ namespace LibHac.Fs
             if (!leaveOpen) ToDispose.Add(BaseStream);
         }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
 #if STREAM_SPAN
             lock (Locker)
@@ -50,9 +52,11 @@ namespace LibHac.Fs
             }
             finally { ArrayPool<byte>.Shared.Return(buffer); }
 #endif
+
+            return Result.Success;
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
 #if STREAM_SPAN
             lock (Locker)
@@ -82,16 +86,24 @@ namespace LibHac.Fs
             }
             finally { ArrayPool<byte>.Shared.Return(buffer); }
 #endif
+
+            return Result.Success;
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
             lock (Locker)
             {
                 BaseStream.Flush();
+
+                return Result.Success;
             }
         }
 
-        public override long GetSize() => _length;
+        public override Result GetSize(out long size)
+        {
+            size = _length;
+            return Result.Success;
+        }
     }
 }

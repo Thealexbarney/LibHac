@@ -101,10 +101,10 @@ namespace LibHac.Fs.Save
 
             if (capacity == 0 || length >= capacity)
             {
-                long currentSize = Storage.GetSize();
+                Storage.GetSize(out long currentSize).ThrowIfFailure();
                 Storage.SetSize(currentSize + CapacityIncrement);
 
-                long newSize = Storage.GetSize();
+                Storage.GetSize(out long newSize).ThrowIfFailure();
                 SetListCapacity((int)(newSize / _sizeOfEntry));
             }
 
@@ -282,7 +282,7 @@ namespace LibHac.Fs.Save
         private int GetListCapacity()
         {
             Span<byte> buf = stackalloc byte[sizeof(int)];
-            Storage.Read(buf, 4);
+            Storage.Read(4, buf).ThrowIfFailure();
 
             return MemoryMarshal.Read<int>(buf);
         }
@@ -290,7 +290,7 @@ namespace LibHac.Fs.Save
         private int GetListLength()
         {
             Span<byte> buf = stackalloc byte[sizeof(int)];
-            Storage.Read(buf, 0);
+            Storage.Read(0, buf).ThrowIfFailure();
 
             return MemoryMarshal.Read<int>(buf);
         }
@@ -300,7 +300,7 @@ namespace LibHac.Fs.Save
             Span<byte> buf = stackalloc byte[sizeof(int)];
             MemoryMarshal.Write(buf, ref capacity);
 
-            Storage.Write(buf, 4);
+            Storage.Write(4, buf).ThrowIfFailure();
         }
 
         private void SetListLength(int length)
@@ -308,7 +308,7 @@ namespace LibHac.Fs.Save
             Span<byte> buf = stackalloc byte[sizeof(int)];
             MemoryMarshal.Write(buf, ref length);
 
-            Storage.Write(buf, 0);
+            Storage.Write(0, buf).ThrowIfFailure();
         }
 
         private void ReadEntry(int index, out SaveFsEntry entry)
@@ -352,7 +352,7 @@ namespace LibHac.Fs.Save
             Debug.Assert(entry.Length == _sizeOfEntry);
 
             int offset = index * _sizeOfEntry;
-            Storage.Read(entry, offset);
+            Storage.Read(offset, entry);
         }
 
         private void WriteEntry(int index, Span<byte> entry)
@@ -360,7 +360,7 @@ namespace LibHac.Fs.Save
             Debug.Assert(entry.Length == _sizeOfEntry);
 
             int offset = index * _sizeOfEntry;
-            Storage.Write(entry, offset);
+            Storage.Write(offset, entry);
         }
 
         private ref SaveFsEntry GetEntryFromBytes(Span<byte> entry)

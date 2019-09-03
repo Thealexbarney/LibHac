@@ -12,6 +12,8 @@ namespace LibHac.Fs
     /// </summary>
     public class StreamFile : FileBase
     {
+        // todo: handle Stream exceptions
+
         private Stream BaseStream { get; }
         private object Locker { get; } = new object();
 
@@ -21,7 +23,7 @@ namespace LibHac.Fs
             Mode = mode;
         }
 
-        public override int Read(Span<byte> destination, long offset, ReadOption options)
+        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
 #if STREAM_SPAN
             lock (Locker)
@@ -31,13 +33,13 @@ namespace LibHac.Fs
                     BaseStream.Position = offset;
                 }
 
-                return BaseStream.Read(destination);
+                bytesRead = BaseStream.Read(destination);
+                return Result.Success;
             }
 #else
             byte[] buffer = ArrayPool<byte>.Shared.Rent(destination.Length);
             try
             {
-                int bytesRead;
                 lock (Locker)
                 {
                     if (BaseStream.Position != offset)
@@ -50,13 +52,13 @@ namespace LibHac.Fs
 
                 new Span<byte>(buffer, 0, destination.Length).CopyTo(destination);
 
-                return bytesRead;
+                return Result.Success;
             }
             finally { ArrayPool<byte>.Shared.Return(buffer); }
 #endif
         }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
+        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
 #if STREAM_SPAN
             lock (Locker)
@@ -81,31 +83,36 @@ namespace LibHac.Fs
 
             if ((options & WriteOption.Flush) != 0)
             {
-                Flush();
+                return Flush();
             }
+
+            return Result.Success;
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
             lock (Locker)
             {
                 BaseStream.Flush();
+                return Result.Success;
             }
         }
 
-        public override long GetSize()
+        public override Result GetSize(out long size)
         {
             lock (Locker)
             {
-                return BaseStream.Length;
+                size = BaseStream.Length;
+                return Result.Success;
             }
         }
 
-        public override void SetSize(long size)
+        public override Result SetSize(long size)
         {
             lock (Locker)
             {
                 BaseStream.SetLength(size);
+                return Result.Success;
             }
         }
     }

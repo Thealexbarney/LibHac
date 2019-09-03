@@ -21,7 +21,9 @@ namespace LibHac
             if (Header.Magic != "NRO0")
                 throw new InvalidDataException("NRO0 magic is incorrect!");
 
-            if (Header.Size < Storage.GetSize())
+            Storage.GetSize(out long storageSize).ThrowIfFailure();
+
+            if (Header.Size < storageSize)
             {
                 AssetStorage = Storage.Slice(Header.Size);
                 var assetReader = new BinaryReader(AssetStorage.AsStream());

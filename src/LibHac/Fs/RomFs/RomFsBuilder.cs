@@ -47,7 +47,7 @@ namespace LibHac.Fs.RomFs
         public void AddFile(string path, IFile file)
         {
             var fileInfo = new RomFileInfo();
-            long fileSize = file.GetSize();
+            file.GetSize(out long fileSize).ThrowIfFailure();
 
             fileInfo.Offset = CurrentOffset;
             fileInfo.Length = fileSize;
@@ -81,7 +81,11 @@ namespace LibHac.Fs.RomFs
             sources.Add(new MemoryStorage(header));
             sources.AddRange(Sources);
 
-            long fileLength = sources.Sum(x => x.GetSize());
+            long fileLength = sources.Sum(x =>
+            {
+                x.GetSize(out long fileSize).ThrowIfFailure();
+                return fileSize;
+            });
 
             headerWriter.Write((long)HeaderSize);
 

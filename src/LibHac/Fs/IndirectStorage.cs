@@ -27,13 +27,13 @@ namespace LibHac.Fs
             _length = BucketTree.BucketOffsets.OffsetEnd;
         }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
             RelocationEntry entry = GetRelocationEntry(offset);
 
             if (entry.SourceIndex > Sources.Count)
             {
-                ThrowHelper.ThrowResult(ResultFs.InvalidIndirectStorageSource);
+                return ResultFs.InvalidIndirectStorageSource.Log();
             }
 
             long inPos = offset;
@@ -45,7 +45,9 @@ namespace LibHac.Fs
                 long entryPos = inPos - entry.Offset;
 
                 int bytesToRead = (int)Math.Min(entry.OffsetEnd - inPos, remaining);
-                Sources[entry.SourceIndex].Read(destination.Slice(outPos, bytesToRead), entry.SourceOffset + entryPos);
+
+                Result rc = Sources[entry.SourceIndex].Read(entry.SourceOffset + entryPos, destination.Slice(outPos, bytesToRead));
+                if (rc.IsFailure()) return rc;
 
                 outPos += bytesToRead;
                 inPos += bytesToRead;
@@ -56,20 +58,29 @@ namespace LibHac.Fs
                     entry = entry.Next;
                 }
             }
+
+            return Result.Success;
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationInIndirectStorageWrite);
+            return ResultFs.UnsupportedOperationInIndirectStorageSetSize.Log();
         }
 
-        public override void Flush() { }
-
-        public override long GetSize() => _length;
-
-        public override void SetSize(long size)
+        public override Result Flush()
         {
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationInIndirectStorageSetSize);
+            return Result.Success;
+        }
+
+        public override Result GetSize(out long size)
+        {
+            size = _length;
+            return Result.Success;
+        }
+
+        public override Result SetSize(long size)
+        {
+            return ResultFs.UnsupportedOperationInIndirectStorageSetSize.Log();
         }
 
         private RelocationEntry GetRelocationEntry(long offset)

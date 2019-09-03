@@ -19,11 +19,13 @@ namespace LibHac.Fs.Save
             BitmapStorage = bitmap;
             BlockSize = blockSize;
 
-            Bitmap = new DuplexBitmap(BitmapStorage, (int)(bitmap.GetSize() * 8));
-            _length = DataA.GetSize();
+            bitmap.GetSize(out long bitmapSize).ThrowIfFailure();
+
+            Bitmap = new DuplexBitmap(BitmapStorage, (int)(bitmapSize * 8));
+            DataA.GetSize(out _length).ThrowIfFailure();
         }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
             long inPos = offset;
             int outPos = 0;
@@ -38,15 +40,18 @@ namespace LibHac.Fs.Save
 
                 IStorage data = Bitmap.Bitmap[blockNum] ? DataB : DataA;
 
-                data.Read(destination.Slice(outPos, bytesToRead), inPos);
+                Result rc = data.Read(inPos, destination.Slice(outPos, bytesToRead));
+                if (rc.IsFailure()) return rc;
 
                 outPos += bytesToRead;
                 inPos += bytesToRead;
                 remaining -= bytesToRead;
             }
+
+            return Result.Success;
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
             long inPos = offset;
             int outPos = 0;
@@ -61,26 +66,42 @@ namespace LibHac.Fs.Save
 
                 IStorage data = Bitmap.Bitmap[blockNum] ? DataB : DataA;
 
-                data.Write(source.Slice(outPos, bytesToWrite), inPos);
+                Result rc = data.Write(inPos, source.Slice(outPos, bytesToWrite));
+                if (rc.IsFailure()) return rc;
 
                 outPos += bytesToWrite;
                 inPos += bytesToWrite;
                 remaining -= bytesToWrite;
             }
+
+            return Result.Success;
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
-            BitmapStorage?.Flush();
-            DataA?.Flush();
-            DataB?.Flush();
+            Result rc = BitmapStorage.Flush();
+            if (rc.IsFailure()) return rc;
+
+            rc = DataA.Flush();
+            if (rc.IsFailure()) return rc;
+
+            rc = DataB.Flush();
+            if (rc.IsFailure()) return rc;
+
+            return Result.Success;
         }
 
-        public override long GetSize() => _length;
+        public override Result GetSize(out long size)
+        {
+            size = _length;
+            return Result.Success;
+        }
 
         public void FsTrim()
         {
-            int blockCount = (int)(DataA.GetSize() / BlockSize);
+            DataA.GetSize(out long dataSize).ThrowIfFailure();
+
+            int blockCount = (int)(dataSize / BlockSize);
 
             for (int i = 0; i < blockCount; i++)
             {

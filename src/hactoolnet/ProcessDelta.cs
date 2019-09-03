@@ -19,7 +19,7 @@ namespace hactoolnet
             {
                 IStorage deltaStorage = deltaFile;
                 Span<byte> magic = stackalloc byte[4];
-                deltaFile.Read(magic, 0);
+                deltaFile.Read(0, magic).ThrowIfFailure();
 
                 if (MemoryMarshal.Read<uint>(magic) != Ndv0Magic)
                 {
@@ -51,7 +51,9 @@ namespace hactoolnet
                             using (var outFile = new FileStream(ctx.Options.OutFile, FileMode.OpenOrCreate, FileAccess.ReadWrite))
                             {
                                 IStorage patchedStorage = delta.GetPatchedStorage();
-                                patchedStorage.CopyToStream(outFile, patchedStorage.GetSize(), ctx.Logger);
+                                patchedStorage.GetSize(out long patchedStorageSize).ThrowIfFailure();
+
+                                patchedStorage.CopyToStream(outFile, patchedStorageSize, ctx.Logger);
                             }
                         }
                     }

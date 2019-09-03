@@ -41,8 +41,10 @@ namespace LibHac.Fs
                     sources.Add(new NullStorage(paddingNeeded));
                 }
 
+                segment.Storage.GetSize(out long segmentSize).ThrowIfFailure();
+
                 sources.Add(segment.Storage);
-                offset = segment.Offset + segment.Storage.GetSize();
+                offset = segment.Offset + segmentSize;
             }
 
             return new ConcatenationStorage(sources, true);

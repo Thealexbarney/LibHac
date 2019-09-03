@@ -11,22 +11,29 @@ namespace LibHac.Fs
             BaseFile = baseFile;
         }
 
-        public override int Read(Span<byte> destination, long offset, ReadOption options)
+        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
-            return BaseFile.Read(destination, offset, options);
+            return BaseFile.Read(out bytesRead, offset, destination, options);
         }
 
-        public override long GetSize()
+        public override Result GetSize(out long size)
         {
-            return BaseFile.GetSize();
+            return BaseFile.GetSize(out size);
         }
 
-        public override void Flush() { }
+        public override Result Flush()
+        {
+            return Result.Success;
+        }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyReadOnlyFile);
+        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        {
+            return ResultFs.UnsupportedOperationModifyReadOnlyFile.Log();
+        }
 
-        public override void SetSize(long size) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyReadOnlyFile);
+        public override Result SetSize(long size)
+        {
+            return ResultFs.UnsupportedOperationModifyReadOnlyFile.Log();
+        }
     }
 }

@@ -31,7 +31,7 @@ namespace LibHac.Fs.Save
             if (!leaveOpen) ToDispose.Add(baseStorage);
         }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
             long inPos = offset;
             int outPos = 0;
@@ -46,15 +46,18 @@ namespace LibHac.Fs.Save
 
                 int bytesToRead = Math.Min(remaining, BlockSize - blockPos);
 
-                BaseStorage.Read(destination.Slice(outPos, bytesToRead), physicalOffset);
+                Result rc = BaseStorage.Read(physicalOffset, destination.Slice(outPos, bytesToRead));
+                if (rc.IsFailure()) return rc;
 
                 outPos += bytesToRead;
                 inPos += bytesToRead;
                 remaining -= bytesToRead;
             }
+
+            return Result.Success;
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
             long inPos = offset;
             int outPos = 0;
@@ -69,20 +72,27 @@ namespace LibHac.Fs.Save
 
                 int bytesToWrite = Math.Min(remaining, BlockSize - blockPos);
 
-                BaseStorage.Write(source.Slice(outPos, bytesToWrite), physicalOffset);
+                Result rc = BaseStorage.Write(physicalOffset, source.Slice(outPos, bytesToWrite));
+                if (rc.IsFailure()) return rc;
 
                 outPos += bytesToWrite;
                 inPos += bytesToWrite;
                 remaining -= bytesToWrite;
             }
+
+            return Result.Success;
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
-            BaseStorage.Flush();
+            return BaseStorage.Flush();
         }
 
-        public override long GetSize() => _length;
+        public override Result GetSize(out long size)
+        {
+            size = _length;
+            return Result.Success;
+        }
 
         public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
         public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();

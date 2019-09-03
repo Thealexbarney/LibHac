@@ -64,9 +64,12 @@ namespace hactoolnet
                         {
                             using (IFile outFile = save.OpenFile(destFilename, OpenMode.ReadWrite))
                             {
-                                if (inFile.GetSize() != outFile.GetSize())
+                                inFile.GetSize(out long inFileSize).ThrowIfFailure();
+                                outFile.GetSize(out long outFileSize).ThrowIfFailure();
+
+                                if (inFileSize != outFileSize)
                                 {
-                                    outFile.SetSize(inFile.GetSize());
+                                    outFile.SetSize(inFileSize).ThrowIfFailure();
                                 }
 
                                 inFile.CopyTo(outFile, ctx.Logger);

@@ -356,7 +356,7 @@ namespace LibHac.Fs.Save
 
             Span<byte> buffer = MemoryMarshal.Cast<AllocationTableEntry, byte>(entries.Slice(0, entriesToRead));
 
-            BaseStorage.Read(buffer, offset);
+            BaseStorage.Read(offset, buffer).ThrowIfFailure();
         }
 
         private AllocationTableEntry ReadEntry(int entryIndex)
@@ -364,7 +364,7 @@ namespace LibHac.Fs.Save
             Span<byte> bytes = stackalloc byte[EntrySize];
             int offset = entryIndex * EntrySize;
 
-            BaseStorage.Read(bytes, offset);
+            BaseStorage.Read(offset, bytes).ThrowIfFailure();
 
             return GetEntryFromBytes(bytes);
         }
@@ -377,7 +377,7 @@ namespace LibHac.Fs.Save
             ref AllocationTableEntry newEntry = ref GetEntryFromBytes(bytes);
             newEntry = entry;
 
-            BaseStorage.Write(bytes, offset);
+            BaseStorage.Write(offset, bytes).ThrowIfFailure();
         }
 
         // ReSharper disable once UnusedMember.Local

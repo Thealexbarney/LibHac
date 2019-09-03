@@ -30,7 +30,7 @@ namespace LibHac.Fs
             SubsectionOffsets = SubsectionEntries.Select(x => x.Offset).ToList();
         }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
             AesSubsectionEntry entry = GetSubsectionEntry(offset);
 
@@ -45,7 +45,9 @@ namespace LibHac.Fs
                 lock (_locker)
                 {
                     UpdateCounterSubsection(entry.Counter);
-                    base.ReadImpl(destination.Slice(outPos, bytesToRead), inPos);
+
+                    Result rc = base.ReadImpl(inPos, destination.Slice(outPos, bytesToRead));
+                    if (rc.IsFailure()) return rc;
                 }
 
                 outPos += bytesToRead;
@@ -57,16 +59,18 @@ namespace LibHac.Fs
                     entry = entry.Next;
                 }
             }
+
+            return Result.Success;
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
-            throw new NotImplementedException();
+            return ResultFs.UnsupportedOperationInAesCtrExStorageWrite.Log();
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
-            throw new NotImplementedException();
+            return Result.Success;
         }
 
         private AesSubsectionEntry GetSubsectionEntry(long offset)

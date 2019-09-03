@@ -58,17 +58,20 @@ namespace LibHac.Fs
             {
                 using (IFile file = BaseFileSystem.OpenFile(path, OpenMode.Read))
                 {
-                    if (file.GetSize() < 0x50)
+                    file.GetSize(out long fileSize).ThrowIfFailure();
+
+                    if (fileSize < 0x50)
                     {
                         return -1;
                     }
 
+                    // todo: Use result codes
                     var buffer = new byte[8];
 
-                    file.Read(buffer, 0x20);
-                    if (BitConverter.ToUInt32(buffer, 0) != 0x3058414E) return 0;
+                    file.Read(out long _, 0x20, buffer);
+                    if (BitConverter.ToUInt32(buffer, 0) != 0x3058414E) return -1;
 
-                    file.Read(buffer, 0x48);
+                    file.Read(out long _, 0x48, buffer);
                     return BitConverter.ToInt64(buffer, 0);
                 }
             }

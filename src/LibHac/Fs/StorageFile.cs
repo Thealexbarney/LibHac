@@ -12,40 +12,46 @@ namespace LibHac.Fs
             Mode = mode;
         }
 
-        public override int Read(Span<byte> destination, long offset, ReadOption options)
+        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
+            bytesRead = default;
             int toRead = ValidateReadParamsAndGetSize(destination, offset);
 
-            BaseStorage.Read(destination.Slice(0, toRead), offset);
+            Result rc = BaseStorage.Read(offset, destination.Slice(0, toRead));
+            if (rc.IsFailure()) return rc;
 
-            return toRead;
+            bytesRead = toRead;
+            return Result.Success;
         }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
+        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
             ValidateWriteParams(source, offset);
 
-            BaseStorage.Write(source, offset);
+            Result rc = BaseStorage.Write(offset, source);
+            if (rc.IsFailure()) return rc;
 
             if ((options & WriteOption.Flush) != 0)
             {
-                Flush();
+                return Flush();
             }
+
+            return Result.Success;
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
-            BaseStorage.Flush();
+            return BaseStorage.Flush();
         }
 
-        public override long GetSize()
+        public override Result GetSize(out long size)
         {
-            return BaseStorage.GetSize();
+            return BaseStorage.GetSize(out size);
         }
 
-        public override void SetSize(long size)
+        public override Result SetSize(long size)
         {
-            BaseStorage.SetSize(size);
+            return BaseStorage.SetSize(size);
         }
     }
 }

@@ -21,33 +21,31 @@ namespace LibHac.Fs
             ToDispose.Add(Stream);
         }
 
-        public override int Read(Span<byte> destination, long offset, ReadOption options)
+        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
             int toRead = ValidateReadParamsAndGetSize(destination, offset);
 
-            File.Read(destination.Slice(0, toRead), offset, options);
-
-            return toRead;
+            return File.Read(out bytesRead, offset, destination.Slice(0, toRead), options);
         }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
+        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
             ValidateWriteParams(source, offset);
-            
-            File.Write(source, offset, options);
+
+            return File.Write(offset, source, options);
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
-            File.Flush();
+            return File.Flush();
         }
 
-        public override long GetSize()
+        public override Result GetSize(out long size)
         {
-            return File.GetSize();
+            return File.GetSize(out size);
         }
 
-        public override void SetSize(long size)
+        public override Result SetSize(long size)
         {
             try
             {
@@ -55,9 +53,10 @@ namespace LibHac.Fs
             }
             catch (IOException ex) when (ex.HResult == ErrorDiskFull || ex.HResult == ErrorHandleDiskFull)
             {
-                ThrowHelper.ThrowResult(ResultFs.InsufficientFreeSpace, ex);
-                throw;
+                return ResultFs.InsufficientFreeSpace.Log();
             }
+
+            return Result.Success;
         }
 
         private static FileAccess GetFileAccess(OpenMode mode)

@@ -117,10 +117,12 @@ namespace LibHac.Fs.NcaUtils
             long offset = Header.GetSectionStartOffset(index);
             long size = Header.GetSectionSize(index);
 
-            if (!Util.IsSubRange(offset, size, BaseStorage.GetSize()))
+            BaseStorage.GetSize(out long baseSize).ThrowIfFailure();
+
+            if (!Util.IsSubRange(offset, size, baseSize))
             {
                 throw new InvalidDataException(
-                    $"Section offset (0x{offset:x}) and length (0x{size:x}) fall outside the total NCA length (0x{BaseStorage.GetSize():x}).");
+                    $"Section offset (0x{offset:x}) and length (0x{size:x}) fall outside the total NCA length (0x{baseSize:x}).");
             }
 
             return BaseStorage.Slice(offset, size);
@@ -492,7 +494,7 @@ namespace LibHac.Fs.NcaUtils
         private int ReadHeaderVersion(IStorage header)
         {
             Span<byte> buf = stackalloc byte[1];
-            header.Read(buf, 0x203);
+            header.Read(0x203, buf).Log();
             return buf[0] - '0';
         }
 

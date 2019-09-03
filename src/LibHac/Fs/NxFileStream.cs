@@ -13,21 +13,21 @@ namespace LibHac.Fs
         {
             BaseFile = baseFile;
             LeaveOpen = leaveOpen;
-            _length = baseFile.GetSize();
+
+            baseFile.GetSize(out _length).ThrowIfFailure();
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            int toRead = (int)Math.Min(count, Length - Position);
-            BaseFile.Read(buffer.AsSpan(offset, toRead), Position);
+            BaseFile.Read(out long bytesRead, Position, buffer.AsSpan(offset, count));
 
-            Position += toRead;
-            return toRead;
+            Position += bytesRead;
+            return (int)bytesRead;
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            BaseFile.Write(buffer.AsSpan(offset, count), Position);
+            BaseFile.Write(Position, buffer.AsSpan(offset, count));
 
             Position += count;
         }
@@ -57,9 +57,9 @@ namespace LibHac.Fs
 
         public override void SetLength(long value)
         {
-            BaseFile.SetSize(value);
+            BaseFile.SetSize(value).ThrowIfFailure();
 
-            _length = BaseFile.GetSize();
+            BaseFile.GetSize(out _length).ThrowIfFailure();
         }
 
         public override bool CanRead => BaseFile.Mode.HasFlag(OpenMode.Read);

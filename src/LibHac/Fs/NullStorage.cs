@@ -12,19 +12,26 @@ namespace LibHac.Fs
 
         private long _length;
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
             destination.Clear();
+            return Result.Success;
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
+            return Result.Success;
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
+            return Result.Success;
         }
 
-        public override long GetSize() => _length;
+        public override Result GetSize(out long size)
+        {
+            size = _length;
+            return Result.Success;
+        }
     }
 }

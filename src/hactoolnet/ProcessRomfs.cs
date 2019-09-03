@@ -28,9 +28,11 @@ namespace hactoolnet
 
             if (ctx.Options.RomfsOut != null)
             {
+                romfsStorage.GetSize(out long romFsSize).ThrowIfFailure();
+
                 using (var outFile = new FileStream(ctx.Options.RomfsOut, FileMode.Create, FileAccess.ReadWrite))
                 {
-                    romfsStorage.CopyToStream(outFile, romfsStorage.GetSize(), ctx.Logger);
+                    romfsStorage.CopyToStream(outFile, romFsSize, ctx.Logger);
                 }
             }
 

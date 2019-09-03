@@ -16,33 +16,41 @@ namespace LibHac.Fs.RomFs
             Size = size;
         }
 
-        public override int Read(Span<byte> destination, long offset, ReadOption options)
+        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
+            bytesRead = default;
+
             int toRead = ValidateReadParamsAndGetSize(destination, offset);
 
             long storageOffset = Offset + offset;
-            BaseStorage.Read(destination.Slice(0, toRead), storageOffset);
 
-            return toRead;
+            Result rc = BaseStorage.Read(storageOffset, destination.Slice(0, toRead));
+            if (rc.IsFailure()) return rc;
+
+            bytesRead = toRead;
+
+            return Result.Success;
         }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
+        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFile);
+            return ResultFs.UnsupportedOperationModifyRomFsFile.Log();
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
+            return Result.Success;
         }
 
-        public override long GetSize()
+        public override Result GetSize(out long size)
         {
-            return Size;
+            size = Size;
+            return Result.Success;
         }
 
-        public override void SetSize(long size)
+        public override Result SetSize(long size)
         {
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFile);
+            return ResultFs.UnsupportedOperationModifyRomFsFile.Log();
         }
     }
 }

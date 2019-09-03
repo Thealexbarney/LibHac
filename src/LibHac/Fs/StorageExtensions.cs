@@ -7,15 +7,16 @@ namespace LibHac.Fs
 {
     public static class StorageExtensions
     {
-        public static void Read(this IStorage storage, byte[] buffer, long offset, int count, int bufferOffset)
+        public static Result Read(this IStorage storage, long offset, byte[] buffer, int count, int bufferOffset)
         {
             ValidateStorageParameters(buffer, offset, count, bufferOffset);
-            storage.Read(buffer.AsSpan(bufferOffset, count), offset);
+            return storage.Read(offset, buffer.AsSpan(bufferOffset, count));
         }
-        public static void Write(this IStorage storage, byte[] buffer, long offset, int count, int bufferOffset)
+
+        public static Result Write(this IStorage storage, long offset, byte[] buffer, int count, int bufferOffset)
         {
             ValidateStorageParameters(buffer, offset, count, bufferOffset);
-            storage.Write(buffer.AsSpan(bufferOffset, count), offset);
+            return storage.Write(offset, buffer.AsSpan(bufferOffset, count));
         }
 
         private static void ValidateStorageParameters(byte[] buffer, long offset, int count, int bufferOffset)
@@ -28,7 +29,7 @@ namespace LibHac.Fs
 
         public static IStorage Slice(this IStorage storage, long start)
         {
-            long length = storage.GetSize();
+            storage.GetSize(out long length).ThrowIfFailure();
 
             if (length == -1)
             {
@@ -53,10 +54,10 @@ namespace LibHac.Fs
             return storage.AsReadOnly(true);
         }
 
-        // Todo: Move out of SubStorage
         public static IStorage AsReadOnly(this IStorage storage, bool leaveOpen)
         {
-            return new SubStorage(storage, 0, storage.GetSize(), leaveOpen, FileAccess.Read);
+            storage.GetSize(out long storageSize).ThrowIfFailure();
+            return new SubStorage(storage, 0, storageSize, leaveOpen, FileAccess.Read);
         }
 
         public static Stream AsStream(this IStorage storage) => new StorageStream(storage, FileAccess.ReadWrite, true);
@@ -68,7 +69,11 @@ namespace LibHac.Fs
         public static void CopyTo(this IStorage input, IStorage output, IProgressReport progress = null)
         {
             const int bufferSize = 81920;
-            long remaining = Math.Min(input.GetSize(), output.GetSize());
+
+            input.GetSize(out long inputSize).ThrowIfFailure();
+            output.GetSize(out long outputSize).ThrowIfFailure();
+
+            long remaining = Math.Min(inputSize, outputSize);
             if (remaining < 0) throw new ArgumentException("Storage must have an explicit length");
             progress?.SetTotal(remaining);
 
@@ -81,8 +86,8 @@ namespace LibHac.Fs
                 {
                     int toCopy = (int)Math.Min(bufferSize, remaining);
                     Span<byte> buf = buffer.AsSpan(0, toCopy);
-                    input.Read(buf, pos);
-                    output.Write(buf, pos);
+                    input.Read(pos, buf);
+                    output.Write(pos, buf);
 
                     remaining -= toCopy;
                     pos += toCopy;
@@ -100,7 +105,8 @@ namespace LibHac.Fs
 
         public static void Fill(this IStorage input, byte value, IProgressReport progress = null)
         {
-            input.Fill(value, 0, input.GetSize(), progress);
+            input.GetSize(out long inputSize).ThrowIfFailure();
+            input.Fill(value, 0, inputSize, progress);
         }
 
         public static void Fill(this IStorage input, byte value, long offset, long count, IProgressReport progress = null)
@@ -116,7 +122,7 @@ namespace LibHac.Fs
             Span<byte> buf = stackalloc byte[(int)count];
             buf.Fill(value);
 
-            input.Write(buf, offset);
+            input.Write(offset, buf);
         }
 
         private static void FillLarge(this IStorage input, byte value, long offset, long count, IProgressReport progress = null)
@@ -139,7 +145,7 @@ namespace LibHac.Fs
                     int toFill = (int)Math.Min(bufferSize, remaining);
                     Span<byte> buf = buffer.AsSpan(0, toFill);
 
-                    input.Write(buf, pos);
+                    input.Write(pos, buf);
 
                     remaining -= toFill;
                     pos += toFill;
@@ -157,9 +163,11 @@ namespace LibHac.Fs
 
         public static void WriteAllBytes(this IStorage input, string filename, IProgressReport progress = null)
         {
+            input.GetSize(out long inputSize).ThrowIfFailure();
+
             using (var outFile = new FileStream(filename, FileMode.Create, FileAccess.Write))
             {
-                input.CopyToStream(outFile, input.GetSize(), progress);
+                input.CopyToStream(outFile, inputSize, progress);
             }
         }
 
@@ -167,7 +175,9 @@ namespace LibHac.Fs
         {
             if (storage == null) return new byte[0];
 
-            var arr = new byte[storage.GetSize()];
+            storage.GetSize(out long storageSize).ThrowIfFailure();
+
+            var arr = new byte[storageSize];
             storage.CopyTo(new MemoryStorage(arr));
             return arr;
         }
@@ -176,10 +186,12 @@ namespace LibHac.Fs
         {
             if (storage == null) return new T[0];
 
-            var arr = new T[storage.GetSize() / Marshal.SizeOf<T>()];
+            storage.GetSize(out long storageSize).ThrowIfFailure();
+
+            var arr = new T[storageSize / Marshal.SizeOf<T>()];
             Span<byte> dest = MemoryMarshal.Cast<T, byte>(arr.AsSpan());
 
-            storage.Read(dest, 0);
+            storage.Read(0, dest);
             return arr;
         }
 
@@ -194,7 +206,7 @@ namespace LibHac.Fs
             while (remaining > 0)
             {
                 int toWrite = (int)Math.Min(buffer.Length, remaining);
-                input.Read(buffer.AsSpan(0, toWrite), inOffset);
+                input.Read(inOffset, buffer.AsSpan(0, toWrite));
 
                 output.Write(buffer, 0, toWrite);
                 remaining -= toWrite;
@@ -203,7 +215,11 @@ namespace LibHac.Fs
             }
         }
 
-        public static void CopyToStream(this IStorage input, Stream output) => CopyToStream(input, output, input.GetSize());
+        public static void CopyToStream(this IStorage input, Stream output)
+        {
+            input.GetSize(out long inputSize).ThrowIfFailure();
+            CopyToStream(input, output, inputSize);
+        }
 
         public static IStorage AsStorage(this Stream stream)
         {

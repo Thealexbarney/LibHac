@@ -95,7 +95,7 @@ namespace LibHac.Fs.NcaUtils
             IStorage storage = nca.OpenRawStorage(index);
 
             var data = new byte[size];
-            storage.Read(data, offset);
+            storage.Read(offset, data).ThrowIfFailure();
 
             byte[] actualHash = Crypto.ComputeSha256(data, 0, data.Length);
 
@@ -116,7 +116,7 @@ namespace LibHac.Fs.NcaUtils
             IStorage decryptedStorage = nca.OpenRawStorage(index);
 
             Span<byte> buffer = stackalloc byte[sizeof(long)];
-            decryptedStorage.Read(buffer, header.EncryptionTreeOffset + 8);
+            decryptedStorage.Read(header.EncryptionTreeOffset + 8, buffer).ThrowIfFailure();
             long readDataSize = BinaryPrimitives.ReadInt64LittleEndian(buffer);
 
             if (header.EncryptionTreeOffset != readDataSize) return Validity.Invalid;

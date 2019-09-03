@@ -32,11 +32,13 @@ namespace LibHac.Fs
 
         public void AddFile(string filename, IFile file)
         {
+            file.GetSize(out long fileSize).ThrowIfFailure();
+
             var entry = new Entry
             {
                 Name = filename,
                 File = file,
-                Length = file.GetSize(),
+                Length = fileSize,
                 Offset = CurrentOffset,
                 NameLength = Encoding.UTF8.GetByteCount(filename),
                 HashOffset = 0,
@@ -148,7 +150,12 @@ namespace LibHac.Fs
                     if (entry.HashLength == 0) entry.HashLength = 0x200;
 
                     var data = new byte[entry.HashLength];
-                    entry.File.Read(data, entry.HashOffset);
+                    entry.File.Read(out long bytesRead, entry.HashOffset, data);
+
+                    if (bytesRead != entry.HashLength)
+                    {
+                        throw new ArgumentOutOfRangeException();
+                    }
 
                     entry.Hash = sha.ComputeHash(data);
                 }

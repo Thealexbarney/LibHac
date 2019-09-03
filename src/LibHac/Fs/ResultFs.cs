@@ -87,8 +87,11 @@
         public static Result InvalidOpenModeForWrite => new Result(ModuleFs, 6203);
 
         public static Result UnsupportedOperation => new Result(ModuleFs, 6300);
+        public static Result SubStorageNotResizable => new Result(ModuleFs, 6302);
+        public static Result SubStorageNotResizableMiddleOfFile => new Result(ModuleFs, 6302);
         public static Result UnsupportedOperationInMemoryStorageSetSize => new Result(ModuleFs, 6316);
         public static Result UnsupportedOperationInHierarchicalIvfcStorageSetSize => new Result(ModuleFs, 6304);
+        public static Result UnsupportedOperationInAesCtrExStorageWrite => new Result(ModuleFs, 6310);
         public static Result UnsupportedOperationInIndirectStorageWrite => new Result(ModuleFs, 6324);
         public static Result UnsupportedOperationInIndirectStorageSetSize => new Result(ModuleFs, 6325);
         public static Result UnsupportedOperationInConcatFsQueryEntry => new Result(ModuleFs, 6359);
@@ -108,6 +111,7 @@
 
         public static Result AllocationTableInsufficientFreeBlocks => new Result(ModuleFs, 6707);
 
+        public static Result Result6902 => new Result(ModuleFs, 6902);
         public static Result MountNameNotFound => new Result(ModuleFs, 6905);
     }
 }

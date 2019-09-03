@@ -26,24 +26,22 @@ namespace LibHac.Fs
         /// <summary>
         /// Reads a sequence of bytes from the current <see cref="IFile"/>.
         /// </summary>
+        /// <param name="bytesRead">If the operation returns successfully, The total number of bytes read into
+        /// the buffer. This can be less than the size of the buffer if the IFile is too short to fulfill the request.</param>
+        /// <param name="offset">The offset in the <see cref="IFile"/> at which to begin reading.</param>
         /// <param name="destination">The buffer where the read bytes will be stored.
         /// The number of bytes read will be no larger than the length of the buffer.</param>
-        /// <param name="offset">The offset in the <see cref="IFile"/> at which to begin reading.</param>
         /// <param name="options">Options for reading from the <see cref="IFile"/>.</param>
-        /// <returns>The total number of bytes read into the buffer. This can be less than the
-        /// size of the buffer if the IFile is too short to fulfill the request.</returns>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> is invalid.</exception>
-        /// <exception cref="NotSupportedException">The file's <see cref="OpenMode"/> does not allow reading.</exception>
+        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
         Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options);
 
         /// <summary>
         /// Writes a sequence of bytes to the current <see cref="IFile"/>.
         /// </summary>
-        /// <param name="source">The buffer containing the bytes to be written.</param>
         /// <param name="offset">The offset in the <see cref="IStorage"/> at which to begin writing.</param>
+        /// <param name="source">The buffer containing the bytes to be written.</param>
         /// <param name="options">Options for writing to the <see cref="IFile"/>.</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> is negative.</exception>
-        /// <exception cref="NotSupportedException">The file's <see cref="OpenMode"/> does not allow this request.</exception>
+        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
         Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options);
 
         /// <summary>
@@ -54,15 +52,15 @@ namespace LibHac.Fs
         /// <summary>
         /// Gets the number of bytes in the file.
         /// </summary>
-        /// <returns>The length of the file in bytes.</returns>
+        /// <param name="size">If the operation returns successfully, the length of the file in bytes.</param>
+        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
         Result GetSize(out long size);
 
         /// <summary>
         /// Sets the size of the file in bytes.
         /// </summary>
         /// <param name="size">The desired size of the file in bytes.</param>
-        /// <exception cref="NotSupportedException">If increasing the file size, The file's
-        /// <see cref="OpenMode"/> does not allow this appending.</exception>
+        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
         Result SetSize(long size);
     }
 }

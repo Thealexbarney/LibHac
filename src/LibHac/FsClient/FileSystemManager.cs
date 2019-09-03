@@ -364,22 +364,22 @@ namespace LibHac.FsClient
 
         public int ReadFile(FileHandle handle, Span<byte> destination, long offset, ReadOption option)
         {
-            int bytesRead;
+            long bytesRead;
 
             if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
             {
                 TimeSpan startTime = Time.GetCurrent();
-                bytesRead = handle.File.Read(destination, offset, option);
+                handle.File.Read(out bytesRead, offset, destination, option).ThrowIfFailure();
                 TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(startTime, endTime, handle, $", offset: {offset}, size: {destination.Length}");
             }
             else
             {
-                bytesRead = handle.File.Read(destination, offset, option);
+                handle.File.Read(out bytesRead, offset, destination, option).ThrowIfFailure();
             }
 
-            return bytesRead;
+            return (int)bytesRead;
         }
 
         public void WriteFile(FileHandle handle, ReadOnlySpan<byte> source, long offset)
@@ -392,7 +392,7 @@ namespace LibHac.FsClient
             if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
             {
                 TimeSpan startTime = Time.GetCurrent();
-                handle.File.Write(source, offset, option);
+                handle.File.Write(offset, source, option);
                 TimeSpan endTime = Time.GetCurrent();
 
                 string optionString = (option & WriteOption.Flush) == 0 ? "" : $", write_option: {option}";
@@ -401,7 +401,7 @@ namespace LibHac.FsClient
             }
             else
             {
-                handle.File.Write(source, offset, option);
+                handle.File.Write(offset, source, option);
             }
         }
 
@@ -423,7 +423,9 @@ namespace LibHac.FsClient
 
         public long GetFileSize(FileHandle handle)
         {
-            return handle.File.GetSize();
+            handle.File.GetSize(out long fileSize).ThrowIfFailure();
+
+            return fileSize;
         }
 
         public void SetFileSize(FileHandle handle, long size)
@@ -501,16 +503,16 @@ namespace LibHac.FsClient
                 handle.Directory.Dispose();
             }
         }
-        
+
         internal Result FindFileSystem(ReadOnlySpan<char> path, out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
         {
             fileSystem = default;
 
-            Result result = GetMountName(path, out ReadOnlySpan<char> mountName, out subPath);
-            if (result.IsFailure()) return result;
+            Result rc = GetMountName(path, out ReadOnlySpan<char> mountName, out subPath);
+            if (rc.IsFailure()) return rc;
 
-            result = MountTable.Find(mountName.ToString(), out fileSystem);
-            if (result.IsFailure()) return result;
+            rc = MountTable.Find(mountName.ToString(), out fileSystem);
+            if (rc.IsFailure()) return rc;
 
             return Result.Success;
         }

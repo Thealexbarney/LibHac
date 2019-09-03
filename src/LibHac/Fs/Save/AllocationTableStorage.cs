@@ -22,7 +22,7 @@ namespace LibHac.Fs.Save
             _length = initialBlock == -1 ? 0 : table.GetListLength(initialBlock) * blockSize;
         }
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
             var iterator = new AllocationTableIterator(Fat, InitialBlock);
 
@@ -41,15 +41,18 @@ namespace LibHac.Fs.Save
                 int remainingInSegment = iterator.CurrentSegmentSize * BlockSize - segmentPos;
                 int bytesToRead = Math.Min(remaining, remainingInSegment);
 
-                BaseStorage.Read(destination.Slice(outPos, bytesToRead), physicalOffset);
+                Result rc = BaseStorage.Read(physicalOffset, destination.Slice(outPos, bytesToRead));
+                if (rc.IsFailure()) return rc;
 
                 outPos += bytesToRead;
                 inPos += bytesToRead;
                 remaining -= bytesToRead;
             }
+
+            return Result.Success;
         }
 
-        protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
             var iterator = new AllocationTableIterator(Fat, InitialBlock);
 
@@ -68,27 +71,34 @@ namespace LibHac.Fs.Save
                 int remainingInSegment = iterator.CurrentSegmentSize * BlockSize - segmentPos;
                 int bytesToWrite = Math.Min(remaining, remainingInSegment);
 
-                BaseStorage.Write(source.Slice(outPos, bytesToWrite), physicalOffset);
+                Result rc = BaseStorage.Write(physicalOffset, source.Slice(outPos, bytesToWrite));
+                if (rc.IsFailure()) return rc;
 
                 outPos += bytesToWrite;
                 inPos += bytesToWrite;
                 remaining -= bytesToWrite;
             }
+
+            return Result.Success;
         }
 
-        public override void Flush()
+        public override Result Flush()
         {
-            BaseStorage.Flush();
+            return BaseStorage.Flush();
         }
 
-        public override long GetSize() => _length;
+        public override Result GetSize(out long size)
+        {
+            size = _length;
+            return Result.Success;
+        }
 
-        public override void SetSize(long size)
+        public override Result SetSize(long size)
         {
             int oldBlockCount = (int)Util.DivideByRoundUp(_length, BlockSize);
             int newBlockCount = (int)Util.DivideByRoundUp(size, BlockSize);
 
-            if (oldBlockCount == newBlockCount) return;
+            if (oldBlockCount == newBlockCount) return Result.Success;
 
             if (oldBlockCount == 0)
             {
@@ -97,7 +107,7 @@ namespace LibHac.Fs.Save
 
                 _length = newBlockCount * BlockSize;
 
-                return;
+                return Result.Success;
             }
 
             if (newBlockCount == 0)
@@ -107,7 +117,7 @@ namespace LibHac.Fs.Save
                 InitialBlock = int.MinValue;
                 _length = 0;
 
-                return;
+                return Result.Success;
             }
 
             if (newBlockCount > oldBlockCount)
@@ -124,6 +134,8 @@ namespace LibHac.Fs.Save
             }
 
             _length = newBlockCount * BlockSize;
+
+            return Result.Success;
         }
     }
 }

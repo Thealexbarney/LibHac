@@ -31,7 +31,7 @@ namespace LibHac.Fs
         {
             Debug.Assert(count <= BufferSize);
 
-            _file.Read(_buffer.AsSpan(0, count), _start + offset);
+            _file.Read(out long _, _start + offset, _buffer.AsSpan(0, count)).ThrowIfFailure();
             if (updatePosition) Position = offset + count;
         }
 
@@ -101,7 +101,7 @@ namespace LibHac.Fs
         public long ReadInt64(long offset, bool updatePosition)
         {
             FillBuffer(offset, sizeof(long), updatePosition);
-            
+
             return MemoryMarshal.Read<long>(_buffer);
         }
 
@@ -121,16 +121,16 @@ namespace LibHac.Fs
 
         public byte[] ReadBytes(long offset, int length, bool updatePosition)
         {
-            var result = new byte[length];
-            _file.Read(result, offset);
+            var bytes = new byte[length];
+            _file.Read(out long _, offset, bytes).ThrowIfFailure();
 
             if (updatePosition) Position = offset + length;
-            return result;
+            return bytes;
         }
 
         public void ReadBytes(Span<byte> destination, long offset, bool updatePosition)
         {
-            _file.Read(destination, offset);
+            _file.Read(out long _, offset, destination).ThrowIfFailure();
 
             if (updatePosition) Position = offset + destination.Length;
         }
@@ -138,7 +138,7 @@ namespace LibHac.Fs
         public string ReadAscii(long offset, int length, bool updatePosition)
         {
             var bytes = new byte[length];
-            _file.Read(bytes, offset);
+            _file.Read(out long _, offset, bytes).ThrowIfFailure();
 
             if (updatePosition) Position = offset + length;
             return Encoding.ASCII.GetString(bytes);
