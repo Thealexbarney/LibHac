@@ -5,6 +5,6 @@ namespace LibHac.FsClient
 {
     public interface IAccessLog
     {
-        void Log(TimeSpan startTime, TimeSpan endTime, int handleId, string message, [CallerMemberName] string caller = "");
+        void Log(Result result, TimeSpan startTime, TimeSpan endTime, int handleId, string message, [CallerMemberName] string caller = "");
     }
 }

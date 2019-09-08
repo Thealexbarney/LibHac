@@ -44,20 +44,23 @@ namespace LibHac.FsClient
 
         public void Unmount(string mountName)
         {
-            MountTable.Find(mountName, out FileSystemAccessor fileSystem).ThrowIfFailure();
+            Result rc;
 
-            if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
+            if (IsEnabledAccessLog() && this.IsEnabledFileSystemAccessorAccessLog(mountName))
             {
                 TimeSpan startTime = Time.GetCurrent();
-                MountTable.Unmount(mountName);
-                TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, $", name: \"{mountName}\"");
+                rc = MountTable.Unmount(mountName);
+
+                TimeSpan endTime = Time.GetCurrent();
+                OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName}\"");
             }
             else
             {
-                MountTable.Unmount(mountName);
+                rc = MountTable.Unmount(mountName);
             }
+
+            rc.ThrowIfFailure();
         }
 
         public void SetAccessLog(bool isEnabled, IAccessLog accessLog = null)
@@ -78,7 +81,7 @@ namespace LibHac.FsClient
                 rc = fileSystem.CreateDirectory(subPath.ToString());
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, $", path: \"{path}\"");
+                OutputAccessLog(rc, startTime, endTime, $", path: \"{path}\"");
             }
             else
             {
@@ -104,7 +107,7 @@ namespace LibHac.FsClient
                 rc = fileSystem.CreateFile(subPath.ToString(), size, options);
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, $", path: \"{path}\", size: {size}");
+                OutputAccessLog(rc, startTime, endTime, $", path: \"{path}\", size: {size}");
             }
             else
             {
@@ -125,7 +128,7 @@ namespace LibHac.FsClient
                 rc = fileSystem.DeleteDirectory(subPath.ToString());
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, $", path: \"{path}\"");
+                OutputAccessLog(rc, startTime, endTime, $", path: \"{path}\"");
             }
             else
             {
@@ -146,7 +149,7 @@ namespace LibHac.FsClient
                 rc = fileSystem.DeleteDirectoryRecursively(subPath.ToString());
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, $", path: \"{path}\"");
+                OutputAccessLog(rc, startTime, endTime, $", path: \"{path}\"");
             }
             else
             {
@@ -167,7 +170,7 @@ namespace LibHac.FsClient
                 rc = fileSystem.CleanDirectoryRecursively(subPath.ToString());
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, $", path: \"{path}\"");
+                OutputAccessLog(rc, startTime, endTime, $", path: \"{path}\"");
             }
             else
             {
@@ -188,7 +191,7 @@ namespace LibHac.FsClient
                 rc = fileSystem.DeleteFile(subPath.ToString());
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, $", path: \"{path}\"");
+                OutputAccessLog(rc, startTime, endTime, $", path: \"{path}\"");
             }
             else
             {
@@ -217,7 +220,7 @@ namespace LibHac.FsClient
                 rc = oldFileSystem.RenameDirectory(oldSubPath.ToString(), newSubPath.ToString());
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, $", path: \"{oldPath}\", new_path: \"{newPath}\"");
+                OutputAccessLog(rc, startTime, endTime, $", path: \"{oldPath}\", new_path: \"{newPath}\"");
             }
             else
             {
@@ -246,7 +249,7 @@ namespace LibHac.FsClient
                 rc = oldFileSystem.RenameFile(oldSubPath.ToString(), newSubPath.ToString());
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, $", path: \"{oldPath}\", new_path: \"{newPath}\"");
+                OutputAccessLog(rc, startTime, endTime, $", path: \"{oldPath}\", new_path: \"{newPath}\"");
             }
             else
             {
@@ -269,7 +272,7 @@ namespace LibHac.FsClient
                 rc = fileSystem.GetEntryType(out type, subPath.ToString());
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, $", path: \"{path}\"");
+                OutputAccessLog(rc, startTime, endTime, $", path: \"{path}\"");
             }
             else
             {
@@ -293,7 +296,7 @@ namespace LibHac.FsClient
                 handle = new FileHandle(file);
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, handle, $", path: \"{path}\", open_mode: {mode}");
+                OutputAccessLog(rc, startTime, endTime, handle, $", path: \"{path}\", open_mode: {mode}");
             }
             else
             {
@@ -318,7 +321,7 @@ namespace LibHac.FsClient
                 handle = new DirectoryHandle(dir);
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, handle, $", path: \"{path}\", open_mode: {mode}");
+                OutputAccessLog(rc, startTime, endTime, handle, $", path: \"{path}\", open_mode: {mode}");
             }
             else
             {
@@ -370,7 +373,7 @@ namespace LibHac.FsClient
                 rc = fileSystem.Commit();
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, $", name: \"{mountName}\"");
+                OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName}\"");
             }
             else
             {
@@ -398,7 +401,7 @@ namespace LibHac.FsClient
                 rc = handle.File.Read(out bytesRead, offset, destination, option);
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, handle, $", offset: {offset}, size: {destination.Length}");
+                OutputAccessLog(rc, startTime, endTime, handle, $", offset: {offset}, size: {destination.Length}");
             }
             else
             {
@@ -425,7 +428,7 @@ namespace LibHac.FsClient
 
                 string optionString = (option & WriteOption.Flush) == 0 ? "" : $", write_option: {option}";
 
-                OutputAccessLog(startTime, endTime, handle, $", offset: {offset}, size: {source.Length}{optionString}");
+                OutputAccessLog(rc, startTime, endTime, handle, $", offset: {offset}, size: {source.Length}{optionString}");
             }
             else
             {
@@ -445,7 +448,7 @@ namespace LibHac.FsClient
                 rc = handle.File.Flush();
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, handle, string.Empty);
+                OutputAccessLog(rc, startTime, endTime, handle, string.Empty);
             }
             else
             {
@@ -470,7 +473,7 @@ namespace LibHac.FsClient
                 rc = handle.File.SetSize(size);
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, handle, $", size: {size}");
+                OutputAccessLog(rc, startTime, endTime, handle, $", size: {size}");
             }
             else
             {
@@ -493,7 +496,7 @@ namespace LibHac.FsClient
                 handle.File.Dispose();
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, handle, string.Empty);
+                OutputAccessLog(Result.Success, startTime, endTime, handle, string.Empty);
             }
             else
             {
@@ -519,7 +522,7 @@ namespace LibHac.FsClient
                 IEnumerable<DirectoryEntry> entries = handle.Directory.Read();
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, handle, string.Empty);
+                OutputAccessLog(Result.Success, startTime, endTime, handle, string.Empty);
                 return entries;
             }
 
@@ -534,7 +537,7 @@ namespace LibHac.FsClient
                 handle.Directory.Dispose();
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(startTime, endTime, handle, string.Empty);
+                OutputAccessLog(Result.Success, startTime, endTime, handle, string.Empty);
             }
             else
             {
@@ -606,19 +609,19 @@ namespace LibHac.FsClient
             return handle.Directory.Parent.IsAccessLogEnabled;
         }
 
-        internal void OutputAccessLog(TimeSpan startTime, TimeSpan endTime, string message, [CallerMemberName] string caller = "")
+        internal void OutputAccessLog(Result result, TimeSpan startTime, TimeSpan endTime, string message, [CallerMemberName] string caller = "")
         {
-            AccessLog.Log(startTime, endTime, 0, message, caller);
+            AccessLog.Log(result, startTime, endTime, 0, message, caller);
         }
 
-        internal void OutputAccessLog(TimeSpan startTime, TimeSpan endTime, FileHandle handle, string message, [CallerMemberName] string caller = "")
+        internal void OutputAccessLog(Result result, TimeSpan startTime, TimeSpan endTime, FileHandle handle, string message, [CallerMemberName] string caller = "")
         {
-            AccessLog.Log(startTime, endTime, handle.GetId(), message, caller);
+            AccessLog.Log(result, startTime, endTime, handle.GetId(), message, caller);
         }
 
-        internal void OutputAccessLog(TimeSpan startTime, TimeSpan endTime, DirectoryHandle handle, string message, [CallerMemberName] string caller = "")
+        internal void OutputAccessLog(Result result, TimeSpan startTime, TimeSpan endTime, DirectoryHandle handle, string message, [CallerMemberName] string caller = "")
         {
-            AccessLog.Log(startTime, endTime, handle.GetId(), message, caller);
+            AccessLog.Log(result, startTime, endTime, handle.GetId(), message, caller);
         }
     }
 }

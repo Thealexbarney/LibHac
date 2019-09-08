@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using LibHac.Fs;
+using LibHac.FsClient.Accessors;
 
 namespace LibHac.FsClient
 {
@@ -201,6 +202,16 @@ namespace LibHac.FsClient
             if (fs.FileExists(path)) fs.DeleteFile(path);
 
             fs.CreateFile(path, size, CreateFileOptions.None);
+        }
+
+        internal static bool IsEnabledFileSystemAccessorAccessLog(this FileSystemManager fs, string mountName)
+        {
+            if (fs.MountTable.Find(mountName, out FileSystemAccessor accessor).IsFailure())
+            {
+                return true;
+            }
+
+            return accessor.IsAccessLogEnabled;
         }
     }
 }
