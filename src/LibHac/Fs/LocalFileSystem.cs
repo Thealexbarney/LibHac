@@ -58,7 +58,7 @@ namespace LibHac.Fs
             return GetSizeInternal(info);
         }
 
-        public void CreateDirectory(string path)
+        public Result CreateDirectory(string path)
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
@@ -66,18 +66,18 @@ namespace LibHac.Fs
 
             if (dir.Exists)
             {
-                ThrowHelper.ThrowResult(ResultFs.PathAlreadyExists);
+                return ResultFs.PathAlreadyExists.Log();
             }
 
             if (dir.Parent?.Exists != true)
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+                return ResultFs.PathNotFound.Log();
             }
 
-            CreateDirInternal(dir);
+            return CreateDirInternal(dir);
         }
 
-        public void CreateFile(string path, long size, CreateFileOptions options)
+        public Result CreateFile(string path, long size, CreateFileOptions options)
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
@@ -85,121 +85,140 @@ namespace LibHac.Fs
 
             if (file.Exists)
             {
-                ThrowHelper.ThrowResult(ResultFs.PathAlreadyExists);
+                return ResultFs.PathAlreadyExists.Log();
             }
 
             if (file.Directory?.Exists != true)
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+                return ResultFs.PathNotFound.Log();
             }
 
-            using (FileStream stream = CreateFileInternal(file))
+            Result rc = CreateFileInternal(out FileStream stream, file);
+
+            using (stream)
             {
-                SetStreamLengthInternal(stream, size);
+                if (rc.IsFailure()) return rc;
+
+                return SetStreamLengthInternal(stream, size);
             }
         }
 
-        public void DeleteDirectory(string path)
+        public Result DeleteDirectory(string path)
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
             DirectoryInfo dir = GetDirInfo(localPath);
 
-            DeleteDirectoryInternal(dir, false);
+            return DeleteDirectoryInternal(dir, false);
         }
 
-        public void DeleteDirectoryRecursively(string path)
+        public Result DeleteDirectoryRecursively(string path)
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
             DirectoryInfo dir = GetDirInfo(localPath);
 
-            DeleteDirectoryInternal(dir, true);
+            return DeleteDirectoryInternal(dir, true);
         }
 
-        public void CleanDirectoryRecursively(string path)
+        public Result CleanDirectoryRecursively(string path)
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
             foreach (string file in Directory.EnumerateFiles(localPath))
             {
-                DeleteFileInternal(GetFileInfo(file));
+                Result rc = DeleteFileInternal(GetFileInfo(file));
+                if (rc.IsFailure()) return rc;
             }
 
             foreach (string dir in Directory.EnumerateDirectories(localPath))
             {
-                DeleteDirectoryInternal(GetDirInfo(dir), true);
+                Result rc = DeleteDirectoryInternal(GetDirInfo(dir), true);
+                if (rc.IsFailure()) return rc;
             }
+
+            return Result.Success;
         }
 
-        public void DeleteFile(string path)
+        public Result DeleteFile(string path)
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
             FileInfo file = GetFileInfo(localPath);
 
-            DeleteFileInternal(file);
+            return DeleteFileInternal(file);
         }
 
-        public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
+        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
+            // Getting the local path is done in the LocalDirectory constructor
             path = PathTools.Normalize(path);
+            directory = default;
 
-            if (GetEntryType(path) == DirectoryEntryType.File)
+            Result rc = GetEntryType(out DirectoryEntryType entryType, path);
+            if (rc.IsFailure()) return rc;
+
+            if (entryType == DirectoryEntryType.File)
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+                return ResultFs.PathNotFound.Log();
             }
 
-            return new LocalDirectory(this, path, mode);
+            directory = new LocalDirectory(this, path, mode);
+            return Result.Success;
         }
 
-        public IFile OpenFile(string path, OpenMode mode)
+        public Result OpenFile(out IFile file, string path, OpenMode mode)
         {
+            file = default;
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            if (GetEntryType(path) == DirectoryEntryType.Directory)
+            Result rc = GetEntryType(out DirectoryEntryType entryType, path);
+            if (rc.IsFailure()) return rc;
+
+            if (entryType == DirectoryEntryType.Directory)
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+                return ResultFs.PathNotFound.Log();
             }
 
-            return new LocalFile(localPath, mode);
+            file = new LocalFile(localPath, mode);
+            return Result.Success;
         }
 
-        public void RenameDirectory(string srcPath, string dstPath)
+        public Result RenameDirectory(string oldPath, string newPath)
         {
-            srcPath = PathTools.Normalize(srcPath);
-            dstPath = PathTools.Normalize(dstPath);
+            oldPath = PathTools.Normalize(oldPath);
+            newPath = PathTools.Normalize(newPath);
 
             // Official FS behavior is to do nothing in this case
-            if (srcPath == dstPath) return;
+            if (oldPath == newPath) return Result.Success;
 
             // FS does the subpath check before verifying the path exists
-            if (PathTools.IsSubPath(srcPath.AsSpan(), dstPath.AsSpan()))
+            if (PathTools.IsSubPath(oldPath.AsSpan(), newPath.AsSpan()))
             {
                 ThrowHelper.ThrowResult(ResultFs.DestinationIsSubPathOfSource);
             }
 
-            DirectoryInfo srcDir = GetDirInfo(ResolveLocalPath(srcPath));
-            DirectoryInfo dstDir = GetDirInfo(ResolveLocalPath(dstPath));
+            DirectoryInfo srcDir = GetDirInfo(ResolveLocalPath(oldPath));
+            DirectoryInfo dstDir = GetDirInfo(ResolveLocalPath(newPath));
 
-            RenameDirInternal(srcDir, dstDir);
+            return RenameDirInternal(srcDir, dstDir);
         }
 
-        public void RenameFile(string srcPath, string dstPath)
+        public Result RenameFile(string oldPath, string newPath)
         {
-            string srcLocalPath = ResolveLocalPath(PathTools.Normalize(srcPath));
-            string dstLocalPath = ResolveLocalPath(PathTools.Normalize(dstPath));
+            string srcLocalPath = ResolveLocalPath(PathTools.Normalize(oldPath));
+            string dstLocalPath = ResolveLocalPath(PathTools.Normalize(newPath));
 
             // Official FS behavior is to do nothing in this case
-            if (srcLocalPath == dstLocalPath) return;
+            if (srcLocalPath == dstLocalPath) return Result.Success;
 
             FileInfo srcFile = GetFileInfo(srcLocalPath);
             FileInfo dstFile = GetFileInfo(dstLocalPath);
 
-            RenameFileInternal(srcFile, dstFile);
+            return RenameFileInternal(srcFile, dstFile);
         }
 
-        public DirectoryEntryType GetEntryType(string path)
+        public Result GetEntryType(out DirectoryEntryType entryType, string path)
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
@@ -207,48 +226,57 @@ namespace LibHac.Fs
 
             if (dir.Exists)
             {
-                return DirectoryEntryType.Directory;
+                entryType = DirectoryEntryType.Directory;
+                return Result.Success;
             }
 
             FileInfo file = GetFileInfo(localPath);
 
             if (file.Exists)
             {
-                return DirectoryEntryType.File;
+                entryType = DirectoryEntryType.File;
+                return Result.Success;
             }
 
-            return DirectoryEntryType.NotFound;
+            entryType = DirectoryEntryType.NotFound;
+            return ResultFs.PathNotFound.Log();
         }
 
-        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
         {
+            timeStamp = default;
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            if (!GetFileInfo(localPath).Exists) ThrowHelper.ThrowResult(ResultFs.PathNotFound);
-
-            FileTimeStampRaw timeStamp = default;
+            if (!GetFileInfo(localPath).Exists) return ResultFs.PathNotFound.Log();
 
             timeStamp.Created = new DateTimeOffset(File.GetCreationTime(localPath)).ToUnixTimeSeconds();
             timeStamp.Accessed = new DateTimeOffset(File.GetLastAccessTime(localPath)).ToUnixTimeSeconds();
             timeStamp.Modified = new DateTimeOffset(File.GetLastWriteTime(localPath)).ToUnixTimeSeconds();
 
-            return timeStamp;
+            return Result.Success;
         }
 
-        public long GetFreeSpaceSize(string path)
+        public Result GetFreeSpaceSize(out long freeSpace, string path)
         {
-            return new DriveInfo(BasePath).AvailableFreeSpace;
+            freeSpace = new DriveInfo(BasePath).AvailableFreeSpace;
+            return Result.Success;
         }
 
-        public long GetTotalSpaceSize(string path)
+        public Result GetTotalSpaceSize(out long totalSpace, string path)
         {
-            return new DriveInfo(BasePath).TotalSize;
+            totalSpace = new DriveInfo(BasePath).TotalSize;
+            return Result.Success;
         }
 
-        public void Commit() { }
+        public Result Commit()
+        {
+            return Result.Success;
+        }
 
-        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
+        {
+            return ResultFs.UnsupportedOperation.Log();
+        }
 
         private static long GetSizeInternal(FileInfo file)
         {
@@ -268,35 +296,36 @@ namespace LibHac.Fs
             }
         }
 
-        private static FileStream CreateFileInternal(FileInfo file)
+        private static Result CreateFileInternal(out FileStream file, FileInfo fileInfo)
         {
+            file = default;
+
             try
             {
-                return new FileStream(file.FullName, FileMode.CreateNew, FileAccess.ReadWrite);
+                file = new FileStream(fileInfo.FullName, FileMode.CreateNew, FileAccess.ReadWrite);
             }
-            catch (DirectoryNotFoundException ex)
+            catch (DirectoryNotFoundException)
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound, ex);
-                throw;
+                return ResultFs.PathNotFound.Log();
             }
             catch (IOException ex) when (ex.HResult == ErrorDiskFull || ex.HResult == ErrorHandleDiskFull)
             {
-                ThrowHelper.ThrowResult(ResultFs.InsufficientFreeSpace, ex);
-                throw;
+                return ResultFs.InsufficientFreeSpace.Log();
             }
             catch (IOException ex) when (ex.HResult == ErrorFileExists)
             {
-                ThrowHelper.ThrowResult(ResultFs.PathAlreadyExists, ex);
-                throw;
+                return ResultFs.PathAlreadyExists.Log();
             }
             catch (Exception ex) when (ex is SecurityException || ex is UnauthorizedAccessException)
             {
-                // todo: Should a HorizonResultException be thrown?
+                // todo: What Result value should be returned?
                 throw;
             }
+
+            return Result.Success;
         }
 
-        private static void SetStreamLengthInternal(Stream stream, long size)
+        private static Result SetStreamLengthInternal(Stream stream, long size)
         {
             try
             {
@@ -304,128 +333,131 @@ namespace LibHac.Fs
             }
             catch (IOException ex) when (ex.HResult == ErrorDiskFull || ex.HResult == ErrorHandleDiskFull)
             {
-                ThrowHelper.ThrowResult(ResultFs.InsufficientFreeSpace, ex);
-                throw;
+                return ResultFs.InsufficientFreeSpace.Log();
             }
+
+            return Result.Success;
         }
 
-        private static void DeleteDirectoryInternal(DirectoryInfo dir, bool recursive)
+        private static Result DeleteDirectoryInternal(DirectoryInfo dir, bool recursive)
         {
-            if (!dir.Exists) ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            if (!dir.Exists) return ResultFs.PathNotFound.Log();
 
             try
             {
                 dir.Delete(recursive);
             }
-            catch (DirectoryNotFoundException ex)
+            catch (DirectoryNotFoundException)
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound, ex);
-                throw;
+                return ResultFs.PathNotFound.Log();
             }
             catch (IOException ex) when (ex.HResult == ErrorDirNotEmpty)
             {
-                ThrowHelper.ThrowResult(ResultFs.DirectoryNotEmpty, ex);
-                throw;
+                return ResultFs.DirectoryNotEmpty.Log();
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
-                // todo: Should a HorizonResultException be thrown?
+                // todo: What Result value should be returned?
                 throw;
             }
 
             EnsureDeleted(dir);
+
+            return Result.Success;
         }
 
-        private static void DeleteFileInternal(FileInfo file)
+        private static Result DeleteFileInternal(FileInfo file)
         {
-            if (!file.Exists) ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            if (!file.Exists) return ResultFs.PathNotFound.Log();
 
             try
             {
                 file.Delete();
             }
-            catch (DirectoryNotFoundException ex)
+            catch (DirectoryNotFoundException)
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound, ex);
-                throw;
+                return ResultFs.PathNotFound.Log();
             }
             catch (IOException ex) when (ex.HResult == ErrorDirNotEmpty)
             {
-                ThrowHelper.ThrowResult(ResultFs.DirectoryNotEmpty, ex);
-                throw;
+                return ResultFs.DirectoryNotEmpty.Log();
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
-                // todo: Should a HorizonResultException be thrown?
+                // todo: What Result value should be returned?
                 throw;
             }
 
             EnsureDeleted(file);
+
+            return Result.Success;
         }
 
-        private static void CreateDirInternal(DirectoryInfo dir)
+        private static Result CreateDirInternal(DirectoryInfo dir)
         {
             try
             {
                 dir.Create();
             }
-            catch (DirectoryNotFoundException ex)
+            catch (DirectoryNotFoundException)
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound, ex);
-                throw;
+                return ResultFs.PathNotFound.Log();
             }
             catch (IOException ex) when (ex.HResult == ErrorDiskFull || ex.HResult == ErrorHandleDiskFull)
             {
-                ThrowHelper.ThrowResult(ResultFs.InsufficientFreeSpace, ex);
-                throw;
+                return ResultFs.InsufficientFreeSpace.Log();
             }
             catch (Exception ex) when (ex is SecurityException || ex is UnauthorizedAccessException)
             {
-                // todo: Should a HorizonResultException be thrown?
+                // todo: What Result value should be returned?
                 throw;
             }
+
+            return Result.Success;
         }
 
-        private static void RenameDirInternal(DirectoryInfo source, DirectoryInfo dest)
+        private static Result RenameDirInternal(DirectoryInfo source, DirectoryInfo dest)
         {
-            if (!source.Exists) ThrowHelper.ThrowResult(ResultFs.PathNotFound);
-            if (dest.Exists) ThrowHelper.ThrowResult(ResultFs.PathAlreadyExists);
+            if (!source.Exists) return ResultFs.PathNotFound.Log();
+            if (dest.Exists) return ResultFs.PathAlreadyExists.Log();
 
             try
             {
                 source.MoveTo(dest.FullName);
             }
-            catch (DirectoryNotFoundException ex)
+            catch (DirectoryNotFoundException)
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound, ex);
-                throw;
+                return ResultFs.PathNotFound.Log();
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
-                // todo: Should a HorizonResultException be thrown?
+                // todo: What Result value should be returned?
                 throw;
             }
+
+            return Result.Success;
         }
 
-        private static void RenameFileInternal(FileInfo source, FileInfo dest)
+        private static Result RenameFileInternal(FileInfo source, FileInfo dest)
         {
-            if (!source.Exists) ThrowHelper.ThrowResult(ResultFs.PathNotFound);
-            if (dest.Exists) ThrowHelper.ThrowResult(ResultFs.PathAlreadyExists);
+            if (!source.Exists) return ResultFs.PathNotFound.Log();
+            if (dest.Exists) return ResultFs.PathAlreadyExists.Log();
 
             try
             {
                 source.MoveTo(dest.FullName);
             }
-            catch (DirectoryNotFoundException ex)
+            catch (DirectoryNotFoundException)
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound, ex);
-                throw;
+                return ResultFs.PathNotFound.Log();
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
-                // todo: Should a HorizonResultException be thrown?
+                // todo: What Result value should be returned?
                 throw;
             }
+
+            return Result.Success;
         }
 
 

@@ -67,9 +67,10 @@ namespace LibHac
 
         private void OpenAllNcas()
         {
+            ContentFs.OpenDirectory(out IDirectory rootDir, "/", OpenDirectoryMode.All).ThrowIfFailure();
+
             // Todo: give warning if directories named "*.nca" are found or manually fix the archive bit
-            IEnumerable<DirectoryEntry> files = ContentFs.OpenDirectory("/", OpenDirectoryMode.All)
-                .EnumerateEntries("*.nca", SearchOptions.RecurseSubdirectories)
+            IEnumerable<DirectoryEntry> files = rootDir.EnumerateEntries("*.nca", SearchOptions.RecurseSubdirectories)
                 .Where(x => x.Type == DirectoryEntryType.File);
 
             foreach (DirectoryEntry fileEntry in files)
@@ -77,9 +78,9 @@ namespace LibHac
                 SwitchFsNca nca = null;
                 try
                 {
-                    IStorage storage = ContentFs.OpenFile(fileEntry.FullPath, OpenMode.Read).AsStorage();
+                    ContentFs.OpenFile(out IFile ncaFile, fileEntry.FullPath, OpenMode.Read).ThrowIfFailure();
 
-                    nca = new SwitchFsNca(new Nca(Keyset, storage));
+                    nca = new SwitchFsNca(new Nca(Keyset, ncaFile.AsStorage()));
 
                     nca.NcaId = GetNcaFilename(fileEntry.Name, nca);
                     string extension = nca.Nca.Header.ContentType == NcaContentType.Meta ? ".cnmt.nca" : ".nca";
@@ -115,7 +116,8 @@ namespace LibHac
 
                 try
                 {
-                    IFile file = SaveFs.OpenFile(fileEntry.FullPath, OpenMode.Read);
+                    SaveFs.OpenFile(out IFile file, fileEntry.FullPath, OpenMode.Read).ThrowIfFailure();
+
                     save = new SaveDataFileSystem(Keyset, file.AsStorage(), IntegrityCheckLevel.None, true);
                 }
                 catch (Exception ex)
@@ -141,7 +143,7 @@ namespace LibHac
                     IFileSystem fs = nca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
                     string cnmtPath = fs.EnumerateEntries("*.cnmt").Single().FullPath;
 
-                    IFile file = fs.OpenFile(cnmtPath, OpenMode.Read);
+                    fs.OpenFile(out IFile file, cnmtPath, OpenMode.Read).ThrowIfFailure();
 
                     var metadata = new Cnmt(file.AsStream());
                     title.Id = metadata.TitleId;
@@ -185,7 +187,7 @@ namespace LibHac
             foreach (Title title in Titles.Values.Where(x => x.ControlNca != null))
             {
                 IFileSystem romfs = title.ControlNca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
-                IFile control = romfs.OpenFile("control.nacp", OpenMode.Read);
+                romfs.OpenFile(out IFile control, "control.nacp", OpenMode.Read).ThrowIfFailure();
 
                 title.Control = new Nacp(control.AsStream());
 

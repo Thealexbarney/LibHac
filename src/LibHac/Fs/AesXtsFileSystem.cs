@@ -27,14 +27,14 @@ namespace LibHac.Fs
             BlockSize = blockSize;
         }
 
-        public void CreateDirectory(string path)
+        public Result CreateDirectory(string path)
         {
-            BaseFileSystem.CreateDirectory(path);
+            return BaseFileSystem.CreateDirectory(path);
         }
 
-        public void CreateFile(string path, long size, CreateFileOptions options)
+        public Result CreateFile(string path, long size, CreateFileOptions options)
         {
-            CreateFile(path, size, options, new byte[0x20]);
+            return CreateFile(path, size, options, new byte[0x20]);
         }
 
         /// <summary>
@@ -45,83 +45,109 @@ namespace LibHac.Fs
         /// <param name="options">Flags to control how the file is created.
         /// Should usually be <see cref="CreateFileOptions.None"/></param>
         /// <param name="key">The 256-bit key containing a 128-bit data key followed by a 128-bit tweak key.</param>
-        public void CreateFile(string path, long size, CreateFileOptions options, byte[] key)
+        public Result CreateFile(string path, long size, CreateFileOptions options, byte[] key)
         {
             long containerSize = AesXtsFile.HeaderLength + Util.AlignUp(size, 0x10);
             BaseFileSystem.CreateFile(path, containerSize, options);
 
             var header = new AesXtsFileHeader(key, size, path, KekSource, ValidationKey);
 
-            using (IFile baseFile = BaseFileSystem.OpenFile(path, OpenMode.Write))
+            Result rc = BaseFileSystem.OpenFile(out IFile baseFile, path, OpenMode.Write);
+            if (rc.IsFailure()) return rc;
+
+            using (baseFile)
             {
-                baseFile.Write(0, header.ToBytes(false)).ThrowIfFailure();
+                rc = baseFile.Write(0, header.ToBytes(false));
+                if (rc.IsFailure()) return rc;
             }
+
+            return Result.Success;
         }
 
-        public void DeleteDirectory(string path)
+        public Result DeleteDirectory(string path)
         {
-            BaseFileSystem.DeleteDirectory(path);
+            return BaseFileSystem.DeleteDirectory(path);
         }
 
-        public void DeleteDirectoryRecursively(string path)
+        public Result DeleteDirectoryRecursively(string path)
         {
-            BaseFileSystem.DeleteDirectoryRecursively(path);
+            return BaseFileSystem.DeleteDirectoryRecursively(path);
         }
 
-        public void CleanDirectoryRecursively(string path)
+        public Result CleanDirectoryRecursively(string path)
         {
-            BaseFileSystem.CleanDirectoryRecursively(path);
+            return BaseFileSystem.CleanDirectoryRecursively(path);
         }
 
-        public void DeleteFile(string path)
+        public Result DeleteFile(string path)
         {
-            BaseFileSystem.DeleteFile(path);
+            return BaseFileSystem.DeleteFile(path);
         }
 
-        public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
+        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
+            directory = default;
             path = PathTools.Normalize(path);
 
-            IDirectory baseDir = BaseFileSystem.OpenDirectory(path, mode);
+            Result rc = BaseFileSystem.OpenDirectory(out IDirectory baseDir, path, mode);
+            if (rc.IsFailure()) return rc;
 
-            var dir = new AesXtsDirectory(this, baseDir, mode);
-            return dir;
+            directory = new AesXtsDirectory(this, baseDir, mode);
+            return Result.Success;
         }
 
-        public IFile OpenFile(string path, OpenMode mode)
+        public Result OpenFile(out IFile file, string path, OpenMode mode)
         {
+            file = default;
             path = PathTools.Normalize(path);
 
-            IFile baseFile = BaseFileSystem.OpenFile(path, mode | OpenMode.Read);
-            var file = new AesXtsFile(mode, baseFile, path, KekSource, ValidationKey, BlockSize);
+            Result rc = BaseFileSystem.OpenFile(out IFile baseFile, path, mode | OpenMode.Read);
+            if (rc.IsFailure()) return rc;
 
-            file.ToDispose.Add(baseFile);
-            return file;
+            var xtsFile = new AesXtsFile(mode, baseFile, path, KekSource, ValidationKey, BlockSize);
+
+            xtsFile.ToDispose.Add(baseFile);
+
+            file = xtsFile;
+            return Result.Success;
         }
 
-        public void RenameDirectory(string srcPath, string dstPath)
+        public Result RenameDirectory(string oldPath, string newPath)
         {
-            srcPath = PathTools.Normalize(srcPath);
-            dstPath = PathTools.Normalize(dstPath);
+            oldPath = PathTools.Normalize(oldPath);
+            newPath = PathTools.Normalize(newPath);
 
-            BaseFileSystem.RenameDirectory(srcPath, dstPath);
+            // todo: Return proper result codes
+
+            // Official code procedure:
+            // Make sure all file headers can be decrypted
+            // Rename directory to the new path
+            // Reencrypt file headers with new path
+            // If no errors, return
+            // Reencrypt any modified file headers with the old path
+            // Rename directory to the old path
+
+            Result rc = BaseFileSystem.RenameDirectory(oldPath, newPath);
+            if (rc.IsFailure()) return rc;
 
             try
             {
-                RenameDirectoryImpl(srcPath, dstPath, false);
+                RenameDirectoryImpl(oldPath, newPath, false);
             }
             catch (Exception)
             {
-                RenameDirectoryImpl(srcPath, dstPath, true);
-                BaseFileSystem.RenameDirectory(dstPath, srcPath);
+                RenameDirectoryImpl(oldPath, newPath, true);
+                BaseFileSystem.RenameDirectory(oldPath, newPath);
 
                 throw;
             }
+
+            return Result.Success;
         }
 
         private void RenameDirectoryImpl(string srcDir, string dstDir, bool doRollback)
         {
-            IDirectory dir = OpenDirectory(dstDir, OpenDirectoryMode.All);
+            OpenDirectory(out IDirectory dir, dstDir, OpenDirectoryMode.All);
 
             foreach (DirectoryEntry entry in dir.Read())
             {
@@ -151,56 +177,60 @@ namespace LibHac.Fs
             }
         }
 
-        public void RenameFile(string srcPath, string dstPath)
+        public Result RenameFile(string oldPath, string newPath)
         {
-            srcPath = PathTools.Normalize(srcPath);
-            dstPath = PathTools.Normalize(dstPath);
+            oldPath = PathTools.Normalize(oldPath);
+            newPath = PathTools.Normalize(newPath);
 
-            AesXtsFileHeader header = ReadXtsHeader(srcPath, srcPath);
+            // todo: Return proper result codes
 
-            BaseFileSystem.RenameFile(srcPath, dstPath);
+            AesXtsFileHeader header = ReadXtsHeader(oldPath, oldPath);
+
+            BaseFileSystem.RenameFile(oldPath, newPath);
 
             try
             {
-                WriteXtsHeader(header, dstPath, dstPath);
+                WriteXtsHeader(header, newPath, newPath);
             }
             catch (Exception)
             {
-                BaseFileSystem.RenameFile(dstPath, srcPath);
-                WriteXtsHeader(header, srcPath, srcPath);
+                BaseFileSystem.RenameFile(newPath, oldPath);
+                WriteXtsHeader(header, oldPath, oldPath);
 
                 throw;
             }
+
+            return Result.Success;
         }
 
-        public DirectoryEntryType GetEntryType(string path)
+        public Result GetEntryType(out DirectoryEntryType entryType, string path)
         {
-            return BaseFileSystem.GetEntryType(path);
+            return BaseFileSystem.GetEntryType(out entryType, path);
         }
 
-        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
         {
-            return BaseFileSystem.GetFileTimeStampRaw(path);
+            return BaseFileSystem.GetFileTimeStampRaw(out timeStamp, path);
         }
 
-        public long GetFreeSpaceSize(string path)
+        public Result GetFreeSpaceSize(out long freeSpace, string path)
         {
-            return BaseFileSystem.GetFreeSpaceSize(path);
+            return BaseFileSystem.GetFreeSpaceSize(out freeSpace, path);
         }
 
-        public long GetTotalSpaceSize(string path)
+        public Result GetTotalSpaceSize(out long totalSpace, string path)
         {
-            return BaseFileSystem.GetTotalSpaceSize(path);
+            return BaseFileSystem.GetTotalSpaceSize(out totalSpace, path);
         }
 
-        public void Commit()
+        public Result Commit()
         {
-            BaseFileSystem.Commit();
+            return BaseFileSystem.Commit();
         }
 
-        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
+        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
         {
-            BaseFileSystem.QueryEntry(outBuffer, inBuffer, path, queryId);
+            return BaseFileSystem.QueryEntry(outBuffer, inBuffer, queryId, path);
         }
 
         private AesXtsFileHeader ReadXtsHeader(string filePath, string keyPath)
@@ -218,7 +248,12 @@ namespace LibHac.Fs
             Debug.Assert(PathTools.IsNormalized(filePath.AsSpan()));
             Debug.Assert(PathTools.IsNormalized(keyPath.AsSpan()));
 
-            using (IFile file = BaseFileSystem.OpenFile(filePath, OpenMode.Read))
+            header = null;
+
+            Result rc = BaseFileSystem.OpenFile(out IFile file, filePath, OpenMode.Read);
+            if (rc.IsFailure()) return false;
+
+            using (file)
             {
                 header = new AesXtsFileHeader(file);
 
@@ -233,7 +268,9 @@ namespace LibHac.Fs
 
             header.EncryptHeader(keyPath, KekSource, ValidationKey);
 
-            using (IFile file = BaseFileSystem.OpenFile(filePath, OpenMode.ReadWrite))
+            BaseFileSystem.OpenFile(out IFile file, filePath, OpenMode.ReadWrite);
+
+            using (file)
             {
                 file.Write(0, header.ToBytes(false), WriteOption.Flush).ThrowIfFailure();
             }

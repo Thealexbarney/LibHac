@@ -68,11 +68,19 @@ namespace LibHac.Fs
 #if CROSS_PLATFORM
         private bool IsConcatenationFileHeuristic(string path)
         {
-            if (BaseFileSystem.GetEntryType(path) != DirectoryEntryType.Directory) return false;
+            // Check if the path is a directory
+            Result getTypeResult = BaseFileSystem.GetEntryType(out DirectoryEntryType pathType, path);
+            if (getTypeResult.IsFailure() || pathType != DirectoryEntryType.Directory) return false;
 
-            if (BaseFileSystem.GetEntryType(PathTools.Combine(path, "00")) != DirectoryEntryType.File) return false;
+            // Check if the directory contains at least one subfile
+            getTypeResult = BaseFileSystem.GetEntryType(out DirectoryEntryType subFileType, PathTools.Combine(path, "00"));
+            if (getTypeResult.IsFailure() || subFileType != DirectoryEntryType.File) return false;
 
-            if (BaseFileSystem.OpenDirectory(path, OpenDirectoryMode.Directory).GetEntryCount() > 0) return false;
+            // Make sure the directory contains no subdirectories
+            Result rc = BaseFileSystem.OpenDirectory(out IDirectory dir, path, OpenDirectoryMode.Directory);
+            if (rc.IsFailure()) return false;
+
+            if (dir.GetEntryCount() > 0) return false;
 
             // Should be enough checks to avoid most false positives. Maybe
             return true;
@@ -91,21 +99,21 @@ namespace LibHac.Fs
             BaseFileSystem.SetFileAttributes(path, attributes);
         }
 
-        public void CreateDirectory(string path)
+        public Result CreateDirectory(string path)
         {
             path = PathTools.Normalize(path);
             string parent = PathTools.GetParentDirectory(path);
 
             if (IsConcatenationFile(parent))
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound,
-                    "Cannot create a directory inside of a concatenation file");
+                // Cannot create a directory inside of a concatenation file
+                return ResultFs.PathNotFound.Log();
             }
 
-            BaseFileSystem.CreateDirectory(path);
+            return BaseFileSystem.CreateDirectory(path);
         }
 
-        public void CreateFile(string path, long size, CreateFileOptions options)
+        public Result CreateFile(string path, long size, CreateFileOptions options)
         {
             path = PathTools.Normalize(path);
 
@@ -113,8 +121,7 @@ namespace LibHac.Fs
 
             if (!options.HasFlag(CreateFileOptions.CreateConcatenationFile))
             {
-                BaseFileSystem.CreateFile(path, size, newOptions);
-                return;
+                return BaseFileSystem.CreateFile(path, size, newOptions);
             }
 
             // A concatenation file directory can't contain normal files
@@ -122,11 +129,13 @@ namespace LibHac.Fs
 
             if (IsConcatenationFile(parentDir))
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound,
-                    "Cannot create a concatenation file inside of a concatenation file");
+                // Cannot create a file inside of a concatenation file
+                return ResultFs.PathNotFound.Log();
             }
 
-            BaseFileSystem.CreateDirectory(path);
+            Result rc = BaseFileSystem.CreateDirectory(path);
+            if (rc.IsFailure()) return rc;
+
             SetConcatenationFileAttribute(path);
 
             long remaining = size;
@@ -136,82 +145,95 @@ namespace LibHac.Fs
                 long fileSize = Math.Min(SubFileSize, remaining);
                 string fileName = GetSubFilePath(path, i);
 
-                BaseFileSystem.CreateFile(fileName, fileSize, CreateFileOptions.None);
+                Result createSubFileResult = BaseFileSystem.CreateFile(fileName, fileSize, CreateFileOptions.None);
+
+                if (createSubFileResult.IsFailure())
+                {
+                    BaseFileSystem.DeleteDirectoryRecursively(path);
+                    return createSubFileResult;
+                }
 
                 remaining -= fileSize;
             }
+
+            return Result.Success;
         }
 
-        public void DeleteDirectory(string path)
+        public Result DeleteDirectory(string path)
         {
             path = PathTools.Normalize(path);
 
             if (IsConcatenationFile(path))
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+                return ResultFs.PathNotFound.Log();
             }
 
-            BaseFileSystem.DeleteDirectory(path);
+            return BaseFileSystem.DeleteDirectory(path);
         }
 
-        public void DeleteDirectoryRecursively(string path)
+        public Result DeleteDirectoryRecursively(string path)
         {
             path = PathTools.Normalize(path);
 
-            if (IsConcatenationFile(path)) ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            if (IsConcatenationFile(path)) return ResultFs.PathNotFound.Log();
 
-            BaseFileSystem.DeleteDirectoryRecursively(path);
+            return BaseFileSystem.DeleteDirectoryRecursively(path);
         }
 
-        public void CleanDirectoryRecursively(string path)
+        public Result CleanDirectoryRecursively(string path)
         {
             path = PathTools.Normalize(path);
 
-            if (IsConcatenationFile(path)) ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            if (IsConcatenationFile(path)) return ResultFs.PathNotFound.Log();
 
-            BaseFileSystem.CleanDirectoryRecursively(path);
+            return BaseFileSystem.CleanDirectoryRecursively(path);
         }
 
-        public void DeleteFile(string path)
+        public Result DeleteFile(string path)
         {
             path = PathTools.Normalize(path);
 
             if (!IsConcatenationFile(path))
             {
-                BaseFileSystem.DeleteFile(path);
+                return BaseFileSystem.DeleteFile(path);
             }
 
             int count = GetSubFileCount(path);
 
             for (int i = 0; i < count; i++)
             {
-                BaseFileSystem.DeleteFile(GetSubFilePath(path, i));
+                Result rc = BaseFileSystem.DeleteFile(GetSubFilePath(path, i));
+                if (rc.IsFailure()) return rc;
             }
 
-            BaseFileSystem.DeleteDirectory(path);
+            return BaseFileSystem.DeleteDirectory(path);
         }
 
-        public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
+        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
+            directory = default;
             path = PathTools.Normalize(path);
 
             if (IsConcatenationFile(path))
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+                return ResultFs.PathNotFound.Log();
             }
 
-            IDirectory parentDir = BaseFileSystem.OpenDirectory(path, OpenDirectoryMode.All);
-            var dir = new ConcatenationDirectory(this, parentDir, mode);
-            return dir;
+            Result rc = BaseFileSystem.OpenDirectory(out IDirectory parentDir, path, OpenDirectoryMode.All);
+            if (rc.IsFailure()) return rc;
+
+            directory = new ConcatenationDirectory(this, parentDir, mode);
+            return Result.Success;
         }
 
-        public IFile OpenFile(string path, OpenMode mode)
+        public Result OpenFile(out IFile file, string path, OpenMode mode)
         {
+            file = default;
             path = PathTools.Normalize(path);
 
             if (!IsConcatenationFile(path))
             {
-                return BaseFileSystem.OpenFile(path, mode);
+                return BaseFileSystem.OpenFile(out file, path, mode);
             }
 
             int fileCount = GetSubFileCount(path);
@@ -221,75 +243,85 @@ namespace LibHac.Fs
             for (int i = 0; i < fileCount; i++)
             {
                 string filePath = GetSubFilePath(path, i);
-                IFile file = BaseFileSystem.OpenFile(filePath, mode);
-                files.Add(file);
+
+                Result rc = BaseFileSystem.OpenFile(out IFile subFile, filePath, mode);
+                if (rc.IsFailure()) return rc;
+
+                files.Add(subFile);
             }
 
-            return new ConcatenationFile(BaseFileSystem, path, files, SubFileSize, mode);
+            file = new ConcatenationFile(BaseFileSystem, path, files, SubFileSize, mode);
+            return Result.Success;
         }
 
-        public void RenameDirectory(string srcPath, string dstPath)
+        public Result RenameDirectory(string oldPath, string newPath)
         {
-            srcPath = PathTools.Normalize(srcPath);
-            dstPath = PathTools.Normalize(dstPath);
+            oldPath = PathTools.Normalize(oldPath);
+            newPath = PathTools.Normalize(newPath);
 
-            if (IsConcatenationFile(srcPath))
+            if (IsConcatenationFile(oldPath))
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+                return ResultFs.PathNotFound.Log();
             }
 
-            BaseFileSystem.RenameDirectory(srcPath, dstPath);
+            return BaseFileSystem.RenameDirectory(oldPath, newPath);
         }
 
-        public void RenameFile(string srcPath, string dstPath)
+        public Result RenameFile(string oldPath, string newPath)
         {
-            srcPath = PathTools.Normalize(srcPath);
-            dstPath = PathTools.Normalize(dstPath);
+            oldPath = PathTools.Normalize(oldPath);
+            newPath = PathTools.Normalize(newPath);
 
-            if (IsConcatenationFile(srcPath))
+            if (IsConcatenationFile(oldPath))
             {
-                BaseFileSystem.RenameDirectory(srcPath, dstPath);
+                return BaseFileSystem.RenameDirectory(oldPath, newPath);
             }
             else
             {
-                BaseFileSystem.RenameFile(srcPath, dstPath);
+                return BaseFileSystem.RenameFile(oldPath, newPath);
             }
         }
 
-        public DirectoryEntryType GetEntryType(string path)
+        public Result GetEntryType(out DirectoryEntryType entryType, string path)
         {
             path = PathTools.Normalize(path);
 
-            if (IsConcatenationFile(path)) return DirectoryEntryType.File;
+            if (IsConcatenationFile(path))
+            {
+                entryType = DirectoryEntryType.File;
+                return Result.Success;
+            }
 
-            return BaseFileSystem.GetEntryType(path);
+            return BaseFileSystem.GetEntryType(out entryType, path);
         }
 
-        public long GetFreeSpaceSize(string path)
+        public Result GetFreeSpaceSize(out long freeSpace, string path)
         {
-            return BaseFileSystem.GetFreeSpaceSize(path);
+            return BaseFileSystem.GetFreeSpaceSize(out freeSpace, path);
         }
 
-        public long GetTotalSpaceSize(string path)
+        public Result GetTotalSpaceSize(out long totalSpace, string path)
         {
-            return BaseFileSystem.GetTotalSpaceSize(path);
+            return BaseFileSystem.GetTotalSpaceSize(out totalSpace, path);
         }
 
-        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
         {
-            return BaseFileSystem.GetFileTimeStampRaw(path);
+            return BaseFileSystem.GetFileTimeStampRaw(out timeStamp, path);
         }
 
-        public void Commit()
+        public Result Commit()
         {
-            BaseFileSystem.Commit();
+            return BaseFileSystem.Commit();
         }
 
-        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
+        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
         {
-            if (queryId != QueryId.MakeConcatFile) ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationInConcatFsQueryEntry);
+            if (queryId != QueryId.MakeConcatFile) return ResultFs.UnsupportedOperationInConcatFsQueryEntry.Log();
 
             SetConcatenationFileAttribute(path);
+
+            return Result.Success;
         }
 
         private int GetSubFileCount(string dirPath)

@@ -130,7 +130,8 @@ namespace LibHac.Fs
 
         public override Result SetSize(long size)
         {
-            GetSize(out long currentSize).ThrowIfFailure();
+            Result rc = GetSize(out long currentSize);
+            if (rc.IsFailure()) return rc;
 
             if (currentSize == size) return Result.Success;
 
@@ -142,7 +143,7 @@ namespace LibHac.Fs
                 IFile currentLastSubFile = Sources[currentSubFileCount - 1];
                 long newSubFileSize = QuerySubFileSize(currentSubFileCount - 1, size, SubFileSize);
 
-                Result rc = currentLastSubFile.SetSize(newSubFileSize);
+                rc = currentLastSubFile.SetSize(newSubFileSize);
                 if (rc.IsFailure()) return rc;
 
                 for (int i = currentSubFileCount; i < newSubFileCount; i++)
@@ -150,8 +151,13 @@ namespace LibHac.Fs
                     string newSubFilePath = ConcatenationFileSystem.GetSubFilePath(FilePath, i);
                     newSubFileSize = QuerySubFileSize(i, size, SubFileSize);
 
-                    BaseFileSystem.CreateFile(newSubFilePath, newSubFileSize, CreateFileOptions.None);
-                    Sources.Add(BaseFileSystem.OpenFile(newSubFilePath, Mode));
+                    rc = BaseFileSystem.CreateFile(newSubFilePath, newSubFileSize, CreateFileOptions.None);
+                    if (rc.IsFailure()) return rc;
+
+                    rc = BaseFileSystem.OpenFile(out IFile newSubFile, newSubFilePath, Mode);
+                    if (rc.IsFailure()) return rc;
+
+                    Sources.Add(newSubFile);
                 }
             }
             else
@@ -162,12 +168,14 @@ namespace LibHac.Fs
                     Sources.RemoveAt(i);
 
                     string subFilePath = ConcatenationFileSystem.GetSubFilePath(FilePath, i);
-                    BaseFileSystem.DeleteFile(subFilePath);
+
+                    rc = BaseFileSystem.DeleteFile(subFilePath);
+                    if (rc.IsFailure()) return rc;
                 }
 
                 long newLastFileSize = QuerySubFileSize(newSubFileCount - 1, size, SubFileSize);
 
-                Result rc = Sources[newSubFileCount - 1].SetSize(newLastFileSize);
+                rc = Sources[newSubFileCount - 1].SetSize(newLastFileSize);
                 if (rc.IsFailure()) return rc;
             }
 

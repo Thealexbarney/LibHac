@@ -26,7 +26,9 @@ namespace hactoolnet
         private static void CopyDirectoryWithProgressInternal(FileSystemManager fs, string sourcePath, string destPath,
             CreateFileOptions options, IProgressReport logger)
         {
-            using (DirectoryHandle sourceHandle = fs.OpenDirectory(sourcePath, OpenDirectoryMode.All))
+            fs.OpenDirectory(out DirectoryHandle sourceHandle, sourcePath, OpenDirectoryMode.All).ThrowIfFailure();
+
+            using (sourceHandle)
             {
                 foreach (DirectoryEntry entry in fs.ReadDirectory(sourceHandle))
                 {
@@ -63,37 +65,53 @@ namespace hactoolnet
             return size;
         }
 
-        public static void CopyFileWithProgress(FileSystemManager fs, string sourcePath, string destPath, IProgressReport logger = null)
+        public static Result CopyFileWithProgress(FileSystemManager fs, string sourcePath, string destPath, IProgressReport logger = null)
         {
-            using (FileHandle sourceHandle = fs.OpenFile(sourcePath, OpenMode.Read))
-            using (FileHandle destHandle = fs.OpenFile(destPath, OpenMode.Write | OpenMode.AllowAppend))
+            Result rc = fs.OpenFile(out FileHandle sourceHandle, sourcePath, OpenMode.Read);
+            if (rc.IsFailure()) return rc;
+
+            using (sourceHandle)
             {
-                const int maxBufferSize = 1024 * 1024;
+                rc = fs.OpenFile(out FileHandle destHandle, destPath, OpenMode.Write | OpenMode.AllowAppend);
+                if (rc.IsFailure()) return rc;
 
-                long fileSize = fs.GetFileSize(sourceHandle);
-                int bufferSize = (int)Math.Min(maxBufferSize, fileSize);
-
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
-                try
+                using (destHandle)
                 {
-                    for (long offset = 0; offset < fileSize; offset += bufferSize)
+                    const int maxBufferSize = 1024 * 1024;
+
+                    rc = fs.GetFileSize(out long fileSize, sourceHandle);
+                    if (rc.IsFailure()) return rc;
+
+                    int bufferSize = (int)Math.Min(maxBufferSize, fileSize);
+
+                    byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+                    try
                     {
-                        int toRead = (int)Math.Min(fileSize - offset, bufferSize);
-                        Span<byte> buf = buffer.AsSpan(0, toRead);
+                        for (long offset = 0; offset < fileSize; offset += bufferSize)
+                        {
+                            int toRead = (int)Math.Min(fileSize - offset, bufferSize);
+                            Span<byte> buf = buffer.AsSpan(0, toRead);
 
-                        fs.ReadFile(sourceHandle, buf, offset);
-                        fs.WriteFile(destHandle, buf, offset);
+                            rc = fs.ReadFile(out long _, sourceHandle, buf, offset);
+                            if (rc.IsFailure()) return rc;
 
-                        logger?.ReportAdd(toRead);
+                            rc = fs.WriteFile(destHandle, buf, offset);
+                            if (rc.IsFailure()) return rc;
+
+                            logger?.ReportAdd(toRead);
+                        }
                     }
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(buffer);
-                }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                    }
 
-                fs.FlushFile(destHandle);
+                    rc = fs.FlushFile(destHandle);
+                    if (rc.IsFailure()) return rc;
+                }
             }
+
+            return Result.Success;
         }
     }
 }

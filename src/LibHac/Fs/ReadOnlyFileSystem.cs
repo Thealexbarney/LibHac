@@ -11,71 +11,82 @@ namespace LibHac.Fs
             BaseFs = baseFileSystem;
         }
 
-        public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
+        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
-            IDirectory baseDir = BaseFs.OpenDirectory(path, mode);
-            return new ReadOnlyDirectory(this, baseDir);
+            directory = default;
+
+            Result rc = BaseFs.OpenDirectory(out IDirectory baseDir, path, mode);
+            if (rc.IsFailure()) return rc;
+
+            directory = new ReadOnlyDirectory(this, baseDir);
+            return Result.Success;
         }
 
-        public IFile OpenFile(string path, OpenMode mode)
+        public Result OpenFile(out IFile file, string path, OpenMode mode)
         {
-            IFile baseFile = BaseFs.OpenFile(path, mode);
-            return new ReadOnlyFile(baseFile);
+            file = default;
+
+            Result rc = BaseFs.OpenFile(out IFile baseFile, path, mode);
+            if (rc.IsFailure()) return rc;
+
+            file = new ReadOnlyFile(baseFile);
+            return Result.Success;
         }
 
-        public DirectoryEntryType GetEntryType(string path)
+        public Result GetEntryType(out DirectoryEntryType entryType, string path)
         {
-            return BaseFs.GetEntryType(path);
+            return BaseFs.GetEntryType(out entryType, path);
         }
 
-        public long GetFreeSpaceSize(string path)
+        public Result GetFreeSpaceSize(out long freeSpace, string path)
         {
-            return 0;
+            freeSpace = 0;
+            return Result.Success;
+
+            // FS does:
+            // return ResultFs.UnsupportedOperationReadOnlyFileSystemGetSpace.Log();
         }
 
-        public long GetTotalSpaceSize(string path)
+        public Result GetTotalSpaceSize(out long totalSpace, string path)
         {
-            return BaseFs.GetTotalSpaceSize(path);
+            return BaseFs.GetTotalSpaceSize(out totalSpace, path);
+
+            // FS does:
+            // return ResultFs.UnsupportedOperationReadOnlyFileSystemGetSpace.Log();
         }
 
-        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
         {
-            return BaseFs.GetFileTimeStampRaw(path);
+            return BaseFs.GetFileTimeStampRaw(out timeStamp, path);
+
+            // FS does:
+            // return ResultFs.NotImplemented.Log();
         }
 
-        public void Commit()
+        public Result Commit()
         {
-
+            return Result.Success;
         }
 
-        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
+        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
         {
-            BaseFs.QueryEntry(outBuffer, inBuffer, path, queryId);
+            return ResultFs.NotImplemented.Log();
         }
 
-        public void CreateDirectory(string path) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyReadOnlyFileSystem);
+        public Result CreateDirectory(string path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
 
-        public void CreateFile(string path, long size, CreateFileOptions options) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyReadOnlyFileSystem);
+        public Result CreateFile(string path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
 
-        public void DeleteDirectory(string path) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyReadOnlyFileSystem);
+        public Result DeleteDirectory(string path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
 
-        public void DeleteDirectoryRecursively(string path) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyReadOnlyFileSystem);
+        public Result DeleteDirectoryRecursively(string path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
 
-        public void CleanDirectoryRecursively(string path) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyReadOnlyFileSystem);
+        public Result CleanDirectoryRecursively(string path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
 
-        public void DeleteFile(string path) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyReadOnlyFileSystem);
+        public Result DeleteFile(string path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
 
-        public void RenameDirectory(string srcPath, string dstPath) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyReadOnlyFileSystem);
+        public Result RenameDirectory(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
 
-        public void RenameFile(string srcPath, string dstPath) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyReadOnlyFileSystem);
-
+        public Result RenameFile(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
     }
 }

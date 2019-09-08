@@ -338,11 +338,11 @@ namespace LibHac.Fs.Save
             FileTable.ChangeKey(ref oldKey, ref newKey);
         }
 
-        public void RenameDirectory(string srcPath, string dstPath)
+        public Result RenameDirectory(string srcPath, string dstPath)
         {
             if (srcPath == dstPath || TryOpenFile(dstPath, out _) || TryOpenDirectory(dstPath, out _))
             {
-                throw new IOException(Messages.DestPathAlreadyExists);
+                return ResultFs.PathAlreadyExists.Log();
             }
 
             ReadOnlySpan<byte> oldPathBytes = Util.GetUtf8Bytes(srcPath);
@@ -350,19 +350,19 @@ namespace LibHac.Fs.Save
 
             if (!FindPathRecursive(oldPathBytes, out SaveEntryKey oldKey))
             {
-                throw new DirectoryNotFoundException();
+                return ResultFs.PathNotFound.Log();
             }
 
             int dirIndex = DirectoryTable.GetIndexFromKey(ref oldKey).Index;
 
             if (!FindPathRecursive(newPathBytes, out SaveEntryKey newKey))
             {
-                throw new IOException(Messages.PartialPathNotFound);
+                return ResultFs.PathNotFound.Log();
             }
 
             if (PathTools.IsSubPath(oldPathBytes, newPathBytes))
             {
-                ThrowHelper.ThrowResult(ResultFs.DestinationIsSubPathOfSource);
+                return ResultFs.DestinationIsSubPathOfSource.Log();
             }
 
             if (oldKey.Parent != newKey.Parent)
@@ -372,6 +372,8 @@ namespace LibHac.Fs.Save
             }
 
             DirectoryTable.ChangeKey(ref oldKey, ref newKey);
+
+            return Result.Success;
         }
 
         public bool TryOpenDirectory(string path, out SaveFindPosition position)

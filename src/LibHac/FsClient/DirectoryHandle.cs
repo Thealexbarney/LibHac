@@ -12,7 +12,7 @@ namespace LibHac.FsClient
             Directory = directory;
         }
 
-        public int GetId() => Directory.GetHashCode();
+        public int GetId() => Directory?.GetHashCode() ?? 0;
 
         public void Dispose()
         {

@@ -26,117 +26,125 @@ namespace LibHac.FsClient.Accessors
             FsManager = fsManager;
         }
 
-        public void CreateDirectory(string path)
+        public Result CreateDirectory(string path)
         {
-            FileSystem.CreateDirectory(path);
+            return FileSystem.CreateDirectory(path);
         }
 
-        public void CreateFile(string path, long size, CreateFileOptions options)
+        public Result CreateFile(string path, long size, CreateFileOptions options)
         {
-            FileSystem.CreateFile(path, size, options);
+            return FileSystem.CreateFile(path, size, options);
         }
 
-        public void DeleteDirectory(string path)
+        public Result DeleteDirectory(string path)
         {
-            FileSystem.DeleteDirectory(path);
+            return FileSystem.DeleteDirectory(path);
         }
 
-        public void DeleteDirectoryRecursively(string path)
+        public Result DeleteDirectoryRecursively(string path)
         {
-            FileSystem.DeleteDirectoryRecursively(path);
+            return FileSystem.DeleteDirectoryRecursively(path);
         }
 
-        public void CleanDirectoryRecursively(string path)
+        public Result CleanDirectoryRecursively(string path)
         {
-            FileSystem.CleanDirectoryRecursively(path);
+            return FileSystem.CleanDirectoryRecursively(path);
         }
 
-        public void DeleteFile(string path)
+        public Result DeleteFile(string path)
         {
-            FileSystem.DeleteFile(path);
+            return FileSystem.DeleteFile(path);
         }
 
-        public DirectoryAccessor OpenDirectory(string path, OpenDirectoryMode mode)
+        public Result OpenDirectory(out DirectoryAccessor directory, string path, OpenDirectoryMode mode)
         {
-            IDirectory dir = FileSystem.OpenDirectory(path, mode);
+            directory = default;
 
-            var accessor = new DirectoryAccessor(dir, this);
+            Result rc = FileSystem.OpenDirectory(out IDirectory rawDirectory, path, mode);
+            if (rc.IsFailure()) return rc;
+
+            var accessor = new DirectoryAccessor(rawDirectory, this);
 
             lock (_locker)
             {
                 OpenDirectories.Add(accessor);
             }
 
-            return accessor;
+            directory = accessor;
+            return Result.Success;
         }
 
-        public FileAccessor OpenFile(string path, OpenMode mode)
+        public Result OpenFile(out FileAccessor file, string path, OpenMode mode)
         {
-            IFile file = FileSystem.OpenFile(path, mode);
+            file = default;
 
-            var accessor = new FileAccessor(file, this, mode);
+            Result rc = FileSystem.OpenFile(out IFile rawFile, path, mode);
+            if (rc.IsFailure()) return rc;
+
+            var accessor = new FileAccessor(rawFile, this, mode);
 
             lock (_locker)
             {
                 OpenFiles.Add(accessor);
             }
 
-            return accessor;
+            file = accessor;
+            return Result.Success;
         }
 
-        public void RenameDirectory(string srcPath, string dstPath)
+        public Result RenameDirectory(string oldPath, string newPath)
         {
-            FileSystem.RenameDirectory(srcPath, dstPath);
+            return FileSystem.RenameDirectory(oldPath, newPath);
         }
 
-        public void RenameFile(string srcPath, string dstPath)
+        public Result RenameFile(string oldPath, string newPath)
         {
-            FileSystem.RenameFile(srcPath, dstPath);
+            return FileSystem.RenameFile(oldPath, newPath);
         }
 
-        public void DirectoryExists(string path)
+        public bool DirectoryExists(string path)
         {
-            FileSystem.DirectoryExists(path);
+            return FileSystem.DirectoryExists(path);
         }
 
-        public void FileExists(string path)
+        public bool FileExists(string path)
         {
-            FileSystem.FileExists(path);
+            return FileSystem.FileExists(path);
         }
 
-        public DirectoryEntryType GetEntryType(string path)
+        public Result GetEntryType(out DirectoryEntryType type, string path)
         {
-            return FileSystem.GetEntryType(path);
+            return FileSystem.GetEntryType(out type, path);
         }
 
-        public long GetFreeSpaceSize(string path)
+        public Result GetFreeSpaceSize(out long freeSpace, string path)
         {
-            return FileSystem.GetFreeSpaceSize(path);
+            return FileSystem.GetFreeSpaceSize(out freeSpace, path);
         }
 
-        public long GetTotalSpaceSize(string path)
+        public Result GetTotalSpaceSize(out long totalSpace, string path)
         {
-            return FileSystem.GetTotalSpaceSize(path);
+            return FileSystem.GetTotalSpaceSize(out totalSpace, path);
         }
 
-        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
         {
-            return FileSystem.GetFileTimeStampRaw(path);
+            return FileSystem.GetFileTimeStampRaw(out timeStamp, path);
         }
 
-        public void Commit()
+        public Result Commit()
         {
             if (OpenFiles.Any(x => (x.OpenMode & OpenMode.Write) != 0))
             {
-                ThrowHelper.ThrowResult(ResultFs.WritableFileOpen);
+                return ResultFs.WritableFileOpen.Log();
             }
 
-            FileSystem.Commit();
+            return FileSystem.Commit();
         }
 
-        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
+        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
         {
-            FileSystem.QueryEntry(outBuffer, inBuffer, path, queryId);
+            return FileSystem.QueryEntry(outBuffer, inBuffer, queryId, path);
         }
 
         internal void NotifyCloseFile(FileAccessor file)

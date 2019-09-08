@@ -22,11 +22,13 @@ namespace LibHac.Fs
         /// </summary>
         public PartitionFileSystemBuilder(IFileSystem input)
         {
-            IDirectory rootDir = input.OpenDirectory("/", OpenDirectoryMode.File);
+            input.OpenDirectory(out IDirectory rootDir, "/", OpenDirectoryMode.File).ThrowIfFailure();
 
-            foreach (DirectoryEntry file in rootDir.Read().OrderBy(x => x.FullPath, StringComparer.Ordinal))
+            foreach (DirectoryEntry entry in rootDir.Read().OrderBy(x => x.FullPath, StringComparer.Ordinal))
             {
-                AddFile(file.FullPath.TrimStart('/'), input.OpenFile(file.FullPath, OpenMode.Read));
+                input.OpenFile(out IFile file, entry.FullPath, OpenMode.Read).ThrowIfFailure();
+
+                AddFile(entry.FullPath.TrimStart('/'), file);
             }
         }
 

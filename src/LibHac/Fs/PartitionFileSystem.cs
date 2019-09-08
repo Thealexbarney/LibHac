@@ -29,12 +29,13 @@ namespace LibHac.Fs
             BaseStorage = storage;
         }
 
-        public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
+        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
-            return new PartitionDirectory(this, path, mode);
+            directory = new PartitionDirectory(this, path, mode);
+            return Result.Success;
         }
 
-        public IFile OpenFile(string path, OpenMode mode)
+        public Result OpenFile(out IFile file, string path, OpenMode mode)
         {
             path = PathTools.Normalize(path).TrimStart('/');
 
@@ -43,7 +44,8 @@ namespace LibHac.Fs
                 ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             }
 
-            return OpenFile(entry, mode);
+            file = OpenFile(entry, mode);
+            return Result.Success;
         }
 
         public IFile OpenFile(PartitionFileEntry entry, OpenMode mode)
@@ -51,46 +53,59 @@ namespace LibHac.Fs
             return new PartitionFile(BaseStorage, HeaderSize + entry.Offset, entry.Size, mode);
         }
 
-        public DirectoryEntryType GetEntryType(string path)
+        public Result GetEntryType(out DirectoryEntryType entryType, string path)
         {
+            entryType = DirectoryEntryType.NotFound;
             path = PathTools.Normalize(path);
 
-            if (path == "/") return DirectoryEntryType.Directory;
+            if (path == "/")
+            {
+                entryType = DirectoryEntryType.Directory;
+                return Result.Success;
+            }
 
-            if (FileDict.ContainsKey(path.TrimStart('/'))) return DirectoryEntryType.File;
+            if (FileDict.ContainsKey(path.TrimStart('/')))
+            {
+                entryType = DirectoryEntryType.File;
+                return Result.Success;
+            }
 
-            return DirectoryEntryType.NotFound;
+            return ResultFs.PathNotFound.Log();
         }
 
-        public void CreateDirectory(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
-        public void CreateFile(string path, long size, CreateFileOptions options) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
-        public void DeleteDirectory(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
-        public void DeleteDirectoryRecursively(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
-        public void CleanDirectoryRecursively(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
-        public void DeleteFile(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
-        public void RenameDirectory(string srcPath, string dstPath) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
-        public void RenameFile(string srcPath, string dstPath) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
+        public Result CreateDirectory(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        public Result CreateFile(string path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        public Result DeleteDirectory(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        public Result DeleteDirectoryRecursively(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        public Result CleanDirectoryRecursively(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        public Result DeleteFile(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        public Result RenameDirectory(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        public Result RenameFile(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
 
-        public long GetFreeSpaceSize(string path)
+        public Result GetFreeSpaceSize(out long freeSpace, string path)
         {
-            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
-            return default;
+            freeSpace = default;
+            return ResultFs.NotImplemented.Log();
         }
 
-        public long GetTotalSpaceSize(string path)
+        public Result GetTotalSpaceSize(out long totalSpace, string path)
         {
-            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
-            return default;
+            totalSpace = default;
+            return ResultFs.NotImplemented.Log();
         }
 
-        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
         {
-            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
-            return default;
+            timeStamp = default;
+            return ResultFs.NotImplemented.Log();
         }
 
-        public void Commit() { }
-        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) => ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+        public Result Commit()
+        {
+            return Result.Success;
+        }
+
+        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path) => ResultFs.NotImplemented.Log();
     }
 
     public enum PartitionFileSystemType

@@ -62,7 +62,9 @@ namespace hactoolnet
 
                         using (IFile inFile = new LocalFile(ctx.Options.ReplaceFileSource, OpenMode.Read))
                         {
-                            using (IFile outFile = save.OpenFile(destFilename, OpenMode.ReadWrite))
+                            save.OpenFile(out IFile outFile, destFilename, OpenMode.ReadWrite).ThrowIfFailure();
+
+                            using (outFile)
                             {
                                 inFile.GetSize(out long inFileSize).ThrowIfFailure();
                                 outFile.GetSize(out long outFileSize).ThrowIfFailure();
@@ -100,7 +102,7 @@ namespace hactoolnet
                 {
                     if (signNeeded)
                     {
-                        save.Commit(ctx.Keyset);
+                        save.Commit(ctx.Keyset).ThrowIfFailure();
                         signNeeded = false;
                     }
                 }
@@ -114,7 +116,7 @@ namespace hactoolnet
 
                 if (signNeeded)
                 {
-                    if (save.Commit(ctx.Keyset))
+                    if (save.Commit(ctx.Keyset).IsSuccess())
                     {
                         ctx.Logger.LogMessage("Successfully signed save file");
                     }
@@ -310,7 +312,7 @@ namespace hactoolnet
             var sb = new StringBuilder();
             sb.AppendLine();
 
-            long freeSpace = save.GetFreeSpaceSize("");
+            save.GetFreeSpaceSize(out long freeSpace, "").ThrowIfFailure();
 
             sb.AppendLine("Savefile:");
             PrintItem(sb, colLen, $"CMAC Signature{save.Header.SignatureValidity.GetValidityString()}:", save.Header.Cmac);

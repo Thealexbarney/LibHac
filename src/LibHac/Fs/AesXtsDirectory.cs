@@ -56,7 +56,9 @@ namespace LibHac.Fs
         {
             try
             {
-                using (IFile file = BaseFileSystem.OpenFile(path, OpenMode.Read))
+                BaseFileSystem.OpenFile(out IFile file, path, OpenMode.Read).ThrowIfFailure();
+
+                using (file)
                 {
                     file.GetSize(out long fileSize).ThrowIfFailure();
 

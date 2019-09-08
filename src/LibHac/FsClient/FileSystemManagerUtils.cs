@@ -7,10 +7,13 @@ namespace LibHac.FsClient
 {
     public static class FileSystemManagerUtils
     {
-        public static void CopyDirectory(this FileSystemManager fs, string sourcePath, string destPath,
+        public static Result CopyDirectory(this FileSystemManager fs, string sourcePath, string destPath,
             CreateFileOptions options = CreateFileOptions.None, IProgressReport logger = null)
         {
-            using (DirectoryHandle sourceHandle = fs.OpenDirectory(sourcePath, OpenDirectoryMode.All))
+            Result rc = fs.OpenDirectory(out DirectoryHandle sourceHandle, sourcePath, OpenDirectoryMode.All);
+            if (rc.IsFailure()) return rc;
+
+            using (sourceHandle)
             {
                 foreach (DirectoryEntry entry in fs.ReadDirectory(sourceHandle))
                 {
@@ -21,7 +24,8 @@ namespace LibHac.FsClient
                     {
                         fs.EnsureDirectoryExists(subDstPath);
 
-                        fs.CopyDirectory(subSrcPath, subDstPath, options, logger);
+                        rc = fs.CopyDirectory(subSrcPath, subDstPath, options, logger);
+                        if (rc.IsFailure()) return rc;
                     }
 
                     if (entry.Type == DirectoryEntryType.File)
@@ -29,46 +33,65 @@ namespace LibHac.FsClient
                         logger?.LogMessage(subSrcPath);
                         fs.CreateOrOverwriteFile(subDstPath, entry.Size, options);
 
-                        fs.CopyFile(subSrcPath, subDstPath, logger);
+                        rc = fs.CopyFile(subSrcPath, subDstPath, logger);
+                        if (rc.IsFailure()) return rc;
                     }
                 }
             }
+
+            return Result.Success;
         }
 
-        public static void CopyFile(this FileSystemManager fs, string sourcePath, string destPath, IProgressReport logger = null)
+        public static Result CopyFile(this FileSystemManager fs, string sourcePath, string destPath, IProgressReport logger = null)
         {
-            using (FileHandle sourceHandle = fs.OpenFile(sourcePath, OpenMode.Read))
-            using (FileHandle destHandle = fs.OpenFile(destPath, OpenMode.Write | OpenMode.AllowAppend))
+            Result rc = fs.OpenFile(out FileHandle sourceHandle, sourcePath, OpenMode.Read);
+            if (rc.IsFailure()) return rc;
+
+            using (sourceHandle)
             {
-                const int maxBufferSize = 0x10000;
+                rc = fs.OpenFile(out FileHandle destHandle, destPath, OpenMode.Write | OpenMode.AllowAppend);
+                if (rc.IsFailure()) return rc;
 
-                long fileSize = fs.GetFileSize(sourceHandle);
-                int bufferSize = (int)Math.Min(maxBufferSize, fileSize);
-
-                logger?.SetTotal(fileSize);
-
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
-                try
+                using (destHandle)
                 {
-                    for (long offset = 0; offset < fileSize; offset += bufferSize)
+                    const int maxBufferSize = 0x10000;
+
+                    rc = fs.GetFileSize(out long fileSize, sourceHandle);
+                    if (rc.IsFailure()) return rc;
+
+                    int bufferSize = (int)Math.Min(maxBufferSize, fileSize);
+
+                    logger?.SetTotal(fileSize);
+
+                    byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+                    try
                     {
-                        int toRead = (int)Math.Min(fileSize - offset, bufferSize);
-                        Span<byte> buf = buffer.AsSpan(0, toRead);
+                        for (long offset = 0; offset < fileSize; offset += bufferSize)
+                        {
+                            int toRead = (int)Math.Min(fileSize - offset, bufferSize);
+                            Span<byte> buf = buffer.AsSpan(0, toRead);
 
-                        fs.ReadFile(sourceHandle, buf, offset);
-                        fs.WriteFile(destHandle, buf, offset);
+                            rc = fs.ReadFile(out long _, sourceHandle, buf, offset);
+                            if (rc.IsFailure()) return rc;
 
-                        logger?.ReportAdd(toRead);
+                            rc = fs.WriteFile(destHandle, buf, offset);
+                            if (rc.IsFailure()) return rc;
+
+                            logger?.ReportAdd(toRead);
+                        }
                     }
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(buffer);
-                    logger?.SetTotal(0);
-                }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                        logger?.SetTotal(0);
+                    }
 
-                fs.FlushFile(destHandle);
+                    rc = fs.FlushFile(destHandle);
+                    if (rc.IsFailure()) return rc;
+                }
             }
+
+            return Result.Success;
         }
 
         public static IEnumerable<DirectoryEntry> EnumerateEntries(this FileSystemManager fs, string path)
@@ -86,7 +109,9 @@ namespace LibHac.FsClient
             bool ignoreCase = searchOptions.HasFlag(SearchOptions.CaseInsensitive);
             bool recurse = searchOptions.HasFlag(SearchOptions.RecurseSubdirectories);
 
-            using (DirectoryHandle sourceHandle = fs.OpenDirectory(path, OpenDirectoryMode.All))
+            fs.OpenDirectory(out DirectoryHandle sourceHandle, path, OpenDirectoryMode.All).ThrowIfFailure();
+
+            using (sourceHandle)
             {
                 foreach (DirectoryEntry entry in fs.ReadDirectory(sourceHandle))
                 {
@@ -112,12 +137,16 @@ namespace LibHac.FsClient
 
         public static bool DirectoryExists(this FileSystemManager fs, string path)
         {
-            return fs.GetEntryType(path) == DirectoryEntryType.Directory;
+            Result rc = fs.GetEntryType(out DirectoryEntryType type, path);
+
+            return (rc.IsSuccess() && type == DirectoryEntryType.Directory);
         }
 
         public static bool FileExists(this FileSystemManager fs, string path)
         {
-            return fs.GetEntryType(path) == DirectoryEntryType.File;
+            Result rc = fs.GetEntryType(out DirectoryEntryType type, path);
+
+            return (rc.IsSuccess() && type == DirectoryEntryType.File);
         }
 
         public static void EnsureDirectoryExists(this FileSystemManager fs, string path)

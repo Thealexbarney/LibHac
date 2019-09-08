@@ -22,52 +22,63 @@ namespace LibHac.Fs.RomFs
             FileTable = new HierarchicalRomFileTable<RomFileInfo>(dirHashTable, dirEntryTable, fileHashTable, fileEntryTable);
         }
 
-        public DirectoryEntryType GetEntryType(string path)
+        public Result GetEntryType(out DirectoryEntryType entryType, string path)
         {
+            entryType = DirectoryEntryType.NotFound;
             path = PathTools.Normalize(path);
 
             if (FileTable.TryOpenFile(path, out RomFileInfo _))
             {
-                return DirectoryEntryType.File;
+                entryType = DirectoryEntryType.File;
+                return Result.Success;
             }
 
             if (FileTable.TryOpenDirectory(path, out FindPosition _))
             {
-                return DirectoryEntryType.Directory;
+                entryType = DirectoryEntryType.Directory;
+                return Result.Success;
             }
 
-            return DirectoryEntryType.NotFound;
+            return ResultFs.PathNotFound.Log();
         }
 
-        public void Commit() { }
-
-        public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
+        public Result Commit()
         {
+            return Result.Success;
+        }
+
+        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
+        {
+            directory = default;
             path = PathTools.Normalize(path);
 
             if (!FileTable.TryOpenDirectory(path, out FindPosition position))
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+                return ResultFs.PathNotFound.Log();
             }
 
-            return new RomFsDirectory(this, path, position, mode);
+            directory = new RomFsDirectory(this, path, position, mode);
+            return Result.Success;
         }
 
-        public IFile OpenFile(string path, OpenMode mode)
+        public Result OpenFile(out IFile file, string path, OpenMode mode)
         {
+            file = default;
             path = PathTools.Normalize(path);
 
             if (!FileTable.TryOpenFile(path, out RomFileInfo info))
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+                return ResultFs.PathNotFound.Log();
             }
 
             if (mode != OpenMode.Read)
             {
-                ThrowHelper.ThrowResult(ResultFs.InvalidArgument, "RomFs files must be opened read-only.");
+                // RomFs files must be opened read-only.
+                return ResultFs.InvalidArgument.Log();
             }
 
-            return new RomFsFile(BaseStorage, Header.DataOffset + info.Offset, info.Length);
+            file = new RomFsFile(BaseStorage, Header.DataOffset + info.Offset, info.Length);
+            return Result.Success;
         }
 
         public IStorage GetBaseStorage()
@@ -75,50 +86,37 @@ namespace LibHac.Fs.RomFs
             return BaseStorage;
         }
 
-        public void CreateDirectory(string path) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFileSystem);
+        public Result CreateDirectory(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        public Result CreateFile(string path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        public Result DeleteDirectory(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        public Result DeleteDirectoryRecursively(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        public Result CleanDirectoryRecursively(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        public Result DeleteFile(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        public Result RenameDirectory(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        public Result RenameFile(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
 
-        public void CreateFile(string path, long size, CreateFileOptions options) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFileSystem);
-
-        public void DeleteDirectory(string path) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFileSystem);
-
-        public void DeleteDirectoryRecursively(string path) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFileSystem);
-
-        public void CleanDirectoryRecursively(string path) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFileSystem);
-
-        public void DeleteFile(string path) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFileSystem);
-
-        public void RenameDirectory(string srcPath, string dstPath) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFileSystem);
-
-        public void RenameFile(string srcPath, string dstPath) =>
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFileSystem);
-
-        public long GetFreeSpaceSize(string path)
+        public Result GetFreeSpaceSize(out long freeSpace, string path)
         {
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationRomFsFileSystemGetSpace);
-            return default;
+            freeSpace = default;
+            return ResultFs.UnsupportedOperationRomFsFileSystemGetSpace.Log();
         }
 
-        public long GetTotalSpaceSize(string path)
+        public Result GetTotalSpaceSize(out long totalSpace, string path)
         {
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationRomFsFileSystemGetSpace);
-            return default;
+            totalSpace = default;
+            return ResultFs.UnsupportedOperationRomFsFileSystemGetSpace.Log();
         }
 
-        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
         {
-            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
-            return default;
+            timeStamp = default;
+            return ResultFs.NotImplemented.Log();
         }
 
-        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) =>
-            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
+        {
+            return ResultFs.NotImplemented.Log();
+        }
     }
 
     public class RomfsHeader

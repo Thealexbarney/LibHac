@@ -55,12 +55,12 @@ namespace LibHac.FsClient
             throw new NotImplementedException();
         }
 
-        public FileHandle OpenFile(out FileHandle handle, string path, OpenMode mode)
+        public Result OpenFile(out FileHandle handle, string path, OpenMode mode)
         {
             throw new NotImplementedException();
         }
 
-        public DirectoryHandle OpenDirectory(out DirectoryHandle handle, string path, OpenDirectoryMode mode)
+        public Result OpenDirectory(out DirectoryHandle handle, string path, OpenDirectoryMode mode)
         {
             throw new NotImplementedException();
         }

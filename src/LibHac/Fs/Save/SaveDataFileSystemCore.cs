@@ -27,14 +27,16 @@ namespace LibHac.Fs.Save
             FileTable = new HierarchicalSaveFileTable(dirTableStorage, fileTableStorage);
         }
 
-        public void CreateDirectory(string path)
+        public Result CreateDirectory(string path)
         {
             path = PathTools.Normalize(path);
 
             FileTable.AddDirectory(path);
+
+            return Result.Success;
         }
 
-        public void CreateFile(string path, long size, CreateFileOptions options)
+        public Result CreateFile(string path, long size, CreateFileOptions options)
         {
             path = PathTools.Normalize(path);
 
@@ -43,7 +45,7 @@ namespace LibHac.Fs.Save
                 var emptyFileEntry = new SaveFileInfo { StartBlock = int.MinValue, Length = size };
                 FileTable.AddFile(path, ref emptyFileEntry);
 
-                return;
+                return Result.Success;
             }
 
             int blockCount = (int)Util.DivideByRoundUp(size, AllocationTable.Header.BlockSize);
@@ -51,45 +53,56 @@ namespace LibHac.Fs.Save
 
             if (startBlock == -1)
             {
-                ThrowHelper.ThrowResult(ResultFs.AllocationTableInsufficientFreeBlocks,
-                    "Not enough available space to create file.");
+                return ResultFs.AllocationTableInsufficientFreeBlocks.Log();
             }
 
             var fileEntry = new SaveFileInfo { StartBlock = startBlock, Length = size };
 
             FileTable.AddFile(path, ref fileEntry);
+
+            return Result.Success;
         }
 
-        public void DeleteDirectory(string path)
+        public Result DeleteDirectory(string path)
         {
             path = PathTools.Normalize(path);
 
             FileTable.DeleteDirectory(path);
+
+            return Result.Success;
         }
 
-        public void DeleteDirectoryRecursively(string path)
+        public Result DeleteDirectoryRecursively(string path)
         {
             path = PathTools.Normalize(path);
 
-            CleanDirectoryRecursively(path);
+            Result rc = CleanDirectoryRecursively(path);
+            if (rc.IsFailure()) return rc;
+
             DeleteDirectory(path);
+
+            return Result.Success;
         }
 
-        public void CleanDirectoryRecursively(string path)
+        public Result CleanDirectoryRecursively(string path)
         {
             path = PathTools.Normalize(path);
 
-            IDirectory dir = OpenDirectory(path, OpenDirectoryMode.All);
+            Result rc = OpenDirectory(out IDirectory dir, path, OpenDirectoryMode.All);
+            if (rc.IsFailure()) return rc;
+
             FileSystemExtensions.CleanDirectoryRecursivelyGeneric(dir);
+
+            return Result.Success;
         }
 
-        public void DeleteFile(string path)
+        public Result DeleteFile(string path)
         {
             path = PathTools.Normalize(path);
 
             if (!FileTable.TryOpenFile(path, out SaveFileInfo fileInfo))
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+                return ResultFs.PathNotFound.Log();
             }
 
             if (fileInfo.StartBlock != int.MinValue)
@@ -98,91 +111,110 @@ namespace LibHac.Fs.Save
             }
 
             FileTable.DeleteFile(path);
+
+            return Result.Success;
         }
 
-        public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
+        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
+            directory = default;
             path = PathTools.Normalize(path);
 
             if (!FileTable.TryOpenDirectory(path, out SaveFindPosition position))
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+                return ResultFs.PathNotFound.Log();
             }
 
-            return new SaveDataDirectory(this, path, position, mode);
+            directory = new SaveDataDirectory(this, path, position, mode);
+
+            return Result.Success;
         }
 
-        public IFile OpenFile(string path, OpenMode mode)
+        public Result OpenFile(out IFile file, string path, OpenMode mode)
         {
+            file = default;
             path = PathTools.Normalize(path);
 
-            if (!FileTable.TryOpenFile(path, out SaveFileInfo file))
+            if (!FileTable.TryOpenFile(path, out SaveFileInfo fileInfo))
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+                return ResultFs.PathNotFound.Log();
             }
 
-            AllocationTableStorage storage = OpenFatStorage(file.StartBlock);
+            AllocationTableStorage storage = OpenFatStorage(fileInfo.StartBlock);
 
-            return new SaveDataFile(storage, path, FileTable, file.Length, mode);
+            file = new SaveDataFile(storage, path, FileTable, fileInfo.Length, mode);
+
+            return Result.Success;
         }
 
-        public void RenameDirectory(string srcPath, string dstPath)
+        public Result RenameDirectory(string oldPath, string newPath)
         {
-            srcPath = PathTools.Normalize(srcPath);
-            dstPath = PathTools.Normalize(dstPath);
+            oldPath = PathTools.Normalize(oldPath);
+            newPath = PathTools.Normalize(newPath);
 
-            FileTable.RenameDirectory(srcPath, dstPath);
+            return FileTable.RenameDirectory(oldPath, newPath);
         }
 
-        public void RenameFile(string srcPath, string dstPath)
+        public Result RenameFile(string oldPath, string newPath)
         {
-            srcPath = PathTools.Normalize(srcPath);
-            dstPath = PathTools.Normalize(dstPath);
+            oldPath = PathTools.Normalize(oldPath);
+            newPath = PathTools.Normalize(newPath);
 
-            FileTable.RenameFile(srcPath, dstPath);
+            FileTable.RenameFile(oldPath, newPath);
+
+            return Result.Success;
         }
 
-        public DirectoryEntryType GetEntryType(string path)
+        public Result GetEntryType(out DirectoryEntryType entryType, string path)
         {
             path = PathTools.Normalize(path);
 
             if (FileTable.TryOpenFile(path, out SaveFileInfo _))
             {
-                return DirectoryEntryType.File;
+                entryType = DirectoryEntryType.File;
+                return Result.Success;
             }
 
             if (FileTable.TryOpenDirectory(path, out SaveFindPosition _))
             {
-                return DirectoryEntryType.Directory;
+                entryType = DirectoryEntryType.Directory;
+                return Result.Success;
             }
 
-            return DirectoryEntryType.NotFound;
+            entryType = DirectoryEntryType.NotFound;
+            return ResultFs.PathNotFound.Log();
         }
 
-        public long GetFreeSpaceSize(string path)
+        public Result GetFreeSpaceSize(out long freeSpace, string path)
         {
             int freeBlockCount = AllocationTable.GetFreeListLength();
-            return Header.BlockSize * freeBlockCount;
+            freeSpace = Header.BlockSize * freeBlockCount;
+
+            return Result.Success;
         }
 
-        public long GetTotalSpaceSize(string path)
+        public Result GetTotalSpaceSize(out long totalSpace, string path)
         {
-            return Header.BlockSize * Header.BlockCount;
+            totalSpace = Header.BlockSize * Header.BlockCount;
+
+            return Result.Success;
         }
 
-        public void Commit()
+        public Result Commit()
         {
-
+            return Result.Success;
         }
 
-        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
         {
-            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
-            return default;
+            timeStamp = default;
+            return ResultFs.NotImplemented.Log();
         }
 
-        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) =>
-            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
+        {
+            return ResultFs.NotImplemented.Log();
+        }
 
         public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
         public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();

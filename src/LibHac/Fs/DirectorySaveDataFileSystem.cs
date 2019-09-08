@@ -33,162 +33,170 @@ namespace LibHac.Fs
             }
         }
 
-        public void CreateDirectory(string path)
+        public Result CreateDirectory(string path)
         {
             string fullPath = GetFullPath(PathTools.Normalize(path));
 
             lock (Locker)
             {
-                BaseFs.CreateDirectory(fullPath);
+                return BaseFs.CreateDirectory(fullPath);
             }
         }
 
-        public void CreateFile(string path, long size, CreateFileOptions options)
+        public Result CreateFile(string path, long size, CreateFileOptions options)
         {
             string fullPath = GetFullPath(PathTools.Normalize(path));
 
             lock (Locker)
             {
-                BaseFs.CreateFile(fullPath, size, options);
+                return BaseFs.CreateFile(fullPath, size, options);
             }
         }
 
-        public void DeleteDirectory(string path)
+        public Result DeleteDirectory(string path)
         {
             string fullPath = GetFullPath(PathTools.Normalize(path));
 
             lock (Locker)
             {
-                BaseFs.DeleteDirectory(fullPath);
+                return BaseFs.DeleteDirectory(fullPath);
             }
         }
 
-        public void DeleteDirectoryRecursively(string path)
+        public Result DeleteDirectoryRecursively(string path)
         {
             string fullPath = GetFullPath(PathTools.Normalize(path));
 
             lock (Locker)
             {
-                BaseFs.DeleteDirectoryRecursively(fullPath);
+                return BaseFs.DeleteDirectoryRecursively(fullPath);
             }
         }
 
-        public void CleanDirectoryRecursively(string path)
+        public Result CleanDirectoryRecursively(string path)
         {
             string fullPath = GetFullPath(PathTools.Normalize(path));
 
             lock (Locker)
             {
-                BaseFs.CleanDirectoryRecursively(fullPath);
+                return BaseFs.CleanDirectoryRecursively(fullPath);
             }
         }
 
-        public void DeleteFile(string path)
+        public Result DeleteFile(string path)
         {
             string fullPath = GetFullPath(PathTools.Normalize(path));
 
             lock (Locker)
             {
-                BaseFs.DeleteFile(fullPath);
+                return BaseFs.DeleteFile(fullPath);
             }
         }
 
-        public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
+        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
             string fullPath = GetFullPath(PathTools.Normalize(path));
 
             lock (Locker)
             {
-                return BaseFs.OpenDirectory(fullPath, mode);
+                return BaseFs.OpenDirectory(out directory, fullPath, mode);
             }
         }
 
-        public IFile OpenFile(string path, OpenMode mode)
+        public Result OpenFile(out IFile file, string path, OpenMode mode)
         {
+            file = default;
             string fullPath = GetFullPath(PathTools.Normalize(path));
 
             lock (Locker)
             {
-                IFile baseFile = BaseFs.OpenFile(fullPath, mode);
-                var file = new DirectorySaveDataFile(this, baseFile);
+                Result rc = BaseFs.OpenFile(out IFile baseFile, fullPath, mode);
+                if (rc.IsFailure()) return rc;
+
+                file = new DirectorySaveDataFile(this, baseFile);
 
                 if (mode.HasFlag(OpenMode.Write))
                 {
                     OpenWritableFileCount++;
                 }
 
-                return file;
+                return Result.Success;
             }
         }
 
-        public void RenameDirectory(string srcPath, string dstPath)
+        public Result RenameDirectory(string oldPath, string newPath)
         {
-            string fullSrcPath = GetFullPath(PathTools.Normalize(srcPath));
-            string fullDstPath = GetFullPath(PathTools.Normalize(dstPath));
+            string fullOldPath = GetFullPath(PathTools.Normalize(oldPath));
+            string fullNewPath = GetFullPath(PathTools.Normalize(newPath));
 
             lock (Locker)
             {
-                BaseFs.RenameDirectory(fullSrcPath, fullDstPath);
+                return BaseFs.RenameDirectory(fullOldPath, fullNewPath);
             }
         }
 
-        public void RenameFile(string srcPath, string dstPath)
+        public Result RenameFile(string oldPath, string newPath)
         {
-            string fullSrcPath = GetFullPath(PathTools.Normalize(srcPath));
-            string fullDstPath = GetFullPath(PathTools.Normalize(dstPath));
+            string fullOldPath = GetFullPath(PathTools.Normalize(oldPath));
+            string fullNewPath = GetFullPath(PathTools.Normalize(newPath));
 
             lock (Locker)
             {
-                BaseFs.RenameFile(fullSrcPath, fullDstPath);
+                return BaseFs.RenameFile(fullOldPath, fullNewPath);
             }
         }
 
-        public DirectoryEntryType GetEntryType(string path)
+        public Result GetEntryType(out DirectoryEntryType entryType, string path)
         {
             string fullPath = GetFullPath(PathTools.Normalize(path));
 
             lock (Locker)
             {
-                return BaseFs.GetEntryType(fullPath);
+                return BaseFs.GetEntryType(out entryType, fullPath);
             }
         }
 
-        public long GetFreeSpaceSize(string path)
+        public Result GetFreeSpaceSize(out long freeSpace, string path)
         {
-            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
-            return default;
+            freeSpace = default;
+            return ResultFs.NotImplemented.Log();
         }
 
-        public long GetTotalSpaceSize(string path)
+        public Result GetTotalSpaceSize(out long totalSpace, string path)
         {
-            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
-            return default;
+            totalSpace = default;
+            return ResultFs.NotImplemented.Log();
         }
 
-        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
         {
-            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
-            return default;
+            timeStamp = default;
+            return ResultFs.NotImplemented.Log();
         }
 
-        public void Commit()
+        public Result Commit()
         {
-            if (OpenWritableFileCount > 0)
+            lock (Locker)
             {
-                ThrowHelper.ThrowResult(ResultFs.WritableFileOpen,
-                    "All files must be closed before commiting save data.");
+                if (OpenWritableFileCount > 0)
+                {
+                    // All files must be closed before commiting save data.
+                    return ResultFs.WritableFileOpen.Log();
+                }
+
+                Result rc = SynchronizeDirectory(SyncDir, WorkingDir);
+                if (rc.IsFailure()) return rc;
+
+                rc = BaseFs.DeleteDirectoryRecursively(CommittedDir);
+                if (rc.IsFailure()) return rc;
+
+                return BaseFs.RenameDirectory(SyncDir, CommittedDir);
             }
-
-            SynchronizeDirectory(SyncDir, WorkingDir);
-
-            BaseFs.DeleteDirectoryRecursively(CommittedDir);
-
-            BaseFs.RenameDirectory(SyncDir, CommittedDir);
         }
 
-        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
+        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
         {
-            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+            return ResultFs.NotImplemented.Log();
         }
 
         private string GetFullPath(string path)
@@ -196,19 +204,21 @@ namespace LibHac.Fs
             return PathTools.Normalize(PathTools.Combine(WorkingDir, path));
         }
 
-        private void SynchronizeDirectory(string dest, string src)
+        private Result SynchronizeDirectory(string dest, string src)
         {
-            if (BaseFs.DirectoryExists(dest))
-            {
-                BaseFs.DeleteDirectoryRecursively(dest);
-            }
+            Result rc = BaseFs.DeleteDirectoryRecursively(dest);
+            if (rc.IsFailure() && rc != ResultFs.PathNotFound) return rc;
 
-            BaseFs.CreateDirectory(dest);
+            rc = BaseFs.CreateDirectory(dest);
+            if (rc.IsFailure()) return rc;
 
-            IDirectory sourceDir = BaseFs.OpenDirectory(src, OpenDirectoryMode.All);
-            IDirectory destDir = BaseFs.OpenDirectory(dest, OpenDirectoryMode.All);
+            rc = BaseFs.OpenDirectory(out IDirectory sourceDir, src, OpenDirectoryMode.All);
+            if (rc.IsFailure()) return rc;
 
-            sourceDir.CopyDirectory(destDir);
+            rc = BaseFs.OpenDirectory(out IDirectory destDir, dest, OpenDirectoryMode.All);
+            if (rc.IsFailure()) return rc;
+
+            return sourceDir.CopyDirectory(destDir);
         }
 
         internal void NotifyCloseWritableFile()

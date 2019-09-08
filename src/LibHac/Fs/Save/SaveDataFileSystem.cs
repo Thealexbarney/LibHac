@@ -142,198 +142,114 @@ namespace LibHac.Fs.Save
                 IntegrityStorageType.Save, integrityCheckLevel, LeaveOpen);
         }
 
-        public void CreateDirectory(string path)
+        public Result CreateDirectory(string path)
         {
-            try
-            {
-                SaveDataFileSystemCore.CreateDirectory(path);
-            }
-            catch (HorizonResultException ex)
-            {
-                ConvertResultException(ex);
-                throw;
-            }
+            Result result = SaveDataFileSystemCore.CreateDirectory(path);
+
+            return SaveResults.ConvertToExternalResult(result);
         }
 
-        public void CreateFile(string path, long size, CreateFileOptions options)
+        public Result CreateFile(string path, long size, CreateFileOptions options)
         {
-            try
-            {
-                SaveDataFileSystemCore.CreateFile(path, size, options);
-            }
-            catch (HorizonResultException ex)
-            {
-                ConvertResultException(ex);
-                throw;
-            }
+            Result result = SaveDataFileSystemCore.CreateFile(path, size, options);
+
+            return SaveResults.ConvertToExternalResult(result);
         }
 
-        public void DeleteDirectory(string path)
+        public Result DeleteDirectory(string path)
         {
-            try
-            {
-                SaveDataFileSystemCore.DeleteDirectory(path);
-            }
-            catch (HorizonResultException ex)
-            {
-                ConvertResultException(ex);
-                throw;
-            }
+            Result result = SaveDataFileSystemCore.DeleteDirectory(path);
+
+            return SaveResults.ConvertToExternalResult(result);
         }
 
-        public void DeleteDirectoryRecursively(string path)
+        public Result DeleteDirectoryRecursively(string path)
         {
-            try
-            {
-                SaveDataFileSystemCore.DeleteDirectoryRecursively(path);
-            }
-            catch (HorizonResultException ex)
-            {
-                ConvertResultException(ex);
-                throw;
-            }
+            Result result = SaveDataFileSystemCore.DeleteDirectoryRecursively(path);
+
+            return SaveResults.ConvertToExternalResult(result);
         }
 
-        public void CleanDirectoryRecursively(string path)
+        public Result CleanDirectoryRecursively(string path)
         {
-            try
-            {
-                SaveDataFileSystemCore.CleanDirectoryRecursively(path);
-            }
-            catch (HorizonResultException ex)
-            {
-                ConvertResultException(ex);
-                throw;
-            }
+            Result result = SaveDataFileSystemCore.CleanDirectoryRecursively(path);
+
+            return SaveResults.ConvertToExternalResult(result);
         }
 
-        public void DeleteFile(string path)
+        public Result DeleteFile(string path)
         {
-            try
-            {
-                SaveDataFileSystemCore.DeleteFile(path);
-            }
-            catch (HorizonResultException ex)
-            {
-                ConvertResultException(ex);
-                throw;
-            }
+            Result result = SaveDataFileSystemCore.DeleteFile(path);
+
+            return SaveResults.ConvertToExternalResult(result);
         }
 
-        public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
+        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
-            try
-            {
-                return SaveDataFileSystemCore.OpenDirectory(path, mode);
-            }
-            catch (HorizonResultException ex)
-            {
-                ConvertResultException(ex);
-                throw;
-            }
+            Result result = SaveDataFileSystemCore.OpenDirectory(out directory, path, mode);
+
+            return SaveResults.ConvertToExternalResult(result);
         }
 
-        public IFile OpenFile(string path, OpenMode mode)
+        public Result OpenFile(out IFile file, string path, OpenMode mode)
         {
-            try
-            {
-                return SaveDataFileSystemCore.OpenFile(path, mode);
-            }
-            catch (HorizonResultException ex)
-            {
-                ConvertResultException(ex);
-                throw;
-            }
+            Result result = SaveDataFileSystemCore.OpenFile(out file, path, mode);
+
+            return SaveResults.ConvertToExternalResult(result);
         }
 
-        public void RenameDirectory(string srcPath, string dstPath)
+        public Result RenameDirectory(string oldPath, string newPath)
         {
-            try
-            {
-                SaveDataFileSystemCore.RenameDirectory(srcPath, dstPath);
-            }
-            catch (HorizonResultException ex)
-            {
-                ConvertResultException(ex);
-                throw;
-            }
+            Result result = SaveDataFileSystemCore.RenameDirectory(oldPath, newPath);
+
+            return SaveResults.ConvertToExternalResult(result);
         }
 
-        public void RenameFile(string srcPath, string dstPath)
+        public Result RenameFile(string oldPath, string newPath)
         {
-            try
-            {
-                SaveDataFileSystemCore.RenameFile(srcPath, dstPath);
-            }
-            catch (HorizonResultException ex)
-            {
-                ConvertResultException(ex);
-                throw;
-            }
+            Result result = SaveDataFileSystemCore.RenameFile(oldPath, newPath);
+
+            return SaveResults.ConvertToExternalResult(result);
         }
 
-        public DirectoryEntryType GetEntryType(string path)
+        public Result GetEntryType(out DirectoryEntryType entryType, string path)
         {
-            try
-            {
-                return SaveDataFileSystemCore.GetEntryType(path);
-            }
-            catch (HorizonResultException ex)
-            {
-                ConvertResultException(ex);
-                throw;
-            }
+            Result result = SaveDataFileSystemCore.GetEntryType(out entryType, path);
+
+            return SaveResults.ConvertToExternalResult(result);
         }
 
-        public long GetFreeSpaceSize(string path)
+        public Result GetFreeSpaceSize(out long freeSpace, string path)
         {
-            try
-            {
-                return SaveDataFileSystemCore.GetFreeSpaceSize(path);
-            }
-            catch (HorizonResultException ex)
-            {
-                ConvertResultException(ex);
-                throw;
-            }
+            Result result = SaveDataFileSystemCore.GetFreeSpaceSize(out freeSpace, path);
+
+            return SaveResults.ConvertToExternalResult(result);
         }
 
-        public long GetTotalSpaceSize(string path)
+        public Result GetTotalSpaceSize(out long totalSpace, string path)
         {
-            try
-            {
-                return SaveDataFileSystemCore.GetTotalSpaceSize(path);
-            }
-            catch (HorizonResultException ex)
-            {
-                ConvertResultException(ex);
-                throw;
-            }
+            Result result = SaveDataFileSystemCore.GetTotalSpaceSize(out totalSpace, path);
+
+            return SaveResults.ConvertToExternalResult(result);
         }
 
-        public void Commit()
+        public Result Commit()
         {
-            try
-            {
-                Commit(Keyset);
-            }
-            catch (HorizonResultException ex)
-            {
-                ConvertResultException(ex);
-                throw;
-            }
+            Result result = Commit(Keyset);
+
+            return SaveResults.ConvertToExternalResult(result);
         }
 
-        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
         {
-            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
-            return default;
+            timeStamp = default;
+            return ResultFs.NotImplemented.Log();
         }
 
-        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) =>
-            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path) =>
+            ResultFs.NotImplemented.Log();
 
-        public bool Commit(Keyset keyset)
+        public Result Commit(Keyset keyset)
         {
             CoreDataIvfcStorage.Flush();
             FatIvfcStorage?.Flush();
@@ -349,7 +265,7 @@ namespace LibHac.Fs.Save
             headerStream.Position = 0x108;
             headerStream.Write(hash, 0, hash.Length);
 
-            if (keyset == null || keyset.SaveMacKey.IsEmpty()) return false;
+            if (keyset == null || keyset.SaveMacKey.IsEmpty()) return ResultFs.PreconditionViolation;
 
             var cmacData = new byte[0x200];
             var cmac = new byte[0x10];
@@ -363,7 +279,7 @@ namespace LibHac.Fs.Save
             headerStream.Write(cmac, 0, 0x10);
             headerStream.Flush();
 
-            return true;
+            return Result.Success;
         }
 
         public void FsTrim()
@@ -394,11 +310,6 @@ namespace LibHac.Fs.Save
             if (fatValidity != Validity.Valid) return fatValidity;
 
             return journalValidity;
-        }
-
-        private void ConvertResultException(HorizonResultException ex)
-        {
-            ex.ResultValue = SaveResults.ConvertToExternalResult(ex.ResultValue);
         }
     }
 }

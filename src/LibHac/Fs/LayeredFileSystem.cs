@@ -12,122 +12,138 @@ namespace LibHac.Fs
             Sources.AddRange(sourceFileSystems);
         }
 
-        public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
+        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
+            directory = default;
             path = PathTools.Normalize(path);
 
             var dirs = new List<IDirectory>();
 
             foreach (IFileSystem fs in Sources)
             {
-                DirectoryEntryType type = fs.GetEntryType(path);
+                Result rc = fs.GetEntryType(out DirectoryEntryType entryType, path);
+                if (rc.IsFailure()) return rc;
 
-                if (type == DirectoryEntryType.File && dirs.Count == 0)
+                if (entryType == DirectoryEntryType.File && dirs.Count == 0)
                 {
                     ThrowHelper.ThrowResult(ResultFs.PathNotFound);
                 }
 
-                if (fs.GetEntryType(path) == DirectoryEntryType.Directory)
+                if (entryType == DirectoryEntryType.Directory)
                 {
-                    dirs.Add(fs.OpenDirectory(path, mode));
+                    rc = fs.OpenDirectory(out IDirectory subDirectory, path, mode);
+                    if (rc.IsFailure()) return rc;
+
+                    dirs.Add(subDirectory);
                 }
             }
 
-            var dir = new LayeredFileSystemDirectory(this, dirs, path, mode);
-
-            return dir;
+            directory = new LayeredFileSystemDirectory(this, dirs, path, mode);
+            return Result.Success;
         }
 
-        public IFile OpenFile(string path, OpenMode mode)
+        public Result OpenFile(out IFile file, string path, OpenMode mode)
         {
+            file = default;
             path = PathTools.Normalize(path);
 
             foreach (IFileSystem fs in Sources)
             {
-                DirectoryEntryType type = fs.GetEntryType(path);
+                Result rc = fs.GetEntryType(out DirectoryEntryType type, path);
+                if (rc.IsFailure()) return rc;
 
                 if (type == DirectoryEntryType.File)
                 {
-                    return fs.OpenFile(path, mode);
+                    return fs.OpenFile(out file, path, mode);
                 }
 
                 if (type == DirectoryEntryType.Directory)
                 {
-                    ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+                    return ResultFs.PathNotFound.Log();
                 }
             }
 
-            ThrowHelper.ThrowResult(ResultFs.PathNotFound);
-            return default;
+            return ResultFs.PathNotFound.Log();
         }
 
-        public DirectoryEntryType GetEntryType(string path)
+        public Result GetEntryType(out DirectoryEntryType entryType, string path)
         {
             path = PathTools.Normalize(path);
 
             foreach (IFileSystem fs in Sources)
             {
-                DirectoryEntryType type = fs.GetEntryType(path);
+                Result getEntryResult = fs.GetEntryType(out DirectoryEntryType type, path);
 
-                if (type != DirectoryEntryType.NotFound) return type;
-            }
-
-            return DirectoryEntryType.NotFound;
-        }
-
-        public FileTimeStampRaw GetFileTimeStampRaw(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            foreach (IFileSystem fs in Sources)
-            {
-                if (fs.GetEntryType(path) != DirectoryEntryType.NotFound)
+                if (getEntryResult.IsSuccess() && type != DirectoryEntryType.NotFound)
                 {
-                    return fs.GetFileTimeStampRaw(path);
+                    entryType = type;
+                    return Result.Success;
                 }
             }
 
-            ThrowHelper.ThrowResult(ResultFs.PathNotFound);
-            return default;
+            entryType = DirectoryEntryType.NotFound;
+            return ResultFs.PathNotFound.Log();
         }
 
-        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
+        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
         {
             path = PathTools.Normalize(path);
 
             foreach (IFileSystem fs in Sources)
             {
-                if (fs.GetEntryType(path) != DirectoryEntryType.NotFound)
+                Result getEntryResult = fs.GetEntryType(out DirectoryEntryType type, path);
+
+                if (getEntryResult.IsSuccess() && type != DirectoryEntryType.NotFound)
                 {
-                    fs.QueryEntry(outBuffer, inBuffer, path, queryId);
-                    return;
+                    return fs.GetFileTimeStampRaw(out timeStamp, path);
                 }
             }
 
-            ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            timeStamp = default;
+            return ResultFs.PathNotFound.Log();
         }
 
-        public void Commit() { }
-
-        public void CreateDirectory(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
-        public void CreateFile(string path, long size, CreateFileOptions options) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
-        public void DeleteDirectory(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
-        public void DeleteDirectoryRecursively(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
-        public void CleanDirectoryRecursively(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
-        public void DeleteFile(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
-        public void RenameDirectory(string srcPath, string dstPath) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
-        public void RenameFile(string srcPath, string dstPath) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
-
-        public long GetFreeSpaceSize(string path)
+        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
         {
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
-            return default;
+            path = PathTools.Normalize(path);
+
+            foreach (IFileSystem fs in Sources)
+            {
+                Result getEntryResult = fs.GetEntryType(out DirectoryEntryType type, path);
+
+                if (getEntryResult.IsSuccess() && type != DirectoryEntryType.NotFound)
+                {
+                    return fs.QueryEntry(outBuffer, inBuffer, queryId, path);
+                }
+            }
+
+            return ResultFs.PathNotFound.Log();
         }
 
-        public long GetTotalSpaceSize(string path)
+        public Result Commit()
         {
-            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
-            return default;
+            return Result.Success;
+        }
+
+        public Result CreateDirectory(string path) => ResultFs.UnsupportedOperation.Log();
+        public Result CreateFile(string path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperation.Log();
+        public Result DeleteDirectory(string path) => ResultFs.UnsupportedOperation.Log();
+        public Result DeleteDirectoryRecursively(string path) => ResultFs.UnsupportedOperation.Log();
+        public Result CleanDirectoryRecursively(string path) => ResultFs.UnsupportedOperation.Log();
+        public Result DeleteFile(string path) => ResultFs.UnsupportedOperation.Log();
+        public Result RenameDirectory(string oldPath, string newPath) => ResultFs.UnsupportedOperation.Log();
+        public Result RenameFile(string oldPath, string newPath) => ResultFs.UnsupportedOperation.Log();
+
+        public Result GetFreeSpaceSize(out long freeSpace, string path)
+        {
+            freeSpace = default;
+            return ResultFs.UnsupportedOperation.Log();
+        }
+
+        public Result GetTotalSpaceSize(out long totalSpace, string path)
+        {
+            totalSpace = default;
+            return ResultFs.UnsupportedOperation.Log();
         }
     }
 }

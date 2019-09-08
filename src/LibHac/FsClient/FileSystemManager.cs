@@ -6,6 +6,7 @@ using LibHac.FsClient.Accessors;
 
 namespace LibHac.FsClient
 {
+    // Todo: Access log for FindFileSystem
     public class FileSystemManager
     {
         internal Horizon Os { get; }
@@ -66,213 +67,229 @@ namespace LibHac.FsClient
             if (accessLog != null) AccessLog = accessLog;
         }
 
-        public void CreateDirectory(string path)
+        public Result CreateDirectory(string path)
         {
-            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
-                .ThrowIfFailure();
+            Result rc = FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath);
+            if (rc.IsFailure()) return rc;
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
                 TimeSpan startTime = Time.GetCurrent();
-                fileSystem.CreateDirectory(subPath.ToString());
+                rc = fileSystem.CreateDirectory(subPath.ToString());
                 TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(startTime, endTime, $", path: \"{path}\"");
             }
             else
             {
-                fileSystem.CreateDirectory(subPath.ToString());
+                rc = fileSystem.CreateDirectory(subPath.ToString());
             }
+
+            return rc;
         }
 
-        public void CreateFile(string path, long size)
+        public Result CreateFile(string path, long size)
         {
-            CreateFile(path, size, CreateFileOptions.None);
+            return CreateFile(path, size, CreateFileOptions.None);
         }
 
-        public void CreateFile(string path, long size, CreateFileOptions options)
+        public Result CreateFile(string path, long size, CreateFileOptions options)
         {
-            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
-                .ThrowIfFailure();
+            Result rc = FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath);
+            if (rc.IsFailure()) return rc;
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
                 TimeSpan startTime = Time.GetCurrent();
-                fileSystem.CreateFile(subPath.ToString(), size, options);
+                rc = fileSystem.CreateFile(subPath.ToString(), size, options);
                 TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(startTime, endTime, $", path: \"{path}\", size: {size}");
             }
             else
             {
-                fileSystem.CreateFile(subPath.ToString(), size, options);
+                rc = fileSystem.CreateFile(subPath.ToString(), size, options);
             }
+
+            return rc;
         }
 
-        public void DeleteDirectory(string path)
+        public Result DeleteDirectory(string path)
         {
-            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
-                .ThrowIfFailure();
+            Result rc = FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath);
+            if (rc.IsFailure()) return rc;
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
                 TimeSpan startTime = Time.GetCurrent();
-                fileSystem.DeleteDirectory(subPath.ToString());
+                rc = fileSystem.DeleteDirectory(subPath.ToString());
                 TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(startTime, endTime, $", path: \"{path}\"");
             }
             else
             {
-                fileSystem.DeleteDirectory(subPath.ToString());
+                rc = fileSystem.DeleteDirectory(subPath.ToString());
             }
+
+            return rc;
         }
 
-        public void DeleteDirectoryRecursively(string path)
+        public Result DeleteDirectoryRecursively(string path)
         {
-            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
-                .ThrowIfFailure();
+            Result rc = FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath);
+            if (rc.IsFailure()) return rc;
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
                 TimeSpan startTime = Time.GetCurrent();
-                fileSystem.DeleteDirectoryRecursively(subPath.ToString());
+                rc = fileSystem.DeleteDirectoryRecursively(subPath.ToString());
                 TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(startTime, endTime, $", path: \"{path}\"");
             }
             else
             {
-                fileSystem.DeleteDirectoryRecursively(subPath.ToString());
+                rc = fileSystem.DeleteDirectoryRecursively(subPath.ToString());
             }
+
+            return rc;
         }
 
-        public void CleanDirectoryRecursively(string path)
+        public Result CleanDirectoryRecursively(string path)
         {
-            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
-                .ThrowIfFailure();
+            Result rc = FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath);
+            if (rc.IsFailure()) return rc;
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
                 TimeSpan startTime = Time.GetCurrent();
-                fileSystem.CleanDirectoryRecursively(subPath.ToString());
+                rc = fileSystem.CleanDirectoryRecursively(subPath.ToString());
                 TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(startTime, endTime, $", path: \"{path}\"");
             }
             else
             {
-                fileSystem.CleanDirectoryRecursively(subPath.ToString());
+                rc = fileSystem.CleanDirectoryRecursively(subPath.ToString());
             }
+
+            return rc;
         }
 
-        public void DeleteFile(string path)
+        public Result DeleteFile(string path)
         {
-            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
-                .ThrowIfFailure();
+            Result rc = FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath);
+            if (rc.IsFailure()) return rc;
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
                 TimeSpan startTime = Time.GetCurrent();
-                fileSystem.DeleteFile(subPath.ToString());
+                rc = fileSystem.DeleteFile(subPath.ToString());
                 TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(startTime, endTime, $", path: \"{path}\"");
             }
             else
             {
-                fileSystem.DeleteFile(subPath.ToString());
+                rc = fileSystem.DeleteFile(subPath.ToString());
             }
+
+            return rc;
         }
 
-        public void RenameDirectory(string oldPath, string newPath)
+        public Result RenameDirectory(string oldPath, string newPath)
         {
-            FindFileSystem(oldPath.AsSpan(), out FileSystemAccessor oldFileSystem, out ReadOnlySpan<char> oldSubPath)
-                .ThrowIfFailure();
+            Result rc = FindFileSystem(oldPath.AsSpan(), out FileSystemAccessor oldFileSystem, out ReadOnlySpan<char> oldSubPath);
+            if (rc.IsFailure()) return rc;
 
-            FindFileSystem(newPath.AsSpan(), out FileSystemAccessor newFileSystem, out ReadOnlySpan<char> newSubPath)
-                .ThrowIfFailure();
+            rc = FindFileSystem(newPath.AsSpan(), out FileSystemAccessor newFileSystem, out ReadOnlySpan<char> newSubPath);
+            if (rc.IsFailure()) return rc;
 
             if (oldFileSystem != newFileSystem)
             {
-                ThrowHelper.ThrowResult(ResultFs.DifferentDestFileSystem);
+                return ResultFs.DifferentDestFileSystem.Log();
             }
 
             if (IsEnabledAccessLog() && oldFileSystem.IsAccessLogEnabled)
             {
                 TimeSpan startTime = Time.GetCurrent();
-                oldFileSystem.RenameDirectory(oldSubPath.ToString(), newSubPath.ToString());
+                rc = oldFileSystem.RenameDirectory(oldSubPath.ToString(), newSubPath.ToString());
                 TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(startTime, endTime, $", path: \"{oldPath}\", new_path: \"{newPath}\"");
             }
             else
             {
-                oldFileSystem.RenameDirectory(oldSubPath.ToString(), newSubPath.ToString());
+                rc = oldFileSystem.RenameDirectory(oldSubPath.ToString(), newSubPath.ToString());
             }
+
+            return rc;
         }
 
-        public void RenameFile(string oldPath, string newPath)
+        public Result RenameFile(string oldPath, string newPath)
         {
-            FindFileSystem(oldPath.AsSpan(), out FileSystemAccessor oldFileSystem, out ReadOnlySpan<char> oldSubPath)
-                .ThrowIfFailure();
+            Result rc = FindFileSystem(oldPath.AsSpan(), out FileSystemAccessor oldFileSystem, out ReadOnlySpan<char> oldSubPath);
+            if (rc.IsFailure()) return rc;
 
-            FindFileSystem(newPath.AsSpan(), out FileSystemAccessor newFileSystem, out ReadOnlySpan<char> newSubPath)
-                .ThrowIfFailure();
+            rc = FindFileSystem(newPath.AsSpan(), out FileSystemAccessor newFileSystem, out ReadOnlySpan<char> newSubPath);
+            if (rc.IsFailure()) return rc;
 
             if (oldFileSystem != newFileSystem)
             {
-                ThrowHelper.ThrowResult(ResultFs.DifferentDestFileSystem);
+                return ResultFs.DifferentDestFileSystem.Log();
             }
 
             if (IsEnabledAccessLog() && oldFileSystem.IsAccessLogEnabled)
             {
                 TimeSpan startTime = Time.GetCurrent();
-                oldFileSystem.RenameFile(oldSubPath.ToString(), newSubPath.ToString());
+                rc = oldFileSystem.RenameFile(oldSubPath.ToString(), newSubPath.ToString());
                 TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(startTime, endTime, $", path: \"{oldPath}\", new_path: \"{newPath}\"");
             }
             else
             {
-                oldFileSystem.RenameFile(oldSubPath.ToString(), newSubPath.ToString());
+                rc = oldFileSystem.RenameFile(oldSubPath.ToString(), newSubPath.ToString());
             }
+
+            return rc;
         }
 
-        public DirectoryEntryType GetEntryType(string path)
+        public Result GetEntryType(out DirectoryEntryType type, string path)
         {
-            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
-                .ThrowIfFailure();
+            type = default;
 
-            DirectoryEntryType type;
+            Result rc = FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath);
+            if (rc.IsFailure()) return rc;
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
                 TimeSpan startTime = Time.GetCurrent();
-                type = fileSystem.GetEntryType(subPath.ToString());
+                rc = fileSystem.GetEntryType(out type, subPath.ToString());
                 TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(startTime, endTime, $", path: \"{path}\"");
             }
             else
             {
-                type = fileSystem.GetEntryType(subPath.ToString());
+                rc = fileSystem.GetEntryType(out type, subPath.ToString());
             }
 
-            return type;
+            return rc;
         }
 
-        public FileHandle OpenFile(string path, OpenMode mode)
+        public Result OpenFile(out FileHandle handle, string path, OpenMode mode)
         {
-            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
-                .ThrowIfFailure();
+            handle = default;
 
-            FileHandle handle;
+            Result rc = FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath);
+            if (rc.IsFailure()) return rc;
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
                 TimeSpan startTime = Time.GetCurrent();
-                FileAccessor file = fileSystem.OpenFile(subPath.ToString(), mode);
+                rc = fileSystem.OpenFile(out FileAccessor file, subPath.ToString(), mode);
                 handle = new FileHandle(file);
                 TimeSpan endTime = Time.GetCurrent();
 
@@ -280,24 +297,24 @@ namespace LibHac.FsClient
             }
             else
             {
-                FileAccessor file = fileSystem.OpenFile(subPath.ToString(), mode);
+                rc = fileSystem.OpenFile(out FileAccessor file, subPath.ToString(), mode);
                 handle = new FileHandle(file);
             }
 
-            return handle;
+            return rc;
         }
 
-        public DirectoryHandle OpenDirectory(string path, OpenDirectoryMode mode)
+        public Result OpenDirectory(out DirectoryHandle handle, string path, OpenDirectoryMode mode)
         {
-            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
-                .ThrowIfFailure();
+            handle = default;
 
-            DirectoryHandle handle;
+            Result rc = FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath);
+            if (rc.IsFailure()) return rc;
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
                 TimeSpan startTime = Time.GetCurrent();
-                DirectoryAccessor dir = fileSystem.OpenDirectory(subPath.ToString(), mode);
+                rc = fileSystem.OpenDirectory(out DirectoryAccessor dir, subPath.ToString(), mode);
                 handle = new DirectoryHandle(dir);
                 TimeSpan endTime = Time.GetCurrent();
 
@@ -305,94 +322,105 @@ namespace LibHac.FsClient
             }
             else
             {
-                DirectoryAccessor dir = fileSystem.OpenDirectory(subPath.ToString(), mode);
+                rc = fileSystem.OpenDirectory(out DirectoryAccessor dir, subPath.ToString(), mode);
                 handle = new DirectoryHandle(dir);
             }
 
-            return handle;
+            return rc;
         }
 
-        public long GetFreeSpaceSize(string path)
+        public Result GetFreeSpaceSize(out long freeSpace, string path)
         {
-            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
-                .ThrowIfFailure();
+            freeSpace = default;
 
-            return fileSystem.GetFreeSpaceSize(subPath.ToString());
+            Result rc = FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath);
+            if (rc.IsFailure()) return rc;
+
+            return fileSystem.GetFreeSpaceSize(out freeSpace, subPath.ToString());
         }
 
-        public long GetTotalSpaceSize(string path)
+        public Result GetTotalSpaceSize(out long totalSpace, string path)
         {
-            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
-                .ThrowIfFailure();
+            totalSpace = default;
 
-            return fileSystem.GetTotalSpaceSize(subPath.ToString());
+            Result rc = FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath);
+            if (rc.IsFailure()) return rc;
+
+            return fileSystem.GetTotalSpaceSize(out totalSpace, subPath.ToString());
         }
 
-        public FileTimeStampRaw GetFileTimeStamp(string path)
+        public Result GetFileTimeStamp(out FileTimeStampRaw timeStamp, string path)
         {
-            FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
-                .ThrowIfFailure();
+            timeStamp = default;
 
-            return fileSystem.GetFileTimeStampRaw(subPath.ToString());
+            Result rc = FindFileSystem(path.AsSpan(), out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath);
+            if (rc.IsFailure()) return rc;
+
+            return fileSystem.GetFileTimeStampRaw(out timeStamp, subPath.ToString());
         }
 
-        public void Commit(string mountName)
+        public Result Commit(string mountName)
         {
-            MountTable.Find(mountName, out FileSystemAccessor fileSystem).ThrowIfFailure();
+            Result rc = MountTable.Find(mountName, out FileSystemAccessor fileSystem);
+            if (rc.IsFailure()) return rc;
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
                 TimeSpan startTime = Time.GetCurrent();
-                fileSystem.Commit();
+                rc = fileSystem.Commit();
                 TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(startTime, endTime, $", name: \"{mountName}\"");
             }
             else
             {
-                fileSystem.Commit();
+                rc = fileSystem.Commit();
             }
+
+            return rc;
         }
 
         // ==========================
         // Operations on file handles
         // ==========================
-        public int ReadFile(FileHandle handle, Span<byte> destination, long offset)
+        public Result ReadFile(out long bytesRead, FileHandle handle, Span<byte> destination, long offset)
         {
-            return ReadFile(handle, destination, offset, ReadOption.None);
+            return ReadFile(out bytesRead, handle, destination, offset, ReadOption.None);
         }
 
-        public int ReadFile(FileHandle handle, Span<byte> destination, long offset, ReadOption option)
+        public Result ReadFile(out long bytesRead, FileHandle handle, Span<byte> destination, long offset, ReadOption option)
         {
-            long bytesRead;
+            Result rc;
 
             if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
             {
                 TimeSpan startTime = Time.GetCurrent();
-                handle.File.Read(out bytesRead, offset, destination, option).ThrowIfFailure();
+                rc = handle.File.Read(out bytesRead, offset, destination, option);
                 TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(startTime, endTime, handle, $", offset: {offset}, size: {destination.Length}");
             }
             else
             {
-                handle.File.Read(out bytesRead, offset, destination, option).ThrowIfFailure();
+                rc = handle.File.Read(out bytesRead, offset, destination, option);
             }
 
-            return (int)bytesRead;
+            return rc;
         }
 
-        public void WriteFile(FileHandle handle, ReadOnlySpan<byte> source, long offset)
+        public Result WriteFile(FileHandle handle, ReadOnlySpan<byte> source, long offset)
         {
-            WriteFile(handle, source, offset, WriteOption.None);
+            return WriteFile(handle, source, offset, WriteOption.None);
         }
 
-        public void WriteFile(FileHandle handle, ReadOnlySpan<byte> source, long offset, WriteOption option)
+        public Result WriteFile(FileHandle handle, ReadOnlySpan<byte> source, long offset, WriteOption option)
         {
+            Result rc;
+
             if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
             {
                 TimeSpan startTime = Time.GetCurrent();
-                handle.File.Write(offset, source, option);
+                rc = handle.File.Write(offset, source, option);
                 TimeSpan endTime = Time.GetCurrent();
 
                 string optionString = (option & WriteOption.Flush) == 0 ? "" : $", write_option: {option}";
@@ -401,47 +429,55 @@ namespace LibHac.FsClient
             }
             else
             {
-                handle.File.Write(offset, source, option);
+                rc = handle.File.Write(offset, source, option);
             }
+
+            return rc;
         }
 
-        public void FlushFile(FileHandle handle)
+        public Result FlushFile(FileHandle handle)
         {
+            Result rc;
+
             if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
             {
                 TimeSpan startTime = Time.GetCurrent();
-                handle.File.Flush();
+                rc = handle.File.Flush();
                 TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(startTime, endTime, handle, string.Empty);
             }
             else
             {
-                handle.File.Flush();
+                rc = handle.File.Flush();
             }
+
+            return rc;
         }
 
-        public long GetFileSize(FileHandle handle)
+        public Result GetFileSize(out long fileSize, FileHandle handle)
         {
-            handle.File.GetSize(out long fileSize).ThrowIfFailure();
-
-            return fileSize;
+            return handle.File.GetSize(out fileSize);
         }
 
-        public void SetFileSize(FileHandle handle, long size)
+        public Result SetFileSize(FileHandle handle, long size)
         {
+            Result rc;
+
             if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
             {
                 TimeSpan startTime = Time.GetCurrent();
-                handle.File.SetSize(size);
+                rc = handle.File.SetSize(size);
                 TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(startTime, endTime, handle, $", size: {size}");
             }
             else
             {
-                handle.File.SetSize(size);
+                rc = handle.File.SetSize(size);
             }
+
+            return rc;
         }
 
         public OpenMode GetFileOpenMode(FileHandle handle)
@@ -468,9 +504,11 @@ namespace LibHac.FsClient
         // ==========================
         // Operations on directory handles
         // ==========================
-        public int GetDirectoryEntryCount(DirectoryHandle handle)
+        public Result GetDirectoryEntryCount(out long count, DirectoryHandle handle)
         {
-            return handle.Directory.GetEntryCount();
+            count = handle.Directory.GetEntryCount();
+
+            return Result.Success;
         }
 
         public IEnumerable<DirectoryEntry> ReadDirectory(DirectoryHandle handle)

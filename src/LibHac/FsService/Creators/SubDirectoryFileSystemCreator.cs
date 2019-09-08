@@ -6,16 +6,10 @@ namespace LibHac.FsService.Creators
     {
         public Result Create(out IFileSystem subDirFileSystem, IFileSystem baseFileSystem, string path)
         {
-            try
-            {
-                baseFileSystem.OpenDirectory(path, OpenDirectoryMode.Directory);
-            }
-            catch (HorizonResultException ex)
-            {
-                subDirFileSystem = default;
+            subDirFileSystem = default;
 
-                return ex.ResultValue;
-            }
+            Result rc = baseFileSystem.OpenDirectory(out IDirectory _, path, OpenDirectoryMode.Directory);
+            if (rc.IsFailure()) return rc;
 
             subDirFileSystem = new SubdirectoryFileSystem(baseFileSystem, path);
 

@@ -32,10 +32,12 @@ namespace LibHac.Fs.RomFs
         /// </summary>
         public RomFsBuilder(IFileSystem input)
         {
-            foreach (DirectoryEntry file in input.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File)
+            foreach (DirectoryEntry entry in input.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File)
                 .OrderBy(x => x.FullPath, StringComparer.Ordinal))
             {
-                AddFile(file.FullPath, input.OpenFile(file.FullPath, OpenMode.Read));
+                input.OpenFile(out IFile file, entry.FullPath, OpenMode.Read).ThrowIfFailure();
+
+                AddFile(entry.FullPath, file);
             }
         }
 

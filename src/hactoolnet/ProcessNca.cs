@@ -210,8 +210,8 @@ namespace hactoolnet
             IFileSystem pfs = nca.OpenFileSystem(NcaSectionType.Code, IntegrityCheckLevel.ErrorOnInvalid);
             if (!pfs.FileExists("main.npdm")) return Validity.Unchecked;
 
-            IFile npdmStorage = pfs.OpenFile("main.npdm", OpenMode.Read);
-            var npdm = new NpdmBinary(npdmStorage.AsStream());
+            pfs.OpenFile(out IFile npdmFile, "main.npdm", OpenMode.Read).ThrowIfFailure();
+            var npdm = new NpdmBinary(npdmFile.AsStream());
 
             return nca.Header.VerifySignature2(npdm.AciD.Rsa2048Modulus);
         }
