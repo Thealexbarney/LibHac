@@ -509,17 +509,15 @@ namespace LibHac.FsClient
         // ==========================
         public Result GetDirectoryEntryCount(out long count, DirectoryHandle handle)
         {
-            count = handle.Directory.GetEntryCount();
-
-            return Result.Success;
+            return handle.Directory.GetEntryCount(out count);
         }
 
-        public IEnumerable<DirectoryEntry> ReadDirectory(DirectoryHandle handle)
+        public IEnumerable<DirectoryEntryEx> ReadDirectory(DirectoryHandle handle)
         {
             if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
             {
                 TimeSpan startTime = Time.GetCurrent();
-                IEnumerable<DirectoryEntry> entries = handle.Directory.Read();
+                IEnumerable<DirectoryEntryEx> entries = handle.Directory.Read();
                 TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(Result.Success, startTime, endTime, handle, string.Empty);
@@ -527,6 +525,26 @@ namespace LibHac.FsClient
             }
 
             return handle.Directory.Read();
+        }
+
+        public Result ReadDirectory2(out long entriesRead, Span<DirectoryEntry> entryBuffer, DirectoryHandle handle)
+        {
+            Result rc;
+
+            if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
+            {
+                TimeSpan startTime = Time.GetCurrent();
+                rc = handle.Directory.Read(out entriesRead, entryBuffer);
+                TimeSpan endTime = Time.GetCurrent();
+
+                OutputAccessLog(rc, startTime, endTime, handle, string.Empty);
+            }
+            else
+            {
+                rc = handle.Directory.Read(out entriesRead, entryBuffer);
+            }
+
+            return rc;
         }
 
         public void CloseDirectory(DirectoryHandle handle)

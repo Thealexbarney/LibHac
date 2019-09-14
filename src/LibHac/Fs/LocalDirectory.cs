@@ -2,22 +2,19 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
+using LibHac.Common;
 
 namespace LibHac.Fs
 {
     public class LocalDirectory : IDirectory
     {
-        public IFileSystem ParentFileSystem { get; }
-        public string FullPath { get; }
-
         private string LocalPath { get; }
-        public OpenDirectoryMode Mode { get; }
+        private OpenDirectoryMode Mode { get; }
         private DirectoryInfo DirInfo { get; }
+        private IEnumerator<FileSystemInfo> EntryEnumerator { get; }
 
         public LocalDirectory(LocalFileSystem fs, string path, OpenDirectoryMode mode)
         {
-            ParentFileSystem = fs;
-            FullPath = path;
             LocalPath = fs.ResolveLocalPath(path);
             Mode = mode;
 
@@ -36,27 +33,42 @@ namespace LibHac.Fs
             {
                 ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             }
+
+            EntryEnumerator = DirInfo.EnumerateFileSystemInfos().GetEnumerator();
         }
 
-        public IEnumerable<DirectoryEntry> Read()
+        public Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer)
         {
-            foreach (FileSystemInfo entry in DirInfo.EnumerateFileSystemInfos())
+            int i = 0;
+
+            while (i < entryBuffer.Length && EntryEnumerator.MoveNext())
             {
-                bool isDir = (entry.Attributes & FileAttributes.Directory) != 0;
+                FileSystemInfo localEntry = EntryEnumerator.Current;
+                if (localEntry == null) break;
+
+                bool isDir = localEntry.Attributes.HasFlag(FileAttributes.Directory);
 
                 if (!CanReturnEntry(isDir, Mode)) continue;
 
+                ReadOnlySpan<byte> name = Util.GetUtf8Bytes(localEntry.Name);
                 DirectoryEntryType type = isDir ? DirectoryEntryType.Directory : DirectoryEntryType.File;
-                long length = isDir ? 0 : ((FileInfo)entry).Length;
+                long length = isDir ? 0 : ((FileInfo)localEntry).Length;
 
-                yield return new DirectoryEntry(entry.Name, PathTools.Combine(FullPath, entry.Name), type, length)
-                {
-                    Attributes = entry.Attributes.ToNxAttributes()
-                };
+                StringUtils.Copy(entryBuffer[i].Name, name);
+                entryBuffer[i].Name[PathTools.MaxPathLength] = 0;
+
+                entryBuffer[i].Attributes = localEntry.Attributes.ToNxAttributes();
+                entryBuffer[i].Type = type;
+                entryBuffer[i].Size = length;
+
+                i++;
             }
+
+            entriesRead = i;
+            return Result.Success;
         }
 
-        public int GetEntryCount()
+        public Result GetEntryCount(out long entryCount)
         {
             int count = 0;
 
@@ -67,7 +79,8 @@ namespace LibHac.Fs
                 if (CanReturnEntry(isDir, Mode)) count++;
             }
 
-            return count;
+            entryCount = count;
+            return Result.Success;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

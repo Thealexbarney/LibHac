@@ -64,10 +64,7 @@ namespace LibHac.Fs
         {
             path = PathTools.Normalize(path);
 
-            ParentFileSystem.OpenDirectory(out IDirectory baseDir, ResolveFullPath(path), mode);
-
-            directory = new SubdirectoryFileSystemDirectory(this, baseDir, path, mode);
-            return Result.Success;
+            return ParentFileSystem.OpenDirectory(out directory, ResolveFullPath(path), mode);
         }
 
         public Result OpenFile(out IFile file, string path, OpenMode mode)

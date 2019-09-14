@@ -1,15 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.IO;
+using System.Text;
+using LibHac.Common;
 
 namespace LibHac.Fs
 {
     public class PartitionDirectory : IDirectory
     {
-        IFileSystem IDirectory.ParentFileSystem => ParentFileSystem;
-        public PartitionFileSystem ParentFileSystem { get; }
-        public string FullPath { get; }
-
-        public OpenDirectoryMode Mode { get; }
+        private PartitionFileSystem ParentFileSystem { get; }
+        private OpenDirectoryMode Mode { get; }
+        private int CurrentIndex { get; set; }
 
         public PartitionDirectory(PartitionFileSystem fs, string path, OpenDirectoryMode mode)
         {
@@ -18,23 +18,43 @@ namespace LibHac.Fs
             if (path != "/") throw new DirectoryNotFoundException();
 
             ParentFileSystem = fs;
-            FullPath = path;
             Mode = mode;
+
+            CurrentIndex = 0;
         }
 
-
-        public IEnumerable<DirectoryEntry> Read()
+        public Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer)
         {
-            if (Mode.HasFlag(OpenDirectoryMode.File))
+            if (!Mode.HasFlag(OpenDirectoryMode.File))
             {
-                foreach (PartitionFileEntry entry in ParentFileSystem.Files)
-                {
-                    yield return new DirectoryEntry(entry.Name, '/' + entry.Name, DirectoryEntryType.File, entry.Size);
-                }
+                entriesRead = 0;
+                return Result.Success;
             }
+
+            int entriesRemaining = ParentFileSystem.Files.Length - CurrentIndex;
+            int toRead = Math.Min(entriesRemaining, entryBuffer.Length);
+
+            for (int i = 0; i < toRead; i++)
+            {
+                PartitionFileEntry fileEntry = ParentFileSystem.Files[CurrentIndex];
+                ref DirectoryEntry entry = ref entryBuffer[i];
+
+                Span<byte> nameUtf8 = Encoding.UTF8.GetBytes(fileEntry.Name);
+
+                entry.Type = DirectoryEntryType.File;
+                entry.Size = fileEntry.Size;
+
+                StringUtils.Copy(entry.Name, nameUtf8);
+                entry.Name[PathTools.MaxPathLength] = 0;
+
+                CurrentIndex++;
+            }
+
+            entriesRead = toRead;
+            return Result.Success;
         }
 
-        public int GetEntryCount()
+        public Result GetEntryCount(out long entryCount)
         {
             int count = 0;
 
@@ -43,7 +63,8 @@ namespace LibHac.Fs
                 count += ParentFileSystem.Files.Length;
             }
 
-            return count;
+            entryCount = count;
+            return Result.Success;
         }
     }
 }

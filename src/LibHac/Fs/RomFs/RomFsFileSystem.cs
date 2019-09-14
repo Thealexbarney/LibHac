@@ -57,7 +57,7 @@ namespace LibHac.Fs.RomFs
                 return ResultFs.PathNotFound.Log();
             }
 
-            directory = new RomFsDirectory(this, path, position, mode);
+            directory = new RomFsDirectory(this, position, mode);
             return Result.Success;
         }
 

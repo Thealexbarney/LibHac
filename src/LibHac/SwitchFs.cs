@@ -67,13 +67,11 @@ namespace LibHac
 
         private void OpenAllNcas()
         {
-            ContentFs.OpenDirectory(out IDirectory rootDir, "/", OpenDirectoryMode.All).ThrowIfFailure();
-
             // Todo: give warning if directories named "*.nca" are found or manually fix the archive bit
-            IEnumerable<DirectoryEntry> files = rootDir.EnumerateEntries("*.nca", SearchOptions.RecurseSubdirectories)
+            IEnumerable<DirectoryEntryEx> files = ContentFs.EnumerateEntries("*.nca", SearchOptions.RecurseSubdirectories)
                 .Where(x => x.Type == DirectoryEntryType.File);
 
-            foreach (DirectoryEntry fileEntry in files)
+            foreach (DirectoryEntryEx fileEntry in files)
             {
                 SwitchFsNca nca = null;
                 try
@@ -109,7 +107,7 @@ namespace LibHac
         {
             if (SaveFs == null) return;
 
-            foreach (DirectoryEntry fileEntry in SaveFs.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File))
+            foreach (DirectoryEntryEx fileEntry in SaveFs.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File))
             {
                 SaveDataFileSystem save = null;
                 string saveName = Path.GetFileNameWithoutExtension(fileEntry.Name);
@@ -141,7 +139,7 @@ namespace LibHac
                     var title = new Title();
 
                     IFileSystem fs = nca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
-                    string cnmtPath = fs.EnumerateEntries("*.cnmt").Single().FullPath;
+                    string cnmtPath = fs.EnumerateEntries("/", "*.cnmt").Single().FullPath;
 
                     fs.OpenFile(out IFile file, cnmtPath, OpenMode.Read).ThrowIfFailure();
 

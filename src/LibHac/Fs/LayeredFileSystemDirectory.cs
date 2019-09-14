@@ -1,44 +1,51 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System;
+using System.Collections.Generic;
 
 namespace LibHac.Fs
 {
     public class LayeredFileSystemDirectory : IDirectory
     {
-        public IFileSystem ParentFileSystem { get; }
-
-        public string FullPath { get; }
-        public OpenDirectoryMode Mode { get; }
-
         private List<IDirectory> Sources { get; }
 
-        public LayeredFileSystemDirectory(IFileSystem fs, List<IDirectory> sources, string path, OpenDirectoryMode mode)
+        public LayeredFileSystemDirectory(List<IDirectory> sources)
         {
-            ParentFileSystem = fs;
             Sources = sources;
-            FullPath = path;
-            Mode = mode;
         }
 
-        public IEnumerable<DirectoryEntry> Read()
+        // Todo: Don't return duplicate entries
+        public Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer)
         {
-            var returnedFiles = new HashSet<string>();
+            entriesRead = 0;
+            int entryIndex = 0;
 
-            foreach (IDirectory source in Sources)
+            for (int i = 0; i < Sources.Count && entryIndex < entryBuffer.Length; i++)
             {
-                foreach (DirectoryEntry entry in source.Read())
-                {
-                    if (returnedFiles.Contains(entry.FullPath)) continue;
+                Result rs = Sources[i].Read(out long subEntriesRead, entryBuffer.Slice(entryIndex));
+                if (rs.IsFailure()) return rs;
 
-                    returnedFiles.Add(entry.FullPath);
-                    yield return entry;
-                }
+                entryIndex += (int)subEntriesRead;
             }
+
+            entriesRead = entryIndex;
+            return Result.Success;
         }
 
-        public int GetEntryCount()
+        // Todo: Don't count duplicate entries
+        public Result GetEntryCount(out long entryCount)
         {
-            return Read().Count();
+            entryCount = 0;
+            long totalEntryCount = 0;
+
+            foreach (IDirectory dir in Sources)
+            {
+                Result rc = dir.GetEntryCount(out long subEntryCount);
+                if (rc.IsFailure()) return rc;
+
+                totalEntryCount += subEntryCount;
+            }
+
+            entryCount = totalEntryCount;
+            return Result.Success;
         }
     }
 }

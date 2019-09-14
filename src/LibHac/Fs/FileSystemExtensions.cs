@@ -2,33 +2,27 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using LibHac.Common;
 
 namespace LibHac.Fs
 {
     public static class FileSystemExtensions
     {
-        public static Result CopyDirectory(this IDirectory source, IDirectory dest, IProgressReport logger = null, CreateFileOptions options = CreateFileOptions.None)
+        public static Result CopyDirectory(this IFileSystem sourceFs, IFileSystem destFs, string sourcePath, string destPath,
+            IProgressReport logger = null, CreateFileOptions options = CreateFileOptions.None)
         {
-            IFileSystem sourceFs = source.ParentFileSystem;
-            IFileSystem destFs = dest.ParentFileSystem;
             Result rc;
 
-            foreach (DirectoryEntry entry in source.Read())
+            foreach (DirectoryEntryEx entry in sourceFs.EnumerateEntries())
             {
-                string subSrcPath = PathTools.Normalize(PathTools.Combine(source.FullPath, entry.Name));
-                string subDstPath = PathTools.Normalize(PathTools.Combine(dest.FullPath, entry.Name));
+                string subSrcPath = PathTools.Normalize(PathTools.Combine(sourcePath, entry.Name));
+                string subDstPath = PathTools.Normalize(PathTools.Combine(destPath, entry.Name));
 
                 if (entry.Type == DirectoryEntryType.Directory)
                 {
                     destFs.EnsureDirectoryExists(subDstPath);
 
-                    rc = sourceFs.OpenDirectory(out IDirectory subSrcDir, subSrcPath, OpenDirectoryMode.All);
-                    if (rc.IsFailure()) return rc;
-
-                    rc = destFs.OpenDirectory(out IDirectory subDstDir, subDstPath, OpenDirectoryMode.All);
-                    if (rc.IsFailure()) return rc;
-
-                    rc = subSrcDir.CopyDirectory(subDstDir, logger, options);
+                    rc = sourceFs.CopyDirectory(destFs, subSrcPath, subDstPath, logger, options);
                     if (rc.IsFailure()) return rc;
                 }
 
@@ -56,52 +50,45 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        public static void CopyFileSystem(this IFileSystem source, IFileSystem dest, IProgressReport logger = null, CreateFileOptions options = CreateFileOptions.None)
-        {
-            source.OpenDirectory(out IDirectory sourceRoot, "/", OpenDirectoryMode.All).ThrowIfFailure();
-            dest.OpenDirectory(out IDirectory destRoot, "/", OpenDirectoryMode.All).ThrowIfFailure();
-
-            sourceRoot.CopyDirectory(destRoot, logger, options).ThrowIfFailure();
-        }
-
         public static void Extract(this IFileSystem source, string destinationPath, IProgressReport logger = null)
         {
             var destFs = new LocalFileSystem(destinationPath);
 
-            source.CopyFileSystem(destFs, logger);
+            source.CopyDirectory(destFs, "/", "/", logger);
         }
 
-        public static IEnumerable<DirectoryEntry> EnumerateEntries(this IFileSystem fileSystem)
+        public static IEnumerable<DirectoryEntryEx> EnumerateEntries(this IFileSystem fileSystem)
         {
-            return fileSystem.EnumerateEntries("*");
+            return fileSystem.EnumerateEntries("/", "*");
         }
 
-        public static IEnumerable<DirectoryEntry> EnumerateEntries(this IFileSystem fileSystem, string searchPattern)
+        public static IEnumerable<DirectoryEntryEx> EnumerateEntries(this IFileSystem fileSystem, string path, string searchPattern)
         {
-            return fileSystem.EnumerateEntries(searchPattern, SearchOptions.RecurseSubdirectories);
+            return fileSystem.EnumerateEntries(path, searchPattern, SearchOptions.RecurseSubdirectories);
         }
 
-        public static IEnumerable<DirectoryEntry> EnumerateEntries(this IFileSystem fileSystem, string searchPattern, SearchOptions searchOptions)
+        public static IEnumerable<DirectoryEntryEx> EnumerateEntries(this IFileSystem fileSystem, string searchPattern, SearchOptions searchOptions)
         {
-            fileSystem.OpenDirectory(out IDirectory rootDir, "/", OpenDirectoryMode.All).ThrowIfFailure();
-
-            return rootDir.EnumerateEntries(searchPattern, searchOptions);
+            return EnumerateEntries(fileSystem, "/", searchPattern, searchOptions);
         }
 
-        public static IEnumerable<DirectoryEntry> EnumerateEntries(this IDirectory directory)
-        {
-            return directory.EnumerateEntries("*", SearchOptions.Default);
-        }
-
-        public static IEnumerable<DirectoryEntry> EnumerateEntries(this IDirectory directory, string searchPattern, SearchOptions searchOptions)
+        public static IEnumerable<DirectoryEntryEx> EnumerateEntries(this IFileSystem fileSystem, string path, string searchPattern, SearchOptions searchOptions)
         {
             bool ignoreCase = searchOptions.HasFlag(SearchOptions.CaseInsensitive);
             bool recurse = searchOptions.HasFlag(SearchOptions.RecurseSubdirectories);
 
-            IFileSystem fs = directory.ParentFileSystem;
+            IFileSystem fs = fileSystem;
+            DirectoryEntry dirEntry = default;
 
-            foreach (DirectoryEntry entry in directory.Read())
+            fileSystem.OpenDirectory(out IDirectory directory, path, OpenDirectoryMode.All).ThrowIfFailure();
+
+            while(true)
             {
+                directory.Read(out long entriesRead, SpanHelpers.AsSpan(ref dirEntry)).ThrowIfFailure();
+                if (entriesRead == 0) break;
+
+                DirectoryEntryEx entry = GetDirectoryEntryEx(ref dirEntry, path);
+
                 if (PathTools.MatchesPattern(searchPattern, entry.Name, ignoreCase))
                 {
                     yield return entry;
@@ -109,13 +96,26 @@ namespace LibHac.Fs
 
                 if (entry.Type != DirectoryEntryType.Directory || !recurse) continue;
 
-                fs.OpenDirectory(out IDirectory subDir, PathTools.Combine(directory.FullPath, entry.Name), OpenDirectoryMode.All).ThrowIfFailure();
+                IEnumerable<DirectoryEntryEx> subEntries =
+                    fs.EnumerateEntries(PathTools.Combine(path, entry.Name), searchPattern,
+                        searchOptions);
 
-                foreach (DirectoryEntry subEntry in subDir.EnumerateEntries(searchPattern, searchOptions))
+                foreach (DirectoryEntryEx subEntry in subEntries)
                 {
                     yield return subEntry;
                 }
             }
+        }
+
+        private static DirectoryEntryEx GetDirectoryEntryEx(ref DirectoryEntry entry, string parentPath)
+        {
+            string name = entry.Name.FromUtf8Z();
+            string path = PathTools.Combine(parentPath, name);
+
+            var entryEx = new DirectoryEntryEx(name, path, entry.Type, entry.Size);
+            entryEx.Attributes = entry.Attributes;
+
+            return entryEx;
         }
 
         public static void CopyTo(this IFile file, IFile dest, IProgressReport logger = null)
@@ -157,16 +157,14 @@ namespace LibHac.Fs
 
         public static int GetEntryCount(this IFileSystem fs, OpenDirectoryMode mode)
         {
-            fs.OpenDirectory(out IDirectory rootDir, "/", OpenDirectoryMode.All).ThrowIfFailure();
-
-            return rootDir.GetEntryCountRecursive(mode);
+            return GetEntryCountRecursive(fs, "/", mode);
         }
 
-        public static int GetEntryCountRecursive(this IDirectory directory, OpenDirectoryMode mode)
+        public static int GetEntryCountRecursive(this IFileSystem fs, string path, OpenDirectoryMode mode)
         {
             int count = 0;
 
-            foreach (DirectoryEntry entry in directory.EnumerateEntries())
+            foreach (DirectoryEntryEx entry in fs.EnumerateEntries(path, "*"))
             {
                 if (entry.Type == DirectoryEntryType.Directory && (mode & OpenDirectoryMode.Directory) != 0 ||
                     entry.Type == DirectoryEntryType.File && (mode & OpenDirectoryMode.File) != 0)
@@ -194,19 +192,17 @@ namespace LibHac.Fs
             fs.QueryEntry(Span<byte>.Empty, Span<byte>.Empty, QueryId.MakeConcatFile, path);
         }
 
-        public static void CleanDirectoryRecursivelyGeneric(IDirectory directory)
+        public static void CleanDirectoryRecursivelyGeneric(IFileSystem fileSystem, string path)
         {
-            IFileSystem fs = directory.ParentFileSystem;
+            IFileSystem fs = fileSystem;
 
-            foreach (DirectoryEntry entry in directory.Read())
+            foreach (DirectoryEntryEx entry in fileSystem.EnumerateEntries(path, "*"))
             {
-                string subPath = PathTools.Combine(directory.FullPath, entry.Name);
+                string subPath = PathTools.Combine(path, entry.Name);
 
                 if (entry.Type == DirectoryEntryType.Directory)
                 {
-                    fs.OpenDirectory(out IDirectory subDir, subPath, OpenDirectoryMode.All).ThrowIfFailure();
-
-                    CleanDirectoryRecursivelyGeneric(subDir);
+                    CleanDirectoryRecursivelyGeneric(fileSystem, subPath);
                     fs.DeleteDirectory(subPath);
                 }
                 else if (entry.Type == DirectoryEntryType.File)

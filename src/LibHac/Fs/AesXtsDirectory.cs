@@ -1,85 +1,90 @@
 ﻿using System;
-using System.Collections.Generic;
+using LibHac.Common;
 
 namespace LibHac.Fs
 {
     public class AesXtsDirectory : IDirectory
     {
-        IFileSystem IDirectory.ParentFileSystem => ParentFileSystem;
-        public AesXtsFileSystem ParentFileSystem { get; }
-
-        public string FullPath { get; }
-        public OpenDirectoryMode Mode { get; }
+        private string Path { get; }
+        private OpenDirectoryMode Mode { get; }
 
         private IFileSystem BaseFileSystem { get; }
         private IDirectory BaseDirectory { get; }
 
-        public AesXtsDirectory(AesXtsFileSystem parentFs, IDirectory baseDir, OpenDirectoryMode mode)
+        public AesXtsDirectory(IFileSystem baseFs, IDirectory baseDir, string path, OpenDirectoryMode mode)
         {
-            ParentFileSystem = parentFs;
+            BaseFileSystem = baseFs;
             BaseDirectory = baseDir;
             Mode = mode;
-            BaseFileSystem = BaseDirectory.ParentFileSystem;
-            FullPath = BaseDirectory.FullPath;
+            Path = path;
         }
 
-        public IEnumerable<DirectoryEntry> Read()
+        public Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer)
         {
-            foreach (DirectoryEntry entry in BaseDirectory.Read())
-            {
-                if (entry.Type == DirectoryEntryType.Directory)
-                {
-                    yield return entry;
-                }
-                else
-                {
-                    // todo: FS returns invalid file entries with a size of 0
-                    long size = GetAesXtsFileSize(entry.FullPath);
-                    if (size == -1) continue;
+            Result rc = BaseDirectory.Read(out entriesRead, entryBuffer);
+            if (rc.IsFailure()) return rc;
 
-                    yield return new DirectoryEntry(entry.Name, entry.FullPath, entry.Type, size);
+            for (int i = 0; i < entriesRead; i++)
+            {
+                ref DirectoryEntry entry = ref entryBuffer[i];
+
+                if (entry.Type == DirectoryEntryType.File)
+                {
+                    if (Mode.HasFlag(OpenDirectoryMode.NoFileSize))
+                    {
+                        entry.Size = 0;
+                    }
+                    else
+                    {
+                        string entryName = Util.GetUtf8StringNullTerminated(entry.Name);
+                        entry.Size = GetAesXtsFileSize(PathTools.Combine(Path, entryName));
+                    }
                 }
             }
+
+            return Result.Success;
         }
 
-        public int GetEntryCount()
+        public Result GetEntryCount(out long entryCount)
         {
-            return BaseDirectory.GetEntryCount();
+            return BaseDirectory.GetEntryCount(out entryCount);
         }
 
         /// <summary>
-        /// Reads the size of a NAX0 file from its header. Returns -1 on error.
+        /// Reads the size of a NAX0 file from its header. Returns 0 on error.
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
         private long GetAesXtsFileSize(string path)
         {
+            const long magicOffset = 0x20;
+            const long fileSizeOffset = 0x48;
+
+            // Todo: Remove try/catch when more code uses Result
             try
             {
-                BaseFileSystem.OpenFile(out IFile file, path, OpenMode.Read).ThrowIfFailure();
+                Result rc = BaseFileSystem.OpenFile(out IFile file, path, OpenMode.Read);
+                if (rc.IsFailure()) return 0;
 
                 using (file)
                 {
-                    file.GetSize(out long fileSize).ThrowIfFailure();
+                    uint magic = 0;
+                    long fileSize = 0;
+                    long bytesRead;
 
-                    if (fileSize < 0x50)
-                    {
-                        return -1;
-                    }
+                    file.Read(out bytesRead, magicOffset, SpanHelpers.AsByteSpan(ref magic), ReadOption.None);
+                    if (bytesRead != sizeof(uint) || magic != AesXtsFileHeader.AesXtsFileMagic) return 0;
 
-                    // todo: Use result codes
-                    var buffer = new byte[8];
+                    file.Read(out bytesRead, fileSizeOffset, SpanHelpers.AsByteSpan(ref fileSize), ReadOption.None);
+                    if (bytesRead != sizeof(long) || magic != AesXtsFileHeader.AesXtsFileMagic) return 0;
 
-                    file.Read(out long _, 0x20, buffer);
-                    if (BitConverter.ToUInt32(buffer, 0) != 0x3058414E) return -1;
-
-                    file.Read(out long _, 0x48, buffer);
-                    return BitConverter.ToInt64(buffer, 0);
+                    return fileSize;
                 }
+
             }
-            catch (ArgumentOutOfRangeException)
+            catch (Exception)
             {
-                return -1;
+                return 0;
             }
         }
     }

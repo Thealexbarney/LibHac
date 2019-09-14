@@ -20,7 +20,7 @@ namespace hactoolnet
 
             if (ctx.Options.ListRomFs)
             {
-                foreach (DirectoryEntry entry in romfs.EnumerateEntries())
+                foreach (DirectoryEntryEx entry in romfs.EnumerateEntries())
                 {
                     ctx.Logger.LogMessage(entry.FullPath);
                 }

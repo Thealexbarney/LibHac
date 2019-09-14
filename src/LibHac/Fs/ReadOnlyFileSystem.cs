@@ -13,13 +13,7 @@ namespace LibHac.Fs
 
         public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
-            directory = default;
-
-            Result rc = BaseFs.OpenDirectory(out IDirectory baseDir, path, mode);
-            if (rc.IsFailure()) return rc;
-
-            directory = new ReadOnlyDirectory(this, baseDir);
-            return Result.Success;
+            return BaseFs.OpenDirectory(out directory, path, mode);
         }
 
         public Result OpenFile(out IFile file, string path, OpenMode mode)

@@ -38,7 +38,7 @@ namespace LibHac.Fs
                 }
             }
 
-            directory = new LayeredFileSystemDirectory(this, dirs, path, mode);
+            directory = new LayeredFileSystemDirectory(dirs);
             return Result.Success;
         }
 

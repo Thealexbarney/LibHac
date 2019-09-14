@@ -7,7 +7,7 @@ namespace LibHac.Fs
 {
     public class AesXtsFileHeader
     {
-        private const uint AesXtsFileMagic = 0x3058414E;
+        internal const uint AesXtsFileMagic = 0x3058414E;
         public byte[] Signature { get; set; } = new byte[0x20];
         public uint Magic { get; }
         public byte[] EncryptedKey1 { get; } = new byte[0x10];

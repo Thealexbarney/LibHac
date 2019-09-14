@@ -80,7 +80,8 @@ namespace LibHac.Fs
             Result rc = BaseFileSystem.OpenDirectory(out IDirectory dir, path, OpenDirectoryMode.Directory);
             if (rc.IsFailure()) return false;
 
-            if (dir.GetEntryCount() > 0) return false;
+            rc = dir.GetEntryCount(out long subDirCount);
+            if (rc.IsFailure() || subDirCount > 0) return false;
 
             // Should be enough checks to avoid most false positives. Maybe
             return true;
@@ -222,7 +223,7 @@ namespace LibHac.Fs
             Result rc = BaseFileSystem.OpenDirectory(out IDirectory parentDir, path, OpenDirectoryMode.All);
             if (rc.IsFailure()) return rc;
 
-            directory = new ConcatenationDirectory(this, parentDir, mode);
+            directory = new ConcatenationDirectory(this, BaseFileSystem, parentDir, mode, path);
             return Result.Success;
         }
 

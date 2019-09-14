@@ -73,7 +73,7 @@ namespace hactoolnet
                 {
                     IFileSystem romfs = OpenFileSystemByType(NcaSectionType.Data);
 
-                    foreach (DirectoryEntry entry in romfs.EnumerateEntries())
+                    foreach (DirectoryEntryEx entry in romfs.EnumerateEntries())
                     {
                         ctx.Logger.LogMessage(entry.FullPath);
                     }

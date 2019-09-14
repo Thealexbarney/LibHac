@@ -63,7 +63,7 @@ namespace LibHac.FsClient.Accessors
             Result rc = FileSystem.OpenDirectory(out IDirectory rawDirectory, path, mode);
             if (rc.IsFailure()) return rc;
 
-            var accessor = new DirectoryAccessor(rawDirectory, this);
+            var accessor = new DirectoryAccessor(rawDirectory, this, FileSystem, path);
 
             lock (_locker)
             {

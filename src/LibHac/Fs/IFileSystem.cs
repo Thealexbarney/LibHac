@@ -221,8 +221,9 @@ namespace LibHac.Fs
     [Flags]
     public enum OpenDirectoryMode
     {
-        Directory = 1,
-        File = 2,
+        Directory = 1 << 0,
+        File = 1 << 1,
+        NoFileSize = 1 << 31,
         All = Directory | File
     }
 

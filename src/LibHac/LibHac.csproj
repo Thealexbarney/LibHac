@@ -23,6 +23,7 @@
     <IncludeSource>true</IncludeSource>
     <NoWarn>$(NoWarn);1591;NU5105</NoWarn>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net46' ">

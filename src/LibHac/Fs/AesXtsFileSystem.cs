@@ -92,7 +92,7 @@ namespace LibHac.Fs
             Result rc = BaseFileSystem.OpenDirectory(out IDirectory baseDir, path, mode);
             if (rc.IsFailure()) return rc;
 
-            directory = new AesXtsDirectory(this, baseDir, mode);
+            directory = new AesXtsDirectory(BaseFileSystem, baseDir, path, mode);
             return Result.Success;
         }
 
@@ -147,9 +147,7 @@ namespace LibHac.Fs
 
         private void RenameDirectoryImpl(string srcDir, string dstDir, bool doRollback)
         {
-            OpenDirectory(out IDirectory dir, dstDir, OpenDirectoryMode.All);
-
-            foreach (DirectoryEntry entry in dir.Read())
+            foreach (DirectoryEntryEx entry in this.EnumerateEntries(srcDir, "*"))
             {
                 string subSrcPath = $"{srcDir}/{entry.Name}";
                 string subDstPath = $"{dstDir}/{entry.Name}";

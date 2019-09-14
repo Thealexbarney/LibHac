@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System;
 
 namespace LibHac.Fs
 {
@@ -8,32 +8,24 @@ namespace LibHac.Fs
     public interface IDirectory
     {
         /// <summary>
-        /// The <see cref="IFileSystem"/> that contains the current <see cref="IDirectory"/>.
+        /// Retrieves the next entries that this directory contains. Does not search subdirectories.
         /// </summary>
-        IFileSystem ParentFileSystem { get; }
+        /// <param name="entriesRead">The number of <see cref="DirectoryEntry"/>s that
+        /// were read into <paramref name="entryBuffer"/>.</param>
+        /// <param name="entryBuffer">The buffer the entries will be read into.</param>
+        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
+        /// <remarks>With each call of <see cref="Read"/>, the <see cref="IDirectory"/> object will
+        /// continue to iterate through all the entries it contains.
+        /// Each call will attempt to read as many entries as the buffer can contain.
+        /// Once all the entries have been read, all subsequent calls to <see cref="Read"/> will
+        /// read 0 entries into the buffer.</remarks>
+        Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer);
 
         /// <summary>
-        /// The full path of the current <see cref="IDirectory"/> in its <see cref="ParentFileSystem"/>.
+        /// Retrieves the number of file system entries that this directory contains. Does not search subdirectories.
         /// </summary>
-        string FullPath { get; }
-
-        /// <summary>
-        /// Specifies which types of entries will be enumerated when <see cref="Read"/> is called.
-        /// </summary>
-        OpenDirectoryMode Mode { get; }
-
-        /// <summary>
-        /// Returns an enumerable collection the file system entries of the types specified by
-        /// <see cref="Mode"/> that this directory contains. Does not search subdirectories.
-        /// </summary>
-        /// <returns>An enumerable collection of file system entries in this directory.</returns>
-        IEnumerable<DirectoryEntry> Read();
-
-        /// <summary>
-        /// Returns the number of file system entries of the types specified by
-        /// <see cref="Mode"/> that this directory contains. Does not search subdirectories.
-        /// </summary>
-        /// <returns>The number of child entries the directory contains.</returns>
-        int GetEntryCount();
+        /// <param name="entryCount">The number of child entries the directory contains.</param>
+        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
+        Result GetEntryCount(out long entryCount);
     }
 }

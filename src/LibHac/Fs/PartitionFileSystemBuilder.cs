@@ -22,9 +22,7 @@ namespace LibHac.Fs
         /// </summary>
         public PartitionFileSystemBuilder(IFileSystem input)
         {
-            input.OpenDirectory(out IDirectory rootDir, "/", OpenDirectoryMode.File).ThrowIfFailure();
-
-            foreach (DirectoryEntry entry in rootDir.Read().OrderBy(x => x.FullPath, StringComparer.Ordinal))
+            foreach (DirectoryEntryEx entry in input.EnumerateEntries().OrderBy(x => x.FullPath, StringComparer.Ordinal))
             {
                 input.OpenFile(out IFile file, entry.FullPath, OpenMode.Read).ThrowIfFailure();
 

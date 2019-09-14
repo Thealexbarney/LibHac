@@ -88,10 +88,7 @@ namespace LibHac.Fs.Save
         {
             path = PathTools.Normalize(path);
 
-            Result rc = OpenDirectory(out IDirectory dir, path, OpenDirectoryMode.All);
-            if (rc.IsFailure()) return rc;
-
-            FileSystemExtensions.CleanDirectoryRecursivelyGeneric(dir);
+            FileSystemExtensions.CleanDirectoryRecursivelyGeneric(this, path);
 
             return Result.Success;
         }
@@ -125,7 +122,7 @@ namespace LibHac.Fs.Save
                 return ResultFs.PathNotFound.Log();
             }
 
-            directory = new SaveDataDirectory(this, path, position, mode);
+            directory = new SaveDataDirectory(this, position, mode);
 
             return Result.Success;
         }
@@ -223,7 +220,7 @@ namespace LibHac.Fs.Save
         {
             AllocationTable.FsTrim();
 
-            foreach (DirectoryEntry file in this.EnumerateEntries("*", SearchOptions.RecurseSubdirectories))
+            foreach (DirectoryEntryEx file in this.EnumerateEntries("*", SearchOptions.RecurseSubdirectories))
             {
                 if (FileTable.TryOpenFile(file.FullPath, out SaveFileInfo fileInfo) && fileInfo.StartBlock >= 0)
                 {

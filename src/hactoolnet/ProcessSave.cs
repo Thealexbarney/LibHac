@@ -131,7 +131,7 @@ namespace hactoolnet
 
                 if (ctx.Options.ListFiles)
                 {
-                    foreach (DirectoryEntry entry in save.EnumerateEntries())
+                    foreach (DirectoryEntryEx entry in save.EnumerateEntries())
                     {
                         ctx.Logger.LogMessage(entry.FullPath);
                     }
@@ -228,7 +228,7 @@ namespace hactoolnet
         {
             var sb = new StringBuilder();
 
-            foreach (DirectoryEntry entry in save.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File))
+            foreach (DirectoryEntryEx entry in save.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File))
             {
                 save.FileTable.TryOpenFile(entry.FullPath, out SaveFileInfo fileInfo);
                 if (fileInfo.StartBlock < 0) continue;

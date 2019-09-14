@@ -30,7 +30,7 @@ namespace hactoolnet
 
             using (sourceHandle)
             {
-                foreach (DirectoryEntry entry in fs.ReadDirectory(sourceHandle))
+                foreach (DirectoryEntryEx entry in fs.ReadDirectory(sourceHandle))
                 {
                     string subSrcPath = PathTools.Normalize(PathTools.Combine(sourcePath, entry.Name));
                     string subDstPath = PathTools.Normalize(PathTools.Combine(destPath, entry.Name));
@@ -57,7 +57,7 @@ namespace hactoolnet
         {
             long size = 0;
 
-            foreach (DirectoryEntry entry in fs.EnumerateEntries(path, searchPattern))
+            foreach (DirectoryEntryEx entry in fs.EnumerateEntries(path, searchPattern))
             {
                 size += entry.Size;
             }

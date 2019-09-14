@@ -316,7 +316,7 @@ namespace hactoolnet
 
             IFileSystem fs = switchFs.ContentFs;
 
-            DirectoryEntry[] ncaDirs = fs.EnumerateEntries("*.nca", SearchOptions.RecurseSubdirectories)
+            DirectoryEntryEx[] ncaDirs = fs.EnumerateEntries("*.nca", SearchOptions.RecurseSubdirectories)
                 .Where(x => x.Type == DirectoryEntryType.Directory)
                 .Where(x => fs.FileExists($"{x.FullPath}/00"))
                 .ToArray();
@@ -326,7 +326,7 @@ namespace hactoolnet
                 ctx.Logger.LogMessage("Warning: NCA folders without the archive flag were found. Fixing...");
             }
 
-            foreach (DirectoryEntry file in ncaDirs)
+            foreach (DirectoryEntryEx file in ncaDirs)
             {
                 fs.SetConcatenationFileAttribute(file.FullPath);
                 ctx.Logger.LogMessage($"{file.FullPath}");

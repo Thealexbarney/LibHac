@@ -1,71 +1,87 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Text;
+using LibHac.Common;
 
 namespace LibHac.Fs.Save
 {
     public class SaveDataDirectory : IDirectory
     {
-        IFileSystem IDirectory.ParentFileSystem => ParentFileSystem;
-        public SaveDataFileSystemCore ParentFileSystem { get; }
-        public string FullPath { get; }
+        private SaveDataFileSystemCore ParentFileSystem { get; }
 
-        public OpenDirectoryMode Mode { get; }
+        private OpenDirectoryMode Mode { get; }
 
         private SaveFindPosition InitialPosition { get; }
+        private SaveFindPosition _currentPosition;
 
-        public SaveDataDirectory(SaveDataFileSystemCore fs, string path, SaveFindPosition position, OpenDirectoryMode mode)
+        public SaveDataDirectory(SaveDataFileSystemCore fs, SaveFindPosition position, OpenDirectoryMode mode)
         {
             ParentFileSystem = fs;
             InitialPosition = position;
-            FullPath = path;
+            _currentPosition = position;
             Mode = mode;
         }
 
-        public IEnumerable<DirectoryEntry> Read()
+        public Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer)
         {
-            SaveFindPosition position = InitialPosition;
-            HierarchicalSaveFileTable tab = ParentFileSystem.FileTable;
-
-            if (Mode.HasFlag(OpenDirectoryMode.Directory))
-            {
-                while (tab.FindNextDirectory(ref position, out string name))
-                {
-                    yield return new DirectoryEntry(name, PathTools.Combine(FullPath, name), DirectoryEntryType.Directory, 0);
-                }
-            }
-
-            if (Mode.HasFlag(OpenDirectoryMode.File))
-            {
-                while (tab.FindNextFile(ref position, out SaveFileInfo info, out string name))
-                {
-                    yield return new DirectoryEntry(name, PathTools.Combine(FullPath, name), DirectoryEntryType.File, info.Length);
-                }
-            }
+            return ReadImpl(out entriesRead, ref _currentPosition, entryBuffer);
         }
 
-        public int GetEntryCount()
+        public Result GetEntryCount(out long entryCount)
         {
-            int count = 0;
-
             SaveFindPosition position = InitialPosition;
+
+            return ReadImpl(out entryCount, ref position, Span<DirectoryEntry>.Empty);
+        }
+
+        private Result ReadImpl(out long entriesRead, ref SaveFindPosition position, Span<DirectoryEntry> entryBuffer)
+        {
             HierarchicalSaveFileTable tab = ParentFileSystem.FileTable;
+
+            int i = 0;
 
             if (Mode.HasFlag(OpenDirectoryMode.Directory))
             {
-                while (tab.FindNextDirectory(ref position, out string _))
+                while ((entryBuffer.IsEmpty || i < entryBuffer.Length) && tab.FindNextDirectory(ref position, out string name))
                 {
-                    count++;
+                    if (!entryBuffer.IsEmpty)
+                    {
+                        ref DirectoryEntry entry = ref entryBuffer[i];
+                        Span<byte> nameUtf8 = Encoding.UTF8.GetBytes(name);
+
+                        StringUtils.Copy(entry.Name, nameUtf8);
+                        entry.Name[64] = 0;
+
+                        entry.Type = DirectoryEntryType.Directory;
+                        entry.Size = 0;
+                    }
+
+                    i++;
                 }
             }
 
             if (Mode.HasFlag(OpenDirectoryMode.File))
             {
-                while (tab.FindNextFile(ref position, out SaveFileInfo _, out string _))
+                while ((entryBuffer.IsEmpty || i < entryBuffer.Length) && tab.FindNextFile(ref position, out SaveFileInfo info, out string name))
                 {
-                    count++;
+                    if (!entryBuffer.IsEmpty)
+                    {
+                        ref DirectoryEntry entry = ref entryBuffer[i];
+                        Span<byte> nameUtf8 = Encoding.UTF8.GetBytes(name);
+
+                        StringUtils.Copy(entry.Name, nameUtf8);
+                        entry.Name[64] = 0;
+
+                        entry.Type = DirectoryEntryType.File;
+                        entry.Size = info.Length;
+                    }
+
+                    i++;
                 }
             }
 
-            return count;
+            entriesRead = i;
+
+            return Result.Success;
         }
     }
 }

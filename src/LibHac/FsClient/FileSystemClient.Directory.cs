@@ -12,7 +12,7 @@ namespace LibHac.FsClient
         }
 
         // todo: change to not use IEnumerable
-        public IEnumerable<DirectoryEntry> ReadDirectory(DirectoryHandle handle)
+        public IEnumerable<DirectoryEntryEx> ReadDirectory(DirectoryHandle handle)
         {
             throw new NotImplementedException();
         }
