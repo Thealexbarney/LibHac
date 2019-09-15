@@ -30,7 +30,7 @@ namespace hactoolnet
 
             using (sourceHandle)
             {
-                foreach (DirectoryEntryEx entry in fs.ReadDirectory(sourceHandle))
+                foreach (DirectoryEntryEx entry in fs.EnumerateEntries(sourcePath, "*", SearchOptions.Default))
                 {
                     string subSrcPath = PathTools.Normalize(PathTools.Combine(sourcePath, entry.Name));
                     string subDstPath = PathTools.Normalize(PathTools.Combine(destPath, entry.Name));
@@ -92,7 +92,7 @@ namespace hactoolnet
                             int toRead = (int)Math.Min(fileSize - offset, bufferSize);
                             Span<byte> buf = buffer.AsSpan(0, toRead);
 
-                            rc = fs.ReadFile(out long _, sourceHandle, buf, offset);
+                            rc = fs.ReadFile(out long _, sourceHandle, offset, buf);
                             if (rc.IsFailure()) return rc;
 
                             rc = fs.WriteFile(destHandle, buf, offset);

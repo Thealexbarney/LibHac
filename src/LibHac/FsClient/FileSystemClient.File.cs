@@ -7,52 +7,52 @@ namespace LibHac.FsClient
     {
         public Result ReadFile(FileHandle handle, long offset, Span<byte> destination)
         {
-            throw new NotImplementedException();
+            return FsManager.ReadFile(handle, offset, destination);
         }
 
         public Result ReadFile(FileHandle handle, long offset, Span<byte> destination, ReadOption options)
         {
-            throw new NotImplementedException();
+            return FsManager.ReadFile(handle, offset, destination, options);
         }
 
         public Result ReadFile(out long bytesRead, FileHandle handle, long offset, Span<byte> destination)
         {
-            throw new NotImplementedException();
+            return FsManager.ReadFile(out bytesRead, handle, offset, destination);
         }
 
         public Result ReadFile(out long bytesRead, FileHandle handle, long offset, Span<byte> destination, ReadOption options)
         {
-            throw new NotImplementedException();
+            return FsManager.ReadFile(out bytesRead, handle, offset, destination, options);
         }
 
-        public Result WriteFile(FileHandle handle, long offset, ReadOnlySpan<byte> source,  WriteOption options)
+        public Result WriteFile(FileHandle handle, long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
-            throw new NotImplementedException();
+            return FsManager.WriteFile(handle, source, offset, options);
         }
 
         public Result FlushFile(FileHandle handle)
         {
-            throw new NotImplementedException();
+            return FsManager.FlushFile(handle);
         }
 
-        public Result GetFileSize(out long size, FileHandle handle)
+        public Result GetFileSize(out long fileSize, FileHandle handle)
         {
-            throw new NotImplementedException();
+            return FsManager.GetFileSize(out fileSize, handle);
         }
 
         public Result SetFileSize(FileHandle handle, long size)
         {
-            throw new NotImplementedException();
+            return FsManager.SetFileSize(handle, size);
         }
 
         public OpenMode GetFileOpenMode(FileHandle handle)
         {
-            throw new NotImplementedException();
+            return FsManager.GetFileOpenMode(handle);
         }
 
         public void CloseFile(FileHandle handle)
         {
-            throw new NotImplementedException();
+            FsManager.CloseFile(handle);
         }
     }
 }

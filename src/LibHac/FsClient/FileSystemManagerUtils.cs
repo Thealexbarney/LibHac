@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsClient.Accessors;
 
@@ -16,7 +17,7 @@ namespace LibHac.FsClient
 
             using (sourceHandle)
             {
-                foreach (DirectoryEntryEx entry in fs.ReadDirectory(sourceHandle))
+                foreach (DirectoryEntryEx entry in fs.EnumerateEntries(sourcePath, "*", SearchOptions.Default))
                 {
                     string subSrcPath = PathTools.Normalize(PathTools.Combine(sourcePath, entry.Name));
                     string subDstPath = PathTools.Normalize(PathTools.Combine(destPath, entry.Name));
@@ -72,7 +73,7 @@ namespace LibHac.FsClient
                             int toRead = (int)Math.Min(fileSize - offset, bufferSize);
                             Span<byte> buf = buffer.AsSpan(0, toRead);
 
-                            rc = fs.ReadFile(out long _, sourceHandle, buf, offset);
+                            rc = fs.ReadFile(out long _, sourceHandle, offset, buf);
                             if (rc.IsFailure()) return rc;
 
                             rc = fs.WriteFile(destHandle, buf, offset);
@@ -110,12 +111,18 @@ namespace LibHac.FsClient
             bool ignoreCase = searchOptions.HasFlag(SearchOptions.CaseInsensitive);
             bool recurse = searchOptions.HasFlag(SearchOptions.RecurseSubdirectories);
 
+            DirectoryEntry dirEntry = default;
             fs.OpenDirectory(out DirectoryHandle sourceHandle, path, OpenDirectoryMode.All).ThrowIfFailure();
 
             using (sourceHandle)
             {
-                foreach (DirectoryEntryEx entry in fs.ReadDirectory(sourceHandle))
+                while (true)
                 {
+                    fs.ReadDirectory(out long entriesRead, SpanHelpers.AsSpan(ref dirEntry), sourceHandle);
+                    if (entriesRead == 0) break;
+
+                    DirectoryEntryEx entry = FileSystemExtensions.GetDirectoryEntryEx(ref dirEntry, path);
+
                     if (PathTools.MatchesPattern(searchPattern, entry.Name, ignoreCase))
                     {
                         yield return entry;
@@ -123,9 +130,9 @@ namespace LibHac.FsClient
 
                     if (entry.Type != DirectoryEntryType.Directory || !recurse) continue;
 
-                    string subPath = PathTools.Normalize(PathTools.Combine(path, entry.Name));
-
-                    IEnumerable<DirectoryEntryEx> subEntries = fs.EnumerateEntries(subPath, searchPattern, searchOptions);
+                    IEnumerable<DirectoryEntryEx> subEntries =
+                        fs.EnumerateEntries(PathTools.Combine(path, entry.Name), searchPattern,
+                            searchOptions);
 
                     foreach (DirectoryEntryEx subEntry in subEntries)
                     {

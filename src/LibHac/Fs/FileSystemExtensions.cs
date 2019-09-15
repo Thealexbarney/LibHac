@@ -13,7 +13,7 @@ namespace LibHac.Fs
         {
             Result rc;
 
-            foreach (DirectoryEntryEx entry in sourceFs.EnumerateEntries())
+            foreach (DirectoryEntryEx entry in sourceFs.EnumerateEntries(sourcePath, "*", SearchOptions.Default))
             {
                 string subSrcPath = PathTools.Normalize(PathTools.Combine(sourcePath, entry.Name));
                 string subDstPath = PathTools.Normalize(PathTools.Combine(destPath, entry.Name));
@@ -107,7 +107,7 @@ namespace LibHac.Fs
             }
         }
 
-        private static DirectoryEntryEx GetDirectoryEntryEx(ref DirectoryEntry entry, string parentPath)
+        internal static DirectoryEntryEx GetDirectoryEntryEx(ref DirectoryEntry entry, string parentPath)
         {
             string name = entry.Name.FromUtf8Z();
             string path = PathTools.Combine(parentPath, name);

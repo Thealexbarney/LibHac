@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using LibHac.Fs;
 
 namespace LibHac.FsClient
@@ -8,18 +7,17 @@ namespace LibHac.FsClient
     {
         public Result GetDirectoryEntryCount(out long count, DirectoryHandle handle)
         {
-            throw new NotImplementedException();
+            return FsManager.GetDirectoryEntryCount(out count, handle);
         }
 
-        // todo: change to not use IEnumerable
-        public IEnumerable<DirectoryEntryEx> ReadDirectory(DirectoryHandle handle)
+        public Result ReadDirectory(out long entriesRead, Span<DirectoryEntry> entryBuffer, DirectoryHandle handle)
         {
-            throw new NotImplementedException();
+            return FsManager.ReadDirectory(out entriesRead, entryBuffer, handle);
         }
 
         public void CloseDirectory(DirectoryHandle handle)
         {
-            throw new NotImplementedException();
+            FsManager.CloseDirectory(handle);
         }
     }
 }

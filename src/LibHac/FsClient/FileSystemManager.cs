@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using LibHac.Fs;
 using LibHac.FsClient.Accessors;
@@ -386,12 +385,27 @@ namespace LibHac.FsClient
         // ==========================
         // Operations on file handles
         // ==========================
-        public Result ReadFile(out long bytesRead, FileHandle handle, Span<byte> destination, long offset)
+        public Result ReadFile(FileHandle handle, long offset, Span<byte> destination)
         {
-            return ReadFile(out bytesRead, handle, destination, offset, ReadOption.None);
+            return ReadFile(handle, offset, destination, ReadOption.None);
         }
 
-        public Result ReadFile(out long bytesRead, FileHandle handle, Span<byte> destination, long offset, ReadOption option)
+        public Result ReadFile(FileHandle handle, long offset, Span<byte> destination, ReadOption option)
+        {
+            Result rc = ReadFile(out long bytesRead, handle, offset, destination, option);
+            if (rc.IsFailure()) return rc;
+
+            if (bytesRead == destination.Length) return Result.Success;
+
+            return ResultFs.ValueOutOfRange.Log();
+        }
+
+        public Result ReadFile(out long bytesRead, FileHandle handle, long offset, Span<byte> destination)
+        {
+            return ReadFile(out bytesRead, handle, offset, destination, ReadOption.None);
+        }
+
+        public Result ReadFile(out long bytesRead, FileHandle handle, long offset, Span<byte> destination, ReadOption option)
         {
             Result rc;
 
@@ -512,22 +526,7 @@ namespace LibHac.FsClient
             return handle.Directory.GetEntryCount(out count);
         }
 
-        public IEnumerable<DirectoryEntryEx> ReadDirectory(DirectoryHandle handle)
-        {
-            if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
-            {
-                TimeSpan startTime = Time.GetCurrent();
-                IEnumerable<DirectoryEntryEx> entries = handle.Directory.Read();
-                TimeSpan endTime = Time.GetCurrent();
-
-                OutputAccessLog(Result.Success, startTime, endTime, handle, string.Empty);
-                return entries;
-            }
-
-            return handle.Directory.Read();
-        }
-
-        public Result ReadDirectory2(out long entriesRead, Span<DirectoryEntry> entryBuffer, DirectoryHandle handle)
+        public Result ReadDirectory(out long entriesRead, Span<DirectoryEntry> entryBuffer, DirectoryHandle handle)
         {
             Result rc;
 
