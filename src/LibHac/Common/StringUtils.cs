@@ -65,21 +65,19 @@ namespace LibHac.Common
 
             return iDest;
         }
-        
-        public static string FromUtf8Z(this Span<byte> value) => FromUtf8Z((ReadOnlySpan<byte>)value);
 
-        public static string FromUtf8Z(this ReadOnlySpan<byte> value)
+        public static string Utf8ToString(ReadOnlySpan<byte> value)
         {
-            int i;
-            for (i = 0; i < value.Length && value[i] != 0; i++) { }
-
-            value = value.Slice(0, i);
-
 #if STRING_SPAN
             return Encoding.UTF8.GetString(value);
 #else
             return Encoding.UTF8.GetString(value.ToArray());
 #endif
+        }
+
+        public static string Utf8ZToString(ReadOnlySpan<byte> value)
+        {
+            return Utf8ToString(value.Slice(0, GetLength(value)));
         }
     }
 }

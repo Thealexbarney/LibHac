@@ -11,6 +11,7 @@ namespace LibHac.FsClient.Accessors
 
         private IFileSystem FileSystem { get; }
         internal FileSystemManager FsManager { get; }
+        private ICommonMountNameGenerator MountNameGenerator { get; }
 
         private HashSet<FileAccessor> OpenFiles { get; } = new HashSet<FileAccessor>();
         private HashSet<DirectoryAccessor> OpenDirectories { get; } = new HashSet<DirectoryAccessor>();
@@ -19,11 +20,12 @@ namespace LibHac.FsClient.Accessors
 
         internal bool IsAccessLogEnabled { get; set; }
 
-        public FileSystemAccessor(string name, IFileSystem baseFileSystem, FileSystemManager fsManager)
+        public FileSystemAccessor(string name, IFileSystem baseFileSystem, FileSystemManager fsManager, ICommonMountNameGenerator nameGenerator)
         {
             Name = name;
             FileSystem = baseFileSystem;
             FsManager = fsManager;
+            MountNameGenerator = nameGenerator;
         }
 
         public Result CreateDirectory(string path)
@@ -145,6 +147,13 @@ namespace LibHac.FsClient.Accessors
         public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
         {
             return FileSystem.QueryEntry(outBuffer, inBuffer, queryId, path);
+        }
+
+        public Result GetCommonMountName(Span<byte> nameBuffer)
+        {
+            if (MountNameGenerator == null) return ResultFs.PreconditionViolation;
+
+            return MountNameGenerator.Generate(nameBuffer);
         }
 
         internal void NotifyCloseFile(FileAccessor file)

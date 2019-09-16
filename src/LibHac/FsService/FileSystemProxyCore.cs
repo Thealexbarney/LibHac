@@ -75,6 +75,50 @@ namespace LibHac.FsService
                 EncryptedFsKeyId.Content, SdEncryptionSeed);
         }
 
+        public Result OpenCustomStorageFileSystem(out IFileSystem fileSystem, CustomStorageId storageId)
+        {
+            fileSystem = default;
+
+            switch (storageId)
+            {
+                case CustomStorageId.SdCard:
+                {
+                    Result rc = FsCreators.SdFileSystemCreator.Create(out IFileSystem sdFs);
+                    if (rc.IsFailure()) return rc;
+
+                    string customStorageDir = Util.GetCustomStorageDirectoryName(CustomStorageId.SdCard);
+                    string subDirName = $"/{NintendoDirectoryName}/{customStorageDir}";
+
+                    rc = Util.CreateSubFileSystem(out IFileSystem subFs, sdFs, subDirName, true);
+                    if (rc.IsFailure()) return rc;
+
+                    rc = FsCreators.EncryptedFileSystemCreator.Create(out IFileSystem encryptedFs, subFs,
+                        EncryptedFsKeyId.CustomStorage, SdEncryptionSeed);
+                    if (rc.IsFailure()) return rc;
+
+                    fileSystem = encryptedFs;
+                    return Result.Success;
+                }
+                case CustomStorageId.User:
+                {
+                    Result rc = FsCreators.BuiltInStorageFileSystemCreator.Create(out IFileSystem userFs, string.Empty,
+                        BisPartitionId.User);
+                    if (rc.IsFailure()) return rc;
+
+                    string customStorageDir = Util.GetCustomStorageDirectoryName(CustomStorageId.User);
+                    string subDirName = $"/{customStorageDir}";
+
+                    rc = Util.CreateSubFileSystem(out IFileSystem subFs, userFs, subDirName, true);
+                    if (rc.IsFailure()) return rc;
+
+                    fileSystem = subFs;
+                    return Result.Success;
+                }
+                default:
+                    return ResultFs.InvalidArgument.Log();
+            }
+        }
+
         public Result SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed)
         {
             seed.CopyTo(SdEncryptionSeed);

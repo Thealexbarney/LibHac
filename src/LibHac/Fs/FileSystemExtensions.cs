@@ -82,7 +82,7 @@ namespace LibHac.Fs
 
             fileSystem.OpenDirectory(out IDirectory directory, path, OpenDirectoryMode.All).ThrowIfFailure();
 
-            while(true)
+            while (true)
             {
                 directory.Read(out long entriesRead, SpanHelpers.AsSpan(ref dirEntry)).ThrowIfFailure();
                 if (entriesRead == 0) break;
@@ -109,7 +109,7 @@ namespace LibHac.Fs
 
         internal static DirectoryEntryEx GetDirectoryEntryEx(ref DirectoryEntry entry, string parentPath)
         {
-            string name = entry.Name.FromUtf8Z();
+            string name = StringUtils.Utf8ZToString(entry.Name);
             string path = PathTools.Combine(parentPath, name);
 
             var entryEx = new DirectoryEntryEx(name, path, entry.Type, entry.Size);

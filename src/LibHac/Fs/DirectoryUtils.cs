@@ -39,7 +39,7 @@ namespace LibHac.Fs
 
             try
             {
-                Result rc = sourceFs.OpenFile(out srcFile, sourcePath.FromUtf8Z(), OpenMode.Read);
+                Result rc = sourceFs.OpenFile(out srcFile, StringUtils.Utf8ZToString(sourcePath), OpenMode.Read);
                 if (rc.IsFailure()) return rc;
 
                 FsPath dstPath = default;
@@ -51,7 +51,7 @@ namespace LibHac.Fs
                     throw new ArgumentException();
                 }
 
-                string dstPathStr = dstPath.Str.FromUtf8Z();
+                string dstPathStr = StringUtils.Utf8ZToString(dstPath.Str);
 
                 rc = destFs.CreateFile(dstPathStr, dirEntry.Size, CreateFileOptions.None);
                 if (rc.IsFailure()) return rc;

@@ -53,4 +53,10 @@
         ProperSystem = 100,
         Safe = 101
     }
+
+    public enum CustomStorageId
+    {
+        User = 0,
+        SdCard = 1
+    }
 }

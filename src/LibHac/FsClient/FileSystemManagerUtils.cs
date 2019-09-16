@@ -131,12 +131,10 @@ namespace LibHac.FsClient
                     if (entry.Type != DirectoryEntryType.Directory || !recurse) continue;
 
                     IEnumerable<DirectoryEntryEx> subEntries =
-                        fs.EnumerateEntries(PathTools.Combine(path, entry.Name), searchPattern,
-                            searchOptions);
+                        fs.EnumerateEntries(PathTools.Combine(path, entry.Name), searchPattern, searchOptions);
 
                     foreach (DirectoryEntryEx subEntry in subEntries)
                     {
-                        subEntry.FullPath = PathTools.Combine(path, subEntry.Name);
                         yield return subEntry;
                     }
                 }

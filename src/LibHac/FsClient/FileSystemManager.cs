@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsClient.Accessors;
 
@@ -32,13 +33,20 @@ namespace LibHac.FsClient
             Time = timer;
         }
 
-        public void Register(string mountName, IFileSystem fileSystem)
+        public Result Register(U8Span mountName, IFileSystem fileSystem)
         {
-            var accessor = new FileSystemAccessor(mountName, fileSystem, this);
+            return Register(mountName, fileSystem, null);
+        }
 
-            MountTable.Mount(accessor).ThrowIfFailure();
+        public Result Register(U8Span mountName, IFileSystem fileSystem, ICommonMountNameGenerator nameGenerator)
+        {
+            var accessor = new FileSystemAccessor(mountName.ToString(), fileSystem, this, nameGenerator);
+
+            Result rc = MountTable.Mount(accessor);
+            if (rc.IsFailure()) return rc;
 
             accessor.IsAccessLogEnabled = IsEnabledAccessLog();
+            return Result.Success;
         }
 
         public void Unmount(string mountName)

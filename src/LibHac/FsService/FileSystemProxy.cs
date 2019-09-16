@@ -95,6 +95,13 @@ namespace LibHac.FsService
             return FsProxyCore.OpenContentStorageFileSystem(out fileSystem, storageId);
         }
 
+        public Result OpenCustomStorageFileSystem(out IFileSystem fileSystem, CustomStorageId storageId)
+        {
+            // Missing permission check, speed emulation storage type wrapper, and FileSystemInterfaceAdapter
+
+            return FsProxyCore.OpenCustomStorageFileSystem(out fileSystem, storageId);
+        }
+
         public Result OpenSaveDataFileSystemBySystemSaveDataId(out IFileSystem fileSystem, SaveDataSpaceId spaceId,
             SaveDataAttribute attribute)
         {

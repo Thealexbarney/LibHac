@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using LibHac;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Save;
 using LibHac.FsClient;
@@ -30,7 +31,7 @@ namespace hactoolnet
                 var save = new SaveDataFileSystem(ctx.Keyset, file, ctx.Options.IntegrityLevel, true);
                 FileSystemManager fs = ctx.Horizon.Fs;
 
-                fs.Register("save", save);
+                fs.Register("save".AsU8Span(), save);
 
                 if (ctx.Options.Validate)
                 {
@@ -39,7 +40,7 @@ namespace hactoolnet
 
                 if (ctx.Options.OutDir != null)
                 {
-                    fs.Register("output", new LocalFileSystem(ctx.Options.OutDir));
+                    fs.Register("output".AsU8Span(), new LocalFileSystem(ctx.Options.OutDir));
 
                     FsUtils.CopyDirectoryWithProgress(fs, "save:/", "output:/", logger: ctx.Logger);
 
@@ -85,7 +86,7 @@ namespace hactoolnet
 
                     if (ctx.Options.RepackSource != null)
                     {
-                        fs.Register("input", new LocalFileSystem(ctx.Options.RepackSource));
+                        fs.Register("input".AsU8Span(), new LocalFileSystem(ctx.Options.RepackSource));
 
                         fs.CleanDirectoryRecursively("save:/");
                         fs.Commit("save");

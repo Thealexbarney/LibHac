@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using System;
+using LibHac.Fs;
 
 namespace LibHac.FsService
 {
@@ -47,6 +48,18 @@ namespace LibHac.FsService
                    spaceId == SaveDataSpaceId.TemporaryStorage ||
                    spaceId == SaveDataSpaceId.ProperSystem ||
                    spaceId == SaveDataSpaceId.Safe;
+        }
+
+        public static string GetCustomStorageDirectoryName(CustomStorageId storageId)
+        {
+            switch (storageId)
+            {
+                case CustomStorageId.User:
+                case CustomStorageId.SdCard:
+                    return "CustomStorage0";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(storageId), storageId, null);
+            }
         }
     }
 }

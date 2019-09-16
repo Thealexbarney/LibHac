@@ -1,0 +1,33 @@
+﻿using LibHac.Common;
+using LibHac.Fs;
+
+namespace LibHac.FsClient
+{
+    internal static class MountHelpers
+    {
+        public static Result CheckMountName(U8Span name)
+        {
+            if (name.IsNull()) return ResultFs.NullArgument.Log();
+
+            if (name.Length > 0 && name[0] == '@') return ResultFs.InvalidMountName.Log();
+            if (!CheckMountNameImpl(name)) return ResultFs.InvalidMountName.Log();
+
+            return Result.Success;
+        }
+
+        public static Result CheckMountNameAcceptingReservedMountName(U8Span name)
+        {
+            if (name.IsNull()) return ResultFs.NullArgument.Log();
+
+            if (!CheckMountNameImpl(name)) return ResultFs.InvalidMountName.Log();
+
+            return Result.Success;
+        }
+
+        private static bool CheckMountNameImpl(U8Span name)
+        {
+            // Todo
+            return true;
+        }
+    }
+}

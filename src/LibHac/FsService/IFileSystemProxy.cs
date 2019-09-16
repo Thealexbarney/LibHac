@@ -12,6 +12,7 @@ namespace LibHac.FsService
         Result OpenSaveDataFileSystem(out IFileSystem fileSystem, SaveDataSpaceId spaceId, SaveDataAttribute attribute);
         Result OpenSaveDataFileSystemBySystemSaveDataId(out IFileSystem fileSystem, SaveDataSpaceId spaceId, SaveDataAttribute attribute);
         Result OpenContentStorageFileSystem(out IFileSystem fileSystem, ContentStorageId storageId);
+        Result OpenCustomStorageFileSystem(out IFileSystem fileSystem, CustomStorageId storageId);
         Result SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed);
         Result SetSaveDataSize(long saveDataSize, long saveDataJournalSize);
         Result SetSaveDataRootPath(string path);

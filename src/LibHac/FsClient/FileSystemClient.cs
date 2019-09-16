@@ -1,4 +1,6 @@
-﻿using LibHac.FsService;
+﻿using LibHac.Common;
+using LibHac.Fs;
+using LibHac.FsService;
 
 namespace LibHac.FsClient
 {
@@ -16,7 +18,7 @@ namespace LibHac.FsClient
             FsManager = new FileSystemManager(timer);
         }
 
-        private FileSystemProxy GetFileSystemProxyServiceObject()
+        public FileSystemProxy GetFileSystemProxyServiceObject()
         {
             if (FsProxy != null) return FsProxy;
 
@@ -28,6 +30,16 @@ namespace LibHac.FsClient
 
                 return FsProxy;
             }
+        }
+
+        public Result Register(U8Span mountName, IFileSystem fileSystem)
+        {
+            return FsManager.Register(mountName, fileSystem);
+        }
+
+        public Result Register(U8Span mountName, IFileSystem fileSystem, ICommonMountNameGenerator nameGenerator)
+        {
+            return FsManager.Register(mountName, fileSystem, nameGenerator);
         }
     }
 }
