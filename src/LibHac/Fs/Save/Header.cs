@@ -280,13 +280,13 @@ namespace LibHac.Fs.Save
         }
     }
 
-    public enum SaveDataType
+    public enum SaveDataType : byte
     {
-        SystemSaveData,
-        SaveData,
-        BcatDeliveryCacheStorage,
-        DeviceSaveData,
-        TemporaryStorage,
-        CacheStorage
+        SystemSaveData = 0,
+        SaveData = 1,
+        BcatDeliveryCacheStorage = 2,
+        DeviceSaveData = 3,
+        TemporaryStorage = 4,
+        CacheStorage = 5
     }
 }

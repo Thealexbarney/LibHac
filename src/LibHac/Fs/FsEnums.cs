@@ -59,4 +59,24 @@
         User = 0,
         SdCard = 1
     }
+
+    public enum FileSystemType
+    {
+        Code = 0,
+        Data = 1,
+        Logo = 2,
+        ContentControl = 3,
+        ContentManual = 4,
+        ContentMeta = 5,
+        ContentData = 6,
+        ApplicationPackage = 7,
+        RegisteredUpdate = 8
+    }
+
+    public enum SaveMetaType : byte
+    {
+        None = 0,
+        Thumbnail = 1,
+        ExtensionInfo = 2
+    }
 }
