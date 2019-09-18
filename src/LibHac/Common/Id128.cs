@@ -12,7 +12,7 @@ namespace LibHac.Common
         public readonly ulong High;
         public readonly ulong Low;
 
-        public static Id128 InvalidId = new Id128(0, 0);
+        public static readonly Id128 InvalidId = new Id128(0, 0);
 
         public Id128(ulong high, ulong low)
         {

@@ -52,6 +52,10 @@ namespace LibHac.FsService
 
         Result OpenContentStorageFileSystem(out IFileSystem fileSystem, ContentStorageId storageId);
         Result OpenCustomStorageFileSystem(out IFileSystem fileSystem, CustomStorageId storageId);
+        Result OpenDataStorageByCurrentProcess(out IStorage storage);
+        Result OpenDataStorageByProgramId(out IStorage storage, TitleId programId);
+        Result OpenDataStorageByDataId(out IStorage storage, TitleId dataId, StorageId storageId);
+
         Result SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed);
         Result SetSaveDataSize(long saveDataSize, long saveDataJournalSize);
         Result SetSaveDataRootPath(U8Span path);
