@@ -43,7 +43,7 @@
         Writable = 2
     }
 
-    public enum SaveDataSpaceId
+    public enum SaveDataSpaceId : byte
     {
         System = 0,
         User = 1,
@@ -51,7 +51,8 @@
         TemporaryStorage = 3,
         SdCache = 4,
         ProperSystem = 100,
-        Safe = 101
+        Safe = 101,
+        BisAuto = 127
     }
 
     public enum CustomStorageId
