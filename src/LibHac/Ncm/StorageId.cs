@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace LibHac.Ncm
+﻿namespace LibHac.Ncm
 {
     public enum StorageId : byte
     {

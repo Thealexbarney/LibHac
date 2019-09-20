@@ -80,4 +80,16 @@
         Thumbnail = 1,
         ExtensionInfo = 2
     }
+
+    public enum ImageDirectoryId
+    {
+        Nand = 0,
+        SdCard = 1
+    }
+
+    public enum CloudBackupWorkStorageId
+    {
+        Nand = 0,
+        SdCard = 1
+    }
 }

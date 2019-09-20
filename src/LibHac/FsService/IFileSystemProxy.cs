@@ -2,6 +2,7 @@
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Ncm;
+using LibHac.Spl;
 
 namespace LibHac.FsService
 {
@@ -10,12 +11,12 @@ namespace LibHac.FsService
         Result SetCurrentProcess(long processId);
         Result OpenDataFileSystemByCurrentProcess(out IFileSystem fileSystem);
         Result OpenFileSystemWithPatch(out IFileSystem fileSystem, TitleId titleId, FileSystemType type);
-        Result OpenFileSystemWithId(out IFileSystem fileSystem, U8Span path, TitleId titleId, FileSystemType type);
+        Result OpenFileSystemWithId(out IFileSystem fileSystem, ref FsPath path, TitleId titleId, FileSystemType type);
         Result OpenDataFileSystemByProgramId(out IFileSystem fileSystem, TitleId titleId);
-        Result OpenBisFileSystem(out IFileSystem fileSystem, U8Span rootPath, BisPartitionId partitionId);
+        Result OpenBisFileSystem(out IFileSystem fileSystem, ref FsPath rootPath, BisPartitionId partitionId);
         Result OpenBisStorage(out IStorage storage, BisPartitionId partitionId);
         Result InvalidateBisCache();
-        Result OpenHostFileSystem(out IFileSystem fileSystem, U8Span subPath);
+        Result OpenHostFileSystem(out IFileSystem fileSystem, ref FsPath subPath);
         Result OpenSdCardFileSystem(out IFileSystem fileSystem);
         Result FormatSdCardFileSystem();
         Result DeleteSaveDataFileSystem(ulong saveDataId);
@@ -50,20 +51,52 @@ namespace LibHac.FsService
         Result WriteSaveDataFileSystemExtraDataBySaveDataAttribute(ref SaveDataAttribute2 attribute, SaveDataSpaceId spaceId, ReadOnlySpan<byte> extraDataBuffer, ReadOnlySpan<byte> maskBuffer);
         Result OpenSaveDataMetaFile(out IFile file, SaveDataSpaceId spaceId, ref SaveDataAttribute2 attribute, SaveMetaType type);
 
+        Result ListAccessibleSaveDataOwnerId(out int readCount, Span<TitleId> idBuffer, TitleId programId, int startIndex, int bufferIdCount);
+        Result OpenImageDirectoryFileSystem(out IFileSystem fileSystem, ImageDirectoryId dirId);
         Result OpenContentStorageFileSystem(out IFileSystem fileSystem, ContentStorageId storageId);
+        Result OpenCloudBackupWorkStorageFileSystem(out IFileSystem fileSystem, CloudBackupWorkStorageId storageId);
         Result OpenCustomStorageFileSystem(out IFileSystem fileSystem, CustomStorageId storageId);
         Result OpenDataStorageByCurrentProcess(out IStorage storage);
         Result OpenDataStorageByProgramId(out IStorage storage, TitleId programId);
         Result OpenDataStorageByDataId(out IStorage storage, TitleId dataId, StorageId storageId);
+        Result OpenPatchDataStorageByCurrentProcess(out IStorage storage);
+        Result OpenDataFileSystemWithProgramIndex(out IFileSystem fileSystem, byte programIndex);
+        Result OpenDataStorageWithProgramIndex(out IStorage storage, byte programIndex);
+        Result OpenDeviceOperator(out IDeviceOperator deviceOperator);
 
+        Result QuerySaveDataTotalSize(out long totalSize, long dataSize, long journalSize);
+        Result VerifySaveDataFileSystem(ulong saveDataId, Span<byte> readBuffer);
+        Result CorruptSaveDataFileSystem(ulong saveDataId);
+        Result CreatePaddingFile(long size);
+        Result DeleteAllPaddingFiles();
+        Result GetRightsId(out RightsId rightsId, TitleId programId, StorageId storageId);
+        Result RegisterExternalKey(ref RightsId rightsId, ref AccessKey externalKey);
+        Result UnregisterAllExternalKey();
+        Result GetRightsIdByPath(out RightsId rightsId, ref FsPath path);
+        Result GetRightsIdAndKeyGenerationByPath(out RightsId rightsId, out byte keyGeneration, ref FsPath path);
+        Result SetCurrentPosixTimeWithTimeDifference(long time, int difference);
+        Result GetFreeSpaceSizeForSaveData(out long freeSpaceSize, SaveDataSpaceId spaceId);
+        Result VerifySaveDataFileSystemBySaveDataSpaceId(SaveDataSpaceId spaceId, ulong saveDataId, Span<byte> readBuffer);
+        Result CorruptSaveDataFileSystemBySaveDataSpaceId(SaveDataSpaceId spaceId, ulong saveDataId);
+        Result QuerySaveDataInternalStorageTotalSize(out long size, SaveDataSpaceId spaceId, ulong saveDataId);
+        Result GetSaveDataCommitId(out long commitId, SaveDataSpaceId spaceId, ulong saveDataId);
+        Result UnregisterExternalKey(ref RightsId rightsId);
         Result SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed);
+        Result SetSdCardAccessibility(bool isAccessible);
+        Result IsSdCardAccessible(out bool isAccessible);
+
+        Result SetBisRootForHost(BisPartitionId partitionId, ref FsPath path);
         Result SetSaveDataSize(long saveDataSize, long saveDataJournalSize);
-        Result SetSaveDataRootPath(U8Span path);
+        Result SetSaveDataRootPath(ref FsPath path);
         Result DisableAutoSaveDataCreation();
         Result SetGlobalAccessLogMode(int mode);
         Result GetGlobalAccessLogMode(out int mode);
         Result OutputAccessLogToSdCard(U8Span logString);
         Result RegisterUpdatePartition();
         Result OpenRegisteredUpdatePartition(out IFileSystem fileSystem);
+
+        Result GetProgramIndexForAccessLog(out int programIndex, out int programCount);
+        Result OverrideSaveDataTransferTokenSignVerificationKey(ReadOnlySpan<byte> key);
+        Result CorruptSaveDataFileSystemByOffset(SaveDataSpaceId spaceId, ulong saveDataId, long offset);
     }
 }

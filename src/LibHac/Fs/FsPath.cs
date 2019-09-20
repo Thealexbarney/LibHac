@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 
 namespace LibHac.Fs
 {
+    [DebuggerDisplay("{ToString()}")]
     [StructLayout(LayoutKind.Explicit, Size = MaxLength + 1)]
     public struct FsPath
     {
@@ -12,5 +14,7 @@ namespace LibHac.Fs
         [FieldOffset(0)] private byte _str;
 
         public Span<byte> Str => SpanHelpers.CreateSpan(ref _str, MaxLength + 1);
+
+        public override string ToString() => StringUtils.Utf8ZToString(Str);
     }
 }
