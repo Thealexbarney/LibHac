@@ -87,7 +87,7 @@ namespace LibHac.FsService
                     Result rc = FsCreators.SdFileSystemCreator.Create(out IFileSystem sdFs);
                     if (rc.IsFailure()) return rc;
 
-                    string customStorageDir = Util.GetCustomStorageDirectoryName(CustomStorageId.SdCard);
+                    string customStorageDir = CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.SdCard);
                     string subDirName = $"/{NintendoDirectoryName}/{customStorageDir}";
 
                     rc = Util.CreateSubFileSystem(out IFileSystem subFs, sdFs, subDirName, true);
@@ -106,7 +106,7 @@ namespace LibHac.FsService
                         BisPartitionId.User);
                     if (rc.IsFailure()) return rc;
 
-                    string customStorageDir = Util.GetCustomStorageDirectoryName(CustomStorageId.User);
+                    string customStorageDir = CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.User);
                     string subDirName = $"/{customStorageDir}";
 
                     rc = Util.CreateSubFileSystem(out IFileSystem subFs, userFs, subDirName, true);
