@@ -1,6 +1,6 @@
 ﻿using System.IO;
 using System.Linq;
-using LibHac.Fs.NcaUtils;
+using LibHac.FsSystem.NcaUtils;
 using LibHac.Ncm;
 using ContentType = LibHac.Ncm.ContentType;
 

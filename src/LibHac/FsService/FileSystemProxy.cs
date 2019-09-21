@@ -1,7 +1,7 @@
 ﻿using System;
 using LibHac.Common;
 using LibHac.Fs;
-using LibHac.FsClient;
+using LibHac.FsSystem;
 
 namespace LibHac.FsService
 {

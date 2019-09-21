@@ -2,7 +2,7 @@
 using System.Reflection;
 using System.Text;
 using LibHac;
-using LibHac.Fs;
+using LibHac.FsSystem;
 using static hactoolnet.Print;
 
 namespace hactoolnet

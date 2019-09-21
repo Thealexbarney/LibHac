@@ -1,5 +1,5 @@
 ﻿using System.Linq;
-using LibHac.Fs;
+using LibHac.FsSystem;
 using Xunit;
 
 namespace LibHac.Tests

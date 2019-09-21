@@ -4,9 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using LibHac;
-using LibHac.Fs;
-using LibHac.Fs.NcaUtils;
-using LibHac.Fs.Save;
+using LibHac.FsSystem;
+using LibHac.FsSystem.NcaUtils;
+using LibHac.FsSystem.Save;
 
 #if NETCOREAPP
 using System.Runtime.InteropServices;

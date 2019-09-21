@@ -1,6 +1,6 @@
 ﻿using System.IO;
-using LibHac.Fs;
-using LibHac.Fs.RomFs;
+using LibHac.FsSystem;
+using LibHac.FsSystem.RomFs;
 
 namespace hactoolnet
 {

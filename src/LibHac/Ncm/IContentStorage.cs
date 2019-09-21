@@ -1,5 +1,5 @@
 ﻿using System;
-using LibHac.Fs;
+using LibHac.FsSystem;
 
 namespace LibHac.Ncm
 {

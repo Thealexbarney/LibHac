@@ -3,8 +3,8 @@ using System.Text;
 using LibHac;
 using LibHac.Common;
 using LibHac.Fs;
-using LibHac.Fs.NcaUtils;
-using LibHac.FsClient;
+using LibHac.FsSystem;
+using LibHac.FsSystem.NcaUtils;
 using LibHac.Npdm;
 using static hactoolnet.Print;
 

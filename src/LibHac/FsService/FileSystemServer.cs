@@ -1,4 +1,4 @@
-﻿using LibHac.FsClient;
+﻿using LibHac.Fs;
 using LibHac.FsService.Creators;
 
 namespace LibHac.FsService

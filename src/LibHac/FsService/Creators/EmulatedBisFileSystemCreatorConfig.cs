@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics;
-using LibHac.Fs;
+using LibHac.FsSystem;
 
 namespace LibHac.FsService.Creators
 {

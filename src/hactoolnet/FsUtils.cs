@@ -2,7 +2,7 @@
 using System.Buffers;
 using LibHac;
 using LibHac.Fs;
-using LibHac.FsClient;
+using LibHac.FsSystem;
 
 namespace hactoolnet
 {

@@ -1,4 +1,4 @@
-﻿using LibHac.Fs;
+﻿using LibHac.FsSystem;
 
 namespace LibHac
 {

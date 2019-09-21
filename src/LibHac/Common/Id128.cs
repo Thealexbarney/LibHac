@@ -35,7 +35,7 @@ namespace LibHac.Common
 
         public override bool Equals(object obj)
         {
-            return obj is Fs.UserId other && Equals(other);
+            return obj is FsSystem.UserId other && Equals(other);
         }
 
         public override int GetHashCode()
