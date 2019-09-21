@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.IO;
+using LibHac.Fs;
 
 namespace LibHac.FsSystem.Save
 {

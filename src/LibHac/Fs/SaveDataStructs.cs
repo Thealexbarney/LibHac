@@ -4,7 +4,7 @@ using LibHac.Common;
 using LibHac.FsSystem.Save;
 using LibHac.Ncm;
 
-namespace LibHac.FsSystem
+namespace LibHac.Fs
 {
     [StructLayout(LayoutKind.Explicit, Size = 0x40)]
     public struct SaveDataAttribute2
@@ -66,5 +66,18 @@ namespace LibHac.FsSystem
         [FieldOffset(0x00)] private byte _hashStart;
 
         public Span<byte> Hash => SpanHelpers.CreateSpan(ref _hashStart, HashLength);
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 0x10)]
+    public struct SaveMetaCreateInfo
+    {
+        [FieldOffset(0)] public int Size;
+        [FieldOffset(4)] public SaveMetaType Type;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 0x40)]
+    public struct SaveDataCreateInfo
+    {
+        // Todo
     }
 }

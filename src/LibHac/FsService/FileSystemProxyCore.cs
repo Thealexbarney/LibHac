@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Fs;
 using LibHac.FsSystem;
 using LibHac.FsSystem.Save;
 using LibHac.FsService.Creators;
@@ -157,9 +158,8 @@ namespace LibHac.FsService
 
             // Missing save FS cache lookup
 
-            rc = FsCreators.SaveDataFileSystemCreator.Create(out IFileSystem saveFs,
-                out ISaveDataExtraDataAccessor extraDataAccessor, saveDirFs, saveDataId, allowDirectorySaveData,
-                useDeviceUniqueMac, type, null);
+            rc = FsCreators.SaveDataFileSystemCreator.Create(out IFileSystem saveFs, out _, saveDirFs, saveDataId,
+                allowDirectorySaveData, useDeviceUniqueMac, type, null);
 
             if (rc.IsFailure()) return rc;
 

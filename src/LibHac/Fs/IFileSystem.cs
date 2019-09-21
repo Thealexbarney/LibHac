@@ -1,6 +1,7 @@
 ﻿using System;
+using LibHac.FsSystem;
 
-namespace LibHac.FsSystem
+namespace LibHac.Fs
 {
     /// <summary>
     /// Provides an interface for accessing a file system. <c>/</c> is used as the path delimiter.

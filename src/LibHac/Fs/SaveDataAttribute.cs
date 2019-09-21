@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 using LibHac.FsSystem.Save;
 using LibHac.Kvdb;
 
-namespace LibHac.FsSystem
+namespace LibHac.Fs
 {
     public class SaveDataAttribute : IComparable<SaveDataAttribute>, IComparable, IEquatable<SaveDataAttribute>, IExportable
     {

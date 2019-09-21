@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using LibHac.Fs;
 
 #if HAS_FILE_SYSTEM_NAME
 using System.IO.Enumeration;

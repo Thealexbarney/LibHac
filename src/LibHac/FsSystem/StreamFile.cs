@@ -1,6 +1,6 @@
 ﻿using System;
 using System.IO;
-
+using LibHac.Fs;
 #if !STREAM_SPAN
 using System.Buffers;
 #endif

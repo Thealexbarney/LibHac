@@ -1,4 +1,4 @@
-﻿using LibHac.FsSystem;
+﻿using LibHac.Fs;
 
 namespace LibHac.FsService.Creators
 {

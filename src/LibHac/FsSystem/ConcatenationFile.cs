@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {

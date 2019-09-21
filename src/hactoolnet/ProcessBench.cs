@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using LibHac;
+using LibHac.Fs;
 using LibHac.FsSystem;
 
 namespace hactoolnet

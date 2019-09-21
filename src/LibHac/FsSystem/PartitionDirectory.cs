@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using LibHac.Common;
+using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {

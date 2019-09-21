@@ -1,4 +1,4 @@
-﻿namespace LibHac.FsSystem
+﻿namespace LibHac.Fs
 {
     public struct FileTimeStampRaw
     {

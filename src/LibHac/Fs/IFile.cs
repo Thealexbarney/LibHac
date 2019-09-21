@@ -1,6 +1,7 @@
 ﻿using System;
+using LibHac.FsSystem;
 
-namespace LibHac.FsSystem
+namespace LibHac.Fs
 {
     /// <summary>
     /// Provides an interface for reading and writing a sequence of bytes.

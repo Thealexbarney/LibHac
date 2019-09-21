@@ -2,6 +2,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using LibHac.Fs;
 using LibHac.FsSystem;
 using LibHac.FsSystem.NcaUtils;
 using static hactoolnet.Print;

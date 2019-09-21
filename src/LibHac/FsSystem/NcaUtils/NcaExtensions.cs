@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers.Binary;
 using System.Diagnostics;
+using LibHac.Fs;
 
 namespace LibHac.FsSystem.NcaUtils
 {

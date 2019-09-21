@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using LibHac.Fs;
 
 namespace LibHac.FsSystem.Save
 {

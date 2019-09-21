@@ -1,5 +1,4 @@
 ﻿using LibHac.Common;
-using LibHac.FsSystem;
 
 namespace LibHac.Fs
 {
@@ -24,6 +23,7 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
+        // ReSharper disable once UnusedParameter.Local
         private static bool CheckMountNameImpl(U8Span name)
         {
             // Todo

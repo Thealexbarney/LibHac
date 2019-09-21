@@ -2,7 +2,7 @@
 using System.Buffers.Binary;
 using LibHac.Kvdb;
 
-namespace LibHac.FsSystem
+namespace LibHac.FsService
 {
     public class SaveIndexerStruct : IExportable
     {

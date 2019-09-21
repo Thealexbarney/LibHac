@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using LibHac.Fs;
 
 namespace LibHac.FsSystem.RomFs
 {

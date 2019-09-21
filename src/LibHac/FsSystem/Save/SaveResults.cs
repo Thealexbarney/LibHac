@@ -1,4 +1,6 @@
-﻿namespace LibHac.FsSystem.Save
+﻿using LibHac.Fs;
+
+namespace LibHac.FsSystem.Save
 {
     internal static class SaveResults
     {

@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.IO;
 using System.Security.Cryptography;
+using LibHac.Fs;
 using LibHac.FsSystem.Save;
 
 namespace LibHac.FsSystem

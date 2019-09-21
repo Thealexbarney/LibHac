@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {

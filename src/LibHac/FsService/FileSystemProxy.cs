@@ -10,6 +10,7 @@ namespace LibHac.FsService
         private FileSystemProxyCore FsProxyCore { get; }
 
         /// <summary>The client instance to be used for internal operations like save indexer access.</summary>
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         private FileSystemClient FsClient { get; }
 
         public long CurrentProcess { get; private set; }
@@ -110,7 +111,7 @@ namespace LibHac.FsService
 
             if (!IsSystemSaveDataId(attribute.SaveId)) return ResultFs.InvalidArgument.Log();
 
-            Result rc = OpenSaveDataFileSystemImpl(out IFileSystem saveFs, out ulong saveDataId, spaceId,
+            Result rc = OpenSaveDataFileSystemImpl(out IFileSystem saveFs, out _, spaceId,
                 attribute, false, true);
             if (rc.IsFailure()) return rc;
 
@@ -159,6 +160,7 @@ namespace LibHac.FsService
 
             if (saveDataId != SaveIndexerId)
             {
+                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                 if (hasFixedId)
                 {
                     // todo: remove save indexer entry

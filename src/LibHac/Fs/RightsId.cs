@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using LibHac.Common;
 
-namespace LibHac.FsSystem
+namespace LibHac.Fs
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x10)]
     public struct RightsId : IEquatable<RightsId>, IComparable<RightsId>, IComparable

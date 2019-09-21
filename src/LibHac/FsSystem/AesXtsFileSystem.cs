@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {

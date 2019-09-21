@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using LibHac.Common;
+using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {

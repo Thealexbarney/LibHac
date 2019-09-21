@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Fs;
 
 namespace LibHac.FsSystem.Save
 {

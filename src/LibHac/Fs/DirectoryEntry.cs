@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.FsSystem;
 
-namespace LibHac.FsSystem
+namespace LibHac.Fs
 {
     public class DirectoryEntryEx
     {

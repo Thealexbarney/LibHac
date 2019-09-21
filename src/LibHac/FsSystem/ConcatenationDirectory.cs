@@ -1,6 +1,6 @@
 ﻿using System;
 using LibHac.Common;
-
+using LibHac.Fs;
 #if CROSS_PLATFORM
 using System.Runtime.InteropServices;
 #endif
