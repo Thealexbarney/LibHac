@@ -1,4 +1,6 @@
-﻿namespace LibHac.Fs
+﻿using System;
+
+namespace LibHac.Fs
 {
     public enum BisPartitionId
     {
@@ -91,5 +93,30 @@
     {
         Nand = 0,
         SdCard = 1
+    }
+
+    /// <summary>
+    /// Specifies which operations are available on an <see cref="IFile"/>.
+    /// </summary>
+    [Flags]
+    public enum OpenMode
+    {
+        Read = 1,
+        Write = 2,
+        AllowAppend = 4,
+        ReadWrite = Read | Write
+    }
+
+    [Flags]
+    public enum ReadOption
+    {
+        None = 0
+    }
+
+    [Flags]
+    public enum WriteOption
+    {
+        None = 0,
+        Flush = 1
     }
 }

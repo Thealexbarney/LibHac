@@ -1,5 +1,4 @@
 ﻿using System;
-using LibHac.FsSystem;
 
 namespace LibHac.Fs.Accessors
 {
@@ -10,10 +9,6 @@ namespace LibHac.Fs.Accessors
         public FileSystemAccessor Parent { get; }
         public WriteState WriteState { get; private set; }
         public OpenMode OpenMode { get; }
-
-        // Todo: Consider removing Mode from interface because OpenMode is in FileAccessor
-        // Todo: Set WriteState to Error based on returned results
-        OpenMode IFile.Mode => OpenMode;
 
         public FileAccessor(IFile baseFile, FileSystemAccessor parent, OpenMode mode)
         {

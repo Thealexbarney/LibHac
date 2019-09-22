@@ -8,11 +8,15 @@ namespace LibHac.FsSystem
     {
         private IFile BaseFile { get; }
         private bool LeaveOpen { get; }
+        private OpenMode Mode { get; }
         private long _length;
 
-        public NxFileStream(IFile baseFile, bool leaveOpen)
+        public NxFileStream(IFile baseFile, bool leaveOpen) : this(baseFile, OpenMode.ReadWrite, leaveOpen) { }
+
+        public NxFileStream(IFile baseFile, OpenMode mode, bool leaveOpen)
         {
             BaseFile = baseFile;
+            Mode = mode;
             LeaveOpen = leaveOpen;
 
             baseFile.GetSize(out _length).ThrowIfFailure();
@@ -63,9 +67,9 @@ namespace LibHac.FsSystem
             BaseFile.GetSize(out _length).ThrowIfFailure();
         }
 
-        public override bool CanRead => BaseFile.Mode.HasFlag(OpenMode.Read);
+        public override bool CanRead => Mode.HasFlag(OpenMode.Read);
         public override bool CanSeek => true;
-        public override bool CanWrite => BaseFile.Mode.HasFlag(OpenMode.Write);
+        public override bool CanWrite => Mode.HasFlag(OpenMode.Write);
         public override long Length => _length;
         public override long Position { get; set; }
 

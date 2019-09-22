@@ -1,7 +1,6 @@
 ﻿using System;
 using LibHac.Common;
 using LibHac.Fs;
-using LibHac.FsSystem;
 using LibHac.FsSystem.Save;
 
 namespace LibHac.FsService.Creators

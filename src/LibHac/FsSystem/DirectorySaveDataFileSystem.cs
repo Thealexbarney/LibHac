@@ -114,7 +114,7 @@ namespace LibHac.FsSystem
                 Result rc = BaseFs.OpenFile(out IFile baseFile, fullPath, mode);
                 if (rc.IsFailure()) return rc;
 
-                file = new DirectorySaveDataFile(this, baseFile);
+                file = new DirectorySaveDataFile(this, baseFile, mode);
 
                 if (mode.HasFlag(OpenMode.Write))
                 {

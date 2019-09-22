@@ -1,5 +1,3 @@
-using LibHac.FsSystem;
-
 namespace LibHac.Fs
 {
     public partial class FileSystemClient

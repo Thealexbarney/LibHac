@@ -1,5 +1,4 @@
 ﻿using System;
-using LibHac.FsSystem;
 
 namespace LibHac.Fs
 {
@@ -19,11 +18,6 @@ namespace LibHac.Fs
     /// the file will be expanded so that it is large enough to contain the written data.</remarks>
     public interface IFile : IDisposable
     {
-        /// <summary>
-        /// The permissions mode for the current file.
-        /// </summary>
-        OpenMode Mode { get; }
-
         /// <summary>
         /// Reads a sequence of bytes from the current <see cref="IFile"/>.
         /// </summary>

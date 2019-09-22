@@ -152,7 +152,7 @@ namespace LibHac.FsSystem
 
         public static IStorage AsStorage(this IFile file) => new FileStorage(file);
         public static Stream AsStream(this IFile file) => new NxFileStream(file, true);
-        public static Stream AsStream(this IFile file, bool keepOpen) => new NxFileStream(file, keepOpen);
+        public static Stream AsStream(this IFile file, OpenMode mode, bool keepOpen) => new NxFileStream(file, mode, keepOpen);
 
         public static IFile AsIFile(this Stream stream, OpenMode mode) => new StreamFile(stream, mode);
 

@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace LibHac
 {
     [Serializable]
+    [DebuggerDisplay("{ToString()}")]
     public struct Result : IEquatable<Result>
     {
         public readonly int Value;
@@ -41,6 +43,11 @@ namespace LibHac
         public Result Log()
         {
             return this;
+        }
+
+        public override string ToString()
+        {
+            return IsSuccess() ? "Success" : ErrorCode;
         }
 
         public override bool Equals(object obj)

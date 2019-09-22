@@ -4,49 +4,51 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class LocalFile : FileBase
+    public class LocalFile : FileBase2
     {
         private const int ErrorHandleDiskFull = unchecked((int)0x80070027);
         private const int ErrorDiskFull = unchecked((int)0x80070070);
 
         private FileStream Stream { get; }
         private StreamFile File { get; }
+        private OpenMode Mode { get; }
 
         public LocalFile(string path, OpenMode mode)
         {
             Mode = mode;
             Stream = OpenFile(path, mode);
             File = new StreamFile(Stream, mode);
-
-            ToDispose.Add(File);
-            ToDispose.Add(Stream);
         }
 
-        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        public override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
-            int toRead = ValidateReadParamsAndGetSize(destination, offset);
+            bytesRead = 0;
 
-            return File.Read(out bytesRead, offset, destination.Slice(0, toRead), options);
+            Result rc = ValidateReadParams(out long toRead, offset, destination.Length, Mode);
+            if (rc.IsFailure()) return rc;
+
+            return File.Read(out bytesRead, offset, destination.Slice(0, (int)toRead), options);
         }
 
-        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        public override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
-            ValidateWriteParams(source, offset);
+            Result rc = ValidateWriteParams(offset, source.Length, Mode, out _);
+            if (rc.IsFailure()) return rc;
 
             return File.Write(offset, source, options);
         }
 
-        public override Result Flush()
+        public override Result FlushImpl()
         {
             return File.Flush();
         }
 
-        public override Result GetSize(out long size)
+        public override Result GetSizeImpl(out long size)
         {
             return File.GetSize(out size);
         }
 
-        public override Result SetSize(long size)
+        public override Result SetSizeImpl(long size)
         {
             try
             {
@@ -58,6 +60,16 @@ namespace LibHac.FsSystem
             }
 
             return Result.Success;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                File?.Dispose();
+            }
+
+            Stream?.Dispose();
         }
 
         private static FileAccess GetFileAccess(OpenMode mode)

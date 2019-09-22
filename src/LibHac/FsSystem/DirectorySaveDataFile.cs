@@ -3,57 +3,49 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class DirectorySaveDataFile : FileBase
+    public class DirectorySaveDataFile : FileBase2
     {
         private IFile BaseFile { get; }
         private DirectorySaveDataFileSystem ParentFs { get; }
-        private object DisposeLocker { get; } = new object();
+        private OpenMode Mode { get; }
 
-        public DirectorySaveDataFile(DirectorySaveDataFileSystem parentFs, IFile baseFile)
+        public DirectorySaveDataFile(DirectorySaveDataFileSystem parentFs, IFile baseFile, OpenMode mode)
         {
             ParentFs = parentFs;
             BaseFile = baseFile;
-            Mode = BaseFile.Mode;
-            ToDispose.Add(BaseFile);
+            Mode = mode;
         }
 
-        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        public override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
             return BaseFile.Read(out bytesRead, offset, destination, options);
         }
 
-        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        public override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
             return BaseFile.Write(offset, source, options);
         }
 
-        public override Result Flush()
+        public override Result FlushImpl()
         {
             return BaseFile.Flush();
         }
 
-        public override Result GetSize(out long size)
+        public override Result GetSizeImpl(out long size)
         {
             return BaseFile.GetSize(out size);
         }
 
-        public override Result SetSize(long size)
+        public override Result SetSizeImpl(long size)
         {
             return BaseFile.SetSize(size);
         }
 
         protected override void Dispose(bool disposing)
         {
-            lock (DisposeLocker)
+            if (Mode.HasFlag(OpenMode.Write))
             {
-                if (IsDisposed) return;
-
-                base.Dispose(disposing);
-
-                if (Mode.HasFlag(OpenMode.Write))
-                {
-                    ParentFs.NotifyCloseWritableFile();
-                }
+                ParentFs.NotifyCloseWritableFile();
             }
         }
     }
