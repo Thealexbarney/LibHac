@@ -6,7 +6,7 @@ namespace LibHac.Fs
     public partial class FileSystemClient
     {
         private FileSystemServer FsSrv { get; }
-        private FileSystemProxy FsProxy { get; set; }
+        private IFileSystemProxy FsProxy { get; set; }
         private FileSystemManager FsManager { get; }
 
         private readonly object _fspInitLocker = new object();
@@ -17,7 +17,7 @@ namespace LibHac.Fs
             FsManager = new FileSystemManager(timer);
         }
 
-        public FileSystemProxy GetFileSystemProxyServiceObject()
+        public IFileSystemProxy GetFileSystemProxyServiceObject()
         {
             if (FsProxy != null) return FsProxy;
 

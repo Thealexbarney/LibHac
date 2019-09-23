@@ -15,6 +15,7 @@ namespace LibHac.FsSystem
 
         public Span<byte> Str => SpanHelpers.CreateSpan(ref _str, MaxLength + 1);
 
+        public static implicit operator U8Span(FsPath value) => new U8Span(value.Str);
         public override string ToString() => StringUtils.Utf8ZToString(Str);
     }
 }

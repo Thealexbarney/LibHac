@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using LibHac.Common;
 using LibHac.Fs;
 
 #if HAS_FILE_SYSTEM_NAME
@@ -49,6 +50,20 @@ namespace LibHac.FsSystem
             sb.Dispose();
 
             return normalized;
+        }
+
+        public static Result Normalize(out U8Span normalizedPath, U8Span path)
+        {
+            if (path.Length == 0)
+            {
+                normalizedPath = path;
+                return Result.Success;
+            }
+
+            // Todo: optimize
+            normalizedPath = new U8Span(Normalize(path.ToString()));
+
+            return Result.Success;
         }
 
         // Licensed to the .NET Foundation under one or more agreements.

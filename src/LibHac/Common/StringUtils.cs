@@ -33,6 +33,18 @@ namespace LibHac.Common
             return i;
         }
 
+        public static int GetLength(ReadOnlySpan<byte> s, int maxLen)
+        {
+            int i = 0;
+
+            while (i < maxLen && i < s.Length && s[i] != 0)
+            {
+                i++;
+            }
+
+            return i;
+        }
+
         /// <summary>
         /// Concatenates 2 byte strings.
         /// </summary>

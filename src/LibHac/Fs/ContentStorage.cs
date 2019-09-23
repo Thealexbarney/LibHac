@@ -20,7 +20,7 @@ namespace LibHac.Fs
             Result rc = MountHelpers.CheckMountNameAcceptingReservedMountName(mountName);
             if (rc.IsFailure()) return rc;
 
-            FileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
             rc = fsProxy.OpenContentStorageFileSystem(out IFileSystem contentFs, storageId);
             if (rc.IsFailure()) return rc;

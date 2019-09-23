@@ -47,7 +47,7 @@ namespace LibHac.FsService
             return new FileSystemClient(this, timer);
         }
 
-        public FileSystemProxy CreateFileSystemProxyService()
+        public IFileSystemProxy CreateFileSystemProxyService()
         {
             return new FileSystemProxy(FsProxyCore, FsClient);
         }
