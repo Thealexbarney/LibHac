@@ -3,7 +3,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class DirectorySaveDataFile : FileBase2
+    public class DirectorySaveDataFile : FileBase
     {
         private IFile BaseFile { get; }
         private DirectorySaveDataFileSystem ParentFs { get; }

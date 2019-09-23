@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace LibHac.Fs
 {
-    public abstract class FileBase2 : IFile
+    public abstract class FileBase : IFile
     {
         // 0 = not disposed; 1 = disposed
         private int _disposedState;

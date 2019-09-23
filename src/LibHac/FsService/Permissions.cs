@@ -3,7 +3,7 @@
 namespace LibHac.FsService
 {
     /// <summary>
-    /// Permissions that control which storages or filesystems can be mounted or opened.
+    /// Permissions that control which filesystems or storages can be mounted or opened.
     /// </summary>
     public enum AccessPermissions
     {

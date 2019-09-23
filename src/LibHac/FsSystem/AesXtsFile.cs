@@ -10,6 +10,7 @@ namespace LibHac.FsSystem
         private byte[] KekSeed { get; }
         private byte[] VerificationKey { get; }
         private int BlockSize { get; }
+        private OpenMode Mode { get; }
 
         private AesXtsFileHeader Header { get; }
         private IStorage BaseStorage { get; }
@@ -52,23 +53,31 @@ namespace LibHac.FsSystem
             return key;
         }
 
-        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        public override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
             bytesRead = default;
 
-            int toRead = ValidateReadParamsAndGetSize(destination, offset);
+            Result rc = ValidateReadParams(out long toRead, offset, destination.Length, Mode);
+            if (rc.IsFailure()) return rc;
 
-            Result rc = BaseStorage.Read(offset, destination.Slice(0, toRead));
+            rc = BaseStorage.Read(offset, destination.Slice(0, (int)toRead));
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
         }
 
-        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        public override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
-            ValidateWriteParams(source, offset);
+            Result rc = ValidateWriteParams(offset, source.Length, Mode, out bool isResizeNeeded);
+            if (rc.IsFailure()) return rc;
 
-            Result rc = BaseStorage.Write(offset, source);
+            if (isResizeNeeded)
+            {
+                rc = SetSizeImpl(offset + source.Length);
+                if (rc.IsFailure()) return rc;
+            }
+
+            rc = BaseStorage.Write(offset, source);
             if (rc.IsFailure()) return rc;
 
             if ((options & WriteOption.Flush) != 0)
@@ -79,18 +88,18 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public override Result Flush()
+        public override Result FlushImpl()
         {
             return BaseStorage.Flush();
         }
 
-        public override Result GetSize(out long size)
+        public override Result GetSizeImpl(out long size)
         {
             size = Header.Size;
             return Result.Success;
         }
 
-        public override Result SetSize(long size)
+        public override Result SetSizeImpl(long size)
         {
             Header.SetSize(size, VerificationKey);
 
@@ -98,6 +107,14 @@ namespace LibHac.FsSystem
             if (rc.IsFailure()) return rc;
 
             return BaseStorage.SetSize(size);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                BaseFile?.Dispose();
+            }
         }
     }
 }

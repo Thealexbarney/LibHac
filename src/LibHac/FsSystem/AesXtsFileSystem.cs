@@ -107,8 +107,6 @@ namespace LibHac.FsSystem
 
             var xtsFile = new AesXtsFile(mode, baseFile, path, KekSource, ValidationKey, BlockSize);
 
-            xtsFile.ToDispose.Add(baseFile);
-
             file = xtsFile;
             return Result.Success;
         }

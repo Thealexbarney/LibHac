@@ -12,6 +12,7 @@ namespace LibHac.FsSystem
         private string FilePath { get; }
         private List<IFile> Sources { get; }
         private long SubFileSize { get; }
+        private OpenMode Mode { get; }
 
         internal ConcatenationFile(IFileSystem baseFileSystem, string path, IEnumerable<IFile> sources, long subFileSize, OpenMode mode)
         {
@@ -30,17 +31,17 @@ namespace LibHac.FsSystem
                     throw new ArgumentException($"Source file must have size {subFileSize}");
                 }
             }
-
-            ToDispose.AddRange(Sources);
         }
 
-        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        public override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
             bytesRead = default;
 
             long inPos = offset;
             int outPos = 0;
-            int remaining = ValidateReadParamsAndGetSize(destination, offset);
+
+            Result rc = ValidateReadParams(out long remaining, offset, destination.Length, Mode);
+            if (rc.IsFailure()) return rc;
 
             GetSize(out long fileSize).ThrowIfFailure();
 
@@ -53,12 +54,12 @@ namespace LibHac.FsSystem
                 long fileEndOffset = Math.Min((fileIndex + 1) * SubFileSize, fileSize);
                 int bytesToRead = (int)Math.Min(fileEndOffset - inPos, remaining);
 
-                Result rc = file.Read(out long subFileBytesRead, fileOffset, destination.Slice(outPos, bytesToRead), options);
+                rc = file.Read(out long subFileBytesRead, fileOffset, destination.Slice(outPos, bytesToRead), options);
                 if (rc.IsFailure()) return rc;
 
                 outPos += (int)subFileBytesRead;
                 inPos += subFileBytesRead;
-                remaining -= (int)subFileBytesRead;
+                remaining -= subFileBytesRead;
 
                 if (bytesRead < bytesToRead) break;
             }
@@ -68,9 +69,10 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        public override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
-            ValidateWriteParams(source, offset);
+            Result rc = ValidateWriteParams(offset, source.Length, Mode, out _);
+            if (rc.IsFailure()) return rc;
 
             int inPos = 0;
             long outPos = offset;
@@ -87,7 +89,7 @@ namespace LibHac.FsSystem
                 long fileEndOffset = Math.Min((fileIndex + 1) * SubFileSize, fileSize);
                 int bytesToWrite = (int)Math.Min(fileEndOffset - outPos, remaining);
 
-                Result rc = file.Write(fileOffset, source.Slice(inPos, bytesToWrite), options);
+                rc = file.Write(fileOffset, source.Slice(inPos, bytesToWrite), options);
                 if (rc.IsFailure()) return rc;
 
                 outPos += bytesToWrite;
@@ -95,7 +97,7 @@ namespace LibHac.FsSystem
                 remaining -= bytesToWrite;
             }
 
-            if ((options & WriteOption.Flush) != 0)
+            if (options.HasFlag(WriteOption.Flush))
             {
                 return Flush();
             }
@@ -103,7 +105,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public override Result Flush()
+        public override Result FlushImpl()
         {
             foreach (IFile file in Sources)
             {
@@ -114,7 +116,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public override Result GetSize(out long size)
+        public override Result GetSizeImpl(out long size)
         {
             size = default;
 
@@ -129,7 +131,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public override Result SetSize(long size)
+        public override Result SetSizeImpl(long size)
         {
             Result rc = GetSize(out long currentSize);
             if (rc.IsFailure()) return rc;
@@ -181,6 +183,19 @@ namespace LibHac.FsSystem
             }
 
             return Result.Success;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                foreach (IFile file in Sources)
+                {
+                    file?.Dispose();
+                }
+
+                Sources.Clear();
+            }
         }
 
         private int GetSubFileIndexFromOffset(long offset)

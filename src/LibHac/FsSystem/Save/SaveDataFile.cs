@@ -10,6 +10,7 @@ namespace LibHac.FsSystem.Save
         private string Path { get; }
         private HierarchicalSaveFileTable FileTable { get; }
         private long Size { get; set; }
+        private OpenMode Mode { get; }
 
         public SaveDataFile(AllocationTableStorage baseStorage, string path, HierarchicalSaveFileTable fileTable, long size, OpenMode mode)
         {
@@ -20,22 +21,36 @@ namespace LibHac.FsSystem.Save
             Size = size;
         }
 
-        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        public override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
             bytesRead = default;
 
-            int toRead = ValidateReadParamsAndGetSize(destination, offset);
+            Result rc = ValidateReadParams(out long toRead, offset, destination.Length, Mode);
+            if (rc.IsFailure()) return rc;
 
-            Result rc = BaseStorage.Read(offset, destination.Slice(0, toRead));
+            if (toRead == 0)
+            {
+                bytesRead = 0;
+                return Result.Success;
+            }
+
+            rc = BaseStorage.Read(offset, destination.Slice(0, (int)toRead));
             if (rc.IsFailure()) return rc;
 
             bytesRead = toRead;
             return Result.Success;
         }
 
-        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        public override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
-            ValidateWriteParams(source, offset);
+            Result rc = ValidateWriteParams(offset, source.Length, Mode, out bool isResizeNeeded);
+            if (rc.IsFailure()) return rc;
+
+            if (isResizeNeeded)
+            {
+                rc = SetSizeImpl(offset + source.Length);
+                if (rc.IsFailure()) return rc;
+            }
 
             BaseStorage.Write(offset, source);
 
@@ -47,18 +62,18 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public override Result Flush()
+        public override Result FlushImpl()
         {
             return BaseStorage.Flush();
         }
 
-        public override Result GetSize(out long size)
+        public override Result GetSizeImpl(out long size)
         {
             size = Size;
             return Result.Success;
         }
 
-        public override Result SetSize(long size)
+        public override Result SetSizeImpl(long size)
         {
             if (size < 0) throw new ArgumentOutOfRangeException(nameof(size));
             if (Size == size) return Result.Success;

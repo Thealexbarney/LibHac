@@ -6,6 +6,7 @@ namespace LibHac.FsSystem
     public class StorageFile : FileBase
     {
         private IStorage BaseStorage { get; }
+        private OpenMode Mode { get; }
 
         public StorageFile(IStorage baseStorage, OpenMode mode)
         {
@@ -13,26 +14,41 @@ namespace LibHac.FsSystem
             Mode = mode;
         }
 
-        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        public override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
             bytesRead = default;
-            int toRead = ValidateReadParamsAndGetSize(destination, offset);
 
-            Result rc = BaseStorage.Read(offset, destination.Slice(0, toRead));
+            Result rc = ValidateReadParams(out long toRead, offset, destination.Length, Mode);
+            if (rc.IsFailure()) return rc;
+
+            if (toRead == 0)
+            {
+                bytesRead = 0;
+                return Result.Success;
+            }
+
+            rc = BaseStorage.Read(offset, destination.Slice(0, (int)toRead));
             if (rc.IsFailure()) return rc;
 
             bytesRead = toRead;
             return Result.Success;
         }
 
-        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        public override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
-            ValidateWriteParams(source, offset);
-
-            Result rc = BaseStorage.Write(offset, source);
+            Result rc = ValidateWriteParams(offset, source.Length, Mode, out bool isResizeNeeded);
             if (rc.IsFailure()) return rc;
 
-            if ((options & WriteOption.Flush) != 0)
+            if (isResizeNeeded)
+            {
+                rc = SetSizeImpl(offset + source.Length);
+                if (rc.IsFailure()) return rc;
+            }
+
+            rc = BaseStorage.Write(offset, source);
+            if (rc.IsFailure()) return rc;
+
+            if (options.HasFlag(WriteOption.Flush))
             {
                 return Flush();
             }
@@ -40,18 +56,24 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public override Result Flush()
+        public override Result FlushImpl()
         {
+            if (!Mode.HasFlag(OpenMode.Write))
+                return Result.Success;
+
             return BaseStorage.Flush();
         }
 
-        public override Result GetSize(out long size)
+        public override Result GetSizeImpl(out long size)
         {
             return BaseStorage.GetSize(out size);
         }
 
-        public override Result SetSize(long size)
+        public override Result SetSizeImpl(long size)
         {
+            if (!Mode.HasFlag(OpenMode.Write))
+                return ResultFs.InvalidOpenModeForWrite.Log();
+
             return BaseStorage.SetSize(size);
         }
     }

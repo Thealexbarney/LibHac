@@ -11,21 +11,21 @@ namespace LibHac.FsSystem.RomFs
 
         public RomFsFile(IStorage baseStorage, long offset, long size)
         {
-            Mode = OpenMode.Read;
             BaseStorage = baseStorage;
             Offset = offset;
             Size = size;
         }
 
-        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        public override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
             bytesRead = default;
 
-            int toRead = ValidateReadParamsAndGetSize(destination, offset);
+            Result rc = ValidateReadParams(out long toRead, offset, destination.Length, OpenMode.Read);
+            if (rc.IsFailure()) return rc;
 
             long storageOffset = Offset + offset;
 
-            Result rc = BaseStorage.Read(storageOffset, destination.Slice(0, toRead));
+            rc = BaseStorage.Read(storageOffset, destination.Slice(0, (int)toRead));
             if (rc.IsFailure()) return rc;
 
             bytesRead = toRead;
@@ -33,23 +33,23 @@ namespace LibHac.FsSystem.RomFs
             return Result.Success;
         }
 
-        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        public override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
             return ResultFs.UnsupportedOperationModifyRomFsFile.Log();
         }
 
-        public override Result Flush()
+        public override Result FlushImpl()
         {
             return Result.Success;
         }
 
-        public override Result GetSize(out long size)
+        public override Result GetSizeImpl(out long size)
         {
             size = Size;
             return Result.Success;
         }
 
-        public override Result SetSize(long size)
+        public override Result SetSizeImpl(long size)
         {
             return ResultFs.UnsupportedOperationModifyRomFsFile.Log();
         }

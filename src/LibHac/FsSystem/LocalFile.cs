@@ -4,7 +4,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class LocalFile : FileBase2
+    public class LocalFile : FileBase
     {
         private const int ErrorHandleDiskFull = unchecked((int)0x80070027);
         private const int ErrorDiskFull = unchecked((int)0x80070070);

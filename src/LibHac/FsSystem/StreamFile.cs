@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using LibHac.Fs;
+
 #if !STREAM_SPAN
 using System.Buffers;
 #endif
@@ -14,6 +15,7 @@ namespace LibHac.FsSystem
     {
         // todo: handle Stream exceptions
 
+        private OpenMode Mode { get; }
         private Stream BaseStream { get; }
         private object Locker { get; } = new object();
 
@@ -23,8 +25,13 @@ namespace LibHac.FsSystem
             Mode = mode;
         }
 
-        public override Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        public override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
+            bytesRead = default;
+
+            Result rc = ValidateReadParams(out long toRead, offset, destination.Length, Mode);
+            if (rc.IsFailure()) return rc;
+
 #if STREAM_SPAN
             lock (Locker)
             {
@@ -33,11 +40,11 @@ namespace LibHac.FsSystem
                     BaseStream.Position = offset;
                 }
 
-                bytesRead = BaseStream.Read(destination);
+                bytesRead = BaseStream.Read(destination.Slice(0, (int)toRead));
                 return Result.Success;
             }
 #else
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(destination.Length);
+            byte[] buffer = ArrayPool<byte>.Shared.Rent((int)toRead);
             try
             {
                 lock (Locker)
@@ -47,10 +54,10 @@ namespace LibHac.FsSystem
                         BaseStream.Position = offset;
                     }
 
-                    bytesRead = BaseStream.Read(buffer, 0, destination.Length);
+                    bytesRead = BaseStream.Read(buffer, 0, (int)toRead);
                 }
 
-                new Span<byte>(buffer, 0, destination.Length).CopyTo(destination);
+                new Span<byte>(buffer, 0, (int)bytesRead).CopyTo(destination);
 
                 return Result.Success;
             }
@@ -58,8 +65,11 @@ namespace LibHac.FsSystem
 #endif
         }
 
-        public override Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        public override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
+            Result rc = ValidateWriteParams(offset, source.Length, Mode, out _);
+            if (rc.IsFailure()) return rc;
+
 #if STREAM_SPAN
             lock (Locker)
             {
@@ -81,7 +91,7 @@ namespace LibHac.FsSystem
             finally { ArrayPool<byte>.Shared.Return(buffer); }
 #endif
 
-            if ((options & WriteOption.Flush) != 0)
+            if (options.HasFlag(WriteOption.Flush))
             {
                 return Flush();
             }
@@ -89,7 +99,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public override Result Flush()
+        public override Result FlushImpl()
         {
             lock (Locker)
             {
@@ -98,7 +108,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        public override Result GetSize(out long size)
+        public override Result GetSizeImpl(out long size)
         {
             lock (Locker)
             {
@@ -107,7 +117,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        public override Result SetSize(long size)
+        public override Result SetSizeImpl(long size)
         {
             lock (Locker)
             {
