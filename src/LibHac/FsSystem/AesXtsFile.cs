@@ -63,6 +63,7 @@ namespace LibHac.FsSystem
             rc = BaseStorage.Read(offset, destination.Slice(0, (int)toRead));
             if (rc.IsFailure()) return rc;
 
+            bytesRead = toRead;
             return Result.Success;
         }
 

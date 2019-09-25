@@ -26,7 +26,7 @@ namespace LibHac.Fs
 
         public Result WriteFile(FileHandle handle, long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
-            return FsManager.WriteFile(handle, source, offset, options);
+            return FsManager.WriteFile(handle, offset, source, options);
         }
 
         public Result FlushFile(FileHandle handle)

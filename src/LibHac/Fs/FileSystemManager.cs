@@ -433,12 +433,12 @@ namespace LibHac.Fs
             return rc;
         }
 
-        public Result WriteFile(FileHandle handle, ReadOnlySpan<byte> source, long offset)
+        public Result WriteFile(FileHandle handle, long offset, ReadOnlySpan<byte> source)
         {
-            return WriteFile(handle, source, offset, WriteOption.None);
+            return WriteFile(handle, offset, source, WriteOption.None);
         }
 
-        public Result WriteFile(FileHandle handle, ReadOnlySpan<byte> source, long offset, WriteOption option)
+        public Result WriteFile(FileHandle handle, long offset, ReadOnlySpan<byte> source, WriteOption option)
         {
             Result rc;
 
@@ -607,9 +607,9 @@ namespace LibHac.Fs
 
             mountName = path.Slice(0, mountLen);
 
-            if (mountLen + 2 < path.Length)
+            if (mountLen + 1 < path.Length)
             {
-                subPath = path.Slice(mountLen + 2);
+                subPath = path.Slice(mountLen + 1);
             }
             else
             {

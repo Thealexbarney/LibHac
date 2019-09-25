@@ -76,7 +76,7 @@ namespace LibHac.Fs
                             rc = fs.ReadFile(out long _, sourceHandle, offset, buf);
                             if (rc.IsFailure()) return rc;
 
-                            rc = fs.WriteFile(destHandle, buf, offset);
+                            rc = fs.WriteFile(destHandle, offset, buf);
                             if (rc.IsFailure()) return rc;
 
                             logger?.ReportAdd(toRead);

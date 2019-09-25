@@ -49,11 +49,13 @@ namespace LibHac.FsSystem
         public Result CreateFile(string path, long size, CreateFileOptions options, byte[] key)
         {
             long containerSize = AesXtsFile.HeaderLength + Util.AlignUp(size, 0x10);
-            BaseFileSystem.CreateFile(path, containerSize, options);
+
+            Result rc = BaseFileSystem.CreateFile(path, containerSize, options);
+            if (rc.IsFailure()) return rc;
 
             var header = new AesXtsFileHeader(key, size, path, KekSource, ValidationKey);
 
-            Result rc = BaseFileSystem.OpenFile(out IFile baseFile, path, OpenMode.Write);
+            rc = BaseFileSystem.OpenFile(out IFile baseFile, path, OpenMode.Write);
             if (rc.IsFailure()) return rc;
 
             using (baseFile)
