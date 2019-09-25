@@ -10,7 +10,7 @@ namespace LibHac.Fs.Accessors
         public string Name { get; }
 
         private IFileSystem FileSystem { get; }
-        internal FileSystemManager FsManager { get; }
+        internal FileSystemClient FsClient { get; }
         private ICommonMountNameGenerator MountNameGenerator { get; }
 
         private HashSet<FileAccessor> OpenFiles { get; } = new HashSet<FileAccessor>();
@@ -20,11 +20,11 @@ namespace LibHac.Fs.Accessors
 
         internal bool IsAccessLogEnabled { get; set; }
 
-        public FileSystemAccessor(string name, IFileSystem baseFileSystem, FileSystemManager fsManager, ICommonMountNameGenerator nameGenerator)
+        public FileSystemAccessor(string name, IFileSystem baseFileSystem, FileSystemClient fsClient, ICommonMountNameGenerator nameGenerator)
         {
             Name = name;
             FileSystem = baseFileSystem;
-            FsManager = fsManager;
+            FsClient = fsClient;
             MountNameGenerator = nameGenerator;
         }
 

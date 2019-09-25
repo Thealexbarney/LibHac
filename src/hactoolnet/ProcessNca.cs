@@ -44,7 +44,7 @@ namespace hactoolnet
 
                     if (ctx.Options.SectionOutDir[i] != null)
                     {
-                        FileSystemManager fs = ctx.Horizon.Fs;
+                        FileSystemClient fs = ctx.Horizon.Fs;
 
                         string mountName = $"section{i}";
 
@@ -95,7 +95,7 @@ namespace hactoolnet
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        FileSystemManager fs = ctx.Horizon.Fs;
+                        FileSystemClient fs = ctx.Horizon.Fs;
 
                         fs.Register("rom".AsU8Span(), OpenFileSystemByType(NcaSectionType.Data));
                         fs.Register("output".AsU8Span(), new LocalFileSystem(ctx.Options.RomfsOutDir));
@@ -152,7 +152,7 @@ namespace hactoolnet
 
                     if (ctx.Options.ExefsOutDir != null)
                     {
-                        FileSystemManager fs = ctx.Horizon.Fs;
+                        FileSystemClient fs = ctx.Horizon.Fs;
 
                         fs.Register("code".AsU8Span(), OpenFileSystemByType(NcaSectionType.Code));
                         fs.Register("output".AsU8Span(), new LocalFileSystem(ctx.Options.ExefsOutDir));

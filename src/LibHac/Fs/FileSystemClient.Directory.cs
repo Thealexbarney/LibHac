@@ -6,17 +6,43 @@ namespace LibHac.Fs
     {
         public Result GetDirectoryEntryCount(out long count, DirectoryHandle handle)
         {
-            return FsManager.GetDirectoryEntryCount(out count, handle);
+            return handle.Directory.GetEntryCount(out count);
         }
 
         public Result ReadDirectory(out long entriesRead, Span<DirectoryEntry> entryBuffer, DirectoryHandle handle)
         {
-            return FsManager.ReadDirectory(out entriesRead, entryBuffer, handle);
+            Result rc;
+
+            if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
+            {
+                TimeSpan startTime = Time.GetCurrent();
+                rc = handle.Directory.Read(out entriesRead, entryBuffer);
+                TimeSpan endTime = Time.GetCurrent();
+
+                OutputAccessLog(rc, startTime, endTime, handle, string.Empty);
+            }
+            else
+            {
+                rc = handle.Directory.Read(out entriesRead, entryBuffer);
+            }
+
+            return rc;
         }
 
         public void CloseDirectory(DirectoryHandle handle)
         {
-            FsManager.CloseDirectory(handle);
+            if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
+            {
+                TimeSpan startTime = Time.GetCurrent();
+                handle.Directory.Dispose();
+                TimeSpan endTime = Time.GetCurrent();
+
+                OutputAccessLog(Result.Success, startTime, endTime, handle, string.Empty);
+            }
+            else
+            {
+                handle.Directory.Dispose();
+            }
         }
     }
 }

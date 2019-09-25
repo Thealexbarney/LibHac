@@ -6,52 +6,135 @@ namespace LibHac.Fs
     {
         public Result ReadFile(FileHandle handle, long offset, Span<byte> destination)
         {
-            return FsManager.ReadFile(handle, offset, destination);
+            return ReadFile(handle, offset, destination, ReadOption.None);
         }
 
-        public Result ReadFile(FileHandle handle, long offset, Span<byte> destination, ReadOption options)
+        public Result ReadFile(FileHandle handle, long offset, Span<byte> destination, ReadOption option)
         {
-            return FsManager.ReadFile(handle, offset, destination, options);
+            Result rc = ReadFile(out long bytesRead, handle, offset, destination, option);
+            if (rc.IsFailure()) return rc;
+
+            if (bytesRead == destination.Length) return Result.Success;
+
+            return ResultFs.ValueOutOfRange.Log();
         }
 
         public Result ReadFile(out long bytesRead, FileHandle handle, long offset, Span<byte> destination)
         {
-            return FsManager.ReadFile(out bytesRead, handle, offset, destination);
+            return ReadFile(out bytesRead, handle, offset, destination, ReadOption.None);
         }
 
-        public Result ReadFile(out long bytesRead, FileHandle handle, long offset, Span<byte> destination, ReadOption options)
+        public Result ReadFile(out long bytesRead, FileHandle handle, long offset, Span<byte> destination, ReadOption option)
         {
-            return FsManager.ReadFile(out bytesRead, handle, offset, destination, options);
+            Result rc;
+
+            if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
+            {
+                TimeSpan startTime = Time.GetCurrent();
+                rc = handle.File.Read(out bytesRead, offset, destination, option);
+                TimeSpan endTime = Time.GetCurrent();
+
+                OutputAccessLog(rc, startTime, endTime, handle, $", offset: {offset}, size: {destination.Length}");
+            }
+            else
+            {
+                rc = handle.File.Read(out bytesRead, offset, destination, option);
+            }
+
+            return rc;
         }
 
-        public Result WriteFile(FileHandle handle, long offset, ReadOnlySpan<byte> source, WriteOption options)
+        public Result WriteFile(FileHandle handle, long offset, ReadOnlySpan<byte> source)
         {
-            return FsManager.WriteFile(handle, offset, source, options);
+            return WriteFile(handle, offset, source, WriteOption.None);
+        }
+
+        public Result WriteFile(FileHandle handle, long offset, ReadOnlySpan<byte> source, WriteOption option)
+        {
+            Result rc;
+
+            if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
+            {
+                TimeSpan startTime = Time.GetCurrent();
+                rc = handle.File.Write(offset, source, option);
+                TimeSpan endTime = Time.GetCurrent();
+
+                string optionString = (option & WriteOption.Flush) == 0 ? "" : $", write_option: {option}";
+
+                OutputAccessLog(rc, startTime, endTime, handle, $", offset: {offset}, size: {source.Length}{optionString}");
+            }
+            else
+            {
+                rc = handle.File.Write(offset, source, option);
+            }
+
+            return rc;
         }
 
         public Result FlushFile(FileHandle handle)
         {
-            return FsManager.FlushFile(handle);
+            Result rc;
+
+            if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
+            {
+                TimeSpan startTime = Time.GetCurrent();
+                rc = handle.File.Flush();
+                TimeSpan endTime = Time.GetCurrent();
+
+                OutputAccessLog(rc, startTime, endTime, handle, string.Empty);
+            }
+            else
+            {
+                rc = handle.File.Flush();
+            }
+
+            return rc;
         }
 
         public Result GetFileSize(out long fileSize, FileHandle handle)
         {
-            return FsManager.GetFileSize(out fileSize, handle);
+            return handle.File.GetSize(out fileSize);
         }
 
         public Result SetFileSize(FileHandle handle, long size)
         {
-            return FsManager.SetFileSize(handle, size);
+            Result rc;
+
+            if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
+            {
+                TimeSpan startTime = Time.GetCurrent();
+                rc = handle.File.SetSize(size);
+                TimeSpan endTime = Time.GetCurrent();
+
+                OutputAccessLog(rc, startTime, endTime, handle, $", size: {size}");
+            }
+            else
+            {
+                rc = handle.File.SetSize(size);
+            }
+
+            return rc;
         }
 
         public OpenMode GetFileOpenMode(FileHandle handle)
         {
-            return FsManager.GetFileOpenMode(handle);
+            return handle.File.OpenMode;
         }
 
         public void CloseFile(FileHandle handle)
         {
-            FsManager.CloseFile(handle);
+            if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
+            {
+                TimeSpan startTime = Time.GetCurrent();
+                handle.File.Dispose();
+                TimeSpan endTime = Time.GetCurrent();
+
+                OutputAccessLog(Result.Success, startTime, endTime, handle, string.Empty);
+            }
+            else
+            {
+                handle.File.Dispose();
+            }
         }
     }
 }

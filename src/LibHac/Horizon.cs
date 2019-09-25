@@ -8,21 +8,16 @@ namespace LibHac
     {
         internal ITimeSpanGenerator Time { get; }
 
-        public FileSystemManager Fs { get; }
+        public FileSystemClient Fs { get; }
         public FileSystemServer FsSrv { get; private set; }
 
         private readonly object _initLocker = new object();
-
-        public Horizon()
-        {
-            Fs = new FileSystemManager(this);
-        }
 
         public Horizon(ITimeSpanGenerator timer)
         {
             Time = timer;
 
-            Fs = new FileSystemManager(this, timer);
+            Fs = new FileSystemClient(timer);
         }
 
         public void InitializeFileSystemServer(FileSystemCreators fsCreators)

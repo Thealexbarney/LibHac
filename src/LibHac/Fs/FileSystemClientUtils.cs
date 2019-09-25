@@ -7,9 +7,9 @@ using LibHac.FsSystem;
 
 namespace LibHac.Fs
 {
-    public static class FileSystemManagerUtils
+    public static class FileSystemClientUtils
     {
-        public static Result CopyDirectory(this FileSystemManager fs, string sourcePath, string destPath,
+        public static Result CopyDirectory(this FileSystemClient fs, string sourcePath, string destPath,
             CreateFileOptions options = CreateFileOptions.None, IProgressReport logger = null)
         {
             Result rc = fs.OpenDirectory(out DirectoryHandle sourceHandle, sourcePath, OpenDirectoryMode.All);
@@ -44,7 +44,7 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        public static Result CopyFile(this FileSystemManager fs, string sourcePath, string destPath, IProgressReport logger = null)
+        public static Result CopyFile(this FileSystemClient fs, string sourcePath, string destPath, IProgressReport logger = null)
         {
             Result rc = fs.OpenFile(out FileHandle sourceHandle, sourcePath, OpenMode.Read);
             if (rc.IsFailure()) return rc;
@@ -96,17 +96,17 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        public static IEnumerable<DirectoryEntryEx> EnumerateEntries(this FileSystemManager fs, string path)
+        public static IEnumerable<DirectoryEntryEx> EnumerateEntries(this FileSystemClient fs, string path)
         {
             return fs.EnumerateEntries(path, "*");
         }
 
-        public static IEnumerable<DirectoryEntryEx> EnumerateEntries(this FileSystemManager fs, string path, string searchPattern)
+        public static IEnumerable<DirectoryEntryEx> EnumerateEntries(this FileSystemClient fs, string path, string searchPattern)
         {
             return fs.EnumerateEntries(path, searchPattern, SearchOptions.RecurseSubdirectories);
         }
 
-        public static IEnumerable<DirectoryEntryEx> EnumerateEntries(this FileSystemManager fs, string path, string searchPattern, SearchOptions searchOptions)
+        public static IEnumerable<DirectoryEntryEx> EnumerateEntries(this FileSystemClient fs, string path, string searchPattern, SearchOptions searchOptions)
         {
             bool ignoreCase = searchOptions.HasFlag(SearchOptions.CaseInsensitive);
             bool recurse = searchOptions.HasFlag(SearchOptions.RecurseSubdirectories);
@@ -141,21 +141,21 @@ namespace LibHac.Fs
             }
         }
 
-        public static bool DirectoryExists(this FileSystemManager fs, string path)
+        public static bool DirectoryExists(this FileSystemClient fs, string path)
         {
             Result rc = fs.GetEntryType(out DirectoryEntryType type, path);
 
             return (rc.IsSuccess() && type == DirectoryEntryType.Directory);
         }
 
-        public static bool FileExists(this FileSystemManager fs, string path)
+        public static bool FileExists(this FileSystemClient fs, string path)
         {
             Result rc = fs.GetEntryType(out DirectoryEntryType type, path);
 
             return (rc.IsSuccess() && type == DirectoryEntryType.File);
         }
 
-        public static void EnsureDirectoryExists(this FileSystemManager fs, string path)
+        public static void EnsureDirectoryExists(this FileSystemClient fs, string path)
         {
             path = PathTools.Normalize(path);
             if (fs.DirectoryExists(path)) return;
@@ -195,12 +195,12 @@ namespace LibHac.Fs
             fs.CreateDirectory(path);
         }
 
-        public static void CreateOrOverwriteFile(this FileSystemManager fs, string path, long size)
+        public static void CreateOrOverwriteFile(this FileSystemClient fs, string path, long size)
         {
             fs.CreateOrOverwriteFile(path, size, CreateFileOptions.None);
         }
 
-        public static void CreateOrOverwriteFile(this FileSystemManager fs, string path, long size, CreateFileOptions options)
+        public static void CreateOrOverwriteFile(this FileSystemClient fs, string path, long size, CreateFileOptions options)
         {
             path = PathTools.Normalize(path);
 
@@ -209,7 +209,7 @@ namespace LibHac.Fs
             fs.CreateFile(path, size, CreateFileOptions.None);
         }
 
-        internal static bool IsEnabledFileSystemAccessorAccessLog(this FileSystemManager fs, string mountName)
+        internal static bool IsEnabledFileSystemAccessorAccessLog(this FileSystemClient fs, string mountName)
         {
             if (fs.MountTable.Find(mountName, out FileSystemAccessor accessor).IsFailure())
             {

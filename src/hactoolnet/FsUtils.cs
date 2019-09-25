@@ -8,7 +8,7 @@ namespace hactoolnet
 {
     public static class FsUtils
     {
-        public static void CopyDirectoryWithProgress(FileSystemManager fs, string sourcePath, string destPath,
+        public static void CopyDirectoryWithProgress(FileSystemClient fs, string sourcePath, string destPath,
             CreateFileOptions options = CreateFileOptions.None, IProgressReport logger = null)
         {
             try
@@ -23,7 +23,7 @@ namespace hactoolnet
             }
         }
 
-        private static void CopyDirectoryWithProgressInternal(FileSystemManager fs, string sourcePath, string destPath,
+        private static void CopyDirectoryWithProgressInternal(FileSystemClient fs, string sourcePath, string destPath,
             CreateFileOptions options, IProgressReport logger)
         {
             fs.OpenDirectory(out DirectoryHandle sourceHandle, sourcePath, OpenDirectoryMode.All).ThrowIfFailure();
@@ -53,7 +53,7 @@ namespace hactoolnet
             }
         }
 
-        public static long GetTotalSize(FileSystemManager fs, string path, string searchPattern = "*")
+        public static long GetTotalSize(FileSystemClient fs, string path, string searchPattern = "*")
         {
             long size = 0;
 
@@ -65,7 +65,7 @@ namespace hactoolnet
             return size;
         }
 
-        public static Result CopyFileWithProgress(FileSystemManager fs, string sourcePath, string destPath, IProgressReport logger = null)
+        public static Result CopyFileWithProgress(FileSystemClient fs, string sourcePath, string destPath, IProgressReport logger = null)
         {
             Result rc = fs.OpenFile(out FileHandle sourceHandle, sourcePath, OpenMode.Read);
             if (rc.IsFailure()) return rc;
@@ -95,7 +95,7 @@ namespace hactoolnet
                             rc = fs.ReadFile(out long _, sourceHandle, offset, buf);
                             if (rc.IsFailure()) return rc;
 
-                            rc = fs.WriteFile(destHandle, buf, offset);
+                            rc = fs.WriteFile(destHandle, offset, buf);
                             if (rc.IsFailure()) return rc;
 
                             logger?.ReportAdd(toRead);

@@ -7,7 +7,7 @@ namespace LibHac.Fs
         private const long InvalidSize = -1;
         private readonly object _locker = new object();
 
-        private FileSystemManager FsManager { get; }
+        private FileSystemClient FsClient { get; }
         private FileHandle Handle { get; }
         private long FileSize { get; set; } = InvalidSize;
         private bool CloseHandle { get; }
@@ -18,7 +18,7 @@ namespace LibHac.Fs
         {
             Handle = handle;
             CloseHandle = closeHandleOnDispose;
-            FsManager = Handle.File.Parent.FsManager;
+            FsClient = Handle.File.Parent.FsClient;
         }
 
         public override Result Read(long offset, Span<byte> destination)
@@ -33,7 +33,7 @@ namespace LibHac.Fs
                 if (destination.Length < 0 || offset < 0) return ResultFs.ValueOutOfRange.Log();
                 if (!IsRangeValid(offset, destination.Length, FileSize)) return ResultFs.ValueOutOfRange.Log();
 
-                return FsManager.ReadFile(Handle, offset, destination);
+                return FsClient.ReadFile(Handle, offset, destination);
             }
         }
 
@@ -49,20 +49,20 @@ namespace LibHac.Fs
                 if (source.Length < 0 || offset < 0) return ResultFs.ValueOutOfRange.Log();
                 if (!IsRangeValid(offset, source.Length, FileSize)) return ResultFs.ValueOutOfRange.Log();
 
-                return FsManager.WriteFile(Handle, offset, source);
+                return FsClient.WriteFile(Handle, offset, source);
             }
         }
 
         public override Result Flush()
         {
-            return FsManager.FlushFile(Handle);
+            return FsClient.FlushFile(Handle);
         }
 
         public override Result SetSize(long size)
         {
             FileSize = InvalidSize;
 
-            return FsManager.SetFileSize(Handle, size);
+            return FsClient.SetFileSize(Handle, size);
         }
 
         public override Result GetSize(out long size)
@@ -80,7 +80,7 @@ namespace LibHac.Fs
         {
             if (FileSize != InvalidSize) return Result.Success;
 
-            Result rc = FsManager.GetFileSize(out long fileSize, Handle);
+            Result rc = FsClient.GetFileSize(out long fileSize, Handle);
             if (rc.IsFailure()) return rc;
 
             FileSize = fileSize;
@@ -91,7 +91,7 @@ namespace LibHac.Fs
         {
             if (CloseHandle)
             {
-                FsManager.CloseFile(Handle);
+                FsClient.CloseFile(Handle);
             }
         }
     }
