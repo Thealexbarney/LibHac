@@ -7,7 +7,7 @@ using LibHac.Ncm;
 namespace LibHac.Fs
 {
     [StructLayout(LayoutKind.Explicit, Size = 0x40)]
-    public struct SaveDataAttribute2
+    public struct SaveDataAttribute
     {
         [FieldOffset(0x00)] public ulong TitleId;
         [FieldOffset(0x08)] public UserId UserId;
@@ -78,6 +78,12 @@ namespace LibHac.Fs
     [StructLayout(LayoutKind.Explicit, Size = 0x40)]
     public struct SaveDataCreateInfo
     {
-        // Todo
+        [FieldOffset(0x00)] public long Size;
+        [FieldOffset(0x08)] public long JournalSize;
+        [FieldOffset(0x10)] public ulong BlockSize;
+        [FieldOffset(0x18)] public ulong OwnerId;
+        [FieldOffset(0x20)] public uint Flags;
+        [FieldOffset(0x24)] public SaveDataSpaceId SpaceId;
+        [FieldOffset(0x25)] public bool Field25;
     }
 }

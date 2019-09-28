@@ -288,6 +288,7 @@ namespace LibHac.FsSystem.Save
         BcatDeliveryCacheStorage = 2,
         DeviceSaveData = 3,
         TemporaryStorage = 4,
-        CacheStorage = 5
+        CacheStorage = 5,
+        BcatSystemStorage = 6
     }
 }

@@ -112,7 +112,7 @@ namespace LibHac.FsService
             throw new NotImplementedException();
         }
 
-        public Result DeleteSaveDataFileSystemBySaveDataAttribute(SaveDataSpaceId spaceId, ref SaveDataAttribute2 attribute)
+        public Result DeleteSaveDataFileSystemBySaveDataAttribute(SaveDataSpaceId spaceId, ref SaveDataAttribute attribute)
         {
             throw new NotImplementedException();
         }
@@ -122,19 +122,19 @@ namespace LibHac.FsService
             throw new NotImplementedException();
         }
 
-        public Result CreateSaveDataFileSystem(ref SaveDataAttribute2 attribute, ref SaveDataCreateInfo createInfo,
+        public Result CreateSaveDataFileSystem(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo,
             ref SaveMetaCreateInfo metaCreateInfo)
         {
             throw new NotImplementedException();
         }
 
-        public Result CreateSaveDataFileSystemWithHashSalt(ref SaveDataAttribute2 attribute, ref SaveDataCreateInfo createInfo,
+        public Result CreateSaveDataFileSystemWithHashSalt(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo,
             ref SaveMetaCreateInfo metaCreateInfo, ref HashSalt hashSalt)
         {
             throw new NotImplementedException();
         }
 
-        public Result CreateSaveDataFileSystemBySystemSaveDataId(ref SaveDataAttribute2 attribute, ref SaveDataCreateInfo createInfo)
+        public Result CreateSaveDataFileSystemBySystemSaveDataId(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo)
         {
             throw new NotImplementedException();
         }
@@ -147,11 +147,11 @@ namespace LibHac.FsService
         private Result OpenSaveDataFileSystemImpl(out IFileSystem fileSystem, out ulong saveDataId,
             SaveDataSpaceId spaceId, ref SaveDataAttribute attribute, bool openReadOnly, bool cacheExtraData)
         {
-            bool hasFixedId = attribute.SaveId != 0 && attribute.UserId.Id == Id128.InvalidId;
+            bool hasFixedId = attribute.SaveDataId != 0 && attribute.UserId.Id == Id128.InvalidId;
 
             if (hasFixedId)
             {
-                saveDataId = attribute.SaveId;
+                saveDataId = attribute.SaveDataId;
             }
             else
             {
@@ -194,7 +194,7 @@ namespace LibHac.FsService
             // Missing permission check, speed emulation storage type wrapper, and FileSystemInterfaceAdapter
             fileSystem = default;
 
-            if (!IsSystemSaveDataId(attribute.SaveId)) return ResultFs.InvalidArgument.Log();
+            if (!IsSystemSaveDataId(attribute.SaveDataId)) return ResultFs.InvalidArgument.Log();
 
             Result rc = OpenSaveDataFileSystemImpl(out IFileSystem saveFs, out _, spaceId,
                 ref attribute, false, true);
@@ -219,7 +219,7 @@ namespace LibHac.FsService
         }
 
         public Result ReadSaveDataFileSystemExtraDataBySaveDataAttribute(Span<byte> extraDataBuffer, SaveDataSpaceId spaceId,
-            ref SaveDataAttribute2 attribute)
+            ref SaveDataAttribute attribute)
         {
             throw new NotImplementedException();
         }
@@ -229,7 +229,7 @@ namespace LibHac.FsService
             throw new NotImplementedException();
         }
 
-        public Result WriteSaveDataFileSystemExtraDataBySaveDataAttribute(ref SaveDataAttribute2 attribute, SaveDataSpaceId spaceId,
+        public Result WriteSaveDataFileSystemExtraDataBySaveDataAttribute(ref SaveDataAttribute attribute, SaveDataSpaceId spaceId,
             ReadOnlySpan<byte> extraDataBuffer, ReadOnlySpan<byte> maskBuffer)
         {
             throw new NotImplementedException();
@@ -352,7 +352,7 @@ namespace LibHac.FsService
             throw new NotImplementedException();
         }
 
-        public Result OpenSaveDataMetaFile(out IFile file, SaveDataSpaceId spaceId, ref SaveDataAttribute2 attribute,
+        public Result OpenSaveDataMetaFile(out IFile file, SaveDataSpaceId spaceId, ref SaveDataAttribute attribute,
             SaveMetaType type)
         {
             throw new NotImplementedException();
@@ -520,12 +520,12 @@ namespace LibHac.FsService
             return Result.Success;
         }
 
-        public Result SetGlobalAccessLogMode(int mode)
+        public Result SetGlobalAccessLogMode(GlobalAccessLogMode mode)
         {
             throw new NotImplementedException();
         }
 
-        public Result GetGlobalAccessLogMode(out int mode)
+        public Result GetGlobalAccessLogMode(out GlobalAccessLogMode mode)
         {
             throw new NotImplementedException();
         }
