@@ -522,12 +522,14 @@ namespace LibHac.FsService
 
         public Result SetGlobalAccessLogMode(GlobalAccessLogMode mode)
         {
-            throw new NotImplementedException();
+            // Missing permission check
+
+            return FsProxyCore.SetGlobalAccessLogMode(mode);
         }
 
         public Result GetGlobalAccessLogMode(out GlobalAccessLogMode mode)
         {
-            throw new NotImplementedException();
+            return FsProxyCore.GetGlobalAccessLogMode(out mode);
         }
 
         public Result GetProgramIndexForAccessLog(out int programIndex, out int programCount)

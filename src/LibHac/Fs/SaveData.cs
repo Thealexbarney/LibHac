@@ -1,5 +1,4 @@
-﻿using System;
-using LibHac.Common;
+﻿using LibHac.Common;
 using LibHac.FsService;
 
 namespace LibHac.Fs
@@ -24,62 +23,33 @@ namespace LibHac.Fs
             return fs.Register(mountName, fileSystem);
         }
 
-        public static Result CreateSystemSaveData(this FileSystemClient fs, SaveDataSpaceId spaceId, ulong saveDataId,
-            UserId userId, ulong ownerId, long size, long journalSize, uint flags)
+        public static Result CreateSystemSaveData(this FileSystemClient fs, SaveDataSpaceId spaceId,
+            ulong saveDataId, UserId userId, ulong ownerId, long size, long journalSize, uint flags)
         {
-            if (fs.IsEnabledAccessLog(LocalAccessLogMode.Internal))
-            {
-                TimeSpan startTime = fs.Time.GetCurrent();
-
-                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
-
-                var attribute = new SaveDataAttribute
+            return fs.RunOperationWithAccessLog(LocalAccessLogMode.Internal,
+                () =>
                 {
-                    UserId = userId,
-                    SaveDataId = saveDataId
-                };
+                    IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                var createInfo = new SaveDataCreateInfo
-                {
-                    Size = size,
-                    JournalSize = journalSize,
-                    BlockSize = 0x4000,
-                    OwnerId = ownerId,
-                    Flags = flags,
-                    SpaceId = spaceId
-                };
+                    var attribute = new SaveDataAttribute
+                    {
+                        UserId = userId,
+                        SaveDataId = saveDataId
+                    };
 
-                Result rc = fsProxy.CreateSaveDataFileSystemBySystemSaveDataId(ref attribute, ref createInfo);
+                    var createInfo = new SaveDataCreateInfo
+                    {
+                        Size = size,
+                        JournalSize = journalSize,
+                        BlockSize = 0x4000,
+                        OwnerId = ownerId,
+                        Flags = flags,
+                        SpaceId = spaceId
+                    };
 
-                TimeSpan endTime = fs.Time.GetCurrent();
-
-                fs.OutputAccessLog(rc, startTime, endTime,
-                    $", savedataspaceid: {spaceId}, savedataid: 0x{saveDataId:X}, userid: 0x{userId.Id.High:X16}{userId.Id.Low:X16}, save_data_owner_id: 0x{ownerId:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{flags:X8}");
-
-                return rc;
-            }
-            else
-            {
-                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
-
-                var attribute = new SaveDataAttribute
-                {
-                    UserId = userId,
-                    SaveDataId = saveDataId
-                };
-
-                var createInfo = new SaveDataCreateInfo
-                {
-                    Size = size,
-                    JournalSize = journalSize,
-                    BlockSize = 0x4000,
-                    OwnerId = ownerId,
-                    Flags = flags,
-                    SpaceId = spaceId
-                };
-
-                return fsProxy.CreateSaveDataFileSystemBySystemSaveDataId(ref attribute, ref createInfo);
-            }
+                    return fsProxy.CreateSaveDataFileSystemBySystemSaveDataId(ref attribute, ref createInfo);
+                },
+                () => $", savedataspaceid: {spaceId}, savedataid: 0x{saveDataId:X}, userid: 0x{userId.Id.High:X16}{userId.Id.Low:X16}, save_data_owner_id: 0x{ownerId:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{flags:X8}");
         }
 
         public static Result CreateSystemSaveData(this FileSystemClient fs, ulong saveDataId, UserId userId,
@@ -114,24 +84,13 @@ namespace LibHac.Fs
 
         public static Result DeleteSaveData(this FileSystemClient fs, ulong saveDataId)
         {
-            if (fs.IsEnabledAccessLog(LocalAccessLogMode.Internal))
-            {
-                TimeSpan startTime = fs.Time.GetCurrent();
-
-                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
-                Result result = fsProxy.DeleteSaveDataFileSystem(saveDataId);
-
-                TimeSpan endTime = fs.Time.GetCurrent();
-
-                fs.OutputAccessLog(result, startTime, endTime, $", savedataid: 0x{saveDataId:X}");
-
-                return result;
-            }
-            else
-            {
-                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
-                return fsProxy.DeleteSaveDataFileSystem(saveDataId);
-            }
+            return fs.RunOperationWithAccessLog(LocalAccessLogMode.Internal,
+                () =>
+                {
+                    IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+                    return fsProxy.DeleteSaveDataFileSystem(saveDataId);
+                },
+                () => $", savedataid: 0x{saveDataId:X}");
         }
 
         public static Result DisableAutoSaveDataCreation(this FileSystemClient fsClient)

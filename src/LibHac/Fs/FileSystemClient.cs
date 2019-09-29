@@ -91,6 +91,11 @@ namespace LibHac.Fs
         {
             AccessLogEnabled = isEnabled;
 
+            if (isEnabled && FsSrv != null)
+            {
+                SetGlobalAccessLogMode(GlobalAccessLogMode.All);
+            }
+
             if (accessLog != null) AccessLog = accessLog;
         }
 

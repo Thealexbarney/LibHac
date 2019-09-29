@@ -14,6 +14,8 @@ namespace LibHac.FsService
         private const string NintendoDirectoryName = "Nintendo";
         private const string ContentDirectoryName = "Contents";
 
+        private GlobalAccessLogMode LogMode { get; set; }
+
         public FileSystemProxyCore(FileSystemCreators fsCreators)
         {
             FsCreators = fsCreators;
@@ -241,6 +243,18 @@ namespace LibHac.FsService
                 default:
                     return ResultFs.InvalidArgument.Log();
             }
+        }
+
+        public Result SetGlobalAccessLogMode(GlobalAccessLogMode mode)
+        {
+            LogMode = mode;
+            return Result.Success;
+        }
+
+        public Result GetGlobalAccessLogMode(out GlobalAccessLogMode mode)
+        {
+            mode = LogMode;
+            return Result.Success;
         }
 
         private string GetSaveDataIdPath(ulong saveDataId)

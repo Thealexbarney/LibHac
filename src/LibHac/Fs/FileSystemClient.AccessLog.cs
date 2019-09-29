@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using LibHac.FsService;
 
 namespace LibHac.Fs
@@ -32,7 +33,7 @@ namespace LibHac.Fs
 
         internal bool IsEnabledAccessLog(LocalAccessLogMode mode)
         {
-            if (!LocalAccessLogMode.HasFlag(mode))
+            if ((LocalAccessLogMode & mode) == 0)
             {
                 return false;
             }
@@ -71,6 +72,26 @@ namespace LibHac.Fs
         private void InitAccessLog()
         {
 
+        }
+
+        public Result RunOperationWithAccessLog(LocalAccessLogMode logType, Func<Result> operation, Func<string> textGenerator, [CallerMemberName] string caller = "")
+        {
+            Result rc;
+
+            if (IsEnabledAccessLog(logType))
+            {
+                TimeSpan startTime = Time.GetCurrent();
+                rc = operation();
+                TimeSpan endTime = Time.GetCurrent();
+
+                OutputAccessLog(rc, startTime, endTime, textGenerator(), caller);
+            }
+            else
+            {
+                rc = operation();
+            }
+
+            return rc;
         }
     }
 
