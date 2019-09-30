@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs.Accessors;
 using LibHac.FsService;
@@ -16,19 +15,23 @@ namespace LibHac.Fs
 
         internal ITimeSpanGenerator Time { get; }
         private IAccessLog AccessLog { get; set; }
-        private bool AccessLogEnabled { get; set; }
 
         internal MountTable MountTable { get; } = new MountTable();
 
         public FileSystemClient(ITimeSpanGenerator timer)
         {
-            Time = timer;
+            Time = timer ?? new StopWatchTimeSpanGenerator();
         }
 
         public FileSystemClient(FileSystemServer fsServer, ITimeSpanGenerator timer)
         {
             FsSrv = fsServer;
-            Time = timer;
+            Time = timer ?? new StopWatchTimeSpanGenerator();
+        }
+
+        public bool HasFileSystemServer()
+        {
+            return FsSrv != null;
         }
 
         public IFileSystemProxy GetFileSystemProxyServiceObject()
@@ -39,7 +42,7 @@ namespace LibHac.Fs
             {
                 if (FsProxy != null) return FsProxy;
 
-                if (FsSrv == null)
+                if (!HasFileSystemServer())
                 {
                     throw new InvalidOperationException("Client was not initialized with a server object.");
                 }
@@ -85,18 +88,6 @@ namespace LibHac.Fs
             }
 
             rc.ThrowIfFailure();
-        }
-
-        public void SetAccessLog(bool isEnabled, IAccessLog accessLog = null)
-        {
-            AccessLogEnabled = isEnabled;
-
-            if (isEnabled && FsSrv != null)
-            {
-                SetGlobalAccessLogMode(GlobalAccessLogMode.All);
-            }
-
-            if (accessLog != null) AccessLog = accessLog;
         }
 
         internal Result FindFileSystem(ReadOnlySpan<char> path, out FileSystemAccessor fileSystem, out ReadOnlySpan<char> subPath)
@@ -146,46 +137,6 @@ namespace LibHac.Fs
             }
 
             return Result.Success;
-        }
-
-        internal bool IsEnabledAccessLog()
-        {
-            return AccessLogEnabled && AccessLog != null && Time != null;
-        }
-
-        internal bool IsEnabledFileSystemAccessorAccessLog(string mountName)
-        {
-            if (MountTable.Find(mountName, out FileSystemAccessor accessor).IsFailure())
-            {
-                return true;
-            }
-
-            return accessor.IsAccessLogEnabled;
-        }
-
-        internal bool IsEnabledHandleAccessLog(FileHandle handle)
-        {
-            return handle.File.Parent.IsAccessLogEnabled;
-        }
-
-        internal bool IsEnabledHandleAccessLog(DirectoryHandle handle)
-        {
-            return handle.Directory.Parent.IsAccessLogEnabled;
-        }
-
-        internal void OutputAccessLog(Result result, TimeSpan startTime, TimeSpan endTime, string message, [CallerMemberName] string caller = "")
-        {
-            AccessLog.Log(result, startTime, endTime, 0, message, caller);
-        }
-
-        internal void OutputAccessLog(Result result, TimeSpan startTime, TimeSpan endTime, FileHandle handle, string message, [CallerMemberName] string caller = "")
-        {
-            AccessLog.Log(result, startTime, endTime, handle.GetId(), message, caller);
-        }
-
-        internal void OutputAccessLog(Result result, TimeSpan startTime, TimeSpan endTime, DirectoryHandle handle, string message, [CallerMemberName] string caller = "")
-        {
-            AccessLog.Log(result, startTime, endTime, handle.GetId(), message, caller);
         }
     }
 }

@@ -48,8 +48,8 @@ namespace hactoolnet
 
                         string mountName = $"section{i}";
 
-                        fs.Register(mountName.AsU8Span(), OpenFileSystem(i));
-                        fs.Register("output".AsU8Span(), new LocalFileSystem(ctx.Options.SectionOutDir[i]));
+                        fs.Register(mountName.ToU8Span(), OpenFileSystem(i));
+                        fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.SectionOutDir[i]));
 
                         FsUtils.CopyDirectoryWithProgress(fs, mountName + ":/", "output:/", logger: ctx.Logger);
 
@@ -97,8 +97,8 @@ namespace hactoolnet
                     {
                         FileSystemClient fs = ctx.Horizon.Fs;
 
-                        fs.Register("rom".AsU8Span(), OpenFileSystemByType(NcaSectionType.Data));
-                        fs.Register("output".AsU8Span(), new LocalFileSystem(ctx.Options.RomfsOutDir));
+                        fs.Register("rom".ToU8Span(), OpenFileSystemByType(NcaSectionType.Data));
+                        fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.RomfsOutDir));
 
                         FsUtils.CopyDirectoryWithProgress(fs, "rom:/", "output:/", logger: ctx.Logger);
 
@@ -154,8 +154,8 @@ namespace hactoolnet
                     {
                         FileSystemClient fs = ctx.Horizon.Fs;
 
-                        fs.Register("code".AsU8Span(), OpenFileSystemByType(NcaSectionType.Code));
-                        fs.Register("output".AsU8Span(), new LocalFileSystem(ctx.Options.ExefsOutDir));
+                        fs.Register("code".ToU8Span(), OpenFileSystemByType(NcaSectionType.Code));
+                        fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.ExefsOutDir));
 
                         FsUtils.CopyDirectoryWithProgress(fs, "code:/", "output:/", logger: ctx.Logger);
 

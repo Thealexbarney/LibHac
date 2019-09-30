@@ -73,22 +73,9 @@ namespace LibHac.Fs
 
         public Result FlushFile(FileHandle handle)
         {
-            Result rc;
-
-            if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
-            {
-                TimeSpan startTime = Time.GetCurrent();
-                rc = handle.File.Flush();
-                TimeSpan endTime = Time.GetCurrent();
-
-                OutputAccessLog(rc, startTime, endTime, handle, string.Empty);
-            }
-            else
-            {
-                rc = handle.File.Flush();
-            }
-
-            return rc;
+            return RunOperationWithAccessLog(LocalAccessLogMode.All, handle,
+                () => handle.File.Flush(),
+                () => string.Empty);
         }
 
         public Result GetFileSize(out long fileSize, FileHandle handle)
@@ -98,22 +85,9 @@ namespace LibHac.Fs
 
         public Result SetFileSize(FileHandle handle, long size)
         {
-            Result rc;
-
-            if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
-            {
-                TimeSpan startTime = Time.GetCurrent();
-                rc = handle.File.SetSize(size);
-                TimeSpan endTime = Time.GetCurrent();
-
-                OutputAccessLog(rc, startTime, endTime, handle, $", size: {size}");
-            }
-            else
-            {
-                rc = handle.File.SetSize(size);
-            }
-
-            return rc;
+            return RunOperationWithAccessLog(LocalAccessLogMode.All, handle,
+                () => handle.File.SetSize(size),
+                () => $", size: {size}");
         }
 
         public OpenMode GetFileOpenMode(FileHandle handle)
@@ -123,18 +97,13 @@ namespace LibHac.Fs
 
         public void CloseFile(FileHandle handle)
         {
-            if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
-            {
-                TimeSpan startTime = Time.GetCurrent();
-                handle.File.Dispose();
-                TimeSpan endTime = Time.GetCurrent();
-
-                OutputAccessLog(Result.Success, startTime, endTime, handle, string.Empty);
-            }
-            else
-            {
-                handle.File.Dispose();
-            }
+            RunOperationWithAccessLog(LocalAccessLogMode.All, handle,
+                () =>
+                {
+                    handle.File.Dispose();
+                    return Result.Success;
+                },
+                () => string.Empty);
         }
     }
 }

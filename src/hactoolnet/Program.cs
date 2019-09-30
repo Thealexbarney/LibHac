@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using LibHac;
+using LibHac.Fs;
 
 namespace hactoolnet
 {
@@ -63,7 +64,11 @@ namespace hactoolnet
                     {
                         logWriter = new StreamWriter(ctx.Options.AccessLog);
                         var accessLog = new TextWriterAccessLog(logWriter);
-                        ctx.Horizon.Fs.SetAccessLog(true, accessLog);
+
+                        ctx.Horizon.Fs.SetLocalAccessLogMode(LocalAccessLogMode.All);
+                        ctx.Horizon.Fs.SetGlobalAccessLogMode(GlobalAccessLogMode.Log);
+
+                        ctx.Horizon.Fs.SetAccessLogObject(accessLog);
                     }
 
                     OpenKeyset(ctx);

@@ -31,7 +31,7 @@ namespace hactoolnet
                 var save = new SaveDataFileSystem(ctx.Keyset, file, ctx.Options.IntegrityLevel, true);
                 FileSystemClient fs = ctx.Horizon.Fs;
 
-                fs.Register("save".AsU8Span(), save);
+                fs.Register("save".ToU8Span(), save);
 
                 if (ctx.Options.Validate)
                 {
@@ -40,7 +40,7 @@ namespace hactoolnet
 
                 if (ctx.Options.OutDir != null)
                 {
-                    fs.Register("output".AsU8Span(), new LocalFileSystem(ctx.Options.OutDir));
+                    fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.OutDir));
 
                     FsUtils.CopyDirectoryWithProgress(fs, "save:/", "output:/", logger: ctx.Logger);
 
@@ -86,7 +86,7 @@ namespace hactoolnet
 
                     if (ctx.Options.RepackSource != null)
                     {
-                        fs.Register("input".AsU8Span(), new LocalFileSystem(ctx.Options.RepackSource));
+                        fs.Register("input".ToU8Span(), new LocalFileSystem(ctx.Options.RepackSource));
 
                         fs.CleanDirectoryRecursively("save:/");
                         fs.Commit("save");
