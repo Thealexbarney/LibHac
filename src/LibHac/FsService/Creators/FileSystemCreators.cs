@@ -26,6 +26,7 @@ namespace LibHac.FsService.Creators
             var creators = new FileSystemCreators();
 
             creators.SubDirectoryFileSystemCreator = new SubDirectoryFileSystemCreator();
+            creators.SaveDataFileSystemCreator = new SaveDataFileSystemCreator(keyset);
             creators.EncryptedFileSystemCreator = new EncryptedFileSystemCreator(keyset);
             creators.BuiltInStorageFileSystemCreator = new EmulatedBisFileSystemCreator(rootFileSystem);
             creators.SdFileSystemCreator = new EmulatedSdFileSystemCreator(rootFileSystem);

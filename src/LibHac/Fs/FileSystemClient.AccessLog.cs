@@ -189,7 +189,7 @@ namespace LibHac.Fs
                 rc = operation();
                 TimeSpan endTime = Time.GetCurrent();
 
-                OutputAccessLog(rc, startTime, endTime, textGenerator(), caller);
+                OutputAccessLog(rc, startTime, endTime, handle, textGenerator(), caller);
             }
             else
             {

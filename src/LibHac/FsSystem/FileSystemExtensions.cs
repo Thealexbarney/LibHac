@@ -182,10 +182,18 @@ namespace LibHac.FsSystem
             return (NxFileAttributes)(((int)attributes >> 4) & 3);
         }
 
+        public static FileAttributes ToFatAttributes(this NxFileAttributes attributes)
+        {
+            return (FileAttributes)(((int)attributes & 3) << 4);
+        }
+
         public static FileAttributes ApplyNxAttributes(this FileAttributes attributes, NxFileAttributes nxAttributes)
         {
-            var nxAttributeBits = (FileAttributes)(((int)nxAttributes & 3) << 4);
-            return attributes | nxAttributeBits;
+            // The only 2 bits from FileAttributes that are used in NxFileAttributes
+            const int mask = 3 << 4;
+
+            FileAttributes oldAttributes = attributes & (FileAttributes)mask;
+            return oldAttributes | nxAttributes.ToFatAttributes();
         }
 
         public static void SetConcatenationFileAttribute(this IFileSystem fs, string path)

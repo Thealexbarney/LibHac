@@ -213,7 +213,7 @@ namespace LibHac.FsSystem
             rc = BaseFs.CreateDirectory(dest);
             if (rc.IsFailure()) return rc;
 
-            return this.CopyDirectory(this, src, dest);
+            return BaseFs.CopyDirectory(BaseFs, src, dest);
         }
 
         internal void NotifyCloseWritableFile()

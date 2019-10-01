@@ -21,81 +21,81 @@ namespace LibHac.FsSystem
 
         public Result CreateDirectory(string path)
         {
-            path = PathTools.Normalize(path);
+            string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
-            return ParentFileSystem.CreateDirectory(ResolveFullPath(path));
+            return ParentFileSystem.CreateDirectory(fullPath);
         }
 
         public Result CreateFile(string path, long size, CreateFileOptions options)
         {
-            path = PathTools.Normalize(path);
+            string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
-            return ParentFileSystem.CreateFile(ResolveFullPath(path), size, options);
+            return ParentFileSystem.CreateFile(fullPath, size, options);
         }
 
         public Result DeleteDirectory(string path)
         {
-            path = PathTools.Normalize(path);
+            string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
-            return ParentFileSystem.DeleteDirectory(ResolveFullPath(path));
+            return ParentFileSystem.DeleteDirectory(fullPath);
         }
 
         public Result DeleteDirectoryRecursively(string path)
         {
-            path = PathTools.Normalize(path);
+            string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
-            return ParentFileSystem.DeleteDirectoryRecursively(ResolveFullPath(path));
+            return ParentFileSystem.DeleteDirectoryRecursively(fullPath);
         }
 
         public Result CleanDirectoryRecursively(string path)
         {
-            path = PathTools.Normalize(path);
+            string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
-            return ParentFileSystem.CleanDirectoryRecursively(ResolveFullPath(path));
+            return ParentFileSystem.CleanDirectoryRecursively(fullPath);
         }
 
         public Result DeleteFile(string path)
         {
-            path = PathTools.Normalize(path);
+            string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
-            return ParentFileSystem.DeleteFile(ResolveFullPath(path));
+            return ParentFileSystem.DeleteFile(fullPath);
         }
 
         public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
-            path = PathTools.Normalize(path);
+            string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
-            return ParentFileSystem.OpenDirectory(out directory, ResolveFullPath(path), mode);
+            return ParentFileSystem.OpenDirectory(out directory, fullPath, mode);
         }
 
         public Result OpenFile(out IFile file, string path, OpenMode mode)
         {
-            path = PathTools.Normalize(path);
+            string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
-            return ParentFileSystem.OpenFile(out file, ResolveFullPath(path), mode);
+            return ParentFileSystem.OpenFile(out file, fullPath, mode);
         }
 
         public Result RenameDirectory(string oldPath, string newPath)
         {
-            oldPath = PathTools.Normalize(oldPath);
-            newPath = PathTools.Normalize(newPath);
+            string fullOldPath = ResolveFullPath(PathTools.Normalize(oldPath));
+            string fullNewPath = ResolveFullPath(PathTools.Normalize(newPath));
 
-            return ParentFileSystem.RenameDirectory(oldPath, newPath);
+            return ParentFileSystem.RenameDirectory(fullOldPath, fullNewPath);
         }
 
         public Result RenameFile(string oldPath, string newPath)
         {
-            oldPath = PathTools.Normalize(oldPath);
-            newPath = PathTools.Normalize(newPath);
+            string fullOldPath = ResolveFullPath(PathTools.Normalize(oldPath));
+            string fullNewPath = ResolveFullPath(PathTools.Normalize(newPath));
 
-            return ParentFileSystem.RenameFile(oldPath, newPath);
+            return ParentFileSystem.RenameFile(fullOldPath, fullNewPath);
         }
 
         public Result GetEntryType(out DirectoryEntryType entryType, string path)
         {
-            path = PathTools.Normalize(path);
+            string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
-            return ParentFileSystem.GetEntryType(out entryType, ResolveFullPath(path));
+            return ParentFileSystem.GetEntryType(out entryType, fullPath);
         }
 
         public Result Commit()
@@ -105,30 +105,30 @@ namespace LibHac.FsSystem
 
         public Result GetFreeSpaceSize(out long freeSpace, string path)
         {
-            path = PathTools.Normalize(path);
+            string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
-            return ParentFileSystem.GetFreeSpaceSize(out freeSpace, ResolveFullPath(path));
+            return ParentFileSystem.GetFreeSpaceSize(out freeSpace, fullPath);
         }
 
         public Result GetTotalSpaceSize(out long totalSpace, string path)
         {
-            path = PathTools.Normalize(path);
+            string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
-            return ParentFileSystem.GetTotalSpaceSize(out totalSpace, ResolveFullPath(path));
+            return ParentFileSystem.GetTotalSpaceSize(out totalSpace, fullPath);
         }
 
         public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
         {
-            path = PathTools.Normalize(path);
+            string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
-            return ParentFileSystem.GetFileTimeStampRaw(out timeStamp, ResolveFullPath(path));
+            return ParentFileSystem.GetFileTimeStampRaw(out timeStamp, fullPath);
         }
 
         public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
         {
-            path = PathTools.Normalize(path);
+            string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
-            return ParentFileSystem.QueryEntry(outBuffer, inBuffer, queryId, ResolveFullPath(path));
+            return ParentFileSystem.QueryEntry(outBuffer, inBuffer, queryId, fullPath);
         }
     }
 }

@@ -34,21 +34,46 @@ namespace LibHac.FsSystem
             return PathTools.Combine(BasePath, path);
         }
 
-        public NxFileAttributes GetFileAttributes(string path)
+        public Result GetFileAttributes(string path, out NxFileAttributes attributes)
         {
-            path = PathTools.Normalize(path);
-            return File.GetAttributes(ResolveLocalPath(path)).ToNxAttributes();
+            string localPath = ResolveLocalPath(PathTools.Normalize(path));
+
+            FileInfo info = GetFileInfo(localPath);
+
+            if (info.Attributes == (FileAttributes)(-1))
+            {
+                attributes = default;
+                return ResultFs.PathNotFound.Log();
+            }
+
+            attributes = info.Attributes.ToNxAttributes();
+            return Result.Success;
         }
 
-        public void SetFileAttributes(string path, NxFileAttributes attributes)
+        public Result SetFileAttributes(string path, NxFileAttributes attributes)
         {
-            path = PathTools.Normalize(path);
-            string localPath = ResolveLocalPath(path);
+            string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            FileAttributes attributesOld = File.GetAttributes(localPath);
+            FileInfo info = GetFileInfo(localPath);
+
+            if (info.Attributes == (FileAttributes)(-1))
+            {
+                return ResultFs.PathNotFound.Log();
+            }
+
+            FileAttributes attributesOld = info.Attributes;
             FileAttributes attributesNew = attributesOld.ApplyNxAttributes(attributes);
 
-            File.SetAttributes(localPath, attributesNew);
+            try
+            {
+                info.Attributes = attributesNew;
+            }
+            catch (IOException)
+            {
+                return ResultFs.PathNotFound.Log();
+            }
+
+            return Result.Success;
         }
 
         public long GetFileSize(string path)
@@ -60,6 +85,11 @@ namespace LibHac.FsSystem
         }
 
         public Result CreateDirectory(string path)
+        {
+            return CreateDirectory(path, NxFileAttributes.None);
+        }
+
+        public Result CreateDirectory(string path, NxFileAttributes archiveAttribute)
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
@@ -75,7 +105,7 @@ namespace LibHac.FsSystem
                 return ResultFs.PathNotFound.Log();
             }
 
-            return CreateDirInternal(dir);
+            return CreateDirInternal(dir, archiveAttribute);
         }
 
         public Result CreateFile(string path, long size, CreateFileOptions options)
@@ -394,11 +424,17 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        private static Result CreateDirInternal(DirectoryInfo dir)
+        private static Result CreateDirInternal(DirectoryInfo dir, NxFileAttributes attributes)
         {
             try
             {
                 dir.Create();
+                dir.Refresh();
+
+                if (attributes.HasFlag(NxFileAttributes.Archive))
+                {
+                    dir.Attributes |= FileAttributes.Archive;
+                }
             }
             catch (DirectoryNotFoundException)
             {

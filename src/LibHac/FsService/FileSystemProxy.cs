@@ -163,7 +163,7 @@ namespace LibHac.FsService
 
             if (saveFsResult.IsSuccess()) return Result.Success;
 
-            if (saveFsResult == ResultFs.PathNotFound || saveFsResult == ResultFs.TargetNotFound) return saveFsResult;
+            if (saveFsResult != ResultFs.PathNotFound && saveFsResult != ResultFs.TargetNotFound) return saveFsResult;
 
             if (saveDataId != SaveIndexerId)
             {

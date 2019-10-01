@@ -54,14 +54,20 @@ namespace LibHac.FsSystem
 #if CROSS_PLATFORM
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                return HasConcatenationFileAttribute(BaseFileSystem.GetFileAttributes(path));
+                Result rc = BaseFileSystem.GetFileAttributes(path, out NxFileAttributes attributes);
+                if (rc.IsFailure()) return false;
+
+                return HasConcatenationFileAttribute(attributes);
             }
             else
             {
                 return IsConcatenationFileHeuristic(path);
             }
 #else
-            return HasConcatenationFileAttribute(BaseFileSystem.GetFileAttributes(path));
+            Result rc = BaseFileSystem.GetFileAttributes(path, out NxFileAttributes attributes);
+            if (rc.IsFailure()) return false;
+
+            return HasConcatenationFileAttribute(attributes);
 #endif
         }
 
@@ -93,11 +99,9 @@ namespace LibHac.FsSystem
             return (attributes & NxFileAttributes.Directory) != 0 && (attributes & NxFileAttributes.Archive) != 0;
         }
 
-        private void SetConcatenationFileAttribute(string path)
+        private Result SetConcatenationFileAttribute(string path)
         {
-            NxFileAttributes attributes = BaseFileSystem.GetFileAttributes(path);
-            attributes |= NxFileAttributes.Archive;
-            BaseFileSystem.SetFileAttributes(path, attributes);
+            return BaseFileSystem.SetFileAttributes(path, NxFileAttributes.Archive);
         }
 
         public Result CreateDirectory(string path)
@@ -134,10 +138,8 @@ namespace LibHac.FsSystem
                 return ResultFs.PathNotFound.Log();
             }
 
-            Result rc = BaseFileSystem.CreateDirectory(path);
+            Result rc = BaseFileSystem.CreateDirectory(path, NxFileAttributes.Archive);
             if (rc.IsFailure()) return rc;
-
-            SetConcatenationFileAttribute(path);
 
             long remaining = size;
 
@@ -320,9 +322,7 @@ namespace LibHac.FsSystem
         {
             if (queryId != QueryId.MakeConcatFile) return ResultFs.UnsupportedOperationInConcatFsQueryEntry.Log();
 
-            SetConcatenationFileAttribute(path);
-
-            return Result.Success;
+            return SetConcatenationFileAttribute(path);
         }
 
         private int GetSubFileCount(string dirPath)

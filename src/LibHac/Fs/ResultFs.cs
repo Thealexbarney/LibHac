@@ -27,6 +27,7 @@
         public static Result InvalidIndirectStorageSource => new Result(ModuleFs, 4023);
 
         public static Result Result4302 => new Result(ModuleFs, 4302);
+        public static Result InvalidSaveDataEntryType => new Result(ModuleFs, 4303);
         public static Result InvalidSaveDataHeader => new Result(ModuleFs, 4315);
         public static Result Result4362 => new Result(ModuleFs, 4362);
         public static Result Result4363 => new Result(ModuleFs, 4363);

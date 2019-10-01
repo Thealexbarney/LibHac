@@ -5,6 +5,11 @@ namespace LibHac.Fs
 {
     public static class SaveData
     {
+        public static Result MountSystemSaveData(this FileSystemClient fs, U8Span mountName, SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            return MountSystemSaveData(fs, mountName, spaceId, saveDataId, UserId.EmptyId);
+        }
+
         public static Result MountSystemSaveData(this FileSystemClient fs, U8Span mountName,
             SaveDataSpaceId spaceId, ulong saveDataId, UserId userId)
         {
@@ -67,19 +72,19 @@ namespace LibHac.Fs
         public static Result CreateSystemSaveData(this FileSystemClient fs, ulong saveDataId, ulong ownerId, long size,
             long journalSize, uint flags)
         {
-            return CreateSystemSaveData(fs, SaveDataSpaceId.System, saveDataId, new UserId(0, 0), ownerId, size, journalSize, flags);
+            return CreateSystemSaveData(fs, SaveDataSpaceId.System, saveDataId, UserId.EmptyId, ownerId, size, journalSize, flags);
         }
 
         public static Result CreateSystemSaveData(this FileSystemClient fs, ulong saveDataId, long size,
             long journalSize, uint flags)
         {
-            return CreateSystemSaveData(fs, SaveDataSpaceId.System, saveDataId, new UserId(0, 0), 0, size, journalSize, flags);
+            return CreateSystemSaveData(fs, SaveDataSpaceId.System, saveDataId, UserId.EmptyId, 0, size, journalSize, flags);
         }
 
         public static Result CreateSystemSaveData(this FileSystemClient fs, SaveDataSpaceId spaceId, ulong saveDataId,
             ulong ownerId, long size, long journalSize, uint flags)
         {
-            return CreateSystemSaveData(fs, spaceId, saveDataId, new UserId(0, 0), ownerId, size, journalSize, flags);
+            return CreateSystemSaveData(fs, spaceId, saveDataId, UserId.EmptyId, ownerId, size, journalSize, flags);
         }
 
         public static Result DeleteSaveData(this FileSystemClient fs, ulong saveDataId)

@@ -7,6 +7,8 @@ namespace LibHac.Fs
     [StructLayout(LayoutKind.Sequential, Size = 0x10)]
     public struct UserId : IEquatable<UserId>, IComparable<UserId>, IComparable
     {
+        public static readonly UserId EmptyId = new UserId(0, 0);
+
         public readonly Id128 Id;
 
         public UserId(ulong high, ulong low)
