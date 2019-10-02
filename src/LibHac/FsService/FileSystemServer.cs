@@ -15,16 +15,17 @@ namespace LibHac.FsService
         /// Creates a new <see cref="FileSystemServer"/> with a new default <see cref="ITimeSpanGenerator"/>.
         /// </summary>
         /// <param name="fsCreators">The <see cref="FileSystemCreators"/> used for creating filesystems.</param>
-        public FileSystemServer(FileSystemCreators fsCreators) : this(fsCreators, new StopWatchTimeSpanGenerator()) { }
+        public FileSystemServer(FileSystemCreators fsCreators) : this(fsCreators, null, new StopWatchTimeSpanGenerator()) { }
 
         /// <summary>
         /// Creates a new <see cref="FileSystemServer"/>.
         /// </summary>
         /// <param name="fsCreators">The <see cref="FileSystemCreators"/> used for creating filesystems.</param>
+        /// <param name="externalKeys">A keyset containing rights IDs and title keys. If null, an empty set will be created.</param>
         /// <param name="timer">The <see cref="ITimeSpanGenerator"/> to use for access log timestamps.</param>
-        public FileSystemServer(FileSystemCreators fsCreators, ITimeSpanGenerator timer)
+        public FileSystemServer(FileSystemCreators fsCreators, ExternalKeySet externalKeys, ITimeSpanGenerator timer)
         {
-            FsProxyCore = new FileSystemProxyCore(fsCreators);
+            FsProxyCore = new FileSystemProxyCore(fsCreators, externalKeys);
             FsClient = new FileSystemClient(this, timer);
             Timer = timer;
         }

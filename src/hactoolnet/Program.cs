@@ -174,7 +174,7 @@ namespace hactoolnet
                 consoleKeyFile = homeConsoleKeyFile;
             }
 
-            ctx.Keyset = ExternalKeys.ReadKeyFile(keyFile, titleKeyFile, consoleKeyFile, ctx.Logger);
+            ctx.Keyset = ExternalKeyReader.ReadKeyFile(keyFile, titleKeyFile, consoleKeyFile, ctx.Logger);
             if (ctx.Options.SdSeed != null)
             {
                 ctx.Keyset.SetSdSeed(ctx.Options.SdSeed.ToBytes());
@@ -185,15 +185,15 @@ namespace hactoolnet
                 string dir = ctx.Options.OutDir;
                 Directory.CreateDirectory(dir);
 
-                File.WriteAllText(Path.Combine(dir, keyFileName), ExternalKeys.PrintCommonKeys(ctx.Keyset));
-                File.WriteAllText(Path.Combine(dir, "console.keys"), ExternalKeys.PrintUniqueKeys(ctx.Keyset));
-                File.WriteAllText(Path.Combine(dir, "title.keys"), ExternalKeys.PrintTitleKeys(ctx.Keyset));
+                File.WriteAllText(Path.Combine(dir, keyFileName), ExternalKeyReader.PrintCommonKeys(ctx.Keyset));
+                File.WriteAllText(Path.Combine(dir, "console.keys"), ExternalKeyReader.PrintUniqueKeys(ctx.Keyset));
+                File.WriteAllText(Path.Combine(dir, "title.keys"), ExternalKeyReader.PrintTitleKeys(ctx.Keyset));
             }
         }
 
         private static void ProcessKeygen(Context ctx)
         {
-            Console.WriteLine(ExternalKeys.PrintCommonKeys(ctx.Keyset));
+            Console.WriteLine(ExternalKeyReader.PrintCommonKeys(ctx.Keyset));
         }
 
         // For running random stuff

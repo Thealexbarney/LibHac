@@ -3,12 +3,14 @@ using LibHac.Fs;
 using LibHac.FsSystem;
 using LibHac.FsSystem.Save;
 using LibHac.FsService.Creators;
+using LibHac.Spl;
 
 namespace LibHac.FsService
 {
     public class FileSystemProxyCore
     {
         private FileSystemCreators FsCreators { get; }
+        private ExternalKeySet ExternalKeys { get; }
         private byte[] SdEncryptionSeed { get; } = new byte[0x10];
 
         private const string NintendoDirectoryName = "Nintendo";
@@ -16,9 +18,10 @@ namespace LibHac.FsService
 
         private GlobalAccessLogMode LogMode { get; set; }
 
-        public FileSystemProxyCore(FileSystemCreators fsCreators)
+        public FileSystemProxyCore(FileSystemCreators fsCreators, ExternalKeySet externalKeys)
         {
             FsCreators = fsCreators;
+            ExternalKeys = externalKeys ?? new ExternalKeySet();
         }
 
         public Result OpenBisFileSystem(out IFileSystem fileSystem, string rootPath, BisPartitionId partitionId)
@@ -120,6 +123,25 @@ namespace LibHac.FsService
                 default:
                     return ResultFs.InvalidArgument.Log();
             }
+        }
+
+        public Result RegisterExternalKey(ref RightsId rightsId, ref AccessKey externalKey)
+        {
+            return ExternalKeys.Add(rightsId, externalKey);
+        }
+
+        public Result UnregisterExternalKey(ref RightsId rightsId)
+        {
+            ExternalKeys.Remove(rightsId);
+
+            return Result.Success;
+        }
+
+        public Result UnregisterAllExternalKey()
+        {
+            ExternalKeys.Clear();
+
+            return Result.Success;
         }
 
         public Result SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed)

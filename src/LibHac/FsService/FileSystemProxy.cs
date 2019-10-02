@@ -451,18 +451,25 @@ namespace LibHac.FsService
 
         public Result RegisterExternalKey(ref RightsId rightsId, ref AccessKey externalKey)
         {
-            throw new NotImplementedException();
+            // Missing permission check
+
+            return FsProxyCore.RegisterExternalKey(ref rightsId, ref externalKey);
         }
 
         public Result UnregisterExternalKey(ref RightsId rightsId)
         {
-            throw new NotImplementedException();
+            // Missing permission check
+
+            return FsProxyCore.UnregisterExternalKey(ref rightsId);
         }
 
         public Result UnregisterAllExternalKey()
         {
-            throw new NotImplementedException();
+            // Missing permission check
+
+            return FsProxyCore.UnregisterAllExternalKey();
         }
+
         public Result SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed)
         {
             // todo: use struct instead of byte span

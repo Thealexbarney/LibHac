@@ -382,7 +382,7 @@ namespace LibHac
         }
     }
 
-    public static class ExternalKeys
+    public static class ExternalKeyReader
     {
         private const int TitleKeySize = 0x10;
 
@@ -390,7 +390,7 @@ namespace LibHac
         public static readonly Dictionary<string, KeyValue> UniqueKeyDict;
         public static readonly Dictionary<string, KeyValue> AllKeyDict;
 
-        static ExternalKeys()
+        static ExternalKeyReader()
         {
             List<KeyValue> commonKeys = CreateCommonKeyList();
             List<KeyValue> uniqueKeys = CreateUniqueKeyList();
