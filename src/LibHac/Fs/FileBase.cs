@@ -121,7 +121,7 @@ namespace LibHac.Fs
 
                 if (!openMode.HasFlag(OpenMode.AllowAppend))
                 {
-                    return ResultFs.AllowAppendRequiredForImplicitExtension.Log();
+                    return ResultFs.FileExtensionWithoutOpenModeAllowAppend.Log();
                 }
             }
 

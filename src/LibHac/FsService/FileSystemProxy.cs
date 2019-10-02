@@ -147,7 +147,7 @@ namespace LibHac.FsService
         private Result OpenSaveDataFileSystemImpl(out IFileSystem fileSystem, out ulong saveDataId,
             SaveDataSpaceId spaceId, ref SaveDataAttribute attribute, bool openReadOnly, bool cacheExtraData)
         {
-            bool hasFixedId = attribute.SaveDataId != 0 && attribute.UserId.Id == Id128.InvalidId;
+            bool hasFixedId = attribute.SaveDataId != 0 && attribute.UserId == UserId.Zero;
 
             if (hasFixedId)
             {

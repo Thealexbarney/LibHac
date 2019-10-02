@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using LibHac.Fs;
 using LibHac.FsSystem.RomFs;
+using LibHac.Spl;
 
 namespace LibHac.FsSystem.NcaUtils
 {
@@ -47,9 +48,9 @@ namespace LibHac.FsSystem.NcaUtils
             int keyRevision = Util.GetMasterKeyRevision(Header.KeyGeneration);
             byte[] titleKek = Keyset.TitleKeks[keyRevision];
 
-            if (!Keyset.TitleKeys.TryGetValue(Header.RightsId.ToArray(), out byte[] encryptedKey))
+            if (Keyset.ExternalKeySet.Get(new RightsId(Header.RightsId), out AccessKey accessKey).IsFailure())
             {
-                throw new MissingKeyException("Missing NCA title key.", Header.RightsId.ToHexString(), KeyType.Title);
+                throw new MissingKeyException("Missing NCA title key.", Header.RightsId.ToString(), KeyType.Title);
             }
 
             if (titleKek.IsEmpty())
@@ -58,6 +59,7 @@ namespace LibHac.FsSystem.NcaUtils
                 throw new MissingKeyException("Unable to decrypt title key.", keyName, KeyType.Common);
             }
 
+            byte[] encryptedKey = accessKey.Value.ToArray();
             var decryptedKey = new byte[Crypto.Aes128Size];
 
             Crypto.DecryptEcb(titleKek, encryptedKey, decryptedKey, Crypto.Aes128Size);
@@ -89,7 +91,7 @@ namespace LibHac.FsSystem.NcaUtils
 
             if (Header.HasRightsId)
             {
-                return Keyset.TitleKeys.ContainsKey(Header.RightsId.ToArray()) &&
+                return Keyset.ExternalKeySet.Contains(new RightsId(Header.RightsId)) &&
                        !Keyset.TitleKeks[keyRevision].IsEmpty();
             }
 

@@ -1,13 +1,15 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 
 namespace LibHac.Fs
 {
+    [DebuggerDisplay("{ToString(),nq}")]
     [StructLayout(LayoutKind.Sequential, Size = 0x10)]
     public struct UserId : IEquatable<UserId>, IComparable<UserId>, IComparable
     {
-        public static readonly UserId EmptyId = new UserId(0, 0);
+        public static UserId Zero => default;
 
         public readonly Id128 Id;
 
@@ -21,12 +23,16 @@ namespace LibHac.Fs
             Id = new Id128(uid);
         }
 
+        public override string ToString()
+        {
+            return $"0x{Id.High:x8}{Id.Low:x8}";
+        }
+
         public bool Equals(UserId other) => Id == other.Id;
         public override bool Equals(object obj) => obj is UserId other && Equals(other);
 
         public override int GetHashCode() => Id.GetHashCode();
 
-        // ReSharper disable once ImpureMethodCallOnReadonlyValueField
         public int CompareTo(UserId other) => Id.CompareTo(other.Id);
 
         public int CompareTo(object obj)
@@ -35,8 +41,12 @@ namespace LibHac.Fs
             return obj is UserId other ? CompareTo(other) : throw new ArgumentException($"Object must be of type {nameof(UserId)}");
         }
 
-        // ReSharper disable once ImpureMethodCallOnReadonlyValueField
         public void ToBytes(Span<byte> output) => Id.ToBytes(output);
+
+        public ReadOnlySpan<byte> AsBytes()
+        {
+            return SpanHelpers.AsByteSpan(ref this);
+        }
 
         public static bool operator ==(UserId left, UserId right) => left.Equals(right);
         public static bool operator !=(UserId left, UserId right) => !left.Equals(right);

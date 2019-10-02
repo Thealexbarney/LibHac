@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 
@@ -8,13 +7,23 @@ namespace LibHac.Spl
 {
     [DebuggerDisplay("{ToString()}")]
     [StructLayout(LayoutKind.Sequential, Size = 0x10)]
-    public struct AccessKey
+    public struct AccessKey : IEquatable<AccessKey>
     {
-        private long _dummy1;
-        private long _dummy2;
+        private readonly Key128 Key;
 
-        public Span<byte> Key => SpanHelpers.CreateSpan(ref Unsafe.As<long, byte>(ref _dummy1), 0x10);
+        public ReadOnlySpan<byte> Value => SpanHelpers.AsByteSpan(ref this);
 
-        public override string ToString() => Key.ToHexString();
+        public AccessKey(ReadOnlySpan<byte> bytes)
+        {
+            Key = new Key128(bytes);
+        }
+
+        public override string ToString() => Key.ToString();
+
+        public override bool Equals(object obj) => obj is AccessKey key && Equals(key);
+        public bool Equals(AccessKey other) => Key.Equals(other.Key);
+        public override int GetHashCode() => Key.GetHashCode();
+        public static bool operator ==(AccessKey left, AccessKey right) => left.Equals(right);
+        public static bool operator !=(AccessKey left, AccessKey right) => !(left == right);
     }
 }

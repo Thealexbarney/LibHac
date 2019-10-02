@@ -11,7 +11,9 @@
         public static Result InsufficientFreeSpace => new Result(ModuleFs, 30);
         public static Result MountNameAlreadyExists => new Result(ModuleFs, 60);
 
+        public static Result PartitionNotFound => new Result(ModuleFs, 1001);
         public static Result TargetNotFound => new Result(ModuleFs, 1002);
+        public static Result ExternalKeyNotFound => new Result(ModuleFs, 1004);
 
         public static Result NotImplemented => new Result(ModuleFs, 3001);
         public static Result Result3002 => new Result(ModuleFs, 3002);
@@ -80,9 +82,11 @@
         public static Result InvalidSize => new Result(ModuleFs, 6062);
         public static Result NullArgument => new Result(ModuleFs, 6063);
         public static Result InvalidMountName => new Result(ModuleFs, 6065);
+        public static Result ExtensionSizeTooLarge => new Result(ModuleFs, 6066);
+        public static Result ExtensionSizeInvalid => new Result(ModuleFs, 6067);
 
         public static Result InvalidOpenModeOperation => new Result(ModuleFs, 6200);
-        public static Result AllowAppendRequiredForImplicitExtension => new Result(ModuleFs, 6201);
+        public static Result FileExtensionWithoutOpenModeAllowAppend => new Result(ModuleFs, 6201);
         public static Result InvalidOpenModeForRead => new Result(ModuleFs, 6202);
         public static Result InvalidOpenModeForWrite => new Result(ModuleFs, 6203);
 
@@ -105,11 +109,16 @@
         public static Result UnsupportedOperationInPartitionFileSetSize => new Result(ModuleFs, 6376);
 
         public static Result PermissionDenied => new Result(ModuleFs, 6400);
+        public static Result ExternalKeyAlreadyRegistered => new Result(ModuleFs, 6452);
         public static Result WriteStateUnflushed => new Result(ModuleFs, 6454);
         public static Result WritableFileOpen => new Result(ModuleFs, 6457);
 
 
+        public static Result MappingTableFull => new Result(ModuleFs, 6706);
         public static Result AllocationTableInsufficientFreeBlocks => new Result(ModuleFs, 6707);
+        public static Result OpenCountLimit => new Result(ModuleFs, 6709);
+
+        public static Result RemapStorageMapFull => new Result(ModuleFs, 6811);
 
         public static Result Result6902 => new Result(ModuleFs, 6902);
         public static Result MountNameNotFound => new Result(ModuleFs, 6905);

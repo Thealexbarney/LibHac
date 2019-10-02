@@ -4,7 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using LibHac.Fs;
+using LibHac.FsService;
 using LibHac.FsSystem;
+using LibHac.Spl;
 
 namespace LibHac
 {
@@ -129,7 +132,7 @@ namespace LibHac
             0x49, 0x50, 0x95, 0x8C, 0x55, 0x80, 0x7E, 0x39, 0xB1, 0x48, 0x05, 0x1E, 0x21, 0xC7, 0x24, 0x4F
         };
 
-        public Dictionary<byte[], byte[]> TitleKeys { get; } = new Dictionary<byte[], byte[]>(new ByteArray128BitComparer());
+        public ExternalKeySet ExternalKeySet { get; } = new ExternalKeySet();
 
         public void SetSdSeed(byte[] sdseed)
         {
@@ -402,6 +405,7 @@ namespace LibHac
             if (filename != null) ReadMainKeys(keyset, filename, AllKeyDict, logger);
             if (consoleKeysFilename != null) ReadMainKeys(keyset, consoleKeysFilename, AllKeyDict, logger);
             if (titleKeysFilename != null) ReadTitleKeys(keyset, titleKeysFilename, logger);
+            keyset.ExternalKeySet.TrimExcess();
             keyset.DeriveKeys(logger);
         }
 
@@ -507,7 +511,7 @@ namespace LibHac
                         continue;
                     }
 
-                    keyset.TitleKeys[rightsId] = titleKey;
+                    keyset.ExternalKeySet.Add(new RightsId(rightsId), new AccessKey(titleKey)).ThrowIfFailure();
                 }
             }
         }
@@ -557,9 +561,9 @@ namespace LibHac
         {
             var sb = new StringBuilder();
 
-            foreach (KeyValuePair<byte[], byte[]> kv in keyset.TitleKeys.OrderBy(x => x.Key.ToHexString()))
+            foreach ((RightsId rightsId, AccessKey key) kv in keyset.ExternalKeySet.ToList().OrderBy(x => x.rightsId.ToString()))
             {
-                string line = $"{kv.Key.ToHexString()} = {kv.Value.ToHexString()}";
+                string line = $"{kv.rightsId} = {kv.key}";
                 sb.AppendLine(line);
             }
 

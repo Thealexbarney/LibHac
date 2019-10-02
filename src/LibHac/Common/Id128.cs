@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace LibHac.Common
@@ -6,13 +7,14 @@ namespace LibHac.Common
     /// <summary>
     /// A generic 128-bit ID value.
     /// </summary>
+    [DebuggerDisplay("{ToString()}")]
     [StructLayout(LayoutKind.Sequential, Size = 0x10)]
     public struct Id128 : IEquatable<Id128>, IComparable<Id128>, IComparable
     {
         public readonly ulong High;
         public readonly ulong Low;
 
-        public static readonly Id128 InvalidId = new Id128(0, 0);
+        public static Id128 Zero => default;
 
         public Id128(ulong high, ulong low)
         {
@@ -27,6 +29,8 @@ namespace LibHac.Common
             High = longs[0];
             Low = longs[1];
         }
+
+        public override string ToString() => AsBytes().ToHexString();
 
         public bool Equals(Id128 other)
         {
@@ -48,11 +52,9 @@ namespace LibHac.Common
 
         public int CompareTo(Id128 other)
         {
-            // ReSharper disable ImpureMethodCallOnReadonlyValueField
             int highComparison = High.CompareTo(other.High);
             if (highComparison != 0) return highComparison;
             return Low.CompareTo(other.Low);
-            // ReSharper restore ImpureMethodCallOnReadonlyValueField
         }
 
         public int CompareTo(object obj)
@@ -61,7 +63,7 @@ namespace LibHac.Common
             return obj is Id128 other ? CompareTo(other) : throw new ArgumentException($"Object must be of type {nameof(Id128)}");
         }
 
-        public void ToBytes(Span<byte> output)
+        public readonly void ToBytes(Span<byte> output)
         {
             Span<ulong> longs = MemoryMarshal.Cast<byte, ulong>(output);
 
@@ -69,33 +71,17 @@ namespace LibHac.Common
             longs[1] = Low;
         }
 
-        public static bool operator ==(Id128 left, Id128 right)
+        public ReadOnlySpan<byte> AsBytes()
         {
-            return left.Equals(right);
+            return SpanHelpers.AsByteSpan(ref this);
         }
 
-        public static bool operator !=(Id128 left, Id128 right)
-        {
-            return !left.Equals(right);
-        }
-        public static bool operator <(Id128 left, Id128 right)
-        {
-            return left.CompareTo(right) < 0;
-        }
+        public static bool operator ==(Id128 left, Id128 right) => left.Equals(right);
+        public static bool operator !=(Id128 left, Id128 right) => !left.Equals(right);
 
-        public static bool operator >(Id128 left, Id128 right)
-        {
-            return left.CompareTo(right) > 0;
-        }
-
-        public static bool operator <=(Id128 left, Id128 right)
-        {
-            return left.CompareTo(right) <= 0;
-        }
-
-        public static bool operator >=(Id128 left, Id128 right)
-        {
-            return left.CompareTo(right) >= 0;
-        }
+        public static bool operator <(Id128 left, Id128 right) => left.CompareTo(right) < 0;
+        public static bool operator >(Id128 left, Id128 right) => left.CompareTo(right) > 0;
+        public static bool operator <=(Id128 left, Id128 right) => left.CompareTo(right) <= 0;
+        public static bool operator >=(Id128 left, Id128 right) => left.CompareTo(right) >= 0;
     }
 }
