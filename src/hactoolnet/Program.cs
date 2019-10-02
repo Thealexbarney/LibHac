@@ -169,7 +169,7 @@ namespace hactoolnet
                 consoleKeyFile = homeConsoleKeyFile;
             }
 
-            ctx.Keyset = ExternalKeys.ReadKeyFile(keyFile, titleKeyFile, consoleKeyFile, ctx.Logger);
+            ctx.Keyset = ExternalKeys.ReadKeyFile(keyFile, titleKeyFile, consoleKeyFile, ctx.Logger, ctx.Options.UseDevKeys);
             if (ctx.Options.SdSeed != null)
             {
                 ctx.Keyset.SetSdSeed(ctx.Options.SdSeed.ToBytes());
