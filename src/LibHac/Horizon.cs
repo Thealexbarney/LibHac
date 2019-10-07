@@ -20,14 +20,19 @@ namespace LibHac
             Fs = new FileSystemClient(timer);
         }
 
-        public void InitializeFileSystemServer(FileSystemCreators fsCreators)
+        public void InitializeFileSystemServer(FileSystemCreators fsCreators, IDeviceOperator deviceOperator)
         {
             if (FsSrv != null) return;
 
             lock (_initLocker)
             {
                 if (FsSrv != null) return;
-                FsSrv = new FileSystemServer(fsCreators);
+
+                var config = new FileSystemServerConfig();
+                config.FsCreators = fsCreators;
+                config.DeviceOperator = deviceOperator;
+
+                FsSrv = new FileSystemServer(config);
             }
         }
     }

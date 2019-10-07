@@ -15,6 +15,15 @@
         public static Result TargetNotFound => new Result(ModuleFs, 1002);
         public static Result ExternalKeyNotFound => new Result(ModuleFs, 1004);
 
+        public static Result InvalidBufferForGameCard => new Result(ModuleFs, 2503);
+        public static Result GameCardNotInserted => new Result(ModuleFs, 2520);
+
+        public static Result GameCardNotInsertedOnGetHandle => new Result(ModuleFs, 2951);
+        public static Result InvalidGameCardHandleOnRead => new Result(ModuleFs, 2952);
+        public static Result InvalidGameCardHandleOnGetCardInfo => new Result(ModuleFs, 2954);
+        public static Result InvalidGameCardHandleOnOpenNormalPartition => new Result(ModuleFs, 2960);
+        public static Result InvalidGameCardHandleOnOpenSecurePartition => new Result(ModuleFs, 2961);
+
         public static Result NotImplemented => new Result(ModuleFs, 3001);
         public static Result Result3002 => new Result(ModuleFs, 3002);
         public static Result SaveDataPathAlreadyExists => new Result(ModuleFs, 3003);
@@ -98,6 +107,8 @@
         public static Result UnsupportedOperationInAesCtrExStorageWrite => new Result(ModuleFs, 6310);
         public static Result UnsupportedOperationInIndirectStorageWrite => new Result(ModuleFs, 6324);
         public static Result UnsupportedOperationInIndirectStorageSetSize => new Result(ModuleFs, 6325);
+        public static Result UnsupportedOperationInRoGameCardStorageWrite => new Result(ModuleFs, 6350);
+        public static Result UnsupportedOperationInRoGameCardStorageSetSize => new Result(ModuleFs, 6351);
         public static Result UnsupportedOperationInConcatFsQueryEntry => new Result(ModuleFs, 6359);
         public static Result UnsupportedOperationModifyRomFsFileSystem => new Result(ModuleFs, 6364);
         public static Result UnsupportedOperationRomFsFileSystemGetSpace => new Result(ModuleFs, 6366);

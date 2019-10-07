@@ -302,12 +302,16 @@ namespace LibHac.FsService
 
         public Result OpenGameCardStorage(out IStorage storage, GameCardHandle handle, GameCardPartitionRaw partitionId)
         {
-            throw new NotImplementedException();
+            // Missing permission check and StorageInterfaceAdapter
+
+            return FsProxyCore.OpenGameCardStorage(out storage, handle, partitionId);
         }
 
         public Result OpenDeviceOperator(out IDeviceOperator deviceOperator)
         {
-            throw new NotImplementedException();
+            // Missing permission check
+
+            return FsProxyCore.OpenDeviceOperator(out deviceOperator);
         }
 
         public Result OpenSaveDataInfoReader(out ISaveDataInfoReader infoReader)

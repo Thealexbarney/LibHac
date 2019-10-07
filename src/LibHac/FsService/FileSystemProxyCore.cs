@@ -11,6 +11,8 @@ namespace LibHac.FsService
     {
         private FileSystemCreators FsCreators { get; }
         private ExternalKeySet ExternalKeys { get; }
+        private IDeviceOperator DeviceOperator { get; }
+
         private byte[] SdEncryptionSeed { get; } = new byte[0x10];
 
         private const string NintendoDirectoryName = "Nintendo";
@@ -18,10 +20,11 @@ namespace LibHac.FsService
 
         private GlobalAccessLogMode LogMode { get; set; }
 
-        public FileSystemProxyCore(FileSystemCreators fsCreators, ExternalKeySet externalKeys)
+        public FileSystemProxyCore(FileSystemCreators fsCreators, ExternalKeySet externalKeys, IDeviceOperator deviceOperator)
         {
             FsCreators = fsCreators;
             ExternalKeys = externalKeys ?? new ExternalKeySet();
+            DeviceOperator = deviceOperator;
         }
 
         public Result OpenBisFileSystem(out IFileSystem fileSystem, string rootPath, BisPartitionId partitionId)
@@ -32,6 +35,27 @@ namespace LibHac.FsService
         public Result OpenSdCardFileSystem(out IFileSystem fileSystem)
         {
             return FsCreators.SdFileSystemCreator.Create(out fileSystem);
+        }
+
+        public Result OpenGameCardStorage(out IStorage storage, GameCardHandle handle, GameCardPartitionRaw partitionId)
+        {
+            switch (partitionId)
+            {
+                case GameCardPartitionRaw.Normal:
+                    return FsCreators.GameCardStorageCreator.CreateNormal(handle, out storage);
+                case GameCardPartitionRaw.Secure:
+                    return FsCreators.GameCardStorageCreator.CreateSecure(handle, out storage);
+                case GameCardPartitionRaw.Writable:
+                    return FsCreators.GameCardStorageCreator.CreateWritable(handle, out storage);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(partitionId), partitionId, null);
+            }
+        }
+
+        public Result OpenDeviceOperator(out IDeviceOperator deviceOperator)
+        {
+            deviceOperator = DeviceOperator;
+            return Result.Success;
         }
 
         public Result OpenContentStorageFileSystem(out IFileSystem fileSystem, ContentStorageId storageId)

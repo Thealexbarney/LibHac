@@ -21,17 +21,24 @@ namespace LibHac.FsService.Creators
         public IBuiltInStorageFileSystemCreator BuiltInStorageFileSystemCreator { get; set; }
         public ISdFileSystemCreator SdFileSystemCreator { get; set; }
 
-        public static FileSystemCreators GetDefaultEmulatedCreators(IFileSystem rootFileSystem, Keyset keyset)
+        public IDeviceOperator DeviceOperator { get; set; }
+
+        public static (FileSystemCreators fsCreators, EmulatedGameCard gameCard) GetDefaultEmulatedCreators(
+            IFileSystem rootFileSystem, Keyset keyset)
         {
             var creators = new FileSystemCreators();
+            var gameCard = new EmulatedGameCard();
 
             creators.SubDirectoryFileSystemCreator = new SubDirectoryFileSystemCreator();
             creators.SaveDataFileSystemCreator = new SaveDataFileSystemCreator(keyset);
+            creators.GameCardStorageCreator = new EmulatedGameCardStorageCreator(gameCard);
             creators.EncryptedFileSystemCreator = new EncryptedFileSystemCreator(keyset);
             creators.BuiltInStorageFileSystemCreator = new EmulatedBisFileSystemCreator(rootFileSystem);
             creators.SdFileSystemCreator = new EmulatedSdFileSystemCreator(rootFileSystem);
 
-            return creators;
+            creators.DeviceOperator = new EmulatedDeviceOperator(gameCard);
+
+            return (creators, gameCard);
         }
     }
 }
