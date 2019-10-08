@@ -9,7 +9,14 @@ namespace LibHac.FsService
         private IStorage CardImageStorage { get; set; }
         private int Handle { get; set; }
         private XciHeader CardHeader { get; set; }
+        private Keyset Keyset { get; set; }
 
+        public EmulatedGameCard() { }
+
+        public EmulatedGameCard(Keyset keyset)
+        {
+            Keyset = keyset;
+        }
         public GameCardHandle GetGameCardHandle()
         {
             return new GameCardHandle(Handle);
@@ -31,7 +38,7 @@ namespace LibHac.FsService
 
             CardImageStorage = cardImageStorage;
 
-            CardHeader = new XciHeader(null, cardImageStorage.AsStream());
+            CardHeader = new XciHeader(Keyset, cardImageStorage.AsStream());
         }
 
         public void RemoveGameCard()
