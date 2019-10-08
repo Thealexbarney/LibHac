@@ -4,7 +4,7 @@ namespace LibHac.FsService
 {
     public struct GameCardHandle : IEquatable<GameCardHandle>
     {
-        internal readonly int Value;
+        public readonly int Value;
 
         public GameCardHandle(int value)
         {
