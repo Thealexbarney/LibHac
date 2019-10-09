@@ -149,6 +149,12 @@ namespace LibHac.FsService
             }
         }
 
+        public Result OpenGameCardFileSystem(out IFileSystem fileSystem, GameCardHandle handle,
+            GameCardPartition partitionId)
+        {
+            return FsCreators.GameCardFileSystemCreator.Create(out fileSystem, handle, partitionId);
+        }
+
         public Result RegisterExternalKey(ref RightsId rightsId, ref AccessKey externalKey)
         {
             return ExternalKeys.Add(rightsId, externalKey);

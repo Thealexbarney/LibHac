@@ -3,7 +3,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsService.Creators
 {
-    class EmulatedGameCardStorageCreator : IGameCardStorageCreator
+    public class EmulatedGameCardStorageCreator : IGameCardStorageCreator
     {
         private EmulatedGameCard GameCard { get; }
 

@@ -423,9 +423,12 @@ namespace LibHac.FsService
             return FsProxyCore.OpenCustomStorageFileSystem(out fileSystem, storageId);
         }
 
-        public Result OpenGameCardFileSystem(out IFileSystem fileSystem, GameCardHandle handle, GameCardPartition partitionId)
+        public Result OpenGameCardFileSystem(out IFileSystem fileSystem, GameCardHandle handle,
+            GameCardPartition partitionId)
         {
-            throw new NotImplementedException();
+            // Missing permission check and FileSystemInterfaceAdapter
+
+            return FsProxyCore.OpenGameCardFileSystem(out fileSystem, handle, partitionId);
         }
 
         public Result QuerySaveDataTotalSize(out long totalSize, long dataSize, long journalSize)

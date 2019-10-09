@@ -14,9 +14,12 @@ namespace LibHac.FsService
             var creators = new FileSystemCreators();
             var gameCard = new EmulatedGameCard(keyset);
 
+            var gcStorageCreator = new EmulatedGameCardStorageCreator(gameCard);
+
             creators.SubDirectoryFileSystemCreator = new SubDirectoryFileSystemCreator();
             creators.SaveDataFileSystemCreator = new SaveDataFileSystemCreator(keyset);
-            creators.GameCardStorageCreator = new EmulatedGameCardStorageCreator(gameCard);
+            creators.GameCardStorageCreator = gcStorageCreator;
+            creators.GameCardFileSystemCreator = new EmulatedGameCardFsCreator(gcStorageCreator, gameCard);
             creators.EncryptedFileSystemCreator = new EncryptedFileSystemCreator(keyset);
             creators.BuiltInStorageFileSystemCreator = new EmulatedBisFileSystemCreator(rootFileSystem);
             creators.SdFileSystemCreator = new EmulatedSdFileSystemCreator(rootFileSystem);

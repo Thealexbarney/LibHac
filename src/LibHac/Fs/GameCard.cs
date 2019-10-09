@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.FsService;
 
 namespace LibHac.Fs
@@ -11,6 +12,22 @@ namespace LibHac.Fs
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
             return fsProxy.OpenGameCardStorage(out storage, handle, partitionType);
+        }
+
+        public static Result MountGameCardPartition(this FileSystemClient fs, U8Span mountName, GameCardHandle handle,
+            GameCardPartition partitionId)
+        {
+            Result rc = MountHelpers.CheckMountNameAcceptingReservedMountName(mountName);
+            if (rc.IsFailure()) return rc;
+
+            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+
+            rc = fsProxy.OpenGameCardFileSystem(out IFileSystem cardFs, handle, partitionId);
+            if (rc.IsFailure()) return rc;
+
+            var mountNameGenerator = new GameCardCommonMountNameGenerator(handle, partitionId);
+
+            return fs.Register(mountName, cardFs, mountNameGenerator);
         }
 
         public static Result GetGameCardHandle(this FileSystemClient fs, out GameCardHandle handle)
@@ -56,6 +73,40 @@ namespace LibHac.Fs
         public static long CardPageToOffset(int page)
         {
             return (long)page << 9;
+        }
+
+        private class GameCardCommonMountNameGenerator : ICommonMountNameGenerator
+        {
+            private GameCardHandle Handle { get; }
+            private GameCardPartition PartitionId { get; }
+
+            public GameCardCommonMountNameGenerator(GameCardHandle handle, GameCardPartition partitionId)
+            {
+                Handle = handle;
+                PartitionId = partitionId;
+            }
+
+            public Result Generate(Span<byte> nameBuffer)
+            {
+                char letter = GetPartitionMountLetter(PartitionId);
+
+                string mountName = $"@Gc{letter}{Handle.Value:x8}";
+                new U8Span(mountName).Value.CopyTo(nameBuffer);
+
+                return Result.Success;
+            }
+
+            private static char GetPartitionMountLetter(GameCardPartition partition)
+            {
+                switch (partition)
+                {
+                    case GameCardPartition.Update: return 'U';
+                    case GameCardPartition.Normal: return 'N';
+                    case GameCardPartition.Secure: return 'S';
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(partition), partition, null);
+                }
+            }
         }
     }
 

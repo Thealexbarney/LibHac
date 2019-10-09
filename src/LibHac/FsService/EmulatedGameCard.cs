@@ -1,6 +1,5 @@
 ﻿using System;
 using LibHac.Fs;
-using LibHac.FsSystem;
 
 namespace LibHac.FsService
 {
@@ -9,6 +8,7 @@ namespace LibHac.FsService
         private IStorage CardImageStorage { get; set; }
         private int Handle { get; set; }
         private XciHeader CardHeader { get; set; }
+        private Xci CardImage { get; set; }
         private Keyset Keyset { get; set; }
 
         public EmulatedGameCard() { }
@@ -38,7 +38,8 @@ namespace LibHac.FsService
 
             CardImageStorage = cardImageStorage;
 
-            CardHeader = new XciHeader(Keyset, cardImageStorage.AsStream());
+            CardImage = new Xci(Keyset, cardImageStorage);
+            CardHeader = CardImage.Header;
         }
 
         public void RemoveGameCard()
@@ -49,7 +50,17 @@ namespace LibHac.FsService
                 Handle++;
             }
         }
+        
+        internal Result GetXci(out Xci xci, GameCardHandle handle)
+        {
+            xci = default;
 
+            if (IsGameCardHandleInvalid(handle)) return ResultFs.InvalidGameCardHandleOnRead.Log();
+            if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
+
+            xci = CardImage;
+            return Result.Success;
+        }
         public Result Read(GameCardHandle handle, long offset, Span<byte> destination)
         {
             if (IsGameCardHandleInvalid(handle)) return ResultFs.InvalidGameCardHandleOnRead.Log();

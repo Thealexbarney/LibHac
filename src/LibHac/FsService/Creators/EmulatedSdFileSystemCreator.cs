@@ -35,6 +35,8 @@ namespace LibHac.FsService.Creators
 
             string path = Path ?? DefaultPath;
 
+            // Todo: Add ProxyFileSystem?
+
             return Util.CreateSubFileSystem(out fileSystem, RootFileSystem, path, true);
         }
 
