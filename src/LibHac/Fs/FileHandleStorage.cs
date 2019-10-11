@@ -21,7 +21,7 @@ namespace LibHac.Fs
             FsClient = Handle.File.Parent.FsClient;
         }
 
-        public override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
             lock (_locker)
             {
@@ -36,7 +36,7 @@ namespace LibHac.Fs
             }
         }
 
-        public override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
             lock (_locker)
             {
@@ -51,19 +51,19 @@ namespace LibHac.Fs
             }
         }
 
-        public override Result FlushImpl()
+        protected override Result FlushImpl()
         {
             return FsClient.FlushFile(Handle);
         }
 
-        public override Result SetSizeImpl(long size)
+        protected override Result SetSizeImpl(long size)
         {
             FileSize = InvalidSize;
 
             return FsClient.SetFileSize(Handle, size);
         }
 
-        public override Result GetSizeImpl(out long size)
+        protected override Result GetSizeImpl(out long size)
         {
             size = default;
 

@@ -15,7 +15,8 @@ namespace LibHac.FsSystem.Save
 
         public int BlockSize { get; }
 
-        private long _length;
+        private long Length { get; }
+        private bool LeaveOpen { get; }
 
         public JournalStorage(IStorage baseStorage, IStorage header, JournalMapParams mapInfo, bool leaveOpen)
         {
@@ -27,9 +28,9 @@ namespace LibHac.FsSystem.Save
             Map = new JournalMap(mapHeader, mapInfo);
 
             BlockSize = (int)Header.BlockSize;
-            _length = Header.TotalSize - Header.JournalSize;
+            Length = Header.TotalSize - Header.JournalSize;
 
-            if (!leaveOpen) ToDispose.Add(baseStorage);
+            LeaveOpen = leaveOpen;
         }
 
         protected override Result ReadImpl(long offset, Span<byte> destination)
@@ -37,6 +38,9 @@ namespace LibHac.FsSystem.Save
             long inPos = offset;
             int outPos = 0;
             int remaining = destination.Length;
+
+            if (!IsRangeValid(offset, destination.Length, Length))
+                return ResultFs.ValueOutOfRange.Log();
 
             while (remaining > 0)
             {
@@ -64,6 +68,9 @@ namespace LibHac.FsSystem.Save
             int outPos = 0;
             int remaining = source.Length;
 
+            if (!IsRangeValid(offset, source.Length, Length))
+                return ResultFs.ValueOutOfRange.Log();
+
             while (remaining > 0)
             {
                 int blockNum = (int)(inPos / BlockSize);
@@ -84,15 +91,31 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             return BaseStorage.Flush();
         }
 
-        public override Result GetSize(out long size)
+        protected override Result SetSizeImpl(long size)
         {
-            size = _length;
+            return ResultFs.NotImplemented.Log();
+        }
+
+        protected override Result GetSizeImpl(out long size)
+        {
+            size = Length;
             return Result.Success;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (!LeaveOpen)
+                {
+                    BaseStorage?.Dispose();
+                }
+            }
         }
 
         public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();

@@ -8,7 +8,8 @@ namespace LibHac.FsSystem
     {
         private IStorage BaseStorage { get; }
         private int BlockSize { get; }
-        private long _length;
+        private long Length { get; set; }
+        private bool LeaveOpen { get; }
 
         private LinkedList<CacheBlock> Blocks { get; } = new LinkedList<CacheBlock>();
         private Dictionary<long, LinkedListNode<CacheBlock>> BlockDict { get; } = new Dictionary<long, LinkedListNode<CacheBlock>>();
@@ -17,9 +18,10 @@ namespace LibHac.FsSystem
         {
             BaseStorage = baseStorage;
             BlockSize = blockSize;
-            BaseStorage.GetSize(out _length).ThrowIfFailure();
+            LeaveOpen = leaveOpen;
 
-            if (!leaveOpen) ToDispose.Add(BaseStorage);
+            BaseStorage.GetSize(out long baseSize).ThrowIfFailure();
+            Length = baseSize;
 
             for (int i = 0; i < cacheSize; i++)
             {
@@ -36,6 +38,9 @@ namespace LibHac.FsSystem
             long remaining = destination.Length;
             long inOffset = offset;
             int outOffset = 0;
+
+            if (!IsRangeValid(offset, destination.Length, Length))
+                return ResultFs.ValueOutOfRange.Log();
 
             lock (Blocks)
             {
@@ -64,6 +69,9 @@ namespace LibHac.FsSystem
             long inOffset = offset;
             int outOffset = 0;
 
+            if (!IsRangeValid(offset, source.Length, Length))
+                return ResultFs.ValueOutOfRange.Log();
+
             lock (Blocks)
             {
                 while (remaining > 0)
@@ -87,7 +95,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             lock (Blocks)
             {
@@ -100,13 +108,13 @@ namespace LibHac.FsSystem
             return BaseStorage.Flush();
         }
 
-        public override Result GetSize(out long size)
+        protected override Result GetSizeImpl(out long size)
         {
-            size = _length;
+            size = Length;
             return Result.Success;
         }
 
-        public override Result SetSize(long size)
+        protected override Result SetSizeImpl(long size)
         {
             Result rc = BaseStorage.SetSize(size);
             if (rc.IsFailure()) return rc;
@@ -114,9 +122,17 @@ namespace LibHac.FsSystem
             rc = BaseStorage.GetSize(out long newSize);
             if (rc.IsFailure()) return rc;
 
-            _length = newSize;
+            Length = newSize;
 
             return Result.Success;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!LeaveOpen)
+            {
+                BaseStorage?.Dispose();
+            }
         }
 
         private CacheBlock GetBlock(long blockIndex)
@@ -157,9 +173,9 @@ namespace LibHac.FsSystem
             long offset = index * BlockSize;
             int length = BlockSize;
 
-            if (_length != -1)
+            if (Length != -1)
             {
-                length = (int)Math.Min(_length - offset, length);
+                length = (int)Math.Min(Length - offset, length);
             }
 
             BaseStorage.Read(offset, block.Buffer.AsSpan(0, length)).ThrowIfFailure();

@@ -11,7 +11,7 @@ namespace LibHac.FsSystem.Save
         private IStorage DataB { get; }
         private DuplexBitmap Bitmap { get; }
 
-        private long _length;
+        private long Length { get; }
 
         public DuplexStorage(IStorage dataA, IStorage dataB, IStorage bitmap, int blockSize)
         {
@@ -23,7 +23,8 @@ namespace LibHac.FsSystem.Save
             bitmap.GetSize(out long bitmapSize).ThrowIfFailure();
 
             Bitmap = new DuplexBitmap(BitmapStorage, (int)(bitmapSize * 8));
-            DataA.GetSize(out _length).ThrowIfFailure();
+            DataA.GetSize(out long dataSize).ThrowIfFailure();
+            Length = dataSize;
         }
 
         protected override Result ReadImpl(long offset, Span<byte> destination)
@@ -31,6 +32,9 @@ namespace LibHac.FsSystem.Save
             long inPos = offset;
             int outPos = 0;
             int remaining = destination.Length;
+
+            if (!IsRangeValid(offset, destination.Length, Length))
+                return ResultFs.ValueOutOfRange.Log();
 
             while (remaining > 0)
             {
@@ -58,6 +62,9 @@ namespace LibHac.FsSystem.Save
             int outPos = 0;
             int remaining = source.Length;
 
+            if (!IsRangeValid(offset, source.Length, Length))
+                return ResultFs.ValueOutOfRange.Log();
+
             while (remaining > 0)
             {
                 int blockNum = (int)(inPos / BlockSize);
@@ -78,7 +85,7 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             Result rc = BitmapStorage.Flush();
             if (rc.IsFailure()) return rc;
@@ -92,9 +99,14 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public override Result GetSize(out long size)
+        protected override Result SetSizeImpl(long size)
         {
-            size = _length;
+            return ResultFs.NotImplemented.Log();
+        }
+
+        protected override Result GetSizeImpl(out long size)
+        {
+            size = Length;
             return Result.Success;
         }
 

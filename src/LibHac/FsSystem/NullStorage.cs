@@ -8,10 +8,11 @@ namespace LibHac.FsSystem
     /// </summary>
     public class NullStorage : StorageBase
     {
-        public NullStorage() { }
-        public NullStorage(long length) => _length = length;
+        private long Length { get; }
 
-        private long _length;
+        public NullStorage() { }
+        public NullStorage(long length) => Length = length;
+
 
         protected override Result ReadImpl(long offset, Span<byte> destination)
         {
@@ -24,14 +25,19 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             return Result.Success;
         }
 
-        public override Result GetSize(out long size)
+        protected override Result SetSizeImpl(long size)
         {
-            size = _length;
+            return ResultFs.NotImplemented.Log();
+        }
+
+        protected override Result GetSizeImpl(out long size)
+        {
+            size = Length;
             return Result.Success;
         }
     }

@@ -18,7 +18,8 @@ namespace LibHac.FsSystem
         /// </summary>
         public Validity[][] LevelValidities { get; }
 
-        private long _length;
+        private long Length { get; }
+        private bool LeaveOpen { get; }
 
         private IntegrityVerificationStorage[] IntegrityStorages { get; }
 
@@ -44,9 +45,10 @@ namespace LibHac.FsSystem
             }
 
             DataLevel = Levels[Levels.Length - 1];
-            DataLevel.GetSize(out _length).ThrowIfFailure();
+            DataLevel.GetSize(out long dataSize).ThrowIfFailure();
+            Length = dataSize;
 
-            if (!leaveOpen) ToDispose.Add(DataLevel);
+            LeaveOpen = leaveOpen;
         }
 
         public HierarchicalIntegrityVerificationStorage(IvfcHeader header, IStorage masterHash, IStorage data,
@@ -104,15 +106,31 @@ namespace LibHac.FsSystem
             return DataLevel.Write(offset, source);
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             return DataLevel.Flush();
         }
 
-        public override Result GetSize(out long size)
+        protected override Result SetSizeImpl(long size)
         {
-            size = _length;
+            return ResultFs.UnsupportedOperationInHierarchicalIvfcStorageSetSize.Log();
+        }
+
+        protected override Result GetSizeImpl(out long size)
+        {
+            size = Length;
             return Result.Success;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (!LeaveOpen)
+                {
+                    DataLevel?.Dispose();
+                }
+            }
         }
 
         /// <summary>
@@ -127,7 +145,7 @@ namespace LibHac.FsSystem
             IntegrityVerificationStorage storage = IntegrityStorages[IntegrityStorages.Length - 1];
 
             long blockSize = storage.SectorSize;
-            int blockCount = (int)Util.DivideByRoundUp(_length, blockSize);
+            int blockCount = (int)Util.DivideByRoundUp(Length, blockSize);
 
             var buffer = new byte[blockSize];
             var result = Validity.Valid;

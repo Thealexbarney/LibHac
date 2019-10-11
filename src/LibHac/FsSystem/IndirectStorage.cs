@@ -12,20 +12,21 @@ namespace LibHac.FsSystem
 
         private List<IStorage> Sources { get; } = new List<IStorage>();
         private BucketTree<RelocationEntry> BucketTree { get; }
-        private long _length;
+        private long Length { get; }
+        private bool LeaveOpen { get; }
 
         public IndirectStorage(IStorage bucketTreeData, bool leaveOpen, params IStorage[] sources)
         {
             Sources.AddRange(sources);
 
-            if (!leaveOpen) ToDispose.AddRange(sources);
+            LeaveOpen = leaveOpen;
 
             BucketTree = new BucketTree<RelocationEntry>(bucketTreeData);
 
             RelocationEntries = BucketTree.GetEntryList();
             RelocationOffsets = RelocationEntries.Select(x => x.Offset).ToList();
 
-            _length = BucketTree.BucketOffsets.OffsetEnd;
+            Length = BucketTree.BucketOffsets.OffsetEnd;
         }
 
         protected override Result ReadImpl(long offset, Span<byte> destination)
@@ -68,20 +69,34 @@ namespace LibHac.FsSystem
             return ResultFs.UnsupportedOperationInIndirectStorageSetSize.Log();
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             return Result.Success;
         }
 
-        public override Result GetSize(out long size)
+        protected override Result GetSizeImpl(out long size)
         {
-            size = _length;
+            size = Length;
             return Result.Success;
         }
 
-        public override Result SetSize(long size)
+        protected override Result SetSizeImpl(long size)
         {
             return ResultFs.UnsupportedOperationInIndirectStorageSetSize.Log();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (!LeaveOpen && Sources != null)
+                {
+                    foreach (IStorage storage in Sources)
+                    {
+                        storage?.Dispose();
+                    }
+                }
+            }
         }
 
         private RelocationEntry GetRelocationEntry(long offset)

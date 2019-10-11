@@ -83,18 +83,18 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             return BaseStorage.Flush();
         }
 
-        public override Result GetSize(out long size)
+        protected override Result GetSizeImpl(out long size)
         {
             size = _length;
             return Result.Success;
         }
 
-        public override Result SetSize(long size)
+        protected override Result SetSizeImpl(long size)
         {
             int oldBlockCount = (int)Util.DivideByRoundUp(_length, BlockSize);
             int newBlockCount = (int)Util.DivideByRoundUp(size, BlockSize);

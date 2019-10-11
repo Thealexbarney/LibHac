@@ -124,7 +124,7 @@ namespace LibHac.FsSystem
 
         public Result Read(long offset, Span<byte> destination, IntegrityCheckLevel integrityCheckLevel)
         {
-            ValidateParameters(destination, offset);
+            // ValidateParameters(destination, offset);
             return ReadImpl(offset, destination, integrityCheckLevel);
         }
 
@@ -188,12 +188,12 @@ namespace LibHac.FsSystem
             }
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             Result rc = HashStorage.Flush();
             if (rc.IsFailure()) return rc;
 
-            return base.Flush();
+            return base.FlushImpl();
         }
 
         public void FsTrim()

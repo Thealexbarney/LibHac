@@ -9,26 +9,27 @@ namespace LibHac.FsSystem
         private IStorage BaseStorage { get; }
         private long Offset { get; }
         private FileAccess Access { get; } = FileAccess.ReadWrite;
-        private long _length;
+        private long Length { get; set; }
+        private bool LeaveOpen { get; }
 
         public SubStorage(IStorage baseStorage, long offset, long length)
         {
             BaseStorage = baseStorage;
             Offset = offset;
-            _length = length;
+            Length = length;
         }
 
         public SubStorage(SubStorage baseStorage, long offset, long length)
         {
             BaseStorage = baseStorage.BaseStorage;
             Offset = baseStorage.Offset + offset;
-            _length = length;
+            Length = length;
         }
 
         public SubStorage(IStorage baseStorage, long offset, long length, bool leaveOpen)
             : this(baseStorage, offset, length)
         {
-            if (!leaveOpen) ToDispose.Add(BaseStorage);
+            LeaveOpen = leaveOpen;
         }
 
         public SubStorage(IStorage baseStorage, long offset, long length, bool leaveOpen, FileAccess access)
@@ -49,18 +50,18 @@ namespace LibHac.FsSystem
             return BaseStorage.Write(offset + Offset, source);
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             return BaseStorage.Flush();
         }
 
-        public override Result GetSize(out long size)
+        protected override Result GetSizeImpl(out long size)
         {
-            size = _length;
+            size = Length;
             return Result.Success;
         }
 
-        public override Result SetSize(long size)
+        protected override Result SetSizeImpl(long size)
         {
             if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
 
@@ -72,7 +73,7 @@ namespace LibHac.FsSystem
             Result rc = BaseStorage.GetSize(out long baseSize);
             if (rc.IsFailure()) return rc;
 
-            if (baseSize != Offset + _length)
+            if (baseSize != Offset + Length)
             {
                 // SubStorage cannot be resized unless it is located at the end of the base storage.
                 return ResultFs.SubStorageNotResizableMiddleOfFile.Log();
@@ -81,9 +82,20 @@ namespace LibHac.FsSystem
             rc = BaseStorage.SetSize(Offset + size);
             if (rc.IsFailure()) return rc;
 
-            _length = size;
+            Length = size;
 
             return Result.Success;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (!LeaveOpen)
+                {
+                    BaseStorage?.Dispose();
+                }
+            }
         }
     }
 }

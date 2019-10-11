@@ -67,7 +67,7 @@ namespace LibHac.FsSystem
             return base.WriteImpl(offset, _tempBuffer.AsSpan(0, size));
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             return BaseStorage.Flush();
         }

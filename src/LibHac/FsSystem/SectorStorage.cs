@@ -10,7 +10,8 @@ namespace LibHac.FsSystem
         public int SectorSize { get; }
         public int SectorCount { get; private set; }
 
-        private long _length;
+        private long Length { get; set; }
+        private bool LeaveOpen { get; }
 
         public SectorStorage(IStorage baseStorage, int sectorSize, bool leaveOpen)
         {
@@ -20,9 +21,9 @@ namespace LibHac.FsSystem
             baseStorage.GetSize(out long baseSize).ThrowIfFailure();
 
             SectorCount = (int)Util.DivideByRoundUp(baseSize, SectorSize);
-            _length = baseSize;
+            Length = baseSize;
 
-            if (!leaveOpen) ToDispose.Add(BaseStorage);
+            LeaveOpen = leaveOpen;
         }
 
         protected override Result ReadImpl(long offset, Span<byte> destination)
@@ -37,18 +38,18 @@ namespace LibHac.FsSystem
             return BaseStorage.Write(offset, source);
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             return BaseStorage.Flush();
         }
 
-        public override Result GetSize(out long size)
+        protected override Result GetSizeImpl(out long size)
         {
-            size = _length;
+            size = Length;
             return Result.Success;
         }
 
-        public override Result SetSize(long size)
+        protected override Result SetSizeImpl(long size)
         {
             Result rc = BaseStorage.SetSize(size);
             if (rc.IsFailure()) return rc;
@@ -57,9 +58,20 @@ namespace LibHac.FsSystem
             if (rc.IsFailure()) return rc;
 
             SectorCount = (int)Util.DivideByRoundUp(newSize, SectorSize);
-            _length = newSize;
+            Length = newSize;
 
             return Result.Success;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (!LeaveOpen)
+                {
+                    BaseStorage?.Dispose();
+                }
+            }
         }
 
         /// <summary>

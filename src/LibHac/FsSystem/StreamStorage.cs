@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using LibHac.Fs;
 
 #if !STREAM_SPAN
 using System.Buffers;
@@ -13,13 +14,14 @@ namespace LibHac.FsSystem
 
         private Stream BaseStream { get; }
         private object Locker { get; } = new object();
-        private long _length;
+        private long Length { get; }
+        private bool LeaveOpen { get; }
 
         public StreamStorage(Stream baseStream, bool leaveOpen)
         {
             BaseStream = baseStream;
-            _length = BaseStream.Length;
-            if (!leaveOpen) ToDispose.Add(BaseStream);
+            Length = BaseStream.Length;
+            LeaveOpen = leaveOpen;
         }
 
         protected override Result ReadImpl(long offset, Span<byte> destination)
@@ -90,7 +92,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             lock (Locker)
             {
@@ -100,10 +102,26 @@ namespace LibHac.FsSystem
             }
         }
 
-        public override Result GetSize(out long size)
+        protected override Result SetSizeImpl(long size)
         {
-            size = _length;
+            return ResultFs.NotImplemented.Log();
+        }
+
+        protected override Result GetSizeImpl(out long size)
+        {
+            size = Length;
             return Result.Success;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (!LeaveOpen)
+                {
+                    BaseStream?.Dispose();
+                }
+            }
         }
     }
 }

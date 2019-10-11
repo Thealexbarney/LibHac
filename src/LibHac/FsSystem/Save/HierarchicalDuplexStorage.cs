@@ -7,7 +7,7 @@ namespace LibHac.FsSystem.Save
     {
         private DuplexStorage[] Layers { get; }
         private DuplexStorage DataLayer { get; }
-        private long _length;
+        private long Length { get; }
 
         public HierarchicalDuplexStorage(DuplexFsLayerInfo[] layers, bool masterBit)
         {
@@ -30,7 +30,8 @@ namespace LibHac.FsSystem.Save
             }
 
             DataLayer = Layers[Layers.Length - 1];
-            DataLayer.GetSize(out _length).ThrowIfFailure();
+            DataLayer.GetSize(out long dataSize).ThrowIfFailure();
+            Length = dataSize;
         }
 
         protected override Result ReadImpl(long offset, Span<byte> destination)
@@ -43,14 +44,19 @@ namespace LibHac.FsSystem.Save
             return DataLayer.Write(offset, source);
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             return DataLayer.Flush();
         }
 
-        public override Result GetSize(out long size)
+        protected override Result SetSizeImpl(long size)
         {
-            size = _length;
+            return ResultFs.NotImplemented.Log();
+        }
+
+        protected override Result GetSizeImpl(out long size)
+        {
+            size = Length;
             return Result.Success;
         }
 

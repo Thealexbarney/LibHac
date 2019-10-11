@@ -10,7 +10,7 @@ namespace LibHac.FsSystem
         private int _length;
         private int _capacity;
         private bool _isExpandable;
-
+        
         public MemoryStorage() : this(0) { }
 
         public MemoryStorage(int capacity)
@@ -19,7 +19,6 @@ namespace LibHac.FsSystem
 
             _capacity = capacity;
             _isExpandable = true;
-            CanAutoExpand = true;
             _buffer = new byte[capacity];
         }
 
@@ -41,6 +40,9 @@ namespace LibHac.FsSystem
 
         protected override Result ReadImpl(long offset, Span<byte> destination)
         {
+            if (!IsRangeValid(offset, destination.Length, _length))
+                return ResultFs.ValueOutOfRange.Log();
+
             _buffer.AsSpan((int)(_start + offset), destination.Length).CopyTo(destination);
 
             return Result.Success;
@@ -48,6 +50,9 @@ namespace LibHac.FsSystem
 
         protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
+            if (!IsRangeValid(offset, source.Length, _length))
+                return ResultFs.ValueOutOfRange.Log();
+
             long requiredCapacity = _start + offset + source.Length;
 
             if (requiredCapacity > _length)
@@ -97,15 +102,15 @@ namespace LibHac.FsSystem
             }
         }
 
-        public override Result Flush() => Result.Success;
+        protected override Result FlushImpl() => Result.Success;
 
-        public override Result GetSize(out long size)
+        protected override Result GetSizeImpl(out long size)
         {
             size = _length;
             return Result.Success;
         }
 
-        public override Result SetSize(long size)
+        protected override Result SetSizeImpl(long size)
         {
             return ResultFs.UnsupportedOperationInMemoryStorageSetSize.Log();
         }

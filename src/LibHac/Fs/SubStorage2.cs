@@ -23,7 +23,7 @@ namespace LibHac.Fs
             Size = size;
         }
 
-        public override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result ReadImpl(long offset, Span<byte> destination)
         {
             if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
             if (destination.Length == 0) return Result.Success;
@@ -33,7 +33,7 @@ namespace LibHac.Fs
             return BaseStorage.Read(Offset + offset, destination);
         }
 
-        public override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
             if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
             if (source.Length == 0) return Result.Success;
@@ -43,14 +43,14 @@ namespace LibHac.Fs
             return BaseStorage.Write(Offset + offset, source);
         }
 
-        public override Result FlushImpl()
+        protected override Result FlushImpl()
         {
             if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
 
             return BaseStorage.Flush();
         }
 
-        public override Result SetSizeImpl(long size)
+        protected override Result SetSizeImpl(long size)
         {
             if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
             if (!IsResizable) return ResultFs.SubStorageNotResizable.Log();
@@ -72,7 +72,7 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        public override Result GetSizeImpl(out long size)
+        protected override Result GetSizeImpl(out long size)
         {
             size = default;
 

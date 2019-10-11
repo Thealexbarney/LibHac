@@ -22,17 +22,17 @@ namespace LibHac.FsSystem
             return BaseFile.Write(offset, source);
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             return BaseFile.Flush();
         }
 
-        public override Result GetSize(out long size)
+        protected override Result GetSizeImpl(out long size)
         {
             return BaseFile.GetSize(out size);
         }
 
-        public override Result SetSize(long size)
+        protected override Result SetSizeImpl(long size)
         {
             return BaseFile.SetSize(size);
         }

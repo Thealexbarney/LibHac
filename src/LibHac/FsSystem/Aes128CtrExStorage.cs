@@ -69,7 +69,7 @@ namespace LibHac.FsSystem
             return ResultFs.UnsupportedOperationInAesCtrExStorageWrite.Log();
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             return Result.Success;
         }

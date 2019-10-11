@@ -13,6 +13,7 @@ namespace LibHac.FsSystem.Save
         private IStorage BaseStorage { get; }
         private IStorage HeaderStorage { get; }
         private IStorage MapEntryStorage { get; }
+        private bool LeaveOpen { get; }
 
         private RemapHeader Header { get; }
         public MapEntry[] MapEntries { get; set; }
@@ -42,7 +43,7 @@ namespace LibHac.FsSystem.Save
                 MapEntries[i] = new MapEntry(reader);
             }
 
-            if (!leaveOpen) ToDispose.Add(BaseStorage);
+            LeaveOpen = leaveOpen;
 
             Segments = InitSegments(Header, MapEntries);
         }
@@ -109,16 +110,32 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             return BaseStorage.Flush();
         }
 
-        public override Result GetSize(out long size)
+        protected override Result SetSizeImpl(long size)
+        {
+            return ResultFs.UnsupportedOperationInHierarchicalIvfcStorageSetSize.Log();
+        }
+
+        protected override Result GetSizeImpl(out long size)
         {
             // todo: Different result code
             size = -1;
             return Result.Success;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (!LeaveOpen)
+                {
+                    BaseStorage?.Dispose();
+                }
+            }
         }
 
         public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();

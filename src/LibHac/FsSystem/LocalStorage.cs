@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
@@ -16,9 +17,6 @@ namespace LibHac.FsSystem
             Path = path;
             Stream = new FileStream(Path, mode, access);
             Storage = new StreamStorage(Stream, false);
-
-            ToDispose.Add(Storage);
-            ToDispose.Add(Stream);
         }
 
         protected override Result ReadImpl(long offset, Span<byte> destination)
@@ -31,14 +29,28 @@ namespace LibHac.FsSystem
             return Storage.Write(offset, source);
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             return Storage.Flush();
         }
 
-        public override Result GetSize(out long size)
+        protected override Result SetSizeImpl(long size)
+        {
+            return ResultFs.NotImplemented.Log();
+        }
+
+        protected override Result GetSizeImpl(out long size)
         {
             return Storage.GetSize(out size);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Storage?.Dispose();
+                Stream?.Dispose();
+            }
         }
     }
 }

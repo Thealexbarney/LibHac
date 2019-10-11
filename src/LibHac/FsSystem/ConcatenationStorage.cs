@@ -7,12 +7,13 @@ namespace LibHac.FsSystem
     public class ConcatenationStorage : StorageBase
     {
         private ConcatSource[] Sources { get; }
-        private long _length;
+        private long Length { get; }
+        private bool LeaveOpen { get; }
 
         public ConcatenationStorage(IList<IStorage> sources, bool leaveOpen)
         {
             Sources = new ConcatSource[sources.Count];
-            if (!leaveOpen) ToDispose.AddRange(sources);
+            LeaveOpen = leaveOpen;
 
             long length = 0;
             for (int i = 0; i < sources.Count; i++)
@@ -24,7 +25,7 @@ namespace LibHac.FsSystem
                 length += sourceSize;
             }
 
-            _length = length;
+            Length = length;
         }
 
         protected override Result ReadImpl(long offset, Span<byte> destination)
@@ -32,6 +33,10 @@ namespace LibHac.FsSystem
             long inPos = offset;
             int outPos = 0;
             int remaining = destination.Length;
+
+            if (!IsRangeValid(offset, destination.Length, Length))
+                return ResultFs.ValueOutOfRange.Log();
+
             int sourceIndex = FindSource(inPos);
 
             while (remaining > 0)
@@ -59,6 +64,10 @@ namespace LibHac.FsSystem
             long inPos = offset;
             int outPos = 0;
             int remaining = source.Length;
+
+            if (!IsRangeValid(offset, source.Length, Length))
+                return ResultFs.ValueOutOfRange.Log();
+
             int sourceIndex = FindSource(inPos);
 
             while (remaining > 0)
@@ -81,7 +90,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public override Result Flush()
+        protected override Result FlushImpl()
         {
             foreach (ConcatSource source in Sources)
             {
@@ -92,15 +101,34 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public override Result GetSize(out long size)
+        protected override Result SetSizeImpl(long size)
         {
-            size = _length;
+            return ResultFs.NotImplemented.Log();
+        }
+
+        protected override Result GetSizeImpl(out long size)
+        {
+            size = Length;
             return Result.Success;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (!LeaveOpen && Sources != null)
+                {
+                    foreach (ConcatSource source in Sources)
+                    {
+                        source?.Storage?.Dispose();
+                    }
+                }
+            }
         }
 
         private int FindSource(long offset)
         {
-            if (offset < 0 || offset >= _length)
+            if (offset < 0 || offset >= Length)
                 throw new ArgumentOutOfRangeException(nameof(offset), offset, "The Storage does not contain this offset.");
 
             int lo = 0;
