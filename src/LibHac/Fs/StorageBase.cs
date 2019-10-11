@@ -1,20 +1,71 @@
 ﻿using System;
+using System.Threading;
 
 namespace LibHac.Fs
 {
     public abstract class StorageBase : IStorage
     {
-        public abstract Result Read(long offset, Span<byte> destination);
-        public abstract Result Write(long offset, ReadOnlySpan<byte> source);
-        public abstract Result Flush();
-        public abstract Result SetSize(long size);
-        public abstract Result GetSize(out long size);
+        // 0 = not disposed; 1 = disposed
+        private int _disposedState;
+        private bool IsDisposed => _disposedState != 0;
 
-        public virtual void Dispose() { }
+        public abstract Result ReadImpl(long offset, Span<byte> destination);
+        public abstract Result WriteImpl(long offset, ReadOnlySpan<byte> source);
+        public abstract Result FlushImpl();
+        public abstract Result GetSizeImpl(out long size);
+        public abstract Result SetSizeImpl(long size);
+
+        public Result Read(long offset, Span<byte> destination)
+        {
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+
+            return ReadImpl(offset, destination);
+        }
+
+        public Result Write(long offset, ReadOnlySpan<byte> source)
+        {
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+
+            return WriteImpl(offset, source);
+        }
+
+        public Result Flush()
+        {
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+
+            return FlushImpl();
+        }
+
+        public Result SetSize(long size)
+        {
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+
+            return SetSizeImpl(size);
+        }
+
+        public Result GetSize(out long size)
+        {
+            size = default;
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+
+            return GetSizeImpl(out size);
+        }
+
+        public void Dispose()
+        {
+            // Make sure Dispose is only called once
+            if (Interlocked.CompareExchange(ref _disposedState, 1, 0) == 0)
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+        }
+
+        protected virtual void Dispose(bool disposing) { }
 
         public static bool IsRangeValid(long offset, long size, long totalSize)
         {
-            return size <= totalSize && offset <= totalSize - size;
+            return offset >= 0 && size >= 0 && size <= totalSize && offset <= totalSize - size;
         }
     }
 }

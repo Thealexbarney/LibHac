@@ -87,7 +87,7 @@ namespace LibHac.FsService.Creators
                 imageHash.CopyTo(ImageHash);
             }
 
-            public override Result Read(long offset, Span<byte> destination)
+            public override Result ReadImpl(long offset, Span<byte> destination)
             {
                 // In secure mode, if Handle is old and the card's device ID and
                 // header hash are still the same, Handle is updated to the new handle
@@ -95,22 +95,22 @@ namespace LibHac.FsService.Creators
                 return GameCard.Read(Handle, offset, destination);
             }
 
-            public override Result Write(long offset, ReadOnlySpan<byte> source)
+            public override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
             {
                 return ResultFs.UnsupportedOperationInRoGameCardStorageWrite.Log();
             }
 
-            public override Result Flush()
+            public override Result FlushImpl()
             {
                 return Result.Success;
             }
 
-            public override Result SetSize(long size)
+            public override Result SetSizeImpl(long size)
             {
                 return ResultFs.UnsupportedOperationInRoGameCardStorageSetSize.Log();
             }
 
-            public override Result GetSize(out long size)
+            public override Result GetSizeImpl(out long size)
             {
                 size = 0;
 

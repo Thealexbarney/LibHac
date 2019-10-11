@@ -62,7 +62,7 @@ namespace LibHac.FsSystem
 
         public override Result SetSize(long size)
         {
-            if (BaseStorage == null) return ResultFs.Result6902.Log();
+            if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
 
             // todo: Add IsResizable member
             // if (!IsResizable) return ResultFs.SubStorageNotResizable.Log();

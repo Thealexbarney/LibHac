@@ -205,8 +205,8 @@ namespace LibHac.Fs
     {
         None = 0,
         Application = 1 << 0,
-        Internal = 1 << 1,
-        All = Application | Internal
+        System = 1 << 1,
+        All = Application | System
     }
 
     [Flags]

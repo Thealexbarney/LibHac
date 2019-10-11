@@ -55,7 +55,7 @@ namespace LibHac.Fs
 
         public Result GetSize(out long size)
         {
-            size = 0;
+            size = default;
             if (IsDisposed) return ResultFs.PreconditionViolation.Log();
 
             return GetSizeImpl(out size);

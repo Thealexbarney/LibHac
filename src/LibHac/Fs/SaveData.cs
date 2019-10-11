@@ -31,7 +31,7 @@ namespace LibHac.Fs
         public static Result CreateSystemSaveData(this FileSystemClient fs, SaveDataSpaceId spaceId,
             ulong saveDataId, UserId userId, ulong ownerId, long size, long journalSize, uint flags)
         {
-            return fs.RunOperationWithAccessLog(LocalAccessLogMode.Internal,
+            return fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
                 () =>
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
@@ -89,7 +89,7 @@ namespace LibHac.Fs
 
         public static Result DeleteSaveData(this FileSystemClient fs, ulong saveDataId)
         {
-            return fs.RunOperationWithAccessLog(LocalAccessLogMode.Internal,
+            return fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
                 () =>
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();

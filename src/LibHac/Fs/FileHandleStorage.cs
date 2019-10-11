@@ -21,7 +21,7 @@ namespace LibHac.Fs
             FsClient = Handle.File.Parent.FsClient;
         }
 
-        public override Result Read(long offset, Span<byte> destination)
+        public override Result ReadImpl(long offset, Span<byte> destination)
         {
             lock (_locker)
             {
@@ -30,14 +30,13 @@ namespace LibHac.Fs
                 Result rc = UpdateSize();
                 if (rc.IsFailure()) return rc;
 
-                if (destination.Length < 0 || offset < 0) return ResultFs.ValueOutOfRange.Log();
                 if (!IsRangeValid(offset, destination.Length, FileSize)) return ResultFs.ValueOutOfRange.Log();
 
                 return FsClient.ReadFile(Handle, offset, destination);
             }
         }
 
-        public override Result Write(long offset, ReadOnlySpan<byte> source)
+        public override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
             lock (_locker)
             {
@@ -46,26 +45,25 @@ namespace LibHac.Fs
                 Result rc = UpdateSize();
                 if (rc.IsFailure()) return rc;
 
-                if (source.Length < 0 || offset < 0) return ResultFs.ValueOutOfRange.Log();
                 if (!IsRangeValid(offset, source.Length, FileSize)) return ResultFs.ValueOutOfRange.Log();
 
                 return FsClient.WriteFile(Handle, offset, source);
             }
         }
 
-        public override Result Flush()
+        public override Result FlushImpl()
         {
             return FsClient.FlushFile(Handle);
         }
 
-        public override Result SetSize(long size)
+        public override Result SetSizeImpl(long size)
         {
             FileSize = InvalidSize;
 
             return FsClient.SetFileSize(Handle, size);
         }
 
-        public override Result GetSize(out long size)
+        public override Result GetSizeImpl(out long size)
         {
             size = default;
 
@@ -87,7 +85,7 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
             if (CloseHandle)
             {

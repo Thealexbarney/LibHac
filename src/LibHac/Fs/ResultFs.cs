@@ -135,7 +135,7 @@
 
         public static Result RemapStorageMapFull => new Result(ModuleFs, 6811);
 
-        public static Result Result6902 => new Result(ModuleFs, 6902);
+        public static Result SubStorageNotInitialized => new Result(ModuleFs, 6902);
         public static Result MountNameNotFound => new Result(ModuleFs, 6905);
     }
 }

@@ -23,38 +23,38 @@ namespace LibHac.Fs
             Size = size;
         }
 
-        public override Result Read(long offset, Span<byte> destination)
+        public override Result ReadImpl(long offset, Span<byte> destination)
         {
-            if (BaseStorage == null) return ResultFs.Result6902.Log();
+            if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
             if (destination.Length == 0) return Result.Success;
-            if (Size < 0 || offset < 0) return ResultFs.ValueOutOfRange.Log();
+
             if (!IsRangeValid(offset, destination.Length, Size)) return ResultFs.ValueOutOfRange.Log();
 
             return BaseStorage.Read(Offset + offset, destination);
         }
 
-        public override Result Write(long offset, ReadOnlySpan<byte> source)
+        public override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
         {
-            if (BaseStorage == null) return ResultFs.Result6902.Log();
+            if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
             if (source.Length == 0) return Result.Success;
-            if (Size < 0 || offset < 0) return ResultFs.ValueOutOfRange.Log();
+
             if (!IsRangeValid(offset, source.Length, Size)) return ResultFs.ValueOutOfRange.Log();
 
             return BaseStorage.Write(Offset + offset, source);
         }
 
-        public override Result Flush()
+        public override Result FlushImpl()
         {
-            if (BaseStorage == null) return ResultFs.Result6902.Log();
+            if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
 
             return BaseStorage.Flush();
         }
 
-        public override Result SetSize(long size)
+        public override Result SetSizeImpl(long size)
         {
-            if (BaseStorage == null) return ResultFs.Result6902.Log();
+            if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
             if (!IsResizable) return ResultFs.SubStorageNotResizable.Log();
-            if (size < 0 || Offset < 0) return ResultFs.ValueOutOfRange.Log();
+            if (size < 0 || Offset < 0) return ResultFs.InvalidSize.Log();
 
             Result rc = BaseStorage.GetSize(out long baseSize);
             if (rc.IsFailure()) return rc;
@@ -72,11 +72,11 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        public override Result GetSize(out long size)
+        public override Result GetSizeImpl(out long size)
         {
             size = default;
 
-            if (BaseStorage == null) return ResultFs.Result6902.Log();
+            if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
 
             size = Size;
             return Result.Success;
