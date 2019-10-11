@@ -75,6 +75,10 @@
 
         public static Result Result4812 => new Result(ModuleFs, 4812);
 
+        public static Result UnexpectedErrorInHostFileFlush => new Result(ModuleFs, 5307);
+        public static Result UnexpectedErrorInHostFileGetSize => new Result(ModuleFs, 5308);
+        public static Result UnknownHostFileSystemError => new Result(ModuleFs, 5309);
+
         public static Result PreconditionViolation => new Result(ModuleFs, 6000);
         public static Result InvalidArgument => new Result(ModuleFs, 6001);
         public static Result InvalidPath => new Result(ModuleFs, 6002);

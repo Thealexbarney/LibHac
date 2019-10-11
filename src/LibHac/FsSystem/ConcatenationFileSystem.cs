@@ -349,7 +349,8 @@ namespace LibHac.FsSystem
 
             for (int i = 0; i < fileCount; i++)
             {
-                size += BaseFileSystem.GetFileSize(GetSubFilePath(path, i));
+                BaseFileSystem.GetFileSize(out long fileSize, GetSubFilePath(path, i)).ThrowIfFailure();
+                size += fileSize;
             }
 
             return size;

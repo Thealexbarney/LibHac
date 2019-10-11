@@ -1,17 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Security;
+using LibHac.Common;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
     public class LocalFileSystem : IAttributeFileSystem
     {
-        private const int ErrorHandleDiskFull = unchecked((int)0x80070027);
-        private const int ErrorFileExists = unchecked((int)0x80070050);
-        private const int ErrorDiskFull = unchecked((int)0x80070070);
-        private const int ErrorDirNotEmpty = unchecked((int)0x80070091);
-
         private string BasePath { get; }
 
         /// <summary>
@@ -36,9 +32,12 @@ namespace LibHac.FsSystem
 
         public Result GetFileAttributes(string path, out NxFileAttributes attributes)
         {
+            attributes = default;
+
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            FileInfo info = GetFileInfo(localPath);
+            Result rc = GetFileInfo(out FileInfo info, localPath);
+            if (rc.IsFailure()) return rc;
 
             if (info.Attributes == (FileAttributes)(-1))
             {
@@ -54,7 +53,8 @@ namespace LibHac.FsSystem
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            FileInfo info = GetFileInfo(localPath);
+            Result rc = GetFileInfo(out FileInfo info, localPath);
+            if (rc.IsFailure()) return rc;
 
             if (info.Attributes == (FileAttributes)(-1))
             {
@@ -76,12 +76,15 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public long GetFileSize(string path)
+        public Result GetFileSize(out long fileSize, string path)
         {
+            fileSize = default;
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            FileInfo info = GetFileInfo(localPath);
-            return GetSizeInternal(info);
+            Result rc = GetFileInfo(out FileInfo info, localPath);
+            if (rc.IsFailure()) return rc;
+
+            return GetSizeInternal(out fileSize, info);
         }
 
         public Result CreateDirectory(string path)
@@ -93,7 +96,8 @@ namespace LibHac.FsSystem
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            DirectoryInfo dir = GetDirInfo(localPath);
+            Result rc = GetDirInfo(out DirectoryInfo dir, localPath);
+            if (rc.IsFailure()) return rc;
 
             if (dir.Exists)
             {
@@ -112,7 +116,8 @@ namespace LibHac.FsSystem
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            FileInfo file = GetFileInfo(localPath);
+            Result rc = GetFileInfo(out FileInfo file, localPath);
+            if (rc.IsFailure()) return rc;
 
             if (file.Exists)
             {
@@ -124,7 +129,7 @@ namespace LibHac.FsSystem
                 return ResultFs.PathNotFound.Log();
             }
 
-            Result rc = CreateFileInternal(out FileStream stream, file);
+            rc = CreateFileInternal(out FileStream stream, file);
 
             using (stream)
             {
@@ -138,7 +143,8 @@ namespace LibHac.FsSystem
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            DirectoryInfo dir = GetDirInfo(localPath);
+            Result rc = GetDirInfo(out DirectoryInfo dir, localPath);
+            if (rc.IsFailure()) return rc;
 
             return DeleteDirectoryInternal(dir, false);
         }
@@ -147,7 +153,8 @@ namespace LibHac.FsSystem
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            DirectoryInfo dir = GetDirInfo(localPath);
+            Result rc = GetDirInfo(out DirectoryInfo dir, localPath);
+            if (rc.IsFailure()) return rc;
 
             return DeleteDirectoryInternal(dir, true);
         }
@@ -158,13 +165,19 @@ namespace LibHac.FsSystem
 
             foreach (string file in Directory.EnumerateFiles(localPath))
             {
-                Result rc = DeleteFileInternal(GetFileInfo(file));
+                Result rc = GetFileInfo(out FileInfo fileInfo, file);
+                if (rc.IsFailure()) return rc;
+
+                rc = DeleteFileInternal(fileInfo);
                 if (rc.IsFailure()) return rc;
             }
 
             foreach (string dir in Directory.EnumerateDirectories(localPath))
             {
-                Result rc = DeleteDirectoryInternal(GetDirInfo(dir), true);
+                Result rc = GetDirInfo(out DirectoryInfo dirInfo, dir);
+                if (rc.IsFailure()) return rc;
+
+                rc = DeleteDirectoryInternal(dirInfo, true);
                 if (rc.IsFailure()) return rc;
             }
 
@@ -175,27 +188,36 @@ namespace LibHac.FsSystem
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            FileInfo file = GetFileInfo(localPath);
+            Result rc = GetFileInfo(out FileInfo file, localPath);
+            if (rc.IsFailure()) return rc;
 
             return DeleteFileInternal(file);
         }
 
         public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
-            // Getting the local path is done in the LocalDirectory constructor
-            path = PathTools.Normalize(path);
             directory = default;
+            string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            Result rc = GetEntryType(out DirectoryEntryType entryType, path);
+            Result rc = GetDirInfo(out DirectoryInfo dirInfo, localPath);
             if (rc.IsFailure()) return rc;
 
-            if (entryType == DirectoryEntryType.File)
+            if (!dirInfo.Attributes.HasFlag(FileAttributes.Directory))
             {
                 return ResultFs.PathNotFound.Log();
             }
 
-            directory = new LocalDirectory(this, path, mode);
-            return Result.Success;
+            try
+            {
+                IEnumerator<FileSystemInfo> entryEnumerator = dirInfo.EnumerateFileSystemInfos().GetEnumerator();
+
+                directory = new LocalDirectory(entryEnumerator, dirInfo, mode);
+                return Result.Success;
+            }
+            catch (Exception ex) when (ex.HResult < 0)
+            {
+                return HResult.HResultToHorizonResult(ex.HResult).Log();
+            }
         }
 
         public Result OpenFile(out IFile file, string path, OpenMode mode)
@@ -211,7 +233,10 @@ namespace LibHac.FsSystem
                 return ResultFs.PathNotFound.Log();
             }
 
-            file = new LocalFile(localPath, mode);
+            rc = OpenFileInternal(out FileStream fileStream, localPath, mode);
+            if (rc.IsFailure()) return rc;
+
+            file = new LocalFile(fileStream, mode);
             return Result.Success;
         }
 
@@ -229,8 +254,11 @@ namespace LibHac.FsSystem
                 ThrowHelper.ThrowResult(ResultFs.DestinationIsSubPathOfSource);
             }
 
-            DirectoryInfo srcDir = GetDirInfo(ResolveLocalPath(oldPath));
-            DirectoryInfo dstDir = GetDirInfo(ResolveLocalPath(newPath));
+            Result rc = GetDirInfo(out DirectoryInfo srcDir, ResolveLocalPath(oldPath));
+            if (rc.IsFailure()) return rc;
+
+            rc = GetDirInfo(out DirectoryInfo dstDir, ResolveLocalPath(newPath));
+            if (rc.IsFailure()) return rc;
 
             return RenameDirInternal(srcDir, dstDir);
         }
@@ -243,17 +271,22 @@ namespace LibHac.FsSystem
             // Official FS behavior is to do nothing in this case
             if (srcLocalPath == dstLocalPath) return Result.Success;
 
-            FileInfo srcFile = GetFileInfo(srcLocalPath);
-            FileInfo dstFile = GetFileInfo(dstLocalPath);
+            Result rc = GetFileInfo(out FileInfo srcFile, srcLocalPath);
+            if (rc.IsFailure()) return rc;
+
+            rc = GetFileInfo(out FileInfo dstFile, dstLocalPath);
+            if (rc.IsFailure()) return rc;
 
             return RenameFileInternal(srcFile, dstFile);
         }
 
         public Result GetEntryType(out DirectoryEntryType entryType, string path)
         {
+            entryType = default;
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            DirectoryInfo dir = GetDirInfo(localPath);
+            Result rc = GetDirInfo(out DirectoryInfo dir, localPath);
+            if (rc.IsFailure()) return rc;
 
             if (dir.Exists)
             {
@@ -261,7 +294,8 @@ namespace LibHac.FsSystem
                 return Result.Success;
             }
 
-            FileInfo file = GetFileInfo(localPath);
+            rc = GetFileInfo(out FileInfo file, localPath);
+            if (rc.IsFailure()) return rc;
 
             if (file.Exists)
             {
@@ -278,7 +312,10 @@ namespace LibHac.FsSystem
             timeStamp = default;
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            if (!GetFileInfo(localPath).Exists) return ResultFs.PathNotFound.Log();
+            Result rc = GetFileInfo(out FileInfo file, localPath);
+            if (rc.IsFailure()) return rc;
+
+            if (!file.Exists) return ResultFs.PathNotFound.Log();
 
             timeStamp.Created = new DateTimeOffset(File.GetCreationTime(localPath)).ToUnixTimeSeconds();
             timeStamp.Accessed = new DateTimeOffset(File.GetLastAccessTime(localPath)).ToUnixTimeSeconds();
@@ -309,21 +346,42 @@ namespace LibHac.FsSystem
             return ResultFs.UnsupportedOperation.Log();
         }
 
-        private static long GetSizeInternal(FileInfo file)
+        internal static FileAccess GetFileAccess(OpenMode mode)
+        {
+            // FileAccess and OpenMode have the same flags
+            return (FileAccess)(mode & OpenMode.ReadWrite);
+        }
+
+        internal static FileShare GetFileShare(OpenMode mode)
+        {
+            return mode.HasFlag(OpenMode.Write) ? FileShare.Read : FileShare.ReadWrite;
+        }
+
+        internal static Result OpenFileInternal(out FileStream stream, string path, OpenMode mode)
         {
             try
             {
-                return file.Length;
+                stream = new FileStream(path, FileMode.Open, GetFileAccess(mode), GetFileShare(mode));
+                return Result.Success;
             }
-            catch (FileNotFoundException ex)
+            catch (Exception ex) when (ex.HResult < 0)
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound, ex);
-                throw;
+                stream = default;
+                return HResult.HResultToHorizonResult(ex.HResult).Log();
             }
-            catch (Exception ex) when (ex is SecurityException || ex is UnauthorizedAccessException)
+        }
+
+        private static Result GetSizeInternal(out long fileSize, FileInfo file)
+        {
+            try
             {
-                // todo: Should a HorizonResultException be thrown?
-                throw;
+                fileSize = file.Length;
+                return Result.Success;
+            }
+            catch (Exception ex) when (ex.HResult < 0)
+            {
+                fileSize = default;
+                return HResult.HResultToHorizonResult(ex.HResult).Log();
             }
         }
 
@@ -335,22 +393,9 @@ namespace LibHac.FsSystem
             {
                 file = new FileStream(fileInfo.FullName, FileMode.CreateNew, FileAccess.ReadWrite);
             }
-            catch (DirectoryNotFoundException)
+            catch (Exception ex) when (ex.HResult < 0)
             {
-                return ResultFs.PathNotFound.Log();
-            }
-            catch (IOException ex) when (ex.HResult == ErrorDiskFull || ex.HResult == ErrorHandleDiskFull)
-            {
-                return ResultFs.InsufficientFreeSpace.Log();
-            }
-            catch (IOException ex) when (ex.HResult == ErrorFileExists)
-            {
-                return ResultFs.PathAlreadyExists.Log();
-            }
-            catch (Exception ex) when (ex is SecurityException || ex is UnauthorizedAccessException)
-            {
-                // todo: What Result value should be returned?
-                throw;
+                return HResult.HResultToHorizonResult(ex.HResult).Log();
             }
 
             return Result.Success;
@@ -362,9 +407,9 @@ namespace LibHac.FsSystem
             {
                 stream.SetLength(size);
             }
-            catch (IOException ex) when (ex.HResult == ErrorDiskFull || ex.HResult == ErrorHandleDiskFull)
+            catch (Exception ex) when (ex.HResult < 0)
             {
-                return ResultFs.InsufficientFreeSpace.Log();
+                return HResult.HResultToHorizonResult(ex.HResult).Log();
             }
 
             return Result.Success;
@@ -378,18 +423,9 @@ namespace LibHac.FsSystem
             {
                 dir.Delete(recursive);
             }
-            catch (DirectoryNotFoundException)
+            catch (Exception ex) when (ex.HResult < 0)
             {
-                return ResultFs.PathNotFound.Log();
-            }
-            catch (IOException ex) when (ex.HResult == ErrorDirNotEmpty)
-            {
-                return ResultFs.DirectoryNotEmpty.Log();
-            }
-            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
-            {
-                // todo: What Result value should be returned?
-                throw;
+                return HResult.HResultToHorizonResult(ex.HResult).Log();
             }
 
             EnsureDeleted(dir);
@@ -405,18 +441,9 @@ namespace LibHac.FsSystem
             {
                 file.Delete();
             }
-            catch (DirectoryNotFoundException)
+            catch (Exception ex) when (ex.HResult < 0)
             {
-                return ResultFs.PathNotFound.Log();
-            }
-            catch (IOException ex) when (ex.HResult == ErrorDirNotEmpty)
-            {
-                return ResultFs.DirectoryNotEmpty.Log();
-            }
-            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
-            {
-                // todo: What Result value should be returned?
-                throw;
+                return HResult.HResultToHorizonResult(ex.HResult).Log();
             }
 
             EnsureDeleted(file);
@@ -436,18 +463,9 @@ namespace LibHac.FsSystem
                     dir.Attributes |= FileAttributes.Archive;
                 }
             }
-            catch (DirectoryNotFoundException)
+            catch (Exception ex) when (ex.HResult < 0)
             {
-                return ResultFs.PathNotFound.Log();
-            }
-            catch (IOException ex) when (ex.HResult == ErrorDiskFull || ex.HResult == ErrorHandleDiskFull)
-            {
-                return ResultFs.InsufficientFreeSpace.Log();
-            }
-            catch (Exception ex) when (ex is SecurityException || ex is UnauthorizedAccessException)
-            {
-                // todo: What Result value should be returned?
-                throw;
+                return HResult.HResultToHorizonResult(ex.HResult).Log();
             }
 
             return Result.Success;
@@ -462,14 +480,9 @@ namespace LibHac.FsSystem
             {
                 source.MoveTo(dest.FullName);
             }
-            catch (DirectoryNotFoundException)
+            catch (Exception ex) when (ex.HResult < 0)
             {
-                return ResultFs.PathNotFound.Log();
-            }
-            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
-            {
-                // todo: What Result value should be returned?
-                throw;
+                return HResult.HResultToHorizonResult(ex.HResult).Log();
             }
 
             return Result.Success;
@@ -484,46 +497,40 @@ namespace LibHac.FsSystem
             {
                 source.MoveTo(dest.FullName);
             }
-            catch (DirectoryNotFoundException)
+            catch (Exception ex) when (ex.HResult < 0)
             {
-                return ResultFs.PathNotFound.Log();
-            }
-            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
-            {
-                // todo: What Result value should be returned?
-                throw;
+                return HResult.HResultToHorizonResult(ex.HResult).Log();
             }
 
             return Result.Success;
         }
 
-
         // GetFileInfo and GetDirInfo detect invalid paths
-        private static FileInfo GetFileInfo(string path)
+        private static Result GetFileInfo(out FileInfo fileInfo, string path)
         {
             try
             {
-                return new FileInfo(path);
+                fileInfo = new FileInfo(path);
+                return Result.Success;
             }
-            catch (Exception ex) when (ex is ArgumentNullException || ex is ArgumentException ||
-                                       ex is PathTooLongException)
+            catch (Exception ex) when (ex.HResult < 0)
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound, ex);
-                throw;
+                fileInfo = default;
+                return HResult.HResultToHorizonResult(ex.HResult).Log();
             }
         }
 
-        private static DirectoryInfo GetDirInfo(string path)
+        private static Result GetDirInfo(out DirectoryInfo directoryInfo, string path)
         {
             try
             {
-                return new DirectoryInfo(path);
+                directoryInfo = new DirectoryInfo(path);
+                return Result.Success;
             }
-            catch (Exception ex) when (ex is ArgumentNullException || ex is ArgumentException ||
-                                       ex is PathTooLongException)
+            catch (Exception ex) when (ex.HResult < 0)
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound, ex);
-                throw;
+                directoryInfo = default;
+                return HResult.HResultToHorizonResult(ex.HResult).Log();
             }
         }
 

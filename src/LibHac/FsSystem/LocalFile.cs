@@ -1,22 +1,29 @@
 ﻿using System;
 using System.IO;
+using LibHac.Common;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
     public class LocalFile : FileBase
     {
-        private const int ErrorHandleDiskFull = unchecked((int)0x80070027);
-        private const int ErrorDiskFull = unchecked((int)0x80070070);
-
         private FileStream Stream { get; }
         private StreamFile File { get; }
         private OpenMode Mode { get; }
 
         public LocalFile(string path, OpenMode mode)
         {
+            LocalFileSystem.OpenFileInternal(out FileStream stream, path, mode).ThrowIfFailure();
+
             Mode = mode;
-            Stream = OpenFile(path, mode);
+            Stream = stream;
+            File = new StreamFile(Stream, mode);
+        }
+
+        public LocalFile(FileStream stream, OpenMode mode)
+        {
+            Mode = mode;
+            Stream = stream;
             File = new StreamFile(Stream, mode);
         }
 
@@ -40,12 +47,27 @@ namespace LibHac.FsSystem
 
         public override Result FlushImpl()
         {
-            return File.Flush();
+            try
+            {
+                return File.Flush();
+            }
+            catch (Exception ex) when (ex.HResult < 0)
+            {
+                return ResultFs.UnexpectedErrorInHostFileFlush.Log();
+            }
         }
 
         public override Result GetSizeImpl(out long size)
         {
-            return File.GetSize(out size);
+            try
+            {
+                return File.GetSize(out size);
+            }
+            catch (Exception ex) when (ex.HResult < 0)
+            {
+                size = default;
+                return ResultFs.UnexpectedErrorInHostFileGetSize.Log();
+            }
         }
 
         public override Result SetSizeImpl(long size)
@@ -54,9 +76,9 @@ namespace LibHac.FsSystem
             {
                 File.SetSize(size);
             }
-            catch (IOException ex) when (ex.HResult == ErrorDiskFull || ex.HResult == ErrorHandleDiskFull)
+            catch (Exception ex) when (ex.HResult < 0)
             {
-                return ResultFs.InsufficientFreeSpace.Log();
+                return HResult.HResultToHorizonResult(ex.HResult).Log();
             }
 
             return Result.Success;
@@ -70,37 +92,6 @@ namespace LibHac.FsSystem
             }
 
             Stream?.Dispose();
-        }
-
-        private static FileAccess GetFileAccess(OpenMode mode)
-        {
-            // FileAccess and OpenMode have the same flags
-            return (FileAccess)(mode & OpenMode.ReadWrite);
-        }
-
-        private static FileShare GetFileShare(OpenMode mode)
-        {
-            return mode.HasFlag(OpenMode.Write) ? FileShare.Read : FileShare.ReadWrite;
-        }
-
-        private static FileStream OpenFile(string path, OpenMode mode)
-        {
-            try
-            {
-                return new FileStream(path, FileMode.Open, GetFileAccess(mode), GetFileShare(mode));
-            }
-            catch (Exception ex) when (ex is ArgumentNullException || ex is ArgumentException ||
-                                       ex is PathTooLongException || ex is DirectoryNotFoundException ||
-                                       ex is FileNotFoundException || ex is NotSupportedException)
-            {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound, ex);
-                throw;
-            }
-            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
-            {
-                // todo: Should a HorizonResultException be thrown?
-                throw;
-            }
         }
     }
 }

@@ -9,33 +9,16 @@ namespace LibHac.FsSystem
 {
     public class LocalDirectory : IDirectory
     {
-        private string LocalPath { get; }
         private OpenDirectoryMode Mode { get; }
         private DirectoryInfo DirInfo { get; }
         private IEnumerator<FileSystemInfo> EntryEnumerator { get; }
-
-        public LocalDirectory(LocalFileSystem fs, string path, OpenDirectoryMode mode)
+        
+        public LocalDirectory(IEnumerator<FileSystemInfo> entryEnumerator, DirectoryInfo dirInfo,
+            OpenDirectoryMode mode)
         {
-            LocalPath = fs.ResolveLocalPath(path);
+            EntryEnumerator = entryEnumerator;
+            DirInfo = dirInfo;
             Mode = mode;
-
-            try
-            {
-                DirInfo = new DirectoryInfo(LocalPath);
-            }
-            catch (Exception ex) when (ex is ArgumentNullException || ex is ArgumentException ||
-                                       ex is PathTooLongException)
-            {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound, ex);
-                throw;
-            }
-
-            if (!DirInfo.Exists)
-            {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
-            }
-
-            EntryEnumerator = DirInfo.EnumerateFileSystemInfos().GetEnumerator();
         }
 
         public Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer)
