@@ -4,7 +4,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class AesXtsFileSystem : IFileSystem
+    public class AesXtsFileSystem : FileSystemBase
     {
         public int BlockSize { get; }
 
@@ -28,12 +28,12 @@ namespace LibHac.FsSystem
             BlockSize = blockSize;
         }
 
-        public Result CreateDirectory(string path)
+        protected override Result CreateDirectoryImpl(string path)
         {
             return BaseFileSystem.CreateDirectory(path);
         }
 
-        public Result CreateFile(string path, long size, CreateFileOptions options)
+        protected override Result CreateFileImpl(string path, long size, CreateFileOptions options)
         {
             return CreateFile(path, size, options, new byte[0x20]);
         }
@@ -67,27 +67,27 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public Result DeleteDirectory(string path)
+        protected override Result DeleteDirectoryImpl(string path)
         {
             return BaseFileSystem.DeleteDirectory(path);
         }
 
-        public Result DeleteDirectoryRecursively(string path)
+        protected override Result DeleteDirectoryRecursivelyImpl(string path)
         {
             return BaseFileSystem.DeleteDirectoryRecursively(path);
         }
 
-        public Result CleanDirectoryRecursively(string path)
+        protected override Result CleanDirectoryRecursivelyImpl(string path)
         {
             return BaseFileSystem.CleanDirectoryRecursively(path);
         }
 
-        public Result DeleteFile(string path)
+        protected override Result DeleteFileImpl(string path)
         {
             return BaseFileSystem.DeleteFile(path);
         }
 
-        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
+        protected override Result OpenDirectoryImpl(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
             directory = default;
             path = PathTools.Normalize(path);
@@ -99,7 +99,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public Result OpenFile(out IFile file, string path, OpenMode mode)
+        protected override Result OpenFileImpl(out IFile file, string path, OpenMode mode)
         {
             file = default;
             path = PathTools.Normalize(path);
@@ -113,7 +113,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public Result RenameDirectory(string oldPath, string newPath)
+        protected override Result RenameDirectoryImpl(string oldPath, string newPath)
         {
             oldPath = PathTools.Normalize(oldPath);
             newPath = PathTools.Normalize(newPath);
@@ -176,7 +176,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        public Result RenameFile(string oldPath, string newPath)
+        protected override Result RenameFileImpl(string oldPath, string newPath)
         {
             oldPath = PathTools.Normalize(oldPath);
             newPath = PathTools.Normalize(newPath);
@@ -202,32 +202,32 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public Result GetEntryType(out DirectoryEntryType entryType, string path)
+        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path)
         {
             return BaseFileSystem.GetEntryType(out entryType, path);
         }
 
-        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
+        protected override Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, string path)
         {
             return BaseFileSystem.GetFileTimeStampRaw(out timeStamp, path);
         }
 
-        public Result GetFreeSpaceSize(out long freeSpace, string path)
+        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, string path)
         {
             return BaseFileSystem.GetFreeSpaceSize(out freeSpace, path);
         }
 
-        public Result GetTotalSpaceSize(out long totalSpace, string path)
+        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, string path)
         {
             return BaseFileSystem.GetTotalSpaceSize(out totalSpace, path);
         }
 
-        public Result Commit()
+        protected override Result CommitImpl()
         {
             return BaseFileSystem.Commit();
         }
 
-        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
+        protected override Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
         {
             return BaseFileSystem.QueryEntry(outBuffer, inBuffer, queryId, path);
         }

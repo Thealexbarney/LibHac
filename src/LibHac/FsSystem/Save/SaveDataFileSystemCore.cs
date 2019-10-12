@@ -1,10 +1,9 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem.Save
 {
-    public class SaveDataFileSystemCore : IFileSystem
+    public class SaveDataFileSystemCore : FileSystemBase
     {
         private IStorage BaseStorage { get; }
         private IStorage HeaderStorage { get; }
@@ -28,7 +27,7 @@ namespace LibHac.FsSystem.Save
             FileTable = new HierarchicalSaveFileTable(dirTableStorage, fileTableStorage);
         }
 
-        public Result CreateDirectory(string path)
+        protected override Result CreateDirectoryImpl(string path)
         {
             path = PathTools.Normalize(path);
 
@@ -37,7 +36,7 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public Result CreateFile(string path, long size, CreateFileOptions options)
+        protected override Result CreateFileImpl(string path, long size, CreateFileOptions options)
         {
             path = PathTools.Normalize(path);
 
@@ -64,7 +63,7 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public Result DeleteDirectory(string path)
+        protected override Result DeleteDirectoryImpl(string path)
         {
             path = PathTools.Normalize(path);
 
@@ -73,7 +72,7 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public Result DeleteDirectoryRecursively(string path)
+        protected override Result DeleteDirectoryRecursivelyImpl(string path)
         {
             path = PathTools.Normalize(path);
 
@@ -85,7 +84,7 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public Result CleanDirectoryRecursively(string path)
+        protected override Result CleanDirectoryRecursivelyImpl(string path)
         {
             path = PathTools.Normalize(path);
 
@@ -94,7 +93,7 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public Result DeleteFile(string path)
+        protected override Result DeleteFileImpl(string path)
         {
             path = PathTools.Normalize(path);
 
@@ -113,7 +112,7 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
+        protected override Result OpenDirectoryImpl(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
             directory = default;
             path = PathTools.Normalize(path);
@@ -128,7 +127,7 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public Result OpenFile(out IFile file, string path, OpenMode mode)
+        protected override Result OpenFileImpl(out IFile file, string path, OpenMode mode)
         {
             file = default;
             path = PathTools.Normalize(path);
@@ -145,7 +144,7 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public Result RenameDirectory(string oldPath, string newPath)
+        protected override Result RenameDirectoryImpl(string oldPath, string newPath)
         {
             oldPath = PathTools.Normalize(oldPath);
             newPath = PathTools.Normalize(newPath);
@@ -153,7 +152,7 @@ namespace LibHac.FsSystem.Save
             return FileTable.RenameDirectory(oldPath, newPath);
         }
 
-        public Result RenameFile(string oldPath, string newPath)
+        protected override Result RenameFileImpl(string oldPath, string newPath)
         {
             oldPath = PathTools.Normalize(oldPath);
             newPath = PathTools.Normalize(newPath);
@@ -163,7 +162,7 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public Result GetEntryType(out DirectoryEntryType entryType, string path)
+        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path)
         {
             path = PathTools.Normalize(path);
 
@@ -183,7 +182,7 @@ namespace LibHac.FsSystem.Save
             return ResultFs.PathNotFound.Log();
         }
 
-        public Result GetFreeSpaceSize(out long freeSpace, string path)
+        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, string path)
         {
             int freeBlockCount = AllocationTable.GetFreeListLength();
             freeSpace = Header.BlockSize * freeBlockCount;
@@ -191,27 +190,16 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public Result GetTotalSpaceSize(out long totalSpace, string path)
+        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, string path)
         {
             totalSpace = Header.BlockSize * Header.BlockCount;
 
             return Result.Success;
         }
 
-        public Result Commit()
+        protected override Result CommitImpl()
         {
             return Result.Success;
-        }
-
-        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
-        {
-            timeStamp = default;
-            return ResultFs.NotImplemented.Log();
-        }
-
-        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
-        {
-            return ResultFs.NotImplemented.Log();
         }
 
         public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();

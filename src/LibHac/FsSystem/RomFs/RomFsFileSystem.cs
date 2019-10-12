@@ -1,9 +1,8 @@
-﻿using System;
-using LibHac.Fs;
+﻿using LibHac.Fs;
 
 namespace LibHac.FsSystem.RomFs
 {
-    public class RomFsFileSystem : IFileSystem
+    public class RomFsFileSystem : FileSystemBase
     {
         public RomfsHeader Header { get; }
 
@@ -23,7 +22,7 @@ namespace LibHac.FsSystem.RomFs
             FileTable = new HierarchicalRomFileTable<RomFileInfo>(dirHashTable, dirEntryTable, fileHashTable, fileEntryTable);
         }
 
-        public Result GetEntryType(out DirectoryEntryType entryType, string path)
+        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path)
         {
             entryType = DirectoryEntryType.NotFound;
             path = PathTools.Normalize(path);
@@ -43,12 +42,12 @@ namespace LibHac.FsSystem.RomFs
             return ResultFs.PathNotFound.Log();
         }
 
-        public Result Commit()
+        protected override Result CommitImpl()
         {
             return Result.Success;
         }
 
-        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
+        protected override Result OpenDirectoryImpl(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
             directory = default;
             path = PathTools.Normalize(path);
@@ -62,7 +61,7 @@ namespace LibHac.FsSystem.RomFs
             return Result.Success;
         }
 
-        public Result OpenFile(out IFile file, string path, OpenMode mode)
+        protected override Result OpenFileImpl(out IFile file, string path, OpenMode mode)
         {
             file = default;
             path = PathTools.Normalize(path);
@@ -87,36 +86,25 @@ namespace LibHac.FsSystem.RomFs
             return BaseStorage;
         }
 
-        public Result CreateDirectory(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
-        public Result CreateFile(string path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
-        public Result DeleteDirectory(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
-        public Result DeleteDirectoryRecursively(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
-        public Result CleanDirectoryRecursively(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
-        public Result DeleteFile(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
-        public Result RenameDirectory(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
-        public Result RenameFile(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        protected override Result CreateDirectoryImpl(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        protected override Result CreateFileImpl(string path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        protected override Result DeleteDirectoryImpl(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        protected override Result DeleteDirectoryRecursivelyImpl(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        protected override Result CleanDirectoryRecursivelyImpl(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        protected override Result DeleteFileImpl(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        protected override Result RenameDirectoryImpl(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        protected override Result RenameFileImpl(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
 
-        public Result GetFreeSpaceSize(out long freeSpace, string path)
+        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, string path)
         {
             freeSpace = default;
             return ResultFs.UnsupportedOperationRomFsFileSystemGetSpace.Log();
         }
 
-        public Result GetTotalSpaceSize(out long totalSpace, string path)
+        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, string path)
         {
             totalSpace = default;
             return ResultFs.UnsupportedOperationRomFsFileSystemGetSpace.Log();
-        }
-
-        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
-        {
-            timeStamp = default;
-            return ResultFs.NotImplemented.Log();
-        }
-
-        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
-        {
-            return ResultFs.NotImplemented.Log();
         }
     }
 

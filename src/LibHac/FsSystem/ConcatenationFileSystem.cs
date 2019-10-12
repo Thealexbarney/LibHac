@@ -21,7 +21,7 @@ namespace LibHac.FsSystem
     /// Each sub-file except the final one must have the size <see cref="SubFileSize"/> that was specified
     /// at the creation of the <see cref="ConcatenationFileSystem"/>.
     /// </remarks>
-    public class ConcatenationFileSystem : IFileSystem
+    public class ConcatenationFileSystem : FileSystemBase
     {
         private const long DefaultSubFileSize = 0xFFFF0000; // Hard-coded value used by FS
         private IAttributeFileSystem BaseFileSystem { get; }
@@ -104,7 +104,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.SetFileAttributes(path, NxFileAttributes.Archive);
         }
 
-        public Result CreateDirectory(string path)
+        protected override Result CreateDirectoryImpl(string path)
         {
             path = PathTools.Normalize(path);
             string parent = PathTools.GetParentDirectory(path);
@@ -118,7 +118,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.CreateDirectory(path);
         }
 
-        public Result CreateFile(string path, long size, CreateFileOptions options)
+        protected override Result CreateFileImpl(string path, long size, CreateFileOptions options)
         {
             path = PathTools.Normalize(path);
 
@@ -162,7 +162,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public Result DeleteDirectory(string path)
+        protected override Result DeleteDirectoryImpl(string path)
         {
             path = PathTools.Normalize(path);
 
@@ -174,7 +174,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.DeleteDirectory(path);
         }
 
-        public Result DeleteDirectoryRecursively(string path)
+        protected override Result DeleteDirectoryRecursivelyImpl(string path)
         {
             path = PathTools.Normalize(path);
 
@@ -183,7 +183,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.DeleteDirectoryRecursively(path);
         }
 
-        public Result CleanDirectoryRecursively(string path)
+        protected override Result CleanDirectoryRecursivelyImpl(string path)
         {
             path = PathTools.Normalize(path);
 
@@ -192,7 +192,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.CleanDirectoryRecursively(path);
         }
 
-        public Result DeleteFile(string path)
+        protected override Result DeleteFileImpl(string path)
         {
             path = PathTools.Normalize(path);
 
@@ -212,7 +212,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.DeleteDirectory(path);
         }
 
-        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
+        protected override Result OpenDirectoryImpl(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
             directory = default;
             path = PathTools.Normalize(path);
@@ -229,7 +229,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public Result OpenFile(out IFile file, string path, OpenMode mode)
+        protected override Result OpenFileImpl(out IFile file, string path, OpenMode mode)
         {
             file = default;
             path = PathTools.Normalize(path);
@@ -257,7 +257,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public Result RenameDirectory(string oldPath, string newPath)
+        protected override Result RenameDirectoryImpl(string oldPath, string newPath)
         {
             oldPath = PathTools.Normalize(oldPath);
             newPath = PathTools.Normalize(newPath);
@@ -270,7 +270,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.RenameDirectory(oldPath, newPath);
         }
 
-        public Result RenameFile(string oldPath, string newPath)
+        protected override Result RenameFileImpl(string oldPath, string newPath)
         {
             oldPath = PathTools.Normalize(oldPath);
             newPath = PathTools.Normalize(newPath);
@@ -285,7 +285,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        public Result GetEntryType(out DirectoryEntryType entryType, string path)
+        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path)
         {
             path = PathTools.Normalize(path);
 
@@ -298,27 +298,27 @@ namespace LibHac.FsSystem
             return BaseFileSystem.GetEntryType(out entryType, path);
         }
 
-        public Result GetFreeSpaceSize(out long freeSpace, string path)
+        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, string path)
         {
             return BaseFileSystem.GetFreeSpaceSize(out freeSpace, path);
         }
 
-        public Result GetTotalSpaceSize(out long totalSpace, string path)
+        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, string path)
         {
             return BaseFileSystem.GetTotalSpaceSize(out totalSpace, path);
         }
 
-        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
+        protected override Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, string path)
         {
             return BaseFileSystem.GetFileTimeStampRaw(out timeStamp, path);
         }
 
-        public Result Commit()
+        protected override Result CommitImpl()
         {
             return BaseFileSystem.Commit();
         }
 
-        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
+        protected override Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
         {
             if (queryId != QueryId.MakeConcatFile) return ResultFs.UnsupportedOperationInConcatFsQueryEntry.Log();
 

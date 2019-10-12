@@ -4,7 +4,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class LayeredFileSystem : IFileSystem
+    public class LayeredFileSystem : FileSystemBase
     {
         private List<IFileSystem> Sources { get; } = new List<IFileSystem>();
 
@@ -13,7 +13,7 @@ namespace LibHac.FsSystem
             Sources.AddRange(sourceFileSystems);
         }
 
-        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
+        protected override Result OpenDirectoryImpl(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
             directory = default;
             path = PathTools.Normalize(path);
@@ -43,7 +43,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public Result OpenFile(out IFile file, string path, OpenMode mode)
+        protected override Result OpenFileImpl(out IFile file, string path, OpenMode mode)
         {
             file = default;
             path = PathTools.Normalize(path);
@@ -67,7 +67,7 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        public Result GetEntryType(out DirectoryEntryType entryType, string path)
+        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path)
         {
             path = PathTools.Normalize(path);
 
@@ -86,7 +86,7 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
+        protected override Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, string path)
         {
             path = PathTools.Normalize(path);
 
@@ -104,7 +104,7 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
+        protected override Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
         {
             path = PathTools.Normalize(path);
 
@@ -121,30 +121,18 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        public Result Commit()
+        protected override Result CommitImpl()
         {
             return Result.Success;
         }
 
-        public Result CreateDirectory(string path) => ResultFs.UnsupportedOperation.Log();
-        public Result CreateFile(string path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperation.Log();
-        public Result DeleteDirectory(string path) => ResultFs.UnsupportedOperation.Log();
-        public Result DeleteDirectoryRecursively(string path) => ResultFs.UnsupportedOperation.Log();
-        public Result CleanDirectoryRecursively(string path) => ResultFs.UnsupportedOperation.Log();
-        public Result DeleteFile(string path) => ResultFs.UnsupportedOperation.Log();
-        public Result RenameDirectory(string oldPath, string newPath) => ResultFs.UnsupportedOperation.Log();
-        public Result RenameFile(string oldPath, string newPath) => ResultFs.UnsupportedOperation.Log();
-
-        public Result GetFreeSpaceSize(out long freeSpace, string path)
-        {
-            freeSpace = default;
-            return ResultFs.UnsupportedOperation.Log();
-        }
-
-        public Result GetTotalSpaceSize(out long totalSpace, string path)
-        {
-            totalSpace = default;
-            return ResultFs.UnsupportedOperation.Log();
-        }
+        protected override Result CreateDirectoryImpl(string path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result CreateFileImpl(string path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DeleteDirectoryImpl(string path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DeleteDirectoryRecursivelyImpl(string path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result CleanDirectoryRecursivelyImpl(string path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DeleteFileImpl(string path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result RenameDirectoryImpl(string oldPath, string newPath) => ResultFs.UnsupportedOperation.Log();
+        protected override Result RenameFileImpl(string oldPath, string newPath) => ResultFs.UnsupportedOperation.Log();
     }
 }

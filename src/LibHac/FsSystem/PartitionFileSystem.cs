@@ -7,7 +7,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class PartitionFileSystem : IFileSystem
+    public class PartitionFileSystem : FileSystemBase
     {
         // todo Re-add way of checking a file hash
         public PartitionFileSystemHeader Header { get; }
@@ -30,13 +30,13 @@ namespace LibHac.FsSystem
             BaseStorage = storage;
         }
 
-        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
+        protected override Result OpenDirectoryImpl(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
             directory = new PartitionDirectory(this, path, mode);
             return Result.Success;
         }
 
-        public Result OpenFile(out IFile file, string path, OpenMode mode)
+        protected override Result OpenFileImpl(out IFile file, string path, OpenMode mode)
         {
             path = PathTools.Normalize(path).TrimStart('/');
 
@@ -54,7 +54,7 @@ namespace LibHac.FsSystem
             return new PartitionFile(BaseStorage, HeaderSize + entry.Offset, entry.Size, mode);
         }
 
-        public Result GetEntryType(out DirectoryEntryType entryType, string path)
+        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path)
         {
             entryType = DirectoryEntryType.NotFound;
             path = PathTools.Normalize(path);
@@ -74,39 +74,19 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        public Result CreateDirectory(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        public Result CreateFile(string path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        public Result DeleteDirectory(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        public Result DeleteDirectoryRecursively(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        public Result CleanDirectoryRecursively(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        public Result DeleteFile(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        public Result RenameDirectory(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        public Result RenameFile(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result CreateDirectoryImpl(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result CreateFileImpl(string path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result DeleteDirectoryImpl(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result DeleteDirectoryRecursivelyImpl(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result CleanDirectoryRecursivelyImpl(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result DeleteFileImpl(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result RenameDirectoryImpl(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result RenameFileImpl(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
 
-        public Result GetFreeSpaceSize(out long freeSpace, string path)
-        {
-            freeSpace = default;
-            return ResultFs.NotImplemented.Log();
-        }
-
-        public Result GetTotalSpaceSize(out long totalSpace, string path)
-        {
-            totalSpace = default;
-            return ResultFs.NotImplemented.Log();
-        }
-
-        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
-        {
-            timeStamp = default;
-            return ResultFs.NotImplemented.Log();
-        }
-
-        public Result Commit()
+        protected override Result CommitImpl()
         {
             return Result.Success;
         }
-
-        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path) => ResultFs.NotImplemented.Log();
     }
 
     public enum PartitionFileSystemType

@@ -3,7 +3,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class SubdirectoryFileSystem : IFileSystem
+    public class SubdirectoryFileSystem : FileSystemBase
     {
         private string RootPath { get; }
         private IFileSystem ParentFileSystem { get; }
@@ -19,63 +19,63 @@ namespace LibHac.FsSystem
             RootPath = PathTools.Normalize(rootPath);
         }
 
-        public Result CreateDirectory(string path)
+        protected override Result CreateDirectoryImpl(string path)
         {
             string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
             return ParentFileSystem.CreateDirectory(fullPath);
         }
 
-        public Result CreateFile(string path, long size, CreateFileOptions options)
+        protected override Result CreateFileImpl(string path, long size, CreateFileOptions options)
         {
             string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
             return ParentFileSystem.CreateFile(fullPath, size, options);
         }
 
-        public Result DeleteDirectory(string path)
+        protected override Result DeleteDirectoryImpl(string path)
         {
             string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
             return ParentFileSystem.DeleteDirectory(fullPath);
         }
 
-        public Result DeleteDirectoryRecursively(string path)
+        protected override Result DeleteDirectoryRecursivelyImpl(string path)
         {
             string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
             return ParentFileSystem.DeleteDirectoryRecursively(fullPath);
         }
 
-        public Result CleanDirectoryRecursively(string path)
+        protected override Result CleanDirectoryRecursivelyImpl(string path)
         {
             string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
             return ParentFileSystem.CleanDirectoryRecursively(fullPath);
         }
 
-        public Result DeleteFile(string path)
+        protected override Result DeleteFileImpl(string path)
         {
             string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
             return ParentFileSystem.DeleteFile(fullPath);
         }
 
-        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
+        protected override Result OpenDirectoryImpl(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
             string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
             return ParentFileSystem.OpenDirectory(out directory, fullPath, mode);
         }
 
-        public Result OpenFile(out IFile file, string path, OpenMode mode)
+        protected override Result OpenFileImpl(out IFile file, string path, OpenMode mode)
         {
             string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
             return ParentFileSystem.OpenFile(out file, fullPath, mode);
         }
 
-        public Result RenameDirectory(string oldPath, string newPath)
+        protected override Result RenameDirectoryImpl(string oldPath, string newPath)
         {
             string fullOldPath = ResolveFullPath(PathTools.Normalize(oldPath));
             string fullNewPath = ResolveFullPath(PathTools.Normalize(newPath));
@@ -83,7 +83,7 @@ namespace LibHac.FsSystem
             return ParentFileSystem.RenameDirectory(fullOldPath, fullNewPath);
         }
 
-        public Result RenameFile(string oldPath, string newPath)
+        protected override Result RenameFileImpl(string oldPath, string newPath)
         {
             string fullOldPath = ResolveFullPath(PathTools.Normalize(oldPath));
             string fullNewPath = ResolveFullPath(PathTools.Normalize(newPath));
@@ -91,40 +91,40 @@ namespace LibHac.FsSystem
             return ParentFileSystem.RenameFile(fullOldPath, fullNewPath);
         }
 
-        public Result GetEntryType(out DirectoryEntryType entryType, string path)
+        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path)
         {
             string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
             return ParentFileSystem.GetEntryType(out entryType, fullPath);
         }
 
-        public Result Commit()
+        protected override Result CommitImpl()
         {
             return ParentFileSystem.Commit();
         }
 
-        public Result GetFreeSpaceSize(out long freeSpace, string path)
+        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, string path)
         {
             string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
             return ParentFileSystem.GetFreeSpaceSize(out freeSpace, fullPath);
         }
 
-        public Result GetTotalSpaceSize(out long totalSpace, string path)
+        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, string path)
         {
             string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
             return ParentFileSystem.GetTotalSpaceSize(out totalSpace, fullPath);
         }
 
-        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
+        protected override Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, string path)
         {
             string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
             return ParentFileSystem.GetFileTimeStampRaw(out timeStamp, fullPath);
         }
 
-        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
+        protected override Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
         {
             string fullPath = ResolveFullPath(PathTools.Normalize(path));
 
