@@ -45,6 +45,13 @@ namespace LibHac.Fs
         Result Flush();
 
         /// <summary>
+        /// Sets the size of the file in bytes.
+        /// </summary>
+        /// <param name="size">The desired size of the file in bytes.</param>
+        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
+        Result SetSize(long size);
+
+        /// <summary>
         /// Gets the number of bytes in the file.
         /// </summary>
         /// <param name="size">If the operation returns successfully, the length of the file in bytes.</param>
@@ -52,10 +59,15 @@ namespace LibHac.Fs
         Result GetSize(out long size);
 
         /// <summary>
-        /// Sets the size of the file in bytes.
+        /// Performs various operations on the file. Used to extend the functionality of the <see cref="IFile"/> interface.
         /// </summary>
-        /// <param name="size">The desired size of the file in bytes.</param>
+        /// <param name="outBuffer">A buffer that will contain the response from the operation.</param>
+        /// <param name="operationId">The operation to be performed.</param>
+        /// <param name="offset">The offset of the range to operate on.</param>
+        /// <param name="size">The size of the range to operate on.</param>
+        /// <param name="inBuffer">An input buffer. Size may vary depending on the operation performed.</param>
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        Result SetSize(long size);
+        Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+            ReadOnlySpan<byte> inBuffer);
     }
 }

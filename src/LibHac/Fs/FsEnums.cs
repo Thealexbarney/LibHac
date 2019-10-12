@@ -119,4 +119,12 @@ namespace LibHac.Fs
         None = 0,
         Flush = 1
     }
+
+    public enum OperationId
+    {
+        Clear = 0,
+        ClearSignature = 1,
+        InvalidateCache = 2,
+        QueryRange = 3
+    }
 }

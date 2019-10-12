@@ -9,20 +9,6 @@ namespace LibHac.Fs
     public interface IFileSystem
     {
         /// <summary>
-        /// Creates all directories and subdirectories in the specified path unless they already exist.
-        /// </summary>
-        /// <param name="path">The full path of the directory to create.</param>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        /// <remarks>
-        /// The following <see cref="Result"/> codes may be returned under certain conditions:
-        /// 
-        /// The parent directory of the specified path does not exist: <see cref="ResultFs.PathNotFound"/>
-        /// Specified path already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
-        /// Insufficient free space to create the directory: <see cref="ResultFs.InsufficientFreeSpace"/>
-        /// </remarks>
-        Result CreateDirectory(string path);
-
-        /// <summary>
         /// Creates or overwrites a file at the specified path.
         /// </summary>
         /// <param name="path">The full path of the file to create.</param>
@@ -38,6 +24,32 @@ namespace LibHac.Fs
         /// Insufficient free space to create the file: <see cref="ResultFs.InsufficientFreeSpace"/>
         /// </remarks>
         Result CreateFile(string path, long size, CreateFileOptions options);
+
+        /// <summary>
+        /// Deletes the specified file.
+        /// </summary>
+        /// <param name="path">The full path of the file to delete.</param>
+        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
+        /// <remarks>
+        /// The following <see cref="Result"/> codes may be returned under certain conditions:
+        /// 
+        /// The specified path does not exist or is a directory: <see cref="ResultFs.PathNotFound"/>
+        /// </remarks>
+        Result DeleteFile(string path);
+
+        /// <summary>
+        /// Creates all directories and subdirectories in the specified path unless they already exist.
+        /// </summary>
+        /// <param name="path">The full path of the directory to create.</param>
+        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
+        /// <remarks>
+        /// The following <see cref="Result"/> codes may be returned under certain conditions:
+        /// 
+        /// The parent directory of the specified path does not exist: <see cref="ResultFs.PathNotFound"/>
+        /// Specified path already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
+        /// Insufficient free space to create the directory: <see cref="ResultFs.InsufficientFreeSpace"/>
+        /// </remarks>
+        Result CreateDirectory(string path);
 
         /// <summary>
         /// Deletes the specified directory.
@@ -77,46 +89,20 @@ namespace LibHac.Fs
         Result CleanDirectoryRecursively(string path);
 
         /// <summary>
-        /// Deletes the specified file.
+        /// Renames or moves a file to a new location.
         /// </summary>
-        /// <param name="path">The full path of the file to delete.</param>
+        /// <param name="oldPath">The full path of the file to rename.</param>
+        /// <param name="newPath">The new full path of the file.</param>
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
         /// <remarks>
+        /// If <paramref name="oldPath"/> and <paramref name="newPath"/> are the same, this function does nothing and returns successfully.
         /// The following <see cref="Result"/> codes may be returned under certain conditions:
         /// 
-        /// The specified path does not exist or is a directory: <see cref="ResultFs.PathNotFound"/>
+        /// <paramref name="oldPath"/> does not exist or is a directory: <see cref="ResultFs.PathNotFound"/>
+        /// <paramref name="newPath"/>'s parent directory does not exist: <see cref="ResultFs.PathNotFound"/>
+        /// <paramref name="newPath"/> already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
         /// </remarks>
-        Result DeleteFile(string path);
-
-        /// <summary>
-        /// Creates an <see cref="IDirectory"/> instance for enumerating the specified directory.
-        /// </summary>
-        /// <param name="directory">If the operation returns successfully,
-        /// An <see cref="IDirectory"/> instance for the specified directory.</param>
-        /// <param name="path">The directory's full path.</param>
-        /// <param name="mode">Specifies which sub-entries should be enumerated.</param>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        /// <remarks>
-        /// The following <see cref="Result"/> codes may be returned under certain conditions:
-        /// 
-        /// The specified path does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
-        /// </remarks>
-        Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode);
-
-        /// <summary>
-        /// Opens an <see cref="IFile"/> instance for the specified path.
-        /// </summary>
-        /// <param name="file">If the operation returns successfully,
-        /// An <see cref="IFile"/> instance for the specified path.</param>
-        /// <param name="path">The full path of the file to open.</param>
-        /// <param name="mode">Specifies the access permissions of the created <see cref="IFile"/>.</param>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        /// <remarks>
-        /// The following <see cref="Result"/> codes may be returned under certain conditions:
-        /// 
-        /// The specified path does not exist or is a directory: <see cref="ResultFs.PathNotFound"/>
-        /// </remarks>
-        Result OpenFile(out IFile file, string path, OpenMode mode);
+        Result RenameFile(string oldPath, string newPath);
 
         /// <summary>
         /// Renames or moves a directory to a new location.
@@ -134,22 +120,6 @@ namespace LibHac.Fs
         /// Either <paramref name="oldPath"/> or <paramref name="newPath"/> is a subpath of the other: <see cref="ResultFs.DestinationIsSubPathOfSource"/>
         /// </remarks>
         Result RenameDirectory(string oldPath, string newPath);
-
-        /// <summary>
-        /// Renames or moves a file to a new location.
-        /// </summary>
-        /// <param name="oldPath">The full path of the file to rename.</param>
-        /// <param name="newPath">The new full path of the file.</param>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        /// <remarks>
-        /// If <paramref name="oldPath"/> and <paramref name="newPath"/> are the same, this function does nothing and returns successfully.
-        /// The following <see cref="Result"/> codes may be returned under certain conditions:
-        /// 
-        /// <paramref name="oldPath"/> does not exist or is a directory: <see cref="ResultFs.PathNotFound"/>
-        /// <paramref name="newPath"/>'s parent directory does not exist: <see cref="ResultFs.PathNotFound"/>
-        /// <paramref name="newPath"/> already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
-        /// </remarks>
-        Result RenameFile(string oldPath, string newPath);
 
         /// <summary>
         /// Determines whether the specified path is a file or directory, or does not exist.
@@ -181,6 +151,43 @@ namespace LibHac.Fs
         Result GetTotalSpaceSize(out long totalSpace, string path);
 
         /// <summary>
+        /// Opens an <see cref="IFile"/> instance for the specified path.
+        /// </summary>
+        /// <param name="file">If the operation returns successfully,
+        /// An <see cref="IFile"/> instance for the specified path.</param>
+        /// <param name="path">The full path of the file to open.</param>
+        /// <param name="mode">Specifies the access permissions of the created <see cref="IFile"/>.</param>
+        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
+        /// <remarks>
+        /// The following <see cref="Result"/> codes may be returned under certain conditions:
+        /// 
+        /// The specified path does not exist or is a directory: <see cref="ResultFs.PathNotFound"/>
+        /// </remarks>
+        Result OpenFile(out IFile file, string path, OpenMode mode);
+
+        /// <summary>
+        /// Creates an <see cref="IDirectory"/> instance for enumerating the specified directory.
+        /// </summary>
+        /// <param name="directory">If the operation returns successfully,
+        /// An <see cref="IDirectory"/> instance for the specified directory.</param>
+        /// <param name="path">The directory's full path.</param>
+        /// <param name="mode">Specifies which sub-entries should be enumerated.</param>
+        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
+        /// <remarks>
+        /// The following <see cref="Result"/> codes may be returned under certain conditions:
+        /// 
+        /// The specified path does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
+        /// </remarks>
+        Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode);
+
+        /// <summary>
+        /// Commits any changes to a transactional file system.
+        /// Does nothing if called on a non-transactional file system.
+        /// </summary>
+        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
+        Result Commit();
+
+        /// <summary>
         /// Gets the creation, last accessed, and last modified timestamps of a file or directory.
         /// </summary>
         /// <param name="timeStamp">If the operation returns successfully, the timestamps for the specified file or directory.
@@ -193,13 +200,6 @@ namespace LibHac.Fs
         /// The specified path does not exist: <see cref="ResultFs.PathNotFound"/>
         /// </remarks>
         Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path);
-
-        /// <summary>
-        /// Commits any changes to a transactional file system.
-        /// Does nothing if called on a non-transactional file system.
-        /// </summary>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        Result Commit();
 
         /// <summary>
         /// Performs a query on the specified file.

@@ -12,8 +12,14 @@ namespace LibHac.Fs
         protected abstract Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options);
         protected abstract Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options);
         protected abstract Result FlushImpl();
-        protected abstract Result GetSizeImpl(out long size);
         protected abstract Result SetSizeImpl(long size);
+        protected abstract Result GetSizeImpl(out long size);
+
+        protected virtual Result OperateRangeImpl(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+            ReadOnlySpan<byte> inBuffer)
+        {
+            return ResultFs.NotImplemented.Log();
+        }
 
         public Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
@@ -53,6 +59,14 @@ namespace LibHac.Fs
             return FlushImpl();
         }
 
+        public Result SetSize(long size)
+        {
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+            if (size < 0) return ResultFs.ValueOutOfRange.Log();
+
+            return SetSizeImpl(size);
+        }
+
         public Result GetSize(out long size)
         {
             if (IsDisposed)
@@ -64,12 +78,12 @@ namespace LibHac.Fs
             return GetSizeImpl(out size);
         }
 
-        public Result SetSize(long size)
+        public Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+            ReadOnlySpan<byte> inBuffer)
         {
             if (IsDisposed) return ResultFs.PreconditionViolation.Log();
-            if (size < 0) return ResultFs.ValueOutOfRange.Log();
 
-            return SetSizeImpl(size);
+            return OperateRange(outBuffer, operationId, offset, size, inBuffer);
         }
 
         public void Dispose()

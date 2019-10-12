@@ -15,6 +15,12 @@ namespace LibHac.Fs
         protected abstract Result GetSizeImpl(out long size);
         protected abstract Result SetSizeImpl(long size);
 
+        protected virtual Result OperateRangeImpl(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+            ReadOnlySpan<byte> inBuffer)
+        {
+            return ResultFs.NotImplemented.Log();
+        }
+
         public Result Read(long offset, Span<byte> destination)
         {
             if (IsDisposed) return ResultFs.PreconditionViolation.Log();
@@ -49,6 +55,14 @@ namespace LibHac.Fs
             if (IsDisposed) return ResultFs.PreconditionViolation.Log();
 
             return GetSizeImpl(out size);
+        }
+
+        public Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+            ReadOnlySpan<byte> inBuffer)
+        {
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+
+            return OperateRange(outBuffer, operationId, offset, size, inBuffer);
         }
 
         public void Dispose()

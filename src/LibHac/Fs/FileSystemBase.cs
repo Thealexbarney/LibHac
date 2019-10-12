@@ -22,6 +22,29 @@ namespace LibHac.Fs
         protected abstract Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path);
         protected abstract Result CommitImpl();
 
+        protected virtual Result GetFreeSpaceSizeImpl(out long freeSpace, string path)
+        {
+            freeSpace = default;
+            return ResultFs.NotImplemented.Log();
+        }
+
+        protected virtual Result GetTotalSpaceSizeImpl(out long totalSpace, string path)
+        {
+            totalSpace = default;
+            return ResultFs.NotImplemented.Log();
+        }
+
+        protected virtual Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, string path)
+        {
+            timeStamp = default;
+            return ResultFs.NotImplemented.Log();
+        }
+
+        protected virtual Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
+        {
+            return ResultFs.NotImplemented.Log();
+        }
+
         public Result CreateDirectory(string path)
         {
             if (IsDisposed) return ResultFs.PreconditionViolation.Log();
@@ -169,28 +192,5 @@ namespace LibHac.Fs
         }
 
         protected virtual void Dispose(bool disposing) { }
-
-        protected virtual Result GetFreeSpaceSizeImpl(out long freeSpace, string path)
-        {
-            freeSpace = default;
-            return ResultFs.NotImplemented.Log();
-        }
-
-        protected virtual Result GetTotalSpaceSizeImpl(out long totalSpace, string path)
-        {
-            totalSpace = default;
-            return ResultFs.NotImplemented.Log();
-        }
-
-        protected virtual Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, string path)
-        {
-            timeStamp = default;
-            return ResultFs.NotImplemented.Log();
-        }
-
-        protected virtual Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
-        {
-            return ResultFs.NotImplemented.Log();
-        }
     }
 }
