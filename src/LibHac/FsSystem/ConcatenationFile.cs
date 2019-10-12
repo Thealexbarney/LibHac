@@ -33,7 +33,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        public override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
             bytesRead = default;
 
@@ -69,7 +69,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
             Result rc = ValidateWriteParams(offset, source.Length, Mode, out _);
             if (rc.IsFailure()) return rc;
@@ -105,7 +105,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public override Result FlushImpl()
+        protected override Result FlushImpl()
         {
             foreach (IFile file in Sources)
             {
@@ -116,7 +116,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public override Result GetSizeImpl(out long size)
+        protected override Result GetSizeImpl(out long size)
         {
             size = default;
 
@@ -131,7 +131,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public override Result SetSizeImpl(long size)
+        protected override Result SetSizeImpl(long size)
         {
             Result rc = GetSize(out long currentSize);
             if (rc.IsFailure()) return rc;

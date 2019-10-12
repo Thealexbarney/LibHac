@@ -2,7 +2,7 @@
 
 namespace LibHac.Fs.Accessors
 {
-    public class FileAccessor : IFile
+    public class FileAccessor : FileBase
     {
         private IFile File { get; set; }
 
@@ -17,14 +17,14 @@ namespace LibHac.Fs.Accessors
             OpenMode = mode;
         }
 
-        public Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
             CheckIfDisposed();
 
             return File.Read(out bytesRead, offset, destination, options);
         }
 
-        public Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
             CheckIfDisposed();
 
@@ -35,7 +35,6 @@ namespace LibHac.Fs.Accessors
                 return Result.Success;
             }
 
-            // 
             Result rc = File.Write(offset, source, options);
 
             if (rc.IsSuccess())
@@ -46,7 +45,7 @@ namespace LibHac.Fs.Accessors
             return rc;
         }
 
-        public Result Flush()
+        protected override Result FlushImpl()
         {
             CheckIfDisposed();
 
@@ -60,21 +59,21 @@ namespace LibHac.Fs.Accessors
             return rc;
         }
 
-        public Result GetSize(out long size)
+        protected override Result GetSizeImpl(out long size)
         {
             CheckIfDisposed();
 
             return File.GetSize(out size);
         }
 
-        public Result SetSize(long size)
+        protected override Result SetSizeImpl(long size)
         {
             CheckIfDisposed();
 
             return File.SetSize(size);
         }
 
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
             if (File == null) return;
 

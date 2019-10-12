@@ -9,11 +9,11 @@ namespace LibHac.Fs
         private int _disposedState;
         private bool IsDisposed => _disposedState != 0;
 
-        public abstract Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options);
-        public abstract Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options);
-        public abstract Result FlushImpl();
-        public abstract Result GetSizeImpl(out long size);
-        public abstract Result SetSizeImpl(long size);
+        protected abstract Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options);
+        protected abstract Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options);
+        protected abstract Result FlushImpl();
+        protected abstract Result GetSizeImpl(out long size);
+        protected abstract Result SetSizeImpl(long size);
 
         public Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {

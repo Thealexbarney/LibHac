@@ -16,7 +16,7 @@ namespace LibHac.FsSystem
 
         private long Length { get; }
 
-        public override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
             bytesRead = 0;
 
@@ -29,23 +29,23 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
             return Result.Success;
         }
 
-        public override Result FlushImpl()
+        protected override Result FlushImpl()
         {
             return Result.Success;
         }
 
-        public override Result GetSizeImpl(out long size)
+        protected override Result GetSizeImpl(out long size)
         {
             size = Length;
             return Result.Success;
         }
 
-        public override Result SetSizeImpl(long size)
+        protected override Result SetSizeImpl(long size)
         {
             return ResultFs.UnsupportedOperation.Log();
         }
