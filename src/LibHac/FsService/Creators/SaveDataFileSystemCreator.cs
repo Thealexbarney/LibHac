@@ -41,7 +41,11 @@ namespace LibHac.FsService.Creators
                     if (!allowDirectorySaveData) return ResultFs.InvalidSaveDataEntryType.Log();
 
                     var subDirFs = new SubdirectoryFileSystem(sourceFileSystem, saveDataPath);
-                    fileSystem = new DirectorySaveDataFileSystem(subDirFs);
+
+                    rc = DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, subDirFs);
+                    if (rc.IsFailure()) return rc;
+
+                    fileSystem = saveFs;
 
                     // Todo: Dummy ISaveDataExtraDataAccessor
 
