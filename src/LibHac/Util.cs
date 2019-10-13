@@ -354,7 +354,9 @@ namespace LibHac
 
         public static string ToHexString(this byte[] bytes) => ToHexString(bytes.AsSpan());
 
-        public static string ToHexString(this Span<byte> bytes)
+        public static string ToHexString(this Span<byte> bytes) => ToHexString((ReadOnlySpan<byte>)bytes);
+
+        public static string ToHexString(this ReadOnlySpan<byte> bytes)
         {
             uint[] lookup32 = Lookup32;
             var result = new char[bytes.Length * 2];

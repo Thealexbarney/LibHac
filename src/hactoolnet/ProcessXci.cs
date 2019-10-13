@@ -4,7 +4,8 @@ using System.Linq;
 using System.Text;
 using LibHac;
 using LibHac.Fs;
-using LibHac.Fs.NcaUtils;
+using LibHac.FsSystem;
+using LibHac.FsSystem.NcaUtils;
 using static hactoolnet.Print;
 
 namespace hactoolnet
@@ -127,7 +128,7 @@ namespace hactoolnet
                 IStorage ncaStorage = partition.OpenFile(fileEntry, OpenMode.Read).AsStorage();
                 var nca = new Nca(ctx.Keyset, ncaStorage);
 
-                if (nca.Header.ContentType == ContentType.Program)
+                if (nca.Header.ContentType == NcaContentType.Program)
                 {
                     mainNca = nca;
                 }
@@ -148,7 +149,7 @@ namespace hactoolnet
             PrintItem(sb, colLen, "Magic:", xci.Header.Magic);
             PrintItem(sb, colLen, $"Header Signature{xci.Header.SignatureValidity.GetValidityString()}:", xci.Header.Signature);
             PrintItem(sb, colLen, $"Header Hash{xci.Header.PartitionFsHeaderValidity.GetValidityString()}:", xci.Header.RootPartitionHeaderHash);
-            PrintItem(sb, colLen, "Cartridge Type:", GetCartridgeType(xci.Header.RomSize));
+            PrintItem(sb, colLen, "Cartridge Type:", GetCartridgeType(xci.Header.GameCardSize));
             PrintItem(sb, colLen, "Cartridge Size:", $"0x{Util.MediaToReal(xci.Header.ValidDataEndPage + 1):x12}");
             PrintItem(sb, colLen, "Header IV:", xci.Header.AesCbcIv);
 
@@ -191,16 +192,16 @@ namespace hactoolnet
             }
         }
 
-        private static string GetCartridgeType(RomSize size)
+        private static string GetCartridgeType(GameCardSize size)
         {
             switch (size)
             {
-                case RomSize.Size1Gb: return "1GB";
-                case RomSize.Size2Gb: return "2GB";
-                case RomSize.Size4Gb: return "4GB";
-                case RomSize.Size8Gb: return "8GB";
-                case RomSize.Size16Gb: return "16GB";
-                case RomSize.Size32Gb: return "32GB";
+                case GameCardSize.Size1Gb: return "1GB";
+                case GameCardSize.Size2Gb: return "2GB";
+                case GameCardSize.Size4Gb: return "4GB";
+                case GameCardSize.Size8Gb: return "8GB";
+                case GameCardSize.Size16Gb: return "16GB";
+                case GameCardSize.Size32Gb: return "32GB";
                 default: return string.Empty;
             }
         }

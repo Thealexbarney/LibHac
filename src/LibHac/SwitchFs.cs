@@ -4,8 +4,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using LibHac.Fs;
-using LibHac.Fs.NcaUtils;
-using LibHac.Fs.Save;
+using LibHac.FsSystem;
+using LibHac.FsSystem.NcaUtils;
+using LibHac.FsSystem.Save;
+using LibHac.Ncm;
 
 namespace LibHac
 {
@@ -67,21 +69,20 @@ namespace LibHac
         private void OpenAllNcas()
         {
             // Todo: give warning if directories named "*.nca" are found or manually fix the archive bit
-            IEnumerable<DirectoryEntry> files = ContentFs.OpenDirectory("/", OpenDirectoryMode.All)
-                .EnumerateEntries("*.nca", SearchOptions.RecurseSubdirectories)
+            IEnumerable<DirectoryEntryEx> files = ContentFs.EnumerateEntries("*.nca", SearchOptions.RecurseSubdirectories)
                 .Where(x => x.Type == DirectoryEntryType.File);
 
-            foreach (DirectoryEntry fileEntry in files)
+            foreach (DirectoryEntryEx fileEntry in files)
             {
                 SwitchFsNca nca = null;
                 try
                 {
-                    IStorage storage = ContentFs.OpenFile(fileEntry.FullPath, OpenMode.Read).AsStorage();
+                    ContentFs.OpenFile(out IFile ncaFile, fileEntry.FullPath, OpenMode.Read).ThrowIfFailure();
 
-                    nca = new SwitchFsNca(new Nca(Keyset, storage));
+                    nca = new SwitchFsNca(new Nca(Keyset, ncaFile.AsStorage()));
 
                     nca.NcaId = GetNcaFilename(fileEntry.Name, nca);
-                    string extension = nca.Nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
+                    string extension = nca.Nca.Header.ContentType == NcaContentType.Meta ? ".cnmt.nca" : ".nca";
                     nca.Filename = nca.NcaId + extension;
                 }
                 catch (MissingKeyException ex)
@@ -107,14 +108,15 @@ namespace LibHac
         {
             if (SaveFs == null) return;
 
-            foreach (DirectoryEntry fileEntry in SaveFs.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File))
+            foreach (DirectoryEntryEx fileEntry in SaveFs.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File))
             {
                 SaveDataFileSystem save = null;
                 string saveName = Path.GetFileNameWithoutExtension(fileEntry.Name);
 
                 try
                 {
-                    IFile file = SaveFs.OpenFile(fileEntry.FullPath, OpenMode.Read);
+                    SaveFs.OpenFile(out IFile file, fileEntry.FullPath, OpenMode.Read).ThrowIfFailure();
+
                     save = new SaveDataFileSystem(Keyset, file.AsStorage(), IntegrityCheckLevel.None, true);
                 }
                 catch (Exception ex)
@@ -131,16 +133,16 @@ namespace LibHac
 
         private void ReadTitles()
         {
-            foreach (SwitchFsNca nca in Ncas.Values.Where(x => x.Nca.Header.ContentType == ContentType.Meta))
+            foreach (SwitchFsNca nca in Ncas.Values.Where(x => x.Nca.Header.ContentType == NcaContentType.Meta))
             {
                 try
                 {
                     var title = new Title();
 
                     IFileSystem fs = nca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
-                    string cnmtPath = fs.EnumerateEntries("*.cnmt").Single().FullPath;
+                    string cnmtPath = fs.EnumerateEntries("/", "*.cnmt").Single().FullPath;
 
-                    IFile file = fs.OpenFile(cnmtPath, OpenMode.Read);
+                    fs.OpenFile(out IFile file, cnmtPath, OpenMode.Read).ThrowIfFailure();
 
                     var metadata = new Cnmt(file.AsStream());
                     title.Id = metadata.TitleId;
@@ -160,11 +162,11 @@ namespace LibHac
 
                         switch (content.Type)
                         {
-                            case CnmtContentType.Program:
-                            case CnmtContentType.Data:
+                            case ContentType.Program:
+                            case ContentType.Data:
                                 title.MainNca = contentNca;
                                 break;
-                            case CnmtContentType.Control:
+                            case ContentType.Control:
                                 title.ControlNca = contentNca;
                                 break;
                         }
@@ -184,7 +186,7 @@ namespace LibHac
             foreach (Title title in Titles.Values.Where(x => x.ControlNca != null))
             {
                 IFileSystem romfs = title.ControlNca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
-                IFile control = romfs.OpenFile("control.nacp", OpenMode.Read);
+                romfs.OpenFile(out IFile control, "control.nacp", OpenMode.Read).ThrowIfFailure();
 
                 title.Control = new Nacp(control.AsStream());
 
@@ -201,7 +203,7 @@ namespace LibHac
 
         private void CreateApplications()
         {
-            foreach (Title title in Titles.Values.Where(x => x.Metadata.Type >= TitleType.Application))
+            foreach (Title title in Titles.Values.Where(x => x.Metadata.Type >= ContentMetaType.Application))
             {
                 Cnmt meta = title.Metadata;
                 ulong appId = meta.ApplicationTitleId;
@@ -229,7 +231,7 @@ namespace LibHac
 
         private string GetNcaFilename(string name, SwitchFsNca nca)
         {
-            if (nca.Nca.Header.ContentType != ContentType.Meta || !name.EndsWith(".cnmt.nca"))
+            if (nca.Nca.Header.ContentType != NcaContentType.Meta || !name.EndsWith(".cnmt.nca"))
             {
                 return Path.GetFileNameWithoutExtension(name);
             }
@@ -343,16 +345,16 @@ namespace LibHac
 
             switch (title.Metadata.Type)
             {
-                case TitleType.Application:
+                case ContentMetaType.Application:
                     Main = title;
                     break;
-                case TitleType.Patch:
+                case ContentMetaType.Patch:
                     Patch = title;
                     break;
-                case TitleType.AddOnContent:
+                case ContentMetaType.AddOnContent:
                     AddOnContent.Add(title);
                     break;
-                case TitleType.Delta:
+                case ContentMetaType.Delta:
                     break;
             }
 

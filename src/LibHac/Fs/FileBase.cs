@@ -1,106 +1,148 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Threading;
 
 namespace LibHac.Fs
 {
     public abstract class FileBase : IFile
     {
-        protected bool IsDisposed { get; private set; }
-        internal List<IDisposable> ToDispose { get; } = new List<IDisposable>();
+        // 0 = not disposed; 1 = disposed
+        private int _disposedState;
+        private bool IsDisposed => _disposedState != 0;
 
-        public abstract int Read(Span<byte> destination, long offset, ReadOption options);
-        public abstract void Write(ReadOnlySpan<byte> source, long offset, WriteOption options);
-        public abstract void Flush();
-        public abstract long GetSize();
-        public abstract void SetSize(long size);
+        protected abstract Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options);
+        protected abstract Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options);
+        protected abstract Result FlushImpl();
+        protected abstract Result SetSizeImpl(long size);
+        protected abstract Result GetSizeImpl(out long size);
 
-        public OpenMode Mode { get; protected set; }
-
-        protected int ValidateReadParamsAndGetSize(ReadOnlySpan<byte> span, long offset)
+        protected virtual Result OperateRangeImpl(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+            ReadOnlySpan<byte> inBuffer)
         {
-            if (IsDisposed) throw new ObjectDisposedException(null);
-
-            if ((Mode & OpenMode.Read) == 0) ThrowHelper.ThrowResult(ResultFs.InvalidOpenModeForRead, "File does not allow reading.");
-            if (span == null) throw new ArgumentNullException(nameof(span));
-            if (offset < 0) ThrowHelper.ThrowResult(ResultFs.ValueOutOfRange, "Offset must be non-negative.");
-
-            long fileSize = GetSize();
-            int size = span.Length;
-
-            if (offset > fileSize) ThrowHelper.ThrowResult(ResultFs.ValueOutOfRange, "Offset must be less than the file size.");
-
-            return (int)Math.Min(fileSize - offset, size);
+            return ResultFs.NotImplemented.Log();
         }
 
-        protected void ValidateWriteParams(ReadOnlySpan<byte> span, long offset)
+        public Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
-            if (IsDisposed) throw new ObjectDisposedException(null);
+            bytesRead = default;
 
-            if ((Mode & OpenMode.Write) == 0) ThrowHelper.ThrowResult(ResultFs.InvalidOpenModeForWrite, "File does not allow writing.");
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
 
-            if (span == null) throw new ArgumentNullException(nameof(span));
-            if (offset < 0) ThrowHelper.ThrowResult(ResultFs.ValueOutOfRange, "Offset must be non-negative.");
+            if (destination.Length == 0) return Result.Success;
+            if (offset < 0) return ResultFs.ValueOutOfRange.Log();
 
-            long fileSize = GetSize();
-            int size = span.Length;
+            return ReadImpl(out bytesRead, offset, destination, options);
+        }
 
-            if (offset + size > fileSize)
+        public Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        {
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+
+            if (source.Length == 0)
             {
-                if ((Mode & OpenMode.Append) == 0)
+                if (options.HasFlag(WriteOption.Flush))
                 {
-                    ThrowHelper.ThrowResult(ResultFs.AllowAppendRequiredForImplicitExtension);
+                    return Flush();
                 }
 
-                SetSize(offset + size);
+                return Result.Success;
             }
+
+            if (offset < 0) return ResultFs.ValueOutOfRange.Log();
+
+            return WriteImpl(offset, source, options);
+        }
+
+        public Result Flush()
+        {
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+
+            return FlushImpl();
+        }
+
+        public Result SetSize(long size)
+        {
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+            if (size < 0) return ResultFs.ValueOutOfRange.Log();
+
+            return SetSizeImpl(size);
+        }
+
+        public Result GetSize(out long size)
+        {
+            if (IsDisposed)
+            {
+                size = default;
+                return ResultFs.PreconditionViolation.Log();
+            }
+
+            return GetSizeImpl(out size);
+        }
+
+        public Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+            ReadOnlySpan<byte> inBuffer)
+        {
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+
+            return OperateRange(outBuffer, operationId, offset, size, inBuffer);
         }
 
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            // Make sure Dispose is only called once
+            if (Interlocked.CompareExchange(ref _disposedState, 1, 0) == 0)
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
         }
 
-        protected virtual void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing) { }
+
+        protected Result ValidateReadParams(out long bytesToRead, long offset, int size, OpenMode openMode)
         {
-            if (IsDisposed) return;
+            bytesToRead = default;
 
-            if (disposing)
+            if (!openMode.HasFlag(OpenMode.Read))
             {
-                Flush();
+                return ResultFs.InvalidOpenModeForRead.Log();
+            }
 
-                foreach (IDisposable item in ToDispose)
+            Result rc = GetSize(out long fileSize);
+            if (rc.IsFailure()) return rc;
+
+            if (offset > fileSize)
+            {
+                return ResultFs.ValueOutOfRange.Log();
+            }
+
+            bytesToRead = Math.Min(fileSize - offset, size);
+
+            return Result.Success;
+        }
+
+        protected Result ValidateWriteParams(long offset, int size, OpenMode openMode, out bool isResizeNeeded)
+        {
+            isResizeNeeded = false;
+
+            if (!openMode.HasFlag(OpenMode.Write))
+            {
+                return ResultFs.InvalidOpenModeForWrite.Log();
+            }
+
+            Result rc = GetSize(out long fileSize);
+            if (rc.IsFailure()) return rc;
+
+            if (offset + size > fileSize)
+            {
+                isResizeNeeded = true;
+
+                if (!openMode.HasFlag(OpenMode.AllowAppend))
                 {
-                    item?.Dispose();
+                    return ResultFs.FileExtensionWithoutOpenModeAllowAppend.Log();
                 }
             }
 
-            IsDisposed = true;
+            return Result.Success;
         }
-    }
-
-    /// <summary>
-    /// Specifies which operations are available on an <see cref="IFile"/>.
-    /// </summary>
-    [Flags]
-    public enum OpenMode
-    {
-        Read = 1,
-        Write = 2,
-        Append = 4,
-        ReadWrite = Read | Write
-    }
-
-    [Flags]
-    public enum ReadOption
-    {
-        None = 0
-    }
-
-    [Flags]
-    public enum WriteOption
-    {
-        None = 0,
-        Flush = 1
     }
 }

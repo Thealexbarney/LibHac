@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using LibHac.FsSystem;
 
 namespace LibHac.Fs.Accessors
 {
@@ -9,24 +10,34 @@ namespace LibHac.Fs.Accessors
 
         public FileSystemAccessor Parent { get; }
 
-        public DirectoryAccessor(IDirectory baseDirectory, FileSystemAccessor parent)
+        private IFileSystem ParentFs { get; }
+        private string Path { get; }
+
+        public DirectoryAccessor(IDirectory baseDirectory, FileSystemAccessor parent, IFileSystem parentFs, string path)
         {
             Directory = baseDirectory;
             Parent = parent;
+            ParentFs = parentFs;
+            Path = path;
         }
 
-        public IEnumerable<DirectoryEntry> Read()
+        public IEnumerable<DirectoryEntryEx> Read()
         {
             CheckIfDisposed();
 
-            return Directory.Read();
+            return ParentFs.EnumerateEntries(Path, "*", SearchOptions.Default);
         }
 
-        public int GetEntryCount()
+        public Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer)
+        {
+            return Directory.Read(out entriesRead, entryBuffer);
+        }
+
+        public Result GetEntryCount(out long entryCount)
         {
             CheckIfDisposed();
 
-            return Directory.GetEntryCount();
+            return Directory.GetEntryCount(out entryCount);
         }
 
         public void Dispose()

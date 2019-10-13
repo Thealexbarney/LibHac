@@ -4,8 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using LibHac;
+using LibHac.Common;
 using LibHac.Fs;
-using LibHac.Fs.Save;
+using LibHac.FsSystem;
+using LibHac.FsSystem.Save;
 using static hactoolnet.Print;
 
 namespace hactoolnet
@@ -27,9 +29,9 @@ namespace hactoolnet
                 bool signNeeded = ctx.Options.SignSave;
 
                 var save = new SaveDataFileSystem(ctx.Keyset, file, ctx.Options.IntegrityLevel, true);
-                FileSystemManager fs = ctx.Horizon.Fs;
+                FileSystemClient fs = ctx.Horizon.Fs;
 
-                fs.Register("save", save);
+                fs.Register("save".ToU8Span(), save);
 
                 if (ctx.Options.Validate)
                 {
@@ -38,7 +40,7 @@ namespace hactoolnet
 
                 if (ctx.Options.OutDir != null)
                 {
-                    fs.Register("output", new LocalFileSystem(ctx.Options.OutDir));
+                    fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.OutDir));
 
                     FsUtils.CopyDirectoryWithProgress(fs, "save:/", "output:/", logger: ctx.Logger);
 
@@ -61,11 +63,16 @@ namespace hactoolnet
 
                         using (IFile inFile = new LocalFile(ctx.Options.ReplaceFileSource, OpenMode.Read))
                         {
-                            using (IFile outFile = save.OpenFile(destFilename, OpenMode.ReadWrite))
+                            save.OpenFile(out IFile outFile, destFilename, OpenMode.ReadWrite).ThrowIfFailure();
+
+                            using (outFile)
                             {
-                                if (inFile.GetSize() != outFile.GetSize())
+                                inFile.GetSize(out long inFileSize).ThrowIfFailure();
+                                outFile.GetSize(out long outFileSize).ThrowIfFailure();
+
+                                if (inFileSize != outFileSize)
                                 {
-                                    outFile.SetSize(inFile.GetSize());
+                                    outFile.SetSize(inFileSize).ThrowIfFailure();
                                 }
 
                                 inFile.CopyTo(outFile, ctx.Logger);
@@ -79,7 +86,7 @@ namespace hactoolnet
 
                     if (ctx.Options.RepackSource != null)
                     {
-                        fs.Register("input", new LocalFileSystem(ctx.Options.RepackSource));
+                        fs.Register("input".ToU8Span(), new LocalFileSystem(ctx.Options.RepackSource));
 
                         fs.CleanDirectoryRecursively("save:/");
                         fs.Commit("save");
@@ -96,7 +103,7 @@ namespace hactoolnet
                 {
                     if (signNeeded)
                     {
-                        save.Commit(ctx.Keyset);
+                        save.Commit(ctx.Keyset).ThrowIfFailure();
                         signNeeded = false;
                     }
                 }
@@ -110,7 +117,7 @@ namespace hactoolnet
 
                 if (signNeeded)
                 {
-                    if (save.Commit(ctx.Keyset))
+                    if (save.Commit(ctx.Keyset).IsSuccess())
                     {
                         ctx.Logger.LogMessage("Successfully signed save file");
                     }
@@ -125,7 +132,7 @@ namespace hactoolnet
 
                 if (ctx.Options.ListFiles)
                 {
-                    foreach (DirectoryEntry entry in save.EnumerateEntries())
+                    foreach (DirectoryEntryEx entry in save.EnumerateEntries())
                     {
                         ctx.Logger.LogMessage(entry.FullPath);
                     }
@@ -222,7 +229,7 @@ namespace hactoolnet
         {
             var sb = new StringBuilder();
 
-            foreach (DirectoryEntry entry in save.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File))
+            foreach (DirectoryEntryEx entry in save.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File))
             {
                 save.FileTable.TryOpenFile(entry.FullPath, out SaveFileInfo fileInfo);
                 if (fileInfo.StartBlock < 0) continue;
@@ -306,7 +313,7 @@ namespace hactoolnet
             var sb = new StringBuilder();
             sb.AppendLine();
 
-            long freeSpace = save.GetFreeSpaceSize("");
+            save.GetFreeSpaceSize(out long freeSpace, "").ThrowIfFailure();
 
             sb.AppendLine("Savefile:");
             PrintItem(sb, colLen, $"CMAC Signature{save.Header.SignatureValidity.GetValidityString()}:", save.Header.Cmac);

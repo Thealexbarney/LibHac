@@ -58,8 +58,8 @@ namespace LibHac.Kvdb
             key = default;
             value = default;
 
-            Result sizeResult = GetEntrySize(out int keySize, out int valueSize);
-            if (sizeResult.IsFailure()) return sizeResult;
+            Result rc = GetEntrySize(out int keySize, out int valueSize);
+            if (rc.IsFailure()) return rc;
 
             _position += Unsafe.SizeOf<ImkvdbEntryHeader>();
 

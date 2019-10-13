@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using LibHac.Fs;
+using LibHac.FsSystem;
 using Xunit;
 
 namespace LibHac.Tests

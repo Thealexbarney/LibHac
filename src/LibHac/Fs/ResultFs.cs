@@ -11,6 +11,19 @@
         public static Result InsufficientFreeSpace => new Result(ModuleFs, 30);
         public static Result MountNameAlreadyExists => new Result(ModuleFs, 60);
 
+        public static Result PartitionNotFound => new Result(ModuleFs, 1001);
+        public static Result TargetNotFound => new Result(ModuleFs, 1002);
+        public static Result ExternalKeyNotFound => new Result(ModuleFs, 1004);
+
+        public static Result InvalidBufferForGameCard => new Result(ModuleFs, 2503);
+        public static Result GameCardNotInserted => new Result(ModuleFs, 2520);
+
+        public static Result GameCardNotInsertedOnGetHandle => new Result(ModuleFs, 2951);
+        public static Result InvalidGameCardHandleOnRead => new Result(ModuleFs, 2952);
+        public static Result InvalidGameCardHandleOnGetCardInfo => new Result(ModuleFs, 2954);
+        public static Result InvalidGameCardHandleOnOpenNormalPartition => new Result(ModuleFs, 2960);
+        public static Result InvalidGameCardHandleOnOpenSecurePartition => new Result(ModuleFs, 2961);
+
         public static Result NotImplemented => new Result(ModuleFs, 3001);
         public static Result Result3002 => new Result(ModuleFs, 3002);
         public static Result SaveDataPathAlreadyExists => new Result(ModuleFs, 3003);
@@ -25,6 +38,7 @@
         public static Result InvalidIndirectStorageSource => new Result(ModuleFs, 4023);
 
         public static Result Result4302 => new Result(ModuleFs, 4302);
+        public static Result InvalidSaveDataEntryType => new Result(ModuleFs, 4303);
         public static Result InvalidSaveDataHeader => new Result(ModuleFs, 4315);
         public static Result Result4362 => new Result(ModuleFs, 4362);
         public static Result Result4363 => new Result(ModuleFs, 4363);
@@ -61,6 +75,10 @@
 
         public static Result Result4812 => new Result(ModuleFs, 4812);
 
+        public static Result UnexpectedErrorInHostFileFlush => new Result(ModuleFs, 5307);
+        public static Result UnexpectedErrorInHostFileGetSize => new Result(ModuleFs, 5308);
+        public static Result UnknownHostFileSystemError => new Result(ModuleFs, 5309);
+
         public static Result PreconditionViolation => new Result(ModuleFs, 6000);
         public static Result InvalidArgument => new Result(ModuleFs, 6001);
         public static Result InvalidPath => new Result(ModuleFs, 6002);
@@ -77,17 +95,24 @@
         public static Result InvalidSize => new Result(ModuleFs, 6062);
         public static Result NullArgument => new Result(ModuleFs, 6063);
         public static Result InvalidMountName => new Result(ModuleFs, 6065);
+        public static Result ExtensionSizeTooLarge => new Result(ModuleFs, 6066);
+        public static Result ExtensionSizeInvalid => new Result(ModuleFs, 6067);
 
         public static Result InvalidOpenModeOperation => new Result(ModuleFs, 6200);
-        public static Result AllowAppendRequiredForImplicitExtension => new Result(ModuleFs, 6201);
+        public static Result FileExtensionWithoutOpenModeAllowAppend => new Result(ModuleFs, 6201);
         public static Result InvalidOpenModeForRead => new Result(ModuleFs, 6202);
         public static Result InvalidOpenModeForWrite => new Result(ModuleFs, 6203);
 
         public static Result UnsupportedOperation => new Result(ModuleFs, 6300);
-        public static Result UnsupportedOperationInMemoryStorageSetSize => new Result(ModuleFs, 6316);
-        public static Result UnsupportedOperationInHierarchicalIvfcStorageSetSize => new Result(ModuleFs, 6304);
+        public static Result SubStorageNotResizable => new Result(ModuleFs, 6302);
+        public static Result SubStorageNotResizableMiddleOfFile => new Result(ModuleFs, 6303);
+        public static Result UnsupportedOperationInMemoryStorageSetSize => new Result(ModuleFs, 6304);
+        public static Result UnsupportedOperationInAesCtrExStorageWrite => new Result(ModuleFs, 6310);
+        public static Result UnsupportedOperationInHierarchicalIvfcStorageSetSize => new Result(ModuleFs, 6316);
         public static Result UnsupportedOperationInIndirectStorageWrite => new Result(ModuleFs, 6324);
         public static Result UnsupportedOperationInIndirectStorageSetSize => new Result(ModuleFs, 6325);
+        public static Result UnsupportedOperationInRoGameCardStorageWrite => new Result(ModuleFs, 6350);
+        public static Result UnsupportedOperationInRoGameCardStorageSetSize => new Result(ModuleFs, 6351);
         public static Result UnsupportedOperationInConcatFsQueryEntry => new Result(ModuleFs, 6359);
         public static Result UnsupportedOperationModifyRomFsFileSystem => new Result(ModuleFs, 6364);
         public static Result UnsupportedOperationRomFsFileSystemGetSpace => new Result(ModuleFs, 6366);
@@ -99,12 +124,18 @@
         public static Result UnsupportedOperationInPartitionFileSetSize => new Result(ModuleFs, 6376);
 
         public static Result PermissionDenied => new Result(ModuleFs, 6400);
+        public static Result ExternalKeyAlreadyRegistered => new Result(ModuleFs, 6452);
         public static Result WriteStateUnflushed => new Result(ModuleFs, 6454);
         public static Result WritableFileOpen => new Result(ModuleFs, 6457);
 
 
+        public static Result MappingTableFull => new Result(ModuleFs, 6706);
         public static Result AllocationTableInsufficientFreeBlocks => new Result(ModuleFs, 6707);
+        public static Result OpenCountLimit => new Result(ModuleFs, 6709);
 
+        public static Result RemapStorageMapFull => new Result(ModuleFs, 6811);
+
+        public static Result SubStorageNotInitialized => new Result(ModuleFs, 6902);
         public static Result MountNameNotFound => new Result(ModuleFs, 6905);
     }
 }

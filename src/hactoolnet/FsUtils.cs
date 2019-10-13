@@ -2,13 +2,13 @@
 using System.Buffers;
 using LibHac;
 using LibHac.Fs;
-using LibHac.Fs.Accessors;
+using LibHac.FsSystem;
 
 namespace hactoolnet
 {
     public static class FsUtils
     {
-        public static void CopyDirectoryWithProgress(FileSystemManager fs, string sourcePath, string destPath,
+        public static void CopyDirectoryWithProgress(FileSystemClient fs, string sourcePath, string destPath,
             CreateFileOptions options = CreateFileOptions.None, IProgressReport logger = null)
         {
             try
@@ -23,12 +23,14 @@ namespace hactoolnet
             }
         }
 
-        private static void CopyDirectoryWithProgressInternal(FileSystemManager fs, string sourcePath, string destPath,
+        private static void CopyDirectoryWithProgressInternal(FileSystemClient fs, string sourcePath, string destPath,
             CreateFileOptions options, IProgressReport logger)
         {
-            using (DirectoryHandle sourceHandle = fs.OpenDirectory(sourcePath, OpenDirectoryMode.All))
+            fs.OpenDirectory(out DirectoryHandle sourceHandle, sourcePath, OpenDirectoryMode.All).ThrowIfFailure();
+
+            using (sourceHandle)
             {
-                foreach (DirectoryEntry entry in fs.ReadDirectory(sourceHandle))
+                foreach (DirectoryEntryEx entry in fs.EnumerateEntries(sourcePath, "*", SearchOptions.Default))
                 {
                     string subSrcPath = PathTools.Normalize(PathTools.Combine(sourcePath, entry.Name));
                     string subDstPath = PathTools.Normalize(PathTools.Combine(destPath, entry.Name));
@@ -51,11 +53,11 @@ namespace hactoolnet
             }
         }
 
-        public static long GetTotalSize(FileSystemManager fs, string path, string searchPattern = "*")
+        public static long GetTotalSize(FileSystemClient fs, string path, string searchPattern = "*")
         {
             long size = 0;
 
-            foreach (DirectoryEntry entry in fs.EnumerateEntries(path, searchPattern))
+            foreach (DirectoryEntryEx entry in fs.EnumerateEntries(path, searchPattern))
             {
                 size += entry.Size;
             }
@@ -63,37 +65,53 @@ namespace hactoolnet
             return size;
         }
 
-        public static void CopyFileWithProgress(FileSystemManager fs, string sourcePath, string destPath, IProgressReport logger = null)
+        public static Result CopyFileWithProgress(FileSystemClient fs, string sourcePath, string destPath, IProgressReport logger = null)
         {
-            using (FileHandle sourceHandle = fs.OpenFile(sourcePath, OpenMode.Read))
-            using (FileHandle destHandle = fs.OpenFile(destPath, OpenMode.Write | OpenMode.Append))
+            Result rc = fs.OpenFile(out FileHandle sourceHandle, sourcePath, OpenMode.Read);
+            if (rc.IsFailure()) return rc;
+
+            using (sourceHandle)
             {
-                const int maxBufferSize = 1024 * 1024;
+                rc = fs.OpenFile(out FileHandle destHandle, destPath, OpenMode.Write | OpenMode.AllowAppend);
+                if (rc.IsFailure()) return rc;
 
-                long fileSize = fs.GetFileSize(sourceHandle);
-                int bufferSize = (int)Math.Min(maxBufferSize, fileSize);
-
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
-                try
+                using (destHandle)
                 {
-                    for (long offset = 0; offset < fileSize; offset += bufferSize)
+                    const int maxBufferSize = 1024 * 1024;
+
+                    rc = fs.GetFileSize(out long fileSize, sourceHandle);
+                    if (rc.IsFailure()) return rc;
+
+                    int bufferSize = (int)Math.Min(maxBufferSize, fileSize);
+
+                    byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+                    try
                     {
-                        int toRead = (int)Math.Min(fileSize - offset, bufferSize);
-                        Span<byte> buf = buffer.AsSpan(0, toRead);
+                        for (long offset = 0; offset < fileSize; offset += bufferSize)
+                        {
+                            int toRead = (int)Math.Min(fileSize - offset, bufferSize);
+                            Span<byte> buf = buffer.AsSpan(0, toRead);
 
-                        fs.ReadFile(sourceHandle, buf, offset);
-                        fs.WriteFile(destHandle, buf, offset);
+                            rc = fs.ReadFile(out long _, sourceHandle, offset, buf);
+                            if (rc.IsFailure()) return rc;
 
-                        logger?.ReportAdd(toRead);
+                            rc = fs.WriteFile(destHandle, offset, buf);
+                            if (rc.IsFailure()) return rc;
+
+                            logger?.ReportAdd(toRead);
+                        }
                     }
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(buffer);
-                }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                    }
 
-                fs.FlushFile(destHandle);
+                    rc = fs.FlushFile(destHandle);
+                    if (rc.IsFailure()) return rc;
+                }
             }
+
+            return Result.Success;
         }
     }
 }

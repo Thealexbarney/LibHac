@@ -1,8 +1,10 @@
 ﻿using System.IO;
 using System.Text;
 using LibHac;
+using LibHac.Common;
 using LibHac.Fs;
-using LibHac.Fs.NcaUtils;
+using LibHac.FsSystem;
+using LibHac.FsSystem.NcaUtils;
 using LibHac.Npdm;
 using static hactoolnet.Print;
 
@@ -42,12 +44,12 @@ namespace hactoolnet
 
                     if (ctx.Options.SectionOutDir[i] != null)
                     {
-                        FileSystemManager fs = ctx.Horizon.Fs;
+                        FileSystemClient fs = ctx.Horizon.Fs;
 
                         string mountName = $"section{i}";
 
-                        fs.Register(mountName, OpenFileSystem(i));
-                        fs.Register("output", new LocalFileSystem(ctx.Options.SectionOutDir[i]));
+                        fs.Register(mountName.ToU8Span(), OpenFileSystem(i));
+                        fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.SectionOutDir[i]));
 
                         FsUtils.CopyDirectoryWithProgress(fs, mountName + ":/", "output:/", logger: ctx.Logger);
 
@@ -72,7 +74,7 @@ namespace hactoolnet
                 {
                     IFileSystem romfs = OpenFileSystemByType(NcaSectionType.Data);
 
-                    foreach (DirectoryEntry entry in romfs.EnumerateEntries())
+                    foreach (DirectoryEntryEx entry in romfs.EnumerateEntries())
                     {
                         ctx.Logger.LogMessage(entry.FullPath);
                     }
@@ -93,10 +95,10 @@ namespace hactoolnet
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        FileSystemManager fs = ctx.Horizon.Fs;
+                        FileSystemClient fs = ctx.Horizon.Fs;
 
-                        fs.Register("rom", OpenFileSystemByType(NcaSectionType.Data));
-                        fs.Register("output", new LocalFileSystem(ctx.Options.RomfsOutDir));
+                        fs.Register("rom".ToU8Span(), OpenFileSystemByType(NcaSectionType.Data));
+                        fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.RomfsOutDir));
 
                         FsUtils.CopyDirectoryWithProgress(fs, "rom:/", "output:/", logger: ctx.Logger);
 
@@ -108,9 +110,12 @@ namespace hactoolnet
                     {
                         long bytesToRead = 1024L * 1024 * 1024 * 5;
                         IStorage storage = OpenStorageByType(NcaSectionType.Data);
-                        var dest = new NullStorage(storage.GetSize());
 
-                        int iterations = (int)(bytesToRead / storage.GetSize()) + 1;
+                        storage.GetSize(out long sectionSize).ThrowIfFailure();
+
+                        var dest = new NullStorage(sectionSize);
+
+                        int iterations = (int)(bytesToRead / sectionSize) + 1;
                         ctx.Logger.LogMessage(iterations.ToString());
 
                         ctx.Logger.StartNewStopWatch();
@@ -128,7 +133,7 @@ namespace hactoolnet
 
                 if (ctx.Options.ExefsOutDir != null || ctx.Options.ExefsOut != null)
                 {
-                    if (nca.Header.ContentType != ContentType.Program)
+                    if (nca.Header.ContentType != NcaContentType.Program)
                     {
                         ctx.Logger.LogMessage("NCA's content type is not \"Program\"");
                         return;
@@ -147,10 +152,10 @@ namespace hactoolnet
 
                     if (ctx.Options.ExefsOutDir != null)
                     {
-                        FileSystemManager fs = ctx.Horizon.Fs;
+                        FileSystemClient fs = ctx.Horizon.Fs;
 
-                        fs.Register("code", OpenFileSystemByType(NcaSectionType.Code));
-                        fs.Register("output", new LocalFileSystem(ctx.Options.ExefsOutDir));
+                        fs.Register("code".ToU8Span(), OpenFileSystemByType(NcaSectionType.Code));
+                        fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.ExefsOutDir));
 
                         FsUtils.CopyDirectoryWithProgress(fs, "code:/", "output:/", logger: ctx.Logger);
 
@@ -201,13 +206,13 @@ namespace hactoolnet
 
         private static Validity VerifySignature2(this Nca nca)
         {
-            if (nca.Header.ContentType != ContentType.Program) return Validity.Unchecked;
+            if (nca.Header.ContentType != NcaContentType.Program) return Validity.Unchecked;
 
             IFileSystem pfs = nca.OpenFileSystem(NcaSectionType.Code, IntegrityCheckLevel.ErrorOnInvalid);
             if (!pfs.FileExists("main.npdm")) return Validity.Unchecked;
 
-            IFile npdmStorage = pfs.OpenFile("main.npdm", OpenMode.Read);
-            var npdm = new NpdmBinary(npdmStorage.AsStream());
+            pfs.OpenFile(out IFile npdmFile, "main.npdm", OpenMode.Read).ThrowIfFailure();
+            var npdm = new NpdmBinary(npdmFile.AsStream());
 
             return nca.Header.VerifySignature2(npdm.AciD.Rsa2048Modulus);
         }
@@ -266,7 +271,7 @@ namespace hactoolnet
                     if (!nca.Header.IsSectionEnabled(i)) continue;
 
                     NcaFsHeader sectHeader = nca.Header.GetFsHeader(i);
-                    bool isExefs = nca.Header.ContentType == ContentType.Program && i == 0;
+                    bool isExefs = nca.Header.ContentType == NcaContentType.Program && i == 0;
 
                     sb.AppendLine($"    Section {i}:");
                     PrintItem(sb, colLen, "        Offset:", $"0x{nca.Header.GetSectionStartOffset(i):x12}");

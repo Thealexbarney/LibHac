@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using LibHac.Fs;
+using LibHac.FsSystem;
 
 namespace LibHac
 {
@@ -109,12 +110,12 @@ namespace LibHac
             var counter = new byte[0x10];
             var decBuffer = new byte[0x10];
 
-            storage.Read(counter, 0x100);
+            storage.Read(0x100, counter).ThrowIfFailure();
 
             for (int i = 0; i < 0x20; i++)
             {
                 var dec = new Aes128CtrStorage(storage.Slice(0x100), keyset.Package2Keys[i], counter, false);
-                dec.Read(decBuffer, 0x50);
+                dec.Read(0x50, decBuffer).ThrowIfFailure();
 
                 if (BitConverter.ToUInt32(decBuffer, 0) == Pk21Magic)
                 {

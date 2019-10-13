@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using LibHac.Fs;
 
 namespace LibHac
 {
@@ -36,9 +37,9 @@ namespace LibHac
         public int BackupAreaStartPage { get; set; }
         public byte KekIndex { get; set; }
         public byte TitleKeyDecIndex { get; set; }
-        public RomSize RomSize { get; set; }
+        public GameCardSize GameCardSize { get; set; }
         public byte CardHeaderVersion { get; set; }
-        public XciFlags Flags { get; set; }
+        public GameCardAttribute Flags { get; set; }
         public ulong PackageId { get; set; }
         public long ValidDataEndPage { get; set; }
         public byte[] AesCbcIv { get; set; }
@@ -62,8 +63,9 @@ namespace LibHac
         public byte[] UppHash { get; set; }
         public ulong UppId { get; set; }
 
-        public Validity SignatureValidity { get; set; }
+        public byte[] ImageHash { get; }
 
+        public Validity SignatureValidity { get; set; }
         public Validity PartitionFsHeaderValidity { get; set; }
 
         public XciHeader(Keyset keyset, Stream stream)
@@ -88,9 +90,9 @@ namespace LibHac
                 byte keyIndex = reader.ReadByte();
                 KekIndex = (byte)(keyIndex >> 4);
                 TitleKeyDecIndex = (byte)(keyIndex & 7);
-                RomSize = (RomSize)reader.ReadByte();
+                GameCardSize = (GameCardSize)reader.ReadByte();
                 CardHeaderVersion = reader.ReadByte();
-                Flags = (XciFlags)reader.ReadByte();
+                Flags = (GameCardAttribute)reader.ReadByte();
                 PackageId = reader.ReadUInt64();
                 ValidDataEndPage = reader.ReadInt64();
                 AesCbcIv = reader.ReadBytes(Crypto.Aes128Size);
@@ -104,7 +106,7 @@ namespace LibHac
                 SelKey = reader.ReadInt32();
                 LimAreaPage = reader.ReadInt32();
 
-                if (!keyset.XciHeaderKey.IsEmpty())
+                if (keyset != null && !keyset.XciHeaderKey.IsEmpty())
                 {
                     byte[] encHeader = reader.ReadBytes(EncryptedHeaderSize);
                     var decHeader = new byte[EncryptedHeaderSize];
@@ -126,28 +128,12 @@ namespace LibHac
                     }
                 }
 
+                ImageHash = Crypto.ComputeSha256(sigData, 0, sigData.Length);
+
                 reader.BaseStream.Position = RootPartitionOffset;
                 PartitionFsHeaderValidity = Crypto.CheckMemoryHashTable(reader.ReadBytes((int)RootPartitionHeaderSize), RootPartitionHeaderHash, 0, (int)RootPartitionHeaderSize);
             }
         }
-    }
-
-    public enum RomSize
-    {
-        Size1Gb = 0xFA,
-        Size2Gb = 0xF8,
-        Size4Gb = 0xF0,
-        Size8Gb = 0xE0,
-        Size16Gb = 0xE1,
-        Size32Gb = 0xE2
-    }
-
-    [Flags]
-    public enum XciFlags
-    {
-        AutoBoot = 1 << 0,
-        HistoryErase = 1 << 1,
-        RepairTool = 1 << 2
     }
 
     public enum CardClockRate

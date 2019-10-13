@@ -2,7 +2,7 @@
 
 namespace LibHac.Fs.Accessors
 {
-    public class FileAccessor : IFile
+    public class FileAccessor : FileBase
     {
         private IFile File { get; set; }
 
@@ -10,9 +10,6 @@ namespace LibHac.Fs.Accessors
         public WriteState WriteState { get; private set; }
         public OpenMode OpenMode { get; }
 
-        // Todo: Consider removing Mode from interface because OpenMode is in FileAccessor
-        OpenMode IFile.Mode => OpenMode;
-        
         public FileAccessor(IFile baseFile, FileSystemAccessor parent, OpenMode mode)
         {
             File = baseFile;
@@ -20,14 +17,14 @@ namespace LibHac.Fs.Accessors
             OpenMode = mode;
         }
 
-        public int Read(Span<byte> destination, long offset, ReadOption options)
+        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
         {
             CheckIfDisposed();
 
-            return File.Read(destination, offset, options);
+            return File.Read(out bytesRead, offset, destination, options);
         }
 
-        public void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
         {
             CheckIfDisposed();
 
@@ -35,38 +32,48 @@ namespace LibHac.Fs.Accessors
             {
                 WriteState = (WriteState)(~options & WriteOption.Flush);
 
-                return;
+                return Result.Success;
             }
 
-            File.Write(source, offset, options);
+            Result rc = File.Write(offset, source, options);
 
-            WriteState = (WriteState)(~options & WriteOption.Flush);
+            if (rc.IsSuccess())
+            {
+                WriteState = (WriteState)(~options & WriteOption.Flush);
+            }
+
+            return rc;
         }
 
-        public void Flush()
+        protected override Result FlushImpl()
         {
             CheckIfDisposed();
 
-            File.Flush();
+            Result rc = File.Flush();
 
-            WriteState = WriteState.None;
+            if (rc.IsSuccess())
+            {
+                WriteState = WriteState.None;
+            }
+
+            return rc;
         }
 
-        public long GetSize()
+        protected override Result GetSizeImpl(out long size)
         {
             CheckIfDisposed();
 
-            return File.GetSize();
+            return File.GetSize(out size);
         }
 
-        public void SetSize(long size)
+        protected override Result SetSizeImpl(long size)
         {
             CheckIfDisposed();
 
-            File.SetSize(size);
+            return File.SetSize(size);
         }
 
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
             if (File == null) return;
 
@@ -74,7 +81,7 @@ namespace LibHac.Fs.Accessors
             {
                 // Original FS code would return an error:
                 // ThrowHelper.ThrowResult(ResultsFs.ResultFsWriteStateUnflushed);
-                
+
                 Flush();
             }
 

@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using LibHac.Fs;
-using LibHac.Fs.RomFs;
+using LibHac.FsSystem;
+using LibHac.FsSystem.RomFs;
 
 namespace hactoolnet
 {
@@ -20,7 +21,7 @@ namespace hactoolnet
 
             if (ctx.Options.ListRomFs)
             {
-                foreach (DirectoryEntry entry in romfs.EnumerateEntries())
+                foreach (DirectoryEntryEx entry in romfs.EnumerateEntries())
                 {
                     ctx.Logger.LogMessage(entry.FullPath);
                 }
@@ -28,9 +29,11 @@ namespace hactoolnet
 
             if (ctx.Options.RomfsOut != null)
             {
+                romfsStorage.GetSize(out long romFsSize).ThrowIfFailure();
+
                 using (var outFile = new FileStream(ctx.Options.RomfsOut, FileMode.Create, FileAccess.ReadWrite))
                 {
-                    romfsStorage.CopyToStream(outFile, romfsStorage.GetSize(), ctx.Logger);
+                    romfsStorage.CopyToStream(outFile, romFsSize, ctx.Logger);
                 }
             }
 

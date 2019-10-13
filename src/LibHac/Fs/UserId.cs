@@ -1,66 +1,59 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using LibHac.Common;
 
 namespace LibHac.Fs
 {
+    [DebuggerDisplay("{ToString(),nq}")]
+    [StructLayout(LayoutKind.Sequential, Size = 0x10)]
     public struct UserId : IEquatable<UserId>, IComparable<UserId>, IComparable
     {
-        public readonly ulong High;
-        public readonly ulong Low;
+        public static UserId Zero => default;
+
+        public readonly Id128 Id;
 
         public UserId(ulong high, ulong low)
         {
-            High = high;
-            Low = low;
+            Id = new Id128(high, low);
         }
 
         public UserId(ReadOnlySpan<byte> uid)
         {
-            ReadOnlySpan<ulong> longs = MemoryMarshal.Cast<byte, ulong>(uid);
-
-            High = longs[0];
-            Low = longs[1];
+            Id = new Id128(uid);
         }
 
-        public bool Equals(UserId other)
+        public override string ToString()
         {
-            return High == other.High && Low == other.Low;
+            return $"0x{Id.High:x8}{Id.Low:x8}";
         }
 
-        public override bool Equals(object obj)
-        {
-            return obj is UserId other && Equals(other);
-        }
+        public bool Equals(UserId other) => Id == other.Id;
+        public override bool Equals(object obj) => obj is UserId other && Equals(other);
 
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                return (High.GetHashCode() * 397) ^ Low.GetHashCode();
-            }
-        }
+        public override int GetHashCode() => Id.GetHashCode();
 
-        public int CompareTo(UserId other)
-        {
-            // ReSharper disable ImpureMethodCallOnReadonlyValueField
-            int highComparison = High.CompareTo(other.High);
-            if (highComparison != 0) return highComparison;
-            return Low.CompareTo(other.Low);
-            // ReSharper restore ImpureMethodCallOnReadonlyValueField
-        }
+        public int CompareTo(UserId other) => Id.CompareTo(other.Id);
 
         public int CompareTo(object obj)
         {
-            if (ReferenceEquals(null, obj)) return 1;
+            if (obj is null) return 1;
             return obj is UserId other ? CompareTo(other) : throw new ArgumentException($"Object must be of type {nameof(UserId)}");
         }
 
-        public void ToBytes(Span<byte> output)
-        {
-            Span<ulong> longs = MemoryMarshal.Cast<byte, ulong>(output);
+        public void ToBytes(Span<byte> output) => Id.ToBytes(output);
 
-            longs[0] = High;
-            longs[1] = Low;
+        public ReadOnlySpan<byte> AsBytes()
+        {
+            return SpanHelpers.AsByteSpan(ref this);
         }
+
+        public static bool operator ==(UserId left, UserId right) => left.Equals(right);
+        public static bool operator !=(UserId left, UserId right) => !left.Equals(right);
+
+        public static bool operator <(UserId left, UserId right) => left.CompareTo(right) < 0;
+        public static bool operator >(UserId left, UserId right) => left.CompareTo(right) > 0;
+        public static bool operator <=(UserId left, UserId right) => left.CompareTo(right) <= 0;
+        public static bool operator >=(UserId left, UserId right) => left.CompareTo(right) >= 0;
     }
 }

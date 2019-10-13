@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using LibHac;
 using LibHac.Fs;
+using LibHac.FsSystem;
 
 namespace hactoolnet
 {
@@ -25,7 +26,9 @@ namespace hactoolnet
             encryptWatch.Stop();
             logger.SetTotal(0);
 
-            string rate = Util.GetBytesReadable((long)(src.GetSize() * iterations / encryptWatch.Elapsed.TotalSeconds));
+            src.GetSize(out long srcSize).ThrowIfFailure();
+
+            string rate = Util.GetBytesReadable((long)(srcSize * iterations / encryptWatch.Elapsed.TotalSeconds));
             logger.LogMessage($"{label}{rate}/s");
         }
 

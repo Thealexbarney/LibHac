@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace LibHac
 {
     [Serializable]
+    [DebuggerDisplay("{ToString()}")]
     public struct Result : IEquatable<Result>
     {
         public readonly int Value;
@@ -30,6 +32,22 @@ namespace LibHac
             {
                 ThrowHelper.ThrowResult(this);
             }
+        }
+
+        /// <summary>
+        /// A function that can contain code for logging or debugging returned results.
+        /// Intended to be used when returning a non-zero Result:
+        /// <code>return result.Log();</code>
+        /// </summary>
+        /// <returns>The called <see cref="Result"/> value.</returns>
+        public Result Log()
+        {
+            return this;
+        }
+
+        public override string ToString()
+        {
+            return IsSuccess() ? "Success" : ErrorCode;
         }
 
         public override bool Equals(object obj)

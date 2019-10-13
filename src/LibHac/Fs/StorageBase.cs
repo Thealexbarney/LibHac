@@ -1,69 +1,85 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Threading;
 
 namespace LibHac.Fs
 {
     public abstract class StorageBase : IStorage
     {
-        private bool _isDisposed;
-        protected internal List<IDisposable> ToDispose { get; } = new List<IDisposable>();
-        protected bool CanAutoExpand { get; set; }
+        // 0 = not disposed; 1 = disposed
+        private int _disposedState;
+        private bool IsDisposed => _disposedState != 0;
 
-        protected abstract void ReadImpl(Span<byte> destination, long offset);
-        protected abstract void WriteImpl(ReadOnlySpan<byte> source, long offset);
-        public abstract void Flush();
-        public abstract long GetSize();
+        protected abstract Result ReadImpl(long offset, Span<byte> destination);
+        protected abstract Result WriteImpl(long offset, ReadOnlySpan<byte> source);
+        protected abstract Result FlushImpl();
+        protected abstract Result GetSizeImpl(out long size);
+        protected abstract Result SetSizeImpl(long size);
 
-        public void Read(Span<byte> destination, long offset)
+        protected virtual Result OperateRangeImpl(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+            ReadOnlySpan<byte> inBuffer)
         {
-            ValidateParameters(destination, offset);
-            ReadImpl(destination, offset);
+            return ResultFs.NotImplemented.Log();
         }
 
-        public void Write(ReadOnlySpan<byte> source, long offset)
+        public Result Read(long offset, Span<byte> destination)
         {
-            ValidateParameters(source, offset);
-            WriteImpl(source, offset);
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+
+            return ReadImpl(offset, destination);
         }
 
-        public virtual void SetSize(long size)
+        public Result Write(long offset, ReadOnlySpan<byte> source)
         {
-            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+
+            return WriteImpl(offset, source);
         }
 
-        protected virtual void Dispose(bool disposing)
+        public Result Flush()
         {
-            if (_isDisposed) return;
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
 
-            if (disposing)
-            {
-                Flush();
-                foreach (IDisposable item in ToDispose)
-                {
-                    item?.Dispose();
-                }
-            }
+            return FlushImpl();
+        }
 
-            _isDisposed = true;
+        public Result SetSize(long size)
+        {
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+
+            return SetSizeImpl(size);
+        }
+
+        public Result GetSize(out long size)
+        {
+            size = default;
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+
+            return GetSizeImpl(out size);
+        }
+
+        public Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+            ReadOnlySpan<byte> inBuffer)
+        {
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+
+            return OperateRange(outBuffer, operationId, offset, size, inBuffer);
         }
 
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            // Make sure Dispose is only called once
+            if (Interlocked.CompareExchange(ref _disposedState, 1, 0) == 0)
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
         }
 
-        protected void ValidateParameters(ReadOnlySpan<byte> span, long offset)
+        protected virtual void Dispose(bool disposing) { }
+
+        public static bool IsRangeValid(long offset, long size, long totalSize)
         {
-            if (_isDisposed) throw new ObjectDisposedException(null);
-            if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), "Argument must be non-negative.");
-
-            long length = GetSize();
-
-            if (length != -1 && !CanAutoExpand)
-            {
-                if (offset + span.Length > length) throw new ArgumentException("The given offset and count exceed the length of the Storage");
-            }
+            return offset >= 0 && size >= 0 && size <= totalSize && offset <= totalSize - size;
         }
     }
 }

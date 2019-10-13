@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using LibHac.Fs;
+using LibHac.FsSystem;
 
 namespace LibHac
 {
@@ -43,9 +44,11 @@ namespace LibHac
 
         public byte[] DecompressSection(int index)
         {
-            IStorage compStream = OpenSection(index);
-            var compressed = new byte[compStream.GetSize()];
-            compStream.Read(compressed, 0);
+            IStorage compStorage = OpenSection(index);
+            compStorage.GetSize(out long compressedSize).ThrowIfFailure();
+
+            var compressed = new byte[compressedSize];
+            compStorage.Read(0, compressed).ThrowIfFailure();
 
             return DecompressBlz(compressed);
         }

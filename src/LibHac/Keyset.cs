@@ -5,6 +5,9 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using LibHac.Fs;
+using LibHac.FsService;
+using LibHac.FsSystem;
+using LibHac.Spl;
 
 namespace LibHac
 {
@@ -69,31 +72,48 @@ namespace LibHac
 
         public RSAParameters EticketExtKeyRsa { get; set; }
 
-        public bool KeysetForDev = false;
-        public byte[] NcaHdrFixedKeyModulus {
-            get {
-                if (KeysetForDev) {
-                    return Keyset.NcaHdrFixedKeyModulusDev;
-                } else {
-                    return Keyset.NcaHdrFixedKeyModulusProd;
+        public bool KeysetForDev;
+        public byte[] NcaHdrFixedKeyModulus
+        {
+            get
+            {
+                if (KeysetForDev)
+                {
+                    return NcaHdrFixedKeyModulusDev;
+                }
+                else
+                {
+                    return NcaHdrFixedKeyModulusProd;
                 }
             }
         }
-        public byte[] AcidFixedKeyModulus {
-            get {
-                if (KeysetForDev) {
-                    return Keyset.AcidFixedKeyModulusDev;
-                } else {
-                    return Keyset.AcidFixedKeyModulusProd;
+
+        public byte[] AcidFixedKeyModulus
+        {
+            get
+            {
+                if (KeysetForDev)
+                {
+                    return AcidFixedKeyModulusDev;
+                }
+                else
+                {
+                    return AcidFixedKeyModulusProd;
                 }
             }
         }
-        public byte[] Package2FixedKeyModulus {
-            get {
-                if (KeysetForDev) {
-                    return Keyset.Package2FixedKeyModulusDev;
-                } else {
-                    return Keyset.Package2FixedKeyModulusProd;
+
+        public byte[] Package2FixedKeyModulus
+        {
+            get
+            {
+                if (KeysetForDev)
+                {
+                    return Package2FixedKeyModulusDev;
+                }
+                else
+                {
+                    return Package2FixedKeyModulusProd;
                 }
             }
         }
@@ -218,7 +238,7 @@ namespace LibHac
             0x71, 0xB0, 0x5C, 0xF4, 0xAD, 0x63, 0x4F, 0xC5, 0xE2, 0xAC, 0x1E, 0xC4, 0x33, 0x96, 0x09, 0x7B
         };
 
-        public Dictionary<byte[], byte[]> TitleKeys { get; } = new Dictionary<byte[], byte[]>(new ByteArray128BitComparer());
+        public ExternalKeySet ExternalKeySet { get; } = new ExternalKeySet();
 
         public void SetSdSeed(byte[] sdseed)
         {
@@ -287,7 +307,7 @@ namespace LibHac
                 using (var keyblobDec = new Aes128CtrStorage(
                     new MemoryStorage(EncryptedKeyblobs[i], 0x20, Keyblobs[i].Length), KeyblobKeys[i], counter, false))
                 {
-                    keyblobDec.Read(Keyblobs[i], 0);
+                    keyblobDec.Read(0, Keyblobs[i]).ThrowIfFailure();
                 }
             }
         }
@@ -468,7 +488,7 @@ namespace LibHac
         }
     }
 
-    public static class ExternalKeys
+    public static class ExternalKeyReader
     {
         private const int TitleKeySize = 0x10;
 
@@ -476,7 +496,7 @@ namespace LibHac
         public static readonly Dictionary<string, KeyValue> UniqueKeyDict;
         public static readonly Dictionary<string, KeyValue> AllKeyDict;
 
-        static ExternalKeys()
+        static ExternalKeyReader()
         {
             List<KeyValue> commonKeys = CreateCommonKeyList();
             List<KeyValue> uniqueKeys = CreateUniqueKeyList();
@@ -491,6 +511,7 @@ namespace LibHac
             if (filename != null) ReadMainKeys(keyset, filename, AllKeyDict, logger);
             if (consoleKeysFilename != null) ReadMainKeys(keyset, consoleKeysFilename, AllKeyDict, logger);
             if (titleKeysFilename != null) ReadTitleKeys(keyset, titleKeysFilename, logger);
+            keyset.ExternalKeySet.TrimExcess();
             keyset.DeriveKeys(logger);
         }
 
@@ -596,7 +617,7 @@ namespace LibHac
                         continue;
                     }
 
-                    keyset.TitleKeys[rightsId] = titleKey;
+                    keyset.ExternalKeySet.Add(new RightsId(rightsId), new AccessKey(titleKey)).ThrowIfFailure();
                 }
             }
         }
@@ -646,9 +667,9 @@ namespace LibHac
         {
             var sb = new StringBuilder();
 
-            foreach (KeyValuePair<byte[], byte[]> kv in keyset.TitleKeys.OrderBy(x => x.Key.ToHexString()))
+            foreach ((RightsId rightsId, AccessKey key) kv in keyset.ExternalKeySet.ToList().OrderBy(x => x.rightsId.ToString()))
             {
-                string line = $"{kv.Key.ToHexString()} = {kv.Value.ToHexString()}";
+                string line = $"{kv.rightsId} = {kv.key}";
                 sb.AppendLine(line);
             }
 
