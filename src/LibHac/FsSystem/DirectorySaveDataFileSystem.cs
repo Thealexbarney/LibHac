@@ -11,26 +11,81 @@ namespace LibHac.FsSystem
         private IFileSystem BaseFs { get; }
         private object Locker { get; } = new object();
         private int OpenWritableFileCount { get; set; }
+        private bool IsPersistentSaveData { get; set; }
 
-        public DirectorySaveDataFileSystem(IFileSystem baseFileSystem)
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
+        private bool IsUserSaveData { get; set; }
+
+        public static Result CreateNew(out DirectorySaveDataFileSystem created, IFileSystem baseFileSystem)
+        {
+            return CreateNew(out created, baseFileSystem, true, true);
+        }
+
+        public static Result CreateNew(out DirectorySaveDataFileSystem created, IFileSystem baseFileSystem,
+            bool isPersistentSaveData, bool isUserSaveData)
+        {
+            var obj = new DirectorySaveDataFileSystem(baseFileSystem);
+            Result rc = obj.Initialize(isPersistentSaveData, isUserSaveData);
+
+            if (rc.IsSuccess())
+            {
+                created = obj;
+                return Result.Success;
+            }
+
+            obj.Dispose();
+            created = default;
+            return rc;
+        }
+
+        private DirectorySaveDataFileSystem(IFileSystem baseFileSystem)
         {
             BaseFs = baseFileSystem;
+        }
 
-            if (!BaseFs.DirectoryExists(WorkingDir))
+        private Result Initialize(bool isPersistentSaveData, bool isUserSaveData)
+        {
+            IsPersistentSaveData = isPersistentSaveData;
+            IsUserSaveData = isUserSaveData;
+
+            // Ensure the working directory exists
+            Result rc = BaseFs.GetEntryType(out _, WorkingDir);
+
+            if (rc.IsFailure())
             {
-                BaseFs.CreateDirectory(WorkingDir);
-                BaseFs.EnsureDirectoryExists(CommittedDir);
+                if (rc != ResultFs.PathNotFound) return rc;
+
+                rc = BaseFs.CreateDirectory(WorkingDir);
+                if (rc.IsFailure()) return rc;
+
+                if (!IsPersistentSaveData) return Result.Success;
+
+                rc = BaseFs.CreateDirectory(CommittedDir);
+
+                // Nintendo returns on all failures, but we'll keep going if committed already exists
+                // to avoid confusing people manually creating savedata in emulators
+                if (rc.IsFailure() && rc != ResultFs.PathAlreadyExists) return rc;
             }
 
-            if (BaseFs.DirectoryExists(CommittedDir))
+            // Only the working directory is needed for temporary savedata
+            if (!IsPersistentSaveData) return Result.Success;
+
+            rc = BaseFs.GetEntryType(out _, CommittedDir);
+
+            if (rc.IsSuccess())
             {
-                SynchronizeDirectory(WorkingDir, CommittedDir);
+                return SynchronizeDirectory(WorkingDir, CommittedDir);
             }
-            else
-            {
-                SynchronizeDirectory(SyncDir, WorkingDir);
-                BaseFs.RenameDirectory(SyncDir, CommittedDir);
-            }
+            
+            if (rc != ResultFs.PathNotFound) return rc;
+
+            // If a previous commit failed, the committed dir may be missing.
+            // Finish that commit by copying the working dir to the committed dir
+
+            rc = SynchronizeDirectory(SyncDir, WorkingDir);
+            if (rc.IsFailure()) return rc;
+
+            return BaseFs.RenameDirectory(SyncDir, CommittedDir);
         }
 
         protected override Result CreateDirectoryImpl(string path)
@@ -166,10 +221,14 @@ namespace LibHac.FsSystem
                     return ResultFs.WritableFileOpen.Log();
                 }
 
-                Result rc = SynchronizeDirectory(SyncDir, WorkingDir);
+                // Get rid of the previous commit by renaming the folder
+                Result rc = BaseFs.RenameDirectory(CommittedDir, SyncDir);
                 if (rc.IsFailure()) return rc;
 
-                rc = BaseFs.DeleteDirectoryRecursively(CommittedDir);
+                // If something goes wrong beyond this point, the commit will be
+                // completed the next time the savedata is opened
+
+                rc = SynchronizeDirectory(SyncDir, WorkingDir);
                 if (rc.IsFailure()) return rc;
 
                 return BaseFs.RenameDirectory(SyncDir, CommittedDir);
