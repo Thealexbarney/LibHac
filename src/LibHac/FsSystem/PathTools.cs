@@ -540,20 +540,20 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public static Result Normalize(Span<byte> outValue, out int outLength, ReadOnlySpan<byte> path, bool hasMountName)
+        public static Result Normalize(Span<byte> normalizedPath, out int normalizedLength, ReadOnlySpan<byte> path, bool hasMountName)
         {
-            outLength = 0;
+            normalizedLength = 0;
 
             int rootLength = 0;
             ReadOnlySpan<byte> mainPath = path;
 
             if (hasMountName)
             {
-                Result pathRootRc = GetPathRoot(out mainPath, outValue, out rootLength, path);
+                Result pathRootRc = GetPathRoot(out mainPath, normalizedPath, out rootLength, path);
                 if (pathRootRc.IsFailure()) return pathRootRc;
             }
 
-            var sb = new PathBuilder(outValue.Slice(rootLength));
+            var sb = new PathBuilder(normalizedPath.Slice(rootLength));
 
             var state = NormalizeState.Initial;
 
@@ -597,7 +597,7 @@ namespace LibHac.FsSystem
 
                     case NormalizeState.Dot when IsDirectorySeparator(c):
                         state = NormalizeState.Delimiter;
-                        rc = sb.RewindLevels(1);
+                        rc = sb.GoUpLevels(1);
                         break;
 
                     case NormalizeState.Dot when c == '.':
@@ -612,7 +612,7 @@ namespace LibHac.FsSystem
 
                     case NormalizeState.DoubleDot when IsDirectorySeparator(c):
                         state = NormalizeState.Delimiter;
-                        rc = sb.RewindLevels(2);
+                        rc = sb.GoUpLevels(2);
                         break;
 
                     case NormalizeState.DoubleDot:
@@ -631,7 +631,7 @@ namespace LibHac.FsSystem
                         }
                     }
 
-                    outLength = sb.Length;
+                    normalizedLength = sb.Length;
                     sb.Terminate();
                     return rc;
                 }
@@ -643,12 +643,12 @@ namespace LibHac.FsSystem
             {
                 case NormalizeState.Dot:
                     state = NormalizeState.Delimiter;
-                    finalRc = sb.RewindLevels(1);
+                    finalRc = sb.GoUpLevels(1);
                     break;
 
                 case NormalizeState.DoubleDot:
                     state = NormalizeState.Delimiter;
-                    finalRc = sb.RewindLevels(2);
+                    finalRc = sb.GoUpLevels(2);
                     break;
             }
 
@@ -660,7 +660,7 @@ namespace LibHac.FsSystem
                 finalRc = sb.Append((byte)'/');
             }
 
-            outLength = sb.Length;
+            normalizedLength = sb.Length;
             sb.Terminate();
 
             return finalRc;

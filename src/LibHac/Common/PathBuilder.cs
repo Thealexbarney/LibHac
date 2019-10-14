@@ -83,7 +83,7 @@ namespace LibHac.Common
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Result RewindLevels(int count)
+        public Result GoUpLevels(int count)
         {
             Debug.Assert(count > 0);
 
