@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using LibHac.Common;
+using LibHac.Fs;
 using LibHac.FsSystem;
 using Xunit;
 
@@ -73,18 +75,18 @@ namespace LibHac.Tests
             new object[] {"mount:/", "mount:/", false},
             new object[] {"mount:/", "mount:/a", true},
             new object[] {"mount:/", "mount:/a/", true},
-                           
+
             new object[] {"mount:/a/b/c", "mount:/a/b/c/d", true},
             new object[] {"mount:/a/b/c/", "mount:/a/b/c/d", true},
-                           
+
             new object[] {"mount:/a/b/c", "mount:/a/b/c", false},
             new object[] {"mount:/a/b/c/", "mount:/a/b/c/", false},
             new object[] {"mount:/a/b/c/", "mount:/a/b/c", false},
             new object[] {"mount:/a/b/c", "mount:/a/b/c/", false},
-                           
+
             new object[] {"mount:/a/b/c/", "mount:/a/b/cdef", false},
             new object[] {"mount:/a/b/c", "mount:/a/b/cdef", false},
-            new object[] { "mount:/a/b/c/", "mount:/a/b/cd", false},
+            new object[] {"mount:/a/b/c/", "mount:/a/b/cd", false},
         };
 
         public static object[][] ParentDirectoryTestItems =
@@ -168,6 +170,110 @@ namespace LibHac.Tests
             HashSet<string> paths = getNormalized ? normalizedPaths : notNormalizedPaths;
 
             return paths.Select(x => new object[] { x }).ToArray();
+        }
+
+        public static object[][] NormalizedPathTestItemsU8NoMountName =
+        {
+            new object[] {"/", "/", Result.Success},
+            new object[] {"/.", "/", Result.Success},
+            new object[] {"/..", "", ResultFs.DirectoryUnobtainable},
+            new object[] {"/abc", "/abc", Result.Success},
+            new object[] {"/a/..", "/", Result.Success},
+            new object[] {"/a/b/c", "/a/b/c", Result.Success},
+            new object[] {"/a/b/../c", "/a/c", Result.Success},
+            new object[] {"/a/b/c/..", "/a/b", Result.Success},
+            new object[] {"/a/b/c/.", "/a/b/c", Result.Success},
+            new object[] {"/a/../../..", "", ResultFs.DirectoryUnobtainable},
+            new object[] {"/a/../../../a/b/c", "", ResultFs.DirectoryUnobtainable},
+            new object[] {"//a/b//.//c", "/a/b/c", Result.Success},
+            new object[] {"/../a/b/c/.", "", ResultFs.DirectoryUnobtainable},
+            new object[] {"/./aaa/bbb/ccc/.", "/aaa/bbb/ccc", Result.Success},
+
+            new object[] {"/a/b/c/", "/a/b/c", Result.Success},
+            new object[] {"/aa/./bb/../cc/", "/aa/cc", Result.Success},
+            new object[] {"/./b/../c/", "/c", Result.Success},
+            new object[] {"/a/../../../", "", ResultFs.DirectoryUnobtainable},
+            new object[] {"//a/b//.//c/", "/a/b/c", Result.Success},
+            new object[] {"/tmp/../", "/", Result.Success},
+            new object[] {"abc", "", ResultFs.InvalidPathFormat}
+        };
+
+        public static object[][] NormalizedPathTestItemsU8MountName =
+        {
+            new object[] {"mount:/a/b/../c", "mount:/a/c", Result.Success},
+            new object[] {"a:/a/b/c", "a:/a/b/c", Result.Success},
+            new object[] {"mount:/a/b/../c", "mount:/a/c", Result.Success},
+            new object[] {"mount:", "mount:/", Result.Success},
+            new object[] {"abc:/a/../../../a/b/c", "", ResultFs.DirectoryUnobtainable},
+            new object[] {"abc:/./b/../c/", "abc:/c", Result.Success},
+            new object[] {"abc:/.", "abc:/", Result.Success},
+            new object[] {"abc:/..", "", ResultFs.DirectoryUnobtainable},
+            new object[] {"abc:/", "abc:/", Result.Success},
+            new object[] {"abc://a/b//.//c", "abc:/a/b/c", Result.Success},
+            new object[] {"abc:/././/././a/b//.//c", "abc:/a/b/c", Result.Success},
+            new object[] {"mount:/d./aa", "mount:/d./aa", Result.Success},
+            new object[] {"mount:/d/..", "mount:/", Result.Success}
+        };
+
+        [Theory]
+        [MemberData(nameof(NormalizedPathTestItemsU8NoMountName))]
+        public static void NormalizePathU8NoMountName(string path, string expected, Result expectedResult)
+        {
+            U8String u8Path = path.ToU8String();
+            Span<byte> buffer = stackalloc byte[0x301];
+
+            Result rc = PathTools.Normalize(buffer, out _, u8Path, false);
+
+            string actual = StringUtils.Utf8ZToString(buffer);
+
+            Assert.Equal(expectedResult, rc);
+            if (expectedResult == Result.Success)
+            {
+                Assert.Equal(expected, actual);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NormalizedPathTestItemsU8MountName))]
+        public static void NormalizePathU8MountName(string path, string expected, Result expectedResult)
+        {
+            U8String u8Path = path.ToU8String();
+            Span<byte> buffer = stackalloc byte[0x301];
+
+            Result rc = PathTools.Normalize(buffer, out _, u8Path, true);
+
+            string actual = StringUtils.Utf8ZToString(buffer);
+
+            Assert.Equal(expectedResult, rc);
+            if (expectedResult == Result.Success)
+            {
+                Assert.Equal(expected, actual);
+            }
+        }
+
+        public static object[][] NormalizedPathTestItemsU8TooShort =
+        {
+            new object[] {"/a/b/c", "", 0},
+            new object[] {"/a/b/c", "/a/", 4},
+            new object[] {"/a/b/c", "/a/b", 5},
+            new object[] {"/a/b/c", "/a/b/", 6}
+        };
+
+        [Theory]
+        [MemberData(nameof(NormalizedPathTestItemsU8TooShort))]
+        public static void NormalizePathU8TooShortDest(string path, string expected, int destSize)
+        {
+            U8String u8Path = path.ToU8String();
+
+            Span<byte> buffer = stackalloc byte[destSize];
+
+            Result rc = PathTools.Normalize(buffer, out int normalizedLength, u8Path, false);
+
+            string actual = StringUtils.Utf8ZToString(buffer);
+
+            Assert.Equal(ResultFs.TooLongPath, rc);
+            Assert.Equal(Math.Max(0, destSize - 1), normalizedLength);
+            Assert.Equal(expected, actual);
         }
     }
 }

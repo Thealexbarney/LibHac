@@ -41,7 +41,7 @@ namespace LibHac.Fs
             {
                 if (options.HasFlag(WriteOption.Flush))
                 {
-                    return Flush();
+                    return FlushImpl();
                 }
 
                 return Result.Success;
@@ -83,7 +83,7 @@ namespace LibHac.Fs
         {
             if (IsDisposed) return ResultFs.PreconditionViolation.Log();
 
-            return OperateRange(outBuffer, operationId, offset, size, inBuffer);
+            return OperateRangeImpl(outBuffer, operationId, offset, size, inBuffer);
         }
 
         public void Dispose()
