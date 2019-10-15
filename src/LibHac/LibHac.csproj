@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>netcoreapp2.1;netstandard2.0;net46</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0;netstandard2.0;net46</TargetFrameworks>
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
@@ -30,7 +30,7 @@
     <DefineConstants>$(DefineConstants);USE_RSA_CNG</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.0' ">
     <DefineConstants>$(DefineConstants);STREAM_SPAN;STRING_SPAN;HAS_FILE_SYSTEM_NAME;CROSS_PLATFORM</DefineConstants>
   </PropertyGroup>
 
@@ -47,10 +47,6 @@
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
     <PackageReference Include="System.Memory" Version="4.5.3" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.2" />
   </ItemGroup>
 
   <ItemGroup>

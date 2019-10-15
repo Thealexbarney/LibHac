@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <RootNamespace>LibHacBuild</RootNamespace>
     <IsPackable>False</IsPackable>
@@ -10,11 +10,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="GitVersion.CommandLine.DotNetCore" Version="5.0.0" />
-    <PackageReference Include="ILRepack.Lib" Version="2.0.17" NoWarn="NU1701" />
-    <PackageReference Include="NuGet.CommandLine" Version="5.1.0" />
-    <PackageReference Include="Nuke.Common" Version="0.21.2" />
-    <PackageReference Include="SharpZipLib" Version="1.1.0" />
+    <PackageReference Include="GitVersion.CommandLine.DotNetCore" Version="5.0.1" />
+    <PackageReference Include="ILRepack.Lib" Version="2.0.18" NoWarn="NU1701" />
+    <PackageReference Include="NuGet.CommandLine" Version="5.2.0" />
+    <PackageReference Include="Nuke.Common" Version="0.22.2" />
+    <PackageReference Include="SharpZipLib" Version="1.2.0" />
   </ItemGroup>
 
   <ItemGroup>
