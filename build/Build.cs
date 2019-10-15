@@ -40,7 +40,7 @@ namespace LibHacBuild
         AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
         AbsolutePath SignedArtifactsDirectory => ArtifactsDirectory / "signed";
         AbsolutePath TempDirectory => RootDirectory / ".tmp";
-        AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_netcoreapp2.1";
+        AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_netcoreapp3.0";
         AbsolutePath CliFrameworkDir => TempDirectory / "hactoolnet_net46";
         AbsolutePath CliNativeDir => TempDirectory / "hactoolnet_native";
         AbsolutePath CliFrameworkZip => ArtifactsDirectory / "hactoolnet.zip";
@@ -57,7 +57,7 @@ namespace LibHacBuild
         string AppVeyorVersion { get; set; }
         Dictionary<string, object> VersionProps { get; set; } = new Dictionary<string, object>();
 
-        private const string MyGetSource = "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json";
+        private const string DotNetFeedSource = "https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json";
         const string CertFileName = "cert.pfx";
 
         private bool IsMasterBranch => _gitVersion?.BranchName.Equals("master") ?? false;
@@ -144,7 +144,7 @@ namespace LibHacBuild
 
                 DotNetPublish(s => publishSettings
                     .SetProject(HactoolnetProject)
-                    .SetFramework("netcoreapp2.1")
+                    .SetFramework("netcoreapp3.0")
                     .SetOutput(CliCoreDir)
                     .SetNoBuild(true)
                     .SetProperties(VersionProps));
@@ -233,7 +233,7 @@ namespace LibHacBuild
                     .EnableNoBuild()
                     .SetConfiguration(Configuration);
 
-                if (EnvironmentInfo.IsUnix) settings = settings.SetProperty("TargetFramework", "netcoreapp2.1");
+                if (EnvironmentInfo.IsUnix) settings = settings.SetProperty("TargetFramework", "netcoreapp3.0");
 
                 DotNetTest(s => settings);
             });
@@ -298,7 +298,7 @@ namespace LibHacBuild
 
                     XDocument doc = XDocument.Load(NugetConfig);
                     doc.Element("configuration").Element("packageSources").Add(new XElement("add",
-                        new XAttribute("key", "myget"), new XAttribute("value", MyGetSource)));
+                        new XAttribute("key", "myget"), new XAttribute("value", DotNetFeedSource)));
 
                     doc.Save(NugetConfig);
 
@@ -309,7 +309,7 @@ namespace LibHacBuild
 
                     DotNetPublish(s => publishSettings
                         .SetProject(nativeProject)
-                        .SetFramework("netcoreapp2.1")
+                        .SetFramework("netcoreapp3.0")
                         .SetRuntime("win-x64")
                         .SetOutput(CliNativeDir)
                         .SetProperties(VersionProps));
@@ -559,7 +559,7 @@ namespace LibHacBuild
 
                 // Avoid having multiple signed versions of the same file
                 File.Copy(nupkgDir / "lib" / "net46" / "LibHac.dll", netFxDir / "LibHac.dll", true);
-                File.Copy(nupkgDir / "lib" / "netcoreapp2.1" / "LibHac.dll", coreFxDir / "LibHac.dll", true);
+                File.Copy(nupkgDir / "lib" / "netcoreapp3.0" / "LibHac.dll", coreFxDir / "LibHac.dll", true);
 
                 ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(nupkgFile), nupkgDir, pkgFileList);
                 ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliFrameworkZip), netFxDir);
