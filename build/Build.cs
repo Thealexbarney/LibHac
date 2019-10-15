@@ -11,7 +11,7 @@ using System.Xml.Linq;
 using ICSharpCode.SharpZipLib.Zip;
 using ILRepacking;
 using Nuke.Common;
-using Nuke.Common.BuildServers;
+using Nuke.Common.CI.AppVeyor;
 using Nuke.Common.Git;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
@@ -272,7 +272,7 @@ namespace LibHacBuild
                 AbsolutePath nupkgFile = ArtifactsDirectory.GlobFiles("*.nupkg").Single();
                 AbsolutePath snupkgFile = ArtifactsDirectory.GlobFiles("*.snupkg").Single();
 
-                string apiKey = EnvironmentInfo.Variable("myget_api_key");
+                string apiKey = EnvironmentInfo.GetVariable<string>("myget_api_key");
                 DotNetNuGetPushSettings settings = new DotNetNuGetPushSettings()
                     .SetApiKey(apiKey)
                     .SetSymbolApiKey(apiKey)
