@@ -7,7 +7,7 @@ using LibHac.Ncm;
 namespace LibHac.Fs
 {
     [StructLayout(LayoutKind.Explicit, Size = 0x40)]
-    public struct SaveDataAttribute
+    public struct SaveDataAttribute : IEquatable<SaveDataAttribute>, IComparable<SaveDataAttribute>
     {
         [FieldOffset(0x00)] public ulong TitleId;
         [FieldOffset(0x08)] public UserId UserId;
@@ -15,6 +15,50 @@ namespace LibHac.Fs
         [FieldOffset(0x20)] public SaveDataType Type;
         [FieldOffset(0x21)] public byte Rank;
         [FieldOffset(0x22)] public short Index;
+
+        public override bool Equals(object obj)
+        {
+            return obj is SaveDataAttribute attribute && Equals(attribute);
+        }
+
+        public bool Equals(SaveDataAttribute other)
+        {
+            return TitleId == other.TitleId &&
+                   Type == other.Type &&
+                   UserId.Equals(other.UserId) &&
+                   SaveDataId == other.SaveDataId &&
+                   Rank == other.Rank &&
+                   Index == other.Index;
+        }
+
+        public override int GetHashCode()
+        {
+            // ReSharper disable NonReadonlyMemberInGetHashCode
+            int hashCode = 487790375;
+            hashCode = hashCode * -1521134295 + TitleId.GetHashCode();
+            hashCode = hashCode * -1521134295 + Type.GetHashCode();
+            hashCode = hashCode * -1521134295 + UserId.GetHashCode();
+            hashCode = hashCode * -1521134295 + SaveDataId.GetHashCode();
+            hashCode = hashCode * -1521134295 + Rank.GetHashCode();
+            hashCode = hashCode * -1521134295 + Index.GetHashCode();
+            return hashCode;
+            // ReSharper restore NonReadonlyMemberInGetHashCode
+        }
+
+        public int CompareTo(SaveDataAttribute other)
+        {
+            int titleIdComparison = TitleId.CompareTo(other.TitleId);
+            if (titleIdComparison != 0) return titleIdComparison;
+            int typeComparison = Type.CompareTo(other.Type);
+            if (typeComparison != 0) return typeComparison;
+            int userIdComparison = UserId.CompareTo(other.UserId);
+            if (userIdComparison != 0) return userIdComparison;
+            int saveDataIdComparison = SaveDataId.CompareTo(other.SaveDataId);
+            if (saveDataIdComparison != 0) return saveDataIdComparison;
+            int rankComparison = Rank.CompareTo(other.Rank);
+            if (rankComparison != 0) return rankComparison;
+            return Index.CompareTo(other.Index);
+        }
     }
 
     [StructLayout(LayoutKind.Explicit, Size = 0x48)]

@@ -5,7 +5,7 @@ namespace LibHac.Kvdb
 {
     public ref struct ImkvdbWriter
     {
-        private Span<byte> _data;
+        private readonly Span<byte> _data;
         private int _position;
 
         public ImkvdbWriter(Span<byte> data)
@@ -27,9 +27,9 @@ namespace LibHac.Kvdb
             _position += Unsafe.SizeOf<ImkvdbHeader>();
         }
 
-        public void WriteEntry(IExportable key, IExportable value)
+        public void WriteEntry(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
         {
-            WriteEntryHeader(key.ExportSize, value.ExportSize);
+            WriteEntryHeader(key.Length, value.Length);
             Write(key);
             Write(value);
         }
@@ -47,13 +47,13 @@ namespace LibHac.Kvdb
             _position += Unsafe.SizeOf<ImkvdbEntryHeader>();
         }
 
-        private void Write(IExportable value)
+        private void Write(ReadOnlySpan<byte> value)
         {
-            int valueSize = value.ExportSize;
+            int valueSize = value.Length;
             if (_position + valueSize > _data.Length) throw new InvalidOperationException();
 
             Span<byte> dest = _data.Slice(_position, valueSize);
-            value.ToBytes(dest);
+            value.CopyTo(dest);
 
             _position += valueSize;
         }
