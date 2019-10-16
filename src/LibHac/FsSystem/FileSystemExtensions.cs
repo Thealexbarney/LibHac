@@ -205,7 +205,7 @@ namespace LibHac.FsSystem
         {
             IFileSystem fs = fileSystem;
 
-            foreach (DirectoryEntryEx entry in fileSystem.EnumerateEntries(path, "*"))
+            foreach (DirectoryEntryEx entry in fileSystem.EnumerateEntries(path, "*", SearchOptions.Default))
             {
                 string subPath = PathTools.Combine(path, entry.Name);
 
