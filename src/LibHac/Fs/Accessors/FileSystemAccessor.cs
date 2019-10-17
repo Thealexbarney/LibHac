@@ -176,7 +176,9 @@ namespace LibHac.Fs.Accessors
         {
             // Todo: Possibly check for open files and directories
             // Nintendo checks for them in DumpUnclosedAccessorList in
-            // FileSystemAccessor's destructor, but doesn't do anything with it
+            // FileSystemAccessor's destructor
+
+            FileSystem?.Dispose();
         }
     }
 }

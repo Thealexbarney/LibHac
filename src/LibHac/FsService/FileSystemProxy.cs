@@ -24,8 +24,6 @@ namespace LibHac.FsService
         public FsPath SaveDataRootPath { get; } = default;
         public bool AutoCreateSaveData { get; private set; }
 
-        private const ulong SaveIndexerId = 0x8000000000000000;
-
         internal FileSystemProxy(FileSystemProxyCore fsProxyCore, FileSystemClient fsClient, FileSystemServer fsServer)
         {
             FsProxyCore = fsProxyCore;
@@ -189,7 +187,7 @@ namespace LibHac.FsService
 
             if (saveFsResult != ResultFs.PathNotFound && saveFsResult != ResultFs.TargetNotFound) return saveFsResult;
 
-            if (saveDataId != SaveIndexerId)
+            if (saveDataId != FileSystemServer.SaveIndexerId)
             {
                 if (hasFixedId)
                 {

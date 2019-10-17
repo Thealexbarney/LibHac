@@ -6,7 +6,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class LocalFileSystem : IAttributeFileSystem
+    public class LocalFileSystem : AttributeFileSystemBase
     {
         private string BasePath { get; }
 
@@ -30,7 +30,7 @@ namespace LibHac.FsSystem
             return PathTools.Combine(BasePath, path);
         }
 
-        public Result GetFileAttributes(string path, out NxFileAttributes attributes)
+        protected override Result GetFileAttributesImpl(string path, out NxFileAttributes attributes)
         {
             attributes = default;
 
@@ -49,7 +49,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public Result SetFileAttributes(string path, NxFileAttributes attributes)
+        protected override Result SetFileAttributesImpl(string path, NxFileAttributes attributes)
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
@@ -76,7 +76,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public Result GetFileSize(out long fileSize, string path)
+        protected override Result GetFileSizeImpl(out long fileSize, string path)
         {
             fileSize = default;
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
@@ -87,12 +87,12 @@ namespace LibHac.FsSystem
             return GetSizeInternal(out fileSize, info);
         }
 
-        public Result CreateDirectory(string path)
+        protected override Result CreateDirectoryImpl(string path)
         {
             return CreateDirectory(path, NxFileAttributes.None);
         }
 
-        public Result CreateDirectory(string path, NxFileAttributes archiveAttribute)
+        protected override Result CreateDirectoryImpl(string path, NxFileAttributes archiveAttribute)
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
@@ -112,7 +112,7 @@ namespace LibHac.FsSystem
             return CreateDirInternal(dir, archiveAttribute);
         }
 
-        public Result CreateFile(string path, long size, CreateFileOptions options)
+        protected override Result CreateFileImpl(string path, long size, CreateFileOptions options)
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
@@ -139,7 +139,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        public Result DeleteDirectory(string path)
+        protected override Result DeleteDirectoryImpl(string path)
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
@@ -149,7 +149,7 @@ namespace LibHac.FsSystem
             return DeleteDirectoryInternal(dir, false);
         }
 
-        public Result DeleteDirectoryRecursively(string path)
+        protected override Result DeleteDirectoryRecursivelyImpl(string path)
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
@@ -159,7 +159,7 @@ namespace LibHac.FsSystem
             return DeleteDirectoryInternal(dir, true);
         }
 
-        public Result CleanDirectoryRecursively(string path)
+        protected override Result CleanDirectoryRecursivelyImpl(string path)
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
@@ -184,7 +184,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public Result DeleteFile(string path)
+        protected override Result DeleteFileImpl(string path)
         {
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
@@ -194,7 +194,7 @@ namespace LibHac.FsSystem
             return DeleteFileInternal(file);
         }
 
-        public Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode)
+        protected override Result OpenDirectoryImpl(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
             directory = default;
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
@@ -220,7 +220,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        public Result OpenFile(out IFile file, string path, OpenMode mode)
+        protected override Result OpenFileImpl(out IFile file, string path, OpenMode mode)
         {
             file = default;
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
@@ -240,7 +240,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public Result RenameDirectory(string oldPath, string newPath)
+        protected override Result RenameDirectoryImpl(string oldPath, string newPath)
         {
             oldPath = PathTools.Normalize(oldPath);
             newPath = PathTools.Normalize(newPath);
@@ -263,7 +263,7 @@ namespace LibHac.FsSystem
             return RenameDirInternal(srcDir, dstDir);
         }
 
-        public Result RenameFile(string oldPath, string newPath)
+        protected override Result RenameFileImpl(string oldPath, string newPath)
         {
             string srcLocalPath = ResolveLocalPath(PathTools.Normalize(oldPath));
             string dstLocalPath = ResolveLocalPath(PathTools.Normalize(newPath));
@@ -280,7 +280,7 @@ namespace LibHac.FsSystem
             return RenameFileInternal(srcFile, dstFile);
         }
 
-        public Result GetEntryType(out DirectoryEntryType entryType, string path)
+        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path)
         {
             entryType = default;
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
@@ -307,7 +307,7 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
+        protected override Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, string path)
         {
             timeStamp = default;
             string localPath = ResolveLocalPath(PathTools.Normalize(path));
@@ -324,24 +324,24 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public Result GetFreeSpaceSize(out long freeSpace, string path)
+        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, string path)
         {
             freeSpace = new DriveInfo(BasePath).AvailableFreeSpace;
             return Result.Success;
         }
 
-        public Result GetTotalSpaceSize(out long totalSpace, string path)
+        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, string path)
         {
             totalSpace = new DriveInfo(BasePath).TotalSize;
             return Result.Success;
         }
 
-        public Result Commit()
+        protected override Result CommitImpl()
         {
             return Result.Success;
         }
 
-        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
+        protected override Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
         {
             return ResultFs.UnsupportedOperation.Log();
         }

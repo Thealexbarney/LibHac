@@ -6,12 +6,12 @@ namespace LibHac.FsService
 {
     public class FileSystemServer
     {
-        internal const ulong SaveDataIndexerSaveId = 0x8000000000000000;
+        internal const ulong SaveIndexerId = 0x8000000000000000;
 
         private FileSystemProxyCore FsProxyCore { get; }
 
         /// <summary>The client instance to be used for internal operations like save indexer access.</summary>
-        private FileSystemClient FsClient { get; }
+        public FileSystemClient FsClient { get; }
         private ITimeSpanGenerator Timer { get; }
 
         internal SaveDataIndexerManager SaveDataIndexerManager { get; }
@@ -35,7 +35,7 @@ namespace LibHac.FsService
             FsClient = new FileSystemClient(this, timer);
             Timer = timer;
 
-            SaveDataIndexerManager = new SaveDataIndexerManager(FsClient, SaveDataIndexerSaveId);
+            SaveDataIndexerManager = new SaveDataIndexerManager(FsClient, SaveIndexerId);
         }
 
         /// <summary>

@@ -5,7 +5,7 @@ namespace LibHac.FsSystem
 {
     public class FileStorage : StorageBase
     {
-        private IFile BaseFile { get; }
+        protected IFile BaseFile { get; }
 
         public FileStorage(IFile baseFile)
         {
@@ -35,6 +35,19 @@ namespace LibHac.FsSystem
         protected override Result SetSizeImpl(long size)
         {
             return BaseFile.SetSize(size);
+        }
+    }
+
+    public class DisposingFileStorage : FileStorage
+    {
+        public DisposingFileStorage(IFile baseFile) : base(baseFile) { }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                BaseFile?.Dispose();
+            }
         }
     }
 }

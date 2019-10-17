@@ -115,6 +115,16 @@ namespace LibHac.Fs
             return accessor.IsAccessLogEnabled;
         }
 
+        internal void EnableFileSystemAccessorAccessLog(U8Span mountName)
+        {
+            if (MountTable.Find(mountName.ToString(), out FileSystemAccessor accessor).IsFailure())
+            {
+                throw new LibHacException("abort");
+            }
+
+            accessor.IsAccessLogEnabled = true;
+        }
+
         internal bool IsEnabledHandleAccessLog(FileHandle handle)
         {
             return handle.File.Parent.IsAccessLogEnabled;

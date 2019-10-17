@@ -55,8 +55,8 @@ namespace LibHac.FsService.Creators
                     rc = sourceFileSystem.OpenFile(out IFile saveDataFile, saveDataPath, OpenMode.ReadWrite);
                     if (rc.IsFailure()) return rc;
 
-                    var saveDataStorage = new FileStorage(saveDataFile);
-                    fileSystem = new SaveDataFileSystem(Keyset, saveDataStorage, IntegrityCheckLevel.ErrorOnInvalid, true);
+                    var saveDataStorage = new DisposingFileStorage(saveDataFile);
+                    fileSystem = new SaveDataFileSystem(Keyset, saveDataStorage, IntegrityCheckLevel.ErrorOnInvalid, false);
 
                     // Todo: ISaveDataExtraDataAccessor
 

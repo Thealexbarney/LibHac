@@ -302,5 +302,16 @@ namespace LibHac.FsSystem.Save
 
             return journalValidity;
         }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (!LeaveOpen)
+                {
+                    BaseStorage?.Dispose();
+                }
+            }
+        }
     }
 }

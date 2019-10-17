@@ -7,7 +7,7 @@ namespace LibHac.Fs
     {
         // 0 = not disposed; 1 = disposed
         private int _disposedState;
-        private bool IsDisposed => _disposedState != 0;
+        protected bool IsDisposed => _disposedState != 0;
 
         protected abstract Result CreateDirectoryImpl(string path);
         protected abstract Result CreateFileImpl(string path, long size, CreateFileOptions options);
