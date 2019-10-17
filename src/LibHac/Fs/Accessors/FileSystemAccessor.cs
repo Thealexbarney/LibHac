@@ -153,7 +153,7 @@ namespace LibHac.Fs.Accessors
         {
             if (MountNameGenerator == null) return ResultFs.PreconditionViolation;
 
-            return MountNameGenerator.Generate(nameBuffer);
+            return MountNameGenerator.GenerateCommonMountName(nameBuffer);
         }
 
         internal void NotifyCloseFile(FileAccessor file)

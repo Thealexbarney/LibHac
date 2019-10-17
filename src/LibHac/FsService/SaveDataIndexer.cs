@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Fs.Shim;
 using LibHac.Kvdb;
 
 namespace LibHac.FsService

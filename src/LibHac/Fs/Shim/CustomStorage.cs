@@ -2,7 +2,7 @@
 using LibHac.Common;
 using LibHac.FsService;
 
-namespace LibHac.Fs
+namespace LibHac.Fs.Shim
 {
     public static class CustomStorage
     {

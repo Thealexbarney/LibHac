@@ -1,9 +1,11 @@
 ﻿using System;
 using LibHac.Fs;
+using LibHac.Fs.Shim;
 using LibHac.FsSystem;
 using LibHac.FsSystem.Save;
 using LibHac.FsService.Creators;
 using LibHac.Spl;
+using RightsId = LibHac.Fs.RightsId;
 
 namespace LibHac.FsService
 {
