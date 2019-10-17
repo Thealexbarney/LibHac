@@ -6,22 +6,26 @@ namespace LibHac.FsService
 {
     public class FileSystemServer
     {
+        internal const ulong SaveDataIndexerSaveId = 0x8000000000000000;
+
         private FileSystemProxyCore FsProxyCore { get; }
 
         /// <summary>The client instance to be used for internal operations like save indexer access.</summary>
         private FileSystemClient FsClient { get; }
         private ITimeSpanGenerator Timer { get; }
-        
+
+        internal SaveDataIndexerManager SaveDataIndexerManager { get; }
+
         /// <summary>
         /// Creates a new <see cref="FileSystemServer"/>.
         /// </summary>
         /// <param name="config">The configuration for the created <see cref="FileSystemServer"/>.</param>
         public FileSystemServer(FileSystemServerConfig config)
         {
-            if(config.FsCreators == null)
+            if (config.FsCreators == null)
                 throw new ArgumentException("FsCreators must not be null");
 
-            if(config.DeviceOperator == null)
+            if (config.DeviceOperator == null)
                 throw new ArgumentException("DeviceOperator must not be null");
 
             ExternalKeySet externalKeySet = config.ExternalKeySet ?? new ExternalKeySet();
@@ -30,6 +34,8 @@ namespace LibHac.FsService
             FsProxyCore = new FileSystemProxyCore(config.FsCreators, externalKeySet, config.DeviceOperator);
             FsClient = new FileSystemClient(this, timer);
             Timer = timer;
+
+            SaveDataIndexerManager = new SaveDataIndexerManager(FsClient, SaveDataIndexerSaveId);
         }
 
         /// <summary>
@@ -52,7 +58,7 @@ namespace LibHac.FsService
 
         public IFileSystemProxy CreateFileSystemProxyService()
         {
-            return new FileSystemProxy(FsProxyCore, FsClient);
+            return new FileSystemProxy(FsProxyCore, FsClient, this);
         }
     }
 

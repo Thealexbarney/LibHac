@@ -2,6 +2,7 @@
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSystem;
+using LibHac.FsSystem.Save;
 using LibHac.Ncm;
 using LibHac.Spl;
 
@@ -14,6 +15,7 @@ namespace LibHac.FsService
         /// <summary>The client instance to be used for internal operations like save indexer access.</summary>
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         private FileSystemClient FsClient { get; }
+        private FileSystemServer FsServer { get; }
 
         public long CurrentProcess { get; private set; }
 
@@ -24,10 +26,11 @@ namespace LibHac.FsService
 
         private const ulong SaveIndexerId = 0x8000000000000000;
 
-        internal FileSystemProxy(FileSystemProxyCore fsProxyCore, FileSystemClient fsClient)
+        internal FileSystemProxy(FileSystemProxyCore fsProxyCore, FileSystemClient fsClient, FileSystemServer fsServer)
         {
             FsProxyCore = fsProxyCore;
             FsClient = fsClient;
+            FsServer = fsServer;
 
             CurrentProcess = -1;
             SaveDataSize = 0x2000000;
@@ -147,6 +150,9 @@ namespace LibHac.FsService
         private Result OpenSaveDataFileSystemImpl(out IFileSystem fileSystem, out ulong saveDataId,
             SaveDataSpaceId spaceId, ref SaveDataAttribute attribute, bool openReadOnly, bool cacheExtraData)
         {
+            fileSystem = default;
+            saveDataId = default;
+
             bool hasFixedId = attribute.SaveDataId != 0 && attribute.UserId == UserId.Zero;
 
             if (hasFixedId)
@@ -155,7 +161,25 @@ namespace LibHac.FsService
             }
             else
             {
-                throw new NotImplementedException();
+                SaveDataAttribute indexerKey = attribute;
+
+                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out SaveDataIndexerReader reader, spaceId);
+                using SaveDataIndexerReader c = reader;
+                if (rc.IsFailure()) return rc;
+
+                c.Indexer.Get(out SaveDataIndexerValue indexerValue, ref indexerKey);
+
+                SaveDataSpaceId indexerSpaceId = spaceId == SaveDataSpaceId.ProperSystem || spaceId == SaveDataSpaceId.Safe
+                    ? SaveDataSpaceId.System
+                    : spaceId;
+
+                if (indexerValue.SpaceId != indexerSpaceId)
+                    return ResultFs.TargetNotFound.Log();
+
+                if (indexerValue.State == 4)
+                    return ResultFs.Result6906.Log();
+
+                saveDataId = indexerValue.SaveDataId;
             }
 
             Result saveFsResult = FsProxyCore.OpenSaveDataFileSystem(out fileSystem, spaceId, saveDataId,
@@ -167,7 +191,6 @@ namespace LibHac.FsService
 
             if (saveDataId != SaveIndexerId)
             {
-                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                 if (hasFixedId)
                 {
                     // todo: remove save indexer entry
@@ -177,15 +200,61 @@ namespace LibHac.FsService
             return ResultFs.TargetNotFound;
         }
 
+        private Result OpenSaveDataFileSystem3(out IFileSystem fileSystem, SaveDataSpaceId spaceId,
+            ref SaveDataAttribute attribute, bool openReadOnly)
+        {
+            // Missing check if the open limit has been hit
+
+            Result rc = OpenSaveDataFileSystemImpl(out fileSystem, out _, spaceId, ref attribute, openReadOnly, true);
+
+            // Missing permission check based on the save's owner ID,
+            // speed emulation storage type wrapper, and FileSystemInterfaceAdapter
+
+            return rc;
+        }
+
+        private Result OpenSaveDataFileSystem2(out IFileSystem fileSystem, SaveDataSpaceId spaceId,
+            ref SaveDataAttribute attribute, bool openReadOnly)
+        {
+            fileSystem = default;
+
+            // Missing permission checks
+
+            SaveDataAttribute attributeCopy;
+
+            if (attribute.TitleId == TitleId.Zero)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                attributeCopy = attribute;
+            }
+
+            SaveDataSpaceId actualSpaceId;
+
+            if (attributeCopy.Type == SaveDataType.CacheStorage)
+            {
+                // Check whether the save is on the SD card or the BIS
+                throw new NotImplementedException();
+            }
+            else
+            {
+                actualSpaceId = spaceId;
+            }
+
+            return OpenSaveDataFileSystem3(out fileSystem, actualSpaceId, ref attributeCopy, openReadOnly);
+        }
+
         public Result OpenSaveDataFileSystem(out IFileSystem fileSystem, SaveDataSpaceId spaceId, ref SaveDataAttribute attribute)
         {
-            throw new NotImplementedException();
+            return OpenSaveDataFileSystem2(out fileSystem, spaceId, ref attribute, false);
         }
 
         public Result OpenReadOnlySaveDataFileSystem(out IFileSystem fileSystem, SaveDataSpaceId spaceId,
             ref SaveDataAttribute attribute)
         {
-            throw new NotImplementedException();
+            return OpenSaveDataFileSystem2(out fileSystem, spaceId, ref attribute, true);
         }
 
         public Result OpenSaveDataFileSystemBySystemSaveDataId(out IFileSystem fileSystem, SaveDataSpaceId spaceId,

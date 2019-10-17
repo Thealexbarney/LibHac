@@ -4,7 +4,7 @@ using LibHac.Fs;
 namespace LibHac.FsService
 {
     [StructLayout(LayoutKind.Explicit, Size = 0x40)]
-    public struct SaveDataIndexerEntry
+    public struct SaveDataIndexerValue
     {
         [FieldOffset(0x00)] public ulong SaveDataId;
         [FieldOffset(0x08)] public ulong Size;

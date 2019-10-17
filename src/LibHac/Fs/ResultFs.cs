@@ -137,5 +137,6 @@
 
         public static Result SubStorageNotInitialized => new Result(ModuleFs, 6902);
         public static Result MountNameNotFound => new Result(ModuleFs, 6905);
+        public static Result Result6906 => new Result(ModuleFs, 6906);
     }
 }

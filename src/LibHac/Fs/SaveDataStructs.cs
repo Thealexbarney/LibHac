@@ -9,7 +9,7 @@ namespace LibHac.Fs
     [StructLayout(LayoutKind.Explicit, Size = 0x40)]
     public struct SaveDataAttribute : IEquatable<SaveDataAttribute>, IComparable<SaveDataAttribute>
     {
-        [FieldOffset(0x00)] public ulong TitleId;
+        [FieldOffset(0x00)] public TitleId TitleId;
         [FieldOffset(0x08)] public UserId UserId;
         [FieldOffset(0x18)] public ulong SaveDataId;
         [FieldOffset(0x20)] public SaveDataType Type;
@@ -71,7 +71,7 @@ namespace LibHac.Fs
         [FieldOffset(0x04)] public bool FilterByIndex;
         [FieldOffset(0x05)] public byte Rank;
 
-        [FieldOffset(0x08)] public TitleId TitleID;
+        [FieldOffset(0x08)] public TitleId TitleId;
         [FieldOffset(0x10)] public UserId UserId;
         [FieldOffset(0x20)] public ulong SaveDataId;
         [FieldOffset(0x28)] public SaveDataType SaveDataType;

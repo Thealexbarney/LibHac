@@ -45,6 +45,16 @@ namespace LibHac
             return this;
         }
 
+        /// <summary>
+        /// Same as <see cref="Log"/>, but for when one result is converted to another.
+        /// </summary>
+        /// <param name="originalResult">The original <see cref="Result"/> value.</param>
+        /// <returns>The called <see cref="Result"/> value.</returns>
+        public Result LogConverted(Result originalResult)
+        {
+            return this;
+        }
+
         public override string ToString()
         {
             return IsSuccess() ? "Success" : ErrorCode;
