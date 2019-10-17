@@ -232,6 +232,15 @@ namespace hactoolnet
             PrintItem(sb, colLen, $"NPDM Signature{nca.VerifySignature2().GetValidityString()}:", nca.Header.Signature2.ToArray());
             PrintItem(sb, colLen, "Content Size:", $"0x{nca.Header.NcaSize:x12}");
             PrintItem(sb, colLen, "TitleID:", $"{nca.Header.TitleId:X16}");
+            if (nca.CanOpenSection(NcaSectionType.Code)) {
+                IFileSystem fs = nca.OpenFileSystem(NcaSectionType.Code, IntegrityCheckLevel.None);
+                Result r = fs.OpenFile(out var file, "/main.npdm", OpenMode.Read);
+                if (r.IsSuccess()) {
+                    NpdmBinary npdm = new NpdmBinary(file.AsStream(), null);
+                    PrintItem(sb, colLen, "Title Name:", npdm.TitleName);
+                }
+            }
+
             PrintItem(sb, colLen, "SDK Version:", nca.Header.SdkVersion);
             PrintItem(sb, colLen, "Distribution type:", nca.Header.DistributionType);
             PrintItem(sb, colLen, "Content Type:", nca.Header.ContentType);
