@@ -18,7 +18,32 @@ namespace LibHac.Fs.Shim
                 rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, titleId, userId, SaveDataType.SaveData, false, 0);
                 TimeSpan endTime = fs.Time.GetCurrent();
 
-                fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\", applicationid: 0x{titleId}, userid: {userId}");
+                fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\", applicationid: 0x{titleId}, userid: 0x{userId}");
+            }
+            else
+            {
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, titleId, userId, SaveDataType.SaveData, false, 0);
+            }
+
+            if (rc.IsSuccess() && fs.IsEnabledAccessLog(LocalAccessLogMode.Application))
+            {
+                fs.EnableFileSystemAccessorAccessLog(mountName);
+            }
+
+            return rc;
+        }
+
+        public static Result MountSaveDataReadOnly(this FileSystemClient fs, U8Span mountName, TitleId titleId, UserId userId)
+        {
+            Result rc;
+
+            if (fs.IsEnabledAccessLog(LocalAccessLogMode.Application))
+            {
+                TimeSpan startTime = fs.Time.GetCurrent();
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, titleId, userId, SaveDataType.SaveData, true, 0);
+                TimeSpan endTime = fs.Time.GetCurrent();
+
+                fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\", applicationid: 0x{titleId}, userid: 0x{userId}");
             }
             else
             {

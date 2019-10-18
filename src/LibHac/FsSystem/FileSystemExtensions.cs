@@ -245,10 +245,10 @@ namespace LibHac.FsSystem
             return (rc.IsSuccess() && type == DirectoryEntryType.File);
         }
 
-        public static void EnsureDirectoryExists(this IFileSystem fs, string path)
+        public static Result EnsureDirectoryExists(this IFileSystem fs, string path)
         {
             path = PathTools.Normalize(path);
-            if (fs.DirectoryExists(path)) return;
+            if (fs.DirectoryExists(path)) return Result.Success;
 
             // Find the first subdirectory in the chain that doesn't exist
             int i;
@@ -276,11 +276,12 @@ namespace LibHac.FsSystem
                 {
                     string subPath = path.Substring(0, i);
 
-                    fs.CreateDirectory(subPath);
+                    Result rc = fs.CreateDirectory(subPath);
+                    if (rc.IsFailure()) return rc;
                 }
             }
 
-            fs.CreateDirectory(path);
+            return fs.CreateDirectory(path);
         }
 
         public static void CreateOrOverwriteFile(this IFileSystem fs, string path, long size)

@@ -112,6 +112,13 @@ namespace LibHac.Fs
         public Span<byte> Hash => SpanHelpers.CreateSpan(ref _hashStart, HashLength);
     }
 
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct OptionalHashSalt
+    {
+        public bool IsSet;
+        public HashSalt HashSalt;
+    }
+
     [StructLayout(LayoutKind.Explicit, Size = 0x10)]
     public struct SaveMetaCreateInfo
     {
@@ -125,7 +132,7 @@ namespace LibHac.Fs
         [FieldOffset(0x00)] public long Size;
         [FieldOffset(0x08)] public long JournalSize;
         [FieldOffset(0x10)] public ulong BlockSize;
-        [FieldOffset(0x18)] public ulong OwnerId;
+        [FieldOffset(0x18)] public TitleId OwnerId;
         [FieldOffset(0x20)] public uint Flags;
         [FieldOffset(0x24)] public SaveDataSpaceId SpaceId;
         [FieldOffset(0x25)] public bool Field25;

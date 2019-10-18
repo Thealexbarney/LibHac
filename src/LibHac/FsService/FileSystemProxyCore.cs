@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Shim;
 using LibHac.FsSystem;
@@ -189,6 +190,31 @@ namespace LibHac.FsService
             return spaceId == SaveDataSpaceId.User && !string.IsNullOrWhiteSpace(saveDataRootPath);
         }
 
+        public Result DoesSaveDataExist(out bool exists, SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            exists = false;
+
+            Result rc = OpenSaveDataDirectory(out IFileSystem fileSystem, spaceId, string.Empty, true);
+            if (rc.IsFailure()) return rc;
+
+            string saveDataPath = $"/{saveDataId:x16}";
+
+            rc = fileSystem.GetEntryType(out _, saveDataPath);
+
+            if (rc.IsFailure())
+            {
+                if (rc == ResultFs.PathNotFound)
+                {
+                    return Result.Success;
+                }
+
+                return rc;
+            }
+
+            exists = true;
+            return Result.Success;
+        }
+
         public Result OpenSaveDataFileSystem(out IFileSystem fileSystem, SaveDataSpaceId spaceId, ulong saveDataId,
             string saveDataRootPath, bool openReadOnly, SaveDataType type, bool cacheExtraData)
         {
@@ -202,14 +228,8 @@ namespace LibHac.FsService
 
             if (allowDirectorySaveData)
             {
-                try
-                {
-                    saveDirFs.EnsureDirectoryExists(GetSaveDataIdPath(saveDataId));
-                }
-                catch (HorizonResultException ex)
-                {
-                    return ex.ResultValue;
-                }
+                rc = saveDirFs.EnsureDirectoryExists(GetSaveDataIdPath(saveDataId));
+                if (rc.IsFailure()) return rc;
             }
 
             // Missing save FS cache lookup
@@ -297,6 +317,47 @@ namespace LibHac.FsService
                 default:
                     return ResultFs.InvalidArgument.Log();
             }
+        }
+
+        public Result OpenSaveDataMetaFile(out IFile file, ulong saveDataId, SaveDataSpaceId spaceId, SaveMetaType type)
+        {
+            file = default;
+
+            string metaDirPath = $"/saveMeta/{saveDataId:x16}";
+
+            Result rc = OpenSaveDataDirectoryImpl(out IFileSystem tmpMetaDirFs, spaceId, metaDirPath, true);
+            using IFileSystem metaDirFs = tmpMetaDirFs;
+            if (rc.IsFailure()) return rc;
+
+            string metaFilePath = $"/{(int)type:x8}.meta";
+
+            return metaDirFs.OpenFile(out file, metaFilePath, OpenMode.ReadWrite);
+        }
+
+        public Result CreateSaveDataMetaFile(ulong saveDataId, SaveDataSpaceId spaceId, SaveMetaType type, long size)
+        {
+            string metaDirPath = $"/saveMeta/{saveDataId:x16}";
+
+            Result rc = OpenSaveDataDirectoryImpl(out IFileSystem tmpMetaDirFs, spaceId, metaDirPath, true);
+            using IFileSystem metaDirFs = tmpMetaDirFs;
+            if (rc.IsFailure()) return rc;
+
+            string metaFilePath = $"/{(int)type:x8}.meta";
+
+            if (size < 0) return ResultFs.ValueOutOfRange.Log();
+
+            return metaDirFs.CreateFile(metaFilePath, size, CreateFileOptions.None);
+        }
+
+        public Result CreateSaveDataFileSystem(ulong saveDataId, ref SaveDataAttribute attribute,
+            ref SaveDataCreateInfo createInfo, U8Span rootPath, OptionalHashSalt hashSalt, bool something)
+        {
+            // Use directory save data for now
+
+            Result rc = OpenSaveDataDirectory(out IFileSystem fileSystem, createInfo.SpaceId, string.Empty, false);
+            if (rc.IsFailure()) return rc;
+
+            return fileSystem.EnsureDirectoryExists(GetSaveDataIdPath(saveDataId));
         }
 
         public Result SetGlobalAccessLogMode(GlobalAccessLogMode mode)

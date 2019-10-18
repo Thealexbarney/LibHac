@@ -44,11 +44,16 @@ namespace LibHac.Kvdb
             return Result.Success;
         }
 
-        public Result Set(ref TKey key, byte[] value)
+        public Result Set(ref TKey key, ReadOnlySpan<byte> value)
         {
-            KvDict[key] = value;
+            KvDict[key] = value.ToArray();
 
             return Result.Success;
+        }
+
+        public Dictionary<TKey, byte[]>.Enumerator GetEnumerator()
+        {
+            return KvDict.GetEnumerator();
         }
 
         public Result ReadDatabaseFromBuffer(ReadOnlySpan<byte> data)

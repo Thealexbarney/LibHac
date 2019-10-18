@@ -3,6 +3,7 @@ using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSystem;
 using LibHac.FsSystem.Save;
+using LibHac.Kvdb;
 using LibHac.Ncm;
 using LibHac.Spl;
 
@@ -123,21 +124,188 @@ namespace LibHac.FsService
             throw new NotImplementedException();
         }
 
+        public Result CreateSaveDataFileSystemImpl(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo,
+            ref SaveMetaCreateInfo metaCreateInfo, ref OptionalHashSalt hashSalt, bool something)
+        {
+            ulong saveDataId;
+            Result rc;
+
+            SaveDataIndexerReader reader = default;
+
+            try
+            {
+                if (attribute.SaveDataId == FileSystemServer.SaveIndexerId)
+                {
+                    saveDataId = FileSystemServer.SaveIndexerId;
+                    rc = FsProxyCore.DoesSaveDataExist(out bool saveExists, createInfo.SpaceId, saveDataId);
+
+                    if (rc.IsSuccess() && saveExists)
+                    {
+                        return ResultFs.PathAlreadyExists.Log();
+                    }
+
+                    // todo
+                }
+                else
+                {
+                    rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out reader, createInfo.SpaceId);
+                    if (rc.IsFailure()) return rc;
+
+                    SaveDataAttribute indexerKey = attribute;
+
+                    if (attribute.SaveDataId != 0 || attribute.UserId == UserId.Zero)
+                    {
+                        saveDataId = attribute.SaveDataId;
+
+                        rc = reader.Indexer.AddSystemSaveData(ref indexerKey);
+                    }
+                    else
+                    {
+                        if (attribute.Type != SaveDataType.SystemSaveData &&
+                            attribute.Type != SaveDataType.BcatSystemStorage)
+                        {
+                            if (reader.Indexer.IsFull())
+                            {
+                                return ResultKvdb.TooLargeKeyOrDbFull.Log();
+                            }
+                        }
+
+                        rc = reader.Indexer.Add(out saveDataId, ref indexerKey);
+                    }
+
+                    if (rc == ResultFs.SaveDataPathAlreadyExists)
+                    {
+                        return ResultFs.PathAlreadyExists.LogConverted(rc);
+                    }
+
+                    rc = reader.Indexer.SetState(saveDataId, 1);
+                    if (rc.IsFailure()) return rc;
+
+                    SaveDataSpaceId indexerSpaceId = GetSpaceIdForIndexer(createInfo.SpaceId);
+
+                    rc = reader.Indexer.SetSpaceId(saveDataId, indexerSpaceId);
+                    if (rc.IsFailure()) return rc;
+
+                    // todo: calculate size
+                    long size = 0;
+
+                    rc = reader.Indexer.SetSize(saveDataId, size);
+                    if (rc.IsFailure()) return rc;
+                }
+
+                rc = FsProxyCore.CreateSaveDataFileSystem(saveDataId, ref attribute, ref createInfo, SaveDataRootPath,
+                    hashSalt, false);
+
+                if (rc.IsFailure())
+                {
+                    // todo: remove and recreate
+                    throw new NotImplementedException();
+                }
+
+                if (metaCreateInfo.Type != SaveMetaType.None)
+                {
+                    rc = FsProxyCore.CreateSaveDataMetaFile(saveDataId, createInfo.SpaceId, metaCreateInfo.Type,
+                        metaCreateInfo.Size);
+                    if (rc.IsFailure()) return rc;
+
+                    if(metaCreateInfo.Type == SaveMetaType.Thumbnail)
+                    {
+                        rc = FsProxyCore.OpenSaveDataMetaFile(out IFile metaFile, saveDataId, createInfo.SpaceId,
+                            metaCreateInfo.Type);
+
+                        using(metaFile)
+                        {
+                            if (rc.IsFailure()) return rc;
+
+                            ReadOnlySpan<byte> metaFileData = stackalloc byte[0x20];
+
+                            rc = metaFile.Write(0, metaFileData, WriteOption.Flush);
+                            if (rc.IsFailure()) return rc;
+                        }
+                    }
+                }
+
+                if (attribute.SaveDataId == FileSystemServer.SaveIndexerId || something)
+                {
+                    return Result.Success;
+                }
+
+                rc = reader.Indexer.SetState(saveDataId, 0);
+
+                if (rc.IsFailure())
+                {
+                    // Delete if flags allow
+                    throw new NotImplementedException();
+                }
+
+                rc = reader.Indexer.Commit();
+
+                if (rc.IsFailure())
+                {
+                    // Delete if flags allow
+                    throw new NotImplementedException();
+                }
+
+                return Result.Success;
+            }
+            finally
+            {
+                reader.Dispose();
+            }
+        }
+
         public Result CreateSaveDataFileSystem(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo,
             ref SaveMetaCreateInfo metaCreateInfo)
         {
-            throw new NotImplementedException();
+            OptionalHashSalt hashSalt = default;
+
+            return CreateUserSaveDataFileSystem(ref attribute, ref createInfo, ref metaCreateInfo, ref hashSalt);
         }
 
         public Result CreateSaveDataFileSystemWithHashSalt(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo,
             ref SaveMetaCreateInfo metaCreateInfo, ref HashSalt hashSalt)
         {
-            throw new NotImplementedException();
+            var hashSaltCopy = new OptionalHashSalt
+            {
+                IsSet = true,
+                HashSalt = hashSalt
+            };
+
+            return CreateUserSaveDataFileSystem(ref attribute, ref createInfo, ref metaCreateInfo, ref hashSaltCopy);
+        }
+
+        public Result CreateUserSaveDataFileSystem(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo,
+            ref SaveMetaCreateInfo metaCreateInfo, ref OptionalHashSalt hashSalt)
+        {
+            return CreateSaveDataFileSystemImpl(ref attribute, ref createInfo, ref metaCreateInfo, ref hashSalt, false);
         }
 
         public Result CreateSaveDataFileSystemBySystemSaveDataId(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo)
         {
-            throw new NotImplementedException();
+
+            if (!IsSystemSaveDataId(attribute.SaveDataId))
+                return ResultFs.InvalidArgument.Log();
+
+            SaveDataCreateInfo newCreateInfo = createInfo;
+
+            if (createInfo.OwnerId == TitleId.Zero)
+            {
+                // Assign the current program's ID
+                throw new NotImplementedException();
+            }
+
+            // Missing permission checks
+
+            if (attribute.Type == SaveDataType.BcatSystemStorage)
+            {
+                newCreateInfo.OwnerId = SystemTitleIds.Bcat;
+            }
+
+            SaveMetaCreateInfo metaCreateInfo = default;
+            OptionalHashSalt optionalHashSalt = default;
+
+            return CreateSaveDataFileSystemImpl(ref attribute, ref newCreateInfo, ref metaCreateInfo,
+                ref optionalHashSalt, false);
         }
 
         public Result ExtendSaveDataFileSystem(SaveDataSpaceId spaceId, ulong saveDataId, long dataSize, long journalSize)
@@ -161,15 +329,13 @@ namespace LibHac.FsService
             {
                 SaveDataAttribute indexerKey = attribute;
 
-                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out SaveDataIndexerReader reader, spaceId);
-                using SaveDataIndexerReader c = reader;
+                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out SaveDataIndexerReader tmpReader, spaceId);
+                using SaveDataIndexerReader reader = tmpReader;
                 if (rc.IsFailure()) return rc;
 
-                c.Indexer.Get(out SaveDataIndexerValue indexerValue, ref indexerKey);
+                reader.Indexer.Get(out SaveDataIndexerValue indexerValue, ref indexerKey);
 
-                SaveDataSpaceId indexerSpaceId = spaceId == SaveDataSpaceId.ProperSystem || spaceId == SaveDataSpaceId.Safe
-                    ? SaveDataSpaceId.System
-                    : spaceId;
+                SaveDataSpaceId indexerSpaceId = GetSpaceIdForIndexer(spaceId);
 
                 if (indexerValue.SpaceId != indexerSpaceId)
                     return ResultFs.TargetNotFound.Log();
@@ -651,6 +817,13 @@ namespace LibHac.FsService
         private static bool IsSystemSaveDataId(ulong id)
         {
             return (long)id < 0;
+        }
+
+        private static SaveDataSpaceId GetSpaceIdForIndexer(SaveDataSpaceId spaceId)
+        {
+            return spaceId == SaveDataSpaceId.ProperSystem || spaceId == SaveDataSpaceId.Safe
+                ? SaveDataSpaceId.System
+                : spaceId;
         }
     }
 }

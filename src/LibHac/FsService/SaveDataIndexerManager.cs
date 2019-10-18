@@ -98,18 +98,25 @@ namespace LibHac.FsService
 
     public ref struct SaveDataIndexerReader
     {
-        private object Locker;
+        private bool _isInitialized;
+        private object _locker;
         public ISaveDataIndexer Indexer;
 
         internal SaveDataIndexerReader(ISaveDataIndexer indexer, object locker)
         {
-            Locker = locker;
+            _isInitialized = true;
+            _locker = locker;
             Indexer = indexer;
         }
 
         public void Dispose()
         {
-            Monitor.Exit(Locker);
+            if (_isInitialized)
+            {
+                Monitor.Exit(_locker);
+
+                _isInitialized = false;
+            }
         }
     }
 }

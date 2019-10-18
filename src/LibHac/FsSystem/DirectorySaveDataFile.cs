@@ -47,6 +47,8 @@ namespace LibHac.FsSystem
             {
                 ParentFs.NotifyCloseWritableFile();
             }
+
+            BaseFile?.Dispose();
         }
     }
 }
