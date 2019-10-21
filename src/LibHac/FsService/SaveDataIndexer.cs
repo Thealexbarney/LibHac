@@ -32,6 +32,23 @@ namespace LibHac.FsService
             SpaceId = spaceId;
         }
 
+        public static void GetSaveDataInfo(out SaveDataInfo info, ref SaveDataAttribute key, ref SaveDataIndexerValue value)
+        {
+            info = new SaveDataInfo
+            {
+                SaveDataId = value.SaveDataId,
+                SpaceId = value.SpaceId,
+                Type = key.Type,
+                UserId = key.UserId,
+                SaveDataIdFromKey = key.SaveDataId,
+                TitleId = key.TitleId,
+                Size = value.Size,
+                Index = key.Index,
+                Rank = key.Rank,
+                State = value.State
+            };
+        }
+
         public Result Commit()
         {
             lock (Locker)
@@ -192,10 +209,35 @@ namespace LibHac.FsService
             return false;
         }
 
+        public Result Delete(ulong saveDataId)
+        {
+            lock (Locker)
+            {
+                Result rc = Initialize();
+                if (rc.IsFailure()) return rc;
+
+                rc = EnsureKvDatabaseLoaded(false);
+                if (rc.IsFailure()) return rc;
+
+                if (!TryGetBySaveDataIdInternal(out SaveDataAttribute key, out _, saveDataId))
+                {
+                    return ResultFs.TargetNotFound.Log();
+                }
+
+                return KvDatabase.Delete(ref key);
+            }
+        }
+
         public Result SetSpaceId(ulong saveDataId, SaveDataSpaceId spaceId)
         {
             lock (Locker)
             {
+                Result rc = Initialize();
+                if (rc.IsFailure()) return rc;
+
+                rc = EnsureKvDatabaseLoaded(false);
+                if (rc.IsFailure()) return rc;
+
                 if (!TryGetBySaveDataIdInternal(out SaveDataAttribute key, out SaveDataIndexerValue value, saveDataId))
                 {
                     return ResultFs.TargetNotFound.Log();
@@ -211,6 +253,12 @@ namespace LibHac.FsService
         {
             lock (Locker)
             {
+                Result rc = Initialize();
+                if (rc.IsFailure()) return rc;
+
+                rc = EnsureKvDatabaseLoaded(false);
+                if (rc.IsFailure()) return rc;
+
                 if (!TryGetBySaveDataIdInternal(out SaveDataAttribute key, out SaveDataIndexerValue value, saveDataId))
                 {
                     return ResultFs.TargetNotFound.Log();
@@ -222,10 +270,16 @@ namespace LibHac.FsService
             }
         }
 
-        public Result SetState(ulong saveDataId, byte state)
+        public Result SetState(ulong saveDataId, SaveDataState state)
         {
             lock (Locker)
             {
+                Result rc = Initialize();
+                if (rc.IsFailure()) return rc;
+
+                rc = EnsureKvDatabaseLoaded(false);
+                if (rc.IsFailure()) return rc;
+
                 if (!TryGetBySaveDataIdInternal(out SaveDataAttribute key, out SaveDataIndexerValue value, saveDataId))
                 {
                     return ResultFs.TargetNotFound.Log();
@@ -237,10 +291,39 @@ namespace LibHac.FsService
             }
         }
 
-        public Result GetBySaveDataId(out SaveDataIndexerValue value, ulong saveDataId)
+        public Result GetKey(out SaveDataAttribute key, ulong saveDataId)
         {
+            key = default;
+
             lock (Locker)
             {
+                Result rc = Initialize();
+                if (rc.IsFailure()) return rc;
+
+                rc = EnsureKvDatabaseLoaded(false);
+                if (rc.IsFailure()) return rc;
+
+                if (TryGetBySaveDataIdInternal(out key, out _, saveDataId))
+                {
+                    return Result.Success;
+                }
+
+                return ResultFs.TargetNotFound.Log();
+            }
+        }
+
+        public Result GetBySaveDataId(out SaveDataIndexerValue value, ulong saveDataId)
+        {
+            value = default;
+
+            lock (Locker)
+            {
+                Result rc = Initialize();
+                if (rc.IsFailure()) return rc;
+
+                rc = EnsureKvDatabaseLoaded(false);
+                if (rc.IsFailure()) return rc;
+
                 if (TryGetBySaveDataIdInternal(out _, out value, saveDataId))
                 {
                     return Result.Success;

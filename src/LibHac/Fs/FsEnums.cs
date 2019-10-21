@@ -83,6 +83,15 @@ namespace LibHac.Fs
         ExtensionInfo = 2
     }
 
+    public enum SaveDataState : byte
+    {
+        Normal = 0,
+        Creating = 1,
+        State2 = 2,
+        MarkedForDeletion = 3,
+        State4 = 4,
+    }
+
     public enum ImageDirectoryId
     {
         Nand = 0,

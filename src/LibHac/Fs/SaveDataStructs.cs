@@ -137,4 +137,19 @@ namespace LibHac.Fs
         [FieldOffset(0x24)] public SaveDataSpaceId SpaceId;
         [FieldOffset(0x25)] public bool Field25;
     }
+
+    [StructLayout(LayoutKind.Explicit, Size = 0x60)]
+    public struct SaveDataInfo
+    {
+        [FieldOffset(0x00)] public ulong SaveDataId;
+        [FieldOffset(0x08)] public SaveDataSpaceId SpaceId;
+        [FieldOffset(0x09)] public SaveDataType Type;
+        [FieldOffset(0x10)] public UserId UserId;
+        [FieldOffset(0x20)] public ulong SaveDataIdFromKey;
+        [FieldOffset(0x28)] public TitleId TitleId;
+        [FieldOffset(0x30)] public long Size;
+        [FieldOffset(0x38)] public short Index;
+        [FieldOffset(0x3A)] public byte Rank;
+        [FieldOffset(0x3B)] public SaveDataState State;
+    }
 }

@@ -334,6 +334,23 @@ namespace LibHac.FsService
             return metaDirFs.OpenFile(out file, metaFilePath, OpenMode.ReadWrite);
         }
 
+        public Result DeleteSaveDataMetaFiles(ulong saveDataId, SaveDataSpaceId spaceId)
+        {
+            Result rc = OpenSaveDataDirectoryImpl(out IFileSystem metaDirFs, spaceId, "/saveMeta", false);
+
+            using (metaDirFs)
+            {
+                if (rc.IsFailure()) return rc;
+
+                rc = metaDirFs.DeleteDirectoryRecursively($"/{saveDataId:x16}");
+
+                if (rc.IsFailure() && rc != ResultFs.PathNotFound)
+                    return rc;
+
+                return Result.Success;
+            }
+        }
+
         public Result CreateSaveDataMetaFile(ulong saveDataId, SaveDataSpaceId spaceId, SaveMetaType type, long size)
         {
             string metaDirPath = $"/saveMeta/{saveDataId:x16}";
@@ -358,6 +375,38 @@ namespace LibHac.FsService
             if (rc.IsFailure()) return rc;
 
             return fileSystem.EnsureDirectoryExists(GetSaveDataIdPath(saveDataId));
+        }
+
+        public Result DeleteSaveDataFileSystem(SaveDataSpaceId spaceId, ulong saveDataId, bool doSecureDelete)
+        {
+            Result rc = OpenSaveDataDirectory(out IFileSystem fileSystem, spaceId, string.Empty, false);
+
+            using (fileSystem)
+            {
+                if (rc.IsFailure()) return rc;
+
+                string saveDataPath = GetSaveDataIdPath(saveDataId);
+
+                rc = fileSystem.GetEntryType(out DirectoryEntryType entryType, saveDataPath);
+                if (rc.IsFailure()) return rc;
+
+                if (entryType == DirectoryEntryType.Directory)
+                {
+                    rc = fileSystem.DeleteDirectoryRecursively(saveDataPath);
+                }
+                else
+                {
+                    if (doSecureDelete)
+                    {
+                        // Overwrite file with garbage before deleting
+                        throw new NotImplementedException();
+                    }
+
+                    rc = fileSystem.DeleteFile(saveDataPath);
+                }
+
+                return rc;
+            }
         }
 
         public Result SetGlobalAccessLogMode(GlobalAccessLogMode mode)

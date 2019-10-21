@@ -9,9 +9,11 @@ namespace LibHac.FsService
         Result Get(out SaveDataIndexerValue value, ref SaveDataAttribute key);
         Result AddSystemSaveData(ref SaveDataAttribute key);
         bool IsFull();
+        Result Delete(ulong saveDataId);
         Result SetSpaceId(ulong saveDataId, SaveDataSpaceId spaceId);
         Result SetSize(ulong saveDataId, long size);
-        Result SetState(ulong saveDataId, byte state);
+        Result SetState(ulong saveDataId, SaveDataState state);
+        Result GetKey(out SaveDataAttribute key, ulong saveDataId);
         Result GetBySaveDataId(out SaveDataIndexerValue value, ulong saveDataId);
     }
 }

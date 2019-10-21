@@ -10,7 +10,7 @@ namespace LibHac.Kvdb
 {
     public class KeyValueDatabase<TKey> where TKey : unmanaged, IComparable<TKey>, IEquatable<TKey>
     {
-        public Dictionary<TKey, byte[]> KvDict { get; } = new Dictionary<TKey, byte[]>();
+        private Dictionary<TKey, byte[]> KvDict { get; } = new Dictionary<TKey, byte[]>();
 
         private FileSystemClient FsClient { get; }
         private string FileName { get; }
@@ -49,6 +49,13 @@ namespace LibHac.Kvdb
             KvDict[key] = value.ToArray();
 
             return Result.Success;
+        }
+
+        public Result Delete(ref TKey key)
+        {
+            bool deleted = KvDict.Remove(key);
+
+            return deleted ? Result.Success : ResultKvdb.KeyNotFound.Log();
         }
 
         public Dictionary<TKey, byte[]>.Enumerator GetEnumerator()

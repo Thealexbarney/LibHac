@@ -106,17 +106,148 @@ namespace LibHac.FsService
 
         public Result DeleteSaveDataFileSystem(ulong saveDataId)
         {
-            throw new NotImplementedException();
+            return DeleteSaveDataFileSystemImpl(SaveDataSpaceId.System, saveDataId);
+        }
+
+        private Result DeleteSaveDataFileSystemImpl(SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            SaveDataIndexerReader reader = default;
+
+            try
+            {
+                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out reader, spaceId);
+                if (rc.IsFailure()) return rc;
+
+                if (saveDataId == FileSystemServer.SaveIndexerId)
+                {
+                    // missing: This save can only be deleted by the FS process itself
+                }
+                else
+                {
+                    if (spaceId != SaveDataSpaceId.ProperSystem && spaceId != SaveDataSpaceId.Safe)
+                    {
+                        rc = reader.Indexer.GetBySaveDataId(out SaveDataIndexerValue value, saveDataId);
+                        if (rc.IsFailure()) return rc;
+
+                        spaceId = value.SpaceId;
+                    }
+
+                    rc = reader.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
+                    if (rc.IsFailure()) return rc;
+
+                    if (key.Type == SaveDataType.SystemSaveData || key.Type == SaveDataType.BcatSystemStorage)
+                    {
+                        // Check if permissions allow deleting system save data
+                    }
+                    else
+                    {
+                        // Check if permissions allow deleting save data
+                    }
+
+                    reader.Indexer.SetState(saveDataId, SaveDataState.Creating);
+                    if (rc.IsFailure()) return rc;
+
+                    reader.Indexer.Commit();
+                    if (rc.IsFailure()) return rc;
+                }
+
+                // missing: Check extra data flags for this value. Bit 3
+                bool doSecureDelete = false;
+
+                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+                rc = DeleteSaveDataFileSystemImpl2(spaceId, saveDataId, doSecureDelete);
+                if (rc.IsFailure()) return rc;
+
+                if (saveDataId != FileSystemServer.SaveIndexerId)
+                {
+                    rc = reader.Indexer.Delete(saveDataId);
+                    if (rc.IsFailure()) return rc;
+
+                    rc = reader.Indexer.Commit();
+                    if (rc.IsFailure()) return rc;
+                }
+
+                return Result.Success;
+            }
+            finally
+            {
+                reader.Dispose();
+            }
+        }
+
+        private Result DeleteSaveDataFileSystemImpl2(SaveDataSpaceId spaceId, ulong saveDataId, bool doSecureDelete)
+        {
+            Result rc = FsProxyCore.DeleteSaveDataMetaFiles(saveDataId, spaceId);
+            if (rc.IsFailure() && rc != ResultFs.PathNotFound)
+                return rc;
+
+            rc = FsProxyCore.DeleteSaveDataFileSystem(spaceId, saveDataId, doSecureDelete);
+            if (rc.IsFailure() && rc != ResultFs.PathNotFound)
+                return rc;
+
+            return Result.Success;
         }
 
         public Result DeleteSaveDataFileSystemBySaveDataSpaceId(SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            throw new NotImplementedException();
+            return DeleteSaveDataFileSystemBySaveDataSpaceIdImpl(spaceId, saveDataId);
+        }
+
+        public Result DeleteSaveDataFileSystemBySaveDataSpaceIdImpl(SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            if (saveDataId != FileSystemServer.SaveIndexerId)
+            {
+                SaveDataIndexerReader reader = default;
+
+                try
+                {
+                    Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out reader, spaceId);
+                    if (rc.IsFailure()) return rc;
+
+                    rc = reader.Indexer.GetBySaveDataId(out SaveDataIndexerValue value, saveDataId);
+                    if (rc.IsFailure()) return rc;
+
+                    if (value.SpaceId != GetSpaceIdForIndexer(spaceId))
+                        return ResultFs.TargetNotFound.Log();
+                }
+                finally
+                {
+                    reader.Dispose();
+                }
+            }
+
+            return DeleteSaveDataFileSystemImpl(spaceId, saveDataId);
+        }
+
+        public Result GetSaveDataInfo(out SaveDataInfo info, SaveDataSpaceId spaceId, ref SaveDataAttribute attribute)
+        {
+            info = default;
+
+            SaveDataIndexerReader reader = default;
+
+            try
+            {
+                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out reader, spaceId);
+                if (rc.IsFailure()) return rc;
+
+                rc = reader.Indexer.Get(out SaveDataIndexerValue value, ref attribute);
+                if (rc.IsFailure()) return rc;
+
+                SaveDataIndexer.GetSaveDataInfo(out info, ref attribute, ref value);
+                return Result.Success;
+            }
+            finally
+            {
+                reader.Dispose();
+            }
         }
 
         public Result DeleteSaveDataFileSystemBySaveDataAttribute(SaveDataSpaceId spaceId, ref SaveDataAttribute attribute)
         {
-            throw new NotImplementedException();
+            Result rs = GetSaveDataInfo(out SaveDataInfo info, spaceId, ref attribute);
+            if (rs.IsFailure()) return rs;
+
+            return DeleteSaveDataFileSystemBySaveDataSpaceIdImpl(spaceId, info.SaveDataId);
         }
 
         public Result UpdateSaveDataMacForDebug(SaveDataSpaceId spaceId, ulong saveDataId)
@@ -178,7 +309,7 @@ namespace LibHac.FsService
                         return ResultFs.PathAlreadyExists.LogConverted(rc);
                     }
 
-                    rc = reader.Indexer.SetState(saveDataId, 1);
+                    rc = reader.Indexer.SetState(saveDataId, SaveDataState.Creating);
                     if (rc.IsFailure()) return rc;
 
                     SaveDataSpaceId indexerSpaceId = GetSpaceIdForIndexer(createInfo.SpaceId);
@@ -208,12 +339,12 @@ namespace LibHac.FsService
                         metaCreateInfo.Size);
                     if (rc.IsFailure()) return rc;
 
-                    if(metaCreateInfo.Type == SaveMetaType.Thumbnail)
+                    if (metaCreateInfo.Type == SaveMetaType.Thumbnail)
                     {
                         rc = FsProxyCore.OpenSaveDataMetaFile(out IFile metaFile, saveDataId, createInfo.SpaceId,
                             metaCreateInfo.Type);
 
-                        using(metaFile)
+                        using (metaFile)
                         {
                             if (rc.IsFailure()) return rc;
 
@@ -282,7 +413,6 @@ namespace LibHac.FsService
 
         public Result CreateSaveDataFileSystemBySystemSaveDataId(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo)
         {
-
             if (!IsSystemSaveDataId(attribute.SaveDataId))
                 return ResultFs.InvalidArgument.Log();
 
@@ -340,7 +470,7 @@ namespace LibHac.FsService
                 if (indexerValue.SpaceId != indexerSpaceId)
                     return ResultFs.TargetNotFound.Log();
 
-                if (indexerValue.State == 4)
+                if (indexerValue.State == SaveDataState.State4)
                     return ResultFs.Result6906.Log();
 
                 saveDataId = indexerValue.SaveDataId;
