@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSystem;
@@ -707,7 +708,34 @@ namespace LibHac.FsService
 
         public Result OpenSaveDataInfoReaderBySaveDataSpaceId(out ISaveDataInfoReader infoReader, SaveDataSpaceId spaceId)
         {
-            throw new NotImplementedException();
+            infoReader = default;
+
+            // Missing permission check
+
+            SaveDataIndexerReader indexReader = default;
+
+            try
+            {
+                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out indexReader, spaceId);
+                if (rc.IsFailure()) return rc;
+
+                rc = indexReader.Indexer.OpenSaveDataInfoReader(out ISaveDataInfoReader baseInfoReader);
+                if (rc.IsFailure()) return rc;
+
+                var filter = new SaveDataFilterInternal
+                {
+                    FilterBySaveDataSpaceId = true,
+                    SpaceId = GetSpaceIdForIndexer(spaceId)
+                };
+
+                infoReader = new SaveDataInfoFilterReader(baseInfoReader, ref filter);
+
+                return Result.Success;
+            }
+            finally
+            {
+                indexReader.Dispose();
+            }
         }
 
         public Result OpenSaveDataInfoReaderWithFilter(out ISaveDataInfoReader infoReader, SaveDataSpaceId spaceId,
@@ -719,7 +747,46 @@ namespace LibHac.FsService
         public Result FindSaveDataWithFilter(out long count, Span<byte> saveDataInfoBuffer, SaveDataSpaceId spaceId,
             ref SaveDataFilter filter)
         {
-            throw new NotImplementedException();
+            count = default;
+
+            if (saveDataInfoBuffer.Length != Unsafe.SizeOf<SaveDataInfo>())
+            {
+                return ResultFs.InvalidArgument.Log();
+            }
+
+            // Missing permission check
+
+            var internalFilter = new SaveDataFilterInternal(ref filter, GetSpaceIdForIndexer(spaceId));
+
+            ref SaveDataInfo saveDataInfo = ref Unsafe.As<byte, SaveDataInfo>(ref saveDataInfoBuffer[0]);
+
+            return FindSaveDataWithFilterImpl(out count, out saveDataInfo, spaceId, ref internalFilter);
+        }
+
+        private Result FindSaveDataWithFilterImpl(out long count, out SaveDataInfo info, SaveDataSpaceId spaceId,
+            ref SaveDataFilterInternal filter)
+        {
+            count = default;
+            info = default;
+
+            SaveDataIndexerReader indexReader = default;
+
+            try
+            {
+                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out indexReader, spaceId);
+                if (rc.IsFailure()) return rc;
+
+                rc = indexReader.Indexer.OpenSaveDataInfoReader(out ISaveDataInfoReader baseInfoReader);
+                if (rc.IsFailure()) return rc;
+
+                var infoReader = new SaveDataInfoFilterReader(baseInfoReader, ref filter);
+
+                return infoReader.ReadSaveDataInfo(out count, SpanHelpers.AsByteSpan(ref info));
+            }
+            finally
+            {
+                indexReader.Dispose();
+            }
         }
 
         public Result OpenSaveDataInternalStorageFileSystem(out IFileSystem fileSystem, SaveDataSpaceId spaceId, ulong saveDataId)

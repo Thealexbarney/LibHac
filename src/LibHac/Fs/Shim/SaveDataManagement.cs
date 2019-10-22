@@ -1,4 +1,7 @@
-﻿using LibHac.FsService;
+﻿using System;
+using System.Runtime.InteropServices;
+using LibHac.Common;
+using LibHac.FsService;
 using LibHac.FsSystem.Save;
 using LibHac.Ncm;
 
@@ -159,11 +162,102 @@ namespace LibHac.Fs.Shim
                 () => $", savedataspaceid: {spaceId}, savedataid: 0x{saveDataId:X}");
         }
 
+        public static Result FindSaveDataWithFilter(this FileSystemClient fs, out SaveDataInfo info, SaveDataSpaceId spaceId,
+            ref SaveDataFilter filter)
+        {
+            info = default;
+
+            SaveDataFilter tempFilter = filter;
+            var tempInfo = new SaveDataInfo();
+
+            Result result = fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
+                () =>
+                {
+                    IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+
+                    tempInfo = new SaveDataInfo();
+
+                    Result rc = fsProxy.FindSaveDataWithFilter(out long count, SpanHelpers.AsByteSpan(ref tempInfo),
+                        spaceId, ref tempFilter);
+                    if (rc.IsFailure()) return rc;
+
+                    if (count == 0)
+                        return ResultFs.TargetNotFound.Log();
+
+                    return Result.Success;
+                },
+                () => $", savedataspaceid: {spaceId}");
+
+            if (result.IsSuccess())
+            {
+                info = tempInfo;
+            }
+
+            return result;
+        }
+
+        public static Result OpenSaveDataIterator(this FileSystemClient fs, out SaveDataIterator iterator, SaveDataSpaceId spaceId)
+        {
+            var tempIterator = new SaveDataIterator();
+
+            Result result = fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
+                () =>
+                {
+                    IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+
+                    Result rc = fsProxy.OpenSaveDataInfoReaderBySaveDataSpaceId(out ISaveDataInfoReader reader, spaceId);
+                    if (rc.IsFailure()) return rc;
+
+                    tempIterator = new SaveDataIterator(fs, reader);
+
+                    return Result.Success;
+                },
+                () => $", savedataspaceid: {spaceId}");
+
+            iterator = result.IsSuccess() ? tempIterator : default;
+
+            return result;
+        }
+
         public static Result DisableAutoSaveDataCreation(this FileSystemClient fsClient)
         {
             IFileSystemProxy fsProxy = fsClient.GetFileSystemProxyServiceObject();
 
             return fsProxy.DisableAutoSaveDataCreation();
+        }
+    }
+
+    public struct SaveDataIterator
+    {
+        private FileSystemClient FsClient { get; }
+        private ISaveDataInfoReader Reader { get; }
+
+        internal SaveDataIterator(FileSystemClient fsClient, ISaveDataInfoReader reader)
+        {
+            FsClient = fsClient;
+            Reader = reader;
+        }
+
+        public Result ReadSaveDataInfo(out long readCount, Span<SaveDataInfo> buffer)
+        {
+            Result rc;
+
+            Span<byte> byteBuffer = MemoryMarshal.Cast<SaveDataInfo, byte>(buffer);
+
+            if (FsClient.IsEnabledAccessLog(LocalAccessLogMode.System))
+            {
+                TimeSpan startTime = FsClient.Time.GetCurrent();
+                rc = Reader.ReadSaveDataInfo(out readCount, byteBuffer);
+                TimeSpan endTime = FsClient.Time.GetCurrent();
+
+                FsClient.OutputAccessLog(rc, startTime, endTime, $", size: {buffer.Length}");
+            }
+            else
+            {
+                rc = Reader.ReadSaveDataInfo(out readCount, byteBuffer);
+            }
+
+            return rc;
         }
     }
 }

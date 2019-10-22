@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Shim;
@@ -23,6 +25,7 @@ namespace LibHac.FsService
         private bool IsInitialized { get; set; }
         private bool IsKvdbLoaded { get; set; }
         private ulong LastPublishedId { get; set; }
+        private int Version { get; set; }
 
         public SaveDataIndexer(FileSystemClient fsClient, string mountName, SaveDataSpaceId spaceId, ulong saveDataId)
         {
@@ -30,6 +33,7 @@ namespace LibHac.FsService
             MountName = mountName;
             SaveDataId = saveDataId;
             SpaceId = spaceId;
+            Version = 1;
         }
 
         public static void GetSaveDataInfo(out SaveDataInfo info, ref SaveDataAttribute key, ref SaveDataIndexerValue value)
@@ -140,6 +144,9 @@ namespace LibHac.FsService
                     return rc;
                 }
 
+                rc = AdjustOpenedInfoReaders(ref key);
+                if (rc.IsFailure()) return rc;
+
                 saveDataId = newSaveDataId;
                 return Result.Success;
             }
@@ -194,11 +201,10 @@ namespace LibHac.FsService
                 };
 
                 rc = KvDatabase.Set(ref key, SpanHelpers.AsByteSpan(ref newValue));
+                if (rc.IsFailure()) return rc;
 
-                if (rc.IsFailure())
-                {
-                    // todo: Missing some function call here
-                }
+                rc = AdjustOpenedInfoReaders(ref key);
+                if (rc.IsFailure()) return rc;
 
                 return rc;
             }
@@ -224,7 +230,10 @@ namespace LibHac.FsService
                     return ResultFs.TargetNotFound.Log();
                 }
 
-                return KvDatabase.Delete(ref key);
+                rc = KvDatabase.Delete(ref key);
+                if (rc.IsFailure()) return rc;
+
+                return AdjustOpenedInfoReaders(ref key);
             }
         }
 
@@ -330,6 +339,26 @@ namespace LibHac.FsService
                 }
 
                 return ResultFs.TargetNotFound.Log();
+            }
+        }
+
+        public Result OpenSaveDataInfoReader(out ISaveDataInfoReader infoReader)
+        {
+            infoReader = default;
+
+            lock (Locker)
+            {
+                Result rc = Initialize();
+                if (rc.IsFailure()) return rc;
+
+                rc = EnsureKvDatabaseLoaded(false);
+                if (rc.IsFailure()) return rc;
+
+                var reader = new SaveDataInfoReader(this);
+
+                infoReader = reader;
+
+                return Result.Success;
             }
         }
 
@@ -459,6 +488,12 @@ namespace LibHac.FsService
             }
         }
 
+        private Result AdjustOpenedInfoReaders(ref SaveDataAttribute key)
+        {
+            // todo
+            return Result.Success;
+        }
+
         private ref struct Mounter
         {
             private FileSystemClient FsClient { get; set; }
@@ -513,6 +548,58 @@ namespace LibHac.FsService
                 if (IsMounted)
                 {
                     FsClient.Unmount(MountName);
+                }
+            }
+        }
+
+        private class SaveDataInfoReader : ISaveDataInfoReader
+        {
+            private SaveDataIndexer Indexer { get; }
+            private int Version { get; }
+            public int Position { get; set; }
+
+            public SaveDataInfoReader(SaveDataIndexer indexer)
+            {
+                Indexer = indexer;
+                Version = indexer.Version;
+            }
+
+            public Result ReadSaveDataInfo(out long readCount, Span<byte> saveDataInfoBuffer)
+            {
+                readCount = default;
+
+                lock (Indexer.Locker)
+                {
+                    // Indexer has been reloaded since this info reader was created
+                    if (Version != Indexer.Version)
+                    {
+                        return ResultFs.ReadOldSaveDataInfoReader.Log();
+                    }
+
+                    // No more to iterate
+                    if (Position == Indexer.KvDatabase.Count)
+                    {
+                        readCount = 0;
+                        return Result.Success;
+                    }
+
+                    Span<SaveDataInfo> outInfo = MemoryMarshal.Cast<byte, SaveDataInfo>(saveDataInfoBuffer);
+
+                    // Todo: A more efficient way of doing this
+                    List<(SaveDataAttribute key, byte[] value)> list = Indexer.KvDatabase.ToList();
+
+                    int i;
+                    for (i = 0; i < outInfo.Length && Position < list.Count; i++, Position++)
+                    {
+                        SaveDataAttribute key = list[Position].key;
+                        ref SaveDataIndexerValue value = ref Unsafe.As<byte, SaveDataIndexerValue>(ref list[Position].value[0]);
+
+                        GetSaveDataInfo(out outInfo[i], ref key, ref value);
+                    }
+
+                    readCount = i;
+
+                    return Result.Success;
                 }
             }
         }

@@ -15,6 +15,8 @@ namespace LibHac.Kvdb
         private FileSystemClient FsClient { get; }
         private string FileName { get; }
 
+        public int Count => KvDict.Count;
+
         public KeyValueDatabase() { }
 
         public KeyValueDatabase(FileSystemClient fsClient, string fileName)
@@ -145,6 +147,11 @@ namespace LibHac.Kvdb
             }
 
             return size;
+        }
+
+        public List<(TKey key, byte[] value)> ToList()
+        {
+            return KvDict.OrderBy(x => x.Key).Select(entry => (entry.Key, entry.Value)).ToList();
         }
 
         private Result ReadFile(out byte[] data)

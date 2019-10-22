@@ -108,7 +108,7 @@ namespace LibHac.Fs
             int mountLen = 0;
             int maxMountLen = Math.Min(path.Length, PathTools.MountNameLength);
 
-            for (int i = 0; i < maxMountLen; i++)
+            for (int i = 0; i <= maxMountLen; i++)
             {
                 if (path[i] == PathTools.MountSeparator)
                 {
@@ -122,7 +122,7 @@ namespace LibHac.Fs
                 mountName = default;
                 subPath = default;
 
-                return ResultFs.InvalidMountName;
+                return ResultFs.InvalidMountName.Log();
             }
 
             mountName = path.Slice(0, mountLen);

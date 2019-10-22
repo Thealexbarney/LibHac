@@ -47,7 +47,7 @@ namespace LibHac.FsService
                         _sdCardIndexer.Indexer = new SaveDataIndexer(FsClient, "saveDataIxrDbSd", SaveDataSpaceId.SdSystem, SaveDataId);
                     }
 
-                    reader = new SaveDataIndexerReader(_bisIndexer.Indexer, _bisIndexer.Locker);
+                    reader = new SaveDataIndexerReader(_sdCardIndexer.Indexer, _sdCardIndexer.Locker);
                     return Result.Success;
 
                 case SaveDataSpaceId.TemporaryStorage:

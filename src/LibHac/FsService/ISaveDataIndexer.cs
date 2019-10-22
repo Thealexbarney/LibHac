@@ -15,5 +15,6 @@ namespace LibHac.FsService
         Result SetState(ulong saveDataId, SaveDataState state);
         Result GetKey(out SaveDataAttribute key, ulong saveDataId);
         Result GetBySaveDataId(out SaveDataIndexerValue value, ulong saveDataId);
+        Result OpenSaveDataInfoReader(out ISaveDataInfoReader infoReader);
     }
 }
