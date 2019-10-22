@@ -151,11 +151,7 @@ namespace LibHac.FsService
                     if (rc.IsFailure()) return rc;
                 }
 
-                // missing: Check extra data flags for this value. Bit 3
-                bool doSecureDelete = false;
-
-                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-                rc = DeleteSaveDataFileSystemImpl2(spaceId, saveDataId, doSecureDelete);
+                rc = DeleteSaveDataFileSystemImpl2(spaceId, saveDataId);
                 if (rc.IsFailure()) return rc;
 
                 if (saveDataId != FileSystemServer.SaveIndexerId)
@@ -175,12 +171,16 @@ namespace LibHac.FsService
             }
         }
 
-        private Result DeleteSaveDataFileSystemImpl2(SaveDataSpaceId spaceId, ulong saveDataId, bool doSecureDelete)
+        private Result DeleteSaveDataFileSystemImpl2(SaveDataSpaceId spaceId, ulong saveDataId)
         {
+            // missing: Check extra data flags for this value. Bit 3
+            bool doSecureDelete = false;
+
             Result rc = FsProxyCore.DeleteSaveDataMetaFiles(saveDataId, spaceId);
             if (rc.IsFailure() && rc != ResultFs.PathNotFound)
                 return rc;
 
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
             rc = FsProxyCore.DeleteSaveDataFileSystem(spaceId, saveDataId, doSecureDelete);
             if (rc.IsFailure() && rc != ResultFs.PathNotFound)
                 return rc;
@@ -258,7 +258,8 @@ namespace LibHac.FsService
         public Result CreateSaveDataFileSystemImpl(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo,
             ref SaveMetaCreateInfo metaCreateInfo, ref OptionalHashSalt hashSalt, bool something)
         {
-            ulong saveDataId;
+            ulong saveDataId = 0;
+            bool isDeleteNeeded = false;
             Result rc;
 
             SaveDataIndexerReader reader = default;
@@ -275,7 +276,7 @@ namespace LibHac.FsService
                         return ResultFs.PathAlreadyExists.Log();
                     }
 
-                    // todo
+                    isDeleteNeeded = true;
                 }
                 else
                 {
@@ -309,6 +310,8 @@ namespace LibHac.FsService
                         return ResultFs.PathAlreadyExists.LogConverted(rc);
                     }
 
+                    isDeleteNeeded = true;
+
                     rc = reader.Indexer.SetState(saveDataId, SaveDataState.Creating);
                     if (rc.IsFailure()) return rc;
 
@@ -322,6 +325,9 @@ namespace LibHac.FsService
 
                     rc = reader.Indexer.SetSize(saveDataId, size);
                     if (rc.IsFailure()) return rc;
+
+                    rc = reader.Indexer.Commit();
+                    if (rc.IsFailure()) return rc;
                 }
 
                 rc = FsProxyCore.CreateSaveDataFileSystem(saveDataId, ref attribute, ref createInfo, SaveDataRootPath,
@@ -329,8 +335,14 @@ namespace LibHac.FsService
 
                 if (rc.IsFailure())
                 {
-                    // todo: remove and recreate
-                    throw new NotImplementedException();
+                    if (rc != ResultFs.PathAlreadyExists) return rc;
+
+                    rc = DeleteSaveDataFileSystemImpl2(createInfo.SpaceId, saveDataId);
+                    if (rc.IsFailure()) return rc;
+
+                    rc = FsProxyCore.CreateSaveDataFileSystem(saveDataId, ref attribute, ref createInfo, SaveDataRootPath,
+                        hashSalt, false);
+                    if (rc.IsFailure()) return rc;
                 }
 
                 if (metaCreateInfo.Type != SaveMetaType.None)
@@ -358,29 +370,40 @@ namespace LibHac.FsService
 
                 if (attribute.SaveDataId == FileSystemServer.SaveIndexerId || something)
                 {
+                    isDeleteNeeded = false;
+
                     return Result.Success;
                 }
 
-                rc = reader.Indexer.SetState(saveDataId, 0);
-
-                if (rc.IsFailure())
-                {
-                    // Delete if flags allow
-                    throw new NotImplementedException();
-                }
+                rc = reader.Indexer.SetState(saveDataId, SaveDataState.Normal);
+                if (rc.IsFailure()) return rc;
 
                 rc = reader.Indexer.Commit();
+                if (rc.IsFailure()) return rc;
 
-                if (rc.IsFailure())
-                {
-                    // Delete if flags allow
-                    throw new NotImplementedException();
-                }
+                isDeleteNeeded = false;
 
                 return Result.Success;
             }
             finally
             {
+                // Revert changes if an error happened in the middle of creation
+                if (isDeleteNeeded)
+                {
+                    DeleteSaveDataFileSystemImpl2(createInfo.SpaceId, saveDataId);
+
+                    if (reader.IsInitialized && saveDataId != FileSystemServer.SaveIndexerId)
+                    {
+                        rc = reader.Indexer.GetBySaveDataId(out SaveDataIndexerValue value, saveDataId);
+
+                        if (rc.IsSuccess() && value.SpaceId == createInfo.SpaceId)
+                        {
+                            reader.Indexer.Delete(saveDataId);
+                            reader.Indexer.Commit();
+                        }
+                    }
+                }
+
                 reader.Dispose();
             }
         }

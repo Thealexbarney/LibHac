@@ -100,7 +100,9 @@ namespace LibHac.FsService
     {
         private bool _isInitialized;
         private object _locker;
+
         public ISaveDataIndexer Indexer;
+        public bool IsInitialized => _isInitialized;
 
         internal SaveDataIndexerReader(ISaveDataIndexer indexer, object locker)
         {
