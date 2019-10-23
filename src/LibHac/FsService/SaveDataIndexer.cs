@@ -344,6 +344,14 @@ namespace LibHac.FsService
             }
         }
 
+        public int GetCount()
+        {
+            lock (Locker)
+            {
+                return KvDatabase.Count;
+            }
+        }
+
         public Result OpenSaveDataInfoReader(out ISaveDataInfoReader infoReader)
         {
             infoReader = default;
