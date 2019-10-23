@@ -219,6 +219,30 @@ namespace LibHac.Fs.Shim
             return result;
         }
 
+        public static Result OpenSaveDataIterator(this FileSystemClient fs, out SaveDataIterator iterator, SaveDataSpaceId spaceId, ref SaveDataFilter filter)
+        {
+            var tempIterator = new SaveDataIterator();
+            SaveDataFilter tempFilter = filter;
+
+            Result result = fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
+                () =>
+                {
+                    IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+
+                    Result rc = fsProxy.OpenSaveDataInfoReaderWithFilter(out ISaveDataInfoReader reader, spaceId, ref tempFilter);
+                    if (rc.IsFailure()) return rc;
+
+                    tempIterator = new SaveDataIterator(fs, reader);
+
+                    return Result.Success;
+                },
+                () => $", savedataspaceid: {spaceId}");
+
+            iterator = result.IsSuccess() ? tempIterator : default;
+
+            return result;
+        }
+
         public static Result DisableAutoSaveDataCreation(this FileSystemClient fsClient)
         {
             IFileSystemProxy fsProxy = fsClient.GetFileSystemProxyServiceObject();

@@ -89,7 +89,7 @@ namespace LibHac.Fs
         Creating = 1,
         State2 = 2,
         MarkedForDeletion = 3,
-        State4 = 4,
+        Extending = 4,
     }
 
     public enum ImageDirectoryId

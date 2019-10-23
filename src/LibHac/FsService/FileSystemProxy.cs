@@ -494,8 +494,8 @@ namespace LibHac.FsService
                 if (indexerValue.SpaceId != indexerSpaceId)
                     return ResultFs.TargetNotFound.Log();
 
-                if (indexerValue.State == SaveDataState.State4)
-                    return ResultFs.Result6906.Log();
+                if (indexerValue.State == SaveDataState.Extending)
+                    return ResultFs.SaveDataIsExtending.Log();
 
                 saveDataId = indexerValue.SaveDataId;
             }
@@ -703,7 +703,23 @@ namespace LibHac.FsService
 
         public Result OpenSaveDataInfoReader(out ISaveDataInfoReader infoReader)
         {
-            throw new NotImplementedException();
+            infoReader = default;
+
+            // Missing permission check
+
+            SaveDataIndexerReader indexReader = default;
+
+            try
+            {
+                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out indexReader, SaveDataSpaceId.System);
+                if (rc.IsFailure()) return rc;
+
+                return indexReader.Indexer.OpenSaveDataInfoReader(out infoReader);
+            }
+            finally
+            {
+                indexReader.Dispose();
+            }
         }
 
         public Result OpenSaveDataInfoReaderBySaveDataSpaceId(out ISaveDataInfoReader infoReader, SaveDataSpaceId spaceId)
@@ -741,7 +757,30 @@ namespace LibHac.FsService
         public Result OpenSaveDataInfoReaderWithFilter(out ISaveDataInfoReader infoReader, SaveDataSpaceId spaceId,
             ref SaveDataFilter filter)
         {
-            throw new NotImplementedException();
+            infoReader = default;
+
+            // Missing permission check
+
+            SaveDataIndexerReader indexReader = default;
+
+            try
+            {
+                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out indexReader, spaceId);
+                if (rc.IsFailure()) return rc;
+
+                rc = indexReader.Indexer.OpenSaveDataInfoReader(out ISaveDataInfoReader baseInfoReader);
+                if (rc.IsFailure()) return rc;
+
+                var filterInternal = new SaveDataFilterInternal(ref filter, spaceId);
+
+                infoReader = new SaveDataInfoFilterReader(baseInfoReader, ref filterInternal);
+
+                return Result.Success;
+            }
+            finally
+            {
+                indexReader.Dispose();
+            }
         }
 
         public Result FindSaveDataWithFilter(out long count, Span<byte> saveDataInfoBuffer, SaveDataSpaceId spaceId,
