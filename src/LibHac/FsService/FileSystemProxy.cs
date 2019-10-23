@@ -194,7 +194,7 @@ namespace LibHac.FsService
             return DeleteSaveDataFileSystemBySaveDataSpaceIdImpl(spaceId, saveDataId);
         }
 
-        public Result DeleteSaveDataFileSystemBySaveDataSpaceIdImpl(SaveDataSpaceId spaceId, ulong saveDataId)
+        private Result DeleteSaveDataFileSystemBySaveDataSpaceIdImpl(SaveDataSpaceId spaceId, ulong saveDataId)
         {
             if (saveDataId != FileSystemServer.SaveIndexerId)
             {
@@ -220,7 +220,7 @@ namespace LibHac.FsService
             return DeleteSaveDataFileSystemImpl(spaceId, saveDataId);
         }
 
-        public Result GetSaveDataInfo(out SaveDataInfo info, SaveDataSpaceId spaceId, ref SaveDataAttribute attribute)
+        private Result GetSaveDataInfo(out SaveDataInfo info, SaveDataSpaceId spaceId, ref SaveDataAttribute attribute)
         {
             info = default;
 
@@ -256,7 +256,7 @@ namespace LibHac.FsService
             throw new NotImplementedException();
         }
 
-        public Result CreateSaveDataFileSystemImpl(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo,
+        private Result CreateSaveDataFileSystemImpl(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo,
             ref SaveMetaCreateInfo metaCreateInfo, ref OptionalHashSalt hashSalt, bool something)
         {
             ulong saveDataId = 0;
@@ -429,7 +429,7 @@ namespace LibHac.FsService
             return CreateUserSaveDataFileSystem(ref attribute, ref createInfo, ref metaCreateInfo, ref hashSaltCopy);
         }
 
-        public Result CreateUserSaveDataFileSystem(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo,
+        private Result CreateUserSaveDataFileSystem(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo,
             ref SaveMetaCreateInfo metaCreateInfo, ref OptionalHashSalt hashSalt)
         {
             return CreateSaveDataFileSystemImpl(ref attribute, ref createInfo, ref metaCreateInfo, ref hashSalt, false);
