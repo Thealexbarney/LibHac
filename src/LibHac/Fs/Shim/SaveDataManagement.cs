@@ -227,7 +227,7 @@ namespace LibHac.Fs.Shim
         }
     }
 
-    public struct SaveDataIterator
+    public struct SaveDataIterator : IDisposable
     {
         private FileSystemClient FsClient { get; }
         private ISaveDataInfoReader Reader { get; }
@@ -258,6 +258,11 @@ namespace LibHac.Fs.Shim
             }
 
             return rc;
+        }
+
+        public void Dispose()
+        {
+            Reader?.Dispose();
         }
     }
 }

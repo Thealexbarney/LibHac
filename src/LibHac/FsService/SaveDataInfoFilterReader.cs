@@ -48,6 +48,11 @@ namespace LibHac.FsService
 
             return Result.Success;
         }
+
+        public void Dispose()
+        {
+            Reader?.Dispose();
+        }
     }
 
     [StructLayout(LayoutKind.Explicit, Size = 0x50)]

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
@@ -26,6 +27,7 @@ namespace LibHac.FsService
         private bool IsKvdbLoaded { get; set; }
         private ulong LastPublishedId { get; set; }
         private int Version { get; set; }
+        private List<SaveDataInfoReader> OpenedReaders { get; } = new List<SaveDataInfoReader>();
 
         public SaveDataIndexer(FileSystemClient fsClient, string mountName, SaveDataSpaceId spaceId, ulong saveDataId)
         {
@@ -356,6 +358,8 @@ namespace LibHac.FsService
 
                 var reader = new SaveDataInfoReader(this);
 
+                OpenedReaders.Add(reader);
+
                 infoReader = reader;
 
                 return Result.Success;
@@ -490,8 +494,53 @@ namespace LibHac.FsService
 
         private Result AdjustOpenedInfoReaders(ref SaveDataAttribute key)
         {
-            // todo
+            // If a new key is added or removed during iteration of the list,
+            // make sure the current item of the iterator remains the same
+
+            // Todo: A more efficient way of doing this
+            List<SaveDataAttribute> list = KvDatabase.ToList().Select(x => x.key).ToList();
+
+            int index = list.BinarySearch(key);
+
+            bool keyWasAdded = index >= 0;
+
+            if (!keyWasAdded)
+            {
+                // If the item was not found, List<T>.BinarySearch returns a negative number that
+                // is the bitwise complement of the index of the next element that is larger than the item
+                index = ~index;
+            }
+
+            foreach (SaveDataInfoReader reader in OpenedReaders)
+            {
+                if (keyWasAdded)
+                {
+                    // New key was inserted before the iterator's position
+                    // increment the position to compensate
+                    if(reader.Position >= index)
+                    {
+                        reader.Position++;
+                    }
+                }
+                else
+                {
+                    // The position should be decremented if the iterator's position is
+                    // after the key that came directly after the deleted key
+                    if (reader.Position > index)
+                    {
+                        reader.Position--;
+                    }
+                }
+            }
+
             return Result.Success;
+        }
+
+        private void CloseReader(SaveDataInfoReader reader)
+        {
+            bool wasRemoved = OpenedReaders.Remove(reader);
+
+            Debug.Assert(wasRemoved);
         }
 
         private ref struct Mounter
@@ -601,6 +650,11 @@ namespace LibHac.FsService
 
                     return Result.Success;
                 }
+            }
+
+            public void Dispose()
+            {
+                Indexer?.CloseReader(this);
             }
         }
     }
