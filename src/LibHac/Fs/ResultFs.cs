@@ -97,6 +97,8 @@
         public static Result InvalidMountName => new Result(ModuleFs, 6065);
         public static Result ExtensionSizeTooLarge => new Result(ModuleFs, 6066);
         public static Result ExtensionSizeInvalid => new Result(ModuleFs, 6067);
+        public static Result ReadOldSaveDataInfoReader => new Result(ModuleFs, 6068);
+        public static Result InvalidSaveDataSpaceId => new Result(ModuleFs, 6082);
 
         public static Result InvalidOpenModeOperation => new Result(ModuleFs, 6200);
         public static Result FileExtensionWithoutOpenModeAllowAppend => new Result(ModuleFs, 6201);
@@ -137,5 +139,6 @@
 
         public static Result SubStorageNotInitialized => new Result(ModuleFs, 6902);
         public static Result MountNameNotFound => new Result(ModuleFs, 6905);
+        public static Result SaveDataIsExtending => new Result(ModuleFs, 6906);
     }
 }

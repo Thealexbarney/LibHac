@@ -5,7 +5,7 @@ using LibHac.Common;
 
 namespace LibHac.Fs
 {
-    [DebuggerDisplay("{ToString(),nq}")]
+    [DebuggerDisplay("0x{ToString(),nq}")]
     [StructLayout(LayoutKind.Sequential, Size = 0x10)]
     public struct UserId : IEquatable<UserId>, IComparable<UserId>, IComparable
     {
@@ -25,7 +25,7 @@ namespace LibHac.Fs
 
         public override string ToString()
         {
-            return $"0x{Id.High:x8}{Id.Low:x8}";
+            return $"{Id.High:X16}{Id.Low:X16}";
         }
 
         public bool Equals(UserId other) => Id == other.Id;

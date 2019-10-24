@@ -12,6 +12,7 @@
         public static ResultRange FatFsCorrupted => new ResultRange(ResultFs.ModuleFs, 4681, 4699);
         public static ResultRange HostFsCorrupted => new ResultRange(ResultFs.ModuleFs, 4701, 4719);
         public static ResultRange FileTableCorrupted => new ResultRange(ResultFs.ModuleFs, 4721, 4739);
+        public static ResultRange Range4771To4779 => new ResultRange(ResultFs.ModuleFs, 4771, 4779);
         public static ResultRange Range4811To4819 => new ResultRange(ResultFs.ModuleFs, 4811, 4819);
 
         public static ResultRange UnexpectedFailure => new ResultRange(ResultFs.ModuleFs, 5000, 5999);

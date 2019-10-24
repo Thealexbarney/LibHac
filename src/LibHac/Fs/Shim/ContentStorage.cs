@@ -2,7 +2,7 @@
 using LibHac.Common;
 using LibHac.FsService;
 
-namespace LibHac.Fs
+namespace LibHac.Fs.Shim
 {
     public static class ContentStorage
     {
@@ -54,7 +54,7 @@ namespace LibHac.Fs
                 StorageId = storageId;
             }
 
-            public Result Generate(Span<byte> nameBuffer)
+            public Result GenerateCommonMountName(Span<byte> nameBuffer)
             {
                 U8String mountName = GetContentStorageMountName(StorageId);
 

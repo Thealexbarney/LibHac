@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSystem;
+using LibHac.FsSystem.Save;
+using LibHac.Kvdb;
 using LibHac.Ncm;
 using LibHac.Spl;
 
@@ -14,6 +17,7 @@ namespace LibHac.FsService
         /// <summary>The client instance to be used for internal operations like save indexer access.</summary>
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         private FileSystemClient FsClient { get; }
+        private FileSystemServer FsServer { get; }
 
         public long CurrentProcess { get; private set; }
 
@@ -22,12 +26,11 @@ namespace LibHac.FsService
         public FsPath SaveDataRootPath { get; } = default;
         public bool AutoCreateSaveData { get; private set; }
 
-        private const ulong SaveIndexerId = 0x8000000000000000;
-
-        internal FileSystemProxy(FileSystemProxyCore fsProxyCore, FileSystemClient fsClient)
+        internal FileSystemProxy(FileSystemProxyCore fsProxyCore, FileSystemClient fsClient, FileSystemServer fsServer)
         {
             FsProxyCore = fsProxyCore;
             FsClient = fsClient;
+            FsServer = fsServer;
 
             CurrentProcess = -1;
             SaveDataSize = 0x2000000;
@@ -104,17 +107,148 @@ namespace LibHac.FsService
 
         public Result DeleteSaveDataFileSystem(ulong saveDataId)
         {
-            throw new NotImplementedException();
+            return DeleteSaveDataFileSystemImpl(SaveDataSpaceId.System, saveDataId);
+        }
+
+        private Result DeleteSaveDataFileSystemImpl(SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            SaveDataIndexerReader reader = default;
+
+            try
+            {
+                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out reader, spaceId);
+                if (rc.IsFailure()) return rc;
+
+                if (saveDataId == FileSystemServer.SaveIndexerId)
+                {
+                    // missing: This save can only be deleted by the FS process itself
+                }
+                else
+                {
+                    if (spaceId != SaveDataSpaceId.ProperSystem && spaceId != SaveDataSpaceId.Safe)
+                    {
+                        rc = reader.Indexer.GetBySaveDataId(out SaveDataIndexerValue value, saveDataId);
+                        if (rc.IsFailure()) return rc;
+
+                        spaceId = value.SpaceId;
+                    }
+
+                    rc = reader.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
+                    if (rc.IsFailure()) return rc;
+
+                    if (key.Type == SaveDataType.SystemSaveData || key.Type == SaveDataType.BcatSystemStorage)
+                    {
+                        // Check if permissions allow deleting system save data
+                    }
+                    else
+                    {
+                        // Check if permissions allow deleting save data
+                    }
+
+                    reader.Indexer.SetState(saveDataId, SaveDataState.Creating);
+                    if (rc.IsFailure()) return rc;
+
+                    reader.Indexer.Commit();
+                    if (rc.IsFailure()) return rc;
+                }
+
+                rc = DeleteSaveDataFileSystemImpl2(spaceId, saveDataId);
+                if (rc.IsFailure()) return rc;
+
+                if (saveDataId != FileSystemServer.SaveIndexerId)
+                {
+                    rc = reader.Indexer.Delete(saveDataId);
+                    if (rc.IsFailure()) return rc;
+
+                    rc = reader.Indexer.Commit();
+                    if (rc.IsFailure()) return rc;
+                }
+
+                return Result.Success;
+            }
+            finally
+            {
+                reader.Dispose();
+            }
+        }
+
+        private Result DeleteSaveDataFileSystemImpl2(SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            // missing: Check extra data flags for this value. Bit 3
+            bool doSecureDelete = false;
+
+            Result rc = FsProxyCore.DeleteSaveDataMetaFiles(saveDataId, spaceId);
+            if (rc.IsFailure() && rc != ResultFs.PathNotFound)
+                return rc;
+
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+            rc = FsProxyCore.DeleteSaveDataFileSystem(spaceId, saveDataId, doSecureDelete);
+            if (rc.IsFailure() && rc != ResultFs.PathNotFound)
+                return rc;
+
+            return Result.Success;
         }
 
         public Result DeleteSaveDataFileSystemBySaveDataSpaceId(SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            throw new NotImplementedException();
+            return DeleteSaveDataFileSystemBySaveDataSpaceIdImpl(spaceId, saveDataId);
+        }
+
+        private Result DeleteSaveDataFileSystemBySaveDataSpaceIdImpl(SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            if (saveDataId != FileSystemServer.SaveIndexerId)
+            {
+                SaveDataIndexerReader reader = default;
+
+                try
+                {
+                    Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out reader, spaceId);
+                    if (rc.IsFailure()) return rc;
+
+                    rc = reader.Indexer.GetBySaveDataId(out SaveDataIndexerValue value, saveDataId);
+                    if (rc.IsFailure()) return rc;
+
+                    if (value.SpaceId != GetSpaceIdForIndexer(spaceId))
+                        return ResultFs.TargetNotFound.Log();
+                }
+                finally
+                {
+                    reader.Dispose();
+                }
+            }
+
+            return DeleteSaveDataFileSystemImpl(spaceId, saveDataId);
+        }
+
+        private Result GetSaveDataInfo(out SaveDataInfo info, SaveDataSpaceId spaceId, ref SaveDataAttribute attribute)
+        {
+            info = default;
+
+            SaveDataIndexerReader reader = default;
+
+            try
+            {
+                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out reader, spaceId);
+                if (rc.IsFailure()) return rc;
+
+                rc = reader.Indexer.Get(out SaveDataIndexerValue value, ref attribute);
+                if (rc.IsFailure()) return rc;
+
+                SaveDataIndexer.GetSaveDataInfo(out info, ref attribute, ref value);
+                return Result.Success;
+            }
+            finally
+            {
+                reader.Dispose();
+            }
         }
 
         public Result DeleteSaveDataFileSystemBySaveDataAttribute(SaveDataSpaceId spaceId, ref SaveDataAttribute attribute)
         {
-            throw new NotImplementedException();
+            Result rs = GetSaveDataInfo(out SaveDataInfo info, spaceId, ref attribute);
+            if (rs.IsFailure()) return rs;
+
+            return DeleteSaveDataFileSystemBySaveDataSpaceIdImpl(spaceId, info.SaveDataId);
         }
 
         public Result UpdateSaveDataMacForDebug(SaveDataSpaceId spaceId, ulong saveDataId)
@@ -122,21 +256,210 @@ namespace LibHac.FsService
             throw new NotImplementedException();
         }
 
+        private Result CreateSaveDataFileSystemImpl(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo,
+            ref SaveMetaCreateInfo metaCreateInfo, ref OptionalHashSalt hashSalt, bool something)
+        {
+            ulong saveDataId = 0;
+            bool isDeleteNeeded = false;
+            Result rc;
+
+            SaveDataIndexerReader reader = default;
+
+            try
+            {
+                if (attribute.SaveDataId == FileSystemServer.SaveIndexerId)
+                {
+                    saveDataId = FileSystemServer.SaveIndexerId;
+                    rc = FsProxyCore.DoesSaveDataExist(out bool saveExists, createInfo.SpaceId, saveDataId);
+
+                    if (rc.IsSuccess() && saveExists)
+                    {
+                        return ResultFs.PathAlreadyExists.Log();
+                    }
+
+                    isDeleteNeeded = true;
+                }
+                else
+                {
+                    rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out reader, createInfo.SpaceId);
+                    if (rc.IsFailure()) return rc;
+
+                    SaveDataAttribute indexerKey = attribute;
+
+                    if (attribute.SaveDataId != 0 || attribute.UserId == UserId.Zero)
+                    {
+                        saveDataId = attribute.SaveDataId;
+
+                        rc = reader.Indexer.AddSystemSaveData(ref indexerKey);
+                    }
+                    else
+                    {
+                        if (attribute.Type != SaveDataType.SystemSaveData &&
+                            attribute.Type != SaveDataType.BcatSystemStorage)
+                        {
+                            if (reader.Indexer.IsFull())
+                            {
+                                return ResultKvdb.TooLargeKeyOrDbFull.Log();
+                            }
+                        }
+
+                        rc = reader.Indexer.Add(out saveDataId, ref indexerKey);
+                    }
+
+                    if (rc == ResultFs.SaveDataPathAlreadyExists)
+                    {
+                        return ResultFs.PathAlreadyExists.LogConverted(rc);
+                    }
+
+                    isDeleteNeeded = true;
+
+                    rc = reader.Indexer.SetState(saveDataId, SaveDataState.Creating);
+                    if (rc.IsFailure()) return rc;
+
+                    SaveDataSpaceId indexerSpaceId = GetSpaceIdForIndexer(createInfo.SpaceId);
+
+                    rc = reader.Indexer.SetSpaceId(saveDataId, indexerSpaceId);
+                    if (rc.IsFailure()) return rc;
+
+                    // todo: calculate size
+                    long size = 0;
+
+                    rc = reader.Indexer.SetSize(saveDataId, size);
+                    if (rc.IsFailure()) return rc;
+
+                    rc = reader.Indexer.Commit();
+                    if (rc.IsFailure()) return rc;
+                }
+
+                rc = FsProxyCore.CreateSaveDataFileSystem(saveDataId, ref attribute, ref createInfo, SaveDataRootPath,
+                    hashSalt, false);
+
+                if (rc.IsFailure())
+                {
+                    if (rc != ResultFs.PathAlreadyExists) return rc;
+
+                    rc = DeleteSaveDataFileSystemImpl2(createInfo.SpaceId, saveDataId);
+                    if (rc.IsFailure()) return rc;
+
+                    rc = FsProxyCore.CreateSaveDataFileSystem(saveDataId, ref attribute, ref createInfo, SaveDataRootPath,
+                        hashSalt, false);
+                    if (rc.IsFailure()) return rc;
+                }
+
+                if (metaCreateInfo.Type != SaveMetaType.None)
+                {
+                    rc = FsProxyCore.CreateSaveDataMetaFile(saveDataId, createInfo.SpaceId, metaCreateInfo.Type,
+                        metaCreateInfo.Size);
+                    if (rc.IsFailure()) return rc;
+
+                    if (metaCreateInfo.Type == SaveMetaType.Thumbnail)
+                    {
+                        rc = FsProxyCore.OpenSaveDataMetaFile(out IFile metaFile, saveDataId, createInfo.SpaceId,
+                            metaCreateInfo.Type);
+
+                        using (metaFile)
+                        {
+                            if (rc.IsFailure()) return rc;
+
+                            ReadOnlySpan<byte> metaFileData = stackalloc byte[0x20];
+
+                            rc = metaFile.Write(0, metaFileData, WriteOption.Flush);
+                            if (rc.IsFailure()) return rc;
+                        }
+                    }
+                }
+
+                if (attribute.SaveDataId == FileSystemServer.SaveIndexerId || something)
+                {
+                    isDeleteNeeded = false;
+
+                    return Result.Success;
+                }
+
+                rc = reader.Indexer.SetState(saveDataId, SaveDataState.Normal);
+                if (rc.IsFailure()) return rc;
+
+                rc = reader.Indexer.Commit();
+                if (rc.IsFailure()) return rc;
+
+                isDeleteNeeded = false;
+
+                return Result.Success;
+            }
+            finally
+            {
+                // Revert changes if an error happened in the middle of creation
+                if (isDeleteNeeded)
+                {
+                    DeleteSaveDataFileSystemImpl2(createInfo.SpaceId, saveDataId);
+
+                    if (reader.IsInitialized && saveDataId != FileSystemServer.SaveIndexerId)
+                    {
+                        rc = reader.Indexer.GetBySaveDataId(out SaveDataIndexerValue value, saveDataId);
+
+                        if (rc.IsSuccess() && value.SpaceId == createInfo.SpaceId)
+                        {
+                            reader.Indexer.Delete(saveDataId);
+                            reader.Indexer.Commit();
+                        }
+                    }
+                }
+
+                reader.Dispose();
+            }
+        }
+
         public Result CreateSaveDataFileSystem(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo,
             ref SaveMetaCreateInfo metaCreateInfo)
         {
-            throw new NotImplementedException();
+            OptionalHashSalt hashSalt = default;
+
+            return CreateUserSaveDataFileSystem(ref attribute, ref createInfo, ref metaCreateInfo, ref hashSalt);
         }
 
         public Result CreateSaveDataFileSystemWithHashSalt(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo,
             ref SaveMetaCreateInfo metaCreateInfo, ref HashSalt hashSalt)
         {
-            throw new NotImplementedException();
+            var hashSaltCopy = new OptionalHashSalt
+            {
+                IsSet = true,
+                HashSalt = hashSalt
+            };
+
+            return CreateUserSaveDataFileSystem(ref attribute, ref createInfo, ref metaCreateInfo, ref hashSaltCopy);
+        }
+
+        private Result CreateUserSaveDataFileSystem(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo,
+            ref SaveMetaCreateInfo metaCreateInfo, ref OptionalHashSalt hashSalt)
+        {
+            return CreateSaveDataFileSystemImpl(ref attribute, ref createInfo, ref metaCreateInfo, ref hashSalt, false);
         }
 
         public Result CreateSaveDataFileSystemBySystemSaveDataId(ref SaveDataAttribute attribute, ref SaveDataCreateInfo createInfo)
         {
-            throw new NotImplementedException();
+            if (!IsSystemSaveDataId(attribute.SaveDataId))
+                return ResultFs.InvalidArgument.Log();
+
+            SaveDataCreateInfo newCreateInfo = createInfo;
+
+            if (createInfo.OwnerId == TitleId.Zero)
+            {
+                // Assign the current program's ID
+                throw new NotImplementedException();
+            }
+
+            // Missing permission checks
+
+            if (attribute.Type == SaveDataType.BcatSystemStorage)
+            {
+                newCreateInfo.OwnerId = SystemTitleIds.Bcat;
+            }
+
+            SaveMetaCreateInfo metaCreateInfo = default;
+            OptionalHashSalt optionalHashSalt = default;
+
+            return CreateSaveDataFileSystemImpl(ref attribute, ref newCreateInfo, ref metaCreateInfo,
+                ref optionalHashSalt, false);
         }
 
         public Result ExtendSaveDataFileSystem(SaveDataSpaceId spaceId, ulong saveDataId, long dataSize, long journalSize)
@@ -147,6 +470,9 @@ namespace LibHac.FsService
         private Result OpenSaveDataFileSystemImpl(out IFileSystem fileSystem, out ulong saveDataId,
             SaveDataSpaceId spaceId, ref SaveDataAttribute attribute, bool openReadOnly, bool cacheExtraData)
         {
+            fileSystem = default;
+            saveDataId = default;
+
             bool hasFixedId = attribute.SaveDataId != 0 && attribute.UserId == UserId.Zero;
 
             if (hasFixedId)
@@ -155,7 +481,23 @@ namespace LibHac.FsService
             }
             else
             {
-                throw new NotImplementedException();
+                SaveDataAttribute indexerKey = attribute;
+
+                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out SaveDataIndexerReader tmpReader, spaceId);
+                using SaveDataIndexerReader reader = tmpReader;
+                if (rc.IsFailure()) return rc;
+
+                reader.Indexer.Get(out SaveDataIndexerValue indexerValue, ref indexerKey);
+
+                SaveDataSpaceId indexerSpaceId = GetSpaceIdForIndexer(spaceId);
+
+                if (indexerValue.SpaceId != indexerSpaceId)
+                    return ResultFs.TargetNotFound.Log();
+
+                if (indexerValue.State == SaveDataState.Extending)
+                    return ResultFs.SaveDataIsExtending.Log();
+
+                saveDataId = indexerValue.SaveDataId;
             }
 
             Result saveFsResult = FsProxyCore.OpenSaveDataFileSystem(out fileSystem, spaceId, saveDataId,
@@ -165,9 +507,8 @@ namespace LibHac.FsService
 
             if (saveFsResult != ResultFs.PathNotFound && saveFsResult != ResultFs.TargetNotFound) return saveFsResult;
 
-            if (saveDataId != SaveIndexerId)
+            if (saveDataId != FileSystemServer.SaveIndexerId)
             {
-                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                 if (hasFixedId)
                 {
                     // todo: remove save indexer entry
@@ -177,15 +518,61 @@ namespace LibHac.FsService
             return ResultFs.TargetNotFound;
         }
 
+        private Result OpenSaveDataFileSystem3(out IFileSystem fileSystem, SaveDataSpaceId spaceId,
+            ref SaveDataAttribute attribute, bool openReadOnly)
+        {
+            // Missing check if the open limit has been hit
+
+            Result rc = OpenSaveDataFileSystemImpl(out fileSystem, out _, spaceId, ref attribute, openReadOnly, true);
+
+            // Missing permission check based on the save's owner ID,
+            // speed emulation storage type wrapper, and FileSystemInterfaceAdapter
+
+            return rc;
+        }
+
+        private Result OpenSaveDataFileSystem2(out IFileSystem fileSystem, SaveDataSpaceId spaceId,
+            ref SaveDataAttribute attribute, bool openReadOnly)
+        {
+            fileSystem = default;
+
+            // Missing permission checks
+
+            SaveDataAttribute attributeCopy;
+
+            if (attribute.TitleId == TitleId.Zero)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                attributeCopy = attribute;
+            }
+
+            SaveDataSpaceId actualSpaceId;
+
+            if (attributeCopy.Type == SaveDataType.CacheStorage)
+            {
+                // Check whether the save is on the SD card or the BIS
+                throw new NotImplementedException();
+            }
+            else
+            {
+                actualSpaceId = spaceId;
+            }
+
+            return OpenSaveDataFileSystem3(out fileSystem, actualSpaceId, ref attributeCopy, openReadOnly);
+        }
+
         public Result OpenSaveDataFileSystem(out IFileSystem fileSystem, SaveDataSpaceId spaceId, ref SaveDataAttribute attribute)
         {
-            throw new NotImplementedException();
+            return OpenSaveDataFileSystem2(out fileSystem, spaceId, ref attribute, false);
         }
 
         public Result OpenReadOnlySaveDataFileSystem(out IFileSystem fileSystem, SaveDataSpaceId spaceId,
             ref SaveDataAttribute attribute)
         {
-            throw new NotImplementedException();
+            return OpenSaveDataFileSystem2(out fileSystem, spaceId, ref attribute, true);
         }
 
         public Result OpenSaveDataFileSystemBySystemSaveDataId(out IFileSystem fileSystem, SaveDataSpaceId spaceId,
@@ -316,24 +703,129 @@ namespace LibHac.FsService
 
         public Result OpenSaveDataInfoReader(out ISaveDataInfoReader infoReader)
         {
-            throw new NotImplementedException();
+            infoReader = default;
+
+            // Missing permission check
+
+            SaveDataIndexerReader indexReader = default;
+
+            try
+            {
+                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out indexReader, SaveDataSpaceId.System);
+                if (rc.IsFailure()) return rc;
+
+                return indexReader.Indexer.OpenSaveDataInfoReader(out infoReader);
+            }
+            finally
+            {
+                indexReader.Dispose();
+            }
         }
 
         public Result OpenSaveDataInfoReaderBySaveDataSpaceId(out ISaveDataInfoReader infoReader, SaveDataSpaceId spaceId)
         {
-            throw new NotImplementedException();
+            infoReader = default;
+
+            // Missing permission check
+
+            SaveDataIndexerReader indexReader = default;
+
+            try
+            {
+                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out indexReader, spaceId);
+                if (rc.IsFailure()) return rc;
+
+                rc = indexReader.Indexer.OpenSaveDataInfoReader(out ISaveDataInfoReader baseInfoReader);
+                if (rc.IsFailure()) return rc;
+
+                var filter = new SaveDataFilterInternal
+                {
+                    FilterBySaveDataSpaceId = true,
+                    SpaceId = GetSpaceIdForIndexer(spaceId)
+                };
+
+                infoReader = new SaveDataInfoFilterReader(baseInfoReader, ref filter);
+
+                return Result.Success;
+            }
+            finally
+            {
+                indexReader.Dispose();
+            }
         }
 
         public Result OpenSaveDataInfoReaderWithFilter(out ISaveDataInfoReader infoReader, SaveDataSpaceId spaceId,
             ref SaveDataFilter filter)
         {
-            throw new NotImplementedException();
+            infoReader = default;
+
+            // Missing permission check
+
+            SaveDataIndexerReader indexReader = default;
+
+            try
+            {
+                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out indexReader, spaceId);
+                if (rc.IsFailure()) return rc;
+
+                rc = indexReader.Indexer.OpenSaveDataInfoReader(out ISaveDataInfoReader baseInfoReader);
+                if (rc.IsFailure()) return rc;
+
+                var filterInternal = new SaveDataFilterInternal(ref filter, spaceId);
+
+                infoReader = new SaveDataInfoFilterReader(baseInfoReader, ref filterInternal);
+
+                return Result.Success;
+            }
+            finally
+            {
+                indexReader.Dispose();
+            }
         }
 
         public Result FindSaveDataWithFilter(out long count, Span<byte> saveDataInfoBuffer, SaveDataSpaceId spaceId,
             ref SaveDataFilter filter)
         {
-            throw new NotImplementedException();
+            count = default;
+
+            if (saveDataInfoBuffer.Length != Unsafe.SizeOf<SaveDataInfo>())
+            {
+                return ResultFs.InvalidArgument.Log();
+            }
+
+            // Missing permission check
+
+            var internalFilter = new SaveDataFilterInternal(ref filter, GetSpaceIdForIndexer(spaceId));
+
+            ref SaveDataInfo saveDataInfo = ref Unsafe.As<byte, SaveDataInfo>(ref saveDataInfoBuffer[0]);
+
+            return FindSaveDataWithFilterImpl(out count, out saveDataInfo, spaceId, ref internalFilter);
+        }
+
+        private Result FindSaveDataWithFilterImpl(out long count, out SaveDataInfo info, SaveDataSpaceId spaceId,
+            ref SaveDataFilterInternal filter)
+        {
+            count = default;
+            info = default;
+
+            SaveDataIndexerReader indexReader = default;
+
+            try
+            {
+                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out indexReader, spaceId);
+                if (rc.IsFailure()) return rc;
+
+                rc = indexReader.Indexer.OpenSaveDataInfoReader(out ISaveDataInfoReader baseInfoReader);
+                if (rc.IsFailure()) return rc;
+
+                var infoReader = new SaveDataInfoFilterReader(baseInfoReader, ref filter);
+
+                return infoReader.ReadSaveDataInfo(out count, SpanHelpers.AsByteSpan(ref info));
+            }
+            finally
+            {
+                indexReader.Dispose();
+            }
         }
 
         public Result OpenSaveDataInternalStorageFileSystem(out IFileSystem fileSystem, SaveDataSpaceId spaceId, ulong saveDataId)
@@ -584,6 +1076,13 @@ namespace LibHac.FsService
         private static bool IsSystemSaveDataId(ulong id)
         {
             return (long)id < 0;
+        }
+
+        private static SaveDataSpaceId GetSpaceIdForIndexer(SaveDataSpaceId spaceId)
+        {
+            return spaceId == SaveDataSpaceId.ProperSystem || spaceId == SaveDataSpaceId.Safe
+                ? SaveDataSpaceId.System
+                : spaceId;
         }
     }
 }

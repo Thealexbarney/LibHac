@@ -6,7 +6,7 @@ namespace LibHac.Fs
     /// <summary>
     /// Provides an interface for accessing a file system. <c>/</c> is used as the path delimiter.
     /// </summary>
-    public interface IFileSystem
+    public interface IFileSystem : IDisposable
     {
         /// <summary>
         /// Creates or overwrites a file at the specified path.

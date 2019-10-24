@@ -5,7 +5,7 @@ namespace LibHac.Kvdb
 {
     public ref struct ImkvdbReader
     {
-        private ReadOnlySpan<byte> _data;
+        private readonly ReadOnlySpan<byte> _data;
         private int _position;
 
         public ImkvdbReader(ReadOnlySpan<byte> data)
@@ -18,13 +18,14 @@ namespace LibHac.Kvdb
         {
             entryCount = default;
 
-            if (_position + Unsafe.SizeOf<ImkvdbHeader>() > _data.Length) return ResultKvdb.InvalidKeyValue;
+            if (_position + Unsafe.SizeOf<ImkvdbHeader>() > _data.Length)
+                return ResultKvdb.InvalidKeyValue.Log();
 
             ref ImkvdbHeader header = ref Unsafe.As<byte, ImkvdbHeader>(ref Unsafe.AsRef(_data[_position]));
 
             if (header.Magic != ImkvdbHeader.ExpectedMagic)
             {
-                return ResultKvdb.InvalidKeyValue;
+                return ResultKvdb.InvalidKeyValue.Log();
             }
 
             entryCount = header.EntryCount;
@@ -38,13 +39,14 @@ namespace LibHac.Kvdb
             keySize = default;
             valueSize = default;
 
-            if (_position + Unsafe.SizeOf<ImkvdbHeader>() > _data.Length) return ResultKvdb.InvalidKeyValue;
+            if (_position + Unsafe.SizeOf<ImkvdbHeader>() > _data.Length)
+                return ResultKvdb.InvalidKeyValue.Log();
 
             ref ImkvdbEntryHeader header = ref Unsafe.As<byte, ImkvdbEntryHeader>(ref Unsafe.AsRef(_data[_position]));
 
             if (header.Magic != ImkvdbEntryHeader.ExpectedMagic)
             {
-                return ResultKvdb.InvalidKeyValue;
+                return ResultKvdb.InvalidKeyValue.Log();
             }
 
             keySize = header.KeySize;
@@ -63,7 +65,8 @@ namespace LibHac.Kvdb
 
             _position += Unsafe.SizeOf<ImkvdbEntryHeader>();
 
-            if (_position + keySize + valueSize > _data.Length) return ResultKvdb.InvalidKeyValue;
+            if (_position + keySize + valueSize > _data.Length)
+                return ResultKvdb.InvalidKeyValue.Log();
 
             key = _data.Slice(_position, keySize);
             value = _data.Slice(_position + keySize, valueSize);
