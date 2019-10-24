@@ -234,9 +234,9 @@ namespace hactoolnet
             PrintItem(sb, colLen, "TitleID:", $"{nca.Header.TitleId:X16}");
             if (nca.CanOpenSection(NcaSectionType.Code)) {
                 IFileSystem fs = nca.OpenFileSystem(NcaSectionType.Code, IntegrityCheckLevel.None);
-                Result r = fs.OpenFile(out var file, "/main.npdm", OpenMode.Read);
+                Result r = fs.OpenFile(out IFile file, "/main.npdm", OpenMode.Read);
                 if (r.IsSuccess()) {
-                    NpdmBinary npdm = new NpdmBinary(file.AsStream(), null);
+                    var npdm = new NpdmBinary(file.AsStream(), null);
                     PrintItem(sb, colLen, "Title Name:", npdm.TitleName);
                 }
             }

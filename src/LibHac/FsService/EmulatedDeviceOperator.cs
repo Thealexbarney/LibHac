@@ -3,7 +3,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsService
 {
-    class EmulatedDeviceOperator : IDeviceOperator
+    public class EmulatedDeviceOperator : IDeviceOperator
     {
         private EmulatedGameCard GameCard { get; set; }
 

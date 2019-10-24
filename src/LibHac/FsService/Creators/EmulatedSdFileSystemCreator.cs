@@ -3,18 +3,24 @@ using LibHac.Fs;
 
 namespace LibHac.FsService.Creators
 {
-    class EmulatedSdFileSystemCreator : ISdFileSystemCreator
+    public class EmulatedSdFileSystemCreator : ISdFileSystemCreator
     {
         private const string DefaultPath = "/sdcard";
 
-        public IFileSystem RootFileSystem { get; set; }
-        public string Path { get; set; }
+        private IFileSystem RootFileSystem { get; }
+        private string Path { get; }
 
-        public IFileSystem SdCardFileSystem { get; set; }
+        private IFileSystem SdCardFileSystem { get; set; }
 
         public EmulatedSdFileSystemCreator(IFileSystem rootFileSystem)
         {
             RootFileSystem = rootFileSystem;
+        }
+
+        public EmulatedSdFileSystemCreator(IFileSystem rootFileSystem, string path)
+        {
+            RootFileSystem = rootFileSystem;
+            Path = path;
         }
 
         public Result Create(out IFileSystem fileSystem)
@@ -37,7 +43,13 @@ namespace LibHac.FsService.Creators
 
             // Todo: Add ProxyFileSystem?
 
-            return Util.CreateSubFileSystem(out fileSystem, RootFileSystem, path, true);
+            Result rc = Util.CreateSubFileSystem(out IFileSystem sdFileSystem, RootFileSystem, path, true);
+            if (rc.IsFailure()) return rc;
+
+            SdCardFileSystem = sdFileSystem;
+            fileSystem = sdFileSystem;
+
+            return Result.Success;
         }
 
         public Result Format(bool closeOpenEntries)
