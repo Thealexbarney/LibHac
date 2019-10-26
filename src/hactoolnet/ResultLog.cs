@@ -32,7 +32,7 @@ namespace hactoolnet
                     method.Name.StartsWith(nameof(IFileSystem.GetEntryType)) ||
                     method.Name.StartsWith(nameof(IAttributeFileSystem.GetFileAttributes)))
                 {
-                   // return;
+                    return;
                 }
 
                 string methodName = $"{method.DeclaringType?.FullName}.{method.Name}";
