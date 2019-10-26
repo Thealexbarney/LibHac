@@ -444,8 +444,8 @@ namespace LibHac.FsService
 
             if (createInfo.OwnerId == TitleId.Zero)
             {
-                // Assign the current program's ID
-                throw new NotImplementedException();
+                // todo: Assign the current program's ID
+                // throw new NotImplementedException();
             }
 
             // Missing permission checks
