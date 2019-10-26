@@ -4,7 +4,7 @@ using System.Diagnostics;
 namespace LibHac
 {
     [Serializable]
-    [DebuggerDisplay("{ToString()}")]
+    [DebuggerDisplay("{ToStringWithName(),nq}")]
     public struct Result : IEquatable<Result>
     {
         public readonly int Value;
@@ -42,6 +42,9 @@ namespace LibHac
         /// <returns>The called <see cref="Result"/> value.</returns>
         public Result Log()
         {
+#if DEBUG
+            LogCallback?.Invoke(this);
+#endif
             return this;
         }
 
@@ -52,7 +55,41 @@ namespace LibHac
         /// <returns>The called <see cref="Result"/> value.</returns>
         public Result LogConverted(Result originalResult)
         {
+#if DEBUG
+            ConvertedLogCallback?.Invoke(this, originalResult);
+#endif
             return this;
+        }
+
+        public delegate void ResultLogger(Result result);
+        public delegate void ConvertedResultLogger(Result result, Result originalResult);
+        public delegate bool ResultNameGetter(Result result, out string name);
+
+        public static ResultLogger LogCallback { get; set; }
+        public static ConvertedResultLogger ConvertedLogCallback { get; set; }
+        public static ResultNameGetter GetResultNameHandler { get; set; }
+
+        public bool TryGetResultName(out string name)
+        {
+            ResultNameGetter func = GetResultNameHandler;
+
+            if (func == null)
+            {
+                name = default;
+                return false;
+            }
+
+            return func(this, out name);
+        }
+
+        public string ToStringWithName()
+        {
+            if (TryGetResultName(out string name))
+            {
+                return $"{name} ({ErrorCode})";
+            }
+
+            return ErrorCode;
         }
 
         public override string ToString()

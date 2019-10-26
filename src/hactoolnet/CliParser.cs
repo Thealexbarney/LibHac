@@ -19,6 +19,7 @@ namespace hactoolnet
             new CliOption("titlekeys", 1, (o, a) => o.TitleKeyFile = a[0]),
             new CliOption("consolekeys", 1, (o, a) => o.ConsoleKeyFile = a[0]),
             new CliOption("accesslog", 1, (o, a) => o.AccessLog = a[0]),
+            new CliOption("resultlog", 1, (o, a) => o.ResultLog = a[0]),
             new CliOption("section0", 1, (o, a) => o.SectionOut[0] = a[0]),
             new CliOption("section1", 1, (o, a) => o.SectionOut[1] = a[0]),
             new CliOption("section2", 1, (o, a) => o.SectionOut[2] = a[0]),
