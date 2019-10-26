@@ -52,9 +52,12 @@ namespace hactoolnet
             if (ctx.Options == null) return false;
 
             StreamWriter logWriter = null;
+            StreamWriter resultWriter = null;
 
             try
             {
+                Result.GetResultNameHandler = ResultLogFunctions.TryGetResultName;
+
                 using (var logger = new ProgressBar())
                 {
                     ctx.Logger = logger;
@@ -71,6 +74,15 @@ namespace hactoolnet
                         ctx.Horizon.Fs.SetAccessLogObject(accessLog);
                     }
 
+                    if (ctx.Options.ResultLog != null)
+                    {
+                        resultWriter = new StreamWriter(ctx.Options.ResultLog);
+                        ResultLogFunctions.LogWriter = resultWriter;
+
+                        Result.LogCallback = ResultLogFunctions.LogResult;
+                        Result.ConvertedLogCallback = ResultLogFunctions.LogConvertedResult;
+                    }
+
                     OpenKeyset(ctx);
 
                     if (ctx.Options.RunCustom)
@@ -85,6 +97,9 @@ namespace hactoolnet
             finally
             {
                 logWriter?.Dispose();
+                resultWriter?.Dispose();
+
+                ResultLogFunctions.LogWriter = null;
             }
 
             return true;
