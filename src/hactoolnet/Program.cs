@@ -25,7 +25,7 @@ namespace hactoolnet
 
                 if (ex.ResultValue != ex.InternalResultValue)
                 {
-                    Console.Error.WriteLine($"Internal Code: {ex.InternalResultValue.ErrorCode}");
+                    Console.Error.WriteLine($"Internal Code: {ex.InternalResultValue.ToStringWithName()}");
                 }
 
                 Console.Error.WriteLine();

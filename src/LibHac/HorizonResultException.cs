@@ -82,10 +82,10 @@ namespace LibHac
             {
                 if (!string.IsNullOrWhiteSpace(InnerMessage))
                 {
-                    return $"{ResultValue.ErrorCode}: {InnerMessage}";
+                    return $"{ResultValue.ToStringWithName()}: {InnerMessage}";
                 }
 
-                return ResultValue.ErrorCode;
+                return ResultValue.ToStringWithName();
             }
         }
     }
