@@ -6,6 +6,13 @@ namespace LibHac.Common
     // In order for the Visual Studio debugger to accurately display a struct, every offset
     // in the struct that is used for the debugger display must be part of a field.
     // These padding structs make it easier to accomplish that.
+    [StructLayout(LayoutKind.Sequential, Size = 0x10)]
+    internal struct Padding10
+    {
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly ulong Padding00;
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly ulong Padding08;
+    }
+
     [StructLayout(LayoutKind.Sequential, Size = 0x20)]
     internal struct Padding20
     {
@@ -34,5 +41,12 @@ namespace LibHac.Common
     {
         [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Padding80 Padding00;
         [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Padding80 Padding80;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Size = 0x200)]
+    internal struct Padding200
+    {
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Padding100 Padding000;
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Padding100 Padding100;
     }
 }

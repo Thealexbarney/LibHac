@@ -2,6 +2,7 @@
 {
     public static class ResultRangeFs
     {
+        public static ResultRange InsufficientFreeSpace => new ResultRange(ResultFs.ModuleFs, 30, 45);
         public static ResultRange DataCorrupted => new ResultRange(ResultFs.ModuleFs, 4000, 4999);
         public static ResultRange RomCorrupted => new ResultRange(ResultFs.ModuleFs, 4001, 4299);
         public static ResultRange SaveDataCorrupted => new ResultRange(ResultFs.ModuleFs, 4301, 4499);

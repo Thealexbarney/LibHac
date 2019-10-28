@@ -76,6 +76,36 @@ namespace LibHac.Fs
         [FieldOffset(0x20)] public ulong SaveDataId;
         [FieldOffset(0x28)] public SaveDataType SaveDataType;
         [FieldOffset(0x2A)] public short Index;
+
+        public void SetTitleId(TitleId value)
+        {
+            FilterByTitleId = true;
+            TitleId = value;
+        }
+
+        public void SetSaveDataType(SaveDataType value)
+        {
+            FilterBySaveDataType = true;
+            SaveDataType = value;
+        }
+
+        public void SetUserId(UserId value)
+        {
+            FilterByUserId = true;
+            UserId = value;
+        }
+
+        public void SetSaveDataId(ulong value)
+        {
+            FilterBySaveDataId = true;
+            SaveDataId = value;
+        }
+
+        public void SetIndex(short value)
+        {
+            FilterByIndex = true;
+            Index = value;
+        }
     }
 
     [StructLayout(LayoutKind.Explicit, Size = HashLength)]

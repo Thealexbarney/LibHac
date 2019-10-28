@@ -45,7 +45,7 @@ namespace LibHac.Fs.Shim
                 () => $", applicationid: 0x{titleId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{flags:x8}");
         }
 
-        public static Result CreateSaveData(this FileSystemClient fs, TitleId titleId, UserId userId, TitleId ownerId,
+        public static Result CreateSaveData(this FileSystemClient fs, TitleId applicationId, UserId userId, TitleId ownerId,
             long size, long journalSize, HashSalt hashSalt, uint flags)
         {
             return fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
@@ -55,7 +55,7 @@ namespace LibHac.Fs.Shim
 
                     var attribute = new SaveDataAttribute
                     {
-                        TitleId = titleId,
+                        TitleId = applicationId,
                         UserId = userId,
                         Type = SaveDataType.SaveData
                     };
@@ -78,7 +78,97 @@ namespace LibHac.Fs.Shim
 
                     return fsProxy.CreateSaveDataFileSystemWithHashSalt(ref attribute, ref createInfo, ref metaInfo, ref hashSalt);
                 },
-                () => $", applicationid: 0x{titleId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{flags:x8}");
+                () => $", applicationid: 0x{applicationId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{flags:x8}");
+        }
+
+        public static Result CreateBcatSaveData(this FileSystemClient fs, TitleId applicationId, long size)
+        {
+            return fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
+                () =>
+                {
+                    IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+
+                    var attribute = new SaveDataAttribute
+                    {
+                        TitleId = applicationId,
+                        Type = SaveDataType.BcatDeliveryCacheStorage
+                    };
+
+                    var createInfo = new SaveDataCreateInfo
+                    {
+                        Size = size,
+                        JournalSize = 0x200000,
+                        BlockSize = 0x4000,
+                        OwnerId = SystemTitleIds.Bcat,
+                        Flags = 0,
+                        SpaceId = SaveDataSpaceId.User
+                    };
+
+                    var metaInfo = new SaveMetaCreateInfo();
+
+                    return fsProxy.CreateSaveDataFileSystem(ref attribute, ref createInfo, ref metaInfo);
+                },
+                () => $", applicationid: 0x{applicationId.Value:X}, save_data_size: {size}");
+        }
+
+        public static Result CreateDeviceSaveData(this FileSystemClient fs, TitleId applicationId, TitleId ownerId,
+            long size, long journalSize, uint flags)
+        {
+            return fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
+                () =>
+                {
+                    IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+
+                    var attribute = new SaveDataAttribute
+                    {
+                        TitleId = applicationId,
+                        Type = SaveDataType.DeviceSaveData
+                    };
+
+                    var createInfo = new SaveDataCreateInfo
+                    {
+                        Size = size,
+                        JournalSize = journalSize,
+                        BlockSize = 0x4000,
+                        OwnerId = ownerId,
+                        Flags = flags,
+                        SpaceId = SaveDataSpaceId.User
+                    };
+
+                    var metaInfo = new SaveMetaCreateInfo();
+
+                    return fsProxy.CreateSaveDataFileSystem(ref attribute, ref createInfo, ref metaInfo);
+                },
+                () => $", applicationid: 0x{applicationId.Value:X}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{flags:x8}");
+        }
+
+        public static Result CreateTemporaryStorage(this FileSystemClient fs, TitleId applicationId, TitleId ownerId, long size, uint flags)
+        {
+            return fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
+                () =>
+                {
+                    IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+
+                    var attribute = new SaveDataAttribute
+                    {
+                        TitleId = applicationId,
+                        Type = SaveDataType.TemporaryStorage
+                    };
+
+                    var createInfo = new SaveDataCreateInfo
+                    {
+                        Size = size,
+                        BlockSize = 0x4000,
+                        OwnerId = ownerId,
+                        Flags = flags,
+                        SpaceId = SaveDataSpaceId.TemporaryStorage
+                    };
+
+                    var metaInfo = new SaveMetaCreateInfo();
+
+                    return fsProxy.CreateSaveDataFileSystem(ref attribute, ref createInfo, ref metaInfo);
+                },
+                () => $", applicationid: 0x{applicationId.Value:X}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_flags: 0x{flags:x8}");
         }
 
         public static Result CreateSystemSaveData(this FileSystemClient fs, SaveDataSpaceId spaceId,
