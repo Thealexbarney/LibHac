@@ -5,45 +5,63 @@ using System.Runtime.InteropServices;
 
 namespace LibHac.Common
 {
-    public ref struct BlitStruct<T> where T : unmanaged
+    /// <summary>
+    /// Handles storing a blittable struct or a series of blittable structs in a byte array.
+    /// </summary>
+    /// <typeparam name="T">The element type.</typeparam>
+    public readonly struct BlitStruct<T> where T : unmanaged
     {
-        private readonly Span<T> _buffer;
+        private readonly byte[] _buffer;
 
-        public int Length => _buffer.Length;
+        public int Length => _buffer.Length / Unsafe.SizeOf<T>();
 
-        public ref T Value => ref _buffer[0];
-        public ref T this[int index] => ref _buffer[index];
-
-        public BlitStruct(Span<T> data)
+        /// <summary>
+        /// A reference to the first element in this collection.
+        /// </summary>
+        public ref T Value
         {
-            _buffer = data;
+            get
+            {
+                Debug.Assert(_buffer.Length >= Unsafe.SizeOf<T>());
 
-            Debug.Assert(_buffer.Length != 0);
+                return ref Unsafe.As<byte, T>(ref _buffer[0]);
+            }
         }
 
-        public BlitStruct(Span<byte> data)
+        /// <summary>
+        /// Initializes a new <see cref="BlitStruct{T}"/> that can hold the specified number
+        /// of elements of type <typeparamref name="T"/>.
+        /// </summary>
+        /// <param name="elementCount">The number of elements the <see cref="BlitStruct{T}"/> will be able to store.</param>
+        public BlitStruct(int elementCount)
         {
-            _buffer = MemoryMarshal.Cast<byte, T>(data);
+            if (elementCount <= 0)
+                ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            Debug.Assert(_buffer.Length != 0);
+            _buffer = new byte[QueryByteLength(elementCount)];
         }
 
-        public BlitStruct(ref T data)
-        {
-            _buffer = SpanHelpers.AsSpan(ref data);
-        }
+        /// <summary>
+        /// Returns a <see cref="Span"/> view of the elements in the current <see cref="BlitStruct{T}"/> as type <typeparamref name="T"/>.
+        /// </summary>
+        public Span<T> Span => MemoryMarshal.Cast<byte, T>(_buffer);
 
-        public Span<byte> GetByteSpan()
-        {
-            return MemoryMarshal.Cast<T, byte>(_buffer);
-        }
+        /// <summary>
+        /// Returns a <see cref="Span"/> view of the elements in the current <see cref="BlitStruct{T}"/> as <see cref="byte"/>s.
+        /// </summary>
+        public Span<byte> ByteSpan => _buffer;
 
-        public Span<byte> GetByteSpan(int elementIndex)
-        {
-            Span<T> element = _buffer.Slice(elementIndex, 1);
-            return MemoryMarshal.Cast<T, byte>(element);
-        }
+        /// <summary>
+        /// Creates a <see cref="BlitSpan{T}"/> from the current <see cref="BlitStruct{T}"/>.
+        /// </summary>
+        public BlitSpan<T> BlitSpan => new BlitSpan<T>(_buffer);
 
+        /// <summary>
+        /// Calculates the length of memory in bytes that would be needed to store <paramref name="elementCount"/>
+        /// elements of type <typeparamref name="T"/>.
+        /// </summary>
+        /// <param name="elementCount">The number of elements.</param>
+        /// <returns>The number of bytes required.</returns>
         public static int QueryByteLength(int elementCount)
         {
             return Unsafe.SizeOf<T>() * elementCount;
