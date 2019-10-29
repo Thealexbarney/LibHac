@@ -14,5 +14,10 @@ namespace LibHac
 
         public static void ThrowResult(Result result, string message, Exception innerException) =>
             throw new HorizonResultException(result, message, innerException);
+
+        internal static void ThrowArgumentOutOfRangeException()
+        {
+            throw new ArgumentOutOfRangeException();
+        }
     }
 }
