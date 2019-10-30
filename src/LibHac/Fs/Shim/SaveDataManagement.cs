@@ -9,7 +9,7 @@ namespace LibHac.Fs.Shim
 {
     public static class SaveDataManagement
     {
-        public static Result CreateSaveData(this FileSystemClient fs, TitleId titleId, UserId userId, TitleId ownerId,
+        public static Result CreateSaveData(this FileSystemClient fs, TitleId applicationId, UserId userId, TitleId ownerId,
             long size, long journalSize, uint flags)
         {
             return fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
@@ -19,7 +19,7 @@ namespace LibHac.Fs.Shim
 
                     var attribute = new SaveDataAttribute
                     {
-                        TitleId = titleId,
+                        TitleId = applicationId,
                         UserId = userId,
                         Type = SaveDataType.SaveData
                     };
@@ -42,7 +42,7 @@ namespace LibHac.Fs.Shim
 
                     return fsProxy.CreateSaveDataFileSystem(ref attribute, ref createInfo, ref metaInfo);
                 },
-                () => $", applicationid: 0x{titleId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{flags:x8}");
+                () => $", applicationid: 0x{applicationId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{flags:x8}");
         }
 
         public static Result CreateSaveData(this FileSystemClient fs, TitleId applicationId, UserId userId, TitleId ownerId,

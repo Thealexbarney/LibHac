@@ -79,7 +79,7 @@ namespace LibHac.Ns
         [FieldOffset(0x3000), DebuggerBrowsable(DebuggerBrowsableState.Never)] private Padding200 _padding1;
         [FieldOffset(0x3200), DebuggerBrowsable(DebuggerBrowsableState.Never)] private Padding100 _padding2;
 
-        public Span<ApplicationControlTitle> GetTitles() => SpanHelpers.CreateSpan(ref Unsafe.As<byte, ApplicationControlTitle>(ref _titles), TitleCount);
+        public Span<ApplicationControlTitle> Titles => SpanHelpers.CreateSpan(ref Unsafe.As<byte, ApplicationControlTitle>(ref _titles), TitleCount);
         public U8SpanMutable Isbn => new U8SpanMutable(SpanHelpers.CreateSpan(ref _isbn, IsbnSize));
         public Span<sbyte> RatingAge => SpanHelpers.CreateSpan(ref _ratingAge, RatingAgeCount);
         public U8SpanMutable DisplayVersion => new U8SpanMutable(SpanHelpers.CreateSpan(ref _displayVersion, DisplayVersionSize));

@@ -78,7 +78,7 @@ namespace LibHac.Common
         }
 
         /// <summary>
-        /// Returns a view of the element at index <see cref="elementIndex"/> as a <see cref="Span{T}"/> of bytes.
+        /// Returns a view of the element at index <paramref name="elementIndex"/> as a <see cref="Span{T}"/> of bytes.
         /// </summary>
         /// <param name="elementIndex">The zero-based index of the element.</param>
         /// <returns>A byte span representation of the element.</returns>
