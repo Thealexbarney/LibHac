@@ -6,10 +6,6 @@ namespace LibHac.Fs.Shim
 {
     public static class ContentStorage
     {
-        private static readonly U8String ContentStorageMountNameSystem = new U8String("@SystemContent");
-        private static readonly U8String ContentStorageMountNameUser = new U8String("@UserContent");
-        private static readonly U8String ContentStorageMountNameSdCard = new U8String("@SdCardContent");
-
         public static Result MountContentStorage(this FileSystemClient fs, ContentStorageId storageId)
         {
             return MountContentStorage(fs, GetContentStorageMountName(storageId), storageId);
@@ -35,11 +31,11 @@ namespace LibHac.Fs.Shim
             switch (storageId)
             {
                 case ContentStorageId.System:
-                    return ContentStorageMountNameSystem;
+                    return CommonMountNames.SystemContentMountName;
                 case ContentStorageId.User:
-                    return ContentStorageMountNameUser;
+                    return CommonMountNames.UserContentMountName;
                 case ContentStorageId.SdCard:
-                    return ContentStorageMountNameSdCard;
+                    return CommonMountNames.SdCardContentMountName;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(storageId), storageId, null);
             }
