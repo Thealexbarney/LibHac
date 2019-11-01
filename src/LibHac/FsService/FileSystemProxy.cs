@@ -38,12 +38,12 @@ namespace LibHac.FsService
             AutoCreateSaveData = true;
         }
 
-        public Result OpenFileSystemWithId(out IFileSystem fileSystem, ref FsPath path, TitleId titleId, FileSystemType type)
+        public Result OpenFileSystemWithId(out IFileSystem fileSystem, ref FsPath path, TitleId titleId, FileSystemProxyType type)
         {
             throw new NotImplementedException();
         }
 
-        public Result OpenFileSystemWithPatch(out IFileSystem fileSystem, TitleId titleId, FileSystemType type)
+        public Result OpenFileSystemWithPatch(out IFileSystem fileSystem, TitleId titleId, FileSystemProxyType type)
         {
             throw new NotImplementedException();
         }

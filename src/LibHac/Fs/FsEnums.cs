@@ -63,7 +63,16 @@ namespace LibHac.Fs
         SdCard = 1
     }
 
-    public enum FileSystemType
+    public enum ContentType
+    {
+        Meta = 0,
+        Control = 1,
+        Manual = 2,
+        Logo = 3,
+        Data = 4,
+    }
+
+    public enum FileSystemProxyType
     {
         Code = 0,
         Data = 1,
