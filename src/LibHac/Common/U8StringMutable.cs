@@ -28,6 +28,16 @@ namespace LibHac.Common
             _buffer = Encoding.UTF8.GetBytes(value);
         }
 
+        public U8StringMutable Slice(int start)
+        {
+            return new U8StringMutable(_buffer.AsSpan(start).ToArray());
+        }
+
+        public U8StringMutable Slice(int start, int length)
+        {
+            return new U8StringMutable(_buffer.AsSpan(start, length).ToArray());
+        }
+
         public static implicit operator U8String(U8StringMutable value) => new U8String(value._buffer);
         public static implicit operator U8SpanMutable(U8StringMutable value) => new U8SpanMutable(value._buffer);
         public static implicit operator U8Span(U8StringMutable value) => new U8Span(value._buffer);
