@@ -11,8 +11,8 @@ namespace LibHac.FsService
     {
         Result SetCurrentProcess(long processId);
         Result OpenDataFileSystemByCurrentProcess(out IFileSystem fileSystem);
-        Result OpenFileSystemWithPatch(out IFileSystem fileSystem, TitleId titleId, FileSystemType type);
-        Result OpenFileSystemWithId(out IFileSystem fileSystem, ref FsPath path, TitleId titleId, FileSystemType type);
+        Result OpenFileSystemWithPatch(out IFileSystem fileSystem, TitleId titleId, FileSystemProxyType type);
+        Result OpenFileSystemWithId(out IFileSystem fileSystem, ref FsPath path, TitleId titleId, FileSystemProxyType type);
         Result OpenDataFileSystemByProgramId(out IFileSystem fileSystem, TitleId titleId);
         Result OpenBisFileSystem(out IFileSystem fileSystem, ref FsPath rootPath, BisPartitionId partitionId);
         Result OpenBisStorage(out IStorage storage, BisPartitionId partitionId);

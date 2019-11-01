@@ -162,11 +162,11 @@ namespace LibHac
 
                         switch (content.Type)
                         {
-                            case ContentType.Program:
-                            case ContentType.Data:
+                            case Ncm.ContentType.Program:
+                            case Ncm.ContentType.Data:
                                 title.MainNca = contentNca;
                                 break;
-                            case ContentType.Control:
+                            case Ncm.ContentType.Control:
                                 title.ControlNca = contentNca;
                                 break;
                         }
