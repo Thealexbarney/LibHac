@@ -68,15 +68,15 @@ namespace LibHac.Fs.Shim
 
             public Result GenerateCommonMountName(Span<byte> nameBuffer)
             {
-                char letter = GetPartitionMountLetter(PartitionId);
+                char letter = GetGameCardMountNameSuffix(PartitionId);
 
-                string mountName = $"@Gc{letter}{Handle.Value:x8}";
+                string mountName = $"{CommonMountNames.GameCardMountName}{letter}{Handle.Value:x8}";
                 new U8Span(mountName).Value.CopyTo(nameBuffer);
 
                 return Result.Success;
             }
 
-            private static char GetPartitionMountLetter(GameCardPartition partition)
+            private static char GetGameCardMountNameSuffix(GameCardPartition partition)
             {
                 switch (partition)
                 {
