@@ -34,7 +34,17 @@ namespace LibHac.FsService
 
         public Result OpenFileSystemWithId(out IFileSystem fileSystem, ref FsPath path, TitleId titleId, FileSystemProxyType type)
         {
-            throw new NotImplementedException();
+            fileSystem = default;
+
+            // Missing permission check, speed emulation storage type wrapper, and FileSystemInterfaceAdapter
+
+            bool canMountSystemDataPrivate = false;
+
+            Result rc = PathTools.Normalize(out U8Span normalizedPath, path);
+            if (rc.IsFailure()) return rc;
+
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+            return FsProxyCore.OpenFileSystem(out fileSystem, normalizedPath, type, canMountSystemDataPrivate, titleId);
         }
 
         public Result OpenFileSystemWithPatch(out IFileSystem fileSystem, TitleId titleId, FileSystemProxyType type)

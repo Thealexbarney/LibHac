@@ -4,6 +4,7 @@ using LibHac.Fs;
 using LibHac.Fs.Shim;
 using LibHac.FsSystem;
 using LibHac.FsService.Creators;
+using LibHac.Ncm;
 using LibHac.Spl;
 using RightsId = LibHac.Fs.RightsId;
 
@@ -22,12 +23,172 @@ namespace LibHac.FsService
 
         private GlobalAccessLogMode LogMode { get; set; }
         public bool IsSdCardAccessible { get; set; }
-        
+
         public FileSystemProxyCore(FileSystemCreators fsCreators, ExternalKeySet externalKeys, IDeviceOperator deviceOperator)
         {
             FsCreators = fsCreators;
             ExternalKeys = externalKeys ?? new ExternalKeySet();
             DeviceOperator = deviceOperator;
+        }
+
+        public Result OpenFileSystem(out IFileSystem fileSystem, U8Span path, FileSystemProxyType type,
+            bool canMountSystemDataPrivate, TitleId titleId)
+        {
+            fileSystem = default;
+
+            U8Span path2 = path;
+
+            Result rc = OpenFileSystemFromMountName(ref path2, out IFileSystem baseFileSystem, out bool successQQ,
+                out MountNameInfo mountNameInfo);
+            if (rc.IsFailure()) return rc;
+
+            if (!successQQ)
+                return ResultFs.InvalidArgument.Log();
+
+            if (type == FileSystemProxyType.Logo && mountNameInfo.IsGameCard)
+            {
+                rc = OpenGameCardFileSystem(out fileSystem, new GameCardHandle(mountNameInfo.GcHandle),
+                    GameCardPartition.Logo);
+
+                if (rc.IsSuccess())
+                    return Result.Success;
+
+                if (!ResultFs.PartitionNotFound.Includes(rc))
+                    return rc;
+            }
+
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Stores info obtained by parsing a common mount name.
+        /// </summary>
+        private struct MountNameInfo
+        {
+            public bool IsGameCard;
+            public int GcHandle;
+            public bool IsHostFs;
+            public bool Field9;
+        }
+
+        private Result OpenFileSystemFromMountName(ref U8Span path, out IFileSystem fileSystem, out bool successQQ,
+            out MountNameInfo info)
+        {
+            fileSystem = default;
+
+            info = new MountNameInfo();
+            successQQ = true;
+
+            if (StringUtils.Compare(path, CommonMountNames.GameCardFileSystemMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.GameCardFileSystemMountName.Length);
+
+                info.IsGameCard = true;
+                info.Field9 = true;
+
+                throw new NotImplementedException();
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.ContentStorageSystemMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.ContentStorageSystemMountName.Length);
+
+                Result rc = OpenContentStorageFileSystem(out fileSystem, ContentStorageId.System);
+                if (rc.IsFailure()) return rc;
+
+                info.Field9 = true;
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.ContentStorageUserMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.ContentStorageUserMountName.Length);
+
+                Result rc = OpenContentStorageFileSystem(out fileSystem, ContentStorageId.User);
+                if (rc.IsFailure()) return rc;
+
+                info.Field9 = true;
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.ContentStorageSdCardMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.ContentStorageSdCardMountName.Length);
+
+                Result rc = OpenContentStorageFileSystem(out fileSystem, ContentStorageId.SdCard);
+                if (rc.IsFailure()) return rc;
+
+                info.Field9 = true;
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.BisCalibrationFilePartitionMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.BisCalibrationFilePartitionMountName.Length);
+
+                Result rc = OpenBisFileSystem(out fileSystem, string.Empty, BisPartitionId.CalibrationFile);
+                if (rc.IsFailure()) return rc;
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.BisSafeModePartitionMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.BisSafeModePartitionMountName.Length);
+
+                Result rc = OpenBisFileSystem(out fileSystem, string.Empty, BisPartitionId.SafeMode);
+                if (rc.IsFailure()) return rc;
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.BisUserPartitionMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.BisUserPartitionMountName.Length);
+
+                Result rc = OpenBisFileSystem(out fileSystem, string.Empty, BisPartitionId.User);
+                if (rc.IsFailure()) return rc;
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.BisSystemPartitionMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.BisSystemPartitionMountName.Length);
+
+                Result rc = OpenBisFileSystem(out fileSystem, string.Empty, BisPartitionId.System);
+                if (rc.IsFailure()) return rc;
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.SdCardFileSystemMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.SdCardFileSystemMountName.Length);
+
+                Result rc = OpenSdCardFileSystem(out fileSystem);
+                if (rc.IsFailure()) return rc;
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.HostRootFileSystemMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.HostRootFileSystemMountName.Length);
+
+                info.IsHostFs = true;
+                info.Field9 = true;
+
+                throw new NotImplementedException();
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.RegisteredUpdatePartitionMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.RegisteredUpdatePartitionMountName.Length);
+
+                info.Field9 = true;
+
+                throw new NotImplementedException();
+            }
+
+            else
+            {
+                return ResultFs.PathNotFound.Log();
+            }
+
+            if (StringUtils.GetLength(path, FsPath.MaxLength) == 0)
+            {
+                successQQ = false;
+            }
+
+            return Result.Success;
         }
 
         public Result OpenBisFileSystem(out IFileSystem fileSystem, string rootPath, BisPartitionId partitionId)
