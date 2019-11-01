@@ -73,7 +73,7 @@ namespace LibHac.Fs
 
         public Result FlushFile(FileHandle handle)
         {
-            return RunOperationWithAccessLog(LocalAccessLogMode.All, handle,
+            return RunOperationWithAccessLog(AccessLogTarget.All, handle,
                 () => handle.File.Flush(),
                 () => string.Empty);
         }
@@ -85,7 +85,7 @@ namespace LibHac.Fs
 
         public Result SetFileSize(FileHandle handle, long size)
         {
-            return RunOperationWithAccessLog(LocalAccessLogMode.All, handle,
+            return RunOperationWithAccessLog(AccessLogTarget.All, handle,
                 () => handle.File.SetSize(size),
                 () => $", size: {size}");
         }
@@ -97,7 +97,7 @@ namespace LibHac.Fs
 
         public void CloseFile(FileHandle handle)
         {
-            RunOperationWithAccessLog(LocalAccessLogMode.All, handle,
+            RunOperationWithAccessLog(AccessLogTarget.All, handle,
                 () =>
                 {
                     handle.File.Dispose();

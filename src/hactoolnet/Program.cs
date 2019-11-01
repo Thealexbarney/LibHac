@@ -68,7 +68,7 @@ namespace hactoolnet
                         logWriter = new StreamWriter(ctx.Options.AccessLog);
                         var accessLog = new TextWriterAccessLog(logWriter);
 
-                        ctx.Horizon.Fs.SetLocalAccessLogMode(LocalAccessLogMode.All);
+                        ctx.Horizon.Fs.SetAccessLogTarget(AccessLogTarget.All);
                         ctx.Horizon.Fs.SetGlobalAccessLogMode(GlobalAccessLogMode.Log);
 
                         ctx.Horizon.Fs.SetAccessLogObject(accessLog);
