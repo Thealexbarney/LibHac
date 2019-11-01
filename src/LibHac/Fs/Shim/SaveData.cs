@@ -12,7 +12,7 @@ namespace LibHac.Fs.Shim
         {
             Result rc;
 
-            if (fs.IsEnabledAccessLog(LocalAccessLogMode.Application))
+            if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
             {
                 TimeSpan startTime = fs.Time.GetCurrent();
                 rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, titleId, userId, SaveDataType.SaveData, false, 0);
@@ -25,7 +25,7 @@ namespace LibHac.Fs.Shim
                 rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, titleId, userId, SaveDataType.SaveData, false, 0);
             }
 
-            if (rc.IsSuccess() && fs.IsEnabledAccessLog(LocalAccessLogMode.Application))
+            if (rc.IsSuccess() && fs.IsEnabledAccessLog(AccessLogTarget.Application))
             {
                 fs.EnableFileSystemAccessorAccessLog(mountName);
             }
@@ -37,7 +37,7 @@ namespace LibHac.Fs.Shim
         {
             Result rc;
 
-            if (fs.IsEnabledAccessLog(LocalAccessLogMode.Application))
+            if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
             {
                 TimeSpan startTime = fs.Time.GetCurrent();
                 rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, titleId, userId, SaveDataType.SaveData, true, 0);
@@ -50,7 +50,7 @@ namespace LibHac.Fs.Shim
                 rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, titleId, userId, SaveDataType.SaveData, false, 0);
             }
 
-            if (rc.IsSuccess() && fs.IsEnabledAccessLog(LocalAccessLogMode.Application))
+            if (rc.IsSuccess() && fs.IsEnabledAccessLog(AccessLogTarget.Application))
             {
                 fs.EnableFileSystemAccessorAccessLog(mountName);
             }

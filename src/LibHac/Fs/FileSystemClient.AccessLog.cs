@@ -9,7 +9,7 @@ namespace LibHac.Fs
     public partial class FileSystemClient
     {
         private GlobalAccessLogMode GlobalAccessLogMode { get; set; }
-        private LocalAccessLogMode LocalAccessLogMode { get; set; }
+        private AccessLogTarget AccessLogTarget { get; set; }
         private bool AccessLogInitialized { get; set; }
 
         private readonly object _accessLogInitLocker = new object();
@@ -40,9 +40,9 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        public void SetLocalAccessLogMode(LocalAccessLogMode mode)
+        public void SetAccessLogTarget(AccessLogTarget target)
         {
-            LocalAccessLogMode = mode;
+            AccessLogTarget = target;
         }
 
         public void SetAccessLogObject(IAccessLog accessLog)
@@ -50,9 +50,9 @@ namespace LibHac.Fs
             AccessLog = accessLog;
         }
 
-        internal bool IsEnabledAccessLog(LocalAccessLogMode mode)
+        internal bool IsEnabledAccessLog(AccessLogTarget target)
         {
-            if ((LocalAccessLogMode & mode) == 0)
+            if ((AccessLogTarget & target) == 0)
             {
                 return false;
             }
@@ -102,7 +102,7 @@ namespace LibHac.Fs
 
         internal bool IsEnabledAccessLog()
         {
-            return IsEnabledAccessLog(LocalAccessLogMode.All);
+            return IsEnabledAccessLog(AccessLogTarget.All);
         }
 
         internal bool IsEnabledFileSystemAccessorAccessLog(string mountName)
@@ -167,12 +167,12 @@ namespace LibHac.Fs
             }
         }
 
-        public Result RunOperationWithAccessLog(LocalAccessLogMode logType, Func<Result> operation,
+        public Result RunOperationWithAccessLog(AccessLogTarget logTarget, Func<Result> operation,
             Func<string> textGenerator, [CallerMemberName] string caller = "")
         {
             Result rc;
 
-            if (IsEnabledAccessLog(logType))
+            if (IsEnabledAccessLog(logTarget))
             {
                 TimeSpan startTime = Time.GetCurrent();
                 rc = operation();
@@ -188,12 +188,12 @@ namespace LibHac.Fs
             return rc;
         }
 
-        public Result RunOperationWithAccessLog(LocalAccessLogMode logType, FileHandle handle, Func<Result> operation,
+        public Result RunOperationWithAccessLog(AccessLogTarget logTarget, FileHandle handle, Func<Result> operation,
             Func<string> textGenerator, [CallerMemberName] string caller = "")
         {
             Result rc;
 
-            if (IsEnabledAccessLog(logType) && handle.File.Parent.IsAccessLogEnabled)
+            if (IsEnabledAccessLog(logTarget) && handle.File.Parent.IsAccessLogEnabled)
             {
                 TimeSpan startTime = Time.GetCurrent();
                 rc = operation();
@@ -211,7 +211,7 @@ namespace LibHac.Fs
     }
 
     [Flags]
-    public enum LocalAccessLogMode
+    public enum AccessLogTarget
     {
         None = 0,
         Application = 1 << 0,
