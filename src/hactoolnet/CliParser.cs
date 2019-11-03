@@ -7,7 +7,7 @@ namespace hactoolnet
 {
     internal static class CliParser
     {
-        private static readonly CliOption[] CliOptions =
+        private static CliOption[] GetCliOptions() => new[]
         {
             new CliOption("custom", 0, (o, a) => o.RunCustom = true),
             new CliOption("intype", 't', 1, (o, a) => o.InFileType = ParseFileType(a[0])),
@@ -73,6 +73,8 @@ namespace hactoolnet
             var options = new Options();
             bool inputSpecified = false;
 
+            CliOption[] cliOptions = GetCliOptions();
+
             for (int i = 0; i < args.Length; i++)
             {
                 string arg;
@@ -98,7 +100,7 @@ namespace hactoolnet
                     continue;
                 }
 
-                CliOption option = CliOptions.FirstOrDefault(x => x.Long == arg || x.Short == arg);
+                CliOption option = cliOptions.FirstOrDefault(x => x.Long == arg || x.Short == arg);
                 if (option == null)
                 {
                     PrintWithUsage($"Unknown option {args[i]}");
@@ -260,6 +262,7 @@ namespace hactoolnet
                 ArgsNeeded = argsNeeded;
                 Assigner = assigner;
             }
+
             public CliOption(string longName, int argsNeeded, Action<Options, string[]> assigner)
             {
                 Long = longName;
