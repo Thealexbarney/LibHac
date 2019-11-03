@@ -491,26 +491,15 @@ namespace LibHac
     public static class ExternalKeyReader
     {
         private const int TitleKeySize = 0x10;
-
-        public static readonly Dictionary<string, KeyValue> CommonKeyDict;
-        public static readonly Dictionary<string, KeyValue> UniqueKeyDict;
-        public static readonly Dictionary<string, KeyValue> AllKeyDict;
-
-        static ExternalKeyReader()
-        {
-            List<KeyValue> commonKeys = CreateCommonKeyList();
-            List<KeyValue> uniqueKeys = CreateUniqueKeyList();
-
-            CommonKeyDict = commonKeys.ToDictionary(k => k.Name, k => k);
-            UniqueKeyDict = uniqueKeys.ToDictionary(k => k.Name, k => k);
-            AllKeyDict = uniqueKeys.Concat(commonKeys).ToDictionary(k => k.Name, k => k);
-        }
-
+        
         public static void ReadKeyFile(Keyset keyset, string filename, string titleKeysFilename = null, string consoleKeysFilename = null, IProgressReport logger = null)
         {
-            if (filename != null) ReadMainKeys(keyset, filename, AllKeyDict, logger);
-            if (consoleKeysFilename != null) ReadMainKeys(keyset, consoleKeysFilename, AllKeyDict, logger);
+            Dictionary<string, KeyValue> keyDictionary = CreateFullKeyDictionary();
+
+            if (filename != null) ReadMainKeys(keyset, filename, keyDictionary, logger);
+            if (consoleKeysFilename != null) ReadMainKeys(keyset, consoleKeysFilename, keyDictionary, logger);
             if (titleKeysFilename != null) ReadTitleKeys(keyset, titleKeysFilename, logger);
+
             keyset.ExternalKeySet.TrimExcess();
             keyset.DeriveKeys(logger);
         }
@@ -526,13 +515,15 @@ namespace LibHac
 
         public static void LoadConsoleKeys(this Keyset keyset, string filename, IProgressReport logger = null)
         {
-            foreach (KeyValue key in UniqueKeyDict.Values)
+            Dictionary<string, KeyValue> uniqueKeyDictionary = CreateUniqueKeyDictionary();
+
+            foreach (KeyValue key in uniqueKeyDictionary.Values)
             {
                 byte[] keyBytes = key.GetKey(keyset);
                 Array.Clear(keyBytes, 0, keyBytes.Length);
             }
 
-            ReadMainKeys(keyset, filename, UniqueKeyDict, logger);
+            ReadMainKeys(keyset, filename, uniqueKeyDictionary, logger);
             keyset.DeriveKeys();
         }
 
@@ -650,17 +641,17 @@ namespace LibHac
 
         public static string PrintCommonKeys(Keyset keyset)
         {
-            return PrintKeys(keyset, CommonKeyDict);
+            return PrintKeys(keyset, CreateCommonKeyDictionary());
         }
 
         public static string PrintUniqueKeys(Keyset keyset)
         {
-            return PrintKeys(keyset, UniqueKeyDict);
+            return PrintKeys(keyset, CreateUniqueKeyDictionary());
         }
 
         public static string PrintAllKeys(Keyset keyset)
         {
-            return PrintKeys(keyset, AllKeyDict);
+            return PrintKeys(keyset, CreateFullKeyDictionary());
         }
 
         public static string PrintTitleKeys(Keyset keyset)
@@ -674,6 +665,24 @@ namespace LibHac
             }
 
             return sb.ToString();
+        }
+
+        public static Dictionary<string, KeyValue> CreateCommonKeyDictionary()
+        {
+            return CreateCommonKeyList().ToDictionary(k => k.Name, k => k);
+        }
+
+        public static Dictionary<string, KeyValue> CreateUniqueKeyDictionary()
+        {
+            return CreateUniqueKeyList().ToDictionary(k => k.Name, k => k);
+        }
+
+        public static Dictionary<string, KeyValue> CreateFullKeyDictionary()
+        {
+            List<KeyValue> commonKeys = CreateCommonKeyList();
+            List<KeyValue> uniqueKeys = CreateUniqueKeyList();
+
+            return uniqueKeys.Concat(commonKeys).ToDictionary(k => k.Name, k => k);
         }
 
         private static List<KeyValue> CreateCommonKeyList()
