@@ -109,6 +109,7 @@
         public static Result SubStorageNotResizable => new Result(ModuleFs, 6302);
         public static Result SubStorageNotResizableMiddleOfFile => new Result(ModuleFs, 6303);
         public static Result UnsupportedOperationInMemoryStorageSetSize => new Result(ModuleFs, 6304);
+        public static Result UnsupportedOperationInFileStorageOperateRange => new Result(ModuleFs, 6306);
         public static Result UnsupportedOperationInAesCtrExStorageWrite => new Result(ModuleFs, 6310);
         public static Result UnsupportedOperationInHierarchicalIvfcStorageSetSize => new Result(ModuleFs, 6316);
         public static Result UnsupportedOperationInIndirectStorageWrite => new Result(ModuleFs, 6324);
