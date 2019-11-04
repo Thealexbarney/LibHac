@@ -4,6 +4,7 @@ using LibHac.Fs;
 using LibHac.Fs.Shim;
 using LibHac.FsSystem;
 using LibHac.FsService.Creators;
+using LibHac.FsSystem.NcaUtils;
 using LibHac.Ncm;
 using LibHac.Spl;
 using RightsId = LibHac.Fs.RightsId;
@@ -36,7 +37,8 @@ namespace LibHac.FsService
         {
             fileSystem = default;
 
-            U8Span path2 = path;
+            // Get a reference to the path that will be advanced as each part of the path is parsed
+            U8Span path2 = path.Slice(0, StringUtils.GetLength(path));
 
             Result rc = OpenFileSystemFromMountName(ref path2, out IFileSystem baseFileSystem, out bool successQQ,
                 out MountNameInfo mountNameInfo);
@@ -56,6 +58,44 @@ namespace LibHac.FsService
                 if (!ResultFs.PartitionNotFound.Includes(rc))
                     return rc;
             }
+
+            rc = IsContentPathDir(ref path2, out bool isDirectory);
+            if (rc.IsFailure()) return rc;
+
+            if (isDirectory)
+            {
+                throw new NotImplementedException();
+            }
+
+            rc = TryOpenNsp(ref path2, out IFileSystem nspFileSystem, baseFileSystem);
+
+            if (rc.IsSuccess())
+            {
+                if (path2.Length == 0 || path[0] == 0)
+                {
+                    if (type == FileSystemProxyType.Package)
+                    {
+                        fileSystem = nspFileSystem;
+                        return Result.Success;
+                    }
+
+                    return ResultFs.InvalidArgument.Log();
+                }
+
+                baseFileSystem = nspFileSystem;
+            }
+
+            if (!mountNameInfo.Field9)
+            {
+                return ResultFs.InvalidNcaMountPoint.Log();
+            }
+
+            TitleId openTitleId = mountNameInfo.IsHostFs ? new TitleId(ulong.MaxValue) : titleId;
+
+            rc = TryOpenNca(ref path2, out Nca nca, baseFileSystem, openTitleId);
+            if (rc.IsFailure()) return rc;
+
+
 
             throw new NotImplementedException();
         }
@@ -189,6 +229,55 @@ namespace LibHac.FsService
             }
 
             return Result.Success;
+        }
+
+        private Result IsContentPathDir(ref U8Span path, out bool isDirectory)
+        {
+            isDirectory = default;
+
+            ReadOnlySpan<byte> mountSeparator = new[] { (byte)':', (byte)'/' };
+
+            if (StringUtils.Compare(mountSeparator, path, mountSeparator.Length) != 0)
+            {
+                return ResultFs.PathNotFound.Log();
+            }
+
+            path = path.Slice(1);
+            int pathLen = StringUtils.GetLength(path);
+
+            if (path[pathLen - 1] == '/')
+            {
+                isDirectory = true;
+                return Result.Success;
+            }
+
+            // Now make sure the path has a content file extension
+            if (pathLen < 5)
+                return ResultFs.PathNotFound.Log();
+
+            ReadOnlySpan<byte> fileExtension = path.Value.Slice(pathLen - 4);
+
+            ReadOnlySpan<byte> ncaExtension = new[] { (byte)'.', (byte)'n', (byte)'c', (byte)'a' };
+            ReadOnlySpan<byte> nspExtension = new[] { (byte)'.', (byte)'n', (byte)'s', (byte)'p' };
+
+            if (StringUtils.CompareCaseInsensitive(fileExtension, ncaExtension) == 0 ||
+                StringUtils.CompareCaseInsensitive(fileExtension, nspExtension) == 0)
+            {
+                isDirectory = false;
+                return Result.Success;
+            }
+
+            return ResultFs.PathNotFound.Log();
+        }
+
+        private Result TryOpenNsp(ref U8Span path, out IFileSystem outFileSystem, IFileSystem baseFileSystem)
+        {
+            throw new NotImplementedException();
+        }
+
+        private Result TryOpenNca(ref U8Span path, out Nca nca, IFileSystem baseFileSystem, TitleId titleId)
+        {
+            throw new NotImplementedException();
         }
 
         public Result OpenBisFileSystem(out IFileSystem fileSystem, string rootPath, BisPartitionId partitionId)
