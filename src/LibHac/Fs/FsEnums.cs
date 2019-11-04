@@ -122,7 +122,8 @@ namespace LibHac.Fs
         Read = 1,
         Write = 2,
         AllowAppend = 4,
-        ReadWrite = Read | Write
+        ReadWrite = Read | Write,
+        All = Read | Write | AllowAppend
     }
 
     [Flags]

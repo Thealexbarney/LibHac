@@ -45,6 +45,30 @@ namespace LibHac.Common
             return i;
         }
 
+        public static int Compare(ReadOnlySpan<byte> s1, ReadOnlySpan<byte> s2)
+        {
+            int maxLen = Math.Min(s1.Length, s2.Length);
+
+            return Compare(s1, s2, maxLen);
+        }
+
+        public static int Compare(ReadOnlySpan<byte> s1, ReadOnlySpan<byte> s2, int maxLen)
+        {
+            for (int i = 0; i < maxLen; i++)
+            {
+                byte c1 = s1[i];
+                byte c2 = s2[i];
+
+                if (c1 != c2)
+                    return c1 - c2;
+
+                if (c1 == 0)
+                    return 0;
+            }
+
+            return 0;
+        }
+
         /// <summary>
         /// Concatenates 2 byte strings.
         /// </summary>

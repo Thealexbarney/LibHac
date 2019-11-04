@@ -95,6 +95,18 @@ namespace LibHac.Fs
                 return ResultFs.PreconditionViolation.Log();
             }
 
+            if (path == null)
+            {
+                directory = default;
+                return ResultFs.NullArgument.Log();
+            }
+
+            if ((mode & ~OpenDirectoryMode.All) != 0 || (mode & OpenDirectoryMode.All) == 0)
+            {
+                directory = default;
+                return ResultFs.InvalidArgument.Log();
+            }
+
             return OpenDirectoryImpl(out directory, path, mode);
         }
 
@@ -104,6 +116,18 @@ namespace LibHac.Fs
             {
                 file = default;
                 return ResultFs.PreconditionViolation.Log();
+            }
+
+            if (path == null)
+            {
+                file = default;
+                return ResultFs.NullArgument.Log();
+            }
+
+            if ((mode & ~OpenMode.All) != 0 || (mode & OpenMode.ReadWrite) == 0)
+            {
+                file = default;
+                return ResultFs.InvalidArgument.Log();
             }
 
             return OpenFileImpl(out file, path, mode);
