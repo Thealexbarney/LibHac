@@ -16,6 +16,10 @@ namespace LibHac.FsService
 
             var gcStorageCreator = new EmulatedGameCardStorageCreator(gameCard);
 
+            creators.RomFileSystemCreator = new RomFileSystemCreator();
+            creators.PartitionFileSystemCreator = new PartitionFileSystemCreator();
+            creators.StorageOnNcaCreator = new StorageOnNcaCreator();
+            creators.TargetManagerFileSystemCreator = new TargetManagerFileSystemCreator();
             creators.SubDirectoryFileSystemCreator = new SubDirectoryFileSystemCreator();
             creators.SaveDataFileSystemCreator = new SaveDataFileSystemCreator(keyset);
             creators.GameCardStorageCreator = gcStorageCreator;

@@ -43,7 +43,7 @@ namespace LibHac.Common
 
         public override string ToString()
         {
-            return StringUtils.Utf8ToString(_buffer);
+            return StringUtils.Utf8ZToString(_buffer);
         }
 
         public bool IsNull() => _buffer == null;
