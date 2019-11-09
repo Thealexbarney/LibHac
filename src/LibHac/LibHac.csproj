@@ -31,7 +31,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.0' ">
-    <DefineConstants>$(DefineConstants);STREAM_SPAN;STRING_SPAN;HAS_FILE_SYSTEM_NAME;CROSS_PLATFORM</DefineConstants>
+    <DefineConstants>$(DefineConstants);STREAM_SPAN;STRING_SPAN;HAS_FILE_SYSTEM_NAME;CROSS_PLATFORM;HAS_INTRINSICS</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
