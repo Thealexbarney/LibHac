@@ -21,6 +21,11 @@ namespace LibHac.FsSystem
 
             if (!Directory.Exists(BasePath))
             {
+                if (File.Exists(BasePath))
+                {
+                    throw new DirectoryNotFoundException($"The specified path is a file. ({basePath})");
+                }
+
                 Directory.CreateDirectory(BasePath);
             }
         }
