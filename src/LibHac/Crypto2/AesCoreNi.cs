@@ -104,18 +104,38 @@ namespace LibHac.Crypto2
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static void KeyExpansion(ReadOnlySpan<byte> key, Span<Vector128<byte>> roundKeys, bool isDecrypting)
         {
-            roundKeys[0] = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(key));
+            var curKey = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(key));
+            roundKeys[0] = curKey;
 
-            MakeRoundKey(roundKeys, 1, 0x01);
-            MakeRoundKey(roundKeys, 2, 0x02);
-            MakeRoundKey(roundKeys, 3, 0x04);
-            MakeRoundKey(roundKeys, 4, 0x08);
-            MakeRoundKey(roundKeys, 5, 0x10);
-            MakeRoundKey(roundKeys, 6, 0x20);
-            MakeRoundKey(roundKeys, 7, 0x40);
-            MakeRoundKey(roundKeys, 8, 0x80);
-            MakeRoundKey(roundKeys, 9, 0x1b);
-            MakeRoundKey(roundKeys, 10, 0x36);
+            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x01));
+            roundKeys[1] = curKey;
+
+            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x02));
+            roundKeys[2] = curKey;
+
+            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x04));
+            roundKeys[3] = curKey;
+
+            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x08));
+            roundKeys[4] = curKey;
+
+            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x10));
+            roundKeys[5] = curKey;
+
+            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x20));
+            roundKeys[6] = curKey;
+
+            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x40));
+            roundKeys[7] = curKey;
+
+            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x80));
+            roundKeys[8] = curKey;
+
+            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x1b));
+            roundKeys[9] = curKey;
+
+            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x36));
+            roundKeys[10] = curKey;
 
             if (isDecrypting)
             {
@@ -126,19 +146,15 @@ namespace LibHac.Crypto2
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static void MakeRoundKey(Span<Vector128<byte>> keys, int i, byte rcon)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<byte> KeyExpansion(Vector128<byte> s, Vector128<byte> t)
         {
-            Vector128<byte> s = keys[i - 1];
-            Vector128<byte> t = keys[i - 1];
-
-            t = Aes.KeygenAssist(t, rcon);
             t = Sse2.Shuffle(t.AsUInt32(), 0xFF).AsByte();
 
             s = Sse2.Xor(s, Sse2.ShiftLeftLogical128BitLane(s, 4));
             s = Sse2.Xor(s, Sse2.ShiftLeftLogical128BitLane(s, 8));
 
-            keys[i] = Sse2.Xor(s, t);
+            return Sse2.Xor(s, t);
         }
     }
 }
