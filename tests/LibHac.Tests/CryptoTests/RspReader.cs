@@ -56,21 +56,27 @@ namespace LibHac.Tests.CryptoTests
 
                 canOutputVector = true;
 
-                switch (kvp[0])
+                switch (kvp[0].ToUpperInvariant())
                 {
                     case "COUNT":
                         testVector.Count = int.Parse(kvp[1]);
+                        break;
+                    case "DATAUNITLEN":
+                        testVector.DataUnitLength = int.Parse(kvp[1]);
                         break;
                     case "KEY":
                         testVector.Key = kvp[1].ToBytes();
                         break;
                     case "IV":
+                    case "I":
                         testVector.Iv = kvp[1].ToBytes();
                         break;
                     case "PLAINTEXT":
+                    case "PT":
                         testVector.PlainText = kvp[1].ToBytes();
                         break;
                     case "CIPHERTEXT":
+                    case "CT":
                         testVector.CipherText = kvp[1].ToBytes();
                         break;
                 }
@@ -94,7 +100,7 @@ namespace LibHac.Tests.CryptoTests
                     }
                 }
             }
-
+            
             return testVectors;
         }
     }
@@ -103,6 +109,7 @@ namespace LibHac.Tests.CryptoTests
     {
         public bool Encrypt { get; set; }
         public int Count { get; set; }
+        public int DataUnitLength { get; set; }
         public byte[] Key { get; set; }
         public byte[] Iv { get; set; }
         public byte[] PlainText { get; set; }

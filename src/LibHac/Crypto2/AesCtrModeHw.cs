@@ -23,42 +23,35 @@ namespace LibHac.Crypto2
 
         public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            ReadOnlySpan<Vector128<byte>> keys = _aesCore.RoundKeys;
-            ReadOnlySpan<Vector128<byte>> inBlocks = MemoryMarshal.Cast<byte, Vector128<byte>>(input);
-            Span<Vector128<byte>> outBlocks = MemoryMarshal.Cast<byte, Vector128<byte>>(output);
+            int blockCount = Math.Min(input.Length, output.Length) >> 4;
+
+            ref Vector128<byte> inBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(input));
+            ref Vector128<byte> outBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(output));
 
             Vector128<byte> byteSwapMask = Vector128.Create((ulong)0x706050403020100, 0x8090A0B0C0D0E0F).AsByte();
             Vector128<ulong> inc = Vector128.Create((ulong)0, 1);
 
-            var iv = _iv;
+            Vector128<byte> iv = _iv;
             Vector128<ulong> bSwappedIv = Ssse3.Shuffle(iv, byteSwapMask).AsUInt64();
 
-            for (int i = 0; i < inBlocks.Length; i++)
+            for (int i = 0; i < blockCount; i++)
             {
-                Vector128<byte> b = Sse2.Xor(iv, keys[0]);
-                b = Aes.Encrypt(b, keys[1]);
-                b = Aes.Encrypt(b, keys[2]);
-                b = Aes.Encrypt(b, keys[3]);
-                b = Aes.Encrypt(b, keys[4]);
-                b = Aes.Encrypt(b, keys[5]);
-                b = Aes.Encrypt(b, keys[6]);
-                b = Aes.Encrypt(b, keys[7]);
-                b = Aes.Encrypt(b, keys[8]);
-                b = Aes.Encrypt(b, keys[9]);
-                b = Aes.EncryptLast(b, keys[10]);
-
-                outBlocks[i] = Sse2.Xor(inBlocks[i], b);
+                Vector128<byte> encIv = _aesCore.EncryptBlock(iv);
+                outBlock = Sse2.Xor(inBlock, encIv);
 
                 // Increase the counter
                 bSwappedIv = Sse2.Add(bSwappedIv, inc);
                 iv = Ssse3.Shuffle(bSwappedIv.AsByte(), byteSwapMask);
+
+                inBlock = ref Unsafe.Add(ref inBlock, 1);
+                outBlock = ref Unsafe.Add(ref outBlock, 1);
             }
 
             _iv = iv;
 
             if ((input.Length & 0xF) != 0)
             {
-                EncryptCtrPartialBlock(input.Slice(inBlocks.Length * 0x10), output.Slice(outBlocks.Length * 0x10));
+                EncryptCtrPartialBlock(input.Slice(blockCount * 0x10), output.Slice(blockCount * 0x10));
             }
         }
 

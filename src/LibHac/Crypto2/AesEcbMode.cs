@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Buffers;
 using System.Security.Cryptography;
 
 namespace LibHac.Crypto2
 {
     public class AesEcbEncryptor : ICipher
     {
+        private const int BufferRentThreshold = 1024;
         private ICryptoTransform _encryptor;
 
         public AesEcbEncryptor(ReadOnlySpan<byte> key)
@@ -21,16 +23,34 @@ namespace LibHac.Crypto2
 
         public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            var outputBuffer = new byte[input.Length];
+            if (input.Length < BufferRentThreshold)
+            {
+                var outputBuffer = new byte[input.Length];
+                input.CopyTo(outputBuffer);
 
-            _encryptor.TransformBlock(input.ToArray(), 0, input.Length, outputBuffer, 0);
+                _encryptor.TransformBlock(outputBuffer, 0, input.Length, outputBuffer, 0);
 
-            outputBuffer.CopyTo(output);
+                outputBuffer.CopyTo(output);
+            }
+            else
+            {
+                byte[] outputBuffer = ArrayPool<byte>.Shared.Rent(input.Length);
+                try
+                {
+                    input.CopyTo(outputBuffer);
+
+                    _encryptor.TransformBlock(outputBuffer, 0, input.Length, outputBuffer, 0);
+
+                    outputBuffer.CopyTo(output);
+                }
+                finally { ArrayPool<byte>.Shared.Return(outputBuffer); }
+            }
         }
     }
 
     public class AesEcbDecryptor : ICipher
     {
+        private const int BufferRentThreshold = 1024;
         private ICryptoTransform _decryptor;
 
         public AesEcbDecryptor(ReadOnlySpan<byte> key)
@@ -47,11 +67,28 @@ namespace LibHac.Crypto2
 
         public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            var outputBuffer = new byte[input.Length];
+            if (input.Length < BufferRentThreshold)
+            {
+                var outputBuffer = new byte[input.Length];
+                input.CopyTo(outputBuffer);
 
-            _decryptor.TransformBlock(input.ToArray(), 0, input.Length, outputBuffer, 0);
+                _decryptor.TransformBlock(outputBuffer, 0, input.Length, outputBuffer, 0);
 
-            outputBuffer.CopyTo(output);
+                outputBuffer.CopyTo(output);
+            }
+            else
+            {
+                byte[] outputBuffer = ArrayPool<byte>.Shared.Rent(input.Length);
+                try
+                {
+                    input.CopyTo(outputBuffer);
+
+                    _decryptor.TransformBlock(outputBuffer, 0, input.Length, outputBuffer, 0);
+
+                    outputBuffer.CopyTo(output);
+                }
+                finally { ArrayPool<byte>.Shared.Return(outputBuffer); }
+            }
         }
     }
 }
