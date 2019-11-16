@@ -8,6 +8,9 @@ namespace LibHac.Crypto2
 {
     public static class AesCrypto
     {
+        public const int KeySize128 = 0x10;
+        public const int BlockSize = 0x10;
+
         public static bool IsAesNiSupported()
         {
 #if HAS_INTRINSICS
@@ -76,6 +79,30 @@ namespace LibHac.Crypto2
             }
 #endif
             return new AesCtrEncryptor(key, iv);
+        }
+
+        public static ICipher CreateXtsDecryptor(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2,
+            ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
+        {
+#if HAS_INTRINSICS
+            if (IsAesNiSupported() && !preferDotNetCrypto)
+            {
+                return new AesXtsCipherHw(key1, key2, iv, true);
+            }
+#endif
+            return new AesXtsCipher(key1, key2, iv, true);
+        }
+
+        public static ICipher CreateXtsEncryptor(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2,
+            ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
+        {
+#if HAS_INTRINSICS
+            if (IsAesNiSupported() && !preferDotNetCrypto)
+            {
+                return new AesXtsCipherHw(key1, key2, iv, false);
+            }
+#endif
+            return new AesXtsCipher(key1, key2, iv, false);
         }
     }
 }

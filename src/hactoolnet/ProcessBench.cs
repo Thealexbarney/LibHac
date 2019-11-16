@@ -116,7 +116,8 @@ namespace hactoolnet
             logger.LogMessage($"{label}{averageRate}/s, fastest run: {fastestRate}/s, slowest run: {slowestRate}/s");
         }
 
-        private static void RunCipherBenchmark(Func<ICipher> cipherNet, Func<ICipher> cipherLibHac, string label, IProgressReport logger)
+        private static void RunCipherBenchmark(Func<ICipher> cipherNet, Func<ICipher> cipherLibHac, bool benchBlocked,
+            string label, IProgressReport logger)
         {
             var srcData = new byte[Size];
 
@@ -131,14 +132,23 @@ namespace hactoolnet
             if (AesCrypto.IsAesNiSupported()) CipherBenchmark(srcData, dstDataLh, cipherLibHac, Iterations, "LibHac impl: ", logger);
             CipherBenchmark(srcData, dstDataNet, cipherNet, Iterations, ".NET impl:   ", logger);
 
-            if (AesCrypto.IsAesNiSupported()) CipherBenchmarkBlocked(srcData, dstDataBlockedLh, cipherLibHac, Iterations / 5, "LibHac impl (blocked): ", logger);
-            CipherBenchmarkBlocked(srcData, dstDataBlockedNet, cipherNet, Iterations / 5, ".NET impl (blocked):   ", logger);
+            if (benchBlocked)
+            {
+                if (AesCrypto.IsAesNiSupported())
+                    CipherBenchmarkBlocked(srcData, dstDataBlockedLh, cipherLibHac, Iterations / 5, "LibHac impl (blocked): ", logger);
+
+                CipherBenchmarkBlocked(srcData, dstDataBlockedNet, cipherNet, Iterations / 5, ".NET impl (blocked):   ", logger);
+            }
 
             if (AesCrypto.IsAesNiSupported())
             {
                 logger.LogMessage($"{dstDataLh.SequenceEqual(dstDataNet)}");
-                logger.LogMessage($"{dstDataLh.SequenceEqual(dstDataBlockedLh)}");
-                logger.LogMessage($"{dstDataLh.SequenceEqual(dstDataBlockedNet)}");
+
+                if (benchBlocked)
+                {
+                    logger.LogMessage($"{dstDataLh.SequenceEqual(dstDataBlockedLh)}");
+                    logger.LogMessage($"{dstDataLh.SequenceEqual(dstDataBlockedNet)}");
+                }
             }
         }
 
@@ -197,12 +207,12 @@ namespace hactoolnet
                     Func<ICipher> encryptorNet = () => AesCrypto.CreateEcbEncryptor(new byte[0x10], true);
                     Func<ICipher> encryptorLh = () => AesCrypto.CreateEcbEncryptor(new byte[0x10]);
 
-                    RunCipherBenchmark(encryptorNet, encryptorLh, "AES-ECB encrypt", ctx.Logger);
+                    RunCipherBenchmark(encryptorNet, encryptorLh, true, "AES-ECB encrypt", ctx.Logger);
 
                     Func<ICipher> decryptorNet = () => AesCrypto.CreateEcbDecryptor(new byte[0x10], true);
                     Func<ICipher> decryptorLh = () => AesCrypto.CreateEcbDecryptor(new byte[0x10]);
 
-                    RunCipherBenchmark(decryptorNet, decryptorLh, "AES-ECB decrypt", ctx.Logger);
+                    RunCipherBenchmark(decryptorNet, decryptorLh, true, "AES-ECB decrypt", ctx.Logger);
 
                     break;
                 }
@@ -211,12 +221,12 @@ namespace hactoolnet
                     Func<ICipher> encryptorNet = () => AesCrypto.CreateCbcEncryptor(new byte[0x10], new byte[0x10], true);
                     Func<ICipher> encryptorLh = () => AesCrypto.CreateCbcEncryptor(new byte[0x10], new byte[0x10]);
 
-                    RunCipherBenchmark(encryptorNet, encryptorLh, "AES-CBC encrypt", ctx.Logger);
+                    RunCipherBenchmark(encryptorNet, encryptorLh, true, "AES-CBC encrypt", ctx.Logger);
 
                     Func<ICipher> decryptorNet = () => AesCrypto.CreateCbcDecryptor(new byte[0x10], new byte[0x10], true);
                     Func<ICipher> decryptorLh = () => AesCrypto.CreateCbcDecryptor(new byte[0x10], new byte[0x10]);
 
-                    RunCipherBenchmark(decryptorNet, decryptorLh, "AES-CBC decrypt", ctx.Logger);
+                    RunCipherBenchmark(decryptorNet, decryptorLh, true, "AES-CBC decrypt", ctx.Logger);
 
                     break;
                 }
@@ -226,7 +236,21 @@ namespace hactoolnet
                     Func<ICipher> encryptorNet = () => AesCrypto.CreateCtrEncryptor(new byte[0x10], new byte[0x10], true);
                     Func<ICipher> encryptorLh = () => AesCrypto.CreateCtrEncryptor(new byte[0x10], new byte[0x10]);
 
-                    RunCipherBenchmark(encryptorNet, encryptorLh, "AES-CTR", ctx.Logger);
+                    RunCipherBenchmark(encryptorNet, encryptorLh, true, "AES-CTR", ctx.Logger);
+
+                    break;
+                }
+                case "aesxtsnew":
+                {
+                    Func<ICipher> encryptorNet = () => AesCrypto.CreateXtsEncryptor(new byte[0x10], new byte[0x10], new byte[0x10], true);
+                    Func<ICipher> encryptorLh = () => AesCrypto.CreateXtsEncryptor(new byte[0x10], new byte[0x10], new byte[0x10]);
+
+                    RunCipherBenchmark(encryptorNet, encryptorLh, false, "AES-XTS encrypt", ctx.Logger);
+
+                    Func<ICipher> decryptorNet = () => AesCrypto.CreateXtsDecryptor(new byte[0x10], new byte[0x10], new byte[0x10], true);
+                    Func<ICipher> decryptorLh = () => AesCrypto.CreateXtsDecryptor(new byte[0x10], new byte[0x10], new byte[0x10]);
+
+                    RunCipherBenchmark(decryptorNet, decryptorLh, false, "AES-XTS decrypt", ctx.Logger);
 
                     break;
                 }

@@ -24,32 +24,24 @@ namespace LibHac.Crypto2
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            ReadOnlySpan<Vector128<byte>> keys = _aesCore.RoundKeys;
-            ReadOnlySpan<Vector128<byte>> inBlocks = MemoryMarshal.Cast<byte, Vector128<byte>>(input);
-            Span<Vector128<byte>> outBlocks = MemoryMarshal.Cast<byte, Vector128<byte>>(output);
+            int blockCount = Math.Min(input.Length, output.Length) >> 4;
 
-            Vector128<byte> b = _iv;
-            
-            for (int i = 0; i < inBlocks.Length; i++)
+            ref Vector128<byte> inBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(input));
+            ref Vector128<byte> outBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(output));
+
+            Vector128<byte> iv = _iv;
+
+            for (int i = 0; i < blockCount; i++)
             {
-                b = Sse2.Xor(b, inBlocks[i]);
+                iv = _aesCore.EncryptBlock(Sse2.Xor(iv, inBlock));
 
-                b = Sse2.Xor(b, keys[0]);
-                b = Aes.Encrypt(b, keys[1]);
-                b = Aes.Encrypt(b, keys[2]);
-                b = Aes.Encrypt(b, keys[3]);
-                b = Aes.Encrypt(b, keys[4]);
-                b = Aes.Encrypt(b, keys[5]);
-                b = Aes.Encrypt(b, keys[6]);
-                b = Aes.Encrypt(b, keys[7]);
-                b = Aes.Encrypt(b, keys[8]);
-                b = Aes.Encrypt(b, keys[9]);
-                b = Aes.EncryptLast(b, keys[10]);
+                outBlock = iv;
 
-                outBlocks[i] = b;
+                inBlock = ref Unsafe.Add(ref inBlock, 1);
+                outBlock = ref Unsafe.Add(ref outBlock, 1);
             }
 
-            _iv = b;
+            _iv = iv;
         }
     }
 
@@ -70,32 +62,22 @@ namespace LibHac.Crypto2
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            ReadOnlySpan<Vector128<byte>> keys = _aesCore.RoundKeys;
-            ReadOnlySpan<Vector128<byte>> inBlocks = MemoryMarshal.Cast<byte, Vector128<byte>>(input);
-            Span<Vector128<byte>> outBlocks = MemoryMarshal.Cast<byte, Vector128<byte>>(output);
+            int blockCount = Math.Min(input.Length, output.Length) >> 4;
+
+            ref Vector128<byte> inBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(input));
+            ref Vector128<byte> outBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(output));
 
             Vector128<byte> iv = _iv;
 
-            for (int i = 0; i < inBlocks.Length; i++)
+            for (int i = 0; i < blockCount; i++)
             {
-                Vector128<byte> b = inBlocks[i];
-                Vector128<byte> nextIv = b;
+                Vector128<byte> decBeforeIv = _aesCore.DecryptBlock(inBlock);
+                outBlock = Sse2.Xor(decBeforeIv, iv);
 
-                b = Sse2.Xor(b, keys[10]);
-                b = Aes.Decrypt(b, keys[9]);
-                b = Aes.Decrypt(b, keys[8]);
-                b = Aes.Decrypt(b, keys[7]);
-                b = Aes.Decrypt(b, keys[6]);
-                b = Aes.Decrypt(b, keys[5]);
-                b = Aes.Decrypt(b, keys[4]);
-                b = Aes.Decrypt(b, keys[3]);
-                b = Aes.Decrypt(b, keys[2]);
-                b = Aes.Decrypt(b, keys[1]);
-                b = Aes.DecryptLast(b, keys[0]);
+                iv = inBlock;
 
-                b = Sse2.Xor(b, iv);
-                iv = nextIv;
-                outBlocks[i] = b;
+                inBlock = ref Unsafe.Add(ref inBlock, 1);
+                outBlock = ref Unsafe.Add(ref outBlock, 1);
             }
 
             _iv = iv;

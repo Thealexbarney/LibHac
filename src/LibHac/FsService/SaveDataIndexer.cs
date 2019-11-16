@@ -546,6 +546,7 @@ namespace LibHac.FsService
 
         private void CloseReader(SaveDataInfoReader reader)
         {
+            // ReSharper disable once RedundantAssignment
             bool wasRemoved = OpenedReaders.Remove(reader);
 
             Debug.Assert(wasRemoved);
