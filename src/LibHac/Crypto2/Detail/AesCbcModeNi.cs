@@ -1,28 +1,28 @@
 ﻿#if HAS_INTRINSICS
 using System;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
-namespace LibHac.Crypto2
+namespace LibHac.Crypto2.Detail
 {
-    public struct AesCbcEncryptorHw : ICipher
+    public struct AesCbcModeNi
     {
+#pragma warning disable 649
         private AesCoreNi _aesCore;
+#pragma warning restore 649
+
         private Vector128<byte> _iv;
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public AesCbcEncryptorHw(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
+        public void Initialize(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv, bool isDecrypting)
         {
-            _aesCore = new AesCoreNi();
-            _aesCore.Initialize(key, false);
+            _aesCore.Initialize(key, isDecrypting);
 
             _iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
+        public void Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
         {
             int blockCount = Math.Min(input.Length, output.Length) >> 4;
 
@@ -43,24 +43,8 @@ namespace LibHac.Crypto2
 
             _iv = iv;
         }
-    }
 
-    public struct AesCbcDecryptorHw : ICipher
-    {
-        private AesCoreNi _aesCore;
-        private Vector128<byte> _iv;
-
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public AesCbcDecryptorHw(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
-        {
-            _aesCore = new AesCoreNi();
-            _aesCore.Initialize(key, true);
-
-            _iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
+        public void Decrypt(ReadOnlySpan<byte> input, Span<byte> output)
         {
             int blockCount = Math.Min(input.Length, output.Length) >> 4;
 

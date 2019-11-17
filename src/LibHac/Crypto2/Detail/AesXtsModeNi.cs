@@ -7,30 +7,27 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using LibHac.Common;
 
-namespace LibHac.Crypto2
+namespace LibHac.Crypto2.Detail
 {
-    public class AesXtsCipherHw : ICipher
+    public struct AesXtsModeNi
     {
+#pragma warning disable 649
         private AesCoreNi _dataAesCore;
         private AesCoreNi _tweakAesCore;
-        private Vector128<byte> _iv;
-        private bool _decrypting;
+#pragma warning restore 649
 
-        public AesXtsCipherHw(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv, bool decrypting)
+        private Vector128<byte> _iv;
+
+        public void Initialize(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv, bool decrypting)
         {
             Debug.Assert(key1.Length == AesCrypto.KeySize128);
             Debug.Assert(key2.Length == AesCrypto.KeySize128);
             Debug.Assert(iv.Length == AesCrypto.KeySize128);
 
-            _dataAesCore = new AesCoreNi();
             _dataAesCore.Initialize(key1, decrypting);
-
-            _tweakAesCore = new AesCoreNi();
             _tweakAesCore.Initialize(key2, false);
 
             _iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
-
-            _decrypting = decrypting;
         }
 
         public void Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
@@ -156,18 +153,6 @@ namespace LibHac.Crypto2
             Vector128<byte> tmp = Sse2.Xor(x.As<Vector128<byte>>(), tweak);
             tmp = _dataAesCore.EncryptBlock(tmp);
             prevOutBlock = Sse2.Xor(tmp, tweak);
-        }
-
-        public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
-        {
-            if (_decrypting)
-            {
-                Decrypt(input, output);
-            }
-            else
-            {
-                Encrypt(input, output);
-            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1,7 +1,9 @@
-﻿using System;
+﻿// ReSharper disable AssignmentIsFullyDiscarded
+using System;
 
 #if HAS_INTRINSICS
 using System.Runtime.Intrinsics.X86;
+using LibHac.Crypto2.Detail;
 #endif
 
 namespace LibHac.Crypto2
@@ -25,7 +27,7 @@ namespace LibHac.Crypto2
 #if HAS_INTRINSICS
             if (IsAesNiSupported() && !preferDotNetCrypto)
             {
-                return new AesEcbDecryptorHw(key);
+                return new AesEcbDecryptorNi(key);
             }
 #endif
             return new AesEcbDecryptor(key);
@@ -36,7 +38,7 @@ namespace LibHac.Crypto2
 #if HAS_INTRINSICS
             if (IsAesNiSupported() && !preferDotNetCrypto)
             {
-                return new AesEcbEncryptorHw(key);
+                return new AesEcbEncryptorNi(key);
             }
 #endif
             return new AesEcbEncryptor(key);
@@ -47,7 +49,7 @@ namespace LibHac.Crypto2
 #if HAS_INTRINSICS
             if (IsAesNiSupported() && !preferDotNetCrypto)
             {
-                return new AesCbcDecryptorHw(key, iv);
+                return new AesCbcDecryptorNi(key, iv);
             }
 #endif
             return new AesCbcDecryptor(key, iv);
@@ -58,7 +60,7 @@ namespace LibHac.Crypto2
 #if HAS_INTRINSICS
             if (IsAesNiSupported() && !preferDotNetCrypto)
             {
-                return new AesCbcEncryptorHw(key, iv);
+                return new AesCbcEncryptorNi(key, iv);
             }
 #endif
             return new AesCbcEncryptor(key, iv);
@@ -66,6 +68,12 @@ namespace LibHac.Crypto2
 
         public static ICipher CreateCtrDecryptor(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
         {
+#if HAS_INTRINSICS
+            if (IsAesNiSupported() && !preferDotNetCrypto)
+            {
+                return new AesCtrCipherNi(key, iv);
+            }
+#endif
             // Encryption and decryption in counter mode is the same operation
             return CreateCtrEncryptor(key, iv, preferDotNetCrypto);
         }
@@ -75,7 +83,7 @@ namespace LibHac.Crypto2
 #if HAS_INTRINSICS
             if (IsAesNiSupported() && !preferDotNetCrypto)
             {
-                return new AesCtrEncryptorHw(key, iv);
+                return new AesCtrCipherNi(key, iv);
             }
 #endif
             return new AesCtrEncryptor(key, iv);
@@ -87,7 +95,7 @@ namespace LibHac.Crypto2
 #if HAS_INTRINSICS
             if (IsAesNiSupported() && !preferDotNetCrypto)
             {
-                return new AesXtsCipherHw(key1, key2, iv, true);
+                return new AesXtsDecryptorNi(key1, key2, iv);
             }
 #endif
             return new AesXtsCipher(key1, key2, iv, true);
@@ -99,7 +107,7 @@ namespace LibHac.Crypto2
 #if HAS_INTRINSICS
             if (IsAesNiSupported() && !preferDotNetCrypto)
             {
-                return new AesXtsCipherHw(key1, key2, iv, false);
+                return new AesXtsEncryptorNi(key1, key2, iv);
             }
 #endif
             return new AesXtsCipher(key1, key2, iv, false);
@@ -108,6 +116,17 @@ namespace LibHac.Crypto2
         public static void EncryptEcb128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
             bool preferDotNetCrypto = false)
         {
+#if HAS_INTRINSICS
+            if (IsAesNiSupported() && !preferDotNetCrypto)
+            {
+                AesEcbModeNi cipherNi;
+                unsafe { _ = &cipherNi; } // workaround for CS0165
+
+                cipherNi.Initialize(key, false);
+                cipherNi.Encrypt(input, output);
+                return;
+            }
+#endif
             ICipher cipher = CreateEcbEncryptor(key, preferDotNetCrypto);
 
             cipher.Transform(input, output);
@@ -116,6 +135,17 @@ namespace LibHac.Crypto2
         public static void DecryptEcb128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
             bool preferDotNetCrypto = false)
         {
+#if HAS_INTRINSICS
+            if (IsAesNiSupported() && !preferDotNetCrypto)
+            {
+                AesEcbModeNi cipherNi;
+                unsafe { _ = &cipherNi; } // workaround for CS0165
+
+                cipherNi.Initialize(key, true);
+                cipherNi.Decrypt(input, output);
+                return;
+            }
+#endif
             ICipher cipher = CreateEcbDecryptor(key, preferDotNetCrypto);
 
             cipher.Transform(input, output);
@@ -124,6 +154,17 @@ namespace LibHac.Crypto2
         public static void EncryptCbc128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
         {
+#if HAS_INTRINSICS
+            if (IsAesNiSupported() && !preferDotNetCrypto)
+            {
+                AesCbcModeNi cipherNi;
+                unsafe { _ = &cipherNi; } // workaround for CS0165
+
+                cipherNi.Initialize(key, iv, false);
+                cipherNi.Encrypt(input, output);
+                return;
+            }
+#endif
             ICipher cipher = CreateCbcEncryptor(key, iv, preferDotNetCrypto);
 
             cipher.Transform(input, output);
@@ -132,6 +173,17 @@ namespace LibHac.Crypto2
         public static void DecryptCbc128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
         {
+#if HAS_INTRINSICS
+            if (IsAesNiSupported() && !preferDotNetCrypto)
+            {
+                AesCbcModeNi cipherNi;
+                unsafe { _ = &cipherNi; } // workaround for CS0165
+
+                cipherNi.Initialize(key, iv, true);
+                cipherNi.Decrypt(input, output);
+                return;
+            }
+#endif
             ICipher cipher = CreateCbcDecryptor(key, iv, preferDotNetCrypto);
 
             cipher.Transform(input, output);
@@ -140,6 +192,17 @@ namespace LibHac.Crypto2
         public static void EncryptCtr128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
         {
+#if HAS_INTRINSICS
+            if (IsAesNiSupported() && !preferDotNetCrypto)
+            {
+                AesCtrModeNi cipherNi;
+                unsafe { _ = &cipherNi; } // workaround for CS0165
+
+                cipherNi.Initialize(key, iv);
+                cipherNi.Transform(input, output);
+                return;
+            }
+#endif
             ICipher cipher = CreateCtrEncryptor(key, iv, preferDotNetCrypto);
 
             cipher.Transform(input, output);
@@ -148,6 +211,17 @@ namespace LibHac.Crypto2
         public static void DecryptCtr128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
         {
+#if HAS_INTRINSICS
+            if (IsAesNiSupported() && !preferDotNetCrypto)
+            {
+                AesCtrModeNi cipherNi;
+                unsafe { _ = &cipherNi; } // workaround for CS0165
+
+                cipherNi.Initialize(key, iv);
+                cipherNi.Transform(input, output);
+                return;
+            }
+#endif
             ICipher cipher = CreateCtrDecryptor(key, iv, preferDotNetCrypto);
 
             cipher.Transform(input, output);
@@ -156,6 +230,17 @@ namespace LibHac.Crypto2
         public static void EncryptXts128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key1,
             ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
         {
+#if HAS_INTRINSICS
+            if (IsAesNiSupported() && !preferDotNetCrypto)
+            {
+                AesXtsModeNi cipherNi;
+                unsafe { _ = &cipherNi; } // workaround for CS0165
+
+                cipherNi.Initialize(key1, key2, iv, false);
+                cipherNi.Encrypt(input, output);
+                return;
+            }
+#endif
             ICipher cipher = CreateXtsEncryptor(key1, key2, iv, preferDotNetCrypto);
 
             cipher.Transform(input, output);
@@ -164,6 +249,17 @@ namespace LibHac.Crypto2
         public static void DecryptXts128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key1,
             ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
         {
+#if HAS_INTRINSICS
+            if (IsAesNiSupported() && !preferDotNetCrypto)
+            {
+                AesXtsModeNi cipherNi;
+                unsafe { _ = &cipherNi; } // workaround for CS0165
+
+                cipherNi.Initialize(key1, key2, iv, true);
+                cipherNi.Decrypt(input, output);
+                return;
+            }
+#endif
             ICipher cipher = CreateXtsDecryptor(key1, key2, iv, preferDotNetCrypto);
 
             cipher.Transform(input, output);
