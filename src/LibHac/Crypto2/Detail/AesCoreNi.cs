@@ -1,11 +1,11 @@
 ﻿#if NETCOREAPP
-using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using System;
+using System.Runtime.CompilerServices;
 
-namespace LibHac.Crypto2
+namespace LibHac.Crypto2.Detail
 {
     [StructLayout(LayoutKind.Sequential, Size = RoundKeyCount * RoundKeySize)]
     public struct AesCoreNi
@@ -15,13 +15,6 @@ namespace LibHac.Crypto2
 
         private Vector128<byte> _roundKeys;
 
-        public AesCoreNi(ReadOnlySpan<byte> key, bool isDecrypting)
-        {
-            _roundKeys = default;
-
-            KeyExpansion(key, MemoryMarshal.CreateSpan(ref _roundKeys, RoundKeyCount), isDecrypting);
-        }
-
         public void Initialize(ReadOnlySpan<byte> key, bool isDecrypting)
         {
             KeyExpansion(key, MemoryMarshal.CreateSpan(ref _roundKeys, RoundKeyCount), isDecrypting);
@@ -29,7 +22,6 @@ namespace LibHac.Crypto2
 
         public readonly ReadOnlySpan<Vector128<byte>> RoundKeys =>
             MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in _roundKeys), RoundKeyCount);
-
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public readonly void Encrypt(ReadOnlySpan<byte> input, Span<byte> output)

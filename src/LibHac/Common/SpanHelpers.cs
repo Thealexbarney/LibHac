@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+
+#if NETCOREAPP
 using System.Runtime.InteropServices;
+#endif
 
 namespace LibHac.Common
 {

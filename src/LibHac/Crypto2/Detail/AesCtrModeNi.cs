@@ -5,17 +5,18 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
-namespace LibHac.Crypto2
+namespace LibHac.Crypto2.Detail
 {
-    public class AesCtrEncryptorHw : ICipher
+    public struct AesCtrModeNi
     {
+#pragma warning disable 649
         private AesCoreNi _aesCore;
+#pragma warning restore 649
+
         private Vector128<byte> _iv;
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public AesCtrEncryptorHw(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
+        public void Initialize(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
         {
-            _aesCore = new AesCoreNi();
             _aesCore.Initialize(key, false);
 
             _iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
