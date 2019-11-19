@@ -86,7 +86,7 @@ namespace LibHac.Crypto2
                 return new AesCtrCipherNi(key, iv);
             }
 #endif
-            return new AesCtrEncryptor(key, iv);
+            return new AesCtrCipher(key, iv);
         }
 
         public static ICipher CreateXtsDecryptor(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2,
@@ -98,7 +98,7 @@ namespace LibHac.Crypto2
                 return new AesXtsDecryptorNi(key1, key2, iv);
             }
 #endif
-            return new AesXtsCipher(key1, key2, iv, true);
+            return new AesXtsDecryptor(key1, key2, iv);
         }
 
         public static ICipher CreateXtsEncryptor(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2,
@@ -110,7 +110,7 @@ namespace LibHac.Crypto2
                 return new AesXtsEncryptorNi(key1, key2, iv);
             }
 #endif
-            return new AesXtsCipher(key1, key2, iv, false);
+            return new AesXtsEncryptor(key1, key2, iv);
         }
 
         public static void EncryptEcb128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
