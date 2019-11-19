@@ -1,5 +1,6 @@
 ﻿#if HAS_INTRINSICS
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -17,6 +18,8 @@ namespace LibHac.Crypto2.Detail
 
         public void Initialize(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
         {
+            Debug.Assert(iv.Length == Aes.BlockSize);
+
             _aesCore.Initialize(key, false);
 
             _iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(iv));

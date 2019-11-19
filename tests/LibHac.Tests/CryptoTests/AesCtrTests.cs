@@ -11,14 +11,14 @@ namespace LibHac.Tests.CryptoTests
         [MemberData(nameof(TestVectors))]
         public static void Transform(EncryptionTestVector tv)
         {
-            Common.CipherTestCore(tv.PlainText, tv.CipherText, AesCrypto.CreateCtrEncryptor(tv.Key, tv.Iv, true));
+            Common.CipherTestCore(tv.PlainText, tv.CipherText, Aes.CreateCtrEncryptor(tv.Key, tv.Iv, true));
         }
 
         [AesIntrinsicsRequiredTheory]
         [MemberData(nameof(TestVectors))]
         public static void TransformIntrinsics(EncryptionTestVector tv)
         {
-            Common.CipherTestCore(tv.PlainText, tv.CipherText, AesCrypto.CreateCtrEncryptor(tv.Key, tv.Iv));
+            Common.CipherTestCore(tv.PlainText, tv.CipherText, Aes.CreateCtrEncryptor(tv.Key, tv.Iv));
         }
     }
 }

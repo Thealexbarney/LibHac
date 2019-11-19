@@ -186,13 +186,13 @@ namespace hactoolnet
             logger.LogMessage(string.Empty);
             logger.LogMessage(label);
 
-            if (AesCrypto.IsAesNiSupported())
+            if (Aes.IsAesNiSupported())
                 CipherBenchmark(srcData, dstDataLh, cipherLibHac, Iterations, "LibHac impl: ", logger);
             CipherBenchmark(srcData, dstDataNet, cipherNet, Iterations, ".NET impl:   ", logger);
 
             if (benchBlocked)
             {
-                if (AesCrypto.IsAesNiSupported())
+                if (Aes.IsAesNiSupported())
                     CipherBenchmarkBlocked(srcData, dstDataBlockedLh, cipherLibHac, Iterations / 5,
                         "LibHac impl (blocked): ", logger);
 
@@ -202,7 +202,7 @@ namespace hactoolnet
 
             if (function != null)
             {
-                if (AesCrypto.IsAesNiSupported())
+                if (Aes.IsAesNiSupported())
                     CipherBenchmarkSeparate(srcData, dstDataSeparateLh, function, Iterations / 5,
                         "LibHac impl (separate): ", false, logger);
 
@@ -210,7 +210,7 @@ namespace hactoolnet
                     ".NET impl (separate): ", true, logger);
             }
 
-            if (AesCrypto.IsAesNiSupported())
+            if (Aes.IsAesNiSupported())
             {
                 logger.LogMessage($"{dstDataLh.SequenceEqual(dstDataNet)}");
 
@@ -279,17 +279,17 @@ namespace hactoolnet
 
                 case "aesecbnew":
                 {
-                    Func<ICipher> encryptorNet = () => AesCrypto.CreateEcbEncryptor(new byte[0x10], true);
-                    Func<ICipher> encryptorLh = () => AesCrypto.CreateEcbEncryptor(new byte[0x10]);
+                    Func<ICipher> encryptorNet = () => Aes.CreateEcbEncryptor(new byte[0x10], true);
+                    Func<ICipher> encryptorLh = () => Aes.CreateEcbEncryptor(new byte[0x10]);
                     CipherTaskSeparate encrypt = (input, output, key1, key2, iv, crypto) =>
-                        AesCrypto.EncryptEcb128(input, output, key1, crypto);
+                        Aes.EncryptEcb128(input, output, key1, crypto);
 
                     RunCipherBenchmark(encryptorNet, encryptorLh, encrypt, true, "AES-ECB encrypt", ctx.Logger);
 
-                    Func<ICipher> decryptorNet = () => AesCrypto.CreateEcbDecryptor(new byte[0x10], true);
-                    Func<ICipher> decryptorLh = () => AesCrypto.CreateEcbDecryptor(new byte[0x10]);
+                    Func<ICipher> decryptorNet = () => Aes.CreateEcbDecryptor(new byte[0x10], true);
+                    Func<ICipher> decryptorLh = () => Aes.CreateEcbDecryptor(new byte[0x10]);
                     CipherTaskSeparate decrypt = (input, output, key1, key2, iv, crypto) =>
-                        AesCrypto.DecryptEcb128(input, output, key1, crypto);
+                        Aes.DecryptEcb128(input, output, key1, crypto);
 
                     RunCipherBenchmark(decryptorNet, decryptorLh, decrypt, true, "AES-ECB decrypt", ctx.Logger);
 
@@ -297,17 +297,17 @@ namespace hactoolnet
                 }
                 case "aescbcnew":
                 {
-                    Func<ICipher> encryptorNet = () => AesCrypto.CreateCbcEncryptor(new byte[0x10], new byte[0x10], true);
-                    Func<ICipher> encryptorLh = () => AesCrypto.CreateCbcEncryptor(new byte[0x10], new byte[0x10]);
+                    Func<ICipher> encryptorNet = () => Aes.CreateCbcEncryptor(new byte[0x10], new byte[0x10], true);
+                    Func<ICipher> encryptorLh = () => Aes.CreateCbcEncryptor(new byte[0x10], new byte[0x10]);
                     CipherTaskSeparate encrypt = (input, output, key1, key2, iv, crypto) =>
-                        AesCrypto.EncryptCbc128(input, output, key1, iv, crypto);
+                        Aes.EncryptCbc128(input, output, key1, iv, crypto);
 
                     RunCipherBenchmark(encryptorNet, encryptorLh, encrypt, true, "AES-CBC encrypt", ctx.Logger);
 
-                    Func<ICipher> decryptorNet = () => AesCrypto.CreateCbcDecryptor(new byte[0x10], new byte[0x10], true);
-                    Func<ICipher> decryptorLh = () => AesCrypto.CreateCbcDecryptor(new byte[0x10], new byte[0x10]);
+                    Func<ICipher> decryptorNet = () => Aes.CreateCbcDecryptor(new byte[0x10], new byte[0x10], true);
+                    Func<ICipher> decryptorLh = () => Aes.CreateCbcDecryptor(new byte[0x10], new byte[0x10]);
                     CipherTaskSeparate decrypt = (input, output, key1, key2, iv, crypto) =>
-                        AesCrypto.DecryptCbc128(input, output, key1, iv, crypto);
+                        Aes.DecryptCbc128(input, output, key1, iv, crypto);
 
                     RunCipherBenchmark(decryptorNet, decryptorLh, decrypt, true, "AES-CBC decrypt", ctx.Logger);
 
@@ -316,10 +316,10 @@ namespace hactoolnet
 
                 case "aesctrnew":
                 {
-                    Func<ICipher> encryptorNet = () => AesCrypto.CreateCtrEncryptor(new byte[0x10], new byte[0x10], true);
-                    Func<ICipher> encryptorLh = () => AesCrypto.CreateCtrEncryptor(new byte[0x10], new byte[0x10]);
+                    Func<ICipher> encryptorNet = () => Aes.CreateCtrEncryptor(new byte[0x10], new byte[0x10], true);
+                    Func<ICipher> encryptorLh = () => Aes.CreateCtrEncryptor(new byte[0x10], new byte[0x10]);
                     CipherTaskSeparate encrypt = (input, output, key1, key2, iv, crypto) =>
-                        AesCrypto.EncryptCtr128(input, output, key1, iv, crypto);
+                        Aes.EncryptCtr128(input, output, key1, iv, crypto);
 
                     RunCipherBenchmark(encryptorNet, encryptorLh, encrypt, true, "AES-CTR", ctx.Logger);
 
@@ -327,17 +327,17 @@ namespace hactoolnet
                 }
                 case "aesxtsnew":
                 {
-                    Func<ICipher> encryptorNet = () => AesCrypto.CreateXtsEncryptor(new byte[0x10], new byte[0x10], new byte[0x10], true);
-                    Func<ICipher> encryptorLh = () => AesCrypto.CreateXtsEncryptor(new byte[0x10], new byte[0x10], new byte[0x10]);
+                    Func<ICipher> encryptorNet = () => Aes.CreateXtsEncryptor(new byte[0x10], new byte[0x10], new byte[0x10], true);
+                    Func<ICipher> encryptorLh = () => Aes.CreateXtsEncryptor(new byte[0x10], new byte[0x10], new byte[0x10]);
                     CipherTaskSeparate encrypt = (input, output, key1, key2, iv, crypto) =>
-                        AesCrypto.EncryptXts128(input, output, key1, key2, iv, crypto);
+                        Aes.EncryptXts128(input, output, key1, key2, iv, crypto);
 
                     RunCipherBenchmark(encryptorNet, encryptorLh, encrypt, false, "AES-XTS encrypt", ctx.Logger);
 
-                    Func<ICipher> decryptorNet = () => AesCrypto.CreateXtsDecryptor(new byte[0x10], new byte[0x10], new byte[0x10], true);
-                    Func<ICipher> decryptorLh = () => AesCrypto.CreateXtsDecryptor(new byte[0x10], new byte[0x10], new byte[0x10]);
+                    Func<ICipher> decryptorNet = () => Aes.CreateXtsDecryptor(new byte[0x10], new byte[0x10], new byte[0x10], true);
+                    Func<ICipher> decryptorLh = () => Aes.CreateXtsDecryptor(new byte[0x10], new byte[0x10], new byte[0x10]);
                     CipherTaskSeparate decrypt = (input, output, key1, key2, iv, crypto) =>
-                        AesCrypto.DecryptXts128(input, output, key1, key2, iv, crypto);
+                        Aes.DecryptXts128(input, output, key1, key2, iv, crypto);
 
                     RunCipherBenchmark(decryptorNet, decryptorLh, decrypt, false, "AES-XTS decrypt", ctx.Logger);
 

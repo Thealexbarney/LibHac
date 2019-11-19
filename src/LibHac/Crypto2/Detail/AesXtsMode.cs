@@ -15,7 +15,7 @@ namespace LibHac.Crypto2.Detail
 
         public void Initialize(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv, bool isDecrypting)
         {
-            Debug.Assert(iv.Length == AesCrypto.BlockSize);
+            Debug.Assert(iv.Length == Aes.BlockSize);
 
             _dataAesCore = new AesCore();
             _tweakAesCore = new AesCore();
@@ -33,18 +33,18 @@ namespace LibHac.Crypto2.Detail
             int leftover = length & 0xF;
 
             // Data units must be at least 1 block long.
-            if (length < AesCrypto.BlockSize)
+            if (length < Aes.BlockSize)
                 throw new ArgumentException();
 
             var tweak = new Buffer16();
 
             _tweakAesCore.Encrypt(_iv, tweak);
 
-            using var tweakBuffer = new RentedArray<byte>(blockCount * AesCrypto.BlockSize);
+            using var tweakBuffer = new RentedArray<byte>(blockCount * Aes.BlockSize);
             tweak = FillTweakBuffer(tweak, MemoryMarshal.Cast<byte, Buffer16>(tweakBuffer.Span));
 
             Util.XorArrays(output, input, tweakBuffer.Span);
-            _dataAesCore.Encrypt(output.Slice(0, blockCount * AesCrypto.BlockSize), output);
+            _dataAesCore.Encrypt(output.Slice(0, blockCount * Aes.BlockSize), output);
             Util.XorArrays(output, output, tweakBuffer.Array);
 
             if (leftover != 0)
@@ -65,7 +65,7 @@ namespace LibHac.Crypto2.Detail
                     tmp[i] = inBlock[i];
                 }
 
-                for (int i = leftover; i < AesCrypto.BlockSize; i++)
+                for (int i = leftover; i < Aes.BlockSize; i++)
                 {
                     tmp[i] = prevOutBlock[i];
                 }
@@ -83,7 +83,7 @@ namespace LibHac.Crypto2.Detail
             int leftover = length & 0xF;
 
             // Data units must be at least 1 block long.
-            if (length < AesCrypto.BlockSize)
+            if (length < Aes.BlockSize)
                 throw new ArgumentException();
 
             if (leftover != 0) blockCount--;
@@ -94,11 +94,11 @@ namespace LibHac.Crypto2.Detail
 
             if (blockCount > 0)
             {
-                using var tweakBuffer = new RentedArray<byte>(blockCount * AesCrypto.BlockSize);
+                using var tweakBuffer = new RentedArray<byte>(blockCount * Aes.BlockSize);
                 tweak = FillTweakBuffer(tweak, MemoryMarshal.Cast<byte, Buffer16>(tweakBuffer.Span));
 
                 Util.XorArrays(output, input, tweakBuffer.Span);
-                _dataAesCore.Decrypt(output.Slice(0, blockCount * AesCrypto.BlockSize), output);
+                _dataAesCore.Decrypt(output.Slice(0, blockCount * Aes.BlockSize), output);
                 Util.XorArrays(output, output, tweakBuffer.Span);
             }
 
@@ -128,7 +128,7 @@ namespace LibHac.Crypto2.Detail
                     tmp[i] = finalInBlock[i];
                 }
 
-                for (int i = leftover; i < AesCrypto.BlockSize; i++)
+                for (int i = leftover; i < Aes.BlockSize; i++)
                 {
                     tmp[i] = outBlock[i];
                 }

@@ -1,9 +1,12 @@
 ﻿#if NETCOREAPP
+using System;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-using System;
-using System.Runtime.CompilerServices;
+
+using AesNi = System.Runtime.Intrinsics.X86.Aes;
 
 namespace LibHac.Crypto2.Detail
 {
@@ -17,6 +20,8 @@ namespace LibHac.Crypto2.Detail
 
         public void Initialize(ReadOnlySpan<byte> key, bool isDecrypting)
         {
+            Debug.Assert(key.Length == Aes.KeySize128);
+
             KeyExpansion(key, MemoryMarshal.CreateSpan(ref _roundKeys, RoundKeyCount), isDecrypting);
         }
 
@@ -63,16 +68,16 @@ namespace LibHac.Crypto2.Detail
             ReadOnlySpan<Vector128<byte>> keys = RoundKeys;
 
             Vector128<byte> b = Sse2.Xor(input, keys[0]);
-            b = Aes.Encrypt(b, keys[1]);
-            b = Aes.Encrypt(b, keys[2]);
-            b = Aes.Encrypt(b, keys[3]);
-            b = Aes.Encrypt(b, keys[4]);
-            b = Aes.Encrypt(b, keys[5]);
-            b = Aes.Encrypt(b, keys[6]);
-            b = Aes.Encrypt(b, keys[7]);
-            b = Aes.Encrypt(b, keys[8]);
-            b = Aes.Encrypt(b, keys[9]);
-            return Aes.EncryptLast(b, keys[10]);
+            b = AesNi.Encrypt(b, keys[1]);
+            b = AesNi.Encrypt(b, keys[2]);
+            b = AesNi.Encrypt(b, keys[3]);
+            b = AesNi.Encrypt(b, keys[4]);
+            b = AesNi.Encrypt(b, keys[5]);
+            b = AesNi.Encrypt(b, keys[6]);
+            b = AesNi.Encrypt(b, keys[7]);
+            b = AesNi.Encrypt(b, keys[8]);
+            b = AesNi.Encrypt(b, keys[9]);
+            return AesNi.EncryptLast(b, keys[10]);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -81,16 +86,16 @@ namespace LibHac.Crypto2.Detail
             ReadOnlySpan<Vector128<byte>> keys = RoundKeys;
 
             Vector128<byte> b = Sse2.Xor(input, keys[10]);
-            b = Aes.Decrypt(b, keys[9]);
-            b = Aes.Decrypt(b, keys[8]);
-            b = Aes.Decrypt(b, keys[7]);
-            b = Aes.Decrypt(b, keys[6]);
-            b = Aes.Decrypt(b, keys[5]);
-            b = Aes.Decrypt(b, keys[4]);
-            b = Aes.Decrypt(b, keys[3]);
-            b = Aes.Decrypt(b, keys[2]);
-            b = Aes.Decrypt(b, keys[1]);
-            return Aes.DecryptLast(b, keys[0]);
+            b = AesNi.Decrypt(b, keys[9]);
+            b = AesNi.Decrypt(b, keys[8]);
+            b = AesNi.Decrypt(b, keys[7]);
+            b = AesNi.Decrypt(b, keys[6]);
+            b = AesNi.Decrypt(b, keys[5]);
+            b = AesNi.Decrypt(b, keys[4]);
+            b = AesNi.Decrypt(b, keys[3]);
+            b = AesNi.Decrypt(b, keys[2]);
+            b = AesNi.Decrypt(b, keys[1]);
+            return AesNi.DecryptLast(b, keys[0]);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -99,41 +104,41 @@ namespace LibHac.Crypto2.Detail
             var curKey = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(key));
             roundKeys[0] = curKey;
 
-            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x01));
+            curKey = KeyExpansion(curKey, AesNi.KeygenAssist(curKey, 0x01));
             roundKeys[1] = curKey;
 
-            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x02));
+            curKey = KeyExpansion(curKey, AesNi.KeygenAssist(curKey, 0x02));
             roundKeys[2] = curKey;
 
-            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x04));
+            curKey = KeyExpansion(curKey, AesNi.KeygenAssist(curKey, 0x04));
             roundKeys[3] = curKey;
 
-            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x08));
+            curKey = KeyExpansion(curKey, AesNi.KeygenAssist(curKey, 0x08));
             roundKeys[4] = curKey;
 
-            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x10));
+            curKey = KeyExpansion(curKey, AesNi.KeygenAssist(curKey, 0x10));
             roundKeys[5] = curKey;
 
-            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x20));
+            curKey = KeyExpansion(curKey, AesNi.KeygenAssist(curKey, 0x20));
             roundKeys[6] = curKey;
 
-            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x40));
+            curKey = KeyExpansion(curKey, AesNi.KeygenAssist(curKey, 0x40));
             roundKeys[7] = curKey;
 
-            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x80));
+            curKey = KeyExpansion(curKey, AesNi.KeygenAssist(curKey, 0x80));
             roundKeys[8] = curKey;
 
-            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x1b));
+            curKey = KeyExpansion(curKey, AesNi.KeygenAssist(curKey, 0x1b));
             roundKeys[9] = curKey;
 
-            curKey = KeyExpansion(curKey, Aes.KeygenAssist(curKey, 0x36));
+            curKey = KeyExpansion(curKey, AesNi.KeygenAssist(curKey, 0x36));
             roundKeys[10] = curKey;
 
             if (isDecrypting)
             {
                 for (int i = 1; i < 10; i++)
                 {
-                    roundKeys[i] = Aes.InverseMixColumns(roundKeys[i]);
+                    roundKeys[i] = AesNi.InverseMixColumns(roundKeys[i]);
                 }
             }
         }

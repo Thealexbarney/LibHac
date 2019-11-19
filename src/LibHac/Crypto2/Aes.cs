@@ -2,13 +2,14 @@
 using System;
 
 #if HAS_INTRINSICS
-using System.Runtime.Intrinsics.X86;
 using LibHac.Crypto2.Detail;
+
+using AesNi = System.Runtime.Intrinsics.X86.Aes;
 #endif
 
 namespace LibHac.Crypto2
 {
-    public static class AesCrypto
+    public static class Aes
     {
         public const int KeySize128 = 0x10;
         public const int BlockSize = 0x10;
@@ -16,7 +17,7 @@ namespace LibHac.Crypto2
         public static bool IsAesNiSupported()
         {
 #if HAS_INTRINSICS
-            return Aes.IsSupported;
+            return AesNi.IsSupported;
 #else
             return false;
 #endif
