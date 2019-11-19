@@ -20,9 +20,7 @@ namespace LibHac.Crypto2.Detail
 
         public void Initialize(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv, bool decrypting)
         {
-            Debug.Assert(key1.Length == AesCrypto.KeySize128);
-            Debug.Assert(key2.Length == AesCrypto.KeySize128);
-            Debug.Assert(iv.Length == AesCrypto.KeySize128);
+            Debug.Assert(iv.Length == Aes.KeySize128);
 
             _dataAesCore.Initialize(key1, decrypting);
             _tweakAesCore.Initialize(key2, false);

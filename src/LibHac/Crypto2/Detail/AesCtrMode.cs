@@ -14,7 +14,7 @@ namespace LibHac.Crypto2.Detail
 
         public void Initialize(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
         {
-            Debug.Assert(iv.Length == AesCrypto.BlockSize);
+            Debug.Assert(iv.Length == Aes.BlockSize);
 
             _aesCore = new AesCore();
             _aesCore.Initialize(key, ReadOnlySpan<byte>.Empty, CipherMode.ECB, false);
@@ -24,8 +24,8 @@ namespace LibHac.Crypto2.Detail
 
         public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            int blockCount = Util.DivideByRoundUp(input.Length, AesCrypto.BlockSize);
-            int length = blockCount * AesCrypto.BlockSize;
+            int blockCount = Util.DivideByRoundUp(input.Length, Aes.BlockSize);
+            int length = blockCount * Aes.BlockSize;
 
             using var counterBuffer = new RentedArray<byte>(length);
             FillDecryptedCounter(_counter, counterBuffer.Span);

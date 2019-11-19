@@ -12,10 +12,10 @@ namespace LibHac.Crypto2.Detail
 
         public void Initialize(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv, CipherMode mode, bool isDecrypting)
         {
-            Debug.Assert(key.Length == AesCrypto.KeySize128);
-            Debug.Assert(iv.IsEmpty || iv.Length == AesCrypto.BlockSize);
+            Debug.Assert(key.Length == Aes.KeySize128);
+            Debug.Assert(iv.IsEmpty || iv.Length == Aes.BlockSize);
 
-            Aes aes = Aes.Create();
+            System.Security.Cryptography.Aes aes = System.Security.Cryptography.Aes.Create();
 
             if (aes == null) throw new CryptographicException("Unable to create AES object");
             aes.Key = key.ToArray();

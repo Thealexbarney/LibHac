@@ -21,56 +21,56 @@ namespace LibHac.Tests.CryptoTests
         [MemberData(nameof(EncryptTestVectors))]
         public static void Encrypt(EncryptionTestVector tv)
         {
-            Common.CipherTestCore(tv.PlainText, tv.CipherText, AesCrypto.CreateEcbEncryptor(tv.Key, true));
+            Common.CipherTestCore(tv.PlainText, tv.CipherText, Aes.CreateEcbEncryptor(tv.Key, true));
         }
 
         [Theory]
         [MemberData(nameof(DecryptTestVectors))]
         public static void Decrypt(EncryptionTestVector tv)
         {
-            Common.CipherTestCore(tv.CipherText, tv.PlainText, AesCrypto.CreateEcbDecryptor(tv.Key, true));
+            Common.CipherTestCore(tv.CipherText, tv.PlainText, Aes.CreateEcbDecryptor(tv.Key, true));
         }
 
         [Theory]
         [MemberData(nameof(EncryptMultiTestVectors))]
         public static void EncryptMulti(EncryptionTestVector tv)
         {
-            Common.CipherTestCore(tv.PlainText, tv.CipherText, AesCrypto.CreateEcbEncryptor(tv.Key, true));
+            Common.CipherTestCore(tv.PlainText, tv.CipherText, Aes.CreateEcbEncryptor(tv.Key, true));
         }
 
         [Theory]
         [MemberData(nameof(DecryptMultiTestVectors))]
         public static void DecryptMulti(EncryptionTestVector tv)
         {
-            Common.CipherTestCore(tv.CipherText, tv.PlainText, AesCrypto.CreateEcbDecryptor(tv.Key, true));
+            Common.CipherTestCore(tv.CipherText, tv.PlainText, Aes.CreateEcbDecryptor(tv.Key, true));
         }
 
         [AesIntrinsicsRequiredTheory]
         [MemberData(nameof(EncryptTestVectors))]
         public static void EncryptIntrinsics(EncryptionTestVector tv)
         {
-            Common.CipherTestCore(tv.PlainText, tv.CipherText, AesCrypto.CreateEcbEncryptor(tv.Key));
+            Common.CipherTestCore(tv.PlainText, tv.CipherText, Aes.CreateEcbEncryptor(tv.Key));
         }
 
         [AesIntrinsicsRequiredTheory]
         [MemberData(nameof(DecryptTestVectors))]
         public static void DecryptIntrinsics(EncryptionTestVector tv)
         {
-            Common.CipherTestCore(tv.CipherText, tv.PlainText, AesCrypto.CreateEcbDecryptor(tv.Key));
+            Common.CipherTestCore(tv.CipherText, tv.PlainText, Aes.CreateEcbDecryptor(tv.Key));
         }
 
         [AesIntrinsicsRequiredTheory]
         [MemberData(nameof(EncryptMultiTestVectors))]
         public static void EncryptMultiIntrinsics(EncryptionTestVector tv)
         {
-            Common.CipherTestCore(tv.PlainText, tv.CipherText, AesCrypto.CreateEcbEncryptor(tv.Key));
+            Common.CipherTestCore(tv.PlainText, tv.CipherText, Aes.CreateEcbEncryptor(tv.Key));
         }
 
         [AesIntrinsicsRequiredTheory]
         [MemberData(nameof(DecryptMultiTestVectors))]
         public static void DecryptMultiIntrinsics(EncryptionTestVector tv)
         {
-            Common.CipherTestCore(tv.CipherText, tv.PlainText, AesCrypto.CreateEcbDecryptor(tv.Key));
+            Common.CipherTestCore(tv.CipherText, tv.PlainText, Aes.CreateEcbDecryptor(tv.Key));
         }
     }
 }

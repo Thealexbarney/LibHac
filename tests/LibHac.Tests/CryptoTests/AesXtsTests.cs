@@ -39,7 +39,7 @@ namespace LibHac.Tests.CryptoTests
             Span<byte> key1 = tv.Key.AsSpan(0, 0x10);
             Span<byte> key2 = tv.Key.AsSpan(0x10, 0x10);
 
-            Common.CipherTestCore(tv.PlainText, tv.CipherText, AesCrypto.CreateXtsEncryptor(key1, key2, tv.Iv, true));
+            Common.CipherTestCore(tv.PlainText, tv.CipherText, Aes.CreateXtsEncryptor(key1, key2, tv.Iv, true));
         }
 
         [Theory]
@@ -49,7 +49,7 @@ namespace LibHac.Tests.CryptoTests
             Span<byte> key1 = tv.Key.AsSpan(0, 0x10);
             Span<byte> key2 = tv.Key.AsSpan(0x10, 0x10);
 
-            Common.CipherTestCore(tv.CipherText, tv.PlainText, AesCrypto.CreateXtsDecryptor(key1, key2, tv.Iv, true));
+            Common.CipherTestCore(tv.CipherText, tv.PlainText, Aes.CreateXtsDecryptor(key1, key2, tv.Iv, true));
         }
 
         [AesIntrinsicsRequiredTheory]
@@ -59,7 +59,7 @@ namespace LibHac.Tests.CryptoTests
             Span<byte> key1 = tv.Key.AsSpan(0, 0x10);
             Span<byte> key2 = tv.Key.AsSpan(0x10, 0x10);
 
-            Common.CipherTestCore(tv.PlainText, tv.CipherText, AesCrypto.CreateXtsEncryptor(key1, key2, tv.Iv));
+            Common.CipherTestCore(tv.PlainText, tv.CipherText, Aes.CreateXtsEncryptor(key1, key2, tv.Iv));
         }
 
         [AesIntrinsicsRequiredTheory]
@@ -69,7 +69,7 @@ namespace LibHac.Tests.CryptoTests
             Span<byte> key1 = tv.Key.AsSpan(0, 0x10);
             Span<byte> key2 = tv.Key.AsSpan(0x10, 0x10);
 
-            Common.CipherTestCore(tv.CipherText, tv.PlainText, AesCrypto.CreateXtsDecryptor(key1, key2, tv.Iv));
+            Common.CipherTestCore(tv.CipherText, tv.PlainText, Aes.CreateXtsDecryptor(key1, key2, tv.Iv));
         }
     }
 }

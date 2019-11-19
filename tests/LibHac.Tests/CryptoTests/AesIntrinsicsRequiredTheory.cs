@@ -7,7 +7,7 @@ namespace LibHac.Tests.CryptoTests
     {
         public AesIntrinsicsRequiredTheoryAttribute()
         {
-            if (!AesCrypto.IsAesNiSupported())
+            if (!Aes.IsAesNiSupported())
             {
                 Skip = "AES intrinsics required";
             }
