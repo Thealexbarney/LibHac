@@ -164,7 +164,7 @@ namespace LibHac.FsSystem
             {
                 HashedRegionSize = reader.ReadInt32();
                 HashedRegionOffset = reader.ReadInt64();
-                Hash = reader.ReadBytes(Crypto.Sha256DigestSize);
+                Hash = reader.ReadBytes(CryptoOld.Sha256DigestSize);
             }
             else
             {

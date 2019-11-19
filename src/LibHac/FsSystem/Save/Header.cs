@@ -81,7 +81,7 @@ namespace LibHac.FsSystem.Save
 
             MasterHash = storage.Slice(Layout.IvfcMasterHashOffsetA, Layout.IvfcMasterHashSize);
 
-            HeaderHashValidity = Crypto.CheckMemoryHashTable(Data, Layout.Hash, 0x300, 0x3d00);
+            HeaderHashValidity = CryptoOld.CheckMemoryHashTable(Data, Layout.Hash, 0x300, 0x3d00);
             SignatureValidity = ValidateSignature(keyset);
         }
 
@@ -89,7 +89,7 @@ namespace LibHac.FsSystem.Save
         {
             var calculatedCmac = new byte[0x10];
 
-            Crypto.CalculateAesCmac(keyset.SaveMacKey, Data, 0x100, calculatedCmac, 0, 0x200);
+            CryptoOld.CalculateAesCmac(keyset.SaveMacKey, Data, 0x100, calculatedCmac, 0, 0x200);
 
             return Util.ArraysEqual(calculatedCmac, Cmac) ? Validity.Valid : Validity.Invalid;
         }

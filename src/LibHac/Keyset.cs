@@ -272,12 +272,12 @@ namespace LibHac
             {
                 if (KeyblobKeySources[i].IsEmpty()) continue;
 
-                Crypto.DecryptEcb(TsecKey, KeyblobKeySources[i], temp, 0x10);
-                Crypto.DecryptEcb(SecureBootKey, temp, KeyblobKeys[i], 0x10);
+                CryptoOld.DecryptEcb(TsecKey, KeyblobKeySources[i], temp, 0x10);
+                CryptoOld.DecryptEcb(SecureBootKey, temp, KeyblobKeys[i], 0x10);
 
                 if (!haveKeyblobMacKeySource) continue;
 
-                Crypto.DecryptEcb(KeyblobKeys[i], KeyblobMacKeySource, KeyblobMacKeys[i], 0x10);
+                CryptoOld.DecryptEcb(KeyblobKeys[i], KeyblobMacKeySource, KeyblobMacKeys[i], 0x10);
             }
         }
 
@@ -295,7 +295,7 @@ namespace LibHac
                 }
 
                 Array.Copy(EncryptedKeyblobs[i], expectedCmac, 0x10);
-                Crypto.CalculateAesCmac(KeyblobMacKeys[i], EncryptedKeyblobs[i], 0x10, cmac, 0, 0xa0);
+                CryptoOld.CalculateAesCmac(KeyblobMacKeys[i], EncryptedKeyblobs[i], 0x10, cmac, 0, 0xa0);
 
                 if (!Util.ArraysEqual(cmac, expectedCmac))
                 {
@@ -329,7 +329,7 @@ namespace LibHac
             {
                 if (TsecRootKeys[i - UsedKeyblobCount].IsEmpty() || MasterKekSources[i].IsEmpty()) continue;
 
-                Crypto.DecryptEcb(TsecRootKeys[i - UsedKeyblobCount], MasterKekSources[i], MasterKeks[i], 0x10);
+                CryptoOld.DecryptEcb(TsecRootKeys[i - UsedKeyblobCount], MasterKekSources[i], MasterKeks[i], 0x10);
             }
         }
 
@@ -341,7 +341,7 @@ namespace LibHac
             {
                 if (MasterKeks[i].IsEmpty()) continue;
 
-                Crypto.DecryptEcb(MasterKeks[i], MasterKeySource, MasterKeys[i], 0x10);
+                CryptoOld.DecryptEcb(MasterKeks[i], MasterKeySource, MasterKeys[i], 0x10);
             }
         }
 
@@ -352,14 +352,14 @@ namespace LibHac
             // Derive the device key
             if (!PerConsoleKeySource.IsEmpty() && !KeyblobKeys[0].IsEmpty())
             {
-                Crypto.DecryptEcb(KeyblobKeys[0], PerConsoleKeySource, DeviceKey, 0x10);
+                CryptoOld.DecryptEcb(KeyblobKeys[0], PerConsoleKeySource, DeviceKey, 0x10);
             }
 
             // Derive save key
             if (!SaveMacKekSource.IsEmpty() && !SaveMacKeySource.IsEmpty() && !DeviceKey.IsEmpty())
             {
-                Crypto.GenerateKek(DeviceKey, SaveMacKekSource, kek, AesKekGenerationSource, null);
-                Crypto.DecryptEcb(kek, SaveMacKeySource, SaveMacKey, 0x10);
+                CryptoOld.GenerateKek(DeviceKey, SaveMacKekSource, kek, AesKekGenerationSource, null);
+                CryptoOld.DecryptEcb(kek, SaveMacKeySource, SaveMacKey, 0x10);
             }
 
             // Derive BIS keys
@@ -378,14 +378,14 @@ namespace LibHac
                 Array.Copy(BisKeySource[2], BisKeySource[3], 0x20);
             }
 
-            Crypto.DecryptEcb(DeviceKey, RetailSpecificAesKeySource, kek, 0x10);
-            if (!BisKeySource[0].IsEmpty()) Crypto.DecryptEcb(kek, BisKeySource[0], BisKeys[0], 0x20);
+            CryptoOld.DecryptEcb(DeviceKey, RetailSpecificAesKeySource, kek, 0x10);
+            if (!BisKeySource[0].IsEmpty()) CryptoOld.DecryptEcb(kek, BisKeySource[0], BisKeys[0], 0x20);
 
-            Crypto.GenerateKek(DeviceKey, BisKekSource, kek, AesKekGenerationSource, AesKeyGenerationSource);
+            CryptoOld.GenerateKek(DeviceKey, BisKekSource, kek, AesKekGenerationSource, AesKeyGenerationSource);
 
             for (int i = 1; i < 4; i++)
             {
-                if (!BisKeySource[i].IsEmpty()) Crypto.DecryptEcb(kek, BisKeySource[i], BisKeys[i], 0x20);
+                if (!BisKeySource[i].IsEmpty()) CryptoOld.DecryptEcb(kek, BisKeySource[i], BisKeys[i], 0x20);
             }
         }
 
@@ -406,30 +406,30 @@ namespace LibHac
 
                 if (haveKakSource0)
                 {
-                    Crypto.GenerateKek(MasterKeys[i], KeyAreaKeyApplicationSource, KeyAreaKeys[i][0],
+                    CryptoOld.GenerateKek(MasterKeys[i], KeyAreaKeyApplicationSource, KeyAreaKeys[i][0],
                         AesKekGenerationSource, AesKeyGenerationSource);
                 }
 
                 if (haveKakSource1)
                 {
-                    Crypto.GenerateKek(MasterKeys[i], KeyAreaKeyOceanSource, KeyAreaKeys[i][1],
+                    CryptoOld.GenerateKek(MasterKeys[i], KeyAreaKeyOceanSource, KeyAreaKeys[i][1],
                         AesKekGenerationSource, AesKeyGenerationSource);
                 }
 
                 if (haveKakSource2)
                 {
-                    Crypto.GenerateKek(MasterKeys[i], KeyAreaKeySystemSource, KeyAreaKeys[i][2],
+                    CryptoOld.GenerateKek(MasterKeys[i], KeyAreaKeySystemSource, KeyAreaKeys[i][2],
                         AesKekGenerationSource, AesKeyGenerationSource);
                 }
 
                 if (haveTitleKekSource)
                 {
-                    Crypto.DecryptEcb(MasterKeys[i], TitleKekSource, TitleKeks[i], 0x10);
+                    CryptoOld.DecryptEcb(MasterKeys[i], TitleKekSource, TitleKeks[i], 0x10);
                 }
 
                 if (havePackage2KeySource)
                 {
-                    Crypto.DecryptEcb(MasterKeys[i], Package2KeySource, Package2Keys[i], 0x10);
+                    CryptoOld.DecryptEcb(MasterKeys[i], Package2KeySource, Package2Keys[i], 0x10);
                 }
             }
         }
@@ -440,15 +440,15 @@ namespace LibHac
 
             var headerKek = new byte[0x10];
 
-            Crypto.GenerateKek(MasterKeys[0], HeaderKekSource, headerKek, AesKekGenerationSource,
+            CryptoOld.GenerateKek(MasterKeys[0], HeaderKekSource, headerKek, AesKekGenerationSource,
                 AesKeyGenerationSource);
-            Crypto.DecryptEcb(headerKek, HeaderKeySource, HeaderKey, 0x20);
+            CryptoOld.DecryptEcb(headerKek, HeaderKeySource, HeaderKey, 0x20);
         }
 
         public void DeriveSdCardKeys()
         {
             var sdKek = new byte[0x10];
-            Crypto.GenerateKek(MasterKeys[0], SdCardKekSource, sdKek, AesKekGenerationSource, AesKeyGenerationSource);
+            CryptoOld.GenerateKek(MasterKeys[0], SdCardKekSource, sdKek, AesKekGenerationSource, AesKeyGenerationSource);
 
             for (int k = 0; k < SdCardKeyIdCount; k++)
             {
@@ -460,7 +460,7 @@ namespace LibHac
 
             for (int k = 0; k < SdCardKeyIdCount; k++)
             {
-                Crypto.DecryptEcb(sdKek, SdCardKeySourcesSpecific[k], SdCardKeys[k], 0x20);
+                CryptoOld.DecryptEcb(sdKek, SdCardKeySourcesSpecific[k], SdCardKeys[k], 0x20);
             }
 
             // Derive sd card save key
@@ -473,8 +473,8 @@ namespace LibHac
                     keySource[i] = (byte)(SaveMacSdCardKeySource[i] ^ SdSeed[i]);
                 }
 
-                Crypto.GenerateKek(MasterKeys[0], SaveMacSdCardKekSource, sdKek, AesKekGenerationSource, null);
-                Crypto.DecryptEcb(sdKek, keySource, SaveMacSdCardKey, 0x10);
+                CryptoOld.GenerateKek(MasterKeys[0], SaveMacSdCardKekSource, sdKek, AesKekGenerationSource, null);
+                CryptoOld.DecryptEcb(sdKek, keySource, SaveMacSdCardKey, 0x10);
             }
         }
 

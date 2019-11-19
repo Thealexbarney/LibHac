@@ -1,13 +1,11 @@
 ﻿// ReSharper disable AssignmentIsFullyDiscarded
 using System;
-
+using LibHac.Crypto.Detail;
 #if HAS_INTRINSICS
-using LibHac.Crypto2.Detail;
-
 using AesNi = System.Runtime.Intrinsics.X86.Aes;
 #endif
 
-namespace LibHac.Crypto2
+namespace LibHac.Crypto
 {
     public static class Aes
     {

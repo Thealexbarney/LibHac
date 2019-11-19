@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using LibHac.Crypto2;
+using LibHac.Crypto;
 using Xunit;
 
 namespace LibHac.Tests.CryptoTests

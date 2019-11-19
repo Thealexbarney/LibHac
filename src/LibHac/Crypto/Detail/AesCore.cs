@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using LibHac.Common;
 
-namespace LibHac.Crypto2.Detail
+namespace LibHac.Crypto.Detail
 {
     public struct AesCore
     {

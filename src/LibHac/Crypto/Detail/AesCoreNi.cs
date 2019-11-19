@@ -8,7 +8,7 @@ using System.Runtime.Intrinsics.X86;
 
 using AesNi = System.Runtime.Intrinsics.X86.Aes;
 
-namespace LibHac.Crypto2.Detail
+namespace LibHac.Crypto.Detail
 {
     [StructLayout(LayoutKind.Sequential, Size = RoundKeyCount * RoundKeySize)]
     public struct AesCoreNi

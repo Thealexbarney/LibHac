@@ -151,8 +151,8 @@ namespace LibHac.FsSystem.NcaUtils
                 throw new ArgumentOutOfRangeException($"Key index must be between 0 and 3. Actual: {index}");
             }
 
-            int offset = NcaHeaderStruct.KeyAreaOffset + Crypto.Aes128Size * index;
-            return _header.Span.Slice(offset, Crypto.Aes128Size);
+            int offset = NcaHeaderStruct.KeyAreaOffset + CryptoOld.Aes128Size * index;
+            return _header.Span.Slice(offset, CryptoOld.Aes128Size);
         }
 
         public NcaFsHeader GetFsHeader(int index)
@@ -163,7 +163,7 @@ namespace LibHac.FsSystem.NcaUtils
             // ReSharper disable once ImpureMethodCallOnReadonlyValueField
             Memory<byte> headerData = _header.Slice(offset, NcaHeaderStruct.FsHeaderSize);
 
-            byte[] actualHash = Crypto.ComputeSha256(headerData.ToArray(), 0, NcaHeaderStruct.FsHeaderSize);
+            byte[] actualHash = CryptoOld.ComputeSha256(headerData.ToArray(), 0, NcaHeaderStruct.FsHeaderSize);
 
             if (!Util.SpansEqual(expectedHash, actualHash))
             {
@@ -231,12 +231,12 @@ namespace LibHac.FsSystem.NcaUtils
 
         public Validity VerifySignature1(byte[] modulus)
         {
-            return Crypto.Rsa2048PssVerify(_header.Span.Slice(0x200, 0x200).ToArray(), Signature1.ToArray(), modulus);
+            return CryptoOld.Rsa2048PssVerify(_header.Span.Slice(0x200, 0x200).ToArray(), Signature1.ToArray(), modulus);
         }
 
         public Validity VerifySignature2(byte[] modulus)
         {
-            return Crypto.Rsa2048PssVerify(_header.Span.Slice(0x200, 0x200).ToArray(), Signature2.ToArray(), modulus);
+            return CryptoOld.Rsa2048PssVerify(_header.Span.Slice(0x200, 0x200).ToArray(), Signature2.ToArray(), modulus);
         }
 
         [StructLayout(LayoutKind.Explicit, Size = 0xC00)]
