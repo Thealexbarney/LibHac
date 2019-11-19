@@ -36,9 +36,9 @@ namespace LibHac.FsSystem.NcaUtils
             }
 
             byte[] encryptedKey = Header.GetEncryptedKey(index).ToArray();
-            var decryptedKey = new byte[Crypto.Aes128Size];
+            var decryptedKey = new byte[CryptoOld.Aes128Size];
 
-            Crypto.DecryptEcb(keyAreaKey, encryptedKey, decryptedKey, Crypto.Aes128Size);
+            CryptoOld.DecryptEcb(keyAreaKey, encryptedKey, decryptedKey, CryptoOld.Aes128Size);
 
             return decryptedKey;
         }
@@ -60,9 +60,9 @@ namespace LibHac.FsSystem.NcaUtils
             }
 
             byte[] encryptedKey = accessKey.Value.ToArray();
-            var decryptedKey = new byte[Crypto.Aes128Size];
+            var decryptedKey = new byte[CryptoOld.Aes128Size];
 
-            Crypto.DecryptEcb(titleKek, encryptedKey, decryptedKey, Crypto.Aes128Size);
+            CryptoOld.DecryptEcb(titleKek, encryptedKey, decryptedKey, CryptoOld.Aes128Size);
 
             return decryptedKey;
         }

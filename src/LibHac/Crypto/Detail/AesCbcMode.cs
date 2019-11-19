@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Security.Cryptography;
 
-namespace LibHac.Crypto2.Detail
+namespace LibHac.Crypto.Detail
 {
     public struct AesCbcMode
     {

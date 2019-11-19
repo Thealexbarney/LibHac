@@ -78,14 +78,14 @@ namespace LibHac.FsSystem
 
         private void DecryptKeys()
         {
-            Crypto.DecryptEcb(Kek1, EncryptedKey1, DecryptedKey1, 0x10);
-            Crypto.DecryptEcb(Kek2, EncryptedKey2, DecryptedKey2, 0x10);
+            CryptoOld.DecryptEcb(Kek1, EncryptedKey1, DecryptedKey1, 0x10);
+            CryptoOld.DecryptEcb(Kek2, EncryptedKey2, DecryptedKey2, 0x10);
         }
 
         private void EncryptKeys()
         {
-            Crypto.EncryptEcb(Kek1, DecryptedKey1, EncryptedKey1, 0x10);
-            Crypto.EncryptEcb(Kek2, DecryptedKey2, EncryptedKey2, 0x10);
+            CryptoOld.EncryptEcb(Kek1, DecryptedKey1, EncryptedKey1, 0x10);
+            CryptoOld.EncryptEcb(Kek2, DecryptedKey2, EncryptedKey2, 0x10);
         }
 
         private void GenerateKek(byte[] kekSeed, string path)

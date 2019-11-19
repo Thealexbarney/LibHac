@@ -98,7 +98,7 @@ namespace LibHac.FsSystem.NcaUtils
             var data = new byte[size];
             storage.Read(offset, data).ThrowIfFailure();
 
-            byte[] actualHash = Crypto.ComputeSha256(data, 0, data.Length);
+            byte[] actualHash = CryptoOld.ComputeSha256(data, 0, data.Length);
 
             if (Util.ArraysEqual(expectedHash, actualHash)) return Validity.Valid;
 

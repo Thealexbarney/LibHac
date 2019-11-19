@@ -6,7 +6,7 @@ using LibHac.FsSystem;
 
 namespace LibHac
 {
-    public static class Crypto
+    public static class CryptoOld
     {
         internal const int Aes128Size = 0x10;
         internal const int Sha256DigestSize = 0x20;

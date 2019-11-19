@@ -1,7 +1,7 @@
 ﻿using System;
-using LibHac.Crypto2.Detail;
+using LibHac.Crypto.Detail;
 
-namespace LibHac.Crypto2
+namespace LibHac.Crypto
 {
     public class AesXtsEncryptor : ICipher
     {

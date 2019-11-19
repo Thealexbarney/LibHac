@@ -1,17 +1,16 @@
-﻿#if HAS_INTRINSICS
-using System;
+﻿using System;
+using System.Security.Cryptography;
 
-namespace LibHac.Crypto2.Detail
+namespace LibHac.Crypto.Detail
 {
-    public struct AesEcbModeNi
+    public struct AesEcbMode
     {
-#pragma warning disable 649
-        private AesCoreNi _aesCore;
-#pragma warning restore 649
+        private AesCore _aesCore;
 
         public void Initialize(ReadOnlySpan<byte> key, bool isDecrypting)
         {
-            _aesCore.Initialize(key, isDecrypting);
+            _aesCore = new AesCore();
+            _aesCore.Initialize(key, ReadOnlySpan<byte>.Empty, CipherMode.ECB, isDecrypting);
         }
 
         public void Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
@@ -25,4 +24,3 @@ namespace LibHac.Crypto2.Detail
         }
     }
 }
-#endif

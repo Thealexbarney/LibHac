@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Linq;
 using LibHac;
-using LibHac.Crypto2;
+using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.FsSystem;
 

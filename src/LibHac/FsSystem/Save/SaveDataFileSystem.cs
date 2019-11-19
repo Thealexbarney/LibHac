@@ -252,7 +252,7 @@ namespace LibHac.FsSystem.Save
             headerStream.Position = 0x300;
             headerStream.Read(hashData, 0, hashData.Length);
 
-            byte[] hash = Crypto.ComputeSha256(hashData, 0, hashData.Length);
+            byte[] hash = CryptoOld.ComputeSha256(hashData, 0, hashData.Length);
             headerStream.Position = 0x108;
             headerStream.Write(hash, 0, hash.Length);
 
@@ -264,7 +264,7 @@ namespace LibHac.FsSystem.Save
             headerStream.Position = 0x100;
             headerStream.Read(cmacData, 0, 0x200);
 
-            Crypto.CalculateAesCmac(keyset.SaveMacKey, cmacData, 0, cmac, 0, 0x200);
+            CryptoOld.CalculateAesCmac(keyset.SaveMacKey, cmacData, 0, cmac, 0, 0x200);
 
             headerStream.Position = 0;
             headerStream.Write(cmac, 0, 0x10);

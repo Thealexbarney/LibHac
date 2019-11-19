@@ -151,7 +151,7 @@ namespace LibHac
 
             Signature = reader.ReadBytes(0x100);
             byte[] sigData = reader.ReadBytes(0x100);
-            SignatureValidity = Crypto.Rsa2048PssVerify(sigData, Signature, keyset.Package2FixedKeyModulus);
+            SignatureValidity = CryptoOld.Rsa2048PssVerify(sigData, Signature, keyset.Package2FixedKeyModulus);
 
             reader.BaseStream.Position -= 0x100;
             Counter = reader.ReadBytes(0x10);

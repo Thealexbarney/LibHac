@@ -20,7 +20,7 @@ namespace LibHac.Compatibility
             SHA256 sha = SHA256.Create();
             var message = new byte[rsaLen];
 
-            BigInteger decInt = BigInteger.ModPow(Crypto.GetBigInteger(signature), new BigInteger(65537), Crypto.GetBigInteger(modulus));
+            BigInteger decInt = BigInteger.ModPow(CryptoOld.GetBigInteger(signature), new BigInteger(65537), CryptoOld.GetBigInteger(modulus));
             byte[] decBytes = decInt.ToByteArray();
 
             if (decBytes[0] != 0xBC) return false;

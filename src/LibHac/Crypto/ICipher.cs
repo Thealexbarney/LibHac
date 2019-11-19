@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LibHac.Crypto2
+namespace LibHac.Crypto
 {
     public interface ICipher
     {

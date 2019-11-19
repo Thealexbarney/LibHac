@@ -57,7 +57,7 @@ namespace LibHac.Tests
         {
             var actual = new byte[0x10];
 
-            Crypto.CalculateAesCmac(data.Key, data.Message, data.Start, actual, 0, data.Length);
+            CryptoOld.CalculateAesCmac(data.Key, data.Message, data.Start, actual, 0, data.Length);
 
             Assert.Equal(data.Expected, actual);
         }
