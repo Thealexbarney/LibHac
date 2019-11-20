@@ -49,8 +49,8 @@ namespace LibHac.Crypto.Detail
 
             if (leftover != 0)
             {
-                ref Buffer16 inBlock =
-                    ref Unsafe.Add(ref Unsafe.As<byte, Buffer16>(ref MemoryMarshal.GetReference(input)), blockCount);
+                Buffer16 inBlock =
+                    Unsafe.Add(ref Unsafe.As<byte, Buffer16>(ref MemoryMarshal.GetReference(input)), blockCount);
 
                 ref Buffer16 outBlock =
                     ref Unsafe.Add(ref Unsafe.As<byte, Buffer16>(ref MemoryMarshal.GetReference(output)), blockCount);
@@ -107,8 +107,8 @@ namespace LibHac.Crypto.Detail
                 Buffer16 finalTweak = tweak;
                 Gf128Mul(ref finalTweak);
 
-                ref Buffer16 inBlock =
-                    ref Unsafe.Add(ref Unsafe.As<byte, Buffer16>(ref MemoryMarshal.GetReference(input)), blockCount);
+                Buffer16 inBlock =
+                    Unsafe.Add(ref Unsafe.As<byte, Buffer16>(ref MemoryMarshal.GetReference(input)), blockCount);
 
                 ref Buffer16 outBlock =
                     ref Unsafe.Add(ref Unsafe.As<byte, Buffer16>(ref MemoryMarshal.GetReference(output)), blockCount);
@@ -120,7 +120,9 @@ namespace LibHac.Crypto.Detail
                 XorBuffer(ref outBlock, ref tmp, ref finalTweak);
 
                 ref Buffer16 finalOutBlock = ref Unsafe.Add(ref outBlock, 1);
-                ref Buffer16 finalInBlock = ref Unsafe.Add(ref inBlock, 1);
+
+                Buffer16 finalInBlock = Unsafe.Add(ref Unsafe.As<byte, Buffer16>(ref MemoryMarshal.GetReference(input)),
+                    blockCount + 1);
 
                 for (int i = 0; i < leftover; i++)
                 {

@@ -58,10 +58,11 @@ namespace LibHac.Crypto.Detail
 
             for (int i = 0; i < blockCount; i++)
             {
-                Vector128<byte> decBeforeIv = _aesCore.DecryptBlock(inBlock);
+                Vector128<byte> currentBlock = inBlock;
+                Vector128<byte> decBeforeIv = _aesCore.DecryptBlock(currentBlock);
                 outBlock = Sse2.Xor(decBeforeIv, iv);
 
-                iv = inBlock;
+                iv = currentBlock;
 
                 inBlock = ref Unsafe.Add(ref inBlock, 1);
                 outBlock = ref Unsafe.Add(ref outBlock, 1);
