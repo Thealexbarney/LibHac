@@ -108,7 +108,7 @@ namespace LibHac.Crypto.Detail
 
             var x = new Buffer16();
             ref Buffer16 outBuf = ref Unsafe.As<Vector128<byte>, Buffer16>(ref output);
-            ref Buffer16 nextInBuf = ref Unsafe.As<Vector128<byte>, Buffer16>(ref Unsafe.Add(ref input, 1));
+            Buffer16 nextInBuf = Unsafe.As<Vector128<byte>, Buffer16>(ref Unsafe.Add(ref input, 1));
             ref Buffer16 nextOutBuf = ref Unsafe.As<Vector128<byte>, Buffer16>(ref Unsafe.Add(ref output, 1));
 
             for (int i = 0; i < finalBlockLength; i++)
@@ -134,7 +134,7 @@ namespace LibHac.Crypto.Detail
 
             var x = new Buffer16();
             ref Buffer16 outBuf = ref Unsafe.As<Vector128<byte>, Buffer16>(ref output);
-            ref Buffer16 inBuf = ref Unsafe.As<Vector128<byte>, Buffer16>(ref input);
+            Buffer16 inBuf = Unsafe.As<Vector128<byte>, Buffer16>(ref input);
             ref Buffer16 prevOutBuf = ref Unsafe.As<Vector128<byte>, Buffer16>(ref prevOutBlock);
 
             for (int i = 0; i < finalBlockLength; i++)
