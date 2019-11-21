@@ -16,12 +16,12 @@ namespace LibHac.Crypto.Detail
 
         public void Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            _aesCore.Encrypt(input, output);
+            _aesCore.EncryptInterleaved8(input, output);
         }
 
         public void Decrypt(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            _aesCore.Decrypt(input, output);
+            _aesCore.DecryptInterleaved8(input, output);
         }
     }
 }

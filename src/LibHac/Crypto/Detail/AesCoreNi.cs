@@ -28,7 +28,6 @@ namespace LibHac.Crypto.Detail
         public readonly ReadOnlySpan<Vector128<byte>> RoundKeys =>
             MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in _roundKeys), RoundKeyCount);
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public readonly void Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
         {
             int blockCount = Math.Min(input.Length, output.Length) >> 4;
@@ -45,7 +44,6 @@ namespace LibHac.Crypto.Detail
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public readonly void Decrypt(ReadOnlySpan<byte> input, Span<byte> output)
         {
             int blockCount = Math.Min(input.Length, output.Length) >> 4;
@@ -98,7 +96,357 @@ namespace LibHac.Crypto.Detail
             return AesNi.DecryptLast(b, keys[0]);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        public readonly void EncryptInterleaved8(ReadOnlySpan<byte> input, Span<byte> output)
+        {
+            int remainingBlocks = Math.Min(input.Length, output.Length) >> 4;
+
+            ref Vector128<byte> inBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(input));
+            ref Vector128<byte> outBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(output));
+
+            while (remainingBlocks > 7)
+            {
+                EncryptBlocks8(
+                    Unsafe.Add(ref inBlock, 0),
+                    Unsafe.Add(ref inBlock, 1),
+                    Unsafe.Add(ref inBlock, 2),
+                    Unsafe.Add(ref inBlock, 3),
+                    Unsafe.Add(ref inBlock, 4),
+                    Unsafe.Add(ref inBlock, 5),
+                    Unsafe.Add(ref inBlock, 6),
+                    Unsafe.Add(ref inBlock, 7),
+                    out Unsafe.Add(ref outBlock, 0),
+                    out Unsafe.Add(ref outBlock, 1),
+                    out Unsafe.Add(ref outBlock, 2),
+                    out Unsafe.Add(ref outBlock, 3),
+                    out Unsafe.Add(ref outBlock, 4),
+                    out Unsafe.Add(ref outBlock, 5),
+                    out Unsafe.Add(ref outBlock, 6),
+                    out Unsafe.Add(ref outBlock, 7));
+
+                inBlock = ref Unsafe.Add(ref inBlock, 8);
+                outBlock = ref Unsafe.Add(ref outBlock, 8);
+                remainingBlocks -= 8;
+            }
+
+            while (remainingBlocks > 0)
+            {
+                outBlock = EncryptBlock(inBlock);
+
+                inBlock = ref Unsafe.Add(ref inBlock, 1);
+                outBlock = ref Unsafe.Add(ref outBlock, 1);
+                remainingBlocks -= 1;
+            }
+        }
+
+        public readonly void DecryptInterleaved8(ReadOnlySpan<byte> input, Span<byte> output)
+        {
+            int remainingBlocks = Math.Min(input.Length, output.Length) >> 4;
+
+            ref Vector128<byte> inBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(input));
+            ref Vector128<byte> outBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(output));
+
+            while (remainingBlocks > 7)
+            {
+                DecryptBlocks8(
+                    Unsafe.Add(ref inBlock, 0),
+                    Unsafe.Add(ref inBlock, 1),
+                    Unsafe.Add(ref inBlock, 2),
+                    Unsafe.Add(ref inBlock, 3),
+                    Unsafe.Add(ref inBlock, 4),
+                    Unsafe.Add(ref inBlock, 5),
+                    Unsafe.Add(ref inBlock, 6),
+                    Unsafe.Add(ref inBlock, 7),
+                    out Unsafe.Add(ref outBlock, 0),
+                    out Unsafe.Add(ref outBlock, 1),
+                    out Unsafe.Add(ref outBlock, 2),
+                    out Unsafe.Add(ref outBlock, 3),
+                    out Unsafe.Add(ref outBlock, 4),
+                    out Unsafe.Add(ref outBlock, 5),
+                    out Unsafe.Add(ref outBlock, 6),
+                    out Unsafe.Add(ref outBlock, 7));
+
+                inBlock = ref Unsafe.Add(ref inBlock, 8);
+                outBlock = ref Unsafe.Add(ref outBlock, 8);
+                remainingBlocks -= 8;
+            }
+
+            while (remainingBlocks > 0)
+            {
+                outBlock = DecryptBlock(inBlock);
+
+                inBlock = ref Unsafe.Add(ref inBlock, 1);
+                outBlock = ref Unsafe.Add(ref outBlock, 1);
+                remainingBlocks -= 1;
+            }
+        }
+
+        // When inlining this function, RyuJIT will almost make the
+        // generated code the same as if it were manually inlined
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly void EncryptBlocks8(Vector128<byte> in0,
+            Vector128<byte> in1,
+            Vector128<byte> in2,
+            Vector128<byte> in3,
+            Vector128<byte> in4,
+            Vector128<byte> in5,
+            Vector128<byte> in6,
+            Vector128<byte> in7,
+            out Vector128<byte> out0,
+            out Vector128<byte> out1,
+            out Vector128<byte> out2,
+            out Vector128<byte> out3,
+            out Vector128<byte> out4,
+            out Vector128<byte> out5,
+            out Vector128<byte> out6,
+            out Vector128<byte> out7
+        )
+        {
+            ReadOnlySpan<Vector128<byte>> keys = RoundKeys;
+
+            Vector128<byte> key = keys[0];
+            Vector128<byte> b0 = Sse2.Xor(in0, key);
+            Vector128<byte> b1 = Sse2.Xor(in1, key);
+            Vector128<byte> b2 = Sse2.Xor(in2, key);
+            Vector128<byte> b3 = Sse2.Xor(in3, key);
+            Vector128<byte> b4 = Sse2.Xor(in4, key);
+            Vector128<byte> b5 = Sse2.Xor(in5, key);
+            Vector128<byte> b6 = Sse2.Xor(in6, key);
+            Vector128<byte> b7 = Sse2.Xor(in7, key);
+
+            key = keys[1];
+            b0 = AesNi.Encrypt(b0, key);
+            b1 = AesNi.Encrypt(b1, key);
+            b2 = AesNi.Encrypt(b2, key);
+            b3 = AesNi.Encrypt(b3, key);
+            b4 = AesNi.Encrypt(b4, key);
+            b5 = AesNi.Encrypt(b5, key);
+            b6 = AesNi.Encrypt(b6, key);
+            b7 = AesNi.Encrypt(b7, key);
+
+            key = keys[2];
+            b0 = AesNi.Encrypt(b0, key);
+            b1 = AesNi.Encrypt(b1, key);
+            b2 = AesNi.Encrypt(b2, key);
+            b3 = AesNi.Encrypt(b3, key);
+            b4 = AesNi.Encrypt(b4, key);
+            b5 = AesNi.Encrypt(b5, key);
+            b6 = AesNi.Encrypt(b6, key);
+            b7 = AesNi.Encrypt(b7, key);
+
+            key = keys[3];
+            b0 = AesNi.Encrypt(b0, key);
+            b1 = AesNi.Encrypt(b1, key);
+            b2 = AesNi.Encrypt(b2, key);
+            b3 = AesNi.Encrypt(b3, key);
+            b4 = AesNi.Encrypt(b4, key);
+            b5 = AesNi.Encrypt(b5, key);
+            b6 = AesNi.Encrypt(b6, key);
+            b7 = AesNi.Encrypt(b7, key);
+
+            key = keys[4];
+            b0 = AesNi.Encrypt(b0, key);
+            b1 = AesNi.Encrypt(b1, key);
+            b2 = AesNi.Encrypt(b2, key);
+            b3 = AesNi.Encrypt(b3, key);
+            b4 = AesNi.Encrypt(b4, key);
+            b5 = AesNi.Encrypt(b5, key);
+            b6 = AesNi.Encrypt(b6, key);
+            b7 = AesNi.Encrypt(b7, key);
+
+            key = keys[5];
+            b0 = AesNi.Encrypt(b0, key);
+            b1 = AesNi.Encrypt(b1, key);
+            b2 = AesNi.Encrypt(b2, key);
+            b3 = AesNi.Encrypt(b3, key);
+            b4 = AesNi.Encrypt(b4, key);
+            b5 = AesNi.Encrypt(b5, key);
+            b6 = AesNi.Encrypt(b6, key);
+            b7 = AesNi.Encrypt(b7, key);
+
+            key = keys[6];
+            b0 = AesNi.Encrypt(b0, key);
+            b1 = AesNi.Encrypt(b1, key);
+            b2 = AesNi.Encrypt(b2, key);
+            b3 = AesNi.Encrypt(b3, key);
+            b4 = AesNi.Encrypt(b4, key);
+            b5 = AesNi.Encrypt(b5, key);
+            b6 = AesNi.Encrypt(b6, key);
+            b7 = AesNi.Encrypt(b7, key);
+
+            key = keys[7];
+            b0 = AesNi.Encrypt(b0, key);
+            b1 = AesNi.Encrypt(b1, key);
+            b2 = AesNi.Encrypt(b2, key);
+            b3 = AesNi.Encrypt(b3, key);
+            b4 = AesNi.Encrypt(b4, key);
+            b5 = AesNi.Encrypt(b5, key);
+            b6 = AesNi.Encrypt(b6, key);
+            b7 = AesNi.Encrypt(b7, key);
+
+            key = keys[8];
+            b0 = AesNi.Encrypt(b0, key);
+            b1 = AesNi.Encrypt(b1, key);
+            b2 = AesNi.Encrypt(b2, key);
+            b3 = AesNi.Encrypt(b3, key);
+            b4 = AesNi.Encrypt(b4, key);
+            b5 = AesNi.Encrypt(b5, key);
+            b6 = AesNi.Encrypt(b6, key);
+            b7 = AesNi.Encrypt(b7, key);
+
+            key = keys[9];
+            b0 = AesNi.Encrypt(b0, key);
+            b1 = AesNi.Encrypt(b1, key);
+            b2 = AesNi.Encrypt(b2, key);
+            b3 = AesNi.Encrypt(b3, key);
+            b4 = AesNi.Encrypt(b4, key);
+            b5 = AesNi.Encrypt(b5, key);
+            b6 = AesNi.Encrypt(b6, key);
+            b7 = AesNi.Encrypt(b7, key);
+
+            key = keys[10];
+            out0 = AesNi.EncryptLast(b0, key);
+            out1 = AesNi.EncryptLast(b1, key);
+            out2 = AesNi.EncryptLast(b2, key);
+            out3 = AesNi.EncryptLast(b3, key);
+            out4 = AesNi.EncryptLast(b4, key);
+            out5 = AesNi.EncryptLast(b5, key);
+            out6 = AesNi.EncryptLast(b6, key);
+            out7 = AesNi.EncryptLast(b7, key);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly void DecryptBlocks8(
+            Vector128<byte> in0,
+            Vector128<byte> in1,
+            Vector128<byte> in2,
+            Vector128<byte> in3,
+            Vector128<byte> in4,
+            Vector128<byte> in5,
+            Vector128<byte> in6,
+            Vector128<byte> in7,
+            out Vector128<byte> out0,
+            out Vector128<byte> out1,
+            out Vector128<byte> out2,
+            out Vector128<byte> out3,
+            out Vector128<byte> out4,
+            out Vector128<byte> out5,
+            out Vector128<byte> out6,
+            out Vector128<byte> out7
+            )
+        {
+            ReadOnlySpan<Vector128<byte>> keys = RoundKeys;
+
+            Vector128<byte> key = keys[10];
+            Vector128<byte> b0 = Sse2.Xor(in0, key);
+            Vector128<byte> b1 = Sse2.Xor(in1, key);
+            Vector128<byte> b2 = Sse2.Xor(in2, key);
+            Vector128<byte> b3 = Sse2.Xor(in3, key);
+            Vector128<byte> b4 = Sse2.Xor(in4, key);
+            Vector128<byte> b5 = Sse2.Xor(in5, key);
+            Vector128<byte> b6 = Sse2.Xor(in6, key);
+            Vector128<byte> b7 = Sse2.Xor(in7, key);
+
+            key = keys[9];
+            b0 = AesNi.Decrypt(b0, key);
+            b1 = AesNi.Decrypt(b1, key);
+            b2 = AesNi.Decrypt(b2, key);
+            b3 = AesNi.Decrypt(b3, key);
+            b4 = AesNi.Decrypt(b4, key);
+            b5 = AesNi.Decrypt(b5, key);
+            b6 = AesNi.Decrypt(b6, key);
+            b7 = AesNi.Decrypt(b7, key);
+
+            key = keys[8];
+            b0 = AesNi.Decrypt(b0, key);
+            b1 = AesNi.Decrypt(b1, key);
+            b2 = AesNi.Decrypt(b2, key);
+            b3 = AesNi.Decrypt(b3, key);
+            b4 = AesNi.Decrypt(b4, key);
+            b5 = AesNi.Decrypt(b5, key);
+            b6 = AesNi.Decrypt(b6, key);
+            b7 = AesNi.Decrypt(b7, key);
+
+            key = keys[7];
+            b0 = AesNi.Decrypt(b0, key);
+            b1 = AesNi.Decrypt(b1, key);
+            b2 = AesNi.Decrypt(b2, key);
+            b3 = AesNi.Decrypt(b3, key);
+            b4 = AesNi.Decrypt(b4, key);
+            b5 = AesNi.Decrypt(b5, key);
+            b6 = AesNi.Decrypt(b6, key);
+            b7 = AesNi.Decrypt(b7, key);
+
+            key = keys[6];
+            b0 = AesNi.Decrypt(b0, key);
+            b1 = AesNi.Decrypt(b1, key);
+            b2 = AesNi.Decrypt(b2, key);
+            b3 = AesNi.Decrypt(b3, key);
+            b4 = AesNi.Decrypt(b4, key);
+            b5 = AesNi.Decrypt(b5, key);
+            b6 = AesNi.Decrypt(b6, key);
+            b7 = AesNi.Decrypt(b7, key);
+
+            key = keys[5];
+            b0 = AesNi.Decrypt(b0, key);
+            b1 = AesNi.Decrypt(b1, key);
+            b2 = AesNi.Decrypt(b2, key);
+            b3 = AesNi.Decrypt(b3, key);
+            b4 = AesNi.Decrypt(b4, key);
+            b5 = AesNi.Decrypt(b5, key);
+            b6 = AesNi.Decrypt(b6, key);
+            b7 = AesNi.Decrypt(b7, key);
+
+            key = keys[4];
+            b0 = AesNi.Decrypt(b0, key);
+            b1 = AesNi.Decrypt(b1, key);
+            b2 = AesNi.Decrypt(b2, key);
+            b3 = AesNi.Decrypt(b3, key);
+            b4 = AesNi.Decrypt(b4, key);
+            b5 = AesNi.Decrypt(b5, key);
+            b6 = AesNi.Decrypt(b6, key);
+            b7 = AesNi.Decrypt(b7, key);
+
+            key = keys[3];
+            b0 = AesNi.Decrypt(b0, key);
+            b1 = AesNi.Decrypt(b1, key);
+            b2 = AesNi.Decrypt(b2, key);
+            b3 = AesNi.Decrypt(b3, key);
+            b4 = AesNi.Decrypt(b4, key);
+            b5 = AesNi.Decrypt(b5, key);
+            b6 = AesNi.Decrypt(b6, key);
+            b7 = AesNi.Decrypt(b7, key);
+
+            key = keys[2];
+            b0 = AesNi.Decrypt(b0, key);
+            b1 = AesNi.Decrypt(b1, key);
+            b2 = AesNi.Decrypt(b2, key);
+            b3 = AesNi.Decrypt(b3, key);
+            b4 = AesNi.Decrypt(b4, key);
+            b5 = AesNi.Decrypt(b5, key);
+            b6 = AesNi.Decrypt(b6, key);
+            b7 = AesNi.Decrypt(b7, key);
+
+            key = keys[1];
+            b0 = AesNi.Decrypt(b0, key);
+            b1 = AesNi.Decrypt(b1, key);
+            b2 = AesNi.Decrypt(b2, key);
+            b3 = AesNi.Decrypt(b3, key);
+            b4 = AesNi.Decrypt(b4, key);
+            b5 = AesNi.Decrypt(b5, key);
+            b6 = AesNi.Decrypt(b6, key);
+            b7 = AesNi.Decrypt(b7, key);
+
+            key = keys[0];
+            out0 = AesNi.DecryptLast(b0, key);
+            out1 = AesNi.DecryptLast(b1, key);
+            out2 = AesNi.DecryptLast(b2, key);
+            out3 = AesNi.DecryptLast(b3, key);
+            out4 = AesNi.DecryptLast(b4, key);
+            out5 = AesNi.DecryptLast(b5, key);
+            out6 = AesNi.DecryptLast(b6, key);
+            out7 = AesNi.DecryptLast(b7, key);
+        }
+
         private static void KeyExpansion(ReadOnlySpan<byte> key, Span<Vector128<byte>> roundKeys, bool isDecrypting)
         {
             var curKey = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(key));
