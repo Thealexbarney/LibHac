@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -21,7 +22,15 @@ namespace LibHac.Common
         /// <summary>
         /// A reference to the first element in this collection.
         /// </summary>
-        public ref T Value => ref MemoryMarshal.GetReference(_buffer);
+        public ref T Value
+        {
+            get
+            {
+                Debug.Assert(_buffer.Length > 0);
+                
+                return ref MemoryMarshal.GetReference(_buffer);
+            }
+        }
 
         /// <summary>
         /// A reference to the element at index <paramref name="index"/>.

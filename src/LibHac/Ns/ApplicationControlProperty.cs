@@ -24,14 +24,14 @@ namespace LibHac.Ns
 
         [FieldOffset(0x0000)] private byte _titles;
         [FieldOffset(0x3000)] private byte _isbn;
-        [FieldOffset(0x3025)] public byte StartupUserAccount;
+        [FieldOffset(0x3025)] public StartupUserAccount StartupUserAccount;
         [FieldOffset(0x3026)] public byte UserAccountSwitchLock;
         [FieldOffset(0x3027)] public byte AddOnContentRegistrationType;
-        [FieldOffset(0x3028)] public int ApplicationAttribute;
+        [FieldOffset(0x3028)] public ApplicationAttribute ApplicationAttribute;
         [FieldOffset(0x302C)] public uint SupportedLanguages;
-        [FieldOffset(0x3030)] public uint ParentalControl;
-        [FieldOffset(0x3034)] public byte Screenshot;
-        [FieldOffset(0x3035)] public byte VideoCaptureMode;
+        [FieldOffset(0x3030)] public ParentalControlFlagValue ParentalControl;
+        [FieldOffset(0x3034)] public ScreenshotValue Screenshot;
+        [FieldOffset(0x3035)] public VideoCaptureValue VideoCaptureMode;
         [FieldOffset(0x3036)] public byte DataLossConfirmation;
         [FieldOffset(0x3037)] public byte PlayLogPolicy;
         [FieldOffset(0x3038)] public ulong PresenceGroupId;
@@ -46,8 +46,8 @@ namespace LibHac.Ns
         [FieldOffset(0x30A0)] public long BcatDeliveryCacheStorageSize;
         [FieldOffset(0x30A8)] private byte _applicationErrorCodeCategory;
         [FieldOffset(0x30B0)] private ulong _localCommunicationIds;
-        [FieldOffset(0x30F0)] public byte LogoType;
-        [FieldOffset(0x30F1)] public byte LogoHandling;
+        [FieldOffset(0x30F0)] public LogoType LogoType;
+        [FieldOffset(0x30F1)] public LogoHandling LogoHandling;
         [FieldOffset(0x30F2)] public byte RuntimeAddOnContentInstall;
         [FieldOffset(0x30F3)] public byte _reserved30F3;
         [FieldOffset(0x30F6)] public byte CrashReport;
@@ -66,7 +66,7 @@ namespace LibHac.Ns
         [FieldOffset(0x3180)] public long CacheStorageMaxSizeAndMaxJournalSize;
         [FieldOffset(0x3188)] public long CacheStorageMaxIndex;
         [FieldOffset(0x3190)] private ulong _playLogQueryableApplicationId;
-        [FieldOffset(0x3210)] public byte PlayLogQueryCapability;
+        [FieldOffset(0x3210)] public PlayLogQueryCapability PlayLogQueryCapability;
         [FieldOffset(0x3211)] public byte RepairFlag;
         [FieldOffset(0x3212)] public byte ProgramIndex;
         [FieldOffset(0x3213)] public byte RequiredNetworkServiceLicenseOnLaunchFlag;
@@ -132,5 +132,58 @@ namespace LibHac.Ns
         private Padding10 _keyPadding;
 
         public Span<byte> Key => SpanHelpers.CreateSpan(ref _key, 0x10);
+    }
+
+    public enum StartupUserAccount : byte
+    {
+        None = 0,
+        Required = 1,
+        RequiredWithNetworkServiceAccountAvailable = 2
+    }
+
+    public enum LogoHandling : byte
+    {
+        Auto = 0,
+        Manual = 1
+    }
+
+    public enum LogoType : byte
+    {
+        LicensedByNintendo = 0,
+        DistributedByNintendo = 1,
+        Nintendo = 2
+    }
+
+    [Flags]
+    public enum ApplicationAttribute
+    {
+        None = 0,
+        Demo = 1
+    }
+
+    public enum PlayLogQueryCapability : byte
+    {
+        None = 0,
+        WhiteList = 1,
+        All = 2
+    }
+
+    public enum ParentalControlFlagValue
+    {
+        None = 0,
+        FreeCommunication = 1
+    }
+
+    public enum ScreenshotValue : byte
+    {
+        Allow = 0,
+        Deny = 1
+    }
+
+    public enum VideoCaptureValue : byte
+    {
+        Deny = 0,
+        Allow = 1,
+        Automatic = 2
     }
 }
