@@ -21,7 +21,7 @@ namespace LibHac.Common
         /// <summary>
         /// A reference to the first element in this collection.
         /// </summary>
-        public ref T Value => ref _buffer[0];
+        public ref T Value => ref MemoryMarshal.GetReference(_buffer);
 
         /// <summary>
         /// A reference to the element at index <paramref name="index"/>.
@@ -84,8 +84,7 @@ namespace LibHac.Common
         /// <returns>A byte span representation of the element.</returns>
         public Span<byte> GetByteSpan(int elementIndex)
         {
-            Span<T> element = _buffer.Slice(elementIndex, 1);
-            return MemoryMarshal.Cast<T, byte>(element);
+            return SpanHelpers.AsByteSpan(ref _buffer[elementIndex]);
         }
 
         /// <summary>
