@@ -15,6 +15,8 @@ namespace hactoolnet
         private const int BlockSizeBlocked = 0x10;
         private const int BlockSizeSeparate = 0x10;
 
+        private const int BatchCipherBenchSize = 1024 * 1024;
+
         private static void CopyBenchmark(IStorage src, IStorage dst, int iterations, string label, IProgressReport logger)
         {
             // Warmup
@@ -171,6 +173,53 @@ namespace hactoolnet
             logger.LogMessage($"{label}{averageRate}/s, fastest run: {fastestRate}/s, slowest run: {slowestRate}/s");
         }
 
+        private static void RegisterAllCipherBenchmarks(MultiBenchmark bench)
+        {
+            var input = new byte[BatchCipherBenchSize];
+            var output = new byte[BatchCipherBenchSize];
+
+            Func<double, string> resultPrinter = time => Util.GetBytesReadable((long)(BatchCipherBenchSize / time)) + "/s";
+
+            // Skip the first benchmark set if we don't have AES-NI intrinsics
+            for (int i = Aes.IsAesNiSupported() ? 0 : 1; i < 2; i++)
+            {
+                // Prefer .NET crypto on the second set
+                string nameSuffix = i == 1 ? "built-in " : string.Empty;
+                bool preferDotNetImpl = i == 1;
+
+                RegisterCipher($"AES-ECB {nameSuffix}encrypt",
+                    () => Aes.CreateEcbEncryptor(new byte[0x10], preferDotNetImpl));
+
+                RegisterCipher($"AES-ECB {nameSuffix}decrypt",
+                    () => Aes.CreateEcbDecryptor(new byte[0x10], preferDotNetImpl));
+
+                RegisterCipher($"AES-CBC {nameSuffix}encrypt",
+                    () => Aes.CreateCbcEncryptor(new byte[0x10], new byte[0x10], preferDotNetImpl));
+
+                RegisterCipher($"AES-CBC {nameSuffix}decrypt",
+                    () => Aes.CreateCbcDecryptor(new byte[0x10], new byte[0x10], preferDotNetImpl));
+
+                RegisterCipher($"AES-CTR {nameSuffix}decrypt",
+                    () => Aes.CreateCtrDecryptor(new byte[0x10], new byte[0x10], preferDotNetImpl));
+
+                RegisterCipher($"AES-XTS {nameSuffix}encrypt",
+                    () => Aes.CreateXtsEncryptor(new byte[0x10], new byte[0x10], new byte[0x10], preferDotNetImpl));
+
+                RegisterCipher($"AES-XTS {nameSuffix}decrypt",
+                    () => Aes.CreateXtsDecryptor(new byte[0x10], new byte[0x10], new byte[0x10], preferDotNetImpl));
+            }
+
+            void RegisterCipher(string name, Func<ICipher> cipherGenerator)
+            {
+                ICipher cipher = null;
+
+                Action setup = () => cipher = cipherGenerator();
+                Action action = () => cipher.Transform(input, output);
+
+                bench.Register(name, setup, action, resultPrinter);
+            }
+        }
+
         private static void RunCipherBenchmark(Func<ICipher> cipherNet, Func<ICipher> cipherLibHac,
             CipherTaskSeparate function, bool benchBlocked, string label, IProgressReport logger)
         {
@@ -295,6 +344,7 @@ namespace hactoolnet
 
                     break;
                 }
+
                 case "aescbcnew":
                 {
                     Func<ICipher> encryptorNet = () => Aes.CreateCbcEncryptor(new byte[0x10], new byte[0x10], true);
@@ -325,6 +375,7 @@ namespace hactoolnet
 
                     break;
                 }
+
                 case "aesxtsnew":
                 {
                     Func<ICipher> encryptorNet = () => Aes.CreateXtsEncryptor(new byte[0x10], new byte[0x10], new byte[0x10], true);
@@ -341,6 +392,16 @@ namespace hactoolnet
 
                     RunCipherBenchmark(decryptorNet, decryptorLh, decrypt, false, "AES-XTS decrypt", ctx.Logger);
 
+                    break;
+                }
+
+                case "crypto":
+                {
+                    var bench = new MultiBenchmark();
+
+                    RegisterAllCipherBenchmarks(bench);
+
+                    bench.Run();
                     break;
                 }
 
