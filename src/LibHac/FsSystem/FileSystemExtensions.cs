@@ -79,12 +79,13 @@ namespace LibHac.FsSystem
             bool recurse = searchOptions.HasFlag(SearchOptions.RecurseSubdirectories);
 
             IFileSystem fs = fileSystem;
-            DirectoryEntry dirEntry = default;
 
             fileSystem.OpenDirectory(out IDirectory directory, path, OpenDirectoryMode.All).ThrowIfFailure();
 
             while (true)
             {
+                DirectoryEntry dirEntry = default;
+
                 directory.Read(out long entriesRead, SpanHelpers.AsSpan(ref dirEntry)).ThrowIfFailure();
                 if (entriesRead == 0) break;
 

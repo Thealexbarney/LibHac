@@ -111,13 +111,14 @@ namespace LibHac.Fs
             bool ignoreCase = searchOptions.HasFlag(SearchOptions.CaseInsensitive);
             bool recurse = searchOptions.HasFlag(SearchOptions.RecurseSubdirectories);
 
-            DirectoryEntry dirEntry = default;
             fs.OpenDirectory(out DirectoryHandle sourceHandle, path, OpenDirectoryMode.All).ThrowIfFailure();
 
             using (sourceHandle)
             {
                 while (true)
                 {
+                    DirectoryEntry dirEntry = default;
+
                     fs.ReadDirectory(out long entriesRead, SpanHelpers.AsSpan(ref dirEntry), sourceHandle);
                     if (entriesRead == 0) break;
 
