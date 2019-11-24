@@ -131,12 +131,30 @@ namespace hactoolnet
 
         private static FileType ParseFileType(string input)
         {
-            if (!Enum.TryParse(input, true, out FileType type))
+            switch (input.ToLower())
             {
-                PrintWithUsage("Specified type is invalid.");
+                case "nca": return FileType.Nca;
+                case "pfs0": return FileType.Pfs0;
+                case "pfsbuild": return FileType.PfsBuild;
+                case "nsp": return FileType.Nsp;
+                case "romfs": return FileType.Romfs;
+                case "romfsbuild": return FileType.RomfsBuild;
+                case "nax0": return FileType.Nax0;
+                case "xci": return FileType.Xci;
+                case "switchfs": return FileType.SwitchFs;
+                case "save": return FileType.Save;
+                case "keygen": return FileType.Keygen;
+                case "pk11": return FileType.Pk11;
+                case "pk21": return FileType.Pk21;
+                case "kip1": return FileType.Kip1;
+                case "ini1": return FileType.Ini1;
+                case "ndv0": return FileType.Ndv0;
+                case "bench": return FileType.Bench;
             }
 
-            return type;
+            PrintWithUsage("Specified type is invalid.");
+
+            return default;
         }
 
         private static ulong ParseTitleId(string input)
