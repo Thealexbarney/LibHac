@@ -22,7 +22,7 @@ namespace LibHac.Crypto.Detail
         {
             Debug.Assert(key.Length == Aes.KeySize128);
 
-            KeyExpansion(key, MemoryMarshal.CreateSpan(ref _roundKeys, RoundKeyCount), isDecrypting);
+            KeyExpansion(key, isDecrypting);
         }
 
         public readonly ReadOnlySpan<Vector128<byte>> RoundKeys =>
@@ -447,8 +447,10 @@ namespace LibHac.Crypto.Detail
             out7 = AesNi.DecryptLast(b7, key);
         }
 
-        private static void KeyExpansion(ReadOnlySpan<byte> key, Span<Vector128<byte>> roundKeys, bool isDecrypting)
+        private void KeyExpansion(ReadOnlySpan<byte> key, bool isDecrypting)
         {
+            Span<Vector128<byte>> roundKeys = MemoryMarshal.CreateSpan(ref _roundKeys, RoundKeyCount);
+
             var curKey = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(key));
             roundKeys[0] = curKey;
 
