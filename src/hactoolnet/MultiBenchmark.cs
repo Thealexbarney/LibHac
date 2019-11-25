@@ -6,18 +6,19 @@ namespace hactoolnet
 {
     internal class MultiBenchmark
     {
-        public int RunsNeeded { get; set; } = 500;
+        public int DefaultRunsNeeded { get; set; } = 500;
 
         private List<BenchmarkItem> Benchmarks { get; } = new List<BenchmarkItem>();
 
-        public void Register(string name, Action setupAction, Action runAction, Func<double, string> resultPrinter)
+        public void Register(string name, Action setupAction, Action runAction, Func<double, string> resultPrinter, int runsNeeded = -1)
         {
             var benchmark = new BenchmarkItem
             {
                 Name = name,
                 Setup = setupAction,
                 Run = runAction,
-                PrintResult = resultPrinter
+                PrintResult = resultPrinter,
+                RunsNeeded = runsNeeded == -1 ? DefaultRunsNeeded : runsNeeded
             };
 
             Benchmarks.Add(benchmark);
@@ -40,7 +41,7 @@ namespace hactoolnet
 
             int runsSinceLastBest = 0;
 
-            while (runsSinceLastBest < RunsNeeded)
+            while (runsSinceLastBest < item.RunsNeeded)
             {
                 runsSinceLastBest++;
                 item.Setup();
@@ -64,6 +65,7 @@ namespace hactoolnet
         private class BenchmarkItem
         {
             public string Name { get; set; }
+            public int RunsNeeded { get; set; }
             public double Time { get; set; }
             public string Result { get; set; }
 

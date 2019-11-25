@@ -6,6 +6,12 @@ using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.FsSystem;
 
+#if NETCOREAPP
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+#endif
+
 namespace hactoolnet
 {
     internal static class ProcessBench
@@ -16,6 +22,8 @@ namespace hactoolnet
         private const int BlockSizeSeparate = 0x10;
 
         private const int BatchCipherBenchSize = 1024 * 1024;
+        // ReSharper disable once UnusedMember.Local
+        private const int SingleBlockCipherBenchSize = 1024 * 128;
 
         private static void CopyBenchmark(IStorage src, IStorage dst, int iterations, string label, IProgressReport logger)
         {
@@ -173,7 +181,7 @@ namespace hactoolnet
             logger.LogMessage($"{label}{averageRate}/s, fastest run: {fastestRate}/s, slowest run: {slowestRate}/s");
         }
 
-        private static void RegisterAllCipherBenchmarks(MultiBenchmark bench)
+        private static void RegisterAesSequentialBenchmarks(MultiBenchmark bench)
         {
             var input = new byte[BatchCipherBenchSize];
             var output = new byte[BatchCipherBenchSize];
@@ -218,6 +226,62 @@ namespace hactoolnet
 
                 bench.Register(name, setup, action, resultPrinter);
             }
+        }
+
+        // ReSharper disable once UnusedParameter.Local
+        private static void RegisterAesSingleBlockBenchmarks(MultiBenchmark bench)
+        {
+#if NETCOREAPP
+            var input = new byte[SingleBlockCipherBenchSize];
+            var output = new byte[SingleBlockCipherBenchSize];
+
+            Func<double, string> resultPrinter = time => Util.GetBytesReadable((long)(SingleBlockCipherBenchSize / time)) + "/s";
+
+            bench.Register("AES single-block encrypt", () => { }, EncryptBlocks, resultPrinter);
+            bench.Register("AES single-block decrypt", () => { }, DecryptBlocks, resultPrinter);
+
+            bench.DefaultRunsNeeded = 1000;
+
+            void EncryptBlocks()
+            {
+                ref byte inBlock = ref MemoryMarshal.GetReference(input.AsSpan());
+                ref byte outBlock = ref MemoryMarshal.GetReference(output.AsSpan());
+
+                Vector128<byte> keyVec = Vector128<byte>.Zero;
+
+                ref byte end = ref Unsafe.Add(ref inBlock, input.Length);
+
+                while (Unsafe.IsAddressLessThan(ref inBlock, ref end))
+                {
+                    var inputVec = Unsafe.ReadUnaligned<Vector128<byte>>(ref inBlock);
+                    Vector128<byte> outputVec = LibHac.Crypto.Detail.AesCoreNi.EncryptBlock(inputVec, keyVec);
+                    Unsafe.WriteUnaligned(ref outBlock, outputVec);
+
+                    inBlock = ref Unsafe.Add(ref inBlock, Aes.BlockSize);
+                    outBlock = ref Unsafe.Add(ref outBlock, Aes.BlockSize);
+                }
+            }
+
+            void DecryptBlocks()
+            {
+                ref byte inBlock = ref MemoryMarshal.GetReference(input.AsSpan());
+                ref byte outBlock = ref MemoryMarshal.GetReference(output.AsSpan());
+
+                Vector128<byte> keyVec = Vector128<byte>.Zero;
+
+                ref byte end = ref Unsafe.Add(ref inBlock, input.Length);
+
+                while (Unsafe.IsAddressLessThan(ref inBlock, ref end))
+                {
+                    var inputVec = Unsafe.ReadUnaligned<Vector128<byte>>(ref inBlock);
+                    Vector128<byte> outputVec = LibHac.Crypto.Detail.AesCoreNi.DecryptBlock(inputVec, keyVec);
+                    Unsafe.WriteUnaligned(ref outBlock, outputVec);
+
+                    inBlock = ref Unsafe.Add(ref inBlock, Aes.BlockSize);
+                    outBlock = ref Unsafe.Add(ref outBlock, Aes.BlockSize);
+                }
+            }
+#endif
         }
 
         private static void RunCipherBenchmark(Func<ICipher> cipherNet, Func<ICipher> cipherLibHac,
@@ -399,7 +463,8 @@ namespace hactoolnet
                 {
                     var bench = new MultiBenchmark();
 
-                    RegisterAllCipherBenchmarks(bench);
+                    RegisterAesSequentialBenchmarks(bench);
+                    RegisterAesSingleBlockBenchmarks(bench);
 
                     bench.Run();
                     break;
