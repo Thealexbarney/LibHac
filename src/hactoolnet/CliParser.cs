@@ -60,6 +60,7 @@ namespace hactoolnet
             new CliOption("hashedfs", 0, (o, a) => o.BuildHfs = true),
             new CliOption("title", 1, (o, a) => o.TitleId = ParseTitleId(a[0])),
             new CliOption("bench", 1, (o, a) => o.BenchType = a[0]),
+            new CliOption("cpufreq", 1, (o, a) => o.CpuFrequencyGhz = ParseDouble(a[0])),
 
             new CliOption("replacefile", 2, (o, a) =>
             {
@@ -170,6 +171,16 @@ namespace hactoolnet
             }
 
             return id;
+        }
+
+        private static double ParseDouble(string input)
+        {
+            if (!double.TryParse(input, out double value))
+            {
+                PrintWithUsage($"Could not parse value \"{input}\"");
+            }
+
+            return value;
         }
 
         private static void PrintWithUsage(string toPrint)

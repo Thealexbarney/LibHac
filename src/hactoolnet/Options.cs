@@ -53,6 +53,7 @@ namespace hactoolnet
         public bool BuildHfs;
         public ulong TitleId;
         public string BenchType;
+        public double CpuFrequencyGhz;
 
         public IntegrityCheckLevel IntegrityLevel
         {
