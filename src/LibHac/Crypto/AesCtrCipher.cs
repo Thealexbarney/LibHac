@@ -1,11 +1,14 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Crypto.Detail;
 
 namespace LibHac.Crypto
 {
-    public class AesCtrCipher : ICipher
+    public class AesCtrCipher : ICipherWithIv
     {
         private AesCtrMode _baseCipher;
+
+        public ref Buffer16 Iv => ref _baseCipher.Iv;
 
         public AesCtrCipher(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
         {

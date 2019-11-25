@@ -16,7 +16,7 @@ namespace LibHac.Crypto.Detail
         private AesCoreNi _tweakAesCore;
 #pragma warning restore 649
 
-        private Vector128<byte> _iv;
+        public Vector128<byte> Iv;
 
         public void Initialize(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv, bool decrypting)
         {
@@ -25,7 +25,7 @@ namespace LibHac.Crypto.Detail
             _dataAesCore.Initialize(key1, decrypting);
             _tweakAesCore.Initialize(key2, false);
 
-            _iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
+            Iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
         }
 
         public void Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
@@ -41,7 +41,7 @@ namespace LibHac.Crypto.Detail
 
             Vector128<byte> mask = Vector128.Create(0x87, 1).AsByte();
 
-            Vector128<byte> tweak = _tweakAesCore.EncryptBlock(_iv);
+            Vector128<byte> tweak = _tweakAesCore.EncryptBlock(Iv);
 
             while (remainingBlocks > 7)
             {
@@ -121,7 +121,7 @@ namespace LibHac.Crypto.Detail
 
             Vector128<byte> mask = Vector128.Create(0x87, 1).AsByte();
 
-            Vector128<byte> tweak = _tweakAesCore.EncryptBlock(_iv);
+            Vector128<byte> tweak = _tweakAesCore.EncryptBlock(Iv);
 
             while (remainingBlocks > 7)
             {

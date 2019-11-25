@@ -11,7 +11,7 @@ namespace LibHac.Crypto.Detail
     {
         private AesCore _dataAesCore;
         private AesCore _tweakAesCore;
-        private byte[] _iv;
+        public Buffer16 Iv;
 
         public void Initialize(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv, bool isDecrypting)
         {
@@ -23,7 +23,7 @@ namespace LibHac.Crypto.Detail
             _dataAesCore.Initialize(key1, ReadOnlySpan<byte>.Empty, CipherMode.ECB, isDecrypting);
             _tweakAesCore.Initialize(key2, ReadOnlySpan<byte>.Empty, CipherMode.ECB, false);
 
-            _iv = iv.ToArray();
+            Iv = Unsafe.ReadUnaligned<Buffer16>(ref MemoryMarshal.GetReference(iv));
         }
 
         public void Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
@@ -38,7 +38,7 @@ namespace LibHac.Crypto.Detail
 
             var tweak = new Buffer16();
 
-            _tweakAesCore.Encrypt(_iv, tweak);
+            _tweakAesCore.Encrypt(Iv, tweak);
 
             using var tweakBuffer = new RentedArray<byte>(blockCount * Aes.BlockSize);
             tweak = FillTweakBuffer(tweak, MemoryMarshal.Cast<byte, Buffer16>(tweakBuffer.Span));
@@ -90,7 +90,7 @@ namespace LibHac.Crypto.Detail
 
             var tweak = new Buffer16();
 
-            _tweakAesCore.Encrypt(_iv, tweak);
+            _tweakAesCore.Encrypt(Iv, tweak);
 
             if (blockCount > 0)
             {

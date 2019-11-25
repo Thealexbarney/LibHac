@@ -1,12 +1,17 @@
 ﻿#if HAS_INTRINSICS
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using LibHac.Common;
 using LibHac.Crypto.Detail;
 
 namespace LibHac.Crypto
 {
-    public class AesXtsEncryptorNi : ICipher
+    public class AesXtsEncryptorNi : ICipherWithIv
     {
         private AesXtsModeNi _baseCipher;
+
+        public ref Buffer16 Iv => ref Unsafe.As<Vector128<byte>, Buffer16>(ref _baseCipher.Iv);
 
         public AesXtsEncryptorNi(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv)
         {
@@ -20,9 +25,11 @@ namespace LibHac.Crypto
         }
     }
 
-    public class AesXtsDecryptorNi : ICipher
+    public class AesXtsDecryptorNi : ICipherWithIv
     {
         private AesXtsModeNi _baseCipher;
+
+        public ref Buffer16 Iv => ref Unsafe.As<Vector128<byte>, Buffer16>(ref _baseCipher.Iv);
 
         public AesXtsDecryptorNi(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv)
         {
