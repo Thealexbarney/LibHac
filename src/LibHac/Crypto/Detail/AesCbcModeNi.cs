@@ -14,7 +14,7 @@ namespace LibHac.Crypto.Detail
         private AesCoreNi _aesCore;
 #pragma warning restore 649
 
-        private Vector128<byte> _iv;
+        public Vector128<byte> Iv;
 
         public void Initialize(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv, bool isDecrypting)
         {
@@ -22,7 +22,7 @@ namespace LibHac.Crypto.Detail
 
             _aesCore.Initialize(key, isDecrypting);
 
-            _iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
+            Iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
         }
 
         public void Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
@@ -32,7 +32,7 @@ namespace LibHac.Crypto.Detail
             ref Vector128<byte> inBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(input));
             ref Vector128<byte> outBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(output));
 
-            Vector128<byte> iv = _iv;
+            Vector128<byte> iv = Iv;
 
             for (int i = 0; i < blockCount; i++)
             {
@@ -44,7 +44,7 @@ namespace LibHac.Crypto.Detail
                 outBlock = ref Unsafe.Add(ref outBlock, 1);
             }
 
-            _iv = iv;
+            Iv = iv;
         }
 
         public void Decrypt(ReadOnlySpan<byte> input, Span<byte> output)
@@ -54,7 +54,7 @@ namespace LibHac.Crypto.Detail
             ref Vector128<byte> inBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(input));
             ref Vector128<byte> outBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(output));
 
-            Vector128<byte> iv = _iv;
+            Vector128<byte> iv = Iv;
 
             while (remainingBlocks > 7)
             {
@@ -106,7 +106,7 @@ namespace LibHac.Crypto.Detail
                 remainingBlocks -= 1;
             }
 
-            _iv = iv;
+            Iv = iv;
         }
     }
 }

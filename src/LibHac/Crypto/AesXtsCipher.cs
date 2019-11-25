@@ -1,11 +1,14 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Crypto.Detail;
 
 namespace LibHac.Crypto
 {
-    public class AesXtsEncryptor : ICipher
+    public class AesXtsEncryptor : ICipherWithIv
     {
         private AesXtsMode _baseCipher;
+
+        public ref Buffer16 Iv => ref  _baseCipher.Iv;
 
         public AesXtsEncryptor(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv)
         {
@@ -19,9 +22,11 @@ namespace LibHac.Crypto
         }
     }
 
-    public class AesXtsDecryptor : ICipher
+    public class AesXtsDecryptor : ICipherWithIv
     {
         private AesXtsMode _baseCipher;
+        
+        public ref Buffer16 Iv => ref _baseCipher.Iv;
 
         public AesXtsDecryptor(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv)
         {

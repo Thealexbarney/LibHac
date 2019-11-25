@@ -67,7 +67,7 @@ namespace LibHac.Crypto
             return new AesCbcEncryptor(key, iv);
         }
 
-        public static ICipher CreateCtrDecryptor(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
+        public static ICipherWithIv CreateCtrDecryptor(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
         {
 #if HAS_INTRINSICS
             if (IsAesNiSupported() && !preferDotNetCrypto)
@@ -79,7 +79,7 @@ namespace LibHac.Crypto
             return CreateCtrEncryptor(key, iv, preferDotNetCrypto);
         }
 
-        public static ICipher CreateCtrEncryptor(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
+        public static ICipherWithIv CreateCtrEncryptor(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
         {
 #if HAS_INTRINSICS
             if (IsAesNiSupported() && !preferDotNetCrypto)
@@ -90,7 +90,7 @@ namespace LibHac.Crypto
             return new AesCtrCipher(key, iv);
         }
 
-        public static ICipher CreateXtsDecryptor(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2,
+        public static ICipherWithIv CreateXtsDecryptor(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2,
             ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
         {
 #if HAS_INTRINSICS
@@ -102,7 +102,7 @@ namespace LibHac.Crypto
             return new AesXtsDecryptor(key1, key2, iv);
         }
 
-        public static ICipher CreateXtsEncryptor(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2,
+        public static ICipherWithIv CreateXtsEncryptor(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2,
             ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
         {
 #if HAS_INTRINSICS

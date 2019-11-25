@@ -14,7 +14,7 @@ namespace LibHac.Crypto.Detail
         private AesCoreNi _aesCore;
 #pragma warning restore 649
 
-        private Vector128<byte> _iv;
+        public Vector128<byte> Iv;
 
         public void Initialize(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
         {
@@ -22,7 +22,7 @@ namespace LibHac.Crypto.Detail
 
             _aesCore.Initialize(key, false);
 
-            _iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
+            Iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
         }
 
         public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
@@ -36,7 +36,7 @@ namespace LibHac.Crypto.Detail
             Vector128<byte> byteSwapMask = Vector128.Create((ulong)0x706050403020100, 0x8090A0B0C0D0E0F).AsByte();
             Vector128<ulong> inc = Vector128.Create((ulong)0, 1);
 
-            Vector128<byte> iv = _iv;
+            Vector128<byte> iv = Iv;
             Vector128<ulong> bSwappedIv = Ssse3.Shuffle(iv, byteSwapMask).AsUInt64();
 
             while (remaining >= 8 * Aes.BlockSize)
@@ -99,7 +99,7 @@ namespace LibHac.Crypto.Detail
                 remaining -= Aes.BlockSize;
             }
 
-            _iv = iv;
+            Iv = iv;
 
             if (remaining != 0)
             {
@@ -110,7 +110,7 @@ namespace LibHac.Crypto.Detail
         private void EncryptCtrPartialBlock(ReadOnlySpan<byte> input, Span<byte> output)
         {
             Span<byte> counter = stackalloc byte[0x10];
-            Unsafe.WriteUnaligned(ref counter[0], _iv);
+            Unsafe.WriteUnaligned(ref counter[0], Iv);
 
             _aesCore.Encrypt(counter, counter);
 

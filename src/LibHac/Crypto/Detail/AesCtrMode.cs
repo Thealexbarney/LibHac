@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using LibHac.Common;
@@ -10,7 +11,7 @@ namespace LibHac.Crypto.Detail
     public struct AesCtrMode
     {
         private AesCore _aesCore;
-        private byte[] _counter;
+        public Buffer16 Iv;
 
         public void Initialize(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
         {
@@ -19,7 +20,7 @@ namespace LibHac.Crypto.Detail
             _aesCore = new AesCore();
             _aesCore.Initialize(key, ReadOnlySpan<byte>.Empty, CipherMode.ECB, false);
 
-            _counter = iv.ToArray();
+            Iv = Unsafe.ReadUnaligned<Buffer16>(ref MemoryMarshal.GetReference(iv));
         }
 
         public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
@@ -28,7 +29,7 @@ namespace LibHac.Crypto.Detail
             int length = blockCount * Aes.BlockSize;
 
             using var counterBuffer = new RentedArray<byte>(length);
-            FillDecryptedCounter(_counter, counterBuffer.Span);
+            FillDecryptedCounter(Iv, counterBuffer.Span);
 
             _aesCore.Encrypt(counterBuffer.Array, counterBuffer.Array, length);
             Util.XorArrays(output, input, counterBuffer.Span);
