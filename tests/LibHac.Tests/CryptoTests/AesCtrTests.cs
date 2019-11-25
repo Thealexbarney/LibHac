@@ -5,7 +5,7 @@ namespace LibHac.Tests.CryptoTests
 {
     public class AesCtrTests
     {
-        public static TheoryData<EncryptionTestVector> TestVectors = RspReader.ReadTestVectors(true, "CTR128.rsp");
+        public static TheoryData<EncryptionTestVector> TestVectors = RspReader.ReadEncryptionTestVectors(true, "CTR128.rsp");
 
         [Theory]
         [MemberData(nameof(TestVectors))]
