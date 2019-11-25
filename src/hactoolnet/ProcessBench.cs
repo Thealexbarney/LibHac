@@ -24,6 +24,9 @@ namespace hactoolnet
         private const int BatchCipherBenchSize = 1024 * 1024;
         // ReSharper disable once UnusedMember.Local
         private const int SingleBlockCipherBenchSize = 1024 * 128;
+        private const int ShaBenchSize = 1024 * 128;
+
+        private static double CpuFrequency { get; set; }
 
         private static void CopyBenchmark(IStorage src, IStorage dst, int iterations, string label, IProgressReport logger)
         {
@@ -186,7 +189,7 @@ namespace hactoolnet
             var input = new byte[BatchCipherBenchSize];
             var output = new byte[BatchCipherBenchSize];
 
-            Func<double, string> resultPrinter = time => Util.GetBytesReadable((long)(BatchCipherBenchSize / time)) + "/s";
+            Func<double, string> resultPrinter = time => GetPerformanceString(time, BatchCipherBenchSize);
 
             // Skip the first benchmark set if we don't have AES-NI intrinsics
             for (int i = Aes.IsAesNiSupported() ? 0 : 1; i < 2; i++)
@@ -235,7 +238,7 @@ namespace hactoolnet
             var input = new byte[SingleBlockCipherBenchSize];
             var output = new byte[SingleBlockCipherBenchSize];
 
-            Func<double, string> resultPrinter = time => Util.GetBytesReadable((long)(SingleBlockCipherBenchSize / time)) + "/s";
+            Func<double, string> resultPrinter = time => GetPerformanceString(time, SingleBlockCipherBenchSize);
 
             bench.Register("AES single-block encrypt", () => { }, EncryptBlocks, resultPrinter);
             bench.Register("AES single-block decrypt", () => { }, DecryptBlocks, resultPrinter);
@@ -282,6 +285,35 @@ namespace hactoolnet
                 }
             }
 #endif
+        }
+
+        private static void RegisterShaBenchmarks(MultiBenchmark bench)
+        {
+            var input = new byte[ShaBenchSize];
+            var digest = new byte[Sha256.DigestSize];
+
+            Func<double, string> resultPrinter = time => GetPerformanceString(time, ShaBenchSize);
+
+            RegisterHash("SHA-256 built-in", () => new Sha256Generator());
+
+            void RegisterHash(string name, Func<IHash> hashGenerator)
+            {
+                IHash hash = null;
+
+                Action setup = () =>
+                {
+                    hash = hashGenerator();
+                    hash.Initialize();
+                };
+
+                Action action = () =>
+                {
+                    hash.Update(input);
+                    hash.GetHash(digest);
+                };
+
+                bench.Register(name, setup, action, resultPrinter);
+            }
         }
 
         private static void RunCipherBenchmark(Func<ICipher> cipherNet, Func<ICipher> cipherLibHac,
@@ -341,8 +373,24 @@ namespace hactoolnet
             }
         }
 
+        private static string GetPerformanceString(double seconds, long bytes)
+        {
+            string cyclesPerByteString = string.Empty;
+            double bytesPerSec = bytes / seconds;
+
+            if (CpuFrequency > 0)
+            {
+                double cyclesPerByte = CpuFrequency / bytesPerSec;
+                cyclesPerByteString = $" ({cyclesPerByte:N3}x)";
+            }
+
+            return Util.GetBytesReadable((long)bytesPerSec) + "/s" + cyclesPerByteString;
+        }
+
         public static void Process(Context ctx)
         {
+            CpuFrequency = ctx.Options.CpuFrequencyGhz * 1_000_000_000;
+
             switch (ctx.Options.BenchType?.ToLower())
             {
                 case "aesctr":
@@ -465,6 +513,7 @@ namespace hactoolnet
 
                     RegisterAesSequentialBenchmarks(bench);
                     RegisterAesSingleBlockBenchmarks(bench);
+                    RegisterShaBenchmarks(bench);
 
                     bench.Run();
                     break;
