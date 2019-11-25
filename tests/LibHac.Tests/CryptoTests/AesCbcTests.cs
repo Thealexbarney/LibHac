@@ -6,16 +6,16 @@ namespace LibHac.Tests.CryptoTests
     public class AesCbcTests
     {
         public static TheoryData<EncryptionTestVector> EncryptTestVectors =
-            RspReader.ReadTestVectors(true, "CBCVarKey128.rsp", "CBCVarTxt128.rsp", "CBCKeySbox128.rsp", "CBCGFSbox128.rsp");
+            RspReader.ReadEncryptionTestVectors(true, "CBCVarKey128.rsp", "CBCVarTxt128.rsp", "CBCKeySbox128.rsp", "CBCGFSbox128.rsp");
 
         public static TheoryData<EncryptionTestVector> DecryptTestVectors =
-            RspReader.ReadTestVectors(false, "CBCVarKey128.rsp", "CBCVarTxt128.rsp", "CBCKeySbox128.rsp", "CBCGFSbox128.rsp");
+            RspReader.ReadEncryptionTestVectors(false, "CBCVarKey128.rsp", "CBCVarTxt128.rsp", "CBCKeySbox128.rsp", "CBCGFSbox128.rsp");
 
         public static TheoryData<EncryptionTestVector> EncryptMultiTestVectors =
-            RspReader.ReadTestVectors(true, "CBCMMT128.rsp");
+            RspReader.ReadEncryptionTestVectors(true, "CBCMMT128.rsp");
 
         public static TheoryData<EncryptionTestVector> DecryptMultiTestVectors =
-            RspReader.ReadTestVectors(false, "CBCMMT128.rsp");
+            RspReader.ReadEncryptionTestVectors(false, "CBCMMT128.rsp");
 
         [Theory]
         [MemberData(nameof(EncryptTestVectors))]

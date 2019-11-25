@@ -9,10 +9,10 @@ namespace LibHac.Tests.CryptoTests
     public class AesXtsTests
     {
         public static TheoryData<EncryptionTestVector> EncryptTestVectors =
-            RemovePartialByteTests(RspReader.ReadTestVectors(true, "XTSGenAES128.rsp"));
+            RemovePartialByteTests(RspReader.ReadEncryptionTestVectors(true, "XTSGenAES128.rsp"));
 
         public static TheoryData<EncryptionTestVector> DecryptTestVectors =
-            RemovePartialByteTests(RspReader.ReadTestVectors(false, "XTSGenAES128.rsp"));
+            RemovePartialByteTests(RspReader.ReadEncryptionTestVectors(false, "XTSGenAES128.rsp"));
 
         // The XTS implementation only supports multiples of whole bytes
         private static TheoryData<EncryptionTestVector> RemovePartialByteTests(TheoryData<EncryptionTestVector> input)

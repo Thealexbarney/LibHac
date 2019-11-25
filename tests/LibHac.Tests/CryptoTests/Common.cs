@@ -15,5 +15,17 @@ namespace LibHac.Tests.CryptoTests
 
             Assert.Equal(expected, transformBuffer);
         }
+
+        internal static void HashTestCore(ReadOnlySpan<byte> message, byte[] expectedDigest, IHash hash)
+        {
+
+            var digestBuffer = new byte[Sha256.DigestSize];
+
+            hash.Initialize();
+            hash.Update(message);
+            hash.GetHash(digestBuffer);
+
+            Assert.Equal(expectedDigest, digestBuffer);
+        }
     }
 }
