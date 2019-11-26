@@ -2,7 +2,7 @@
 
 using System;
 using System.Numerics;
-using System.Security.Cryptography;
+using LibHac.Crypto;
 
 namespace LibHac.Compatibility
 {
@@ -17,7 +17,6 @@ namespace LibHac.Compatibility
             const int saltOffset = hashOffset - digestLen;
             const int padEnd = saltOffset - 1;
 
-            SHA256 sha = SHA256.Create();
             var message = new byte[rsaLen];
 
             BigInteger decInt = BigInteger.ModPow(CryptoOld.GetBigInteger(signature), new BigInteger(65537), CryptoOld.GetBigInteger(modulus));
@@ -33,9 +32,12 @@ namespace LibHac.Compatibility
 
             ref byte seed = ref hashBuf[0x23];
 
+            Span<byte> digestBuffer = stackalloc byte[Sha256.DigestSize];
+            
             for (int i = 0; i < hashOffset; i += 0x20)
             {
-                Util.XorArrays(message.AsSpan(i, digestLen), sha.ComputeHash(hashBuf));
+                Sha256.GenerateSha256Hash(hashBuf, digestBuffer);
+                Util.XorArrays(message.AsSpan(i, digestLen), digestBuffer);
                 seed++;
             }
 
@@ -46,14 +48,21 @@ namespace LibHac.Compatibility
                 return false;
             }
 
-            var prefix = new byte[8];
-            byte[] digest = sha.ComputeHash(data);
+            Span<byte> prefix = stackalloc byte[8];
+            Span<byte> digest = stackalloc byte[Sha256.DigestSize];
 
-            sha.TransformBlock(prefix, 0, prefix.Length, null, 0);
-            sha.TransformBlock(digest, 0, digestLen, null, 0);
-            sha.TransformFinalBlock(message, saltOffset, digestLen);
+            Sha256.GenerateSha256Hash(data, digest);
 
-            return Util.SpansEqual(hashBuf.AsSpan(0, 0x20), sha.Hash);
+            IHash sha2 = Sha256.CreateSha256Generator();
+            sha2.Initialize();
+
+            sha2.Update(prefix);
+            sha2.Update(digest);
+            sha2.Update(message.AsSpan(saltOffset, digestLen));
+
+            sha2.GetHash(digest);
+
+            return Util.SpansEqual(hashBuf.AsSpan(0, 0x20), digest);
         }
     }
 }

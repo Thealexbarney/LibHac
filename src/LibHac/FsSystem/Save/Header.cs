@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using LibHac.Crypto;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem.Save
@@ -81,7 +82,10 @@ namespace LibHac.FsSystem.Save
 
             MasterHash = storage.Slice(Layout.IvfcMasterHashOffsetA, Layout.IvfcMasterHashSize);
 
-            HeaderHashValidity = CryptoOld.CheckMemoryHashTable(Data, Layout.Hash, 0x300, 0x3d00);
+            Span<byte> actualHeaderHash = stackalloc byte[Sha256.DigestSize];
+            Sha256.GenerateSha256Hash(Data.AsSpan(0x300, 0x3d00), actualHeaderHash);
+
+            HeaderHashValidity = Util.SpansEqual(Layout.Hash, actualHeaderHash) ? Validity.Valid : Validity.Invalid;
             SignatureValidity = ValidateSignature(keyset);
         }
 

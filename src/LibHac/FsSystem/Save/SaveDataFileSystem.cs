@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using LibHac.Crypto;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem.Save
@@ -252,7 +253,9 @@ namespace LibHac.FsSystem.Save
             headerStream.Position = 0x300;
             headerStream.Read(hashData, 0, hashData.Length);
 
-            byte[] hash = CryptoOld.ComputeSha256(hashData, 0, hashData.Length);
+            var hash = new byte[Sha256.DigestSize];
+            Sha256.GenerateSha256Hash(hashData, hash);
+
             headerStream.Position = 0x108;
             headerStream.Write(hash, 0, hash.Length);
 

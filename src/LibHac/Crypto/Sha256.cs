@@ -7,6 +7,10 @@ namespace LibHac.Crypto
     {
         public const int DigestSize = 0x20;
 
+        /// <summary>
+        /// Creates an uninitialized SHA-256 <see cref="IHash"/> object.
+        /// </summary>
+        /// <returns> The new uninitialized SHA-256 <see cref="IHash"/> object.</returns>
         public static IHash CreateSha256Generator()
         {
             return new Sha256Generator();

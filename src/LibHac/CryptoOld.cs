@@ -9,25 +9,6 @@ namespace LibHac
     public static class CryptoOld
     {
         internal const int Aes128Size = 0x10;
-        internal const int Sha256DigestSize = 0x20;
-
-        public static Validity CheckMemoryHashTable(byte[] data, byte[] hash, int offset, int count)
-        {
-            Validity comp;
-            using (SHA256 sha = SHA256.Create())
-            {
-                comp = Util.ArraysEqual(hash, sha.ComputeHash(data, offset, count)) ? Validity.Valid : Validity.Invalid;
-            }
-            return comp;
-        }
-
-        public static byte[] ComputeSha256(byte[] data, int offset, int count)
-        {
-            using (SHA256 sha = SHA256.Create())
-            {
-                return sha.ComputeHash(data, offset, count);
-            }
-        }
 
         public static void DecryptEcb(byte[] key, byte[] src, int srcIndex, byte[] dest, int destIndex, int length)
         {
@@ -172,7 +153,7 @@ namespace LibHac
         public static Validity Rsa2048PssVerify(byte[] data, byte[] signature, byte[] modulus)
         {
 #if NETFRAMEWORK
-            if (Compatibility.Env.IsMono)
+            if (!Compatibility.Env.IsMono)
             {
                 return Compatibility.Rsa.Rsa2048PssVerifyMono(data, signature, modulus)
                     ? Validity.Valid

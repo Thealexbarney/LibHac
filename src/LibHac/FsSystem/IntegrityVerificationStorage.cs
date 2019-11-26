@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.IO;
-using System.Security.Cryptography;
+using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.FsSystem.Save;
 
@@ -18,7 +18,7 @@ namespace LibHac.FsSystem
         private byte[] Salt { get; }
         private IntegrityStorageType Type { get; }
 
-        private readonly SHA256 _hash = SHA256.Create();
+        private readonly IHash _hash = Sha256.CreateSha256Generator();
         private readonly object _locker = new object();
 
         public IntegrityVerificationStorage(IntegrityVerificationInfo info, IStorage hashStorage,
@@ -170,13 +170,13 @@ namespace LibHac.FsSystem
 
                 if (Type == IntegrityStorageType.Save)
                 {
-                    _hash.TransformBlock(Salt, 0, Salt.Length, null, 0);
+                    _hash.Update(Salt);
                 }
 
-                _hash.TransformBlock(buffer, offset, count, null, 0);
-                _hash.TransformFinalBlock(buffer, 0, 0);
+                _hash.Update(buffer.AsSpan(offset, count));
 
-                byte[] hash = _hash.Hash;
+                var hash = new byte[Sha256.DigestSize];
+                _hash.GetHash(hash);
 
                 if (Type == IntegrityStorageType.Save)
                 {
