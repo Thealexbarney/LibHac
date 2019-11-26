@@ -2,6 +2,7 @@
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using LibHac.Crypto;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem.NcaUtils
@@ -163,7 +164,8 @@ namespace LibHac.FsSystem.NcaUtils
             // ReSharper disable once ImpureMethodCallOnReadonlyValueField
             Memory<byte> headerData = _header.Slice(offset, NcaHeaderStruct.FsHeaderSize);
 
-            byte[] actualHash = CryptoOld.ComputeSha256(headerData.ToArray(), 0, NcaHeaderStruct.FsHeaderSize);
+            Span<byte> actualHash = stackalloc byte[Sha256.DigestSize];
+            Sha256.GenerateSha256Hash(headerData.Span, actualHash);
 
             if (!Util.SpansEqual(expectedHash, actualHash))
             {

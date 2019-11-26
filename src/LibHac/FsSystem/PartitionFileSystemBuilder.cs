@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
+using LibHac.Crypto;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem
@@ -23,7 +23,8 @@ namespace LibHac.FsSystem
         /// </summary>
         public PartitionFileSystemBuilder(IFileSystem input)
         {
-            foreach (DirectoryEntryEx entry in input.EnumerateEntries().OrderBy(x => x.FullPath, StringComparer.Ordinal))
+            foreach (DirectoryEntryEx entry in input.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File)
+                .OrderBy(x => x.FullPath, StringComparer.Ordinal))
             {
                 input.OpenFile(out IFile file, entry.FullPath, OpenMode.Read).ThrowIfFailure();
 
@@ -144,22 +145,25 @@ namespace LibHac.FsSystem
 
         private void CalculateHashes()
         {
-            using (SHA256 sha = SHA256.Create())
+            IHash sha = Sha256.CreateSha256Generator();
+
+            foreach (Entry entry in Entries)
             {
-                foreach (Entry entry in Entries)
+                if (entry.HashLength == 0) entry.HashLength = 0x200;
+
+                var data = new byte[entry.HashLength];
+                entry.File.Read(out long bytesRead, entry.HashOffset, data);
+
+                if (bytesRead != entry.HashLength)
                 {
-                    if (entry.HashLength == 0) entry.HashLength = 0x200;
-
-                    var data = new byte[entry.HashLength];
-                    entry.File.Read(out long bytesRead, entry.HashOffset, data);
-
-                    if (bytesRead != entry.HashLength)
-                    {
-                        throw new ArgumentOutOfRangeException();
-                    }
-
-                    entry.Hash = sha.ComputeHash(data);
+                    throw new ArgumentOutOfRangeException();
                 }
+
+                entry.Hash = new byte[Sha256.DigestSize];
+
+                sha.Initialize();
+                sha.Update(data);
+                sha.GetHash(entry.Hash);
             }
         }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers.Binary;
 using System.Diagnostics;
+using LibHac.Crypto;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem.NcaUtils
@@ -98,7 +99,8 @@ namespace LibHac.FsSystem.NcaUtils
             var data = new byte[size];
             storage.Read(offset, data).ThrowIfFailure();
 
-            byte[] actualHash = CryptoOld.ComputeSha256(data, 0, data.Length);
+            var actualHash = new byte[Sha256.DigestSize];
+            Sha256.GenerateSha256Hash(data, actualHash);
 
             if (Util.ArraysEqual(expectedHash, actualHash)) return Validity.Valid;
 

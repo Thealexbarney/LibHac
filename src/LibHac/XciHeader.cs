@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using LibHac.Crypto;
 using LibHac.Fs;
 
 namespace LibHac
@@ -99,8 +100,8 @@ namespace LibHac
                 Array.Reverse(AesCbcIv);
                 RootPartitionOffset = reader.ReadInt64();
                 RootPartitionHeaderSize = reader.ReadInt64();
-                RootPartitionHeaderHash = reader.ReadBytes(CryptoOld.Sha256DigestSize);
-                InitialDataHash = reader.ReadBytes(CryptoOld.Sha256DigestSize);
+                RootPartitionHeaderHash = reader.ReadBytes(Sha256.DigestSize);
+                InitialDataHash = reader.ReadBytes(Sha256.DigestSize);
                 SelSec = reader.ReadInt32();
                 SelT1Key = reader.ReadInt32();
                 SelKey = reader.ReadInt32();
@@ -128,10 +129,16 @@ namespace LibHac
                     }
                 }
 
-                ImageHash = CryptoOld.ComputeSha256(sigData, 0, sigData.Length);
+                ImageHash = new byte[Sha256.DigestSize];
+                Sha256.GenerateSha256Hash(sigData, ImageHash);
 
                 reader.BaseStream.Position = RootPartitionOffset;
-                PartitionFsHeaderValidity = CryptoOld.CheckMemoryHashTable(reader.ReadBytes((int)RootPartitionHeaderSize), RootPartitionHeaderHash, 0, (int)RootPartitionHeaderSize);
+                byte[] headerBytes = reader.ReadBytes((int) RootPartitionHeaderSize);
+
+                Span<byte> actualHeaderHash = stackalloc byte[Sha256.DigestSize];
+                Sha256.GenerateSha256Hash(headerBytes, actualHeaderHash);
+
+                PartitionFsHeaderValidity = Util.SpansEqual(RootPartitionHeaderHash, actualHeaderHash) ? Validity.Valid : Validity.Invalid;
             }
         }
     }
