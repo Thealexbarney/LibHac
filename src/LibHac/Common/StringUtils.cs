@@ -80,11 +80,7 @@ namespace LibHac.Common
 
         public static string Utf8ToString(ReadOnlySpan<byte> value)
         {
-#if STRING_SPAN
             return Encoding.UTF8.GetString(value);
-#else
-            return Encoding.UTF8.GetString(value.ToArray());
-#endif
         }
 
         public static string Utf8ZToString(ReadOnlySpan<byte> value)

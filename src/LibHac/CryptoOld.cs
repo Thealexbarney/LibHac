@@ -152,20 +152,7 @@ namespace LibHac
 
         public static Validity Rsa2048PssVerify(byte[] data, byte[] signature, byte[] modulus)
         {
-#if NETFRAMEWORK
-            if (!Compatibility.Env.IsMono)
-            {
-                return Compatibility.Rsa.Rsa2048PssVerifyMono(data, signature, modulus)
-                    ? Validity.Valid
-                    : Validity.Invalid;
-            }
-#endif
-
-#if USE_RSA_CNG
-            using (RSA rsa = new RSACng())
-#else
             using (RSA rsa = RSA.Create())
-#endif
             {
                 rsa.ImportParameters(new RSAParameters { Exponent = new byte[] { 1, 0, 1 }, Modulus = modulus });
 
@@ -177,12 +164,8 @@ namespace LibHac
 
         public static byte[] DecryptTitleKey(byte[] titleKeyblock, RSAParameters rsaParams)
         {
-            // todo: Does this work on Mono?
-#if USE_RSA_CNG
-            RSA rsa = new RSACng();
-#else
             RSA rsa = RSA.Create();
-#endif
+
             rsa.ImportParameters(rsaParams);
             return rsa.Decrypt(titleKeyblock, RSAEncryptionPadding.OaepSHA256);
         }

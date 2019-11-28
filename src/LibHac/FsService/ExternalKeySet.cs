@@ -90,18 +90,7 @@ namespace LibHac.FsService
             lock (_locker)
             {
                 int newCapacity = Math.Max(capacity, ExternalKeys.Count);
-#if NETCOREAPP
                 ExternalKeys.TrimExcess(newCapacity);
-#else
-                var trimmedDict = new Dictionary<RightsId, AccessKey>(newCapacity);
-
-                foreach (KeyValuePair<RightsId, AccessKey> kvp in ExternalKeys)
-                {
-                    trimmedDict.Add(kvp.Key, kvp.Value);
-                }
-
-                ExternalKeys = trimmedDict;
-#endif
             }
         }
     }

@@ -1,9 +1,7 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
-#if CROSS_PLATFORM
-using System.Runtime.InteropServices;
-#endif
 
 namespace LibHac.FsSystem
 {
@@ -99,7 +97,6 @@ namespace LibHac.FsSystem
 
         private bool IsConcatenationFile(DirectoryEntry entry)
         {
-#if CROSS_PLATFORM
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 return ConcatenationFileSystem.HasConcatenationFileAttribute(entry.Attributes);
@@ -111,9 +108,6 @@ namespace LibHac.FsSystem
 
                 return ParentFileSystem.IsConcatenationFile(fullPath);
             }
-#else
-            return ConcatenationFileSystem.HasConcatenationFileAttribute(entry.Attributes);
-#endif
         }
     }
 }
