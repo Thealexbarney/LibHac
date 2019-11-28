@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -31,6 +32,9 @@ namespace LibHacBuild
         [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
         public readonly string Configuration = IsLocalBuild ? "Debug" : "Release";
 
+        [Parameter("Don't enable any size-reducing settings on native builds.")]
+        public readonly bool Untrimmed;
+
         [Solution("LibHac.sln")] readonly Solution _solution;
         [GitRepository] readonly GitRepository _gitRepository;
         [GitVersion] readonly GitVersion _gitVersion;
@@ -48,17 +52,39 @@ namespace LibHacBuild
         AbsolutePath NugetConfig => RootDirectory / "nuget.config";
 
         AbsolutePath CliMergedExe => ArtifactsDirectory / "hactoolnet.exe";
-        AbsolutePath CliNativeExe => ArtifactsDirectory / "hactoolnet_native.exe";
+        AbsolutePath CliNativeExe => ArtifactsDirectory / NativeProgramFilename;
 
         Project LibHacProject => _solution.GetProject("LibHac").NotNull();
         Project LibHacTestProject => _solution.GetProject("LibHac.Tests").NotNull();
         Project HactoolnetProject => _solution.GetProject("hactoolnet").NotNull();
+
+        private string NativeRuntime { get; set; }
+        private string NativeProgramFilename { get; set; }
 
         string AppVeyorVersion { get; set; }
         Dictionary<string, object> VersionProps { get; set; } = new Dictionary<string, object>();
 
         private const string DotNetFeedSource = "https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json";
         const string CertFileName = "cert.pfx";
+
+        public Build()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                NativeRuntime = "win-x64";
+                NativeProgramFilename = "hactoolnet_native.exe";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                NativeRuntime = "linux-x64";
+                NativeProgramFilename = "hactoolnet_native";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                NativeRuntime = "osx-x64";
+                NativeProgramFilename = "hactoolnet_native";
+            }
+        }
 
         private bool IsMasterBranch => _gitVersion?.BranchName.Equals("master") ?? false;
 
@@ -305,16 +331,26 @@ namespace LibHacBuild
                     DotNet($"add {nativeProject} package Microsoft.DotNet.ILCompiler --version 1.0.0-alpha-*");
 
                     DotNetPublishSettings publishSettings = new DotNetPublishSettings()
-                        .SetConfiguration(Configuration);
-
-                    DotNetPublish(s => publishSettings
+                        .SetConfiguration(Configuration)
                         .SetProject(nativeProject)
                         .SetFramework("netcoreapp3.0")
-                        .SetRuntime("win-x64")
+                        .SetRuntime(NativeRuntime)
                         .SetOutput(CliNativeDir)
-                        .SetProperties(VersionProps));
+                        .SetProperties(VersionProps);
 
-                    AbsolutePath tempExe = CliNativeDir / "hactoolnet_native.exe";
+                    if (!Untrimmed)
+                    {
+                        publishSettings = publishSettings
+                                .AddProperty("RootAllApplicationAssemblies", false)
+                                .AddProperty("IlcGenerateCompleteTypeMetadata", false)
+                                .AddProperty("IlcGenerateStackTraceData", false)
+                                .AddProperty("IlcFoldIdenticalMethodBodies", true)
+                            ;
+                    }
+
+                    DotNetPublish(publishSettings);
+
+                    AbsolutePath tempExe = CliNativeDir / NativeProgramFilename;
 
                     File.Copy(tempExe, CliNativeExe, true);
 
