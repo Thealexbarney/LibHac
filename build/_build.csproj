@@ -11,7 +11,6 @@
 
   <ItemGroup>
     <PackageDownload Include="GitVersion.Tool" Version="[5.1.2]" />
-    <PackageReference Include="ILRepack.Lib" Version="2.0.18" NoWarn="NU1701" />
     <PackageReference Include="NuGet.CommandLine" Version="5.3.1" />
     <PackageReference Include="Nuke.Common" Version="0.23.4" />
     <PackageReference Include="SharpZipLib" Version="1.2.0" />

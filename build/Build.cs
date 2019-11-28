@@ -10,7 +10,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using ICSharpCode.SharpZipLib.Zip;
-using ILRepacking;
 using Nuke.Common;
 using Nuke.Common.CI.AppVeyor;
 using Nuke.Common.Git;
@@ -45,13 +44,10 @@ namespace LibHacBuild
         AbsolutePath SignedArtifactsDirectory => ArtifactsDirectory / "signed";
         AbsolutePath TempDirectory => RootDirectory / ".tmp";
         AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_netcoreapp3.0";
-        AbsolutePath CliFrameworkDir => TempDirectory / "hactoolnet_net46";
         AbsolutePath CliNativeDir => TempDirectory / "hactoolnet_native";
-        AbsolutePath CliFrameworkZip => ArtifactsDirectory / "hactoolnet.zip";
         AbsolutePath CliCoreZip => ArtifactsDirectory / "hactoolnet_netcore.zip";
         AbsolutePath NugetConfig => RootDirectory / "nuget.config";
 
-        AbsolutePath CliMergedExe => ArtifactsDirectory / "hactoolnet.exe";
         AbsolutePath CliNativeExe => ArtifactsDirectory / NativeProgramFilename;
 
         Project LibHacProject => _solution.GetProject("LibHac").NotNull();
@@ -137,7 +133,6 @@ namespace LibHacBuild
 
                 EnsureCleanDirectory(ArtifactsDirectory);
                 EnsureCleanDirectory(CliCoreDir);
-                EnsureCleanDirectory(CliFrameworkDir);
                 EnsureCleanDirectory(CliNativeDir);
             });
 
@@ -172,13 +167,6 @@ namespace LibHacBuild
                     .SetProject(HactoolnetProject)
                     .SetFramework("netcoreapp3.0")
                     .SetOutput(CliCoreDir)
-                    .SetNoBuild(true)
-                    .SetProperties(VersionProps));
-
-                DotNetPublish(s => publishSettings
-                    .SetProject(HactoolnetProject)
-                    .SetFramework("net46")
-                    .SetOutput(CliFrameworkDir)
                     .SetNoBuild(true)
                     .SetProperties(VersionProps));
 
@@ -220,36 +208,6 @@ namespace LibHacBuild
                 }
             });
 
-        Target Merge => _ => _
-            .DependsOn(Compile)
-            // Merging on Linux blocked by https://github.com/gluck/il-repack/issues/230
-            .OnlyWhenStatic(() => !EnvironmentInfo.IsUnix)
-            .Executes(() =>
-            {
-                string[] libraries = Directory.GetFiles(CliFrameworkDir, "*.dll");
-                var cliList = new List<string> { CliFrameworkDir / "hactoolnet.exe" };
-                cliList.AddRange(libraries);
-
-                var cliOptions = new RepackOptions
-                {
-                    OutputFile = CliMergedExe,
-                    InputAssemblies = cliList.ToArray(),
-                    SearchDirectories = new[] { "." }
-                };
-
-                new ILRepack(cliOptions).Repack();
-
-                foreach (AbsolutePath file in ArtifactsDirectory.GlobFiles("*.exe.config"))
-                {
-                    File.Delete(file);
-                }
-
-                if (Host == HostType.AppVeyor)
-                {
-                    PushArtifact(CliMergedExe);
-                }
-            });
-
         Target Test => _ => _
             .DependsOn(Compile)
             .Executes(() =>
@@ -268,25 +226,16 @@ namespace LibHacBuild
             .DependsOn(Pack)
             .Executes(() =>
             {
-                string[] namesFx = Directory.EnumerateFiles(CliFrameworkDir, "*.exe")
-                    .Concat(Directory.EnumerateFiles(CliFrameworkDir, "*.dll"))
-                    .ToArray();
-
                 string[] namesCore = Directory.EnumerateFiles(CliCoreDir, "*.json")
                     .Concat(Directory.EnumerateFiles(CliCoreDir, "*.dll"))
                     .ToArray();
-
-                ZipFiles(CliFrameworkZip, namesFx);
-                Console.WriteLine($"Created {CliFrameworkZip}");
 
                 ZipFiles(CliCoreZip, namesCore);
                 Console.WriteLine($"Created {CliCoreZip}");
 
                 if (Host == HostType.AppVeyor)
                 {
-                    PushArtifact(CliFrameworkZip);
                     PushArtifact(CliCoreZip);
-                    PushArtifact(CliMergedExe);
                 }
             });
 
@@ -370,7 +319,7 @@ namespace LibHacBuild
             });
 
         Target Results => _ => _
-            .DependsOn(Test, Zip, Merge, Sign, Native, Publish)
+            .DependsOn(Test, Zip, Sign, Native, Publish)
             .Executes(() =>
             {
                 Console.WriteLine("SHA-1:");
@@ -388,7 +337,7 @@ namespace LibHacBuild
             });
 
         Target Sign => _ => _
-            .DependsOn(Test, Zip, Merge)
+            .DependsOn(Test, Zip)
             .OnlyWhenStatic(() => File.Exists(CertFileName))
             .OnlyWhenStatic(() => !EnvironmentInfo.IsUnix)
             .Executes(() =>
@@ -572,33 +521,25 @@ namespace LibHacBuild
             AbsolutePath nupkgFile = ArtifactsDirectory.GlobFiles("*.nupkg").Single();
             AbsolutePath snupkgFile = ArtifactsDirectory.GlobFiles("*.snupkg").Single();
             AbsolutePath nupkgDir = TempDirectory / ("sign_" + Path.GetFileName(nupkgFile));
-            AbsolutePath netFxDir = TempDirectory / ("sign_" + Path.GetFileName(CliFrameworkZip));
             AbsolutePath coreFxDir = TempDirectory / ("sign_" + Path.GetFileName(CliCoreZip));
-            AbsolutePath signedMergedExe = SignedArtifactsDirectory / Path.GetFileName(CliMergedExe);
 
             try
             {
-                UnzipFiles(CliFrameworkZip, netFxDir);
                 UnzipFiles(CliCoreZip, coreFxDir);
                 List<string> pkgFileList = UnzipPackage(nupkgFile, nupkgDir);
 
                 var toSign = new List<AbsolutePath>();
                 toSign.AddRange(nupkgDir.GlobFiles("**/LibHac.dll"));
-                toSign.Add(netFxDir / "hactoolnet.exe");
                 toSign.Add(coreFxDir / "hactoolnet.dll");
-                toSign.Add(signedMergedExe);
 
                 Directory.CreateDirectory(SignedArtifactsDirectory);
-                File.Copy(CliMergedExe, signedMergedExe, true);
 
                 SignAssemblies(password, toSign.Select(x => x.ToString()).ToArray());
 
                 // Avoid having multiple signed versions of the same file
-                File.Copy(nupkgDir / "lib" / "net46" / "LibHac.dll", netFxDir / "LibHac.dll", true);
                 File.Copy(nupkgDir / "lib" / "netcoreapp3.0" / "LibHac.dll", coreFxDir / "LibHac.dll", true);
 
                 ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(nupkgFile), nupkgDir, pkgFileList);
-                ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliFrameworkZip), netFxDir);
                 ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliCoreZip), coreFxDir);
 
                 File.Copy(snupkgFile, SignedArtifactsDirectory / Path.GetFileName(snupkgFile));
@@ -614,7 +555,6 @@ namespace LibHacBuild
             finally
             {
                 Directory.Delete(nupkgDir, true);
-                Directory.Delete(netFxDir, true);
                 Directory.Delete(coreFxDir, true);
             }
         }
