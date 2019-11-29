@@ -16,7 +16,7 @@ namespace hactoolnet
             }
             catch (MissingKeyException ex)
             {
-                string name = ex.Type == KeyType.Title ? $"Title key for rights ID {ex.Name}" : ex.Name;
+                string name = ex.Type == KeyType.Title ? $" Title key for rights ID {ex.Name}" : ex.Name;
                 Console.Error.WriteLine($"\nERROR: {ex.Message}\nA required key is missing.\nKey name: {name}\n");
             }
             catch (HorizonResultException ex)
