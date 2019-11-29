@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO.Enumeration;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
-
-#if HAS_FILE_SYSTEM_NAME
-using System.IO.Enumeration;
-#endif
 
 namespace LibHac.FsSystem
 {
@@ -455,13 +452,8 @@ namespace LibHac.FsSystem
 
         public static bool MatchesPattern(string searchPattern, string name, bool ignoreCase)
         {
-#if HAS_FILE_SYSTEM_NAME
             return FileSystemName.MatchesSimpleExpression(searchPattern.AsSpan(),
                            name.AsSpan(), ignoreCase);
-#else
-            return Compatibility.FileSystemName.MatchesSimpleExpression(searchPattern.AsSpan(),
-                name.AsSpan(), ignoreCase);
-#endif
         }
 
         private static bool IsValidMountNameChar(char c)

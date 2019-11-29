@@ -4,5 +4,5 @@ environment:
   myget_api_key:
     secure: 0xJoYAtR6psXCRvk1qm5czDObkeRjHKPjfe5gIExXVFPwA0VVODYv/hBZYUtz2F3
 build_script:
-  - ps: .\build.ps1
+  - ps: .\build.ps1 appveyorbuild
 test: off

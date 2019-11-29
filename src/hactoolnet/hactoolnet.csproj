@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp3.0;net46</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0</TargetFrameworks>
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
@@ -18,10 +18,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LibHac\LibHac.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="All" Version="1.0.0-preview.2" />
   </ItemGroup>
 
 </Project>

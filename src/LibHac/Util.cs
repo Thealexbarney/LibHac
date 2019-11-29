@@ -109,11 +109,7 @@ namespace LibHac
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string GetUtf8String(ReadOnlySpan<byte> value)
         {
-#if STRING_SPAN
             return Encoding.UTF8.GetString(value);
-#else
-            return Encoding.UTF8.GetString(value.ToArray());
-#endif
         }
 
         public static string GetUtf8StringNullTerminated(ReadOnlySpan<byte> value)
@@ -123,11 +119,7 @@ namespace LibHac
 
             value = value.Slice(0, i);
 
-#if STRING_SPAN
             return Encoding.UTF8.GetString(value);
-#else
-            return Encoding.UTF8.GetString(value.ToArray());
-#endif
         }
 
         public static bool IsEmpty(this byte[] array) => ((ReadOnlySpan<byte>)array).IsEmpty();

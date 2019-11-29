@@ -2,16 +2,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using LibHac;
 using LibHac.Fs;
 using LibHac.FsSystem;
 using LibHac.FsSystem.NcaUtils;
 using LibHac.FsSystem.Save;
-
-#if NETCOREAPP
-using System.Runtime.InteropServices;
-#endif
 
 namespace hactoolnet
 {
@@ -310,10 +307,8 @@ namespace hactoolnet
 
         private static void CheckForNcaFolders(Context ctx, SwitchFs switchFs)
         {
-#if NETCOREAPP
             // Skip this until Linux gets FAT attribute support
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return;
-#endif
 
             IFileSystem fs = switchFs.ContentFs;
 

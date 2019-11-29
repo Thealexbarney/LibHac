@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using LibHac.Fs;
-#if CROSS_PLATFORM
 using System.Runtime.InteropServices;
-#endif
+using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
@@ -51,7 +49,6 @@ namespace LibHac.FsSystem
         // but writing still won't work properly on those platforms
         internal bool IsConcatenationFile(string path)
         {
-#if CROSS_PLATFORM
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Result rc = BaseFileSystem.GetFileAttributes(path, out NxFileAttributes attributes);
@@ -63,15 +60,8 @@ namespace LibHac.FsSystem
             {
                 return IsConcatenationFileHeuristic(path);
             }
-#else
-            Result rc = BaseFileSystem.GetFileAttributes(path, out NxFileAttributes attributes);
-            if (rc.IsFailure()) return false;
-
-            return HasConcatenationFileAttribute(attributes);
-#endif
         }
 
-#if CROSS_PLATFORM
         private bool IsConcatenationFileHeuristic(string path)
         {
             // Check if the path is a directory
@@ -92,7 +82,6 @@ namespace LibHac.FsSystem
             // Should be enough checks to avoid most false positives. Maybe
             return true;
         }
-#endif
 
         internal static bool HasConcatenationFileAttribute(NxFileAttributes attributes)
         {

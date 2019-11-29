@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using LibHac;
 using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.FsSystem;
-
-#if NETCOREAPP
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
-#endif
 
 namespace hactoolnet
 {
@@ -234,7 +231,6 @@ namespace hactoolnet
         // ReSharper disable once UnusedParameter.Local
         private static void RegisterAesSingleBlockBenchmarks(MultiBenchmark bench)
         {
-#if NETCOREAPP
             var input = new byte[SingleBlockCipherBenchSize];
             var output = new byte[SingleBlockCipherBenchSize];
 
@@ -284,7 +280,6 @@ namespace hactoolnet
                     outBlock = ref Unsafe.Add(ref outBlock, Aes.BlockSize);
                 }
             }
-#endif
         }
 
         private static void RegisterShaBenchmarks(MultiBenchmark bench)

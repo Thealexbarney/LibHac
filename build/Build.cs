@@ -4,18 +4,17 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using ICSharpCode.SharpZipLib.Zip;
-using ILRepacking;
 using Nuke.Common;
 using Nuke.Common.CI.AppVeyor;
 using Nuke.Common.Git;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
+using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.SignTool;
@@ -27,7 +26,7 @@ namespace LibHacBuild
 {
     partial class Build : NukeBuild
     {
-        public static int Main() => Execute<Build>(x => x.Results);
+        public static int Main() => Execute<Build>(x => x.Standard);
 
         [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
         public readonly string Configuration = IsLocalBuild ? "Debug" : "Release";
@@ -45,23 +44,21 @@ namespace LibHacBuild
         AbsolutePath SignedArtifactsDirectory => ArtifactsDirectory / "signed";
         AbsolutePath TempDirectory => RootDirectory / ".tmp";
         AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_netcoreapp3.0";
-        AbsolutePath CliFrameworkDir => TempDirectory / "hactoolnet_net46";
-        AbsolutePath CliNativeDir => TempDirectory / "hactoolnet_native";
-        AbsolutePath CliFrameworkZip => ArtifactsDirectory / "hactoolnet.zip";
-        AbsolutePath CliCoreZip => ArtifactsDirectory / "hactoolnet_netcore.zip";
+        AbsolutePath CliNativeDir => TempDirectory / $"hactoolnet_{HostOsName}";
+        AbsolutePath CliNativeExe => CliNativeDir / $"hactoolnet_native{NativeProgramExtension}";
+        AbsolutePath CliCoreZip => ArtifactsDirectory / $"hactoolnet-{VersionString}-netcore.zip";
+        AbsolutePath CliNativeZip => ArtifactsDirectory / $"hactoolnet-{VersionString}-{HostOsName}.zip";
         AbsolutePath NugetConfig => RootDirectory / "nuget.config";
-
-        AbsolutePath CliMergedExe => ArtifactsDirectory / "hactoolnet.exe";
-        AbsolutePath CliNativeExe => ArtifactsDirectory / NativeProgramFilename;
 
         Project LibHacProject => _solution.GetProject("LibHac").NotNull();
         Project LibHacTestProject => _solution.GetProject("LibHac.Tests").NotNull();
         Project HactoolnetProject => _solution.GetProject("hactoolnet").NotNull();
 
         private string NativeRuntime { get; set; }
-        private string NativeProgramFilename { get; set; }
+        private string HostOsName { get; set; }
+        private string NativeProgramExtension { get; set; }
 
-        string AppVeyorVersion { get; set; }
+        string VersionString { get; set; }
         Dictionary<string, object> VersionProps { get; set; } = new Dictionary<string, object>();
 
         private const string DotNetFeedSource = "https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json";
@@ -69,20 +66,23 @@ namespace LibHacBuild
 
         public Build()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (EnvironmentInfo.IsWin)
             {
                 NativeRuntime = "win-x64";
-                NativeProgramFilename = "hactoolnet_native.exe";
+                NativeProgramExtension = ".exe";
+                HostOsName = "win";
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            else if (EnvironmentInfo.IsLinux)
             {
                 NativeRuntime = "linux-x64";
-                NativeProgramFilename = "hactoolnet_native";
+                NativeProgramExtension = "";
+                HostOsName = "linux";
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if (EnvironmentInfo.IsOsx)
             {
                 NativeRuntime = "osx-x64";
-                NativeProgramFilename = "hactoolnet_native";
+                NativeProgramExtension = "";
+                HostOsName = "macos";
             }
         }
 
@@ -92,10 +92,10 @@ namespace LibHacBuild
             .OnlyWhenStatic(() => _gitRepository != null)
             .Executes(() =>
             {
-                AppVeyorVersion = $"{_gitVersion.AssemblySemVer}";
+                VersionString = $"{_gitVersion.MajorMinorPatch}";
                 if (!string.IsNullOrWhiteSpace(_gitVersion.PreReleaseTag))
                 {
-                    AppVeyorVersion += $"-{_gitVersion.PreReleaseTag}+{_gitVersion.Sha.Substring(0, 8)}";
+                    VersionString += $"-{_gitVersion.PreReleaseTag}+{_gitVersion.Sha.Substring(0, 8)}";
                 }
 
                 string suffix = _gitVersion.PreReleaseTag;
@@ -116,11 +116,11 @@ namespace LibHacBuild
                     ["VersionSuffix"] = suffix
                 };
 
-                Console.WriteLine($"Building version {AppVeyorVersion}");
+                Logger.Normal($"Building version {VersionString}");
 
                 if (Host == HostType.AppVeyor)
                 {
-                    SetAppVeyorVersion(AppVeyorVersion);
+                    SetAppVeyorVersion(VersionString);
                 }
             });
 
@@ -137,7 +137,6 @@ namespace LibHacBuild
 
                 EnsureCleanDirectory(ArtifactsDirectory);
                 EnsureCleanDirectory(CliCoreDir);
-                EnsureCleanDirectory(CliFrameworkDir);
                 EnsureCleanDirectory(CliNativeDir);
             });
 
@@ -172,13 +171,6 @@ namespace LibHacBuild
                     .SetProject(HactoolnetProject)
                     .SetFramework("netcoreapp3.0")
                     .SetOutput(CliCoreDir)
-                    .SetNoBuild(true)
-                    .SetProperties(VersionProps));
-
-                DotNetPublish(s => publishSettings
-                    .SetProject(HactoolnetProject)
-                    .SetFramework("net46")
-                    .SetOutput(CliFrameworkDir)
                     .SetNoBuild(true)
                     .SetProperties(VersionProps));
 
@@ -220,36 +212,6 @@ namespace LibHacBuild
                 }
             });
 
-        Target Merge => _ => _
-            .DependsOn(Compile)
-            // Merging on Linux blocked by https://github.com/gluck/il-repack/issues/230
-            .OnlyWhenStatic(() => !EnvironmentInfo.IsUnix)
-            .Executes(() =>
-            {
-                string[] libraries = Directory.GetFiles(CliFrameworkDir, "*.dll");
-                var cliList = new List<string> { CliFrameworkDir / "hactoolnet.exe" };
-                cliList.AddRange(libraries);
-
-                var cliOptions = new RepackOptions
-                {
-                    OutputFile = CliMergedExe,
-                    InputAssemblies = cliList.ToArray(),
-                    SearchDirectories = new[] { "." }
-                };
-
-                new ILRepack(cliOptions).Repack();
-
-                foreach (AbsolutePath file in ArtifactsDirectory.GlobFiles("*.exe.config"))
-                {
-                    File.Delete(file);
-                }
-
-                if (Host == HostType.AppVeyor)
-                {
-                    PushArtifact(CliMergedExe);
-                }
-            });
-
         Target Test => _ => _
             .DependsOn(Compile)
             .Executes(() =>
@@ -266,32 +228,24 @@ namespace LibHacBuild
 
         Target Zip => _ => _
             .DependsOn(Pack)
+            .After(Native)
             .Executes(() =>
             {
-                string[] namesFx = Directory.EnumerateFiles(CliFrameworkDir, "*.exe")
-                    .Concat(Directory.EnumerateFiles(CliFrameworkDir, "*.dll"))
-                    .ToArray();
-
                 string[] namesCore = Directory.EnumerateFiles(CliCoreDir, "*.json")
                     .Concat(Directory.EnumerateFiles(CliCoreDir, "*.dll"))
                     .ToArray();
 
-                ZipFiles(CliFrameworkZip, namesFx);
-                Console.WriteLine($"Created {CliFrameworkZip}");
-
                 ZipFiles(CliCoreZip, namesCore);
-                Console.WriteLine($"Created {CliCoreZip}");
+                Logger.Normal($"Created {CliCoreZip}");
 
                 if (Host == HostType.AppVeyor)
                 {
-                    PushArtifact(CliFrameworkZip);
                     PushArtifact(CliCoreZip);
-                    PushArtifact(CliMergedExe);
                 }
             });
 
         Target Publish => _ => _
-            .DependsOn(Test)
+            .DependsOn(Test, Pack)
             .OnlyWhenStatic(() => AppVeyor.Instance != null && AppVeyor.Instance.PullRequestTitle == null)
             .Executes(() =>
             {
@@ -309,100 +263,114 @@ namespace LibHacBuild
                 DotNetNuGetPush(settings.SetTargetPath(snupkgFile));
             });
 
-        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
-        Target Native => _ => _
-            .DependsOn(SetVersion)
-            .OnlyWhenStatic(() => AppVeyor.Instance != null && IsMasterBranch)
-            .Executes(() =>
-            {
-                AbsolutePath nativeProject = HactoolnetProject.Path.Parent / "hactoolnet_native.csproj";
-
-                try
-                {
-                    File.Copy(HactoolnetProject, nativeProject, true);
-                    DotNet("new nuget --force");
-
-                    XDocument doc = XDocument.Load(NugetConfig);
-                    doc.Element("configuration").Element("packageSources").Add(new XElement("add",
-                        new XAttribute("key", "myget"), new XAttribute("value", DotNetFeedSource)));
-
-                    doc.Save(NugetConfig);
-
-                    DotNet($"add {nativeProject} package Microsoft.DotNet.ILCompiler --version 1.0.0-alpha-*");
-
-                    DotNetPublishSettings publishSettings = new DotNetPublishSettings()
-                        .SetConfiguration(Configuration)
-                        .SetProject(nativeProject)
-                        .SetFramework("netcoreapp3.0")
-                        .SetRuntime(NativeRuntime)
-                        .SetOutput(CliNativeDir)
-                        .SetProperties(VersionProps);
-
-                    if (!Untrimmed)
-                    {
-                        publishSettings = publishSettings
-                                .AddProperty("RootAllApplicationAssemblies", false)
-                                .AddProperty("IlcGenerateCompleteTypeMetadata", false)
-                                .AddProperty("IlcGenerateStackTraceData", false)
-                                .AddProperty("IlcFoldIdenticalMethodBodies", true)
-                            ;
-                    }
-
-                    DotNetPublish(publishSettings);
-
-                    AbsolutePath tempExe = CliNativeDir / NativeProgramFilename;
-
-                    File.Copy(tempExe, CliNativeExe, true);
-
-                    if (Host == HostType.AppVeyor)
-                    {
-                        AbsolutePath zipFile = CliNativeExe.Parent / "hactoolnet_native.zip";
-                        ZipFiles(zipFile, new[] { CliNativeExe.ToString() });
-
-                        PushArtifact(zipFile);
-                    }
-                }
-                finally
-                {
-                    File.Delete(nativeProject);
-                    File.Delete(NugetConfig);
-                }
-            });
-
-        Target Results => _ => _
-            .DependsOn(Test, Zip, Merge, Sign, Native, Publish)
-            .Executes(() =>
-            {
-                Console.WriteLine("SHA-1:");
-                using (SHA1 sha = SHA1.Create())
-                {
-                    foreach (string filename in Directory.EnumerateFiles(ArtifactsDirectory))
-                    {
-                        using (var stream = new FileStream(filename, FileMode.Open))
-                        {
-                            string hash = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "");
-                            Console.WriteLine($"{hash} - {Path.GetFileName(filename)}");
-                        }
-                    }
-                }
-            });
-
         Target Sign => _ => _
-            .DependsOn(Test, Zip, Merge)
+            .DependsOn(Test, Zip)
             .OnlyWhenStatic(() => File.Exists(CertFileName))
-            .OnlyWhenStatic(() => !EnvironmentInfo.IsUnix)
+            .OnlyWhenStatic(() => EnvironmentInfo.IsWin)
             .Executes(() =>
             {
                 string pwd = ReadPassword();
 
                 if (pwd == string.Empty)
                 {
-                    Console.WriteLine("Skipping sign task");
+                    Logger.Normal("Skipping sign task");
                     return;
                 }
 
                 SignAndReZip(pwd);
             });
+
+        Target Native => _ => _
+            .DependsOn(SetVersion)
+            .After(Compile)
+            .Executes(BuildNative);
+
+        Target AppVeyorBuild => _ => _
+            .DependsOn(Zip, Native, Publish)
+            .Unlisted()
+            .Executes(PrintResults);
+
+        Target Standard => _ => _
+            .DependsOn(Test, Zip)
+            .Executes(PrintResults);
+
+        Target Full => _ => _
+            .DependsOn(Sign, Native)
+            .Executes(PrintResults);
+
+        public void PrintResults()
+        {
+            Logger.Normal("SHA-1:");
+            using (SHA1 sha = SHA1.Create())
+            {
+                foreach (string filename in Directory.EnumerateFiles(ArtifactsDirectory))
+                {
+                    using (var stream = new FileStream(filename, FileMode.Open))
+                    {
+                        string hash = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "");
+                        Logger.Normal($"{hash} - {Path.GetFileName(filename)}");
+                    }
+                }
+            }
+        }
+
+        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
+        public void BuildNative()
+        {
+            AbsolutePath nativeProject = HactoolnetProject.Path.Parent / "hactoolnet_native.csproj";
+
+            try
+            {
+                File.Copy(HactoolnetProject, nativeProject, true);
+                DotNet("new nuget --force");
+
+                XDocument doc = XDocument.Load(NugetConfig);
+                doc.Element("configuration").Element("packageSources").Add(new XElement("add",
+                    new XAttribute("key", "myget"), new XAttribute("value", DotNetFeedSource)));
+
+                doc.Save(NugetConfig);
+
+                DotNet($"add {nativeProject} package Microsoft.DotNet.ILCompiler --version 1.0.0-alpha-*");
+
+                DotNetPublishSettings publishSettings = new DotNetPublishSettings()
+                    .SetConfiguration(Configuration)
+                    .SetProject(nativeProject)
+                    .SetFramework("netcoreapp3.0")
+                    .SetRuntime(NativeRuntime)
+                    .SetOutput(CliNativeDir)
+                    .SetProperties(VersionProps);
+
+                if (!Untrimmed)
+                {
+                    publishSettings = publishSettings
+                            .AddProperty("RootAllApplicationAssemblies", false)
+                            .AddProperty("IlcGenerateCompleteTypeMetadata", false)
+                            .AddProperty("IlcGenerateStackTraceData", false)
+                            .AddProperty("IlcFoldIdenticalMethodBodies", true)
+                        ;
+                }
+
+                DotNetPublish(publishSettings);
+
+                if (EnvironmentInfo.IsUnix && !Untrimmed)
+                {
+                    ProcessTasks.StartProcess("strip", CliNativeExe).AssertZeroExitCode();
+                }
+
+                ZipFile(CliNativeZip, CliNativeExe, $"hactoolnet{NativeProgramExtension}");
+                Logger.Normal($"Created {CliNativeZip}");
+
+                if (Host == HostType.AppVeyor)
+                {
+                    PushArtifact(CliNativeZip);
+                }
+            }
+            finally
+            {
+                File.Delete(nativeProject);
+                File.Delete(NugetConfig);
+            }
+        }
 
         public static void ZipFiles(string outFile, IEnumerable<string> files)
         {
@@ -421,6 +389,24 @@ namespace LibHacBuild
                         s.PutNextEntry(entry);
                         fs.CopyTo(s);
                     }
+                }
+            }
+        }
+
+        public static void ZipFile(string outFile, string file, string nameInsideZip)
+        {
+            using (var s = new ZipOutputStream(File.Create(outFile)))
+            {
+                s.SetLevel(9);
+
+                var entry = new ZipEntry(nameInsideZip);
+                entry.DateTime = DateTime.UnixEpoch;
+
+                using (FileStream fs = File.OpenRead(file))
+                {
+                    entry.Size = fs.Length;
+                    s.PutNextEntry(entry);
+                    fs.CopyTo(s);
                 }
             }
         }
@@ -503,7 +489,7 @@ namespace LibHacBuild
         {
             if (!File.Exists(path))
             {
-                Console.WriteLine($"Unable to add artifact {path}");
+                Logger.Warn($"Unable to add artifact {path}");
             }
 
             var psi = new ProcessStartInfo
@@ -524,7 +510,7 @@ namespace LibHacBuild
 
             proc.WaitForExit();
 
-            Console.WriteLine($"Added AppVeyor artifact {path}");
+            Logger.Normal($"Added AppVeyor artifact {path}");
         }
 
         public static void SetAppVeyorVersion(string version)
@@ -572,34 +558,40 @@ namespace LibHacBuild
             AbsolutePath nupkgFile = ArtifactsDirectory.GlobFiles("*.nupkg").Single();
             AbsolutePath snupkgFile = ArtifactsDirectory.GlobFiles("*.snupkg").Single();
             AbsolutePath nupkgDir = TempDirectory / ("sign_" + Path.GetFileName(nupkgFile));
-            AbsolutePath netFxDir = TempDirectory / ("sign_" + Path.GetFileName(CliFrameworkZip));
             AbsolutePath coreFxDir = TempDirectory / ("sign_" + Path.GetFileName(CliCoreZip));
-            AbsolutePath signedMergedExe = SignedArtifactsDirectory / Path.GetFileName(CliMergedExe);
+            AbsolutePath nativeZipDir = TempDirectory / ("sign_" + Path.GetFileName(CliNativeZip));
+
+            bool signNative = FileExists(CliNativeExe);
 
             try
             {
-                UnzipFiles(CliFrameworkZip, netFxDir);
                 UnzipFiles(CliCoreZip, coreFxDir);
                 List<string> pkgFileList = UnzipPackage(nupkgFile, nupkgDir);
 
                 var toSign = new List<AbsolutePath>();
                 toSign.AddRange(nupkgDir.GlobFiles("**/LibHac.dll"));
-                toSign.Add(netFxDir / "hactoolnet.exe");
                 toSign.Add(coreFxDir / "hactoolnet.dll");
-                toSign.Add(signedMergedExe);
+
+                if (signNative)
+                {
+                    UnzipFiles(CliNativeZip, nativeZipDir);
+                    toSign.Add(nativeZipDir / "hactoolnet.exe");
+                }
 
                 Directory.CreateDirectory(SignedArtifactsDirectory);
-                File.Copy(CliMergedExe, signedMergedExe, true);
 
                 SignAssemblies(password, toSign.Select(x => x.ToString()).ToArray());
 
                 // Avoid having multiple signed versions of the same file
-                File.Copy(nupkgDir / "lib" / "net46" / "LibHac.dll", netFxDir / "LibHac.dll", true);
                 File.Copy(nupkgDir / "lib" / "netcoreapp3.0" / "LibHac.dll", coreFxDir / "LibHac.dll", true);
 
                 ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(nupkgFile), nupkgDir, pkgFileList);
-                ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliFrameworkZip), netFxDir);
                 ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliCoreZip), coreFxDir);
+
+                if (signNative)
+                {
+                    ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliNativeZip), nativeZipDir);
+                }
 
                 File.Copy(snupkgFile, SignedArtifactsDirectory / Path.GetFileName(snupkgFile));
 
@@ -614,7 +606,6 @@ namespace LibHacBuild
             finally
             {
                 Directory.Delete(nupkgDir, true);
-                Directory.Delete(netFxDir, true);
                 Directory.Delete(coreFxDir, true);
             }
         }
