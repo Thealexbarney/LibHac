@@ -4,5 +4,7 @@ environment:
   myget_api_key:
     secure: 0xJoYAtR6psXCRvk1qm5czDObkeRjHKPjfe5gIExXVFPwA0VVODYv/hBZYUtz2F3
 build_script:
-  - ps: .\build.ps1
+  - ps: ls
+on_finish:
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 test: off
