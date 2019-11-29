@@ -283,7 +283,6 @@ namespace LibHacBuild
         Target Native => _ => _
             .DependsOn(SetVersion)
             .After(Compile)
-            .OnlyWhenStatic(() => AppVeyor.Instance == null || IsMasterBranch)
             .Executes(BuildNative);
 
         Target AppVeyorBuild => _ => _
