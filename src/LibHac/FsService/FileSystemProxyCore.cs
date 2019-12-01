@@ -71,7 +71,8 @@ namespace LibHac.FsService
 
             if (rc.IsSuccess())
             {
-                if (path2.Length == 0 || path[0] == 0)
+                // Must be the end of the path to open Application Package FS type
+                if (path2.Length == 0 || path2[0] == 0)
                 {
                     if (type == FileSystemProxyType.Package)
                     {
@@ -85,7 +86,7 @@ namespace LibHac.FsService
                 baseFileSystem = nspFileSystem;
             }
 
-            if (!mountNameInfo.Field9)
+            if (!mountNameInfo.CanMountNca)
             {
                 return ResultFs.InvalidNcaMountPoint.Log();
             }
@@ -108,7 +109,7 @@ namespace LibHac.FsService
             public bool IsGameCard;
             public int GcHandle;
             public bool IsHostFs;
-            public bool Field9;
+            public bool CanMountNca;
         }
 
         private Result OpenFileSystemFromMountName(ref U8Span path, out IFileSystem fileSystem, out bool successQQ,
@@ -119,47 +120,52 @@ namespace LibHac.FsService
             info = new MountNameInfo();
             successQQ = true;
 
-            if (StringUtils.Compare(path, CommonMountNames.GameCardFileSystemMountName) == 0)
+            if (StringUtils.Compare(path, CommonMountNames.GameCardFileSystemMountName,
+                    CommonMountNames.GameCardFileSystemMountName.Length) == 0)
             {
                 path = path.Slice(CommonMountNames.GameCardFileSystemMountName.Length);
 
                 info.IsGameCard = true;
-                info.Field9 = true;
+                info.CanMountNca = true;
 
                 throw new NotImplementedException();
             }
 
-            else if (StringUtils.Compare(path, CommonMountNames.ContentStorageSystemMountName) == 0)
+            else if (StringUtils.Compare(path, CommonMountNames.ContentStorageSystemMountName,
+                         CommonMountNames.ContentStorageSystemMountName.Length) == 0)
             {
                 path = path.Slice(CommonMountNames.ContentStorageSystemMountName.Length);
 
                 Result rc = OpenContentStorageFileSystem(out fileSystem, ContentStorageId.System);
                 if (rc.IsFailure()) return rc;
 
-                info.Field9 = true;
+                info.CanMountNca = true;
             }
 
-            else if (StringUtils.Compare(path, CommonMountNames.ContentStorageUserMountName) == 0)
+            else if (StringUtils.Compare(path, CommonMountNames.ContentStorageUserMountName,
+                         CommonMountNames.ContentStorageUserMountName.Length) == 0)
             {
                 path = path.Slice(CommonMountNames.ContentStorageUserMountName.Length);
 
                 Result rc = OpenContentStorageFileSystem(out fileSystem, ContentStorageId.User);
                 if (rc.IsFailure()) return rc;
 
-                info.Field9 = true;
+                info.CanMountNca = true;
             }
 
-            else if (StringUtils.Compare(path, CommonMountNames.ContentStorageSdCardMountName) == 0)
+            else if (StringUtils.Compare(path, CommonMountNames.ContentStorageSdCardMountName,
+                         CommonMountNames.ContentStorageSdCardMountName.Length) == 0)
             {
                 path = path.Slice(CommonMountNames.ContentStorageSdCardMountName.Length);
 
                 Result rc = OpenContentStorageFileSystem(out fileSystem, ContentStorageId.SdCard);
                 if (rc.IsFailure()) return rc;
 
-                info.Field9 = true;
+                info.CanMountNca = true;
             }
 
-            else if (StringUtils.Compare(path, CommonMountNames.BisCalibrationFilePartitionMountName) == 0)
+            else if (StringUtils.Compare(path, CommonMountNames.BisCalibrationFilePartitionMountName,
+                         CommonMountNames.BisCalibrationFilePartitionMountName.Length) == 0)
             {
                 path = path.Slice(CommonMountNames.BisCalibrationFilePartitionMountName.Length);
 
@@ -167,7 +173,8 @@ namespace LibHac.FsService
                 if (rc.IsFailure()) return rc;
             }
 
-            else if (StringUtils.Compare(path, CommonMountNames.BisSafeModePartitionMountName) == 0)
+            else if (StringUtils.Compare(path, CommonMountNames.BisSafeModePartitionMountName,
+                         CommonMountNames.BisSafeModePartitionMountName.Length) == 0)
             {
                 path = path.Slice(CommonMountNames.BisSafeModePartitionMountName.Length);
 
@@ -175,7 +182,8 @@ namespace LibHac.FsService
                 if (rc.IsFailure()) return rc;
             }
 
-            else if (StringUtils.Compare(path, CommonMountNames.BisUserPartitionMountName) == 0)
+            else if (StringUtils.Compare(path, CommonMountNames.BisUserPartitionMountName,
+                         CommonMountNames.BisUserPartitionMountName.Length) == 0)
             {
                 path = path.Slice(CommonMountNames.BisUserPartitionMountName.Length);
 
@@ -183,7 +191,8 @@ namespace LibHac.FsService
                 if (rc.IsFailure()) return rc;
             }
 
-            else if (StringUtils.Compare(path, CommonMountNames.BisSystemPartitionMountName) == 0)
+            else if (StringUtils.Compare(path, CommonMountNames.BisSystemPartitionMountName,
+                         CommonMountNames.BisSystemPartitionMountName.Length) == 0)
             {
                 path = path.Slice(CommonMountNames.BisSystemPartitionMountName.Length);
 
@@ -191,7 +200,8 @@ namespace LibHac.FsService
                 if (rc.IsFailure()) return rc;
             }
 
-            else if (StringUtils.Compare(path, CommonMountNames.SdCardFileSystemMountName) == 0)
+            else if (StringUtils.Compare(path, CommonMountNames.SdCardFileSystemMountName,
+                         CommonMountNames.SdCardFileSystemMountName.Length) == 0)
             {
                 path = path.Slice(CommonMountNames.SdCardFileSystemMountName.Length);
 
@@ -199,21 +209,23 @@ namespace LibHac.FsService
                 if (rc.IsFailure()) return rc;
             }
 
-            else if (StringUtils.Compare(path, CommonMountNames.HostRootFileSystemMountName) == 0)
+            else if (StringUtils.Compare(path, CommonMountNames.HostRootFileSystemMountName,
+                         CommonMountNames.HostRootFileSystemMountName.Length) == 0)
             {
                 path = path.Slice(CommonMountNames.HostRootFileSystemMountName.Length);
 
                 info.IsHostFs = true;
-                info.Field9 = true;
+                info.CanMountNca = true;
 
                 throw new NotImplementedException();
             }
 
-            else if (StringUtils.Compare(path, CommonMountNames.RegisteredUpdatePartitionMountName) == 0)
+            else if (StringUtils.Compare(path, CommonMountNames.RegisteredUpdatePartitionMountName,
+                         CommonMountNames.RegisteredUpdatePartitionMountName.Length) == 0)
             {
                 path = path.Slice(CommonMountNames.RegisteredUpdatePartitionMountName.Length);
 
-                info.Field9 = true;
+                info.CanMountNca = true;
 
                 throw new NotImplementedException();
             }
@@ -272,7 +284,60 @@ namespace LibHac.FsService
 
         private Result TryOpenNsp(ref U8Span path, out IFileSystem outFileSystem, IFileSystem baseFileSystem)
         {
-            throw new NotImplementedException();
+            outFileSystem = default;
+
+            ReadOnlySpan<byte> nspExtension = new[] { (byte)'.', (byte)'n', (byte)'s', (byte)'p' };
+
+            int searchEnd = path.Length - 4;
+
+            // Search for the end of the nsp part of the path
+            int nspPathLen = 0;
+
+            while (true)
+            {
+                U8Span currentSpan;
+
+                while (true)
+                {
+                    currentSpan = path.Slice(nspPathLen);
+                    if (StringUtils.CompareCaseInsensitive(nspExtension, currentSpan, 4) == 0)
+                        break;
+
+                    if (currentSpan.Length == 0 || currentSpan[0] == 0)
+                    {
+                        return ResultFs.PathNotFound.Log();
+                    }
+
+                    nspPathLen++;
+                }
+
+                // The nsp filename must be the end of the entire path or the end of a path segment
+                if (currentSpan.Length <= 4 || currentSpan[4] == 0 || currentSpan[4] == (byte)'/')
+                    break;
+
+                nspPathLen += 4;
+            }
+
+            nspPathLen += 4;
+
+            if (nspPathLen > FsPath.MaxLength + 1)
+                return ResultFs.TooLongPath.Log();
+
+            Result rc = FsPath.FromSpan(out FsPath nspPath, path.Slice(0, nspPathLen));
+            if (rc.IsFailure()) return rc;
+
+            rc = FileStorageBasedFileSystem.CreateNew(out FileStorageBasedFileSystem nspFileStorage, baseFileSystem,
+                new U8Span(nspPath.Str), OpenMode.Read);
+            if (rc.IsFailure()) return rc;
+
+            rc = FsCreators.PartitionFileSystemCreator.Create(out outFileSystem, nspFileStorage);
+
+            if (rc.IsSuccess())
+            {
+                path = path.Slice(nspPathLen);
+            }
+
+            return rc;
         }
 
         private Result TryOpenNca(ref U8Span path, out Nca nca, IFileSystem baseFileSystem, TitleId titleId)
