@@ -4,20 +4,16 @@ namespace LibHac.Fs
 {
     public static class GameCard
     {
-        public static long GetGameCardSizeBytes(GameCardSize size)
+        public static long GetGameCardSizeBytes(GameCardSizeInternal size) => size switch
         {
-            switch (size)
-            {
-                case GameCardSize.Size1Gb: return 0x3B800000;
-                case GameCardSize.Size2Gb: return 0x77000000;
-                case GameCardSize.Size4Gb: return 0xEE000000;
-                case GameCardSize.Size8Gb: return 0x1DC000000;
-                case GameCardSize.Size16Gb: return 0x3B8000000;
-                case GameCardSize.Size32Gb: return 0x770000000;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(size), size, null);
-            }
-        }
+            GameCardSizeInternal.Size1Gb => 0x3B800000,
+            GameCardSizeInternal.Size2Gb => 0x77000000,
+            GameCardSizeInternal.Size4Gb => 0xEE000000,
+            GameCardSizeInternal.Size8Gb => 0x1DC000000,
+            GameCardSizeInternal.Size16Gb => 0x3B8000000,
+            GameCardSizeInternal.Size32Gb => 0x770000000,
+            _ => 0
+        };
 
         public static long CardPageToOffset(int page)
         {
@@ -25,7 +21,7 @@ namespace LibHac.Fs
         }
     }
 
-    public enum GameCardSize
+    public enum GameCardSizeInternal : byte
     {
         Size1Gb = 0xFA,
         Size2Gb = 0xF8,
@@ -38,8 +34,11 @@ namespace LibHac.Fs
     [Flags]
     public enum GameCardAttribute : byte
     {
-        AutoBoot = 1 << 0,
-        HistoryErase = 1 << 1,
-        RepairTool = 1 << 2
+        None = 0,
+        AutoBootFlag = 1 << 0,
+        HistoryEraseFlag = 1 << 1,
+        RepairToolFlag = 1 << 2,
+        DifferentRegionCupToTerraDeviceFlag = 1 << 3,
+        DifferentRegionCupToGlobalDeviceFlag = 1 << 4
     }
 }

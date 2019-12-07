@@ -42,7 +42,7 @@ namespace LibHac.Fs.Shim
 
                 IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                rc = fsProxy.OpenFileSystemWithId(out IFileSystem fileSystem, ref fsPath, default, FileSystemProxyType.ApplicationPackage);
+                rc = fsProxy.OpenFileSystemWithId(out IFileSystem fileSystem, ref fsPath, default, FileSystemProxyType.Package);
                 if (rc.IsFailure()) return rc;
 
                 return fs.Register(mountName, fileSystem);

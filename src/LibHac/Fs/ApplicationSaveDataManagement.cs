@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using LibHac.Account;
 using LibHac.Fs.Shim;
-using LibHac.FsSystem.Save;
 using LibHac.Ncm;
 using LibHac.Ns;
 
@@ -20,7 +19,7 @@ namespace LibHac.Fs
             {
                 var filter = new SaveDataFilter();
                 filter.SetTitleId(applicationId);
-                filter.SetSaveDataType(SaveDataType.SaveData);
+                filter.SetSaveDataType(SaveDataType.Account);
                 filter.SetUserId(new UserId(uid.Id.High, uid.Id.Low));
 
                 Result rc = fs.FindSaveDataWithFilter(out SaveDataInfo saveDataInfo, SaveDataSpaceId.User, ref filter);
@@ -74,7 +73,7 @@ namespace LibHac.Fs
             {
                 var filter = new SaveDataFilter();
                 filter.SetTitleId(applicationId);
-                filter.SetSaveDataType(SaveDataType.DeviceSaveData);
+                filter.SetSaveDataType(SaveDataType.Device);
 
                 Result rc = fs.FindSaveDataWithFilter(out SaveDataInfo saveDataInfo, SaveDataSpaceId.User, ref filter);
 
@@ -142,7 +141,7 @@ namespace LibHac.Fs
                 {
                     var filter = new SaveDataFilter();
                     filter.SetTitleId(applicationId);
-                    filter.SetSaveDataType(SaveDataType.TemporaryStorage);
+                    filter.SetSaveDataType(SaveDataType.Temporary);
 
                     Result rc = fs.FindSaveDataWithFilter(out _, SaveDataSpaceId.User, ref filter);
 
@@ -213,7 +212,7 @@ namespace LibHac.Fs
 
             var filter = new SaveDataFilter();
             filter.SetTitleId(applicationId);
-            filter.SetSaveDataType(SaveDataType.BcatDeliveryCacheStorage);
+            filter.SetSaveDataType(SaveDataType.Bcat);
 
             Result rc = fs.FindSaveDataWithFilter(out SaveDataInfo saveDataInfo, SaveDataSpaceId.User, ref filter);
 

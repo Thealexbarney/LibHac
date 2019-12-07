@@ -50,7 +50,7 @@ namespace LibHac.FsService
                     reader = new SaveDataIndexerReader(_sdCardIndexer.Indexer, _sdCardIndexer.Locker);
                     return Result.Success;
 
-                case SaveDataSpaceId.TemporaryStorage:
+                case SaveDataSpaceId.Temporary:
                     throw new NotImplementedException();
 
                 case SaveDataSpaceId.ProperSystem:
@@ -64,12 +64,12 @@ namespace LibHac.FsService
                     reader = new SaveDataIndexerReader(_safeIndexer.Indexer, _safeIndexer.Locker);
                     return Result.Success;
 
-                case SaveDataSpaceId.Safe:
+                case SaveDataSpaceId.SafeMode:
                     Monitor.Enter(_properSystemIndexer.Locker);
 
                     if (!_properSystemIndexer.IsInitialized)
                     {
-                        _properSystemIndexer.Indexer = new SaveDataIndexer(FsClient, "saveDataIxrDbSf", SaveDataSpaceId.Safe, SaveDataId);
+                        _properSystemIndexer.Indexer = new SaveDataIndexer(FsClient, "saveDataIxrDbSf", SaveDataSpaceId.SafeMode, SaveDataId);
                     }
 
                     reader = new SaveDataIndexerReader(_properSystemIndexer.Indexer, _properSystemIndexer.Locker);

@@ -55,10 +55,10 @@ namespace LibHac.Fs.Shim
 
         private static FileSystemProxyType ConvertToFileSystemProxyType(ContentType type) => type switch
         {
-            ContentType.Meta => FileSystemProxyType.ContentMeta,
-            ContentType.Control => FileSystemProxyType.ContentControl,
-            ContentType.Manual => FileSystemProxyType.ContentManual,
-            ContentType.Data => FileSystemProxyType.ContentData,
+            ContentType.Meta => FileSystemProxyType.Meta,
+            ContentType.Control => FileSystemProxyType.Control,
+            ContentType.Manual => FileSystemProxyType.Manual,
+            ContentType.Data => FileSystemProxyType.Data,
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, null),
         };
     }

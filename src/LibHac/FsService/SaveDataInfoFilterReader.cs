@@ -2,7 +2,6 @@
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
-using LibHac.FsSystem.Save;
 using LibHac.Ncm;
 
 namespace LibHac.FsService
@@ -85,7 +84,7 @@ namespace LibHac.FsService
             FilterBySaveDataSpaceId = true;
             SpaceId = spaceId;
 
-            Rank = filter.Rank;
+            Rank = (int)filter.Rank;
 
             if (filter.FilterByTitleId)
             {
@@ -150,7 +149,8 @@ namespace LibHac.FsService
                 return false;
             }
 
-            if ((Rank & 1) == 0 && info.Rank != 0)
+            // When filtering by secondary rank include primary ranks as well
+            if ((Rank & 1) == 1 || info.Rank == SaveDataRank.Primary)
             {
                 return false;
             }

@@ -3,7 +3,6 @@ using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Shim;
 using LibHac.FsSystem;
-using LibHac.FsSystem.Save;
 using LibHac.FsService.Creators;
 using LibHac.Spl;
 using RightsId = LibHac.Fs.RightsId;
@@ -44,11 +43,11 @@ namespace LibHac.FsService
         {
             switch (partitionId)
             {
-                case GameCardPartitionRaw.Normal:
+                case GameCardPartitionRaw.NormalReadOnly:
                     return FsCreators.GameCardStorageCreator.CreateNormal(handle, out storage);
-                case GameCardPartitionRaw.Secure:
+                case GameCardPartitionRaw.SecureReadOnly:
                     return FsCreators.GameCardStorageCreator.CreateSecure(handle, out storage);
-                case GameCardPartitionRaw.Writable:
+                case GameCardPartitionRaw.RootWriteOnly:
                     return FsCreators.GameCardStorageCreator.CreateWritable(handle, out storage);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(partitionId), partitionId, null);
@@ -132,13 +131,13 @@ namespace LibHac.FsService
                     fileSystem = encryptedFs;
                     return Result.Success;
                 }
-                case CustomStorageId.User:
+                case CustomStorageId.System:
                 {
                     Result rc = FsCreators.BuiltInStorageFileSystemCreator.Create(out IFileSystem userFs, string.Empty,
                         BisPartitionId.User);
                     if (rc.IsFailure()) return rc;
 
-                    string customStorageDir = CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.User);
+                    string customStorageDir = CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System);
                     string subDirName = $"/{customStorageDir}";
 
                     rc = Util.CreateSubFileSystem(out IFileSystem subFs, userFs, subDirName, true);
@@ -264,7 +263,7 @@ namespace LibHac.FsService
                 return Util.CreateSubFileSystem(out fileSystem, hostFs, saveDataRootPath, true);
             }
 
-            string dirName = spaceId == SaveDataSpaceId.TemporaryStorage ? "/temp" : "/save";
+            string dirName = spaceId == SaveDataSpaceId.Temporary ? "/temp" : "/save";
 
             return OpenSaveDataDirectoryImpl(out fileSystem, spaceId, dirName, true);
         }
@@ -283,7 +282,7 @@ namespace LibHac.FsService
                     return Util.CreateSubFileSystem(out fileSystem, sysFs, saveDirName, createIfMissing);
 
                 case SaveDataSpaceId.User:
-                case SaveDataSpaceId.TemporaryStorage:
+                case SaveDataSpaceId.Temporary:
                     rc = OpenBisFileSystem(out IFileSystem userFs, string.Empty, BisPartitionId.User);
                     if (rc.IsFailure()) return rc;
 
@@ -308,7 +307,7 @@ namespace LibHac.FsService
 
                     return Util.CreateSubFileSystem(out fileSystem, sysProperFs, saveDirName, createIfMissing);
 
-                case SaveDataSpaceId.Safe:
+                case SaveDataSpaceId.SafeMode:
                     rc = OpenBisFileSystem(out IFileSystem safeFs, string.Empty, BisPartitionId.SafeMode);
                     if (rc.IsFailure()) return rc;
 
@@ -319,7 +318,7 @@ namespace LibHac.FsService
             }
         }
 
-        public Result OpenSaveDataMetaFile(out IFile file, ulong saveDataId, SaveDataSpaceId spaceId, SaveMetaType type)
+        public Result OpenSaveDataMetaFile(out IFile file, ulong saveDataId, SaveDataSpaceId spaceId, SaveDataMetaType type)
         {
             file = default;
 
@@ -351,7 +350,7 @@ namespace LibHac.FsService
             }
         }
 
-        public Result CreateSaveDataMetaFile(ulong saveDataId, SaveDataSpaceId spaceId, SaveMetaType type, long size)
+        public Result CreateSaveDataMetaFile(ulong saveDataId, SaveDataSpaceId spaceId, SaveDataMetaType type, long size)
         {
             string metaDirPath = $"/saveMeta/{saveDataId:x16}";
 
@@ -367,11 +366,11 @@ namespace LibHac.FsService
         }
 
         public Result CreateSaveDataFileSystem(ulong saveDataId, ref SaveDataAttribute attribute,
-            ref SaveDataCreateInfo createInfo, U8Span rootPath, OptionalHashSalt hashSalt, bool something)
+            ref SaveDataCreationInfo creationInfo, U8Span rootPath, OptionalHashSalt hashSalt, bool something)
         {
             // Use directory save data for now
 
-            Result rc = OpenSaveDataDirectory(out IFileSystem fileSystem, createInfo.SpaceId, string.Empty, false);
+            Result rc = OpenSaveDataDirectory(out IFileSystem fileSystem, creationInfo.SpaceId, string.Empty, false);
             if (rc.IsFailure()) return rc;
 
             return fileSystem.EnsureDirectoryExists(GetSaveDataIdPath(saveDataId));
