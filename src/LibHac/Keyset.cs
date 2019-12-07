@@ -688,12 +688,12 @@ namespace LibHac
 
         public static Dictionary<string, KeyValue> CreateCommonKeyDictionary()
         {
-            return CreateCommonKeyList().ToDictionary(k => k.Name, k => k);
+            return CreateCommonKeyList().ToDictionary(k => k.Name, k => k, StringComparer.OrdinalIgnoreCase);
         }
 
         public static Dictionary<string, KeyValue> CreateUniqueKeyDictionary()
         {
-            return CreateUniqueKeyList().ToDictionary(k => k.Name, k => k);
+            return CreateUniqueKeyList().ToDictionary(k => k.Name, k => k, StringComparer.OrdinalIgnoreCase);
         }
 
         public static Dictionary<string, KeyValue> CreateFullKeyDictionary()
@@ -701,7 +701,7 @@ namespace LibHac
             List<KeyValue> commonKeys = CreateCommonKeyList();
             List<KeyValue> uniqueKeys = CreateUniqueKeyList();
 
-            return uniqueKeys.Concat(commonKeys).ToDictionary(k => k.Name, k => k);
+            return uniqueKeys.Concat(commonKeys).ToDictionary(k => k.Name, k => k, StringComparer.OrdinalIgnoreCase);
         }
 
         private static List<KeyValue> CreateCommonKeyList()
