@@ -58,8 +58,11 @@
         public static Result InvalidHashInIvfc => new Result(ModuleFs, 4604);
         public static Result IvfcHashIsEmpty => new Result(ModuleFs, 4612);
         public static Result InvalidHashInIvfcTopLayer => new Result(ModuleFs, 4613);
+        public static Result InvalidPartitionFileSystemHashOffset => new Result(ModuleFs, 4642);
+        public static Result InvalidPartitionFileSystemHash => new Result(ModuleFs, 4643);
         public static Result InvalidPartitionFileSystemMagic => new Result(ModuleFs, 4644);
         public static Result InvalidHashedPartitionFileSystemMagic => new Result(ModuleFs, 4645);
+        public static Result InvalidPartitionFileSystemEntryNameOffset => new Result(ModuleFs, 4646);
         public static Result Result4662 => new Result(ModuleFs, 4662);
 
         public static Result SaveDataAllocationTableCorruptedInternal => new Result(ModuleFs, 4722);
@@ -127,6 +130,7 @@
         public static Result UnsupportedOperationModifyReadOnlyFile => new Result(ModuleFs, 6372);
         public static Result UnsupportedOperationModifyPartitionFileSystem => new Result(ModuleFs, 6374);
         public static Result UnsupportedOperationInPartitionFileSetSize => new Result(ModuleFs, 6376);
+        public static Result UnsupportedOperationIdInPartitionFileSystem => new Result(ModuleFs, 6377);
 
         public static Result PermissionDenied => new Result(ModuleFs, 6400);
         public static Result ExternalKeyAlreadyRegistered => new Result(ModuleFs, 6452);
