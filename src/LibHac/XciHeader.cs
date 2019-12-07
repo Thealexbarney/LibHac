@@ -38,7 +38,7 @@ namespace LibHac
         public int BackupAreaStartPage { get; set; }
         public byte KekIndex { get; set; }
         public byte TitleKeyDecIndex { get; set; }
-        public GameCardSize GameCardSize { get; set; }
+        public GameCardSizeInternal GameCardSize { get; set; }
         public byte CardHeaderVersion { get; set; }
         public GameCardAttribute Flags { get; set; }
         public ulong PackageId { get; set; }
@@ -91,7 +91,7 @@ namespace LibHac
                 byte keyIndex = reader.ReadByte();
                 KekIndex = (byte)(keyIndex >> 4);
                 TitleKeyDecIndex = (byte)(keyIndex & 7);
-                GameCardSize = (GameCardSize)reader.ReadByte();
+                GameCardSize = (GameCardSizeInternal)reader.ReadByte();
                 CardHeaderVersion = reader.ReadByte();
                 Flags = (GameCardAttribute)reader.ReadByte();
                 PackageId = reader.ReadUInt64();
@@ -133,7 +133,7 @@ namespace LibHac
                 Sha256.GenerateSha256Hash(sigData, ImageHash);
 
                 reader.BaseStream.Position = RootPartitionOffset;
-                byte[] headerBytes = reader.ReadBytes((int) RootPartitionHeaderSize);
+                byte[] headerBytes = reader.ReadBytes((int)RootPartitionHeaderSize);
 
                 Span<byte> actualHeaderHash = stackalloc byte[Sha256.DigestSize];
                 Sha256.GenerateSha256Hash(headerBytes, actualHeaderHash);

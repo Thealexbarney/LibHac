@@ -23,7 +23,7 @@ namespace LibHac.Fs.Shim
         {
             switch (storageId)
             {
-                case CustomStorageId.User:
+                case CustomStorageId.System:
                 case CustomStorageId.SdCard:
                     return "CustomStorage0";
                 default:

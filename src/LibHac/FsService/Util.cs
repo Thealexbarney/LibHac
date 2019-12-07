@@ -45,9 +45,9 @@ namespace LibHac.FsService
         {
             return spaceId == SaveDataSpaceId.System ||
                    spaceId == SaveDataSpaceId.User ||
-                   spaceId == SaveDataSpaceId.TemporaryStorage ||
+                   spaceId == SaveDataSpaceId.Temporary ||
                    spaceId == SaveDataSpaceId.ProperSystem ||
-                   spaceId == SaveDataSpaceId.Safe;
+                   spaceId == SaveDataSpaceId.SafeMode;
         }
     }
 }

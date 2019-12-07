@@ -20,7 +20,7 @@ namespace LibHac.Fs
         System = 31,
         SystemProperEncryption = 32,
         SystemProperPartition = 33,
-        Invalid = 35
+        SignedSystemPartitionOnSafeMode = 34
     }
 
     public enum ContentStorageId
@@ -40,9 +40,9 @@ namespace LibHac.Fs
 
     public enum GameCardPartitionRaw
     {
-        Normal = 0,
-        Secure = 1,
-        Writable = 2
+        NormalReadOnly = 0,
+        SecureReadOnly = 1,
+        RootWriteOnly = 2
     }
 
     public enum SaveDataSpaceId : byte
@@ -50,16 +50,16 @@ namespace LibHac.Fs
         System = 0,
         User = 1,
         SdSystem = 2,
-        TemporaryStorage = 3,
+        Temporary = 3,
         SdCache = 4,
         ProperSystem = 100,
-        Safe = 101,
+        SafeMode = 101,
         BisAuto = 127
     }
 
     public enum CustomStorageId
     {
-        User = 0,
+        System = 0,
         SdCard = 1
     }
 
@@ -69,27 +69,27 @@ namespace LibHac.Fs
         Control = 1,
         Manual = 2,
         Logo = 3,
-        Data = 4,
+        Data = 4
     }
 
     public enum FileSystemProxyType
     {
         Code = 0,
-        Data = 1,
+        Rom = 1,
         Logo = 2,
-        ContentControl = 3,
-        ContentManual = 4,
-        ContentMeta = 5,
-        ContentData = 6,
-        ApplicationPackage = 7,
+        Control = 3,
+        Manual = 4,
+        Meta = 5,
+        Data = 6,
+        Package = 7,
         RegisteredUpdate = 8
     }
 
-    public enum SaveMetaType : byte
+    public enum SaveDataMetaType : byte
     {
         None = 0,
         Thumbnail = 1,
-        ExtensionInfo = 2
+        ExtensionContext = 2
     }
 
     public enum SaveDataState : byte
@@ -98,7 +98,7 @@ namespace LibHac.Fs
         Creating = 1,
         State2 = 2,
         MarkedForDeletion = 3,
-        Extending = 4,
+        Extending = 4
     }
 
     public enum ImageDirectoryId
@@ -145,5 +145,32 @@ namespace LibHac.Fs
         ClearSignature = 1,
         InvalidateCache = 2,
         QueryRange = 3
+    }
+
+    public enum SaveDataType : byte
+    {
+        System = 0,
+        Account = 1,
+        Bcat = 2,
+        Device = 3,
+        Temporary = 4,
+        Cache = 5,
+        SystemBcat = 6
+    }
+
+    public enum SaveDataRank : byte
+    {
+        Primary = 0,
+        Secondary = 1
+    }
+
+    [Flags]
+    public enum SaveDataFlags
+    {
+        None = 0,
+        KeepAfterResettingSystemSaveData = 1 << 0,
+        KeepAfterRefurbishment = 1 << 1,
+        KeepAfterResettingSystemSaveDataWithoutUserSaveData = 1 << 2,
+        NeedsSecureDelete = 1 << 3
     }
 }

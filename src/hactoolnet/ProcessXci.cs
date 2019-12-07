@@ -192,16 +192,16 @@ namespace hactoolnet
             }
         }
 
-        private static string GetCartridgeType(GameCardSize size)
+        private static string GetCartridgeType(GameCardSizeInternal size)
         {
             switch (size)
             {
-                case GameCardSize.Size1Gb: return "1GB";
-                case GameCardSize.Size2Gb: return "2GB";
-                case GameCardSize.Size4Gb: return "4GB";
-                case GameCardSize.Size8Gb: return "8GB";
-                case GameCardSize.Size16Gb: return "16GB";
-                case GameCardSize.Size32Gb: return "32GB";
+                case GameCardSizeInternal.Size1Gb: return "1GB";
+                case GameCardSizeInternal.Size2Gb: return "2GB";
+                case GameCardSizeInternal.Size4Gb: return "4GB";
+                case GameCardSizeInternal.Size8Gb: return "8GB";
+                case GameCardSizeInternal.Size16Gb: return "16GB";
+                case GameCardSizeInternal.Size32Gb: return "32GB";
                 default: return string.Empty;
             }
         }
