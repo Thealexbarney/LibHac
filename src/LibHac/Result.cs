@@ -42,9 +42,8 @@ namespace LibHac
         /// <returns>The called <see cref="Result"/> value.</returns>
         public Result Log()
         {
-#if DEBUG
-            LogCallback?.Invoke(this);
-#endif
+            LogImpl();
+
             return this;
         }
 
@@ -55,10 +54,21 @@ namespace LibHac
         /// <returns>The called <see cref="Result"/> value.</returns>
         public Result LogConverted(Result originalResult)
         {
-#if DEBUG
-            ConvertedLogCallback?.Invoke(this, originalResult);
-#endif
+            LogConvertedImpl(originalResult);
+
             return this;
+        }
+
+        [Conditional("DEBUG")]
+        private void LogImpl()
+        {
+            LogCallback?.Invoke(this);
+        }
+
+        [Conditional("DEBUG")]
+        private void LogConvertedImpl(Result originalResult)
+        {
+            ConvertedLogCallback?.Invoke(this, originalResult);
         }
 
         public delegate void ResultLogger(Result result);

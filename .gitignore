@@ -265,3 +265,4 @@ __pycache__/
 global.json
 
 !tests/LibHac.Tests/CryptoTests/TestVectors/*
+**/DisasmoBin/
