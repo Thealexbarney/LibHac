@@ -103,7 +103,15 @@ namespace hactoolnet
                 {
                     if (signNeeded)
                     {
-                        save.Commit(ctx.Keyset).ThrowIfFailure();
+                        if (save.Commit(ctx.Keyset).IsSuccess())
+                        {
+                            ctx.Logger.LogMessage("Successfully signed save file");
+                        }
+                        else
+                        {
+                            ctx.Logger.LogMessage("Unable to sign save file. Do you have all the required keys?");
+                        }
+
                         signNeeded = false;
                     }
                 }
