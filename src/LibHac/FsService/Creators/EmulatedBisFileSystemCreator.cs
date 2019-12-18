@@ -22,8 +22,8 @@ namespace LibHac.FsService.Creators
         {
             fileSystem = default;
 
-            if (!IsValidPartitionId(partitionId)) return ResultFs.InvalidArgument;
-            if (rootPath == null) return ResultFs.NullArgument;
+            if (!IsValidPartitionId(partitionId)) return ResultFs.InvalidArgument.Log();
+            if (rootPath == null) return ResultFs.NullArgument.Log();
 
             if (Config.TryGetFileSystem(out fileSystem, partitionId))
             {
@@ -32,7 +32,7 @@ namespace LibHac.FsService.Creators
 
             if (Config.RootFileSystem == null)
             {
-                return ResultFs.PreconditionViolation;
+                return ResultFs.PreconditionViolation.Log();
             }
 
             string partitionPath = GetPartitionPath(partitionId);
@@ -54,7 +54,7 @@ namespace LibHac.FsService.Creators
         public Result CreateFatFileSystem(out IFileSystem fileSystem, BisPartitionId partitionId)
         {
             fileSystem = default;
-            return ResultFs.NotImplemented;
+            return ResultFs.NotImplemented.Log();
         }
 
         public Result SetBisRootForHost(BisPartitionId partitionId, string rootPath)

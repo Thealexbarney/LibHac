@@ -147,98 +147,98 @@ namespace LibHac.FsSystem.Save
         {
             Result result = SaveDataFileSystemCore.CreateDirectory(path);
 
-            return SaveResults.ConvertToExternalResult(result);
+            return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
         protected override Result CreateFileImpl(string path, long size, CreateFileOptions options)
         {
             Result result = SaveDataFileSystemCore.CreateFile(path, size, options);
 
-            return SaveResults.ConvertToExternalResult(result);
+            return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
         protected override Result DeleteDirectoryImpl(string path)
         {
             Result result = SaveDataFileSystemCore.DeleteDirectory(path);
 
-            return SaveResults.ConvertToExternalResult(result);
+            return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
         protected override Result DeleteDirectoryRecursivelyImpl(string path)
         {
             Result result = SaveDataFileSystemCore.DeleteDirectoryRecursively(path);
 
-            return SaveResults.ConvertToExternalResult(result);
+            return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
         protected override Result CleanDirectoryRecursivelyImpl(string path)
         {
             Result result = SaveDataFileSystemCore.CleanDirectoryRecursively(path);
 
-            return SaveResults.ConvertToExternalResult(result);
+            return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
         protected override Result DeleteFileImpl(string path)
         {
             Result result = SaveDataFileSystemCore.DeleteFile(path);
 
-            return SaveResults.ConvertToExternalResult(result);
+            return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
         protected override Result OpenDirectoryImpl(out IDirectory directory, string path, OpenDirectoryMode mode)
         {
             Result result = SaveDataFileSystemCore.OpenDirectory(out directory, path, mode);
 
-            return SaveResults.ConvertToExternalResult(result);
+            return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
         protected override Result OpenFileImpl(out IFile file, string path, OpenMode mode)
         {
             Result result = SaveDataFileSystemCore.OpenFile(out file, path, mode);
 
-            return SaveResults.ConvertToExternalResult(result);
+            return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
         protected override Result RenameDirectoryImpl(string oldPath, string newPath)
         {
             Result result = SaveDataFileSystemCore.RenameDirectory(oldPath, newPath);
 
-            return SaveResults.ConvertToExternalResult(result);
+            return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
         protected override Result RenameFileImpl(string oldPath, string newPath)
         {
             Result result = SaveDataFileSystemCore.RenameFile(oldPath, newPath);
 
-            return SaveResults.ConvertToExternalResult(result);
+            return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
         protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path)
         {
             Result result = SaveDataFileSystemCore.GetEntryType(out entryType, path);
 
-            return SaveResults.ConvertToExternalResult(result);
+            return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
         protected override Result GetFreeSpaceSizeImpl(out long freeSpace, string path)
         {
             Result result = SaveDataFileSystemCore.GetFreeSpaceSize(out freeSpace, path);
 
-            return SaveResults.ConvertToExternalResult(result);
+            return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
         protected override Result GetTotalSpaceSizeImpl(out long totalSpace, string path)
         {
             Result result = SaveDataFileSystemCore.GetTotalSpaceSize(out totalSpace, path);
 
-            return SaveResults.ConvertToExternalResult(result);
+            return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
         protected override Result CommitImpl()
         {
             Result result = Commit(Keyset);
 
-            return SaveResults.ConvertToExternalResult(result);
+            return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
         public Result Commit(Keyset keyset)
@@ -259,7 +259,7 @@ namespace LibHac.FsSystem.Save
             headerStream.Position = 0x108;
             headerStream.Write(hash, 0, hash.Length);
 
-            if (keyset == null || keyset.SaveMacKey.IsEmpty()) return ResultFs.PreconditionViolation;
+            if (keyset == null || keyset.SaveMacKey.IsEmpty()) return ResultFs.PreconditionViolation.Log();
 
             var cmacData = new byte[0x200];
             var cmac = new byte[0x10];

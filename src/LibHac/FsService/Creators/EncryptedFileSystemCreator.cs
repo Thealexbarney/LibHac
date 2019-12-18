@@ -20,7 +20,7 @@ namespace LibHac.FsService.Creators
 
             if (keyId < EncryptedFsKeyId.Save || keyId > EncryptedFsKeyId.CustomStorage)
             {
-                return ResultFs.InvalidArgument;
+                return ResultFs.InvalidArgument.Log();
             }
 
             // todo: "proper" key generation instead of a lazy hack
