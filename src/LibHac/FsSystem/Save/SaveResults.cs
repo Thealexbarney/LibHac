@@ -87,7 +87,7 @@ namespace LibHac.FsSystem.Save
             {
                 if (description > 4721 && description < 4729)
                 {
-                    return new Result(ResultFs.ModuleFs, (description - 260));
+                    return new Result(ResultFs.ModuleFs, description - 260);
                 }
 
                 return result;

@@ -514,7 +514,12 @@ namespace LibHac.FsService
                 }
             }
 
-            return ResultFs.TargetNotFound;
+            if (saveFsResult == ResultFs.PathNotFound)
+            {
+                return ResultFs.TargetNotFound.LogConverted(saveFsResult);
+            }
+
+            return saveFsResult;
         }
 
         private Result OpenSaveDataFileSystem3(out IFileSystem fileSystem, SaveDataSpaceId spaceId,
@@ -873,7 +878,7 @@ namespace LibHac.FsService
         {
             if (saveDataSize < 0 || saveDataJournalSize < 0)
             {
-                return ResultFs.InvalidSize;
+                return ResultFs.InvalidSize.Log();
             }
 
             SaveDataSize = saveDataSize;
@@ -887,7 +892,7 @@ namespace LibHac.FsService
 
             if (StringUtils.GetLength(path.Str, FsPath.MaxLength + 1) > FsPath.MaxLength)
             {
-                return ResultFs.TooLongPath;
+                return ResultFs.TooLongPath.Log();
             }
 
             StringUtils.Copy(SaveDataRootPath.Str, path.Str);
@@ -971,7 +976,7 @@ namespace LibHac.FsService
         public Result SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed)
         {
             // todo: use struct instead of byte span
-            if (seed.Length != 0x10) return ResultFs.InvalidSize;
+            if (seed.Length != 0x10) return ResultFs.InvalidSize.Log();
 
             // Missing permission check
 

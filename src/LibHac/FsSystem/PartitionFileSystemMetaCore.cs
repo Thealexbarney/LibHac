@@ -156,12 +156,12 @@ namespace LibHac.FsSystem
         {
             if (typeof(T) == typeof(StandardEntry))
             {
-                return ResultFs.InvalidPartitionFileSystemMagic;
+                return ResultFs.InvalidPartitionFileSystemMagic.Log();
             }
 
             if (typeof(T) == typeof(HashedEntry))
             {
-                return ResultFs.InvalidHashedPartitionFileSystemMagic;
+                return ResultFs.InvalidHashedPartitionFileSystemMagic.Log();
             }
 
             throw new NotSupportedException();

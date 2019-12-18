@@ -85,7 +85,7 @@ namespace LibHac.FsService
                     isEncrypted = true;
                     break;
                 default:
-                    rc = ResultFs.InvalidArgument;
+                    rc = ResultFs.InvalidArgument.Log();
                     break;
             }
 

@@ -151,7 +151,7 @@ namespace LibHac.Fs.Accessors
 
         public Result GetCommonMountName(Span<byte> nameBuffer)
         {
-            if (MountNameGenerator == null) return ResultFs.PreconditionViolation;
+            if (MountNameGenerator == null) return ResultFs.PreconditionViolation.Log();
 
             return MountNameGenerator.GenerateCommonMountName(nameBuffer);
         }

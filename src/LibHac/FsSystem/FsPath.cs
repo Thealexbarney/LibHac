@@ -27,7 +27,7 @@ namespace LibHac.FsSystem
 
             U8StringBuilder builder = new U8StringBuilder(fsPath.Str).Append(path);
 
-            return builder.Overflowed ? ResultFs.TooLongPath : Result.Success;
+            return builder.Overflowed ? ResultFs.TooLongPath.Log() : Result.Success;
         }
 
         public static implicit operator U8Span(FsPath value) => new U8Span(value.Str);
