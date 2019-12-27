@@ -273,8 +273,8 @@ namespace LibHac
             {
                 if (KeyblobKeySources[i].IsEmpty()) continue;
 
-                Aes.DecryptEcb128(KeyblobKeySources[i], temp, SecureBootKey);
-                Aes.DecryptEcb128(temp, KeyblobKeys[i], TsecKey);
+                Aes.DecryptEcb128(KeyblobKeySources[i], temp, TsecKey);
+                Aes.DecryptEcb128(temp, KeyblobKeys[i], SecureBootKey);
 
                 if (!haveKeyblobMacKeySource) continue;
 
