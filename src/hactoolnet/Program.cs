@@ -126,6 +126,7 @@ namespace hactoolnet
                     ProcessFsBuild.ProcessRomFs(ctx);
                     break;
                 case FileType.Nax0:
+                    ProcessNax0.Process(ctx);
                     break;
                 case FileType.SwitchFs:
                     ProcessSwitchFs.Process(ctx);

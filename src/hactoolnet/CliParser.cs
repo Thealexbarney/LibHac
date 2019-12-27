@@ -272,6 +272,10 @@ namespace hactoolnet
             sb.AppendLine("  --listfiles          List files in save file.");
             sb.AppendLine("  --repack <dir>       Replaces the contents of the save data with the specified directory.");
             sb.AppendLine("  --replacefile <filename in save> <file> Replaces a file in the save data");
+            sb.AppendLine("NAX0 options:");
+            sb.AppendLine("  --sdseed <seed>      Set console unique seed for SD card NAX0 encryption.");
+            sb.AppendLine("  --sdpath <path>      Set relative path for NAX0 key derivation (ex: /registered/000000FF/cafebabecafebabecafebabecafebabe.nca).");
+            sb.AppendLine("  --plaintext          Specify file path to save decrypted contents.");
             sb.AppendLine("NDV0 (Delta) options:");
             sb.AppendLine("                       Input delta patch can be a delta NCA file or a delta fragment file.");
             sb.AppendLine("  --basefile <file>    Specify base file path.");

@@ -12,7 +12,7 @@ namespace LibHac.FsSystem
         private int BlockSize { get; }
         private OpenMode Mode { get; }
 
-        private AesXtsFileHeader Header { get; }
+        public AesXtsFileHeader Header { get; }
         private IStorage BaseStorage { get; }
 
         internal const int HeaderLength = 0x4000;
