@@ -73,7 +73,7 @@ namespace LibHacBuild
 
         public static string CalcPsmdcpName(string libDir)
         {
-            using (SHA256 sha = SHA256.Create())
+            using (var sha = SHA256.Create())
             {
                 foreach (string file in Directory.EnumerateFiles(libDir))
                 {
@@ -104,7 +104,7 @@ namespace LibHacBuild
 
             foreach (XElement rs in doc.Root.Elements(ns + "Relationship"))
             {
-                using (SHA256 sha = SHA256.Create())
+                using (var sha = SHA256.Create())
                 {
                     if (rs.Attribute("Target").Value.Contains(".psmdcp"))
                     {

@@ -87,7 +87,7 @@ namespace hactoolnet
             byte[] ticketBytes = ticket.GetBytes();
             builder.AddFile($"{ticket.RightsId.ToHexString()}.tik", new MemoryStream(ticketBytes).AsIFile(OpenMode.ReadWrite));
 
-            Assembly thisAssembly = Assembly.GetExecutingAssembly();
+            var thisAssembly = Assembly.GetExecutingAssembly();
             Stream cert = thisAssembly.GetManifestResourceStream("hactoolnet.CA00000003_XS00000020");
             builder.AddFile($"{ticket.RightsId.ToHexString()}.cert", cert.AsIFile(OpenMode.Read));
 

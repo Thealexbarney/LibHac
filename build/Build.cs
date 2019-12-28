@@ -301,7 +301,7 @@ namespace LibHacBuild
         public void PrintResults()
         {
             Logger.Normal("SHA-1:");
-            using (SHA1 sha = SHA1.Create())
+            using (var sha = SHA1.Create())
             {
                 foreach (string filename in Directory.EnumerateFiles(ArtifactsDirectory))
                 {

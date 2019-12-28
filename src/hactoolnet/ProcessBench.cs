@@ -32,7 +32,7 @@ namespace hactoolnet
 
             logger.SetTotal(iterations);
 
-            Stopwatch encryptWatch = Stopwatch.StartNew();
+            var encryptWatch = Stopwatch.StartNew();
             for (int i = 0; i < iterations; i++)
             {
                 src.CopyTo(dst);

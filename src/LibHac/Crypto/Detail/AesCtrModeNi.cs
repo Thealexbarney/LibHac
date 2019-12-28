@@ -34,7 +34,7 @@ namespace LibHac.Crypto.Detail
             ref Vector128<byte> outBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(output));
 
             Vector128<byte> byteSwapMask = Vector128.Create((ulong)0x706050403020100, 0x8090A0B0C0D0E0F).AsByte();
-            Vector128<ulong> inc = Vector128.Create((ulong)0, 1);
+            var inc = Vector128.Create((ulong)0, 1);
 
             Vector128<byte> iv = Iv;
             Vector128<ulong> bSwappedIv = Ssse3.Shuffle(iv, byteSwapMask).AsUInt64();

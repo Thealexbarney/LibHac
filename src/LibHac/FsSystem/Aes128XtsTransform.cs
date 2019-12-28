@@ -49,7 +49,7 @@ namespace LibHac.FsSystem
             if (key1?.Length != BlockSizeBytes || key2?.Length != BlockSizeBytes)
                 throw new ArgumentException($"Each key must be {BlockSizeBytes} bytes long");
 
-            Aes aes = Aes.Create();
+            var aes = Aes.Create();
             if (aes == null) throw new CryptographicException("Unable to create AES object");
             aes.Mode = CipherMode.ECB;
             aes.Padding = PaddingMode.None;

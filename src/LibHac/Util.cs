@@ -19,7 +19,7 @@ namespace LibHac
 
         private static object InitializeJaggedArray(Type type, int index, int[] lengths)
         {
-            Array array = Array.CreateInstance(type, lengths[index]);
+            var array = Array.CreateInstance(type, lengths[index]);
 
             Type elementType = type.GetElementType();
             if (elementType == null) return array;

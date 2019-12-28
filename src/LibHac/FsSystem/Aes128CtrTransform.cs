@@ -24,7 +24,7 @@ namespace LibHac.FsSystem
             if (counter.Length != BlockSizeBytes)
                 throw new ArgumentException($"{nameof(counter)} must be {BlockSizeBytes} bytes long");
 
-            Aes aes = Aes.Create();
+            var aes = Aes.Create();
             if (aes == null) throw new CryptographicException("Unable to create AES object");
             aes.Mode = CipherMode.ECB;
             aes.Padding = PaddingMode.None;

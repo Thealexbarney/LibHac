@@ -15,7 +15,7 @@ namespace LibHac.Crypto.Detail
             Debug.Assert(key.Length == Aes.KeySize128);
             Debug.Assert(iv.IsEmpty || iv.Length == Aes.BlockSize);
 
-            System.Security.Cryptography.Aes aes = System.Security.Cryptography.Aes.Create();
+            var aes = System.Security.Cryptography.Aes.Create();
 
             if (aes == null) throw new CryptographicException("Unable to create AES object");
             aes.Key = key.ToArray();

@@ -219,7 +219,7 @@ namespace LibHac.Tests
         [MemberData(nameof(NormalizedPathTestItemsU8NoMountName))]
         public static void NormalizePathU8NoMountName(string path, string expected, Result expectedResult)
         {
-            U8String u8Path = path.ToU8String();
+            var u8Path = path.ToU8String();
             Span<byte> buffer = stackalloc byte[0x301];
 
             Result rc = PathTools.Normalize(buffer, out _, u8Path, false);
@@ -237,7 +237,7 @@ namespace LibHac.Tests
         [MemberData(nameof(NormalizedPathTestItemsU8MountName))]
         public static void NormalizePathU8MountName(string path, string expected, Result expectedResult)
         {
-            U8String u8Path = path.ToU8String();
+            var u8Path = path.ToU8String();
             Span<byte> buffer = stackalloc byte[0x301];
 
             Result rc = PathTools.Normalize(buffer, out _, u8Path, true);
@@ -263,7 +263,7 @@ namespace LibHac.Tests
         [MemberData(nameof(NormalizedPathTestItemsU8TooShort))]
         public static void NormalizePathU8TooShortDest(string path, string expected, int destSize)
         {
-            U8String u8Path = path.ToU8String();
+            var u8Path = path.ToU8String();
 
             Span<byte> buffer = stackalloc byte[destSize];
 
