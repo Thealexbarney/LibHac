@@ -14,14 +14,18 @@
     <Description>A library for reading content formats used by the Nintendo Switch.</Description>
     <PackageTags>Nintendo;Switch;nca;xci;savefile</PackageTags>
     <PackageProjectUrl>https://github.com/Thealexbarney/LibHac</PackageProjectUrl>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>    
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <DeterministicSourcePaths Condition=" '$(BuildType)' == 'Release' ">true</DeterministicSourcePaths>
-    
+
+    <!-- When doing a release build with a Git directory, SourceLink will set the SourceRoot needed for DeterministicSourcePaths -->
+    <!-- Otherwise use a manually specified path -->
+    <PathMap Condition=" '$(BuildType)' == 'Release' and '$(HasGitDir)' == 'false' ">$(MSBuildProjectDirectory)=C:/LibHac/</PathMap>
+    <DeterministicSourcePaths Condition=" '$(BuildType)' == 'Release' and '$(HasGitDir)' == 'true' ">true</DeterministicSourcePaths>
+
     <NoWarn>$(NoWarn);1591;NU5105</NoWarn>
   </PropertyGroup>
 
