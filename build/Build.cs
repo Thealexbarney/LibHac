@@ -132,6 +132,23 @@ namespace LibHacBuild
                     suffix += $"+{gitVersion.Sha.Substring(0, 8)}";
                 }
 
+                if (Host == HostType.AppVeyor)
+                {
+                    // Workaround GitVersion issue by getting PR info manually https://github.com/GitTools/GitVersion/issues/1927
+                    string prNumber = Environment.GetEnvironmentVariable("APPVEYOR_PULL_REQUEST_NUMBER");
+                    string branchName = Environment.GetEnvironmentVariable("APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH");
+
+                    if (int.TryParse(prNumber, out int prInt) && branchName != null)
+                    {
+                        string prString = $"PullRequest{prInt:D4}";
+
+                        VersionString = VersionString.Replace(branchName, prString);
+                        suffix = suffix.Replace(branchName, prString);
+                    }
+
+                    SetAppVeyorVersion(VersionString);
+                }
+
                 VersionProps = new Dictionary<string, object>
                 {
                     ["VersionPrefix"] = gitVersion.AssemblySemVer,
@@ -139,11 +156,6 @@ namespace LibHacBuild
                 };
 
                 Logger.Normal($"Building version {VersionString}");
-
-                if (Host == HostType.AppVeyor)
-                {
-                    SetAppVeyorVersion(VersionString);
-                }
             });
 
         Target Clean => _ => _
