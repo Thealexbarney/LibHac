@@ -35,15 +35,13 @@ namespace LibHacBuild
         public readonly bool Untrimmed;
 
         [Solution("LibHac.sln")] readonly Solution _solution;
-        [GitRepository] readonly GitRepository _gitRepository;
-        [GitVersion] readonly GitVersion _gitVersion;
 
         AbsolutePath SourceDirectory => RootDirectory / "src";
         AbsolutePath TestsDirectory => RootDirectory / "tests";
         AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
         AbsolutePath SignedArtifactsDirectory => ArtifactsDirectory / "signed";
         AbsolutePath TempDirectory => RootDirectory / ".tmp";
-        AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_netcoreapp3.0";
+        AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_netcoreapp3.1";
         AbsolutePath CliNativeDir => TempDirectory / $"hactoolnet_{HostOsName}";
         AbsolutePath CliNativeExe => CliNativeDir / $"hactoolnet_native{NativeProgramExtension}";
         AbsolutePath CliCoreZip => ArtifactsDirectory / $"hactoolnet-{VersionString}-netcore.zip";
@@ -53,6 +51,8 @@ namespace LibHacBuild
         Project LibHacProject => _solution.GetProject("LibHac").NotNull();
         Project LibHacTestProject => _solution.GetProject("LibHac.Tests").NotNull();
         Project HactoolnetProject => _solution.GetProject("hactoolnet").NotNull();
+
+        private bool HasGitDir { get; set; }
 
         private string NativeRuntime { get; set; }
         private string HostOsName { get; set; }
@@ -86,42 +86,76 @@ namespace LibHacBuild
             }
         }
 
-        private bool IsMasterBranch => _gitVersion?.BranchName.Equals("master") ?? false;
-
         Target SetVersion => _ => _
-            .OnlyWhenStatic(() => _gitRepository != null)
             .Executes(() =>
             {
-                VersionString = $"{_gitVersion.MajorMinorPatch}";
-                if (!string.IsNullOrWhiteSpace(_gitVersion.PreReleaseTag))
+                GitRepository gitRepository = null;
+                GitVersion gitVersion = null;
+
+                try
                 {
-                    VersionString += $"-{_gitVersion.PreReleaseTag}+{_gitVersion.Sha.Substring(0, 8)}";
+                    gitRepository = (GitRepository)new GitRepositoryAttribute().GetValue(null, null);
+
+                    gitVersion = GitVersionTasks.GitVersion(s => s
+                            .SetFramework("netcoreapp3.1")
+                            .DisableLogOutput())
+                        .Result;
+                }
+                catch (Exception e)
+                {
+                    Logger.Error(e);
                 }
 
-                string suffix = _gitVersion.PreReleaseTag;
+                if (gitRepository == null || gitVersion == null)
+                {
+                    Logger.Normal("Unable to read Git version.");
+                    return;
+                }
+
+                HasGitDir = true;
+
+                VersionString = $"{gitVersion.MajorMinorPatch}";
+                if (!string.IsNullOrWhiteSpace(gitVersion.PreReleaseTag))
+                {
+                    VersionString += $"-{gitVersion.PreReleaseTag}+{gitVersion.Sha.Substring(0, 8)}";
+                }
+
+                string suffix = gitVersion.PreReleaseTag;
 
                 if (!string.IsNullOrWhiteSpace(suffix))
                 {
-                    if (!_gitRepository.IsOnMasterBranch())
+                    if (!gitRepository.IsOnMasterBranch())
                     {
                         suffix = $"-{suffix}";
                     }
 
-                    suffix += $"+{_gitVersion.Sha.Substring(0, 8)}";
+                    suffix += $"+{gitVersion.Sha.Substring(0, 8)}";
+                }
+
+                if (Host == HostType.AppVeyor)
+                {
+                    // Workaround GitVersion issue by getting PR info manually https://github.com/GitTools/GitVersion/issues/1927
+                    string prNumber = Environment.GetEnvironmentVariable("APPVEYOR_PULL_REQUEST_NUMBER");
+                    string branchName = Environment.GetEnvironmentVariable("APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH");
+
+                    if (int.TryParse(prNumber, out int prInt) && branchName != null)
+                    {
+                        string prString = $"PullRequest{prInt:D4}";
+
+                        VersionString = VersionString.Replace(branchName, prString);
+                        suffix = suffix.Replace(branchName, prString);
+                    }
+
+                    SetAppVeyorVersion(VersionString);
                 }
 
                 VersionProps = new Dictionary<string, object>
                 {
-                    ["VersionPrefix"] = _gitVersion.AssemblySemVer,
+                    ["VersionPrefix"] = gitVersion.AssemblySemVer,
                     ["VersionSuffix"] = suffix
                 };
 
                 Logger.Normal($"Building version {VersionString}");
-
-                if (Host == HostType.AppVeyor)
-                {
-                    SetAppVeyorVersion(VersionString);
-                }
             });
 
         Target Clean => _ => _
@@ -159,7 +193,8 @@ namespace LibHacBuild
                     .EnableNoRestore()
                     .SetConfiguration(Configuration)
                     .SetProperties(VersionProps)
-                    .SetProperty("BuildType", "Release");
+                    .SetProperty("BuildType", "Release")
+                    .SetProperty("HasGitDir", HasGitDir);
 
                 DotNetBuild(s => buildSettings);
 
@@ -169,7 +204,7 @@ namespace LibHacBuild
 
                 DotNetPublish(s => publishSettings
                     .SetProject(HactoolnetProject)
-                    .SetFramework("netcoreapp3.0")
+                    .SetFramework("netcoreapp3.1")
                     .SetOutput(CliCoreDir)
                     .SetNoBuild(true)
                     .SetProperties(VersionProps));
@@ -221,7 +256,7 @@ namespace LibHacBuild
                     .EnableNoBuild()
                     .SetConfiguration(Configuration);
 
-                if (EnvironmentInfo.IsUnix) settings = settings.SetProperty("TargetFramework", "netcoreapp3.0");
+                if (EnvironmentInfo.IsUnix) settings = settings.SetProperty("TargetFramework", "netcoreapp3.1");
 
                 DotNetTest(s => settings);
             });
@@ -335,7 +370,7 @@ namespace LibHacBuild
                 DotNetPublishSettings publishSettings = new DotNetPublishSettings()
                     .SetConfiguration(Configuration)
                     .SetProject(nativeProject)
-                    .SetFramework("netcoreapp3.0")
+                    .SetFramework("netcoreapp3.1")
                     .SetRuntime(NativeRuntime)
                     .SetOutput(CliNativeDir)
                     .SetProperties(VersionProps);

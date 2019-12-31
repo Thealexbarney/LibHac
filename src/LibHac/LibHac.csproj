@@ -2,8 +2,10 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
+    <VersionPrefix>0.8.0</VersionPrefix>
     <TargetFrameworks>netcoreapp3.0;netstandard2.1</TargetFrameworks>
     <LangVersion>8.0</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -13,17 +15,18 @@
     <PackageTags>Nintendo;Switch;nca;xci;savefile</PackageTags>
     <PackageProjectUrl>https://github.com/Thealexbarney/LibHac</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/Thealexbarney/LibHac</RepositoryUrl>
 
-    <VersionPrefix>0.7.0</VersionPrefix>
-    <PathMap Condition=" '$(BuildType)' == 'Release' ">$(MSBuildProjectDirectory)=C:/LibHac/</PathMap>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <IncludeSource>true</IncludeSource>
-    <NoWarn>$(NoWarn);1591;NU5105</NoWarn>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- When doing a release build with a Git directory, SourceLink will set the SourceRoot needed for DeterministicSourcePaths -->
+    <!-- Otherwise use a manually specified path -->
+    <PathMap Condition=" '$(BuildType)' == 'Release' and '$(HasGitDir)' == 'false' ">$(MSBuildProjectDirectory)=C:/LibHac/</PathMap>
+    <DeterministicSourcePaths Condition=" '$(BuildType)' == 'Release' and '$(HasGitDir)' == 'true' ">true</DeterministicSourcePaths>
+
+    <NoWarn>$(NoWarn);1591;NU5105</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.0' ">
@@ -35,7 +38,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-19554-01" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>
