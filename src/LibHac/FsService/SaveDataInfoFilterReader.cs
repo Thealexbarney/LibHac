@@ -149,8 +149,10 @@ namespace LibHac.FsService
                 return false;
             }
 
-            // When filtering by secondary rank include primary ranks as well
-            if ((Rank & 1) == 1 || info.Rank == SaveDataRank.Primary)
+            var filterRank = (SaveDataRank)(Rank & 1);
+
+            // When filtering by secondary rank, match on both primary and secondary ranks
+            if (filterRank == SaveDataRank.Primary && info.Rank == SaveDataRank.Secondary)
             {
                 return false;
             }
