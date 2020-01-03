@@ -41,7 +41,7 @@ namespace LibHac.Fs.Shim
 
                     return fsProxy.CreateSaveDataFileSystem(ref attribute, ref createInfo, ref metaInfo);
                 },
-                () => $", applicationid: 0x{applicationId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{flags:x8}");
+                () => $", applicationid: 0x{applicationId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:x8}");
         }
 
         public static Result CreateSaveData(this FileSystemClient fs, TitleId applicationId, UserId userId, TitleId ownerId,
@@ -77,7 +77,7 @@ namespace LibHac.Fs.Shim
 
                     return fsProxy.CreateSaveDataFileSystemWithHashSalt(ref attribute, ref createInfo, ref metaInfo, ref hashSalt);
                 },
-                () => $", applicationid: 0x{applicationId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{flags:x8}");
+                () => $", applicationid: 0x{applicationId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:x8}");
         }
 
         public static Result CreateBcatSaveData(this FileSystemClient fs, TitleId applicationId, long size)
@@ -138,7 +138,7 @@ namespace LibHac.Fs.Shim
 
                     return fsProxy.CreateSaveDataFileSystem(ref attribute, ref createInfo, ref metaInfo);
                 },
-                () => $", applicationid: 0x{applicationId.Value:X}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{flags:x8}");
+                () => $", applicationid: 0x{applicationId.Value:X}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:x8}");
         }
 
         public static Result CreateTemporaryStorage(this FileSystemClient fs, TitleId applicationId, TitleId ownerId, long size, SaveDataFlags flags)
@@ -167,7 +167,7 @@ namespace LibHac.Fs.Shim
 
                     return fsProxy.CreateSaveDataFileSystem(ref attribute, ref createInfo, ref metaInfo);
                 },
-                () => $", applicationid: 0x{applicationId.Value:X}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_flags: 0x{flags:x8}");
+                () => $", applicationid: 0x{applicationId.Value:X}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_flags: 0x{(int)flags:x8}");
         }
 
         public static Result CreateSystemSaveData(this FileSystemClient fs, SaveDataSpaceId spaceId,
@@ -196,7 +196,7 @@ namespace LibHac.Fs.Shim
 
                     return fsProxy.CreateSaveDataFileSystemBySystemSaveDataId(ref attribute, ref createInfo);
                 },
-                () => $", savedataspaceid: {spaceId}, savedataid: 0x{saveDataId:X}, userid: 0x{userId.Id.High:X16}{userId.Id.Low:X16}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{flags:X8}");
+                () => $", savedataspaceid: {spaceId}, savedataid: 0x{saveDataId:X}, userid: 0x{userId.Id.High:X16}{userId.Id.Low:X16}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:x8}");
         }
 
         public static Result CreateSystemSaveData(this FileSystemClient fs, ulong saveDataId, UserId userId,
