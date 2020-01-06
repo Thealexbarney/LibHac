@@ -7,21 +7,21 @@ namespace LibHac.Fs.Shim
 {
     public static class SaveData
     {
-        public static Result MountSaveData(this FileSystemClient fs, U8Span mountName, TitleId titleId, UserId userId)
+        public static Result MountSaveData(this FileSystemClient fs, U8Span mountName, TitleId applicationId, UserId userId)
         {
             Result rc;
 
             if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
             {
                 TimeSpan startTime = fs.Time.GetCurrent();
-                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, titleId, userId, SaveDataType.Account, false, 0);
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, applicationId, userId, SaveDataType.Account, false, 0);
                 TimeSpan endTime = fs.Time.GetCurrent();
 
-                fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\", applicationid: 0x{titleId}, userid: 0x{userId}");
+                fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\", applicationid: 0x{applicationId}, userid: 0x{userId}");
             }
             else
             {
-                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, titleId, userId, SaveDataType.Account, false, 0);
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, applicationId, userId, SaveDataType.Account, false, 0);
             }
 
             if (rc.IsSuccess() && fs.IsEnabledAccessLog(AccessLogTarget.Application))
@@ -32,24 +32,149 @@ namespace LibHac.Fs.Shim
             return rc;
         }
 
-        public static Result MountSaveDataReadOnly(this FileSystemClient fs, U8Span mountName, TitleId titleId, UserId userId)
+        public static Result MountSaveDataReadOnly(this FileSystemClient fs, U8Span mountName, TitleId applicationId, UserId userId)
         {
             Result rc;
 
             if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
             {
                 TimeSpan startTime = fs.Time.GetCurrent();
-                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, titleId, userId, SaveDataType.Account, true, 0);
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, applicationId, userId, SaveDataType.Account, true, 0);
                 TimeSpan endTime = fs.Time.GetCurrent();
 
-                fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\", applicationid: 0x{titleId}, userid: 0x{userId}");
+                fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\", applicationid: 0x{applicationId}, userid: 0x{userId}");
             }
             else
             {
-                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, titleId, userId, SaveDataType.Account, false, 0);
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, applicationId, userId, SaveDataType.Account, false, 0);
             }
 
             if (rc.IsSuccess() && fs.IsEnabledAccessLog(AccessLogTarget.Application))
+            {
+                fs.EnableFileSystemAccessorAccessLog(mountName);
+            }
+
+            return rc;
+        }
+
+        public static Result MountTemporaryStorage(this FileSystemClient fs, U8Span mountName)
+        {
+            Result rc;
+
+            if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
+            {
+                TimeSpan startTime = fs.Time.GetCurrent();
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.Temporary, default, default, SaveDataType.Temporary, false, 0);
+                TimeSpan endTime = fs.Time.GetCurrent();
+
+                fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\"");
+            }
+            else
+            {
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.Temporary, default, default, SaveDataType.Temporary, false, 0);
+            }
+
+            if (rc.IsSuccess() && fs.IsEnabledAccessLog(AccessLogTarget.Application))
+            {
+                fs.EnableFileSystemAccessorAccessLog(mountName);
+            }
+
+            return rc;
+        }
+
+        public static Result MountCacheStorage(this FileSystemClient fs, U8Span mountName)
+        {
+            Result rc;
+
+            if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
+            {
+                TimeSpan startTime = fs.Time.GetCurrent();
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, default, default, SaveDataType.Cache, false, 0);
+                TimeSpan endTime = fs.Time.GetCurrent();
+
+                fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\"");
+            }
+            else
+            {
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, default, default, SaveDataType.Cache, false, 0);
+            }
+
+            if (rc.IsSuccess() && fs.IsEnabledAccessLog(AccessLogTarget.Application))
+            {
+                fs.EnableFileSystemAccessorAccessLog(mountName);
+            }
+
+            return rc;
+        }
+
+        public static Result MountCacheStorage(this FileSystemClient fs, U8Span mountName, int index)
+        {
+            Result rc;
+
+            if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
+            {
+                TimeSpan startTime = fs.Time.GetCurrent();
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, default, default, SaveDataType.Cache, false, (short)index);
+                TimeSpan endTime = fs.Time.GetCurrent();
+
+                fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\", index: {index}");
+            }
+            else
+            {
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, default, default, SaveDataType.Cache, false, (short)index);
+            }
+
+            if (rc.IsSuccess() && fs.IsEnabledAccessLog(AccessLogTarget.Application))
+            {
+                fs.EnableFileSystemAccessorAccessLog(mountName);
+            }
+
+            return rc;
+        }
+
+        public static Result MountCacheStorage(this FileSystemClient fs, U8Span mountName, TitleId applicationId)
+        {
+            Result rc;
+
+            if (fs.IsEnabledAccessLog(AccessLogTarget.System))
+            {
+                TimeSpan startTime = fs.Time.GetCurrent();
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, applicationId, default, SaveDataType.Cache, false, 0);
+                TimeSpan endTime = fs.Time.GetCurrent();
+
+                fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\", applicationid: 0x{applicationId}");
+            }
+            else
+            {
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, applicationId, default, SaveDataType.Cache, false, 0);
+            }
+
+            if (rc.IsSuccess() && fs.IsEnabledAccessLog(AccessLogTarget.System))
+            {
+                fs.EnableFileSystemAccessorAccessLog(mountName);
+            }
+
+            return rc;
+        }
+
+        public static Result MountCacheStorage(this FileSystemClient fs, U8Span mountName, TitleId applicationId, int index)
+        {
+            Result rc;
+
+            if (fs.IsEnabledAccessLog(AccessLogTarget.System))
+            {
+                TimeSpan startTime = fs.Time.GetCurrent();
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, applicationId, default, SaveDataType.Cache, false, (short)index);
+                TimeSpan endTime = fs.Time.GetCurrent();
+
+                fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\", applicationid: 0x{applicationId}, index: {index}");
+            }
+            else
+            {
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, applicationId, default, SaveDataType.Cache, false, (short)index);
+            }
+
+            if (rc.IsSuccess() && fs.IsEnabledAccessLog(AccessLogTarget.System))
             {
                 fs.EnableFileSystemAccessorAccessLog(mountName);
             }

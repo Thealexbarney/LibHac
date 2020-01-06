@@ -929,7 +929,11 @@ namespace LibHac.FsService
 
         public Result QuerySaveDataTotalSize(out long totalSize, long dataSize, long journalSize)
         {
-            throw new NotImplementedException();
+            // todo: Implement properly
+
+            totalSize = 0;
+
+            return Result.Success;
         }
 
         public Result SetCurrentPosixTimeWithTimeDifference(long time, int difference)

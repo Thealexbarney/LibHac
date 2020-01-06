@@ -15,6 +15,7 @@ namespace LibHac.Fs
 
             long requiredSizeSum = 0;
 
+            // If the application needs a user save
             if (uid != Uid.Zero && nacp.UserAccountSaveDataSize > 0)
             {
                 var filter = new SaveDataFilter();
@@ -24,8 +25,10 @@ namespace LibHac.Fs
 
                 Result rc = fs.FindSaveDataWithFilter(out SaveDataInfo saveDataInfo, SaveDataSpaceId.User, ref filter);
 
+                // If the save already exists
                 if (rc.IsSuccess())
                 {
+                    // Make sure the save is large enough
                     rc = ExtendSaveDataIfNeeded(fs, out long requiredSizeUser, SaveDataSpaceId.User,
                         saveDataInfo.SaveDataId, nacp.UserAccountSaveDataSize, nacp.UserAccountSaveDataJournalSize);
 
@@ -45,6 +48,7 @@ namespace LibHac.Fs
                 }
                 else
                 {
+                    // The save doesn't exist, so try to create it
                     UserId userId = ConvertAccountUidToFsUserId(uid);
 
                     Result createRc = fs.CreateSaveData(applicationId, userId, nacp.SaveDataOwnerId,
@@ -52,10 +56,16 @@ namespace LibHac.Fs
 
                     if (createRc.IsFailure())
                     {
+                        // If there's insufficient free space, calculate the space required to create the save
                         if (ResultRangeFs.InsufficientFreeSpace.Contains(createRc))
                         {
-                            // todo: Call QuerySaveDataTotalSize and assign the value to requiredSizeSum
-                            requiredSizeSum = 0;
+                            Result queryRc = fs.QuerySaveDataTotalSize(out long userAccountTotalSize,
+                                nacp.UserAccountSaveDataSize, nacp.UserAccountSaveDataJournalSize);
+
+                            if (queryRc.IsFailure()) return queryRc;
+
+                            // The 0x4c000 includes the save meta and other stuff
+                            requiredSizeSum = Util.AlignUp(userAccountTotalSize, 0x4000) + 0x4c000;
                         }
                         else if (createRc == ResultFs.PathAlreadyExists)
                         {
@@ -105,8 +115,13 @@ namespace LibHac.Fs
                     {
                         if (ResultRangeFs.InsufficientFreeSpace.Contains(createRc))
                         {
-                            // todo: Call QuerySaveDataTotalSize and add the value to requiredSizeSum
-                            requiredSizeSum += 0;
+                            Result queryRc = fs.QuerySaveDataTotalSize(out long deviceSaveTotalSize,
+                                nacp.DeviceSaveDataSize, nacp.DeviceSaveDataJournalSize);
+
+                            if (queryRc.IsFailure()) return queryRc;
+
+                            // Not sure what the additional 0x4000 is
+                            requiredSizeSum += Util.AlignUp(deviceSaveTotalSize, 0x4000) + 0x4000;
                         }
                         else if (createRc == ResultFs.PathAlreadyExists)
                         {
@@ -139,21 +154,27 @@ namespace LibHac.Fs
             {
                 if (requiredSizeSum > 0)
                 {
+                    // If there was already insufficient space to create the previous saves, check if the temp
+                    // save already exists instead of trying to create a new one.
                     var filter = new SaveDataFilter();
                     filter.SetTitleId(applicationId);
                     filter.SetSaveDataType(SaveDataType.Temporary);
 
-                    Result rc = fs.FindSaveDataWithFilter(out _, SaveDataSpaceId.User, ref filter);
+                    Result rc = fs.FindSaveDataWithFilter(out _, SaveDataSpaceId.Temporary, ref filter);
 
                     if (rc.IsFailure())
                     {
-                        if(rc != ResultFs.TargetNotFound)
+                        if (rc != ResultFs.TargetNotFound)
                         {
                             return rc;
                         }
 
-                        // todo: Call QuerySaveDataTotalSize and add the value to requiredSizeSum
-                        requiredSizeSum += 0;
+                        Result queryRc = fs.QuerySaveDataTotalSize(out long tempSaveTotalSize,
+                            nacp.TemporaryStorageSize, 0);
+
+                        if (queryRc.IsFailure()) return queryRc;
+
+                        requiredSizeSum += Util.AlignUp(tempSaveTotalSize, 0x4000) + 0x4000;
                     }
                 }
                 else
@@ -165,8 +186,12 @@ namespace LibHac.Fs
                     {
                         if (ResultRangeFs.InsufficientFreeSpace.Contains(createRc))
                         {
-                            // todo: Call QuerySaveDataTotalSize and assign the value to requiredSizeSum
-                            requiredSizeSum += 0;
+                            Result queryRc = fs.QuerySaveDataTotalSize(out long tempSaveTotalSize,
+                                nacp.TemporaryStorageSize, 0);
+
+                            if (queryRc.IsFailure()) return queryRc;
+
+                            requiredSizeSum += Util.AlignUp(tempSaveTotalSize, 0x4000) + 0x4000;
                         }
                         else if (createRc == ResultFs.PathAlreadyExists)
                         {
@@ -219,7 +244,7 @@ namespace LibHac.Fs
             if (rc.IsSuccess())
             {
                 rc = ExtendSaveDataIfNeeded(fs, out long requiredSizeBcat, SaveDataSpaceId.User,
-                    saveDataInfo.SaveDataId, nacp.DeviceSaveDataSize, bcatDeliveryCacheJournalSize);
+                    saveDataInfo.SaveDataId, nacp.BcatDeliveryCacheStorageSize, bcatDeliveryCacheJournalSize);
 
                 if (rc.IsFailure())
                 {
@@ -243,8 +268,12 @@ namespace LibHac.Fs
                 {
                     if (ResultRangeFs.InsufficientFreeSpace.Contains(createRc))
                     {
-                        // todo: Call QuerySaveDataTotalSize and assign the value to requiredSize
-                        requiredSize = 0;
+                        Result queryRc = fs.QuerySaveDataTotalSize(out long saveTotalSize,
+                            nacp.BcatDeliveryCacheStorageSize, bcatDeliveryCacheJournalSize);
+
+                        if (queryRc.IsFailure()) return queryRc;
+
+                        requiredSize = Util.AlignUp(saveTotalSize, 0x4000) + 0x4000;
                     }
                     else if (createRc == ResultFs.PathAlreadyExists)
                     {
@@ -258,6 +287,29 @@ namespace LibHac.Fs
             }
 
             return requiredSize > 0 ? ResultFs.InsufficientFreeSpace.Log() : Result.Success;
+        }
+
+        public static Result CleanUpTemporaryStorage(FileSystemClient fs)
+        {
+            var filter = new SaveDataFilter();
+            filter.SetSaveDataType(SaveDataType.Temporary);
+
+            Result rc;
+
+            while (true)
+            {
+                rc = fs.FindSaveDataWithFilter(out SaveDataInfo saveInfo, SaveDataSpaceId.Temporary, ref filter);
+
+                if (rc.IsFailure()) break;
+
+                rc = fs.DeleteSaveData(SaveDataSpaceId.Temporary, saveInfo.SaveDataId);
+                if (rc.IsFailure()) return rc;
+            }
+
+            if (rc == ResultFs.TargetNotFound)
+                return Result.Success;
+
+            return rc;
         }
 
         public static UserId ConvertAccountUidToFsUserId(Uid uid)
