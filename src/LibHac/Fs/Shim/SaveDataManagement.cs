@@ -41,7 +41,7 @@ namespace LibHac.Fs.Shim
 
                     return fsProxy.CreateSaveDataFileSystem(ref attribute, ref createInfo, ref metaInfo);
                 },
-                () => $", applicationid: 0x{applicationId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:x8}");
+                () => $", applicationid: 0x{applicationId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:X8}");
         }
 
         public static Result CreateSaveData(this FileSystemClient fs, TitleId applicationId, UserId userId, TitleId ownerId,
@@ -77,7 +77,7 @@ namespace LibHac.Fs.Shim
 
                     return fsProxy.CreateSaveDataFileSystemWithHashSalt(ref attribute, ref createInfo, ref metaInfo, ref hashSalt);
                 },
-                () => $", applicationid: 0x{applicationId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:x8}");
+                () => $", applicationid: 0x{applicationId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:X8}");
         }
 
         public static Result CreateBcatSaveData(this FileSystemClient fs, TitleId applicationId, long size)
@@ -138,7 +138,7 @@ namespace LibHac.Fs.Shim
 
                     return fsProxy.CreateSaveDataFileSystem(ref attribute, ref createInfo, ref metaInfo);
                 },
-                () => $", applicationid: 0x{applicationId.Value:X}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:x8}");
+                () => $", applicationid: 0x{applicationId.Value:X}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:X8}");
         }
 
         public static Result CreateTemporaryStorage(this FileSystemClient fs, TitleId applicationId, TitleId ownerId, long size, SaveDataFlags flags)
@@ -167,7 +167,51 @@ namespace LibHac.Fs.Shim
 
                     return fsProxy.CreateSaveDataFileSystem(ref attribute, ref createInfo, ref metaInfo);
                 },
-                () => $", applicationid: 0x{applicationId.Value:X}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_flags: 0x{(int)flags:x8}");
+                () => $", applicationid: 0x{applicationId.Value:X}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_flags: 0x{(int)flags:X8}");
+        }
+
+        public static Result CreateCacheStorage(this FileSystemClient fs, TitleId applicationId,
+            SaveDataSpaceId spaceId, TitleId ownerId, short index, long size, long journalSize, SaveDataFlags flags)
+        {
+            return fs.RunOperationWithAccessLog(AccessLogTarget.System,
+                () =>
+                {
+                    IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+
+                    var attribute = new SaveDataAttribute
+                    {
+                        TitleId = applicationId,
+                        Type = SaveDataType.Cache,
+                        Index = index
+                    };
+
+                    var creationInfo = new SaveDataCreationInfo
+                    {
+                        Size = size,
+                        JournalSize = journalSize,
+                        BlockSize = 0x4000,
+                        OwnerId = ownerId,
+                        Flags = flags,
+                        SpaceId = spaceId
+                    };
+
+                    var metaInfo = new SaveMetaCreateInfo();
+
+                    return fsProxy.CreateSaveDataFileSystem(ref attribute, ref creationInfo, ref metaInfo);
+                },
+                () => $", applicationid: 0x{applicationId.Value:X}, savedataspaceid: {spaceId}, save_data_owner_id: 0x{ownerId.Value:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:X8}");
+        }
+
+        public static Result CreateCacheStorage(this FileSystemClient fs, TitleId applicationId,
+            SaveDataSpaceId spaceId, TitleId ownerId, long size, long journalSize, SaveDataFlags flags)
+        {
+            return CreateCacheStorage(fs, applicationId, spaceId, ownerId, 0, size, journalSize, flags);
+        }
+
+        public static Result CreateCacheStorage(this FileSystemClient fs, TitleId applicationId, TitleId ownerId,
+            long size, long journalSize, SaveDataFlags flags)
+        {
+            return CreateCacheStorage(fs, applicationId, SaveDataSpaceId.User, ownerId, 0, size, journalSize, flags);
         }
 
         public static Result CreateSystemSaveData(this FileSystemClient fs, SaveDataSpaceId spaceId,
@@ -280,6 +324,29 @@ namespace LibHac.Fs.Shim
             if (result.IsSuccess())
             {
                 info = tempInfo;
+            }
+
+            return result;
+        }
+
+        public static Result QuerySaveDataTotalSize(this FileSystemClient fs, out long totalSize, long size, long journalSize)
+        {
+            totalSize = default;
+
+            long totalSizeTemp = 0;
+
+            Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
+                () =>
+                {
+                    IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+
+                    return fsProxy.QuerySaveDataTotalSize(out totalSizeTemp, size, journalSize);
+                },
+                () => $", save_data_size: {size}, save_data_journal_size: {journalSize}");
+
+            if (result.IsSuccess())
+            {
+                totalSize = totalSizeTemp;
             }
 
             return result;
