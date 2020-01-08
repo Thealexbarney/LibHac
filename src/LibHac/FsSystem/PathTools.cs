@@ -246,6 +246,22 @@ namespace LibHac.FsSystem
             return path.Slice(0, i);
         }
 
+        /// <summary>
+        /// Returns the name and extension parts of the given path. The returned ReadOnlySpan
+        /// contains the characters of the path that follows the last separator in path.
+        /// </summary>
+        public static ReadOnlySpan<byte> GetFileName(ReadOnlySpan<byte> path)
+        {
+            Debug.Assert(IsNormalized(path));
+
+            int i = path.Length;
+
+            while (i >= 1 && path[i - 1] != '/') i--;
+
+            i = Math.Max(i, 0);
+            return path.Slice(i, path.Length - i);
+        }
+
         public static bool IsNormalized(ReadOnlySpan<char> path)
         {
             var state = NormalizeState.Initial;
