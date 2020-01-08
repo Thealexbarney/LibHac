@@ -6,7 +6,6 @@ using System.Security.Cryptography;
 using System.Text;
 using LibHac.Fs;
 using LibHac.FsService;
-using LibHac.FsSystem;
 using LibHac.Spl;
 using Aes = LibHac.Crypto.Aes;
 
@@ -305,11 +304,7 @@ namespace LibHac
 
                 Array.Copy(EncryptedKeyblobs[i], 0x10, counter, 0, 0x10);
 
-                using (var keyblobDec = new Aes128CtrStorage(
-                    new MemoryStorage(EncryptedKeyblobs[i], 0x20, Keyblobs[i].Length), KeyblobKeys[i], counter, false))
-                {
-                    keyblobDec.Read(0, Keyblobs[i]).ThrowIfFailure();
-                }
+                Aes.DecryptCtr128(EncryptedKeyblobs[i].AsSpan(0x20), Keyblobs[i], KeyblobKeys[i], counter);
             }
         }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace LibHac.Fs
@@ -77,6 +78,7 @@ namespace LibHac.Fs
 
         protected virtual void Dispose(bool disposing) { }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsRangeValid(long offset, long size, long totalSize)
         {
             return offset >= 0 && size >= 0 && size <= totalSize && offset <= totalSize - size;
