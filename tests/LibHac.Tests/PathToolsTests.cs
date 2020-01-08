@@ -275,5 +275,29 @@ namespace LibHac.Tests
             Assert.Equal(Math.Max(0, destSize - 1), normalizedLength);
             Assert.Equal(expected, actual);
         }
+
+        public static object[][] GetFileNameTestItems =
+        {
+            new object[] {"/a/bb/ccc", "ccc"},
+            new object[] {"/a/bb/ccc/", ""},
+            new object[] {"/a/bb", "bb"},
+            new object[] {"/a/bb/", ""},
+            new object[] {"/a", "a"},
+            new object[] {"/a/", ""},
+            new object[] {"/", ""},
+        };
+
+        [Theory]
+        [MemberData(nameof(GetFileNameTestItems))]
+        public static void GetFileNameTest(string path, string expected)
+        {
+            var u8Path = path.ToU8String();
+
+            ReadOnlySpan<byte> fileName = PathTools.GetFileName(u8Path);
+
+            string actual = StringUtils.Utf8ZToString(fileName);
+
+            Assert.Equal(expected, actual);
+        }
     }
 }

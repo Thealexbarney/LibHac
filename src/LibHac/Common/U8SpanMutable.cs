@@ -51,6 +51,11 @@ namespace LibHac.Common
             return StringUtils.Utf8ZToString(_buffer);
         }
 
+        public U8StringMutable ToU8String()
+        {
+            return new U8StringMutable(_buffer.ToArray());
+        }
+
         public bool IsNull() => _buffer == default;
     }
 }
