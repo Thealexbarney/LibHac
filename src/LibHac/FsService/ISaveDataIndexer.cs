@@ -5,6 +5,7 @@ namespace LibHac.FsService
     public interface ISaveDataIndexer
     {
         Result Commit();
+        Result Reset();
         Result Add(out ulong saveDataId, ref SaveDataAttribute key);
         Result Get(out SaveDataIndexerValue value, ref SaveDataAttribute key);
         Result AddSystemSaveData(ref SaveDataAttribute key);
