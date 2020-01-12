@@ -42,8 +42,10 @@ namespace LibHac.FsService.Creators
                     // if (!allowDirectorySaveData) return ResultFs.InvalidSaveDataEntryType.Log();
 
                     var subDirFs = new SubdirectoryFileSystem(sourceFileSystem, saveDataPath);
+                    bool isPersistentSaveData = type != SaveDataType.Temporary;
+                    bool isUserSaveData = type == SaveDataType.Account || type == SaveDataType.Device;
 
-                    rc = DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, subDirFs);
+                    rc = DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, subDirFs, isPersistentSaveData, isUserSaveData);
                     if (rc.IsFailure()) return rc;
 
                     fileSystem = saveFs;

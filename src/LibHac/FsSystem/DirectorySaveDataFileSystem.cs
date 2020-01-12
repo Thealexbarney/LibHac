@@ -16,11 +16,6 @@ namespace LibHac.FsSystem
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         private bool IsUserSaveData { get; set; }
 
-        public static Result CreateNew(out DirectorySaveDataFileSystem created, IFileSystem baseFileSystem)
-        {
-            return CreateNew(out created, baseFileSystem, true, true);
-        }
-
         public static Result CreateNew(out DirectorySaveDataFileSystem created, IFileSystem baseFileSystem,
             bool isPersistentSaveData, bool isUserSaveData)
         {
@@ -215,6 +210,8 @@ namespace LibHac.FsSystem
         {
             lock (Locker)
             {
+                if(!IsPersistentSaveData) return Result.Success;
+
                 if (OpenWritableFileCount > 0)
                 {
                     // All files must be closed before commiting save data.
