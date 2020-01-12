@@ -12,10 +12,6 @@ namespace LibHac.FsService
     public class FileSystemProxy : IFileSystemProxy
     {
         private FileSystemProxyCore FsProxyCore { get; }
-
-        /// <summary>The client instance to be used for internal operations like save indexer access.</summary>
-        // ReSharper disable once UnusedAutoPropertyAccessor.Local
-        private FileSystemClient FsClient { get; }
         private FileSystemServer FsServer { get; }
 
         public long CurrentProcess { get; private set; }
@@ -25,10 +21,9 @@ namespace LibHac.FsService
         public FsPath SaveDataRootPath { get; } = default;
         public bool AutoCreateSaveData { get; private set; }
 
-        internal FileSystemProxy(FileSystemProxyCore fsProxyCore, FileSystemClient fsClient, FileSystemServer fsServer)
+        internal FileSystemProxy(FileSystemProxyCore fsProxyCore, FileSystemServer fsServer)
         {
             FsProxyCore = fsProxyCore;
-            FsClient = fsClient;
             FsServer = fsServer;
 
             CurrentProcess = -1;
@@ -1070,6 +1065,32 @@ namespace LibHac.FsService
         public Result OverrideSaveDataTransferTokenSignVerificationKey(ReadOnlySpan<byte> key)
         {
             throw new NotImplementedException();
+        }
+
+        public Result CleanUpTemporaryStorage()
+        {
+            Result rc = FsProxyCore.OpenSaveDataDirectory(out IFileSystem saveDirFs, SaveDataSpaceId.Temporary,
+                string.Empty, false);
+            if (rc.IsFailure()) return rc;
+
+            rc = saveDirFs.CleanDirectoryRecursively("/");
+            if (rc.IsFailure()) return rc;
+
+            SaveDataIndexerReader reader = default;
+
+            try
+            {
+                rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out reader, SaveDataSpaceId.Temporary);
+                if (rc.IsFailure()) return rc;
+
+                reader.Indexer.Reset();
+
+                return Result.Success;
+            }
+            finally
+            {
+                reader.Dispose();
+            }
         }
 
         public Result SetSdCardAccessibility(bool isAccessible)

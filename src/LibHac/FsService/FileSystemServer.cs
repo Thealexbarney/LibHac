@@ -29,13 +29,15 @@ namespace LibHac.FsService
                 throw new ArgumentException("DeviceOperator must not be null");
 
             ExternalKeySet externalKeySet = config.ExternalKeySet ?? new ExternalKeySet();
-            ITimeSpanGenerator timer = config.TimeSpanGenerator ?? new StopWatchTimeSpanGenerator();
+            Timer = config.TimeSpanGenerator ?? new StopWatchTimeSpanGenerator();
 
             FsProxyCore = new FileSystemProxyCore(config.FsCreators, externalKeySet, config.DeviceOperator);
-            FsClient = new FileSystemClient(this, timer);
-            Timer = timer;
+            var fsProxy = new FileSystemProxy(FsProxyCore, this);
+            FsClient = new FileSystemClient(this, fsProxy, Timer);
 
             SaveDataIndexerManager = new SaveDataIndexerManager(FsClient, SaveIndexerId);
+
+            fsProxy.CleanUpTemporaryStorage();
         }
 
         /// <summary>
@@ -58,7 +60,7 @@ namespace LibHac.FsService
 
         public IFileSystemProxy CreateFileSystemProxyService()
         {
-            return new FileSystemProxy(FsProxyCore, FsClient, this);
+            return new FileSystemProxy(FsProxyCore, this);
         }
     }
 

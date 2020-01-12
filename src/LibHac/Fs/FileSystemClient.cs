@@ -29,6 +29,13 @@ namespace LibHac.Fs
             Time = timer ?? new StopWatchTimeSpanGenerator();
         }
 
+        internal FileSystemClient(FileSystemServer fsServer, IFileSystemProxy fsProxy, ITimeSpanGenerator timer)
+        {
+            FsSrv = fsServer;
+            FsProxy = fsProxy;
+            Time = timer ?? new StopWatchTimeSpanGenerator();
+        }
+
         public bool HasFileSystemServer()
         {
             return FsSrv != null;

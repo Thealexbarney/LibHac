@@ -18,6 +18,15 @@ namespace LibHac.FsService
             return Result.Success;
         }
 
+        public Result Reset()
+        {
+            lock (Locker)
+            {
+                IsKeyValueSet = false;
+                return Result.Success;
+            }
+        }
+
         public Result Add(out ulong saveDataId, ref SaveDataAttribute key)
         {
             lock (Locker)
