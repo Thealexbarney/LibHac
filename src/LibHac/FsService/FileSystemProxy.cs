@@ -285,7 +285,7 @@ namespace LibHac.FsService
 
                     SaveDataAttribute indexerKey = attribute;
 
-                    if (attribute.SaveDataId != 0 || attribute.UserId == UserId.Zero)
+                    if (attribute.SaveDataId != 0 && attribute.UserId == UserId.Zero)
                     {
                         saveDataId = attribute.SaveDataId;
 
@@ -486,7 +486,8 @@ namespace LibHac.FsService
                 using SaveDataIndexerReader reader = tmpReader;
                 if (rc.IsFailure()) return rc;
 
-                reader.Indexer.Get(out SaveDataIndexerValue indexerValue, ref indexerKey);
+                rc = reader.Indexer.Get(out SaveDataIndexerValue indexerValue, ref indexerKey);
+                if (rc.IsFailure()) return rc;
 
                 SaveDataSpaceId indexerSpaceId = GetSpaceIdForIndexer(spaceId);
 
