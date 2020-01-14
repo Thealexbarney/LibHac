@@ -148,9 +148,7 @@ namespace LibHac.Fs
                 requiredSizeSum += requiredSizeBcat;
             }
 
-            // Don't actually do this yet because the temp save indexer hasn't been implemented
-            // todo: Flip the operator when it is
-            if (nacp.TemporaryStorageSize < 0)
+            if (nacp.TemporaryStorageSize > 0)
             {
                 if (requiredSizeSum > 0)
                 {
