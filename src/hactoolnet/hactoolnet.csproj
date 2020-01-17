@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
@@ -19,5 +19,26 @@
   <ItemGroup>
     <ProjectReference Include="..\LibHac\LibHac.csproj" />
   </ItemGroup>
+
+  <!-- Options for use with CoreRT -->
+  <ItemGroup Condition=" $(BuildType.StartsWith('native')) ">
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="1.0.0-alpha-*" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" $(BuildType.StartsWith('native')) and '$(BuildType)' != 'native-untrimmed' ">
+    <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
+    <IlcGenerateCompleteTypeMetadata>false</IlcGenerateCompleteTypeMetadata>
+    <IlcOptimizationPreference>Speed</IlcOptimizationPreference>
+    <RootAllApplicationAssemblies>false</RootAllApplicationAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" $(BuildType.StartsWith('native')) and '$(BuildType)' != 'native-untrimmed' ">
+    <IlcArg Include="--removefeature:EventSource" />
+  </ItemGroup>
+
+  <!-- No-reflection mode doesn't work yet -->
+  <PropertyGroup Condition=" '$(BuildType)' == 'native-noreflection' ">
+    <IlcDisableReflection>true</IlcDisableReflection>
+  </PropertyGroup>
 
 </Project>
