@@ -7,7 +7,6 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
 using ICSharpCode.SharpZipLib.Zip;
 using Nuke.Common;
 using Nuke.Common.CI.AppVeyor;
@@ -43,10 +42,9 @@ namespace LibHacBuild
         AbsolutePath TempDirectory => RootDirectory / ".tmp";
         AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_netcoreapp3.1";
         AbsolutePath CliNativeDir => TempDirectory / $"hactoolnet_{HostOsName}";
-        AbsolutePath CliNativeExe => CliNativeDir / $"hactoolnet_native{NativeProgramExtension}";
+        AbsolutePath CliNativeExe => CliNativeDir / $"hactoolnet{NativeProgramExtension}";
         AbsolutePath CliCoreZip => ArtifactsDirectory / $"hactoolnet-{VersionString}-netcore.zip";
         AbsolutePath CliNativeZip => ArtifactsDirectory / $"hactoolnet-{VersionString}-{HostOsName}.zip";
-        AbsolutePath NugetConfig => RootDirectory / "nuget.config";
 
         Project LibHacProject => _solution.GetProject("LibHac").NotNull();
         Project LibHacTestProject => _solution.GetProject("LibHac.Tests").NotNull();
@@ -61,7 +59,6 @@ namespace LibHacBuild
         string VersionString { get; set; }
         Dictionary<string, object> VersionProps { get; set; } = new Dictionary<string, object>();
 
-        private const string DotNetFeedSource = "https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json";
         const string CertFileName = "cert.pfx";
 
         public Build()
@@ -270,6 +267,8 @@ namespace LibHacBuild
                     .Concat(Directory.EnumerateFiles(CliCoreDir, "*.dll"))
                     .ToArray();
 
+                EnsureExistingDirectory(ArtifactsDirectory);
+
                 ZipFiles(CliCoreZip, namesCore);
                 Logger.Normal($"Created {CliCoreZip}");
 
@@ -352,58 +351,32 @@ namespace LibHacBuild
         [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         public void BuildNative()
         {
-            AbsolutePath nativeProject = HactoolnetProject.Path.Parent / "hactoolnet_native.csproj";
+            string buildType = Untrimmed ? "native-untrimmed" : "native";
 
-            try
+            DotNetPublishSettings publishSettings = new DotNetPublishSettings()
+                .SetConfiguration(Configuration)
+                .SetProject(HactoolnetProject)
+                .SetRuntime(NativeRuntime)
+                .SetOutput(CliNativeDir)
+                .SetProperties(VersionProps)
+                .AddProperty("BuildType", buildType);
+
+            DotNetPublish(publishSettings);
+
+            if (EnvironmentInfo.IsUnix && !Untrimmed)
             {
-                File.Copy(HactoolnetProject, nativeProject, true);
-                DotNet("new nuget --force");
-
-                XDocument doc = XDocument.Load(NugetConfig);
-                doc.Element("configuration").Element("packageSources").Add(new XElement("add",
-                    new XAttribute("key", "myget"), new XAttribute("value", DotNetFeedSource)));
-
-                doc.Save(NugetConfig);
-
-                DotNet($"add {nativeProject} package Microsoft.DotNet.ILCompiler --version 1.0.0-alpha-*");
-
-                DotNetPublishSettings publishSettings = new DotNetPublishSettings()
-                    .SetConfiguration(Configuration)
-                    .SetProject(nativeProject)
-                    .SetFramework("netcoreapp3.1")
-                    .SetRuntime(NativeRuntime)
-                    .SetOutput(CliNativeDir)
-                    .SetProperties(VersionProps);
-
-                if (!Untrimmed)
-                {
-                    publishSettings = publishSettings
-                            .AddProperty("RootAllApplicationAssemblies", false)
-                            .AddProperty("IlcGenerateCompleteTypeMetadata", false)
-                            .AddProperty("IlcGenerateStackTraceData", false)
-                            .AddProperty("IlcFoldIdenticalMethodBodies", true)
-                        ;
-                }
-
-                DotNetPublish(publishSettings);
-
-                if (EnvironmentInfo.IsUnix && !Untrimmed)
-                {
-                    ProcessTasks.StartProcess("strip", CliNativeExe).AssertZeroExitCode();
-                }
-
-                ZipFile(CliNativeZip, CliNativeExe, $"hactoolnet{NativeProgramExtension}");
-                Logger.Normal($"Created {CliNativeZip}");
-
-                if (Host == HostType.AppVeyor)
-                {
-                    PushArtifact(CliNativeZip);
-                }
+                File.Copy(CliNativeExe, CliNativeExe + "_unstripped");
+                ProcessTasks.StartProcess("strip", CliNativeExe).AssertZeroExitCode();
             }
-            finally
+
+            EnsureExistingDirectory(ArtifactsDirectory);
+
+            ZipFile(CliNativeZip, CliNativeExe, $"hactoolnet{NativeProgramExtension}");
+            Logger.Normal($"Created {CliNativeZip}");
+
+            if (Host == HostType.AppVeyor)
             {
-                File.Delete(nativeProject);
-                File.Delete(NugetConfig);
+                PushArtifact(CliNativeZip);
             }
         }
 
