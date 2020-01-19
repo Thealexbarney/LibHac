@@ -262,6 +262,22 @@ namespace LibHac.FsSystem
             return path.Slice(i, path.Length - i);
         }
 
+        public static ReadOnlySpan<byte> GetLastSegment(ReadOnlySpan<byte> path)
+        {
+            Debug.Assert(IsNormalized(path));
+
+            if (path.Length == 0)
+                return path;
+
+            int endIndex = path[path.Length - 1] == DirectorySeparator ? path.Length - 1 : path.Length;
+            int i = endIndex;
+
+            while (i >= 1 && path[i - 1] != '/') i--;
+
+            i = Math.Max(i, 0);
+            return path.Slice(i, endIndex - i);
+        }
+
         public static bool IsNormalized(ReadOnlySpan<char> path)
         {
             var state = NormalizeState.Initial;
