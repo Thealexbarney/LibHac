@@ -299,5 +299,29 @@ namespace LibHac.Tests
 
             Assert.Equal(expected, actual);
         }
+
+        public static object[][] GetLastSegmentTestItems =
+        {
+            new object[] {"/a/bb/ccc", "ccc"},
+            new object[] {"/a/bb/ccc/", "ccc"},
+            new object[] {"/a/bb", "bb"},
+            new object[] {"/a/bb/", "bb"},
+            new object[] {"/a", "a"},
+            new object[] {"/a/", "a"},
+            new object[] {"/", ""},
+        };
+
+        [Theory]
+        [MemberData(nameof(GetLastSegmentTestItems))]
+        public static void GetLastSegmentTest(string path, string expected)
+        {
+            var u8Path = path.ToU8String();
+
+            ReadOnlySpan<byte> fileName = PathTools.GetLastSegment(u8Path);
+
+            string actual = StringUtils.Utf8ZToString(fileName);
+
+            Assert.Equal(expected, actual);
+        }
     }
 }
