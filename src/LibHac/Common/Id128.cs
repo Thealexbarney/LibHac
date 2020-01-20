@@ -44,10 +44,7 @@ namespace LibHac.Common
 
         public override int GetHashCode()
         {
-            unchecked
-            {
-                return (High.GetHashCode() * 397) ^ Low.GetHashCode();
-            }
+            return HashCode.Combine(High, Low);
         }
 
         public int CompareTo(Id128 other)

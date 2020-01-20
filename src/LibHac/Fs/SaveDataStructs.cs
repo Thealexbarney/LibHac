@@ -33,14 +33,7 @@ namespace LibHac.Fs
         public override int GetHashCode()
         {
             // ReSharper disable NonReadonlyMemberInGetHashCode
-            int hashCode = 487790375;
-            hashCode = hashCode * -1521134295 + TitleId.GetHashCode();
-            hashCode = hashCode * -1521134295 + Type.GetHashCode();
-            hashCode = hashCode * -1521134295 + UserId.GetHashCode();
-            hashCode = hashCode * -1521134295 + SaveDataId.GetHashCode();
-            hashCode = hashCode * -1521134295 + Rank.GetHashCode();
-            hashCode = hashCode * -1521134295 + Index.GetHashCode();
-            return hashCode;
+            return HashCode.Combine(TitleId, Type, UserId, SaveDataId, Rank, Index);
             // ReSharper restore NonReadonlyMemberInGetHashCode
         }
 

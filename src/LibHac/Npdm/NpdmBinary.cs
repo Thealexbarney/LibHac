@@ -1,5 +1,6 @@
 // ReSharper disable UnusedVariable
 using System;
+using System.Buffers.Binary;
 using System.IO;
 
 namespace LibHac.Npdm
@@ -53,10 +54,10 @@ namespace LibHac.Npdm
             reader.ReadInt32();
 
             //System resource size (max size as of 5.x: 534773760).
-            SystemResourceSize = Util.Swap32(reader.ReadInt32());
+            SystemResourceSize = BinaryPrimitives.ReverseEndianness(reader.ReadInt32());
 
             //ProcessCategory (0: regular title, 1: kernel built-in). Should be 0 here.
-            ProcessCategory = Util.Swap32(reader.ReadInt32());
+            ProcessCategory = BinaryPrimitives.ReverseEndianness(reader.ReadInt32());
 
             //Main entrypoint stack size.
             MainEntrypointStackSize = reader.ReadInt32();

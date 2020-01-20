@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -471,7 +470,6 @@ namespace LibHac
 
         public static void MemDump(this StringBuilder sb, string prefix, byte[] data)
         {
-
             int max = 32;
             int remaining = data.Length;
             bool first = true;
@@ -501,21 +499,21 @@ namespace LibHac
             }
         }
 
-        public static string GetKeyRevisionSummary(int revision)
+        public static string GetKeyRevisionSummary(int revision) => revision switch
         {
-            switch (revision)
-            {
-                case 0: return "1.0.0-2.3.0";
-                case 1: return "3.0.0";
-                case 2: return "3.0.1-3.0.2";
-                case 3: return "4.0.0-4.1.0";
-                case 4: return "5.0.0-5.1.0";
-                case 5: return "6.0.0-6.0.1";
-                case 6: return "6.2.0";
-                case 7: return "7.0.0-8.0.1";
-                default: return "Unknown";
-            }
-        }
+            0 => "1.0.0-2.3.0",
+            1 => "3.0.0",
+            2 => "3.0.1-3.0.2",
+            3 => "4.0.0-4.1.0",
+            4 => "5.0.0-5.1.0",
+            5 => "6.0.0-6.0.1",
+            6 => "6.2.0",
+            7 => "7.0.0-8.0.1",
+            8 => "8.1.0-8.1.1",
+            9 => "9.0.0-9.0.1",
+            0xA => "9.1.0-",
+            _ => "Unknown"
+        };
 
         public static bool IsSubRange(long startIndex, long subLength, long length)
         {
@@ -523,61 +521,11 @@ namespace LibHac
             return !isOutOfRange;
         }
 
-        public static int Swap32(int value)
-        {
-            uint uintVal = (uint)value;
-
-            return (int)(((uintVal >> 24) & 0x000000ff) |
-                         ((uintVal >> 8) & 0x0000ff00) |
-                         ((uintVal << 8) & 0x00ff0000) |
-                         ((uintVal << 24) & 0xff000000));
-        }
-
         public static int GetMasterKeyRevision(int keyGeneration)
         {
             if (keyGeneration == 0) return 0;
 
             return keyGeneration - 1;
-        }
-    }
-
-    public class ByteArray128BitComparer : EqualityComparer<byte[]>
-    {
-        public override bool Equals(byte[] first, byte[] second)
-        {
-            if (first == null || second == null)
-            {
-                // null == null returns true.
-                // non-null == null returns false.
-                return first == second;
-            }
-            if (ReferenceEquals(first, second))
-            {
-                return true;
-            }
-            if (first.Length != second.Length)
-            {
-                return false;
-            }
-
-            return Util.ArraysEqual(first, second);
-        }
-
-        public override int GetHashCode(byte[] obj)
-        {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-            if (obj.Length != 16)
-            {
-                throw new ArgumentException("Length must be 16 bytes");
-            }
-
-            ulong hi = BitConverter.ToUInt64(obj, 0);
-            ulong lo = BitConverter.ToUInt64(obj, 8);
-
-            return (hi.GetHashCode() * 397) ^ lo.GetHashCode();
         }
     }
 }
