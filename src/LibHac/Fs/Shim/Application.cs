@@ -35,6 +35,7 @@ namespace LibHac.Fs.Shim
 
             static Result Run(FileSystemClient fs, U8Span mountName, U8Span path)
             {
+                // ReSharper disable once VariableHidesOuterVariable
                 Result rc = MountHelpers.CheckMountName(mountName);
                 if (rc.IsFailure()) return rc;
 
