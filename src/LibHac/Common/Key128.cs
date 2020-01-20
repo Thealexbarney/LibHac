@@ -36,10 +36,7 @@ namespace LibHac.Common
 
         public override int GetHashCode()
         {
-            int hashCode = -1653217991;
-            hashCode = hashCode * -1521134295 + _dummy1.GetHashCode();
-            hashCode = hashCode * -1521134295 + _dummy2.GetHashCode();
-            return hashCode;
+            return HashCode.Combine(_dummy1, _dummy2);
         }
 
         public static bool operator ==(Key128 left, Key128 right) => left.Equals(right);

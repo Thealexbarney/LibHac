@@ -50,16 +50,9 @@ namespace LibHac.Ncm
 
         public override int GetHashCode()
         {
-            unchecked
-            {
-                // ReSharper disable NonReadonlyMemberInGetHashCode
-                int hashCode = TitleId.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)Version;
-                hashCode = (hashCode * 397) ^ Type.GetHashCode();
-                hashCode = (hashCode * 397) ^ Attributes.GetHashCode();
-                return hashCode;
-                // ReSharper restore NonReadonlyMemberInGetHashCode
-            }
+            // ReSharper disable NonReadonlyMemberInGetHashCode
+            return HashCode.Combine(TitleId, Version, Type, Attributes);
+            // ReSharper restore NonReadonlyMemberInGetHashCode
         }
 
         public int CompareTo(ContentMetaKey other)
