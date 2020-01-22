@@ -646,7 +646,7 @@ namespace LibHac.FsSystem
 
                 if (rc.IsFailure())
                 {
-                    if (rc == ResultFs.TooLongPath)
+                    if (ResultFs.TooLongPath.Includes(rc))
                     {
                         // Make sure pending delimiters are added to the string if possible
                         if (state == NormalizeState.Delimiter)

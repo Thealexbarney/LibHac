@@ -120,7 +120,7 @@ namespace LibHac.FsService
 
                 Result rc = FsClient.DeleteSaveData(SaveDataId);
 
-                if (rc.IsSuccess() || rc == ResultFs.TargetNotFound)
+                if (rc.IsSuccess() || ResultFs.TargetNotFound.Includes(rc))
                 {
                     Version++;
                 }
@@ -472,7 +472,7 @@ namespace LibHac.FsService
 
                 if (rc.IsFailure())
                 {
-                    if (rc != ResultFs.PathNotFound) return rc;
+                    if (!ResultFs.PathNotFound.Includes(rc)) return rc;
 
                     rc = FsClient.CreateFile(idFilePath, LastIdFileSize);
                     if (rc.IsFailure()) return rc;
@@ -587,7 +587,7 @@ namespace LibHac.FsService
 
                 if (rc.IsFailure())
                 {
-                    if (rc == ResultFs.TargetNotFound)
+                    if (ResultFs.TargetNotFound.Includes(rc))
                     {
                         rc = FsClient.CreateSystemSaveData(spaceId, saveDataId, TitleId.Zero, 0xC0000, 0xC0000, 0);
                         if (rc.IsFailure()) return rc;
@@ -597,8 +597,8 @@ namespace LibHac.FsService
                     }
                     else
                     {
-                        if (ResultRangeFs.Range4771To4779.Contains(rc)) return rc;
-                        if (!ResultRangeFs.DataCorrupted.Contains(rc)) return rc;
+                        if (ResultFs.Range4771To4779.Includes(rc)) return rc;
+                        if (!ResultFs.DataCorrupted.Includes(rc)) return rc;
 
                         if (spaceId == SaveDataSpaceId.SdSystem) return rc;
 

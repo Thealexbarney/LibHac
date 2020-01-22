@@ -172,12 +172,12 @@ namespace LibHac.FsService
             bool doSecureDelete = false;
 
             Result rc = FsProxyCore.DeleteSaveDataMetaFiles(saveDataId, spaceId);
-            if (rc.IsFailure() && rc != ResultFs.PathNotFound)
+            if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc))
                 return rc;
 
             // ReSharper disable once ConditionIsAlwaysTrueOrFalse
             rc = FsProxyCore.DeleteSaveDataFileSystem(spaceId, saveDataId, doSecureDelete);
-            if (rc.IsFailure() && rc != ResultFs.PathNotFound)
+            if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc))
                 return rc;
 
             return Result.Success;
@@ -300,7 +300,7 @@ namespace LibHac.FsService
                         rc = reader.Indexer.Add(out saveDataId, ref indexerKey);
                     }
 
-                    if (rc == ResultFs.SaveDataPathAlreadyExists)
+                    if (ResultFs.SaveDataPathAlreadyExists.Includes(rc))
                     {
                         return ResultFs.PathAlreadyExists.LogConverted(rc);
                     }
@@ -330,7 +330,7 @@ namespace LibHac.FsService
 
                 if (rc.IsFailure())
                 {
-                    if (rc != ResultFs.PathAlreadyExists) return rc;
+                    if (!ResultFs.PathAlreadyExists.Includes(rc)) return rc;
 
                     rc = DeleteSaveDataFileSystemImpl2(creationInfo.SpaceId, saveDataId);
                     if (rc.IsFailure()) return rc;
@@ -500,7 +500,7 @@ namespace LibHac.FsService
 
             if (saveFsResult.IsSuccess()) return Result.Success;
 
-            if (saveFsResult != ResultFs.PathNotFound && saveFsResult != ResultFs.TargetNotFound) return saveFsResult;
+            if (!ResultFs.PathNotFound.Includes(saveFsResult) && !ResultFs.TargetNotFound.Includes(saveFsResult)) return saveFsResult;
 
             if (saveDataId != FileSystemServer.SaveIndexerId)
             {
@@ -510,7 +510,7 @@ namespace LibHac.FsService
                 }
             }
 
-            if (saveFsResult == ResultFs.PathNotFound)
+            if (ResultFs.PathNotFound.Includes(saveFsResult))
             {
                 return ResultFs.TargetNotFound.LogConverted(saveFsResult);
             }

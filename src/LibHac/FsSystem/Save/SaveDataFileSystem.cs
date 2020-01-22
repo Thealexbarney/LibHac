@@ -47,7 +47,7 @@ namespace LibHac.FsSystem.Save
             }
             else
             {
-                ThrowHelper.ThrowResult(ResultFs.InvalidSaveDataHeader, "Savedata header is not valid.");
+                ThrowHelper.ThrowResult(ResultFs.InvalidSaveDataHeader.Value, "Savedata header is not valid.");
             }
 
             Header = IsFirstHeaderInUse ? headerA : headerB;

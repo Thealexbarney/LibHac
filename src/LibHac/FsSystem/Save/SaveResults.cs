@@ -6,7 +6,7 @@ namespace LibHac.FsSystem.Save
     {
         public static Result ConvertToExternalResult(Result result)
         {
-            int description = result.Description;
+            int description = (int)result.Description;
 
             if (result == Result.Success)
             {
@@ -18,52 +18,52 @@ namespace LibHac.FsSystem.Save
                 return result;
             }
 
-            if (result == ResultFs.Result3002)
+            if (ResultFs.Result3002.Includes(result))
             {
-                return ResultFs.Result4302;
+                return ResultFs.Result4302.Value;
             }
 
-            if (ResultRangeFs.IvfcStorageCorrupted.Contains(result))
+            if (ResultFs.IvfcStorageCorrupted.Includes(result))
             {
-                if (result == ResultFs.Result4602)
+                if (ResultFs.Result4602.Includes(result))
                 {
-                    return ResultFs.Result4362;
+                    return ResultFs.Result4362.Value;
                 }
 
-                if (result == ResultFs.Result4603)
+                if (ResultFs.Result4603.Includes(result))
                 {
-                    return ResultFs.Result4363;
+                    return ResultFs.Result4363.Value;
                 }
 
-                if (result == ResultFs.InvalidHashInIvfc)
+                if (ResultFs.InvalidHashInIvfc.Includes(result))
                 {
-                    return ResultFs.InvalidHashInSaveIvfc;
+                    return ResultFs.InvalidHashInSaveIvfc.Value;
                 }
 
-                if (result == ResultFs.IvfcHashIsEmpty)
+                if (ResultFs.IvfcHashIsEmpty.Includes(result))
                 {
-                    return ResultFs.SaveIvfcHashIsEmpty;
+                    return ResultFs.SaveIvfcHashIsEmpty.Value;
                 }
 
-                if (result == ResultFs.InvalidHashInIvfcTopLayer)
+                if (ResultFs.InvalidHashInIvfcTopLayer.Includes(result))
                 {
-                    return ResultFs.InvalidHashInSaveIvfcTopLayer;
+                    return ResultFs.InvalidHashInSaveIvfcTopLayer.Value;
                 }
 
                 return result;
             }
 
-            if (ResultRangeFs.BuiltInStorageCorrupted.Contains(result))
+            if (ResultFs.BuiltInStorageCorrupted.Includes(result))
             {
-                if (result == ResultFs.Result4662)
+                if (ResultFs.Result4662.Includes(result))
                 {
-                    return ResultFs.Result4402;
+                    return ResultFs.Result4402.Value;
                 }
 
                 return result;
             }
 
-            if (ResultRangeFs.HostFsCorrupted.Contains(result))
+            if (ResultFs.HostFsCorrupted.Includes(result))
             {
                 if (description > 4701 && description < 4706)
                 {
@@ -73,17 +73,17 @@ namespace LibHac.FsSystem.Save
                 return result;
             }
 
-            if (ResultRangeFs.Range4811To4819.Contains(result))
+            if (ResultFs.Range4811To4819.Includes(result))
             {
-                if (result == ResultFs.Result4812)
+                if (ResultFs.Result4812.Includes(result))
                 {
-                    return ResultFs.Result4427;
+                    return ResultFs.Result4427.Value;
                 }
 
                 return result;
             }
 
-            if (ResultRangeFs.FileTableCorrupted.Contains(result))
+            if (ResultFs.FileTableCorrupted.Includes(result))
             {
                 if (description > 4721 && description < 4729)
                 {
@@ -93,34 +93,34 @@ namespace LibHac.FsSystem.Save
                 return result;
             }
 
-            if (ResultRangeFs.FatFsCorrupted.Contains(result))
+            if (ResultFs.FatFsCorrupted.Includes(result))
             {
                 return result;
             }
 
-            if (ResultRangeFs.EntryNotFound.Contains(result))
+            if (ResultFs.EntryNotFound.Includes(result))
             {
-                return ResultFs.PathNotFound;
+                return ResultFs.PathNotFound.Value;
             }
 
-            if (result == ResultFs.SaveDataPathAlreadyExists)
+            if (ResultFs.SaveDataPathAlreadyExists.Includes(result))
             {
-                return ResultFs.PathAlreadyExists;
+                return ResultFs.PathAlreadyExists.Value;
             }
 
-            if (result == ResultFs.PathNotFoundInSaveDataFileTable)
+            if (ResultFs.PathNotFoundInSaveDataFileTable.Includes(result))
             {
-                return ResultFs.PathNotFound;
+                return ResultFs.PathNotFound.Value;
             }
 
-            if (result == ResultFs.InvalidOffset)
+            if (ResultFs.InvalidOffset.Includes(result))
             {
-                return ResultFs.ValueOutOfRange;
+                return ResultFs.ValueOutOfRange.Value;
             }
 
-            if (result == ResultFs.AllocationTableInsufficientFreeBlocks)
+            if (ResultFs.AllocationTableInsufficientFreeBlocks.Includes(result))
             {
-                return ResultFs.InsufficientFreeSpace;
+                return ResultFs.InsufficientFreeSpace.Value;
             }
 
             return result;

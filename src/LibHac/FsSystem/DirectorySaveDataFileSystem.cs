@@ -48,7 +48,7 @@ namespace LibHac.FsSystem
 
             if (rc.IsFailure())
             {
-                if (rc != ResultFs.PathNotFound) return rc;
+                if (!ResultFs.PathNotFound.Includes(rc)) return rc;
 
                 rc = BaseFs.CreateDirectory(WorkingDir);
                 if (rc.IsFailure()) return rc;
@@ -59,7 +59,7 @@ namespace LibHac.FsSystem
 
                 // Nintendo returns on all failures, but we'll keep going if committed already exists
                 // to avoid confusing people manually creating savedata in emulators
-                if (rc.IsFailure() && rc != ResultFs.PathAlreadyExists) return rc;
+                if (rc.IsFailure() && !ResultFs.PathAlreadyExists.Includes(rc)) return rc;
             }
 
             // Only the working directory is needed for temporary savedata
@@ -71,8 +71,8 @@ namespace LibHac.FsSystem
             {
                 return SynchronizeDirectory(WorkingDir, CommittedDir);
             }
-            
-            if (rc != ResultFs.PathNotFound) return rc;
+
+            if (!ResultFs.PathNotFound.Includes(rc)) return rc;
 
             // If a previous commit failed, the committed dir may be missing.
             // Finish that commit by copying the working dir to the committed dir
@@ -210,7 +210,7 @@ namespace LibHac.FsSystem
         {
             lock (Locker)
             {
-                if(!IsPersistentSaveData) return Result.Success;
+                if (!IsPersistentSaveData) return Result.Success;
 
                 if (OpenWritableFileCount > 0)
                 {
@@ -240,7 +240,7 @@ namespace LibHac.FsSystem
         private Result SynchronizeDirectory(string dest, string src)
         {
             Result rc = BaseFs.DeleteDirectoryRecursively(dest);
-            if (rc.IsFailure() && rc != ResultFs.PathNotFound) return rc;
+            if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc)) return rc;
 
             rc = BaseFs.CreateDirectory(dest);
             if (rc.IsFailure()) return rc;

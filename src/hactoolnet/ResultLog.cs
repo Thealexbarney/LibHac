@@ -27,7 +27,7 @@ namespace hactoolnet
 
                 // This result from these functions is usually noise because they
                 // are frequently used to detect if a file exists
-                if (result == ResultFs.PathNotFound &&
+                if (ResultFs.PathNotFound.Includes(result) &&
                     typeof(IFileSystem).IsAssignableFrom(method.DeclaringType) &&
                     method.Name.StartsWith(nameof(IFileSystem.GetEntryType)) ||
                     method.Name.StartsWith(nameof(IAttributeFileSystem.GetFileAttributes)))

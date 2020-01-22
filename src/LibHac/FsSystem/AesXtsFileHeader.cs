@@ -26,7 +26,7 @@ namespace LibHac.FsSystem
 
             if (fileSize < 0x80)
             {
-                ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderTooShort);
+                ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderTooShort.Value);
             }
 
             var reader = new FileReader(aesXtsFile);
@@ -40,7 +40,7 @@ namespace LibHac.FsSystem
 
             if (Magic != AesXtsFileMagic)
             {
-                ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderInvalidMagic, "Invalid NAX0 magic value");
+                ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderInvalidMagic.Value, "Invalid NAX0 magic value");
             }
         }
 

@@ -19,7 +19,7 @@ namespace LibHac.Tests
 
             Result rc = fs.CreateFile("/dir/file", 0, CreateFileOptions.None);
 
-            Assert.Equal(ResultFs.PathNotFound, rc);
+            Assert.Equal(ResultFs.PathNotFound.Value, rc);
         }
 
         [Fact]
@@ -108,7 +108,7 @@ namespace LibHac.Tests
 
             Result rc = fs.OpenDirectory(out _, "/file", OpenDirectoryMode.All);
 
-            Assert.Equal(ResultFs.PathNotFound, rc);
+            Assert.Equal(ResultFs.PathNotFound.Value, rc);
         }
 
         [Fact]
@@ -120,7 +120,7 @@ namespace LibHac.Tests
 
             Result rc = fs.OpenFile(out _, "/dir", OpenMode.All);
 
-            Assert.Equal(ResultFs.PathNotFound, rc);
+            Assert.Equal(ResultFs.PathNotFound.Value, rc);
         }
 
         [Fact]
@@ -129,7 +129,7 @@ namespace LibHac.Tests
             IAttributeFileSystem fs = GetFileSystem();
 
             Result rc = fs.DeleteFile("/file");
-            Assert.Equal(ResultFs.PathNotFound, rc);
+            Assert.Equal(ResultFs.PathNotFound.Value, rc);
         }
 
         [Fact]
@@ -138,7 +138,7 @@ namespace LibHac.Tests
             IAttributeFileSystem fs = GetFileSystem();
 
             Result rc = fs.DeleteDirectory("/dir");
-            Assert.Equal(ResultFs.PathNotFound, rc);
+            Assert.Equal(ResultFs.PathNotFound.Value, rc);
         }
 
         [Fact]
@@ -152,7 +152,7 @@ namespace LibHac.Tests
             Result rcEntry = fs.GetEntryType(out _, "/file");
 
             Assert.True(rcDelete.IsSuccess());
-            Assert.Equal(ResultFs.PathNotFound, rcEntry);
+            Assert.Equal(ResultFs.PathNotFound.Value, rcEntry);
         }
 
         [Fact]
@@ -169,7 +169,7 @@ namespace LibHac.Tests
 
             Assert.True(rcDelete.IsSuccess());
             Assert.True(rcEntry1.IsSuccess());
-            Assert.Equal(ResultFs.PathNotFound, rcEntry2);
+            Assert.Equal(ResultFs.PathNotFound.Value, rcEntry2);
 
             Assert.Equal(DirectoryEntryType.File, dir1Type);
         }
@@ -188,7 +188,7 @@ namespace LibHac.Tests
 
             Assert.True(rcDelete.IsSuccess());
             Assert.True(rcEntry1.IsSuccess());
-            Assert.Equal(ResultFs.PathNotFound, rcEntry2);
+            Assert.Equal(ResultFs.PathNotFound.Value, rcEntry2);
 
             Assert.Equal(DirectoryEntryType.File, dir1Type);
         }
@@ -204,7 +204,7 @@ namespace LibHac.Tests
             Result rcEntry = fs.GetEntryType(out _, "/dir");
 
             Assert.True(rcDelete.IsSuccess());
-            Assert.Equal(ResultFs.PathNotFound, rcEntry);
+            Assert.Equal(ResultFs.PathNotFound.Value, rcEntry);
         }
 
         [Fact]
@@ -221,7 +221,7 @@ namespace LibHac.Tests
 
             Assert.True(rcDelete.IsSuccess());
             Assert.True(rcEntry1.IsSuccess());
-            Assert.Equal(ResultFs.PathNotFound, rcEntry2);
+            Assert.Equal(ResultFs.PathNotFound.Value, rcEntry2);
 
             Assert.Equal(DirectoryEntryType.Directory, dir1Type);
         }
@@ -240,7 +240,7 @@ namespace LibHac.Tests
 
             Assert.True(rcDelete.IsSuccess());
             Assert.True(rcEntry1.IsSuccess());
-            Assert.Equal(ResultFs.PathNotFound, rcEntry2);
+            Assert.Equal(ResultFs.PathNotFound.Value, rcEntry2);
 
             Assert.Equal(DirectoryEntryType.Directory, dir1Type);
         }
@@ -255,7 +255,7 @@ namespace LibHac.Tests
 
             Result rc = fs.DeleteDirectory("/dir");
 
-            Assert.Equal(ResultFs.DirectoryNotEmpty, rc);
+            Assert.Equal(ResultFs.DirectoryNotEmpty.Value, rc);
         }
 
         [Fact]
@@ -275,9 +275,9 @@ namespace LibHac.Tests
 
             Assert.True(rcDelete.IsSuccess());
 
-            Assert.Equal(ResultFs.PathNotFound, rcDir1Type);
-            Assert.Equal(ResultFs.PathNotFound, rcDir2Type);
-            Assert.Equal(ResultFs.PathNotFound, rcFileType);
+            Assert.Equal(ResultFs.PathNotFound.Value, rcDir1Type);
+            Assert.Equal(ResultFs.PathNotFound.Value, rcDir2Type);
+            Assert.Equal(ResultFs.PathNotFound.Value, rcFileType);
         }
 
         [Fact]
@@ -300,8 +300,8 @@ namespace LibHac.Tests
             Assert.True(rcDir1Type.IsSuccess());
             Assert.Equal(DirectoryEntryType.Directory, dir1Type);
 
-            Assert.Equal(ResultFs.PathNotFound, rcDir2Type);
-            Assert.Equal(ResultFs.PathNotFound, rcFileType);
+            Assert.Equal(ResultFs.PathNotFound.Value, rcDir2Type);
+            Assert.Equal(ResultFs.PathNotFound.Value, rcFileType);
         }
 
         [Fact]
@@ -424,7 +424,7 @@ namespace LibHac.Tests
             Assert.True(rcSize.IsSuccess());
 
             Assert.Equal(12345, fileSize);
-            Assert.Equal(ResultFs.PathNotFound, rcOldType);
+            Assert.Equal(ResultFs.PathNotFound.Value, rcOldType);
         }
 
         [Fact]
@@ -440,7 +440,7 @@ namespace LibHac.Tests
             Result rcFile1 = fs.GetEntryType(out DirectoryEntryType file1Type, "/file1");
             Result rcFile2 = fs.GetEntryType(out DirectoryEntryType file2Type, "/file2");
 
-            Assert.Equal(ResultFs.PathAlreadyExists, rcRename);
+            Assert.Equal(ResultFs.PathAlreadyExists.Value, rcRename);
 
             Assert.True(rcFile1.IsSuccess());
             Assert.True(rcFile2.IsSuccess());
@@ -464,7 +464,7 @@ namespace LibHac.Tests
             Assert.True(rcDir2.IsSuccess());
             Assert.Equal(DirectoryEntryType.Directory, dir2Type);
 
-            Assert.Equal(ResultFs.PathNotFound, rcDir1);
+            Assert.Equal(ResultFs.PathNotFound.Value, rcDir1);
         }
 
         [Fact]
@@ -498,9 +498,9 @@ namespace LibHac.Tests
             Assert.Equal(DirectoryEntryType.Directory, dir1CType);
             Assert.Equal(DirectoryEntryType.File, file1Type);
 
-            Assert.Equal(ResultFs.PathNotFound, rcDir1);
-            Assert.Equal(ResultFs.PathNotFound, rcDirCOld);
-            Assert.Equal(ResultFs.PathNotFound, rcFile1Old);
+            Assert.Equal(ResultFs.PathNotFound.Value, rcDir1);
+            Assert.Equal(ResultFs.PathNotFound.Value, rcDirCOld);
+            Assert.Equal(ResultFs.PathNotFound.Value, rcFile1Old);
         }
 
         [Fact]
@@ -523,7 +523,7 @@ namespace LibHac.Tests
             Assert.True(rcDir2.IsSuccess());
             Assert.Equal(DirectoryEntryType.Directory, dir2Type);
 
-            Assert.Equal(ResultFs.PathNotFound, rcDir1);
+            Assert.Equal(ResultFs.PathNotFound.Value, rcDir1);
         }
 
         [Fact]
@@ -539,7 +539,7 @@ namespace LibHac.Tests
             Result rcDir1 = fs.GetEntryType(out DirectoryEntryType dir1Type, "/dir1");
             Result rcDir2 = fs.GetEntryType(out DirectoryEntryType dir2Type, "/dir2");
 
-            Assert.Equal(ResultFs.PathAlreadyExists, rcRename);
+            Assert.Equal(ResultFs.PathAlreadyExists.Value, rcRename);
 
             Assert.True(rcDir1.IsSuccess());
             Assert.True(rcDir2.IsSuccess());

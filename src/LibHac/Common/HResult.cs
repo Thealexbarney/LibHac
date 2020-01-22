@@ -22,20 +22,20 @@ namespace LibHac.Common
 
         public static Result HResultToHorizonResult(int hResult) => hResult switch
         {
-            ERROR_FILE_NOT_FOUND => ResultFs.PathNotFound,
-            ERROR_PATH_NOT_FOUND => ResultFs.PathNotFound,
-            ERROR_ACCESS_DENIED => ResultFs.TargetLocked,
-            ERROR_SHARING_VIOLATION => ResultFs.TargetLocked,
-            ERROR_HANDLE_EOF => ResultFs.ValueOutOfRange,
-            ERROR_HANDLE_DISK_FULL => ResultFs.InsufficientFreeSpace,
-            ERROR_FILE_EXISTS => ResultFs.PathAlreadyExists,
-            ERROR_DISK_FULL => ResultFs.InsufficientFreeSpace,
-            ERROR_INVALID_NAME => ResultFs.PathNotFound,
-            ERROR_DIR_NOT_EMPTY => ResultFs.DirectoryNotEmpty,
-            ERROR_ALREADY_EXISTS => ResultFs.PathAlreadyExists,
-            ERROR_DIRECTORY => ResultFs.PathNotFound,
-            ERROR_SPACES_NOT_ENOUGH_DRIVES => ResultFs.InsufficientFreeSpace,
-            _ => ResultFs.UnknownHostFileSystemError
+            ERROR_FILE_NOT_FOUND => ResultFs.PathNotFound.Value,
+            ERROR_PATH_NOT_FOUND => ResultFs.PathNotFound.Value,
+            ERROR_ACCESS_DENIED => ResultFs.TargetLocked.Value,
+            ERROR_SHARING_VIOLATION => ResultFs.TargetLocked.Value,
+            ERROR_HANDLE_EOF => ResultFs.ValueOutOfRange.Value,
+            ERROR_HANDLE_DISK_FULL => ResultFs.InsufficientFreeSpace.Value,
+            ERROR_FILE_EXISTS => ResultFs.PathAlreadyExists.Value,
+            ERROR_DISK_FULL => ResultFs.InsufficientFreeSpace.Value,
+            ERROR_INVALID_NAME => ResultFs.PathNotFound.Value,
+            ERROR_DIR_NOT_EMPTY => ResultFs.DirectoryNotEmpty.Value,
+            ERROR_ALREADY_EXISTS => ResultFs.PathAlreadyExists.Value,
+            ERROR_DIRECTORY => ResultFs.PathNotFound.Value,
+            ERROR_SPACES_NOT_ENOUGH_DRIVES => ResultFs.InsufficientFreeSpace.Value,
+            _ => ResultFs.UnknownHostFileSystemError.Value
         };
     }
 }

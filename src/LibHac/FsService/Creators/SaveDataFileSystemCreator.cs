@@ -32,7 +32,7 @@ namespace LibHac.FsService.Creators
             Result rc = sourceFileSystem.GetEntryType(out DirectoryEntryType entryType, saveDataPath);
             if (rc.IsFailure())
             {
-                return rc == ResultFs.PathNotFound ? ResultFs.TargetNotFound.LogConverted(rc) : rc;
+                return ResultFs.PathNotFound.Includes(rc) ? ResultFs.TargetNotFound.LogConverted(rc) : rc;
             }
 
             switch (entryType)

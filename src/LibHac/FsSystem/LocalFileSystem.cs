@@ -256,7 +256,7 @@ namespace LibHac.FsSystem
             // FS does the subpath check before verifying the path exists
             if (PathTools.IsSubPath(oldPath.AsSpan(), newPath.AsSpan()))
             {
-                ThrowHelper.ThrowResult(ResultFs.DestinationIsSubPathOfSource);
+                ThrowHelper.ThrowResult(ResultFs.DestinationIsSubPathOfSource.Value);
             }
 
             Result rc = GetDirInfo(out DirectoryInfo srcDir, ResolveLocalPath(oldPath));
