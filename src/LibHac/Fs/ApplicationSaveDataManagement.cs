@@ -34,7 +34,7 @@ namespace LibHac.Fs
 
                     if (rc.IsFailure())
                     {
-                        if (!ResultRangeFs.InsufficientFreeSpace.Contains(rc))
+                        if (!ResultFs.InsufficientFreeSpace.Includes(rc))
                         {
                             return rc;
                         }
@@ -42,7 +42,7 @@ namespace LibHac.Fs
                         requiredSizeSum = requiredSizeUser;
                     }
                 }
-                else if (rc != ResultFs.TargetNotFound)
+                else if (!ResultFs.TargetNotFound.Includes(rc))
                 {
                     return rc;
                 }
@@ -57,7 +57,7 @@ namespace LibHac.Fs
                     if (createRc.IsFailure())
                     {
                         // If there's insufficient free space, calculate the space required to create the save
-                        if (ResultRangeFs.InsufficientFreeSpace.Contains(createRc))
+                        if (ResultFs.InsufficientFreeSpace.Includes(createRc))
                         {
                             Result queryRc = fs.QuerySaveDataTotalSize(out long userAccountTotalSize,
                                 nacp.UserAccountSaveDataSize, nacp.UserAccountSaveDataJournalSize);
@@ -67,7 +67,7 @@ namespace LibHac.Fs
                             // The 0x4c000 includes the save meta and other stuff
                             requiredSizeSum = Util.AlignUp(userAccountTotalSize, 0x4000) + 0x4c000;
                         }
-                        else if (createRc == ResultFs.PathAlreadyExists)
+                        else if (ResultFs.PathAlreadyExists.Includes(createRc))
                         {
                             requiredSizeSum = 0;
                         }
@@ -94,7 +94,7 @@ namespace LibHac.Fs
 
                     if (rc.IsFailure())
                     {
-                        if (!ResultRangeFs.InsufficientFreeSpace.Contains(rc))
+                        if (!ResultFs.InsufficientFreeSpace.Includes(rc))
                         {
                             return rc;
                         }
@@ -102,7 +102,7 @@ namespace LibHac.Fs
                         requiredSizeSum += requiredSizeDevice;
                     }
                 }
-                else if (rc != ResultFs.TargetNotFound)
+                else if (!ResultFs.TargetNotFound.Includes(rc))
                 {
                     return rc;
                 }
@@ -113,7 +113,7 @@ namespace LibHac.Fs
 
                     if (createRc.IsFailure())
                     {
-                        if (ResultRangeFs.InsufficientFreeSpace.Contains(createRc))
+                        if (ResultFs.InsufficientFreeSpace.Includes(createRc))
                         {
                             Result queryRc = fs.QuerySaveDataTotalSize(out long deviceSaveTotalSize,
                                 nacp.DeviceSaveDataSize, nacp.DeviceSaveDataJournalSize);
@@ -123,7 +123,7 @@ namespace LibHac.Fs
                             // Not sure what the additional 0x4000 is
                             requiredSizeSum += Util.AlignUp(deviceSaveTotalSize, 0x4000) + 0x4000;
                         }
-                        else if (createRc == ResultFs.PathAlreadyExists)
+                        else if (ResultFs.PathAlreadyExists.Includes(createRc))
                         {
                             requiredSizeSum += 0;
                         }
@@ -140,7 +140,7 @@ namespace LibHac.Fs
 
             if (bcatRc.IsFailure())
             {
-                if (!ResultRangeFs.InsufficientFreeSpace.Contains(bcatRc))
+                if (!ResultFs.InsufficientFreeSpace.Includes(bcatRc))
                 {
                     return bcatRc;
                 }
@@ -162,7 +162,7 @@ namespace LibHac.Fs
 
                     if (rc.IsFailure())
                     {
-                        if (rc != ResultFs.TargetNotFound)
+                        if (!ResultFs.TargetNotFound.Includes(rc))
                         {
                             return rc;
                         }
@@ -182,7 +182,7 @@ namespace LibHac.Fs
 
                     if (createRc.IsFailure())
                     {
-                        if (ResultRangeFs.InsufficientFreeSpace.Contains(createRc))
+                        if (ResultFs.InsufficientFreeSpace.Includes(createRc))
                         {
                             Result queryRc = fs.QuerySaveDataTotalSize(out long tempSaveTotalSize,
                                 nacp.TemporaryStorageSize, 0);
@@ -191,7 +191,7 @@ namespace LibHac.Fs
 
                             requiredSizeSum += Util.AlignUp(tempSaveTotalSize, 0x4000) + 0x4000;
                         }
-                        else if (createRc == ResultFs.PathAlreadyExists)
+                        else if (ResultFs.PathAlreadyExists.Includes(createRc))
                         {
                             requiredSizeSum += 0;
                         }
@@ -246,7 +246,7 @@ namespace LibHac.Fs
 
                 if (rc.IsFailure())
                 {
-                    if (!ResultRangeFs.InsufficientFreeSpace.Contains(rc))
+                    if (!ResultFs.InsufficientFreeSpace.Includes(rc))
                     {
                         return rc;
                     }
@@ -254,7 +254,7 @@ namespace LibHac.Fs
                     requiredSize = requiredSizeBcat;
                 }
             }
-            else if (rc != ResultFs.TargetNotFound)
+            else if (!ResultFs.TargetNotFound.Includes(rc))
             {
                 return rc;
             }
@@ -264,7 +264,7 @@ namespace LibHac.Fs
 
                 if (createRc.IsFailure())
                 {
-                    if (ResultRangeFs.InsufficientFreeSpace.Contains(createRc))
+                    if (ResultFs.InsufficientFreeSpace.Includes(createRc))
                     {
                         Result queryRc = fs.QuerySaveDataTotalSize(out long saveTotalSize,
                             nacp.BcatDeliveryCacheStorageSize, bcatDeliveryCacheJournalSize);
@@ -273,7 +273,7 @@ namespace LibHac.Fs
 
                         requiredSize = Util.AlignUp(saveTotalSize, 0x4000) + 0x4000;
                     }
-                    else if (createRc == ResultFs.PathAlreadyExists)
+                    else if (ResultFs.PathAlreadyExists.Includes(createRc))
                     {
                         requiredSize = 0;
                     }
@@ -304,7 +304,7 @@ namespace LibHac.Fs
                 if (rc.IsFailure()) return rc;
             }
 
-            if (rc == ResultFs.TargetNotFound)
+            if (ResultFs.TargetNotFound.Includes(rc))
                 return Result.Success;
 
             return rc;

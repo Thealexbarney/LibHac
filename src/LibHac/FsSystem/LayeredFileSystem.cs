@@ -27,7 +27,7 @@ namespace LibHac.FsSystem
 
                 if (entryType == DirectoryEntryType.File && dirs.Count == 0)
                 {
-                    ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+                    ThrowHelper.ThrowResult(ResultFs.PathNotFound.Value);
                 }
 
                 if (entryType == DirectoryEntryType.Directory)

@@ -202,7 +202,7 @@ namespace LibHac.FsService
 
             if (rc.IsFailure())
             {
-                if (rc == ResultFs.PathNotFound)
+                if (ResultFs.PathNotFound.Includes(rc))
                 {
                     return Result.Success;
                 }
@@ -343,7 +343,7 @@ namespace LibHac.FsService
 
                 rc = metaDirFs.DeleteDirectoryRecursively($"/{saveDataId:x16}");
 
-                if (rc.IsFailure() && rc != ResultFs.PathNotFound)
+                if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc))
                     return rc;
 
                 return Result.Success;

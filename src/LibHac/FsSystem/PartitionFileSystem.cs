@@ -43,7 +43,7 @@ namespace LibHac.FsSystem
 
             if (!FileDict.TryGetValue(path, out PartitionFileEntry entry))
             {
-                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound.Value);
             }
 
             file = OpenFile(entry, mode);
@@ -122,7 +122,7 @@ namespace LibHac.FsSystem
                     Type = PartitionFileSystemType.Hashed;
                     break;
                 default:
-                    ThrowHelper.ThrowResult(ResultFs.InvalidPartitionFileSystemMagic, $"Invalid Partition FS type \"{Magic}\"");
+                    ThrowHelper.ThrowResult(ResultFs.InvalidPartitionFileSystemMagic.Value, $"Invalid Partition FS type \"{Magic}\"");
                     break;
             }
 

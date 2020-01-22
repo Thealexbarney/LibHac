@@ -176,26 +176,26 @@ namespace LibHac.Tests
         {
             new object[] {"/", "/", Result.Success},
             new object[] {"/.", "/", Result.Success},
-            new object[] {"/..", "", ResultFs.DirectoryUnobtainable},
+            new object[] {"/..", "", ResultFs.DirectoryUnobtainable.Value},
             new object[] {"/abc", "/abc", Result.Success},
             new object[] {"/a/..", "/", Result.Success},
             new object[] {"/a/b/c", "/a/b/c", Result.Success},
             new object[] {"/a/b/../c", "/a/c", Result.Success},
             new object[] {"/a/b/c/..", "/a/b", Result.Success},
             new object[] {"/a/b/c/.", "/a/b/c", Result.Success},
-            new object[] {"/a/../../..", "", ResultFs.DirectoryUnobtainable},
-            new object[] {"/a/../../../a/b/c", "", ResultFs.DirectoryUnobtainable},
+            new object[] {"/a/../../..", "", ResultFs.DirectoryUnobtainable.Value},
+            new object[] {"/a/../../../a/b/c", "", ResultFs.DirectoryUnobtainable.Value},
             new object[] {"//a/b//.//c", "/a/b/c", Result.Success},
-            new object[] {"/../a/b/c/.", "", ResultFs.DirectoryUnobtainable},
+            new object[] {"/../a/b/c/.", "", ResultFs.DirectoryUnobtainable.Value},
             new object[] {"/./aaa/bbb/ccc/.", "/aaa/bbb/ccc", Result.Success},
 
             new object[] {"/a/b/c/", "/a/b/c", Result.Success},
             new object[] {"/aa/./bb/../cc/", "/aa/cc", Result.Success},
             new object[] {"/./b/../c/", "/c", Result.Success},
-            new object[] {"/a/../../../", "", ResultFs.DirectoryUnobtainable},
+            new object[] {"/a/../../../", "", ResultFs.DirectoryUnobtainable.Value},
             new object[] {"//a/b//.//c/", "/a/b/c", Result.Success},
             new object[] {"/tmp/../", "/", Result.Success},
-            new object[] {"abc", "", ResultFs.InvalidPathFormat}
+            new object[] {"abc", "", ResultFs.InvalidPathFormat.Value }
         };
 
         public static object[][] NormalizedPathTestItemsU8MountName =
@@ -204,10 +204,10 @@ namespace LibHac.Tests
             new object[] {"a:/a/b/c", "a:/a/b/c", Result.Success},
             new object[] {"mount:/a/b/../c", "mount:/a/c", Result.Success},
             new object[] {"mount:", "mount:/", Result.Success},
-            new object[] {"abc:/a/../../../a/b/c", "", ResultFs.DirectoryUnobtainable},
+            new object[] {"abc:/a/../../../a/b/c", "", ResultFs.DirectoryUnobtainable.Value},
             new object[] {"abc:/./b/../c/", "abc:/c", Result.Success},
             new object[] {"abc:/.", "abc:/", Result.Success},
-            new object[] {"abc:/..", "", ResultFs.DirectoryUnobtainable},
+            new object[] {"abc:/..", "", ResultFs.DirectoryUnobtainable.Value},
             new object[] {"abc:/", "abc:/", Result.Success},
             new object[] {"abc://a/b//.//c", "abc:/a/b/c", Result.Success},
             new object[] {"abc:/././/././a/b//.//c", "abc:/a/b/c", Result.Success},
@@ -271,7 +271,7 @@ namespace LibHac.Tests
 
             string actual = StringUtils.Utf8ZToString(buffer);
 
-            Assert.Equal(ResultFs.TooLongPath, rc);
+            Assert.Equal(ResultFs.TooLongPath.Value, rc);
             Assert.Equal(Math.Max(0, destSize - 1), normalizedLength);
             Assert.Equal(expected, actual);
         }

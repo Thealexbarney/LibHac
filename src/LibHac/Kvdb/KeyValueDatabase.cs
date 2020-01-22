@@ -116,7 +116,7 @@ namespace LibHac.Kvdb
 
             if (rc.IsFailure())
             {
-                return rc == ResultFs.PathNotFound ? Result.Success : rc;
+                return ResultFs.PathNotFound.Includes(rc) ? Result.Success : rc;
             }
 
             return ReadDatabaseFromBuffer(data);

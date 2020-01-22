@@ -236,7 +236,7 @@ namespace LibHac.FsSystem
         {
             if (!TryReadXtsHeader(filePath, keyPath, out AesXtsFileHeader header))
             {
-                ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderInvalidKeysInRenameFile, "Could not decrypt AES-XTS keys");
+                ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderInvalidKeysInRenameFile.Value, "Could not decrypt AES-XTS keys");
             }
 
             return header;

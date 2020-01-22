@@ -36,7 +36,7 @@ namespace LibHac.FsService.Creators
 
             if (RootFileSystem == null)
             {
-                return ResultFs.PreconditionViolation;
+                return ResultFs.PreconditionViolation.Log();
             }
 
             string path = Path ?? DefaultPath;

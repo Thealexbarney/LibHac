@@ -39,7 +39,7 @@ namespace LibHac.FsSystem.Save
 
                 if (entries[0].IsRangeEntry())
                 {
-                    ThrowHelper.ThrowResult(ResultFs.AllocationTableIteratedRangeEntryInternal);
+                    ThrowHelper.ThrowResult(ResultFs.AllocationTableIteratedRangeEntryInternal.Value);
                 }
             }
             else
