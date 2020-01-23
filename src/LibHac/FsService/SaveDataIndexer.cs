@@ -597,7 +597,7 @@ namespace LibHac.FsService
                     }
                     else
                     {
-                        if (ResultFs.Range4771To4779.Includes(rc)) return rc;
+                        if (ResultFs.SignedSystemPartitionDataCorrupted.Includes(rc)) return rc;
                         if (!ResultFs.DataCorrupted.Includes(rc)) return rc;
 
                         if (spaceId == SaveDataSpaceId.SdSystem) return rc;

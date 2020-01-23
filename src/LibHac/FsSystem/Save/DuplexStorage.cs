@@ -34,7 +34,7 @@ namespace LibHac.FsSystem.Save
             int remaining = destination.Length;
 
             if (!IsRangeValid(offset, destination.Length, Length))
-                return ResultFs.ValueOutOfRange.Log();
+                return ResultFs.OutOfRange.Log();
 
             while (remaining > 0)
             {
@@ -63,7 +63,7 @@ namespace LibHac.FsSystem.Save
             int remaining = source.Length;
 
             if (!IsRangeValid(offset, source.Length, Length))
-                return ResultFs.ValueOutOfRange.Log();
+                return ResultFs.OutOfRange.Log();
 
             while (remaining > 0)
             {

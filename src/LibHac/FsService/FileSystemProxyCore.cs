@@ -360,7 +360,7 @@ namespace LibHac.FsService
 
             string metaFilePath = $"/{(int)type:x8}.meta";
 
-            if (size < 0) return ResultFs.ValueOutOfRange.Log();
+            if (size < 0) return ResultFs.OutOfRange.Log();
 
             return metaDirFs.CreateFile(metaFilePath, size, CreateFileOptions.None);
         }

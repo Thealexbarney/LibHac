@@ -26,7 +26,7 @@ namespace LibHac.Common
             ERROR_PATH_NOT_FOUND => ResultFs.PathNotFound.Value,
             ERROR_ACCESS_DENIED => ResultFs.TargetLocked.Value,
             ERROR_SHARING_VIOLATION => ResultFs.TargetLocked.Value,
-            ERROR_HANDLE_EOF => ResultFs.ValueOutOfRange.Value,
+            ERROR_HANDLE_EOF => ResultFs.OutOfRange.Value,
             ERROR_HANDLE_DISK_FULL => ResultFs.InsufficientFreeSpace.Value,
             ERROR_FILE_EXISTS => ResultFs.PathAlreadyExists.Value,
             ERROR_DISK_FULL => ResultFs.InsufficientFreeSpace.Value,

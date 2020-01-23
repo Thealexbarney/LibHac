@@ -163,7 +163,7 @@ namespace LibHac.FsSystem
 
                     // Nintendo checks for overflow here but not in other places for some reason
                     if (storageOffset < 0)
-                        return ResultFs.ValueOutOfRange.Log();
+                        return ResultFs.OutOfRange.Log();
 
                     IHash sha256 = Sha256.CreateSha256Generator();
                     sha256.Initialize();
@@ -248,7 +248,7 @@ namespace LibHac.FsSystem
                     return ResultFs.UnsupportedOperationInPartitionFileSetSize.Log();
 
                 if (_entry.Size < offset)
-                    return ResultFs.ValueOutOfRange.Log();
+                    return ResultFs.OutOfRange.Log();
 
                 if (_entry.Size < source.Length + offset)
                     return ResultFs.InvalidSize.Log();
@@ -302,7 +302,7 @@ namespace LibHac.FsSystem
                 }
 
                 if (offset < 0 || offset > _entry.Size)
-                    return ResultFs.ValueOutOfRange.Log();
+                    return ResultFs.OutOfRange.Log();
 
                 if (size < 0 || offset + size > _entry.Size)
                     return ResultFs.InvalidSize.Log();

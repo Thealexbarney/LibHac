@@ -40,7 +40,7 @@ namespace LibHac.FsSystem
             int outOffset = 0;
 
             if (!IsRangeValid(offset, destination.Length, Length))
-                return ResultFs.ValueOutOfRange.Log();
+                return ResultFs.OutOfRange.Log();
 
             lock (Blocks)
             {
@@ -70,7 +70,7 @@ namespace LibHac.FsSystem
             int outOffset = 0;
 
             if (!IsRangeValid(offset, source.Length, Length))
-                return ResultFs.ValueOutOfRange.Log();
+                return ResultFs.OutOfRange.Log();
 
             lock (Blocks)
             {

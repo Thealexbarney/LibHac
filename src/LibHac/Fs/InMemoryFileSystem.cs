@@ -346,7 +346,7 @@ namespace LibHac.Fs
                     if (offset > BaseStream.Length)
                     {
                         bytesRead = default;
-                        return ResultFs.ValueOutOfRange.Log();
+                        return ResultFs.OutOfRange.Log();
                     }
 
                     BaseStream.Position = offset;
@@ -368,7 +368,7 @@ namespace LibHac.Fs
                         }
 
                         if (offset + source.Length > MemStreamMaxLength)
-                            return ResultFs.ValueOutOfRange.Log();
+                            return ResultFs.OutOfRange.Log();
                     }
 
                     BaseStream.Position = offset;
@@ -388,7 +388,7 @@ namespace LibHac.Fs
                 lock (Locker)
                 {
                     if (size > MemStreamMaxLength)
-                        return ResultFs.ValueOutOfRange.Log();
+                        return ResultFs.OutOfRange.Log();
 
                     BaseStream.SetLength(size);
 

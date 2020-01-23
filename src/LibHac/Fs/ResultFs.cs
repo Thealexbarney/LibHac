@@ -2,7 +2,7 @@
 
 namespace LibHac.Fs
 {
-    public class ResultFs
+    public static class ResultFs
     {
         public const int ModuleFs = 2;
 
@@ -10,13 +10,23 @@ namespace LibHac.Fs
         public static Result.Base PathAlreadyExists => new Result.Base(ModuleFs, 2);
         public static Result.Base TargetLocked => new Result.Base(ModuleFs, 7);
         public static Result.Base DirectoryNotEmpty => new Result.Base(ModuleFs, 8);
-        public static Result.Base InsufficientFreeSpace { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 30, 45); }
+        public static Result.Base InsufficientFreeSpace => new Result.Base(ResultFs.ModuleFs, 30, 45);
+        public static Result.Base InsufficientFreeSpaceBis => new Result.Base(ResultFs.ModuleFs, 34, 38);
+        public static Result.Base InsufficientFreeSpaceBisCalibration => new Result.Base(ModuleFs, 35);
+        public static Result.Base InsufficientFreeSpaceBisSafe => new Result.Base(ModuleFs, 36);
+        public static Result.Base InsufficientFreeSpaceBisUser => new Result.Base(ModuleFs, 37);
+        public static Result.Base InsufficientFreeSpaceBisSystem => new Result.Base(ModuleFs, 38);
+        public static Result.Base InsufficientFreeSpaceSdCard => new Result.Base(ModuleFs, 38);
         public static Result.Base MountNameAlreadyExists => new Result.Base(ModuleFs, 60);
 
         public static Result.Base PartitionNotFound => new Result.Base(ModuleFs, 1001);
         public static Result.Base TargetNotFound => new Result.Base(ModuleFs, 1002);
         public static Result.Base ExternalKeyNotFound => new Result.Base(ModuleFs, 1004);
 
+        public static Result.Base SdCardAccessFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 2000, 2499); }
+        public static Result.Base SdCardNotPresent => new Result.Base(ModuleFs, 2001);
+
+        public static Result.Base GameCardAccessFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 2500, 2999); }
         public static Result.Base InvalidBufferForGameCard => new Result.Base(ModuleFs, 2503);
         public static Result.Base GameCardNotInserted => new Result.Base(ModuleFs, 2520);
 
@@ -29,13 +39,16 @@ namespace LibHac.Fs
         public static Result.Base NotImplemented => new Result.Base(ModuleFs, 3001);
         public static Result.Base Result3002 => new Result.Base(ModuleFs, 3002);
         public static Result.Base SaveDataPathAlreadyExists => new Result.Base(ModuleFs, 3003);
-        public static Result.Base ValueOutOfRange => new Result.Base(ModuleFs, 3005);
+        public static Result.Base OutOfRange => new Result.Base(ModuleFs, 3005);
 
+        public static Result.Base AllocationMemoryFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 3200, 3499); }
         public static Result.Base AesXtsFileFileStorageAllocationError => new Result.Base(ModuleFs, 3312);
         public static Result.Base AesXtsFileXtsStorageAllocationError => new Result.Base(ModuleFs, 3313);
         public static Result.Base AesXtsFileAlignmentStorageAllocationError => new Result.Base(ModuleFs, 3314);
         public static Result.Base AesXtsFileStorageFileAllocationError => new Result.Base(ModuleFs, 3315);
         public static Result.Base AesXtsFileSubStorageAllocationError => new Result.Base(ModuleFs, 3383);
+
+        public static Result.Base MmcAccessFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 3500, 3999); }
 
         public static Result.Base DataCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4000, 4999); }
         public static Result.Base RomCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4001, 4299); }
@@ -51,7 +64,6 @@ namespace LibHac.Fs
         public static Result.Base SaveIvfcHashIsEmpty => new Result.Base(ModuleFs, 4372);
         public static Result.Base InvalidHashInSaveIvfcTopLayer => new Result.Base(ModuleFs, 4373);
 
-
         public static Result.Base Result4402 => new Result.Base(ModuleFs, 4402);
         public static Result.Base Result4427 => new Result.Base(ModuleFs, 4427);
         public static Result.Base SaveDataAllocationTableCorrupted => new Result.Base(ModuleFs, 4462);
@@ -60,14 +72,14 @@ namespace LibHac.Fs
 
         public static Result.Base NcaCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4501, 4599); }
 
-        public static Result.Base IvfcStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4601, 4639); }
+        public static Result.Base IntegrityVerificationStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4601, 4639); }
         public static Result.Base Result4602 => new Result.Base(ModuleFs, 4602);
         public static Result.Base Result4603 => new Result.Base(ModuleFs, 4603);
         public static Result.Base InvalidHashInIvfc => new Result.Base(ModuleFs, 4604);
         public static Result.Base IvfcHashIsEmpty => new Result.Base(ModuleFs, 4612);
         public static Result.Base InvalidHashInIvfcTopLayer => new Result.Base(ModuleFs, 4613);
 
-        public static Result.Base PartitionFsCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4641, 4659); }
+        public static Result.Base PartitionFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4641, 4659); }
         public static Result.Base InvalidPartitionFileSystemHashOffset => new Result.Base(ModuleFs, 4642);
         public static Result.Base InvalidPartitionFileSystemHash => new Result.Base(ModuleFs, 4643);
         public static Result.Base InvalidPartitionFileSystemMagic => new Result.Base(ModuleFs, 4644);
@@ -77,13 +89,15 @@ namespace LibHac.Fs
         public static Result.Base BuiltInStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4661, 4679); }
         public static Result.Base Result4662 => new Result.Base(ModuleFs, 4662);
 
-        public static Result.Base FatFsCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4681, 4699); }
-        public static Result.Base HostFsCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4701, 4719); }
+        public static Result.Base FatFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4681, 4699); }
+        public static Result.Base HostFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4701, 4719); }
 
-        public static Result.Base FileTableCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4721, 4739); }
+        public static Result.Base DatabaseCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4721, 4739); }
         public static Result.Base SaveDataAllocationTableCorruptedInternal => new Result.Base(ModuleFs, 4722);
         public static Result.Base SaveDataFileTableCorruptedInternal => new Result.Base(ModuleFs, 4723);
         public static Result.Base AllocationTableIteratedRangeEntryInternal => new Result.Base(ModuleFs, 4724);
+
+        public static Result.Base AesXtsFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4741, 4759); }
         public static Result.Base AesXtsFileHeaderTooShort => new Result.Base(ModuleFs, 4742);
         public static Result.Base AesXtsFileHeaderInvalidKeys => new Result.Base(ModuleFs, 4743);
         public static Result.Base AesXtsFileHeaderInvalidMagic => new Result.Base(ModuleFs, 4744);
@@ -92,11 +106,15 @@ namespace LibHac.Fs
         public static Result.Base AesXtsFileHeaderInvalidKeysInRenameFile => new Result.Base(ModuleFs, 4747);
         public static Result.Base AesXtsFileHeaderInvalidKeysInSetSize => new Result.Base(ModuleFs, 4748);
 
-        public static Result.Base Range4771To4779 { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4771, 4779); }
+        public static Result.Base SaveDataTransferDataCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4761, 4769); }
+        public static Result.Base SignedSystemPartitionDataCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4771, 4779); }
+
+        public static Result.Base GameCardLogoDataCorrupted => new Result.Base(ModuleFs, 4781);
+
         public static Result.Base Range4811To4819 { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 4811, 4819); }
         public static Result.Base Result4812 => new Result.Base(ModuleFs, 4812);
 
-        public static Result.Base UnexpectedFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 5000, 5999); }
+        public static Result.Base Unexpected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 5000, 5999); }
 
         public static Result.Base UnexpectedErrorInHostFileFlush => new Result.Base(ModuleFs, 5307);
         public static Result.Base UnexpectedErrorInHostFileGetSize => new Result.Base(ModuleFs, 5308);
@@ -113,9 +131,12 @@ namespace LibHac.Fs
         public static Result.Base DirectoryUnobtainable => new Result.Base(ModuleFs, 6006);
         public static Result.Base NotNormalized => new Result.Base(ModuleFs, 6007);
 
+        public static Result.Base InvalidPathForOperation { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 6030, 6059); }
+        public static Result.Base DirectoryNotDeletable => new Result.Base(ModuleFs, 6031);
         public static Result.Base DestinationIsSubPathOfSource => new Result.Base(ModuleFs, 6032);
         public static Result.Base PathNotFoundInSaveDataFileTable => new Result.Base(ModuleFs, 6033);
         public static Result.Base DifferentDestFileSystem => new Result.Base(ModuleFs, 6034);
+
         public static Result.Base InvalidOffset => new Result.Base(ModuleFs, 6061);
         public static Result.Base InvalidSize => new Result.Base(ModuleFs, 6062);
         public static Result.Base NullArgument => new Result.Base(ModuleFs, 6063);
@@ -123,14 +144,17 @@ namespace LibHac.Fs
         public static Result.Base ExtensionSizeTooLarge => new Result.Base(ModuleFs, 6066);
         public static Result.Base ExtensionSizeInvalid => new Result.Base(ModuleFs, 6067);
         public static Result.Base ReadOldSaveDataInfoReader => new Result.Base(ModuleFs, 6068);
+
+        public static Result.Base InvalidEnumValue { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 6080, 6099); }
+        public static Result.Base InvalidSaveDataState => new Result.Base(ModuleFs, 6081);
         public static Result.Base InvalidSaveDataSpaceId => new Result.Base(ModuleFs, 6082);
 
-        public static Result.Base InvalidOpenModeOperation => new Result.Base(ModuleFs, 6200);
+        public static Result.Base InvalidOperationForOpenMode { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 6200, 6299); }
         public static Result.Base FileExtensionWithoutOpenModeAllowAppend => new Result.Base(ModuleFs, 6201);
         public static Result.Base InvalidOpenModeForRead => new Result.Base(ModuleFs, 6202);
         public static Result.Base InvalidOpenModeForWrite => new Result.Base(ModuleFs, 6203);
 
-        public static Result.Base UnsupportedOperation => new Result.Base(ModuleFs, 6300);
+        public static Result.Base UnsupportedOperation { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 6300, 6399); }
         public static Result.Base SubStorageNotResizable => new Result.Base(ModuleFs, 6302);
         public static Result.Base SubStorageNotResizableMiddleOfFile => new Result.Base(ModuleFs, 6303);
         public static Result.Base UnsupportedOperationInMemoryStorageSetSize => new Result.Base(ModuleFs, 6304);
@@ -152,21 +176,27 @@ namespace LibHac.Fs
         public static Result.Base UnsupportedOperationInPartitionFileSetSize => new Result.Base(ModuleFs, 6376);
         public static Result.Base UnsupportedOperationIdInPartitionFileSystem => new Result.Base(ModuleFs, 6377);
 
-        public static Result.Base PermissionDenied => new Result.Base(ModuleFs, 6400);
+        public static Result.Base PermissionDenied { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 6400, 6449); }
+
         public static Result.Base ExternalKeyAlreadyRegistered => new Result.Base(ModuleFs, 6452);
         public static Result.Base WriteStateUnflushed => new Result.Base(ModuleFs, 6454);
         public static Result.Base WritableFileOpen => new Result.Base(ModuleFs, 6457);
+        public static Result.Base AllocatorAlignmentViolation => new Result.Base(ModuleFs, 6461);
+        public static Result.Base UserNotExist => new Result.Base(ModuleFs, 6465);
 
         public static Result.Base EntryNotFound { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 6600, 6699); }
 
+        public static Result.Base OutOfResource { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 6700, 6799); }
         public static Result.Base MappingTableFull => new Result.Base(ModuleFs, 6706);
         public static Result.Base AllocationTableInsufficientFreeBlocks => new Result.Base(ModuleFs, 6707);
         public static Result.Base OpenCountLimit => new Result.Base(ModuleFs, 6709);
 
+        public static Result.Base MappingFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 6800, 6899); }
         public static Result.Base RemapStorageMapFull => new Result.Base(ModuleFs, 6811);
 
+        public static Result.Base BadState { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ResultFs.ModuleFs, 6900, 6999); }
         public static Result.Base SubStorageNotInitialized => new Result.Base(ModuleFs, 6902);
-        public static Result.Base MountNameNotFound => new Result.Base(ModuleFs, 6905);
+        public static Result.Base NotMounted => new Result.Base(ModuleFs, 6905);
         public static Result.Base SaveDataIsExtending => new Result.Base(ModuleFs, 6906);
     }
 }

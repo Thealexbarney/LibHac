@@ -23,7 +23,7 @@ namespace LibHac.FsSystem.Save
                 return ResultFs.Result4302.Value;
             }
 
-            if (ResultFs.IvfcStorageCorrupted.Includes(result))
+            if (ResultFs.IntegrityVerificationStorageCorrupted.Includes(result))
             {
                 if (ResultFs.Result4602.Includes(result))
                 {
@@ -63,7 +63,7 @@ namespace LibHac.FsSystem.Save
                 return result;
             }
 
-            if (ResultFs.HostFsCorrupted.Includes(result))
+            if (ResultFs.HostFileSystemCorrupted.Includes(result))
             {
                 if (description > 4701 && description < 4706)
                 {
@@ -83,7 +83,7 @@ namespace LibHac.FsSystem.Save
                 return result;
             }
 
-            if (ResultFs.FileTableCorrupted.Includes(result))
+            if (ResultFs.DatabaseCorrupted.Includes(result))
             {
                 if (description > 4721 && description < 4729)
                 {
@@ -93,7 +93,7 @@ namespace LibHac.FsSystem.Save
                 return result;
             }
 
-            if (ResultFs.FatFsCorrupted.Includes(result))
+            if (ResultFs.FatFileSystemCorrupted.Includes(result))
             {
                 return result;
             }
@@ -115,7 +115,7 @@ namespace LibHac.FsSystem.Save
 
             if (ResultFs.InvalidOffset.Includes(result))
             {
-                return ResultFs.ValueOutOfRange.Value;
+                return ResultFs.OutOfRange.Value;
             }
 
             if (ResultFs.AllocationTableInsufficientFreeBlocks.Includes(result))
