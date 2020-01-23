@@ -39,7 +39,7 @@ namespace LibHac.FsSystem
 
             if (isResizeNeeded) return ResultFs.UnsupportedOperationInPartitionFileSetSize.Log();
 
-            if (offset > Size) return ResultFs.ValueOutOfRange.Log();
+            if (offset > Size) return ResultFs.OutOfRange.Log();
 
             rc = BaseStorage.Write(offset, source);
             if (rc.IsFailure()) return rc;

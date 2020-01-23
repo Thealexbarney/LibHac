@@ -35,7 +35,7 @@ namespace LibHac.FsSystem
             int remaining = destination.Length;
 
             if (!IsRangeValid(offset, destination.Length, Length))
-                return ResultFs.ValueOutOfRange.Log();
+                return ResultFs.OutOfRange.Log();
 
             int sourceIndex = FindSource(inPos);
 
@@ -66,7 +66,7 @@ namespace LibHac.FsSystem
             int remaining = source.Length;
 
             if (!IsRangeValid(offset, source.Length, Length))
-                return ResultFs.ValueOutOfRange.Log();
+                return ResultFs.OutOfRange.Log();
 
             int sourceIndex = FindSource(inPos);
 

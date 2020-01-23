@@ -28,7 +28,7 @@ namespace LibHac.Fs
             if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
             if (destination.Length == 0) return Result.Success;
 
-            if (!IsRangeValid(offset, destination.Length, Size)) return ResultFs.ValueOutOfRange.Log();
+            if (!IsRangeValid(offset, destination.Length, Size)) return ResultFs.OutOfRange.Log();
 
             return BaseStorage.Read(Offset + offset, destination);
         }
@@ -38,7 +38,7 @@ namespace LibHac.Fs
             if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
             if (source.Length == 0) return Result.Success;
 
-            if (!IsRangeValid(offset, source.Length, Size)) return ResultFs.ValueOutOfRange.Log();
+            if (!IsRangeValid(offset, source.Length, Size)) return ResultFs.OutOfRange.Log();
 
             return BaseStorage.Write(Offset + offset, source);
         }

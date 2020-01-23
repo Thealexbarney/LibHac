@@ -30,7 +30,7 @@ namespace LibHac.Fs
                 Result rc = UpdateSize();
                 if (rc.IsFailure()) return rc;
 
-                if (!IsRangeValid(offset, destination.Length, FileSize)) return ResultFs.ValueOutOfRange.Log();
+                if (!IsRangeValid(offset, destination.Length, FileSize)) return ResultFs.OutOfRange.Log();
 
                 return FsClient.ReadFile(Handle, offset, destination);
             }
@@ -45,7 +45,7 @@ namespace LibHac.Fs
                 Result rc = UpdateSize();
                 if (rc.IsFailure()) return rc;
 
-                if (!IsRangeValid(offset, source.Length, FileSize)) return ResultFs.ValueOutOfRange.Log();
+                if (!IsRangeValid(offset, source.Length, FileSize)) return ResultFs.OutOfRange.Log();
 
                 return FsClient.WriteFile(Handle, offset, source);
             }

@@ -31,7 +31,7 @@ namespace LibHac.Fs.Accessors
             {
                 if (!Table.TryGetValue(name, out fileSystem))
                 {
-                    return ResultFs.MountNameNotFound.Log();
+                    return ResultFs.NotMounted.Log();
                 }
 
                 return Result.Success;
@@ -44,7 +44,7 @@ namespace LibHac.Fs.Accessors
             {
                 if (!Table.TryGetValue(name, out FileSystemAccessor fsAccessor))
                 {
-                    return ResultFs.MountNameNotFound.Log();
+                    return ResultFs.NotMounted.Log();
                 }
 
                 Table.Remove(name);

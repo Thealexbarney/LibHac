@@ -28,7 +28,7 @@ namespace LibHac.Fs
             if (IsDisposed) return ResultFs.PreconditionViolation.Log();
 
             if (destination.Length == 0) return Result.Success;
-            if (offset < 0) return ResultFs.ValueOutOfRange.Log();
+            if (offset < 0) return ResultFs.OutOfRange.Log();
 
             return ReadImpl(out bytesRead, offset, destination, options);
         }
@@ -47,7 +47,7 @@ namespace LibHac.Fs
                 return Result.Success;
             }
 
-            if (offset < 0) return ResultFs.ValueOutOfRange.Log();
+            if (offset < 0) return ResultFs.OutOfRange.Log();
 
             return WriteImpl(offset, source, options);
         }
@@ -62,7 +62,7 @@ namespace LibHac.Fs
         public Result SetSize(long size)
         {
             if (IsDisposed) return ResultFs.PreconditionViolation.Log();
-            if (size < 0) return ResultFs.ValueOutOfRange.Log();
+            if (size < 0) return ResultFs.OutOfRange.Log();
 
             return SetSizeImpl(size);
         }
@@ -112,7 +112,7 @@ namespace LibHac.Fs
 
             if (offset > fileSize)
             {
-                return ResultFs.ValueOutOfRange.Log();
+                return ResultFs.OutOfRange.Log();
             }
 
             bytesToRead = Math.Min(fileSize - offset, size);

@@ -16,7 +16,7 @@ namespace LibHac.Fs
 
             if (bytesRead == destination.Length) return Result.Success;
 
-            return ResultFs.ValueOutOfRange.Log();
+            return ResultFs.OutOfRange.Log();
         }
 
         public Result ReadFile(out long bytesRead, FileHandle handle, long offset, Span<byte> destination)
