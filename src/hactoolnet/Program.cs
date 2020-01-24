@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text;
 using LibHac;
@@ -52,11 +52,11 @@ namespace hactoolnet
             if (ctx.Options == null) return false;
 
             StreamWriter logWriter = null;
-            StreamWriter resultWriter = null;
+            ResultLogger resultLogger = null;
 
             try
             {
-                Result.GetResultNameHandler = ResultLogFunctions.TryGetResultName;
+                Result.SetNameResolver(new ResultNameResolver());
 
                 using (var logger = new ProgressBar())
                 {
@@ -76,11 +76,10 @@ namespace hactoolnet
 
                     if (ctx.Options.ResultLog != null)
                     {
-                        resultWriter = new StreamWriter(ctx.Options.ResultLog);
-                        ResultLogFunctions.LogWriter = resultWriter;
+                        resultLogger = new ResultLogger(new StreamWriter(ctx.Options.ResultLog),
+                            printStackTrace: true, printSourceInfo: true, combineRepeats: true);
 
-                        Result.LogCallback = ResultLogFunctions.LogResult;
-                        Result.ConvertedLogCallback = ResultLogFunctions.LogConvertedResult;
+                        Result.SetLogger(resultLogger);
                     }
 
                     OpenKeyset(ctx);
@@ -97,9 +96,12 @@ namespace hactoolnet
             finally
             {
                 logWriter?.Dispose();
-                resultWriter?.Dispose();
 
-                ResultLogFunctions.LogWriter = null;
+                if (resultLogger != null)
+                {
+                    Result.SetLogger(null);
+                    resultLogger.Dispose();
+                }
             }
 
             return true;
