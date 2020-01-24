@@ -11,6 +11,10 @@ namespace LibHac
     public struct Result : IEquatable<Result>
     {
         private const BaseType SuccessValue = default;
+        public static Result Success => new Result(SuccessValue);
+
+        private static IResultLogger Logger { get; set; }
+        private static IResultNameResolver NameResolver { get; set; }
 
         private const int ModuleBitsOffset = 0;
         private const int ModuleBitsCount = 9;
@@ -26,8 +30,6 @@ namespace LibHac
         private const int EndOffset = ReservedBitsOffset + ReservedBitsCount;
 
         private readonly BaseType _value;
-
-        public static Result Success => new Result(SuccessValue);
 
         public Result(BaseType value)
         {
@@ -53,18 +55,6 @@ namespace LibHac
         public bool IsSuccess() => _value == SuccessValue;
         public bool IsFailure() => !IsSuccess();
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static BaseType GetBitsValue(BaseType value, int bitsOffset, int bitsCount)
-        {
-            return (value >> bitsOffset) & ~(~default(BaseType) << bitsCount);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static BaseType SetBitsValue(int value, int bitsOffset, int bitsCount)
-        {
-            return ((uint)value & ~(~default(BaseType) << bitsCount)) << bitsOffset;
-        }
-
         public void ThrowIfFailure()
         {
             if (IsFailure())
@@ -74,8 +64,10 @@ namespace LibHac
         }
 
         /// <summary>
-        /// A function that can contain code for logging or debugging returned results.
-        /// Intended to be used when returning a non-zero Result:
+        /// Performs no action in release mode.
+        /// In debug mode, logs returned results using the <see cref="IResultLogger"/> set by <see cref="SetLogger"/>.
+        /// <br/>Intended to always be used when returning a non-zero <see cref="Result"/>.
+        /// <br/><br/>Example:
         /// <code>return result.Log();</code>
         /// </summary>
         /// <returns>The called <see cref="Result"/> value.</returns>
@@ -87,7 +79,7 @@ namespace LibHac
         }
 
         /// <summary>
-        /// Same as <see cref="Log"/>, but for when one result is converted to another.
+        /// In debug mode, logs converted results using the <see cref="IResultLogger"/> set by <see cref="SetLogger"/>.
         /// </summary>
         /// <param name="originalResult">The original <see cref="Result"/> value.</param>
         /// <returns>The called <see cref="Result"/> value.</returns>
@@ -98,37 +90,17 @@ namespace LibHac
             return this;
         }
 
-        [Conditional("DEBUG")]
-        private void LogImpl()
-        {
-            LogCallback?.Invoke(this);
-        }
-
-        [Conditional("DEBUG")]
-        private void LogConvertedImpl(Result originalResult)
-        {
-            ConvertedLogCallback?.Invoke(this, originalResult);
-        }
-
-        public delegate void ResultLogger(Result result);
-        public delegate void ConvertedResultLogger(Result result, Result originalResult);
-        public delegate bool ResultNameGetter(Result result, out string name);
-
-        public static ResultLogger LogCallback { get; set; }
-        public static ConvertedResultLogger ConvertedLogCallback { get; set; }
-        public static ResultNameGetter GetResultNameHandler { get; set; }
-
         public bool TryGetResultName(out string name)
         {
-            ResultNameGetter func = GetResultNameHandler;
+            IResultNameResolver resolver = NameResolver;
 
-            if (func == null)
+            if (resolver == null)
             {
                 name = default;
                 return false;
             }
 
-            return func(this, out name);
+            return resolver.TryResolveName(this, out name);
         }
 
         public string ToStringWithName()
@@ -149,6 +121,40 @@ namespace LibHac
 
         public static bool operator ==(Result left, Result right) => left.Equals(right);
         public static bool operator !=(Result left, Result right) => !left.Equals(right);
+
+        public static void SetLogger(IResultLogger logger)
+        {
+            Logger = logger;
+        }
+
+        public static void SetNameResolver(IResultNameResolver nameResolver)
+        {
+            NameResolver = nameResolver;
+        }
+
+        [Conditional("DEBUG")]
+        private void LogImpl()
+        {
+            Logger?.LogResult(this);
+        }
+
+        [Conditional("DEBUG")]
+        private void LogConvertedImpl(Result originalResult)
+        {
+            Logger?.LogConvertedResult(this, originalResult);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static BaseType GetBitsValue(BaseType value, int bitsOffset, int bitsCount)
+        {
+            return (value >> bitsOffset) & ~(~default(BaseType) << bitsCount);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static BaseType SetBitsValue(int value, int bitsOffset, int bitsCount)
+        {
+            return ((uint)value & ~(~default(BaseType) << bitsCount)) << bitsOffset;
+        }
 
         public struct Base
         {
@@ -175,6 +181,7 @@ namespace LibHac
 
             /// <summary>
             /// The <see cref="Result"/> representing the start of this result range.
+            /// If returning a <see cref="Result"/> from a function, use <see cref="Log"/> instead.
             /// </summary>
             public Result Value => new Result((BaseType)_value);
 
@@ -198,9 +205,11 @@ namespace LibHac
             }
 
             /// <summary>
-            /// A function that can contain code for logging or debugging returned results.
-            /// Intended to be used when returning a non-zero Result:
-            /// <code>return result.Log();</code>
+            /// Performs no action in release mode.
+            /// In debug mode, logs returned results using the <see cref="IResultLogger"/> set by <see cref="SetLogger"/>.
+            /// <br/>Intended to always be used when returning a non-zero <see cref="Result"/>.
+            /// <br/><br/>Example:
+            /// <code>return ResultFs.PathNotFound.Log();</code>
             /// </summary>
             /// <returns>The <see cref="Result"/> representing the start of this result range.</returns>
             public Result Log()
@@ -209,7 +218,7 @@ namespace LibHac
             }
 
             /// <summary>
-            /// Same as <see cref="Log"/>, but for when one result is converted to another.
+            /// In debug mode, logs converted results using the <see cref="IResultLogger"/> set by <see cref="SetLogger"/>.
             /// </summary>
             /// <param name="originalResult">The original <see cref="Result"/> value.</param>
             /// <returns>The <see cref="Result"/> representing the start of this result range.</returns>
@@ -229,6 +238,17 @@ namespace LibHac
             {
                 return ((uint)value & ~(~default(ulong) << bitsCount)) << bitsOffset;
             }
+        }
+
+        public interface IResultLogger
+        {
+            public void LogResult(Result result);
+            public void LogConvertedResult(Result result, Result originalResult);
+        }
+
+        public interface IResultNameResolver
+        {
+            public bool TryResolveName(Result result, out string name);
         }
     }
 }
