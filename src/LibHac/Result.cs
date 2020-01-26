@@ -6,11 +6,17 @@ using BaseType = System.UInt32;
 
 namespace LibHac
 {
+    /// <summary>
+    /// Represents a code used to report the result of a returned function.
+    /// </summary>
     [Serializable]
-    [DebuggerDisplay("{ToStringWithName(),nq}")]
+    [DebuggerDisplay("{" + nameof(ToStringWithName) + "(),nq}")]
     public struct Result : IEquatable<Result>
     {
         private const BaseType SuccessValue = default;
+        /// <summary>
+        /// The <see cref="Result"/> signifying success.
+        /// </summary>
         public static Result Success => new Result(SuccessValue);
 
         private static IResultLogger Logger { get; set; }
@@ -31,11 +37,20 @@ namespace LibHac
 
         private readonly BaseType _value;
 
+        /// <summary>
+        /// Creates a new <see cref="Result"/> from the internal result value.
+        /// </summary>
+        /// <param name="value">The value used internally by <see cref="Result"/>.</param>
         public Result(BaseType value)
         {
             _value = GetBitsValue(value, ModuleBitsOffset, ModuleBitsCount + DescriptionBitsCount);
         }
 
+        /// <summary>
+        /// Creates a new <see cref="Result"/> from a module and description.
+        /// </summary>
+        /// <param name="module">The module this result is from. Must be in the range 1 through 511.</param>
+        /// <param name="description">The description value of the result. Must be in the range 0 through 8191.</param>
         public Result(int module, int description)
         {
             Debug.Assert(ModuleBegin <= module && module < ModuleEnd, "Invalid Module");
@@ -103,6 +118,11 @@ namespace LibHac
             return resolver.TryResolveName(this, out name);
         }
 
+        /// <summary>
+        /// If a <see cref="IResultNameResolver"/> has been set via <see cref="SetNameResolver"/>, attempts to
+        /// return the name and error code of this <see cref="Result"/>, otherwise it only returns <see cref="ErrorCode"/>.
+        /// </summary>
+        /// <returns>If a name was found, the name and error code, otherwise just the error code.</returns>
         public string ToStringWithName()
         {
             if (TryGetResultName(out string name))
@@ -122,11 +142,18 @@ namespace LibHac
         public static bool operator ==(Result left, Result right) => left.Equals(right);
         public static bool operator !=(Result left, Result right) => !left.Equals(right);
 
+        /// <summary>
+        /// Sets a <see cref="IResultLogger"/> to be called when <see cref="Log"/> is called in debug mode.
+        /// </summary>
         public static void SetLogger(IResultLogger logger)
         {
             Logger = logger;
         }
 
+        /// <summary>
+        /// Sets a <see cref="IResultNameResolver"/> that will be used by methods like <see cref="ToStringWithName"/>
+        /// or <see cref="TryGetResultName"/> to resolve the names of <see cref="Result"/>s.
+        /// </summary>
         public static void SetNameResolver(IResultNameResolver nameResolver)
         {
             NameResolver = nameResolver;
@@ -156,13 +183,53 @@ namespace LibHac
             return ((uint)value & ~(~default(BaseType) << bitsCount)) << bitsOffset;
         }
 
+        /// <summary>
+        /// Represents a range of <see cref="Result"/>s.
+        /// This range is defined by a single module value and a range of description values.
+        /// See the documentation remarks for additional information.
+        /// </summary>
+        /// <remarks>
+        /// Due to C# not having templates, we can't define results like Horizon and Atmosphere do.
+        /// Compared to those Result classes, this struct generates identical code and uses identical syntax.
+        /// <br/>A Result definition should look like this: <c>public static Result.Base PathNotFound => new Result.Base(ModuleFs, 1);</c>
+        /// <br/>Being a computed property like this will allow the compiler to do constant propagation to optimize comparisons.
+        /// <br/><br/>This is an example of how a Result should be returned from a function: <c>return PathNotFound.Log();</c>
+        /// <br/>The <see cref="Log()"/> method will return the <see cref="Result"/> for the specified <see cref="Base"/>, and
+        /// will optionally log the returned Result when running in debug mode for easier debugging. All Result logging functionality
+        /// is removed from release builds.
+        /// If the <see cref="Result"/> is not being used as a return value, <see cref="Value"/> will get the Result without logging anything.
+        /// <br/><br/><see cref="Includes"/> is used to check if a provided <see cref="Result"/> is contained within the range of the <see cref="Base"/>.
+        /// If the <see cref="Base"/> is a computed property as shown above, the compiler will be able to properly optimize the code.
+        /// The following pairs of lines will produce the same code given <c>Result result;</c>
+        /// <code>
+        /// bool a1 = ResultFs.TargetNotFound.Includes(result); // Comparing a single value
+        /// bool a2 = result.Value == 0x7D402;
+        ///
+        /// bool b1 = ResultFs.InsufficientFreeSpace.Includes(result); // Comparing a range of values
+        /// bool b2 = return result.Module == 2 &amp;&amp; (result.Description - 30 &lt;= 45 - 30);
+        /// </code>
+        /// Unfortunately RyuJIT will not automatically inline the property when the compiled CIL is 16 bytes or larger as in cases like
+        /// <c>new Result.Base(ModuleFs, 2000, 2499)</c>. The property will need to have the aggressive inlining flag set like so:
+        /// <c>public static Result.Base SdCardAccessFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get =&gt; new Result.Base(ModuleFs, 2000, 2499); }</c>
+        /// </remarks>
         public struct Base
         {
             private const int DescriptionEndBitsOffset = ReservedBitsOffset;
             private readonly ulong _value;
 
+            /// <summary>
+            /// Creates a Result <see cref="Base"/> containing a single value.
+            /// </summary>
+            /// <param name="module">The module this result is from. Must be in the range 1 through 511.</param>
+            /// <param name="description">The description value of the result. Must be in the range 0 through 8191.</param>
             public Base(int module, int description) : this(module, description, description) { }
 
+            /// <summary>
+            /// Creates a Result <see cref="Base"/> containing a range of values.
+            /// </summary>
+            /// <param name="module">The module this result is from. Must be in the range 1 through 511.</param>
+            /// <param name="descriptionStart">The inclusive start description value of the range. Must be in the range 0 through 8191.</param>
+            /// <param name="descriptionEnd">The inclusive end description value of the range. Must be in the range 0 through 8191.</param>
             public Base(int module, int descriptionStart, int descriptionEnd)
             {
                 Debug.Assert(ModuleBegin <= module && module < ModuleEnd, "Invalid Module");
