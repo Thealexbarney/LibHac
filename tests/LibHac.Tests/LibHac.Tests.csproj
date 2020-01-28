@@ -17,6 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="LibHac.Tests.csproj.DotSettings" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="CryptoTests\TestVectors\*.rsp" />
   </ItemGroup>
 

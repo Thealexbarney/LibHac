@@ -51,7 +51,7 @@ namespace LibHac.FsSystem
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Result rc = BaseFileSystem.GetFileAttributes(path, out NxFileAttributes attributes);
+                Result rc = BaseFileSystem.GetFileAttributes(out NxFileAttributes attributes, path);
                 if (rc.IsFailure()) return false;
 
                 return HasConcatenationFileAttribute(attributes);

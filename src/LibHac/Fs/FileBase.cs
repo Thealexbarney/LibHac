@@ -29,6 +29,7 @@ namespace LibHac.Fs
 
             if (destination.Length == 0) return Result.Success;
             if (offset < 0) return ResultFs.OutOfRange.Log();
+            if (long.MaxValue - offset < destination.Length) return ResultFs.OutOfRange.Log();
 
             return ReadImpl(out bytesRead, offset, destination, options);
         }
@@ -48,6 +49,7 @@ namespace LibHac.Fs
             }
 
             if (offset < 0) return ResultFs.OutOfRange.Log();
+            if (long.MaxValue - offset < source.Length) return ResultFs.OutOfRange.Log();
 
             return WriteImpl(offset, source, options);
         }
