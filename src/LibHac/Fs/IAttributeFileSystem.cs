@@ -3,7 +3,7 @@
     public interface IAttributeFileSystem : IFileSystem
     {
         Result CreateDirectory(string path, NxFileAttributes archiveAttribute);
-        Result GetFileAttributes(string path, out NxFileAttributes attributes);
+        Result GetFileAttributes(out NxFileAttributes attributes, string path);
         Result SetFileAttributes(string path, NxFileAttributes attributes);
         Result GetFileSize(out long fileSize, string path);
     }

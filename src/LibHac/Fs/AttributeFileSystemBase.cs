@@ -14,7 +14,7 @@
             return CreateDirectoryImpl(path, archiveAttribute);
         }
 
-        public Result GetFileAttributes(string path, out NxFileAttributes attributes)
+        public Result GetFileAttributes(out NxFileAttributes attributes, string path)
         {
             if (IsDisposed)
             {
