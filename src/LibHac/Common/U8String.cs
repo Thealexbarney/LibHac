@@ -46,6 +46,6 @@ namespace LibHac.Common
             return StringUtils.Utf8ZToString(_buffer);
         }
 
-        public bool IsNull() => _buffer == null;
+        public bool IsEmpty() => _buffer == null || _buffer.Length == 0;
     }
 }

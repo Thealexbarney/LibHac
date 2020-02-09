@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace LibHac.Common
@@ -27,6 +29,26 @@ namespace LibHac.Common
             _buffer = Encoding.UTF8.GetBytes(value);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public byte GetOrNull(int i)
+        {
+            byte value = 0;
+            ReadOnlySpan<byte> b = _buffer;
+
+            if ((uint)i < (uint)b.Length)
+            {
+                value = b[i];
+            }
+
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public byte GetUnsafe(int i)
+        {
+            return Unsafe.Add(ref MemoryMarshal.GetReference(_buffer), i);
+        }
+
         public U8Span Slice(int start)
         {
             return new U8Span(_buffer.Slice(start));
@@ -52,6 +74,6 @@ namespace LibHac.Common
             return new U8String(_buffer.ToArray());
         }
 
-        public bool IsNull() => _buffer == default;
+        public bool IsEmpty() => _buffer.IsEmpty;
     }
 }
