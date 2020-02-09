@@ -9,9 +9,10 @@ namespace LibHac.FsSystem
 {
     public static class PathTools
     {
+        // todo: Consolidate these
         internal const char DirectorySeparator = '/';
         internal const char MountSeparator = ':';
-        internal const int MountNameLength = 0xF;
+        internal const int MountNameLengthMax = 0xF;
 
         // Todo: Remove
         internal const int MaxPathLength = 0x300;
@@ -24,7 +25,7 @@ namespace LibHac.FsSystem
             var sb = new ValueStringBuilder(initialBuffer);
 
             int rootLen = 0;
-            int maxMountLen = Math.Min(inPath.Length, MountNameLength);
+            int maxMountLen = Math.Min(inPath.Length, MountNameLengthMax);
 
             for (int i = 0; i < maxMountLen; i++)
             {
@@ -467,7 +468,7 @@ namespace LibHac.FsSystem
 
         public static Result GetMountNameLength(string path, out int length)
         {
-            int maxLen = Math.Min(path.Length, MountNameLength);
+            int maxLen = Math.Min(path.Length, MountNameLengthMax);
 
             for (int i = 0; i < maxLen; i++)
             {
@@ -515,7 +516,7 @@ namespace LibHac.FsSystem
 
             int rootLength = 0;
 
-            for (int i = mountNameStart; i < mountNameStart + MountNameLength; i++)
+            for (int i = mountNameStart; i < mountNameStart + MountNameLengthMax; i++)
             {
                 if (i >= path.Length || path[i] == 0) break;
 
