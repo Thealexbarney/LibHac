@@ -360,7 +360,7 @@ namespace LibHac.Fs
                 }
             }
 
-            if (path2.IsEmpty() || IsNullTerminator(path2[0]))
+            if (path2.IsEmpty())
                 return ResultFs.InvalidPathFormat.Log();
 
             if (ContainsParentDirectoryAlt(path2))
