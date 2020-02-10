@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace LibHac.Common
@@ -76,6 +77,18 @@ namespace LibHac.Common
             return new U8String(_buffer.ToArray());
         }
 
-        public bool IsEmpty() => _buffer.IsEmpty;
+        /// <summary>
+        /// Checks if the <see cref="U8Span"/> has no buffer.
+        /// </summary>
+        /// <returns><see langword="true"/> if the span has no buffer.
+        /// Otherwise, <see langword="false"/>.</returns>
+        public bool IsNull() => _buffer.IsEmpty;
+
+        /// <summary>
+        /// Checks if the <see cref="U8Span"/> has no buffer or begins with a null terminator.
+        /// </summary>
+        /// <returns><see langword="true"/> if the span has no buffer or begins with a null terminator.
+        /// Otherwise, <see langword="false"/>.</returns>
+        public bool IsEmpty() => _buffer.IsEmpty || MemoryMarshal.GetReference(_buffer) == 0;
     }
 }

@@ -148,6 +148,7 @@ void CreateNormalizationTestData(void (*func)(char const*, bool, bool)) {
 	func("mount:/a/b/../c", preserveUnc, true);
 	func("a:/a/b/c", preserveUnc, true);
 	func("mount:/a/b/../c", preserveUnc, true);
+	func("mount:/a/b/../c", preserveUnc, false);
 	func("mount:\\a/b/../c", preserveUnc, true);
 	func("mount:\\a/b\\../c", preserveUnc, true);
 	func("mount:\\a/b/c", preserveUnc, true);
