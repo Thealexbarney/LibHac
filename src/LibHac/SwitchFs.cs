@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSystem;
 using LibHac.FsSystem.NcaUtils;
@@ -38,12 +39,12 @@ namespace LibHac
         public static SwitchFs OpenSdCard(Keyset keyset, IAttributeFileSystem fileSystem)
         {
             var concatFs = new ConcatenationFileSystem(fileSystem);
-            var contentDirFs = new SubdirectoryFileSystem(concatFs, "/Nintendo/Contents");
+            SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem contentDirFs, concatFs, "/Nintendo/Contents".ToU8String()).ThrowIfFailure();
 
             AesXtsFileSystem encSaveFs = null;
             if (fileSystem.DirectoryExists("/Nintendo/save"))
             {
-                var saveDirFs = new SubdirectoryFileSystem(concatFs, "/Nintendo/save");
+                SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem saveDirFs, concatFs, "/Nintendo/save".ToU8String()).ThrowIfFailure();
                 encSaveFs = new AesXtsFileSystem(saveDirFs, keyset.SdCardKeys[0], 0x4000);
             }
 
@@ -55,8 +56,14 @@ namespace LibHac
         public static SwitchFs OpenNandPartition(Keyset keyset, IAttributeFileSystem fileSystem)
         {
             var concatFs = new ConcatenationFileSystem(fileSystem);
-            IFileSystem saveDirFs = concatFs.DirectoryExists("/save") ? new SubdirectoryFileSystem(concatFs, "/save") : null;
-            var contentDirFs = new SubdirectoryFileSystem(concatFs, "/Contents");
+            SubdirectoryFileSystem saveDirFs = null;
+
+            if (concatFs.DirectoryExists("/save"))
+            {
+                SubdirectoryFileSystem.CreateNew(out saveDirFs, concatFs, "/save".ToU8String()).ThrowIfFailure();
+            }
+
+            SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem contentDirFs, concatFs, "/Contents".ToU8String()).ThrowIfFailure();
 
             return new SwitchFs(keyset, contentDirFs, saveDirFs);
         }
