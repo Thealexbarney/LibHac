@@ -74,7 +74,13 @@ namespace LibHac.Common
 
         public U8String ToU8String()
         {
-            return new U8String(_buffer.ToArray());
+            int length = StringUtils.GetLength(_buffer);
+
+            // Allocate an extra byte for the null terminator
+            var buffer = new byte[length + 1];
+            _buffer.Slice(0, length).CopyTo(buffer);
+
+            return new U8String(buffer);
         }
 
         /// <summary>

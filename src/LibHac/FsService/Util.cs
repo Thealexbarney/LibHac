@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 using LibHac.FsSystem;
 
 namespace LibHac.FsService
@@ -36,9 +37,9 @@ namespace LibHac.FsService
             Result rc = baseFileSystem.OpenDirectory(out IDirectory _, path, OpenDirectoryMode.Directory);
             if (rc.IsFailure()) return rc;
 
-            subFileSystem = new SubdirectoryFileSystem(baseFileSystem, path);
-
-            return Result.Success;
+            rc = SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem fs, baseFileSystem, path.ToU8String());
+            subFileSystem = fs;
+            return rc;
         }
 
         public static bool UseDeviceUniqueSaveMac(SaveDataSpaceId spaceId)

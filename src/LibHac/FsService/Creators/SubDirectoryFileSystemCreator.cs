@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 using LibHac.FsSystem;
 
 namespace LibHac.FsService.Creators
@@ -12,9 +13,9 @@ namespace LibHac.FsService.Creators
             Result rc = baseFileSystem.OpenDirectory(out IDirectory _, path, OpenDirectoryMode.Directory);
             if (rc.IsFailure()) return rc;
 
-            subDirFileSystem = new SubdirectoryFileSystem(baseFileSystem, path);
-
-            return Result.Success;
+            rc = SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem fs, baseFileSystem, path.ToU8String());
+            subDirFileSystem = fs;
+            return rc;
         }
     }
 }
