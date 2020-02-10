@@ -38,8 +38,7 @@ namespace LibHac.FsService.Creators
             switch (entryType)
             {
                 case DirectoryEntryType.Directory:
-                    // Actual FS does this check
-                    // if (!allowDirectorySaveData) return ResultFs.InvalidSaveDataEntryType.Log();
+                    if (!allowDirectorySaveData) return ResultFs.InvalidSaveDataEntryType.Log();
 
                     rc = SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem subDirFs, sourceFileSystem, saveDataPath.ToU8String());
                     if (rc.IsFailure()) return rc;

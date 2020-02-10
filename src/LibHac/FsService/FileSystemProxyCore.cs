@@ -222,9 +222,14 @@ namespace LibHac.FsService
             Result rc = OpenSaveDataDirectory(out IFileSystem saveDirFs, spaceId, saveDataRootPath, true);
             if (rc.IsFailure()) return rc;
 
+            // ReSharper disable once RedundantAssignment
             bool allowDirectorySaveData = AllowDirectorySaveData(spaceId, saveDataRootPath);
             bool useDeviceUniqueMac = Util.UseDeviceUniqueSaveMac(spaceId);
 
+            // Always allow directory savedata because we don't support transaction with file savedata yet
+            allowDirectorySaveData = true;
+
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
             if (allowDirectorySaveData)
             {
                 rc = saveDirFs.EnsureDirectoryExists(GetSaveDataIdPath(saveDataId));
@@ -233,6 +238,7 @@ namespace LibHac.FsService
 
             // Missing save FS cache lookup
 
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
             rc = FsCreators.SaveDataFileSystemCreator.Create(out IFileSystem saveFs, out _, saveDirFs, saveDataId,
                 allowDirectorySaveData, useDeviceUniqueMac, type, null);
 
