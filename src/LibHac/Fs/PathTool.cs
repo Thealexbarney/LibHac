@@ -437,7 +437,40 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        public static Result ParseMountName(out U8Span pathAfterMount, Span<byte> outMountNameBuffer,
+        public static bool IsSubpath(U8Span lhs, U8Span rhs)
+        {
+            bool isUncLhs = PathUtility.IsUnc(lhs);
+            bool isUncRhs = PathUtility.IsUnc(rhs);
+
+            if (isUncLhs && !isUncRhs || !isUncLhs && isUncRhs)
+                return false;
+
+            if (IsSeparator(lhs.GetOrNull(0)) && IsNullTerminator(lhs.GetOrNull(1)) &&
+                IsSeparator(rhs.GetOrNull(0)) && !IsNullTerminator(rhs.GetOrNull(1)))
+                return true;
+
+            if (IsSeparator(rhs.GetOrNull(0)) && IsNullTerminator(rhs.GetOrNull(1)) &&
+                IsSeparator(lhs.GetOrNull(0)) && !IsNullTerminator(lhs.GetOrNull(1)))
+                return true;
+
+            for (int i = 0; ; i++)
+            {
+                if (IsNullTerminator(lhs.GetOrNull(i)))
+                {
+                    return IsSeparator(rhs.GetOrNull(i));
+                }
+                else if (IsNullTerminator(rhs.GetOrNull(i)))
+                {
+                    return IsSeparator(lhs.GetOrNull(i));
+                }
+                else if (lhs.GetOrNull(i) != rhs.GetOrNull(i))
+                {
+                    return false;
+                }
+            }
+        }
+
+        private static Result ParseMountName(out U8Span pathAfterMount, Span<byte> outMountNameBuffer,
             out long mountNameLength, U8Span path)
         {
             pathAfterMount = default;
