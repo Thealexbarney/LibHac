@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace LibHac.Common
 {
     [DebuggerDisplay("{ToString()}")]
-    public ref struct U8Span
+    public readonly ref struct U8Span
     {
         private readonly ReadOnlySpan<byte> _buffer;
 
@@ -33,11 +32,10 @@ namespace LibHac.Common
         public byte GetOrNull(int i)
         {
             byte value = 0;
-            ReadOnlySpan<byte> b = _buffer;
 
-            if ((uint)i < (uint)b.Length)
+            if ((uint)i < (uint)_buffer.Length)
             {
-                value = b[i];
+                value = GetUnsafe(i);
             }
 
             return value;
@@ -46,7 +44,11 @@ namespace LibHac.Common
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte GetUnsafe(int i)
         {
+#if DEBUG
+            return _buffer[i];
+#else
             return Unsafe.Add(ref MemoryMarshal.GetReference(_buffer), i);
+#endif
         }
 
         public U8Span Slice(int start)

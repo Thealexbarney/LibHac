@@ -18,6 +18,8 @@ namespace nn::fs::PathTool {
 	// SDK >= 7
 	nn::Result Normalize(char* buffer, uint64_t* outNormalizedPathLength, const char* path, uint64_t bufferLength, bool preserveUnc, bool hasMountName);
 	nn::Result IsNormalized(bool* outIsNormalized, const char* path, bool preserveUnc, bool hasMountName);
+
+	bool IsSubpath(const char* path1, const char* path2);
 }
 
 void* allocate(size_t size)
@@ -58,7 +60,7 @@ const char* GetResultName(nn::Result result) {
 	}
 }
 
-void CreateNormalizeTestData(char const* path, bool preserveUnc, bool hasMountName) {
+void CreateNormalizeTestItem(char const* path, bool preserveUnc, bool hasMountName) {
 	char normalized[0x200];
 	uint64_t normalizedLen = 0;
 	memset(normalized, 0, 0x200);
@@ -73,7 +75,7 @@ void CreateNormalizeTestData(char const* path, bool preserveUnc, bool hasMountNa
 		path, preserveUncStr, hasMountNameStr, normalized, normalizedLen, GetResultName(result));
 }
 
-void CreateIsNormalizedTestData(char const* path, bool preserveUnc, bool hasMountName) {
+void CreateIsNormalizedTestItem(char const* path, bool preserveUnc, bool hasMountName) {
 	bool isNormalized = false;
 
 	nn::Result result = nn::fs::PathTool::IsNormalized(&isNormalized, path, preserveUnc, hasMountName);
@@ -85,7 +87,15 @@ void CreateIsNormalizedTestData(char const* path, bool preserveUnc, bool hasMoun
 		path, preserveUncStr, hasMountNameStr, isNormalizedStr, GetResultName(result));
 }
 
-void CreateTestDataWithParentDirs(char const* path, bool preserveUnc, bool hasMountName, void (*func)(char const*, bool, bool), int parentCount) {
+void CreateIsSubpathTestItem(const char* path1, const char* path2) {
+	bool result = nn::fs::PathTool::IsSubpath(path1, path2);
+
+	const char* resultStr = result ? "true" : "false";
+	BufPos += sprintf(&Buf[BufPos], "new object[] {@\"%s\", @\"%s\", %s},\n",
+		path1, path2, resultStr);
+}
+
+void CreateTestItemWithParentDirs(char const* path, bool preserveUnc, bool hasMountName, void (*func)(char const*, bool, bool), int parentCount) {
 	char parentPath[0x200];
 	memset(parentPath, 0, sizeof(parentPath));
 
@@ -98,11 +108,11 @@ void CreateTestDataWithParentDirs(char const* path, bool preserveUnc, bool hasMo
 	}
 }
 
-void CreateTestDataWithParentDirs(char const* path, bool preserveUnc, bool hasMountName, void (*func)(char const*, bool, bool)) {
-	CreateTestDataWithParentDirs(path, preserveUnc, hasMountName, func, 3);
+void CreateTestItemWithParentDirs(char const* path, bool preserveUnc, bool hasMountName, void (*func)(char const*, bool, bool)) {
+	CreateTestItemWithParentDirs(path, preserveUnc, hasMountName, func, 3);
 }
 
-void CreateTestData(void (*func)(char const*, bool, bool)) {
+void CreateNormalizationTestData(void (*func)(char const*, bool, bool)) {
 	Buf[0] = '\n';
 	BufPos = 1;
 
@@ -190,83 +200,108 @@ void CreateTestData(void (*func)(char const*, bool, bool)) {
 	for (int i = 0; i < 2; i++) {
 		preserveUnc = (bool)i;
 
-		CreateTestDataWithParentDirs("//$abc/bb", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("//:abc/bb", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("\\\\\\asd", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("\\\\/asd", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("\\\\//asd", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("//", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("\\\\a/b/cc/../d", preserveUnc, false, func);
-		CreateTestDataWithParentDirs("c:/aa/bb", preserveUnc, true, func);
-		CreateTestDataWithParentDirs("mount:\\c:/aa", preserveUnc, true, func);
-		CreateTestDataWithParentDirs("mount:/c:\\aa/bb", preserveUnc, true, func);
-		CreateTestDataWithParentDirs("mount:////c:\\aa/bb", preserveUnc, true, func);
-		CreateTestDataWithParentDirs("mount:/\\aa/bb", preserveUnc, true, func);
-		CreateTestDataWithParentDirs("mount:/c:/aa/bb", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("mount:c:/aa/bb", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("mount:c:/aa/bb", preserveUnc, true, func, 0);
-		CreateTestDataWithParentDirs("mount:/\\aa/../b", preserveUnc, true, func, 2);
-		CreateTestDataWithParentDirs("mount://aa/bb", preserveUnc, true, func, 1);
-		CreateTestDataWithParentDirs("//aa/bb", preserveUnc, true, func, 1);
-		CreateTestDataWithParentDirs("//aa/bb", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("/aa/bb", preserveUnc, false, func);
-		CreateTestDataWithParentDirs("c:/aa", preserveUnc, false, func, 2);
-		CreateTestDataWithParentDirs("c:abcde/aa/bb", preserveUnc, false, func);
-		CreateTestDataWithParentDirs("c:abcde", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("c:abcde/", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("///aa", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("//aa//bb", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("//./bb", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("//../bb", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("//.../bb", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("//aa$abc/bb", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("//aa$/bb", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("//aa:/bb", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("//aa/bb$b/cc$", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("//aa/bb/cc$c", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("//aa/bb/cc$c/dd", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("//aa/bb", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("//aa/bb/cc//dd", preserveUnc, false, func);
-		CreateTestDataWithParentDirs("//aa/bb/cc\\/dd", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("//aa/bb/cc//dd", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("//aa/bb/cc/dd", preserveUnc, false, func);
-		CreateTestDataWithParentDirs("//aa/bb/cc/\\dd", preserveUnc, false, func);
-		CreateTestDataWithParentDirs("//aa/../", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("//aa//", preserveUnc, false, func, 0);
-		CreateTestDataWithParentDirs("//aa/bb..", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("//aa/bb../", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("/\\\\aa/bb/cc/..", preserveUnc, true, func);
+		CreateTestItemWithParentDirs("//$abc/bb", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("//:abc/bb", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("\\\\\\asd", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("\\\\/asd", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("\\\\//asd", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("//", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("\\\\a/b/cc/../d", preserveUnc, false, func);
+		CreateTestItemWithParentDirs("c:/aa/bb", preserveUnc, true, func);
+		CreateTestItemWithParentDirs("mount:\\c:/aa", preserveUnc, true, func);
+		CreateTestItemWithParentDirs("mount:/c:\\aa/bb", preserveUnc, true, func);
+		CreateTestItemWithParentDirs("mount:////c:\\aa/bb", preserveUnc, true, func);
+		CreateTestItemWithParentDirs("mount:/\\aa/bb", preserveUnc, true, func);
+		CreateTestItemWithParentDirs("mount:/c:/aa/bb", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("mount:c:/aa/bb", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("mount:c:/aa/bb", preserveUnc, true, func, 0);
+		CreateTestItemWithParentDirs("mount:/\\aa/../b", preserveUnc, true, func, 2);
+		CreateTestItemWithParentDirs("mount://aa/bb", preserveUnc, true, func, 1);
+		CreateTestItemWithParentDirs("//aa/bb", preserveUnc, true, func, 1);
+		CreateTestItemWithParentDirs("//aa/bb", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("/aa/bb", preserveUnc, false, func);
+		CreateTestItemWithParentDirs("c:/aa", preserveUnc, false, func, 2);
+		CreateTestItemWithParentDirs("c:abcde/aa/bb", preserveUnc, false, func);
+		CreateTestItemWithParentDirs("c:abcde", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("c:abcde/", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("///aa", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("//aa//bb", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("//./bb", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("//../bb", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("//.../bb", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("//aa$abc/bb", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("//aa$/bb", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("//aa:/bb", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("//aa/bb$b/cc$", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("//aa/bb/cc$c", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("//aa/bb/cc$c/dd", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("//aa/bb", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("//aa/bb/cc//dd", preserveUnc, false, func);
+		CreateTestItemWithParentDirs("//aa/bb/cc\\/dd", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("//aa/bb/cc//dd", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("//aa/bb/cc/dd", preserveUnc, false, func);
+		CreateTestItemWithParentDirs("//aa/bb/cc/\\dd", preserveUnc, false, func);
+		CreateTestItemWithParentDirs("//aa/../", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("//aa//", preserveUnc, false, func, 0);
+		CreateTestItemWithParentDirs("//aa/bb..", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("//aa/bb../", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("/\\\\aa/bb/cc/..", preserveUnc, true, func);
 
-		CreateTestDataWithParentDirs("c:aa\\bb/cc", preserveUnc, false, func);
-		CreateTestDataWithParentDirs("c:\\//\\aa\\bb", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("c:aa\\bb/cc", preserveUnc, false, func);
+		CreateTestItemWithParentDirs("c:\\//\\aa\\bb", preserveUnc, false, func, 1);
 
-		CreateTestDataWithParentDirs("mount://////a/bb/c", preserveUnc, true, func, 2);
+		CreateTestItemWithParentDirs("mount://////a/bb/c", preserveUnc, true, func, 2);
 
-		CreateTestDataWithParentDirs("//", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("//a", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("//a", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("//a/", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("//a/b", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("//a/b/", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("//a/b/c", preserveUnc, false, func, 2);
-		CreateTestDataWithParentDirs("//a/b/c/", preserveUnc, false, func, 2);
+		CreateTestItemWithParentDirs("//", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("//a", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("//a", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("//a/", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("//a/b", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("//a/b/", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("//a/b/c", preserveUnc, false, func, 2);
+		CreateTestItemWithParentDirs("//a/b/c/", preserveUnc, false, func, 2);
 
-		CreateTestDataWithParentDirs("\\\\", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("\\\\a", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("\\\\a/", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("\\\\a/b", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("\\\\a/b/", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("\\\\a/b/c", preserveUnc, false, func, 2);
-		CreateTestDataWithParentDirs("\\\\a/b/c/", preserveUnc, false, func, 2);
+		CreateTestItemWithParentDirs("\\\\", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("\\\\a", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("\\\\a/", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("\\\\a/b", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("\\\\a/b/", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("\\\\a/b/c", preserveUnc, false, func, 2);
+		CreateTestItemWithParentDirs("\\\\a/b/c/", preserveUnc, false, func, 2);
 
-		CreateTestDataWithParentDirs("\\\\", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("\\\\a", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("\\\\a\\", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("\\\\a\\b", preserveUnc, false, func, 1);
-		CreateTestDataWithParentDirs("\\\\a\\b\\", preserveUnc, false, func, 1); // "\\a\b\/../.." crashes nnsdk
-		CreateTestDataWithParentDirs("\\\\a\\b\\c", preserveUnc, false, func, 2);
-		CreateTestDataWithParentDirs("\\\\a\\b\\c\\", preserveUnc, false, func, 2);
+		CreateTestItemWithParentDirs("\\\\", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("\\\\a", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("\\\\a\\", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("\\\\a\\b", preserveUnc, false, func, 1);
+		CreateTestItemWithParentDirs("\\\\a\\b\\", preserveUnc, false, func, 1); // "\\a\b\/../.." crashes nnsdk
+		CreateTestItemWithParentDirs("\\\\a\\b\\c", preserveUnc, false, func, 2);
+		CreateTestItemWithParentDirs("\\\\a\\b\\c\\", preserveUnc, false, func, 2);
 	}
+
+	svcOutputDebugString(Buf, BufPos);
+}
+
+void CreateSubpathTestData() {
+	Buf[0] = '\n';
+	BufPos = 1;
+
+	CreateIsSubpathTestItem("//a/b", "/a");
+	CreateIsSubpathTestItem("/a", "//a/b");
+	CreateIsSubpathTestItem("//a/b", "\\\\a");
+	CreateIsSubpathTestItem("//a/b", "//a");
+	CreateIsSubpathTestItem("/", "/a");
+	CreateIsSubpathTestItem("/a", "/");
+	CreateIsSubpathTestItem("/", "/");
+	CreateIsSubpathTestItem("", "");
+	CreateIsSubpathTestItem("/", "");
+	CreateIsSubpathTestItem("/", "mount:/a");
+	CreateIsSubpathTestItem("mount:/", "mount:/");
+	CreateIsSubpathTestItem("mount:/a/b", "mount:/a/b");
+	CreateIsSubpathTestItem("mount:/a/b", "mount:/a/b/c");
+	CreateIsSubpathTestItem("/a/b", "/a/b/c");
+	CreateIsSubpathTestItem("/a/b/c", "/a/b");
+	CreateIsSubpathTestItem("/a/b", "/a/b");
+	CreateIsSubpathTestItem("/a/b", "/a/b\\c");
 
 	svcOutputDebugString(Buf, BufPos);
 }
@@ -274,6 +309,7 @@ void CreateTestData(void (*func)(char const*, bool, bool)) {
 extern "C" void nnMain(void) {
 	//setAllocators();
 	nn::fs::detail::IsEnabledAccessLog(); // Adds the sdk version to the output when not calling setAllocators
-	CreateTestData(CreateNormalizeTestData);
-	CreateTestData(CreateIsNormalizedTestData);
+	CreateNormalizationTestData(CreateNormalizeTestItem);
+	CreateNormalizationTestData(CreateIsNormalizedTestItem);
+	CreateSubpathTestData();
 }

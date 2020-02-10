@@ -36,6 +36,15 @@ namespace LibHac.Tests.Fs
             }
         }
 
+        [Theory]
+        [MemberData(nameof(SubpathTestItems))]
+        public static void IsSubpath(string path1, string path2, bool expectedResult)
+        {
+            bool result = PathTool.IsSubpath(path1.ToU8Span(), path2.ToU8Span());
+
+            Assert.Equal(expectedResult, result);
+        }
+
         public static object[][] NormalizeTestItems =
         {
             new object[] {@"", false, false, @"", 0, ResultFs.InvalidPathFormat.Value},
@@ -812,6 +821,27 @@ namespace LibHac.Tests.Fs
             new object[] {@"\\a\b\c\", true, false, false, Result.Success},
             new object[] {@"\\a\b\c\/..", true, false, false, Result.Success},
             new object[] {@"\\a\b\c\/../..", true, false, false, Result.Success}
+        };
+
+        public static object[][] SubpathTestItems =
+        {
+            new object[] {@"//a/b", @"/a", false},
+            new object[] {@"/a", @"//a/b", false},
+            new object[] {@"//a/b", @"\\a", false},
+            new object[] {@"//a/b", @"//a", true},
+            new object[] {@"/", @"/a", true},
+            new object[] {@"/a", @"/", true},
+            new object[] {@"/", @"/", false},
+            new object[] {@"", @"", false},
+            new object[] {@"/", @"", true},
+            new object[] {@"/", @"mount:/a", false},
+            new object[] {@"mount:/", @"mount:/", false},
+            new object[] {@"mount:/a/b", @"mount:/a/b", false},
+            new object[] {@"mount:/a/b", @"mount:/a/b/c", true},
+            new object[] {@"/a/b", @"/a/b/c", true},
+            new object[] {@"/a/b/c", @"/a/b", true},
+            new object[] {@"/a/b", @"/a/b", false},
+            new object[] {@"/a/b", @"/a/b\c", false}
         };
     }
 }

@@ -25,8 +25,8 @@ namespace LibHac.Fs
         public static bool IsUnc(U8Span path)
         {
             return (uint)path.Length > 1 &&
-                   (IsSeparator(path[0]) && IsSeparator(path[1]) ||
-                    IsAltSeparator(path[0]) && IsAltSeparator(path[1]));
+                   (IsSeparator(path.GetUnsafe(0)) && IsSeparator(path.GetUnsafe(1)) ||
+                    IsAltSeparator(path.GetUnsafe(0)) && IsAltSeparator(path.GetUnsafe(1)));
         }
     }
 }
