@@ -109,13 +109,20 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             fs.CreateFile("/file", 100, CreateFileOptions.None);
 
+            // The contents of a created file are undefined, so zero the file
+            fs.OpenFile(out IFile file, "/file", OpenMode.Write);
+            using (file)
+            {
+                file.Write(0, new byte[100], WriteOption.None);
+            }
+
             var bufferExpected = new byte[200];
             bufferExpected.AsSpan(10).Fill(0xCC);
 
             var buffer = new byte[200];
             buffer.AsSpan().Fill(0xCC);
 
-            fs.OpenFile(out IFile file, "/file", OpenMode.Read);
+            fs.OpenFile(out file, "/file", OpenMode.Read);
             using (file)
             {
                 Assert.True(file.Read(out _, 90, buffer, ReadOption.None).IsSuccess());

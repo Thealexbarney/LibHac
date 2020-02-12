@@ -147,7 +147,10 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file", OpenMode.All);
             using (file)
             {
-                file.Write(15, writeBuffer, WriteOption.None).IsSuccess();
+                Assert.True(file.Write(15, writeBuffer, WriteOption.None).IsSuccess());
+
+                // Unwritten portions of new files are undefined, so write to the other portions
+                file.Write(0, new byte[15], WriteOption.None);
             }
 
             var readBuffer = new byte[25];

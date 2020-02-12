@@ -148,7 +148,7 @@ namespace LibHac.FsSystem
 
         private void RenameDirectoryImpl(string srcDir, string dstDir, bool doRollback)
         {
-            foreach (DirectoryEntryEx entry in this.EnumerateEntries(srcDir, "*"))
+            foreach (DirectoryEntryEx entry in this.EnumerateEntries(dstDir, "*"))
             {
                 string subSrcPath = $"{srcDir}/{entry.Name}";
                 string subDstPath = $"{dstDir}/{entry.Name}";
@@ -185,7 +185,8 @@ namespace LibHac.FsSystem
 
             AesXtsFileHeader header = ReadXtsHeader(oldPath, oldPath);
 
-            BaseFileSystem.RenameFile(oldPath, newPath);
+            Result rc = BaseFileSystem.RenameFile(oldPath, newPath);
+            if (rc.IsFailure()) return rc;
 
             try
             {
