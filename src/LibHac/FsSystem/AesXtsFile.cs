@@ -107,13 +107,15 @@ namespace LibHac.FsSystem
             Result rc = BaseFile.Write(0, Header.ToBytes(false));
             if (rc.IsFailure()) return rc;
 
-            return BaseStorage.SetSize(size);
+            return BaseStorage.SetSize(Util.AlignUp(size, 0x10));
         }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
+                BaseStorage.Flush();
+                BaseStorage.Dispose();
                 BaseFile?.Dispose();
             }
         }
