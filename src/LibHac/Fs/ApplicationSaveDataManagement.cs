@@ -19,7 +19,7 @@ namespace LibHac.Fs
             if (uid != Uid.Zero && nacp.UserAccountSaveDataSize > 0)
             {
                 var filter = new SaveDataFilter();
-                filter.SetTitleId(applicationId);
+                filter.SetProgramId(applicationId);
                 filter.SetSaveDataType(SaveDataType.Account);
                 filter.SetUserId(new UserId(uid.Id.High, uid.Id.Low));
 
@@ -82,7 +82,7 @@ namespace LibHac.Fs
             if (nacp.DeviceSaveDataSize > 0)
             {
                 var filter = new SaveDataFilter();
-                filter.SetTitleId(applicationId);
+                filter.SetProgramId(applicationId);
                 filter.SetSaveDataType(SaveDataType.Device);
 
                 Result rc = fs.FindSaveDataWithFilter(out SaveDataInfo saveDataInfo, SaveDataSpaceId.User, ref filter);
@@ -155,7 +155,7 @@ namespace LibHac.Fs
                     // If there was already insufficient space to create the previous saves, check if the temp
                     // save already exists instead of trying to create a new one.
                     var filter = new SaveDataFilter();
-                    filter.SetTitleId(applicationId);
+                    filter.SetProgramId(applicationId);
                     filter.SetSaveDataType(SaveDataType.Temporary);
 
                     Result rc = fs.FindSaveDataWithFilter(out _, SaveDataSpaceId.Temporary, ref filter);
@@ -234,7 +234,7 @@ namespace LibHac.Fs
             }
 
             var filter = new SaveDataFilter();
-            filter.SetTitleId(applicationId);
+            filter.SetProgramId(applicationId);
             filter.SetSaveDataType(SaveDataType.Bcat);
 
             Result rc = fs.FindSaveDataWithFilter(out SaveDataInfo saveDataInfo, SaveDataSpaceId.User, ref filter);

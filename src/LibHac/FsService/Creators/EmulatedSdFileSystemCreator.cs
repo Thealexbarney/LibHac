@@ -7,18 +7,21 @@ namespace LibHac.FsService.Creators
     {
         private const string DefaultPath = "/sdcard";
 
+        private EmulatedSdCard SdCard { get; }
         private IFileSystem RootFileSystem { get; }
         private string Path { get; }
 
         private IFileSystem SdCardFileSystem { get; set; }
 
-        public EmulatedSdFileSystemCreator(IFileSystem rootFileSystem)
+        public EmulatedSdFileSystemCreator(EmulatedSdCard sdCard, IFileSystem rootFileSystem)
         {
+            SdCard = sdCard;
             RootFileSystem = rootFileSystem;
         }
 
-        public EmulatedSdFileSystemCreator(IFileSystem rootFileSystem, string path)
+        public EmulatedSdFileSystemCreator(EmulatedSdCard sdCard, IFileSystem rootFileSystem, string path)
         {
+            SdCard = sdCard;
             RootFileSystem = rootFileSystem;
             Path = path;
         }
@@ -26,6 +29,11 @@ namespace LibHac.FsService.Creators
         public Result Create(out IFileSystem fileSystem)
         {
             fileSystem = default;
+
+            if (!SdCard.IsSdCardInserted())
+            {
+                return ResultFs.SdCardNotFound.Log();
+            }
 
             if (SdCardFileSystem != null)
             {

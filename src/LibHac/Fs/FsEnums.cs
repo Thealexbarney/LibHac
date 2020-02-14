@@ -173,4 +173,11 @@ namespace LibHac.Fs
         KeepAfterResettingSystemSaveDataWithoutUserSaveData = 1 << 2,
         NeedsSecureDelete = 1 << 3
     }
+
+    public enum SdmmcPort
+    {
+        Mmc = 0,
+        SdCard = 1,
+        GcAsic = 2
+    }
 }

@@ -554,7 +554,8 @@ namespace LibHac.FsService
             if (attributeCopy.Type == SaveDataType.Cache)
             {
                 // Check whether the save is on the SD card or the BIS
-                throw new NotImplementedException();
+                Result rc = GetSpaceIdForCacheStorage(out actualSpaceId, attributeCopy.TitleId);
+                if (rc.IsFailure()) return rc;
             }
             else
             {
@@ -854,6 +855,48 @@ namespace LibHac.FsService
             throw new NotImplementedException();
         }
 
+        private Result GetSpaceIdForCacheStorage(out SaveDataSpaceId spaceId, TitleId programId)
+        {
+            spaceId = default;
+
+            if (FsProxyCore.IsSdCardAccessible)
+            {
+                var filter = new SaveDataFilterInternal();
+
+                filter.SetSaveDataSpaceId(SaveDataSpaceId.SdCache);
+                filter.SetProgramId(programId);
+                filter.SetSaveDataType(SaveDataType.Cache);
+
+                Result rc = FindSaveDataWithFilterImpl(out long count, out _, SaveDataSpaceId.SdCache, ref filter);
+                if (rc.IsFailure()) return rc;
+
+                if (count > 0)
+                {
+                    spaceId = SaveDataSpaceId.SdCache;
+                    return Result.Success;
+                }
+            }
+
+            {
+                var filter = new SaveDataFilterInternal();
+
+                filter.SetSaveDataSpaceId(SaveDataSpaceId.User);
+                filter.SetProgramId(programId);
+                filter.SetSaveDataType(SaveDataType.Cache);
+
+                Result rc = FindSaveDataWithFilterImpl(out long count, out _, SaveDataSpaceId.User, ref filter);
+                if (rc.IsFailure()) return rc;
+
+                if (count > 0)
+                {
+                    spaceId = SaveDataSpaceId.User;
+                    return Result.Success;
+                }
+            }
+
+            return ResultFs.TargetNotFound.Log();
+        }
+
         public Result DeleteCacheStorage(short index)
         {
             throw new NotImplementedException();
@@ -973,17 +1016,14 @@ namespace LibHac.FsService
             return FsProxyCore.UnregisterAllExternalKey();
         }
 
-        public Result SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed)
+        public Result SetSdCardEncryptionSeed(ref EncryptionSeed seed)
         {
-            // todo: use struct instead of byte span
-            if (seed.Length != 0x10) return ResultFs.InvalidSize.Log();
-
             // Missing permission check
 
-            Result rc = FsProxyCore.SetSdCardEncryptionSeed(seed);
+            Result rc = FsProxyCore.SetSdCardEncryptionSeed(ref seed);
             if (rc.IsFailure()) return rc;
 
-            // todo: Reset save data indexer
+            FsServer.SaveDataIndexerManager.ResetSdCardIndexer();
 
             return Result.Success;
         }
@@ -1095,12 +1135,16 @@ namespace LibHac.FsService
 
         public Result SetSdCardAccessibility(bool isAccessible)
         {
-            throw new NotImplementedException();
+            // Missing permission check
+
+            FsProxyCore.IsSdCardAccessible = isAccessible;
+            return Result.Success;
         }
 
         public Result IsSdCardAccessible(out bool isAccessible)
         {
-            throw new NotImplementedException();
+            isAccessible = FsProxyCore.IsSdCardAccessible;
+            return Result.Success;
         }
 
         private static bool IsSystemSaveDataId(ulong id)

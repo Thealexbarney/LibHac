@@ -82,7 +82,7 @@ namespace LibHac.FsService
         Result QuerySaveDataInternalStorageTotalSize(out long size, SaveDataSpaceId spaceId, ulong saveDataId);
         Result GetSaveDataCommitId(out long commitId, SaveDataSpaceId spaceId, ulong saveDataId);
         Result UnregisterExternalKey(ref RightsId rightsId);
-        Result SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed);
+        Result SetSdCardEncryptionSeed(ref EncryptionSeed seed);
         Result SetSdCardAccessibility(bool isAccessible);
         Result IsSdCardAccessible(out bool isAccessible);
 

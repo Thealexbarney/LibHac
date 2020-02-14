@@ -24,7 +24,8 @@ namespace LibHac.Fs
         public static Result.Base ExternalKeyNotFound => new Result.Base(ModuleFs, 1004);
 
         public static Result.Base SdCardAccessFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2000, 2499); }
-        public static Result.Base SdCardNotPresent => new Result.Base(ModuleFs, 2001);
+        public static Result.Base SdCardNotFound => new Result.Base(ModuleFs, 2001);
+        public static Result.Base SdCardAsleep => new Result.Base(ModuleFs, 2004);
 
         public static Result.Base GameCardAccessFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2500, 2999); }
         public static Result.Base InvalidBufferForGameCard => new Result.Base(ModuleFs, 2503);

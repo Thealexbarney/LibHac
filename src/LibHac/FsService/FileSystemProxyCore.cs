@@ -21,7 +21,8 @@ namespace LibHac.FsService
         private const string ContentDirectoryName = "Contents";
 
         private GlobalAccessLogMode LogMode { get; set; }
-
+        public bool IsSdCardAccessible { get; set; }
+        
         public FileSystemProxyCore(FileSystemCreators fsCreators, ExternalKeySet externalKeys, IDeviceOperator deviceOperator)
         {
             FsCreators = fsCreators;
@@ -176,10 +177,10 @@ namespace LibHac.FsService
             return Result.Success;
         }
 
-        public Result SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed)
+        public Result SetSdCardEncryptionSeed(ref EncryptionSeed seed)
         {
-            seed.CopyTo(SdEncryptionSeed);
-            //FsCreators.SaveDataFileSystemCreator.SetSdCardEncryptionSeed(seed);
+            seed.Value.CopyTo(SdEncryptionSeed);
+            // todo: FsCreators.SaveDataFileSystemCreator.SetSdCardEncryptionSeed(seed);
 
             return Result.Success;
         }
