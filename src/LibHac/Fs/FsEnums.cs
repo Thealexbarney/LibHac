@@ -180,4 +180,11 @@ namespace LibHac.Fs
         SdCard = 1,
         GcAsic = 2
     }
+
+    public enum CacheStorageTargetMedia
+    {
+        None = 0,
+        Nand = 1,
+        SdCard = 2
+    }
 }
