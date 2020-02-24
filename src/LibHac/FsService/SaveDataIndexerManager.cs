@@ -40,7 +40,7 @@ namespace LibHac.FsService
                 case SaveDataSpaceId.SdCache:
                     Monitor.Enter(_sdCardIndexer.Locker);
 
-                    // Missing reinitialize if SD handle is old
+                    // todo: Missing reinitialize if SD handle is old
 
                     if (!_sdCardIndexer.IsInitialized)
                     {
@@ -86,6 +86,14 @@ namespace LibHac.FsService
                 default:
                     reader = default;
                     return ResultFs.InvalidArgument.Log();
+            }
+        }
+
+        internal void ResetSdCardIndexer()
+        {
+            lock (_sdCardIndexer.Locker)
+            {
+                _sdCardIndexer.Indexer = null;
             }
         }
 

@@ -61,6 +61,7 @@ namespace LibHac.FsService
             xci = CardImage;
             return Result.Success;
         }
+
         public Result Read(GameCardHandle handle, long offset, Span<byte> destination)
         {
             if (IsGameCardHandleInvalid(handle)) return ResultFs.InvalidGameCardHandleOnRead.Log();

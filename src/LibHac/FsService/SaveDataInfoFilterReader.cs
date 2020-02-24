@@ -60,8 +60,8 @@ namespace LibHac.FsService
         [FieldOffset(0x00)] public bool FilterBySaveDataSpaceId;
         [FieldOffset(0x01)] public SaveDataSpaceId SpaceId;
 
-        [FieldOffset(0x08)] public bool FilterByTitleId;
-        [FieldOffset(0x10)] public TitleId TitleId;
+        [FieldOffset(0x08)] public bool FilterByProgramId;
+        [FieldOffset(0x10)] public TitleId ProgramId;
 
         [FieldOffset(0x18)] public bool FilterBySaveDataType;
         [FieldOffset(0x19)] public SaveDataType SaveDataType;
@@ -86,10 +86,10 @@ namespace LibHac.FsService
 
             Rank = (int)filter.Rank;
 
-            if (filter.FilterByTitleId)
+            if (filter.FilterByProgramId)
             {
-                FilterByTitleId = true;
-                TitleId = filter.TitleId;
+                FilterByProgramId = true;
+                ProgramId = filter.ProgramId;
             }
 
             if (filter.FilterBySaveDataType)
@@ -117,6 +117,42 @@ namespace LibHac.FsService
             }
         }
 
+        public void SetSaveDataSpaceId(SaveDataSpaceId spaceId)
+        {
+            FilterBySaveDataSpaceId = true;
+            SpaceId = spaceId;
+        }
+
+        public void SetProgramId(TitleId value)
+        {
+            FilterByProgramId = true;
+            ProgramId = value;
+        }
+
+        public void SetSaveDataType(SaveDataType value)
+        {
+            FilterBySaveDataType = true;
+            SaveDataType = value;
+        }
+
+        public void SetUserId(UserId value)
+        {
+            FilterByUserId = true;
+            UserId = value;
+        }
+
+        public void SetSaveDataId(ulong value)
+        {
+            FilterBySaveDataId = true;
+            SaveDataId = value;
+        }
+
+        public void SetIndex(short value)
+        {
+            FilterByIndex = true;
+            Index = value;
+        }
+
         public bool Matches(ref SaveDataInfo info)
         {
             if (FilterBySaveDataSpaceId && info.SpaceId != SpaceId)
@@ -124,7 +160,7 @@ namespace LibHac.FsService
                 return false;
             }
 
-            if (FilterByTitleId && info.TitleId != TitleId)
+            if (FilterByProgramId && info.TitleId != ProgramId)
             {
                 return false;
             }

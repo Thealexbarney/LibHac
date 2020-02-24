@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using LibHac.Account;
 using LibHac.Fs.Shim;
 using LibHac.Ncm;
@@ -12,127 +13,55 @@ namespace LibHac.Fs
             ref ApplicationControlProperty nacp, ref Uid uid)
         {
             requiredSize = default;
-
             long requiredSizeSum = 0;
 
-            // If the application needs a user save
+            // Create local variable for use in closures
+            TitleId saveDataOwnerId = nacp.SaveDataOwnerId;
+
+            // Ensure the user account save exists
             if (uid != Uid.Zero && nacp.UserAccountSaveDataSize > 0)
             {
+                // More local variables for use in closures
+                Uid uidLocal = uid;
+                long accountSaveDataSize = nacp.UserAccountSaveDataSize;
+                long accountSaveJournalSize = nacp.UserAccountSaveDataJournalSize;
+
+                Result CreateAccountSaveFunc()
+                {
+                    UserId userId = ConvertAccountUidToFsUserId(uidLocal);
+                    return fs.CreateSaveData(applicationId, userId, saveDataOwnerId, accountSaveDataSize,
+                        accountSaveJournalSize, SaveDataFlags.None);
+                }
+
                 var filter = new SaveDataFilter();
-                filter.SetTitleId(applicationId);
+                filter.SetProgramId(applicationId);
                 filter.SetSaveDataType(SaveDataType.Account);
                 filter.SetUserId(new UserId(uid.Id.High, uid.Id.Low));
 
-                Result rc = fs.FindSaveDataWithFilter(out SaveDataInfo saveDataInfo, SaveDataSpaceId.User, ref filter);
+                // The 0x4c000 includes the save meta and other stuff
+                Result rc = EnsureAndExtendSaveData(fs, CreateAccountSaveFunc, ref requiredSizeSum, ref filter, 0x4c000,
+                    accountSaveDataSize, accountSaveJournalSize);
 
-                // If the save already exists
-                if (rc.IsSuccess())
-                {
-                    // Make sure the save is large enough
-                    rc = ExtendSaveDataIfNeeded(fs, out long requiredSizeUser, SaveDataSpaceId.User,
-                        saveDataInfo.SaveDataId, nacp.UserAccountSaveDataSize, nacp.UserAccountSaveDataJournalSize);
-
-                    if (rc.IsFailure())
-                    {
-                        if (!ResultFs.InsufficientFreeSpace.Includes(rc))
-                        {
-                            return rc;
-                        }
-
-                        requiredSizeSum = requiredSizeUser;
-                    }
-                }
-                else if (!ResultFs.TargetNotFound.Includes(rc))
-                {
-                    return rc;
-                }
-                else
-                {
-                    // The save doesn't exist, so try to create it
-                    UserId userId = ConvertAccountUidToFsUserId(uid);
-
-                    Result createRc = fs.CreateSaveData(applicationId, userId, nacp.SaveDataOwnerId,
-                        nacp.UserAccountSaveDataSize, nacp.UserAccountSaveDataJournalSize, 0);
-
-                    if (createRc.IsFailure())
-                    {
-                        // If there's insufficient free space, calculate the space required to create the save
-                        if (ResultFs.InsufficientFreeSpace.Includes(createRc))
-                        {
-                            Result queryRc = fs.QuerySaveDataTotalSize(out long userAccountTotalSize,
-                                nacp.UserAccountSaveDataSize, nacp.UserAccountSaveDataJournalSize);
-
-                            if (queryRc.IsFailure()) return queryRc;
-
-                            // The 0x4c000 includes the save meta and other stuff
-                            requiredSizeSum = Util.AlignUp(userAccountTotalSize, 0x4000) + 0x4c000;
-                        }
-                        else if (ResultFs.PathAlreadyExists.Includes(createRc))
-                        {
-                            requiredSizeSum = 0;
-                        }
-                        else
-                        {
-                            return createRc;
-                        }
-                    }
-                }
+                if (rc.IsFailure()) return rc;
             }
 
+            // Ensure the device save exists
             if (nacp.DeviceSaveDataSize > 0)
             {
+                long deviceSaveDataSize = nacp.DeviceSaveDataSize;
+                long deviceSaveJournalSize = nacp.DeviceSaveDataJournalSize;
+
+                Result CreateDeviceSaveFunc() => fs.CreateDeviceSaveData(applicationId, saveDataOwnerId,
+                    deviceSaveDataSize, deviceSaveJournalSize, 0);
+
                 var filter = new SaveDataFilter();
-                filter.SetTitleId(applicationId);
+                filter.SetProgramId(applicationId);
                 filter.SetSaveDataType(SaveDataType.Device);
 
-                Result rc = fs.FindSaveDataWithFilter(out SaveDataInfo saveDataInfo, SaveDataSpaceId.User, ref filter);
+                Result rc = EnsureAndExtendSaveData(fs, CreateDeviceSaveFunc, ref requiredSizeSum, ref filter, 0x4000,
+                    deviceSaveDataSize, deviceSaveJournalSize);
 
-                if (rc.IsSuccess())
-                {
-                    rc = ExtendSaveDataIfNeeded(fs, out long requiredSizeDevice, SaveDataSpaceId.User,
-                        saveDataInfo.SaveDataId, nacp.DeviceSaveDataSize, nacp.DeviceSaveDataJournalSize);
-
-                    if (rc.IsFailure())
-                    {
-                        if (!ResultFs.InsufficientFreeSpace.Includes(rc))
-                        {
-                            return rc;
-                        }
-
-                        requiredSizeSum += requiredSizeDevice;
-                    }
-                }
-                else if (!ResultFs.TargetNotFound.Includes(rc))
-                {
-                    return rc;
-                }
-                else
-                {
-                    Result createRc = fs.CreateDeviceSaveData(applicationId, nacp.SaveDataOwnerId,
-                        nacp.DeviceSaveDataSize, nacp.DeviceSaveDataJournalSize, 0);
-
-                    if (createRc.IsFailure())
-                    {
-                        if (ResultFs.InsufficientFreeSpace.Includes(createRc))
-                        {
-                            Result queryRc = fs.QuerySaveDataTotalSize(out long deviceSaveTotalSize,
-                                nacp.DeviceSaveDataSize, nacp.DeviceSaveDataJournalSize);
-
-                            if (queryRc.IsFailure()) return queryRc;
-
-                            // Not sure what the additional 0x4000 is
-                            requiredSizeSum += Util.AlignUp(deviceSaveTotalSize, 0x4000) + 0x4000;
-                        }
-                        else if (ResultFs.PathAlreadyExists.Includes(createRc))
-                        {
-                            requiredSizeSum += 0;
-                        }
-                        else
-                        {
-                            return createRc;
-                        }
-                    }
-                }
+                if (rc.IsFailure()) return rc;
             }
 
             Result bcatRc = EnsureApplicationBcatDeliveryCacheStorageImpl(fs,
@@ -155,7 +84,7 @@ namespace LibHac.Fs
                     // If there was already insufficient space to create the previous saves, check if the temp
                     // save already exists instead of trying to create a new one.
                     var filter = new SaveDataFilter();
-                    filter.SetTitleId(applicationId);
+                    filter.SetProgramId(applicationId);
                     filter.SetSaveDataType(SaveDataType.Temporary);
 
                     Result rc = fs.FindSaveDataWithFilter(out _, SaveDataSpaceId.Temporary, ref filter);
@@ -220,71 +149,277 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
+        private static Result CreateSaveData(FileSystemClient fs, Func<Result> createFunc, ref long requiredSize, long baseSize,
+            long dataSize, long journalSize)
+        {
+            Result rc = createFunc();
+
+            if (rc.IsSuccess())
+                return Result.Success;
+
+            if (ResultFs.InsufficientFreeSpace.Includes(rc))
+            {
+                Result queryRc = fs.QuerySaveDataTotalSize(out long totalSize, dataSize, journalSize);
+                if (queryRc.IsFailure()) return queryRc;
+
+                requiredSize += Util.AlignUp(totalSize, 0x4000) + baseSize;
+            }
+            else if (!ResultFs.PathAlreadyExists.Includes(rc))
+            {
+                return rc;
+            }
+
+            return Result.Success;
+        }
+
+        private static Result EnsureAndExtendSaveData(FileSystemClient fs, Func<Result> createFunc,
+            ref long requiredSize, ref SaveDataFilter filter, long baseSize, long dataSize, long journalSize)
+        {
+            Result rc = fs.FindSaveDataWithFilter(out SaveDataInfo info, SaveDataSpaceId.User, ref filter);
+
+            if (rc.IsFailure())
+            {
+                if (ResultFs.TargetNotFound.Includes(rc))
+                {
+                    rc = CreateSaveData(fs, createFunc, ref requiredSize, baseSize, dataSize, journalSize);
+                }
+
+                return rc;
+            }
+
+            rc = ExtendSaveDataIfNeeded(fs, out long requiredSizeExtend, SaveDataSpaceId.User, info.SaveDataId,
+                dataSize, journalSize);
+
+            if (rc.IsFailure())
+            {
+                if (!ResultFs.InsufficientFreeSpace.Includes(rc))
+                    return rc;
+
+                requiredSize += requiredSizeExtend;
+            }
+
+            return Result.Success;
+        }
+
         private static Result EnsureApplicationBcatDeliveryCacheStorageImpl(FileSystemClient fs, out long requiredSize,
             TitleId applicationId, ref ApplicationControlProperty nacp)
         {
             const long bcatDeliveryCacheJournalSize = 0x200000;
 
-            requiredSize = default;
-
-            if (nacp.BcatDeliveryCacheStorageSize <= 0)
+            long bcatStorageSize = nacp.BcatDeliveryCacheStorageSize;
+            if (bcatStorageSize <= 0)
             {
                 requiredSize = 0;
                 return Result.Success;
             }
 
+            requiredSize = default;
+            long requiredSizeBcat = 0;
+
             var filter = new SaveDataFilter();
-            filter.SetTitleId(applicationId);
+            filter.SetProgramId(applicationId);
             filter.SetSaveDataType(SaveDataType.Bcat);
 
-            Result rc = fs.FindSaveDataWithFilter(out SaveDataInfo saveDataInfo, SaveDataSpaceId.User, ref filter);
+            Result CreateBcatStorageFunc() => fs.CreateBcatSaveData(applicationId, bcatStorageSize);
 
-            if (rc.IsSuccess())
+            Result rc = EnsureAndExtendSaveData(fs, CreateBcatStorageFunc,
+                ref requiredSizeBcat, ref filter, 0x4000, bcatStorageSize, bcatDeliveryCacheJournalSize);
+
+            if (rc.IsFailure()) return rc;
+
+            requiredSize = requiredSizeBcat;
+            return requiredSizeBcat > 0 ? ResultFs.InsufficientFreeSpace.Log() : Result.Success;
+        }
+
+        private static Result EnsureApplicationCacheStorageImpl(this FileSystemClient fs, out long requiredSize,
+            out CacheStorageTargetMedia target, TitleId applicationId, TitleId saveDataOwnerId, short index,
+            long dataSize, long journalSize, bool allowExisting)
+        {
+            requiredSize = default;
+            target = CacheStorageTargetMedia.SdCard;
+
+            Result rc = fs.GetCacheStorageTargetMediaImpl(out CacheStorageTargetMedia targetMedia, applicationId);
+            if (rc.IsFailure()) return rc;
+
+            long requiredSizeLocal = 0;
+
+            if (targetMedia == CacheStorageTargetMedia.Nand)
             {
-                rc = ExtendSaveDataIfNeeded(fs, out long requiredSizeBcat, SaveDataSpaceId.User,
-                    saveDataInfo.SaveDataId, nacp.BcatDeliveryCacheStorageSize, bcatDeliveryCacheJournalSize);
-
-                if (rc.IsFailure())
-                {
-                    if (!ResultFs.InsufficientFreeSpace.Includes(rc))
-                    {
-                        return rc;
-                    }
-
-                    requiredSize = requiredSizeBcat;
-                }
+                rc = TryCreateCacheStorage(fs, out requiredSizeLocal, SaveDataSpaceId.User, applicationId,
+                    saveDataOwnerId, index, dataSize, journalSize, allowExisting);
+                if (rc.IsFailure()) return rc;
             }
-            else if (!ResultFs.TargetNotFound.Includes(rc))
+            else if (targetMedia == CacheStorageTargetMedia.SdCard)
             {
-                return rc;
+                rc = TryCreateCacheStorage(fs, out requiredSizeLocal, SaveDataSpaceId.SdCache, applicationId,
+                    saveDataOwnerId, index, dataSize, journalSize, allowExisting);
+                if (rc.IsFailure()) return rc;
             }
+            // Savedata doesn't exist. Try to create a new one.
             else
             {
-                Result createRc = fs.CreateBcatSaveData(applicationId, nacp.BcatDeliveryCacheStorageSize);
-
-                if (createRc.IsFailure())
+                // Try to create the savedata on the SD card first
+                if (fs.IsSdCardAccessible())
                 {
-                    if (ResultFs.InsufficientFreeSpace.Includes(createRc))
-                    {
-                        Result queryRc = fs.QuerySaveDataTotalSize(out long saveTotalSize,
-                            nacp.BcatDeliveryCacheStorageSize, bcatDeliveryCacheJournalSize);
+                    target = CacheStorageTargetMedia.SdCard;
 
-                        if (queryRc.IsFailure()) return queryRc;
+                    Result CreateFuncSdCard() => fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdCache,
+                        saveDataOwnerId, index, dataSize, journalSize, SaveDataFlags.None);
 
-                        requiredSize = Util.AlignUp(saveTotalSize, 0x4000) + 0x4000;
-                    }
-                    else if (ResultFs.PathAlreadyExists.Includes(createRc))
+                    rc = CreateSaveData(fs, CreateFuncSdCard, ref requiredSizeLocal, 0x4000, dataSize, journalSize);
+                    if (rc.IsFailure()) return rc;
+
+                    if (requiredSizeLocal == 0)
                     {
                         requiredSize = 0;
+                        return Result.Success;
                     }
-                    else
-                    {
-                        return createRc;
-                    }
+                }
+
+                // If the save can't be created on the SD card, try creating it on the User BIS partition
+                requiredSizeLocal = 0;
+                target = CacheStorageTargetMedia.Nand;
+
+                Result CreateFuncNand() => fs.CreateCacheStorage(applicationId, SaveDataSpaceId.User, saveDataOwnerId,
+                    index, dataSize, journalSize, SaveDataFlags.None);
+
+                rc = CreateSaveData(fs, CreateFuncNand, ref requiredSizeLocal, 0x4000, dataSize, journalSize);
+                if (rc.IsFailure()) return rc;
+
+                if (requiredSizeLocal != 0)
+                {
+                    target = CacheStorageTargetMedia.None;
+                    requiredSize = requiredSizeLocal;
+                    return ResultFs.InsufficientFreeSpace.Log();
                 }
             }
 
-            return requiredSize > 0 ? ResultFs.InsufficientFreeSpace.Log() : Result.Success;
+            requiredSize = 0;
+            return Result.Success;
+        }
+
+        public static Result EnsureApplicationCacheStorage(this FileSystemClient fs, out long requiredSize,
+            out CacheStorageTargetMedia target, TitleId applicationId, TitleId saveDataOwnerId, short index,
+            long dataSize, long journalSize, bool allowExisting)
+        {
+            return EnsureApplicationCacheStorageImpl(fs, out requiredSize, out target, applicationId, saveDataOwnerId,
+                index, dataSize, journalSize, allowExisting);
+        }
+
+        public static Result EnsureApplicationCacheStorage(this FileSystemClient fs, out long requiredSize,
+            TitleId applicationId, ref ApplicationControlProperty nacp)
+        {
+            return EnsureApplicationCacheStorageImpl(fs, out requiredSize, out _, applicationId, nacp.SaveDataOwnerId,
+                0, nacp.CacheStorageSize, nacp.CacheStorageJournalSize, true);
+        }
+
+        public static Result EnsureApplicationCacheStorage(this FileSystemClient fs, out long requiredSize,
+            out CacheStorageTargetMedia target, TitleId applicationId, ref ApplicationControlProperty nacp)
+        {
+            if (nacp.CacheStorageSize <= 0)
+            {
+                requiredSize = default;
+                target = default;
+                return Result.Success;
+            }
+
+            return EnsureApplicationCacheStorageImpl(fs, out requiredSize, out target, applicationId,
+                nacp.SaveDataOwnerId, 0, nacp.CacheStorageSize, nacp.CacheStorageJournalSize, true);
+        }
+
+        public static Result EnsureApplicationBcatDeliveryCacheStorage(this FileSystemClient fs, out long requiredSize,
+            TitleId applicationId, ref ApplicationControlProperty nacp)
+        {
+            return EnsureApplicationBcatDeliveryCacheStorageImpl(fs, out requiredSize, applicationId, ref nacp);
+        }
+
+        public static Result TryCreateCacheStorage(this FileSystemClient fs, out long requiredSize,
+            SaveDataSpaceId spaceId, TitleId applicationId, TitleId saveDataOwnerId, short index, long dataSize,
+            long journalSize, bool allowExisting)
+        {
+            requiredSize = default;
+            long requiredSizeLocal = 0;
+
+            var filter = new SaveDataFilter();
+            filter.SetProgramId(applicationId);
+            filter.SetIndex(index);
+            filter.SetSaveDataType(SaveDataType.Cache);
+
+            Result rc = fs.FindSaveDataWithFilter(out SaveDataInfo info, spaceId, ref filter);
+
+            if (rc.IsFailure())
+            {
+                if (!ResultFs.TargetNotFound.Includes(rc))
+                    return rc;
+
+                Result CreateCacheFunc() => fs.CreateCacheStorage(applicationId, spaceId, saveDataOwnerId, index,
+                    dataSize, journalSize, SaveDataFlags.None);
+
+                rc = CreateSaveData(fs, CreateCacheFunc, ref requiredSizeLocal, 0x4000, dataSize, journalSize);
+                if (rc.IsFailure()) return rc;
+
+                requiredSize = requiredSizeLocal;
+                return Result.Success;
+            }
+
+            if (!allowExisting)
+            {
+                return ResultFs.SaveDataPathAlreadyExists.Log();
+            }
+
+            rc = ExtendSaveDataIfNeeded(fs, out requiredSizeLocal, spaceId, info.SaveDataId, dataSize, journalSize);
+
+            if (rc.IsSuccess() || ResultFs.InsufficientFreeSpace.Includes(rc))
+            {
+                requiredSize = requiredSizeLocal;
+                return Result.Success;
+            }
+
+            if (ResultFs.SaveDataIsExtending.Includes(rc))
+            {
+                return ResultFs.SaveDataCorrupted.LogConverted(rc);
+            }
+
+            return rc;
+        }
+
+        public static Result GetCacheStorageTargetMedia(this FileSystemClient fs, out CacheStorageTargetMedia target, TitleId applicationId)
+        {
+            return GetCacheStorageTargetMediaImpl(fs, out target, applicationId);
+        }
+
+        private static Result GetCacheStorageTargetMediaImpl(this FileSystemClient fs, out CacheStorageTargetMedia target, TitleId applicationId)
+        {
+            target = CacheStorageTargetMedia.None;
+
+            var filter = new SaveDataFilter();
+            filter.SetProgramId(applicationId);
+            filter.SetSaveDataType(SaveDataType.Cache);
+
+            if (fs.IsSdCardAccessible())
+            {
+                Result rc = fs.FindSaveDataWithFilter(out _, SaveDataSpaceId.SdCache, ref filter);
+                if (rc.IsFailure() && !ResultFs.TargetNotFound.Includes(rc)) return rc;
+
+                if (rc.IsSuccess())
+                {
+                    target = CacheStorageTargetMedia.SdCard;
+                }
+            }
+
+            // Not on the SD card. Check it it's in NAND
+            if (target == CacheStorageTargetMedia.None)
+            {
+                Result rc = fs.FindSaveDataWithFilter(out _, SaveDataSpaceId.User, ref filter);
+                if (rc.IsFailure() && !ResultFs.TargetNotFound.Includes(rc)) return rc;
+
+                if (rc.IsSuccess())
+                {
+                    target = CacheStorageTargetMedia.Nand;
+                }
+            }
+
+            return Result.Success;
         }
 
         public static Result CleanUpTemporaryStorage(FileSystemClient fs)
