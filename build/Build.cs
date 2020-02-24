@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using ICSharpCode.SharpZipLib.Zip;
+using LibHacBuild.CodeGen;
 using Nuke.Common;
 using Nuke.Common.CI.AppVeyor;
 using Nuke.Common.Git;
@@ -181,8 +182,14 @@ namespace LibHacBuild
                 DotNetRestore(s => settings);
             });
 
+        Target Codegen => _ => _
+            .Executes(() =>
+            {
+                ResultCodeGen.Run();
+            });
+
         Target Compile => _ => _
-            .DependsOn(Restore, SetVersion)
+            .DependsOn(Restore, SetVersion, Codegen)
             .Executes(() =>
             {
                 DotNetBuildSettings buildSettings = new DotNetBuildSettings()

@@ -1,0 +1,4 @@
+Name,Namespace,Path
+Fs,LibHac.Fs,LibHac/Fs/ResultFs.cs
+Kvdb,LibHac.Kvdb,LibHac/Kvdb/ResultKvdb.cs
+Sdmmc,LibHac.FsService,LibHac/FsService/ResultSdmmc.cs
