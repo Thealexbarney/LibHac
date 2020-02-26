@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using CsvHelper;
+using CsvHelper.Configuration;
 using Nuke.Common;
 
 namespace LibHacBuild.CodeGen
@@ -20,7 +21,9 @@ namespace LibHacBuild.CodeGen
         {
             ModuleInfo[] modules = ReadResults();
 
-            SetEmptyResultNames(modules);
+            SetEmptyResultValues(modules);
+            ValidateResults(modules);
+            ValidateHierarchy(modules);
             CheckIfAggressiveInliningNeeded(modules);
             SetOutputPaths(modules);
 
@@ -65,19 +68,68 @@ namespace LibHacBuild.CodeGen
             return modules.Values.ToArray();
         }
 
-        private static void SetEmptyResultNames(ModuleInfo[] modules)
+        private static void SetEmptyResultValues(ModuleInfo[] modules)
         {
             foreach (ModuleInfo module in modules)
             {
                 foreach (ResultInfo result in module.Results.Where(x => string.IsNullOrWhiteSpace(x.Name)))
                 {
-                    if (result.DescriptionEnd.HasValue)
+                    if (result.IsRange)
                     {
                         result.Name += $"Range{result.DescriptionStart}To{result.DescriptionEnd}";
                     }
                     else
                     {
                         result.Name = $"Result{result.DescriptionStart}";
+                        result.DescriptionEnd = result.DescriptionStart;
+                    }
+                }
+            }
+        }
+
+        private static void ValidateResults(ModuleInfo[] modules)
+        {
+            foreach (ModuleInfo module in modules)
+            {
+                foreach (ResultInfo result in module.Results)
+                {
+                    // Logic should match Result.Base.ctor
+                    Assert(1 <= result.Module && result.Module < 512, "Invalid Module");
+                    Assert(0 <= result.DescriptionStart && result.DescriptionStart < 8192, "Invalid Description Start");
+                    Assert(0 <= result.DescriptionEnd && result.DescriptionEnd < 8192, "Invalid Description End");
+                    Assert(result.DescriptionStart <= result.DescriptionEnd, "descriptionStart must be <= descriptionEnd");
+
+                    // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+                    void Assert(bool condition, string message)
+                    {
+                        if (!condition)
+                            throw new InvalidDataException($"Result {result.Module}-{result.DescriptionStart}: {message}");
+                    }
+                }
+            }
+        }
+
+        private static void ValidateHierarchy(ModuleInfo[] modules)
+        {
+            foreach (ModuleInfo module in modules)
+            {
+                var hierarchy = new Stack<ResultInfo>();
+
+                foreach (ResultInfo result in module.Results)
+                {
+                    while (hierarchy.Count > 0 && hierarchy.Peek().DescriptionEnd < result.DescriptionStart)
+                    {
+                        hierarchy.Pop();
+                    }
+
+                    if (result.IsRange)
+                    {
+                        if (hierarchy.Count > 0 && result.DescriptionEnd > hierarchy.Peek().DescriptionEnd)
+                        {
+                            throw new InvalidDataException($"Result {result.Module}-{result.DescriptionStart} is not nested properly.");
+                        }
+
+                        hierarchy.Push(result);
                     }
                 }
             }
@@ -120,9 +172,38 @@ namespace LibHacBuild.CodeGen
             sb.AppendLine($"public const int Module{module.Name} = {module.Index};");
             sb.AppendLine();
 
+            var hierarchy = new Stack<ResultInfo>();
+            bool justIndented = false;
+
             foreach (ResultInfo result in module.Results)
             {
+                while (hierarchy.Count > 0 && hierarchy.Peek().DescriptionEnd < result.DescriptionStart)
+                {
+                    hierarchy.Pop();
+                    sb.DecreaseLevel();
+                    sb.AppendSpacerLine();
+                }
+
+                if (!justIndented && result.IsRange)
+                {
+                    sb.AppendSpacerLine();
+                }
+
                 PrintResult(sb, module.Name, result);
+
+                if (result.IsRange)
+                {
+                    hierarchy.Push(result);
+                    sb.IncreaseLevel();
+                }
+
+                justIndented = result.IsRange;
+            }
+
+            while (hierarchy.Count > 0)
+            {
+                hierarchy.Pop();
+                sb.DecreaseLevel();
             }
 
             sb.DecreaseAndAppendLine("}");
@@ -135,7 +216,7 @@ namespace LibHacBuild.CodeGen
         {
             string descriptionArgs;
 
-            if (result.DescriptionEnd.HasValue)
+            if (result.IsRange)
             {
                 descriptionArgs = $"{result.DescriptionStart}, {result.DescriptionEnd}";
             }
@@ -197,6 +278,11 @@ namespace LibHacBuild.CodeGen
             {
                 csv.Configuration.AllowComments = true;
 
+                if (typeof(T) == typeof(ResultInfo))
+                {
+                    csv.Configuration.RegisterClassMap<ResultMap>();
+                }
+
                 return csv.GetRecords<T>().ToArray();
             }
         }
@@ -239,8 +325,8 @@ namespace LibHacBuild.CodeGen
             size += GetLoadSize(result.Module);
             size += GetLoadSize(result.DescriptionStart);
 
-            if (result.DescriptionEnd.HasValue)
-                size += GetLoadSize(result.DescriptionEnd.Value);
+            if (result.IsRange)
+                size += GetLoadSize(result.DescriptionEnd);
 
             size += 5; // newobj
             size += 1; // ret
@@ -291,10 +377,29 @@ namespace LibHacBuild.CodeGen
     {
         public int Module { get; set; }
         public int DescriptionStart { get; set; }
-        public int? DescriptionEnd { get; set; }
+        public int DescriptionEnd { get; set; }
         public string Name { get; set; }
 
+        public bool IsRange => DescriptionStart != DescriptionEnd;
         public string ErrorCode => $"{2000 + Module:d4}-{DescriptionStart:d4}";
         public int InnerValue => Module & 0x1ff | ((DescriptionStart & 0x7ffff) << 9);
+    }
+
+    public sealed class ResultMap : ClassMap<ResultInfo>
+    {
+        public ResultMap()
+        {
+            Map(m => m.Module);
+            Map(m => m.Name);
+            Map(m => m.DescriptionStart);
+            Map(m => m.DescriptionEnd).ConvertUsing(row =>
+            {
+                string field = row.GetField("DescriptionEnd");
+                if (string.IsNullOrWhiteSpace(field))
+                    field = row.GetField("DescriptionStart");
+
+                return int.Parse(field);
+            });
+        }
     }
 }
