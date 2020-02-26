@@ -157,6 +157,9 @@ namespace LibHacBuild.CodeGen
         {
             var sb = new IndentingStringBuilder();
 
+            sb.AppendLine(GetHeader());
+            sb.AppendLine();
+
             if (module.NeedsAggressiveInlining)
             {
                 sb.AppendLine("using System.Runtime.CompilerServices;");
@@ -225,7 +228,7 @@ namespace LibHacBuild.CodeGen
                 descriptionArgs = $"{result.DescriptionStart}";
             }
 
-            // sb.AppendLine($"/// <summary>Error code: {result.ErrorCode}; Inner value: 0x{result.InnerValue:x}</summary>");
+            sb.AppendLine(GetXmlDoc(result));
 
             string resultCtor = $"new Result.Base(Module{moduleName}, {descriptionArgs});";
             sb.Append($"public static Result.Base {result.Name} ");
@@ -238,6 +241,44 @@ namespace LibHacBuild.CodeGen
             {
                 sb.AppendLine($"=> {resultCtor}");
             }
+        }
+
+        private static string GetXmlDoc(ResultInfo result)
+        {
+            string doc = "/// <summary>";
+
+            if (!string.IsNullOrWhiteSpace(result.Summary))
+            {
+                doc += $"{result.Summary}<br/>";
+            }
+
+            doc += $"Error code: {result.ErrorCode}";
+
+            if (result.IsRange)
+            {
+                doc += $"; Range: {result.DescriptionStart}-{result.DescriptionEnd}";
+            }
+
+            doc += $"; Inner value: 0x{result.InnerValue:x}";
+            doc += "</summary>";
+
+            return doc;
+        }
+
+        private static string GetHeader()
+        {
+            string nl = Environment.NewLine;
+            return
+                "//-----------------------------------------------------------------------------" + nl +
+                "// This file was automatically generated." + nl +
+                "// Changes to this file will be lost when the file is regenerated." + nl +
+                "//" + nl +
+                "// To change this file, modify /build/CodeGen/results.csv at the root of this" + nl +
+                "// repo and run the build script." + nl +
+                "//" + nl +
+                "// The script can be run with the \"codegen\" option to run only the" + nl +
+                "// code generation portion of the build." + nl +
+                "//-----------------------------------------------------------------------------";
         }
 
         // Write the file only if it has changed
@@ -379,6 +420,7 @@ namespace LibHacBuild.CodeGen
         public int DescriptionStart { get; set; }
         public int DescriptionEnd { get; set; }
         public string Name { get; set; }
+        public string Summary { get; set; }
 
         public bool IsRange => DescriptionStart != DescriptionEnd;
         public string ErrorCode => $"{2000 + Module:d4}-{DescriptionStart:d4}";
@@ -391,6 +433,7 @@ namespace LibHacBuild.CodeGen
         {
             Map(m => m.Module);
             Map(m => m.Name);
+            Map(m => m.Summary);
             Map(m => m.DescriptionStart);
             Map(m => m.DescriptionEnd).ConvertUsing(row =>
             {
