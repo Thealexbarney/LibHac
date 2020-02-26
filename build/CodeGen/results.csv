@@ -1,16 +1,20 @@
 Module,DescriptionStart,DescriptionEnd,Name
+2,0,999,HandledByAllProcess
 2,1,,PathNotFound
 2,2,,PathAlreadyExists
 2,7,,TargetLocked
 2,8,,DirectoryNotEmpty
+2,13,,DirectoryStatusChanged
 
 2,30,45,InsufficientFreeSpace
+2,31,,UsableSpaceNotEnoughForSaveData
 2,34,38,InsufficientFreeSpaceBis
 2,35,,InsufficientFreeSpaceBisCalibration
 2,36,,InsufficientFreeSpaceBisSafe
 2,37,,InsufficientFreeSpaceBisUser
 2,38,,InsufficientFreeSpaceBisSystem
 2,39,,InsufficientFreeSpaceSdCard
+2,50,,UnsupportedSdkVersion
 2,60,,MountNameAlreadyExists
 
 2,1001,,PartitionNotFound
@@ -48,6 +52,12 @@ Module,DescriptionStart,DescriptionEnd,Name
 2,4001,4299,RomCorrupted
 2,4023,,InvalidIndirectStorageSource
 
+2,4241,4259,RomHostFileSystemCorrupted
+2,4242,,RomHostEntryCorrupted
+2,4243,,RomHostFileDataCorrupted
+2,4244,,RomHostFileCorrupted
+2,4245,,InvalidRomHostHandle
+
 2,4301,4499,SaveDataCorrupted
 2,4302,,
 2,4303,,InvalidSaveDataEntryType
@@ -60,6 +70,12 @@ Module,DescriptionStart,DescriptionEnd,Name
 
 2,4402,,
 2,4427,,
+2,4441,4459,SaveDataHostFileSystemCorrupted
+2,4442,,SaveDataHostEntryCorrupted
+2,4443,,SaveDataHostFileDataCorrupted
+2,4444,,SaveDataHostFileCorrupted
+2,4445,,InvalidSaveDataHostHandle
+
 2,4462,,SaveDataAllocationTableCorrupted
 2,4463,,SaveDataFileTableCorrupted
 2,4464,,AllocationTableIteratedRangeEntry
@@ -84,7 +100,12 @@ Module,DescriptionStart,DescriptionEnd,Name
 2,4662,,
 
 2,4681,4699,FatFileSystemCorrupted
+
 2,4701,4719,HostFileSystemCorrupted
+2,4702,,HostEntryCorrupted
+2,4703,,HostFileDataCorrupted
+2,4704,,HostFileCorrupted
+2,4705,,InvalidHostHandle
 
 2,4721,4739,DatabaseCorrupted
 2,4722,,SaveDataAllocationTableCorruptedInternal
@@ -113,9 +134,9 @@ Module,DescriptionStart,DescriptionEnd,Name
 2,5309,,UnknownHostFileSystemError
 2,5320,,InvalidNcaMountPoint
 
-2,6000,,PreconditionViolation
-2,6001,,InvalidArgument
-2,6002,,InvalidPath
+2,6000,6499,PreconditionViolation
+2,6001,6199,InvalidArgument
+2,6002,6029,InvalidPath
 2,6003,,TooLongPath
 2,6004,,InvalidCharacter
 2,6005,,InvalidPathFormat
@@ -171,7 +192,7 @@ Module,DescriptionStart,DescriptionEnd,Name
 
 2,6452,,ExternalKeyAlreadyRegistered
 2,6454,,WriteStateUnflushed
-2,6457,,WritableFileOpen
+2,6457,,WriteModeFileNotClosed
 2,6461,,AllocatorAlignmentViolation
 2,6465,,UserNotExist
 
@@ -197,3 +218,28 @@ Module,DescriptionStart,DescriptionEnd,Name
 
 24,1,,DeviceNotFound
 24,4,,DeviceAsleep
+
+123,0,4999,SslService
+
+124,0,,Cancelled
+124,1,,CancelledByUser
+124,100,,UserNotExist
+124,200,269,NetworkServiceAccountUnavailable
+124,430,499,TokenCacheUnavailable
+124,3000,8191,NetworkCommunicationError
+
+202,140,149,Invalid
+202,601,,DualConnected
+202,602,,SameJoyTypeConnected
+202,603,,ColorNotAvailable
+202,604,,ControllerNotConnected
+202,3101,,Canceled
+202,3102,,NotSupportedNpadStyle
+202,3200,3209,ControllerFirmwareUpdateError
+202,3201,,ControllerFirmwareUpdateFailed
+
+205,110,119,IrsensorUnavailable
+205,110,,IrsensorUnconnected
+205,111,,IrsensorUnsupported
+205,120,,IrsensorNotReady
+205,122,139,IrsensorDeviceError

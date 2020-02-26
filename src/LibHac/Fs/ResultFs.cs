@@ -6,17 +6,21 @@ namespace LibHac.Fs
     {
         public const int ModuleFs = 2;
 
+        public static Result.Base HandledByAllProcess => new Result.Base(ModuleFs, 0, 999);
         public static Result.Base PathNotFound => new Result.Base(ModuleFs, 1);
         public static Result.Base PathAlreadyExists => new Result.Base(ModuleFs, 2);
         public static Result.Base TargetLocked => new Result.Base(ModuleFs, 7);
         public static Result.Base DirectoryNotEmpty => new Result.Base(ModuleFs, 8);
+        public static Result.Base DirectoryStatusChanged => new Result.Base(ModuleFs, 13);
         public static Result.Base InsufficientFreeSpace => new Result.Base(ModuleFs, 30, 45);
+        public static Result.Base UsableSpaceNotEnoughForSaveData => new Result.Base(ModuleFs, 31);
         public static Result.Base InsufficientFreeSpaceBis => new Result.Base(ModuleFs, 34, 38);
         public static Result.Base InsufficientFreeSpaceBisCalibration => new Result.Base(ModuleFs, 35);
         public static Result.Base InsufficientFreeSpaceBisSafe => new Result.Base(ModuleFs, 36);
         public static Result.Base InsufficientFreeSpaceBisUser => new Result.Base(ModuleFs, 37);
         public static Result.Base InsufficientFreeSpaceBisSystem => new Result.Base(ModuleFs, 38);
         public static Result.Base InsufficientFreeSpaceSdCard => new Result.Base(ModuleFs, 39);
+        public static Result.Base UnsupportedSdkVersion => new Result.Base(ModuleFs, 50);
         public static Result.Base MountNameAlreadyExists => new Result.Base(ModuleFs, 60);
         public static Result.Base PartitionNotFound => new Result.Base(ModuleFs, 1001);
         public static Result.Base TargetNotFound => new Result.Base(ModuleFs, 1002);
@@ -46,6 +50,11 @@ namespace LibHac.Fs
         public static Result.Base DataCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4000, 4999); }
         public static Result.Base RomCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4001, 4299); }
         public static Result.Base InvalidIndirectStorageSource => new Result.Base(ModuleFs, 4023);
+        public static Result.Base RomHostFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4241, 4259); }
+        public static Result.Base RomHostEntryCorrupted => new Result.Base(ModuleFs, 4242);
+        public static Result.Base RomHostFileDataCorrupted => new Result.Base(ModuleFs, 4243);
+        public static Result.Base RomHostFileCorrupted => new Result.Base(ModuleFs, 4244);
+        public static Result.Base InvalidRomHostHandle => new Result.Base(ModuleFs, 4245);
         public static Result.Base SaveDataCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4301, 4499); }
         public static Result.Base Result4302 => new Result.Base(ModuleFs, 4302);
         public static Result.Base InvalidSaveDataEntryType => new Result.Base(ModuleFs, 4303);
@@ -57,6 +66,11 @@ namespace LibHac.Fs
         public static Result.Base InvalidHashInSaveIvfcTopLayer => new Result.Base(ModuleFs, 4373);
         public static Result.Base Result4402 => new Result.Base(ModuleFs, 4402);
         public static Result.Base Result4427 => new Result.Base(ModuleFs, 4427);
+        public static Result.Base SaveDataHostFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4441, 4459); }
+        public static Result.Base SaveDataHostEntryCorrupted => new Result.Base(ModuleFs, 4442);
+        public static Result.Base SaveDataHostFileDataCorrupted => new Result.Base(ModuleFs, 4443);
+        public static Result.Base SaveDataHostFileCorrupted => new Result.Base(ModuleFs, 4444);
+        public static Result.Base InvalidSaveDataHostHandle => new Result.Base(ModuleFs, 4445);
         public static Result.Base SaveDataAllocationTableCorrupted => new Result.Base(ModuleFs, 4462);
         public static Result.Base SaveDataFileTableCorrupted => new Result.Base(ModuleFs, 4463);
         public static Result.Base AllocationTableIteratedRangeEntry => new Result.Base(ModuleFs, 4464);
@@ -77,6 +91,10 @@ namespace LibHac.Fs
         public static Result.Base Result4662 => new Result.Base(ModuleFs, 4662);
         public static Result.Base FatFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4681, 4699); }
         public static Result.Base HostFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4701, 4719); }
+        public static Result.Base HostEntryCorrupted => new Result.Base(ModuleFs, 4702);
+        public static Result.Base HostFileDataCorrupted => new Result.Base(ModuleFs, 4703);
+        public static Result.Base HostFileCorrupted => new Result.Base(ModuleFs, 4704);
+        public static Result.Base InvalidHostHandle => new Result.Base(ModuleFs, 4705);
         public static Result.Base DatabaseCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4721, 4739); }
         public static Result.Base SaveDataAllocationTableCorruptedInternal => new Result.Base(ModuleFs, 4722);
         public static Result.Base SaveDataFileTableCorruptedInternal => new Result.Base(ModuleFs, 4723);
@@ -99,9 +117,9 @@ namespace LibHac.Fs
         public static Result.Base UnexpectedErrorInHostFileGetSize => new Result.Base(ModuleFs, 5308);
         public static Result.Base UnknownHostFileSystemError => new Result.Base(ModuleFs, 5309);
         public static Result.Base InvalidNcaMountPoint => new Result.Base(ModuleFs, 5320);
-        public static Result.Base PreconditionViolation => new Result.Base(ModuleFs, 6000);
-        public static Result.Base InvalidArgument => new Result.Base(ModuleFs, 6001);
-        public static Result.Base InvalidPath => new Result.Base(ModuleFs, 6002);
+        public static Result.Base PreconditionViolation { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6000, 6499); }
+        public static Result.Base InvalidArgument { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6001, 6199); }
+        public static Result.Base InvalidPath { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6002, 6029); }
         public static Result.Base TooLongPath => new Result.Base(ModuleFs, 6003);
         public static Result.Base InvalidCharacter => new Result.Base(ModuleFs, 6004);
         public static Result.Base InvalidPathFormat => new Result.Base(ModuleFs, 6005);
@@ -150,7 +168,7 @@ namespace LibHac.Fs
         public static Result.Base PermissionDenied { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6400, 6449); }
         public static Result.Base ExternalKeyAlreadyRegistered => new Result.Base(ModuleFs, 6452);
         public static Result.Base WriteStateUnflushed => new Result.Base(ModuleFs, 6454);
-        public static Result.Base WritableFileOpen => new Result.Base(ModuleFs, 6457);
+        public static Result.Base WriteModeFileNotClosed => new Result.Base(ModuleFs, 6457);
         public static Result.Base AllocatorAlignmentViolation => new Result.Base(ModuleFs, 6461);
         public static Result.Base UserNotExist => new Result.Base(ModuleFs, 6465);
         public static Result.Base EntryNotFound { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6600, 6699); }
