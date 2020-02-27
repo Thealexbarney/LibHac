@@ -266,3 +266,5 @@ global.json
 
 !tests/LibHac.Tests/CryptoTests/TestVectors/*
 **/DisasmoBin/
+
+ResultNameResolver.Generated.cs

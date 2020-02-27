@@ -20,7 +20,7 @@ namespace LibHac
         public static Result Success => new Result(SuccessValue);
 
         private static IResultLogger Logger { get; set; }
-        private static IResultNameResolver NameResolver { get; set; }
+        private static IResultNameResolver NameResolver { get; set; } = new ResultNameResolver();
 
         private const int ModuleBitsOffset = 0;
         private const int ModuleBitsCount = 9;

@@ -5,6 +5,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using CsvHelper;
 using CsvHelper.Configuration;
@@ -25,14 +27,17 @@ namespace LibHacBuild.CodeGen
             ValidateResults(modules);
             ValidateHierarchy(modules);
             CheckIfAggressiveInliningNeeded(modules);
-            SetOutputPaths(modules);
 
             foreach (ModuleInfo module in modules)
             {
                 string moduleResultFile = PrintModule(module);
 
-                WriteOutput(module, moduleResultFile);
+                WriteOutput(module.Path, moduleResultFile);
             }
+
+            byte[] archive = BuildArchive(modules);
+            string archiveStr = PrintArchive(archive);
+            WriteOutput("LibHac/ResultNameResolver.Generated.cs", archiveStr);
         }
 
         private static ModuleInfo[] ReadResults()
@@ -72,16 +77,21 @@ namespace LibHacBuild.CodeGen
         {
             foreach (ModuleInfo module in modules)
             {
-                foreach (ResultInfo result in module.Results.Where(x => string.IsNullOrWhiteSpace(x.Name)))
+                foreach (ResultInfo result in module.Results)
                 {
-                    if (result.IsRange)
+                    result.FullName = $"Result{module.Name}{result.Name}";
+
+                    if (string.IsNullOrWhiteSpace(result.Name))
                     {
-                        result.Name += $"Range{result.DescriptionStart}To{result.DescriptionEnd}";
-                    }
-                    else
-                    {
-                        result.Name = $"Result{result.DescriptionStart}";
-                        result.DescriptionEnd = result.DescriptionStart;
+                        if (result.IsRange)
+                        {
+                            result.Name += $"Range{result.DescriptionStart}To{result.DescriptionEnd}";
+                        }
+                        else
+                        {
+                            result.Name = $"Result{result.DescriptionStart}";
+                            result.DescriptionEnd = result.DescriptionStart;
+                        }
                     }
                 }
             }
@@ -140,16 +150,6 @@ namespace LibHacBuild.CodeGen
             foreach (ModuleInfo module in modules)
             {
                 module.NeedsAggressiveInlining = module.Results.Any(x => EstimateCilSize(x) > InlineThreshold);
-            }
-        }
-
-        private static void SetOutputPaths(ModuleInfo[] modules)
-        {
-            string rootPath = FindProjectDirectory();
-
-            foreach (ModuleInfo module in modules.Where(x => !string.IsNullOrWhiteSpace(x.Path)))
-            {
-                module.FullPath = Path.Combine(rootPath, module.Path);
             }
         }
 
@@ -283,19 +283,22 @@ namespace LibHacBuild.CodeGen
 
         // Write the file only if it has changed
         // Preserve the UTF-8 BOM usage if the file already exists
-        private static void WriteOutput(ModuleInfo module, string text)
+        private static void WriteOutput(string relativePath, string text)
         {
-            if (string.IsNullOrWhiteSpace(module.FullPath))
+            if (string.IsNullOrWhiteSpace(relativePath))
                 return;
+
+            string rootPath = FindProjectDirectory();
+            string fullPath = Path.Combine(rootPath, relativePath);
 
             // Default is true because Visual Studio saves .cs files with the BOM by default
             bool hasBom = true;
             byte[] bom = Encoding.UTF8.GetPreamble();
             byte[] oldFile = null;
 
-            if (File.Exists(module.FullPath))
+            if (File.Exists(fullPath))
             {
-                oldFile = File.ReadAllBytes(module.FullPath);
+                oldFile = File.ReadAllBytes(fullPath);
 
                 if (oldFile.Length >= 3)
                     hasBom = oldFile.AsSpan(0, 3).SequenceEqual(bom);
@@ -305,12 +308,66 @@ namespace LibHacBuild.CodeGen
 
             if (oldFile?.SequenceEqual(newFile) == true)
             {
-                Logger.Normal($"{module.Path} is already up-to-date");
+                Logger.Normal($"{relativePath} is already up-to-date");
                 return;
             }
 
-            Logger.Normal($"Generated file {module.Path}");
-            File.WriteAllBytes(module.FullPath, newFile);
+            Logger.Normal($"Generated file {relativePath}");
+            File.WriteAllBytes(fullPath, newFile);
+        }
+
+        private static byte[] BuildArchive(ModuleInfo[] modules)
+        {
+            var builder = new ResultArchiveBuilder();
+
+            foreach (ModuleInfo module in modules.OrderBy(x => x.Index))
+            {
+                foreach (ResultInfo result in module.Results.OrderBy(x => x.DescriptionStart))
+                {
+                    builder.Add(result);
+                }
+            }
+
+            return builder.Build();
+        }
+
+        private static string PrintArchive(ReadOnlySpan<byte> data)
+        {
+            var sb = new IndentingStringBuilder();
+
+            sb.AppendLine(GetHeader());
+            sb.AppendLine();
+
+            sb.AppendLine("using System;");
+            sb.AppendLine();
+
+            sb.AppendLine("namespace LibHac");
+            sb.AppendLineAndIncrease("{");
+
+            sb.AppendLine("internal partial class ResultNameResolver");
+            sb.AppendLineAndIncrease("{");
+
+            sb.AppendLine("private static ReadOnlySpan<byte> ArchiveData => new byte[]");
+            sb.AppendLineAndIncrease("{");
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                if (i % 16 != 0) sb.Append(" ");
+                sb.Append($"0x{data[i]:x2}");
+
+                if (i != data.Length - 1)
+                {
+                    sb.Append(",");
+                    if (i % 16 == 15) sb.AppendLine();
+                }
+            }
+
+            sb.AppendLine();
+            sb.DecreaseAndAppendLine("};");
+            sb.DecreaseAndAppendLine("}");
+            sb.DecreaseAndAppendLine("}");
+
+            return sb.ToString();
         }
 
         private static T[] ReadCsv<T>(string name)
@@ -387,6 +444,85 @@ namespace LibHacBuild.CodeGen
         }
     }
 
+    public class ResultArchiveBuilder
+    {
+        private List<ResultInfo> Results = new List<ResultInfo>();
+
+        public void Add(ResultInfo result)
+        {
+            Results.Add(result);
+        }
+
+        public byte[] Build()
+        {
+            int tableOffset = CalculateNameTableOffset();
+            var archive = new byte[tableOffset + CalculateNameTableSize()];
+
+            ref HeaderStruct header = ref Unsafe.As<byte, HeaderStruct>(ref archive[0]);
+            Span<Element> elements = MemoryMarshal.Cast<byte, Element>(
+                archive.AsSpan(Unsafe.SizeOf<HeaderStruct>(), Results.Count * Unsafe.SizeOf<Element>()));
+            Span<byte> nameTable = archive.AsSpan(tableOffset);
+
+            header.ElementCount = Results.Count;
+            header.NameTableOffset = tableOffset;
+
+            int curNameOffset = 0;
+
+            for (int i = 0; i < Results.Count; i++)
+            {
+                ResultInfo result = Results[i];
+                ref Element element = ref elements[i];
+
+                element.NameOffset = curNameOffset;
+                element.Module = (short)result.Module;
+                element.DescriptionStart = (short)result.DescriptionStart;
+                element.DescriptionEnd = (short)result.DescriptionEnd;
+
+                Span<byte> utf8Name = Encoding.UTF8.GetBytes(result.FullName);
+                utf8Name.CopyTo(nameTable.Slice(curNameOffset));
+                nameTable[curNameOffset + utf8Name.Length] = 0;
+
+                curNameOffset += utf8Name.Length + 1;
+            }
+
+            return archive;
+        }
+
+        private int CalculateNameTableOffset()
+        {
+            return Unsafe.SizeOf<HeaderStruct>() + Unsafe.SizeOf<Element>() * Results.Count;
+        }
+
+        private int CalculateNameTableSize()
+        {
+            int size = 0;
+            Encoding encoding = Encoding.UTF8;
+
+            foreach (ResultInfo result in Results)
+            {
+                size += encoding.GetByteCount(result.FullName) + 1;
+            }
+
+            return size;
+        }
+
+        // ReSharper disable NotAccessedField.Local
+        private struct HeaderStruct
+        {
+            public int ElementCount;
+            public int NameTableOffset;
+        }
+
+        private struct Element
+        {
+            public int NameOffset;
+            public short Module;
+            public short DescriptionStart;
+            public short DescriptionEnd;
+        }
+        // ReSharper restore NotAccessedField.Local
+    }
+
     public class ModuleIndex
     {
         public string Name { get; set; }
@@ -408,7 +544,6 @@ namespace LibHacBuild.CodeGen
         public string Namespace { get; set; }
         public string Path { get; set; }
 
-        public string FullPath { get; set; }
         public bool NeedsAggressiveInlining { get; set; }
         public ResultInfo[] Results { get; set; }
     }
@@ -420,6 +555,7 @@ namespace LibHacBuild.CodeGen
         public int DescriptionStart { get; set; }
         public int DescriptionEnd { get; set; }
         public string Name { get; set; }
+        public string FullName { get; set; }
         public string Summary { get; set; }
 
         public bool IsRange => DescriptionStart != DescriptionEnd;
