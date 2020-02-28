@@ -35,7 +35,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,2961,,InvalidGameCardHandleOnOpenSecurePartition,
 
 2,3001,,NotImplemented,
-2,3002,,,
+2,3002,,UnsupportedVersion,
 2,3003,,SaveDataPathAlreadyExists,
 2,3005,,OutOfRange,
 
@@ -59,17 +59,17 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,4245,,InvalidRomHostHandle,
 
 2,4301,4499,SaveDataCorrupted,
-2,4302,,,
+2,4302,,UnsupportedSaveVersion,
 2,4303,,InvalidSaveDataEntryType,
 2,4315,,InvalidSaveDataHeader,
-2,4362,,,
-2,4363,,,
-2,4364,,InvalidHashInSaveIvfc,
-2,4372,,SaveIvfcHashIsEmpty,
-2,4373,,InvalidHashInSaveIvfcTopLayer,
+2,4362,,InvalidSaveDataIvfcMagic,
+2,4363,,InvalidSaveDataIvfcHashValidationBit,
+2,4364,,InvalidSaveDataIvfcHash,
+2,4372,,EmptySaveDataIvfcHash,
+2,4373,,InvalidSaveDataHashInIvfcTopLayer,
 
-2,4402,,,
-2,4427,,,
+2,4402,,SaveDataInvalidGptPartitionSignature,
+2,4427,,IncompleteBlockInZeroBitmapHashStorageFileSaveData,
 2,4441,4459,SaveDataHostFileSystemCorrupted,
 2,4442,,SaveDataHostEntryCorrupted,
 2,4443,,SaveDataHostFileDataCorrupted,
@@ -83,10 +83,10 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,4501,4599,NcaCorrupted,
 
 2,4601,4639,IntegrityVerificationStorageCorrupted,
-2,4602,,,
-2,4603,,,
-2,4604,,InvalidHashInIvfc,
-2,4612,,IvfcHashIsEmpty,
+2,4602,,InvalidIvfcMagic,
+2,4603,,InvalidIvfcHashValidationBit,
+2,4604,,InvalidIvfcHash,
+2,4612,,EmptyIvfcHash,
 2,4613,,InvalidHashInIvfcTopLayer,
 
 2,4641,4659,PartitionFileSystemCorrupted,
@@ -97,7 +97,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,4646,,InvalidPartitionFileSystemEntryNameOffset,
 
 2,4661,4679,BuiltInStorageCorrupted,
-2,4662,,,
+2,4662,,InvalidGptPartitionSignature,
 
 2,4681,4699,FatFileSystemCorrupted,
 
@@ -125,8 +125,9 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,4771,4779,SignedSystemPartitionDataCorrupted,
 2,4781,,GameCardLogoDataCorrupted,
 
-2,4811,4819,,
-2,4812,,,
+# The range name is a guess. 4812 is currently the only result in it
+2,4811,4819,ZeroBitmapFileCorrupted,
+2,4812,,IncompleteBlockInZeroBitmapHashStorageFile,
 
 2,5000,5999,Unexpected,
 2,5307,,UnexpectedErrorInHostFileFlush,
@@ -197,6 +198,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6465,,UserNotExist,
 
 2,6600,6699,EntryNotFound,
+2,6606,,TargetProgramIndexNotFound,Specified program index is not found
 2,6700,6799,OutOfResource,
 2,6706,,MappingTableFull,
 2,6707,,AllocationTableInsufficientFreeBlocks,

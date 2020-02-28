@@ -88,7 +88,7 @@ namespace LibHac.Fs
         /// <summary>Error code: 2002-3001; Inner value: 0x177202</summary>
         public static Result.Base NotImplemented => new Result.Base(ModuleFs, 3001);
         /// <summary>Error code: 2002-3002; Inner value: 0x177402</summary>
-        public static Result.Base Result3002 => new Result.Base(ModuleFs, 3002);
+        public static Result.Base UnsupportedVersion => new Result.Base(ModuleFs, 3002);
         /// <summary>Error code: 2002-3003; Inner value: 0x177602</summary>
         public static Result.Base SaveDataPathAlreadyExists => new Result.Base(ModuleFs, 3003);
         /// <summary>Error code: 2002-3005; Inner value: 0x177a02</summary>
@@ -131,25 +131,25 @@ namespace LibHac.Fs
             /// <summary>Error code: 2002-4301; Range: 4301-4499; Inner value: 0x219a02</summary>
             public static Result.Base SaveDataCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4301, 4499); }
                 /// <summary>Error code: 2002-4302; Inner value: 0x219c02</summary>
-                public static Result.Base Result4302 => new Result.Base(ModuleFs, 4302);
+                public static Result.Base UnsupportedSaveVersion => new Result.Base(ModuleFs, 4302);
                 /// <summary>Error code: 2002-4303; Inner value: 0x219e02</summary>
                 public static Result.Base InvalidSaveDataEntryType => new Result.Base(ModuleFs, 4303);
                 /// <summary>Error code: 2002-4315; Inner value: 0x21b602</summary>
                 public static Result.Base InvalidSaveDataHeader => new Result.Base(ModuleFs, 4315);
                 /// <summary>Error code: 2002-4362; Inner value: 0x221402</summary>
-                public static Result.Base Result4362 => new Result.Base(ModuleFs, 4362);
+                public static Result.Base InvalidSaveDataIvfcMagic => new Result.Base(ModuleFs, 4362);
                 /// <summary>Error code: 2002-4363; Inner value: 0x221602</summary>
-                public static Result.Base Result4363 => new Result.Base(ModuleFs, 4363);
+                public static Result.Base InvalidSaveDataIvfcHashValidationBit => new Result.Base(ModuleFs, 4363);
                 /// <summary>Error code: 2002-4364; Inner value: 0x221802</summary>
-                public static Result.Base InvalidHashInSaveIvfc => new Result.Base(ModuleFs, 4364);
+                public static Result.Base InvalidSaveDataIvfcHash => new Result.Base(ModuleFs, 4364);
                 /// <summary>Error code: 2002-4372; Inner value: 0x222802</summary>
-                public static Result.Base SaveIvfcHashIsEmpty => new Result.Base(ModuleFs, 4372);
+                public static Result.Base EmptySaveDataIvfcHash => new Result.Base(ModuleFs, 4372);
                 /// <summary>Error code: 2002-4373; Inner value: 0x222a02</summary>
-                public static Result.Base InvalidHashInSaveIvfcTopLayer => new Result.Base(ModuleFs, 4373);
+                public static Result.Base InvalidSaveDataHashInIvfcTopLayer => new Result.Base(ModuleFs, 4373);
                 /// <summary>Error code: 2002-4402; Inner value: 0x226402</summary>
-                public static Result.Base Result4402 => new Result.Base(ModuleFs, 4402);
+                public static Result.Base SaveDataInvalidGptPartitionSignature => new Result.Base(ModuleFs, 4402);
                 /// <summary>Error code: 2002-4427; Inner value: 0x229602</summary>
-                public static Result.Base Result4427 => new Result.Base(ModuleFs, 4427);
+                public static Result.Base IncompleteBlockInZeroBitmapHashStorageFileSaveData => new Result.Base(ModuleFs, 4427);
 
                 /// <summary>Error code: 2002-4441; Range: 4441-4459; Inner value: 0x22b202</summary>
                 public static Result.Base SaveDataHostFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4441, 4459); }
@@ -175,13 +175,13 @@ namespace LibHac.Fs
             /// <summary>Error code: 2002-4601; Range: 4601-4639; Inner value: 0x23f202</summary>
             public static Result.Base IntegrityVerificationStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4601, 4639); }
                 /// <summary>Error code: 2002-4602; Inner value: 0x23f402</summary>
-                public static Result.Base Result4602 => new Result.Base(ModuleFs, 4602);
+                public static Result.Base InvalidIvfcMagic => new Result.Base(ModuleFs, 4602);
                 /// <summary>Error code: 2002-4603; Inner value: 0x23f602</summary>
-                public static Result.Base Result4603 => new Result.Base(ModuleFs, 4603);
+                public static Result.Base InvalidIvfcHashValidationBit => new Result.Base(ModuleFs, 4603);
                 /// <summary>Error code: 2002-4604; Inner value: 0x23f802</summary>
-                public static Result.Base InvalidHashInIvfc => new Result.Base(ModuleFs, 4604);
+                public static Result.Base InvalidIvfcHash => new Result.Base(ModuleFs, 4604);
                 /// <summary>Error code: 2002-4612; Inner value: 0x240802</summary>
-                public static Result.Base IvfcHashIsEmpty => new Result.Base(ModuleFs, 4612);
+                public static Result.Base EmptyIvfcHash => new Result.Base(ModuleFs, 4612);
                 /// <summary>Error code: 2002-4613; Inner value: 0x240a02</summary>
                 public static Result.Base InvalidHashInIvfcTopLayer => new Result.Base(ModuleFs, 4613);
 
@@ -201,7 +201,7 @@ namespace LibHac.Fs
             /// <summary>Error code: 2002-4661; Range: 4661-4679; Inner value: 0x246a02</summary>
             public static Result.Base BuiltInStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4661, 4679); }
                 /// <summary>Error code: 2002-4662; Inner value: 0x246c02</summary>
-                public static Result.Base Result4662 => new Result.Base(ModuleFs, 4662);
+                public static Result.Base InvalidGptPartitionSignature => new Result.Base(ModuleFs, 4662);
 
             /// <summary>Error code: 2002-4681; Range: 4681-4699; Inner value: 0x249202</summary>
             public static Result.Base FatFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4681, 4699); }
@@ -253,9 +253,9 @@ namespace LibHac.Fs
             public static Result.Base GameCardLogoDataCorrupted => new Result.Base(ModuleFs, 4781);
 
             /// <summary>Error code: 2002-4811; Range: 4811-4819; Inner value: 0x259602</summary>
-            public static Result.Base Range4811To4819 { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4811, 4819); }
+            public static Result.Base ZeroBitmapFileCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4811, 4819); }
                 /// <summary>Error code: 2002-4812; Inner value: 0x259802</summary>
-                public static Result.Base Result4812 => new Result.Base(ModuleFs, 4812);
+                public static Result.Base IncompleteBlockInZeroBitmapHashStorageFile => new Result.Base(ModuleFs, 4812);
 
         /// <summary>Error code: 2002-5000; Range: 5000-5999; Inner value: 0x271002</summary>
         public static Result.Base Unexpected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 5000, 5999); }
@@ -386,6 +386,8 @@ namespace LibHac.Fs
 
         /// <summary>Error code: 2002-6600; Range: 6600-6699; Inner value: 0x339002</summary>
         public static Result.Base EntryNotFound { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6600, 6699); }
+            /// <summary>Specified program index is not found<br/>Error code: 2002-6606; Inner value: 0x339c02</summary>
+            public static Result.Base TargetProgramIndexNotFound => new Result.Base(ModuleFs, 6606);
 
         /// <summary>Error code: 2002-6700; Range: 6700-6799; Inner value: 0x345802</summary>
         public static Result.Base OutOfResource { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6700, 6799); }

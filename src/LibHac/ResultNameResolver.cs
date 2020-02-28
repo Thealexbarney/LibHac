@@ -21,6 +21,8 @@ namespace LibHac
             return archiveReader.GetDictionary();
         }
 
+        // To save a bunch of space in the assembly, Results with their names are packed into
+        // an archive and unpacked at runtime.
         private readonly ref struct ResultArchiveReader
         {
             private readonly ReadOnlySpan<byte> _data;
