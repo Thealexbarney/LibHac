@@ -20,7 +20,7 @@ namespace LibHac
         public static Result Success => new Result(SuccessValue);
 
         private static IResultLogger Logger { get; set; }
-        private static IResultNameResolver NameResolver { get; set; }
+        private static IResultNameResolver NameResolver { get; set; } = new ResultNameResolver();
 
         private const int ModuleBitsOffset = 0;
         private const int ModuleBitsCount = 9;
@@ -233,8 +233,8 @@ namespace LibHac
             public Base(int module, int descriptionStart, int descriptionEnd)
             {
                 Debug.Assert(ModuleBegin <= module && module < ModuleEnd, "Invalid Module");
-                Debug.Assert(DescriptionBegin <= descriptionStart && descriptionStart < DescriptionEnd, "Invalid Description");
-                Debug.Assert(DescriptionBegin <= descriptionEnd && descriptionEnd < DescriptionEnd, "Invalid Description");
+                Debug.Assert(DescriptionBegin <= descriptionStart && descriptionStart < DescriptionEnd, "Invalid Description Start");
+                Debug.Assert(DescriptionBegin <= descriptionEnd && descriptionEnd < DescriptionEnd, "Invalid Description End");
                 Debug.Assert(descriptionStart <= descriptionEnd, "descriptionStart must be <= descriptionEnd");
 
                 _value = SetBitsValueLong(module, ModuleBitsOffset, ModuleBitsCount) |

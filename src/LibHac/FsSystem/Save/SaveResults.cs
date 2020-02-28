@@ -18,36 +18,36 @@ namespace LibHac.FsSystem.Save
                 return result;
             }
 
-            if (ResultFs.Result3002.Includes(result))
+            if (ResultFs.UnsupportedVersion.Includes(result))
             {
-                return ResultFs.Result4302.Value;
+                return ResultFs.UnsupportedSaveVersion.Value;
             }
 
             if (ResultFs.IntegrityVerificationStorageCorrupted.Includes(result))
             {
-                if (ResultFs.Result4602.Includes(result))
+                if (ResultFs.InvalidIvfcMagic.Includes(result))
                 {
-                    return ResultFs.Result4362.Value;
+                    return ResultFs.InvalidSaveDataIvfcMagic.Value;
                 }
 
-                if (ResultFs.Result4603.Includes(result))
+                if (ResultFs.InvalidIvfcHashValidationBit.Includes(result))
                 {
-                    return ResultFs.Result4363.Value;
+                    return ResultFs.InvalidSaveDataIvfcHashValidationBit.Value;
                 }
 
-                if (ResultFs.InvalidHashInIvfc.Includes(result))
+                if (ResultFs.InvalidIvfcHash.Includes(result))
                 {
-                    return ResultFs.InvalidHashInSaveIvfc.Value;
+                    return ResultFs.InvalidSaveDataIvfcHash.Value;
                 }
 
-                if (ResultFs.IvfcHashIsEmpty.Includes(result))
+                if (ResultFs.EmptyIvfcHash.Includes(result))
                 {
-                    return ResultFs.SaveIvfcHashIsEmpty.Value;
+                    return ResultFs.EmptySaveDataIvfcHash.Value;
                 }
 
                 if (ResultFs.InvalidHashInIvfcTopLayer.Includes(result))
                 {
-                    return ResultFs.InvalidHashInSaveIvfcTopLayer.Value;
+                    return ResultFs.InvalidSaveDataHashInIvfcTopLayer.Value;
                 }
 
                 return result;
@@ -55,9 +55,9 @@ namespace LibHac.FsSystem.Save
 
             if (ResultFs.BuiltInStorageCorrupted.Includes(result))
             {
-                if (ResultFs.Result4662.Includes(result))
+                if (ResultFs.InvalidGptPartitionSignature.Includes(result))
                 {
-                    return ResultFs.Result4402.Value;
+                    return ResultFs.SaveDataInvalidGptPartitionSignature.Value;
                 }
 
                 return result;
@@ -73,11 +73,11 @@ namespace LibHac.FsSystem.Save
                 return result;
             }
 
-            if (ResultFs.Range4811To4819.Includes(result))
+            if (ResultFs.ZeroBitmapFileCorrupted.Includes(result))
             {
-                if (ResultFs.Result4812.Includes(result))
+                if (ResultFs.IncompleteBlockInZeroBitmapHashStorageFile.Includes(result))
                 {
-                    return ResultFs.Result4427.Value;
+                    return ResultFs.IncompleteBlockInZeroBitmapHashStorageFileSaveData.Value;
                 }
 
                 return result;

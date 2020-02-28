@@ -215,7 +215,7 @@ namespace LibHac.FsSystem
                 if (OpenWritableFileCount > 0)
                 {
                     // All files must be closed before commiting save data.
-                    return ResultFs.WritableFileOpen.Log();
+                    return ResultFs.WriteModeFileNotClosed.Log();
                 }
 
                 // Get rid of the previous commit by renaming the folder

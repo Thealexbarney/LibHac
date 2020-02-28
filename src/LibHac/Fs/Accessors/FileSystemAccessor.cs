@@ -138,7 +138,7 @@ namespace LibHac.Fs.Accessors
         {
             if (OpenFiles.Any(x => (x.OpenMode & OpenMode.Write) != 0))
             {
-                return ResultFs.WritableFileOpen.Log();
+                return ResultFs.WriteModeFileNotClosed.Log();
             }
 
             return FileSystem.Commit();

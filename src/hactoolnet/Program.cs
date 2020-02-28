@@ -56,8 +56,6 @@ namespace hactoolnet
 
             try
             {
-                Result.SetNameResolver(new ResultNameResolver());
-
                 using (var logger = new ProgressBar())
                 {
                     ctx.Logger = logger;
