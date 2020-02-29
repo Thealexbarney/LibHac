@@ -326,6 +326,7 @@ namespace LibHacBuild
             .After(Compile)
             .Executes(BuildNative);
 
+        // ReSharper disable once UnusedMember.Local
         Target AppVeyorBuild => _ => _
             .DependsOn(Zip, Native, Publish)
             .Unlisted()
@@ -335,6 +336,7 @@ namespace LibHacBuild
             .DependsOn(Test, Zip)
             .Executes(PrintResults);
 
+        // ReSharper disable once UnusedMember.Local
         Target Full => _ => _
             .DependsOn(Sign, Native)
             .Executes(PrintResults);
@@ -372,7 +374,7 @@ namespace LibHacBuild
 
             if (EnvironmentInfo.IsUnix && !Untrimmed)
             {
-                File.Copy(CliNativeExe, CliNativeExe + "_unstripped");
+                File.Copy(CliNativeExe, CliNativeExe + "_unstripped", true);
                 ProcessTasks.StartProcess("strip", CliNativeExe).AssertZeroExitCode();
             }
 

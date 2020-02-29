@@ -7,9 +7,9 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Xml.Linq;
 using ICSharpCode.SharpZipLib.Zip;
+using Nuke.Common.IO;
 using Nuke.Common.Tools.NuGet;
 using static Nuke.Common.IO.FileSystemTasks;
-using static Nuke.Common.IO.PathConstruction;
 
 namespace LibHacBuild
 {

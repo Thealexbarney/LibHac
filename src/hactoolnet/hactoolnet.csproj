@@ -32,7 +32,7 @@
     <RootAllApplicationAssemblies>false</RootAllApplicationAssemblies>
   </PropertyGroup>
 
-  <ItemGroup Condition=" $(BuildType.StartsWith('native')) and '$(BuildType)' != 'native-untrimmed' ">
+  <ItemGroup Condition=" $(BuildType.StartsWith('native')) and '$(OS)' == 'Windows_NT' and '$(BuildType)' != 'native-untrimmed' ">
     <IlcArg Include="--removefeature:EventSource" />
   </ItemGroup>
 
