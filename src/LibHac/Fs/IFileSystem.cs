@@ -127,11 +127,6 @@ namespace LibHac.Fs
         /// <param name="entryType">If the operation returns successfully, the <see cref="DirectoryEntryType"/> of the file.</param>
         /// <param name="path">The full path to check.</param>
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        /// <remarks>
-        /// This function operates slightly differently than it does in Horizon OS.
-        /// Instead of returning <see cref="ResultFs.PathNotFound"/> when an entry is missing,
-        /// the function will return <see cref="DirectoryEntryType.NotFound"/>.
-        /// </remarks>
         Result GetEntryType(out DirectoryEntryType entryType, string path);
 
         /// <summary>

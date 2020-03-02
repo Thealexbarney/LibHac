@@ -75,14 +75,14 @@ namespace LibHac.FsSystem
             {
                 Result getEntryResult = fs.GetEntryType(out DirectoryEntryType type, path);
 
-                if (getEntryResult.IsSuccess() && type != DirectoryEntryType.NotFound)
+                if (getEntryResult.IsSuccess())
                 {
                     entryType = type;
                     return Result.Success;
                 }
             }
 
-            entryType = DirectoryEntryType.NotFound;
+            entryType = default;
             return ResultFs.PathNotFound.Log();
         }
 
@@ -94,7 +94,7 @@ namespace LibHac.FsSystem
             {
                 Result getEntryResult = fs.GetEntryType(out DirectoryEntryType type, path);
 
-                if (getEntryResult.IsSuccess() && type != DirectoryEntryType.NotFound)
+                if (getEntryResult.IsSuccess())
                 {
                     return fs.GetFileTimeStampRaw(out timeStamp, path);
                 }
@@ -112,7 +112,7 @@ namespace LibHac.FsSystem
             {
                 Result getEntryResult = fs.GetEntryType(out DirectoryEntryType type, path);
 
-                if (getEntryResult.IsSuccess() && type != DirectoryEntryType.NotFound)
+                if (getEntryResult.IsSuccess())
                 {
                     return fs.QueryEntry(outBuffer, inBuffer, queryId, path);
                 }

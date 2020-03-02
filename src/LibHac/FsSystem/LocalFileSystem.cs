@@ -308,7 +308,7 @@ namespace LibHac.FsSystem
                 return Result.Success;
             }
 
-            entryType = DirectoryEntryType.NotFound;
+            entryType = default;
             return ResultFs.PathNotFound.Log();
         }
 

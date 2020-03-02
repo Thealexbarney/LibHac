@@ -24,7 +24,7 @@ namespace LibHac.FsSystem.RomFs
 
         protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path)
         {
-            entryType = DirectoryEntryType.NotFound;
+            entryType = default;
             path = PathTools.Normalize(path);
 
             if (FileTable.TryOpenFile(path, out RomFileInfo _))
