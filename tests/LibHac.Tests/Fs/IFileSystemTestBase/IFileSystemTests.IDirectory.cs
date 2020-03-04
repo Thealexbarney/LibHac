@@ -8,6 +8,29 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
     public abstract partial class IFileSystemTests
     {
         [Fact]
+        public void IDirectoryRead_EmptyFs_NoEntriesAreRead()
+        {
+            IFileSystem fs = CreateFileSystem();
+            Span<DirectoryEntry> entries = stackalloc DirectoryEntry[1];
+
+            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/", OpenDirectoryMode.All));
+
+            Assert.Success(directory.Read(out long entriesRead, entries));
+            Assert.Equal(0, entriesRead);
+        }
+
+        [Fact]
+        public void IDirectoryGetEntryCount_EmptyFs_EntryCountIsZero()
+        {
+            IFileSystem fs = CreateFileSystem();
+
+            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/", OpenDirectoryMode.All));
+
+            Assert.Success(directory.GetEntryCount(out long entryCount));
+            Assert.Equal(0, entryCount);
+        }
+
+        [Fact]
         public void IDirectoryRead_AllEntriesAreReturned()
         {
             IFileSystem fs = CreateFileSystem();

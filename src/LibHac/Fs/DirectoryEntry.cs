@@ -36,8 +36,7 @@ namespace LibHac.Fs
     public enum DirectoryEntryType : byte
     {
         Directory,
-        File,
-        NotFound
+        File
     }
 
     [Flags]
