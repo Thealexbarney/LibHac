@@ -18,59 +18,55 @@ namespace LibHac.Fs
             FsTable = new FileTable();
         }
 
-        protected override Result CreateDirectoryImpl(string path)
+        protected override Result CreateDirectoryImpl(U8Span path)
         {
             return FsTable.AddDirectory(new U8Span(path));
         }
 
-        protected override Result CreateDirectoryImpl(string path, NxFileAttributes archiveAttribute)
+        protected override Result CreateDirectoryImpl(U8Span path, NxFileAttributes archiveAttribute)
         {
-            var u8Path = new U8Span(path);
-
-            Result rc = FsTable.AddDirectory(u8Path);
+            Result rc = FsTable.AddDirectory(path);
             if (rc.IsFailure()) return rc;
 
-            rc = FsTable.GetDirectory(u8Path, out DirectoryNode dir);
+            rc = FsTable.GetDirectory(path, out DirectoryNode dir);
             if (rc.IsFailure()) return rc;
 
             dir.Attributes = archiveAttribute;
             return Result.Success;
         }
 
-        protected override Result CreateFileImpl(string path, long size, CreateFileOptions options)
+        protected override Result CreateFileImpl(U8Span path, long size, CreateFileOptions options)
         {
-            var u8Path = new U8Span(path);
-
-            Result rc = FsTable.AddFile(u8Path);
+            Result rc = FsTable.AddFile(path);
             if (rc.IsFailure()) return rc;
 
-            rc = FsTable.GetFile(u8Path, out FileNode file);
+            rc = FsTable.GetFile(path, out FileNode file);
             if (rc.IsFailure()) return rc;
 
             return file.File.SetSize(size);
         }
 
-        protected override Result DeleteDirectoryImpl(string path)
+        protected override Result DeleteDirectoryImpl(U8Span path)
         {
             return FsTable.DeleteDirectory(new U8Span(path), false);
         }
 
-        protected override Result DeleteDirectoryRecursivelyImpl(string path)
+        protected override Result DeleteDirectoryRecursivelyImpl(U8Span path)
         {
             return FsTable.DeleteDirectory(new U8Span(path), true);
         }
 
-        protected override Result CleanDirectoryRecursivelyImpl(string path)
+        protected override Result CleanDirectoryRecursivelyImpl(U8Span path)
         {
             return FsTable.CleanDirectory(new U8Span(path));
         }
 
-        protected override Result DeleteFileImpl(string path)
+        protected override Result DeleteFileImpl(U8Span path)
         {
             return FsTable.DeleteFile(new U8Span(path));
         }
 
-        protected override Result OpenDirectoryImpl(out IDirectory directory, string path, OpenDirectoryMode mode)
+        protected override Result OpenDirectoryImpl(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
             directory = default;
 
@@ -81,12 +77,11 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        protected override Result OpenFileImpl(out IFile file, string path, OpenMode mode)
+        protected override Result OpenFileImpl(out IFile file, U8Span path, OpenMode mode)
         {
             file = default;
-            var u8Path = new U8Span(path);
 
-            Result rc = FsTable.GetFile(u8Path, out FileNode fileNode);
+            Result rc = FsTable.GetFile(path, out FileNode fileNode);
             if (rc.IsFailure()) return rc;
 
             file = new MemoryFile(mode, fileNode.File);
@@ -94,27 +89,25 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        protected override Result RenameDirectoryImpl(string oldPath, string newPath)
+        protected override Result RenameDirectoryImpl(U8Span oldPath, U8Span newPath)
         {
             return FsTable.RenameDirectory(new U8Span(oldPath), new U8Span(newPath));
         }
 
-        protected override Result RenameFileImpl(string oldPath, string newPath)
+        protected override Result RenameFileImpl(U8Span oldPath, U8Span newPath)
         {
             return FsTable.RenameFile(new U8Span(oldPath), new U8Span(newPath));
         }
 
-        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path)
+        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, U8Span path)
         {
-            var u8Path = new U8Span(path);
-
-            if (FsTable.GetFile(u8Path, out _).IsSuccess())
+            if (FsTable.GetFile(path, out _).IsSuccess())
             {
                 entryType = DirectoryEntryType.File;
                 return Result.Success;
             }
 
-            if (FsTable.GetDirectory(u8Path, out _).IsSuccess())
+            if (FsTable.GetDirectory(path, out _).IsSuccess())
             {
                 entryType = DirectoryEntryType.Directory;
                 return Result.Success;
@@ -129,17 +122,15 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        protected override Result GetFileAttributesImpl(string path, out NxFileAttributes attributes)
+        protected override Result GetFileAttributesImpl(out NxFileAttributes attributes, U8Span path)
         {
-            var u8Path = new U8Span(path);
-
-            if (FsTable.GetFile(u8Path, out FileNode file).IsSuccess())
+            if (FsTable.GetFile(path, out FileNode file).IsSuccess())
             {
                 attributes = file.Attributes;
                 return Result.Success;
             }
 
-            if (FsTable.GetDirectory(u8Path, out DirectoryNode dir).IsSuccess())
+            if (FsTable.GetDirectory(path, out DirectoryNode dir).IsSuccess())
             {
                 attributes = dir.Attributes;
                 return Result.Success;
@@ -149,17 +140,15 @@ namespace LibHac.Fs
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result SetFileAttributesImpl(string path, NxFileAttributes attributes)
+        protected override Result SetFileAttributesImpl(U8Span path, NxFileAttributes attributes)
         {
-            var u8Path = new U8Span(path);
-
-            if (FsTable.GetFile(u8Path, out FileNode file).IsSuccess())
+            if (FsTable.GetFile(path, out FileNode file).IsSuccess())
             {
                 file.Attributes = attributes;
                 return Result.Success;
             }
 
-            if (FsTable.GetDirectory(u8Path, out DirectoryNode dir).IsSuccess())
+            if (FsTable.GetDirectory(path, out DirectoryNode dir).IsSuccess())
             {
                 dir.Attributes = attributes;
                 return Result.Success;
@@ -168,11 +157,9 @@ namespace LibHac.Fs
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result GetFileSizeImpl(out long fileSize, string path)
+        protected override Result GetFileSizeImpl(out long fileSize, U8Span path)
         {
-            var u8Path = new U8Span(path);
-
-            if (FsTable.GetFile(u8Path, out FileNode file).IsSuccess())
+            if (FsTable.GetFile(path, out FileNode file).IsSuccess())
             {
                 return file.File.GetSize(out fileSize);
             }
@@ -646,7 +633,12 @@ namespace LibHac.Fs
 
                 while (parser.MoveNext())
                 {
-                    if (!TryFindChildDirectory(new U8Span(parser.GetCurrent()), current, out DirectoryNode child))
+                    var currentDir = new U8Span(parser.GetCurrent());
+
+                    // End if we've hit a trailing separator
+                    if (currentDir.IsEmpty() && parser.IsFinished()) break;
+
+                    if (!TryFindChildDirectory(currentDir, current, out DirectoryNode child))
                     {
                         directory = default;
                         return ResultFs.PathNotFound.Log();

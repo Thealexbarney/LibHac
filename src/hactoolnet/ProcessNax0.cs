@@ -27,7 +27,7 @@ namespace hactoolnet
 
                 try
                 {
-                    xtsFile = new AesXtsFile(OpenMode.Read, baseFile, ctx.Options.SdPath, kekSource, validationKey, 0x4000);
+                    xtsFile = new AesXtsFile(OpenMode.Read, baseFile, ctx.Options.SdPath.ToU8String(), kekSource, validationKey, 0x4000);
                     contentType = i;
 
                     break;

@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 using Xunit;
 
 namespace LibHac.Tests.Fs.IFileSystemTestBase
@@ -10,15 +11,15 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateDirectory("/dir");
-            fs.CreateDirectory("/dir/dir2");
-            fs.CreateFile("/dir/file1", 0, CreateFileOptions.None);
+            fs.CreateDirectory("/dir".ToU8Span());
+            fs.CreateDirectory("/dir/dir2".ToU8Span());
+            fs.CreateFile("/dir/file1".ToU8Span(), 0, CreateFileOptions.None);
 
-            Result rcDelete = fs.CleanDirectoryRecursively("/dir");
+            Result rcDelete = fs.CleanDirectoryRecursively("/dir".ToU8Span());
 
-            Result rcDir1Type = fs.GetEntryType(out DirectoryEntryType dir1Type, "/dir");
-            Result rcDir2Type = fs.GetEntryType(out _, "/dir/dir2");
-            Result rcFileType = fs.GetEntryType(out _, "/dir/file1");
+            Result rcDir1Type = fs.GetEntryType(out DirectoryEntryType dir1Type, "/dir".ToU8Span());
+            Result rcDir2Type = fs.GetEntryType(out _, "/dir/dir2".ToU8Span());
+            Result rcFileType = fs.GetEntryType(out _, "/dir/file1".ToU8Span());
 
             Assert.True(rcDelete.IsSuccess());
 

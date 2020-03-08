@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Buffers;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using LibHac.Common;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem
@@ -47,7 +50,7 @@ namespace LibHac.FsSystem
         // .NET Core on platforms other than Windows doesn't support getting the
         // archive flag in FAT file systems. Try to work around that for now for reading, 
         // but writing still won't work properly on those platforms
-        internal bool IsConcatenationFile(string path)
+        internal bool IsConcatenationFile(U8Span path)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -62,14 +65,14 @@ namespace LibHac.FsSystem
             }
         }
 
-        private bool IsConcatenationFileHeuristic(string path)
+        private bool IsConcatenationFileHeuristic(U8Span path)
         {
             // Check if the path is a directory
             Result getTypeResult = BaseFileSystem.GetEntryType(out DirectoryEntryType pathType, path);
             if (getTypeResult.IsFailure() || pathType != DirectoryEntryType.Directory) return false;
 
             // Check if the directory contains at least one subfile
-            getTypeResult = BaseFileSystem.GetEntryType(out DirectoryEntryType subFileType, PathTools.Combine(path, "00"));
+            getTypeResult = BaseFileSystem.GetEntryType(out DirectoryEntryType subFileType, PathTools.Combine(path.ToString(), "00").ToU8Span());
             if (getTypeResult.IsFailure() || subFileType != DirectoryEntryType.File) return false;
 
             // Make sure the directory contains no subdirectories
@@ -88,15 +91,14 @@ namespace LibHac.FsSystem
             return (attributes & NxFileAttributes.Directory) != 0 && (attributes & NxFileAttributes.Archive) != 0;
         }
 
-        private Result SetConcatenationFileAttribute(string path)
+        private Result SetConcatenationFileAttribute(U8Span path)
         {
             return BaseFileSystem.SetFileAttributes(path, NxFileAttributes.Archive);
         }
 
-        protected override Result CreateDirectoryImpl(string path)
+        protected override Result CreateDirectoryImpl(U8Span path)
         {
-            path = PathTools.Normalize(path);
-            string parent = PathTools.GetParentDirectory(path);
+            var parent = new U8Span(PathTools.GetParentDirectory(path));
 
             if (IsConcatenationFile(parent))
             {
@@ -107,10 +109,8 @@ namespace LibHac.FsSystem
             return BaseFileSystem.CreateDirectory(path);
         }
 
-        protected override Result CreateFileImpl(string path, long size, CreateFileOptions options)
+        protected override Result CreateFileImpl(U8Span path, long size, CreateFileOptions options)
         {
-            path = PathTools.Normalize(path);
-
             CreateFileOptions newOptions = options & ~CreateFileOptions.CreateConcatenationFile;
 
             if (!options.HasFlag(CreateFileOptions.CreateConcatenationFile))
@@ -119,9 +119,9 @@ namespace LibHac.FsSystem
             }
 
             // A concatenation file directory can't contain normal files
-            string parentDir = PathTools.GetParentDirectory(path);
+            ReadOnlySpan<byte> parentDir = PathTools.GetParentDirectory(path);
 
-            if (IsConcatenationFile(parentDir))
+            if (IsConcatenationFile(new U8Span(parentDir)))
             {
                 // Cannot create a file inside of a concatenation file
                 return ResultFs.PathNotFound.Log();
@@ -135,7 +135,12 @@ namespace LibHac.FsSystem
             for (int i = 0; remaining > 0; i++)
             {
                 long fileSize = Math.Min(SubFileSize, remaining);
-                string fileName = GetSubFilePath(path, i);
+
+                FsPath fileName;
+                unsafe { _ = &fileName; } // workaround for CS0165
+
+                rc = GetSubFilePath(fileName.Str, path, i);
+                if (rc.IsFailure()) return rc;
 
                 Result createSubFileResult = BaseFileSystem.CreateFile(fileName, fileSize, CreateFileOptions.None);
 
@@ -151,10 +156,8 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DeleteDirectoryImpl(string path)
+        protected override Result DeleteDirectoryImpl(U8Span path)
         {
-            path = PathTools.Normalize(path);
-
             if (IsConcatenationFile(path))
             {
                 return ResultFs.PathNotFound.Log();
@@ -163,48 +166,48 @@ namespace LibHac.FsSystem
             return BaseFileSystem.DeleteDirectory(path);
         }
 
-        protected override Result DeleteDirectoryRecursivelyImpl(string path)
+        protected override Result DeleteDirectoryRecursivelyImpl(U8Span path)
         {
-            path = PathTools.Normalize(path);
-
             if (IsConcatenationFile(path)) return ResultFs.PathNotFound.Log();
 
             return BaseFileSystem.DeleteDirectoryRecursively(path);
         }
 
-        protected override Result CleanDirectoryRecursivelyImpl(string path)
+        protected override Result CleanDirectoryRecursivelyImpl(U8Span path)
         {
-            path = PathTools.Normalize(path);
-
             if (IsConcatenationFile(path)) return ResultFs.PathNotFound.Log();
 
             return BaseFileSystem.CleanDirectoryRecursively(path);
         }
 
-        protected override Result DeleteFileImpl(string path)
+        protected override Result DeleteFileImpl(U8Span path)
         {
-            path = PathTools.Normalize(path);
-
             if (!IsConcatenationFile(path))
             {
                 return BaseFileSystem.DeleteFile(path);
             }
 
-            int count = GetSubFileCount(path);
+            Result rc = GetSubFileCount(out int count, path);
+            if (rc.IsFailure()) return rc;
 
             for (int i = 0; i < count; i++)
             {
-                Result rc = BaseFileSystem.DeleteFile(GetSubFilePath(path, i));
+                FsPath subFilePath;
+                unsafe { _ = &subFilePath; } // workaround for CS0165
+
+                rc = GetSubFilePath(subFilePath.Str, path, i);
+                if (rc.IsFailure()) return rc;
+
+                rc = BaseFileSystem.DeleteFile(subFilePath);
                 if (rc.IsFailure()) return rc;
             }
 
             return BaseFileSystem.DeleteDirectory(path);
         }
 
-        protected override Result OpenDirectoryImpl(out IDirectory directory, string path, OpenDirectoryMode mode)
+        protected override Result OpenDirectoryImpl(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
             directory = default;
-            path = PathTools.Normalize(path);
 
             if (IsConcatenationFile(path))
             {
@@ -218,25 +221,29 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result OpenFileImpl(out IFile file, string path, OpenMode mode)
+        protected override Result OpenFileImpl(out IFile file, U8Span path, OpenMode mode)
         {
             file = default;
-            path = PathTools.Normalize(path);
 
             if (!IsConcatenationFile(path))
             {
                 return BaseFileSystem.OpenFile(out file, path, mode);
             }
 
-            int fileCount = GetSubFileCount(path);
+            Result rc = GetSubFileCount(out int fileCount, path);
+            if (rc.IsFailure()) return rc;
 
-            var files = new List<IFile>();
+            var files = new List<IFile>(fileCount);
 
             for (int i = 0; i < fileCount; i++)
             {
-                string filePath = GetSubFilePath(path, i);
+                FsPath subFilePath;
+                unsafe { _ = &subFilePath; } // workaround for CS0165
 
-                Result rc = BaseFileSystem.OpenFile(out IFile subFile, filePath, mode);
+                rc = GetSubFilePath(subFilePath.Str, path, i);
+                if (rc.IsFailure()) return rc;
+
+                rc = BaseFileSystem.OpenFile(out IFile subFile, subFilePath, mode);
                 if (rc.IsFailure()) return rc;
 
                 files.Add(subFile);
@@ -246,11 +253,8 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result RenameDirectoryImpl(string oldPath, string newPath)
+        protected override Result RenameDirectoryImpl(U8Span oldPath, U8Span newPath)
         {
-            oldPath = PathTools.Normalize(oldPath);
-            newPath = PathTools.Normalize(newPath);
-
             if (IsConcatenationFile(oldPath))
             {
                 return ResultFs.PathNotFound.Log();
@@ -259,11 +263,8 @@ namespace LibHac.FsSystem
             return BaseFileSystem.RenameDirectory(oldPath, newPath);
         }
 
-        protected override Result RenameFileImpl(string oldPath, string newPath)
+        protected override Result RenameFileImpl(U8Span oldPath, U8Span newPath)
         {
-            oldPath = PathTools.Normalize(oldPath);
-            newPath = PathTools.Normalize(newPath);
-
             if (IsConcatenationFile(oldPath))
             {
                 return BaseFileSystem.RenameDirectory(oldPath, newPath);
@@ -274,10 +275,8 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path)
+        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, U8Span path)
         {
-            path = PathTools.Normalize(path);
-
             if (IsConcatenationFile(path))
             {
                 entryType = DirectoryEntryType.File;
@@ -287,17 +286,17 @@ namespace LibHac.FsSystem
             return BaseFileSystem.GetEntryType(out entryType, path);
         }
 
-        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, string path)
+        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, U8Span path)
         {
             return BaseFileSystem.GetFreeSpaceSize(out freeSpace, path);
         }
 
-        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, string path)
+        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, U8Span path)
         {
             return BaseFileSystem.GetTotalSpaceSize(out totalSpace, path);
         }
 
-        protected override Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, string path)
+        protected override Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, U8Span path)
         {
             return BaseFileSystem.GetFileTimeStampRaw(out timeStamp, path);
         }
@@ -307,42 +306,101 @@ namespace LibHac.FsSystem
             return BaseFileSystem.Commit();
         }
 
-        protected override Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
+        protected override Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
+            U8Span path)
         {
             if (queryId != QueryId.MakeConcatFile) return ResultFs.UnsupportedOperationInConcatFsQueryEntry.Log();
 
             return SetConcatenationFileAttribute(path);
         }
 
-        private int GetSubFileCount(string dirPath)
+        private Result GetSubFileCount(out int fileCount, U8Span dirPath)
         {
-            int count = 0;
+            fileCount = default;
 
-            while (BaseFileSystem.FileExists(GetSubFilePath(dirPath, count)))
+            FsPath buffer;
+            unsafe { _ = &buffer; } // workaround for CS0165
+
+            int pathLen = StringUtils.Copy(buffer.Str, dirPath);
+
+            // Make sure we have at least 3 bytes for the sub file name
+            if (pathLen + 3 > PathTools.MaxPathLength)
+                return ResultFs.TooLongPath.Log();
+
+            buffer.Str[pathLen] = StringTraits.DirectorySeparator;
+            Span<byte> subFileName = buffer.Str.Slice(pathLen + 1);
+
+            Result rc;
+            int count;
+
+            for (count = 0; ; count++)
             {
-                count++;
+                Utf8Formatter.TryFormat(count, subFileName, out _, new StandardFormat('D', 2));
+
+                rc = BaseFileSystem.GetEntryType(out _, buffer);
+                if (rc.IsFailure()) break;
             }
 
-            return count;
-        }
-
-        internal static string GetSubFilePath(string dirPath, int index)
-        {
-            return $"{dirPath}/{index:D2}";
-        }
-
-        internal long GetConcatenationFileSize(string path)
-        {
-            int fileCount = GetSubFileCount(path);
-            long size = 0;
-
-            for (int i = 0; i < fileCount; i++)
+            if (!ResultFs.PathNotFound.Includes(rc))
             {
-                BaseFileSystem.GetFileSize(out long fileSize, GetSubFilePath(path, i)).ThrowIfFailure();
-                size += fileSize;
+                return rc;
             }
 
-            return size;
+            fileCount = count;
+            return Result.Success;
+        }
+
+        internal static Result GetSubFilePath(Span<byte> subFilePathBuffer, ReadOnlySpan<byte> basePath, int index)
+        {
+            int basePathLen = StringUtils.Copy(subFilePathBuffer, basePath);
+
+            // Make sure we have at least 3 bytes for the sub file name
+            if (basePathLen + 3 > PathTools.MaxPathLength)
+                return ResultFs.TooLongPath.Log();
+
+            subFilePathBuffer[basePathLen] = StringTraits.DirectorySeparator;
+
+            Utf8Formatter.TryFormat(index, subFilePathBuffer.Slice(basePathLen + 1), out _, new StandardFormat('D', 2));
+
+            return Result.Success;
+        }
+
+        internal Result GetConcatenationFileSize(out long size, ReadOnlySpan<byte> path)
+        {
+            size = default;
+
+            FsPath buffer;
+            unsafe { _ = &buffer; } // workaround for CS0165
+
+            int pathLen = StringUtils.Copy(buffer.Str, path);
+
+            // Make sure we have at least 3 bytes for the sub file name
+            if (pathLen + 3 > PathTools.MaxPathLength)
+                return ResultFs.TooLongPath.Log();
+
+            buffer.Str[pathLen] = StringTraits.DirectorySeparator;
+            Span<byte> subFileName = buffer.Str.Slice(pathLen + 1);
+
+            Result rc;
+            long totalSize = 0;
+
+            for (int i = 0; ; i++)
+            {
+                Utf8Formatter.TryFormat(i, subFileName, out _, new StandardFormat('D', 2));
+
+                rc = BaseFileSystem.GetFileSize(out long fileSize, buffer);
+                if (rc.IsFailure()) break;
+
+                totalSize += fileSize;
+            }
+
+            if (!ResultFs.PathNotFound.Includes(rc))
+            {
+                return rc;
+            }
+
+            size = totalSize;
+            return Result.Success;
         }
     }
 }

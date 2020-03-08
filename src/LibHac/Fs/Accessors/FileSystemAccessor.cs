@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using LibHac.FsSystem;
+using LibHac.Common;
 
 namespace LibHac.Fs.Accessors
 {
@@ -28,44 +28,44 @@ namespace LibHac.Fs.Accessors
             MountNameGenerator = nameGenerator;
         }
 
-        public Result CreateDirectory(string path)
+        public Result CreateDirectory(U8Span path)
         {
             return FileSystem.CreateDirectory(path);
         }
 
-        public Result CreateFile(string path, long size, CreateFileOptions options)
+        public Result CreateFile(U8Span path, long size, CreateFileOptions options)
         {
             return FileSystem.CreateFile(path, size, options);
         }
 
-        public Result DeleteDirectory(string path)
+        public Result DeleteDirectory(U8Span path)
         {
             return FileSystem.DeleteDirectory(path);
         }
 
-        public Result DeleteDirectoryRecursively(string path)
+        public Result DeleteDirectoryRecursively(U8Span path)
         {
             return FileSystem.DeleteDirectoryRecursively(path);
         }
 
-        public Result CleanDirectoryRecursively(string path)
+        public Result CleanDirectoryRecursively(U8Span path)
         {
             return FileSystem.CleanDirectoryRecursively(path);
         }
 
-        public Result DeleteFile(string path)
+        public Result DeleteFile(U8Span path)
         {
             return FileSystem.DeleteFile(path);
         }
 
-        public Result OpenDirectory(out DirectoryAccessor directory, string path, OpenDirectoryMode mode)
+        public Result OpenDirectory(out DirectoryAccessor directory, U8Span path, OpenDirectoryMode mode)
         {
             directory = default;
 
             Result rc = FileSystem.OpenDirectory(out IDirectory rawDirectory, path, mode);
             if (rc.IsFailure()) return rc;
 
-            var accessor = new DirectoryAccessor(rawDirectory, this, FileSystem, path);
+            var accessor = new DirectoryAccessor(rawDirectory, this);
 
             lock (_locker)
             {
@@ -76,7 +76,7 @@ namespace LibHac.Fs.Accessors
             return Result.Success;
         }
 
-        public Result OpenFile(out FileAccessor file, string path, OpenMode mode)
+        public Result OpenFile(out FileAccessor file, U8Span path, OpenMode mode)
         {
             file = default;
 
@@ -94,42 +94,32 @@ namespace LibHac.Fs.Accessors
             return Result.Success;
         }
 
-        public Result RenameDirectory(string oldPath, string newPath)
+        public Result RenameDirectory(U8Span oldPath, U8Span newPath)
         {
             return FileSystem.RenameDirectory(oldPath, newPath);
         }
 
-        public Result RenameFile(string oldPath, string newPath)
+        public Result RenameFile(U8Span oldPath, U8Span newPath)
         {
             return FileSystem.RenameFile(oldPath, newPath);
         }
 
-        public bool DirectoryExists(string path)
-        {
-            return FileSystem.DirectoryExists(path);
-        }
-
-        public bool FileExists(string path)
-        {
-            return FileSystem.FileExists(path);
-        }
-
-        public Result GetEntryType(out DirectoryEntryType type, string path)
+        public Result GetEntryType(out DirectoryEntryType type, U8Span path)
         {
             return FileSystem.GetEntryType(out type, path);
         }
 
-        public Result GetFreeSpaceSize(out long freeSpace, string path)
+        public Result GetFreeSpaceSize(out long freeSpace, U8Span path)
         {
             return FileSystem.GetFreeSpaceSize(out freeSpace, path);
         }
 
-        public Result GetTotalSpaceSize(out long totalSpace, string path)
+        public Result GetTotalSpaceSize(out long totalSpace, U8Span path)
         {
             return FileSystem.GetTotalSpaceSize(out totalSpace, path);
         }
 
-        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path)
+        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
         {
             return FileSystem.GetFileTimeStampRaw(out timeStamp, path);
         }
@@ -144,7 +134,7 @@ namespace LibHac.Fs.Accessors
             return FileSystem.Commit();
         }
 
-        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
+        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, U8Span path, QueryId queryId)
         {
             return FileSystem.QueryEntry(outBuffer, inBuffer, queryId, path);
         }

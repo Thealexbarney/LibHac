@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 using LibHac.FsSystem;
 
 namespace LibHac
@@ -29,7 +30,7 @@ namespace LibHac
             XciPartition root = GetRootPartition();
             if (type == XciPartitionType.Root) return root;
 
-            root.OpenFile(out IFile partitionFile, type.GetFileName(), OpenMode.Read).ThrowIfFailure();
+            root.OpenFile(out IFile partitionFile, type.GetFileName().ToU8Span(), OpenMode.Read).ThrowIfFailure();
             return new XciPartition(partitionFile.AsStorage());
         }
 

@@ -1,9 +1,10 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 
 namespace LibHac.FsService.Creators
 {
     public interface ISubDirectoryFileSystemCreator
     {
-        Result Create(out IFileSystem subDirFileSystem, IFileSystem baseFileSystem, string path);
+        Result Create(out IFileSystem subDirFileSystem, IFileSystem baseFileSystem, U8Span path);
     }
 }

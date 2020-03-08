@@ -1,20 +1,22 @@
-﻿namespace LibHac.Fs
+﻿using LibHac.Common;
+
+namespace LibHac.Fs
 {
     public abstract class AttributeFileSystemBase : FileSystemBase, IAttributeFileSystem
     {
-        protected abstract Result CreateDirectoryImpl(string path, NxFileAttributes archiveAttribute);
-        protected abstract Result GetFileAttributesImpl(string path, out NxFileAttributes attributes);
-        protected abstract Result SetFileAttributesImpl(string path, NxFileAttributes attributes);
-        protected abstract Result GetFileSizeImpl(out long fileSize, string path);
+        protected abstract Result CreateDirectoryImpl(U8Span path, NxFileAttributes archiveAttribute);
+        protected abstract Result GetFileAttributesImpl(out NxFileAttributes attributes, U8Span path);
+        protected abstract Result SetFileAttributesImpl(U8Span path, NxFileAttributes attributes);
+        protected abstract Result GetFileSizeImpl(out long fileSize, U8Span path);
 
-        public Result CreateDirectory(string path, NxFileAttributes archiveAttribute)
+        public Result CreateDirectory(U8Span path, NxFileAttributes archiveAttribute)
         {
             if (IsDisposed) return ResultFs.PreconditionViolation.Log();
 
             return CreateDirectoryImpl(path, archiveAttribute);
         }
 
-        public Result GetFileAttributes(out NxFileAttributes attributes, string path)
+        public Result GetFileAttributes(out NxFileAttributes attributes, U8Span path)
         {
             if (IsDisposed)
             {
@@ -22,17 +24,17 @@
                 return ResultFs.PreconditionViolation.Log();
             }
 
-            return GetFileAttributesImpl(path, out attributes);
+            return GetFileAttributesImpl(out attributes, path);
         }
 
-        public Result SetFileAttributes(string path, NxFileAttributes attributes)
+        public Result SetFileAttributes(U8Span path, NxFileAttributes attributes)
         {
             if (IsDisposed) return ResultFs.PreconditionViolation.Log();
 
             return SetFileAttributesImpl(path, attributes);
         }
 
-        public Result GetFileSize(out long fileSize, string path)
+        public Result GetFileSize(out long fileSize, U8Span path)
         {
             if (IsDisposed)
             {

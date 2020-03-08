@@ -14,7 +14,7 @@ namespace LibHac.FsService.Creators
 
         public Result SetFileSystem(IFileSystem fileSystem, BisPartitionId partitionId)
         {
-            if (fileSystem == null) return ResultFs.NullArgument.Log();
+            if (fileSystem == null) return ResultFs.NullptrArgument.Log();
             if (!IsValidPartitionId(partitionId)) return ResultFs.InvalidArgument.Log();
 
             PartitionFileSystems[GetArrayIndex(partitionId)] = fileSystem;
@@ -24,7 +24,7 @@ namespace LibHac.FsService.Creators
 
         public Result SetPath(string path, BisPartitionId partitionId)
         {
-            if (path == null) return ResultFs.NullArgument.Log();
+            if (path == null) return ResultFs.NullptrArgument.Log();
             if (!IsValidPartitionId(partitionId)) return ResultFs.InvalidArgument.Log();
 
             PartitionPaths[GetArrayIndex(partitionId)] = path;

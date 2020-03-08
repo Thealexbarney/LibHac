@@ -27,7 +27,7 @@ namespace LibHac.FsService.Creators
             fileSystem = default;
             extraDataAccessor = default;
 
-            string saveDataPath = $"/{saveDataId:x16}";
+            var saveDataPath = $"/{saveDataId:x16}".ToU8String();
 
             Result rc = sourceFileSystem.GetEntryType(out DirectoryEntryType entryType, saveDataPath);
             if (rc.IsFailure())
@@ -40,7 +40,7 @@ namespace LibHac.FsService.Creators
                 case DirectoryEntryType.Directory:
                     if (!allowDirectorySaveData) return ResultFs.InvalidSaveDataEntryType.Log();
 
-                    rc = SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem subDirFs, sourceFileSystem, saveDataPath.ToU8String());
+                    rc = SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem subDirFs, sourceFileSystem, saveDataPath);
                     if (rc.IsFailure()) return rc;
 
                     bool isPersistentSaveData = type != SaveDataType.Temporary;

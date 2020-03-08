@@ -1,12 +1,18 @@
-﻿using LibHac.Fs;
+﻿using System;
+using LibHac.Common;
+using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
     public class DirectorySaveDataFileSystem : FileSystemBase
     {
-        private const string CommittedDir = "/0/";
-        private const string WorkingDir = "/1/";
-        private const string SyncDir = "/_/";
+        private ReadOnlySpan<byte> CommittedDirectoryBytes => new[] { (byte)'/', (byte)'0', (byte)'/' };
+        private ReadOnlySpan<byte> WorkingDirectoryBytes => new[] { (byte)'/', (byte)'1', (byte)'/' };
+        private ReadOnlySpan<byte> SynchronizingDirectoryBytes => new[] { (byte)'/', (byte)'_', (byte)'/' };
+
+        private U8Span CommittedDirectoryPath => new U8Span(CommittedDirectoryBytes);
+        private U8Span WorkingDirectoryPath => new U8Span(WorkingDirectoryBytes);
+        private U8Span SynchronizingDirectoryPath => new U8Span(SynchronizingDirectoryBytes);
 
         private IFileSystem BaseFs { get; }
         private object Locker { get; } = new object();
@@ -44,18 +50,18 @@ namespace LibHac.FsSystem
             IsUserSaveData = isUserSaveData;
 
             // Ensure the working directory exists
-            Result rc = BaseFs.GetEntryType(out _, WorkingDir);
+            Result rc = BaseFs.GetEntryType(out _, WorkingDirectoryPath);
 
             if (rc.IsFailure())
             {
                 if (!ResultFs.PathNotFound.Includes(rc)) return rc;
 
-                rc = BaseFs.CreateDirectory(WorkingDir);
+                rc = BaseFs.CreateDirectory(WorkingDirectoryPath);
                 if (rc.IsFailure()) return rc;
 
                 if (!IsPersistentSaveData) return Result.Success;
 
-                rc = BaseFs.CreateDirectory(CommittedDir);
+                rc = BaseFs.CreateDirectory(CommittedDirectoryPath);
 
                 // Nintendo returns on all failures, but we'll keep going if committed already exists
                 // to avoid confusing people manually creating savedata in emulators
@@ -65,11 +71,11 @@ namespace LibHac.FsSystem
             // Only the working directory is needed for temporary savedata
             if (!IsPersistentSaveData) return Result.Success;
 
-            rc = BaseFs.GetEntryType(out _, CommittedDir);
+            rc = BaseFs.GetEntryType(out _, CommittedDirectoryPath);
 
             if (rc.IsSuccess())
             {
-                return SynchronizeDirectory(WorkingDir, CommittedDir);
+                return SynchronizeDirectory(WorkingDirectoryPath, CommittedDirectoryPath);
             }
 
             if (!ResultFs.PathNotFound.Includes(rc)) return rc;
@@ -77,15 +83,19 @@ namespace LibHac.FsSystem
             // If a previous commit failed, the committed dir may be missing.
             // Finish that commit by copying the working dir to the committed dir
 
-            rc = SynchronizeDirectory(SyncDir, WorkingDir);
+            rc = SynchronizeDirectory(SynchronizingDirectoryPath, WorkingDirectoryPath);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.RenameDirectory(SyncDir, CommittedDir);
+            return BaseFs.RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath);
         }
 
-        protected override Result CreateDirectoryImpl(string path)
+        protected override Result CreateDirectoryImpl(U8Span path)
         {
-            string fullPath = GetFullPath(PathTools.Normalize(path));
+            FsPath fullPath;
+            unsafe { _ = &fullPath; } // workaround for CS0165
+
+            Result rc = ResolveFullPath(fullPath.Str, path);
+            if (rc.IsFailure()) return rc;
 
             lock (Locker)
             {
@@ -93,9 +103,13 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result CreateFileImpl(string path, long size, CreateFileOptions options)
+        protected override Result CreateFileImpl(U8Span path, long size, CreateFileOptions options)
         {
-            string fullPath = GetFullPath(PathTools.Normalize(path));
+            FsPath fullPath;
+            unsafe { _ = &fullPath; } // workaround for CS0165
+
+            Result rc = ResolveFullPath(fullPath.Str, path);
+            if (rc.IsFailure()) return rc;
 
             lock (Locker)
             {
@@ -103,9 +117,13 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result DeleteDirectoryImpl(string path)
+        protected override Result DeleteDirectoryImpl(U8Span path)
         {
-            string fullPath = GetFullPath(PathTools.Normalize(path));
+            FsPath fullPath;
+            unsafe { _ = &fullPath; } // workaround for CS0165
+
+            Result rc = ResolveFullPath(fullPath.Str, path);
+            if (rc.IsFailure()) return rc;
 
             lock (Locker)
             {
@@ -113,9 +131,13 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result DeleteDirectoryRecursivelyImpl(string path)
+        protected override Result DeleteDirectoryRecursivelyImpl(U8Span path)
         {
-            string fullPath = GetFullPath(PathTools.Normalize(path));
+            FsPath fullPath;
+            unsafe { _ = &fullPath; } // workaround for CS0165
+
+            Result rc = ResolveFullPath(fullPath.Str, path);
+            if (rc.IsFailure()) return rc;
 
             lock (Locker)
             {
@@ -123,9 +145,13 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result CleanDirectoryRecursivelyImpl(string path)
+        protected override Result CleanDirectoryRecursivelyImpl(U8Span path)
         {
-            string fullPath = GetFullPath(PathTools.Normalize(path));
+            FsPath fullPath;
+            unsafe { _ = &fullPath; } // workaround for CS0165
+
+            Result rc = ResolveFullPath(fullPath.Str, path);
+            if (rc.IsFailure()) return rc;
 
             lock (Locker)
             {
@@ -133,9 +159,13 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result DeleteFileImpl(string path)
+        protected override Result DeleteFileImpl(U8Span path)
         {
-            string fullPath = GetFullPath(PathTools.Normalize(path));
+            FsPath fullPath;
+            unsafe { _ = &fullPath; } // workaround for CS0165
+
+            Result rc = ResolveFullPath(fullPath.Str, path);
+            if (rc.IsFailure()) return rc;
 
             lock (Locker)
             {
@@ -143,9 +173,17 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result OpenDirectoryImpl(out IDirectory directory, string path, OpenDirectoryMode mode)
+        protected override Result OpenDirectoryImpl(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
-            string fullPath = GetFullPath(PathTools.Normalize(path));
+            FsPath fullPath;
+            unsafe { _ = &fullPath; } // workaround for CS0165
+
+            Result rc = ResolveFullPath(fullPath.Str, path);
+            if (rc.IsFailure())
+            {
+                directory = default;
+                return rc;
+            }
 
             lock (Locker)
             {
@@ -153,14 +191,19 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result OpenFileImpl(out IFile file, string path, OpenMode mode)
+        protected override Result OpenFileImpl(out IFile file, U8Span path, OpenMode mode)
         {
             file = default;
-            string fullPath = GetFullPath(PathTools.Normalize(path));
+
+            FsPath fullPath;
+            unsafe { _ = &fullPath; } // workaround for CS0165
+
+            Result rc = ResolveFullPath(fullPath.Str, path);
+            if (rc.IsFailure()) return rc;
 
             lock (Locker)
             {
-                Result rc = BaseFs.OpenFile(out IFile baseFile, fullPath, mode);
+                rc = BaseFs.OpenFile(out IFile baseFile, fullPath, mode);
                 if (rc.IsFailure()) return rc;
 
                 file = new DirectorySaveDataFile(this, baseFile, mode);
@@ -174,31 +217,55 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result RenameDirectoryImpl(string oldPath, string newPath)
+        protected override Result RenameDirectoryImpl(U8Span oldPath, U8Span newPath)
         {
-            string fullOldPath = GetFullPath(PathTools.Normalize(oldPath));
-            string fullNewPath = GetFullPath(PathTools.Normalize(newPath));
+            FsPath fullCurrentPath;
+            FsPath fullNewPath;
+            unsafe { _ = &fullCurrentPath; } // workaround for CS0165
+            unsafe { _ = &fullNewPath; } // workaround for CS0165
+
+            Result rc = ResolveFullPath(fullCurrentPath.Str, oldPath);
+            if (rc.IsFailure()) return rc;
+
+            rc = ResolveFullPath(fullNewPath.Str, newPath);
+            if (rc.IsFailure()) return rc;
 
             lock (Locker)
             {
-                return BaseFs.RenameDirectory(fullOldPath, fullNewPath);
+                return BaseFs.RenameDirectory(fullCurrentPath, fullNewPath);
             }
         }
 
-        protected override Result RenameFileImpl(string oldPath, string newPath)
+        protected override Result RenameFileImpl(U8Span oldPath, U8Span newPath)
         {
-            string fullOldPath = GetFullPath(PathTools.Normalize(oldPath));
-            string fullNewPath = GetFullPath(PathTools.Normalize(newPath));
+            FsPath fullCurrentPath;
+            FsPath fullNewPath;
+            unsafe { _ = &fullCurrentPath; } // workaround for CS0165
+            unsafe { _ = &fullNewPath; } // workaround for CS0165
+
+            Result rc = ResolveFullPath(fullCurrentPath.Str, oldPath);
+            if (rc.IsFailure()) return rc;
+
+            rc = ResolveFullPath(fullNewPath.Str, newPath);
+            if (rc.IsFailure()) return rc;
 
             lock (Locker)
             {
-                return BaseFs.RenameFile(fullOldPath, fullNewPath);
+                return BaseFs.RenameFile(fullCurrentPath, fullNewPath);
             }
         }
 
-        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path)
+        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, U8Span path)
         {
-            string fullPath = GetFullPath(PathTools.Normalize(path));
+            FsPath fullPath;
+            unsafe { _ = &fullPath; } // workaround for CS0165
+
+            Result rc = ResolveFullPath(fullPath.Str, path);
+            if (rc.IsFailure())
+            {
+                entryType = default;
+                return rc;
+            }
 
             lock (Locker)
             {
@@ -219,25 +286,31 @@ namespace LibHac.FsSystem
                 }
 
                 // Get rid of the previous commit by renaming the folder
-                Result rc = BaseFs.RenameDirectory(CommittedDir, SyncDir);
+                Result rc = BaseFs.RenameDirectory(CommittedDirectoryPath, SynchronizingDirectoryPath);
                 if (rc.IsFailure()) return rc;
 
                 // If something goes wrong beyond this point, the commit will be
                 // completed the next time the savedata is opened
 
-                rc = SynchronizeDirectory(SyncDir, WorkingDir);
+                rc = SynchronizeDirectory(SynchronizingDirectoryPath, WorkingDirectoryPath);
                 if (rc.IsFailure()) return rc;
 
-                return BaseFs.RenameDirectory(SyncDir, CommittedDir);
+                return BaseFs.RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath);
             }
         }
 
-        private string GetFullPath(string path)
+        private Result ResolveFullPath(Span<byte> outPath, U8Span relativePath)
         {
-            return PathTools.Normalize(PathTools.Combine(WorkingDir, path));
+            if (StringUtils.GetLength(relativePath, PathTools.MaxPathLength + 1) > PathTools.MaxPathLength)
+                return ResultFs.TooLongPath.Log();
+
+            StringUtils.Copy(outPath, WorkingDirectoryBytes);
+            outPath[^1] = StringTraits.NullTerminator;
+
+            return PathTool.Normalize(outPath.Slice(2), out _, relativePath, false, false);
         }
 
-        private Result SynchronizeDirectory(string dest, string src)
+        private Result SynchronizeDirectory(U8Span dest, U8Span src)
         {
             Result rc = BaseFs.DeleteDirectoryRecursively(dest);
             if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc)) return rc;
@@ -245,7 +318,7 @@ namespace LibHac.FsSystem
             rc = BaseFs.CreateDirectory(dest);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.CopyDirectory(BaseFs, src, dest);
+            return BaseFs.CopyDirectory(BaseFs, src.ToString(), dest.ToString());
         }
 
         internal void NotifyCloseWritableFile()

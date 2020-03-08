@@ -63,7 +63,7 @@ namespace hactoolnet
 
                         using (IFile inFile = new LocalFile(ctx.Options.ReplaceFileSource, OpenMode.Read))
                         {
-                            save.OpenFile(out IFile outFile, destFilename, OpenMode.ReadWrite).ThrowIfFailure();
+                            save.OpenFile(out IFile outFile, destFilename.ToU8String(), OpenMode.ReadWrite).ThrowIfFailure();
 
                             using (outFile)
                             {
@@ -239,7 +239,7 @@ namespace hactoolnet
 
             foreach (DirectoryEntryEx entry in save.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File))
             {
-                save.FileTable.TryOpenFile(entry.FullPath, out SaveFileInfo fileInfo);
+                save.FileTable.TryOpenFile(entry.FullPath.ToU8Span(), out SaveFileInfo fileInfo);
                 if (fileInfo.StartBlock < 0) continue;
 
                 IEnumerable<(int block, int length)> chain = save.AllocationTable.DumpChain(fileInfo.StartBlock);
@@ -321,7 +321,7 @@ namespace hactoolnet
             var sb = new StringBuilder();
             sb.AppendLine();
 
-            save.GetFreeSpaceSize(out long freeSpace, "").ThrowIfFailure();
+            save.GetFreeSpaceSize(out long freeSpace, "".ToU8String()).ThrowIfFailure();
 
             sb.AppendLine("Savefile:");
             PrintItem(sb, colLen, "CMAC Key Used:", keyset.SaveMacKey);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Fs;
 
@@ -26,7 +27,7 @@ namespace LibHac.FsSystem
             foreach (DirectoryEntryEx entry in input.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File)
                 .OrderBy(x => x.FullPath, StringComparer.Ordinal))
             {
-                input.OpenFile(out IFile file, entry.FullPath, OpenMode.Read).ThrowIfFailure();
+                input.OpenFile(out IFile file, entry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
                 AddFile(entry.FullPath.TrimStart('/'), file);
             }

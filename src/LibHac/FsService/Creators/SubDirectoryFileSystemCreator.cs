@@ -6,7 +6,7 @@ namespace LibHac.FsService.Creators
 {
     public class SubDirectoryFileSystemCreator : ISubDirectoryFileSystemCreator
     {
-        public Result Create(out IFileSystem subDirFileSystem, IFileSystem baseFileSystem, string path)
+        public Result Create(out IFileSystem subDirFileSystem, IFileSystem baseFileSystem, U8Span path)
         {
             subDirFileSystem = default;
 

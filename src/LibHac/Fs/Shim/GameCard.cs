@@ -70,7 +70,7 @@ namespace LibHac.Fs.Shim
             {
                 char letter = GetGameCardMountNameSuffix(PartitionId);
 
-                string mountName = $"{CommonMountNames.GameCardMountName}{letter}{Handle.Value:x8}";
+                string mountName = $"{CommonMountNames.GameCardFileSystemMountName}{letter}{Handle.Value:x8}";
                 new U8Span(mountName).Value.CopyTo(nameBuffer);
 
                 return Result.Success;

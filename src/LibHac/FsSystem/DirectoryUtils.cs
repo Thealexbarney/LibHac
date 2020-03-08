@@ -11,9 +11,7 @@ namespace LibHac.FsSystem
         public static Result IterateDirectoryRecursivelyInternal(IFileSystem fs, Span<byte> workPath,
             ref DirectoryEntry entry, Blah onEnterDir, Blah onExitDir, Blah onFile)
         {
-            string currentPath = Util.GetUtf8StringNullTerminated(workPath);
-
-            Result rc = fs.OpenDirectory(out IDirectory _, currentPath, OpenDirectoryMode.All);
+            Result rc = fs.OpenDirectory(out IDirectory _, new U8Span(workPath), OpenDirectoryMode.All);
             if (rc.IsFailure()) return rc;
 
             onFile(workPath, ref entry);
@@ -40,7 +38,7 @@ namespace LibHac.FsSystem
 
             try
             {
-                Result rc = sourceFs.OpenFile(out srcFile, StringUtils.Utf8ZToString(sourcePath), OpenMode.Read);
+                Result rc = sourceFs.OpenFile(out srcFile, new U8Span(sourcePath), OpenMode.Read);
                 if (rc.IsFailure()) return rc;
 
                 FsPath dstPath = default;
@@ -52,12 +50,10 @@ namespace LibHac.FsSystem
                     throw new ArgumentException();
                 }
 
-                string dstPathStr = StringUtils.Utf8ZToString(dstPath.Str);
-
-                rc = destFs.CreateFile(dstPathStr, dirEntry.Size, CreateFileOptions.None);
+                rc = destFs.CreateFile(dstPath, dirEntry.Size, CreateFileOptions.None);
                 if (rc.IsFailure()) return rc;
 
-                rc = destFs.OpenFile(out dstFile, dstPathStr, OpenMode.Write);
+                rc = destFs.OpenFile(out dstFile, dstPath, OpenMode.Write);
                 if (rc.IsFailure()) return rc;
 
                 long fileSize = dirEntry.Size;

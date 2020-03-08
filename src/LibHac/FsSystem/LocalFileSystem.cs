@@ -30,18 +30,49 @@ namespace LibHac.FsSystem
             }
         }
 
-        internal string ResolveLocalPath(string path)
+        private Result ResolveFullPath(out string fullPath, U8Span path)
         {
-            return PathTools.Combine(BasePath, path);
+            fullPath = default;
+
+            FsPath normalizedPath;
+            unsafe { _ = &normalizedPath; } // workaround for CS0165
+
+            Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
+            if (rc.IsFailure()) return rc;
+
+            fullPath = PathTools.Combine(BasePath, normalizedPath.ToString());
+            return Result.Success;
         }
 
-        protected override Result GetFileAttributesImpl(string path, out NxFileAttributes attributes)
+        private Result CheckSubPath(U8Span path1, U8Span path2)
+        {
+            FsPath normalizedPath1;
+            FsPath normalizedPath2;
+            unsafe { _ = &normalizedPath1; } // workaround for CS0165
+            unsafe { _ = &normalizedPath2; } // workaround for CS0165
+
+            Result rc = PathTool.Normalize(normalizedPath1.Str, out _, path1, false, false);
+            if (rc.IsFailure()) return rc;
+
+            rc = PathTool.Normalize(normalizedPath2.Str, out _, path2, false, false);
+            if (rc.IsFailure()) return rc;
+
+            if (PathTool.IsSubpath(normalizedPath1, normalizedPath2))
+            {
+                return ResultFs.DestinationIsSubPathOfSource.Log();
+            }
+
+            return Result.Success;
+        }
+
+        protected override Result GetFileAttributesImpl(out NxFileAttributes attributes, U8Span path)
         {
             attributes = default;
 
-            string localPath = ResolveLocalPath(PathTools.Normalize(path));
+            Result rc = ResolveFullPath(out string fullPath, path);
+            if (rc.IsFailure()) return rc;
 
-            Result rc = GetFileInfo(out FileInfo info, localPath);
+            rc = GetFileInfo(out FileInfo info, fullPath);
             if (rc.IsFailure()) return rc;
 
             if (info.Attributes == (FileAttributes)(-1))
@@ -54,11 +85,12 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result SetFileAttributesImpl(string path, NxFileAttributes attributes)
+        protected override Result SetFileAttributesImpl(U8Span path, NxFileAttributes attributes)
         {
-            string localPath = ResolveLocalPath(PathTools.Normalize(path));
+            Result rc = ResolveFullPath(out string fullPath, path);
+            if (rc.IsFailure()) return rc;
 
-            Result rc = GetFileInfo(out FileInfo info, localPath);
+            rc = GetFileInfo(out FileInfo info, fullPath);
             if (rc.IsFailure()) return rc;
 
             if (info.Attributes == (FileAttributes)(-1))
@@ -81,27 +113,30 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result GetFileSizeImpl(out long fileSize, string path)
+        protected override Result GetFileSizeImpl(out long fileSize, U8Span path)
         {
             fileSize = default;
-            string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            Result rc = GetFileInfo(out FileInfo info, localPath);
+            Result rc = ResolveFullPath(out string fullPath, path);
+            if (rc.IsFailure()) return rc;
+
+            rc = GetFileInfo(out FileInfo info, fullPath);
             if (rc.IsFailure()) return rc;
 
             return GetSizeInternal(out fileSize, info);
         }
 
-        protected override Result CreateDirectoryImpl(string path)
+        protected override Result CreateDirectoryImpl(U8Span path)
         {
             return CreateDirectory(path, NxFileAttributes.None);
         }
 
-        protected override Result CreateDirectoryImpl(string path, NxFileAttributes archiveAttribute)
+        protected override Result CreateDirectoryImpl(U8Span path, NxFileAttributes archiveAttribute)
         {
-            string localPath = ResolveLocalPath(PathTools.Normalize(path));
+            Result rc = ResolveFullPath(out string fullPath, path);
+            if (rc.IsFailure()) return rc;
 
-            Result rc = GetDirInfo(out DirectoryInfo dir, localPath);
+            rc = GetDirInfo(out DirectoryInfo dir, fullPath);
             if (rc.IsFailure()) return rc;
 
             if (dir.Exists)
@@ -117,11 +152,12 @@ namespace LibHac.FsSystem
             return CreateDirInternal(dir, archiveAttribute);
         }
 
-        protected override Result CreateFileImpl(string path, long size, CreateFileOptions options)
+        protected override Result CreateFileImpl(U8Span path, long size, CreateFileOptions options)
         {
-            string localPath = ResolveLocalPath(PathTools.Normalize(path));
+            Result rc = ResolveFullPath(out string fullPath, path);
+            if (rc.IsFailure()) return rc;
 
-            Result rc = GetFileInfo(out FileInfo file, localPath);
+            rc = GetFileInfo(out FileInfo file, fullPath);
             if (rc.IsFailure()) return rc;
 
             if (file.Exists)
@@ -144,42 +180,45 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result DeleteDirectoryImpl(string path)
+        protected override Result DeleteDirectoryImpl(U8Span path)
         {
-            string localPath = ResolveLocalPath(PathTools.Normalize(path));
+            Result rc = ResolveFullPath(out string fullPath, path);
+            if (rc.IsFailure()) return rc;
 
-            Result rc = GetDirInfo(out DirectoryInfo dir, localPath);
+            rc = GetDirInfo(out DirectoryInfo dir, fullPath);
             if (rc.IsFailure()) return rc;
 
             return DeleteDirectoryInternal(dir, false);
         }
 
-        protected override Result DeleteDirectoryRecursivelyImpl(string path)
+        protected override Result DeleteDirectoryRecursivelyImpl(U8Span path)
         {
-            string localPath = ResolveLocalPath(PathTools.Normalize(path));
+            Result rc = ResolveFullPath(out string fullPath, path);
+            if (rc.IsFailure()) return rc;
 
-            Result rc = GetDirInfo(out DirectoryInfo dir, localPath);
+            rc = GetDirInfo(out DirectoryInfo dir, fullPath);
             if (rc.IsFailure()) return rc;
 
             return DeleteDirectoryInternal(dir, true);
         }
 
-        protected override Result CleanDirectoryRecursivelyImpl(string path)
+        protected override Result CleanDirectoryRecursivelyImpl(U8Span path)
         {
-            string localPath = ResolveLocalPath(PathTools.Normalize(path));
+            Result rc = ResolveFullPath(out string fullPath, path);
+            if (rc.IsFailure()) return rc;
 
-            foreach (string file in Directory.EnumerateFiles(localPath))
+            foreach (string file in Directory.EnumerateFiles(fullPath))
             {
-                Result rc = GetFileInfo(out FileInfo fileInfo, file);
+                rc = GetFileInfo(out FileInfo fileInfo, file);
                 if (rc.IsFailure()) return rc;
 
                 rc = DeleteFileInternal(fileInfo);
                 if (rc.IsFailure()) return rc;
             }
 
-            foreach (string dir in Directory.EnumerateDirectories(localPath))
+            foreach (string dir in Directory.EnumerateDirectories(fullPath))
             {
-                Result rc = GetDirInfo(out DirectoryInfo dirInfo, dir);
+                rc = GetDirInfo(out DirectoryInfo dirInfo, dir);
                 if (rc.IsFailure()) return rc;
 
                 rc = DeleteDirectoryInternal(dirInfo, true);
@@ -189,22 +228,24 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DeleteFileImpl(string path)
+        protected override Result DeleteFileImpl(U8Span path)
         {
-            string localPath = ResolveLocalPath(PathTools.Normalize(path));
+            Result rc = ResolveFullPath(out string fullPath, path);
+            if (rc.IsFailure()) return rc;
 
-            Result rc = GetFileInfo(out FileInfo file, localPath);
+            rc = GetFileInfo(out FileInfo file, fullPath);
             if (rc.IsFailure()) return rc;
 
             return DeleteFileInternal(file);
         }
 
-        protected override Result OpenDirectoryImpl(out IDirectory directory, string path, OpenDirectoryMode mode)
+        protected override Result OpenDirectoryImpl(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
             directory = default;
-            string localPath = ResolveLocalPath(PathTools.Normalize(path));
+            Result rc = ResolveFullPath(out string fullPath, path);
+            if (rc.IsFailure()) return rc;
 
-            Result rc = GetDirInfo(out DirectoryInfo dirInfo, localPath);
+            rc = GetDirInfo(out DirectoryInfo dirInfo, fullPath);
             if (rc.IsFailure()) return rc;
 
             if (!dirInfo.Attributes.HasFlag(FileAttributes.Directory))
@@ -225,12 +266,14 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result OpenFileImpl(out IFile file, string path, OpenMode mode)
+        protected override Result OpenFileImpl(out IFile file, U8Span path, OpenMode mode)
         {
             file = default;
-            string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            Result rc = GetEntryType(out DirectoryEntryType entryType, path);
+            Result rc = ResolveFullPath(out string fullPath, path);
+            if (rc.IsFailure()) return rc;
+
+            rc = GetEntryType(out DirectoryEntryType entryType, path);
             if (rc.IsFailure()) return rc;
 
             if (entryType == DirectoryEntryType.Directory)
@@ -238,59 +281,64 @@ namespace LibHac.FsSystem
                 return ResultFs.PathNotFound.Log();
             }
 
-            rc = OpenFileInternal(out FileStream fileStream, localPath, mode);
+            rc = OpenFileInternal(out FileStream fileStream, fullPath, mode);
             if (rc.IsFailure()) return rc;
 
             file = new LocalFile(fileStream, mode);
             return Result.Success;
         }
 
-        protected override Result RenameDirectoryImpl(string oldPath, string newPath)
+        protected override Result RenameDirectoryImpl(U8Span oldPath, U8Span newPath)
         {
-            oldPath = PathTools.Normalize(oldPath);
-            newPath = PathTools.Normalize(newPath);
+            Result rc = CheckSubPath(oldPath, newPath);
+            if (rc.IsFailure()) return rc;
+
+            rc = ResolveFullPath(out string fullCurrentPath, oldPath);
+            if (rc.IsFailure()) return rc;
+
+            rc = ResolveFullPath(out string fullNewPath, newPath);
+            if (rc.IsFailure()) return rc;
 
             // Official FS behavior is to do nothing in this case
-            if (oldPath == newPath) return Result.Success;
+            if (fullCurrentPath == fullNewPath) return Result.Success;
 
-            // FS does the subpath check before verifying the path exists
-            if (PathTools.IsSubPath(oldPath.AsSpan(), newPath.AsSpan()))
-            {
-                ThrowHelper.ThrowResult(ResultFs.DestinationIsSubPathOfSource.Value);
-            }
-
-            Result rc = GetDirInfo(out DirectoryInfo srcDir, ResolveLocalPath(oldPath));
+            rc = GetDirInfo(out DirectoryInfo currentDirInfo, fullCurrentPath);
             if (rc.IsFailure()) return rc;
 
-            rc = GetDirInfo(out DirectoryInfo dstDir, ResolveLocalPath(newPath));
+            rc = GetDirInfo(out DirectoryInfo newDirInfo, fullNewPath);
             if (rc.IsFailure()) return rc;
 
-            return RenameDirInternal(srcDir, dstDir);
+            return RenameDirInternal(currentDirInfo, newDirInfo);
         }
 
-        protected override Result RenameFileImpl(string oldPath, string newPath)
+        protected override Result RenameFileImpl(U8Span oldPath, U8Span newPath)
         {
-            string srcLocalPath = ResolveLocalPath(PathTools.Normalize(oldPath));
-            string dstLocalPath = ResolveLocalPath(PathTools.Normalize(newPath));
+            Result rc = ResolveFullPath(out string fullCurrentPath, oldPath);
+            if (rc.IsFailure()) return rc;
+
+            rc = ResolveFullPath(out string fullNewPath, newPath);
+            if (rc.IsFailure()) return rc;
 
             // Official FS behavior is to do nothing in this case
-            if (srcLocalPath == dstLocalPath) return Result.Success;
+            if (fullCurrentPath == fullNewPath) return Result.Success;
 
-            Result rc = GetFileInfo(out FileInfo srcFile, srcLocalPath);
+            rc = GetFileInfo(out FileInfo currentFileInfo, fullCurrentPath);
             if (rc.IsFailure()) return rc;
 
-            rc = GetFileInfo(out FileInfo dstFile, dstLocalPath);
+            rc = GetFileInfo(out FileInfo newFileInfo, fullNewPath);
             if (rc.IsFailure()) return rc;
 
-            return RenameFileInternal(srcFile, dstFile);
+            return RenameFileInternal(currentFileInfo, newFileInfo);
         }
 
-        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path)
+        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, U8Span path)
         {
             entryType = default;
-            string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            Result rc = GetDirInfo(out DirectoryInfo dir, localPath);
+            Result rc = ResolveFullPath(out string fullPath, path);
+            if (rc.IsFailure()) return rc;
+
+            rc = GetDirInfo(out DirectoryInfo dir, fullPath);
             if (rc.IsFailure()) return rc;
 
             if (dir.Exists)
@@ -299,7 +347,7 @@ namespace LibHac.FsSystem
                 return Result.Success;
             }
 
-            rc = GetFileInfo(out FileInfo file, localPath);
+            rc = GetFileInfo(out FileInfo file, fullPath);
             if (rc.IsFailure()) return rc;
 
             if (file.Exists)
@@ -312,30 +360,32 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, string path)
+        protected override Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, U8Span path)
         {
             timeStamp = default;
-            string localPath = ResolveLocalPath(PathTools.Normalize(path));
 
-            Result rc = GetFileInfo(out FileInfo file, localPath);
+            Result rc = ResolveFullPath(out string fullPath, path);
+            if (rc.IsFailure()) return rc;
+
+            rc = GetFileInfo(out FileInfo file, fullPath);
             if (rc.IsFailure()) return rc;
 
             if (!file.Exists) return ResultFs.PathNotFound.Log();
 
-            timeStamp.Created = new DateTimeOffset(File.GetCreationTime(localPath)).ToUnixTimeSeconds();
-            timeStamp.Accessed = new DateTimeOffset(File.GetLastAccessTime(localPath)).ToUnixTimeSeconds();
-            timeStamp.Modified = new DateTimeOffset(File.GetLastWriteTime(localPath)).ToUnixTimeSeconds();
+            timeStamp.Created = new DateTimeOffset(file.CreationTimeUtc).ToUnixTimeSeconds();
+            timeStamp.Accessed = new DateTimeOffset(file.LastAccessTimeUtc).ToUnixTimeSeconds();
+            timeStamp.Modified = new DateTimeOffset(file.LastWriteTime).ToUnixTimeSeconds();
 
             return Result.Success;
         }
 
-        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, string path)
+        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, U8Span path)
         {
             freeSpace = new DriveInfo(BasePath).AvailableFreeSpace;
             return Result.Success;
         }
 
-        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, string path)
+        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, U8Span path)
         {
             totalSpace = new DriveInfo(BasePath).TotalSize;
             return Result.Success;
@@ -346,7 +396,8 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
+        protected override Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
+            U8Span path)
         {
             return ResultFs.UnsupportedOperation.Log();
         }

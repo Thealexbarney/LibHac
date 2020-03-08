@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using LibHac.Common;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem
@@ -9,15 +10,15 @@ namespace LibHac.FsSystem
     public class ConcatenationFile : FileBase
     {
         private IFileSystem BaseFileSystem { get; }
-        private string FilePath { get; }
+        private U8String FilePath { get; }
         private List<IFile> Sources { get; }
         private long SubFileSize { get; }
         private OpenMode Mode { get; }
 
-        internal ConcatenationFile(IFileSystem baseFileSystem, string path, IEnumerable<IFile> sources, long subFileSize, OpenMode mode)
+        internal ConcatenationFile(IFileSystem baseFileSystem, U8Span path, IEnumerable<IFile> sources, long subFileSize, OpenMode mode)
         {
             BaseFileSystem = baseFileSystem;
-            FilePath = path;
+            FilePath = path.ToU8String();
             Sources = sources.ToList();
             SubFileSize = subFileSize;
             Mode = mode;
@@ -78,7 +79,8 @@ namespace LibHac.FsSystem
             long outPos = offset;
             int remaining = source.Length;
 
-            GetSize(out long fileSize).ThrowIfFailure();
+            rc = GetSize(out long fileSize);
+            if (rc.IsFailure()) return rc;
 
             while (remaining > 0)
             {
@@ -151,7 +153,12 @@ namespace LibHac.FsSystem
 
                 for (int i = currentSubFileCount; i < newSubFileCount; i++)
                 {
-                    string newSubFilePath = ConcatenationFileSystem.GetSubFilePath(FilePath, i);
+                    FsPath newSubFilePath;
+                    unsafe { _ = &newSubFilePath; } // workaround for CS0165
+
+                    rc = ConcatenationFileSystem.GetSubFilePath(newSubFilePath.Str, FilePath, i);
+                    if (rc.IsFailure()) return rc;
+
                     newSubFileSize = QuerySubFileSize(i, size, SubFileSize);
 
                     rc = BaseFileSystem.CreateFile(newSubFilePath, newSubFileSize, CreateFileOptions.None);
@@ -170,7 +177,11 @@ namespace LibHac.FsSystem
                     Sources[i].Dispose();
                     Sources.RemoveAt(i);
 
-                    string subFilePath = ConcatenationFileSystem.GetSubFilePath(FilePath, i);
+                    FsPath subFilePath;
+                    unsafe { _ = &subFilePath; } // workaround for CS0165
+
+                    rc = ConcatenationFileSystem.GetSubFilePath(subFilePath.Str, FilePath, i);
+                    if (rc.IsFailure()) return rc;
 
                     rc = BaseFileSystem.DeleteFile(subFilePath);
                     if (rc.IsFailure()) return rc;

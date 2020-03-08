@@ -301,7 +301,7 @@ namespace LibHac.Fs
                 /// <summary>Error code: 2002-6062; Inner value: 0x2f5c02</summary>
                 public static Result.Base InvalidSize => new Result.Base(ModuleFs, 6062);
                 /// <summary>Error code: 2002-6063; Inner value: 0x2f5e02</summary>
-                public static Result.Base NullArgument => new Result.Base(ModuleFs, 6063);
+                public static Result.Base NullptrArgument => new Result.Base(ModuleFs, 6063);
                 /// <summary>Error code: 2002-6065; Inner value: 0x2f6202</summary>
                 public static Result.Base InvalidMountName => new Result.Base(ModuleFs, 6065);
                 /// <summary>Error code: 2002-6066; Inner value: 0x2f6402</summary>

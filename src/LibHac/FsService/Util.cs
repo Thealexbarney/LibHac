@@ -13,9 +13,9 @@ namespace LibHac.FsService
 
             if (!createPathIfMissing)
             {
-                if (path == null) return ResultFs.NullArgument.Log();
+                if (path == null) return ResultFs.NullptrArgument.Log();
 
-                Result rc = baseFileSystem.GetEntryType(out DirectoryEntryType entryType, path);
+                Result rc = baseFileSystem.GetEntryType(out DirectoryEntryType entryType, path.ToU8Span());
 
                 if (rc.IsFailure() || entryType != DirectoryEntryType.Directory)
                 {
@@ -32,9 +32,9 @@ namespace LibHac.FsService
         {
             subFileSystem = default;
 
-            if (path == null) return ResultFs.NullArgument.Log();
+            if (path == null) return ResultFs.NullptrArgument.Log();
 
-            Result rc = baseFileSystem.OpenDirectory(out IDirectory _, path, OpenDirectoryMode.Directory);
+            Result rc = baseFileSystem.OpenDirectory(out IDirectory _, path.ToU8Span(), OpenDirectoryMode.Directory);
             if (rc.IsFailure()) return rc;
 
             rc = SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem fs, baseFileSystem, path.ToU8String());

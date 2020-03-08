@@ -152,7 +152,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 
 2,6061,,InvalidOffset,
 2,6062,,InvalidSize,
-2,6063,,NullArgument,
+2,6063,,NullptrArgument,
 2,6065,,InvalidMountName,
 2,6066,,ExtensionSizeTooLarge,
 2,6067,,ExtensionSizeInvalid,

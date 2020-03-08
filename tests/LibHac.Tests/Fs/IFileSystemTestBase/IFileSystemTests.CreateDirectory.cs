@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 using Xunit;
 
 namespace LibHac.Tests.Fs.IFileSystemTestBase
@@ -10,8 +11,8 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateDirectory("/dir");
-            Result rc = fs.GetEntryType(out DirectoryEntryType type, "/dir");
+            fs.CreateDirectory("/dir".ToU8Span());
+            Result rc = fs.GetEntryType(out DirectoryEntryType type, "/dir".ToU8Span());
 
             Assert.True(rc.IsSuccess());
             Assert.Equal(DirectoryEntryType.Directory, type);
@@ -22,9 +23,9 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateDirectory("/dir");
+            fs.CreateDirectory("/dir".ToU8Span());
 
-            Result rc = fs.CreateDirectory("/dir");
+            Result rc = fs.CreateDirectory("/dir".ToU8Span());
 
             Assert.Equal(ResultFs.PathAlreadyExists.Value, rc);
         }
@@ -34,9 +35,9 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateFile("/file", 0, CreateFileOptions.None);
+            fs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
 
-            Result rc = fs.CreateDirectory("/file");
+            Result rc = fs.CreateDirectory("/file".ToU8Span());
 
             Assert.Equal(ResultFs.PathAlreadyExists.Value, rc);
         }
@@ -46,7 +47,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            Result rc = fs.CreateFile("/dir1/dir2", 0, CreateFileOptions.None);
+            Result rc = fs.CreateFile("/dir1/dir2".ToU8Span(), 0, CreateFileOptions.None);
 
             Assert.Equal(ResultFs.PathNotFound.Value, rc);
         }
@@ -56,8 +57,8 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateDirectory("/dir/");
-            Result rc = fs.GetEntryType(out DirectoryEntryType type, "/dir/");
+            fs.CreateDirectory("/dir/".ToU8Span());
+            Result rc = fs.GetEntryType(out DirectoryEntryType type, "/dir/".ToU8Span());
 
             Assert.True(rc.IsSuccess());
             Assert.Equal(DirectoryEntryType.Directory, type);
@@ -68,11 +69,11 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateDirectory("/dir1");
-            fs.CreateDirectory("/dir2");
+            fs.CreateDirectory("/dir1".ToU8Span());
+            fs.CreateDirectory("/dir2".ToU8Span());
 
-            Result rc1 = fs.GetEntryType(out DirectoryEntryType type1, "/dir1");
-            Result rc2 = fs.GetEntryType(out DirectoryEntryType type2, "/dir2");
+            Result rc1 = fs.GetEntryType(out DirectoryEntryType type1, "/dir1".ToU8Span());
+            Result rc2 = fs.GetEntryType(out DirectoryEntryType type2, "/dir2".ToU8Span());
 
             Assert.True(rc1.IsSuccess());
             Assert.True(rc2.IsSuccess());
@@ -85,14 +86,14 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateDirectory("/dir1");
-            fs.CreateDirectory("/dir2");
+            fs.CreateDirectory("/dir1".ToU8Span());
+            fs.CreateDirectory("/dir2".ToU8Span());
 
-            fs.CreateDirectory("/dir1/dir1a");
-            fs.CreateDirectory("/dir2/dir2a");
+            fs.CreateDirectory("/dir1/dir1a".ToU8Span());
+            fs.CreateDirectory("/dir2/dir2a".ToU8Span());
 
-            Result rc1 = fs.GetEntryType(out DirectoryEntryType type1, "/dir1/dir1a");
-            Result rc2 = fs.GetEntryType(out DirectoryEntryType type2, "/dir2/dir2a");
+            Result rc1 = fs.GetEntryType(out DirectoryEntryType type1, "/dir1/dir1a".ToU8Span());
+            Result rc2 = fs.GetEntryType(out DirectoryEntryType type2, "/dir2/dir2a".ToU8Span());
 
             Assert.True(rc1.IsSuccess());
             Assert.True(rc2.IsSuccess());

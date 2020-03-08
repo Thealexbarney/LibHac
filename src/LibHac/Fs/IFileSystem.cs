@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.FsSystem;
 
 namespace LibHac.Fs
@@ -23,7 +24,7 @@ namespace LibHac.Fs
         /// Specified path already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
         /// Insufficient free space to create the file: <see cref="ResultFs.InsufficientFreeSpace"/>
         /// </remarks>
-        Result CreateFile(string path, long size, CreateFileOptions options);
+        Result CreateFile(U8Span path, long size, CreateFileOptions options);
 
         /// <summary>
         /// Deletes the specified file.
@@ -35,7 +36,7 @@ namespace LibHac.Fs
         /// 
         /// The specified path does not exist or is a directory: <see cref="ResultFs.PathNotFound"/>
         /// </remarks>
-        Result DeleteFile(string path);
+        Result DeleteFile(U8Span path);
 
         /// <summary>
         /// Creates all directories and subdirectories in the specified path unless they already exist.
@@ -49,7 +50,7 @@ namespace LibHac.Fs
         /// Specified path already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
         /// Insufficient free space to create the directory: <see cref="ResultFs.InsufficientFreeSpace"/>
         /// </remarks>
-        Result CreateDirectory(string path);
+        Result CreateDirectory(U8Span path);
 
         /// <summary>
         /// Deletes the specified directory.
@@ -62,7 +63,7 @@ namespace LibHac.Fs
         /// The specified path does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
         /// The specified directory is not empty: <see cref="ResultFs.DirectoryNotEmpty"/>
         /// </remarks>
-        Result DeleteDirectory(string path);
+        Result DeleteDirectory(U8Span path);
 
         /// <summary>
         /// Deletes the specified directory and any subdirectories and files in the directory.
@@ -74,7 +75,7 @@ namespace LibHac.Fs
         /// 
         /// The specified path does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
         /// </remarks>
-        Result DeleteDirectoryRecursively(string path);
+        Result DeleteDirectoryRecursively(U8Span path);
 
         /// <summary>
         /// Deletes any subdirectories and files in the specified directory.
@@ -86,7 +87,7 @@ namespace LibHac.Fs
         /// 
         /// The specified path does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
         /// </remarks>
-        Result CleanDirectoryRecursively(string path);
+        Result CleanDirectoryRecursively(U8Span path);
 
         /// <summary>
         /// Renames or moves a file to a new location.
@@ -102,7 +103,7 @@ namespace LibHac.Fs
         /// <paramref name="newPath"/>'s parent directory does not exist: <see cref="ResultFs.PathNotFound"/>
         /// <paramref name="newPath"/> already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
         /// </remarks>
-        Result RenameFile(string oldPath, string newPath);
+        Result RenameFile(U8Span oldPath, U8Span newPath);
 
         /// <summary>
         /// Renames or moves a directory to a new location.
@@ -119,7 +120,7 @@ namespace LibHac.Fs
         /// <paramref name="newPath"/> already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
         /// Either <paramref name="oldPath"/> or <paramref name="newPath"/> is a subpath of the other: <see cref="ResultFs.DestinationIsSubPathOfSource"/>
         /// </remarks>
-        Result RenameDirectory(string oldPath, string newPath);
+        Result RenameDirectory(U8Span oldPath, U8Span newPath);
 
         /// <summary>
         /// Determines whether the specified path is a file or directory, or does not exist.
@@ -127,7 +128,7 @@ namespace LibHac.Fs
         /// <param name="entryType">If the operation returns successfully, the <see cref="DirectoryEntryType"/> of the file.</param>
         /// <param name="path">The full path to check.</param>
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        Result GetEntryType(out DirectoryEntryType entryType, string path);
+        Result GetEntryType(out DirectoryEntryType entryType, U8Span path);
 
         /// <summary>
         /// Gets the amount of available free space on a drive, in bytes.
@@ -135,7 +136,7 @@ namespace LibHac.Fs
         /// <param name="freeSpace">If the operation returns successfully, the amount of free space available on the drive, in bytes.</param>
         /// <param name="path">The path of the drive to query. Unused in almost all cases.</param>
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        Result GetFreeSpaceSize(out long freeSpace, string path);
+        Result GetFreeSpaceSize(out long freeSpace, U8Span path);
 
         /// <summary>
         /// Gets the total size of storage space on a drive, in bytes.
@@ -143,7 +144,7 @@ namespace LibHac.Fs
         /// <param name="totalSpace">If the operation returns successfully, the total size of the drive, in bytes.</param>
         /// <param name="path">The path of the drive to query. Unused in almost all cases.</param>
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        Result GetTotalSpaceSize(out long totalSpace, string path);
+        Result GetTotalSpaceSize(out long totalSpace, U8Span path);
 
         /// <summary>
         /// Opens an <see cref="IFile"/> instance for the specified path.
@@ -158,7 +159,7 @@ namespace LibHac.Fs
         /// 
         /// The specified path does not exist or is a directory: <see cref="ResultFs.PathNotFound"/>
         /// </remarks>
-        Result OpenFile(out IFile file, string path, OpenMode mode);
+        Result OpenFile(out IFile file, U8Span path, OpenMode mode);
 
         /// <summary>
         /// Creates an <see cref="IDirectory"/> instance for enumerating the specified directory.
@@ -173,7 +174,7 @@ namespace LibHac.Fs
         /// 
         /// The specified path does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
         /// </remarks>
-        Result OpenDirectory(out IDirectory directory, string path, OpenDirectoryMode mode);
+        Result OpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode);
 
         /// <summary>
         /// Commits any changes to a transactional file system.
@@ -194,7 +195,7 @@ namespace LibHac.Fs
         /// 
         /// The specified path does not exist: <see cref="ResultFs.PathNotFound"/>
         /// </remarks>
-        Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, string path);
+        Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path);
 
         /// <summary>
         /// Performs a query on the specified file.
@@ -208,7 +209,7 @@ namespace LibHac.Fs
         /// <param name="queryId">The type of query to perform.</param>
         /// <param name="path">The full path of the file to query.</param>
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path);
+        Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, U8Span path);
     }
 
     /// <summary>
