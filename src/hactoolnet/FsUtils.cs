@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using LibHac;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSystem;
 
@@ -8,14 +9,14 @@ namespace hactoolnet
 {
     public static class FsUtils
     {
-        public static void CopyDirectoryWithProgress(FileSystemClient fs, string sourcePath, string destPath,
+        public static Result CopyDirectoryWithProgress(FileSystemClient fs, U8Span sourcePath, U8Span destPath,
             CreateFileOptions options = CreateFileOptions.None, IProgressReport logger = null)
         {
             try
             {
                 logger?.SetTotal(GetTotalSize(fs, sourcePath));
 
-                CopyDirectoryWithProgressInternal(fs, sourcePath, destPath, options, logger);
+                return CopyDirectoryWithProgressInternal(fs, sourcePath, destPath, options, logger);
             }
             finally
             {
@@ -23,41 +24,51 @@ namespace hactoolnet
             }
         }
 
-        private static void CopyDirectoryWithProgressInternal(FileSystemClient fs, string sourcePath, string destPath,
+        private static Result CopyDirectoryWithProgressInternal(FileSystemClient fs, U8Span sourcePath, U8Span destPath,
             CreateFileOptions options, IProgressReport logger)
         {
-            fs.OpenDirectory(out DirectoryHandle sourceHandle, sourcePath, OpenDirectoryMode.All).ThrowIfFailure();
+            string sourcePathStr = sourcePath.ToString();
+            string destPathStr = destPath.ToString();
+
+            Result rc = fs.OpenDirectory(out DirectoryHandle sourceHandle, sourcePath, OpenDirectoryMode.All);
+            if (rc.IsFailure()) return rc;
 
             using (sourceHandle)
             {
-                foreach (DirectoryEntryEx entry in fs.EnumerateEntries(sourcePath, "*", SearchOptions.Default))
+                foreach (DirectoryEntryEx entry in fs.EnumerateEntries(sourcePathStr, "*", SearchOptions.Default))
                 {
-                    string subSrcPath = PathTools.Normalize(PathTools.Combine(sourcePath, entry.Name));
-                    string subDstPath = PathTools.Normalize(PathTools.Combine(destPath, entry.Name));
+                    string subSrcPath = PathTools.Normalize(PathTools.Combine(sourcePathStr, entry.Name));
+                    string subDstPath = PathTools.Normalize(PathTools.Combine(destPathStr, entry.Name));
 
                     if (entry.Type == DirectoryEntryType.Directory)
                     {
                         fs.EnsureDirectoryExists(subDstPath);
 
-                        CopyDirectoryWithProgressInternal(fs, subSrcPath, subDstPath, options, logger);
+                        rc = CopyDirectoryWithProgressInternal(fs, subSrcPath.ToU8Span(), subDstPath.ToU8Span(), options, logger);
+                        if (rc.IsFailure()) return rc;
                     }
 
                     if (entry.Type == DirectoryEntryType.File)
                     {
                         logger?.LogMessage(subSrcPath);
-                        fs.CreateOrOverwriteFile(subDstPath, entry.Size, options);
 
-                        CopyFileWithProgress(fs, subSrcPath, subDstPath, logger);
+                        rc = fs.CreateOrOverwriteFile(subDstPath, entry.Size, options);
+                        if (rc.IsFailure()) return rc;
+
+                        rc = CopyFileWithProgress(fs, subSrcPath.ToU8Span(), subDstPath.ToU8Span(), logger);
+                        if (rc.IsFailure()) return rc;
                     }
                 }
             }
+
+            return Result.Success;
         }
 
-        public static long GetTotalSize(FileSystemClient fs, string path, string searchPattern = "*")
+        public static long GetTotalSize(FileSystemClient fs, U8Span path, string searchPattern = "*")
         {
             long size = 0;
 
-            foreach (DirectoryEntryEx entry in fs.EnumerateEntries(path, searchPattern))
+            foreach (DirectoryEntryEx entry in fs.EnumerateEntries(path.ToString(), searchPattern))
             {
                 size += entry.Size;
             }
@@ -65,7 +76,7 @@ namespace hactoolnet
             return size;
         }
 
-        public static Result CopyFileWithProgress(FileSystemClient fs, string sourcePath, string destPath, IProgressReport logger = null)
+        public static Result CopyFileWithProgress(FileSystemClient fs, U8Span sourcePath, U8Span destPath, IProgressReport logger = null)
         {
             Result rc = fs.OpenFile(out FileHandle sourceHandle, sourcePath, OpenMode.Read);
             if (rc.IsFailure()) return rc;

@@ -51,10 +51,10 @@ namespace hactoolnet
                         fs.Register(mountName.ToU8Span(), OpenFileSystem(i));
                         fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.SectionOutDir[i]));
 
-                        FsUtils.CopyDirectoryWithProgress(fs, mountName + ":/", "output:/", logger: ctx.Logger);
+                        FsUtils.CopyDirectoryWithProgress(fs, (mountName + ":/").ToU8Span(), "output:/".ToU8Span(), logger: ctx.Logger).ThrowIfFailure();
 
-                        fs.Unmount(mountName);
-                        fs.Unmount("output");
+                        fs.Unmount(mountName.ToU8Span());
+                        fs.Unmount("output".ToU8Span());
                     }
 
                     if (ctx.Options.Validate && nca.SectionExists(i))
@@ -100,10 +100,10 @@ namespace hactoolnet
                         fs.Register("rom".ToU8Span(), OpenFileSystemByType(NcaSectionType.Data));
                         fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.RomfsOutDir));
 
-                        FsUtils.CopyDirectoryWithProgress(fs, "rom:/", "output:/", logger: ctx.Logger);
+                        FsUtils.CopyDirectoryWithProgress(fs, "rom:/".ToU8Span(), "output:/".ToU8Span(), logger: ctx.Logger).ThrowIfFailure();
 
-                        fs.Unmount("rom");
-                        fs.Unmount("output");
+                        fs.Unmount("rom".ToU8Span());
+                        fs.Unmount("output".ToU8Span());
                     }
 
                     if (ctx.Options.ReadBench)
@@ -157,10 +157,10 @@ namespace hactoolnet
                         fs.Register("code".ToU8Span(), OpenFileSystemByType(NcaSectionType.Code));
                         fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.ExefsOutDir));
 
-                        FsUtils.CopyDirectoryWithProgress(fs, "code:/", "output:/", logger: ctx.Logger);
+                        FsUtils.CopyDirectoryWithProgress(fs, "code:/".ToU8Span(), "output:/".ToU8Span(), logger: ctx.Logger).ThrowIfFailure();
 
-                        fs.Unmount("code");
-                        fs.Unmount("output");
+                        fs.Unmount("code".ToU8Span());
+                        fs.Unmount("output".ToU8Span());
                     }
                 }
 

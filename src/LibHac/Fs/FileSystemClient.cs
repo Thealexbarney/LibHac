@@ -78,22 +78,23 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        public void Unmount(string mountName)
+        public void Unmount(U8Span mountName)
         {
             Result rc;
+            string mountNameStr = mountName.ToString();
 
             if (IsEnabledAccessLog() && IsEnabledFileSystemAccessorAccessLog(mountName))
             {
                 TimeSpan startTime = Time.GetCurrent();
 
-                rc = MountTable.Unmount(mountName);
+                rc = MountTable.Unmount(mountNameStr);
 
                 TimeSpan endTime = Time.GetCurrent();
-                OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName}\"");
+                OutputAccessLog(rc, startTime, endTime, $", name: \"{mountNameStr}\"");
             }
             else
             {
-                rc = MountTable.Unmount(mountName);
+                rc = MountTable.Unmount(mountNameStr);
             }
 
             rc.ThrowIfFailure();

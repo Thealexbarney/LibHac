@@ -42,9 +42,9 @@ namespace hactoolnet
                 {
                     fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.OutDir));
 
-                    FsUtils.CopyDirectoryWithProgress(fs, "save:/", "output:/", logger: ctx.Logger);
+                    FsUtils.CopyDirectoryWithProgress(fs, "save:/".ToU8Span(), "output:/".ToU8Span(), logger: ctx.Logger).ThrowIfFailure();
 
-                    fs.Unmount("output");
+                    fs.Unmount("output".ToU8Span());
                 }
 
                 if (ctx.Options.DebugOutDir != null)
@@ -88,13 +88,13 @@ namespace hactoolnet
                     {
                         fs.Register("input".ToU8Span(), new LocalFileSystem(ctx.Options.RepackSource));
 
-                        fs.CleanDirectoryRecursively("save:/");
-                        fs.Commit("save");
+                        fs.CleanDirectoryRecursively("save:/".ToU8Span());
+                        fs.Commit("save".ToU8Span());
 
-                        FsUtils.CopyDirectoryWithProgress(fs, "input:/", "save:/", logger: ctx.Logger);
+                        FsUtils.CopyDirectoryWithProgress(fs, "input:/".ToU8Span(), "save:/".ToU8Span(), logger: ctx.Logger).ThrowIfFailure();
 
-                        fs.Commit("save");
-                        fs.Unmount("input");
+                        fs.Commit("save".ToU8Span());
+                        fs.Unmount("input".ToU8Span());
 
                         signNeeded = true;
                     }
@@ -134,7 +134,7 @@ namespace hactoolnet
                         ctx.Logger.LogMessage("Unable to sign save file. Do you have all the required keys?");
                     }
 
-                    fs.Unmount("save");
+                    fs.Unmount("save".ToU8Span());
                     return;
                 }
 
@@ -149,7 +149,7 @@ namespace hactoolnet
                 ctx.Logger.LogMessage(save.Print(ctx.Keyset));
                 //ctx.Logger.LogMessage(PrintFatLayout(save.SaveDataFileSystemCore));
 
-                fs.Unmount("save");
+                fs.Unmount("save".ToU8Span());
             }
         }
 

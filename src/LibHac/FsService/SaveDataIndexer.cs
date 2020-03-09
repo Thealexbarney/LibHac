@@ -18,7 +18,7 @@ namespace LibHac.FsService
         private const long LastIdFileSize = 8;
 
         private FileSystemClient FsClient { get; }
-        private string MountName { get; }
+        private U8String MountName { get; }
         private ulong SaveDataId { get; }
         private SaveDataSpaceId SpaceId { get; }
         private KeyValueDatabase<SaveDataAttribute> KvDatabase { get; set; }
@@ -29,10 +29,10 @@ namespace LibHac.FsService
         private int Version { get; set; }
         private List<SaveDataInfoReader> OpenedReaders { get; } = new List<SaveDataInfoReader>();
 
-        public SaveDataIndexer(FileSystemClient fsClient, string mountName, SaveDataSpaceId spaceId, ulong saveDataId)
+        public SaveDataIndexer(FileSystemClient fsClient, U8Span mountName, SaveDataSpaceId spaceId, ulong saveDataId)
         {
             FsClient = fsClient;
-            MountName = mountName;
+            MountName = mountName.ToU8String();
             SaveDataId = saveDataId;
             SpaceId = spaceId;
             Version = 1;
@@ -77,7 +77,7 @@ namespace LibHac.FsService
 
                     string idFilePath = $"{MountName}:/{LastIdFileName}";
 
-                    rc = FsClient.OpenFile(out FileHandle handle, idFilePath, OpenMode.Write);
+                    rc = FsClient.OpenFile(out FileHandle handle, idFilePath.ToU8Span(), OpenMode.Write);
                     if (rc.IsFailure()) return rc;
 
                     bool fileAlreadyClosed = false;
@@ -423,7 +423,7 @@ namespace LibHac.FsService
 
                 string dbDirectory = $"{MountName}:/";
 
-                rc = FsClient.GetEntryType(out DirectoryEntryType entryType, dbDirectory);
+                rc = FsClient.GetEntryType(out DirectoryEntryType entryType, dbDirectory.ToU8Span());
                 if (rc.IsFailure()) return rc;
 
                 if (entryType == DirectoryEntryType.File)
@@ -431,7 +431,7 @@ namespace LibHac.FsService
 
                 string dbArchiveFile = $"{dbDirectory}imkvdb.arc";
 
-                KvDatabase = new KeyValueDatabase<SaveDataAttribute>(FsClient, dbArchiveFile);
+                KvDatabase = new KeyValueDatabase<SaveDataAttribute>(FsClient, dbArchiveFile.ToU8Span());
 
                 IsInitialized = true;
                 return Result.Success;
@@ -466,7 +466,7 @@ namespace LibHac.FsService
                 if (rc.IsFailure()) return rc;
 
                 bool createdNewFile = false;
-                string idFilePath = $"{MountName}:/{LastIdFileName}";
+                var idFilePath = $"{MountName}:/{LastIdFileName}".ToU8String();
 
                 rc = FsClient.OpenFile(out FileHandle handle, idFilePath, OpenMode.Read);
 
@@ -572,10 +572,10 @@ namespace LibHac.FsService
         private ref struct Mounter
         {
             private FileSystemClient FsClient { get; set; }
-            private string MountName { get; set; }
+            private U8String MountName { get; set; }
             private bool IsMounted { get; set; }
 
-            public Result Initialize(FileSystemClient fsClient, string mountName, SaveDataSpaceId spaceId,
+            public Result Initialize(FileSystemClient fsClient, U8String mountName, SaveDataSpaceId spaceId,
                 ulong saveDataId)
             {
                 FsClient = fsClient;
@@ -583,7 +583,7 @@ namespace LibHac.FsService
 
                 FsClient.DisableAutoSaveDataCreation();
 
-                Result rc = FsClient.MountSystemSaveData(MountName.ToU8Span(), spaceId, saveDataId);
+                Result rc = FsClient.MountSystemSaveData(MountName, spaceId, saveDataId);
 
                 if (rc.IsFailure())
                 {
@@ -592,7 +592,7 @@ namespace LibHac.FsService
                         rc = FsClient.CreateSystemSaveData(spaceId, saveDataId, TitleId.Zero, 0xC0000, 0xC0000, 0);
                         if (rc.IsFailure()) return rc;
 
-                        rc = FsClient.MountSystemSaveData(MountName.ToU8Span(), spaceId, saveDataId);
+                        rc = FsClient.MountSystemSaveData(MountName, spaceId, saveDataId);
                         if (rc.IsFailure()) return rc;
                     }
                     else
@@ -608,7 +608,7 @@ namespace LibHac.FsService
                         rc = FsClient.CreateSystemSaveData(spaceId, saveDataId, TitleId.Zero, 0xC0000, 0xC0000, 0);
                         if (rc.IsFailure()) return rc;
 
-                        rc = FsClient.MountSystemSaveData(MountName.ToU8Span(), spaceId, saveDataId);
+                        rc = FsClient.MountSystemSaveData(MountName, spaceId, saveDataId);
                         if (rc.IsFailure()) return rc;
                     }
                 }
