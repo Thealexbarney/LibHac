@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Shim;
@@ -96,9 +97,19 @@ namespace LibHac.FsService
             rc = TryOpenNca(ref path2, out Nca nca, baseFileSystem, openTitleId);
             if (rc.IsFailure()) return rc;
 
+            rc = OpenNcaStorage(out IStorage ncaSectionStorage, nca, out NcaFormatType fsType, type,
+                mountNameInfo.IsGameCard, canMountSystemDataPrivate);
+            if (rc.IsFailure()) return rc;
 
-
-            throw new NotImplementedException();
+            switch (fsType)
+            {
+                case NcaFormatType.Romfs:
+                    return FsCreators.RomFileSystemCreator.Create(out fileSystem, ncaSectionStorage);
+                case NcaFormatType.Pfs0:
+                    return FsCreators.PartitionFileSystemCreator.Create(out fileSystem, ncaSectionStorage);
+                default:
+                    return ResultFs.InvalidNcaFsType.Log();
+            }
         }
 
         /// <summary>
@@ -340,9 +351,132 @@ namespace LibHac.FsService
             return rc;
         }
 
-        private Result TryOpenNca(ref U8Span path, out Nca nca, IFileSystem baseFileSystem, TitleId titleId)
+        private Result TryOpenNca(ref U8Span path, out Nca nca, IFileSystem baseFileSystem, TitleId programId)
         {
-            throw new NotImplementedException();
+            nca = default;
+
+            Result rc = FileStorageBasedFileSystem.CreateNew(out FileStorageBasedFileSystem ncaFileStorage,
+                baseFileSystem, path, OpenMode.Read);
+            if (rc.IsFailure()) return rc;
+
+            rc = FsCreators.StorageOnNcaCreator.OpenNca(out Nca ncaTemp, ncaFileStorage);
+            if (rc.IsFailure()) return rc;
+
+            if (programId.Value == ulong.MaxValue)
+            {
+                ulong ncaProgramId = ncaTemp.Header.TitleId;
+
+                if (ncaProgramId != ulong.MaxValue && programId.Value != ncaProgramId)
+                {
+                    return ResultFs.InvalidNcaProgramId.Log();
+                }
+            }
+
+            nca = ncaTemp;
+            return Result.Success;
+        }
+
+        private Result OpenNcaStorage(out IStorage ncaStorage, Nca nca, out NcaFormatType fsType,
+            FileSystemProxyType fsProxyType, bool isGameCard, bool canMountSystemDataPrivate)
+        {
+            ncaStorage = default;
+            fsType = default;
+
+            NcaContentType contentType = nca.Header.ContentType;
+
+            switch (fsProxyType)
+            {
+                case FileSystemProxyType.Code:
+                case FileSystemProxyType.Rom:
+                case FileSystemProxyType.Logo:
+                case FileSystemProxyType.RegisteredUpdate:
+                    if (contentType != NcaContentType.Program)
+                        return ResultFs.PreconditionViolation.Log();
+
+                    break;
+
+                case FileSystemProxyType.Control:
+                    if (contentType != NcaContentType.Control)
+                        return ResultFs.PreconditionViolation.Log();
+
+                    break;
+                case FileSystemProxyType.Manual:
+                    if (contentType != NcaContentType.Manual)
+                        return ResultFs.PreconditionViolation.Log();
+
+                    break;
+                case FileSystemProxyType.Meta:
+                    if (contentType != NcaContentType.Meta)
+                        return ResultFs.PreconditionViolation.Log();
+
+                    break;
+                case FileSystemProxyType.Data:
+                    if (contentType != NcaContentType.Data && contentType != NcaContentType.PublicData)
+                        return ResultFs.PreconditionViolation.Log();
+
+                    if (contentType == NcaContentType.Data && !canMountSystemDataPrivate)
+                        return ResultFs.PermissionDenied.Log();
+
+                    break;
+                default:
+                    return ResultFs.InvalidArgument.Log();
+            }
+
+            if (nca.Header.DistributionType == DistributionType.GameCard && !isGameCard)
+                return ResultFs.PermissionDenied.Log();
+
+            Result rc = SetNcaExternalKey(nca);
+            if (rc.IsFailure()) return rc;
+
+            rc = GetNcaSectionIndex(out int sectionIndex, fsProxyType);
+            if (rc.IsFailure()) return rc;
+
+            rc = FsCreators.StorageOnNcaCreator.Create(out ncaStorage, out NcaFsHeader fsHeader, nca,
+                sectionIndex, fsProxyType == FileSystemProxyType.Code);
+            if (rc.IsFailure()) return rc;
+
+            fsType = fsHeader.FormatType;
+            return Result.Success;
+        }
+
+        private Result SetNcaExternalKey(Nca nca)
+        {
+            var rightsId = new RightsId(nca.Header.RightsId);
+            var zero = new RightsId(0, 0);
+
+            if (Crypto.CryptoUtil.IsSameBytes(rightsId.AsBytes(), zero.AsBytes(), Unsafe.SizeOf<RightsId>()))
+                return Result.Success;
+
+            Result rc = ExternalKeys.Get(rightsId, out AccessKey accessKey);
+            if (rc.IsFailure()) return rc;
+
+            // todo: Set key in nca reader
+
+            return Result.Success;
+        }
+
+        private Result GetNcaSectionIndex(out int index, FileSystemProxyType fspType)
+        {
+            switch (fspType)
+            {
+                case FileSystemProxyType.Code:
+                case FileSystemProxyType.Control:
+                case FileSystemProxyType.Manual:
+                case FileSystemProxyType.Meta:
+                case FileSystemProxyType.Data:
+                    index = 0;
+                    return Result.Success;
+                case FileSystemProxyType.Rom:
+                case FileSystemProxyType.RegisteredUpdate:
+                    index = 1;
+                    return Result.Success;
+                case FileSystemProxyType.Logo:
+                    index = 2;
+                    return Result.Success;
+                default:
+                    index = default;
+                    return ResultFs.InvalidArgument.Log();
+            }
         }
 
         public Result OpenBisFileSystem(out IFileSystem fileSystem, string rootPath, BisPartitionId partitionId)

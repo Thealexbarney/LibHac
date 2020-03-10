@@ -81,6 +81,8 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,4464,,AllocationTableIteratedRangeEntry,
 
 2,4501,4599,NcaCorrupted,
+2,4512,,InvalidNcaFsType,
+2,4527,,InvalidNcaProgramId,
 
 2,4601,4639,IntegrityVerificationStorageCorrupted,
 2,4602,,InvalidIvfcMagic,

@@ -20,7 +20,7 @@ namespace LibHac.FsService
 
             creators.RomFileSystemCreator = new RomFileSystemCreator();
             creators.PartitionFileSystemCreator = new PartitionFileSystemCreator();
-            creators.StorageOnNcaCreator = new StorageOnNcaCreator();
+            creators.StorageOnNcaCreator = new StorageOnNcaCreator(keyset);
             creators.TargetManagerFileSystemCreator = new TargetManagerFileSystemCreator();
             creators.SubDirectoryFileSystemCreator = new SubDirectoryFileSystemCreator();
             creators.SaveDataFileSystemCreator = new SaveDataFileSystemCreator(keyset);

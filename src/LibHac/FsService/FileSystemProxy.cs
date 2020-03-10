@@ -40,11 +40,22 @@ namespace LibHac.FsService
 
             bool canMountSystemDataPrivate = false;
 
-            Result rc = PathTools.Normalize(out U8Span normalizedPath, path);
-            if (rc.IsFailure()) return rc;
-
+            var normalizer = new PathNormalizer(path, GetPathNormalizerOptions(path));
+            if (normalizer.Result.IsFailure()) return normalizer.Result;
+            
             // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-            return FsProxyCore.OpenFileSystem(out fileSystem, normalizedPath, type, canMountSystemDataPrivate, titleId);
+            return FsProxyCore.OpenFileSystem(out fileSystem, normalizer.Path, type, canMountSystemDataPrivate, titleId);
+        }
+
+        private PathNormalizer.Option GetPathNormalizerOptions(U8Span path)
+        {
+            int hostMountLength = StringUtils.GetLength(CommonMountNames.HostRootFileSystemMountName,
+                PathTools.MountNameLengthMax);
+
+            bool isHostPath = StringUtils.Compare(path, CommonMountNames.HostRootFileSystemMountName, hostMountLength) == 0;
+
+            PathNormalizer.Option hostOption = isHostPath ? PathNormalizer.Option.PreserveUnc : PathNormalizer.Option.None;
+            return PathNormalizer.Option.HasMountName | PathNormalizer.Option.PreserveTailSeparator | hostOption;
         }
 
         public Result OpenFileSystemWithPatch(out IFileSystem fileSystem, TitleId titleId, FileSystemProxyType type)

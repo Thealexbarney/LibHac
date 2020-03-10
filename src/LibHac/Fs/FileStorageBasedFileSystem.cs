@@ -9,7 +9,10 @@ namespace LibHac.Fs
         private IFileSystem BaseFileSystem { get; set; }
         private IFile BaseFile { get; set; }
 
-        private FileStorageBasedFileSystem() { }
+        private FileStorageBasedFileSystem()
+        {
+            FileSize = InvalidSize;
+        }
 
         public static Result CreateNew(out FileStorageBasedFileSystem created, IFileSystem baseFileSystem, U8Span path,
             OpenMode mode)
