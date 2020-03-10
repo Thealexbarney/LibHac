@@ -7,20 +7,35 @@ namespace LibHac.FsSystem
 {
     public class ConcatenationDirectory : IDirectory
     {
-        private string Path { get; }
         private OpenDirectoryMode Mode { get; }
-
-        private ConcatenationFileSystem ParentFileSystem { get; }
-        private IFileSystem BaseFileSystem { get; }
         private IDirectory ParentDirectory { get; }
+        private IFileSystem BaseFileSystem { get; }
+        private ConcatenationFileSystem ParentFileSystem { get; }
 
-        public ConcatenationDirectory(ConcatenationFileSystem fs, IFileSystem baseFs, IDirectory parentDirectory, OpenDirectoryMode mode, string path)
+        private FsPath _path;
+
+        public ConcatenationDirectory(ConcatenationFileSystem fs, IFileSystem baseFs, IDirectory parentDirectory, OpenDirectoryMode mode, U8Span path)
         {
             ParentFileSystem = fs;
             BaseFileSystem = baseFs;
             ParentDirectory = parentDirectory;
             Mode = mode;
-            Path = path;
+
+            StringUtils.Copy(_path.Str, path);
+            _path.Str[PathTools.MaxPathLength] = StringTraits.NullTerminator;
+
+            // Ensure the path ends with a separator
+            int pathLength = StringUtils.GetLength(path, PathTools.MaxPathLength + 1);
+
+            if (pathLength != 0 && _path.Str[pathLength - 1] == StringTraits.DirectorySeparator)
+                return;
+
+            if (pathLength >= PathTools.MaxPathLength)
+                throw new HorizonResultException(ResultFs.TooLongPath.Value, "abort");
+
+            _path.Str[pathLength] = StringTraits.DirectorySeparator;
+            _path.Str[pathLength + 1] = StringTraits.NullTerminator;
+            _path.Str[PathTools.MaxPathLength] = StringTraits.NullTerminator;
         }
 
         public Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer)
@@ -48,9 +63,12 @@ namespace LibHac.FsSystem
                     if (!Mode.HasFlag(OpenDirectoryMode.NoFileSize))
                     {
                         string entryName = Util.GetUtf8StringNullTerminated(entry.Name);
-                        string entryFullPath = PathTools.Combine(Path, entryName);
+                        string entryFullPath = PathTools.Combine(_path.ToString(), entryName);
 
-                        entry.Size = ParentFileSystem.GetConcatenationFileSize(entryFullPath);
+                        rc = ParentFileSystem.GetConcatenationFileSize(out long fileSize, entryFullPath.ToU8Span());
+                        if (rc.IsFailure()) return rc;
+
+                        entry.Size = fileSize;
                     }
                 }
 
@@ -68,7 +86,7 @@ namespace LibHac.FsSystem
             entryCount = 0;
             long count = 0;
 
-            Result rc = BaseFileSystem.OpenDirectory(out IDirectory _, Path,
+            Result rc = BaseFileSystem.OpenDirectory(out IDirectory _, _path,
                 OpenDirectoryMode.All | OpenDirectoryMode.NoFileSize);
             if (rc.IsFailure()) return rc;
 
@@ -104,7 +122,7 @@ namespace LibHac.FsSystem
             else
             {
                 string name = Util.GetUtf8StringNullTerminated(entry.Name);
-                string fullPath = PathTools.Combine(Path, name);
+                var fullPath = PathTools.Combine(_path.ToString(), name).ToU8Span();
 
                 return ParentFileSystem.IsConcatenationFile(fullPath);
             }

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSystem;
 using LibHac.FsSystem.NcaUtils;
@@ -34,7 +35,7 @@ namespace hactoolnet
                             throw new FileNotFoundException("Specified NCA does not contain a delta fragment");
                         }
 
-                        fs.OpenFile(out IFile deltaFragmentFile, FragmentFileName, OpenMode.Read).ThrowIfFailure();
+                        fs.OpenFile(out IFile deltaFragmentFile, FragmentFileName.ToU8String(), OpenMode.Read).ThrowIfFailure();
 
                         deltaStorage = deltaFragmentFile.AsStorage();
                     }

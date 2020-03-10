@@ -62,9 +62,9 @@ namespace LibHac.Common
             return new U8Span(_buffer.Slice(start, length));
         }
 
-        public static implicit operator ReadOnlySpan<byte>(U8Span value) => value.Value;
+        public static implicit operator ReadOnlySpan<byte>(in U8Span value) => value.Value;
 
-        public static explicit operator string(U8Span value) => value.ToString();
+        public static explicit operator string(in U8Span value) => value.ToString();
         public static explicit operator U8Span(string value) => new U8Span(value);
 
         public override string ToString()

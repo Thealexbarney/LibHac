@@ -30,7 +30,7 @@ namespace LibHac.Fs
 
         private Result Initialize(IFileSystem baseFileSystem, U8Span path, OpenMode mode)
         {
-            Result rc = baseFileSystem.OpenFile(out IFile file, path.ToString(), mode);
+            Result rc = baseFileSystem.OpenFile(out IFile file, path, mode);
             if (rc.IsFailure()) return rc;
 
             SetFile(file);

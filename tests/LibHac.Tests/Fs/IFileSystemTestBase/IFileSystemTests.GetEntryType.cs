@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 using Xunit;
 
 namespace LibHac.Tests.Fs.IFileSystemTestBase
@@ -10,9 +11,8 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            Result rc = fs.GetEntryType(out DirectoryEntryType type, "/");
+            Assert.Success(fs.GetEntryType(out DirectoryEntryType type, "/".ToU8Span()));
 
-            Assert.True(rc.IsSuccess());
             Assert.Equal(DirectoryEntryType.Directory, type);
         }
 
@@ -21,9 +21,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            Result rc = fs.GetEntryType(out _, "/path");
-
-            Assert.Equal(ResultFs.PathNotFound.Value, rc);
+            Assert.Result(ResultFs.PathNotFound, fs.GetEntryType(out _, "/path".ToU8Span()));
         }
     }
 }

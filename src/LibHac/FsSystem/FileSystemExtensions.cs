@@ -31,12 +31,12 @@ namespace LibHac.FsSystem
                 {
                     destFs.CreateOrOverwriteFile(subDstPath, entry.Size, options);
 
-                    rc = sourceFs.OpenFile(out IFile srcFile, subSrcPath, OpenMode.Read);
+                    rc = sourceFs.OpenFile(out IFile srcFile, subSrcPath.ToU8Span(), OpenMode.Read);
                     if (rc.IsFailure()) return rc;
 
                     using (srcFile)
                     {
-                        rc = destFs.OpenFile(out IFile dstFile, subDstPath, OpenMode.Write | OpenMode.AllowAppend);
+                        rc = destFs.OpenFile(out IFile dstFile, subDstPath.ToU8Span(), OpenMode.Write | OpenMode.AllowAppend);
                         if (rc.IsFailure()) return rc;
 
                         using (dstFile)
@@ -80,7 +80,7 @@ namespace LibHac.FsSystem
 
             IFileSystem fs = fileSystem;
 
-            fileSystem.OpenDirectory(out IDirectory directory, path, OpenDirectoryMode.All).ThrowIfFailure();
+            fileSystem.OpenDirectory(out IDirectory directory, path.ToU8Span(), OpenDirectoryMode.All).ThrowIfFailure();
 
             while (true)
             {
@@ -199,7 +199,7 @@ namespace LibHac.FsSystem
 
         public static void SetConcatenationFileAttribute(this IFileSystem fs, string path)
         {
-            fs.QueryEntry(Span<byte>.Empty, Span<byte>.Empty, QueryId.MakeConcatFile, path);
+            fs.QueryEntry(Span<byte>.Empty, Span<byte>.Empty, QueryId.MakeConcatFile, path.ToU8Span());
         }
 
         public static void CleanDirectoryRecursivelyGeneric(IFileSystem fileSystem, string path)
@@ -213,11 +213,11 @@ namespace LibHac.FsSystem
                 if (entry.Type == DirectoryEntryType.Directory)
                 {
                     CleanDirectoryRecursivelyGeneric(fileSystem, subPath);
-                    fs.DeleteDirectory(subPath);
+                    fs.DeleteDirectory(subPath.ToU8Span());
                 }
                 else if (entry.Type == DirectoryEntryType.File)
                 {
-                    fs.DeleteFile(subPath);
+                    fs.DeleteFile(subPath.ToU8Span());
                 }
             }
         }
@@ -234,14 +234,14 @@ namespace LibHac.FsSystem
 
         public static bool DirectoryExists(this IFileSystem fs, string path)
         {
-            Result rc = fs.GetEntryType(out DirectoryEntryType type, path);
+            Result rc = fs.GetEntryType(out DirectoryEntryType type, path.ToU8Span());
 
             return (rc.IsSuccess() && type == DirectoryEntryType.Directory);
         }
 
         public static bool FileExists(this IFileSystem fs, string path)
         {
-            Result rc = fs.GetEntryType(out DirectoryEntryType type, path);
+            Result rc = fs.GetEntryType(out DirectoryEntryType type, path.ToU8Span());
 
             return (rc.IsSuccess() && type == DirectoryEntryType.File);
         }
@@ -277,12 +277,12 @@ namespace LibHac.FsSystem
                 {
                     string subPath = path.Substring(0, i);
 
-                    Result rc = fs.CreateDirectory(subPath);
+                    Result rc = fs.CreateDirectory(subPath.ToU8Span());
                     if (rc.IsFailure()) return rc;
                 }
             }
 
-            return fs.CreateDirectory(path);
+            return fs.CreateDirectory(path.ToU8Span());
         }
 
         public static void CreateOrOverwriteFile(this IFileSystem fs, string path, long size)
@@ -294,9 +294,9 @@ namespace LibHac.FsSystem
         {
             path = PathTools.Normalize(path);
 
-            if (fs.FileExists(path)) fs.DeleteFile(path);
+            if (fs.FileExists(path)) fs.DeleteFile(path.ToU8Span());
 
-            fs.CreateFile(path, size, CreateFileOptions.None);
+            fs.CreateFile(path.ToU8Span(), size, CreateFileOptions.None);
         }
     }
 

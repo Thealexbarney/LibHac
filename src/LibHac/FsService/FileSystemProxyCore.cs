@@ -65,7 +65,7 @@ namespace LibHac.FsService
         {
             fileSystem = default;
 
-            string contentDirPath = default;
+            U8String contentDirPath = default;
             IFileSystem baseFileSystem = default;
             bool isEncrypted = false;
             Result rc;
@@ -74,15 +74,15 @@ namespace LibHac.FsService
             {
                 case ContentStorageId.System:
                     rc = OpenBisFileSystem(out baseFileSystem, string.Empty, BisPartitionId.System);
-                    contentDirPath = $"/{ContentDirectoryName}";
+                    contentDirPath = $"/{ContentDirectoryName}".ToU8String();
                     break;
                 case ContentStorageId.User:
                     rc = OpenBisFileSystem(out baseFileSystem, string.Empty, BisPartitionId.User);
-                    contentDirPath = $"/{ContentDirectoryName}";
+                    contentDirPath = $"/{ContentDirectoryName}".ToU8String();
                     break;
                 case ContentStorageId.SdCard:
                     rc = OpenSdCardFileSystem(out baseFileSystem);
-                    contentDirPath = $"/{NintendoDirectoryName}/{ContentDirectoryName}";
+                    contentDirPath = $"/{NintendoDirectoryName}/{ContentDirectoryName}".ToU8String();
                     isEncrypted = true;
                     break;
                 default:
@@ -92,7 +92,7 @@ namespace LibHac.FsService
 
             if (rc.IsFailure()) return rc;
 
-            baseFileSystem.EnsureDirectoryExists(contentDirPath);
+            baseFileSystem.EnsureDirectoryExists(contentDirPath.ToString());
 
             rc = FsCreators.SubDirectoryFileSystemCreator.Create(out IFileSystem subDirFileSystem,
                 baseFileSystem, contentDirPath);
@@ -199,7 +199,7 @@ namespace LibHac.FsService
 
             string saveDataPath = $"/{saveDataId:x16}";
 
-            rc = fileSystem.GetEntryType(out _, saveDataPath);
+            rc = fileSystem.GetEntryType(out _, saveDataPath.ToU8Span());
 
             if (rc.IsFailure())
             {
@@ -337,7 +337,7 @@ namespace LibHac.FsService
 
             string metaFilePath = $"/{(int)type:x8}.meta";
 
-            return metaDirFs.OpenFile(out file, metaFilePath, OpenMode.ReadWrite);
+            return metaDirFs.OpenFile(out file, metaFilePath.ToU8Span(), OpenMode.ReadWrite);
         }
 
         public Result DeleteSaveDataMetaFiles(ulong saveDataId, SaveDataSpaceId spaceId)
@@ -348,7 +348,7 @@ namespace LibHac.FsService
             {
                 if (rc.IsFailure()) return rc;
 
-                rc = metaDirFs.DeleteDirectoryRecursively($"/{saveDataId:x16}");
+                rc = metaDirFs.DeleteDirectoryRecursively($"/{saveDataId:x16}".ToU8Span());
 
                 if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc))
                     return rc;
@@ -369,7 +369,7 @@ namespace LibHac.FsService
 
             if (size < 0) return ResultFs.OutOfRange.Log();
 
-            return metaDirFs.CreateFile(metaFilePath, size, CreateFileOptions.None);
+            return metaDirFs.CreateFile(metaFilePath.ToU8Span(), size, CreateFileOptions.None);
         }
 
         public Result CreateSaveDataFileSystem(ulong saveDataId, ref SaveDataAttribute attribute,
@@ -391,7 +391,7 @@ namespace LibHac.FsService
             {
                 if (rc.IsFailure()) return rc;
 
-                string saveDataPath = GetSaveDataIdPath(saveDataId);
+                var saveDataPath = GetSaveDataIdPath(saveDataId).ToU8Span();
 
                 rc = fileSystem.GetEntryType(out DirectoryEntryType entryType, saveDataPath);
                 if (rc.IsFailure()) return rc;

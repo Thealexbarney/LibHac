@@ -35,10 +35,9 @@ namespace LibHac.FsSystem
             Sources.AddRange(sourceFileSystems);
         }
 
-        protected override Result OpenDirectoryImpl(out IDirectory directory, string path, OpenDirectoryMode mode)
+        protected override Result OpenDirectoryImpl(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
             directory = default;
-            path = PathTools.Normalize(path);
 
             // Open directories from all layers so they can be merged
             // Only allocate the list for multiple sources if needed
@@ -107,10 +106,9 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result OpenFileImpl(out IFile file, string path, OpenMode mode)
+        protected override Result OpenFileImpl(out IFile file, U8Span path, OpenMode mode)
         {
             file = default;
-            path = PathTools.Normalize(path);
 
             foreach (IFileSystem fs in Sources)
             {
@@ -137,10 +135,8 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path)
+        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, U8Span path)
         {
-            path = PathTools.Normalize(path);
-
             foreach (IFileSystem fs in Sources)
             {
                 Result getEntryResult = fs.GetEntryType(out DirectoryEntryType type, path);
@@ -156,10 +152,8 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, string path)
+        protected override Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, U8Span path)
         {
-            path = PathTools.Normalize(path);
-
             foreach (IFileSystem fs in Sources)
             {
                 Result getEntryResult = fs.GetEntryType(out _, path);
@@ -174,10 +168,9 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, string path)
+        protected override Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
+            U8Span path)
         {
-            path = PathTools.Normalize(path);
-
             foreach (IFileSystem fs in Sources)
             {
                 Result getEntryResult = fs.GetEntryType(out _, path);
@@ -196,31 +189,31 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result CreateDirectoryImpl(string path) => ResultFs.UnsupportedOperation.Log();
-        protected override Result CreateFileImpl(string path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperation.Log();
-        protected override Result DeleteDirectoryImpl(string path) => ResultFs.UnsupportedOperation.Log();
-        protected override Result DeleteDirectoryRecursivelyImpl(string path) => ResultFs.UnsupportedOperation.Log();
-        protected override Result CleanDirectoryRecursivelyImpl(string path) => ResultFs.UnsupportedOperation.Log();
-        protected override Result DeleteFileImpl(string path) => ResultFs.UnsupportedOperation.Log();
-        protected override Result RenameDirectoryImpl(string oldPath, string newPath) => ResultFs.UnsupportedOperation.Log();
-        protected override Result RenameFileImpl(string oldPath, string newPath) => ResultFs.UnsupportedOperation.Log();
+        protected override Result CreateDirectoryImpl(U8Span path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result CreateFileImpl(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DeleteDirectoryImpl(U8Span path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DeleteDirectoryRecursivelyImpl(U8Span path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result CleanDirectoryRecursivelyImpl(U8Span path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DeleteFileImpl(U8Span path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result RenameDirectoryImpl(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperation.Log();
+        protected override Result RenameFileImpl(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperation.Log();
 
         private class MergedDirectory : IDirectory
         {
             // Needed to open new directories for GetEntryCount
             private List<IFileSystem> SourceFileSystems { get; }
             private List<IDirectory> SourceDirs { get; }
-            private string Path { get; }
+            private U8String Path { get; }
             private OpenDirectoryMode Mode { get; }
 
             // todo: Efficient way to remove duplicates
             private HashSet<string> Names { get; } = new HashSet<string>();
 
-            public MergedDirectory(List<IFileSystem> sourceFileSystems, string path, OpenDirectoryMode mode)
+            public MergedDirectory(List<IFileSystem> sourceFileSystems, U8Span path, OpenDirectoryMode mode)
             {
                 SourceFileSystems = sourceFileSystems;
                 SourceDirs = new List<IDirectory>(sourceFileSystems.Count);
-                Path = path;
+                Path = path.ToU8String();
                 Mode = mode;
             }
 
@@ -280,7 +273,7 @@ namespace LibHac.FsSystem
                     long entriesRead;
                     do
                     {
-                        dir.Read(out entriesRead, SpanHelpers.AsSpan(ref entry));
+                        rc = dir.Read(out entriesRead, SpanHelpers.AsSpan(ref entry));
                         if (rc.IsFailure()) return rc;
 
                         if (entriesRead == 1 && names.Add(StringUtils.Utf8ZToString(entry.Name)))

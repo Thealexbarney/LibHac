@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 
 namespace LibHac.FsSystem.RomFs
 {
@@ -22,18 +23,17 @@ namespace LibHac.FsSystem.RomFs
             FileTable = new HierarchicalRomFileTable<RomFileInfo>(dirHashTable, dirEntryTable, fileHashTable, fileEntryTable);
         }
 
-        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path)
+        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, U8Span path)
         {
             entryType = default;
-            path = PathTools.Normalize(path);
 
-            if (FileTable.TryOpenFile(path, out RomFileInfo _))
+            if (FileTable.TryOpenFile(path.ToString(), out RomFileInfo _))
             {
                 entryType = DirectoryEntryType.File;
                 return Result.Success;
             }
 
-            if (FileTable.TryOpenDirectory(path, out FindPosition _))
+            if (FileTable.TryOpenDirectory(path.ToString(), out FindPosition _))
             {
                 entryType = DirectoryEntryType.Directory;
                 return Result.Success;
@@ -47,12 +47,11 @@ namespace LibHac.FsSystem.RomFs
             return Result.Success;
         }
 
-        protected override Result OpenDirectoryImpl(out IDirectory directory, string path, OpenDirectoryMode mode)
+        protected override Result OpenDirectoryImpl(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
             directory = default;
-            path = PathTools.Normalize(path);
 
-            if (!FileTable.TryOpenDirectory(path, out FindPosition position))
+            if (!FileTable.TryOpenDirectory(path.ToString(), out FindPosition position))
             {
                 return ResultFs.PathNotFound.Log();
             }
@@ -61,12 +60,11 @@ namespace LibHac.FsSystem.RomFs
             return Result.Success;
         }
 
-        protected override Result OpenFileImpl(out IFile file, string path, OpenMode mode)
+        protected override Result OpenFileImpl(out IFile file, U8Span path, OpenMode mode)
         {
             file = default;
-            path = PathTools.Normalize(path);
 
-            if (!FileTable.TryOpenFile(path, out RomFileInfo info))
+            if (!FileTable.TryOpenFile(path.ToString(), out RomFileInfo info))
             {
                 return ResultFs.PathNotFound.Log();
             }
@@ -86,22 +84,22 @@ namespace LibHac.FsSystem.RomFs
             return BaseStorage;
         }
 
-        protected override Result CreateDirectoryImpl(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
-        protected override Result CreateFileImpl(string path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
-        protected override Result DeleteDirectoryImpl(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
-        protected override Result DeleteDirectoryRecursivelyImpl(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
-        protected override Result CleanDirectoryRecursivelyImpl(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
-        protected override Result DeleteFileImpl(string path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
-        protected override Result RenameDirectoryImpl(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
-        protected override Result RenameFileImpl(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        protected override Result CreateDirectoryImpl(U8Span path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        protected override Result CreateFileImpl(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        protected override Result DeleteDirectoryImpl(U8Span path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        protected override Result DeleteDirectoryRecursivelyImpl(U8Span path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        protected override Result CleanDirectoryRecursivelyImpl(U8Span path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        protected override Result DeleteFileImpl(U8Span path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        protected override Result RenameDirectoryImpl(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        protected override Result RenameFileImpl(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
 
-        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, string path)
+        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, U8Span path)
         {
             freeSpace = default;
             return ResultFs.UnsupportedOperationRomFsFileSystemGetSpace.Log();
         }
 
-        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, string path)
+        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, U8Span path)
         {
             totalSpace = default;
             return ResultFs.UnsupportedOperationRomFsFileSystemGetSpace.Log();

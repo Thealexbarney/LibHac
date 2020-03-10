@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using LibHac.Common;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem.Save
@@ -16,9 +17,9 @@ namespace LibHac.FsSystem.Save
             DirectoryTable = new SaveFsList<TableEntry<SaveFindPosition>>(dirTable);
         }
 
-        public bool TryOpenFile(string path, out SaveFileInfo fileInfo)
+        public bool TryOpenFile(U8Span path, out SaveFileInfo fileInfo)
         {
-            if (!FindPathRecursive(Util.GetUtf8Bytes(path), out SaveEntryKey key))
+            if (!FindPathRecursive(path, out SaveEntryKey key))
             {
                 fileInfo = default;
                 return false;
@@ -89,24 +90,18 @@ namespace LibHac.FsSystem.Save
             return true;
         }
 
-        public void AddFile(string path, ref SaveFileInfo fileInfo)
+        public void AddFile(U8Span path, ref SaveFileInfo fileInfo)
         {
-            path = PathTools.Normalize(path);
-            ReadOnlySpan<byte> pathBytes = Util.GetUtf8Bytes(path);
+            if (path.Length == 1 && path[0] == '/') throw new ArgumentException("Path cannot be empty");
 
-            if (path == "/") throw new ArgumentException("Path cannot be empty");
-
-            CreateFileRecursive(pathBytes, ref fileInfo);
+            CreateFileRecursive(path, ref fileInfo);
         }
 
-        public void AddDirectory(string path)
+        public void AddDirectory(U8Span path)
         {
-            path = PathTools.Normalize(path);
-            ReadOnlySpan<byte> pathBytes = Util.GetUtf8Bytes(path);
+            if (path.Length == 1 && path[0] == '/') throw new ArgumentException("Path cannot be empty");
 
-            if (path == "/") throw new ArgumentException("Path cannot be empty");
-
-            CreateDirectoryRecursive(pathBytes);
+            CreateDirectoryRecursive(path);
         }
 
         private void CreateFileRecursive(ReadOnlySpan<byte> path, ref SaveFileInfo fileInfo)
@@ -269,12 +264,9 @@ namespace LibHac.FsSystem.Save
             }
         }
 
-        public void DeleteFile(string path)
+        public void DeleteFile(U8Span path)
         {
-            path = PathTools.Normalize(path);
-            ReadOnlySpan<byte> pathBytes = Util.GetUtf8Bytes(path);
-
-            FindPathRecursive(pathBytes, out SaveEntryKey key);
+            FindPathRecursive(path, out SaveEntryKey key);
             int parentIndex = key.Parent;
 
             int toDeleteIndex = FileTable.GetIndexFromKey(ref key).Index;
@@ -285,12 +277,9 @@ namespace LibHac.FsSystem.Save
             FileTable.Remove(ref key);
         }
 
-        public void DeleteDirectory(string path)
+        public void DeleteDirectory(U8Span path)
         {
-            path = PathTools.Normalize(path);
-            ReadOnlySpan<byte> pathBytes = Util.GetUtf8Bytes(path);
-
-            FindPathRecursive(pathBytes, out SaveEntryKey key);
+            FindPathRecursive(path, out SaveEntryKey key);
             int parentIndex = key.Parent;
 
             int toDeleteIndex = DirectoryTable.GetIndexFromKey(ref key).Index;
@@ -308,24 +297,21 @@ namespace LibHac.FsSystem.Save
             DirectoryTable.Remove(ref key);
         }
 
-        public void RenameFile(string srcPath, string dstPath)
+        public void RenameFile(U8Span srcPath, U8Span dstPath)
         {
-            if (srcPath == dstPath || TryOpenFile(dstPath, out _) || TryOpenDirectory(dstPath, out _))
+            if (srcPath.Value == dstPath.Value || TryOpenFile(dstPath, out _) || TryOpenDirectory(dstPath, out _))
             {
                 throw new IOException("Destination path already exists.");
             }
 
-            ReadOnlySpan<byte> oldPathBytes = Util.GetUtf8Bytes(srcPath);
-            ReadOnlySpan<byte> newPathBytes = Util.GetUtf8Bytes(dstPath);
-
-            if (!FindPathRecursive(oldPathBytes, out SaveEntryKey oldKey))
+            if (!FindPathRecursive(srcPath, out SaveEntryKey oldKey))
             {
                 throw new FileNotFoundException();
             }
 
             int fileIndex = FileTable.GetIndexFromKey(ref oldKey).Index;
 
-            if (!FindPathRecursive(newPathBytes, out SaveEntryKey newKey))
+            if (!FindPathRecursive(dstPath, out SaveEntryKey newKey))
             {
                 throw new FileNotFoundException();
             }
@@ -339,29 +325,26 @@ namespace LibHac.FsSystem.Save
             FileTable.ChangeKey(ref oldKey, ref newKey);
         }
 
-        public Result RenameDirectory(string srcPath, string dstPath)
+        public Result RenameDirectory(U8Span srcPath, U8Span dstPath)
         {
-            if (srcPath == dstPath || TryOpenFile(dstPath, out _) || TryOpenDirectory(dstPath, out _))
+            if (srcPath.Value == dstPath.Value || TryOpenFile(dstPath, out _) || TryOpenDirectory(dstPath, out _))
             {
                 return ResultFs.PathAlreadyExists.Log();
             }
 
-            ReadOnlySpan<byte> oldPathBytes = Util.GetUtf8Bytes(srcPath);
-            ReadOnlySpan<byte> newPathBytes = Util.GetUtf8Bytes(dstPath);
-
-            if (!FindPathRecursive(oldPathBytes, out SaveEntryKey oldKey))
+            if (!FindPathRecursive(srcPath, out SaveEntryKey oldKey))
             {
                 return ResultFs.PathNotFound.Log();
             }
 
             int dirIndex = DirectoryTable.GetIndexFromKey(ref oldKey).Index;
 
-            if (!FindPathRecursive(newPathBytes, out SaveEntryKey newKey))
+            if (!FindPathRecursive(dstPath, out SaveEntryKey newKey))
             {
                 return ResultFs.PathNotFound.Log();
             }
 
-            if (PathTools.IsSubPath(oldPathBytes, newPathBytes))
+            if (PathTools.IsSubPath(srcPath, dstPath))
             {
                 return ResultFs.DestinationIsSubPathOfSource.Log();
             }
@@ -377,9 +360,9 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public bool TryOpenDirectory(string path, out SaveFindPosition position)
+        public bool TryOpenDirectory(U8Span path, out SaveFindPosition position)
         {
-            if (!FindPathRecursive(Util.GetUtf8Bytes(path), out SaveEntryKey key))
+            if (!FindPathRecursive(path, out SaveEntryKey key))
             {
                 position = default;
                 return false;

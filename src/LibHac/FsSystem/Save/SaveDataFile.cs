@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using LibHac.Common;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem.Save
@@ -7,16 +8,16 @@ namespace LibHac.FsSystem.Save
     public class SaveDataFile : FileBase
     {
         private AllocationTableStorage BaseStorage { get; }
-        private string Path { get; }
+        private U8String Path { get; }
         private HierarchicalSaveFileTable FileTable { get; }
         private long Size { get; set; }
         private OpenMode Mode { get; }
 
-        public SaveDataFile(AllocationTableStorage baseStorage, string path, HierarchicalSaveFileTable fileTable, long size, OpenMode mode)
+        public SaveDataFile(AllocationTableStorage baseStorage, U8Span path, HierarchicalSaveFileTable fileTable, long size, OpenMode mode)
         {
             Mode = mode;
             BaseStorage = baseStorage;
-            Path = path;
+            Path = path.ToU8String();
             FileTable = fileTable;
             Size = size;
         }

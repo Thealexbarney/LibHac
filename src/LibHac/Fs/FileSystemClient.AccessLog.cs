@@ -105,9 +105,9 @@ namespace LibHac.Fs
             return IsEnabledAccessLog(AccessLogTarget.All);
         }
 
-        internal bool IsEnabledFileSystemAccessorAccessLog(string mountName)
+        internal bool IsEnabledFileSystemAccessorAccessLog(U8Span mountName)
         {
-            if (MountTable.Find(mountName, out FileSystemAccessor accessor).IsFailure())
+            if (MountTable.Find(mountName.ToString(), out FileSystemAccessor accessor).IsFailure())
             {
                 return true;
             }

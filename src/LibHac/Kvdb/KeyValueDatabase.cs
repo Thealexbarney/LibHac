@@ -13,16 +13,16 @@ namespace LibHac.Kvdb
         private Dictionary<TKey, byte[]> KvDict { get; } = new Dictionary<TKey, byte[]>();
 
         private FileSystemClient FsClient { get; }
-        private string FileName { get; }
+        private U8String FileName { get; }
 
         public int Count => KvDict.Count;
 
         public KeyValueDatabase() { }
 
-        public KeyValueDatabase(FileSystemClient fsClient, string fileName)
+        public KeyValueDatabase(FileSystemClient fsClient, U8Span fileName)
         {
             FsClient = fsClient;
-            FileName = fileName;
+            FileName = fileName.ToU8String();
         }
 
         public Result Get(ref TKey key, Span<byte> valueBuffer)
@@ -109,7 +109,7 @@ namespace LibHac.Kvdb
 
         public Result ReadDatabaseFromFile()
         {
-            if (FsClient == null || FileName == null)
+            if (FsClient == null || FileName.IsNull())
                 return ResultFs.PreconditionViolation.Log();
 
             Result rc = ReadFile(out byte[] data);
@@ -124,7 +124,7 @@ namespace LibHac.Kvdb
 
         public Result WriteDatabaseToFile()
         {
-            if (FsClient == null || FileName == null)
+            if (FsClient == null || FileName.IsNull())
                 return ResultFs.PreconditionViolation.Log();
 
             var buffer = new byte[GetExportedSize()];
@@ -157,7 +157,7 @@ namespace LibHac.Kvdb
         private Result ReadFile(out byte[] data)
         {
             Debug.Assert(FsClient != null);
-            Debug.Assert(!string.IsNullOrWhiteSpace(FileName));
+            Debug.Assert(!FileName.IsEmpty());
 
             data = default;
 
@@ -180,7 +180,7 @@ namespace LibHac.Kvdb
         private Result WriteFile(ReadOnlySpan<byte> data)
         {
             Debug.Assert(FsClient != null);
-            Debug.Assert(!string.IsNullOrWhiteSpace(FileName));
+            Debug.Assert(!FileName.IsEmpty());
 
             FsClient.DeleteFile(FileName);
 

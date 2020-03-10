@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem
@@ -6,7 +7,7 @@ namespace LibHac.FsSystem
     public class AesXtsFile : FileBase
     {
         private IFile BaseFile { get; }
-        private string Path { get; }
+        private U8String Path { get; }
         private byte[] KekSeed { get; }
         private byte[] VerificationKey { get; }
         private int BlockSize { get; }
@@ -17,7 +18,7 @@ namespace LibHac.FsSystem
 
         internal const int HeaderLength = 0x4000;
 
-        public AesXtsFile(OpenMode mode, IFile baseFile, string path, ReadOnlySpan<byte> kekSeed, ReadOnlySpan<byte> verificationKey, int blockSize)
+        public AesXtsFile(OpenMode mode, IFile baseFile, U8String path, ReadOnlySpan<byte> kekSeed, ReadOnlySpan<byte> verificationKey, int blockSize)
         {
             Mode = mode;
             BaseFile = baseFile;
@@ -30,7 +31,7 @@ namespace LibHac.FsSystem
 
             baseFile.GetSize(out long fileSize).ThrowIfFailure();
 
-            if (!Header.TryDecryptHeader(Path, KekSeed, VerificationKey))
+            if (!Header.TryDecryptHeader(Path.ToString(), KekSeed, VerificationKey))
             {
                 ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderInvalidKeys.Value, "NAX0 key derivation failed.");
             }

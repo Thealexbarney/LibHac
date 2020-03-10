@@ -15,30 +15,30 @@ namespace LibHac.Tests.Fs
 
             var layeredFs = new LayeredFileSystem(lowerLayerFs, upperLayerFs);
 
-            lowerLayerFs.CreateDirectory("/dir").ThrowIfFailure();
-            upperLayerFs.CreateDirectory("/dir").ThrowIfFailure();
-            lowerLayerFs.CreateDirectory("/dir2").ThrowIfFailure();
-            upperLayerFs.CreateDirectory("/dir2").ThrowIfFailure();
-            lowerLayerFs.CreateDirectory("/dir3").ThrowIfFailure();
-            upperLayerFs.CreateDirectory("/dir3").ThrowIfFailure();
+            lowerLayerFs.CreateDirectory("/dir".ToU8Span()).ThrowIfFailure();
+            upperLayerFs.CreateDirectory("/dir".ToU8Span()).ThrowIfFailure();
+            lowerLayerFs.CreateDirectory("/dir2".ToU8Span()).ThrowIfFailure();
+            upperLayerFs.CreateDirectory("/dir2".ToU8Span()).ThrowIfFailure();
+            lowerLayerFs.CreateDirectory("/dir3".ToU8Span()).ThrowIfFailure();
+            upperLayerFs.CreateDirectory("/dir3".ToU8Span()).ThrowIfFailure();
 
-            lowerLayerFs.CreateDirectory("/lowerDir").ThrowIfFailure();
-            upperLayerFs.CreateDirectory("/upperDir").ThrowIfFailure();
+            lowerLayerFs.CreateDirectory("/lowerDir".ToU8Span()).ThrowIfFailure();
+            upperLayerFs.CreateDirectory("/upperDir".ToU8Span()).ThrowIfFailure();
 
-            lowerLayerFs.CreateFile("/dir/replacedFile", 1, CreateFileOptions.None).ThrowIfFailure();
-            upperLayerFs.CreateFile("/dir/replacedFile", 2, CreateFileOptions.None).ThrowIfFailure();
+            lowerLayerFs.CreateFile("/dir/replacedFile".ToU8Span(), 1, CreateFileOptions.None).ThrowIfFailure();
+            upperLayerFs.CreateFile("/dir/replacedFile".ToU8Span(), 2, CreateFileOptions.None).ThrowIfFailure();
 
-            lowerLayerFs.CreateFile("/dir2/lowerFile", 0, CreateFileOptions.None).ThrowIfFailure();
-            upperLayerFs.CreateFile("/dir2/upperFile", 0, CreateFileOptions.None).ThrowIfFailure();
+            lowerLayerFs.CreateFile("/dir2/lowerFile".ToU8Span(), 0, CreateFileOptions.None).ThrowIfFailure();
+            upperLayerFs.CreateFile("/dir2/upperFile".ToU8Span(), 0, CreateFileOptions.None).ThrowIfFailure();
 
-            lowerLayerFs.CreateFile("/dir3/lowerFile", 0, CreateFileOptions.None).ThrowIfFailure();
-            upperLayerFs.CreateFile("/dir3/upperFile", 2, CreateFileOptions.None).ThrowIfFailure();
-            lowerLayerFs.CreateFile("/dir3/replacedFile", 1, CreateFileOptions.None).ThrowIfFailure();
-            upperLayerFs.CreateFile("/dir3/replacedFile", 2, CreateFileOptions.None).ThrowIfFailure();
+            lowerLayerFs.CreateFile("/dir3/lowerFile".ToU8Span(), 0, CreateFileOptions.None).ThrowIfFailure();
+            upperLayerFs.CreateFile("/dir3/upperFile".ToU8Span(), 2, CreateFileOptions.None).ThrowIfFailure();
+            lowerLayerFs.CreateFile("/dir3/replacedFile".ToU8Span(), 1, CreateFileOptions.None).ThrowIfFailure();
+            upperLayerFs.CreateFile("/dir3/replacedFile".ToU8Span(), 2, CreateFileOptions.None).ThrowIfFailure();
 
-            lowerLayerFs.CreateFile("/replacedWithDir", 0, CreateFileOptions.None).ThrowIfFailure();
-            upperLayerFs.CreateDirectory("/replacedWithDir").ThrowIfFailure();
-            upperLayerFs.CreateFile("/replacedWithDir/subFile", 0, CreateFileOptions.None).ThrowIfFailure();
+            lowerLayerFs.CreateFile("/replacedWithDir".ToU8Span(), 0, CreateFileOptions.None).ThrowIfFailure();
+            upperLayerFs.CreateDirectory("/replacedWithDir".ToU8Span()).ThrowIfFailure();
+            upperLayerFs.CreateFile("/replacedWithDir/subFile".ToU8Span(), 0, CreateFileOptions.None).ThrowIfFailure();
 
             return layeredFs;
         }
@@ -56,7 +56,7 @@ namespace LibHac.Tests.Fs
         {
             IFileSystem fs = CreateFileSystem();
 
-            Assert.Result(ResultFs.PathNotFound, fs.OpenFile(out _, "/fakefile", OpenMode.All));
+            Assert.Result(ResultFs.PathNotFound, fs.OpenFile(out _, "/fakefile".ToU8Span(), OpenMode.All));
         }
 
         [Fact]
@@ -64,7 +64,7 @@ namespace LibHac.Tests.Fs
         {
             IFileSystem fs = CreateFileSystem();
 
-            Assert.Success(fs.OpenFile(out IFile file, "/dir/replacedFile", OpenMode.All));
+            Assert.Success(fs.OpenFile(out IFile file, "/dir/replacedFile".ToU8Span(), OpenMode.All));
             Assert.Success(file.GetSize(out long fileSize));
 
             Assert.Equal(2, fileSize);
@@ -75,8 +75,8 @@ namespace LibHac.Tests.Fs
         {
             IFileSystem fs = CreateFileSystem();
 
-            Assert.Success(fs.OpenFile(out _, "/dir2/lowerFile", OpenMode.All));
-            Assert.Success(fs.OpenFile(out _, "/dir2/upperFile", OpenMode.All));
+            Assert.Success(fs.OpenFile(out _, "/dir2/lowerFile".ToU8Span(), OpenMode.All));
+            Assert.Success(fs.OpenFile(out _, "/dir2/upperFile".ToU8Span(), OpenMode.All));
         }
 
         [Fact]
@@ -84,7 +84,7 @@ namespace LibHac.Tests.Fs
         {
             IFileSystem fs = CreateFileSystem();
 
-            Assert.Result(ResultFs.PathNotFound, fs.OpenDirectory(out _, "/fakedir", OpenDirectoryMode.All));
+            Assert.Result(ResultFs.PathNotFound, fs.OpenDirectory(out _, "/fakedir".ToU8Span(), OpenDirectoryMode.All));
         }
 
         [Fact]
@@ -92,7 +92,7 @@ namespace LibHac.Tests.Fs
         {
             IFileSystem fs = CreateFileSystem();
 
-            Assert.Success(fs.OpenDirectory(out IDirectory dir, "/lowerDir", OpenDirectoryMode.All));
+            Assert.Success(fs.OpenDirectory(out IDirectory dir, "/lowerDir".ToU8Span(), OpenDirectoryMode.All));
             Assert.Equal(typeof(InMemoryFileSystem), dir.GetType().DeclaringType);
         }
 
@@ -101,7 +101,7 @@ namespace LibHac.Tests.Fs
         {
             IFileSystem fs = CreateFileSystem();
 
-            Assert.Success(fs.OpenDirectory(out IDirectory dir, "/dir", OpenDirectoryMode.All));
+            Assert.Success(fs.OpenDirectory(out IDirectory dir, "/dir".ToU8Span(), OpenDirectoryMode.All));
             Assert.Equal(typeof(LayeredFileSystem), dir.GetType().DeclaringType);
         }
 
@@ -110,8 +110,8 @@ namespace LibHac.Tests.Fs
         {
             IFileSystem fs = CreateFileSystem();
 
-            Assert.Success(fs.GetEntryType(out _, "/dir2/lowerFile"));
-            Assert.Success(fs.GetEntryType(out _, "/dir2/upperFile"));
+            Assert.Success(fs.GetEntryType(out _, "/dir2/lowerFile".ToU8Span()));
+            Assert.Success(fs.GetEntryType(out _, "/dir2/upperFile".ToU8Span()));
         }
 
         [Fact]
@@ -120,7 +120,7 @@ namespace LibHac.Tests.Fs
             IFileSystem fs = CreateFileSystem();
             Span<DirectoryEntry> entries = stackalloc DirectoryEntry[4];
 
-            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/dir3", OpenDirectoryMode.All));
+            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/dir3".ToU8Span(), OpenDirectoryMode.All));
 
             Assert.Success(directory.Read(out long entriesRead, entries));
             Assert.Equal(3, entriesRead);
@@ -132,7 +132,7 @@ namespace LibHac.Tests.Fs
             IFileSystem fs = CreateFileSystem();
             var entry = new DirectoryEntry();
 
-            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/dir", OpenDirectoryMode.All));
+            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/dir".ToU8Span(), OpenDirectoryMode.All));
 
             Assert.Success(directory.Read(out _, SpanHelpers.AsSpan(ref entry)));
             Assert.Equal("replacedFile", StringUtils.Utf8ZToString(entry.Name));
@@ -145,7 +145,7 @@ namespace LibHac.Tests.Fs
             IFileSystem fs = CreateEmptyFileSystem();
             var entry = new DirectoryEntry();
 
-            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/", OpenDirectoryMode.All));
+            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/".ToU8Span(), OpenDirectoryMode.All));
 
             Assert.Success(directory.Read(out long entriesRead, SpanHelpers.AsSpan(ref entry)));
             Assert.Equal(0, entriesRead);
@@ -156,7 +156,7 @@ namespace LibHac.Tests.Fs
         {
             IFileSystem fs = CreateFileSystem();
 
-            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/dir3", OpenDirectoryMode.All));
+            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/dir3".ToU8Span(), OpenDirectoryMode.All));
 
             Assert.Success(directory.GetEntryCount(out long entryCount));
             Assert.Equal(3, entryCount);
@@ -168,7 +168,7 @@ namespace LibHac.Tests.Fs
             IFileSystem fs = CreateFileSystem();
             var entry = new DirectoryEntry();
 
-            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/dir3", OpenDirectoryMode.All));
+            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/dir3".ToU8Span(), OpenDirectoryMode.All));
 
             // Read all entries
             long entriesRead;
@@ -186,7 +186,7 @@ namespace LibHac.Tests.Fs
         {
             IFileSystem fs = CreateEmptyFileSystem();
 
-            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/", OpenDirectoryMode.All));
+            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/".ToU8Span(), OpenDirectoryMode.All));
 
             Assert.Success(directory.GetEntryCount(out long entryCount));
             Assert.Equal(0, entryCount);

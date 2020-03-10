@@ -12,7 +12,7 @@ namespace LibHac.Fs
         public static Result CopyDirectory(this FileSystemClient fs, string sourcePath, string destPath,
             CreateFileOptions options = CreateFileOptions.None, IProgressReport logger = null)
         {
-            Result rc = fs.OpenDirectory(out DirectoryHandle sourceHandle, sourcePath, OpenDirectoryMode.All);
+            Result rc = fs.OpenDirectory(out DirectoryHandle sourceHandle, sourcePath.ToU8Span(), OpenDirectoryMode.All);
             if (rc.IsFailure()) return rc;
 
             using (sourceHandle)
@@ -46,12 +46,12 @@ namespace LibHac.Fs
 
         public static Result CopyFile(this FileSystemClient fs, string sourcePath, string destPath, IProgressReport logger = null)
         {
-            Result rc = fs.OpenFile(out FileHandle sourceHandle, sourcePath, OpenMode.Read);
+            Result rc = fs.OpenFile(out FileHandle sourceHandle, sourcePath.ToU8Span(), OpenMode.Read);
             if (rc.IsFailure()) return rc;
 
             using (sourceHandle)
             {
-                rc = fs.OpenFile(out FileHandle destHandle, destPath, OpenMode.Write | OpenMode.AllowAppend);
+                rc = fs.OpenFile(out FileHandle destHandle, destPath.ToU8Span(), OpenMode.Write | OpenMode.AllowAppend);
                 if (rc.IsFailure()) return rc;
 
                 using (destHandle)
@@ -111,7 +111,7 @@ namespace LibHac.Fs
             bool ignoreCase = searchOptions.HasFlag(SearchOptions.CaseInsensitive);
             bool recurse = searchOptions.HasFlag(SearchOptions.RecurseSubdirectories);
 
-            fs.OpenDirectory(out DirectoryHandle sourceHandle, path, OpenDirectoryMode.All).ThrowIfFailure();
+            fs.OpenDirectory(out DirectoryHandle sourceHandle, path.ToU8Span(), OpenDirectoryMode.All).ThrowIfFailure();
 
             using (sourceHandle)
             {
@@ -144,14 +144,14 @@ namespace LibHac.Fs
 
         public static bool DirectoryExists(this FileSystemClient fs, string path)
         {
-            Result rc = fs.GetEntryType(out DirectoryEntryType type, path);
+            Result rc = fs.GetEntryType(out DirectoryEntryType type, path.ToU8Span());
 
             return (rc.IsSuccess() && type == DirectoryEntryType.Directory);
         }
 
         public static bool FileExists(this FileSystemClient fs, string path)
         {
-            Result rc = fs.GetEntryType(out DirectoryEntryType type, path);
+            Result rc = fs.GetEntryType(out DirectoryEntryType type, path.ToU8Span());
 
             return (rc.IsSuccess() && type == DirectoryEntryType.File);
         }
@@ -189,25 +189,30 @@ namespace LibHac.Fs
                 {
                     string subPath = path.Substring(0, i);
 
-                    fs.CreateDirectory(subPath);
+                    fs.CreateDirectory(subPath.ToU8Span());
                 }
             }
 
-            fs.CreateDirectory(path);
+            fs.CreateDirectory(path.ToU8Span());
         }
 
-        public static void CreateOrOverwriteFile(this FileSystemClient fs, string path, long size)
+        public static Result CreateOrOverwriteFile(this FileSystemClient fs, string path, long size)
         {
-            fs.CreateOrOverwriteFile(path, size, CreateFileOptions.None);
+            return fs.CreateOrOverwriteFile(path, size, CreateFileOptions.None);
         }
 
-        public static void CreateOrOverwriteFile(this FileSystemClient fs, string path, long size, CreateFileOptions options)
+        public static Result CreateOrOverwriteFile(this FileSystemClient fs, string path, long size, CreateFileOptions options)
         {
             path = PathTools.Normalize(path);
+            var u8Path = path.ToU8Span();
 
-            if (fs.FileExists(path)) fs.DeleteFile(path);
+            if (fs.FileExists(path))
+            {
+                Result rc = fs.DeleteFile(u8Path);
+                if (rc.IsFailure()) return rc;
+            }
 
-            fs.CreateFile(path, size, CreateFileOptions.None);
+            return fs.CreateFile(u8Path, size, CreateFileOptions.None);
         }
 
         internal static bool IsEnabledFileSystemAccessorAccessLog(this FileSystemClient fs, string mountName)

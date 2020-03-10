@@ -6,13 +6,13 @@ namespace LibHac.FsSystem
 {
     public class AesXtsDirectory : IDirectory
     {
-        private string Path { get; }
+        private U8String Path { get; }
         private OpenDirectoryMode Mode { get; }
 
         private IFileSystem BaseFileSystem { get; }
         private IDirectory BaseDirectory { get; }
 
-        public AesXtsDirectory(IFileSystem baseFs, IDirectory baseDir, string path, OpenDirectoryMode mode)
+        public AesXtsDirectory(IFileSystem baseFs, IDirectory baseDir, U8String path, OpenDirectoryMode mode)
         {
             BaseFileSystem = baseFs;
             BaseDirectory = baseDir;
@@ -38,7 +38,7 @@ namespace LibHac.FsSystem
                     else
                     {
                         string entryName = Util.GetUtf8StringNullTerminated(entry.Name);
-                        entry.Size = GetAesXtsFileSize(PathTools.Combine(Path, entryName));
+                        entry.Size = GetAesXtsFileSize(PathTools.Combine(Path.ToString(), entryName).ToU8Span());
                     }
                 }
             }
@@ -56,7 +56,7 @@ namespace LibHac.FsSystem
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
-        private long GetAesXtsFileSize(string path)
+        private long GetAesXtsFileSize(U8Span path)
         {
             const long magicOffset = 0x20;
             const long fileSizeOffset = 0x48;

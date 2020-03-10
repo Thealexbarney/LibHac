@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 using Xunit;
 
 namespace LibHac.Tests.Fs.IFileSystemTestBase
@@ -10,12 +11,12 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateFile("/file1", 0, CreateFileOptions.None);
+            fs.CreateFile("/file1".ToU8Span(), 0, CreateFileOptions.None);
 
-            Assert.True(fs.RenameFile("/file1", "/file2").IsSuccess());
+            Assert.True(fs.RenameFile("/file1".ToU8Span(), "/file2".ToU8Span()).IsSuccess());
 
-            Assert.True(fs.GetEntryType(out DirectoryEntryType type, "/file2").IsSuccess());
-            Result rc = fs.GetEntryType(out _, "/file1");
+            Assert.True(fs.GetEntryType(out DirectoryEntryType type, "/file2".ToU8Span()).IsSuccess());
+            Result rc = fs.GetEntryType(out _, "/file1".ToU8Span());
 
             Assert.Equal(DirectoryEntryType.File, type);
             Assert.Equal(ResultFs.PathNotFound.Value, rc);
@@ -25,13 +26,13 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateFile("/file1", 0, CreateFileOptions.None);
-            fs.CreateDirectory("/dir");
+            fs.CreateFile("/file1".ToU8Span(), 0, CreateFileOptions.None);
+            fs.CreateDirectory("/dir".ToU8Span());
 
-            Assert.True(fs.RenameFile("/file1", "/dir/file2").IsSuccess());
+            Assert.True(fs.RenameFile("/file1".ToU8Span(), "/dir/file2".ToU8Span()).IsSuccess());
 
-            Assert.True(fs.GetEntryType(out DirectoryEntryType type, "/dir/file2").IsSuccess());
-            Result rc = fs.GetEntryType(out _, "/file1");
+            Assert.True(fs.GetEntryType(out DirectoryEntryType type, "/dir/file2".ToU8Span()).IsSuccess());
+            Result rc = fs.GetEntryType(out _, "/file1".ToU8Span());
 
             Assert.Equal(DirectoryEntryType.File, type);
             Assert.Equal(ResultFs.PathNotFound.Value, rc);
@@ -42,10 +43,10 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateFile("/file1", 0, CreateFileOptions.None);
-            fs.CreateFile("/file2", 0, CreateFileOptions.None);
+            fs.CreateFile("/file1".ToU8Span(), 0, CreateFileOptions.None);
+            fs.CreateFile("/file2".ToU8Span(), 0, CreateFileOptions.None);
 
-            Result rc = fs.RenameFile("/file1", "/file2");
+            Result rc = fs.RenameFile("/file1".ToU8Span(), "/file2".ToU8Span());
 
             Assert.Equal(ResultFs.PathAlreadyExists.Value, rc);
         }
@@ -55,10 +56,10 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateFile("/file", 0, CreateFileOptions.None);
-            fs.CreateDirectory("/dir");
+            fs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
+            fs.CreateDirectory("/dir".ToU8Span());
 
-            Result rc = fs.RenameFile("/file", "/dir");
+            Result rc = fs.RenameFile("/file".ToU8Span(), "/dir".ToU8Span());
 
             Assert.Equal(ResultFs.PathAlreadyExists.Value, rc);
         }
@@ -68,13 +69,13 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateFile("/file1", 54321, CreateFileOptions.None);
-            fs.CreateFile("/file2", 12345, CreateFileOptions.None);
+            fs.CreateFile("/file1".ToU8Span(), 54321, CreateFileOptions.None);
+            fs.CreateFile("/file2".ToU8Span(), 12345, CreateFileOptions.None);
 
-            fs.RenameFile("/file1", "/file2");
+            fs.RenameFile("/file1".ToU8Span(), "/file2".ToU8Span());
 
-            Assert.True(fs.OpenFile(out IFile file1, "/file1", OpenMode.Read).IsSuccess());
-            Assert.True(fs.OpenFile(out IFile file2, "/file2", OpenMode.Read).IsSuccess());
+            Assert.True(fs.OpenFile(out IFile file1, "/file1".ToU8Span(), OpenMode.Read).IsSuccess());
+            Assert.True(fs.OpenFile(out IFile file2, "/file2".ToU8Span(), OpenMode.Read).IsSuccess());
 
             using (file1)
             using (file2)
@@ -94,17 +95,17 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateFile("/file", data.Length, CreateFileOptions.None);
+            fs.CreateFile("/file".ToU8Span(), data.Length, CreateFileOptions.None);
 
-            fs.OpenFile(out IFile file, "/file", OpenMode.Write);
+            fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Write);
             file.Write(0, data, WriteOption.None);
             file.Dispose();
 
-            fs.RenameFile("/file", "/renamed");
+            fs.RenameFile("/file".ToU8Span(), "/renamed".ToU8Span());
 
             var readData = new byte[data.Length];
 
-            fs.OpenFile(out file, "/renamed", OpenMode.Read);
+            fs.OpenFile(out file, "/renamed".ToU8Span(), OpenMode.Read);
             Result rc = file.Read(out long bytesRead, 0, readData, ReadOption.None);
             file.Dispose();
 

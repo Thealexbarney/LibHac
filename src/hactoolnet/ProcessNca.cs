@@ -51,10 +51,10 @@ namespace hactoolnet
                         fs.Register(mountName.ToU8Span(), OpenFileSystem(i));
                         fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.SectionOutDir[i]));
 
-                        FsUtils.CopyDirectoryWithProgress(fs, mountName + ":/", "output:/", logger: ctx.Logger);
+                        FsUtils.CopyDirectoryWithProgress(fs, (mountName + ":/").ToU8Span(), "output:/".ToU8Span(), logger: ctx.Logger).ThrowIfFailure();
 
-                        fs.Unmount(mountName);
-                        fs.Unmount("output");
+                        fs.Unmount(mountName.ToU8Span());
+                        fs.Unmount("output".ToU8Span());
                     }
 
                     if (ctx.Options.Validate && nca.SectionExists(i))
@@ -100,10 +100,10 @@ namespace hactoolnet
                         fs.Register("rom".ToU8Span(), OpenFileSystemByType(NcaSectionType.Data));
                         fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.RomfsOutDir));
 
-                        FsUtils.CopyDirectoryWithProgress(fs, "rom:/", "output:/", logger: ctx.Logger);
+                        FsUtils.CopyDirectoryWithProgress(fs, "rom:/".ToU8Span(), "output:/".ToU8Span(), logger: ctx.Logger).ThrowIfFailure();
 
-                        fs.Unmount("rom");
-                        fs.Unmount("output");
+                        fs.Unmount("rom".ToU8Span());
+                        fs.Unmount("output".ToU8Span());
                     }
 
                     if (ctx.Options.ReadBench)
@@ -157,10 +157,10 @@ namespace hactoolnet
                         fs.Register("code".ToU8Span(), OpenFileSystemByType(NcaSectionType.Code));
                         fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.ExefsOutDir));
 
-                        FsUtils.CopyDirectoryWithProgress(fs, "code:/", "output:/", logger: ctx.Logger);
+                        FsUtils.CopyDirectoryWithProgress(fs, "code:/".ToU8Span(), "output:/".ToU8Span(), logger: ctx.Logger).ThrowIfFailure();
 
-                        fs.Unmount("code");
-                        fs.Unmount("output");
+                        fs.Unmount("code".ToU8Span());
+                        fs.Unmount("output".ToU8Span());
                     }
                 }
 
@@ -211,7 +211,7 @@ namespace hactoolnet
             IFileSystem pfs = nca.OpenFileSystem(NcaSectionType.Code, IntegrityCheckLevel.ErrorOnInvalid);
             if (!pfs.FileExists("main.npdm")) return Validity.Unchecked;
 
-            pfs.OpenFile(out IFile npdmFile, "main.npdm", OpenMode.Read).ThrowIfFailure();
+            pfs.OpenFile(out IFile npdmFile, "main.npdm".ToU8String(), OpenMode.Read).ThrowIfFailure();
             var npdm = new NpdmBinary(npdmFile.AsStream());
 
             return nca.Header.VerifySignature2(npdm.AciD.Rsa2048Modulus);
@@ -234,7 +234,7 @@ namespace hactoolnet
             PrintItem(sb, colLen, "TitleID:", $"{nca.Header.TitleId:X16}");
             if (nca.CanOpenSection(NcaSectionType.Code)) {
                 IFileSystem fs = nca.OpenFileSystem(NcaSectionType.Code, IntegrityCheckLevel.None);
-                Result r = fs.OpenFile(out IFile file, "/main.npdm", OpenMode.Read);
+                Result r = fs.OpenFile(out IFile file, "/main.npdm".ToU8String(), OpenMode.Read);
                 if (r.IsSuccess()) {
                     var npdm = new NpdmBinary(file.AsStream(), null);
                     PrintItem(sb, colLen, "Title Name:", npdm.TitleName);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Fs;
 
@@ -31,17 +32,17 @@ namespace LibHac.FsSystem
             BaseStorage = storage;
         }
 
-        protected override Result OpenDirectoryImpl(out IDirectory directory, string path, OpenDirectoryMode mode)
+        protected override Result OpenDirectoryImpl(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
-            directory = new PartitionDirectory(this, path, mode);
+            directory = new PartitionDirectory(this, path.ToString(), mode);
             return Result.Success;
         }
 
-        protected override Result OpenFileImpl(out IFile file, string path, OpenMode mode)
+        protected override Result OpenFileImpl(out IFile file, U8Span path, OpenMode mode)
         {
-            path = PathTools.Normalize(path).TrimStart('/');
+            path = PathTools.Normalize(path.ToString()).TrimStart('/').ToU8Span();
 
-            if (!FileDict.TryGetValue(path, out PartitionFileEntry entry))
+            if (!FileDict.TryGetValue(path.ToString(), out PartitionFileEntry entry))
             {
                 ThrowHelper.ThrowResult(ResultFs.PathNotFound.Value);
             }
@@ -55,18 +56,17 @@ namespace LibHac.FsSystem
             return new PartitionFile(BaseStorage, HeaderSize + entry.Offset, entry.Size, mode);
         }
 
-        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, string path)
+        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, U8Span path)
         {
             entryType = default;
-            path = PathTools.Normalize(path);
 
-            if (path == "/")
+            if (path.ToString() == "/")
             {
                 entryType = DirectoryEntryType.Directory;
                 return Result.Success;
             }
 
-            if (FileDict.ContainsKey(path.TrimStart('/')))
+            if (FileDict.ContainsKey(path.ToString().TrimStart('/')))
             {
                 entryType = DirectoryEntryType.File;
                 return Result.Success;
@@ -75,14 +75,14 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result CreateDirectoryImpl(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result CreateFileImpl(string path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DeleteDirectoryImpl(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DeleteDirectoryRecursivelyImpl(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result CleanDirectoryRecursivelyImpl(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DeleteFileImpl(string path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result RenameDirectoryImpl(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result RenameFileImpl(string oldPath, string newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result CreateDirectoryImpl(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result CreateFileImpl(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result DeleteDirectoryImpl(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result DeleteDirectoryRecursivelyImpl(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result CleanDirectoryRecursivelyImpl(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result DeleteFileImpl(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result RenameDirectoryImpl(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result RenameFileImpl(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
 
         protected override Result CommitImpl()
         {

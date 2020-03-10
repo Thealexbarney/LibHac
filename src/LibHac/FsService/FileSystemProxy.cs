@@ -1113,7 +1113,7 @@ namespace LibHac.FsService
                 string.Empty, false);
             if (rc.IsFailure()) return rc;
 
-            rc = saveDirFs.CleanDirectoryRecursively("/");
+            rc = saveDirFs.CleanDirectoryRecursively("/".ToU8Span());
             if (rc.IsFailure()) return rc;
 
             SaveDataIndexerReader reader = default;

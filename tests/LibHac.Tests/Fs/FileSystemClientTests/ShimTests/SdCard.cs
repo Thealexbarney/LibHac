@@ -12,7 +12,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
         {
             FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-            Assert.Success(fs.MountSdCard("sdcard".ToU8String()));
+            Assert.Success(fs.MountSdCard("sdcard".ToU8Span()));
         }
 
         [Fact]
@@ -20,7 +20,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
         {
             FileSystemClient fs = FileSystemServerFactory.CreateClient(false);
 
-            Assert.Result(ResultFs.SdCardNotFound, fs.MountSdCard("sdcard".ToU8String()));
+            Assert.Result(ResultFs.SdCardNotFound, fs.MountSdCard("sdcard".ToU8Span()));
         }
 
         [Fact]
@@ -30,7 +30,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
 
             fs.MountSdCard("sdcard".ToU8String());
 
-            Assert.Success(fs.CreateFile("sdcard:/file", 100, CreateFileOptions.None));
+            Assert.Success(fs.CreateFile("sdcard:/file".ToU8Span(), 100, CreateFileOptions.None));
         }
 
         [Fact]

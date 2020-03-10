@@ -23,7 +23,7 @@ namespace LibHac.FsService.Creators
             fileSystem = default;
 
             if (!IsValidPartitionId(partitionId)) return ResultFs.InvalidArgument.Log();
-            if (rootPath == null) return ResultFs.NullArgument.Log();
+            if (rootPath == null) return ResultFs.NullptrArgument.Log();
 
             if (Config.TryGetFileSystem(out fileSystem, partitionId))
             {

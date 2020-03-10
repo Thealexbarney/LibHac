@@ -84,7 +84,7 @@ namespace LibHac
                 SwitchFsNca nca = null;
                 try
                 {
-                    ContentFs.OpenFile(out IFile ncaFile, fileEntry.FullPath, OpenMode.Read).ThrowIfFailure();
+                    ContentFs.OpenFile(out IFile ncaFile, fileEntry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
                     nca = new SwitchFsNca(new Nca(Keyset, ncaFile.AsStorage()));
 
@@ -122,7 +122,7 @@ namespace LibHac
 
                 try
                 {
-                    SaveFs.OpenFile(out IFile file, fileEntry.FullPath, OpenMode.Read).ThrowIfFailure();
+                    SaveFs.OpenFile(out IFile file, fileEntry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
                     save = new SaveDataFileSystem(Keyset, file.AsStorage(), IntegrityCheckLevel.None, true);
                 }
@@ -149,7 +149,7 @@ namespace LibHac
                     IFileSystem fs = nca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
                     string cnmtPath = fs.EnumerateEntries("/", "*.cnmt").Single().FullPath;
 
-                    fs.OpenFile(out IFile file, cnmtPath, OpenMode.Read).ThrowIfFailure();
+                    fs.OpenFile(out IFile file, cnmtPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
                     var metadata = new Cnmt(file.AsStream());
                     title.Id = metadata.TitleId;
@@ -193,7 +193,7 @@ namespace LibHac
             foreach (Title title in Titles.Values.Where(x => x.ControlNca != null))
             {
                 IFileSystem romfs = title.ControlNca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
-                romfs.OpenFile(out IFile control, "control.nacp", OpenMode.Read).ThrowIfFailure();
+                romfs.OpenFile(out IFile control, "/control.nacp".ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
                 title.Control = new Nacp(control.AsStream());
 

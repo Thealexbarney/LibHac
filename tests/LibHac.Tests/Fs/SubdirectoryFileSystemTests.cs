@@ -16,8 +16,8 @@ namespace LibHac.Tests.Fs
         private (IFileSystem baseFs, IFileSystem subDirFs) CreateFileSystemInternal()
         {
             var baseFs = new InMemoryFileSystem();
-            baseFs.CreateDirectory("/sub");
-            baseFs.CreateDirectory("/sub/path");
+            baseFs.CreateDirectory("/sub".ToU8Span());
+            baseFs.CreateDirectory("/sub/path".ToU8Span());
 
             SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem subFs, baseFs, "/sub/path".ToU8String()).ThrowIfFailure();
             return (baseFs, subFs);
@@ -28,8 +28,8 @@ namespace LibHac.Tests.Fs
         {
             (IFileSystem baseFs, IFileSystem subDirFs) = CreateFileSystemInternal();
 
-            subDirFs.CreateFile("/file", 0, CreateFileOptions.None);
-            Result rc = baseFs.GetEntryType(out DirectoryEntryType type, "/sub/path/file");
+            subDirFs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
+            Result rc = baseFs.GetEntryType(out DirectoryEntryType type, "/sub/path/file".ToU8Span());
 
             Assert.True(rc.IsSuccess());
             Assert.Equal(DirectoryEntryType.File, type);
@@ -40,8 +40,8 @@ namespace LibHac.Tests.Fs
         {
             (IFileSystem baseFs, IFileSystem subDirFs) = CreateFileSystemInternal();
 
-            subDirFs.CreateDirectory("/dir");
-            Result rc = baseFs.GetEntryType(out DirectoryEntryType type, "/sub/path/dir");
+            subDirFs.CreateDirectory("/dir".ToU8Span());
+            Result rc = baseFs.GetEntryType(out DirectoryEntryType type, "/sub/path/dir".ToU8Span());
 
             Assert.True(rc.IsSuccess());
             Assert.Equal(DirectoryEntryType.Directory, type);
