@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers.Text;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
@@ -41,11 +42,13 @@ namespace LibHac.FsService
             // Get a reference to the path that will be advanced as each part of the path is parsed
             U8Span path2 = path.Slice(0, StringUtils.GetLength(path));
 
-            Result rc = OpenFileSystemFromMountName(ref path2, out IFileSystem baseFileSystem, out bool successQQ,
+            // Open the root filesystem based on the path's mount name
+            Result rc = OpenFileSystemFromMountName(ref path2, out IFileSystem baseFileSystem, out bool shouldContinue,
                 out MountNameInfo mountNameInfo);
             if (rc.IsFailure()) return rc;
 
-            if (!successQQ)
+            // Don't continue if the rest of the path is empty
+            if (!shouldContinue)
                 return ResultFs.InvalidArgument.Log();
 
             if (type == FileSystemProxyType.Logo && mountNameInfo.IsGameCard)
@@ -65,7 +68,19 @@ namespace LibHac.FsService
 
             if (isDirectory)
             {
-                throw new NotImplementedException();
+                if (!mountNameInfo.IsHostFs)
+                    return ResultFs.PermissionDenied.Log();
+
+                if (type == FileSystemProxyType.Manual)
+                {
+                    rc = TryOpenCaseSensitiveContentDirectory(out IFileSystem manualFileSystem, baseFileSystem, path2);
+                    if (rc.IsFailure()) return rc;
+
+                    fileSystem = new ReadOnlyFileSystem(manualFileSystem);
+                    return Result.Success;
+                }
+
+                return TryOpenContentDirectory(path2, out fileSystem, baseFileSystem, type, true);
             }
 
             rc = TryOpenNsp(ref path2, out IFileSystem nspFileSystem, baseFileSystem);
@@ -123,23 +138,52 @@ namespace LibHac.FsService
             public bool CanMountNca;
         }
 
-        private Result OpenFileSystemFromMountName(ref U8Span path, out IFileSystem fileSystem, out bool successQQ,
+        private Result OpenFileSystemFromMountName(ref U8Span path, out IFileSystem fileSystem, out bool shouldContinue,
             out MountNameInfo info)
         {
             fileSystem = default;
 
             info = new MountNameInfo();
-            successQQ = true;
+            shouldContinue = true;
 
             if (StringUtils.Compare(path, CommonMountNames.GameCardFileSystemMountName,
                     CommonMountNames.GameCardFileSystemMountName.Length) == 0)
             {
                 path = path.Slice(CommonMountNames.GameCardFileSystemMountName.Length);
 
+                if (StringUtils.GetLength(path.Value, 9) < 9)
+                    return ResultFs.InvalidPath.Log();
+
+                GameCardPartition partition;
+                switch ((char)path[0])
+                {
+                    case CommonMountNames.GameCardFileSystemMountNameUpdateSuffix:
+                        partition = GameCardPartition.Update;
+                        break;
+                    case CommonMountNames.GameCardFileSystemMountNameNormalSuffix:
+                        partition = GameCardPartition.Normal;
+                        break;
+                    case CommonMountNames.GameCardFileSystemMountNameSecureSuffix:
+                        partition = GameCardPartition.Secure;
+                        break;
+                    default:
+                        return ResultFs.InvalidPath.Log();
+                }
+
+                path = path.Slice(1);
+                bool handleParsed = Utf8Parser.TryParse(path, out int handle, out int bytesConsumed);
+
+                if (!handleParsed || handle == -1 || bytesConsumed != 8)
+                    return ResultFs.InvalidPath.Log();
+
+                path = path.Slice(8);
+
+                Result rc = OpenGameCardFileSystem(out fileSystem, new GameCardHandle(handle), partition);
+                if (rc.IsFailure()) return rc;
+
+                info.GcHandle = handle;
                 info.IsGameCard = true;
                 info.CanMountNca = true;
-
-                throw new NotImplementedException();
             }
 
             else if (StringUtils.Compare(path, CommonMountNames.ContentStorageSystemMountName,
@@ -228,7 +272,8 @@ namespace LibHac.FsService
                 info.IsHostFs = true;
                 info.CanMountNca = true;
 
-                throw new NotImplementedException();
+                Result rc = OpenHostFileSystem(out fileSystem, U8Span.Empty, openCaseSensitive: false);
+                if (rc.IsFailure()) return rc;
             }
 
             else if (StringUtils.Compare(path, CommonMountNames.RegisteredUpdatePartitionMountName,
@@ -248,7 +293,7 @@ namespace LibHac.FsService
 
             if (StringUtils.GetLength(path, FsPath.MaxLength) == 0)
             {
-                successQQ = false;
+                shouldContinue = false;
             }
 
             return Result.Success;
@@ -293,13 +338,105 @@ namespace LibHac.FsService
             return ResultFs.PathNotFound.Log();
         }
 
+        private Result TryOpenContentDirectory(U8Span path, out IFileSystem contentFileSystem,
+            IFileSystem baseFileSystem, FileSystemProxyType fsType, bool preserveUnc)
+        {
+            contentFileSystem = default;
+
+            FsPath fullPath;
+            unsafe { _ = &fullPath; } // workaround for CS0165
+
+            Result rc = FsCreators.SubDirectoryFileSystemCreator.Create(out IFileSystem subDirFs,
+                baseFileSystem, path, preserveUnc);
+            if (rc.IsFailure()) return rc;
+
+            return OpenSubDirectoryForFsType(out contentFileSystem, subDirFs, fsType);
+        }
+
+        private Result TryOpenCaseSensitiveContentDirectory(out IFileSystem contentFileSystem,
+            IFileSystem baseFileSystem, U8Span path)
+        {
+            contentFileSystem = default;
+            FsPath fullPath;
+            unsafe { _ = &fullPath; } // workaround for CS0165
+
+            var pathBuilder = new PathBuilder(fullPath.Str);
+            Result rc = pathBuilder.Append(path);
+            if (rc.IsFailure()) return rc;
+
+            rc = pathBuilder.Append(new[] { (byte)'d', (byte)'a', (byte)'t', (byte)'a', (byte)'/' });
+            if (rc.IsFailure()) return rc;
+
+            pathBuilder.Terminate();
+
+            rc = FsCreators.TargetManagerFileSystemCreator.GetCaseSensitivePath(out bool success, fullPath.Str);
+            if (rc.IsFailure()) return rc;
+
+            // Reopen the host filesystem as case sensitive
+            if (success)
+            {
+                baseFileSystem.Dispose();
+
+                rc = OpenHostFileSystem(out baseFileSystem, U8Span.Empty, openCaseSensitive: true);
+                if (rc.IsFailure()) return rc;
+            }
+
+            return FsCreators.SubDirectoryFileSystemCreator.Create(out contentFileSystem, baseFileSystem, fullPath);
+        }
+
+        private Result OpenSubDirectoryForFsType(out IFileSystem fileSystem, IFileSystem baseFileSystem,
+            FileSystemProxyType fsType)
+        {
+            fileSystem = default;
+            ReadOnlySpan<byte> dirName;
+
+            // Get the name of the subdirectory for the filesystem type
+            switch (fsType)
+            {
+                case FileSystemProxyType.Package:
+                    fileSystem = baseFileSystem;
+                    return Result.Success;
+
+                case FileSystemProxyType.Code:
+                    dirName = new[] { (byte)'/', (byte)'c', (byte)'o', (byte)'d', (byte)'e', (byte)'/' };
+                    break;
+                case FileSystemProxyType.Rom:
+                case FileSystemProxyType.Control:
+                case FileSystemProxyType.Manual:
+                case FileSystemProxyType.Meta:
+                // Nintendo doesn't include the Data case in the switch. Maybe an oversight?
+                case FileSystemProxyType.Data:
+                case FileSystemProxyType.RegisteredUpdate:
+                    dirName = new[] { (byte)'/', (byte)'d', (byte)'a', (byte)'t', (byte)'a', (byte)'/' };
+                    break;
+                case FileSystemProxyType.Logo:
+                    dirName = new[] { (byte)'/', (byte)'l', (byte)'o', (byte)'g', (byte)'o', (byte)'/' };
+                    break;
+
+                default:
+                    return ResultFs.InvalidArgument.Log();
+            }
+
+            // Open the subdirectory filesystem
+            Result rc = FsCreators.SubDirectoryFileSystemCreator.Create(out IFileSystem subDirFs, baseFileSystem,
+                new U8Span(dirName));
+            if (rc.IsFailure()) return rc;
+
+            if (fsType == FileSystemProxyType.Code)
+            {
+                rc = FsCreators.StorageOnNcaCreator.VerifyAcidSignature(subDirFs, null);
+                if (rc.IsFailure()) return rc;
+            }
+
+            fileSystem = subDirFs;
+            return Result.Success;
+        }
+
         private Result TryOpenNsp(ref U8Span path, out IFileSystem outFileSystem, IFileSystem baseFileSystem)
         {
             outFileSystem = default;
 
             ReadOnlySpan<byte> nspExtension = new[] { (byte)'.', (byte)'n', (byte)'s', (byte)'p' };
-
-            int searchEnd = path.Length - 4;
 
             // Search for the end of the nsp part of the path
             int nspPathLen = 0;
@@ -447,6 +584,7 @@ namespace LibHac.FsService
             if (Crypto.CryptoUtil.IsSameBytes(rightsId.AsBytes(), zero.AsBytes(), Unsafe.SizeOf<RightsId>()))
                 return Result.Success;
 
+            // ReSharper disable once UnusedVariable
             Result rc = ExternalKeys.Get(rightsId, out AccessKey accessKey);
             if (rc.IsFailure()) return rc;
 
@@ -604,7 +742,53 @@ namespace LibHac.FsService
         public Result OpenGameCardFileSystem(out IFileSystem fileSystem, GameCardHandle handle,
             GameCardPartition partitionId)
         {
-            return FsCreators.GameCardFileSystemCreator.Create(out fileSystem, handle, partitionId);
+            Result rc;
+            int tries = 0;
+
+            do
+            {
+                rc = FsCreators.GameCardFileSystemCreator.Create(out fileSystem, handle, partitionId);
+
+                if (!ResultFs.DataCorrupted.Includes(rc))
+                    break;
+
+                tries++;
+            } while (tries < 2);
+
+            return rc;
+        }
+
+        public Result OpenHostFileSystem(out IFileSystem fileSystem, U8Span path, bool openCaseSensitive)
+        {
+            fileSystem = default;
+            Result rc;
+
+            if (!path.IsEmpty())
+            {
+                rc = Util.VerifyHostPath(path);
+                if (rc.IsFailure()) return rc;
+            }
+
+            rc = FsCreators.TargetManagerFileSystemCreator.Create(out IFileSystem hostFs, openCaseSensitive);
+            if (rc.IsFailure()) return rc;
+
+            if (path.IsEmpty())
+            {
+                rc = hostFs.GetEntryType(out _, "C:/".ToU8Span());
+
+                // Nintendo ignores all results other than this one
+                if (ResultFs.TargetNotFound.Includes(rc))
+                    return rc;
+
+                fileSystem = hostFs;
+                return Result.Success;
+            }
+
+            rc = FsCreators.SubDirectoryFileSystemCreator.Create(out IFileSystem subDirFs, hostFs, path, preserveUnc: true);
+            if (rc.IsFailure()) return rc;
+
+            fileSystem = subDirFs;
+            return Result.Success;
         }
 
         public Result RegisterExternalKey(ref RightsId rightsId, ref AccessKey externalKey)

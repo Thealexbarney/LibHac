@@ -8,6 +8,7 @@ namespace LibHac.FsService.Creators
 {
     public class StorageOnNcaCreator : IStorageOnNcaCreator
     {
+        // ReSharper disable once UnusedMember.Local
         private bool IsEnabledProgramVerification { get; set; }
         private Keyset Keyset { get; }
 
@@ -39,7 +40,7 @@ namespace LibHac.FsService.Creators
 
             storage = storageTemp;
             fsHeader = nca.Header.GetFsHeader(fsIndex);
-            
+
             return Result.Success;
         }
 

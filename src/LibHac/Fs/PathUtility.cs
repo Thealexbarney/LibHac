@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
 using static LibHac.Fs.PathTool;
 
@@ -27,6 +28,54 @@ namespace LibHac.Fs
             return (uint)path.Length > 1 &&
                    (IsSeparator(path.GetUnsafe(0)) && IsSeparator(path.GetUnsafe(1)) ||
                     IsAltSeparator(path.GetUnsafe(0)) && IsAltSeparator(path.GetUnsafe(1)));
+        }
+
+        public static int GetWindowsPathSkipLength(U8Span path)
+        {
+            if (IsWindowsDrive(path))
+                return 2;
+
+            if (!IsUnc(path))
+                return 0;
+
+            for (int i = 2; i < path.Length && !IsNullTerminator(path[i]); i++)
+            {
+                byte c = path[i];
+                if (c == (byte)'$' || IsDriveSeparator(c))
+                {
+                    return i + 1;
+                }
+            }
+
+            return 0;
+        }
+
+        public static Result VerifyPath(U8Span path, int maxPathLength, int maxNameLength)
+        {
+            Debug.Assert(!path.IsNull());
+
+            int nameLength = 0;
+
+            for (int i = 0; i < path.Length && i <= maxPathLength && nameLength <= maxNameLength; i++)
+            {
+                byte c = path[i];
+
+                if (IsNullTerminator(c))
+                    return Result.Success;
+
+                // todo: Compare path based on their Unicode code points
+
+                if (c == ':' || c == '*' || c == '?' || c == '<' || c == '>' || c == '|')
+                    return ResultFs.InvalidCharacter.Log();
+
+                nameLength++;
+                if (c == '\\' || c == '/')
+                {
+                    nameLength = 0;
+                }
+            }
+
+            return ResultFs.TooLongPath.Log();
         }
     }
 }

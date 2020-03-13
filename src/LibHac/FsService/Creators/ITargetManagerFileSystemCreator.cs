@@ -1,10 +1,11 @@
-﻿using LibHac.Fs;
+﻿using System;
+using LibHac.Fs;
 
 namespace LibHac.FsService.Creators
 {
     public interface ITargetManagerFileSystemCreator
     {
         Result Create(out IFileSystem fileSystem, bool openCaseSensitive);
-        Result GetCaseSensitivePath(out bool isSuccess, ref string path);
+        Result GetCaseSensitivePath(out bool isSuccess, Span<byte> path);
     }
 }
