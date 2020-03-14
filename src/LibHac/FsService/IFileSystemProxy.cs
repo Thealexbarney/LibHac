@@ -17,7 +17,8 @@ namespace LibHac.FsService
         Result OpenBisFileSystem(out IFileSystem fileSystem, ref FsPath rootPath, BisPartitionId partitionId);
         Result OpenBisStorage(out IStorage storage, BisPartitionId partitionId);
         Result InvalidateBisCache();
-        Result OpenHostFileSystem(out IFileSystem fileSystem, ref FsPath subPath);
+        Result OpenHostFileSystemWithOption(out IFileSystem fileSystem, ref FsPath path, MountHostOption option);
+        Result OpenHostFileSystem(out IFileSystem fileSystem, ref FsPath path);
         Result OpenSdCardFileSystem(out IFileSystem fileSystem);
         Result FormatSdCardFileSystem();
         Result DeleteSaveDataFileSystem(ulong saveDataId);

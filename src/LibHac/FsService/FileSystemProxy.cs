@@ -42,7 +42,7 @@ namespace LibHac.FsService
 
             var normalizer = new PathNormalizer(path, GetPathNormalizerOptions(path));
             if (normalizer.Result.IsFailure()) return normalizer.Result;
-            
+
             // ReSharper disable once ConditionIsAlwaysTrueOrFalse
             return FsProxyCore.OpenFileSystem(out fileSystem, normalizer.Path, type, canMountSystemDataPrivate, titleId);
         }
@@ -682,7 +682,12 @@ namespace LibHac.FsService
             throw new NotImplementedException();
         }
 
-        public Result OpenHostFileSystem(out IFileSystem fileSystem, ref FsPath subPath)
+        public Result OpenHostFileSystemWithOption(out IFileSystem fileSystem, ref FsPath path, MountHostOption option)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result OpenHostFileSystem(out IFileSystem fileSystem, ref FsPath path)
         {
             throw new NotImplementedException();
         }

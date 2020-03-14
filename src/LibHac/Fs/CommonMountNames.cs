@@ -4,6 +4,8 @@ namespace LibHac.Fs
 {
     internal static class CommonMountNames
     {
+        public const char ReservedMountNamePrefixCharacter = '@';
+
         public static readonly U8String GameCardFileSystemMountName = new U8String("@Gc");
         public static readonly U8String ContentStorageSystemMountName = new U8String("@SystemContent");
         public static readonly U8String ContentStorageUserMountName = new U8String("@UserContent");
