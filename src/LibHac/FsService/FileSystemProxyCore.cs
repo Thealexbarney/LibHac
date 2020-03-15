@@ -360,16 +360,14 @@ namespace LibHac.FsService
             FsPath fullPath;
             unsafe { _ = &fullPath; } // workaround for CS0165
 
-            var pathBuilder = new PathBuilder(fullPath.Str);
-            Result rc = pathBuilder.Append(path);
-            if (rc.IsFailure()) return rc;
+            var sb = new U8StringBuilder(fullPath.Str);
+            sb.Append(path)
+            .Append(new[] { (byte)'d', (byte)'a', (byte)'t', (byte)'a', (byte)'/' });
 
-            rc = pathBuilder.Append(new[] { (byte)'d', (byte)'a', (byte)'t', (byte)'a', (byte)'/' });
-            if (rc.IsFailure()) return rc;
+            if (sb.Overflowed)
+                return ResultFs.TooLongPath.Log();
 
-            pathBuilder.Terminate();
-
-            rc = FsCreators.TargetManagerFileSystemCreator.GetCaseSensitivePath(out bool success, fullPath.Str);
+            Result rc = FsCreators.TargetManagerFileSystemCreator.GetCaseSensitivePath(out bool success, fullPath.Str);
             if (rc.IsFailure()) return rc;
 
             // Reopen the host filesystem as case sensitive
