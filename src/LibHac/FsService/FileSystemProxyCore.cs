@@ -772,7 +772,8 @@ namespace LibHac.FsService
 
             if (path.IsEmpty())
             {
-                rc = hostFs.GetEntryType(out _, "C:/".ToU8Span());
+                ReadOnlySpan<byte> rootHostPath = new[] { (byte)'C', (byte)':', (byte)'/' };
+                rc = hostFs.GetEntryType(out _, new U8Span(rootHostPath));
 
                 // Nintendo ignores all results other than this one
                 if (ResultFs.TargetNotFound.Includes(rc))

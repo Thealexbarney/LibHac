@@ -684,12 +684,14 @@ namespace LibHac.FsService
 
         public Result OpenHostFileSystemWithOption(out IFileSystem fileSystem, ref FsPath path, MountHostOption option)
         {
-            throw new NotImplementedException();
+            // Missing permission check
+
+            return FsProxyCore.OpenHostFileSystem(out fileSystem, new U8Span(path.Str), option.HasFlag(MountHostOption.PseudoCaseSensitive));
         }
 
         public Result OpenHostFileSystem(out IFileSystem fileSystem, ref FsPath path)
         {
-            throw new NotImplementedException();
+            return OpenHostFileSystemWithOption(out fileSystem, ref path, MountHostOption.None);
         }
 
         public Result OpenSdCardFileSystem(out IFileSystem fileSystem)

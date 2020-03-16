@@ -188,6 +188,7 @@ namespace LibHac.Fs
         SdCard = 2
     }
 
+    [Flags]
     public enum MountHostOption
     {
         None = 0,

@@ -8,6 +8,12 @@ using static LibHac.Fs.CommonMountNames;
 
 namespace LibHac.Fs.Shim
 {
+    /// <summary>
+    /// Contains functions for mounting file systems from a host computer.
+    /// </summary>
+    /// <remarks>
+    /// All functions in this file are based on SDK 9.3
+    /// </remarks>
     public static class Host
     {
         private static ReadOnlySpan<byte> HostRootFileSystemPath => new[]
@@ -59,6 +65,11 @@ namespace LibHac.Fs.Shim
             }
         }
 
+        /// <summary>
+        /// Mounts the C:\ drive of a host Windows computer at @Host:/
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
         public static Result MountHostRoot(this FileSystemClient fs)
         {
             IFileSystem hostFileSystem = default;
@@ -87,6 +98,12 @@ namespace LibHac.Fs.Shim
             return Result.Success;
         }
 
+        /// <summary>
+        /// Mounts the C:\ drive of a host Windows computer at @Host:/
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        /// <param name="option">Options for mounting the host file system.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
         public static Result MountHostRoot(this FileSystemClient fs, MountHostOption option)
         {
             IFileSystem hostFileSystem = default;
@@ -116,21 +133,49 @@ namespace LibHac.Fs.Shim
             return Result.Success;
         }
 
+        /// <summary>
+        /// Unmounts the file system at @Host:/
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
         public static void UnmountHostRoot(this FileSystemClient fs)
         {
             fs.Unmount(HostRootFileSystemMountName);
         }
 
+        /// <summary>
+        /// Mounts a directory on a host Windows computer at the specified mount point.
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        /// <param name="mountName">The mount name at which the file system will be mounted.</param>
+        /// <param name="path">The path on the host computer to mount. e.g. C:\Windows\System32</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
         public static Result MountHost(this FileSystemClient fs, U8Span mountName, U8Span path)
         {
             return MountHostImpl(fs, mountName, path, null);
         }
 
+        /// <summary>
+        /// Mounts a directory on a host Windows computer at the specified mount point.
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        /// <param name="mountName">The mount name at which the file system will be mounted.</param>
+        /// <param name="path">The path on the host computer to mount. e.g. C:\Windows\System32</param>
+        /// <param name="option">Options for mounting the host file system.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
         public static Result MountHost(this FileSystemClient fs, U8Span mountName, U8Span path, MountHostOption option)
         {
             return MountHostImpl(fs, mountName, path, option);
         }
 
+        /// <summary>
+        /// Mounts a directory on a host Windows computer at the specified mount point.
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        /// <param name="mountName">The mount name at which the file system will be mounted.</param>
+        /// <param name="path">The path on the host computer to mount. e.g. C:\Windows\System32</param>
+        /// <param name="optionalOption">Options for mounting the host file system. Specifying this parameter is optional.</param>
+        /// <param name="caller">The caller of this function.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
         private static Result MountHostImpl(this FileSystemClient fs, U8Span mountName, U8Span path,
             MountHostOption? optionalOption, [CallerMemberName] string caller = "")
         {
@@ -210,6 +255,14 @@ namespace LibHac.Fs.Shim
             return Result.Success;
         }
 
+        /// <summary>
+        /// Creates an <see cref="ICommonMountNameGenerator"/> based on the <paramref name="mountName"/> and
+        /// <paramref name="path"/>, and verifies the <paramref name="mountName"/>.
+        /// </summary>
+        /// <param name="nameGenerator">If successful, the created <see cref="ICommonMountNameGenerator"/>.</param>
+        /// <param name="mountName">The mount name at which the file system will be mounted.</param>
+        /// <param name="path">The path that will be opened on the host computer. e.g. C:\Windows\System32</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
         private static Result PreMountHost(out ICommonMountNameGenerator nameGenerator, U8Span mountName, U8Span path)
         {
             nameGenerator = default;
@@ -224,6 +277,15 @@ namespace LibHac.Fs.Shim
             return Result.Success;
         }
 
+        /// <summary>
+        /// Verifies parameters and opens a host file system.
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        /// <param name="fileSystem">If successful, the opened host file system.</param>
+        /// <param name="mountName">The mount name to be verified.</param>
+        /// <param name="path">The path on the host computer to open. e.g. C:\Windows\System32</param>
+        /// <param name="option">Options for opening the host file system.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
         private static Result OpenHostFileSystem(FileSystemClient fs, out IFileSystem fileSystem, U8Span mountName,
             U8Span path, MountHostOption option)
         {
@@ -279,6 +341,14 @@ namespace LibHac.Fs.Shim
             return OpenHostFileSystemImpl(fs, out fileSystem, ref fullPath, option);
         }
 
+        /// <summary>
+        /// Opens a host file system via <see cref="IFileSystemProxy"/>.
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        /// <param name="fileSystem">If successful, the opened host file system.</param>
+        /// <param name="path">The path on the host computer to open. e.g. /C:\Windows\System32/</param>
+        /// <param name="option">Options for opening the host file system.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
         private static Result OpenHostFileSystemImpl(FileSystemClient fs, out IFileSystem fileSystem, ref FsPath path, MountHostOption option)
         {
             fileSystem = default;
