@@ -43,27 +43,27 @@ namespace LibHac.Es
     public enum SignatureType
     {
         Rsa4096Sha1 = 0x10000,
-        Rsa2048Sha1,
-        EcdsaSha1,
-        Rsa4096Sha256,
-        Rsa2048Sha256,
-        EcdsaSha256
+        Rsa2048Sha1 = 0x10001,
+        EcdsaSha1 = 0x10002,
+        Rsa4096Sha256 = 0x10003,
+        Rsa2048Sha256 = 0x10004,
+        EcdsaSha256 = 0x10005
     }
 
     public enum TitleKeyType : byte
     {
-        Common,
-        Personalized
+        Common = 0,
+        Personalized = 1
     }
 
     public enum LicenseType : byte
     {
-        Permanent,
-        Demo,
-        Trial,
-        Rental,
-        Subscription,
-        Service
+        Permanent = 0,
+        Demo = 1,
+        Trial = 2,
+        Rental = 3,
+        Subscription = 4,
+        Service = 5
     }
 
     [Flags]

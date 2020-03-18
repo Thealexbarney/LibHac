@@ -47,20 +47,20 @@ namespace hactoolnet
 
                 if (ctx.Options.OutDir != null)
                 {
-                    XciPartition root = xci.OpenPartition(XciPartitionType.Root);
+                    IFileSystem root = xci.OpenPartition(XciPartitionType.Root);
                     if (root == null)
                     {
                         ctx.Logger.LogMessage("Could not find root partition");
                         return;
                     }
 
-                    foreach (PartitionFileEntry sub in root.Files)
-                    {
-                        var subPfs = new PartitionFileSystem(root.OpenFile(sub, OpenMode.Read).AsStorage());
-                        string subDir = Path.Combine(ctx.Options.OutDir, sub.Name);
+                    //foreach (PartitionFileEntry sub in root.Files)
+                    //{
+                    //    var subPfs = new PartitionFileSystem(root.OpenFile(sub, OpenMode.Read).AsStorage());
+                    //    string subDir = Path.Combine(ctx.Options.OutDir, sub.Name);
 
-                        subPfs.Extract(subDir, ctx.Logger);
-                    }
+                    //    subPfs.Extract(subDir, ctx.Logger);
+                    //}
                 }
 
                 if (ctx.Options.ExefsOutDir != null || ctx.Options.ExefsOut != null)
@@ -113,7 +113,7 @@ namespace hactoolnet
 
         private static Nca GetXciMainNca(Xci xci, Context ctx)
         {
-            XciPartition partition = xci.OpenPartition(XciPartitionType.Secure);
+            IFileSystem partition = xci.OpenPartition(XciPartitionType.Secure);
 
             if (partition == null)
             {
@@ -123,16 +123,16 @@ namespace hactoolnet
 
             Nca mainNca = null;
 
-            foreach (PartitionFileEntry fileEntry in partition.Files.Where(x => x.Name.EndsWith(".nca")))
-            {
-                IStorage ncaStorage = partition.OpenFile(fileEntry, OpenMode.Read).AsStorage();
-                var nca = new Nca(ctx.Keyset, ncaStorage);
+            //foreach (PartitionFileEntry fileEntry in partition.Files.Where(x => x.Name.EndsWith(".nca")))
+            //{
+            //    IStorage ncaStorage = partition.OpenFile(fileEntry, OpenMode.Read).AsStorage();
+            //    var nca = new Nca(ctx.Keyset, ncaStorage);
 
-                if (nca.Header.ContentType == NcaContentType.Program)
-                {
-                    mainNca = nca;
-                }
-            }
+            //    if (nca.Header.ContentType == NcaContentType.Program)
+            //    {
+            //        mainNca = nca;
+            //    }
+            //}
 
             return mainNca;
         }
@@ -153,15 +153,15 @@ namespace hactoolnet
             PrintItem(sb, colLen, "Cartridge Size:", $"0x{Util.MediaToReal(xci.Header.ValidDataEndPage + 1):x12}");
             PrintItem(sb, colLen, "Header IV:", xci.Header.AesCbcIv);
 
-            PrintPartition(sb, colLen, xci.OpenPartition(XciPartitionType.Root), XciPartitionType.Root);
+            //PrintPartition(sb, colLen, xci.OpenPartition(XciPartitionType.Root), XciPartitionType.Root);
 
-            foreach (XciPartitionType type in Enum.GetValues(typeof(XciPartitionType)))
-            {
-                if (type == XciPartitionType.Root || !xci.HasPartition(type)) continue;
+            //foreach (XciPartitionType type in Enum.GetValues(typeof(XciPartitionType)))
+            //{
+            //    if (type == XciPartitionType.Root || !xci.HasPartition(type)) continue;
 
-                XciPartition partition = xci.OpenPartition(type);
-                PrintPartition(sb, colLen, partition, type);
-            }
+            //    IFileSystem partition = xci.OpenPartition(type);
+            //    PrintPartition(sb, colLen, partition, type);
+            //}
 
             return sb.ToString();
         }

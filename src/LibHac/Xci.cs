@@ -1,6 +1,7 @@
 ﻿using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSystem;
+using LibHac.FsSystem.Detail;
 
 namespace LibHac
 {
@@ -11,6 +12,7 @@ namespace LibHac
         private IStorage BaseStorage { get; }
         private object InitLocker { get; } = new object();
         private XciPartition RootPartition { get; set; }
+        private IFileSystem RootPartition2 { get; set; }
 
         public Xci(Keyset keyset, IStorage storage)
         {
@@ -25,13 +27,26 @@ namespace LibHac
             return GetRootPartition().FileExists(type.GetFileName());
         }
 
-        public XciPartition OpenPartition(XciPartitionType type)
+        public XciPartition OpenPartitionO(XciPartitionType type)
         {
             XciPartition root = GetRootPartition();
             if (type == XciPartitionType.Root) return root;
 
             root.OpenFile(out IFile partitionFile, type.GetFileName().ToU8Span(), OpenMode.Read).ThrowIfFailure();
             return new XciPartition(partitionFile.AsStorage());
+        }
+
+        public IFileSystem OpenPartition(XciPartitionType type)
+        {
+            IFileSystem root = GetRootPartition2();
+            if (type == XciPartitionType.Root) return root;
+
+            root.OpenFile(out IFile partitionFile, type.GetFileName().ToU8Span(), OpenMode.Read).ThrowIfFailure();
+
+            var partitionFs = new PartitionFileSystemCore<HashedEntry>();
+            partitionFs.Initialize(partitionFile.AsStorage()).ThrowIfFailure();
+
+            return partitionFs;
         }
 
         private XciPartition GetRootPartition()
@@ -41,6 +56,15 @@ namespace LibHac
             InitializeRootPartition();
 
             return RootPartition;
+        }
+
+        private IFileSystem GetRootPartition2()
+        {
+            if (RootPartition2 != null) return RootPartition2;
+
+            InitializeRootPartition2();
+
+            return RootPartition2;
         }
 
         private void InitializeRootPartition()
@@ -56,6 +80,21 @@ namespace LibHac
                     Offset = Header.RootPartitionOffset,
                     HashValidity = Header.PartitionFsHeaderValidity
                 };
+            }
+        }
+
+        private void InitializeRootPartition2()
+        {
+            lock (InitLocker)
+            {
+                if (RootPartition2 != null) return;
+
+                IStorage rootStorage = BaseStorage.Slice(Header.RootPartitionOffset);
+
+                var partitionFs = new PartitionFileSystemCore<HashedEntry>();
+                partitionFs.Initialize(rootStorage).ThrowIfFailure();
+
+                RootPartition2 = partitionFs;
             }
         }
     }
