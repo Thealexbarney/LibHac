@@ -4,6 +4,8 @@ namespace LibHac.Fs
 {
     internal static class CommonMountNames
     {
+        public const char ReservedMountNamePrefixCharacter = '@';
+
         public static readonly U8String GameCardFileSystemMountName = new U8String("@Gc");
         public static readonly U8String ContentStorageSystemMountName = new U8String("@SystemContent");
         public static readonly U8String ContentStorageUserMountName = new U8String("@UserContent");
@@ -15,5 +17,9 @@ namespace LibHac.Fs
         public static readonly U8String SdCardFileSystemMountName = new U8String("@Sdcard");
         public static readonly U8String HostRootFileSystemMountName = new U8String("@Host");
         public static readonly U8String RegisteredUpdatePartitionMountName = new U8String("@RegUpdate");
+
+        public const char GameCardFileSystemMountNameUpdateSuffix = 'U';
+        public const char GameCardFileSystemMountNameNormalSuffix = 'N';
+        public const char GameCardFileSystemMountNameSecureSuffix = 'S';
     }
 }

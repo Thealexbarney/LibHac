@@ -187,4 +187,11 @@ namespace LibHac.Fs
         Nand = 1,
         SdCard = 2
     }
+
+    [Flags]
+    public enum MountHostOption
+    {
+        None = 0,
+        PseudoCaseSensitive = 1
+    }
 }

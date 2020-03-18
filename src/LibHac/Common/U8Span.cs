@@ -14,6 +14,8 @@ namespace LibHac.Common
         public ReadOnlySpan<byte> Value => _buffer;
         public int Length => _buffer.Length;
 
+        public static U8Span Empty => default;
+
         public byte this[int i]
         {
             get => _buffer[i];

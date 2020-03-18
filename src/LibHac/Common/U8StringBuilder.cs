@@ -12,6 +12,7 @@ namespace LibHac.Common
         private int _length;
 
         public bool Overflowed { get; private set; }
+        public int Length => _length;
         public int Capacity => _buffer.Length - NullTerminatorLength;
 
         public U8StringBuilder(Span<byte> buffer)

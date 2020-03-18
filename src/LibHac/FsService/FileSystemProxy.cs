@@ -34,7 +34,28 @@ namespace LibHac.FsService
 
         public Result OpenFileSystemWithId(out IFileSystem fileSystem, ref FsPath path, TitleId titleId, FileSystemProxyType type)
         {
-            throw new NotImplementedException();
+            fileSystem = default;
+
+            // Missing permission check, speed emulation storage type wrapper, and FileSystemInterfaceAdapter
+
+            bool canMountSystemDataPrivate = false;
+
+            var normalizer = new PathNormalizer(path, GetPathNormalizerOptions(path));
+            if (normalizer.Result.IsFailure()) return normalizer.Result;
+
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+            return FsProxyCore.OpenFileSystem(out fileSystem, normalizer.Path, type, canMountSystemDataPrivate, titleId);
+        }
+
+        private PathNormalizer.Option GetPathNormalizerOptions(U8Span path)
+        {
+            int hostMountLength = StringUtils.GetLength(CommonMountNames.HostRootFileSystemMountName,
+                PathTools.MountNameLengthMax);
+
+            bool isHostPath = StringUtils.Compare(path, CommonMountNames.HostRootFileSystemMountName, hostMountLength) == 0;
+
+            PathNormalizer.Option hostOption = isHostPath ? PathNormalizer.Option.PreserveUnc : PathNormalizer.Option.None;
+            return PathNormalizer.Option.HasMountName | PathNormalizer.Option.PreserveTailSeparator | hostOption;
         }
 
         public Result OpenFileSystemWithPatch(out IFileSystem fileSystem, TitleId titleId, FileSystemProxyType type)
@@ -661,9 +682,16 @@ namespace LibHac.FsService
             throw new NotImplementedException();
         }
 
-        public Result OpenHostFileSystem(out IFileSystem fileSystem, ref FsPath subPath)
+        public Result OpenHostFileSystemWithOption(out IFileSystem fileSystem, ref FsPath path, MountHostOption option)
         {
-            throw new NotImplementedException();
+            // Missing permission check
+
+            return FsProxyCore.OpenHostFileSystem(out fileSystem, new U8Span(path.Str), option.HasFlag(MountHostOption.PseudoCaseSensitive));
+        }
+
+        public Result OpenHostFileSystem(out IFileSystem fileSystem, ref FsPath path)
+        {
+            return OpenHostFileSystemWithOption(out fileSystem, ref path, MountHostOption.None);
         }
 
         public Result OpenSdCardFileSystem(out IFileSystem fileSystem)

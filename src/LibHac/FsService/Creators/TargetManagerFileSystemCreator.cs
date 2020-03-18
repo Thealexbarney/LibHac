@@ -10,7 +10,7 @@ namespace LibHac.FsService.Creators
             throw new NotImplementedException();
         }
 
-        public Result GetCaseSensitivePath(out bool isSuccess, ref string path)
+        public Result GetCaseSensitivePath(out bool isSuccess, Span<byte> path)
         {
             throw new NotImplementedException();
         }

@@ -171,6 +171,10 @@ namespace LibHac.Fs
 
             /// <summary>Error code: 2002-4501; Range: 4501-4599; Inner value: 0x232a02</summary>
             public static Result.Base NcaCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4501, 4599); }
+                /// <summary>Error code: 2002-4512; Inner value: 0x234002</summary>
+                public static Result.Base InvalidNcaFsType => new Result.Base(ModuleFs, 4512);
+                /// <summary>Error code: 2002-4527; Inner value: 0x235e02</summary>
+                public static Result.Base InvalidNcaProgramId => new Result.Base(ModuleFs, 4527);
 
             /// <summary>Error code: 2002-4601; Range: 4601-4639; Inner value: 0x23f202</summary>
             public static Result.Base IntegrityVerificationStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4601, 4639); }

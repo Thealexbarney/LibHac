@@ -6,10 +6,10 @@ namespace LibHac.Fs
 {
     public class FileStorage2 : StorageBase
     {
-        private const long InvalidSize = -1;
+        protected const long InvalidSize = -1;
 
         private IFile BaseFile { get; set; }
-        private long FileSize { get; set; }
+        protected long FileSize { get; set; }
 
         public FileStorage2(IFile baseFile)
         {
