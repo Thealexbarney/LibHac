@@ -1176,6 +1176,12 @@ namespace LibHac.FsService
             return Result.Success;
         }
 
+        public Result OpenMultiCommitManager(out IMultiCommitManager commitManager)
+        {
+            commitManager = new MultiCommitManager(this);
+            return Result.Success;
+        }
+
         internal Result OpenMultiCommitContextSaveData(out IFileSystem fileSystem)
         {
             fileSystem = default;

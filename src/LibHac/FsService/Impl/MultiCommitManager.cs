@@ -142,13 +142,13 @@ namespace LibHac.FsService.Impl
             return rc;
         }
 
-        [StructLayout(LayoutKind.Sequential, Size = 0x18)]
+        [StructLayout(LayoutKind.Explicit, Size = 0x18)]
         private struct CommitContext
         {
-            public int Version;
-            public CommitState State;
-            public int FileSystemCount;
-            public long CommitCount; // I think?
+            [FieldOffset(0x00)] public int Version;
+            [FieldOffset(0x04)] public CommitState State;
+            [FieldOffset(0x08)] public int FileSystemCount;
+            [FieldOffset(0x10)] public long CommitCount; // I think?
         }
 
         private enum CommitState

@@ -100,5 +100,6 @@ namespace LibHac.FsService
         Result GetProgramIndexForAccessLog(out int programIndex, out int programCount);
         Result OverrideSaveDataTransferTokenSignVerificationKey(ReadOnlySpan<byte> key);
         Result CorruptSaveDataFileSystemByOffset(SaveDataSpaceId spaceId, ulong saveDataId, long offset);
+        Result OpenMultiCommitManager(out IMultiCommitManager commitManager);
     }
 }
