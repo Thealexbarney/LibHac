@@ -183,6 +183,12 @@ namespace LibHac.Fs
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
         Result Commit();
 
+        Result CommitProvisionally(long commitCount);
+
+        Result Rollback();
+
+        Result Flush();
+
         /// <summary>
         /// Gets the creation, last accessed, and last modified timestamps of a file or directory.
         /// </summary>

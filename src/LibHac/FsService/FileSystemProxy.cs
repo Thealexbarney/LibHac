@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.FsService.Impl;
 using LibHac.FsSystem;
 using LibHac.Kvdb;
 using LibHac.Ncm;
@@ -12,7 +13,7 @@ namespace LibHac.FsService
     public class FileSystemProxy : IFileSystemProxy
     {
         private FileSystemProxyCore FsProxyCore { get; }
-        private FileSystemServer FsServer { get; }
+        internal FileSystemServer FsServer { get; }
 
         public long CurrentProcess { get; private set; }
 
@@ -1172,6 +1173,22 @@ namespace LibHac.FsService
         public Result IsSdCardAccessible(out bool isAccessible)
         {
             isAccessible = FsProxyCore.IsSdCardAccessible;
+            return Result.Success;
+        }
+
+        internal Result OpenMultiCommitContextSaveData(out IFileSystem fileSystem)
+        {
+            fileSystem = default;
+
+            SaveDataAttribute attribute = default;
+            attribute.TitleId = new TitleId(MultiCommitManager.ProgramId);
+            attribute.SaveDataId = MultiCommitManager.SaveDataId;
+
+            Result rc = OpenSaveDataFileSystemImpl(out IFileSystem saveFs, out _, SaveDataSpaceId.System, ref attribute,
+                false, true);
+            if (rc.IsFailure()) return rc;
+
+            fileSystem = saveFs;
             return Result.Success;
         }
 

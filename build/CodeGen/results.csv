@@ -127,6 +127,10 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,4771,4779,SignedSystemPartitionDataCorrupted,
 2,4781,,GameCardLogoDataCorrupted,
 
+2,4791,4799,MultiCommitContextCorrupted,
+2,4791,,InvalidMultiCommitContextVersion,
+2,4792,,InvalidMultiCommitContextState,
+
 # The range name is a guess. 4812 is currently the only result in it
 2,4811,4819,ZeroBitmapFileCorrupted,
 2,4812,,IncompleteBlockInZeroBitmapHashStorageFile,
@@ -197,14 +201,17 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6454,,WriteStateUnflushed,
 2,6457,,WriteModeFileNotClosed,
 2,6461,,AllocatorAlignmentViolation,
+2,6463,,MultiCommitFileSystemAlreadyAdded,
 2,6465,,UserNotExist,
 
 2,6600,6699,EntryNotFound,
 2,6606,,TargetProgramIndexNotFound,Specified program index is not found
+
 2,6700,6799,OutOfResource,
 2,6706,,MappingTableFull,
 2,6707,,AllocationTableInsufficientFreeBlocks,
 2,6709,,OpenCountLimit,
+2,6710,,MultiCommitFileSystemLimit,
 
 2,6800,6899,MappingFailed,
 2,6811,,RemapStorageMapFull,

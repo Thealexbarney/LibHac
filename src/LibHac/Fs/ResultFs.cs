@@ -256,6 +256,13 @@ namespace LibHac.Fs
             /// <summary>Error code: 2002-4781; Inner value: 0x255a02</summary>
             public static Result.Base GameCardLogoDataCorrupted => new Result.Base(ModuleFs, 4781);
 
+            /// <summary>Error code: 2002-4791; Range: 4791-4799; Inner value: 0x256e02</summary>
+            public static Result.Base MultiCommitContextCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4791, 4799); }
+                /// <summary>Error code: 2002-4791; Inner value: 0x256e02</summary>
+                public static Result.Base InvalidMultiCommitContextVersion => new Result.Base(ModuleFs, 4791);
+                /// <summary>Error code: 2002-4792; Inner value: 0x257002</summary>
+                public static Result.Base InvalidMultiCommitContextState => new Result.Base(ModuleFs, 4792);
+
             /// <summary>Error code: 2002-4811; Range: 4811-4819; Inner value: 0x259602</summary>
             public static Result.Base ZeroBitmapFileCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4811, 4819); }
                 /// <summary>Error code: 2002-4812; Inner value: 0x259802</summary>
@@ -385,6 +392,8 @@ namespace LibHac.Fs
             public static Result.Base WriteModeFileNotClosed => new Result.Base(ModuleFs, 6457);
             /// <summary>Error code: 2002-6461; Inner value: 0x327a02</summary>
             public static Result.Base AllocatorAlignmentViolation => new Result.Base(ModuleFs, 6461);
+            /// <summary>Error code: 2002-6463; Inner value: 0x327e02</summary>
+            public static Result.Base MultiCommitFileSystemAlreadyAdded => new Result.Base(ModuleFs, 6463);
             /// <summary>Error code: 2002-6465; Inner value: 0x328202</summary>
             public static Result.Base UserNotExist => new Result.Base(ModuleFs, 6465);
 
@@ -401,6 +410,8 @@ namespace LibHac.Fs
             public static Result.Base AllocationTableInsufficientFreeBlocks => new Result.Base(ModuleFs, 6707);
             /// <summary>Error code: 2002-6709; Inner value: 0x346a02</summary>
             public static Result.Base OpenCountLimit => new Result.Base(ModuleFs, 6709);
+            /// <summary>Error code: 2002-6710; Inner value: 0x346c02</summary>
+            public static Result.Base MultiCommitFileSystemLimit => new Result.Base(ModuleFs, 6710);
 
         /// <summary>Error code: 2002-6800; Range: 6800-6899; Inner value: 0x352002</summary>
         public static Result.Base MappingFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6800, 6899); }
