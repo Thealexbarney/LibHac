@@ -221,6 +221,16 @@ namespace LibHac.FsSystem
             return BaseFileSystem.Commit();
         }
 
+        protected override Result CommitProvisionallyImpl(long commitCount)
+        {
+            return BaseFileSystem.CommitProvisionally(commitCount);
+        }
+
+        protected override Result RollbackImpl()
+        {
+            return BaseFileSystem.Rollback();
+        }
+
         protected override Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
             U8Span path)
         {

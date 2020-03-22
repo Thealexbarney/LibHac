@@ -258,9 +258,9 @@ namespace LibHac.Fs
 
             /// <summary>Error code: 2002-4791; Range: 4791-4799; Inner value: 0x256e02</summary>
             public static Result.Base MultiCommitContextCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4791, 4799); }
-                /// <summary>Error code: 2002-4791; Inner value: 0x256e02</summary>
+                /// <summary>The version of the multi-commit context file is to high for the current MultiCommitManager implementation.<br/>Error code: 2002-4791; Inner value: 0x256e02</summary>
                 public static Result.Base InvalidMultiCommitContextVersion => new Result.Base(ModuleFs, 4791);
-                /// <summary>Error code: 2002-4792; Inner value: 0x257002</summary>
+                /// <summary>The multi-commit has not been provisionally committed.<br/>Error code: 2002-4792; Inner value: 0x257002</summary>
                 public static Result.Base InvalidMultiCommitContextState => new Result.Base(ModuleFs, 4792);
 
             /// <summary>Error code: 2002-4811; Range: 4811-4819; Inner value: 0x259602</summary>
@@ -364,6 +364,8 @@ namespace LibHac.Fs
                 public static Result.Base UnsupportedOperationInConcatFsQueryEntry => new Result.Base(ModuleFs, 6359);
                 /// <summary>Error code: 2002-6364; Inner value: 0x31b802</summary>
                 public static Result.Base UnsupportedOperationModifyRomFsFileSystem => new Result.Base(ModuleFs, 6364);
+                /// <summary>Called RomFsFileSystem::CommitProvisionally.<br/>Error code: 2002-6365; Inner value: 0x31ba02</summary>
+                public static Result.Base UnsupportedOperationInRomFsFileSystem => new Result.Base(ModuleFs, 6365);
                 /// <summary>Error code: 2002-6366; Inner value: 0x31bc02</summary>
                 public static Result.Base UnsupportedOperationRomFsFileSystemGetSpace => new Result.Base(ModuleFs, 6366);
                 /// <summary>Error code: 2002-6367; Inner value: 0x31be02</summary>
@@ -376,10 +378,14 @@ namespace LibHac.Fs
                 public static Result.Base UnsupportedOperationModifyReadOnlyFile => new Result.Base(ModuleFs, 6372);
                 /// <summary>Error code: 2002-6374; Inner value: 0x31cc02</summary>
                 public static Result.Base UnsupportedOperationModifyPartitionFileSystem => new Result.Base(ModuleFs, 6374);
+                /// <summary>Called PartitionFileSystemCore::CommitProvisionally.<br/>Error code: 2002-6375; Inner value: 0x31ce02</summary>
+                public static Result.Base UnsupportedOperationInPartitionFileSystem => new Result.Base(ModuleFs, 6375);
                 /// <summary>Error code: 2002-6376; Inner value: 0x31d002</summary>
                 public static Result.Base UnsupportedOperationInPartitionFileSetSize => new Result.Base(ModuleFs, 6376);
                 /// <summary>Error code: 2002-6377; Inner value: 0x31d202</summary>
                 public static Result.Base UnsupportedOperationIdInPartitionFileSystem => new Result.Base(ModuleFs, 6377);
+                /// <summary>Called DirectorySaveDataFileSystem::CommitProvisionally on a non-user savedata.<br/>Error code: 2002-6384; Inner value: 0x31e002</summary>
+                public static Result.Base UnsupportedOperationInDirectorySaveDataFileSystem => new Result.Base(ModuleFs, 6384);
 
             /// <summary>Error code: 2002-6400; Range: 6400-6449; Inner value: 0x320002</summary>
             public static Result.Base PermissionDenied { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6400, 6449); }
@@ -392,7 +398,7 @@ namespace LibHac.Fs
             public static Result.Base WriteModeFileNotClosed => new Result.Base(ModuleFs, 6457);
             /// <summary>Error code: 2002-6461; Inner value: 0x327a02</summary>
             public static Result.Base AllocatorAlignmentViolation => new Result.Base(ModuleFs, 6461);
-            /// <summary>Error code: 2002-6463; Inner value: 0x327e02</summary>
+            /// <summary>The provided file system has already been added to the multi-commit manager.<br/>Error code: 2002-6463; Inner value: 0x327e02</summary>
             public static Result.Base MultiCommitFileSystemAlreadyAdded => new Result.Base(ModuleFs, 6463);
             /// <summary>Error code: 2002-6465; Inner value: 0x328202</summary>
             public static Result.Base UserNotExist => new Result.Base(ModuleFs, 6465);
@@ -410,7 +416,7 @@ namespace LibHac.Fs
             public static Result.Base AllocationTableInsufficientFreeBlocks => new Result.Base(ModuleFs, 6707);
             /// <summary>Error code: 2002-6709; Inner value: 0x346a02</summary>
             public static Result.Base OpenCountLimit => new Result.Base(ModuleFs, 6709);
-            /// <summary>Error code: 2002-6710; Inner value: 0x346c02</summary>
+            /// <summary>The maximum number of file systems have been added to the multi-commit manager.<br/>Error code: 2002-6710; Inner value: 0x346c02</summary>
             public static Result.Base MultiCommitFileSystemLimit => new Result.Base(ModuleFs, 6710);
 
         /// <summary>Error code: 2002-6800; Range: 6800-6899; Inner value: 0x352002</summary>

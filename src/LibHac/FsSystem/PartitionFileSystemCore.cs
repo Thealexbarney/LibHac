@@ -108,6 +108,7 @@ namespace LibHac.FsSystem
         protected override Result DeleteFileImpl(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
         protected override Result RenameDirectoryImpl(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
         protected override Result RenameFileImpl(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result CommitProvisionallyImpl(long commitCount) => ResultFs.UnsupportedOperationInPartitionFileSystem.Log();
 
         private class PartitionFile : FileBase
         {

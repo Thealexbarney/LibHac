@@ -299,6 +299,23 @@ namespace LibHac.FsSystem
             }
         }
 
+        protected override Result CommitProvisionallyImpl(long commitCount)
+        {
+            if (!IsUserSaveData)
+                return ResultFs.UnsupportedOperationIdInPartitionFileSystem.Log();
+
+            return Result.Success;
+        }
+
+        protected override Result RollbackImpl()
+        {
+            // No old data is kept for temporary save data, so there's nothing to rollback to
+            if (!IsPersistentSaveData)
+                return Result.Success;
+
+            return Initialize(IsPersistentSaveData, IsUserSaveData);
+        }
+
         private Result ResolveFullPath(Span<byte> outPath, U8Span relativePath)
         {
             if (StringUtils.GetLength(relativePath, PathTools.MaxPathLength + 1) > PathTools.MaxPathLength)
