@@ -70,6 +70,11 @@ namespace LibHac
         public bool IsSuccess() => _value == SuccessValue;
         public bool IsFailure() => !IsSuccess();
 
+        /// <summary>
+        /// Specifies that the <see cref="Result"/> from a returned function is explicitly ignored.
+        /// </summary>
+        public void IgnoreResult() { }
+
         public void ThrowIfFailure()
         {
             if (IsFailure())
@@ -212,6 +217,7 @@ namespace LibHac
         /// <c>new Result.Base(ModuleFs, 2000, 2499)</c>. The property will need to have the aggressive inlining flag set like so:
         /// <c>public static Result.Base SdCardAccessFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get =&gt; new Result.Base(ModuleFs, 2000, 2499); }</c>
         /// </remarks>
+        [DebuggerDisplay("{" + nameof(ToStringWithName) + "(),nq}")]
         public struct Base
         {
             private const int DescriptionEndBitsOffset = ReservedBitsOffset;
