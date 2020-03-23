@@ -648,7 +648,7 @@ namespace LibHac.FsService
                     // Indexer has been reloaded since this info reader was created
                     if (Version != Indexer.Version)
                     {
-                        return ResultFs.ReadOldSaveDataInfoReader.Log();
+                        return ResultFs.InvalidSaveDataInfoReader.Log();
                     }
 
                     // No more to iterate

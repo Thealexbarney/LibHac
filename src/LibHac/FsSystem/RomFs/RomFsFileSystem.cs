@@ -92,6 +92,7 @@ namespace LibHac.FsSystem.RomFs
         protected override Result DeleteFileImpl(U8Span path) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
         protected override Result RenameDirectoryImpl(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
         protected override Result RenameFileImpl(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyRomFsFileSystem.Log();
+        protected override Result CommitProvisionallyImpl(long commitCount) => ResultFs.UnsupportedOperationInRomFsFileSystem.Log();
 
         protected override Result GetFreeSpaceSizeImpl(out long freeSpace, U8Span path)
         {

@@ -127,6 +127,10 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,4771,4779,SignedSystemPartitionDataCorrupted,
 2,4781,,GameCardLogoDataCorrupted,
 
+2,4791,4799,MultiCommitContextCorrupted,
+2,4791,,InvalidMultiCommitContextVersion,The version of the multi-commit context file is to high for the current MultiCommitManager implementation.
+2,4792,,InvalidMultiCommitContextState,The multi-commit has not been provisionally committed.
+
 # The range name is a guess. 4812 is currently the only result in it
 2,4811,4819,ZeroBitmapFileCorrupted,
 2,4812,,IncompleteBlockInZeroBitmapHashStorageFile,
@@ -155,10 +159,14 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6061,,InvalidOffset,
 2,6062,,InvalidSize,
 2,6063,,NullptrArgument,
+2,6064,,InvalidAlignment,
 2,6065,,InvalidMountName,
 2,6066,,ExtensionSizeTooLarge,
 2,6067,,ExtensionSizeInvalid,
-2,6068,,ReadOldSaveDataInfoReader,
+2,6068,,InvalidSaveDataInfoReader,
+2,6069,,InvalidCacheStorageSize,
+2,6070,,InvalidCacheStorageIndex,
+2,6071,,InvalidCommitNameCount,Up to 10 file systems can be committed at the same time.
 
 2,6080,6099,InvalidEnumValue,
 2,6081,,InvalidSaveDataState,
@@ -182,14 +190,17 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6351,,UnsupportedOperationInRoGameCardStorageSetSize,
 2,6359,,UnsupportedOperationInConcatFsQueryEntry,
 2,6364,,UnsupportedOperationModifyRomFsFileSystem,
+2,6365,,UnsupportedOperationInRomFsFileSystem,Called RomFsFileSystem::CommitProvisionally.
 2,6366,,UnsupportedOperationRomFsFileSystemGetSpace,
 2,6367,,UnsupportedOperationModifyRomFsFile,
 2,6369,,UnsupportedOperationModifyReadOnlyFileSystem,
 2,6371,,UnsupportedOperationReadOnlyFileSystemGetSpace,
 2,6372,,UnsupportedOperationModifyReadOnlyFile,
 2,6374,,UnsupportedOperationModifyPartitionFileSystem,
+2,6375,,UnsupportedOperationInPartitionFileSystem,Called PartitionFileSystemCore::CommitProvisionally.
 2,6376,,UnsupportedOperationInPartitionFileSetSize,
 2,6377,,UnsupportedOperationIdInPartitionFileSystem,
+2,6384,,UnsupportedOperationInDirectorySaveDataFileSystem,Called DirectorySaveDataFileSystem::CommitProvisionally on a non-user savedata.
 
 2,6400,6449,PermissionDenied,
 
@@ -197,14 +208,17 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6454,,WriteStateUnflushed,
 2,6457,,WriteModeFileNotClosed,
 2,6461,,AllocatorAlignmentViolation,
+2,6463,,MultiCommitFileSystemAlreadyAdded,The provided file system has already been added to the multi-commit manager.
 2,6465,,UserNotExist,
 
 2,6600,6699,EntryNotFound,
 2,6606,,TargetProgramIndexNotFound,Specified program index is not found
+
 2,6700,6799,OutOfResource,
 2,6706,,MappingTableFull,
 2,6707,,AllocationTableInsufficientFreeBlocks,
 2,6709,,OpenCountLimit,
+2,6710,,MultiCommitFileSystemLimit,The maximum number of file systems have been added to the multi-commit manager.
 
 2,6800,6899,MappingFailed,
 2,6811,,RemapStorageMapFull,

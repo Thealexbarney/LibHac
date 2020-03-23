@@ -8,6 +8,7 @@ namespace LibHac.Fs
     [StructLayout(LayoutKind.Explicit, Size = 0x40)]
     public struct SaveDataAttribute : IEquatable<SaveDataAttribute>, IComparable<SaveDataAttribute>
     {
+        // todo: rename to ProgramId
         [FieldOffset(0x00)] public TitleId TitleId;
         [FieldOffset(0x08)] public UserId UserId;
         [FieldOffset(0x18)] public ulong SaveDataId;

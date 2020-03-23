@@ -677,7 +677,8 @@ namespace LibHac.FsService
 
             if (rc.IsFailure()) return rc;
 
-            baseFileSystem.EnsureDirectoryExists(contentDirPath.ToString());
+            rc = baseFileSystem.EnsureDirectoryExists(contentDirPath.ToString());
+            if (rc.IsFailure()) return rc;
 
             rc = FsCreators.SubDirectoryFileSystemCreator.Create(out IFileSystem subDirFileSystem,
                 baseFileSystem, contentDirPath);
@@ -879,7 +880,7 @@ namespace LibHac.FsService
 
             if (cacheExtraData)
             {
-                // Missing extra data caching
+                // todo: Missing extra data caching
             }
 
             fileSystem = openReadOnly ? new ReadOnlyFileSystem(saveFs) : saveFs;

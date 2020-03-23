@@ -35,6 +35,21 @@ namespace LibHac.Fs
             return ResultFs.NotImplemented.Log();
         }
 
+        protected virtual Result CommitProvisionallyImpl(long commitCount)
+        {
+            return ResultFs.NotImplemented.Log();
+        }
+
+        protected virtual Result RollbackImpl()
+        {
+            return ResultFs.NotImplemented.Log();
+        }
+
+        protected virtual Result FlushImpl()
+        {
+            return ResultFs.NotImplemented.Log();
+        }
+
         protected virtual Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, U8Span path)
         {
             timeStamp = default;
@@ -198,6 +213,27 @@ namespace LibHac.Fs
             if (IsDisposed) return ResultFs.PreconditionViolation.Log();
 
             return CommitImpl();
+        }
+
+        public Result CommitProvisionally(long commitCount)
+        {
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+
+            return CommitProvisionallyImpl(commitCount);
+        }
+
+        public Result Rollback()
+        {
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+
+            return RollbackImpl();
+        }
+
+        public Result Flush()
+        {
+            if (IsDisposed) return ResultFs.PreconditionViolation.Log();
+
+            return FlushImpl();
         }
 
         public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, U8Span path)

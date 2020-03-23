@@ -42,7 +42,7 @@ namespace LibHac.FsService
 
             SaveDataIndexerManager = new SaveDataIndexerManager(FsClient, SaveIndexerId);
 
-            fsProxy.CleanUpTemporaryStorage();
+            fsProxy.CleanUpTemporaryStorage().IgnoreResult();
         }
 
         /// <summary>

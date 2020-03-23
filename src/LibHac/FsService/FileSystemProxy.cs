@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.FsService.Impl;
 using LibHac.FsSystem;
 using LibHac.Kvdb;
 using LibHac.Ncm;
@@ -12,7 +13,7 @@ namespace LibHac.FsService
     public class FileSystemProxy : IFileSystemProxy
     {
         private FileSystemProxyCore FsProxyCore { get; }
-        private FileSystemServer FsServer { get; }
+        internal FileSystemServer FsServer { get; }
 
         public long CurrentProcess { get; private set; }
 
@@ -160,10 +161,10 @@ namespace LibHac.FsService
                         // Check if permissions allow deleting save data
                     }
 
-                    reader.Indexer.SetState(saveDataId, SaveDataState.Creating);
+                    rc = reader.Indexer.SetState(saveDataId, SaveDataState.Creating);
                     if (rc.IsFailure()) return rc;
 
-                    reader.Indexer.Commit();
+                    rc = reader.Indexer.Commit();
                     if (rc.IsFailure()) return rc;
                 }
 
@@ -406,7 +407,7 @@ namespace LibHac.FsService
                 // Revert changes if an error happened in the middle of creation
                 if (isDeleteNeeded)
                 {
-                    DeleteSaveDataFileSystemImpl2(creationInfo.SpaceId, saveDataId);
+                    DeleteSaveDataFileSystemImpl2(creationInfo.SpaceId, saveDataId).IgnoreResult();
 
                     if (reader.IsInitialized && saveDataId != FileSystemServer.SaveIndexerId)
                     {
@@ -414,8 +415,8 @@ namespace LibHac.FsService
 
                         if (rc.IsSuccess() && value.SpaceId == creationInfo.SpaceId)
                         {
-                            reader.Indexer.Delete(saveDataId);
-                            reader.Indexer.Commit();
+                            reader.Indexer.Delete(saveDataId).IgnoreResult();
+                            reader.Indexer.Commit().IgnoreResult();
                         }
                     }
                 }
@@ -1151,7 +1152,7 @@ namespace LibHac.FsService
                 rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out reader, SaveDataSpaceId.Temporary);
                 if (rc.IsFailure()) return rc;
 
-                reader.Indexer.Reset();
+                reader.Indexer.Reset().IgnoreResult();
 
                 return Result.Success;
             }
@@ -1172,6 +1173,28 @@ namespace LibHac.FsService
         public Result IsSdCardAccessible(out bool isAccessible)
         {
             isAccessible = FsProxyCore.IsSdCardAccessible;
+            return Result.Success;
+        }
+
+        public Result OpenMultiCommitManager(out IMultiCommitManager commitManager)
+        {
+            commitManager = new MultiCommitManager(this);
+            return Result.Success;
+        }
+
+        internal Result OpenMultiCommitContextSaveData(out IFileSystem fileSystem)
+        {
+            fileSystem = default;
+
+            SaveDataAttribute attribute = default;
+            attribute.TitleId = new TitleId(MultiCommitManager.ProgramId);
+            attribute.SaveDataId = MultiCommitManager.SaveDataId;
+
+            Result rc = OpenSaveDataFileSystemImpl(out IFileSystem saveFs, out _, SaveDataSpaceId.System, ref attribute,
+                false, true);
+            if (rc.IsFailure()) return rc;
+
+            fileSystem = saveFs;
             return Result.Success;
         }
 
