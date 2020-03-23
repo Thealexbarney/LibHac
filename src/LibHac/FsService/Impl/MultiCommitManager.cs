@@ -190,6 +190,16 @@ namespace LibHac.FsService.Impl
                         rc = _fileSystem.OpenFile(out contextFile, ContextFileName, OpenMode.Read);
                         if (rc.IsFailure()) return rc;
                     }
+                }
+                finally
+                {
+                    contextFile?.Dispose();
+                }
+
+                try
+                {
+                    Result rc = _fileSystem.OpenFile(out contextFile, ContextFileName, OpenMode.ReadWrite);
+                    if (rc.IsFailure()) return rc;
 
                     _context.Version = CurrentContextVersion;
                     _context.State = CommitState.NotCommitted;
