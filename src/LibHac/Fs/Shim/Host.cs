@@ -43,6 +43,7 @@ namespace LibHac.Fs.Shim
                 if (nameBuffer.Length < requiredNameBufferSize)
                     return ResultFs.TooLongPath.Log();
 
+                // ReSharper disable once RedundantAssignment
                 int size = new U8StringBuilder(nameBuffer).Append(HostRootFileSystemPath).Append(_path.Str).Length;
                 Debug.Assert(size == requiredNameBufferSize - 1);
 
@@ -58,6 +59,7 @@ namespace LibHac.Fs.Shim
 
                 Debug.Assert(nameBuffer.Length >= requiredNameBufferSize);
 
+                // ReSharper disable once RedundantAssignment
                 int size = StringUtils.Copy(nameBuffer, HostRootFileSystemPath);
                 Debug.Assert(size == requiredNameBufferSize - 1);
 
