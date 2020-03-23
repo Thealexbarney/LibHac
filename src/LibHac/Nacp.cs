@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace LibHac
 {
+    [Obsolete("This class has been deprecated. LibHac.Ns.ApplicationControlProperty should be used instead.")]
     public class Nacp
     {
         public NacpDescription[] Descriptions { get; } = new NacpDescription[0x10];
