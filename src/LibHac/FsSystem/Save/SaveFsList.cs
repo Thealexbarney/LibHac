@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using LibHac.Common;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem.Save
@@ -44,7 +45,7 @@ namespace LibHac.FsSystem.Save
 
                 ReadEntry(index, out entry);
 
-                if (entry.Parent == key.Parent && Util.StringSpansEqual(name, key.Name))
+                if (entry.Parent == key.Parent && StringUtils.Compare(name, key.Name) == 0)
                 {
                     return (index, prevIndex);
                 }

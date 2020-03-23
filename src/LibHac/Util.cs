@@ -64,42 +64,6 @@ namespace LibHac
             return true;
         }
 
-        /// <summary>
-        /// Compares two strings stored int byte spans. For the strings to be equal,
-        /// they must terminate in the same place.
-        /// A string can be terminated by either a null character or the end of the span.
-        /// </summary>
-        /// <param name="s1">The first string to be compared.</param>
-        /// <param name="s2">The first string to be compared.</param>
-        /// <returns><see langword="true"/> if the strings are equal;
-        /// otherwise <see langword="false"/>.</returns>
-        public static bool StringSpansEqual(ReadOnlySpan<byte> s1, ReadOnlySpan<byte> s2)
-        {
-            // Make s1 the long string for simplicity
-            if (s1.Length < s2.Length)
-            {
-                ReadOnlySpan<byte> tmp = s1;
-                s1 = s2;
-                s2 = tmp;
-            }
-
-            int shortLength = s2.Length;
-            int i;
-
-            for (i = 0; i < shortLength; i++)
-            {
-                if (s1[i] != s2[i]) return false;
-
-                // Both strings are null-terminated
-                if (s1[i] == 0) return true;
-            }
-
-            // The bytes in the short string equal those in the long.
-            // Check if the strings are the same length or if the next
-            // character in the long string is a null character
-            return s1.Length == s2.Length || s1[i] == 0;
-        }
-
         public static ReadOnlySpan<byte> GetUtf8Bytes(string value)
         {
             return Encoding.UTF8.GetBytes(value).AsSpan();

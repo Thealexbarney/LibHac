@@ -27,7 +27,7 @@ namespace LibHac.FsSystem
             _path = path;
             _offset = 0;
             _length = 0;
-            _finished = path.Length == 1;
+            _finished = path.Length == 1 || path[1] == '\0';
         }
 
         /// <summary>
@@ -57,12 +57,12 @@ namespace LibHac.FsSystem
             _offset = _offset + _length + 1;
             int end = _offset;
 
-            while (end < _path.Length && _path[end] != '/')
+            while (end < _path.Length && _path[end] != '\0' && _path[end] != '/')
             {
                 end++;
             }
 
-            _finished = end + 1 >= _path.Length;
+            _finished = end + 1 >= _path.Length || _path[end + 1] == '\0';
             _length = end - _offset;
 
             return true;
