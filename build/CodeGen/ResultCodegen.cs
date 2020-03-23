@@ -25,6 +25,7 @@ namespace LibHacBuild.CodeGen
 
             SetEmptyResultValues(modules);
             ValidateResults(modules);
+            CheckForDuplicates(modules);
             ValidateHierarchy(modules);
             CheckIfAggressiveInliningNeeded(modules);
 
@@ -114,6 +115,24 @@ namespace LibHacBuild.CodeGen
                     {
                         if (!condition)
                             throw new InvalidDataException($"Result {result.Module}-{result.DescriptionStart}: {message}");
+                    }
+                }
+            }
+        }
+
+        private static void CheckForDuplicates(ModuleInfo[] modules)
+        {
+            foreach (ModuleInfo module in modules)
+            {
+                var set = new HashSet<long>();
+
+                foreach (ResultInfo result in module.Results)
+                {
+                    long description = (long)result.DescriptionStart << 32 | (uint)result.DescriptionEnd;
+
+                    if (!set.Add(description))
+                    {
+                        throw new InvalidDataException($"Duplicate result {result.Module}-{result.DescriptionStart}-{result.DescriptionEnd}.");
                     }
                 }
             }
