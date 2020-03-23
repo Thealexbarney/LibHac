@@ -124,11 +124,12 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,4748,,AesXtsFileHeaderInvalidKeysInSetSize,
 
 2,4761,4769,SaveDataTransferDataCorrupted,
+
 2,4771,4779,SignedSystemPartitionDataCorrupted,
 2,4781,,GameCardLogoDataCorrupted,
 
-2,4791,4799,MultiCommitContextCorrupted,
-2,4791,,InvalidMultiCommitContextVersion,The version of the multi-commit context file is to high for the current MultiCommitManager implementation.
+2,4790,4799,MultiCommitContextCorrupted,
+2,4791,,InvalidMultiCommitContextVersion,The version of the multi-commit context file is too high for the current MultiCommitManager implementation.
 2,4792,,InvalidMultiCommitContextState,The multi-commit has not been provisionally committed.
 
 # The range name is a guess. 4812 is currently the only result in it

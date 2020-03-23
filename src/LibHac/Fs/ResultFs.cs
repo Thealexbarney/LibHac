@@ -256,9 +256,9 @@ namespace LibHac.Fs
             /// <summary>Error code: 2002-4781; Inner value: 0x255a02</summary>
             public static Result.Base GameCardLogoDataCorrupted => new Result.Base(ModuleFs, 4781);
 
-            /// <summary>Error code: 2002-4791; Range: 4791-4799; Inner value: 0x256e02</summary>
-            public static Result.Base MultiCommitContextCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4791, 4799); }
-                /// <summary>The version of the multi-commit context file is to high for the current MultiCommitManager implementation.<br/>Error code: 2002-4791; Inner value: 0x256e02</summary>
+            /// <summary>Error code: 2002-4790; Range: 4790-4799; Inner value: 0x256c02</summary>
+            public static Result.Base MultiCommitContextCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4790, 4799); }
+                /// <summary>The version of the multi-commit context file is too high for the current MultiCommitManager implementation.<br/>Error code: 2002-4791; Inner value: 0x256e02</summary>
                 public static Result.Base InvalidMultiCommitContextVersion => new Result.Base(ModuleFs, 4791);
                 /// <summary>The multi-commit has not been provisionally committed.<br/>Error code: 2002-4792; Inner value: 0x257002</summary>
                 public static Result.Base InvalidMultiCommitContextState => new Result.Base(ModuleFs, 4792);
