@@ -124,13 +124,11 @@ namespace LibHacBuild.CodeGen
         {
             foreach (ModuleInfo module in modules)
             {
-                var set = new HashSet<long>();
+                var set = new HashSet<int>();
 
                 foreach (ResultInfo result in module.Results)
                 {
-                    long description = (long)result.DescriptionStart << 32 | (uint)result.DescriptionEnd;
-
-                    if (!set.Add(description))
+                    if (!set.Add(result.DescriptionStart))
                     {
                         throw new InvalidDataException($"Duplicate result {result.Module}-{result.DescriptionStart}-{result.DescriptionEnd}.");
                     }

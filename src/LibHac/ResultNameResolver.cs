@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
@@ -47,7 +48,11 @@ namespace LibHac
                 foreach (ref readonly Element element in elements)
                 {
                     var result = new Result(element.Module, element.DescriptionStart);
-                    dict.Add(result, GetName(element.NameOffset).ToString());
+
+                    if (!dict.TryAdd(result, GetName(element.NameOffset).ToString()))
+                    {
+                        throw new InvalidDataException("Invalid result name archive: Duplicate result found.");
+                    }
                 }
 
                 return dict;
