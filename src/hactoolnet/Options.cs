@@ -29,6 +29,7 @@ namespace hactoolnet
         public string OutDir;
         public string OutFile;
         public string PlaintextOut;
+        public string UncompressedOut;
         public string SdSeed;
         public string NspOut;
         public string SdPath;

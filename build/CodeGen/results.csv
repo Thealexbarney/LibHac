@@ -306,3 +306,10 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 428,2,,NullArgument,
 428,3,,ArgumentOutOfRange,
 428,4,,BufferTooSmall,
+
+428,1000,1999,InvalidData,
+428,1001,1019,InvalidKip,
+428,1002,,InvalidKipFileSize,The size of the KIP file was smaller than expected.
+428,1003,,InvalidKipMagic,The magic value of the KIP file was not KIP1.
+428,1004,,InvalidKipSegmentSize,The size of the compressed KIP segment was smaller than expected.
+428,1005,,KipSegmentDecompressionFailed,An error occurred while decompressing a KIP segment.

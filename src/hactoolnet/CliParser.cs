@@ -38,6 +38,7 @@ namespace hactoolnet
             new CliOption("outdir", 1, (o, a) => o.OutDir = a[0]),
             new CliOption("outfile", 1, (o, a) => o.OutFile = a[0]),
             new CliOption("plaintext", 1, (o, a) => o.PlaintextOut = a[0]),
+            new CliOption("uncompressed", 1, (o, a) => o.UncompressedOut = a[0]),
             new CliOption("nspout", 1, (o, a) => o.NspOut = a[0]),
             new CliOption("sdseed", 1, (o, a) => o.SdSeed = a[0]),
             new CliOption("sdpath", 1, (o, a) => o.SdPath = a[0]),
@@ -221,6 +222,8 @@ namespace hactoolnet
             sb.AppendLine("  --romfsdir <dir>     Specify RomFS directory path.");
             sb.AppendLine("  --listromfs          List files in RomFS.");
             sb.AppendLine("  --basenca            Set Base NCA to use with update partitions.");
+            sb.AppendLine("KIP1 options:");
+            sb.AppendLine("  --uncompressed <f>   Specify file path for saving uncompressed KIP1.");
             sb.AppendLine("RomFS options:");
             sb.AppendLine("  --romfsdir <dir>     Specify RomFS directory path.");
             sb.AppendLine("  --listromfs          List files in RomFS.");

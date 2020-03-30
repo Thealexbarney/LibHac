@@ -82,6 +82,7 @@ namespace LibHac
             int cmpPos = 0;
             int decPos = 0;
 
+            // ReSharper disable once VariableHidesOuterVariable
             int GetLength(int length, ReadOnlySpan<byte> cmp)
             {
                 byte sum;
