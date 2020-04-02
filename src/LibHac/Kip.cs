@@ -5,6 +5,7 @@ using LibHac.FsSystem;
 
 namespace LibHac
 {
+    [Obsolete("This class has been deprecated. LibHac.Loader.KipReader should be used instead.")]
     public class Kip
     {
         private const int HeaderSize = 0x100;
