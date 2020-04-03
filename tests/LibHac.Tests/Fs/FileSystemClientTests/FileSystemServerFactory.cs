@@ -5,9 +5,9 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
 {
     public static class FileSystemServerFactory
     {
-        public static FileSystemServer CreateServer(bool sdCardInserted)
+        public static FileSystemServer CreateServer(bool sdCardInserted, out IFileSystem rootFs)
         {
-            var rootFs = new InMemoryFileSystem();
+            rootFs = new InMemoryFileSystem();
 
             var defaultObjects = DefaultFsServerObjects.GetDefaultEmulatedCreators(rootFs, new Keyset());
 
@@ -25,7 +25,14 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
 
         public static FileSystemClient CreateClient(bool sdCardInserted)
         {
-            FileSystemServer fsServer = CreateServer(sdCardInserted);
+            FileSystemServer fsServer = CreateServer(sdCardInserted, out _);
+
+            return fsServer.CreateFileSystemClient();
+        }
+
+        public static FileSystemClient CreateClient(out IFileSystem rootFs)
+        {
+            FileSystemServer fsServer = CreateServer(false, out rootFs);
 
             return fsServer.CreateFileSystemClient();
         }
