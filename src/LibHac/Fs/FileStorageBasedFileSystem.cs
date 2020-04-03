@@ -11,7 +11,7 @@ namespace LibHac.Fs
 
         private FileStorageBasedFileSystem()
         {
-            FileSize = InvalidSize;
+            FileSize = SizeNotInitialized;
         }
 
         public static Result CreateNew(out FileStorageBasedFileSystem created, IFileSystem baseFileSystem, U8Span path,
