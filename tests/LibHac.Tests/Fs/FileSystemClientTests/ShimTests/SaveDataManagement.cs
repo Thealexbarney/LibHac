@@ -84,5 +84,33 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
 
             Assert.Equal(expectedIndexes, actualIndexes);
         }
+
+        [Fact]
+        public void CreateBcatSaveData_DoesNotExist_SaveIsCreated()
+        {
+            var applicationId = new TitleId(1);
+            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+
+            Assert.Success(fs.CreateBcatSaveData(applicationId, 0x400000));
+
+            fs.OpenSaveDataIterator(out SaveDataIterator iterator, SaveDataSpaceId.User);
+
+            var info = new SaveDataInfo[2];
+            iterator.ReadSaveDataInfo(out long entriesRead, info);
+
+            Assert.Equal(1, entriesRead);
+            Assert.Equal(applicationId, info[0].TitleId);
+            Assert.Equal(SaveDataType.Bcat, info[0].Type);
+        }
+
+        [Fact]
+        public void CreateBcatSaveData_AlreadyExists_ReturnsPathAlreadyExists()
+        {
+            var applicationId = new TitleId(1);
+            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+
+            Assert.Success(fs.CreateBcatSaveData(applicationId, 0x400000));
+            Assert.Result(ResultFs.PathAlreadyExists, fs.CreateBcatSaveData(applicationId, 0x400000));
+        }
     }
 }

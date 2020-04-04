@@ -6,7 +6,7 @@ namespace LibHac.Fs
 {
     public class FileStorage2 : StorageBase
     {
-        protected const long InvalidSize = -1;
+        protected const long SizeNotInitialized = -1;
 
         private IFile BaseFile { get; set; }
         protected long FileSize { get; set; }
@@ -14,7 +14,7 @@ namespace LibHac.Fs
         public FileStorage2(IFile baseFile)
         {
             BaseFile = baseFile;
-            FileSize = InvalidSize;
+            FileSize = SizeNotInitialized;
         }
 
         protected FileStorage2() { }
@@ -29,7 +29,7 @@ namespace LibHac.Fs
 
         private Result UpdateSize()
         {
-            if (FileSize != InvalidSize)
+            if (FileSize != SizeNotInitialized)
                 return Result.Success;
 
             Result rc = BaseFile.GetSize(out long fileSize);
@@ -87,7 +87,7 @@ namespace LibHac.Fs
 
         protected override Result SetSizeImpl(long size)
         {
-            FileSize = InvalidSize;
+            FileSize = SizeNotInitialized;
             return BaseFile.SetSize(size);
         }
 

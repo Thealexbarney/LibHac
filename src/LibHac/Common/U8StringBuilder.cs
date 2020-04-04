@@ -12,8 +12,9 @@ namespace LibHac.Common
         private int _length;
 
         public bool Overflowed { get; private set; }
-        public int Length => _length;
-        public int Capacity => _buffer.Length - NullTerminatorLength;
+        public readonly int Length => _length;
+        public readonly int Capacity => _buffer.Length - NullTerminatorLength;
+        public readonly Span<byte> Buffer => _buffer;
 
         public U8StringBuilder(Span<byte> buffer)
         {
@@ -62,12 +63,12 @@ namespace LibHac.Common
             return this;
         }
 
-        private bool HasCapacity(int requiredCapacity)
+        private readonly bool HasCapacity(int requiredCapacity)
         {
             return requiredCapacity <= Capacity;
         }
 
-        private bool HasAdditionalCapacity(int requiredAdditionalCapacity)
+        private readonly bool HasAdditionalCapacity(int requiredAdditionalCapacity)
         {
             return HasCapacity(_length + requiredAdditionalCapacity);
         }
@@ -77,11 +78,11 @@ namespace LibHac.Common
             _buffer[_length] = 0;
         }
 
-        private void ThrowIfBufferLengthIsZero()
+        private readonly void ThrowIfBufferLengthIsZero()
         {
             if (_buffer.Length == 0) throw new ArgumentException("Buffer length must be greater than 0.");
         }
 
-        public override string ToString() => StringUtils.Utf8ZToString(_buffer);
+        public override readonly string ToString() => StringUtils.Utf8ZToString(_buffer);
     }
 }

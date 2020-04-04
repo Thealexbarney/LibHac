@@ -36,6 +36,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
             Assert.Success(fs.GetEntryType(out DirectoryEntryType type, "cache:/file".ToU8Span()));
             Assert.Equal(DirectoryEntryType.File, type);
         }
+
         [Fact]
         public void MountCacheStorage_SdCardIsPreferredOverBis()
         {
