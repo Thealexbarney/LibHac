@@ -26,6 +26,9 @@ namespace LibHac.Common
             /// <summary>Error code: 2428-0004; Inner value: 0x9ac</summary>
             public static Result.Base BufferTooSmall => new Result.Base(ModuleLibHac, 4);
 
+        /// <summary>Error code: 2428-0051; Inner value: 0x67ac</summary>
+        public static Result.Base ServiceNotInitialized => new Result.Base(ModuleLibHac, 51);
+
         /// <summary>Error code: 2428-1000; Range: 1000-1999; Inner value: 0x7d1ac</summary>
         public static Result.Base InvalidData { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleLibHac, 1000, 1999); }
             /// <summary>Error code: 2428-1001; Range: 1001-1019; Inner value: 0x7d3ac</summary>

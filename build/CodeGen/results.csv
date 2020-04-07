@@ -277,6 +277,19 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 24,1,,DeviceNotFound,
 24,4,,DeviceAsleep,
 
+122,1,,InvalidArgument,
+122,2,,NotFound,
+122,7,,NotOpen,
+122,9,,ServiceOpenLimitReached,
+122,10,,SaveDataNotFount,
+
+122,31,,NetworkServiceAccountNotAvailable,
+
+122,90,,PermissionDenied,
+
+122,204,,InvalidStorageMetaVersion,
+122,205,,StorageOpenLimitReached,
+
 123,0,4999,SslService,
 
 124,0,,Cancelled,
@@ -306,6 +319,8 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 428,2,,NullArgument,
 428,3,,ArgumentOutOfRange,
 428,4,,BufferTooSmall,
+
+428,51,,ServiceNotInitialized,
 
 428,1000,1999,InvalidData,
 428,1001,1019,InvalidKip,
