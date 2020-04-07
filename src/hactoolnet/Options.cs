@@ -1,4 +1,5 @@
 ﻿using LibHac;
+using LibHac.Fs;
 using LibHac.FsSystem;
 
 namespace hactoolnet
@@ -93,6 +94,6 @@ namespace hactoolnet
         public Options Options;
         public Keyset Keyset;
         public ProgressBar Logger;
-        public Horizon Horizon;
+        public FileSystemClient FsClient;
     }
 }

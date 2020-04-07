@@ -44,7 +44,7 @@ namespace hactoolnet
 
                     if (ctx.Options.SectionOutDir[i] != null)
                     {
-                        FileSystemClient fs = ctx.Horizon.Fs;
+                        FileSystemClient fs = ctx.FsClient;
 
                         string mountName = $"section{i}";
 
@@ -95,7 +95,7 @@ namespace hactoolnet
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        FileSystemClient fs = ctx.Horizon.Fs;
+                        FileSystemClient fs = ctx.FsClient;
 
                         fs.Register("rom".ToU8Span(), OpenFileSystemByType(NcaSectionType.Data));
                         fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.RomfsOutDir));
@@ -152,7 +152,7 @@ namespace hactoolnet
 
                     if (ctx.Options.ExefsOutDir != null)
                     {
-                        FileSystemClient fs = ctx.Horizon.Fs;
+                        FileSystemClient fs = ctx.FsClient;
 
                         fs.Register("code".ToU8Span(), OpenFileSystemByType(NcaSectionType.Code));
                         fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.ExefsOutDir));
@@ -232,10 +232,12 @@ namespace hactoolnet
             PrintItem(sb, colLen, $"NPDM Signature{nca.VerifySignature2().GetValidityString()}:", nca.Header.Signature2.ToArray());
             PrintItem(sb, colLen, "Content Size:", $"0x{nca.Header.NcaSize:x12}");
             PrintItem(sb, colLen, "TitleID:", $"{nca.Header.TitleId:X16}");
-            if (nca.CanOpenSection(NcaSectionType.Code)) {
+            if (nca.CanOpenSection(NcaSectionType.Code))
+            {
                 IFileSystem fs = nca.OpenFileSystem(NcaSectionType.Code, IntegrityCheckLevel.None);
                 Result r = fs.OpenFile(out IFile file, "/main.npdm".ToU8String(), OpenMode.Read);
-                if (r.IsSuccess()) {
+                if (r.IsSuccess())
+                {
                     var npdm = new NpdmBinary(file.AsStream(), null);
                     PrintItem(sb, colLen, "Title Name:", npdm.TitleName);
                 }
