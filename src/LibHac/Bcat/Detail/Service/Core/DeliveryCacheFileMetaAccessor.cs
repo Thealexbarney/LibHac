@@ -14,7 +14,7 @@ namespace LibHac.Bcat.Detail.Service.Core
         private BcatServer Server { get; }
         private object Locker { get; } = new object();
         private DeliveryCacheFileMetaEntry[] Entries { get; } = new DeliveryCacheFileMetaEntry[MaxEntryCount];
-        private int Count { get; set; }
+        public int Count { get; private set; }
 
         public DeliveryCacheFileMetaAccessor(BcatServer server)
         {
@@ -28,6 +28,21 @@ namespace LibHac.Bcat.Detail.Service.Core
             Server.GetStorageManager().GetFilesMetaPath(metaPath, applicationId, ref directoryName);
 
             return Read(new U8Span(metaPath), allowMissingMetaFile);
+        }
+
+        public Result GetEntry(out DeliveryCacheFileMetaEntry entry, int index)
+        {
+            lock (Locker)
+            {
+                if (index >= Count)
+                {
+                    entry = default;
+                    return ResultBcat.NotFound.Log();
+                }
+
+                entry = Entries[index];
+                return Result.Success;
+            }
         }
 
         public Result FindEntry(out DeliveryCacheFileMetaEntry entry, ref FileName fileName)
