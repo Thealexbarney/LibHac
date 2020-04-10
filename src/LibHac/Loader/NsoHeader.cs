@@ -40,7 +40,7 @@ namespace LibHac.Loader
         [FieldOffset(0x64)] public uint RoFileSize;
         [FieldOffset(0x68)] public uint DataFileSize;
 
-        [FieldOffset(0x68)] private byte _reserved6C;
+        [FieldOffset(0x6C)] private byte _reserved6C;
 
         [FieldOffset(0x88)] public uint ApiInfoOffset;
         [FieldOffset(0x8C)] public uint ApiInfoSize;
