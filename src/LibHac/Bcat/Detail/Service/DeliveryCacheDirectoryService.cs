@@ -5,6 +5,7 @@ namespace LibHac.Bcat.Detail.Service
 {
     internal class DeliveryCacheDirectoryService : IDeliveryCacheDirectoryService
     {
+        private BcatServer Server { get; }
         public object Locker { get; } = new object();
         private DeliveryCacheStorageService Parent { get; }
         private AccessControl Access { get; }
@@ -13,9 +14,10 @@ namespace LibHac.Bcat.Detail.Service
         private bool IsDirectoryOpen { get; set; }
         private int Count { get; set; }
 
-        public DeliveryCacheDirectoryService(DeliveryCacheStorageService parent, ulong applicationId,
+        public DeliveryCacheDirectoryService(BcatServer server, DeliveryCacheStorageService parent, ulong applicationId,
             AccessControl accessControl)
         {
+            Server = server;
             Parent = parent;
             ApplicationId = applicationId;
             Access = accessControl;

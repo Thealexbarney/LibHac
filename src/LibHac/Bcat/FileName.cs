@@ -6,9 +6,11 @@ using LibHac.Common;
 namespace LibHac.Bcat
 {
     [DebuggerDisplay("{ToString()}")]
-    [StructLayout(LayoutKind.Sequential, Size = 32)]
+    [StructLayout(LayoutKind.Sequential, Size = MaxSize)]
     public struct FileName
     {
+        private const int MaxSize = 0x20;
+
         [DebuggerBrowsable(DebuggerBrowsableState.Never)] private ulong _dummy0;
         [DebuggerBrowsable(DebuggerBrowsableState.Never)] private ulong _dummy1;
         [DebuggerBrowsable(DebuggerBrowsableState.Never)] private ulong _dummy2;
@@ -21,6 +23,29 @@ namespace LibHac.Bcat
         }
 
         public Span<byte> Bytes => SpanHelpers.AsByteSpan(ref this);
+
+        public bool IsValid()
+        {
+            Span<byte> name = Bytes;
+
+            int i;
+            for (i = 0; i < name.Length; i++)
+            {
+                if (name[i] == 0)
+                    break;
+
+                if (!StringUtils.IsDigit(name[i]) && !StringUtils.IsAlpha(name[i]) && name[i] != '_' && name[i] != '.')
+                    return false;
+            }
+
+            if (i == 0 || i == MaxSize)
+                return false;
+
+            if (name[i] != 0)
+                return false;
+
+            return name[i - 1] != '.';
+        }
 
         public override string ToString()
         {

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using LibHac.Bcat.Detail.Ipc;
 using LibHac.Bcat.Detail.Service;
+using LibHac.Bcat.Detail.Service.Core;
 using LibHac.Common;
 using LibHac.Fs;
 
@@ -67,7 +68,7 @@ namespace LibHac.Bcat
                     return StorageManager;
                 }
 
-                StorageManager = new DeliveryCacheStorageManager();
+                StorageManager = new DeliveryCacheStorageManager(this);
                 return StorageManager;
             }
         }

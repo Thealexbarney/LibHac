@@ -279,15 +279,20 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 
 122,1,,InvalidArgument,
 122,2,,NotFound,
+122,3,,TargetLocked,
+122,6,,AlreadyOpen,
 122,7,,NotOpen,
 122,9,,ServiceOpenLimitReached,
-122,10,,SaveDataNotFount,
+122,10,,SaveDataNotFound,
 
 122,31,,NetworkServiceAccountNotAvailable,
 
-122,90,,PermissionDenied,
+122,80,,PassphrasePathNotFound,
 
-122,204,,InvalidStorageMetaVersion,
+122,90,,PermissionDenied,
+122,91,,AllocationFailed,
+
+122,204,,InvalidDeliveryCacheStorageFile,
 122,205,,StorageOpenLimitReached,
 
 123,0,4999,SslService,

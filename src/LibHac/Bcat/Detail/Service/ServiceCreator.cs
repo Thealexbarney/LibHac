@@ -1,18 +1,17 @@
-﻿using System;
-using LibHac.Bcat.Detail.Ipc;
+﻿using LibHac.Bcat.Detail.Ipc;
 using LibHac.Ncm;
 
 namespace LibHac.Bcat.Detail.Service
 {
     internal class ServiceCreator : IServiceCreator
     {
-        private BcatServer Parent { get; }
+        private BcatServer Server { get; }
         private BcatServiceType ServiceType { get; }
         private AccessControl AccessControl { get; }
 
-        public ServiceCreator(BcatServer parentServer, BcatServiceType type, AccessControl accessControl)
+        public ServiceCreator(BcatServer server, BcatServiceType type, AccessControl accessControl)
         {
-            Parent = parentServer;
+            Server = server;
             ServiceType = type;
             AccessControl = accessControl;
         }
@@ -31,7 +30,23 @@ namespace LibHac.Bcat.Detail.Service
         private Result CreateDeliveryCacheStorageServiceImpl(out IDeliveryCacheStorageService service,
             TitleId applicationId)
         {
-            throw new NotImplementedException();
+            service = default;
+
+            Result rc = Server.GetStorageManager().Open(applicationId.Value);
+            if (rc.IsFailure()) return rc;
+
+            try
+            {
+                // todo: Check if network account required
+
+                service = new DeliveryCacheStorageService(Server, applicationId.Value, AccessControl);
+            }
+            finally
+            {
+                Server.GetStorageManager().Release(applicationId.Value);
+            }
+
+            return Result.Success;
         }
     }
 }
