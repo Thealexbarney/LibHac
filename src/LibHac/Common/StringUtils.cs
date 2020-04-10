@@ -168,5 +168,15 @@ namespace LibHac.Common
         {
             return Utf8ToString(value.Slice(0, GetLength(value)));
         }
+
+        public static bool IsAlpha(byte c)
+        {
+            return (c | 0x20u) - (byte)'A' <= 'Z' - 'A';
+        }
+
+        public static bool IsDigit(byte c)
+        {
+            return (uint)(c - (byte)'0') <= 9;
+        }
     }
 }
