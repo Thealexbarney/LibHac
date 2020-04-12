@@ -48,8 +48,8 @@ namespace LibHac.Bcat.Detail.Service.Core
                 // Get the mount name
                 var mountName = new MountName();
 
-                new U8StringBuilder(mountName.Name)
-                    .Append(DeliveryCacheMountNamePrefix)
+                var sb = new U8StringBuilder(mountName.Name);
+                sb.Append(DeliveryCacheMountNamePrefix)
                     .AppendFormat(index, 'd', 2);
 
                 // Mount the save if enabled
@@ -89,8 +89,8 @@ namespace LibHac.Bcat.Detail.Service.Core
                 {
                     var mountName = new MountName();
 
-                    new U8StringBuilder(mountName.Name)
-                        .Append(DeliveryCacheMountNamePrefix)
+                    var sb = new U8StringBuilder(mountName.Name);
+                    sb.Append(DeliveryCacheMountNamePrefix)
                         .AppendFormat(index, 'd', 2);
 
                     // Unmount the entry's savedata
@@ -115,8 +115,8 @@ namespace LibHac.Bcat.Detail.Service.Core
 
                 var mountName = new MountName();
 
-                new U8StringBuilder(mountName.Name)
-                    .Append(DeliveryCacheMountNamePrefix)
+                var sb = new U8StringBuilder(mountName.Name);
+                sb.Append(DeliveryCacheMountNamePrefix)
                     .AppendFormat(index, 'd', 2);
 
                 if (!DisableStorage)
@@ -215,10 +215,10 @@ namespace LibHac.Bcat.Detail.Service.Core
                 var sb = new U8StringBuilder(pathBuffer);
                 AppendMountName(ref sb, applicationId);
 
-                sb.Append(DirectoriesPath);
-                sb.Append(DirectorySeparator).Append(directoryName.Bytes);
-                sb.Append(DirectorySeparator).Append(FilesDirectoryName);
-                sb.Append(DirectorySeparator).Append(fileName.Bytes);
+                sb.Append(DirectoriesPath)
+                    .Append(DirectorySeparator).Append(directoryName.Bytes)
+                    .Append(DirectorySeparator).Append(FilesDirectoryName)
+                    .Append(DirectorySeparator).Append(fileName.Bytes);
             }
         }
 
@@ -229,9 +229,9 @@ namespace LibHac.Bcat.Detail.Service.Core
                 var sb = new U8StringBuilder(pathBuffer);
                 AppendMountName(ref sb, applicationId);
 
-                sb.Append(DirectoriesPath);
-                sb.Append(DirectorySeparator).Append(directoryName.Bytes);
-                sb.Append(DirectorySeparator).Append(FilesMetaFileName);
+                sb.Append(DirectoriesPath)
+                    .Append(DirectorySeparator).Append(directoryName.Bytes)
+                    .Append(DirectorySeparator).Append(FilesMetaFileName);
             }
         }
 
@@ -252,8 +252,8 @@ namespace LibHac.Bcat.Detail.Service.Core
                 var sb = new U8StringBuilder(pathBuffer);
                 AppendMountName(ref sb, applicationId);
 
-                sb.Append(DirectoriesPath);
-                sb.Append(DirectorySeparator).Append(directoryName.Bytes);
+                sb.Append(DirectoriesPath)
+                    .Append(DirectorySeparator).Append(directoryName.Bytes);
             }
         }
 

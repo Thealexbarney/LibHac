@@ -6,6 +6,8 @@ namespace LibHac.Bcat.Detail.Service
     internal class ServiceCreator : IServiceCreator
     {
         private BcatServer Server { get; }
+
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         private BcatServiceType ServiceType { get; }
         private AccessControl AccessControl { get; }
 
@@ -35,16 +37,9 @@ namespace LibHac.Bcat.Detail.Service
             Result rc = Server.GetStorageManager().Open(applicationId.Value);
             if (rc.IsFailure()) return rc;
 
-            try
-            {
-                // todo: Check if network account required
+            // todo: Check if network account required
 
-                service = new DeliveryCacheStorageService(Server, applicationId.Value, AccessControl);
-            }
-            finally
-            {
-                Server.GetStorageManager().Release(applicationId.Value);
-            }
+            service = new DeliveryCacheStorageService(Server, applicationId.Value, AccessControl);
 
             return Result.Success;
         }

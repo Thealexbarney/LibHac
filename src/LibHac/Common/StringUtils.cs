@@ -171,7 +171,7 @@ namespace LibHac.Common
 
         public static bool IsAlpha(byte c)
         {
-            return (c | 0x20u) - (byte)'A' <= 'Z' - 'A';
+            return (c | 0x20u) - (byte)'a' <= 'z' - 'a';
         }
 
         public static bool IsDigit(byte c)

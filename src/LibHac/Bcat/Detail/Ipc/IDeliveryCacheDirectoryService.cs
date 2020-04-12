@@ -2,7 +2,7 @@
 
 namespace LibHac.Bcat.Detail.Ipc
 {
-    public interface IDeliveryCacheDirectoryService
+    public interface IDeliveryCacheDirectoryService : IDisposable
     {
         Result Open(ref DirectoryName name);
         Result Read(out int entriesRead, Span<DeliveryCacheDirectoryEntry> entryBuffer);

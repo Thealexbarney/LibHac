@@ -6,11 +6,13 @@ using LibHac.Fs;
 
 namespace LibHac.Bcat.Detail.Service
 {
-    internal class DeliveryCacheFileService : IDeliveryCacheFileService, IDisposable
+    internal class DeliveryCacheFileService : IDeliveryCacheFileService
     {
         private BcatServer Server { get; }
         private object Locker { get; } = new object();
         private DeliveryCacheStorageService Parent { get; }
+
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         private AccessControl Access { get; }
         private ulong ApplicationId { get; }
         private FileHandle _handle;

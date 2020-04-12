@@ -28,9 +28,10 @@ namespace LibHac.Fs.Shim
 
                 Debug.Assert(nameBuffer.Length >= requiredNameBufferSize);
 
-                // ReSharper disable once RedundantAssignment
-                int size = new U8StringBuilder(nameBuffer).Append(mountName).Append(StringTraits.DriveSeparator).Length;
-                Debug.Assert(size == requiredNameBufferSize - 1);
+                var sb = new U8StringBuilder(nameBuffer);
+                sb.Append(mountName).Append(StringTraits.DriveSeparator);
+
+                Debug.Assert(sb.Length == requiredNameBufferSize - 1);
 
                 return Result.Success;
             }
@@ -144,7 +145,8 @@ namespace LibHac.Fs.Shim
                     ? StringTraits.NullTerminator
                     : StringTraits.DirectorySeparator;
 
-                Result rc = new U8StringBuilder(sfPath.Str).Append(rootPath).Append(endingSeparator).ToSfPath();
+                var sb = new U8StringBuilder(sfPath.Str);
+                Result rc = sb.Append(rootPath).Append(endingSeparator).ToSfPath();
                 if (rc.IsFailure()) return rc;
             }
             else

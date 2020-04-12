@@ -2,7 +2,7 @@
 
 namespace LibHac.Bcat.Detail.Ipc
 {
-    public interface IDeliveryCacheStorageService
+    public interface IDeliveryCacheStorageService : IDisposable
     {
         Result CreateFileService(out IDeliveryCacheFileService fileService);
         Result CreateDirectoryService(out IDeliveryCacheDirectoryService directoryService);

@@ -4,11 +4,13 @@ using LibHac.Bcat.Detail.Service.Core;
 
 namespace LibHac.Bcat.Detail.Service
 {
-    internal class DeliveryCacheDirectoryService : IDeliveryCacheDirectoryService, IDisposable
+    internal class DeliveryCacheDirectoryService : IDeliveryCacheDirectoryService
     {
         private BcatServer Server { get; }
         private object Locker { get; } = new object();
         private DeliveryCacheStorageService Parent { get; }
+
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         private AccessControl Access { get; }
         private ulong ApplicationId { get; }
         private DirectoryName _name;

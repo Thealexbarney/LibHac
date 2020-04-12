@@ -10,14 +10,14 @@ namespace LibHac
     public class Horizon
     {
         internal ITimeSpanGenerator Time { get; }
-        private FileSystemServer FileSystemServer { get; set; }
-        private BcatServer BcatServer { get; set; }
+        public FileSystemServer FileSystemServer { get; private set; }
+        public BcatServer BcatServer { get; private set; }
 
         private readonly object _initLocker = new object();
 
         public Horizon(ITimeSpanGenerator timer)
         {
-            Time = timer;
+            Time = timer ?? new StopWatchTimeSpanGenerator();
         }
 
         public Result OpenFileSystemProxyService(out IFileSystemProxy service)
@@ -58,6 +58,18 @@ namespace LibHac
             }
 
             return BcatServer.GetServiceCreator(out service, type);
+        }
+
+        public void InitializeBcatServer()
+        {
+            if (BcatServer != null) return;
+
+            lock (_initLocker)
+            {
+                if (BcatServer != null) return;
+
+                BcatServer = new BcatServer(this);
+            }
         }
 
         public void InitializeFileSystemServer(FileSystemCreators fsCreators, IDeviceOperator deviceOperator)

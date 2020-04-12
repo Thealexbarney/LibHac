@@ -4,12 +4,12 @@ using LibHac.Bcat.Detail.Ipc;
 
 namespace LibHac.Bcat.Detail.Service
 {
-    internal class DeliveryCacheStorageService : IDeliveryCacheStorageService, IDisposable
+    internal class DeliveryCacheStorageService : IDeliveryCacheStorageService
     {
         private const int MaxOpenCount = 8;
         private BcatServer Server { get; }
 
-        public object Locker { get; } = new object();
+        private object Locker { get; } = new object();
         private AccessControl Access { get; }
         private ulong ApplicationId { get; }
         private int FileServiceOpenCount { get; set; }

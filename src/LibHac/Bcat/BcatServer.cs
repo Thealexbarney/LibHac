@@ -32,7 +32,7 @@ namespace LibHac.Bcat
 
         public Result GetServiceCreator(out IServiceCreator serviceCreator, BcatServiceType type)
         {
-            if ((uint)type < ServiceTypeCount)
+            if ((uint)type >= ServiceTypeCount)
             {
                 serviceCreator = default;
                 return ResultLibHac.ArgumentOutOfRange.Log();
@@ -87,6 +87,9 @@ namespace LibHac.Bcat
                 if (!rc.IsSuccess())
                     throw new HorizonResultException(rc, "Abort");
 
+                fsClient.SetAccessLogTarget(AccessLogTarget.All);
+
+                FsClient = fsClient;
                 return fsClient;
             }
         }
