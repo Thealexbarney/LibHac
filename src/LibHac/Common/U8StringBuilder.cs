@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace LibHac.Common
 {
@@ -13,7 +14,12 @@ namespace LibHac.Common
         public Span<byte> Buffer { get; }
         public int Length { get; private set; }
         public bool Overflowed { get; private set; }
-        public readonly int Capacity => Buffer.Length - NullTerminatorLength;
+
+        public readonly int Capacity
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Buffer.Length - NullTerminatorLength;
+        }
 
         public U8StringBuilder(Span<byte> buffer)
         {
@@ -61,46 +67,59 @@ namespace LibHac.Common
             AddNullTerminator();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void AppendFormatInternal(byte value, char format = 'G', byte precision = 255) =>
             AppendFormatUInt64(value, format, precision);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void AppendFormatInternal(sbyte value, char format = 'G', byte precision = 255) =>
             AppendFormatInt64(value, 0xff, format, precision);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void AppendFormatInternal(ushort value, char format = 'G', byte precision = 255) =>
             AppendFormatUInt64(value, format, precision);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void AppendFormatInternal(short value, char format = 'G', byte precision = 255) =>
             AppendFormatInt64(value, 0xffff, format, precision);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void AppendFormatInternal(uint value, char format = 'G', byte precision = 255) =>
             AppendFormatUInt64(value, format, precision);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void AppendFormatInternal(int value, char format = 'G', byte precision = 255) =>
             AppendFormatInt64(value, 0xffffff, format, precision);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void AppendFormatInternal(ulong value, char format = 'G', byte precision = 255) =>
             AppendFormatUInt64(value, format, precision);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void AppendFormatInternal(long value, char format = 'G', byte precision = 255) =>
             AppendFormatInt64(value, 0xffffffff, format, precision);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void AppendFormatInternal(float value, char format = 'G', byte precision = 255) =>
             AppendFormatFloat(value, format, precision);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void AppendFormatInternal(double value, char format = 'G', byte precision = 255) =>
             AppendFormatDouble(value, format, precision);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private readonly bool HasCapacity(int requiredCapacity)
         {
             return requiredCapacity <= Capacity;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private readonly bool HasAdditionalCapacity(int requiredAdditionalCapacity)
         {
             return HasCapacity(Length + requiredAdditionalCapacity);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AddNullTerminator()
         {
             Buffer[Length] = 0;
@@ -202,18 +221,21 @@ namespace LibHac.Common
 
     public static class U8StringBuilderExtensions
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref U8StringBuilder Append(this ref U8StringBuilder sb, ReadOnlySpan<byte> value)
         {
             sb.AppendInternal(value);
             return ref sb;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref U8StringBuilder Append(this ref U8StringBuilder sb, byte value)
         {
             sb.AppendInternal(value);
             return ref sb;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, byte value, char format = 'G',
             byte precision = 255)
         {
@@ -221,6 +243,7 @@ namespace LibHac.Common
             return ref sb;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, sbyte value, char format = 'G',
             byte precision = 255)
         {
@@ -228,6 +251,7 @@ namespace LibHac.Common
             return ref sb;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, ushort value, char format = 'G',
             byte precision = 255)
         {
@@ -235,6 +259,7 @@ namespace LibHac.Common
             return ref sb;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, short value, char format = 'G',
             byte precision = 255)
         {
@@ -242,6 +267,7 @@ namespace LibHac.Common
             return ref sb;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, uint value, char format = 'G',
             byte precision = 255)
         {
@@ -249,6 +275,7 @@ namespace LibHac.Common
             return ref sb;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, int value, char format = 'G',
             byte precision = 255)
         {
@@ -256,6 +283,7 @@ namespace LibHac.Common
             return ref sb;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, ulong value, char format = 'G',
             byte precision = 255)
         {
@@ -263,6 +291,7 @@ namespace LibHac.Common
             return ref sb;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, long value, char format = 'G',
             byte precision = 255)
         {
@@ -270,6 +299,7 @@ namespace LibHac.Common
             return ref sb;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, float value, char format = 'G',
             byte precision = 255)
         {
@@ -277,6 +307,7 @@ namespace LibHac.Common
             return ref sb;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, double value, char format = 'G',
             byte precision = 255)
         {
