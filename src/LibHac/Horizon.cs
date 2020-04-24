@@ -20,6 +20,13 @@ namespace LibHac
             ServiceManager = new ServiceManager(this);
         }
 
+        public Horizon(ITimeSpanGenerator timer, FileSystemServer fsServer)
+        {
+            Time = timer ?? new StopWatchTimeSpanGenerator();
+            FileSystemServer = fsServer;
+            ServiceManager = new ServiceManager(this);
+        }
+
         private Result OpenFileSystemClient(out FileSystemClient client)
         {
             if (FileSystemServer is null)
