@@ -1,5 +1,5 @@
-﻿using LibHac.Bcat.Detail.Ipc;
-using LibHac.Ncm;
+﻿using LibHac.Arp;
+using LibHac.Bcat.Detail.Ipc;
 
 namespace LibHac.Bcat.Detail.Service
 {
@@ -8,29 +8,44 @@ namespace LibHac.Bcat.Detail.Service
         private BcatServer Server { get; }
 
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
-        private BcatServiceType ServiceType { get; }
+        private string ServiceName { get; }
         private AccessControl AccessControl { get; }
 
-        public ServiceCreator(BcatServer server, BcatServiceType type, AccessControl accessControl)
+        public ServiceCreator(BcatServer server, string serviceName, AccessControl accessControl)
         {
             Server = server;
-            ServiceType = type;
+            ServiceName = serviceName;
             AccessControl = accessControl;
         }
 
-        public Result CreateDeliveryCacheStorageServiceWithApplicationId(out IDeliveryCacheStorageService service,
-            TitleId applicationId)
+        public Result CreateDeliveryCacheStorageService(out IDeliveryCacheStorageService service, ulong processId)
         {
-            service = default;
+            Result rc = Server.Hos.Arp.GetApplicationLaunchProperty(out ApplicationLaunchProperty launchProperty,
+                processId);
 
-            if (!AccessControl.HasFlag(AccessControl.Bit2))
+            if (rc.IsFailure())
+            {
+                service = default;
+                return ResultBcat.NotFound.LogConverted(rc);
+            }
+
+            return CreateDeliveryCacheStorageServiceImpl(out service, launchProperty.ApplicationId);
+        }
+
+        public Result CreateDeliveryCacheStorageServiceWithApplicationId(out IDeliveryCacheStorageService service,
+            ApplicationId applicationId)
+        {
+            if (!AccessControl.HasFlag(AccessControl.MountOthersDeliveryCacheStorage))
+            {
+                service = default;
                 return ResultBcat.PermissionDenied.Log();
+            }
 
             return CreateDeliveryCacheStorageServiceImpl(out service, applicationId);
         }
 
         private Result CreateDeliveryCacheStorageServiceImpl(out IDeliveryCacheStorageService service,
-            TitleId applicationId)
+            ApplicationId applicationId)
         {
             service = default;
 

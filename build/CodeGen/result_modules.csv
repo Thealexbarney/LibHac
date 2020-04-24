@@ -1,7 +1,9 @@
 Name,Index
 Fs,2
 Loader,9
+Sf,10
 Kvdb,20
+Sm,21
 Sdmmc,24
 Bcat,122
 LibHac,428

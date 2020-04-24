@@ -1,38 +1,26 @@
-﻿using LibHac.Bcat;
-using LibHac.Bcat.Detail.Ipc;
-using LibHac.Common;
+﻿using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsService;
 using LibHac.FsService.Creators;
+using LibHac.Sm;
 
 namespace LibHac
 {
     public class Horizon
     {
         internal ITimeSpanGenerator Time { get; }
-        public FileSystemServer FileSystemServer { get; private set; }
-        public BcatServer BcatServer { get; private set; }
+        private FileSystemServer FileSystemServer { get; set; }
+        internal ServiceManager ServiceManager { get; }
 
         private readonly object _initLocker = new object();
 
         public Horizon(ITimeSpanGenerator timer)
         {
             Time = timer ?? new StopWatchTimeSpanGenerator();
+            ServiceManager = new ServiceManager(this);
         }
 
-        public Result OpenFileSystemProxyService(out IFileSystemProxy service)
-        {
-            if (FileSystemServer is null)
-            {
-                service = default;
-                return ResultLibHac.ServiceNotInitialized.Log();
-            }
-
-            service = FileSystemServer.CreateFileSystemProxyService();
-            return Result.Success;
-        }
-
-        public Result OpenFileSystemClient(out FileSystemClient client)
+        private Result OpenFileSystemClient(out FileSystemClient client)
         {
             if (FileSystemServer is null)
             {
@@ -44,32 +32,17 @@ namespace LibHac
             return Result.Success;
         }
 
-        public Result OpenBcatUService(out IServiceCreator service) => OpenBcatService(out service, BcatServiceType.BcatU);
-        public Result OpenBcatSService(out IServiceCreator service) => OpenBcatService(out service, BcatServiceType.BcatS);
-        public Result OpenBcatMService(out IServiceCreator service) => OpenBcatService(out service, BcatServiceType.BcatM);
-        public Result OpenBcatAService(out IServiceCreator service) => OpenBcatService(out service, BcatServiceType.BcatA);
-
-        private Result OpenBcatService(out IServiceCreator service, BcatServiceType type)
+        public Result CreateHorizonClient(out HorizonClient client)
         {
-            if (BcatServer is null)
+            Result rc = OpenFileSystemClient(out FileSystemClient fsClient);
+            if (rc.IsFailure())
             {
-                service = default;
-                return ResultLibHac.ServiceNotInitialized.Log();
+                client = default;
+                return rc;
             }
 
-            return BcatServer.GetServiceCreator(out service, type);
-        }
-
-        public void InitializeBcatServer()
-        {
-            if (BcatServer != null) return;
-
-            lock (_initLocker)
-            {
-                if (BcatServer != null) return;
-
-                BcatServer = new BcatServer(this);
-            }
+            client = new HorizonClient(this, fsClient);
+            return Result.Success;
         }
 
         public void InitializeFileSystemServer(FileSystemCreators fsCreators, IDeviceOperator deviceOperator)

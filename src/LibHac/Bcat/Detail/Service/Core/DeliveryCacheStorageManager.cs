@@ -159,6 +159,7 @@ namespace LibHac.Bcat.Detail.Service.Core
 
         public void GetPassphrasePath(Span<byte> pathBuffer, ulong applicationId)
         {
+            // returns "mount:/passphrase.bin"
             lock (_locker)
             {
                 var sb = new U8StringBuilder(pathBuffer);
@@ -169,6 +170,7 @@ namespace LibHac.Bcat.Detail.Service.Core
 
         public void GetDeliveryListPath(Span<byte> pathBuffer, ulong applicationId)
         {
+            // returns "mount:/list.msgpack"
             lock (_locker)
             {
                 var sb = new U8StringBuilder(pathBuffer);
@@ -179,6 +181,7 @@ namespace LibHac.Bcat.Detail.Service.Core
 
         public void GetEtagFilePath(Span<byte> pathBuffer, ulong applicationId)
         {
+            // returns "mount:/etag.bin"
             lock (_locker)
             {
                 var sb = new U8StringBuilder(pathBuffer);
@@ -189,6 +192,7 @@ namespace LibHac.Bcat.Detail.Service.Core
 
         public void GetNaRequiredPath(Span<byte> pathBuffer, ulong applicationId)
         {
+            // returns "mount:/na_required"
             lock (_locker)
             {
                 var sb = new U8StringBuilder(pathBuffer);
@@ -199,6 +203,7 @@ namespace LibHac.Bcat.Detail.Service.Core
 
         public void GetIndexLockPath(Span<byte> pathBuffer, ulong applicationId)
         {
+            // returns "mount:/index.lock"
             lock (_locker)
             {
                 var sb = new U8StringBuilder(pathBuffer);
@@ -210,6 +215,7 @@ namespace LibHac.Bcat.Detail.Service.Core
         public void GetFilePath(Span<byte> pathBuffer, ulong applicationId, ref DirectoryName directoryName,
             ref FileName fileName)
         {
+            // returns "mount:/directories/%s/files/%s", directoryName, fileName
             lock (_locker)
             {
                 var sb = new U8StringBuilder(pathBuffer);
@@ -224,6 +230,7 @@ namespace LibHac.Bcat.Detail.Service.Core
 
         public void GetFilesMetaPath(Span<byte> pathBuffer, ulong applicationId, ref DirectoryName directoryName)
         {
+            // returns "mount:/directories/%s/files.meta", directoryName
             lock (_locker)
             {
                 var sb = new U8StringBuilder(pathBuffer);
@@ -237,6 +244,7 @@ namespace LibHac.Bcat.Detail.Service.Core
 
         public void GetDirectoriesPath(Span<byte> pathBuffer, ulong applicationId)
         {
+            // returns "mount:/directories"
             lock (_locker)
             {
                 var sb = new U8StringBuilder(pathBuffer);
@@ -247,6 +255,7 @@ namespace LibHac.Bcat.Detail.Service.Core
 
         public void GetDirectoryPath(Span<byte> pathBuffer, ulong applicationId, ref DirectoryName directoryName)
         {
+            // returns "mount:/directories/%s", directoryName
             lock (_locker)
             {
                 var sb = new U8StringBuilder(pathBuffer);
@@ -259,6 +268,7 @@ namespace LibHac.Bcat.Detail.Service.Core
 
         public void GetDirectoriesMetaPath(Span<byte> pathBuffer, ulong applicationId)
         {
+            // returns "mount:/directories.meta"
             lock (_locker)
             {
                 var sb = new U8StringBuilder(pathBuffer);
@@ -304,9 +314,11 @@ namespace LibHac.Bcat.Detail.Service.Core
 
         private int FindEntry(ulong applicationId)
         {
-            for (int i = 0; i < Entries.Length; i++)
+            Entry[] entries = Entries;
+
+            for (int i = 0; i < entries.Length; i++)
             {
-                if (Entries[i].ApplicationId == applicationId)
+                if (entries[i].ApplicationId == applicationId)
                 {
                     return i;
                 }
