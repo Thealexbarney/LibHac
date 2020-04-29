@@ -59,17 +59,17 @@ namespace hactoolnet
                 using (var logger = new ProgressBar())
                 {
                     ctx.Logger = logger;
-                    ctx.Horizon = new Horizon(new StopWatchTimeSpanGenerator());
+                    ctx.FsClient = new FileSystemClient(new StopWatchTimeSpanGenerator());
 
                     if (ctx.Options.AccessLog != null)
                     {
                         logWriter = new StreamWriter(ctx.Options.AccessLog);
                         var accessLog = new TextWriterAccessLog(logWriter);
 
-                        ctx.Horizon.Fs.SetAccessLogTarget(AccessLogTarget.All);
-                        ctx.Horizon.Fs.SetGlobalAccessLogMode(GlobalAccessLogMode.Log);
+                        ctx.FsClient.SetAccessLogTarget(AccessLogTarget.All);
+                        ctx.FsClient.SetGlobalAccessLogMode(GlobalAccessLogMode.Log);
 
-                        ctx.Horizon.Fs.SetAccessLogObject(accessLog);
+                        ctx.FsClient.SetAccessLogObject(accessLog);
                     }
 
                     if (ctx.Options.ResultLog != null)

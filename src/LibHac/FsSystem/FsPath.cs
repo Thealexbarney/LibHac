@@ -26,9 +26,10 @@ namespace LibHac.FsSystem
         {
             fsPath = new FsPath();
 
-            U8StringBuilder builder = new U8StringBuilder(fsPath.Str).Append(path);
+            var sb = new U8StringBuilder(fsPath.Str);
+            bool overflowed = sb.Append(path).Overflowed;
 
-            return builder.Overflowed ? ResultFs.TooLongPath.Log() : Result.Success;
+            return overflowed ? ResultFs.TooLongPath.Log() : Result.Success;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

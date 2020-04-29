@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Buffers;
+using System.Buffers.Text;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace LibHac.Common
 {
@@ -8,18 +11,20 @@ namespace LibHac.Common
     {
         private const int NullTerminatorLength = 1;
 
-        private readonly Span<byte> _buffer;
-        private int _length;
-
+        public Span<byte> Buffer { get; }
+        public int Length { get; private set; }
         public bool Overflowed { get; private set; }
-        public readonly int Length => _length;
-        public readonly int Capacity => _buffer.Length - NullTerminatorLength;
-        public readonly Span<byte> Buffer => _buffer;
+
+        public readonly int Capacity
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Buffer.Length - NullTerminatorLength;
+        }
 
         public U8StringBuilder(Span<byte> buffer)
         {
-            _buffer = buffer;
-            _length = 0;
+            Buffer = buffer;
+            Length = 0;
             Overflowed = false;
 
             ThrowIfBufferLengthIsZero();
@@ -27,62 +32,287 @@ namespace LibHac.Common
             AddNullTerminator();
         }
 
-        public U8StringBuilder Append(ReadOnlySpan<byte> value)
+        // These functions are internal so they can be called by the extension methods
+        // in U8StringBuilderExtensions. It's not an ideal setup, but it allows append
+        // calls to be chained without accidentally creating a copy of the U8StringBuilder.
+        internal void AppendInternal(ReadOnlySpan<byte> value)
         {
-            if (Overflowed) return this;
+            if (Overflowed) return;
 
             int valueLength = StringUtils.GetLength(value);
 
             if (!HasAdditionalCapacity(valueLength))
             {
                 Overflowed = true;
-                return this;
+                return;
             }
 
-            value.Slice(0, valueLength).CopyTo(_buffer.Slice(_length));
-            _length += valueLength;
+            value.Slice(0, valueLength).CopyTo(Buffer.Slice(Length));
+            Length += valueLength;
             AddNullTerminator();
-
-            return this;
         }
 
-        public U8StringBuilder Append(byte value)
+        internal void AppendInternal(byte value)
         {
-            if (Overflowed) return this;
+            if (Overflowed) return;
 
             if (!HasAdditionalCapacity(1))
             {
                 Overflowed = true;
-                return this;
+                return;
             }
 
-            _buffer[_length] = value;
-            _length++;
+            Buffer[Length] = value;
+            Length++;
             AddNullTerminator();
-
-            return this;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void AppendFormatInternal(byte value, char format = 'G', byte precision = 255) =>
+            AppendFormatUInt64(value, format, precision);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void AppendFormatInternal(sbyte value, char format = 'G', byte precision = 255) =>
+            AppendFormatInt64(value, 0xff, format, precision);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void AppendFormatInternal(ushort value, char format = 'G', byte precision = 255) =>
+            AppendFormatUInt64(value, format, precision);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void AppendFormatInternal(short value, char format = 'G', byte precision = 255) =>
+            AppendFormatInt64(value, 0xffff, format, precision);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void AppendFormatInternal(uint value, char format = 'G', byte precision = 255) =>
+            AppendFormatUInt64(value, format, precision);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void AppendFormatInternal(int value, char format = 'G', byte precision = 255) =>
+            AppendFormatInt64(value, 0xffffff, format, precision);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void AppendFormatInternal(ulong value, char format = 'G', byte precision = 255) =>
+            AppendFormatUInt64(value, format, precision);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void AppendFormatInternal(long value, char format = 'G', byte precision = 255) =>
+            AppendFormatInt64(value, 0xffffffff, format, precision);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void AppendFormatInternal(float value, char format = 'G', byte precision = 255) =>
+            AppendFormatFloat(value, format, precision);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void AppendFormatInternal(double value, char format = 'G', byte precision = 255) =>
+            AppendFormatDouble(value, format, precision);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private readonly bool HasCapacity(int requiredCapacity)
         {
             return requiredCapacity <= Capacity;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private readonly bool HasAdditionalCapacity(int requiredAdditionalCapacity)
         {
-            return HasCapacity(_length + requiredAdditionalCapacity);
+            return HasCapacity(Length + requiredAdditionalCapacity);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AddNullTerminator()
         {
-            _buffer[_length] = 0;
+            Buffer[Length] = 0;
         }
 
         private readonly void ThrowIfBufferLengthIsZero()
         {
-            if (_buffer.Length == 0) throw new ArgumentException("Buffer length must be greater than 0.");
+            if (Buffer.Length == 0) throw new ArgumentException("Buffer length must be greater than 0.");
         }
 
-        public override readonly string ToString() => StringUtils.Utf8ZToString(_buffer);
+        private void AppendFormatInt64(long value, ulong mask, char format, byte precision)
+        {
+            if (Overflowed) return;
+
+            // Remove possible sign extension if needed
+            if (mask == 'x' | mask == 'X')
+            {
+                value &= (long)mask;
+            }
+
+            // Exclude the null terminator from the buffer because Utf8Formatter doesn't handle it
+            Span<byte> availableBuffer = Buffer.Slice(Length, Capacity - Length);
+
+            bool bufferLargeEnough = Utf8Formatter.TryFormat(value, availableBuffer, out int bytesWritten,
+                new StandardFormat(format, precision));
+
+            if (!bufferLargeEnough)
+            {
+                Overflowed = true;
+                return;
+            }
+
+            Length += bytesWritten;
+            AddNullTerminator();
+        }
+
+        private void AppendFormatUInt64(ulong value, char format, byte precision)
+        {
+            if (Overflowed) return;
+
+            // Exclude the null terminator from the buffer because Utf8Formatter doesn't handle it
+            Span<byte> availableBuffer = Buffer.Slice(Length, Capacity - Length);
+
+            bool bufferLargeEnough = Utf8Formatter.TryFormat(value, availableBuffer, out int bytesWritten,
+                new StandardFormat(format, precision));
+
+            if (!bufferLargeEnough)
+            {
+                Overflowed = true;
+                return;
+            }
+
+            Length += bytesWritten;
+            AddNullTerminator();
+        }
+
+        private void AppendFormatFloat(float value, char format, byte precision)
+        {
+            if (Overflowed) return;
+
+            // Exclude the null terminator from the buffer because Utf8Formatter doesn't handle it
+            Span<byte> availableBuffer = Buffer.Slice(Length, Capacity - Length);
+
+            bool bufferLargeEnough = Utf8Formatter.TryFormat(value, availableBuffer, out int bytesWritten,
+                new StandardFormat(format, precision));
+
+            if (!bufferLargeEnough)
+            {
+                Overflowed = true;
+                return;
+            }
+
+            Length += bytesWritten;
+            AddNullTerminator();
+        }
+
+        private void AppendFormatDouble(double value, char format, byte precision)
+        {
+            if (Overflowed) return;
+
+            // Exclude the null terminator from the buffer because Utf8Formatter doesn't handle it
+            Span<byte> availableBuffer = Buffer.Slice(Length, Capacity - Length);
+
+            bool bufferLargeEnough = Utf8Formatter.TryFormat(value, availableBuffer, out int bytesWritten,
+                new StandardFormat(format, precision));
+
+            if (!bufferLargeEnough)
+            {
+                Overflowed = true;
+                return;
+            }
+
+            Length += bytesWritten;
+            AddNullTerminator();
+        }
+
+        public override readonly string ToString() => StringUtils.Utf8ZToString(Buffer);
+    }
+
+    public static class U8StringBuilderExtensions
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref U8StringBuilder Append(this ref U8StringBuilder sb, ReadOnlySpan<byte> value)
+        {
+            sb.AppendInternal(value);
+            return ref sb;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref U8StringBuilder Append(this ref U8StringBuilder sb, byte value)
+        {
+            sb.AppendInternal(value);
+            return ref sb;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, byte value, char format = 'G',
+            byte precision = 255)
+        {
+            sb.AppendFormatInternal(value, format, precision);
+            return ref sb;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, sbyte value, char format = 'G',
+            byte precision = 255)
+        {
+            sb.AppendFormatInternal(value, format, precision);
+            return ref sb;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, ushort value, char format = 'G',
+            byte precision = 255)
+        {
+            sb.AppendFormatInternal(value, format, precision);
+            return ref sb;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, short value, char format = 'G',
+            byte precision = 255)
+        {
+            sb.AppendFormatInternal(value, format, precision);
+            return ref sb;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, uint value, char format = 'G',
+            byte precision = 255)
+        {
+            sb.AppendFormatInternal(value, format, precision);
+            return ref sb;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, int value, char format = 'G',
+            byte precision = 255)
+        {
+            sb.AppendFormatInternal(value, format, precision);
+            return ref sb;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, ulong value, char format = 'G',
+            byte precision = 255)
+        {
+            sb.AppendFormatInternal(value, format, precision);
+            return ref sb;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, long value, char format = 'G',
+            byte precision = 255)
+        {
+            sb.AppendFormatInternal(value, format, precision);
+            return ref sb;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, float value, char format = 'G',
+            byte precision = 255)
+        {
+            sb.AppendFormatInternal(value, format, precision);
+            return ref sb;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref U8StringBuilder AppendFormat(this ref U8StringBuilder sb, double value, char format = 'G',
+            byte precision = 255)
+        {
+            sb.AppendFormatInternal(value, format, precision);
+            return ref sb;
+        }
     }
 }

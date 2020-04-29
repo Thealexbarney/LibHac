@@ -268,14 +268,64 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 
 9,200,,InternalError,
 
+10,1,,NotSupported,
+10,3,,PreconditionViolation,
+
+# These should be in the sf::cmif namespace
+10,202,,InvalidHeaderSize,
+10,211,,InvalidInHeader,
+10,221,,UnknownCommandId,
+10,232,,InvalidOutRawSize,
+10,235,,InvalidNumInObjects,
+10,236,,InvalidNumOutObjects,
+10,239,,InvalidInObject,
+10,261,,TargetNotFound,
+10,301,,OutOfDomainEntries,
+
+# These should be in the sf::impl namespace
+10,800,899,RequestContextChanged,
+10,801,809,RequestInvalidated,
+10,802,,RequestInvalidatedByUser,
+
+10,811,819,RequestDeferred,
+10,812,,RequestDeferredByUser,
+
 20,1,,TooLargeKeyOrDbFull,
 20,2,,KeyNotFound,
 20,4,,AllocationFailed,
 20,5,,InvalidKeyValue,
 20,6,,BufferInsufficient,
 
+21,1,,OutOfProcesses,
+21,2,,InvalidClient,
+21,3,,OutOfSessions,
+21,4,,AlreadyRegistered,
+21,5,,OutOfServices,
+21,6,,InvalidServiceName,
+21,7,,NotRegistered,
+21,8,,NotAllowed,
+21,9,,TooLargeAccessControl,
+
 24,1,,DeviceNotFound,
 24,4,,DeviceAsleep,
+
+122,1,,InvalidArgument,
+122,2,,NotFound,
+122,3,,TargetLocked,
+122,6,,AlreadyOpen,
+122,7,,NotOpen,
+122,9,,ServiceOpenLimitReached,
+122,10,,SaveDataNotFound,
+
+122,31,,NetworkServiceAccountNotAvailable,
+
+122,80,,PassphrasePathNotFound,
+
+122,90,,PermissionDenied,
+122,91,,AllocationFailed,
+
+122,204,,InvalidDeliveryCacheStorageFile,
+122,205,,StorageOpenLimitReached,
 
 123,0,4999,SslService,
 
@@ -306,6 +356,8 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 428,2,,NullArgument,
 428,3,,ArgumentOutOfRange,
 428,4,,BufferTooSmall,
+
+428,51,,ServiceNotInitialized,
 
 428,1000,1999,InvalidData,
 428,1001,1019,InvalidKip,
