@@ -78,7 +78,10 @@ namespace LibHac.Loader
             // Uncompress if necessary.
             if (isCompressed)
             {
-                Lz4.Decompress(buffer.Slice((int)loadAddress), buffer);
+                // todo: Fix in-place decompression
+                // Lz4.Decompress(buffer.Slice((int)loadAddress), buffer);
+                byte[] decomp = Lz4.Decompress(buffer.Slice((int)loadAddress).ToArray(), buffer.Length);
+                decomp.CopyTo(buffer);
             }
 
             // Check hash if necessary.
