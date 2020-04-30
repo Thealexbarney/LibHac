@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using LibHac.Bcat.Detail.Ipc;
+using LibHac.Bcat.Detail.Service.Core;
+using LibHac.Common;
 
 namespace LibHac.Bcat.Detail.Service
 {
@@ -37,7 +39,7 @@ namespace LibHac.Bcat.Detail.Service
                 return Result.Success;
             }
         }
-        
+
         public Result CreateDirectoryService(out IDeliveryCacheDirectoryService service)
         {
             lock (Locker)
@@ -56,7 +58,33 @@ namespace LibHac.Bcat.Detail.Service
 
         public Result EnumerateDeliveryCacheDirectory(out int namesRead, Span<DirectoryName> nameBuffer)
         {
-            throw new NotImplementedException();
+            lock (Locker)
+            {
+                namesRead = default;
+
+                var metaReader = new DeliveryCacheDirectoryMetaAccessor(Server);
+                Result rc = metaReader.ReadApplicationDirectoryMeta(ApplicationId, true);
+                if (rc.IsFailure()) return rc;
+
+                int i;
+                for (i = 0; i < nameBuffer.Length; i++)
+                {
+                    rc = metaReader.GetEntry(out DeliveryCacheDirectoryMetaEntry entry, i);
+
+                    if (rc.IsFailure())
+                    {
+                        if (!ResultBcat.NotFound.Includes(rc))
+                            return rc;
+
+                        break;
+                    }
+
+                    StringUtils.Copy(nameBuffer[i].Bytes, entry.Name.Bytes);
+                }
+
+                namesRead = i;
+                return Result.Success;
+            }
         }
 
         internal void NotifyCloseFile()
