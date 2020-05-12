@@ -4,6 +4,14 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
+    /// <summary>
+    /// An <see cref="IFileSystem"/> that provides transactional commits for savedata on top of another base IFileSystem.
+    /// </summary>
+    /// <remarks>
+    /// Transactional commits should be atomic as long as the <see cref="IFileSystem.RenameDirectory"/> function of the
+    /// underlying <see cref="IFileSystem"/> is atomic.
+    /// This class is based on nn::fssystem::DirectorySaveDataFileSystem in SDK 10.4.0 used in FS 10.0.0
+    /// </remarks>
     public class DirectorySaveDataFileSystem : FileSystemBase
     {
         private const int IdealWorkBufferSize = 0x100000; // 1 MiB
@@ -322,6 +330,38 @@ namespace LibHac.FsSystem
                 return Result.Success;
 
             return Initialize(IsPersistentSaveData, CanCommitProvisionally);
+        }
+
+        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, U8Span path)
+        {
+            freeSpace = default;
+
+            FsPath fullPath;
+            unsafe { _ = &fullPath; } // workaround for CS0165
+
+            Result rc = ResolveFullPath(fullPath.Str, path);
+            if (rc.IsFailure()) return rc;
+
+            lock (Locker)
+            {
+                return BaseFs.GetFreeSpaceSize(out freeSpace, fullPath);
+            }
+        }
+
+        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, U8Span path)
+        {
+            totalSpace = default;
+
+            FsPath fullPath;
+            unsafe { _ = &fullPath; } // workaround for CS0165
+
+            Result rc = ResolveFullPath(fullPath.Str, path);
+            if (rc.IsFailure()) return rc;
+
+            lock (Locker)
+            {
+                return BaseFs.GetTotalSpaceSize(out totalSpace, fullPath);
+            }
         }
 
         private Result ResolveFullPath(Span<byte> outPath, U8Span relativePath)
