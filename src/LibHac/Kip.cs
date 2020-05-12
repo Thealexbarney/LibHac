@@ -2,6 +2,7 @@
 using System.IO;
 using LibHac.Fs;
 using LibHac.FsSystem;
+using LibHac.Loader;
 
 namespace LibHac
 {
@@ -171,7 +172,7 @@ namespace LibHac
 
     public class Ini1
     {
-        public Kip[] Kips { get; }
+        public KipReader[] Kips { get; }
 
         public string Magic { get; }
         public int Size { get; }
@@ -194,13 +195,15 @@ namespace LibHac
             Size = reader.ReadInt32();
             KipCount = reader.ReadInt32();
 
-            Kips = new Kip[KipCount];
+            Kips = new KipReader[KipCount];
             int offset = 0x10;
 
             for (int i = 0; i < KipCount; i++)
             {
-                Kips[i] = new Kip(Storage.Slice(offset));
-                offset += Kips[i].Size;
+                Kips[i] = new KipReader();
+                Kips[i].Initialize(Storage.Slice(offset)).ThrowIfFailure();
+
+                offset += Kips[i].GetUncompressedSize();
             }
         }
     }

@@ -1,6 +1,5 @@
 ﻿using System.IO;
 using LibHac;
-using LibHac.Fs;
 using LibHac.FsSystem;
 using LibHac.Loader;
 
@@ -10,7 +9,7 @@ namespace hactoolnet
     {
         public static void ProcessKip1(Context ctx)
         {
-            using (var file = new LocalFile(ctx.Options.InFile, OpenMode.Read))
+            using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
                 var kip = new KipReader();
                 kip.Initialize(file).ThrowIfFailure();
@@ -38,9 +37,13 @@ namespace hactoolnet
                 {
                     Directory.CreateDirectory(outDir);
 
-                    foreach (Kip kip in ini1.Kips)
+                    foreach (KipReader kip in ini1.Kips)
                     {
-                        kip.OpenRawFile().WriteAllBytes(Path.Combine(outDir, $"{kip.Header.Name}.kip1"));
+                        var uncompressed = new byte[kip.GetUncompressedSize()];
+
+                        kip.ReadUncompressedKip(uncompressed).ThrowIfFailure();
+
+                        File.WriteAllBytes(Path.Combine(outDir, $"{kip.Name.ToString()}.kip1"), uncompressed);
                     }
                 }
             }
