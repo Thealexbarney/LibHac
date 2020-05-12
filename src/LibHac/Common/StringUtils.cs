@@ -139,10 +139,10 @@ namespace LibHac.Common
         /// no null terminating byte will be written to the end of the string.</remarks>
         public static int Concat(Span<byte> dest, ReadOnlySpan<byte> source)
         {
-            return Concat(dest, GetLength(dest), source);
+            return Concat(dest, source, GetLength(dest));
         }
 
-        public static int Concat(Span<byte> dest, int destLength, ReadOnlySpan<byte> source)
+        public static int Concat(Span<byte> dest, ReadOnlySpan<byte> source, int destLength)
         {
             int iDest = destLength;
 

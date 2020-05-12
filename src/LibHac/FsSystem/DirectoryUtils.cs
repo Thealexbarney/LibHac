@@ -43,7 +43,7 @@ namespace LibHac.FsSystem
 
                 FsPath dstPath = default;
                 int dstPathLen = StringUtils.Concat(dstPath.Str, destParentPath);
-                dstPathLen = StringUtils.Concat(dstPath.Str, dstPathLen, dirEntry.Name);
+                dstPathLen = StringUtils.Concat(dstPath.Str, dirEntry.Name, dstPathLen);
 
                 if (dstPathLen > FsPath.MaxLength)
                 {
