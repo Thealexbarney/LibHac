@@ -9,6 +9,7 @@ using LibHac.FsSystem;
 using LibHac.FsSystem.NcaUtils;
 using LibHac.FsSystem.Save;
 using LibHac.Ncm;
+using LibHac.Ns;
 
 namespace LibHac
 {
@@ -195,13 +196,16 @@ namespace LibHac
                 IFileSystem romfs = title.ControlNca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
                 romfs.OpenFile(out IFile control, "/control.nacp".ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
-                title.Control = new Nacp(control.AsStream());
-
-                foreach (NacpDescription desc in title.Control.Descriptions)
+                using (control)
                 {
-                    if (!string.IsNullOrWhiteSpace(desc.Title))
+                    control.Read(out _, 0, title.Control.ByteSpan).ThrowIfFailure();
+                }
+
+                foreach (ref ApplicationControlTitle desc in title.Control.Value.Titles)
+                {
+                    if (!desc.Name.IsEmpty())
                     {
-                        title.Name = desc.Title;
+                        title.Name = desc.Name.ToString();
                         break;
                     }
                 }
@@ -320,7 +324,7 @@ namespace LibHac
         public Cnmt Metadata { get; internal set; }
 
         public string Name { get; internal set; }
-        public Nacp Control { get; internal set; }
+        public BlitStruct<ApplicationControlProperty> Control { get; } = new BlitStruct<ApplicationControlProperty>(1);
         public SwitchFsNca MetaNca { get; internal set; }
         public SwitchFsNca MainNca { get; internal set; }
         public SwitchFsNca ControlNca { get; internal set; }
@@ -339,7 +343,7 @@ namespace LibHac
 
         public ulong TitleId { get; private set; }
         public TitleVersion Version { get; private set; }
-        public Nacp Nacp { get; private set; }
+        public BlitStruct<ApplicationControlProperty> Nacp { get; private set; } = new BlitStruct<ApplicationControlProperty>(1);
 
         public string Name { get; private set; }
         public string DisplayVersion { get; private set; }
@@ -374,14 +378,14 @@ namespace LibHac
             {
                 Name = Patch.Name;
                 Version = Patch.Version;
-                DisplayVersion = Patch.Control?.DisplayVersion ?? "";
+                DisplayVersion = Patch.Control.Value.DisplayVersion.ToString();
                 Nacp = Patch.Control;
             }
             else if (Main != null)
             {
                 Name = Main.Name;
                 Version = Main.Version;
-                DisplayVersion = Main.Control?.DisplayVersion ?? "";
+                DisplayVersion = Main.Control.Value.DisplayVersion.ToString();
                 Nacp = Main.Control;
             }
             else

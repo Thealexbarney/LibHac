@@ -9,6 +9,7 @@ using LibHac.Fs;
 using LibHac.FsSystem;
 using LibHac.FsSystem.NcaUtils;
 using LibHac.FsSystem.Save;
+using LibHac.Ns;
 
 namespace hactoolnet
 {
@@ -241,7 +242,7 @@ namespace hactoolnet
                     title.Version?.ToString(),
                     title.Metadata?.Type.ToString(),
                     Util.GetBytesReadable(title.GetSize()),
-                    title.Control?.DisplayVersion,
+                    title.Control.Value.DisplayVersion.ToString(),
                     title.Name);
             }
 
@@ -283,12 +284,17 @@ namespace hactoolnet
                     sb.AppendLine($"DLC: {Util.GetBytesReadable(app.AddOnContent.Sum(x => x.GetSize()))}");
                 }
 
-                if (app.Nacp?.UserTotalSaveDataSize > 0)
-                    sb.AppendLine($"User save: {Util.GetBytesReadable(app.Nacp.UserTotalSaveDataSize)}");
-                if (app.Nacp?.DeviceTotalSaveDataSize > 0)
-                    sb.AppendLine($"System save: {Util.GetBytesReadable(app.Nacp.DeviceTotalSaveDataSize)}");
-                if (app.Nacp?.BcatDeliveryCacheStorageSize > 0)
-                    sb.AppendLine($"BCAT save: {Util.GetBytesReadable(app.Nacp.BcatDeliveryCacheStorageSize)}");
+                ref ApplicationControlProperty nacp = ref app.Nacp.Value;
+
+                long userTotalSaveDataSize = nacp.UserAccountSaveDataSize + nacp.UserAccountSaveDataJournalSize;
+                long deviceTotalSaveDataSize = nacp.DeviceSaveDataSize + nacp.DeviceSaveDataJournalSize;
+
+                if (userTotalSaveDataSize > 0)
+                    sb.AppendLine($"User save: {Util.GetBytesReadable(userTotalSaveDataSize)}");
+                if (deviceTotalSaveDataSize > 0)
+                    sb.AppendLine($"System save: {Util.GetBytesReadable(deviceTotalSaveDataSize)}");
+                if (nacp.BcatDeliveryCacheStorageSize > 0)
+                    sb.AppendLine($"BCAT save: {Util.GetBytesReadable(nacp.BcatDeliveryCacheStorageSize)}");
 
                 sb.AppendLine();
             }
