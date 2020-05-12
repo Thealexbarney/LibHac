@@ -11,7 +11,7 @@ namespace LibHac
     /// </summary>
     [Serializable]
     [DebuggerDisplay("{" + nameof(ToStringWithName) + "(),nq}")]
-    public struct Result : IEquatable<Result>
+    public readonly struct Result : IEquatable<Result>
     {
         private const BaseType SuccessValue = default;
         /// <summary>
@@ -218,7 +218,7 @@ namespace LibHac
         /// <c>public static Result.Base SdCardAccessFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get =&gt; new Result.Base(ModuleFs, 2000, 2499); }</c>
         /// </remarks>
         [DebuggerDisplay("{" + nameof(ToStringWithName) + "(),nq}")]
-        public struct Base
+        public readonly struct Base
         {
             private const int DescriptionEndBitsOffset = ReservedBitsOffset;
             private readonly ulong _value;
