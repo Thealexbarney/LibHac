@@ -6,6 +6,8 @@ namespace LibHac.FsSystem
 {
     public class DirectorySaveDataFileSystem : FileSystemBase
     {
+        private const int IdealWorkBufferSize = 0x100000; // 1 MiB
+
         private ReadOnlySpan<byte> CommittedDirectoryBytes => new[] { (byte)'/', (byte)'0', (byte)'/' };
         private ReadOnlySpan<byte> WorkingDirectoryBytes => new[] { (byte)'/', (byte)'1', (byte)'/' };
         private ReadOnlySpan<byte> SynchronizingDirectoryBytes => new[] { (byte)'/', (byte)'_', (byte)'/' };
@@ -18,15 +20,13 @@ namespace LibHac.FsSystem
         private object Locker { get; } = new object();
         private int OpenWritableFileCount { get; set; }
         private bool IsPersistentSaveData { get; set; }
-
-        // ReSharper disable once UnusedAutoPropertyAccessor.Local
-        private bool IsUserSaveData { get; set; }
+        private bool CanCommitProvisionally { get; set; }
 
         public static Result CreateNew(out DirectorySaveDataFileSystem created, IFileSystem baseFileSystem,
-            bool isPersistentSaveData, bool isUserSaveData)
+            bool isPersistentSaveData, bool canCommitProvisionally)
         {
             var obj = new DirectorySaveDataFileSystem(baseFileSystem);
-            Result rc = obj.Initialize(isPersistentSaveData, isUserSaveData);
+            Result rc = obj.Initialize(isPersistentSaveData, canCommitProvisionally);
 
             if (rc.IsSuccess())
             {
@@ -44,10 +44,10 @@ namespace LibHac.FsSystem
             BaseFs = baseFileSystem;
         }
 
-        private Result Initialize(bool isPersistentSaveData, bool isUserSaveData)
+        private Result Initialize(bool isPersistentSaveData, bool canCommitProvisionally)
         {
             IsPersistentSaveData = isPersistentSaveData;
-            IsUserSaveData = isUserSaveData;
+            CanCommitProvisionally = canCommitProvisionally;
 
             // Ensure the working directory exists
             Result rc = BaseFs.GetEntryType(out _, WorkingDirectoryPath);
@@ -277,7 +277,8 @@ namespace LibHac.FsSystem
         {
             lock (Locker)
             {
-                if (!IsPersistentSaveData) return Result.Success;
+                if (!IsPersistentSaveData)
+                    return Result.Success;
 
                 if (OpenWritableFileCount > 0)
                 {
@@ -285,24 +286,31 @@ namespace LibHac.FsSystem
                     return ResultFs.WriteModeFileNotClosed.Log();
                 }
 
+                Result RenameCommittedDir() => BaseFs.RenameDirectory(CommittedDirectoryPath, SynchronizingDirectoryPath);
+                Result SynchronizeWorkingDir() => SynchronizeDirectory(SynchronizingDirectoryPath, WorkingDirectoryPath);
+                Result RenameSynchronizingDir() => BaseFs.RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath);
+
                 // Get rid of the previous commit by renaming the folder
-                Result rc = BaseFs.RenameDirectory(CommittedDirectoryPath, SynchronizingDirectoryPath);
+                Result rc = Utility.RetryFinitelyForTargetLocked(RenameCommittedDir);
                 if (rc.IsFailure()) return rc;
 
                 // If something goes wrong beyond this point, the commit will be
                 // completed the next time the savedata is opened
 
-                rc = SynchronizeDirectory(SynchronizingDirectoryPath, WorkingDirectoryPath);
+                rc = Utility.RetryFinitelyForTargetLocked(SynchronizeWorkingDir);
                 if (rc.IsFailure()) return rc;
 
-                return BaseFs.RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath);
+                rc = Utility.RetryFinitelyForTargetLocked(RenameSynchronizingDir);
+                if (rc.IsFailure()) return rc;
+
+                return Result.Success;
             }
         }
 
         protected override Result CommitProvisionallyImpl(long commitCount)
         {
-            if (!IsUserSaveData)
-                return ResultFs.UnsupportedOperationIdInPartitionFileSystem.Log();
+            if (!CanCommitProvisionally)
+                return ResultFs.UnsupportedOperationInDirectorySaveDataFileSystem.Log();
 
             return Result.Success;
         }
@@ -313,7 +321,7 @@ namespace LibHac.FsSystem
             if (!IsPersistentSaveData)
                 return Result.Success;
 
-            return Initialize(IsPersistentSaveData, IsUserSaveData);
+            return Initialize(IsPersistentSaveData, CanCommitProvisionally);
         }
 
         private Result ResolveFullPath(Span<byte> outPath, U8Span relativePath)
@@ -322,20 +330,36 @@ namespace LibHac.FsSystem
                 return ResultFs.TooLongPath.Log();
 
             StringUtils.Copy(outPath, WorkingDirectoryBytes);
-            outPath[^1] = StringTraits.NullTerminator;
+            outPath[outPath.Length - 1] = StringTraits.NullTerminator;
 
             return PathTool.Normalize(outPath.Slice(2), out _, relativePath, false, false);
         }
 
-        private Result SynchronizeDirectory(U8Span dest, U8Span src)
+        /// <summary>
+        /// Creates the destination directory if needed and copies the source directory to it.
+        /// </summary>
+        /// <param name="destPath">The path of the destination directory.</param>
+        /// <param name="sourcePath">The path of the source directory.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
+        private Result SynchronizeDirectory(U8Span destPath, U8Span sourcePath)
         {
-            Result rc = BaseFs.DeleteDirectoryRecursively(dest);
+            // Delete destination dir and recreate it.
+            Result rc = BaseFs.DeleteDirectoryRecursively(destPath);
+
+            // Nintendo returns error unconditionally because SynchronizeDirectory is always called in situations
+            // where a PathNotFound error would mean the save directory was in an invalid state.
+            // We'll ignore PathNotFound errors to be more user-friendly to users who might accidentally
+            // put the save directory in an invalid state.
             if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc)) return rc;
 
-            rc = BaseFs.CreateDirectory(dest);
+            rc = BaseFs.CreateDirectory(destPath);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.CopyDirectory(BaseFs, src.ToString(), dest.ToString());
+            // Get a work buffer to work with.
+            using (var buffer = new RentedArray<byte>(IdealWorkBufferSize))
+            {
+                return Utility.CopyDirectoryRecursively(BaseFs, destPath, sourcePath, buffer.Span);
+            }
         }
 
         internal void NotifyCloseWritableFile()

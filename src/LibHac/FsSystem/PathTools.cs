@@ -236,7 +236,7 @@ namespace LibHac.FsSystem
         {
             Debug.Assert(IsNormalized(path));
 
-            int i = path.Length - 1;
+            int i = StringUtils.GetLength(path) - 1;
 
             // A trailing separator should be ignored
             if (path[i] == '/') i--;
@@ -267,10 +267,12 @@ namespace LibHac.FsSystem
         {
             Debug.Assert(IsNormalized(path));
 
-            if (path.Length == 0)
+            int pathLength = StringUtils.GetLength(path);
+
+            if (pathLength == 0)
                 return path;
 
-            int endIndex = path[path.Length - 1] == DirectorySeparator ? path.Length - 1 : path.Length;
+            int endIndex = path[pathLength - 1] == DirectorySeparator ? pathLength - 1 : pathLength;
             int i = endIndex;
 
             while (i >= 1 && path[i - 1] != '/') i--;
