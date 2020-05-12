@@ -22,12 +22,15 @@ namespace LibHac.Tests
 
             foreach (TypeInfo type in assembly.DefinedTypes.Where(x => x.Name.Contains("Result")))
                 foreach (PropertyInfo property in type.DeclaredProperties
-                    .Where(x => x.PropertyType == typeof(Result.Base) && x.GetMethod.IsStatic && x.SetMethod == null))
+                    .Where(x => x.PropertyType == typeof(Result.Base) && x.GetMethod?.IsStatic == true && x.SetMethod == null))
                 {
-                    Result value = ((Result.Base)property.GetValue(null, null)).Value;
+                    object value = property.GetValue(null, null);
+                    if (value is null) continue;
+
+                    Result resultValue = ((Result.Base)value).Value;
                     string name = $"{type.Name}{property.Name}";
 
-                    dict[value] = name;
+                    dict[resultValue] = name;
                 }
 
             return dict;

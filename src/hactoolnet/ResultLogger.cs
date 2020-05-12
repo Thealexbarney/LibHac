@@ -37,7 +37,10 @@ namespace hactoolnet
         public void LogResult(Result result)
         {
             StackTrace st = GetStackTrace();
-            MethodBase method = st.GetFrame(0).GetMethod();
+            MethodBase method = st.GetFrame(0)?.GetMethod();
+
+            if (method is null)
+                return;
 
             // This result from these functions is usually noise because they
             // are frequently used to detect if a file exists
@@ -90,7 +93,11 @@ namespace hactoolnet
 
         private void PrintLogEntry(LogEntry entry)
         {
-            MethodBase method = entry.StackTrace.GetFrame(0).GetMethod();
+            MethodBase method = entry.StackTrace.GetFrame(0)?.GetMethod();
+
+            if (method is null)
+                return;
+
             string methodName = $"{method.DeclaringType?.FullName}.{method.Name}";
 
             bool printStackTrace = PrintStackTrace && !entry.IsConvertedResult;
@@ -189,11 +196,22 @@ namespace hactoolnet
                 IsConvertedResult = isConverted;
                 OriginalResult = originalResult;
 
-                MethodBase method = stackTrace.GetFrame(0).GetMethod();
+                MethodBase method = stackTrace.GetFrame(0)?.GetMethod();
+
+                if (method is null)
+                {
+                    CallingMethod = string.Empty;
+                    StackTraceText = string.Empty;
+                    LineNumber = 0;
+                    TimesCalled = 1;
+
+                    return;
+                }
+
                 CallingMethod = $"{method.DeclaringType?.FullName}.{method.Name}";
 
                 StackTraceText = stackTrace.ToString();
-                LineNumber = stackTrace.GetFrame(0).GetFileLineNumber();
+                LineNumber = stackTrace.GetFrame(0)?.GetFileLineNumber() ?? 0;
                 TimesCalled = 1;
             }
 
