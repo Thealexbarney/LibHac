@@ -20,16 +20,16 @@ namespace LibHac.Tests.Fs
 
         private class DirectorySaveDataFileSystemCreator : IReopenableFileSystemCreator
         {
-            private IFileSystem _baseFileSystem { get; }
+            private IFileSystem BaseFileSystem { get; }
 
             public DirectorySaveDataFileSystemCreator()
             {
-                _baseFileSystem = new InMemoryFileSystem();
+                BaseFileSystem = new InMemoryFileSystem();
             }
 
             public IFileSystem Create()
             {
-                DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, _baseFileSystem, true, true)
+                DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, BaseFileSystem, true, true)
                     .ThrowIfFailure();
 
                 return saveFs;

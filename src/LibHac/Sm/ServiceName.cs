@@ -9,6 +9,8 @@ namespace LibHac.Sm
     {
         private const int MaxLength = 8;
 
+        // The Name should always be assigned in the below Encode method
+        // ReSharper disable once UnassignedReadonlyField
         public readonly ulong Name;
 
         public static ServiceName Encode(ReadOnlySpan<char> name)

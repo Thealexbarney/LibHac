@@ -1,6 +1,4 @@
-﻿using LibHac.Ncm;
-
-namespace LibHac.Bcat.Detail.Ipc
+﻿namespace LibHac.Bcat.Detail.Ipc
 {
     public interface IServiceCreator
     {

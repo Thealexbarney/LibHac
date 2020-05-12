@@ -11,6 +11,7 @@ namespace LibHac.Sm
     // isn't blocked waiting for something better.
     internal class ServiceManager
     {
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         private Horizon Horizon { get; }
         private Dictionary<ServiceName, object> Services { get; } = new Dictionary<ServiceName, object>();
 

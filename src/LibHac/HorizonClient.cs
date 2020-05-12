@@ -7,6 +7,7 @@ namespace LibHac
 {
     public class HorizonClient
     {
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         private Horizon Horizon { get; }
 
         private Lazy<ArpClient> ArpLazy { get; }
