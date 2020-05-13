@@ -23,7 +23,7 @@ namespace LibHac.Fs
             public static Result.Base PathNotFound => new Result.Base(ModuleFs, 1);
             /// <summary>Specified path already exists<br/>Error code: 2002-0002; Inner value: 0x402</summary>
             public static Result.Base PathAlreadyExists => new Result.Base(ModuleFs, 2);
-            /// <summary>Resource already in use (file already opened<br/>Error code: 2002-0007; Inner value: 0xe02</summary>
+            /// <summary>Resource already in use (file already opened, savedata filesystem already mounted)<br/>Error code: 2002-0007; Inner value: 0xe02</summary>
             public static Result.Base TargetLocked => new Result.Base(ModuleFs, 7);
             /// <summary>Specified directory is not empty when trying to delete it<br/>Error code: 2002-0008; Inner value: 0x1002</summary>
             public static Result.Base DirectoryNotEmpty => new Result.Base(ModuleFs, 8);

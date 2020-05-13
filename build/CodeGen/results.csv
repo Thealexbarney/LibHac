@@ -2,7 +2,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,0,999,HandledByAllProcess,
 2,1,,PathNotFound,Specified path does not exist
 2,2,,PathAlreadyExists,Specified path already exists
-2,7,,TargetLocked,Resource already in use (file already opened, savedata filesystem already mounted)
+2,7,,TargetLocked,"Resource already in use (file already opened, savedata filesystem already mounted)"
 2,8,,DirectoryNotEmpty,Specified directory is not empty when trying to delete it
 2,13,,DirectoryStatusChanged,
 

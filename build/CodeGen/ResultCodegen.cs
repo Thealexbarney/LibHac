@@ -392,6 +392,7 @@ namespace LibHacBuild.CodeGen
             using (var csv = new CsvReader(new StreamReader(GetResource(name)), CultureInfo.InvariantCulture))
             {
                 csv.Configuration.AllowComments = true;
+                csv.Configuration.DetectColumnCountChanges = true;
 
                 if (typeof(T) == typeof(ResultInfo))
                 {
