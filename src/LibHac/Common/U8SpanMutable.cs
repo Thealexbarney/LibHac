@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace LibHac.Common
 {
     [DebuggerDisplay("{ToString()}")]
-    public ref struct U8SpanMutable
+    public readonly ref struct U8SpanMutable
     {
         private readonly Span<byte> _buffer;
 
@@ -26,6 +28,29 @@ namespace LibHac.Common
         public U8SpanMutable(string value)
         {
             _buffer = Encoding.UTF8.GetBytes(value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public byte GetOrNull(int i)
+        {
+            byte value = 0;
+
+            if ((uint)i < (uint)_buffer.Length)
+            {
+                value = GetUnsafe(i);
+            }
+
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public byte GetUnsafe(int i)
+        {
+#if DEBUG
+            return _buffer[i];
+#else
+            return Unsafe.Add(ref MemoryMarshal.GetReference(_buffer), i);
+#endif
         }
 
         public U8SpanMutable Slice(int start)
@@ -56,6 +81,18 @@ namespace LibHac.Common
             return new U8StringMutable(_buffer.ToArray());
         }
 
-        public bool IsNull() => _buffer == default;
+        /// <summary>
+        /// Checks if the <see cref="U8StringMutable"/> has no buffer.
+        /// </summary>
+        /// <returns><see langword="true"/> if the span has no buffer.
+        /// Otherwise, <see langword="false"/>.</returns>
+        public bool IsNull() => _buffer.IsEmpty;
+
+        /// <summary>
+        /// Checks if the <see cref="U8StringMutable"/> has no buffer or begins with a null terminator.
+        /// </summary>
+        /// <returns><see langword="true"/> if the span has no buffer or begins with a null terminator.
+        /// Otherwise, <see langword="false"/>.</returns>
+        public bool IsEmpty() => _buffer.IsEmpty || MemoryMarshal.GetReference(_buffer) == 0;
     }
 }

@@ -5,7 +5,7 @@ using System.Text;
 namespace LibHac.Common
 {
     [DebuggerDisplay("{ToString()}")]
-    public struct U8StringMutable
+    public readonly struct U8StringMutable
     {
         private readonly byte[] _buffer;
 
@@ -53,6 +53,18 @@ namespace LibHac.Common
             return StringUtils.Utf8ZToString(_buffer);
         }
 
+        /// <summary>
+        /// Checks if the <see cref="U8String"/> has no buffer.
+        /// </summary>
+        /// <returns><see langword="true"/> if the string has no buffer.
+        /// Otherwise, <see langword="false"/>.</returns>
         public bool IsNull() => _buffer == null;
+
+        /// <summary>
+        /// Checks if the <see cref="U8String"/> has no buffer or begins with a null terminator.
+        /// </summary>
+        /// <returns><see langword="true"/> if the string has no buffer or begins with a null terminator.
+        /// Otherwise, <see langword="false"/>.</returns>
+        public bool IsEmpty() => _buffer == null || _buffer.Length < 1 || _buffer[0] == 0;
     }
 }

@@ -69,7 +69,7 @@ namespace LibHac
             : base(info, context)
         {
             Name = info.GetString(nameof(Name));
-            Type = (KeyType)info.GetValue(nameof(Type), Type.GetType());
+            Type = (KeyType)(info.GetValue(nameof(Type), Type.GetType()) ?? default(KeyType));
         }
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)

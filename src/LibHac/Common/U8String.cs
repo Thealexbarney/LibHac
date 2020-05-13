@@ -5,7 +5,7 @@ using System.Text;
 namespace LibHac.Common
 {
     [DebuggerDisplay("{ToString()}")]
-    public struct U8String
+    public readonly struct U8String
     {
         private readonly byte[] _buffer;
 

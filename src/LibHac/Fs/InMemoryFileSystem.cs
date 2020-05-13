@@ -265,7 +265,13 @@ namespace LibHac.Fs
 
                         entry.Type = DirectoryEntryType.File;
                         entry.Attributes = CurrentFile.Attributes;
-                        CurrentFile.File.GetSize(out entry.Size);
+
+                        Result rc = CurrentFile.File.GetSize(out entry.Size);
+                        if (rc.IsFailure())
+                        {
+                            entriesRead = 0;
+                            return rc;
+                        }
 
                         i++;
                         CurrentFile = CurrentFile.Next;

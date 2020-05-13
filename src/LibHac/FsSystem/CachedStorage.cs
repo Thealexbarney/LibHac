@@ -145,10 +145,19 @@ namespace LibHac.FsSystem
                     Blocks.AddFirst(node);
                 }
 
+                // If a supposedly active block is null, something's really wrong
+                if (node is null)
+                {
+                    throw new NullReferenceException("CachedStorage cache block is unexpectedly null.");
+                }
+
                 return node.Value;
             }
 
-            node = Blocks.Last;
+            // An inactive node shouldn't be null, but we'll fix it if it is anyway
+            node = Blocks.Last ??
+                   new LinkedListNode<CacheBlock>(new CacheBlock {Buffer = new byte[BlockSize], Index = -1});
+
             FlushBlock(node.Value);
 
             CacheBlock block = node.Value;

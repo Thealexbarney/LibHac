@@ -10,7 +10,7 @@ namespace LibHac.Loader
 {
     public class KipReader
     {
-        private IFile KipFile { get; set; }
+        private IStorage KipStorage { get; set; }
 
         private KipHeader _header;
 
@@ -34,21 +34,48 @@ namespace LibHac.Loader
         public int AffinityMask => _header.AffinityMask;
         public int StackSize => _header.StackSize;
 
-        public Result Initialize(IFile kipFile)
+        public Result Initialize(IStorage kipData)
         {
-            if (kipFile is null)
+            if (kipData is null)
                 return ResultLibHac.NullArgument.Log();
 
-            Result rc = kipFile.Read(out long bytesRead, 0, SpanHelpers.AsByteSpan(ref _header), ReadOption.None);
+            // Verify there's enough data to read the header
+            Result rc = kipData.GetSize(out long kipSize);
             if (rc.IsFailure()) return rc;
 
-            if (bytesRead != Unsafe.SizeOf<KipHeader>())
+            if (kipSize < Unsafe.SizeOf<KipHeader>())
                 return ResultLibHac.InvalidKipFileSize.Log();
+
+            rc = kipData.Read(0, SpanHelpers.AsByteSpan(ref _header));
+            if (rc.IsFailure()) return rc;
 
             if (!_header.IsValid)
                 return ResultLibHac.InvalidKipMagic.Log();
 
-            KipFile = kipFile;
+            KipStorage = kipData;
+            return Result.Success;
+        }
+
+        /// <summary>
+        /// Gets the raw input KIP file.
+        /// </summary>
+        /// <param name="kipData">If the operation returns successfully, an <see cref="IStorage"/>
+        /// containing the KIP data.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
+        public Result GetRawData(out IStorage kipData)
+        {
+            kipData = default;
+
+            int kipFileSize = GetFileSize();
+
+            Result rc = KipStorage.GetSize(out long inputFileSize);
+            if (rc.IsFailure()) return rc;
+
+            // Verify the input KIP file isn't truncated
+            if (inputFileSize < kipFileSize)
+                return ResultLibHac.InvalidKipFileSize.Log();
+
+            kipData = new SubStorage2(KipStorage, 0, kipFileSize);
             return Result.Success;
         }
 
@@ -68,6 +95,18 @@ namespace LibHac.Loader
                     size = default;
                     return ResultLibHac.ArgumentOutOfRange.Log();
             }
+        }
+
+        private int GetFileSize()
+        {
+            int size = Unsafe.SizeOf<KipHeader>();
+
+            for (int i = 0; i < Segments.Length; i++)
+            {
+                size += Segments[i].FileSize;
+            }
+
+            return size;
         }
 
         public int GetUncompressedSize()
@@ -108,12 +147,16 @@ namespace LibHac.Loader
 
             int offset = CalculateSegmentOffset((int)segment);
 
-            // Read the segment data.
-            rc = KipFile.Read(out long bytesRead, offset, buffer.Slice(0, segmentHeader.FileSize), ReadOption.None);
+            // Verify the segment offset is in-range
+            rc = KipStorage.GetSize(out long kipSize);
             if (rc.IsFailure()) return rc;
 
-            if (bytesRead != segmentHeader.FileSize)
+            if (kipSize < offset + segmentHeader.FileSize)
                 return ResultLibHac.InvalidKipFileSize.Log();
+
+            // Read the segment data.
+            rc = KipStorage.Read(offset, buffer.Slice(0, segmentHeader.FileSize));
+            if (rc.IsFailure()) return rc;
 
             // Decompress if necessary.
             bool isCompressed = segment switch

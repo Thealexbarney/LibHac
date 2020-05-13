@@ -63,8 +63,8 @@ namespace LibHac
         protected HorizonResultException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            InternalResultValue = (Result)info.GetValue(nameof(InternalResultValue), InternalResultValue.GetType());
-            ResultValue = (Result)info.GetValue(nameof(ResultValue), ResultValue.GetType());
+            InternalResultValue = (Result)(info.GetValue(nameof(InternalResultValue), InternalResultValue.GetType()) ?? default(Result));
+            ResultValue = (Result)(info.GetValue(nameof(ResultValue), ResultValue.GetType()) ?? default(Result));
             InnerMessage = (string)info.GetValue(nameof(InnerMessage), InnerMessage.GetType());
         }
 

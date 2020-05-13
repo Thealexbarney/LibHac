@@ -87,7 +87,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
         [Fact]
         public void MountBis_InvalidPartition_ReturnsInvalidArgument()
         {
-            FileSystemClient fs = FileSystemServerFactory.CreateClient(out IFileSystem rootFs);
+            FileSystemClient fs = FileSystemServerFactory.CreateClient(out IFileSystem _);
 
             Assert.Result(ResultFs.InvalidArgument, fs.MountBis("boot1".ToU8Span(), BisPartitionId.BootPartition1Root));
         }
