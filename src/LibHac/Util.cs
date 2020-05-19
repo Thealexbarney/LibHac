@@ -491,5 +491,27 @@ namespace LibHac
 
             return keyGeneration - 1;
         }
+
+        public static bool IsPowerOfTwo(int value)
+        {
+            return value > 0 && ResetLeastSignificantOneBit(value) == 0;
+        }
+
+        public static bool IsPowerOfTwo(long value)
+        {
+            return value > 0 && ResetLeastSignificantOneBit(value) == 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int ResetLeastSignificantOneBit(int value)
+        {
+            return value & (value - 1);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static long ResetLeastSignificantOneBit(long value)
+        {
+            return value & (value - 1);
+        }
     }
 }
