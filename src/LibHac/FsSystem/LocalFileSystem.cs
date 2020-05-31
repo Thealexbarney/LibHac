@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using LibHac.Common;
 using LibHac.Fs;
 
@@ -591,22 +592,28 @@ namespace LibHac.FsSystem
         }
 
         // Delete operations on IFileSystem should be synchronous
-        // DeleteFile and RemoveDirectory only mark the file for deletion, so we need
-        // to poll the filesystem until it's actually gone
+        // DeleteFile and RemoveDirectory only mark the file for deletion on Windows,
+        // so we need to poll the filesystem until it's actually gone
         private static void EnsureDeleted(FileSystemInfo entry)
         {
-            int tries = 0;
+            const int noDelayRetryCount = 1000;
+            const int retryDelay = 500;
 
-            do
+            // The entry is usually deleted within the first 5-10 tries
+            for (int i = 0; i < noDelayRetryCount; i++)
             {
                 entry.Refresh();
-                tries++;
 
-                if (tries > 1000)
-                {
-                    throw new IOException($"Unable to delete file {entry.FullName}");
-                }
-            } while (entry.Exists);
+                if (!entry.Exists)
+                    return;
+            }
+
+            // Nintendo's solution is to check every 500 ms with no timeout
+            while (entry.Exists)
+            {
+                Thread.Sleep(retryDelay);
+                entry.Refresh();
+            }
         }
     }
 }
