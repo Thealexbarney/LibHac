@@ -1,7 +1,5 @@
 [CmdletBinding()]
 Param(
-    #[switch]$CustomParam,
-    [switch]$BuildDotnetCoreOnly,
     [Parameter(Position = 0, Mandatory = $false, ValueFromRemainingArguments = $true)]
     [string[]]$BuildArguments
 )
@@ -16,10 +14,10 @@ $PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
 ###########################################################################
 
 $BuildProjectFile = "$PSScriptRoot\build\_build.csproj"
-$TempDirectory = "$PSScriptRoot\\.tmp"
+$TempDirectory = "$PSScriptRoot\.tmp"
 
-$DotNetGlobalFile = "$PSScriptRoot\\global.json"
-$DotNetInstallUrl = "https://raw.githubusercontent.com/dotnet/cli/master/scripts/obtain/dotnet-install.ps1"
+$DotNetGlobalFile = "$PSScriptRoot\global.json"
+$DotNetInstallUrl = "https://dot.net/v1/dotnet-install.ps1"
 $DotNetChannel = "Current"
 $DotNetCliVersion = Get-Content DotnetCliVersion.txt
 
@@ -53,12 +51,13 @@ try {
         (!(Test-Path variable:DotNetVersion) -or $(& cmd.exe /c 'dotnet --version 2>&1') -eq $DotNetVersion)) {
         $env:DOTNET_EXE = (Get-Command "dotnet").Path
     }
-    elseif ($null -eq (Get-Command $env:DOTNET_EXE -ErrorAction SilentlyContinue) -and `
-        (!(Test-Path variable:DotNetVersion) -or $(& cmd.exe /c '$env:DOTNET_EXE --version 2>&1') -ne $DotNetVersion)) {
+    elseif ($null -eq (Get-Command $env:DOTNET_EXE -ErrorAction SilentlyContinue) -or `
+        !(Test-Path variable:DotNetVersion) -or $(& cmd.exe /c "$env:DOTNET_EXE --version 2>&1") -ne $DotNetVersion) {
 
         # Download install script
         $DotNetInstallFile = "$TempDirectory\dotnet-install.ps1"
-        mkdir -force $TempDirectory > $null
+        New-Item -ItemType Directory -Path $TempDirectory -Force | Out-Null
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         (New-Object System.Net.WebClient).DownloadFile($DotNetInstallUrl, $DotNetInstallFile)
 
         # Install by channel or version
@@ -71,11 +70,6 @@ try {
     }
 
     Write-Output "Microsoft (R) .NET Core SDK version $(& $env:DOTNET_EXE --version)"
-
-    if($BuildDotnetCoreOnly) {
-        $BuildArguments += "-DoCoreBuildOnly"
-        $BuildArguments += "true"
-    }
 
     ExecSafe { & $env:DOTNET_EXE run --project $BuildProjectFile -- $BuildArguments }
 }
