@@ -291,17 +291,13 @@ namespace LibHacBuild
             .Executes(() =>
             {
                 AbsolutePath nupkgFile = ArtifactsDirectory.GlobFiles("*.nupkg").Single();
-                AbsolutePath snupkgFile = ArtifactsDirectory.GlobFiles("*.snupkg").Single();
 
                 string apiKey = EnvironmentInfo.GetVariable<string>("myget_api_key");
                 DotNetNuGetPushSettings settings = new DotNetNuGetPushSettings()
                     .SetApiKey(apiKey)
-                    .SetSymbolApiKey(apiKey)
-                    .SetSource("https://www.myget.org/F/libhac/api/v2/package")
-                    .SetSymbolSource("https://www.myget.org/F/libhac/symbols/api/v2/package");
+                    .SetSource("https://www.myget.org/F/libhac/api/v3/index.json");
 
                 DotNetNuGetPush(settings.SetTargetPath(nupkgFile));
-                DotNetNuGetPush(settings.SetTargetPath(snupkgFile));
             });
 
         Target Sign => _ => _
