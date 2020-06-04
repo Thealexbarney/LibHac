@@ -10,7 +10,7 @@
 
   <PropertyGroup>
     <Authors>Alex Barney</Authors>
-    <Copyright>Copyright © 2018 Alex Barney</Copyright>
+    <Copyright>Copyright © 2018-2020 Alex Barney</Copyright>
     <Description>A library for reading content formats used by the Nintendo Switch.</Description>
     <PackageTags>Nintendo;Switch;nca;xci;savefile</PackageTags>
     <PackageProjectUrl>https://github.com/Thealexbarney/LibHac</PackageProjectUrl>
@@ -19,6 +19,7 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
     <!-- When doing a release build with a Git directory, SourceLink will set the SourceRoot needed for DeterministicSourcePaths -->
