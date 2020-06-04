@@ -97,7 +97,7 @@ namespace LibHac.Loader
             }
         }
 
-        private int GetFileSize()
+        public int GetFileSize()
         {
             int size = Unsafe.SizeOf<KipHeader>();
 
@@ -248,7 +248,7 @@ namespace LibHac.Loader
             if (buffer.Length < totalCompSize + additionalSize)
                 return ResultLibHac.BufferTooSmall.Log();
 
-            Span<byte> data = buffer;
+            Span<byte> data = buffer.Slice(compressedDataSize - totalCompSize);
 
             int inOffset = totalCompSize - footerSize;
             int outOffset = totalCompSize + additionalSize;

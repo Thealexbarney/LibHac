@@ -203,7 +203,7 @@ namespace LibHac
                 Kips[i] = new KipReader();
                 Kips[i].Initialize(Storage.Slice(offset)).ThrowIfFailure();
 
-                offset += Kips[i].GetUncompressedSize();
+                offset += Kips[i].GetFileSize();
             }
         }
     }
