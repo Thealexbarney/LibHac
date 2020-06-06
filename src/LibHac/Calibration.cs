@@ -85,7 +85,7 @@ namespace LibHac
 
         public Calibration(Stream stream)
         {
-            using BinaryReader reader = new BinaryReader(stream, Encoding.Default, true);
+            using var reader = new BinaryReader(stream, Encoding.Default, true);
 
             stream.Position = 0x0;
             Magic = reader.ReadUtf8(0x4);
