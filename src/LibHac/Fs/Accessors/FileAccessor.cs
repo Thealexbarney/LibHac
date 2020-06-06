@@ -17,14 +17,14 @@ namespace LibHac.Fs.Accessors
             OpenMode = mode;
         }
 
-        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
+        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
         {
             CheckIfDisposed();
 
             return File.Read(out bytesRead, offset, destination, options);
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
         {
             CheckIfDisposed();
 
@@ -45,7 +45,7 @@ namespace LibHac.Fs.Accessors
             return rc;
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             CheckIfDisposed();
 
@@ -59,14 +59,14 @@ namespace LibHac.Fs.Accessors
             return rc;
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             CheckIfDisposed();
 
             return File.GetSize(out size);
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             CheckIfDisposed();
 

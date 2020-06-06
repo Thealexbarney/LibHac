@@ -9,13 +9,13 @@ namespace LibHac.Fs
         private int _disposedState;
         private bool IsDisposed => _disposedState != 0;
 
-        protected abstract Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options);
-        protected abstract Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options);
-        protected abstract Result FlushImpl();
-        protected abstract Result SetSizeImpl(long size);
-        protected abstract Result GetSizeImpl(out long size);
+        protected abstract Result DoRead(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options);
+        protected abstract Result DoWrite(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options);
+        protected abstract Result DoFlush();
+        protected abstract Result DoSetSize(long size);
+        protected abstract Result DoGetSize(out long size);
 
-        protected virtual Result OperateRangeImpl(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+        protected virtual Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
             ReadOnlySpan<byte> inBuffer)
         {
             return ResultFs.NotImplemented.Log();
@@ -31,7 +31,7 @@ namespace LibHac.Fs
             if (offset < 0) return ResultFs.OutOfRange.Log();
             if (long.MaxValue - offset < destination.Length) return ResultFs.OutOfRange.Log();
 
-            return ReadImpl(out bytesRead, offset, destination, options);
+            return DoRead(out bytesRead, offset, destination, options);
         }
 
         public Result Write(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
@@ -42,7 +42,7 @@ namespace LibHac.Fs
             {
                 if (options.HasFlag(WriteOptionFlag.Flush))
                 {
-                    return FlushImpl();
+                    return DoFlush();
                 }
 
                 return Result.Success;
@@ -51,14 +51,14 @@ namespace LibHac.Fs
             if (offset < 0) return ResultFs.OutOfRange.Log();
             if (long.MaxValue - offset < source.Length) return ResultFs.OutOfRange.Log();
 
-            return WriteImpl(offset, source, options);
+            return DoWrite(offset, source, options);
         }
 
         public Result Flush()
         {
             if (IsDisposed) return ResultFs.PreconditionViolation.Log();
 
-            return FlushImpl();
+            return DoFlush();
         }
 
         public Result SetSize(long size)
@@ -66,7 +66,7 @@ namespace LibHac.Fs
             if (IsDisposed) return ResultFs.PreconditionViolation.Log();
             if (size < 0) return ResultFs.OutOfRange.Log();
 
-            return SetSizeImpl(size);
+            return DoSetSize(size);
         }
 
         public Result GetSize(out long size)
@@ -77,7 +77,7 @@ namespace LibHac.Fs
                 return ResultFs.PreconditionViolation.Log();
             }
 
-            return GetSizeImpl(out size);
+            return DoGetSize(out size);
         }
 
         public Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
@@ -85,7 +85,7 @@ namespace LibHac.Fs
         {
             if (IsDisposed) return ResultFs.PreconditionViolation.Log();
 
-            return OperateRangeImpl(outBuffer, operationId, offset, size, inBuffer);
+            return DoOperateRange(outBuffer, operationId, offset, size, inBuffer);
         }
 
         public void Dispose()

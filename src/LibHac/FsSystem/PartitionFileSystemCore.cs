@@ -123,7 +123,7 @@ namespace LibHac.FsSystem
                 Mode = mode;
             }
 
-            protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
+            protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
             {
                 bytesRead = default;
 
@@ -240,7 +240,7 @@ namespace LibHac.FsSystem
                 return rc;
             }
 
-            protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
+            protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
             {
                 Result rc = ValidateWriteParams(offset, source.Length, Mode, out bool isResizeNeeded);
                 if (rc.IsFailure()) return rc;
@@ -257,7 +257,7 @@ namespace LibHac.FsSystem
                 return ParentFs.BaseStorage.Write(ParentFs.DataOffset + _entry.Offset + offset, source);
             }
 
-            protected override Result FlushImpl()
+            protected override Result DoFlush()
             {
                 if (Mode.HasFlag(OpenMode.Write))
                 {
@@ -267,7 +267,7 @@ namespace LibHac.FsSystem
                 return Result.Success;
             }
 
-            protected override Result SetSizeImpl(long size)
+            protected override Result DoSetSize(long size)
             {
                 if (Mode.HasFlag(OpenMode.Write))
                 {
@@ -277,14 +277,14 @@ namespace LibHac.FsSystem
                 return ResultFs.InvalidOpenModeForWrite.Log();
             }
 
-            protected override Result GetSizeImpl(out long size)
+            protected override Result DoGetSize(out long size)
             {
                 size = _entry.Size;
 
                 return Result.Success;
             }
 
-            protected override Result OperateRangeImpl(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+            protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
             {
                 switch (operationId)
                 {

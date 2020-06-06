@@ -180,7 +180,7 @@ namespace LibHac.Fs
                 Mode = mode;
             }
 
-            protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
+            protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
             {
                 if (!Mode.HasFlag(OpenMode.Read))
                 {
@@ -191,7 +191,7 @@ namespace LibHac.Fs
                 return BaseStream.Read(out bytesRead, offset, destination);
             }
 
-            protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
+            protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
             {
                 if (!Mode.HasFlag(OpenMode.Write))
                 {
@@ -201,17 +201,17 @@ namespace LibHac.Fs
                 return BaseStream.Write(offset, source, Mode.HasFlag(OpenMode.AllowAppend));
             }
 
-            protected override Result FlushImpl()
+            protected override Result DoFlush()
             {
                 return BaseStream.Flush();
             }
 
-            protected override Result SetSizeImpl(long size)
+            protected override Result DoSetSize(long size)
             {
                 return BaseStream.SetSize(size);
             }
 
-            protected override Result GetSizeImpl(out long size)
+            protected override Result DoGetSize(out long size)
             {
                 return BaseStream.GetSize(out size);
             }

@@ -12,27 +12,27 @@ namespace LibHac.FsSystem
             BaseFile = baseFile;
         }
 
-        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
+        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
         {
             return BaseFile.Read(out bytesRead, offset, destination, options);
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             return BaseFile.GetSize(out size);
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
         {
             return ResultFs.InvalidOpenModeForWrite.Log();
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             return ResultFs.InvalidOpenModeForWrite.Log();
         }
