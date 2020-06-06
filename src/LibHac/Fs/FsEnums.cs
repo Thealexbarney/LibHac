@@ -132,13 +132,6 @@ namespace LibHac.Fs
         None = 0
     }
 
-    [Flags]
-    public enum WriteOptionFlag
-    {
-        None = 0,
-        Flush = 1
-    }
-
     public enum OperationId
     {
         Clear = 0,
