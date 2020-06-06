@@ -90,7 +90,7 @@ namespace hactoolnet
                     }
                 }
 
-                if (ctx.Options.RomfsOutDir != null || ctx.Options.RomfsOut != null)
+                if (ctx.Options.RomfsOutDir != null || ctx.Options.RomfsOut != null || ctx.Options.ListRomFs)
                 {
                     Nca mainNca = GetXciMainNca(xci, ctx);
 
