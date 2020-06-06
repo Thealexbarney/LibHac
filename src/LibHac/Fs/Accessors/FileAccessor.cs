@@ -17,20 +17,20 @@ namespace LibHac.Fs.Accessors
             OpenMode = mode;
         }
 
-        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
         {
             CheckIfDisposed();
 
             return File.Read(out bytesRead, offset, destination, options);
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
         {
             CheckIfDisposed();
 
             if (source.Length == 0)
             {
-                WriteState = (WriteState)(~options & WriteOption.Flush);
+                WriteState = (WriteState)(~options & WriteOptionFlag.Flush);
 
                 return Result.Success;
             }
@@ -39,7 +39,7 @@ namespace LibHac.Fs.Accessors
 
             if (rc.IsSuccess())
             {
-                WriteState = (WriteState)(~options & WriteOption.Flush);
+                WriteState = (WriteState)(~options & WriteOptionFlag.Flush);
             }
 
             return rc;

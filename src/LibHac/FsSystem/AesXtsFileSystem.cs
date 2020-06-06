@@ -276,7 +276,7 @@ namespace LibHac.FsSystem
 
             using (file)
             {
-                file.Write(0, header.ToBytes(false), WriteOption.Flush).ThrowIfFailure();
+                file.Write(0, header.ToBytes(false), WriteOptionFlag.Flush).ThrowIfFailure();
             }
         }
     }

@@ -61,10 +61,10 @@ namespace LibHac.FsSystem
 
                 while (offset < fileSize)
                 {
-                    rc = srcFile.Read(out long bytesRead, offset, copyBuffer, ReadOption.None);
+                    rc = srcFile.Read(out long bytesRead, offset, copyBuffer, ReadOptionFlag.None);
                     if (rc.IsFailure()) return rc;
 
-                    rc = dstFile.Write(offset, copyBuffer.Slice(0, (int)bytesRead), WriteOption.None);
+                    rc = dstFile.Write(offset, copyBuffer.Slice(0, (int)bytesRead), WriteOptionFlag.None);
                     if (rc.IsFailure()) return rc;
 
                     offset += bytesRead;

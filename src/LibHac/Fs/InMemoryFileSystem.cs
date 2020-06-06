@@ -180,7 +180,7 @@ namespace LibHac.Fs
                 Mode = mode;
             }
 
-            protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+            protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
             {
                 if (!Mode.HasFlag(OpenMode.Read))
                 {
@@ -191,7 +191,7 @@ namespace LibHac.Fs
                 return BaseStream.Read(out bytesRead, offset, destination);
             }
 
-            protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
+            protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
             {
                 if (!Mode.HasFlag(OpenMode.Write))
                 {

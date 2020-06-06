@@ -207,7 +207,7 @@ namespace LibHac.FsService.Impl
                     _context.CommitCount = commitCount;
 
                     // Write the initial context to the file
-                    rc = contextFile.Write(0, SpanHelpers.AsByteSpan(ref _context), WriteOption.None);
+                    rc = contextFile.Write(0, SpanHelpers.AsByteSpan(ref _context), WriteOptionFlag.None);
                     if (rc.IsFailure()) return rc;
 
                     rc = contextFile.Flush();
@@ -232,7 +232,7 @@ namespace LibHac.FsService.Impl
 
                     _context.State = CommitState.ProvisionallyCommitted;
 
-                    rc = contextFile.Write(0, SpanHelpers.AsByteSpan(ref _context), WriteOption.None);
+                    rc = contextFile.Write(0, SpanHelpers.AsByteSpan(ref _context), WriteOptionFlag.None);
                     if (rc.IsFailure()) return rc;
 
                     rc = contextFile.Flush();

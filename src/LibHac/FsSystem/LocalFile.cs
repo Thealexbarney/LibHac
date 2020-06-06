@@ -27,7 +27,7 @@ namespace LibHac.FsSystem
             File = new StreamFile(Stream, mode);
         }
 
-        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
         {
             bytesRead = 0;
 
@@ -37,7 +37,7 @@ namespace LibHac.FsSystem
             return File.Read(out bytesRead, offset, destination.Slice(0, (int)toRead), options);
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
         {
             Result rc = ValidateWriteParams(offset, source.Length, Mode, out _);
             if (rc.IsFailure()) return rc;

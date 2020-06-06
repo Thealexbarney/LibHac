@@ -86,7 +86,7 @@ namespace LibHac.FsService
                     {
                         ulong lastId = LastPublishedId;
 
-                        rc = FsClient.WriteFile(handle, 0, SpanHelpers.AsByteSpan(ref lastId), WriteOption.None);
+                        rc = FsClient.WriteFile(handle, 0, SpanHelpers.AsByteSpan(ref lastId), WriteOptionFlag.None);
                         if (rc.IsFailure()) return rc;
 
                         rc = FsClient.FlushFile(handle);

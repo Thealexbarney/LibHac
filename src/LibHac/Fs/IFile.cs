@@ -28,7 +28,7 @@ namespace LibHac.Fs
         /// The number of bytes read will be no larger than the length of the buffer.</param>
         /// <param name="options">Options for reading from the <see cref="IFile"/>.</param>
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options);
+        Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options);
 
         /// <summary>
         /// Writes a sequence of bytes to the current <see cref="IFile"/>.
@@ -37,7 +37,7 @@ namespace LibHac.Fs
         /// <param name="source">The buffer containing the bytes to be written.</param>
         /// <param name="options">Options for writing to the <see cref="IFile"/>.</param>
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options);
+        Result Write(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options);
 
         /// <summary>
         /// Causes any buffered data to be written to the underlying device.

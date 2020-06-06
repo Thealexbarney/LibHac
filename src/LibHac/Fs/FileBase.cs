@@ -9,8 +9,8 @@ namespace LibHac.Fs
         private int _disposedState;
         private bool IsDisposed => _disposedState != 0;
 
-        protected abstract Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options);
-        protected abstract Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options);
+        protected abstract Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options);
+        protected abstract Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options);
         protected abstract Result FlushImpl();
         protected abstract Result SetSizeImpl(long size);
         protected abstract Result GetSizeImpl(out long size);
@@ -21,7 +21,7 @@ namespace LibHac.Fs
             return ResultFs.NotImplemented.Log();
         }
 
-        public Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        public Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
         {
             bytesRead = default;
 
@@ -34,13 +34,13 @@ namespace LibHac.Fs
             return ReadImpl(out bytesRead, offset, destination, options);
         }
 
-        public Result Write(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        public Result Write(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
         {
             if (IsDisposed) return ResultFs.PreconditionViolation.Log();
 
             if (source.Length == 0)
             {
-                if (options.HasFlag(WriteOption.Flush))
+                if (options.HasFlag(WriteOptionFlag.Flush))
                 {
                     return FlushImpl();
                 }

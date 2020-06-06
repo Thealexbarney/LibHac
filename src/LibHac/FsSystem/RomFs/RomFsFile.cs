@@ -16,7 +16,7 @@ namespace LibHac.FsSystem.RomFs
             Size = size;
         }
 
-        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
         {
             bytesRead = default;
 
@@ -33,7 +33,7 @@ namespace LibHac.FsSystem.RomFs
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
         {
             return ResultFs.UnsupportedOperationModifyRomFsFile.Log();
         }

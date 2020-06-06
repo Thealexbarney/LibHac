@@ -190,7 +190,7 @@ namespace LibHac.Kvdb
             rc = FsClient.OpenFile(out FileHandle handle, FileName, OpenMode.Write);
             if (rc.IsFailure()) return rc;
 
-            rc = FsClient.WriteFile(handle, 0, data, WriteOption.Flush);
+            rc = FsClient.WriteFile(handle, 0, data, WriteOptionFlag.Flush);
             FsClient.CloseFile(handle);
 
             return rc;

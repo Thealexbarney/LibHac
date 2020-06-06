@@ -73,10 +73,10 @@ namespace LibHac.FsSystem
                     long fileSize = 0;
                     long bytesRead;
 
-                    file.Read(out bytesRead, magicOffset, SpanHelpers.AsByteSpan(ref magic), ReadOption.None);
+                    file.Read(out bytesRead, magicOffset, SpanHelpers.AsByteSpan(ref magic), ReadOptionFlag.None);
                     if (bytesRead != sizeof(uint) || magic != AesXtsFileHeader.AesXtsFileMagic) return 0;
 
-                    file.Read(out bytesRead, fileSizeOffset, SpanHelpers.AsByteSpan(ref fileSize), ReadOption.None);
+                    file.Read(out bytesRead, fileSizeOffset, SpanHelpers.AsByteSpan(ref fileSize), ReadOptionFlag.None);
                     if (bytesRead != sizeof(long) || magic != AesXtsFileHeader.AesXtsFileMagic) return 0;
 
                     return fileSize;

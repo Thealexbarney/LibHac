@@ -18,7 +18,7 @@ namespace LibHac.FsSystem
             Size = size;
         }
 
-        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
         {
             bytesRead = 0;
 
@@ -32,7 +32,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
         {
             Result rc = ValidateWriteParams(offset, source.Length, Mode, out bool isResizeNeeded);
             if (rc.IsFailure()) return rc;
@@ -45,7 +45,7 @@ namespace LibHac.FsSystem
             if (rc.IsFailure()) return rc;
 
             // N doesn't flush if the flag is set
-            if (options.HasFlag(WriteOption.Flush))
+            if (options.HasFlag(WriteOptionFlag.Flush))
             {
                 return BaseStorage.Flush();
             }

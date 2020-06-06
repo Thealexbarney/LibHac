@@ -12,7 +12,7 @@ namespace LibHac.FsSystem
             BaseFile = baseFile;
         }
 
-        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
         {
             return BaseFile.Read(out bytesRead, offset, destination, options);
         }
@@ -27,7 +27,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
         {
             return ResultFs.InvalidOpenModeForWrite.Log();
         }

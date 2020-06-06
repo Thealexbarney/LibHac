@@ -17,7 +17,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.CreateFile("/file".ToU8Span(), data.Length, CreateFileOptions.None);
 
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Write);
-            file.Write(0, data, WriteOption.None);
+            file.Write(0, data, WriteOptionFlag.None);
             file.Dispose();
 
             var readData = new byte[data.Length];
@@ -25,7 +25,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out file, "/file".ToU8Span(), OpenMode.Read);
             using (file)
             {
-                Assert.True(file.Read(out long bytesRead, 0, readData, ReadOption.None).IsSuccess());
+                Assert.True(file.Read(out long bytesRead, 0, readData, ReadOptionFlag.None).IsSuccess());
                 Assert.Equal(data.Length, bytesRead);
             }
 
@@ -43,7 +43,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Write);
             using (file)
             {
-                Result rc = file.Write(5, buffer, WriteOption.None);
+                Result rc = file.Write(5, buffer, WriteOptionFlag.None);
                 Assert.Equal(ResultFs.FileExtensionWithoutOpenModeAllowAppend.Value, rc);
             }
         }
@@ -59,7 +59,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Read);
             using (file)
             {
-                Result rc = file.Write(5, buffer, WriteOption.None);
+                Result rc = file.Write(5, buffer, WriteOptionFlag.None);
                 Assert.Equal(ResultFs.InvalidOpenModeForWrite.Value, rc);
             }
         }
@@ -75,7 +75,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Read);
             using (file)
             {
-                Result rc = file.Write(-5, buffer, WriteOption.None);
+                Result rc = file.Write(-5, buffer, WriteOptionFlag.None);
                 Assert.Equal(ResultFs.OutOfRange.Value, rc);
             }
         }
@@ -91,7 +91,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Read);
             using (file)
             {
-                Result rc = file.Write(long.MaxValue - 5, buffer, WriteOption.None);
+                Result rc = file.Write(long.MaxValue - 5, buffer, WriteOptionFlag.None);
                 Assert.Equal(ResultFs.OutOfRange.Value, rc);
             }
         }
@@ -107,7 +107,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.All);
             using (file)
             {
-                Assert.True(file.Write(5, buffer, WriteOption.None).IsSuccess());
+                Assert.True(file.Write(5, buffer, WriteOptionFlag.None).IsSuccess());
 
                 file.GetSize(out long newSize);
                 Assert.Equal(15, newSize);
@@ -125,7 +125,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.All);
             using (file)
             {
-                Assert.True(file.Write(15, buffer, WriteOption.None).IsSuccess());
+                Assert.True(file.Write(15, buffer, WriteOptionFlag.None).IsSuccess());
 
                 file.GetSize(out long newSize);
                 Assert.Equal(25, newSize);
@@ -148,10 +148,10 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.All);
             using (file)
             {
-                Assert.True(file.Write(15, writeBuffer, WriteOption.None).IsSuccess());
+                Assert.True(file.Write(15, writeBuffer, WriteOptionFlag.None).IsSuccess());
 
                 // Unwritten portions of new files are undefined, so write to the other portions
-                file.Write(0, new byte[15], WriteOption.None);
+                file.Write(0, new byte[15], WriteOptionFlag.None);
             }
 
             var readBuffer = new byte[25];
@@ -159,7 +159,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out file, "/file".ToU8Span(), OpenMode.Read);
             using (file)
             {
-                file.Read(out _, 0, readBuffer, ReadOption.None);
+                file.Read(out _, 0, readBuffer, ReadOptionFlag.None);
                 Assert.Equal(bufferExpected, readBuffer);
             }
         }

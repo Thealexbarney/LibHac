@@ -34,7 +34,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
         {
             bytesRead = default;
 
@@ -70,7 +70,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
         {
             Result rc = ValidateWriteParams(offset, source.Length, Mode, out _);
             if (rc.IsFailure()) return rc;
@@ -99,7 +99,7 @@ namespace LibHac.FsSystem
                 remaining -= bytesToWrite;
             }
 
-            if (options.HasFlag(WriteOption.Flush))
+            if (options.HasFlag(WriteOptionFlag.Flush))
             {
                 return Flush();
             }

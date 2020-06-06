@@ -379,7 +379,7 @@ namespace LibHac.FsService
 
                             ReadOnlySpan<byte> metaFileData = stackalloc byte[0x20];
 
-                            rc = metaFile.Write(0, metaFileData, WriteOption.Flush);
+                            rc = metaFile.Write(0, metaFileData, WriteOptionFlag.Flush);
                             if (rc.IsFailure()) return rc;
                         }
                     }

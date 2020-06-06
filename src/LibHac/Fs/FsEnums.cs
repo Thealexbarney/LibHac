@@ -127,13 +127,13 @@ namespace LibHac.Fs
     }
 
     [Flags]
-    public enum ReadOption
+    public enum ReadOptionFlag
     {
         None = 0
     }
 
     [Flags]
-    public enum WriteOption
+    public enum WriteOptionFlag
     {
         None = 0,
         Flush = 1

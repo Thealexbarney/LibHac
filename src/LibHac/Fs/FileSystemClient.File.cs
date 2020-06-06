@@ -6,10 +6,10 @@ namespace LibHac.Fs
     {
         public Result ReadFile(FileHandle handle, long offset, Span<byte> destination)
         {
-            return ReadFile(handle, offset, destination, ReadOption.None);
+            return ReadFile(handle, offset, destination, ReadOptionFlag.None);
         }
 
-        public Result ReadFile(FileHandle handle, long offset, Span<byte> destination, ReadOption option)
+        public Result ReadFile(FileHandle handle, long offset, Span<byte> destination, ReadOptionFlag option)
         {
             Result rc = ReadFile(out long bytesRead, handle, offset, destination, option);
             if (rc.IsFailure()) return rc;
@@ -21,10 +21,10 @@ namespace LibHac.Fs
 
         public Result ReadFile(out long bytesRead, FileHandle handle, long offset, Span<byte> destination)
         {
-            return ReadFile(out bytesRead, handle, offset, destination, ReadOption.None);
+            return ReadFile(out bytesRead, handle, offset, destination, ReadOptionFlag.None);
         }
 
-        public Result ReadFile(out long bytesRead, FileHandle handle, long offset, Span<byte> destination, ReadOption option)
+        public Result ReadFile(out long bytesRead, FileHandle handle, long offset, Span<byte> destination, ReadOptionFlag option)
         {
             Result rc;
 
@@ -46,10 +46,10 @@ namespace LibHac.Fs
 
         public Result WriteFile(FileHandle handle, long offset, ReadOnlySpan<byte> source)
         {
-            return WriteFile(handle, offset, source, WriteOption.None);
+            return WriteFile(handle, offset, source, WriteOptionFlag.None);
         }
 
-        public Result WriteFile(FileHandle handle, long offset, ReadOnlySpan<byte> source, WriteOption option)
+        public Result WriteFile(FileHandle handle, long offset, ReadOnlySpan<byte> source, WriteOptionFlag option)
         {
             Result rc;
 
@@ -59,7 +59,7 @@ namespace LibHac.Fs
                 rc = handle.File.Write(offset, source, option);
                 TimeSpan endTime = Time.GetCurrent();
 
-                string optionString = (option & WriteOption.Flush) == 0 ? "" : $", write_option: {option}";
+                string optionString = (option & WriteOptionFlag.Flush) == 0 ? "" : $", write_option: {option}";
 
                 OutputAccessLog(rc, startTime, endTime, handle, $", offset: {offset}, size: {source.Length}{optionString}");
             }
