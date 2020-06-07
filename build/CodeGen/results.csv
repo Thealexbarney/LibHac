@@ -168,6 +168,8 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6069,,InvalidCacheStorageSize,
 2,6070,,InvalidCacheStorageIndex,
 2,6071,,InvalidCommitNameCount,Up to 10 file systems can be committed at the same time.
+2,6072,,InvalidOpenMode,
+2,6074,,InvalidDirectoryOpenMode,
 
 2,6080,6099,InvalidEnumValue,
 2,6081,,InvalidSaveDataState,
