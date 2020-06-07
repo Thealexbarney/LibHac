@@ -6,10 +6,10 @@ namespace LibHac.Fs
     {
         public Result ReadFile(FileHandle handle, long offset, Span<byte> destination)
         {
-            return ReadFile(handle, offset, destination, ReadOptionFlag.None);
+            return ReadFile(handle, offset, destination, ReadOption.None);
         }
 
-        public Result ReadFile(FileHandle handle, long offset, Span<byte> destination, ReadOptionFlag option)
+        public Result ReadFile(FileHandle handle, long offset, Span<byte> destination, in ReadOption option)
         {
             Result rc = ReadFile(out long bytesRead, handle, offset, destination, option);
             if (rc.IsFailure()) return rc;
@@ -21,24 +21,24 @@ namespace LibHac.Fs
 
         public Result ReadFile(out long bytesRead, FileHandle handle, long offset, Span<byte> destination)
         {
-            return ReadFile(out bytesRead, handle, offset, destination, ReadOptionFlag.None);
+            return ReadFile(out bytesRead, handle, offset, destination, ReadOption.None);
         }
 
-        public Result ReadFile(out long bytesRead, FileHandle handle, long offset, Span<byte> destination, ReadOptionFlag option)
+        public Result ReadFile(out long bytesRead, FileHandle handle, long offset, Span<byte> destination, in ReadOption option)
         {
             Result rc;
 
             if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
             {
                 TimeSpan startTime = Time.GetCurrent();
-                rc = handle.File.Read(out bytesRead, offset, destination, option);
+                rc = handle.File.Read(out bytesRead, offset, destination, in option);
                 TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, handle, $", offset: {offset}, size: {destination.Length}");
             }
             else
             {
-                rc = handle.File.Read(out bytesRead, offset, destination, option);
+                rc = handle.File.Read(out bytesRead, offset, destination, in option);
             }
 
             return rc;
@@ -46,26 +46,26 @@ namespace LibHac.Fs
 
         public Result WriteFile(FileHandle handle, long offset, ReadOnlySpan<byte> source)
         {
-            return WriteFile(handle, offset, source, WriteOptionFlag.None);
+            return WriteFile(handle, offset, source, WriteOption.None);
         }
 
-        public Result WriteFile(FileHandle handle, long offset, ReadOnlySpan<byte> source, WriteOptionFlag option)
+        public Result WriteFile(FileHandle handle, long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
             Result rc;
 
             if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
             {
                 TimeSpan startTime = Time.GetCurrent();
-                rc = handle.File.Write(offset, source, option);
+                rc = handle.File.Write(offset, source, in option);
                 TimeSpan endTime = Time.GetCurrent();
 
-                string optionString = (option & WriteOptionFlag.Flush) == 0 ? "" : $", write_option: {option}";
+                string optionString = option.HasFlushFlag() ? "" : $", write_option: {option}";
 
                 OutputAccessLog(rc, startTime, endTime, handle, $", offset: {offset}, size: {source.Length}{optionString}");
             }
             else
             {
-                rc = handle.File.Write(offset, source, option);
+                rc = handle.File.Write(offset, source, in option);
             }
 
             return rc;

@@ -5,7 +5,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class SubdirectoryFileSystem : FileSystemBase
+    public class SubdirectoryFileSystem : IFileSystem
     {
         private IFileSystem BaseFileSystem { get; }
         private U8String RootPath { get; set; }
@@ -72,7 +72,7 @@ namespace LibHac.FsSystem
             return PathTool.Normalize(outPath.Slice(RootPath.Length - 2), out _, relativePath, PreserveUnc, false);
         }
 
-        protected override Result CreateDirectoryImpl(U8Span path)
+        protected override Result DoCreateDirectory(U8Span path)
         {
             Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
             Result rc = ResolveFullPath(fullPath, path);
@@ -81,7 +81,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.CreateDirectory(new U8Span(fullPath));
         }
 
-        protected override Result CreateFileImpl(U8Span path, long size, CreateFileOptions options)
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
         {
             Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
             Result rc = ResolveFullPath(fullPath, path);
@@ -90,7 +90,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.CreateFile(new U8Span(fullPath), size, options);
         }
 
-        protected override Result DeleteDirectoryImpl(U8Span path)
+        protected override Result DoDeleteDirectory(U8Span path)
         {
             Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
             Result rc = ResolveFullPath(fullPath, path);
@@ -99,7 +99,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.DeleteDirectory(new U8Span(fullPath));
         }
 
-        protected override Result DeleteDirectoryRecursivelyImpl(U8Span path)
+        protected override Result DoDeleteDirectoryRecursively(U8Span path)
         {
             Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
             Result rc = ResolveFullPath(fullPath, path);
@@ -108,7 +108,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.DeleteDirectoryRecursively(new U8Span(fullPath));
         }
 
-        protected override Result CleanDirectoryRecursivelyImpl(U8Span path)
+        protected override Result DoCleanDirectoryRecursively(U8Span path)
         {
             Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
             Result rc = ResolveFullPath(fullPath, path);
@@ -117,7 +117,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.CleanDirectoryRecursively(new U8Span(fullPath));
         }
 
-        protected override Result DeleteFileImpl(U8Span path)
+        protected override Result DoDeleteFile(U8Span path)
         {
             Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
             Result rc = ResolveFullPath(fullPath, path);
@@ -126,7 +126,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.DeleteFile(new U8Span(fullPath));
         }
 
-        protected override Result OpenDirectoryImpl(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
             directory = default;
 
@@ -137,7 +137,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.OpenDirectory(out directory, new U8Span(fullPath), mode);
         }
 
-        protected override Result OpenFileImpl(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
             file = default;
 
@@ -148,7 +148,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.OpenFile(out file, new U8Span(fullPath), mode);
         }
 
-        protected override Result RenameDirectoryImpl(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
         {
             Span<byte> fullOldPath = stackalloc byte[PathTools.MaxPathLength + 1];
             Span<byte> fullNewPath = stackalloc byte[PathTools.MaxPathLength + 1];
@@ -162,7 +162,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.RenameDirectory(new U8Span(fullOldPath), new U8Span(fullNewPath));
         }
 
-        protected override Result RenameFileImpl(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
         {
             Span<byte> fullOldPath = stackalloc byte[PathTools.MaxPathLength + 1];
             Span<byte> fullNewPath = stackalloc byte[PathTools.MaxPathLength + 1];
@@ -176,7 +176,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.RenameFile(new U8Span(fullOldPath), new U8Span(fullNewPath));
         }
 
-        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
             entryType = default;
 
@@ -189,22 +189,22 @@ namespace LibHac.FsSystem
             return BaseFileSystem.GetEntryType(out entryType, fullPath);
         }
 
-        protected override Result CommitImpl()
+        protected override Result DoCommit()
         {
             return BaseFileSystem.Commit();
         }
 
-        protected override Result CommitProvisionallyImpl(long commitCount)
+        protected override Result DoCommitProvisionally(long counter)
         {
-            return BaseFileSystem.CommitProvisionally(commitCount);
+            return BaseFileSystem.CommitProvisionally(counter);
         }
 
-        protected override Result RollbackImpl()
+        protected override Result DoRollback()
         {
             return BaseFileSystem.Rollback();
         }
 
-        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, U8Span path)
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
         {
             freeSpace = default;
 
@@ -215,7 +215,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.GetFreeSpaceSize(out freeSpace, new U8Span(fullPath));
         }
 
-        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, U8Span path)
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
         {
             totalSpace = default;
 
@@ -226,7 +226,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.GetTotalSpaceSize(out totalSpace, new U8Span(fullPath));
         }
 
-        protected override Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, U8Span path)
+        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
         {
             timeStamp = default;
 
@@ -237,7 +237,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.GetFileTimeStampRaw(out timeStamp, new U8Span(fullPath));
         }
 
-        protected override Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
+        protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
             U8Span path)
         {
             Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];

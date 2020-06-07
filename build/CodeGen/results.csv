@@ -199,6 +199,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6369,,UnsupportedOperationModifyReadOnlyFileSystem,
 2,6371,,UnsupportedOperationReadOnlyFileSystemGetSpace,
 2,6372,,UnsupportedOperationModifyReadOnlyFile,
+2,6373,,UnsupportedOperationInReadOnlyFile,
 2,6374,,UnsupportedOperationModifyPartitionFileSystem,
 2,6375,,UnsupportedOperationInPartitionFileSystem,Called PartitionFileSystemCore::CommitProvisionally.
 2,6376,,UnsupportedOperationInPartitionFileSetSize,

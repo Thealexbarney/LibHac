@@ -7,7 +7,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class LocalFileSystem : AttributeFileSystemBase
+    public class LocalFileSystem : IAttributeFileSystem
     {
         private string BasePath { get; }
 
@@ -66,7 +66,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result GetFileAttributesImpl(out NxFileAttributes attributes, U8Span path)
+        protected override Result DoGetFileAttributes(out NxFileAttributes attributes, U8Span path)
         {
             attributes = default;
 
@@ -86,7 +86,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result SetFileAttributesImpl(U8Span path, NxFileAttributes attributes)
+        protected override Result DoSetFileAttributes(U8Span path, NxFileAttributes attributes)
         {
             Result rc = ResolveFullPath(out string fullPath, path);
             if (rc.IsFailure()) return rc;
@@ -114,7 +114,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result GetFileSizeImpl(out long fileSize, U8Span path)
+        protected override Result DoGetFileSize(out long fileSize, U8Span path)
         {
             fileSize = default;
 
@@ -127,12 +127,12 @@ namespace LibHac.FsSystem
             return GetSizeInternal(out fileSize, info);
         }
 
-        protected override Result CreateDirectoryImpl(U8Span path)
+        protected override Result DoCreateDirectory(U8Span path)
         {
-            return CreateDirectory(path, NxFileAttributes.None);
+            return DoCreateDirectory(path, NxFileAttributes.None);
         }
 
-        protected override Result CreateDirectoryImpl(U8Span path, NxFileAttributes archiveAttribute)
+        protected override Result DoCreateDirectory(U8Span path, NxFileAttributes archiveAttribute)
         {
             Result rc = ResolveFullPath(out string fullPath, path);
             if (rc.IsFailure()) return rc;
@@ -153,7 +153,7 @@ namespace LibHac.FsSystem
             return CreateDirInternal(dir, archiveAttribute);
         }
 
-        protected override Result CreateFileImpl(U8Span path, long size, CreateFileOptions options)
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
         {
             Result rc = ResolveFullPath(out string fullPath, path);
             if (rc.IsFailure()) return rc;
@@ -181,7 +181,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result DeleteDirectoryImpl(U8Span path)
+        protected override Result DoDeleteDirectory(U8Span path)
         {
             Result rc = ResolveFullPath(out string fullPath, path);
             if (rc.IsFailure()) return rc;
@@ -192,7 +192,7 @@ namespace LibHac.FsSystem
             return DeleteDirectoryInternal(dir, false);
         }
 
-        protected override Result DeleteDirectoryRecursivelyImpl(U8Span path)
+        protected override Result DoDeleteDirectoryRecursively(U8Span path)
         {
             Result rc = ResolveFullPath(out string fullPath, path);
             if (rc.IsFailure()) return rc;
@@ -203,7 +203,7 @@ namespace LibHac.FsSystem
             return DeleteDirectoryInternal(dir, true);
         }
 
-        protected override Result CleanDirectoryRecursivelyImpl(U8Span path)
+        protected override Result DoCleanDirectoryRecursively(U8Span path)
         {
             Result rc = ResolveFullPath(out string fullPath, path);
             if (rc.IsFailure()) return rc;
@@ -229,7 +229,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DeleteFileImpl(U8Span path)
+        protected override Result DoDeleteFile(U8Span path)
         {
             Result rc = ResolveFullPath(out string fullPath, path);
             if (rc.IsFailure()) return rc;
@@ -240,7 +240,7 @@ namespace LibHac.FsSystem
             return DeleteFileInternal(file);
         }
 
-        protected override Result OpenDirectoryImpl(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
             directory = default;
             Result rc = ResolveFullPath(out string fullPath, path);
@@ -267,7 +267,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result OpenFileImpl(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
             file = default;
 
@@ -289,7 +289,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result RenameDirectoryImpl(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
         {
             Result rc = CheckSubPath(oldPath, newPath);
             if (rc.IsFailure()) return rc;
@@ -312,7 +312,7 @@ namespace LibHac.FsSystem
             return RenameDirInternal(currentDirInfo, newDirInfo);
         }
 
-        protected override Result RenameFileImpl(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
         {
             Result rc = ResolveFullPath(out string fullCurrentPath, oldPath);
             if (rc.IsFailure()) return rc;
@@ -332,7 +332,7 @@ namespace LibHac.FsSystem
             return RenameFileInternal(currentFileInfo, newFileInfo);
         }
 
-        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
             entryType = default;
 
@@ -361,7 +361,7 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, U8Span path)
+        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
         {
             timeStamp = default;
 
@@ -380,24 +380,24 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, U8Span path)
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
         {
             freeSpace = new DriveInfo(BasePath).AvailableFreeSpace;
             return Result.Success;
         }
 
-        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, U8Span path)
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
         {
             totalSpace = new DriveInfo(BasePath).TotalSize;
             return Result.Success;
         }
 
-        protected override Result CommitImpl()
+        protected override Result DoCommit()
         {
             return Result.Success;
         }
 
-        protected override Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
+        protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
             U8Span path)
         {
             return ResultFs.UnsupportedOperation.Log();

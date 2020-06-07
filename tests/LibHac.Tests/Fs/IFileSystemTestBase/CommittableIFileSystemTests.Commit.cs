@@ -26,8 +26,8 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file1, "/dir1/file".ToU8Span(), OpenMode.Write).ThrowIfFailure();
             fs.OpenFile(out IFile file2, "/dir2/file".ToU8Span(), OpenMode.Write).ThrowIfFailure();
 
-            file1.Write(0, data1, WriteOptionFlag.Flush).ThrowIfFailure();
-            file2.Write(0, data2, WriteOptionFlag.Flush).ThrowIfFailure();
+            file1.Write(0, data1, WriteOption.Flush).ThrowIfFailure();
+            file2.Write(0, data2, WriteOption.Flush).ThrowIfFailure();
 
             file1.Dispose();
             file2.Dispose();
@@ -45,7 +45,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             using (file1)
             {
-                Assert.Success(file1.Read(out long bytesRead, 0, readData1, ReadOptionFlag.None));
+                Assert.Success(file1.Read(out long bytesRead, 0, readData1, ReadOption.None));
                 Assert.Equal(data1.Length, bytesRead);
             }
 
@@ -55,7 +55,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             using (file2)
             {
-                Assert.Success(file2.Read(out long bytesRead, 0, readData2, ReadOptionFlag.None));
+                Assert.Success(file2.Read(out long bytesRead, 0, readData2, ReadOption.None));
                 Assert.Equal(data2.Length, bytesRead);
             }
 
@@ -110,7 +110,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.CreateFile("/dir/file".ToU8Span(), data1.Length, CreateFileOptions.None).ThrowIfFailure();
 
             fs.OpenFile(out IFile file, "/dir/file".ToU8Span(), OpenMode.Write).ThrowIfFailure();
-            file.Write(0, data1, WriteOptionFlag.Flush).ThrowIfFailure();
+            file.Write(0, data1, WriteOption.Flush).ThrowIfFailure();
             file.Dispose();
 
             // Commit and reopen the file system
@@ -121,7 +121,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             // Make changes to the file
             fs.OpenFile(out file, "/dir/file".ToU8Span(), OpenMode.Write).ThrowIfFailure();
-            file.Write(0, data2, WriteOptionFlag.Flush).ThrowIfFailure();
+            file.Write(0, data2, WriteOption.Flush).ThrowIfFailure();
             file.Dispose();
 
             Assert.Success(fs.Rollback());
@@ -133,7 +133,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             using (file)
             {
-                Assert.Success(file.Read(out long bytesRead, 0, readData, ReadOptionFlag.None));
+                Assert.Success(file.Read(out long bytesRead, 0, readData, ReadOption.None));
                 Assert.Equal(data1.Length, bytesRead);
             }
 

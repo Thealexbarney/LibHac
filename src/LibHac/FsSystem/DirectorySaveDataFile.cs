@@ -3,7 +3,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class DirectorySaveDataFile : FileBase
+    public class DirectorySaveDataFile : IFile
     {
         private IFile BaseFile { get; }
         private DirectorySaveDataFileSystem ParentFs { get; }
@@ -16,14 +16,15 @@ namespace LibHac.FsSystem
             Mode = mode;
         }
 
-        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
+        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
+            in ReadOption option)
         {
-            return BaseFile.Read(out bytesRead, offset, destination, options);
+            return BaseFile.Read(out bytesRead, offset, destination, in option);
         }
 
-        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
-            return BaseFile.Write(offset, source, options);
+            return BaseFile.Write(offset, source, in option);
         }
 
         protected override Result DoFlush()
@@ -39,6 +40,11 @@ namespace LibHac.FsSystem
         protected override Result DoSetSize(long size)
         {
             return BaseFile.SetSize(size);
+        }
+
+        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+        {
+            return BaseFile.OperateRange(outBuffer, operationId, offset, size, inBuffer);
         }
 
         protected override void Dispose(bool disposing)

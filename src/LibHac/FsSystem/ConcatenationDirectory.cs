@@ -38,7 +38,7 @@ namespace LibHac.FsSystem
             _path.Str[PathTools.MaxPathLength] = StringTraits.NullTerminator;
         }
 
-        public Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer)
+        protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)
         {
             entriesRead = 0;
             var entry = new DirectoryEntry();
@@ -81,7 +81,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public Result GetEntryCount(out long entryCount)
+        protected override Result DoGetEntryCount(out long entryCount)
         {
             entryCount = 0;
             long count = 0;

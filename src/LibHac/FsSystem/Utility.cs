@@ -209,10 +209,10 @@ namespace LibHac.FsSystem
 
                     while (remaining > 0)
                     {
-                        rc = sourceFile.Read(out long bytesRead, offset, workBuffer, ReadOptionFlag.None);
+                        rc = sourceFile.Read(out long bytesRead, offset, workBuffer, ReadOption.None);
                         if (rc.IsFailure()) return rc;
 
-                        rc = destFile.Write(offset, workBuffer.Slice(0, (int)bytesRead), WriteOptionFlag.None);
+                        rc = destFile.Write(offset, workBuffer.Slice(0, (int)bytesRead), WriteOption.None);
                         if (rc.IsFailure()) return rc;
 
                         remaining -= bytesRead;

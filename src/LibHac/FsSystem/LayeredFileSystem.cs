@@ -5,7 +5,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class LayeredFileSystem : FileSystemBase
+    public class LayeredFileSystem : IFileSystem
     {
         /// <summary>
         /// List of source <see cref="IFileSystem"/>s.
@@ -35,7 +35,7 @@ namespace LibHac.FsSystem
             Sources.AddRange(sourceFileSystems);
         }
 
-        protected override Result OpenDirectoryImpl(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
             directory = default;
 
@@ -106,7 +106,7 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result OpenFileImpl(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
             file = default;
 
@@ -135,7 +135,7 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
             foreach (IFileSystem fs in Sources)
             {
@@ -152,7 +152,7 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, U8Span path)
+        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
         {
             foreach (IFileSystem fs in Sources)
             {
@@ -168,7 +168,7 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
+        protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
             U8Span path)
         {
             foreach (IFileSystem fs in Sources)
@@ -184,19 +184,19 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result CommitImpl()
+        protected override Result DoCommit()
         {
             return Result.Success;
         }
 
-        protected override Result CreateDirectoryImpl(U8Span path) => ResultFs.UnsupportedOperation.Log();
-        protected override Result CreateFileImpl(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperation.Log();
-        protected override Result DeleteDirectoryImpl(U8Span path) => ResultFs.UnsupportedOperation.Log();
-        protected override Result DeleteDirectoryRecursivelyImpl(U8Span path) => ResultFs.UnsupportedOperation.Log();
-        protected override Result CleanDirectoryRecursivelyImpl(U8Span path) => ResultFs.UnsupportedOperation.Log();
-        protected override Result DeleteFileImpl(U8Span path) => ResultFs.UnsupportedOperation.Log();
-        protected override Result RenameDirectoryImpl(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperation.Log();
-        protected override Result RenameFileImpl(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DoCreateDirectory(U8Span path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DoDeleteDirectory(U8Span path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DoDeleteDirectoryRecursively(U8Span path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DoCleanDirectoryRecursively(U8Span path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DoDeleteFile(U8Span path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperation.Log();
 
         private class MergedDirectory : IDirectory
         {
@@ -230,7 +230,7 @@ namespace LibHac.FsSystem
                 return Result.Success;
             }
 
-            public Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer)
+            protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)
             {
                 entriesRead = 0;
                 int entryIndex = 0;
@@ -255,7 +255,7 @@ namespace LibHac.FsSystem
                 return Result.Success;
             }
 
-            public Result GetEntryCount(out long entryCount)
+            protected override Result DoGetEntryCount(out long entryCount)
             {
                 entryCount = 0;
                 long totalEntryCount = 0;

@@ -3,7 +3,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class NullFile : FileBase
+    public class NullFile : IFile
     {
         private OpenMode Mode { get; }
 
@@ -16,11 +16,12 @@ namespace LibHac.FsSystem
 
         private long Length { get; }
 
-        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
+        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
+            in ReadOption option)
         {
             bytesRead = 0;
 
-            Result rc = ValidateReadParams(out long toRead, offset, destination.Length, Mode);
+            Result rc = DryRead(out long toRead, offset, destination.Length, in option, Mode);
             if (rc.IsFailure()) return rc;
 
             destination.Slice(0, (int)toRead).Clear();
@@ -29,7 +30,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
             return Result.Success;
         }
@@ -42,6 +43,12 @@ namespace LibHac.FsSystem
         protected override Result DoGetSize(out long size)
         {
             size = Length;
+            return Result.Success;
+        }
+
+        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+            ReadOnlySpan<byte> inBuffer)
+        {
             return Result.Success;
         }
 

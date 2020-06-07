@@ -7,7 +7,7 @@ namespace LibHac.FsSystem
     /// <summary>
     /// Provides an <see cref="IFile"/> interface for interacting with a <see cref="Stream"/>
     /// </summary>
-    public class StreamFile : FileBase
+    public class StreamFile : IFile
     {
         // todo: handle Stream exceptions
 
@@ -21,11 +21,12 @@ namespace LibHac.FsSystem
             Mode = mode;
         }
 
-        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
+        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
+            in ReadOption option)
         {
             bytesRead = default;
 
-            Result rc = ValidateReadParams(out long toRead, offset, destination.Length, Mode);
+            Result rc = DryRead(out long toRead, offset, destination.Length, in option, Mode);
             if (rc.IsFailure()) return rc;
 
             lock (Locker)
@@ -40,9 +41,9 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
-            Result rc = ValidateWriteParams(offset, source.Length, Mode, out _);
+            Result rc = DryWrite(out _, offset, source.Length, in option, Mode);
             if (rc.IsFailure()) return rc;
 
             lock (Locker)
@@ -51,7 +52,7 @@ namespace LibHac.FsSystem
                 BaseStream.Write(source);
             }
 
-            if (options.HasFlag(WriteOptionFlag.Flush))
+            if (option.HasFlushFlag())
             {
                 return Flush();
             }
@@ -84,6 +85,12 @@ namespace LibHac.FsSystem
                 BaseStream.SetLength(size);
                 return Result.Success;
             }
+        }
+
+        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+            ReadOnlySpan<byte> inBuffer)
+        {
+            return ResultFs.NotImplemented.Log();
         }
     }
 }

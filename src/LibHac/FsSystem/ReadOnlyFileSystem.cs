@@ -3,7 +3,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class ReadOnlyFileSystem : FileSystemBase
+    public class ReadOnlyFileSystem : IFileSystem
     {
         private IFileSystem BaseFs { get; }
 
@@ -12,12 +12,12 @@ namespace LibHac.FsSystem
             BaseFs = baseFileSystem;
         }
 
-        protected override Result OpenDirectoryImpl(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
             return BaseFs.OpenDirectory(out directory, path, mode);
         }
 
-        protected override Result OpenFileImpl(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
             file = default;
 
@@ -28,12 +28,12 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
             return BaseFs.GetEntryType(out entryType, path);
         }
 
-        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, U8Span path)
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
         {
             freeSpace = 0;
             return Result.Success;
@@ -42,7 +42,7 @@ namespace LibHac.FsSystem
             // return ResultFs.UnsupportedOperationReadOnlyFileSystemGetSpace.Log();
         }
 
-        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, U8Span path)
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
         {
             return BaseFs.GetTotalSpaceSize(out totalSpace, path);
 
@@ -50,7 +50,7 @@ namespace LibHac.FsSystem
             // return ResultFs.UnsupportedOperationReadOnlyFileSystemGetSpace.Log();
         }
 
-        protected override Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, U8Span path)
+        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
         {
             return BaseFs.GetFileTimeStampRaw(out timeStamp, path);
 
@@ -58,25 +58,25 @@ namespace LibHac.FsSystem
             // return ResultFs.NotImplemented.Log();
         }
 
-        protected override Result CommitImpl()
+        protected override Result DoCommit()
         {
             return Result.Success;
         }
 
-        protected override Result CreateDirectoryImpl(U8Span path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
+        protected override Result DoCreateDirectory(U8Span path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
 
-        protected override Result CreateFileImpl(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
 
-        protected override Result DeleteDirectoryImpl(U8Span path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
+        protected override Result DoDeleteDirectory(U8Span path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
 
-        protected override Result DeleteDirectoryRecursivelyImpl(U8Span path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
+        protected override Result DoDeleteDirectoryRecursively(U8Span path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
 
-        protected override Result CleanDirectoryRecursivelyImpl(U8Span path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
+        protected override Result DoCleanDirectoryRecursively(U8Span path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
 
-        protected override Result DeleteFileImpl(U8Span path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
+        protected override Result DoDeleteFile(U8Span path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
 
-        protected override Result RenameDirectoryImpl(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
+        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
 
-        protected override Result RenameFileImpl(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
+        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
     }
 }

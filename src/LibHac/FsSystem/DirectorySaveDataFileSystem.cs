@@ -12,7 +12,7 @@ namespace LibHac.FsSystem
     /// underlying <see cref="IFileSystem"/> is atomic.
     /// This class is based on nn::fssystem::DirectorySaveDataFileSystem in SDK 10.4.0 used in FS 10.0.0
     /// </remarks>
-    public class DirectorySaveDataFileSystem : FileSystemBase
+    public class DirectorySaveDataFileSystem : IFileSystem
     {
         private const int IdealWorkBufferSize = 0x100000; // 1 MiB
 
@@ -97,7 +97,7 @@ namespace LibHac.FsSystem
             return BaseFs.RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath);
         }
 
-        protected override Result CreateDirectoryImpl(U8Span path)
+        protected override Result DoCreateDirectory(U8Span path)
         {
             FsPath fullPath;
             unsafe { _ = &fullPath; } // workaround for CS0165
@@ -111,7 +111,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result CreateFileImpl(U8Span path, long size, CreateFileOptions options)
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
         {
             FsPath fullPath;
             unsafe { _ = &fullPath; } // workaround for CS0165
@@ -125,7 +125,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result DeleteDirectoryImpl(U8Span path)
+        protected override Result DoDeleteDirectory(U8Span path)
         {
             FsPath fullPath;
             unsafe { _ = &fullPath; } // workaround for CS0165
@@ -139,7 +139,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result DeleteDirectoryRecursivelyImpl(U8Span path)
+        protected override Result DoDeleteDirectoryRecursively(U8Span path)
         {
             FsPath fullPath;
             unsafe { _ = &fullPath; } // workaround for CS0165
@@ -153,7 +153,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result CleanDirectoryRecursivelyImpl(U8Span path)
+        protected override Result DoCleanDirectoryRecursively(U8Span path)
         {
             FsPath fullPath;
             unsafe { _ = &fullPath; } // workaround for CS0165
@@ -167,7 +167,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result DeleteFileImpl(U8Span path)
+        protected override Result DoDeleteFile(U8Span path)
         {
             FsPath fullPath;
             unsafe { _ = &fullPath; } // workaround for CS0165
@@ -181,7 +181,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result OpenDirectoryImpl(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
             FsPath fullPath;
             unsafe { _ = &fullPath; } // workaround for CS0165
@@ -199,7 +199,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result OpenFileImpl(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
             file = default;
 
@@ -225,7 +225,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result RenameDirectoryImpl(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
         {
             FsPath fullCurrentPath;
             FsPath fullNewPath;
@@ -244,7 +244,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result RenameFileImpl(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
         {
             FsPath fullCurrentPath;
             FsPath fullNewPath;
@@ -263,7 +263,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
             FsPath fullPath;
             unsafe { _ = &fullPath; } // workaround for CS0165
@@ -281,7 +281,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result CommitImpl()
+        protected override Result DoCommit()
         {
             lock (Locker)
             {
@@ -315,7 +315,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result CommitProvisionallyImpl(long commitCount)
+        protected override Result DoCommitProvisionally(long counter)
         {
             if (!CanCommitProvisionally)
                 return ResultFs.UnsupportedOperationInDirectorySaveDataFileSystem.Log();
@@ -323,7 +323,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result RollbackImpl()
+        protected override Result DoRollback()
         {
             // No old data is kept for temporary save data, so there's nothing to rollback to
             if (!IsPersistentSaveData)
@@ -332,7 +332,7 @@ namespace LibHac.FsSystem
             return Initialize(IsPersistentSaveData, CanCommitProvisionally);
         }
 
-        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, U8Span path)
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
         {
             freeSpace = default;
 
@@ -348,7 +348,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, U8Span path)
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
         {
             totalSpace = default;
 

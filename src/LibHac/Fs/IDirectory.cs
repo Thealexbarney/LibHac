@@ -2,10 +2,11 @@
 
 namespace LibHac.Fs
 {
+    // ReSharper disable once InconsistentNaming
     /// <summary>
     /// Provides an interface for enumerating the child entries of a directory.
     /// </summary>
-    public interface IDirectory
+    public abstract class IDirectory : IDisposable
     {
         /// <summary>
         /// Retrieves the next entries that this directory contains. Does not search subdirectories.
@@ -19,13 +20,36 @@ namespace LibHac.Fs
         /// Each call will attempt to read as many entries as the buffer can contain.
         /// Once all the entries have been read, all subsequent calls to <see cref="Read"/> will
         /// read 0 entries into the buffer.</remarks>
-        Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer);
+        public Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer)
+        {
+            if (entryBuffer.IsEmpty)
+            {
+                entriesRead = 0;
+                return Result.Success;
+            }
+
+            return DoRead(out entriesRead, entryBuffer);
+        }
 
         /// <summary>
         /// Retrieves the number of file system entries that this directory contains. Does not search subdirectories.
         /// </summary>
         /// <param name="entryCount">The number of child entries the directory contains.</param>
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        Result GetEntryCount(out long entryCount);
+        public Result GetEntryCount(out long entryCount)
+        {
+            return DoGetEntryCount(out entryCount);
+        }
+
+        protected abstract Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer);
+        protected abstract Result DoGetEntryCount(out long entryCount);
+
+        protected virtual void Dispose(bool disposing) { }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
     }
 }

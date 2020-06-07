@@ -388,6 +388,8 @@ namespace LibHac.Fs
                 public static Result.Base UnsupportedOperationReadOnlyFileSystemGetSpace => new Result.Base(ModuleFs, 6371);
                 /// <summary>Error code: 2002-6372; Inner value: 0x31c802</summary>
                 public static Result.Base UnsupportedOperationModifyReadOnlyFile => new Result.Base(ModuleFs, 6372);
+                /// <summary>Error code: 2002-6373; Inner value: 0x31ca02</summary>
+                public static Result.Base UnsupportedOperationInReadOnlyFile => new Result.Base(ModuleFs, 6373);
                 /// <summary>Error code: 2002-6374; Inner value: 0x31cc02</summary>
                 public static Result.Base UnsupportedOperationModifyPartitionFileSystem => new Result.Base(ModuleFs, 6374);
                 /// <summary>Called PartitionFileSystemCore::CommitProvisionally.<br/>Error code: 2002-6375; Inner value: 0x31ce02</summary>

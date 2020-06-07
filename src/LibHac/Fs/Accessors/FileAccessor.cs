@@ -2,7 +2,7 @@
 
 namespace LibHac.Fs.Accessors
 {
-    public class FileAccessor : FileBase
+    public class FileAccessor : IFile
     {
         private IFile File { get; set; }
 
@@ -17,29 +17,30 @@ namespace LibHac.Fs.Accessors
             OpenMode = mode;
         }
 
-        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
+        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
+            in ReadOption option)
         {
             CheckIfDisposed();
 
-            return File.Read(out bytesRead, offset, destination, options);
+            return File.Read(out bytesRead, offset, destination, in option);
         }
 
-        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
             CheckIfDisposed();
 
             if (source.Length == 0)
             {
-                WriteState = (WriteState)(~options & WriteOptionFlag.Flush);
+                WriteState = (WriteState)(~option.Flags & WriteOptionFlag.Flush);
 
                 return Result.Success;
             }
 
-            Result rc = File.Write(offset, source, options);
+            Result rc = File.Write(offset, source, in option);
 
             if (rc.IsSuccess())
             {
-                WriteState = (WriteState)(~options & WriteOptionFlag.Flush);
+                WriteState = (WriteState)(~option.Flags & WriteOptionFlag.Flush);
             }
 
             return rc;
@@ -64,6 +65,11 @@ namespace LibHac.Fs.Accessors
             CheckIfDisposed();
 
             return File.GetSize(out size);
+        }
+
+        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+        {
+            return ResultFs.NotImplemented.Log();
         }
 
         protected override Result DoSetSize(long size)

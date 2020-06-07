@@ -13,7 +13,7 @@ namespace LibHac.Loader
 
         public Result Initialize(IFile nsoFile)
         {
-            Result rc = nsoFile.Read(out long bytesRead, 0, SpanHelpers.AsByteSpan(ref Header), ReadOptionFlag.None);
+            Result rc = nsoFile.Read(out long bytesRead, 0, SpanHelpers.AsByteSpan(ref Header), ReadOption.None);
             if (rc.IsFailure()) return rc;
 
             if (bytesRead != Unsafe.SizeOf<NsoHeader>())
@@ -69,7 +69,7 @@ namespace LibHac.Loader
             // Load data from file.
             uint loadAddress = isCompressed ? (uint)buffer.Length - fileSize : 0;
 
-            Result rc = NsoFile.Read(out long bytesRead, segment.FileOffset, buffer.Slice((int)loadAddress), ReadOptionFlag.None);
+            Result rc = NsoFile.Read(out long bytesRead, segment.FileOffset, buffer.Slice((int)loadAddress), ReadOption.None);
             if (rc.IsFailure()) return rc;
 
             if (bytesRead != fileSize)

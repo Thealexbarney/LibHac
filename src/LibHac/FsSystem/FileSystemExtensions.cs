@@ -224,12 +224,12 @@ namespace LibHac.FsSystem
 
         public static Result Read(this IFile file, out long bytesRead, long offset, Span<byte> destination)
         {
-            return file.Read(out bytesRead, offset, destination, ReadOptionFlag.None);
+            return file.Read(out bytesRead, offset, destination, ReadOption.None);
         }
 
         public static Result Write(this IFile file, long offset, ReadOnlySpan<byte> source)
         {
-            return file.Write(offset, source, WriteOptionFlag.None);
+            return file.Write(offset, source, WriteOption.None);
         }
 
         public static bool DirectoryExists(this IFileSystem fs, string path)

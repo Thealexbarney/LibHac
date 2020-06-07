@@ -3,7 +3,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class StorageFile : FileBase
+    public class StorageFile : IFile
     {
         private IStorage BaseStorage { get; }
         private OpenMode Mode { get; }
@@ -14,11 +14,12 @@ namespace LibHac.FsSystem
             Mode = mode;
         }
 
-        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
+        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
+            in ReadOption option)
         {
             bytesRead = default;
 
-            Result rc = ValidateReadParams(out long toRead, offset, destination.Length, Mode);
+            Result rc = DryRead(out long toRead, offset, destination.Length, in option, Mode);
             if (rc.IsFailure()) return rc;
 
             if (toRead == 0)
@@ -34,9 +35,9 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
-            Result rc = ValidateWriteParams(offset, source.Length, Mode, out bool isResizeNeeded);
+            Result rc = DryWrite(out bool isResizeNeeded, offset, source.Length, in option, Mode);
             if (rc.IsFailure()) return rc;
 
             if (isResizeNeeded)
@@ -48,7 +49,7 @@ namespace LibHac.FsSystem
             rc = BaseStorage.Write(offset, source);
             if (rc.IsFailure()) return rc;
 
-            if (options.HasFlag(WriteOptionFlag.Flush))
+            if (option.HasFlushFlag())
             {
                 return Flush();
             }
@@ -75,6 +76,12 @@ namespace LibHac.FsSystem
                 return ResultFs.InvalidOpenModeForWrite.Log();
 
             return BaseStorage.SetSize(size);
+        }
+
+        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+            ReadOnlySpan<byte> inBuffer)
+        {
+            return ResultFs.NotImplemented.Log();
         }
     }
 }

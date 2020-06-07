@@ -18,7 +18,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Read);
             using (file)
             {
-                Assert.True(file.Read(out long bytesRead, 50, buffer, ReadOptionFlag.None).IsSuccess());
+                Assert.True(file.Read(out long bytesRead, 50, buffer, ReadOption.None).IsSuccess());
                 Assert.Equal(20, bytesRead);
             }
         }
@@ -34,7 +34,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Read);
             using (file)
             {
-                Result rc = file.Read(out _, 1, buffer, ReadOptionFlag.None);
+                Result rc = file.Read(out _, 1, buffer, ReadOption.None);
                 Assert.Equal(ResultFs.OutOfRange.Value, rc);
             }
         }
@@ -50,7 +50,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Write);
             using (file)
             {
-                Result rc = file.Read(out _, 0, buffer, ReadOptionFlag.None);
+                Result rc = file.Read(out _, 0, buffer, ReadOption.None);
                 Assert.Equal(ResultFs.InvalidOpenModeForRead.Value, rc);
             }
         }
@@ -66,7 +66,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Write);
             using (file)
             {
-                Result rc = file.Read(out _, -5, buffer, ReadOptionFlag.None);
+                Result rc = file.Read(out _, -5, buffer, ReadOption.None);
                 Assert.Equal(ResultFs.OutOfRange.Value, rc);
             }
         }
@@ -82,7 +82,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Write);
             using (file)
             {
-                Result rc = file.Read(out _, long.MaxValue - 5, buffer, ReadOptionFlag.None);
+                Result rc = file.Read(out _, long.MaxValue - 5, buffer, ReadOption.None);
                 Assert.Equal(ResultFs.OutOfRange.Value, rc);
             }
         }
@@ -98,7 +98,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Read);
             using (file)
             {
-                Assert.True(file.Read(out long bytesRead, 90, buffer, ReadOptionFlag.None).IsSuccess());
+                Assert.True(file.Read(out long bytesRead, 90, buffer, ReadOption.None).IsSuccess());
                 Assert.Equal(10, bytesRead);
             }
         }
@@ -114,7 +114,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Write);
             using (file)
             {
-                file.Write(0, new byte[100], WriteOptionFlag.None);
+                file.Write(0, new byte[100], WriteOption.None);
             }
 
             var bufferExpected = new byte[200];
@@ -126,7 +126,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out file, "/file".ToU8Span(), OpenMode.Read);
             using (file)
             {
-                Assert.True(file.Read(out _, 90, buffer, ReadOptionFlag.None).IsSuccess());
+                Assert.True(file.Read(out _, 90, buffer, ReadOption.None).IsSuccess());
                 Assert.Equal(bufferExpected, buffer);
             }
         }

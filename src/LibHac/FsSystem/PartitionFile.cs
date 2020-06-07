@@ -3,7 +3,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class PartitionFile : FileBase
+    public class PartitionFile : IFile
     {
         private IStorage BaseStorage { get; }
         private long Offset { get; }
@@ -18,11 +18,12 @@ namespace LibHac.FsSystem
             Size = size;
         }
 
-        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
+        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
+            in ReadOption option)
         {
             bytesRead = 0;
 
-            Result rc = ValidateReadParams(out long toRead, offset, destination.Length, Mode);
+            Result rc = DryRead(out long toRead, offset, destination.Length, in option, Mode);
             if (rc.IsFailure()) return rc;
 
             long storageOffset = Offset + offset;
@@ -32,9 +33,9 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
-            Result rc = ValidateWriteParams(offset, source.Length, Mode, out bool isResizeNeeded);
+            Result rc = DryWrite(out bool isResizeNeeded, offset, source.Length, in option, Mode);
             if (rc.IsFailure()) return rc;
 
             if (isResizeNeeded) return ResultFs.UnsupportedOperationInPartitionFileSetSize.Log();
@@ -45,7 +46,7 @@ namespace LibHac.FsSystem
             if (rc.IsFailure()) return rc;
 
             // N doesn't flush if the flag is set
-            if (options.HasFlag(WriteOptionFlag.Flush))
+            if (option.HasFlushFlag())
             {
                 return BaseStorage.Flush();
             }
@@ -67,6 +68,12 @@ namespace LibHac.FsSystem
         {
             size = Size;
             return Result.Success;
+        }
+
+        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+            ReadOnlySpan<byte> inBuffer)
+        {
+            return ResultFs.NotImplemented.Log();
         }
 
         protected override Result DoSetSize(long size)

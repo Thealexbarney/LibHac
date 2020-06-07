@@ -7,7 +7,7 @@ using LibHac.FsSystem.Detail;
 
 namespace LibHac.FsSystem
 {
-    public class PartitionFileSystemCore<T> : FileSystemBase where T : unmanaged, IPartitionFileSystemEntry
+    public class PartitionFileSystemCore<T> : IFileSystem where T : unmanaged, IPartitionFileSystemEntry
     {
         private IStorage BaseStorage { get; set; }
         private PartitionFileSystemMetaCore<T> MetaData { get; set; }
@@ -31,7 +31,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result OpenDirectoryImpl(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
             directory = default;
 
@@ -48,7 +48,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result OpenFileImpl(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
             file = default;
 
@@ -68,7 +68,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
             entryType = default;
 
@@ -95,22 +95,22 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result CommitImpl()
+        protected override Result DoCommit()
         {
             return Result.Success;
         }
 
-        protected override Result CreateDirectoryImpl(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result CreateFileImpl(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DeleteDirectoryImpl(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DeleteDirectoryRecursivelyImpl(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result CleanDirectoryRecursivelyImpl(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DeleteFileImpl(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result RenameDirectoryImpl(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result RenameFileImpl(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result CommitProvisionallyImpl(long commitCount) => ResultFs.UnsupportedOperationInPartitionFileSystem.Log();
+        protected override Result DoCreateDirectory(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result DoDeleteDirectory(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result DoDeleteDirectoryRecursively(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result DoCleanDirectoryRecursively(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result DoDeleteFile(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result DoCommitProvisionally(long counter) => ResultFs.UnsupportedOperationInPartitionFileSystem.Log();
 
-        private class PartitionFile : FileBase
+        private class PartitionFile : IFile
         {
             private PartitionFileSystemCore<T> ParentFs { get; }
             private OpenMode Mode { get; }
@@ -123,11 +123,12 @@ namespace LibHac.FsSystem
                 Mode = mode;
             }
 
-            protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, ReadOptionFlag options)
+            protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
+                in ReadOption option)
             {
                 bytesRead = default;
 
-                Result rc = ValidateReadParams(out long bytesToRead, offset, destination.Length, Mode);
+                Result rc = DryRead(out long bytesToRead, offset, destination.Length, in option, Mode);
                 if (rc.IsFailure()) return rc;
 
                 bool hashNeeded = false;
@@ -240,9 +241,9 @@ namespace LibHac.FsSystem
                 return rc;
             }
 
-            protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, WriteOptionFlag options)
+            protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
             {
-                Result rc = ValidateWriteParams(offset, source.Length, Mode, out bool isResizeNeeded);
+                Result rc = DryWrite(out bool isResizeNeeded, offset, source.Length, in option, Mode);
                 if (rc.IsFailure()) return rc;
 
                 if (isResizeNeeded)
@@ -327,7 +328,7 @@ namespace LibHac.FsSystem
                 Mode = mode;
             }
 
-            public Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer)
+            protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)
             {
                 if (Mode.HasFlag(OpenDirectoryMode.File))
                 {
@@ -356,7 +357,7 @@ namespace LibHac.FsSystem
                 return Result.Success;
             }
 
-            public Result GetEntryCount(out long entryCount)
+            protected override Result DoGetEntryCount(out long entryCount)
             {
                 if (Mode.HasFlag(OpenDirectoryMode.File))
                 {

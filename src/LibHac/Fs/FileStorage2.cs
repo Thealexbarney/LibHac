@@ -50,7 +50,7 @@ namespace LibHac.Fs
             if (!IsRangeValid(offset, destination.Length, FileSize))
                 return ResultFs.OutOfRange.Log();
 
-            return BaseFile.Read(out _, offset, destination, ReadOptionFlag.None);
+            return BaseFile.Read(out _, offset, destination, ReadOption.None);
         }
 
         protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
@@ -64,7 +64,7 @@ namespace LibHac.Fs
             if (!IsRangeValid(offset, source.Length, FileSize))
                 return ResultFs.OutOfRange.Log();
 
-            return BaseFile.Write(offset, source, WriteOptionFlag.None);
+            return BaseFile.Write(offset, source, WriteOption.None);
         }
 
         protected override Result FlushImpl()

@@ -20,7 +20,7 @@ namespace LibHac.FsSystem
             Path = path;
         }
 
-        public Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer)
+        protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)
         {
             Result rc = BaseDirectory.Read(out entriesRead, entryBuffer);
             if (rc.IsFailure()) return rc;
@@ -46,7 +46,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public Result GetEntryCount(out long entryCount)
+        protected override Result DoGetEntryCount(out long entryCount)
         {
             return BaseDirectory.GetEntryCount(out entryCount);
         }
@@ -73,10 +73,10 @@ namespace LibHac.FsSystem
                     long fileSize = 0;
                     long bytesRead;
 
-                    file.Read(out bytesRead, magicOffset, SpanHelpers.AsByteSpan(ref magic), ReadOptionFlag.None);
+                    file.Read(out bytesRead, magicOffset, SpanHelpers.AsByteSpan(ref magic), ReadOption.None);
                     if (bytesRead != sizeof(uint) || magic != AesXtsFileHeader.AesXtsFileMagic) return 0;
 
-                    file.Read(out bytesRead, fileSizeOffset, SpanHelpers.AsByteSpan(ref fileSize), ReadOptionFlag.None);
+                    file.Read(out bytesRead, fileSizeOffset, SpanHelpers.AsByteSpan(ref fileSize), ReadOption.None);
                     if (bytesRead != sizeof(long) || magic != AesXtsFileHeader.AesXtsFileMagic) return 0;
 
                     return fileSize;

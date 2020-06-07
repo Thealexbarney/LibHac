@@ -98,7 +98,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.CreateFile("/file".ToU8Span(), data.Length, CreateFileOptions.None);
 
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Write);
-            file.Write(0, data, WriteOptionFlag.None);
+            file.Write(0, data, WriteOption.None);
             file.Dispose();
 
             fs.RenameFile("/file".ToU8Span(), "/renamed".ToU8Span());
@@ -106,7 +106,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             var readData = new byte[data.Length];
 
             fs.OpenFile(out file, "/renamed".ToU8Span(), OpenMode.Read);
-            Result rc = file.Read(out long bytesRead, 0, readData, ReadOptionFlag.None);
+            Result rc = file.Read(out long bytesRead, 0, readData, ReadOption.None);
             file.Dispose();
 
             Assert.True(rc.IsSuccess());
