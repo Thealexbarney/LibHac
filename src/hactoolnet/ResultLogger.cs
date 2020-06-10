@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using LibHac;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 
 namespace hactoolnet
 {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LibHac.Fs
+namespace LibHac.Fs.Fsa
 {
     // ReSharper disable once InconsistentNaming
     /// <summary>

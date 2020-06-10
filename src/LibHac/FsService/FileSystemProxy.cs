@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 using LibHac.FsService.Impl;
 using LibHac.FsSystem;
 using LibHac.Kvdb;

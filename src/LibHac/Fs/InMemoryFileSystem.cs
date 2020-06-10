@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using LibHac.Common;
+using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 
 namespace LibHac.Fs

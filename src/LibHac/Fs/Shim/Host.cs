@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Fs.Fsa;
 using LibHac.FsService;
 using LibHac.FsSystem;
 using static LibHac.Fs.CommonMountNames;

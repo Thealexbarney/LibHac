@@ -6,6 +6,7 @@ using System.Text;
 using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSystem
 {

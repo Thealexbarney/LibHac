@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.Fs.Accessors
 {

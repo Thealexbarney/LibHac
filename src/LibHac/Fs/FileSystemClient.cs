@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs.Accessors;
+using LibHac.Fs.Fsa;
 using LibHac.FsService;
 using LibHac.FsSystem;
 

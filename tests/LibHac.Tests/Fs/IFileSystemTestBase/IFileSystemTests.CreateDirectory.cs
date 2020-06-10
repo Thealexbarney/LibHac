@@ -1,5 +1,6 @@
 ﻿using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 using Xunit;
 
 namespace LibHac.Tests.Fs.IFileSystemTestBase

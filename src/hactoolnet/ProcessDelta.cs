@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 using LibHac.FsSystem.NcaUtils;
 using static hactoolnet.Print;

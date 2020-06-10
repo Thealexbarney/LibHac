@@ -3,6 +3,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using LibHac.Crypto;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSystem.NcaUtils
 {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.Fs
 {

@@ -1,4 +1,5 @@
 ﻿using LibHac.Fs;
+using LibHac.Fs.Fsa;
 using LibHac.FsSystem.NcaUtils;
 
 namespace LibHac.FsService.Creators

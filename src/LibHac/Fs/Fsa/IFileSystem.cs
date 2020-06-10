@@ -2,7 +2,7 @@
 using LibHac.Common;
 using LibHac.FsSystem;
 
-namespace LibHac.Fs
+namespace LibHac.Fs.Fsa
 {
     // ReSharper disable once InconsistentNaming
     /// <summary>

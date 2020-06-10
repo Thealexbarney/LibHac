@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 using LibHac.FsSystem.Detail;
 
 namespace LibHac.FsSystem

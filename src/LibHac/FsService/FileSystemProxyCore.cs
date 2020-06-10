@@ -3,6 +3,7 @@ using System.Buffers.Text;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
 using LibHac.FsSystem;
 using LibHac.FsService.Creators;
