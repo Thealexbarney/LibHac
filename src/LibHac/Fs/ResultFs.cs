@@ -229,6 +229,8 @@ namespace LibHac.Fs
                 public static Result.Base SaveDataFileTableCorruptedInternal => new Result.Base(ModuleFs, 4723);
                 /// <summary>Error code: 2002-4724; Inner value: 0x24e802</summary>
                 public static Result.Base AllocationTableIteratedRangeEntryInternal => new Result.Base(ModuleFs, 4724);
+                /// <summary>Error code: 2002-4725; Inner value: 0x24ea02</summary>
+                public static Result.Base InvalidAllocationTableOffset => new Result.Base(ModuleFs, 4725);
 
             /// <summary>Error code: 2002-4741; Range: 4741-4759; Inner value: 0x250a02</summary>
             public static Result.Base AesXtsFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4741, 4759); }

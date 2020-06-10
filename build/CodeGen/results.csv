@@ -113,6 +113,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,4722,,SaveDataAllocationTableCorruptedInternal,
 2,4723,,SaveDataFileTableCorruptedInternal,
 2,4724,,AllocationTableIteratedRangeEntryInternal,
+2,4725,,InvalidAllocationTableOffset,
 
 2,4741,4759,AesXtsFileSystemCorrupted,
 2,4742,,AesXtsFileHeaderTooShort,

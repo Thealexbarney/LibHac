@@ -34,7 +34,11 @@ namespace LibHac.FsSystem.Save
             while (remaining > 0)
             {
                 int blockNum = (int)(inPos / BlockSize);
-                iterator.Seek(blockNum);
+
+                if (!iterator.Seek(blockNum))
+                {
+                    return ResultFs.InvalidAllocationTableOffset.Log();
+                }
 
                 int segmentPos = (int)(inPos - (long)iterator.VirtualBlock * BlockSize);
                 long physicalOffset = iterator.PhysicalBlock * BlockSize + segmentPos;
@@ -64,7 +68,11 @@ namespace LibHac.FsSystem.Save
             while (remaining > 0)
             {
                 int blockNum = (int)(inPos / BlockSize);
-                iterator.Seek(blockNum);
+
+                if (!iterator.Seek(blockNum))
+                {
+                    return ResultFs.InvalidAllocationTableOffset.Log();
+                }
 
                 int segmentPos = (int)(inPos - (long)iterator.VirtualBlock * BlockSize);
                 long physicalOffset = iterator.PhysicalBlock * BlockSize + segmentPos;
@@ -124,7 +132,7 @@ namespace LibHac.FsSystem.Save
             if (newBlockCount > oldBlockCount)
             {
                 int newBlocks = Fat.Allocate(newBlockCount - oldBlockCount);
-                if (InitialBlock == -1) throw new IOException("Not enough space to resize file.");
+                if (newBlocks == -1) throw new IOException("Not enough space to resize file.");
 
                 Fat.Join(InitialBlock, newBlocks);
             }
