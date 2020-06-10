@@ -53,7 +53,8 @@ namespace LibHac.FsSystem.Save
                 if (rc.IsFailure()) return rc;
             }
 
-            BaseStorage.Write(offset, source);
+            rc = BaseStorage.Write(offset, source);
+            if (rc.IsFailure()) return rc;
 
             if ((options & WriteOption.Flush) != 0)
             {
