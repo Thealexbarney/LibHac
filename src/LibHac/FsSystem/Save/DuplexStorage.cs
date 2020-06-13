@@ -3,7 +3,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem.Save
 {
-    public class DuplexStorage : StorageBase
+    public class DuplexStorage : IStorage
     {
         private int BlockSize { get; }
         private IStorage BitmapStorage { get; }
@@ -27,7 +27,7 @@ namespace LibHac.FsSystem.Save
             Length = dataSize;
         }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             long inPos = offset;
             int outPos = 0;
@@ -56,7 +56,7 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             long inPos = offset;
             int outPos = 0;
@@ -85,7 +85,7 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             Result rc = BitmapStorage.Flush();
             if (rc.IsFailure()) return rc;
@@ -99,12 +99,12 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             return ResultFs.NotImplemented.Log();
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             size = Length;
             return Result.Success;

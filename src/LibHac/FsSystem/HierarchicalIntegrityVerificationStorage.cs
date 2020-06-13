@@ -7,7 +7,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class HierarchicalIntegrityVerificationStorage : StorageBase
+    public class HierarchicalIntegrityVerificationStorage : IStorage
     {
         public IStorage[] Levels { get; }
         public IStorage DataLevel { get; }
@@ -96,27 +96,27 @@ namespace LibHac.FsSystem
             return initInfo;
         }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             return DataLevel.Read(offset, destination);
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             return DataLevel.Write(offset, source);
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             return DataLevel.Flush();
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             return ResultFs.UnsupportedOperationInHierarchicalIvfcStorageSetSize.Log();
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             size = Length;
             return Result.Success;

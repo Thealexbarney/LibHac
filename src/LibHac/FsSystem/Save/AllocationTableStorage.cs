@@ -4,7 +4,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem.Save
 {
-    public class AllocationTableStorage : StorageBase
+    public class AllocationTableStorage : IStorage
     {
         private IStorage BaseStorage { get; }
         private int BlockSize { get; }
@@ -23,7 +23,7 @@ namespace LibHac.FsSystem.Save
             _length = initialBlock == -1 ? 0 : table.GetListLength(initialBlock) * blockSize;
         }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             var iterator = new AllocationTableIterator(Fat, InitialBlock);
 
@@ -53,7 +53,7 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             var iterator = new AllocationTableIterator(Fat, InitialBlock);
 
@@ -83,18 +83,18 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             return BaseStorage.Flush();
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             size = _length;
             return Result.Success;
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             int oldBlockCount = (int)Util.DivideByRoundUp(_length, BlockSize);
             int newBlockCount = (int)Util.DivideByRoundUp(size, BlockSize);

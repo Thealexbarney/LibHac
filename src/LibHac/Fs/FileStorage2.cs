@@ -5,7 +5,7 @@ using LibHac.Fs.Fsa;
 
 namespace LibHac.Fs
 {
-    public class FileStorage2 : StorageBase
+    public class FileStorage2 : IStorage
     {
         protected const long SizeNotInitialized = -1;
 
@@ -40,7 +40,7 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             if (destination.Length == 0)
                 return Result.Success;
@@ -54,7 +54,7 @@ namespace LibHac.Fs
             return BaseFile.Read(out _, offset, destination, ReadOption.None);
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             if (source.Length == 0)
                 return Result.Success;
@@ -68,12 +68,12 @@ namespace LibHac.Fs
             return BaseFile.Write(offset, source, WriteOption.None);
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             return BaseFile.Flush();
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             Result rc = UpdateSize();
             if (rc.IsFailure())
@@ -86,13 +86,13 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             FileSize = SizeNotInitialized;
             return BaseFile.SetSize(size);
         }
 
-        protected override Result OperateRangeImpl(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
         {
             switch (operationId)
             {

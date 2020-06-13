@@ -2,7 +2,7 @@
 
 namespace LibHac.Fs
 {
-    public class FileHandleStorage : StorageBase
+    public class FileHandleStorage : IStorage
     {
         private const long InvalidSize = -1;
         private readonly object _locker = new object();
@@ -21,7 +21,7 @@ namespace LibHac.Fs
             FsClient = Handle.File.Parent.FsClient;
         }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             lock (_locker)
             {
@@ -36,7 +36,7 @@ namespace LibHac.Fs
             }
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             lock (_locker)
             {
@@ -51,19 +51,19 @@ namespace LibHac.Fs
             }
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             return FsClient.FlushFile(Handle);
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             FileSize = InvalidSize;
 
             return FsClient.SetFileSize(Handle, size);
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             size = default;
 

@@ -4,7 +4,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class SubStorage : StorageBase
+    public class SubStorage : IStorage
     {
         private IStorage BaseStorage { get; }
         private long Offset { get; }
@@ -38,30 +38,30 @@ namespace LibHac.FsSystem
             Access = access;
         }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             if ((Access & FileAccess.Read) == 0) throw new InvalidOperationException("Storage is not readable");
             return BaseStorage.Read(offset + Offset, destination);
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             if ((Access & FileAccess.Write) == 0) throw new InvalidOperationException("Storage is not writable");
             return BaseStorage.Write(offset + Offset, source);
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             return BaseStorage.Flush();
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             size = Length;
             return Result.Success;
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
 

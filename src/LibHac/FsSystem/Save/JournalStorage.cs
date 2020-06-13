@@ -5,7 +5,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem.Save
 {
-    public class JournalStorage : StorageBase
+    public class JournalStorage : IStorage
     {
         private IStorage BaseStorage { get; }
         private IStorage HeaderStorage { get; }
@@ -33,7 +33,7 @@ namespace LibHac.FsSystem.Save
             LeaveOpen = leaveOpen;
         }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             long inPos = offset;
             int outPos = 0;
@@ -62,7 +62,7 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             long inPos = offset;
             int outPos = 0;
@@ -91,17 +91,17 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             return BaseStorage.Flush();
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             return ResultFs.NotImplemented.Log();
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             size = Length;
             return Result.Success;

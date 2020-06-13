@@ -62,7 +62,7 @@ namespace LibHac.FsService.Creators
             throw new NotImplementedException();
         }
 
-        private class ReadOnlyGameCardStorage : StorageBase
+        private class ReadOnlyGameCardStorage : IStorage
         {
             private EmulatedGameCard GameCard { get; }
             private GameCardHandle Handle { get; set; }
@@ -87,7 +87,7 @@ namespace LibHac.FsService.Creators
                 imageHash.CopyTo(ImageHash);
             }
 
-            protected override Result ReadImpl(long offset, Span<byte> destination)
+            protected override Result DoRead(long offset, Span<byte> destination)
             {
                 // In secure mode, if Handle is old and the card's device ID and
                 // header hash are still the same, Handle is updated to the new handle
@@ -95,22 +95,22 @@ namespace LibHac.FsService.Creators
                 return GameCard.Read(Handle, offset, destination);
             }
 
-            protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+            protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
             {
                 return ResultFs.UnsupportedOperationInRoGameCardStorageWrite.Log();
             }
 
-            protected override Result FlushImpl()
+            protected override Result DoFlush()
             {
                 return Result.Success;
             }
 
-            protected override Result SetSizeImpl(long size)
+            protected override Result DoSetSize(long size)
             {
                 return ResultFs.UnsupportedOperationInRoGameCardStorageSetSize.Log();
             }
 
-            protected override Result GetSizeImpl(out long size)
+            protected override Result DoGetSize(out long size)
             {
                 size = 0;
 

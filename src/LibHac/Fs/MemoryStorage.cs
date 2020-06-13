@@ -2,7 +2,7 @@
 
 namespace LibHac.Fs
 {
-    public class MemoryStorage : StorageBase
+    public class MemoryStorage : IStorage
     {
         private byte[] StorageBuffer { get; }
 
@@ -11,7 +11,7 @@ namespace LibHac.Fs
             StorageBuffer = buffer;
         }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             if (destination.Length == 0)
                 return Result.Success;
@@ -24,7 +24,7 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             if (source.Length == 0)
                 return Result.Success;
@@ -37,17 +37,17 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             return Result.Success;
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             return ResultFs.UnsupportedOperationInMemoryStorageSetSize.Log();
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             size = StorageBuffer.Length;
 

@@ -4,7 +4,7 @@ using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSystem
 {
-    public class FileStorage : StorageBase
+    public class FileStorage : IStorage
     {
         protected IFile BaseFile { get; }
 
@@ -13,27 +13,27 @@ namespace LibHac.FsSystem
             BaseFile = baseFile;
         }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             return BaseFile.Read(out long _, offset, destination);
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             return BaseFile.Write(offset, source);
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             return BaseFile.Flush();
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             return BaseFile.GetSize(out size);
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             return BaseFile.SetSize(size);
         }

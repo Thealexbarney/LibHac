@@ -5,7 +5,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class IndirectStorage : StorageBase
+    public class IndirectStorage : IStorage
     {
         private List<RelocationEntry> RelocationEntries { get; }
         private List<long> RelocationOffsets { get; }
@@ -29,7 +29,7 @@ namespace LibHac.FsSystem
             Length = BucketTree.BucketOffsets.OffsetEnd;
         }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             RelocationEntry entry = GetRelocationEntry(offset);
 
@@ -64,23 +64,23 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             return ResultFs.UnsupportedOperationInIndirectStorageSetSize.Log();
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             return Result.Success;
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             size = Length;
             return Result.Success;
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             return ResultFs.UnsupportedOperationInIndirectStorageSetSize.Log();
         }
