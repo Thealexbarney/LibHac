@@ -331,6 +331,10 @@ namespace LibHac.Fs
                 public static Result.Base InvalidCacheStorageIndex => new Result.Base(ModuleFs, 6070);
                 /// <summary>Up to 10 file systems can be committed at the same time.<br/>Error code: 2002-6071; Inner value: 0x2f6e02</summary>
                 public static Result.Base InvalidCommitNameCount => new Result.Base(ModuleFs, 6071);
+                /// <summary>Error code: 2002-6072; Inner value: 0x2f7002</summary>
+                public static Result.Base InvalidOpenMode => new Result.Base(ModuleFs, 6072);
+                /// <summary>Error code: 2002-6074; Inner value: 0x2f7402</summary>
+                public static Result.Base InvalidDirectoryOpenMode => new Result.Base(ModuleFs, 6074);
 
                 /// <summary>Error code: 2002-6080; Range: 6080-6099; Inner value: 0x2f8002</summary>
                 public static Result.Base InvalidEnumValue { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6080, 6099); }
@@ -386,6 +390,8 @@ namespace LibHac.Fs
                 public static Result.Base UnsupportedOperationReadOnlyFileSystemGetSpace => new Result.Base(ModuleFs, 6371);
                 /// <summary>Error code: 2002-6372; Inner value: 0x31c802</summary>
                 public static Result.Base UnsupportedOperationModifyReadOnlyFile => new Result.Base(ModuleFs, 6372);
+                /// <summary>Error code: 2002-6373; Inner value: 0x31ca02</summary>
+                public static Result.Base UnsupportedOperationInReadOnlyFile => new Result.Base(ModuleFs, 6373);
                 /// <summary>Error code: 2002-6374; Inner value: 0x31cc02</summary>
                 public static Result.Base UnsupportedOperationModifyPartitionFileSystem => new Result.Base(ModuleFs, 6374);
                 /// <summary>Called PartitionFileSystemCore::CommitProvisionally.<br/>Error code: 2002-6375; Inner value: 0x31ce02</summary>

@@ -1,9 +1,10 @@
 ﻿using System;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSystem
 {
-    public class ReadOnlyFile : FileBase
+    public class ReadOnlyFile : IFile
     {
         private IFile BaseFile { get; }
 
@@ -12,29 +13,42 @@ namespace LibHac.FsSystem
             BaseFile = baseFile;
         }
 
-        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
+            in ReadOption option)
         {
-            return BaseFile.Read(out bytesRead, offset, destination, options);
+            return BaseFile.Read(out bytesRead, offset, destination, option);
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             return BaseFile.GetSize(out size);
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
             return ResultFs.InvalidOpenModeForWrite.Log();
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             return ResultFs.InvalidOpenModeForWrite.Log();
+        }
+
+        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+        {
+            switch (operationId)
+            {
+                case OperationId.InvalidateCache:
+                case OperationId.QueryRange:
+                    return BaseFile.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+                default:
+                    return ResultFs.UnsupportedOperationInReadOnlyFile.Log();
+            }
         }
     }
 }

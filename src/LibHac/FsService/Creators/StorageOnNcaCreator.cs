@@ -1,5 +1,6 @@
 ﻿using System;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 using LibHac.FsSystem.Detail;
 using LibHac.FsSystem.NcaUtils;

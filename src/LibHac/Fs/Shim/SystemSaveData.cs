@@ -1,4 +1,5 @@
 ﻿using LibHac.Common;
+using LibHac.Fs.Fsa;
 using LibHac.FsService;
 
 namespace LibHac.Fs.Shim

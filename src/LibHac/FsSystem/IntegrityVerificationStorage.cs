@@ -117,7 +117,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             return ReadImpl(offset, destination, IntegrityCheckLevel);
         }
@@ -128,7 +128,7 @@ namespace LibHac.FsSystem
             return ReadImpl(offset, destination, integrityCheckLevel);
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             long blockIndex = offset / SectorSize;
             long hashPos = blockIndex * DigestSize;
@@ -188,12 +188,12 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             Result rc = HashStorage.Flush();
             if (rc.IsFailure()) return rc;
 
-            return base.FlushImpl();
+            return base.DoFlush();
         }
 
         public void FsTrim()

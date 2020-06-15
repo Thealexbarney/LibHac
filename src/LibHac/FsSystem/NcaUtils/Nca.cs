@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 using LibHac.FsSystem.RomFs;
 using LibHac.Spl;
 

@@ -4,7 +4,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class StreamStorage : StorageBase
+    public class StreamStorage : IStorage
     {
         // todo: handle Stream exceptions
 
@@ -20,7 +20,7 @@ namespace LibHac.FsSystem
             LeaveOpen = leaveOpen;
         }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             lock (Locker)
             {
@@ -35,7 +35,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             lock (Locker)
             {
@@ -50,7 +50,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             lock (Locker)
             {
@@ -60,12 +60,12 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             return ResultFs.NotImplemented.Log();
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             size = Length;
             return Result.Success;

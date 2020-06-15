@@ -4,7 +4,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class ConcatenationStorage : StorageBase
+    public class ConcatenationStorage : IStorage
     {
         private ConcatSource[] Sources { get; }
         private long Length { get; }
@@ -28,7 +28,7 @@ namespace LibHac.FsSystem
             Length = length;
         }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             long inPos = offset;
             int outPos = 0;
@@ -59,7 +59,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             long inPos = offset;
             int outPos = 0;
@@ -90,7 +90,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             foreach (ConcatSource source in Sources)
             {
@@ -101,12 +101,12 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             return ResultFs.NotImplemented.Log();
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             size = Length;
             return Result.Success;

@@ -2,10 +2,11 @@
 using System.IO;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSystem
 {
-    public class LocalFile : FileBase
+    public class LocalFile : IFile
     {
         private FileStream Stream { get; }
         private StreamFile File { get; }
@@ -27,25 +28,26 @@ namespace LibHac.FsSystem
             File = new StreamFile(Stream, mode);
         }
 
-        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
+            in ReadOption option)
         {
             bytesRead = 0;
 
-            Result rc = ValidateReadParams(out long toRead, offset, destination.Length, Mode);
+            Result rc = DryRead(out long toRead, offset, destination.Length, in option, Mode);
             if (rc.IsFailure()) return rc;
 
-            return File.Read(out bytesRead, offset, destination.Slice(0, (int)toRead), options);
+            return File.Read(out bytesRead, offset, destination.Slice(0, (int)toRead), option);
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
-            Result rc = ValidateWriteParams(offset, source.Length, Mode, out _);
+            Result rc = DryWrite(out _, offset, source.Length, in option, Mode);
             if (rc.IsFailure()) return rc;
 
-            return File.Write(offset, source, options);
+            return File.Write(offset, source, option);
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             try
             {
@@ -57,7 +59,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             try
             {
@@ -70,7 +72,12 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+        {
+            return ResultFs.NotImplemented.Log();
+        }
+
+        protected override Result DoSetSize(long size)
         {
             try
             {

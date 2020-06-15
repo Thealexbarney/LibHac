@@ -2,10 +2,11 @@
 using System.IO;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSystem.Save
 {
-    public class SaveDataFile : FileBase
+    public class SaveDataFile : IFile
     {
         private AllocationTableStorage BaseStorage { get; }
         private U8String Path { get; }
@@ -22,11 +23,12 @@ namespace LibHac.FsSystem.Save
             Size = size;
         }
 
-        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
+            in ReadOption option)
         {
             bytesRead = default;
 
-            Result rc = ValidateReadParams(out long toRead, offset, destination.Length, Mode);
+            Result rc = DryRead(out long toRead, offset, destination.Length, in option, Mode);
             if (rc.IsFailure()) return rc;
 
             if (toRead == 0)
@@ -42,21 +44,21 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
-            Result rc = ValidateWriteParams(offset, source.Length, Mode, out bool isResizeNeeded);
+            Result rc = DryWrite(out bool isResizeNeeded, offset, source.Length, in option, Mode);
             if (rc.IsFailure()) return rc;
 
             if (isResizeNeeded)
             {
-                rc = SetSizeImpl(offset + source.Length);
+                rc = DoSetSize(offset + source.Length);
                 if (rc.IsFailure()) return rc;
             }
 
             rc = BaseStorage.Write(offset, source);
             if (rc.IsFailure()) return rc;
 
-            if ((options & WriteOption.Flush) != 0)
+            if (option.HasFlushFlag())
             {
                 return Flush();
             }
@@ -64,18 +66,18 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             return BaseStorage.Flush();
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             size = Size;
             return Result.Success;
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             if (size < 0) throw new ArgumentOutOfRangeException(nameof(size));
             if (Size == size) return Result.Success;
@@ -96,6 +98,11 @@ namespace LibHac.FsSystem.Save
             Size = size;
 
             return Result.Success;
+        }
+
+        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+        {
+            return ResultFs.NotImplemented.Log();
         }
     }
 }

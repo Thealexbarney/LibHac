@@ -6,7 +6,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem.Save
 {
-    public class RemapStorage : StorageBase
+    public class RemapStorage : IStorage
     {
         private const int MapEntryLength = 0x20;
 
@@ -48,7 +48,7 @@ namespace LibHac.FsSystem.Save
             Segments = InitSegments(Header, MapEntries);
         }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             if (destination.Length == 0) return Result.Success;
 
@@ -78,7 +78,7 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             if (source.Length == 0) return Result.Success;
 
@@ -110,17 +110,17 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             return BaseStorage.Flush();
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             return ResultFs.UnsupportedOperationInHierarchicalIvfcStorageSetSize.Log();
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             // todo: Different result code
             size = -1;

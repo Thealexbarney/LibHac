@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSystem
 {
@@ -22,7 +23,7 @@ namespace LibHac.FsSystem
     /// Each sub-file except the final one must have the size <see cref="SubFileSize"/> that was specified
     /// at the creation of the <see cref="ConcatenationFileSystem"/>.
     /// </remarks>
-    public class ConcatenationFileSystem : FileSystemBase
+    public class ConcatenationFileSystem : IFileSystem
     {
         private const long DefaultSubFileSize = 0xFFFF0000; // Hard-coded value used by FS
         private IAttributeFileSystem BaseFileSystem { get; }
@@ -96,7 +97,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.SetFileAttributes(path, NxFileAttributes.Archive);
         }
 
-        protected override Result CreateDirectoryImpl(U8Span path)
+        protected override Result DoCreateDirectory(U8Span path)
         {
             var parent = new U8Span(PathTools.GetParentDirectory(path));
 
@@ -109,7 +110,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.CreateDirectory(path);
         }
 
-        protected override Result CreateFileImpl(U8Span path, long size, CreateFileOptions options)
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
         {
             CreateFileOptions newOptions = options & ~CreateFileOptions.CreateConcatenationFile;
 
@@ -156,7 +157,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DeleteDirectoryImpl(U8Span path)
+        protected override Result DoDeleteDirectory(U8Span path)
         {
             if (IsConcatenationFile(path))
             {
@@ -166,21 +167,21 @@ namespace LibHac.FsSystem
             return BaseFileSystem.DeleteDirectory(path);
         }
 
-        protected override Result DeleteDirectoryRecursivelyImpl(U8Span path)
+        protected override Result DoDeleteDirectoryRecursively(U8Span path)
         {
             if (IsConcatenationFile(path)) return ResultFs.PathNotFound.Log();
 
             return BaseFileSystem.DeleteDirectoryRecursively(path);
         }
 
-        protected override Result CleanDirectoryRecursivelyImpl(U8Span path)
+        protected override Result DoCleanDirectoryRecursively(U8Span path)
         {
             if (IsConcatenationFile(path)) return ResultFs.PathNotFound.Log();
 
             return BaseFileSystem.CleanDirectoryRecursively(path);
         }
 
-        protected override Result DeleteFileImpl(U8Span path)
+        protected override Result DoDeleteFile(U8Span path)
         {
             if (!IsConcatenationFile(path))
             {
@@ -205,7 +206,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.DeleteDirectory(path);
         }
 
-        protected override Result OpenDirectoryImpl(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
             directory = default;
 
@@ -221,7 +222,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result OpenFileImpl(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
             file = default;
 
@@ -253,7 +254,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result RenameDirectoryImpl(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
         {
             if (IsConcatenationFile(oldPath))
             {
@@ -263,7 +264,7 @@ namespace LibHac.FsSystem
             return BaseFileSystem.RenameDirectory(oldPath, newPath);
         }
 
-        protected override Result RenameFileImpl(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
         {
             if (IsConcatenationFile(oldPath))
             {
@@ -275,7 +276,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
             if (IsConcatenationFile(path))
             {
@@ -286,37 +287,37 @@ namespace LibHac.FsSystem
             return BaseFileSystem.GetEntryType(out entryType, path);
         }
 
-        protected override Result GetFreeSpaceSizeImpl(out long freeSpace, U8Span path)
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
         {
             return BaseFileSystem.GetFreeSpaceSize(out freeSpace, path);
         }
 
-        protected override Result GetTotalSpaceSizeImpl(out long totalSpace, U8Span path)
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
         {
             return BaseFileSystem.GetTotalSpaceSize(out totalSpace, path);
         }
 
-        protected override Result GetFileTimeStampRawImpl(out FileTimeStampRaw timeStamp, U8Span path)
+        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
         {
             return BaseFileSystem.GetFileTimeStampRaw(out timeStamp, path);
         }
 
-        protected override Result CommitImpl()
+        protected override Result DoCommit()
         {
             return BaseFileSystem.Commit();
         }
 
-        protected override Result CommitProvisionallyImpl(long commitCount)
+        protected override Result DoCommitProvisionally(long counter)
         {
-            return BaseFileSystem.CommitProvisionally(commitCount);
+            return BaseFileSystem.CommitProvisionally(counter);
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             return BaseFileSystem.Flush();
         }
 
-        protected override Result QueryEntryImpl(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
+        protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
             U8Span path)
         {
             if (queryId != QueryId.MakeConcatFile) return ResultFs.UnsupportedOperationInConcatFsQueryEntry.Log();

@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSystem
 {
@@ -24,7 +25,7 @@ namespace LibHac.FsSystem
             CurrentIndex = 0;
         }
 
-        public Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer)
+        protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)
         {
             if (!Mode.HasFlag(OpenDirectoryMode.File))
             {
@@ -55,7 +56,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public Result GetEntryCount(out long entryCount)
+        protected override Result DoGetEntryCount(out long entryCount)
         {
             int count = 0;
 

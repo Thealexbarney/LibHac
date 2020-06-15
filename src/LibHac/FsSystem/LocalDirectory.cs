@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSystem
 {
@@ -12,7 +13,7 @@ namespace LibHac.FsSystem
         private OpenDirectoryMode Mode { get; }
         private DirectoryInfo DirInfo { get; }
         private IEnumerator<FileSystemInfo> EntryEnumerator { get; }
-        
+
         public LocalDirectory(IEnumerator<FileSystemInfo> entryEnumerator, DirectoryInfo dirInfo,
             OpenDirectoryMode mode)
         {
@@ -21,7 +22,7 @@ namespace LibHac.FsSystem
             Mode = mode;
         }
 
-        public Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer)
+        protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)
         {
             int i = 0;
 
@@ -52,7 +53,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public Result GetEntryCount(out long entryCount)
+        protected override Result DoGetEntryCount(out long entryCount)
         {
             int count = 0;
 

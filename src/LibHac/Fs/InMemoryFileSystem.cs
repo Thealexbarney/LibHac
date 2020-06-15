@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using LibHac.Common;
+using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 
 namespace LibHac.Fs
@@ -9,7 +10,7 @@ namespace LibHac.Fs
     /// <summary>
     /// A filesystem stored in-memory. Mainly used for testing.
     /// </summary>
-    public class InMemoryFileSystem : AttributeFileSystemBase
+    public class InMemoryFileSystem : IAttributeFileSystem
     {
         private FileTable FsTable { get; }
 
@@ -18,12 +19,12 @@ namespace LibHac.Fs
             FsTable = new FileTable();
         }
 
-        protected override Result CreateDirectoryImpl(U8Span path)
+        protected override Result DoCreateDirectory(U8Span path)
         {
             return FsTable.AddDirectory(new U8Span(path));
         }
 
-        protected override Result CreateDirectoryImpl(U8Span path, NxFileAttributes archiveAttribute)
+        protected override Result DoCreateDirectory(U8Span path, NxFileAttributes archiveAttribute)
         {
             Result rc = FsTable.AddDirectory(path);
             if (rc.IsFailure()) return rc;
@@ -35,7 +36,7 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        protected override Result CreateFileImpl(U8Span path, long size, CreateFileOptions options)
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
         {
             Result rc = FsTable.AddFile(path);
             if (rc.IsFailure()) return rc;
@@ -46,27 +47,27 @@ namespace LibHac.Fs
             return file.File.SetSize(size);
         }
 
-        protected override Result DeleteDirectoryImpl(U8Span path)
+        protected override Result DoDeleteDirectory(U8Span path)
         {
             return FsTable.DeleteDirectory(new U8Span(path), false);
         }
 
-        protected override Result DeleteDirectoryRecursivelyImpl(U8Span path)
+        protected override Result DoDeleteDirectoryRecursively(U8Span path)
         {
             return FsTable.DeleteDirectory(new U8Span(path), true);
         }
 
-        protected override Result CleanDirectoryRecursivelyImpl(U8Span path)
+        protected override Result DoCleanDirectoryRecursively(U8Span path)
         {
             return FsTable.CleanDirectory(new U8Span(path));
         }
 
-        protected override Result DeleteFileImpl(U8Span path)
+        protected override Result DoDeleteFile(U8Span path)
         {
             return FsTable.DeleteFile(new U8Span(path));
         }
 
-        protected override Result OpenDirectoryImpl(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
             directory = default;
 
@@ -77,7 +78,7 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        protected override Result OpenFileImpl(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
             file = default;
 
@@ -89,17 +90,17 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        protected override Result RenameDirectoryImpl(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
         {
             return FsTable.RenameDirectory(new U8Span(oldPath), new U8Span(newPath));
         }
 
-        protected override Result RenameFileImpl(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
         {
             return FsTable.RenameFile(new U8Span(oldPath), new U8Span(newPath));
         }
 
-        protected override Result GetEntryTypeImpl(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
             if (FsTable.GetFile(path, out _).IsSuccess())
             {
@@ -117,12 +118,12 @@ namespace LibHac.Fs
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result CommitImpl()
+        protected override Result DoCommit()
         {
             return Result.Success;
         }
 
-        protected override Result GetFileAttributesImpl(out NxFileAttributes attributes, U8Span path)
+        protected override Result DoGetFileAttributes(out NxFileAttributes attributes, U8Span path)
         {
             if (FsTable.GetFile(path, out FileNode file).IsSuccess())
             {
@@ -140,7 +141,7 @@ namespace LibHac.Fs
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result SetFileAttributesImpl(U8Span path, NxFileAttributes attributes)
+        protected override Result DoSetFileAttributes(U8Span path, NxFileAttributes attributes)
         {
             if (FsTable.GetFile(path, out FileNode file).IsSuccess())
             {
@@ -157,7 +158,7 @@ namespace LibHac.Fs
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result GetFileSizeImpl(out long fileSize, U8Span path)
+        protected override Result DoGetFileSize(out long fileSize, U8Span path)
         {
             if (FsTable.GetFile(path, out FileNode file).IsSuccess())
             {
@@ -169,7 +170,7 @@ namespace LibHac.Fs
         }
 
         // todo: Make a more generic MemoryFile-type class
-        private class MemoryFile : FileBase
+        private class MemoryFile : IFile
         {
             private OpenMode Mode { get; }
             private MemoryStreamAccessor BaseStream { get; }
@@ -180,7 +181,8 @@ namespace LibHac.Fs
                 Mode = mode;
             }
 
-            protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+            protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
+                in ReadOption option)
             {
                 if (!Mode.HasFlag(OpenMode.Read))
                 {
@@ -191,7 +193,7 @@ namespace LibHac.Fs
                 return BaseStream.Read(out bytesRead, offset, destination);
             }
 
-            protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
+            protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
             {
                 if (!Mode.HasFlag(OpenMode.Write))
                 {
@@ -201,19 +203,24 @@ namespace LibHac.Fs
                 return BaseStream.Write(offset, source, Mode.HasFlag(OpenMode.AllowAppend));
             }
 
-            protected override Result FlushImpl()
+            protected override Result DoFlush()
             {
                 return BaseStream.Flush();
             }
 
-            protected override Result SetSizeImpl(long size)
+            protected override Result DoSetSize(long size)
             {
                 return BaseStream.SetSize(size);
             }
 
-            protected override Result GetSizeImpl(out long size)
+            protected override Result DoGetSize(out long size)
             {
                 return BaseStream.GetSize(out size);
+            }
+
+            protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+            {
+                throw new NotImplementedException();
             }
         }
 
@@ -232,7 +239,7 @@ namespace LibHac.Fs
                 CurrentFile = directory.ChildFile;
             }
 
-            public Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer)
+            protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)
             {
                 int i = 0;
 
@@ -283,7 +290,7 @@ namespace LibHac.Fs
                 return Result.Success;
             }
 
-            public Result GetEntryCount(out long entryCount)
+            protected override Result DoGetEntryCount(out long entryCount)
             {
                 long count = 0;
 

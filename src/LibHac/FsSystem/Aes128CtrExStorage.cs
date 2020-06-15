@@ -31,7 +31,7 @@ namespace LibHac.FsSystem
             SubsectionOffsets = SubsectionEntries.Select(x => x.Offset).ToList();
         }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             AesSubsectionEntry entry = GetSubsectionEntry(offset);
 
@@ -47,7 +47,7 @@ namespace LibHac.FsSystem
                 {
                     UpdateCounterSubsection(entry.Counter);
 
-                    Result rc = base.ReadImpl(inPos, destination.Slice(outPos, bytesToRead));
+                    Result rc = base.DoRead(inPos, destination.Slice(outPos, bytesToRead));
                     if (rc.IsFailure()) return rc;
                 }
 
@@ -64,12 +64,12 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             return ResultFs.UnsupportedOperationInAesCtrExStorageWrite.Log();
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             return Result.Success;
         }

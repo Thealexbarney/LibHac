@@ -169,6 +169,8 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6069,,InvalidCacheStorageSize,
 2,6070,,InvalidCacheStorageIndex,
 2,6071,,InvalidCommitNameCount,Up to 10 file systems can be committed at the same time.
+2,6072,,InvalidOpenMode,
+2,6074,,InvalidDirectoryOpenMode,
 
 2,6080,6099,InvalidEnumValue,
 2,6081,,InvalidSaveDataState,
@@ -198,6 +200,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6369,,UnsupportedOperationModifyReadOnlyFileSystem,
 2,6371,,UnsupportedOperationReadOnlyFileSystemGetSpace,
 2,6372,,UnsupportedOperationModifyReadOnlyFile,
+2,6373,,UnsupportedOperationInReadOnlyFile,
 2,6374,,UnsupportedOperationModifyPartitionFileSystem,
 2,6375,,UnsupportedOperationInPartitionFileSystem,Called PartitionFileSystemCore::CommitProvisionally.
 2,6376,,UnsupportedOperationInPartitionFileSetSize,

@@ -1,8 +1,9 @@
 ﻿using System;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.Fs.Accessors
 {
-    public class FileAccessor : FileBase
+    public class FileAccessor : IFile
     {
         private IFile File { get; set; }
 
@@ -17,35 +18,36 @@ namespace LibHac.Fs.Accessors
             OpenMode = mode;
         }
 
-        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
+            in ReadOption option)
         {
             CheckIfDisposed();
 
-            return File.Read(out bytesRead, offset, destination, options);
+            return File.Read(out bytesRead, offset, destination, in option);
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
             CheckIfDisposed();
 
             if (source.Length == 0)
             {
-                WriteState = (WriteState)(~options & WriteOption.Flush);
+                WriteState = (WriteState)(~option.Flags & WriteOptionFlag.Flush);
 
                 return Result.Success;
             }
 
-            Result rc = File.Write(offset, source, options);
+            Result rc = File.Write(offset, source, in option);
 
             if (rc.IsSuccess())
             {
-                WriteState = (WriteState)(~options & WriteOption.Flush);
+                WriteState = (WriteState)(~option.Flags & WriteOptionFlag.Flush);
             }
 
             return rc;
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             CheckIfDisposed();
 
@@ -59,14 +61,19 @@ namespace LibHac.Fs.Accessors
             return rc;
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             CheckIfDisposed();
 
             return File.GetSize(out size);
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+        {
+            return ResultFs.NotImplemented.Log();
+        }
+
+        protected override Result DoSetSize(long size)
         {
             CheckIfDisposed();
 

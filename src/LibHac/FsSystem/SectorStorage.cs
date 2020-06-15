@@ -3,7 +3,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class SectorStorage : StorageBase
+    public class SectorStorage : IStorage
     {
         protected IStorage BaseStorage { get; }
 
@@ -26,30 +26,30 @@ namespace LibHac.FsSystem
             LeaveOpen = leaveOpen;
         }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             ValidateSize(destination.Length, offset);
             return BaseStorage.Read(offset, destination);
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             ValidateSize(source.Length, offset);
             return BaseStorage.Write(offset, source);
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             return BaseStorage.Flush();
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             size = Length;
             return Result.Success;
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             Result rc = BaseStorage.SetSize(size);
             if (rc.IsFailure()) return rc;

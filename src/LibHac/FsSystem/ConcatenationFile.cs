@@ -4,10 +4,11 @@ using System.Diagnostics;
 using System.Linq;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSystem
 {
-    public class ConcatenationFile : FileBase
+    public class ConcatenationFile : IFile
     {
         private IFileSystem BaseFileSystem { get; }
         private U8String FilePath { get; }
@@ -34,14 +35,15 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
+            in ReadOption option)
         {
             bytesRead = default;
 
             long inPos = offset;
             int outPos = 0;
 
-            Result rc = ValidateReadParams(out long remaining, offset, destination.Length, Mode);
+            Result rc = DryRead(out long remaining, offset, destination.Length, in option, Mode);
             if (rc.IsFailure()) return rc;
 
             GetSize(out long fileSize).ThrowIfFailure();
@@ -55,7 +57,7 @@ namespace LibHac.FsSystem
                 long fileEndOffset = Math.Min((fileIndex + 1) * SubFileSize, fileSize);
                 int bytesToRead = (int)Math.Min(fileEndOffset - inPos, remaining);
 
-                rc = file.Read(out long subFileBytesRead, fileOffset, destination.Slice(outPos, bytesToRead), options);
+                rc = file.Read(out long subFileBytesRead, fileOffset, destination.Slice(outPos, bytesToRead), option);
                 if (rc.IsFailure()) return rc;
 
                 outPos += (int)subFileBytesRead;
@@ -70,9 +72,9 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
-            Result rc = ValidateWriteParams(offset, source.Length, Mode, out _);
+            Result rc = DryWrite(out _, offset, source.Length, in option, Mode);
             if (rc.IsFailure()) return rc;
 
             int inPos = 0;
@@ -91,7 +93,7 @@ namespace LibHac.FsSystem
                 long fileEndOffset = Math.Min((fileIndex + 1) * SubFileSize, fileSize);
                 int bytesToWrite = (int)Math.Min(fileEndOffset - outPos, remaining);
 
-                rc = file.Write(fileOffset, source.Slice(inPos, bytesToWrite), options);
+                rc = file.Write(fileOffset, source.Slice(inPos, bytesToWrite), option);
                 if (rc.IsFailure()) return rc;
 
                 outPos += bytesToWrite;
@@ -99,7 +101,7 @@ namespace LibHac.FsSystem
                 remaining -= bytesToWrite;
             }
 
-            if (options.HasFlag(WriteOption.Flush))
+            if (option.HasFlushFlag())
             {
                 return Flush();
             }
@@ -107,7 +109,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             foreach (IFile file in Sources)
             {
@@ -118,7 +120,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             size = default;
 
@@ -133,7 +135,12 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+        {
+            return ResultFs.NotImplemented.Log();
+        }
+
+        protected override Result DoSetSize(long size)
         {
             Result rc = GetSize(out long currentSize);
             if (rc.IsFailure()) return rc;

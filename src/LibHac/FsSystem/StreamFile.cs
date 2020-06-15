@@ -1,13 +1,14 @@
 ﻿using System;
 using System.IO;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSystem
 {
     /// <summary>
     /// Provides an <see cref="IFile"/> interface for interacting with a <see cref="Stream"/>
     /// </summary>
-    public class StreamFile : FileBase
+    public class StreamFile : IFile
     {
         // todo: handle Stream exceptions
 
@@ -21,11 +22,12 @@ namespace LibHac.FsSystem
             Mode = mode;
         }
 
-        protected override Result ReadImpl(out long bytesRead, long offset, Span<byte> destination, ReadOption options)
+        protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
+            in ReadOption option)
         {
             bytesRead = default;
 
-            Result rc = ValidateReadParams(out long toRead, offset, destination.Length, Mode);
+            Result rc = DryRead(out long toRead, offset, destination.Length, in option, Mode);
             if (rc.IsFailure()) return rc;
 
             lock (Locker)
@@ -40,9 +42,9 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source, WriteOption options)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
-            Result rc = ValidateWriteParams(offset, source.Length, Mode, out _);
+            Result rc = DryWrite(out _, offset, source.Length, in option, Mode);
             if (rc.IsFailure()) return rc;
 
             lock (Locker)
@@ -51,7 +53,7 @@ namespace LibHac.FsSystem
                 BaseStream.Write(source);
             }
 
-            if (options.HasFlag(WriteOption.Flush))
+            if (option.HasFlushFlag())
             {
                 return Flush();
             }
@@ -59,7 +61,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             lock (Locker)
             {
@@ -68,7 +70,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             lock (Locker)
             {
@@ -77,13 +79,19 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             lock (Locker)
             {
                 BaseStream.SetLength(size);
                 return Result.Success;
             }
+        }
+
+        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+            ReadOnlySpan<byte> inBuffer)
+        {
+            return ResultFs.NotImplemented.Log();
         }
     }
 }

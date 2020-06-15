@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.Fs
 {
@@ -127,16 +128,9 @@ namespace LibHac.Fs
     }
 
     [Flags]
-    public enum ReadOption
+    public enum ReadOptionFlag
     {
         None = 0
-    }
-
-    [Flags]
-    public enum WriteOption
-    {
-        None = 0,
-        Flush = 1
     }
 
     public enum OperationId

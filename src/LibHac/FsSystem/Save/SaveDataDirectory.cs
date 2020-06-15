@@ -2,6 +2,7 @@
 using System.Text;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSystem.Save
 {
@@ -22,12 +23,12 @@ namespace LibHac.FsSystem.Save
             Mode = mode;
         }
 
-        public Result Read(out long entriesRead, Span<DirectoryEntry> entryBuffer)
+        protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)
         {
             return ReadImpl(out entriesRead, ref _currentPosition, entryBuffer);
         }
 
-        public Result GetEntryCount(out long entryCount)
+        protected override Result DoGetEntryCount(out long entryCount)
         {
             SaveFindPosition position = InitialPosition;
 

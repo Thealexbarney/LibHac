@@ -4,7 +4,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class CachedStorage : StorageBase
+    public class CachedStorage : IStorage
     {
         private IStorage BaseStorage { get; }
         private int BlockSize { get; }
@@ -33,7 +33,7 @@ namespace LibHac.FsSystem
         public CachedStorage(SectorStorage baseStorage, int cacheSize, bool leaveOpen)
             : this(baseStorage, baseStorage.SectorSize, cacheSize, leaveOpen) { }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             long remaining = destination.Length;
             long inOffset = offset;
@@ -63,7 +63,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             long remaining = source.Length;
             long inOffset = offset;
@@ -95,7 +95,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             lock (Blocks)
             {
@@ -108,13 +108,13 @@ namespace LibHac.FsSystem
             return BaseStorage.Flush();
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             size = Length;
             return Result.Success;
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             Result rc = BaseStorage.SetSize(size);
             if (rc.IsFailure()) return rc;

@@ -3,7 +3,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem.Save
 {
-    public class HierarchicalDuplexStorage : StorageBase
+    public class HierarchicalDuplexStorage : IStorage
     {
         private DuplexStorage[] Layers { get; }
         private DuplexStorage DataLayer { get; }
@@ -34,27 +34,27 @@ namespace LibHac.FsSystem.Save
             Length = dataSize;
         }
 
-        protected override Result ReadImpl(long offset, Span<byte> destination)
+        protected override Result DoRead(long offset, Span<byte> destination)
         {
             return DataLayer.Read(offset, destination);
         }
 
-        protected override Result WriteImpl(long offset, ReadOnlySpan<byte> source)
+        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
             return DataLayer.Write(offset, source);
         }
 
-        protected override Result FlushImpl()
+        protected override Result DoFlush()
         {
             return DataLayer.Flush();
         }
 
-        protected override Result SetSizeImpl(long size)
+        protected override Result DoSetSize(long size)
         {
             return ResultFs.NotImplemented.Log();
         }
 
-        protected override Result GetSizeImpl(out long size)
+        protected override Result DoGetSize(out long size)
         {
             size = Length;
             return Result.Success;
