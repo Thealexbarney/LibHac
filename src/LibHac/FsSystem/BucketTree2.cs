@@ -21,11 +21,10 @@ namespace LibHac.FsSystem
         private SubStorage2 NodeStorage { get; set; }
         private SubStorage2 EntryStorage { get; set; }
 
-        private NodeBuffer NodeL1 { get; } = new NodeBuffer();
+        private NodeBuffer _nodeL1 = new NodeBuffer();
 
         private long NodeSize { get; set; }
         private long EntrySize { get; set; }
-        private int EntryCount { get; set; }
         private int OffsetCount { get; set; }
         private int EntrySetCount { get; set; }
         private long StartOffset { get; set; }
@@ -45,24 +44,24 @@ namespace LibHac.FsSystem
                 return ResultFs.InvalidArgument.Log();
 
             // Allocate node.
-            if (!NodeL1.Allocate(nodeSize))
+            if (!_nodeL1.Allocate(nodeSize))
                 return ResultFs.BufferAllocationFailed.Log();
 
             bool needFree = true;
             try
             {
                 // Read node.
-                Result rc = nodeStorage.Read(0, NodeL1.GetBuffer());
+                Result rc = nodeStorage.Read(0, _nodeL1.GetBuffer());
                 if (rc.IsFailure()) return rc;
 
                 // Verify node.
-                rc = NodeL1.GetHeader().Verify(0, nodeSize, sizeof(long));
+                rc = _nodeL1.GetHeader().Verify(0, nodeSize, sizeof(long));
                 if (rc.IsFailure()) return rc;
 
                 // Validate offsets.
                 int offsetCount = GetOffsetCount(nodeSize);
                 int entrySetCount = GetEntrySetCount(nodeSize, entrySize, entryCount);
-                BucketTreeNode<long> node = NodeL1.GetNode<long>();
+                BucketTreeNode<long> node = _nodeL1.GetNode<long>();
 
                 long startOffset;
                 if (offsetCount < entrySetCount && node.GetCount() < offsetCount)
@@ -83,7 +82,6 @@ namespace LibHac.FsSystem
                 EntryStorage = entryStorage;
                 NodeSize = nodeSize;
                 EntrySize = entrySize;
-                EntryCount = entryCount;
                 OffsetCount = offsetCount;
                 EntrySetCount = entrySetCount;
                 StartOffset = startOffset;
@@ -96,7 +94,7 @@ namespace LibHac.FsSystem
             finally
             {
                 if (needFree)
-                    NodeL1.Free();
+                    _nodeL1.Free();
             }
         }
 
@@ -194,11 +192,11 @@ namespace LibHac.FsSystem
         }
 
         private bool IsExistL2() => OffsetCount < EntrySetCount;
-        private bool IsExistOffsetL2OnL1() => IsExistL2() && NodeL1.GetHeader().Count < OffsetCount;
+        private bool IsExistOffsetL2OnL1() => IsExistL2() && _nodeL1.GetHeader().Count < OffsetCount;
 
         private long GetEntrySetIndex(int nodeIndex, int offsetIndex)
         {
-            return (OffsetCount - NodeL1.GetHeader().Count) + (OffsetCount * nodeIndex) + offsetIndex;
+            return (OffsetCount - _nodeL1.GetHeader().Count) + (OffsetCount * nodeIndex) + offsetIndex;
         }
 
         public struct Header
@@ -206,7 +204,9 @@ namespace LibHac.FsSystem
             public uint Magic;
             public uint Version;
             public int EntryCount;
+#pragma warning disable 414
             private int _reserved;
+#pragma warning restore 414
 
             public void Format(int entryCount)
             {
@@ -300,18 +300,6 @@ namespace LibHac.FsSystem
             {
                 return new BucketTreeNode<TEntry>(GetBuffer());
             }
-
-            public ref T Get<T>() where T : unmanaged
-            {
-                if (Unsafe.SizeOf<T>() != Unsafe.SizeOf<NodeHeader>())
-                {
-                    throw new InvalidOperationException();
-                }
-
-                Assert.AssertTrue(_header.Length / sizeof(long) >= Unsafe.SizeOf<T>());
-
-                return ref Unsafe.As<long, T>(ref _header[0]);
-            }
         }
 
         public readonly ref struct BucketTreeNode<TEntry> where TEntry : unmanaged
@@ -365,6 +353,7 @@ namespace LibHac.FsSystem
             [StructLayout(LayoutKind.Explicit)]
             private struct EntrySetHeader
             {
+                // ReSharper disable once MemberHidesStaticFromOuterClass
                 [FieldOffset(0)] public NodeHeader Header;
                 [FieldOffset(0)] public EntrySetInfo Info;
 
@@ -516,7 +505,7 @@ namespace LibHac.FsSystem
                 Result rc;
 
                 // Get the node.
-                BucketTreeNode<long> node = Tree.NodeL1.GetNode<long>();
+                BucketTreeNode<long> node = Tree._nodeL1.GetNode<long>();
 
                 if (virtualAddress >= node.GetEndOffset())
                     return ResultFs.OutOfRange.Log();
@@ -667,13 +656,6 @@ namespace LibHac.FsSystem
                 public StorageNode(long size, int count)
                 {
                     _start = new Offset(NodeHeaderSize, (int)size);
-                    _count = count;
-                    _index = -1;
-                }
-
-                public StorageNode(long offset, long size, int count)
-                {
-                    _start = new Offset(offset + NodeHeaderSize, (int)size);
                     _count = count;
                     _index = -1;
                 }
