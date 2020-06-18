@@ -9,10 +9,14 @@ namespace LibHac.FsSystem
 {
     public partial class BucketTree2
     {
-        public ref struct Builder
+        public class Builder
         {
-            private Span<byte> NodeBuffer { get; set; }
-            private Span<byte> EntryBuffer { get; set; }
+            private SubStorage2 NodeStorage { get; set; }
+            private SubStorage2 EntryStorage { get; set; }
+
+            private NodeBuffer _l1Node = new NodeBuffer();
+            private NodeBuffer _l2Node = new NodeBuffer();
+            private NodeBuffer _entrySet = new NodeBuffer();
 
             private int NodeSize { get; set; }
             private int EntrySize { get; set; }
@@ -22,19 +26,19 @@ namespace LibHac.FsSystem
 
             private int CurrentL2OffsetIndex { get; set; }
             private int CurrentEntryIndex { get; set; }
-            private long CurrentOffset { get; set; }
+            private long CurrentOffset { get; set; } = -1;
 
             /// <summary>
             /// Initializes the bucket tree builder.
             /// </summary>
-            /// <param name="headerBuffer">The buffer for the tree's header. Must be at least the size in bytes returned by <see cref="QueryHeaderStorageSize"/>.</param>
-            /// <param name="nodeBuffer">The buffer for the tree's nodes. Must be at least the size in bytes returned by <see cref="QueryNodeStorageSize"/>.</param>
-            /// <param name="entryBuffer">The buffer for the tree's entries. Must be at least the size in bytes returned by <see cref="QueryEntryStorageSize"/>.</param>
-            /// <param name="nodeSize">The size of each node in the bucket tree.</param>
+            /// <param name="headerStorage">The <see cref="SubStorage2"/> the tree's header will be written to.Must be at least the size in bytes returned by <see cref="QueryHeaderStorageSize"/>.</param>
+            /// <param name="nodeStorage">The <see cref="SubStorage2"/> the tree's nodes will be written to. Must be at least the size in bytes returned by <see cref="QueryNodeStorageSize"/>.</param>
+            /// <param name="entryStorage">The <see cref="SubStorage2"/> the tree's entries will be written to. Must be at least the size in bytes returned by <see cref="QueryEntryStorageSize"/>.</param>
+            /// <param name="nodeSize">The size of each node in the bucket tree. Must be a power of 2.</param>
             /// <param name="entrySize">The size of each entry that will be stored in the bucket tree.</param>
             /// <param name="entryCount">The exact number of entries that will be added to the bucket tree.</param>
             /// <returns>The <see cref="Result"/> of the operation.</returns>
-            public Result Initialize(Span<byte> headerBuffer, Span<byte> nodeBuffer, Span<byte> entryBuffer,
+            public Result Initialize(SubStorage2 headerStorage, SubStorage2 nodeStorage, SubStorage2 entryStorage,
                 int nodeSize, int entrySize, int entryCount)
             {
                 Assert.AssertTrue(entrySize >= sizeof(long));
@@ -42,6 +46,10 @@ namespace LibHac.FsSystem
                 Assert.AssertTrue(NodeSizeMin <= nodeSize && nodeSize <= NodeSizeMax);
                 Assert.AssertTrue(Util.IsPowerOfTwo(nodeSize));
 
+                if (headerStorage is null || nodeStorage is null || entryStorage is null)
+                    return ResultFs.NullptrArgument.Log();
+
+                // Set the builder parameters
                 NodeSize = nodeSize;
                 EntrySize = entrySize;
                 EntryCount = entryCount;
@@ -50,27 +58,30 @@ namespace LibHac.FsSystem
                 OffsetsPerNode = GetOffsetCount(nodeSize);
                 CurrentL2OffsetIndex = GetNodeL2Count(nodeSize, entrySize, entryCount);
 
-                // Verify the provided buffers are large enough
-                int nodeStorageSize = (int)QueryNodeStorageSize(nodeSize, entrySize, entryCount);
-                int entryStorageSize = (int)QueryEntryStorageSize(nodeSize, entrySize, entryCount);
+                // Create and write the header
+                var header = new Header();
+                header.Format(entryCount);
+                Result rc = headerStorage.Write(0, SpanHelpers.AsByteSpan(ref header));
+                if (rc.IsFailure()) return rc;
 
-                if (headerBuffer.Length < QueryHeaderStorageSize() ||
-                    nodeBuffer.Length < nodeStorageSize ||
-                    entryBuffer.Length < entryStorageSize)
+                // Allocate buffers for the L1 node and entry sets
+                _l1Node.Allocate(nodeSize);
+                _entrySet.Allocate(nodeSize);
+
+                int entrySetCount = GetEntrySetCount(nodeSize, entrySize, entryCount);
+
+                // Allocate an L2 node buffer if there are more entry sets than will fit in the L1 node
+                if (OffsetsPerNode < entrySetCount)
                 {
-                    return ResultFs.InvalidSize.Log();
+                    _l2Node.Allocate(nodeSize);
                 }
 
-                // Set and clear the buffers
-                NodeBuffer = nodeBuffer.Slice(0, nodeStorageSize);
-                EntryBuffer = entryBuffer.Slice(0, entryStorageSize);
+                _l1Node.FillZero();
+                _l2Node.FillZero();
+                _entrySet.FillZero();
 
-                nodeBuffer.Clear();
-                entryBuffer.Clear();
-
-                // Format the tree header
-                ref Header header = ref SpanHelpers.AsStruct<Header>(headerBuffer);
-                header.Format(entryCount);
+                NodeStorage = nodeStorage;
+                EntryStorage = entryStorage;
 
                 // Set the initial position
                 CurrentEntryIndex = 0;
@@ -92,18 +103,20 @@ namespace LibHac.FsSystem
                 if (CurrentEntryIndex >= EntryCount)
                     return ResultFs.OutOfRange.Log();
 
+                // The entry offset must always be the first 8 bytes of the struct
                 long entryOffset = BinaryPrimitives.ReadInt64LittleEndian(SpanHelpers.AsByteSpan(ref entry));
 
                 if (entryOffset <= CurrentOffset)
                     return ResultFs.InvalidOffset.Log();
 
-                FinalizePreviousEntrySet(entryOffset);
+                Result rc = FinalizePreviousEntrySet(entryOffset);
+                if (rc.IsFailure()) return rc;
+
                 AddEntryOffset(entryOffset);
 
-                int entrySetIndex = CurrentEntryIndex / EntriesPerEntrySet;
+                // Write the new entry
                 int indexInEntrySet = CurrentEntryIndex % EntriesPerEntrySet;
-
-                GetEntrySet<T>(entrySetIndex).GetWritableArray()[indexInEntrySet] = entry;
+                _entrySet.GetNode<T>().GetWritableArray()[indexInEntrySet] = entry;
 
                 CurrentOffset = entryOffset;
                 CurrentEntryIndex++;
@@ -112,10 +125,12 @@ namespace LibHac.FsSystem
             }
 
             /// <summary>
-            /// Checks if a new entry set is being started. If so, sets the end offset of the previous entry set.
+            /// Checks if a new entry set is being started. If so, sets the end offset of the previous
+            /// entry set and writes it to the output storage.
             /// </summary>
             /// <param name="endOffset">The end offset of the previous entry.</param>
-            private void FinalizePreviousEntrySet(long endOffset)
+            /// <returns>The <see cref="Result"/> of the operation.</returns>
+            private Result FinalizePreviousEntrySet(long endOffset)
             {
                 int prevEntrySetIndex = CurrentEntryIndex / EntriesPerEntrySet - 1;
                 int indexInEntrySet = CurrentEntryIndex % EntriesPerEntrySet;
@@ -124,11 +139,19 @@ namespace LibHac.FsSystem
                 if (CurrentEntryIndex > 0 && indexInEntrySet == 0)
                 {
                     // Set the end offset of that entry set
-                    BucketTreeNode<long> prevEntrySet = GetEntrySet<long>(prevEntrySetIndex);
+                    ref NodeHeader entrySetHeader = ref _entrySet.GetHeader();
 
-                    prevEntrySet.GetHeader().Index = prevEntrySetIndex;
-                    prevEntrySet.GetHeader().Count = EntriesPerEntrySet;
-                    prevEntrySet.GetHeader().Offset = endOffset;
+                    entrySetHeader.Index = prevEntrySetIndex;
+                    entrySetHeader.Count = EntriesPerEntrySet;
+                    entrySetHeader.Offset = endOffset;
+
+                    // Write the entry set to the entry storage
+                    long storageOffset = (long)NodeSize * prevEntrySetIndex;
+                    Result rc = EntryStorage.Write(storageOffset, _entrySet.GetBuffer());
+                    if (rc.IsFailure()) return rc;
+
+                    // Clear the entry set buffer to begin the new entry set
+                    _entrySet.FillZero();
 
                     // Check if we're writing in L2 nodes
                     if (CurrentL2OffsetIndex > OffsetsPerNode)
@@ -140,14 +163,24 @@ namespace LibHac.FsSystem
                         if (indexInL2Node == 0)
                         {
                             // Set the end offset of that node
-                            BucketTreeNode<long> prevL2Node = GetL2Node(prevL2NodeIndex);
+                            ref NodeHeader l2NodeHeader = ref _l2Node.GetHeader();
 
-                            prevL2Node.GetHeader().Index = prevL2NodeIndex;
-                            prevL2Node.GetHeader().Count = OffsetsPerNode;
-                            prevL2Node.GetHeader().Offset = endOffset;
+                            l2NodeHeader.Index = prevL2NodeIndex;
+                            l2NodeHeader.Count = OffsetsPerNode;
+                            l2NodeHeader.Offset = endOffset;
+
+                            // Write the L2 node to the node storage
+                            long nodeOffset = (long)NodeSize * (prevL2NodeIndex + 1);
+                            rc = NodeStorage.Write(nodeOffset, _l2Node.GetBuffer());
+                            if (rc.IsFailure()) return rc;
+
+                            // Clear the L2 node buffer to begin the new node
+                            _l2Node.FillZero();
                         }
                     }
                 }
+
+                return Result.Success;
             }
 
             /// <summary>
@@ -162,19 +195,19 @@ namespace LibHac.FsSystem
                 // If we're starting a new entry set we need to add its start offset to the L1/L2 nodes
                 if (indexInEntrySet == 0)
                 {
-                    BucketTreeNode<long> l1Node = GetL1Node();
+                    Span<long> l1Data = _l1Node.GetNode<long>().GetWritableArray();
 
                     if (CurrentL2OffsetIndex == 0)
                     {
                         // There are no L2 nodes. Write the entry set end offset directly to L1
-                        l1Node.GetWritableArray()[entrySetIndex] = entryOffset;
+                        l1Data[entrySetIndex] = entryOffset;
                     }
                     else
                     {
                         if (CurrentL2OffsetIndex < OffsetsPerNode)
                         {
                             // The current L2 offset is stored in the L1 node
-                            l1Node.GetWritableArray()[CurrentL2OffsetIndex] = entryOffset;
+                            l1Data[CurrentL2OffsetIndex] = entryOffset;
                         }
                         else
                         {
@@ -182,14 +215,13 @@ namespace LibHac.FsSystem
                             int l2NodeIndex = CurrentL2OffsetIndex / OffsetsPerNode;
                             int indexInL2Node = CurrentL2OffsetIndex % OffsetsPerNode;
 
-                            BucketTreeNode<long> l2Node = GetL2Node(l2NodeIndex - 1);
-
-                            l2Node.GetWritableArray()[indexInL2Node] = entryOffset;
+                            Span<long> l2Data = _l2Node.GetNode<long>().GetWritableArray();
+                            l2Data[indexInL2Node] = entryOffset;
 
                             // If we're starting a new L2 node we need to add its start offset to the L1 node
                             if (indexInL2Node == 0)
                             {
-                                l1Node.GetWritableArray()[l2NodeIndex - 1] = entryOffset;
+                                l1Data[l2NodeIndex - 1] = entryOffset;
                             }
                         }
 
@@ -212,7 +244,11 @@ namespace LibHac.FsSystem
                 if (endOffset <= CurrentOffset)
                     return ResultFs.InvalidOffset.Log();
 
-                FinalizePreviousEntrySet(endOffset);
+                if (CurrentOffset == -1)
+                    return Result.Success;
+
+                Result rc = FinalizePreviousEntrySet(endOffset);
+                if (rc.IsFailure()) return rc;
 
                 int entrySetIndex = CurrentEntryIndex / EntriesPerEntrySet;
                 int indexInEntrySet = CurrentEntryIndex % EntriesPerEntrySet;
@@ -220,11 +256,15 @@ namespace LibHac.FsSystem
                 // Finalize the current entry set if needed
                 if (indexInEntrySet != 0)
                 {
-                    ref NodeHeader entrySetHeader = ref GetEntrySetHeader(entrySetIndex);
+                    ref NodeHeader entrySetHeader = ref _entrySet.GetHeader();
 
                     entrySetHeader.Index = entrySetIndex;
                     entrySetHeader.Count = indexInEntrySet;
                     entrySetHeader.Offset = endOffset;
+
+                    long entryStorageOffset = (long)NodeSize * entrySetIndex;
+                    rc = EntryStorage.Write(entryStorageOffset, _entrySet.GetBuffer());
+                    if (rc.IsFailure()) return rc;
                 }
 
                 int l2NodeIndex = Util.DivideByRoundUp(CurrentL2OffsetIndex, OffsetsPerNode) - 2;
@@ -233,53 +273,36 @@ namespace LibHac.FsSystem
                 // Finalize the current L2 node if needed
                 if (CurrentL2OffsetIndex > OffsetsPerNode && (indexInEntrySet != 0 || indexInL2Node != 0))
                 {
-                    ref NodeHeader l2NodeHeader = ref GetL2Node(l2NodeIndex).GetHeader();
+                    ref NodeHeader l2NodeHeader = ref _l2Node.GetHeader();
                     l2NodeHeader.Index = l2NodeIndex;
                     l2NodeHeader.Count = indexInL2Node != 0 ? indexInL2Node : OffsetsPerNode;
                     l2NodeHeader.Offset = endOffset;
+
+                    long l2NodeStorageOffset = NodeSize * (l2NodeIndex + 1);
+                    rc = NodeStorage.Write(l2NodeStorageOffset, _l2Node.GetBuffer());
+                    if (rc.IsFailure()) return rc;
                 }
 
                 // Finalize the L1 node
-                ref NodeHeader l1Header = ref GetL1Node().GetHeader();
-
-                l1Header.Index = 0;
-                l1Header.Offset = endOffset;
+                ref NodeHeader l1NodeHeader = ref _l1Node.GetHeader();
+                l1NodeHeader.Index = 0;
+                l1NodeHeader.Offset = endOffset;
 
                 // L1 count depends on the existence or absence of L2 nodes
                 if (CurrentL2OffsetIndex == 0)
                 {
-                    l1Header.Count = Util.DivideByRoundUp(CurrentEntryIndex, EntriesPerEntrySet);
+                    l1NodeHeader.Count = Util.DivideByRoundUp(CurrentEntryIndex, EntriesPerEntrySet);
                 }
                 else
                 {
-                    l1Header.Count = l2NodeIndex + 1;
+                    l1NodeHeader.Count = l2NodeIndex + 1;
                 }
 
+                rc = NodeStorage.Write(0, _l1Node.GetBuffer());
+                if (rc.IsFailure()) return rc;
+
+                CurrentOffset = long.MaxValue;
                 return Result.Success;
-            }
-
-            private ref NodeHeader GetEntrySetHeader(int index)
-            {
-                BucketTreeNode<long> entrySetNode = GetEntrySet<long>(index);
-                return ref entrySetNode.GetHeader();
-            }
-
-            private BucketTreeNode<T> GetEntrySet<T>(int index) where T : unmanaged
-            {
-                Span<byte> entrySetBuffer = EntryBuffer.Slice(NodeSize * index, NodeSize);
-                return new BucketTreeNode<T>(entrySetBuffer);
-            }
-
-            private BucketTreeNode<long> GetL1Node()
-            {
-                Span<byte> l1NodeBuffer = NodeBuffer.Slice(0, NodeSize);
-                return new BucketTreeNode<long>(l1NodeBuffer);
-            }
-
-            private BucketTreeNode<long> GetL2Node(int index)
-            {
-                Span<byte> l2NodeBuffer = NodeBuffer.Slice(NodeSize * (index + 1), NodeSize);
-                return new BucketTreeNode<long>(l2NodeBuffer);
             }
         }
     }

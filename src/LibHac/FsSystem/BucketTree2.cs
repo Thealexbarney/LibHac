@@ -257,7 +257,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        private class NodeBuffer
+        private struct NodeBuffer
         {
             // Use long to ensure alignment
             private long[] _header;
