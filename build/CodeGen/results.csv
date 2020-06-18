@@ -60,7 +60,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,4036,,InvalidBucketTreeEntryOffset,
 2,4037,,InvalidBucketTreeEntrySetOffset,
 2,4038,,InvalidBucketTreeNodeIndex,
-2,4039,,BucketTreeEntryNotFound,
+2,4039,,InvalidBucketTreeVirtualOffset,
 
 2,4241,4259,RomHostFileSystemCorrupted,
 2,4242,,RomHostEntryCorrupted,

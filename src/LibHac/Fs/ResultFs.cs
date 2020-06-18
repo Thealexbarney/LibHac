@@ -134,7 +134,7 @@ namespace LibHac.Fs
                     /// <summary>Error code: 2002-4038; Inner value: 0x1f8c02</summary>
                     public static Result.Base InvalidBucketTreeNodeIndex => new Result.Base(ModuleFs, 4038);
                     /// <summary>Error code: 2002-4039; Inner value: 0x1f8e02</summary>
-                    public static Result.Base BucketTreeEntryNotFound => new Result.Base(ModuleFs, 4039);
+                    public static Result.Base InvalidBucketTreeVirtualOffset => new Result.Base(ModuleFs, 4039);
 
                 /// <summary>Error code: 2002-4241; Range: 4241-4259; Inner value: 0x212202</summary>
                 public static Result.Base RomHostFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4241, 4259); }

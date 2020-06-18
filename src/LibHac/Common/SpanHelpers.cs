@@ -57,5 +57,34 @@ namespace LibHac.Common
         {
             return CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref reference), Unsafe.SizeOf<T>());
         }
+
+        // All AsStruct methods do bounds checks on the input
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T AsStruct<T>(Span<byte> span) where T : unmanaged
+        {
+            return ref MemoryMarshal.Cast<byte, T>(span)[0];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref readonly T AsReadOnlyStruct<T>(ReadOnlySpan<byte> span) where T : unmanaged
+        {
+            return ref MemoryMarshal.Cast<byte, T>(span)[0];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref TTo AsStruct<TFrom, TTo>(Span<TFrom> span)
+            where TFrom : unmanaged
+            where TTo : unmanaged
+        {
+            return ref MemoryMarshal.Cast<TFrom, TTo>(span)[0];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref readonly TTo AsStruct<TFrom, TTo>(ReadOnlySpan<TFrom> span)
+            where TFrom : unmanaged
+            where TTo : unmanaged
+        {
+            return ref MemoryMarshal.Cast<TFrom, TTo>(span)[0];
+        }
     }
 }

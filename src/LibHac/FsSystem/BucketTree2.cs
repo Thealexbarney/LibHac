@@ -8,7 +8,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public class BucketTree2
+    public partial class BucketTree2
     {
         private const uint ExpectedMagic = 0x52544B42; // BKTR
         private const int MaxVersion = 1;
@@ -103,6 +103,10 @@ namespace LibHac.FsSystem
         public bool IsInitialized() => NodeSize > 0;
         public bool IsEmpty() => EntrySize == 0;
 
+        public long GetStart() => StartOffset;
+        public long GetEnd() => EndOffset;
+        public long GetSize() => EndOffset - StartOffset;
+
         public Result Find(ref Visitor visitor, long virtualAddress)
         {
             Assert.AssertTrue(IsInitialized());
@@ -165,7 +169,7 @@ namespace LibHac.FsSystem
             return Util.DivideByRoundUp(entryCount, entryCountPerNode);
         }
 
-        private static int GetNodeL2Count(long nodeSize, long entrySize, int entryCount)
+        public static int GetNodeL2Count(long nodeSize, long entrySize, int entryCount)
         {
             int offsetCountPerNode = GetOffsetCount(nodeSize);
             int entrySetCount = GetEntrySetCount(nodeSize, entrySize, entryCount);
@@ -312,9 +316,9 @@ namespace LibHac.FsSystem
 
         public readonly ref struct BucketTreeNode<TEntry> where TEntry : unmanaged
         {
-            private readonly ReadOnlySpan<byte> _buffer;
+            private readonly Span<byte> _buffer;
 
-            public BucketTreeNode(ReadOnlySpan<byte> buffer)
+            public BucketTreeNode(Span<byte> buffer)
             {
                 _buffer = buffer;
 
@@ -324,7 +328,8 @@ namespace LibHac.FsSystem
 
             public int GetCount() => GetHeader().Count;
 
-            public ReadOnlySpan<TEntry> GetArray() => GetArray<TEntry>();
+            public ReadOnlySpan<TEntry> GetArray() => GetWritableArray();
+            internal Span<TEntry> GetWritableArray() => GetWritableArray<TEntry>();
 
             public long GetBeginOffset() => GetArray<long>()[0];
             public long GetEndOffset() => GetHeader().Offset;
@@ -333,11 +338,17 @@ namespace LibHac.FsSystem
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public ReadOnlySpan<TElement> GetArray<TElement>() where TElement : unmanaged
             {
+                return GetWritableArray<TElement>();
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private Span<TElement> GetWritableArray<TElement>() where TElement : unmanaged
+            {
                 return MemoryMarshal.Cast<byte, TElement>(_buffer.Slice(Unsafe.SizeOf<NodeHeader>()));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private ref NodeHeader GetHeader()
+            internal ref NodeHeader GetHeader()
             {
                 return ref Unsafe.As<byte, NodeHeader>(ref MemoryMarshal.GetReference(_buffer));
             }
@@ -594,7 +605,7 @@ namespace LibHac.FsSystem
                 node.Find(buffer, virtualAddress);
 
                 if (node.GetIndex() < 0)
-                    return ResultFs.BucketTreeEntryNotFound.Log();
+                    return ResultFs.InvalidBucketTreeVirtualOffset.Log();
 
                 // Return the index.
                 outIndex = (int)Tree.GetEntrySetIndex(header.Index, node.GetIndex());
@@ -633,7 +644,7 @@ namespace LibHac.FsSystem
                 node.Find(buffer, virtualAddress);
 
                 if (node.GetIndex() < 0)
-                    return ResultFs.BucketTreeEntryNotFound.Log();
+                    return ResultFs.InvalidBucketTreeVirtualOffset.Log();
 
                 // Copy the data into entry.
                 int entryIndex = node.GetIndex();

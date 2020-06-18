@@ -18,5 +18,14 @@ namespace LibHac.Diag
 
             throw new LibHacException($"Assertion failed: {message}");
         }
+
+        [Conditional("DEBUG")]
+        public static void NotNull<T>([NotNull] T item) where T : class
+        {
+            if (!(item is null))
+            {
+                throw new LibHacException("Not-null assertion failed.");
+            }
+        }
     }
 }
