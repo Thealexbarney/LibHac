@@ -50,7 +50,14 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 
 2,4000,4999,DataCorrupted,
 2,4001,4299,RomCorrupted,
-2,4023,,InvalidIndirectStorageSource,
+
+2,4021,4029,IndirectStorageCorrupted,
+2,4022,,InvalidIndirectEntryOffset,
+2,4023,,InvalidIndirectEntryStorageIndex,
+2,4024,,InvalidIndirectStorageSize,
+2,4025,,InvalidIndirectVirtualOffset,
+2,4026,,InvalidIndirectPhysicalOffset,
+2,4027,,InvalidIndirectStorageIndex,
 
 2,4031,4039,BucketTreeCorrupted,
 2,4032,,InvalidBucketTreeSignature,

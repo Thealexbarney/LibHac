@@ -114,8 +114,20 @@ namespace LibHac.Fs
         public static Result.Base DataCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4000, 4999); }
             /// <summary>Error code: 2002-4001; Range: 4001-4299; Inner value: 0x1f4202</summary>
             public static Result.Base RomCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4001, 4299); }
-                /// <summary>Error code: 2002-4023; Inner value: 0x1f6e02</summary>
-                public static Result.Base InvalidIndirectStorageSource => new Result.Base(ModuleFs, 4023);
+                /// <summary>Error code: 2002-4021; Range: 4021-4029; Inner value: 0x1f6a02</summary>
+                public static Result.Base IndirectStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4021, 4029); }
+                    /// <summary>Error code: 2002-4022; Inner value: 0x1f6c02</summary>
+                    public static Result.Base InvalidIndirectEntryOffset => new Result.Base(ModuleFs, 4022);
+                    /// <summary>Error code: 2002-4023; Inner value: 0x1f6e02</summary>
+                    public static Result.Base InvalidIndirectEntryStorageIndex => new Result.Base(ModuleFs, 4023);
+                    /// <summary>Error code: 2002-4024; Inner value: 0x1f7002</summary>
+                    public static Result.Base InvalidIndirectStorageSize => new Result.Base(ModuleFs, 4024);
+                    /// <summary>Error code: 2002-4025; Inner value: 0x1f7202</summary>
+                    public static Result.Base InvalidIndirectVirtualOffset => new Result.Base(ModuleFs, 4025);
+                    /// <summary>Error code: 2002-4026; Inner value: 0x1f7402</summary>
+                    public static Result.Base InvalidIndirectPhysicalOffset => new Result.Base(ModuleFs, 4026);
+                    /// <summary>Error code: 2002-4027; Inner value: 0x1f7602</summary>
+                    public static Result.Base InvalidIndirectStorageIndex => new Result.Base(ModuleFs, 4027);
 
                 /// <summary>Error code: 2002-4031; Range: 4031-4039; Inner value: 0x1f7e02</summary>
                 public static Result.Base BucketTreeCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4031, 4039); }

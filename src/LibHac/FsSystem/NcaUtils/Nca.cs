@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem.RomFs;
@@ -214,6 +215,9 @@ namespace LibHac.FsSystem.NcaUtils
             IStorage patchStorage = patchNca.OpenRawStorage(index);
             IStorage baseStorage = SectionExists(index) ? OpenRawStorage(index) : new NullStorage();
 
+            patchStorage.GetSize(out long patchSize).ThrowIfFailure();
+            baseStorage.GetSize(out long baseSize).ThrowIfFailure();
+
             NcaFsHeader header = patchNca.Header.GetFsHeader(index);
             NcaFsPatchInfo patchInfo = header.GetPatchInfo();
 
@@ -222,9 +226,24 @@ namespace LibHac.FsSystem.NcaUtils
                 return patchStorage;
             }
 
-            IStorage relocationTableStorage = patchStorage.Slice(patchInfo.RelocationTreeOffset, patchInfo.RelocationTreeSize);
+            var treeHeader = new BucketTree2.Header();
+            patchInfo.RelocationTreeHeader.CopyTo(SpanHelpers.AsByteSpan(ref treeHeader));
+            long nodeStorageSize = IndirectStorage.QueryNodeStorageSize(treeHeader.EntryCount);
+            long entryStorageSize = IndirectStorage.QueryEntryStorageSize(treeHeader.EntryCount);
 
-            return new IndirectStorage(relocationTableStorage, true, baseStorage, patchStorage);
+            var relocationTableStorage = new SubStorage2(patchStorage, patchInfo.RelocationTreeOffset, patchInfo.RelocationTreeSize);
+            var cachedTableStorage = new CachedStorage(relocationTableStorage, IndirectStorage.NodeSize, 4, true);
+
+            var tableNodeStorage = new SubStorage2(cachedTableStorage, 0, nodeStorageSize);
+            var tableEntryStorage = new SubStorage2(cachedTableStorage, nodeStorageSize, entryStorageSize);
+
+            var storage = new IndirectStorage();
+            storage.Initialize(tableNodeStorage, tableEntryStorage, treeHeader.EntryCount).ThrowIfFailure();
+
+            storage.SetStorage(0, baseStorage, 0, baseSize);
+            storage.SetStorage(1, patchStorage, 0, patchSize);
+
+            return storage;
         }
 
         public IStorage OpenStorage(int index, IntegrityCheckLevel integrityCheckLevel)

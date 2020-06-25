@@ -105,6 +105,16 @@ namespace LibHac.FsSystem
         public long GetEnd() => EndOffset;
         public long GetSize() => EndOffset - StartOffset;
 
+        public bool Includes(long offset)
+        {
+            return StartOffset <= offset && offset < EndOffset;
+        }
+
+        public bool Includes(long offset, long size)
+        {
+            return size > 0 && StartOffset <= offset && size <= EndOffset - offset;
+        }
+
         public Result Find(ref Visitor visitor, long virtualAddress)
         {
             Assert.AssertTrue(IsInitialized());
@@ -380,6 +390,11 @@ namespace LibHac.FsSystem
                 }
 
                 return Result.Success;
+            }
+
+            public void Dispose()
+            {
+                // todo: try using shared arrays
             }
 
             public bool IsValid() => EntryIndex >= 0;

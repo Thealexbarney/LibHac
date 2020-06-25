@@ -48,20 +48,9 @@ namespace LibHac
             return true;
         }
 
-        public static bool SpansEqual<T>(Span<T> a1, Span<T> a2)
+        public static bool SpansEqual<T>(Span<T> a1, Span<T> a2) where T : IEquatable<T>
         {
-            if (a1 == a2) return true;
-            if (a1.Length != a2.Length) return false;
-
-            for (int i = 0; i < a1.Length; i++)
-            {
-                if (!a1[i].Equals(a2[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return a1.SequenceEqual(a2);
         }
 
         public static ReadOnlySpan<byte> GetUtf8Bytes(string value)

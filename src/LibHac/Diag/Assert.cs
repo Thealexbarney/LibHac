@@ -27,5 +27,20 @@ namespace LibHac.Diag
                 throw new LibHacException("Not-null assertion failed.");
             }
         }
+
+        [Conditional("DEBUG")]
+        public static void InRange(int value, int lowerInclusive, int upperExclusive)
+        {
+            InRange((long)value, lowerInclusive, upperExclusive);
+        }
+
+        [Conditional("DEBUG")]
+        public static void InRange(long value, long lowerInclusive, long upperExclusive)
+        {
+            if (value < lowerInclusive || value >= upperExclusive)
+            {
+                throw new LibHacException($"Value {value} is not in the range {lowerInclusive} to {upperExclusive}");
+            }
+        }
     }
 }

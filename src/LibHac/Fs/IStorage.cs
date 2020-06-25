@@ -132,8 +132,8 @@ namespace LibHac.Fs
         protected abstract Result DoRead(long offset, Span<byte> destination);
         protected abstract Result DoWrite(long offset, ReadOnlySpan<byte> source);
         protected abstract Result DoFlush();
-        protected abstract Result DoGetSize(out long size);
         protected abstract Result DoSetSize(long size);
+        protected abstract Result DoGetSize(out long size);
 
         protected virtual Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
             ReadOnlySpan<byte> inBuffer)
