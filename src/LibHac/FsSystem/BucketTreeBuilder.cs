@@ -7,7 +7,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
-    public partial class BucketTree2
+    public partial class BucketTree
     {
         public class Builder
         {

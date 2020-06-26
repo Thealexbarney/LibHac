@@ -9,7 +9,7 @@ namespace LibHac.FsSystem
     {
         public static readonly int NodeSize = 1024 * 16;
 
-        private BucketTree2 Table { get; } = new BucketTree2();
+        private BucketTree Table { get; } = new BucketTree();
 
         private readonly object _locker = new object();
 
@@ -34,7 +34,7 @@ namespace LibHac.FsSystem
             if (destination.Length == 0)
                 return Result.Success;
 
-            var visitor = new BucketTree2.Visitor();
+            var visitor = new BucketTree.Visitor();
 
             Result rc = Table.Find(ref visitor, offset);
             if (rc.IsFailure()) return rc;

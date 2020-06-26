@@ -199,7 +199,7 @@ namespace LibHac.FsSystem.NcaUtils
 
             var cachedBucketTreeData = new CachedStorage(encryptionBucketTreeData, IndirectStorage.NodeSize, 6, true);
 
-            var treeHeader = new BucketTree2.Header();
+            var treeHeader = new BucketTree.Header();
             info.EncryptionTreeHeader.CopyTo(SpanHelpers.AsByteSpan(ref treeHeader));
             long nodeStorageSize = IndirectStorage.QueryNodeStorageSize(treeHeader.EntryCount);
             long entryStorageSize = IndirectStorage.QueryEntryStorageSize(treeHeader.EntryCount);
@@ -237,7 +237,7 @@ namespace LibHac.FsSystem.NcaUtils
                 return patchStorage;
             }
 
-            var treeHeader = new BucketTree2.Header();
+            var treeHeader = new BucketTree.Header();
             patchInfo.RelocationTreeHeader.CopyTo(SpanHelpers.AsByteSpan(ref treeHeader));
             long nodeStorageSize = IndirectStorage.QueryNodeStorageSize(treeHeader.EntryCount);
             long entryStorageSize = IndirectStorage.QueryEntryStorageSize(treeHeader.EntryCount);

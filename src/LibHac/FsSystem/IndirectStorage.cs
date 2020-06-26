@@ -12,10 +12,10 @@ namespace LibHac.FsSystem
         public static readonly int StorageCount = 2;
         public static readonly int NodeSize = 1024 * 16;
 
-        private BucketTree2 Table { get; } = new BucketTree2();
+        private BucketTree Table { get; } = new BucketTree();
         private SubStorage2[] DataStorage { get; } = new SubStorage2[StorageCount];
 
-        [StructLayout(LayoutKind.Sequential, Size = 0x14)]
+        [StructLayout(LayoutKind.Sequential, Size = 0x14, Pack = 4)]
         public struct Entry
         {
             private long VirtualOffset;
@@ -29,13 +29,13 @@ namespace LibHac.FsSystem
             public long GetPhysicalOffset() => PhysicalOffset;
         }
 
-        public static long QueryHeaderStorageSize() => BucketTree2.QueryHeaderStorageSize();
+        public static long QueryHeaderStorageSize() => BucketTree.QueryHeaderStorageSize();
 
         public static long QueryNodeStorageSize(int entryCount) =>
-            BucketTree2.QueryNodeStorageSize(NodeSize, Unsafe.SizeOf<Entry>(), entryCount);
+            BucketTree.QueryNodeStorageSize(NodeSize, Unsafe.SizeOf<Entry>(), entryCount);
 
         public static long QueryEntryStorageSize(int entryCount) =>
-            BucketTree2.QueryEntryStorageSize(NodeSize, Unsafe.SizeOf<Entry>(), entryCount);
+            BucketTree.QueryEntryStorageSize(NodeSize, Unsafe.SizeOf<Entry>(), entryCount);
 
         public bool IsInitialized() => Table.IsInitialized();
 
@@ -43,7 +43,7 @@ namespace LibHac.FsSystem
         {
             // Read and verify the bucket tree header.
             // note: skip init
-            var header = new BucketTree2.Header();
+            var header = new BucketTree.Header();
 
             Result rc = tableStorage.Read(0, SpanHelpers.AsByteSpan(ref header));
             if (rc.IsFailure()) return rc;
@@ -100,7 +100,7 @@ namespace LibHac.FsSystem
                 return ResultFs.OutOfRange.Log();
 
             // Find the offset in our tree
-            var visitor = new BucketTree2.Visitor();
+            var visitor = new BucketTree.Visitor();
             Result rc = Table.Find(ref visitor, offset);
             if (rc.IsFailure()) return rc;
 
@@ -214,7 +214,7 @@ namespace LibHac.FsSystem
                 return ResultFs.OutOfRange.Log();
 
             // Find the offset in our tree
-            var visitor = new BucketTree2.Visitor();
+            var visitor = new BucketTree.Visitor();
 
             Result rc = Table.Find(ref visitor, offset);
             if (rc.IsFailure()) return rc;
