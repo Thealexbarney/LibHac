@@ -101,48 +101,53 @@ namespace LibHac.FsSystem
 
             // Find the offset in our tree
             var visitor = new BucketTree.Visitor();
-            Result rc = Table.Find(ref visitor, offset);
-            if (rc.IsFailure()) return rc;
 
-            long entryOffset = visitor.Get<Entry>().GetVirtualOffset();
-            if (entryOffset > 0 || !Table.Includes(entryOffset))
-                return ResultFs.InvalidIndirectEntryOffset.Log();
-
-            // Prepare to loop over entries
-            long endOffset = offset + size;
-            int count = 0;
-
-            ref Entry currentEntry = ref visitor.Get<Entry>();
-            while (currentEntry.GetVirtualOffset() < endOffset)
+            try
             {
-                // Try to write the entry to the out list
-                if (entryBuffer.Length != 0)
+                Result rc = Table.Find(ref visitor, offset);
+                if (rc.IsFailure()) return rc;
+
+                long entryOffset = visitor.Get<Entry>().GetVirtualOffset();
+                if (entryOffset > 0 || !Table.Includes(entryOffset))
+                    return ResultFs.InvalidIndirectEntryOffset.Log();
+
+                // Prepare to loop over entries
+                long endOffset = offset + size;
+                int count = 0;
+
+                ref Entry currentEntry = ref visitor.Get<Entry>();
+                while (currentEntry.GetVirtualOffset() < endOffset)
                 {
-                    if (count >= entryBuffer.Length)
+                    // Try to write the entry to the out list
+                    if (entryBuffer.Length != 0)
+                    {
+                        if (count >= entryBuffer.Length)
+                            break;
+
+                        entryBuffer[count] = currentEntry;
+                    }
+
+                    count++;
+
+                    // Advance
+                    if (visitor.CanMoveNext())
+                    {
+                        rc = visitor.MoveNext();
+                        if (rc.IsFailure()) return rc;
+
+                        currentEntry = ref visitor.Get<Entry>();
+                    }
+                    else
+                    {
                         break;
-
-                    entryBuffer[count] = currentEntry;
+                    }
                 }
 
-                count++;
-
-                // Advance
-                if (visitor.CanMoveNext())
-                {
-                    rc = visitor.MoveNext();
-                    if (rc.IsFailure()) return rc;
-
-                    currentEntry = ref visitor.Get<Entry>();
-                }
-                else
-                {
-                    break;
-                }
+                // Write the entry count
+                outputEntryCount = count;
+                return Result.Success;
             }
-
-            // Write the entry count
-            outputEntryCount = count;
-            return Result.Success;
+            finally { visitor.Dispose(); }
         }
 
         protected override unsafe Result DoRead(long offset, Span<byte> destination)
@@ -216,84 +221,88 @@ namespace LibHac.FsSystem
             // Find the offset in our tree
             var visitor = new BucketTree.Visitor();
 
-            Result rc = Table.Find(ref visitor, offset);
-            if (rc.IsFailure()) return rc;
-
-            long entryOffset = visitor.Get<Entry>().GetVirtualOffset();
-            if (entryOffset < 0 || !Table.Includes(entryOffset))
-                return ResultFs.InvalidIndirectEntryStorageIndex.Log();
-
-            // Prepare to operate in chunks
-            long currentOffset = offset;
-            long endOffset = offset + size;
-
-            while (currentOffset < endOffset)
+            try
             {
-                // Get the current entry
-                var currentEntry = visitor.Get<Entry>();
+                Result rc = Table.Find(ref visitor, offset);
+                if (rc.IsFailure()) return rc;
 
-                // Get and validate the entry's offset
-                long currentEntryOffset = currentEntry.GetVirtualOffset();
-                if (currentEntryOffset > currentOffset)
-                    return ResultFs.InvalidIndirectEntryOffset.Log();
-
-                // Validate the storage index
-                if (currentEntry.StorageIndex < 0 || currentEntry.StorageIndex >= StorageCount)
+                long entryOffset = visitor.Get<Entry>().GetVirtualOffset();
+                if (entryOffset < 0 || !Table.Includes(entryOffset))
                     return ResultFs.InvalidIndirectEntryStorageIndex.Log();
 
-                // todo: Implement continuous reading
+                // Prepare to operate in chunks
+                long currentOffset = offset;
+                long endOffset = offset + size;
 
-                // Get and validate the next entry offset
-                long nextEntryOffset;
-                if (visitor.CanMoveNext())
+                while (currentOffset < endOffset)
                 {
-                    rc = visitor.MoveNext();
-                    if (rc.IsFailure()) return rc;
+                    // Get the current entry
+                    var currentEntry = visitor.Get<Entry>();
 
-                    nextEntryOffset = visitor.Get<Entry>().GetVirtualOffset();
-                    if (!Table.Includes(nextEntryOffset))
+                    // Get and validate the entry's offset
+                    long currentEntryOffset = currentEntry.GetVirtualOffset();
+                    if (currentEntryOffset > currentOffset)
                         return ResultFs.InvalidIndirectEntryOffset.Log();
+
+                    // Validate the storage index
+                    if (currentEntry.StorageIndex < 0 || currentEntry.StorageIndex >= StorageCount)
+                        return ResultFs.InvalidIndirectEntryStorageIndex.Log();
+
+                    // todo: Implement continuous reading
+
+                    // Get and validate the next entry offset
+                    long nextEntryOffset;
+                    if (visitor.CanMoveNext())
+                    {
+                        rc = visitor.MoveNext();
+                        if (rc.IsFailure()) return rc;
+
+                        nextEntryOffset = visitor.Get<Entry>().GetVirtualOffset();
+                        if (!Table.Includes(nextEntryOffset))
+                            return ResultFs.InvalidIndirectEntryOffset.Log();
+                    }
+                    else
+                    {
+                        nextEntryOffset = Table.GetEnd();
+                    }
+
+                    if (currentOffset >= nextEntryOffset)
+                        return ResultFs.InvalidIndirectEntryOffset.Log();
+
+                    // Get the offset of the entry in the data we read
+                    long dataOffset = currentOffset - currentEntryOffset;
+                    long dataSize = nextEntryOffset - currentEntryOffset - dataOffset;
+                    Assert.AssertTrue(dataSize > 0);
+
+                    // Determine how much is left
+                    long remainingSize = endOffset - currentOffset;
+                    long currentSize = Math.Min(remainingSize, dataSize);
+                    Assert.AssertTrue(currentSize <= size);
+
+                    {
+                        SubStorage2 currentStorage = DataStorage[currentEntry.StorageIndex];
+
+                        // Get the current data storage's size.
+                        rc = currentStorage.GetSize(out long currentDataStorageSize);
+                        if (rc.IsFailure()) return rc;
+
+                        // Ensure that we remain within range.
+                        long currentEntryPhysicalOffset = currentEntry.GetPhysicalOffset();
+
+                        if (currentEntryPhysicalOffset < 0 || currentEntryPhysicalOffset > currentDataStorageSize)
+                            return ResultFs.IndirectStorageCorrupted.Log();
+
+                        if (currentDataStorageSize < currentEntryPhysicalOffset + dataOffset + currentSize)
+                            return ResultFs.IndirectStorageCorrupted.Log();
+
+                        rc = func(currentStorage, currentEntryPhysicalOffset + dataOffset, currentOffset, currentSize);
+                        if (rc.IsFailure()) return rc;
+                    }
+
+                    currentOffset += currentSize;
                 }
-                else
-                {
-                    nextEntryOffset = Table.GetEnd();
-                }
-
-                if (currentOffset >= nextEntryOffset)
-                    return ResultFs.InvalidIndirectEntryOffset.Log();
-
-                // Get the offset of the entry in the data we read
-                long dataOffset = currentOffset - currentEntryOffset;
-                long dataSize = nextEntryOffset - currentEntryOffset - dataOffset;
-                Assert.AssertTrue(dataSize > 0);
-
-                // Determine how much is left
-                long remainingSize = endOffset - currentOffset;
-                long currentSize = Math.Min(remainingSize, dataSize);
-                Assert.AssertTrue(currentSize <= size);
-
-                {
-                    SubStorage2 currentStorage = DataStorage[currentEntry.StorageIndex];
-
-                    // Get the current data storage's size.
-                    rc = currentStorage.GetSize(out long currentDataStorageSize);
-                    if (rc.IsFailure()) return rc;
-
-                    // Ensure that we remain within range.
-                    long currentEntryPhysicalOffset = currentEntry.GetPhysicalOffset();
-
-                    if (currentEntryPhysicalOffset < 0 || currentEntryPhysicalOffset > currentDataStorageSize)
-                        return ResultFs.IndirectStorageCorrupted.Log();
-
-                    if (currentDataStorageSize < currentEntryPhysicalOffset + dataOffset + currentSize)
-                        return ResultFs.IndirectStorageCorrupted.Log();
-
-                    rc = func(currentStorage, currentEntryPhysicalOffset + dataOffset, currentOffset, currentSize);
-                    if (rc.IsFailure()) return rc;
-                }
-
-                currentOffset += currentSize;
             }
+            finally { visitor.Dispose(); }
 
             return Result.Success;
         }

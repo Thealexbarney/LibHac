@@ -36,47 +36,51 @@ namespace LibHac.FsSystem
 
             var visitor = new BucketTree.Visitor();
 
-            Result rc = Table.Find(ref visitor, offset);
-            if (rc.IsFailure()) return rc;
-
-            long inPos = offset;
-            int outPos = 0;
-            int remaining = destination.Length;
-
-            while (remaining > 0)
+            try
             {
-                var currentEntry = visitor.Get<Entry>();
+                Result rc = Table.Find(ref visitor, offset);
+                if (rc.IsFailure()) return rc;
 
-                // Get and validate the next entry offset
-                long nextEntryOffset;
-                if (visitor.CanMoveNext())
+                long inPos = offset;
+                int outPos = 0;
+                int remaining = destination.Length;
+
+                while (remaining > 0)
                 {
-                    rc = visitor.MoveNext();
-                    if (rc.IsFailure()) return rc;
+                    var currentEntry = visitor.Get<Entry>();
 
-                    nextEntryOffset = visitor.Get<Entry>().Offset;
-                    if (!Table.Includes(nextEntryOffset))
-                        return ResultFs.InvalidIndirectEntryOffset.Log();
+                    // Get and validate the next entry offset
+                    long nextEntryOffset;
+                    if (visitor.CanMoveNext())
+                    {
+                        rc = visitor.MoveNext();
+                        if (rc.IsFailure()) return rc;
+
+                        nextEntryOffset = visitor.Get<Entry>().Offset;
+                        if (!Table.Includes(nextEntryOffset))
+                            return ResultFs.InvalidIndirectEntryOffset.Log();
+                    }
+                    else
+                    {
+                        nextEntryOffset = Table.GetEnd();
+                    }
+
+                    int bytesToRead = (int)Math.Min(nextEntryOffset - inPos, remaining);
+
+                    lock (_locker)
+                    {
+                        UpdateCounterSubsection((uint)currentEntry.Generation);
+
+                        rc = base.DoRead(inPos, destination.Slice(outPos, bytesToRead));
+                        if (rc.IsFailure()) return rc;
+                    }
+
+                    outPos += bytesToRead;
+                    inPos += bytesToRead;
+                    remaining -= bytesToRead;
                 }
-                else
-                {
-                    nextEntryOffset = Table.GetEnd();
-                }
-
-                int bytesToRead = (int)Math.Min(nextEntryOffset - inPos, remaining);
-
-                lock (_locker)
-                {
-                    UpdateCounterSubsection((uint)currentEntry.Generation);
-
-                    rc = base.DoRead(inPos, destination.Slice(outPos, bytesToRead));
-                    if (rc.IsFailure()) return rc;
-                }
-
-                outPos += bytesToRead;
-                inPos += bytesToRead;
-                remaining -= bytesToRead;
             }
+            finally { visitor.Dispose(); }
 
             return Result.Success;
         }

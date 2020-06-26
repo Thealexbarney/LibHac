@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -384,7 +385,7 @@ namespace LibHac.FsSystem
 
                 if (Entry == null)
                 {
-                    Entry = new byte[tree.EntrySize];
+                    Entry = ArrayPool<byte>.Shared.Rent((int)tree.EntrySize);
                     Tree = tree;
                     EntryIndex = -1;
                 }
@@ -394,7 +395,11 @@ namespace LibHac.FsSystem
 
             public void Dispose()
             {
-                // todo: try using shared arrays
+                if (Entry != null)
+                {
+                    ArrayPool<byte>.Shared.Return(Entry);
+                    Entry = null;
+                }
             }
 
             public bool IsValid() => EntryIndex >= 0;
