@@ -1,39 +1,43 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
     public class Aes128CtrExStorage : Aes128CtrStorage
     {
-        private List<AesSubsectionEntry> SubsectionEntries { get; }
-        private List<long> SubsectionOffsets { get; }
-        private BucketTree<AesSubsectionEntry> BucketTree { get; }
+        public static readonly int NodeSize = 1024 * 16;
+
+        private BucketTree2 Table { get; } = new BucketTree2();
 
         private readonly object _locker = new object();
 
-        public Aes128CtrExStorage(IStorage baseStorage, IStorage bucketTreeData, byte[] key, long counterOffset, byte[] ctrHi, bool leaveOpen)
-            : base(baseStorage, key, counterOffset, ctrHi, leaveOpen)
+        [StructLayout(LayoutKind.Sequential, Size = 0x10)]
+        public struct Entry
         {
-            BucketTree = new BucketTree<AesSubsectionEntry>(bucketTreeData);
-
-            SubsectionEntries = BucketTree.GetEntryList();
-            SubsectionOffsets = SubsectionEntries.Select(x => x.Offset).ToList();
+            public long Offset;
+            public int Reserved;
+            public int Generation;
         }
 
-        public Aes128CtrExStorage(IStorage baseStorage, IStorage bucketTreeData, byte[] key, byte[] counter, bool leaveOpen)
+        public Aes128CtrExStorage(IStorage baseStorage, SubStorage2 nodeStorage, SubStorage2 entryStorage,
+            int entryCount, byte[] key, byte[] counter, bool leaveOpen)
             : base(baseStorage, key, counter, leaveOpen)
         {
-            BucketTree = new BucketTree<AesSubsectionEntry>(bucketTreeData);
-
-            SubsectionEntries = BucketTree.GetEntryList();
-            SubsectionOffsets = SubsectionEntries.Select(x => x.Offset).ToList();
+            Result rc = Table.Initialize(nodeStorage, entryStorage, NodeSize, Unsafe.SizeOf<Entry>(), entryCount);
+            rc.ThrowIfFailure();
         }
 
         protected override Result DoRead(long offset, Span<byte> destination)
         {
-            AesSubsectionEntry entry = GetSubsectionEntry(offset);
+            if (destination.Length == 0)
+                return Result.Success;
+
+            var visitor = new BucketTree2.Visitor();
+
+            Result rc = Table.Find(ref visitor, offset);
+            if (rc.IsFailure()) return rc;
 
             long inPos = offset;
             int outPos = 0;
@@ -41,24 +45,37 @@ namespace LibHac.FsSystem
 
             while (remaining > 0)
             {
-                int bytesToRead = (int)Math.Min(entry.OffsetEnd - inPos, remaining);
+                var currentEntry = visitor.Get<Entry>();
+
+                // Get and validate the next entry offset
+                long nextEntryOffset;
+                if (visitor.CanMoveNext())
+                {
+                    rc = visitor.MoveNext();
+                    if (rc.IsFailure()) return rc;
+
+                    nextEntryOffset = visitor.Get<Entry>().Offset;
+                    if (!Table.Includes(nextEntryOffset))
+                        return ResultFs.InvalidIndirectEntryOffset.Log();
+                }
+                else
+                {
+                    nextEntryOffset = Table.GetEnd();
+                }
+
+                int bytesToRead = (int)Math.Min(nextEntryOffset - inPos, remaining);
 
                 lock (_locker)
                 {
-                    UpdateCounterSubsection(entry.Counter);
+                    UpdateCounterSubsection((uint)currentEntry.Generation);
 
-                    Result rc = base.DoRead(inPos, destination.Slice(outPos, bytesToRead));
+                    rc = base.DoRead(inPos, destination.Slice(outPos, bytesToRead));
                     if (rc.IsFailure()) return rc;
                 }
 
                 outPos += bytesToRead;
                 inPos += bytesToRead;
                 remaining -= bytesToRead;
-
-                if (remaining != 0 && inPos >= entry.OffsetEnd)
-                {
-                    entry = entry.Next;
-                }
             }
 
             return Result.Success;
@@ -72,13 +89,6 @@ namespace LibHac.FsSystem
         protected override Result DoFlush()
         {
             return Result.Success;
-        }
-
-        private AesSubsectionEntry GetSubsectionEntry(long offset)
-        {
-            int index = SubsectionOffsets.BinarySearch(offset);
-            if (index < 0) index = ~index - 1;
-            return SubsectionEntries[index];
         }
 
         private void UpdateCounterSubsection(uint value)

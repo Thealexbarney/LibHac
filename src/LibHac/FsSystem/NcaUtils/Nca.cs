@@ -194,10 +194,21 @@ namespace LibHac.FsSystem.NcaUtils
             byte[] counterEx = Aes128CtrStorage.CreateCounter(fsHeader.Counter, sectionOffset);
 
             IStorage bucketTreeData = new CachedStorage(new Aes128CtrStorage(baseStorage.Slice(bktrOffset, bktrSize), key, counter, true), 4, true);
+            var encryptionBucketTreeData = new SubStorage2(bucketTreeData,
+                info.EncryptionTreeOffset - bktrOffset, sectionSize - info.EncryptionTreeOffset);
 
-            IStorage encryptionBucketTreeData = bucketTreeData.Slice(info.EncryptionTreeOffset - bktrOffset);
-            IStorage decStorage = new Aes128CtrExStorage(baseStorage.Slice(0, dataSize), encryptionBucketTreeData, key, counterEx, true);
-            decStorage = new CachedStorage(decStorage, 0x4000, 4, true);
+            var cachedBucketTreeData = new CachedStorage(encryptionBucketTreeData, IndirectStorage.NodeSize, 6, true);
+
+            var treeHeader = new BucketTree2.Header();
+            info.EncryptionTreeHeader.CopyTo(SpanHelpers.AsByteSpan(ref treeHeader));
+            long nodeStorageSize = IndirectStorage.QueryNodeStorageSize(treeHeader.EntryCount);
+            long entryStorageSize = IndirectStorage.QueryEntryStorageSize(treeHeader.EntryCount);
+
+            var tableNodeStorage = new SubStorage2(cachedBucketTreeData, 0, nodeStorageSize);
+            var tableEntryStorage = new SubStorage2(cachedBucketTreeData, nodeStorageSize, entryStorageSize);
+
+            IStorage decStorage = new Aes128CtrExStorage(baseStorage.Slice(0, dataSize), tableNodeStorage,
+                tableEntryStorage, treeHeader.EntryCount, key, counterEx, true);
 
             return new ConcatenationStorage(new[] { decStorage, bucketTreeData }, true);
         }
