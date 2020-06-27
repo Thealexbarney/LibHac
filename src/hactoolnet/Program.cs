@@ -37,7 +37,10 @@ namespace hactoolnet
                 Console.Error.WriteLine($"\nERROR: {ex.Message}\n");
 
                 Console.Error.WriteLine("Additional information:");
+#if !CORERT_NO_REFLECTION
                 Console.Error.WriteLine(ex.GetType().FullName);
+#endif
+
                 Console.Error.WriteLine(ex.StackTrace);
             }
 
@@ -167,7 +170,11 @@ namespace hactoolnet
         {
             string keyFileName = ctx.Options.UseDevKeys ? "dev.keys" : "prod.keys";
 
+#if CORERT_NO_REFLECTION
+            string home = HomeFolder.GetFolderPath(Environment.SpecialFolder.UserProfile);
+#else
             string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+#endif
             string homeKeyFile = Path.Combine(home, ".switch", keyFileName);
             string homeTitleKeyFile = Path.Combine(home, ".switch", "title.keys");
             string homeConsoleKeyFile = Path.Combine(home, ".switch", "console.keys");

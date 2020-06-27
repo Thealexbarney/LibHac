@@ -36,9 +36,10 @@
     <IlcArg Include="--removefeature:EventSource" />
   </ItemGroup>
 
-  <!-- No-reflection mode doesn't work yet -->
+  <!-- No-reflection mode might not work on Linux if the HOME environment variable is not set -->
   <PropertyGroup Condition=" '$(BuildType)' == 'native-noreflection' ">
     <IlcDisableReflection>true</IlcDisableReflection>
+    <DefineConstants>CORERT_NO_REFLECTION;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
 </Project>
