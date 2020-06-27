@@ -114,8 +114,39 @@ namespace LibHac.Fs
         public static Result.Base DataCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4000, 4999); }
             /// <summary>Error code: 2002-4001; Range: 4001-4299; Inner value: 0x1f4202</summary>
             public static Result.Base RomCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4001, 4299); }
-                /// <summary>Error code: 2002-4023; Inner value: 0x1f6e02</summary>
-                public static Result.Base InvalidIndirectStorageSource => new Result.Base(ModuleFs, 4023);
+                /// <summary>Error code: 2002-4021; Range: 4021-4029; Inner value: 0x1f6a02</summary>
+                public static Result.Base IndirectStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4021, 4029); }
+                    /// <summary>Error code: 2002-4022; Inner value: 0x1f6c02</summary>
+                    public static Result.Base InvalidIndirectEntryOffset => new Result.Base(ModuleFs, 4022);
+                    /// <summary>Error code: 2002-4023; Inner value: 0x1f6e02</summary>
+                    public static Result.Base InvalidIndirectEntryStorageIndex => new Result.Base(ModuleFs, 4023);
+                    /// <summary>Error code: 2002-4024; Inner value: 0x1f7002</summary>
+                    public static Result.Base InvalidIndirectStorageSize => new Result.Base(ModuleFs, 4024);
+                    /// <summary>Error code: 2002-4025; Inner value: 0x1f7202</summary>
+                    public static Result.Base InvalidIndirectVirtualOffset => new Result.Base(ModuleFs, 4025);
+                    /// <summary>Error code: 2002-4026; Inner value: 0x1f7402</summary>
+                    public static Result.Base InvalidIndirectPhysicalOffset => new Result.Base(ModuleFs, 4026);
+                    /// <summary>Error code: 2002-4027; Inner value: 0x1f7602</summary>
+                    public static Result.Base InvalidIndirectStorageIndex => new Result.Base(ModuleFs, 4027);
+
+                /// <summary>Error code: 2002-4031; Range: 4031-4039; Inner value: 0x1f7e02</summary>
+                public static Result.Base BucketTreeCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4031, 4039); }
+                    /// <summary>Error code: 2002-4032; Inner value: 0x1f8002</summary>
+                    public static Result.Base InvalidBucketTreeSignature => new Result.Base(ModuleFs, 4032);
+                    /// <summary>Error code: 2002-4033; Inner value: 0x1f8202</summary>
+                    public static Result.Base InvalidBucketTreeEntryCount => new Result.Base(ModuleFs, 4033);
+                    /// <summary>Error code: 2002-4034; Inner value: 0x1f8402</summary>
+                    public static Result.Base InvalidBucketTreeNodeEntryCount => new Result.Base(ModuleFs, 4034);
+                    /// <summary>Error code: 2002-4035; Inner value: 0x1f8602</summary>
+                    public static Result.Base InvalidBucketTreeNodeOffset => new Result.Base(ModuleFs, 4035);
+                    /// <summary>Error code: 2002-4036; Inner value: 0x1f8802</summary>
+                    public static Result.Base InvalidBucketTreeEntryOffset => new Result.Base(ModuleFs, 4036);
+                    /// <summary>Error code: 2002-4037; Inner value: 0x1f8a02</summary>
+                    public static Result.Base InvalidBucketTreeEntrySetOffset => new Result.Base(ModuleFs, 4037);
+                    /// <summary>Error code: 2002-4038; Inner value: 0x1f8c02</summary>
+                    public static Result.Base InvalidBucketTreeNodeIndex => new Result.Base(ModuleFs, 4038);
+                    /// <summary>Error code: 2002-4039; Inner value: 0x1f8e02</summary>
+                    public static Result.Base InvalidBucketTreeVirtualOffset => new Result.Base(ModuleFs, 4039);
 
                 /// <summary>Error code: 2002-4241; Range: 4241-4259; Inner value: 0x212202</summary>
                 public static Result.Base RomHostFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4241, 4259); }
@@ -426,6 +457,8 @@ namespace LibHac.Fs
 
         /// <summary>Error code: 2002-6700; Range: 6700-6799; Inner value: 0x345802</summary>
         public static Result.Base OutOfResource { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6700, 6799); }
+            /// <summary>Error code: 2002-6705; Inner value: 0x346202</summary>
+            public static Result.Base BufferAllocationFailed => new Result.Base(ModuleFs, 6705);
             /// <summary>Error code: 2002-6706; Inner value: 0x346402</summary>
             public static Result.Base MappingTableFull => new Result.Base(ModuleFs, 6706);
             /// <summary>Error code: 2002-6707; Inner value: 0x346602</summary>

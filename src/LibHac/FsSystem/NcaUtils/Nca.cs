@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem.RomFs;
@@ -193,10 +194,21 @@ namespace LibHac.FsSystem.NcaUtils
             byte[] counterEx = Aes128CtrStorage.CreateCounter(fsHeader.Counter, sectionOffset);
 
             IStorage bucketTreeData = new CachedStorage(new Aes128CtrStorage(baseStorage.Slice(bktrOffset, bktrSize), key, counter, true), 4, true);
+            var encryptionBucketTreeData = new SubStorage2(bucketTreeData,
+                info.EncryptionTreeOffset - bktrOffset, sectionSize - info.EncryptionTreeOffset);
 
-            IStorage encryptionBucketTreeData = bucketTreeData.Slice(info.EncryptionTreeOffset - bktrOffset);
-            IStorage decStorage = new Aes128CtrExStorage(baseStorage.Slice(0, dataSize), encryptionBucketTreeData, key, counterEx, true);
-            decStorage = new CachedStorage(decStorage, 0x4000, 4, true);
+            var cachedBucketTreeData = new CachedStorage(encryptionBucketTreeData, IndirectStorage.NodeSize, 6, true);
+
+            var treeHeader = new BucketTree.Header();
+            info.EncryptionTreeHeader.CopyTo(SpanHelpers.AsByteSpan(ref treeHeader));
+            long nodeStorageSize = IndirectStorage.QueryNodeStorageSize(treeHeader.EntryCount);
+            long entryStorageSize = IndirectStorage.QueryEntryStorageSize(treeHeader.EntryCount);
+
+            var tableNodeStorage = new SubStorage2(cachedBucketTreeData, 0, nodeStorageSize);
+            var tableEntryStorage = new SubStorage2(cachedBucketTreeData, nodeStorageSize, entryStorageSize);
+
+            IStorage decStorage = new Aes128CtrExStorage(baseStorage.Slice(0, dataSize), tableNodeStorage,
+                tableEntryStorage, treeHeader.EntryCount, key, counterEx, true);
 
             return new ConcatenationStorage(new[] { decStorage, bucketTreeData }, true);
         }
@@ -214,6 +226,9 @@ namespace LibHac.FsSystem.NcaUtils
             IStorage patchStorage = patchNca.OpenRawStorage(index);
             IStorage baseStorage = SectionExists(index) ? OpenRawStorage(index) : new NullStorage();
 
+            patchStorage.GetSize(out long patchSize).ThrowIfFailure();
+            baseStorage.GetSize(out long baseSize).ThrowIfFailure();
+
             NcaFsHeader header = patchNca.Header.GetFsHeader(index);
             NcaFsPatchInfo patchInfo = header.GetPatchInfo();
 
@@ -222,9 +237,24 @@ namespace LibHac.FsSystem.NcaUtils
                 return patchStorage;
             }
 
-            IStorage relocationTableStorage = patchStorage.Slice(patchInfo.RelocationTreeOffset, patchInfo.RelocationTreeSize);
+            var treeHeader = new BucketTree.Header();
+            patchInfo.RelocationTreeHeader.CopyTo(SpanHelpers.AsByteSpan(ref treeHeader));
+            long nodeStorageSize = IndirectStorage.QueryNodeStorageSize(treeHeader.EntryCount);
+            long entryStorageSize = IndirectStorage.QueryEntryStorageSize(treeHeader.EntryCount);
 
-            return new IndirectStorage(relocationTableStorage, true, baseStorage, patchStorage);
+            var relocationTableStorage = new SubStorage2(patchStorage, patchInfo.RelocationTreeOffset, patchInfo.RelocationTreeSize);
+            var cachedTableStorage = new CachedStorage(relocationTableStorage, IndirectStorage.NodeSize, 4, true);
+
+            var tableNodeStorage = new SubStorage2(cachedTableStorage, 0, nodeStorageSize);
+            var tableEntryStorage = new SubStorage2(cachedTableStorage, nodeStorageSize, entryStorageSize);
+
+            var storage = new IndirectStorage();
+            storage.Initialize(tableNodeStorage, tableEntryStorage, treeHeader.EntryCount).ThrowIfFailure();
+
+            storage.SetStorage(0, baseStorage, 0, baseSize);
+            storage.SetStorage(1, patchStorage, 0, patchSize);
+
+            return storage;
         }
 
         public IStorage OpenStorage(int index, IntegrityCheckLevel integrityCheckLevel)

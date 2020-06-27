@@ -50,7 +50,24 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 
 2,4000,4999,DataCorrupted,
 2,4001,4299,RomCorrupted,
-2,4023,,InvalidIndirectStorageSource,
+
+2,4021,4029,IndirectStorageCorrupted,
+2,4022,,InvalidIndirectEntryOffset,
+2,4023,,InvalidIndirectEntryStorageIndex,
+2,4024,,InvalidIndirectStorageSize,
+2,4025,,InvalidIndirectVirtualOffset,
+2,4026,,InvalidIndirectPhysicalOffset,
+2,4027,,InvalidIndirectStorageIndex,
+
+2,4031,4039,BucketTreeCorrupted,
+2,4032,,InvalidBucketTreeSignature,
+2,4033,,InvalidBucketTreeEntryCount,
+2,4034,,InvalidBucketTreeNodeEntryCount,
+2,4035,,InvalidBucketTreeNodeOffset,
+2,4036,,InvalidBucketTreeEntryOffset,
+2,4037,,InvalidBucketTreeEntrySetOffset,
+2,4038,,InvalidBucketTreeNodeIndex,
+2,4039,,InvalidBucketTreeVirtualOffset,
 
 2,4241,4259,RomHostFileSystemCorrupted,
 2,4242,,RomHostEntryCorrupted,
@@ -220,6 +237,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6606,,TargetProgramIndexNotFound,Specified program index is not found
 
 2,6700,6799,OutOfResource,
+2,6705,,BufferAllocationFailed,
 2,6706,,MappingTableFull,
 2,6707,,AllocationTableInsufficientFreeBlocks,
 2,6709,,OpenCountLimit,

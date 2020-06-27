@@ -48,20 +48,9 @@ namespace LibHac
             return true;
         }
 
-        public static bool SpansEqual<T>(Span<T> a1, Span<T> a2)
+        public static bool SpansEqual<T>(Span<T> a1, Span<T> a2) where T : IEquatable<T>
         {
-            if (a1 == a2) return true;
-            if (a1.Length != a2.Length) return false;
-
-            for (int i = 0; i < a1.Length; i++)
-            {
-                if (!a1[i].Equals(a2[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return a1.SequenceEqual(a2);
         }
 
         public static ReadOnlySpan<byte> GetUtf8Bytes(string value)
@@ -490,6 +479,28 @@ namespace LibHac
             if (keyGeneration == 0) return 0;
 
             return keyGeneration - 1;
+        }
+
+        public static bool IsPowerOfTwo(int value)
+        {
+            return value > 0 && ResetLeastSignificantOneBit(value) == 0;
+        }
+
+        public static bool IsPowerOfTwo(long value)
+        {
+            return value > 0 && ResetLeastSignificantOneBit(value) == 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int ResetLeastSignificantOneBit(int value)
+        {
+            return value & (value - 1);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static long ResetLeastSignificantOneBit(long value)
+        {
+            return value & (value - 1);
         }
     }
 }
