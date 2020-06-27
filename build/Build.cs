@@ -34,6 +34,9 @@ namespace LibHacBuild
         [Parameter("Don't enable any size-reducing settings on native builds.")]
         public readonly bool Untrimmed;
 
+        [Parameter("Disable reflection in native builds.")]
+        public readonly bool NoReflection;
+
         [Solution("LibHac.sln")] readonly Solution _solution;
 
         AbsolutePath SourceDirectory => RootDirectory / "src";
@@ -358,6 +361,11 @@ namespace LibHacBuild
         {
             string buildType = Untrimmed ? "native-untrimmed" : "native";
 
+            if (NoReflection)
+            {
+                buildType = "native-noreflection";
+            }
+
             DotNetPublishSettings publishSettings = new DotNetPublishSettings()
                 .SetConfiguration(Configuration)
                 .SetProject(HactoolnetProject)
@@ -368,7 +376,7 @@ namespace LibHacBuild
 
             DotNetPublish(publishSettings);
 
-            if (EnvironmentInfo.IsUnix && !Untrimmed)
+            if (EnvironmentInfo.IsUnix && !Untrimmed && !NoReflection)
             {
                 File.Copy(CliNativeExe, CliNativeExe + "_unstripped", true);
                 ProcessTasks.StartProcess("strip", CliNativeExe).AssertZeroExitCode();

@@ -11,21 +11,30 @@ namespace LibHac
     {
         private const int MediaSize = 0x200;
 
-        public static T CreateJaggedArray<T>(params int[] lengths)
+        public static byte[][] CreateJaggedByteArray(int len1, int len2)
         {
-            return (T)InitializeJaggedArray(typeof(T).GetElementType(), 0, lengths);
+            var array = new byte[len1][];
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                array[i] = new byte[len2];
+            }
+
+            return array;
         }
 
-        private static object InitializeJaggedArray(Type type, int index, int[] lengths)
+        public static byte[][][] CreateJaggedByteArray(int len1, int len2, int len3)
         {
-            var array = Array.CreateInstance(type, lengths[index]);
+            var array = new byte[len1][][];
 
-            Type elementType = type.GetElementType();
-            if (elementType == null) return array;
-
-            for (int i = 0; i < lengths[index]; i++)
+            for (int i = 0; i < array.Length; i++)
             {
-                array.SetValue(InitializeJaggedArray(elementType, index + 1, lengths), i);
+                array[i] = new byte[len2][];
+
+                for (int j = 0; j < array[i].Length; j++)
+                {
+                    array[i][j] = new byte[len3];
+                }
             }
 
             return array;
