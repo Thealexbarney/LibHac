@@ -104,8 +104,8 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoSetSize(long size)
         {
-            int oldBlockCount = (int)Util.DivideByRoundUp(_length, BlockSize);
-            int newBlockCount = (int)Util.DivideByRoundUp(size, BlockSize);
+            int oldBlockCount = (int)Utilities.DivideByRoundUp(_length, BlockSize);
+            int newBlockCount = (int)Utilities.DivideByRoundUp(size, BlockSize);
 
             if (oldBlockCount == newBlockCount) return Result.Success;
 

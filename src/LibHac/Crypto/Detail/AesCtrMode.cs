@@ -25,14 +25,14 @@ namespace LibHac.Crypto.Detail
 
         public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            int blockCount = Util.DivideByRoundUp(input.Length, Aes.BlockSize);
+            int blockCount = Utilities.DivideByRoundUp(input.Length, Aes.BlockSize);
             int length = blockCount * Aes.BlockSize;
 
             using var counterBuffer = new RentedArray<byte>(length);
             FillDecryptedCounter(Iv, counterBuffer.Span);
 
             _aesCore.Encrypt(counterBuffer.Array, counterBuffer.Array, length);
-            Util.XorArrays(output, input, counterBuffer.Span);
+            Utilities.XorArrays(output, input, counterBuffer.Span);
         }
 
         private static void FillDecryptedCounter(Span<byte> counter, Span<byte> buffer)

@@ -7,7 +7,7 @@ using System.Text;
 
 namespace LibHac
 {
-    public static class Util
+    public static class Utilities
     {
         private const int MediaSize = 0x200;
 
@@ -189,7 +189,7 @@ namespace LibHac
             return text;
         }
 
-        public static string ReadUtf8Z(this BinaryReader reader, int maxLength = Int32.MaxValue)
+        public static string ReadUtf8Z(this BinaryReader reader, int maxLength = int.MaxValue)
         {
             long start = reader.BaseStream.Position;
             int size = 0;

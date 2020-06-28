@@ -121,7 +121,7 @@ namespace LibHac.FsSystem
                 size += entry.NameLength + 1;
             }
 
-            int endOffset = Util.AlignUp(startOffset + size, GetMetaDataAlignment(type));
+            int endOffset = Utilities.AlignUp(startOffset + size, GetMetaDataAlignment(type));
             return endOffset - startOffset;
         }
 

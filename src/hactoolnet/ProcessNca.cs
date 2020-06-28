@@ -247,7 +247,7 @@ namespace hactoolnet
             PrintItem(sb, colLen, "SDK Version:", nca.Header.SdkVersion);
             PrintItem(sb, colLen, "Distribution type:", nca.Header.DistributionType);
             PrintItem(sb, colLen, "Content Type:", nca.Header.ContentType);
-            PrintItem(sb, colLen, "Master Key Revision:", $"{masterKey} ({Util.GetKeyRevisionSummary(masterKey)})");
+            PrintItem(sb, colLen, "Master Key Revision:", $"{masterKey} ({Utilities.GetKeyRevisionSummary(masterKey)})");
             PrintItem(sb, colLen, "Encryption Type:", $"{(nca.Header.HasRightsId ? "Titlekey crypto" : "Standard crypto")}");
 
             if (nca.Header.HasRightsId)

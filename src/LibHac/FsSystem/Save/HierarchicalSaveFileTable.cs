@@ -59,7 +59,7 @@ namespace LibHac.FsSystem.Save
             position.NextFile = entry.NextSibling;
             info = entry.Value;
 
-            name = Util.GetUtf8StringNullTerminated(nameBytes);
+            name = Utilities.GetUtf8StringNullTerminated(nameBytes);
 
             return true;
         }
@@ -85,7 +85,7 @@ namespace LibHac.FsSystem.Save
 
             position.NextDirectory = entry.NextSibling;
 
-            name = Util.GetUtf8StringNullTerminated(nameBytes);
+            name = Utilities.GetUtf8StringNullTerminated(nameBytes);
 
             return true;
         }

@@ -132,7 +132,7 @@ namespace LibHac
             byte[] testEnc = rsa.Encrypt(test, false);
             byte[] testDec = rsa.Decrypt(testEnc, false);
 
-            if (!Util.ArraysEqual(test, testDec))
+            if (!Utilities.ArraysEqual(test, testDec))
             {
                 throw new InvalidDataException("Could not verify RSA key pair");
             }

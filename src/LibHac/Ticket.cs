@@ -111,7 +111,7 @@ namespace LibHac
                     throw new ArgumentOutOfRangeException();
             }
 
-            long bodyStart = Util.GetNextMultiple(4 + sigLength, 0x40);
+            long bodyStart = Utilities.GetNextMultiple(4 + sigLength, 0x40);
 
             writer.Write((int)SignatureType);
 

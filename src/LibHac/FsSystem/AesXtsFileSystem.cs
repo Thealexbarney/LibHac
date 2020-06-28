@@ -50,7 +50,7 @@ namespace LibHac.FsSystem
         /// <param name="key">The 256-bit key containing a 128-bit data key followed by a 128-bit tweak key.</param>
         public Result CreateFile(U8Span path, long size, CreateFileOptions options, byte[] key)
         {
-            long containerSize = AesXtsFile.HeaderLength + Util.AlignUp(size, 0x10);
+            long containerSize = AesXtsFile.HeaderLength + Utilities.AlignUp(size, 0x10);
 
             Result rc = BaseFileSystem.CreateFile(path, containerSize, options);
             if (rc.IsFailure()) return rc;

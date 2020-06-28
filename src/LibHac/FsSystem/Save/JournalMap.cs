@@ -64,8 +64,8 @@ namespace LibHac.FsSystem.Save
             int physicalBlockCount = virtualBlockCount + Header.JournalBlockCount;
 
             int blockMapLength = virtualBlockCount * MapEntryLength;
-            int physicalBitmapLength = Util.AlignUp(physicalBlockCount, 32) / 8;
-            int virtualBitmapLength = Util.AlignUp(virtualBlockCount, 32) / 8;
+            int physicalBitmapLength = Utilities.AlignUp(physicalBlockCount, 32) / 8;
+            int virtualBitmapLength = Utilities.AlignUp(virtualBlockCount, 32) / 8;
 
             MapStorage.Slice(blockMapLength).Fill(SaveDataFileSystem.TrimFillValue);
             FreeBlocks.Slice(physicalBitmapLength).Fill(SaveDataFileSystem.TrimFillValue);

@@ -85,7 +85,7 @@ namespace LibHac.FsSystem.Save
             Span<byte> actualHeaderHash = stackalloc byte[Sha256.DigestSize];
             Sha256.GenerateSha256Hash(Data.AsSpan(0x300, 0x3d00), actualHeaderHash);
 
-            HeaderHashValidity = Util.SpansEqual(Layout.Hash, actualHeaderHash) ? Validity.Valid : Validity.Invalid;
+            HeaderHashValidity = Utilities.SpansEqual(Layout.Hash, actualHeaderHash) ? Validity.Valid : Validity.Invalid;
             SignatureValidity = ValidateSignature(keyset);
         }
 
@@ -95,7 +95,7 @@ namespace LibHac.FsSystem.Save
 
             CryptoOld.CalculateAesCmac(keyset.SaveMacKey, Data, 0x100, calculatedCmac, 0, 0x200);
 
-            return Util.ArraysEqual(calculatedCmac, Cmac) ? Validity.Valid : Validity.Invalid;
+            return Utilities.ArraysEqual(calculatedCmac, Cmac) ? Validity.Valid : Validity.Invalid;
         }
     }
 

@@ -38,7 +38,7 @@ namespace LibHac.FsSystem
                     }
                     else
                     {
-                        string entryName = Util.GetUtf8StringNullTerminated(entry.Name);
+                        string entryName = Utilities.GetUtf8StringNullTerminated(entry.Name);
                         entry.Size = GetAesXtsFileSize(PathTools.Combine(Path.ToString(), entryName).ToU8Span());
                     }
                 }

@@ -103,7 +103,7 @@ namespace LibHac.FsSystem.NcaUtils
             var actualHash = new byte[Sha256.DigestSize];
             Sha256.GenerateSha256Hash(data, actualHash);
 
-            if (Util.ArraysEqual(expectedHash, actualHash)) return Validity.Valid;
+            if (Utilities.ArraysEqual(expectedHash, actualHash)) return Validity.Valid;
 
             return Validity.Invalid;
         }

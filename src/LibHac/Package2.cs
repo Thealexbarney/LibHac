@@ -67,7 +67,7 @@ namespace LibHac
             // Increase the counter by one and start decrypting at 0x110.
             var counter = new byte[0x10];
             Array.Copy(Header.Counter, counter, 0x10);
-            Util.IncrementByteArray(counter);
+            Utilities.IncrementByteArray(counter);
 
             return new CachedStorage(new Aes128CtrStorage(encStorage, Key, counter, true), 0x4000, 4, true);
         }

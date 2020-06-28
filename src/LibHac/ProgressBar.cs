@@ -87,7 +87,7 @@ namespace LibHac
 
         public string GetRateString()
         {
-            return Util.GetBytesReadable((long) (_timedBytes / _watch.Elapsed.TotalSeconds)) + "/s";
+            return Utilities.GetBytesReadable((long) (_timedBytes / _watch.Elapsed.TotalSeconds)) + "/s";
         }
 
         private void TimerHandler(object state)

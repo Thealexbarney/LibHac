@@ -44,7 +44,7 @@ namespace LibHac.FsSystem
                 Assert.AssertTrue(entrySize >= sizeof(long));
                 Assert.AssertTrue(nodeSize >= entrySize + Unsafe.SizeOf<NodeHeader>());
                 Assert.AssertTrue(NodeSizeMin <= nodeSize && nodeSize <= NodeSizeMax);
-                Assert.AssertTrue(Util.IsPowerOfTwo(nodeSize));
+                Assert.AssertTrue(Utilities.IsPowerOfTwo(nodeSize));
 
                 if (headerStorage is null || nodeStorage is null || entryStorage is null)
                     return ResultFs.NullptrArgument.Log();
@@ -267,7 +267,7 @@ namespace LibHac.FsSystem
                     if (rc.IsFailure()) return rc;
                 }
 
-                int l2NodeIndex = Util.DivideByRoundUp(CurrentL2OffsetIndex, OffsetsPerNode) - 2;
+                int l2NodeIndex = Utilities.DivideByRoundUp(CurrentL2OffsetIndex, OffsetsPerNode) - 2;
                 int indexInL2Node = CurrentL2OffsetIndex % OffsetsPerNode;
 
                 // Finalize the current L2 node if needed
@@ -291,7 +291,7 @@ namespace LibHac.FsSystem
                 // L1 count depends on the existence or absence of L2 nodes
                 if (CurrentL2OffsetIndex == 0)
                 {
-                    l1NodeHeader.Count = Util.DivideByRoundUp(CurrentEntryIndex, EntriesPerEntrySet);
+                    l1NodeHeader.Count = Utilities.DivideByRoundUp(CurrentEntryIndex, EntriesPerEntrySet);
                 }
                 else
                 {

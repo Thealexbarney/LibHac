@@ -61,7 +61,7 @@ namespace LibHac.FsSystem.RomFs
             Sources.Add(fileStorage);
 
             long newOffset = CurrentOffset + fileSize;
-            CurrentOffset = Util.AlignUp(newOffset, FileAlignment);
+            CurrentOffset = Utilities.AlignUp(newOffset, FileAlignment);
 
             var padding = new NullStorage(CurrentOffset - newOffset);
             Sources.Add(padding);
