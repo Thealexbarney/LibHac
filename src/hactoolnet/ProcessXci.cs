@@ -150,7 +150,7 @@ namespace hactoolnet
             PrintItem(sb, colLen, $"Header Signature{xci.Header.SignatureValidity.GetValidityString()}:", xci.Header.Signature);
             PrintItem(sb, colLen, $"Header Hash{xci.Header.PartitionFsHeaderValidity.GetValidityString()}:", xci.Header.RootPartitionHeaderHash);
             PrintItem(sb, colLen, "Cartridge Type:", GetCartridgeType(xci.Header.GameCardSize));
-            PrintItem(sb, colLen, "Cartridge Size:", $"0x{Util.MediaToReal(xci.Header.ValidDataEndPage + 1):x12}");
+            PrintItem(sb, colLen, "Cartridge Size:", $"0x{Utilities.MediaToReal(xci.Header.ValidDataEndPage + 1):x12}");
             PrintItem(sb, colLen, "Header IV:", xci.Header.AesCbcIv);
 
             PrintPartition(sb, colLen, xci.OpenPartition(XciPartitionType.Root), XciPartitionType.Root);

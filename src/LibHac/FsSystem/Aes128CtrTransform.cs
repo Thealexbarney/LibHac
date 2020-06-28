@@ -36,7 +36,7 @@ namespace LibHac.FsSystem
 
         public int TransformBlock(Span<byte> data)
         {
-            int blockCount = Util.DivideByRoundUp(data.Length, BlockSizeBytes);
+            int blockCount = Utilities.DivideByRoundUp(data.Length, BlockSizeBytes);
             int length = blockCount * BlockSizeBytes;
 
             byte[] counterXor = ArrayPool<byte>.Shared.Rent(length);
@@ -46,7 +46,7 @@ namespace LibHac.FsSystem
                 FillDecryptedCounter(counterXor.AsSpan(0, length));
 
                 _encryptor.TransformBlock(counterXor, 0, length, counterXor, 0);
-                Util.XorArrays(data, counterXor);
+                Utilities.XorArrays(data, counterXor);
             }
             finally
             {

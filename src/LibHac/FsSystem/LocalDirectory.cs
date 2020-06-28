@@ -35,7 +35,7 @@ namespace LibHac.FsSystem
 
                 if (!CanReturnEntry(isDir, Mode)) continue;
 
-                ReadOnlySpan<byte> name = Util.GetUtf8Bytes(localEntry.Name);
+                ReadOnlySpan<byte> name = Utilities.GetUtf8Bytes(localEntry.Name);
                 DirectoryEntryType type = isDir ? DirectoryEntryType.Directory : DirectoryEntryType.File;
                 long length = isDir ? 0 : ((FileInfo)localEntry).Length;
 

@@ -102,7 +102,7 @@ namespace LibHac.FsSystem.NcaUtils
 
         public Span<byte> RightsId => _header.Span.Slice(NcaHeaderStruct.RightsIdOffset, NcaHeaderStruct.RightsIdSize);
 
-        public bool HasRightsId => !Util.IsEmpty(RightsId);
+        public bool HasRightsId => !Utilities.IsEmpty(RightsId);
 
         private ref NcaSectionEntryStruct GetSectionEntry(int index)
         {
@@ -167,7 +167,7 @@ namespace LibHac.FsSystem.NcaUtils
             Span<byte> actualHash = stackalloc byte[Sha256.DigestSize];
             Sha256.GenerateSha256Hash(headerData.Span, actualHash);
 
-            if (!Util.SpansEqual(expectedHash, actualHash))
+            if (!Utilities.SpansEqual(expectedHash, actualHash))
             {
                 throw new InvalidDataException("FS header hash is invalid.");
             }

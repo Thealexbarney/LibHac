@@ -115,7 +115,7 @@ namespace LibHac.Crypto.Detail
             _aesCore.Encrypt(counter, counter);
 
             input.CopyTo(output);
-            Util.XorArrays(output, counter);
+            Utilities.XorArrays(output, counter);
 
             for (int i = 0; i < counter.Length; i++)
             {

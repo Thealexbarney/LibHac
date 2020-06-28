@@ -43,9 +43,9 @@ namespace LibHac.Crypto.Detail
             using var tweakBuffer = new RentedArray<byte>(blockCount * Aes.BlockSize);
             tweak = FillTweakBuffer(tweak, MemoryMarshal.Cast<byte, Buffer16>(tweakBuffer.Span));
 
-            Util.XorArrays(output, input, tweakBuffer.Span);
+            Utilities.XorArrays(output, input, tweakBuffer.Span);
             _dataAesCore.Encrypt(output.Slice(0, blockCount * Aes.BlockSize), output);
-            Util.XorArrays(output, output, tweakBuffer.Array);
+            Utilities.XorArrays(output, output, tweakBuffer.Array);
 
             if (leftover != 0)
             {
@@ -97,9 +97,9 @@ namespace LibHac.Crypto.Detail
                 using var tweakBuffer = new RentedArray<byte>(blockCount * Aes.BlockSize);
                 tweak = FillTweakBuffer(tweak, MemoryMarshal.Cast<byte, Buffer16>(tweakBuffer.Span));
 
-                Util.XorArrays(output, input, tweakBuffer.Span);
+                Utilities.XorArrays(output, input, tweakBuffer.Span);
                 _dataAesCore.Decrypt(output.Slice(0, blockCount * Aes.BlockSize), output);
-                Util.XorArrays(output, output, tweakBuffer.Span);
+                Utilities.XorArrays(output, output, tweakBuffer.Span);
             }
 
             if (leftover != 0)

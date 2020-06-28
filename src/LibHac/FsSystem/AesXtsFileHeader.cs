@@ -68,7 +68,7 @@ namespace LibHac.FsSystem
             DecryptKeys();
 
             byte[] hmac = CalculateHmac(verificationKey);
-            return Util.ArraysEqual(hmac, Signature);
+            return Utilities.ArraysEqual(hmac, Signature);
         }
 
         public void SetSize(long size, byte[] verificationKey)

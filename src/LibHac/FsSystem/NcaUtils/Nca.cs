@@ -28,7 +28,7 @@ namespace LibHac.FsSystem.NcaUtils
         {
             if (index < 0 || index > 3) throw new ArgumentOutOfRangeException(nameof(index));
 
-            int keyRevision = Util.GetMasterKeyRevision(Header.KeyGeneration);
+            int keyRevision = Utilities.GetMasterKeyRevision(Header.KeyGeneration);
             byte[] keyAreaKey = Keyset.KeyAreaKeys[keyRevision][Header.KeyAreaKeyIndex];
 
             if (keyAreaKey.IsEmpty())
@@ -47,7 +47,7 @@ namespace LibHac.FsSystem.NcaUtils
 
         public byte[] GetDecryptedTitleKey()
         {
-            int keyRevision = Util.GetMasterKeyRevision(Header.KeyGeneration);
+            int keyRevision = Utilities.GetMasterKeyRevision(Header.KeyGeneration);
             byte[] titleKek = Keyset.TitleKeks[keyRevision];
 
             var rightsId = new RightsId(Header.RightsId);
@@ -91,7 +91,7 @@ namespace LibHac.FsSystem.NcaUtils
             if (!SectionExists(index)) return false;
             if (Header.GetFsHeader(index).EncryptionType == NcaEncryptionType.None) return true;
 
-            int keyRevision = Util.GetMasterKeyRevision(Header.KeyGeneration);
+            int keyRevision = Utilities.GetMasterKeyRevision(Header.KeyGeneration);
 
             if (Header.HasRightsId)
             {
@@ -126,7 +126,7 @@ namespace LibHac.FsSystem.NcaUtils
 
             BaseStorage.GetSize(out long baseSize).ThrowIfFailure();
 
-            if (!Util.IsSubRange(offset, size, baseSize))
+            if (!Utilities.IsSubRange(offset, size, baseSize))
             {
                 throw new InvalidDataException(
                     $"Section offset (0x{offset:x}) and length (0x{size:x}) fall outside the total NCA length (0x{baseSize:x}).");

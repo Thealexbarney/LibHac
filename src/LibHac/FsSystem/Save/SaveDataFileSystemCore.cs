@@ -58,7 +58,7 @@ namespace LibHac.FsSystem.Save
                 return Result.Success;
             }
 
-            int blockCount = (int)Util.DivideByRoundUp(size, AllocationTable.Header.BlockSize);
+            int blockCount = (int)Utilities.DivideByRoundUp(size, AllocationTable.Header.BlockSize);
             int startBlock = AllocationTable.Allocate(blockCount);
 
             if (startBlock == -1)

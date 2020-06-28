@@ -63,7 +63,7 @@ namespace LibHac.FsSystem
 
                     if (!Mode.HasFlag(OpenDirectoryMode.NoFileSize))
                     {
-                        string entryName = Util.GetUtf8StringNullTerminated(entry.Name);
+                        string entryName = Utilities.GetUtf8StringNullTerminated(entry.Name);
                         string entryFullPath = PathTools.Combine(_path.ToString(), entryName);
 
                         rc = ParentFileSystem.GetConcatenationFileSize(out long fileSize, entryFullPath.ToU8Span());
@@ -122,7 +122,7 @@ namespace LibHac.FsSystem
             }
             else
             {
-                string name = Util.GetUtf8StringNullTerminated(entry.Name);
+                string name = Utilities.GetUtf8StringNullTerminated(entry.Name);
                 var fullPath = PathTools.Combine(_path.ToString(), name).ToU8Span();
 
                 return ParentFileSystem.IsConcatenationFile(fullPath);

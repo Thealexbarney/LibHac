@@ -83,7 +83,7 @@ namespace LibHac.FsSystem
             /* get number of blocks */
             int m = count >> 4;
             int mo = count & 15;
-            int alignedCount = Util.AlignUp(count, BlockSizeBytes);
+            int alignedCount = Utilities.AlignUp(count, BlockSizeBytes);
 
             /* for i = 0 to m-2 do */
             if (mo == 0)
@@ -103,9 +103,9 @@ namespace LibHac.FsSystem
 
                 if (lim > 0)
                 {
-                    Util.XorArrays(buffer.AsSpan(offset, lim * 16), tweak);
+                    Utilities.XorArrays(buffer.AsSpan(offset, lim * 16), tweak);
                     _key1.TransformBlock(buffer, offset, lim * 16, buffer, offset);
-                    Util.XorArrays(buffer.AsSpan(offset, lim * 16), tweak);
+                    Utilities.XorArrays(buffer.AsSpan(offset, lim * 16), tweak);
                 }
 
                 if (mo > 0)

@@ -242,7 +242,7 @@ namespace hactoolnet
                     $"v{title.Version?.Version}",
                     title.Version?.ToString(),
                     title.Metadata?.Type.ToString(),
-                    Util.GetBytesReadable(title.GetSize()),
+                    Utilities.GetBytesReadable(title.GetSize()),
                     title.Control.Value.DisplayVersion.ToString(),
                     title.Name);
             }
@@ -272,17 +272,17 @@ namespace hactoolnet
 
                 if (app.Main != null)
                 {
-                    sb.AppendLine($"Software: {Util.GetBytesReadable(app.Main.GetSize())}");
+                    sb.AppendLine($"Software: {Utilities.GetBytesReadable(app.Main.GetSize())}");
                 }
 
                 if (app.Patch != null)
                 {
-                    sb.AppendLine($"Update Data: {Util.GetBytesReadable(app.Patch.GetSize())}");
+                    sb.AppendLine($"Update Data: {Utilities.GetBytesReadable(app.Patch.GetSize())}");
                 }
 
                 if (app.AddOnContent.Count > 0)
                 {
-                    sb.AppendLine($"DLC: {Util.GetBytesReadable(app.AddOnContent.Sum(x => x.GetSize()))}");
+                    sb.AppendLine($"DLC: {Utilities.GetBytesReadable(app.AddOnContent.Sum(x => x.GetSize()))}");
                 }
 
                 ref ApplicationControlProperty nacp = ref app.Nacp.Value;
@@ -291,11 +291,11 @@ namespace hactoolnet
                 long deviceTotalSaveDataSize = nacp.DeviceSaveDataSize + nacp.DeviceSaveDataJournalSize;
 
                 if (userTotalSaveDataSize > 0)
-                    sb.AppendLine($"User save: {Util.GetBytesReadable(userTotalSaveDataSize)}");
+                    sb.AppendLine($"User save: {Utilities.GetBytesReadable(userTotalSaveDataSize)}");
                 if (deviceTotalSaveDataSize > 0)
-                    sb.AppendLine($"System save: {Util.GetBytesReadable(deviceTotalSaveDataSize)}");
+                    sb.AppendLine($"System save: {Utilities.GetBytesReadable(deviceTotalSaveDataSize)}");
                 if (nacp.BcatDeliveryCacheStorageSize > 0)
-                    sb.AppendLine($"BCAT save: {Util.GetBytesReadable(nacp.BcatDeliveryCacheStorageSize)}");
+                    sb.AppendLine($"BCAT save: {Utilities.GetBytesReadable(nacp.BcatDeliveryCacheStorageSize)}");
 
                 sb.AppendLine();
             }

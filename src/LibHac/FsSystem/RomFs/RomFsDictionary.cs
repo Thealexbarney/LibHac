@@ -140,7 +140,7 @@ namespace LibHac.FsSystem.RomFs
 
         private int CreateNewEntry(int nameLength)
         {
-            int bytesNeeded = Util.AlignUp(_sizeOfEntry + nameLength, 4);
+            int bytesNeeded = Utilities.AlignUp(_sizeOfEntry + nameLength, 4);
 
             if (_length + bytesNeeded > _capacity)
             {

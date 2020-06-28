@@ -138,7 +138,7 @@ namespace LibHac
                 Span<byte> actualHeaderHash = stackalloc byte[Sha256.DigestSize];
                 Sha256.GenerateSha256Hash(headerBytes, actualHeaderHash);
 
-                PartitionFsHeaderValidity = Util.SpansEqual(RootPartitionHeaderHash, actualHeaderHash) ? Validity.Valid : Validity.Invalid;
+                PartitionFsHeaderValidity = Utilities.SpansEqual(RootPartitionHeaderHash, actualHeaderHash) ? Validity.Valid : Validity.Invalid;
             }
         }
     }

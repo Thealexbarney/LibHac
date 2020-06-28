@@ -228,7 +228,7 @@ namespace LibHac.FsSystem
 
             if (size == 0) return 1;
 
-            return (int)Util.DivideByRoundUp(size, subFileSize);
+            return (int)Utilities.DivideByRoundUp(size, subFileSize);
         }
 
         private static long QuerySubFileSize(int subFileIndex, long totalSize, long subFileSize)

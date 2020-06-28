@@ -43,7 +43,7 @@ namespace hactoolnet
 
             src.GetSize(out long srcSize).ThrowIfFailure();
 
-            string rate = Util.GetBytesReadable((long)(srcSize * iterations / encryptWatch.Elapsed.TotalSeconds));
+            string rate = Utilities.GetBytesReadable((long)(srcSize * iterations / encryptWatch.Elapsed.TotalSeconds));
             logger.LogMessage($"{label}{rate}/s");
         }
 
@@ -77,9 +77,9 @@ namespace hactoolnet
             double averageRun = runTimes.Average();
             double slowestRun = runTimes.Max();
 
-            string fastestRate = Util.GetBytesReadable((long)(srcSize / fastestRun));
-            string averageRate = Util.GetBytesReadable((long)(srcSize / averageRun));
-            string slowestRate = Util.GetBytesReadable((long)(srcSize / slowestRun));
+            string fastestRate = Utilities.GetBytesReadable((long)(srcSize / fastestRun));
+            string averageRate = Utilities.GetBytesReadable((long)(srcSize / averageRun));
+            string slowestRate = Utilities.GetBytesReadable((long)(srcSize / slowestRun));
 
             logger.LogMessage($"{label}{averageRate}/s, fastest run: {fastestRate}/s, slowest run: {slowestRate}/s");
         }
@@ -122,9 +122,9 @@ namespace hactoolnet
             double averageRun = runTimes.Average();
             double slowestRun = runTimes.Max();
 
-            string fastestRate = Util.GetBytesReadable((long)(srcSize / fastestRun));
-            string averageRate = Util.GetBytesReadable((long)(srcSize / averageRun));
-            string slowestRate = Util.GetBytesReadable((long)(srcSize / slowestRun));
+            string fastestRate = Utilities.GetBytesReadable((long)(srcSize / fastestRun));
+            string averageRate = Utilities.GetBytesReadable((long)(srcSize / averageRun));
+            string slowestRate = Utilities.GetBytesReadable((long)(srcSize / slowestRun));
 
             logger.LogMessage($"{label}{averageRate}/s, fastest run: {fastestRate}/s, slowest run: {slowestRate}/s");
         }
@@ -174,9 +174,9 @@ namespace hactoolnet
             double averageRun = runTimes.Average();
             double slowestRun = runTimes.Max();
 
-            string fastestRate = Util.GetBytesReadable((long)(srcSize / fastestRun));
-            string averageRate = Util.GetBytesReadable((long)(srcSize / averageRun));
-            string slowestRate = Util.GetBytesReadable((long)(srcSize / slowestRun));
+            string fastestRate = Utilities.GetBytesReadable((long)(srcSize / fastestRun));
+            string averageRate = Utilities.GetBytesReadable((long)(srcSize / averageRun));
+            string slowestRate = Utilities.GetBytesReadable((long)(srcSize / slowestRun));
 
             logger.LogMessage($"{label}{averageRate}/s, fastest run: {fastestRate}/s, slowest run: {slowestRate}/s");
         }
@@ -379,7 +379,7 @@ namespace hactoolnet
                 cyclesPerByteString = $" ({cyclesPerByte:N3}x)";
             }
 
-            return Util.GetBytesReadable((long)bytesPerSec) + "/s" + cyclesPerByteString;
+            return Utilities.GetBytesReadable((long)bytesPerSec) + "/s" + cyclesPerByteString;
         }
 
         public static void Process(Context ctx)

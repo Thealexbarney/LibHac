@@ -333,9 +333,9 @@ namespace hactoolnet
             PrintItem(sb, colLen, "Save Type:", $"{save.Header.ExtraData.Type}");
             PrintItem(sb, colLen, "Owner ID:", $"{save.Header.ExtraData.SaveOwnerId:x16}");
             PrintItem(sb, colLen, "Timestamp:", $"{DateTimeOffset.FromUnixTimeSeconds(save.Header.ExtraData.Timestamp):yyyy-MM-dd HH:mm:ss} UTC");
-            PrintItem(sb, colLen, "Save Data Size:", $"0x{save.Header.ExtraData.DataSize:x16} ({Util.GetBytesReadable(save.Header.ExtraData.DataSize)})");
-            PrintItem(sb, colLen, "Journal Size:", $"0x{save.Header.ExtraData.JournalSize:x16} ({Util.GetBytesReadable(save.Header.ExtraData.JournalSize)})");
-            PrintItem(sb, colLen, "Free Space:", $"0x{freeSpace:x16} ({Util.GetBytesReadable(freeSpace)})");
+            PrintItem(sb, colLen, "Save Data Size:", $"0x{save.Header.ExtraData.DataSize:x16} ({Utilities.GetBytesReadable(save.Header.ExtraData.DataSize)})");
+            PrintItem(sb, colLen, "Journal Size:", $"0x{save.Header.ExtraData.JournalSize:x16} ({Utilities.GetBytesReadable(save.Header.ExtraData.JournalSize)})");
+            PrintItem(sb, colLen, "Free Space:", $"0x{freeSpace:x16} ({Utilities.GetBytesReadable(freeSpace)})");
             PrintItem(sb, colLen, $"Header Hash{save.Header.HeaderHashValidity.GetValidityString()}:", save.Header.Layout.Hash);
             PrintItem(sb, colLen, "Number of Files:", save.EnumerateEntries().Count(x => x.Type == DirectoryEntryType.File));
 

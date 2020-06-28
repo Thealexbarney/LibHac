@@ -83,7 +83,7 @@ namespace LibHac.FsSystem.RomFs
 
         public bool TryOpenFile(string path, out T fileInfo)
         {
-            FindPathRecursive(Util.GetUtf8Bytes(path), out RomEntryKey key);
+            FindPathRecursive(Utilities.GetUtf8Bytes(path), out RomEntryKey key);
 
             if (FileTable.TryGetValue(ref key, out RomKeyValuePair<FileRomEntry> keyValuePair))
             {
@@ -116,7 +116,7 @@ namespace LibHac.FsSystem.RomFs
         /// otherwise, <see langword="false"/>.</returns>
         public bool TryOpenDirectory(string path, out FindPosition position)
         {
-            FindPathRecursive(Util.GetUtf8Bytes(path), out RomEntryKey key);
+            FindPathRecursive(Utilities.GetUtf8Bytes(path), out RomEntryKey key);
 
             if (DirectoryTable.TryGetValue(ref key, out RomKeyValuePair<DirectoryRomEntry> keyValuePair))
             {
@@ -169,7 +169,7 @@ namespace LibHac.FsSystem.RomFs
             position.NextFile = entry.NextSibling;
             info = entry.Info;
 
-            name = Util.GetUtf8String(nameBytes);
+            name = Utilities.GetUtf8String(nameBytes);
 
             return true;
         }
@@ -193,7 +193,7 @@ namespace LibHac.FsSystem.RomFs
             ref DirectoryRomEntry entry = ref DirectoryTable.GetValueReference(position.NextDirectory, out Span<byte> nameBytes);
             position.NextDirectory = entry.NextSibling;
 
-            name = Util.GetUtf8String(nameBytes);
+            name = Utilities.GetUtf8String(nameBytes);
 
             return true;
         }
@@ -207,7 +207,7 @@ namespace LibHac.FsSystem.RomFs
         public void AddFile(string path, ref T fileInfo)
         {
             path = PathTools.Normalize(path);
-            ReadOnlySpan<byte> pathBytes = Util.GetUtf8Bytes(path);
+            ReadOnlySpan<byte> pathBytes = Utilities.GetUtf8Bytes(path);
 
             if (path == "/") throw new ArgumentException("Path cannot be empty");
 
@@ -223,7 +223,7 @@ namespace LibHac.FsSystem.RomFs
         {
             path = PathTools.Normalize(path);
 
-            CreateDirectoryRecursive(Util.GetUtf8Bytes(path));
+            CreateDirectoryRecursive(Utilities.GetUtf8Bytes(path));
         }
 
         /// <summary>
