@@ -385,10 +385,10 @@ namespace LibHac.Fs
 
             /// <summary>Error code: 2002-6300; Range: 6300-6399; Inner value: 0x313802</summary>
             public static Result.Base UnsupportedOperation { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6300, 6399); }
-                /// <summary>Error code: 2002-6302; Inner value: 0x313c02</summary>
-                public static Result.Base SubStorageNotResizable => new Result.Base(ModuleFs, 6302);
-                /// <summary>Error code: 2002-6303; Inner value: 0x313e02</summary>
-                public static Result.Base SubStorageNotResizableMiddleOfFile => new Result.Base(ModuleFs, 6303);
+                /// <summary>Attempted to resize a non-resizable SubStorage.<br/>Error code: 2002-6302; Inner value: 0x313c02</summary>
+                public static Result.Base UnsupportedOperationInSubStorageSetSize => new Result.Base(ModuleFs, 6302);
+                /// <summary>Attempted to resize a SubStorage that wasn't located at the end of the base storage.<br/>Error code: 2002-6303; Inner value: 0x313e02</summary>
+                public static Result.Base UnsupportedOperationInResizableSubStorageSetSize => new Result.Base(ModuleFs, 6303);
                 /// <summary>Error code: 2002-6304; Inner value: 0x314002</summary>
                 public static Result.Base UnsupportedOperationInMemoryStorageSetSize => new Result.Base(ModuleFs, 6304);
                 /// <summary>Error code: 2002-6306; Inner value: 0x314402</summary>
@@ -476,7 +476,7 @@ namespace LibHac.Fs
         /// <summary>Error code: 2002-6900; Range: 6900-6999; Inner value: 0x35e802</summary>
         public static Result.Base BadState { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6900, 6999); }
             /// <summary>Error code: 2002-6902; Inner value: 0x35ec02</summary>
-            public static Result.Base SubStorageNotInitialized => new Result.Base(ModuleFs, 6902);
+            public static Result.Base NotInitialized => new Result.Base(ModuleFs, 6902);
             /// <summary>Error code: 2002-6905; Inner value: 0x35f202</summary>
             public static Result.Base NotMounted => new Result.Base(ModuleFs, 6905);
             /// <summary>Error code: 2002-6906; Inner value: 0x35f402</summary>

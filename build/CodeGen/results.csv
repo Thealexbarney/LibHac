@@ -199,8 +199,8 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6203,,InvalidOpenModeForWrite,
 
 2,6300,6399,UnsupportedOperation,
-2,6302,,SubStorageNotResizable,
-2,6303,,SubStorageNotResizableMiddleOfFile,
+2,6302,,UnsupportedOperationInSubStorageSetSize,Attempted to resize a non-resizable SubStorage.
+2,6303,,UnsupportedOperationInResizableSubStorageSetSize,Attempted to resize a SubStorage that wasn't located at the end of the base storage.
 2,6304,,UnsupportedOperationInMemoryStorageSetSize,
 2,6306,,UnsupportedOperationInFileStorageOperateRange,
 2,6310,,UnsupportedOperationInAesCtrExStorageWrite,
@@ -247,7 +247,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6811,,RemapStorageMapFull,
 
 2,6900,6999,BadState,
-2,6902,,SubStorageNotInitialized,
+2,6902,,NotInitialized,
 2,6905,,NotMounted,
 2,6906,,SaveDataIsExtending,
 
