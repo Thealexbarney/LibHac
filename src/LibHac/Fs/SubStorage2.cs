@@ -1,31 +1,64 @@
 ﻿using System;
+using LibHac.Diag;
 
 namespace LibHac.Fs
 {
     public class SubStorage2 : IStorage
     {
+        private ReferenceCountedDisposable<IStorage> SharedBaseStorage { get; set; }
         private IStorage BaseStorage { get; }
         private long Offset { get; }
         private long Size { get; set; }
-        public bool IsResizable { get; set; }
+        private bool IsResizable { get; set; }
 
         public SubStorage2(IStorage baseStorage, long offset, long size)
         {
             BaseStorage = baseStorage;
             Offset = offset;
             Size = size;
+            IsResizable = false;
+
+            Assert.AssertTrue(IsValid());
+            Assert.AssertTrue(Offset >= 0);
+            Assert.AssertTrue(Size >= 0);
         }
 
-        public SubStorage2(SubStorage2 baseStorage, long offset, long size)
+        public SubStorage2(ReferenceCountedDisposable<IStorage> sharedBaseStorage, long offset, long size)
         {
-            BaseStorage = baseStorage.BaseStorage;
-            Offset = baseStorage.Offset + offset;
+            SharedBaseStorage = sharedBaseStorage.AddReference();
+            BaseStorage = SharedBaseStorage.Target;
+            Offset = offset;
             Size = size;
+            IsResizable = false;
+
+            Assert.AssertTrue(IsValid());
+            Assert.AssertTrue(Offset >= 0);
+            Assert.AssertTrue(Size >= 0);
+        }
+
+        public SubStorage2(SubStorage2 subStorage, long offset, long size)
+        {
+            BaseStorage = subStorage.BaseStorage;
+            Offset = subStorage.Offset + offset;
+            Size = size;
+            IsResizable = false;
+
+            Assert.AssertTrue(IsValid());
+            Assert.AssertTrue(Offset >= 0);
+            Assert.AssertTrue(Size >= 0);
+            Assert.AssertTrue(subStorage.Size >= offset + size);
+        }
+
+        private bool IsValid() => BaseStorage != null;
+
+        public void SetResizable(bool isResizable)
+        {
+            IsResizable = isResizable;
         }
 
         protected override Result DoRead(long offset, Span<byte> destination)
         {
-            if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
+            if (!IsValid()) return ResultFs.NotInitialized.Log();
             if (destination.Length == 0) return Result.Success;
 
             if (!IsRangeValid(offset, destination.Length, Size)) return ResultFs.OutOfRange.Log();
@@ -35,7 +68,7 @@ namespace LibHac.Fs
 
         protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
-            if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
+            if (!IsValid()) return ResultFs.NotInitialized.Log();
             if (source.Length == 0) return Result.Success;
 
             if (!IsRangeValid(offset, source.Length, Size)) return ResultFs.OutOfRange.Log();
@@ -45,24 +78,24 @@ namespace LibHac.Fs
 
         protected override Result DoFlush()
         {
-            if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
+            if (!IsValid()) return ResultFs.NotInitialized.Log();
 
             return BaseStorage.Flush();
         }
 
         protected override Result DoSetSize(long size)
         {
-            if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
-            if (!IsResizable) return ResultFs.SubStorageNotResizable.Log();
-            if (size < 0 || Offset < 0) return ResultFs.InvalidSize.Log();
+            if (!IsValid()) return ResultFs.NotInitialized.Log();
+            if (!IsResizable) return ResultFs.UnsupportedOperationInSubStorageSetSize.Log();
+            if (!IsOffsetAndSizeValid(Offset, size)) return ResultFs.InvalidSize.Log();
 
-            Result rc = BaseStorage.GetSize(out long baseSize);
+            Result rc = BaseStorage.GetSize(out long currentSize);
             if (rc.IsFailure()) return rc;
 
-            if (baseSize != Offset + Size)
+            if (currentSize != Offset + Size)
             {
                 // SubStorage cannot be resized unless it is located at the end of the base storage.
-                return ResultFs.SubStorageNotResizableMiddleOfFile.Log();
+                return ResultFs.UnsupportedOperationInResizableSubStorageSetSize.Log();
             }
 
             rc = BaseStorage.SetSize(Offset + size);
@@ -76,10 +109,32 @@ namespace LibHac.Fs
         {
             size = default;
 
-            if (BaseStorage == null) return ResultFs.SubStorageNotInitialized.Log();
+            if (!IsValid()) return ResultFs.NotInitialized.Log();
 
             size = Size;
             return Result.Success;
+        }
+
+        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+        {
+            if (!IsValid()) return ResultFs.NotInitialized.Log();
+
+            if (size == 0) return Result.Success;
+
+            if (!IsOffsetAndSizeValid(Offset, size)) return ResultFs.OutOfRange.Log();
+
+            return base.DoOperateRange(outBuffer, operationId, Offset + offset, size, inBuffer);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                SharedBaseStorage?.Dispose();
+                SharedBaseStorage = null;
+            }
+
+            base.Dispose(disposing);
         }
     }
 }
