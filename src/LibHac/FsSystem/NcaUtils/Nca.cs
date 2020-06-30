@@ -194,7 +194,7 @@ namespace LibHac.FsSystem.NcaUtils
             byte[] counterEx = Aes128CtrStorage.CreateCounter(fsHeader.Counter, sectionOffset);
 
             IStorage bucketTreeData = new CachedStorage(new Aes128CtrStorage(baseStorage.Slice(bktrOffset, bktrSize), key, counter, true), 4, true);
-            var encryptionBucketTreeData = new SubStorage2(bucketTreeData,
+            var encryptionBucketTreeData = new SubStorage(bucketTreeData,
                 info.EncryptionTreeOffset - bktrOffset, sectionSize - info.EncryptionTreeOffset);
 
             var cachedBucketTreeData = new CachedStorage(encryptionBucketTreeData, IndirectStorage.NodeSize, 6, true);
@@ -204,8 +204,8 @@ namespace LibHac.FsSystem.NcaUtils
             long nodeStorageSize = IndirectStorage.QueryNodeStorageSize(treeHeader.EntryCount);
             long entryStorageSize = IndirectStorage.QueryEntryStorageSize(treeHeader.EntryCount);
 
-            var tableNodeStorage = new SubStorage2(cachedBucketTreeData, 0, nodeStorageSize);
-            var tableEntryStorage = new SubStorage2(cachedBucketTreeData, nodeStorageSize, entryStorageSize);
+            var tableNodeStorage = new SubStorage(cachedBucketTreeData, 0, nodeStorageSize);
+            var tableEntryStorage = new SubStorage(cachedBucketTreeData, nodeStorageSize, entryStorageSize);
 
             IStorage decStorage = new Aes128CtrExStorage(baseStorage.Slice(0, dataSize), tableNodeStorage,
                 tableEntryStorage, treeHeader.EntryCount, key, counterEx, true);
@@ -242,11 +242,11 @@ namespace LibHac.FsSystem.NcaUtils
             long nodeStorageSize = IndirectStorage.QueryNodeStorageSize(treeHeader.EntryCount);
             long entryStorageSize = IndirectStorage.QueryEntryStorageSize(treeHeader.EntryCount);
 
-            var relocationTableStorage = new SubStorage2(patchStorage, patchInfo.RelocationTreeOffset, patchInfo.RelocationTreeSize);
+            var relocationTableStorage = new SubStorage(patchStorage, patchInfo.RelocationTreeOffset, patchInfo.RelocationTreeSize);
             var cachedTableStorage = new CachedStorage(relocationTableStorage, IndirectStorage.NodeSize, 4, true);
 
-            var tableNodeStorage = new SubStorage2(cachedTableStorage, 0, nodeStorageSize);
-            var tableEntryStorage = new SubStorage2(cachedTableStorage, nodeStorageSize, entryStorageSize);
+            var tableNodeStorage = new SubStorage(cachedTableStorage, 0, nodeStorageSize);
+            var tableEntryStorage = new SubStorage(cachedTableStorage, nodeStorageSize, entryStorageSize);
 
             var storage = new IndirectStorage();
             storage.Initialize(tableNodeStorage, tableEntryStorage, treeHeader.EntryCount).ThrowIfFailure();

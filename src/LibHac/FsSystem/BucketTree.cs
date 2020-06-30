@@ -19,8 +19,8 @@ namespace LibHac.FsSystem
 
         private static int NodeHeaderSize => Unsafe.SizeOf<NodeHeader>();
 
-        private SubStorage2 NodeStorage { get; set; }
-        private SubStorage2 EntryStorage { get; set; }
+        private SubStorage NodeStorage { get; set; }
+        private SubStorage EntryStorage { get; set; }
 
         private NodeBuffer _nodeL1 = new NodeBuffer();
 
@@ -31,7 +31,7 @@ namespace LibHac.FsSystem
         private long StartOffset { get; set; }
         private long EndOffset { get; set; }
 
-        public Result Initialize(SubStorage2 nodeStorage, SubStorage2 entryStorage, int nodeSize, int entrySize,
+        public Result Initialize(SubStorage nodeStorage, SubStorage entryStorage, int nodeSize, int entrySize,
             int entryCount)
         {
             Assert.AssertTrue(entrySize >= sizeof(long));
@@ -598,7 +598,7 @@ namespace LibHac.FsSystem
                 // Calculate node extents.
                 long nodeSize = Tree.NodeSize;
                 long nodeOffset = (nodeIndex + 1) * nodeSize;
-                SubStorage2 storage = Tree.NodeStorage;
+                SubStorage storage = Tree.NodeStorage;
 
                 // Read the node.
                 Result rc = storage.Read(nodeOffset, buffer.Slice(0, (int)nodeSize));
@@ -637,7 +637,7 @@ namespace LibHac.FsSystem
                 long entrySize = Tree.EntrySize;
                 long entrySetSize = Tree.NodeSize;
                 long entrySetOffset = entrySetIndex * entrySetSize;
-                SubStorage2 storage = Tree.EntryStorage;
+                SubStorage storage = Tree.EntryStorage;
 
                 // Read the entry set.
                 Result rc = storage.Read(entrySetOffset, buffer.Slice(0, (int)entrySetSize));

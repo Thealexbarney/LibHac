@@ -21,7 +21,7 @@ namespace LibHac.FsSystem
             public int Generation;
         }
 
-        public Aes128CtrExStorage(IStorage baseStorage, SubStorage2 nodeStorage, SubStorage2 entryStorage,
+        public Aes128CtrExStorage(IStorage baseStorage, SubStorage nodeStorage, SubStorage entryStorage,
             int entryCount, byte[] key, byte[] counter, bool leaveOpen)
             : base(baseStorage, key, counter, leaveOpen)
         {

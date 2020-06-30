@@ -54,18 +54,15 @@ namespace LibHac.FsSystem
 
         public static IStorage Slice(this IStorage storage, long start, long length, bool leaveOpen)
         {
-            return new SubStorage(storage, start, length, leaveOpen);
-        }
+            if (!leaveOpen)
+            {
+                return new SubStorage(storage, start, length);
+            }
 
-        public static IStorage AsReadOnly(this IStorage storage)
-        {
-            return storage.AsReadOnly(true);
-        }
-
-        public static IStorage AsReadOnly(this IStorage storage, bool leaveOpen)
-        {
-            storage.GetSize(out long storageSize).ThrowIfFailure();
-            return new SubStorage(storage, 0, storageSize, leaveOpen, FileAccess.Read);
+            using (var sharedStorage = new ReferenceCountedDisposable<IStorage>(storage))
+            {
+                return new SubStorage(sharedStorage, start, length);
+            }
         }
 
         public static Stream AsStream(this IStorage storage) => new StorageStream(storage, FileAccess.ReadWrite, true);

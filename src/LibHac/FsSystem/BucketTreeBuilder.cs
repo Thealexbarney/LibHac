@@ -11,8 +11,8 @@ namespace LibHac.FsSystem
     {
         public class Builder
         {
-            private SubStorage2 NodeStorage { get; set; }
-            private SubStorage2 EntryStorage { get; set; }
+            private SubStorage NodeStorage { get; set; }
+            private SubStorage EntryStorage { get; set; }
 
             private NodeBuffer _l1Node = new NodeBuffer();
             private NodeBuffer _l2Node = new NodeBuffer();
@@ -31,14 +31,14 @@ namespace LibHac.FsSystem
             /// <summary>
             /// Initializes the bucket tree builder.
             /// </summary>
-            /// <param name="headerStorage">The <see cref="SubStorage2"/> the tree's header will be written to.Must be at least the size in bytes returned by <see cref="QueryHeaderStorageSize"/>.</param>
-            /// <param name="nodeStorage">The <see cref="SubStorage2"/> the tree's nodes will be written to. Must be at least the size in bytes returned by <see cref="QueryNodeStorageSize"/>.</param>
-            /// <param name="entryStorage">The <see cref="SubStorage2"/> the tree's entries will be written to. Must be at least the size in bytes returned by <see cref="QueryEntryStorageSize"/>.</param>
+            /// <param name="headerStorage">The <see cref="SubStorage"/> the tree's header will be written to.Must be at least the size in bytes returned by <see cref="QueryHeaderStorageSize"/>.</param>
+            /// <param name="nodeStorage">The <see cref="SubStorage"/> the tree's nodes will be written to. Must be at least the size in bytes returned by <see cref="QueryNodeStorageSize"/>.</param>
+            /// <param name="entryStorage">The <see cref="SubStorage"/> the tree's entries will be written to. Must be at least the size in bytes returned by <see cref="QueryEntryStorageSize"/>.</param>
             /// <param name="nodeSize">The size of each node in the bucket tree. Must be a power of 2.</param>
             /// <param name="entrySize">The size of each entry that will be stored in the bucket tree.</param>
             /// <param name="entryCount">The exact number of entries that will be added to the bucket tree.</param>
             /// <returns>The <see cref="Result"/> of the operation.</returns>
-            public Result Initialize(SubStorage2 headerStorage, SubStorage2 nodeStorage, SubStorage2 entryStorage,
+            public Result Initialize(SubStorage headerStorage, SubStorage nodeStorage, SubStorage entryStorage,
                 int nodeSize, int entrySize, int entryCount)
             {
                 Assert.AssertTrue(entrySize >= sizeof(long));

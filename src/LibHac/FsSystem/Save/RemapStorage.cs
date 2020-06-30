@@ -138,9 +138,9 @@ namespace LibHac.FsSystem.Save
             }
         }
 
-        public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
-        public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
-        public IStorage GetMapEntryStorage() => MapEntryStorage.AsReadOnly();
+        public IStorage GetBaseStorage() => BaseStorage;
+        public IStorage GetHeaderStorage() => HeaderStorage;
+        public IStorage GetMapEntryStorage() => MapEntryStorage;
 
         private static RemapSegment[] InitSegments(RemapHeader header, MapEntry[] mapEntries)
         {

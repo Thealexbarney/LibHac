@@ -16,8 +16,8 @@ namespace LibHac.FsSystem.Save
 
         public AllocationTableHeader Header { get; }
 
-        public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
-        public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
+        public IStorage GetBaseStorage() => BaseStorage;
+        public IStorage GetHeaderStorage() => HeaderStorage;
 
         public AllocationTable(IStorage storage, IStorage header)
         {
