@@ -26,7 +26,7 @@ namespace LibHac.FsService.Creators
             Result rc = GameCard.GetCardInfo(out GameCardInfo cardInfo, handle);
             if (rc.IsFailure()) return rc;
 
-            storage = new SubStorage2(baseStorage, 0, cardInfo.SecureAreaOffset);
+            storage = new SubStorage(baseStorage, 0, cardInfo.SecureAreaOffset);
             return Result.Success;
         }
 
@@ -53,7 +53,7 @@ namespace LibHac.FsService.Creators
             rc = GameCard.GetCardInfo(out GameCardInfo cardInfo, handle);
             if (rc.IsFailure()) return rc;
 
-            storage = new SubStorage2(baseStorage, cardInfo.SecureAreaOffset, cardInfo.SecureAreaSize);
+            storage = new SubStorage(baseStorage, cardInfo.SecureAreaOffset, cardInfo.SecureAreaSize);
             return Result.Success;
         }
 

@@ -13,7 +13,7 @@ namespace LibHac.FsSystem
         public static readonly int NodeSize = 1024 * 16;
 
         private BucketTree Table { get; } = new BucketTree();
-        private SubStorage2[] DataStorage { get; } = new SubStorage2[StorageCount];
+        private SubStorage[] DataStorage { get; } = new SubStorage[StorageCount];
 
         [StructLayout(LayoutKind.Sequential, Size = 0x14, Pack = 4)]
         public struct Entry
@@ -39,7 +39,7 @@ namespace LibHac.FsSystem
 
         public bool IsInitialized() => Table.IsInitialized();
 
-        public Result Initialize(SubStorage2 tableStorage)
+        public Result Initialize(SubStorage tableStorage)
         {
             // Read and verify the bucket tree header.
             // note: skip init
@@ -58,18 +58,18 @@ namespace LibHac.FsSystem
             long entryStorageOffset = nodeStorageOffset + nodeStorageSize;
 
             // Initialize.
-            var nodeStorage = new SubStorage2(tableStorage, nodeStorageOffset, nodeStorageSize);
-            var entryStorage = new SubStorage2(tableStorage, entryStorageOffset, entryStorageSize);
+            var nodeStorage = new SubStorage(tableStorage, nodeStorageOffset, nodeStorageSize);
+            var entryStorage = new SubStorage(tableStorage, entryStorageOffset, entryStorageSize);
 
             return Initialize(nodeStorage, entryStorage, header.EntryCount);
         }
 
-        public Result Initialize(SubStorage2 nodeStorage, SubStorage2 entryStorage, int entryCount)
+        public Result Initialize(SubStorage nodeStorage, SubStorage entryStorage, int entryCount)
         {
             return Table.Initialize(nodeStorage, entryStorage, NodeSize, Unsafe.SizeOf<Entry>(), entryCount);
         }
 
-        public void SetStorage(int index, SubStorage2 storage)
+        public void SetStorage(int index, SubStorage storage)
         {
             Assert.InRange(index, 0, StorageCount);
             DataStorage[index] = storage;
@@ -78,7 +78,7 @@ namespace LibHac.FsSystem
         public void SetStorage(int index, IStorage storage, long offset, long size)
         {
             Assert.InRange(index, 0, StorageCount);
-            DataStorage[index] = new SubStorage2(storage, offset, size);
+            DataStorage[index] = new SubStorage(storage, offset, size);
         }
 
         public Result GetEntryList(Span<Entry> entryBuffer, out int outputEntryCount, long offset, long size)
@@ -280,7 +280,7 @@ namespace LibHac.FsSystem
                     Assert.AssertTrue(currentSize <= size);
 
                     {
-                        SubStorage2 currentStorage = DataStorage[currentEntry.StorageIndex];
+                        SubStorage currentStorage = DataStorage[currentEntry.StorageIndex];
 
                         // Get the current data storage's size.
                         rc = currentStorage.GetSize(out long currentDataStorageSize);

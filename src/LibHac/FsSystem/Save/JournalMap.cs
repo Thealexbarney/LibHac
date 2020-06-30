@@ -52,11 +52,11 @@ namespace LibHac.FsSystem.Save
             return map;
         }
 
-        public IStorage GetMapStorage() => MapStorage.AsReadOnly();
-        public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
-        public IStorage GetModifiedPhysicalBlocksStorage() => ModifiedPhysicalBlocks.AsReadOnly();
-        public IStorage GetModifiedVirtualBlocksStorage() => ModifiedVirtualBlocks.AsReadOnly();
-        public IStorage GetFreeBlocksStorage() => FreeBlocks.AsReadOnly();
+        public IStorage GetMapStorage() => MapStorage;
+        public IStorage GetHeaderStorage() => HeaderStorage;
+        public IStorage GetModifiedPhysicalBlocksStorage() => ModifiedPhysicalBlocks;
+        public IStorage GetModifiedVirtualBlocksStorage() => ModifiedVirtualBlocks;
+        public IStorage GetFreeBlocksStorage() => FreeBlocks;
 
         public void FsTrim()
         {

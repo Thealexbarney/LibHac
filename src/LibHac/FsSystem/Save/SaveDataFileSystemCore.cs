@@ -261,8 +261,8 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
-        public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
+        public IStorage GetBaseStorage() => BaseStorage;
+        public IStorage GetHeaderStorage() => HeaderStorage;
 
         public void FsTrim()
         {

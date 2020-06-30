@@ -75,7 +75,7 @@ namespace LibHac.Loader
             if (inputFileSize < kipFileSize)
                 return ResultLibHac.InvalidKipFileSize.Log();
 
-            kipData = new SubStorage2(KipStorage, 0, kipFileSize);
+            kipData = new SubStorage(KipStorage, 0, kipFileSize);
             return Result.Success;
         }
 

@@ -3,7 +3,7 @@ using LibHac.Diag;
 
 namespace LibHac.Fs
 {
-    public class SubStorage2 : IStorage
+    public class SubStorage : IStorage
     {
         private ReferenceCountedDisposable<IStorage> SharedBaseStorage { get; set; }
         private IStorage BaseStorage { get; }
@@ -11,7 +11,7 @@ namespace LibHac.Fs
         private long Size { get; set; }
         private bool IsResizable { get; set; }
 
-        public SubStorage2(IStorage baseStorage, long offset, long size)
+        public SubStorage(IStorage baseStorage, long offset, long size)
         {
             BaseStorage = baseStorage;
             Offset = offset;
@@ -23,7 +23,7 @@ namespace LibHac.Fs
             Assert.AssertTrue(Size >= 0);
         }
 
-        public SubStorage2(ReferenceCountedDisposable<IStorage> sharedBaseStorage, long offset, long size)
+        public SubStorage(ReferenceCountedDisposable<IStorage> sharedBaseStorage, long offset, long size)
         {
             SharedBaseStorage = sharedBaseStorage.AddReference();
             BaseStorage = SharedBaseStorage.Target;
@@ -36,7 +36,7 @@ namespace LibHac.Fs
             Assert.AssertTrue(Size >= 0);
         }
 
-        public SubStorage2(SubStorage2 subStorage, long offset, long size)
+        public SubStorage(SubStorage subStorage, long offset, long size)
         {
             BaseStorage = subStorage.BaseStorage;
             Offset = subStorage.Offset + offset;
