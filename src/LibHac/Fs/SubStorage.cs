@@ -6,10 +6,37 @@ namespace LibHac.Fs
     public class SubStorage : IStorage
     {
         private ReferenceCountedDisposable<IStorage> SharedBaseStorage { get; set; }
-        private IStorage BaseStorage { get; }
-        private long Offset { get; }
+        protected IStorage BaseStorage { get; private set; }
+        private long Offset { get; set; }
         private long Size { get; set; }
         private bool IsResizable { get; set; }
+
+        public SubStorage()
+        {
+            BaseStorage = null;
+            Offset = 0;
+            Size = 0;
+            IsResizable = false;
+        }
+
+        public SubStorage(SubStorage other)
+        {
+            BaseStorage = other.BaseStorage;
+            Offset = other.Offset;
+            Size = other.Size;
+            IsResizable = other.IsResizable;
+        }
+
+        public void InitializeFrom(SubStorage other)
+        {
+            if (this != other)
+            {
+                BaseStorage = other.BaseStorage;
+                Offset = other.Offset;
+                Size = other.Size;
+                IsResizable = other.IsResizable;
+            }
+        }
 
         public SubStorage(IStorage baseStorage, long offset, long size)
         {
