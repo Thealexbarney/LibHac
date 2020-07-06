@@ -41,18 +41,17 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.CreateFile("/dir/file1".ToU8Span(), 0, CreateFileOptions.None);
             fs.CreateFile("/dir/file2".ToU8Span(), 0, CreateFileOptions.None);
 
-            Result rc = fs.OpenDirectory(out IDirectory dir, "/dir".ToU8Span(), OpenDirectoryMode.All);
-            Assert.True(rc.IsSuccess());
+            Assert.Success(fs.OpenDirectory(out IDirectory dir, "/dir".ToU8Span(), OpenDirectoryMode.All));
 
             var entry1 = new DirectoryEntry();
             var entry2 = new DirectoryEntry();
             var entry3 = new DirectoryEntry();
             var entry4 = new DirectoryEntry();
 
-            Assert.True(dir.Read(out long entriesRead1, SpanHelpers.AsSpan(ref entry1)).IsSuccess());
-            Assert.True(dir.Read(out long entriesRead2, SpanHelpers.AsSpan(ref entry2)).IsSuccess());
-            Assert.True(dir.Read(out long entriesRead3, SpanHelpers.AsSpan(ref entry3)).IsSuccess());
-            Assert.True(dir.Read(out long entriesRead4, SpanHelpers.AsSpan(ref entry4)).IsSuccess());
+            Assert.Success(dir.Read(out long entriesRead1, SpanHelpers.AsSpan(ref entry1)));
+            Assert.Success(dir.Read(out long entriesRead2, SpanHelpers.AsSpan(ref entry2)));
+            Assert.Success(dir.Read(out long entriesRead3, SpanHelpers.AsSpan(ref entry3)));
+            Assert.Success(dir.Read(out long entriesRead4, SpanHelpers.AsSpan(ref entry4)));
 
             Assert.Equal(1, entriesRead1);
             Assert.Equal(1, entriesRead2);

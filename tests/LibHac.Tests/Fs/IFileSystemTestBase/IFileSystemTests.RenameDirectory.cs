@@ -18,12 +18,12 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             Result rcDir2 = fs.GetEntryType(out DirectoryEntryType dir2Type, "/dir2".ToU8Span());
             Result rcDir1 = fs.GetEntryType(out _, "/dir1".ToU8Span());
 
-            Assert.True(rcRename.IsSuccess());
+            Assert.Success(rcRename);
 
-            Assert.True(rcDir2.IsSuccess());
+            Assert.Success(rcDir2);
             Assert.Equal(DirectoryEntryType.Directory, dir2Type);
 
-            Assert.Equal(ResultFs.PathNotFound.Value, rcDir1);
+            Assert.Result(ResultFs.PathNotFound, rcDir1);
         }
 
         [Fact]
@@ -47,19 +47,19 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             Result rcDirCOld = fs.GetEntryType(out _, "/dir1/dirC".ToU8Span());
             Result rcFile1Old = fs.GetEntryType(out _, "/dir1/file1".ToU8Span());
 
-            Assert.True(rcRename.IsSuccess());
+            Assert.Success(rcRename);
 
-            Assert.True(rcDir2.IsSuccess());
-            Assert.True(rcDirC.IsSuccess());
-            Assert.True(rcFile1.IsSuccess());
+            Assert.Success(rcDir2);
+            Assert.Success(rcDirC);
+            Assert.Success(rcFile1);
 
             Assert.Equal(DirectoryEntryType.Directory, dir2Type);
             Assert.Equal(DirectoryEntryType.Directory, dir1CType);
             Assert.Equal(DirectoryEntryType.File, file1Type);
 
-            Assert.Equal(ResultFs.PathNotFound.Value, rcDir1);
-            Assert.Equal(ResultFs.PathNotFound.Value, rcDirCOld);
-            Assert.Equal(ResultFs.PathNotFound.Value, rcFile1Old);
+            Assert.Result(ResultFs.PathNotFound, rcDir1);
+            Assert.Result(ResultFs.PathNotFound, rcDirCOld);
+            Assert.Result(ResultFs.PathNotFound, rcFile1Old);
         }
 
         [Fact]
@@ -76,13 +76,13 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             Result rcDir2 = fs.GetEntryType(out DirectoryEntryType dir2Type, "/parent2/dir2".ToU8Span());
             Result rcDir1 = fs.GetEntryType(out _, "/parent1/dir1".ToU8Span());
 
-            Assert.True(rcRename.IsSuccess());
+            Assert.Success(rcRename);
 
             Assert.Equal(Result.Success, rcDir2);
-            Assert.True(rcDir2.IsSuccess());
+            Assert.Success(rcDir2);
             Assert.Equal(DirectoryEntryType.Directory, dir2Type);
 
-            Assert.Equal(ResultFs.PathNotFound.Value, rcDir1);
+            Assert.Result(ResultFs.PathNotFound, rcDir1);
         }
 
         [Fact]
@@ -98,10 +98,10 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             Result rcDir1 = fs.GetEntryType(out DirectoryEntryType dir1Type, "/dir1".ToU8Span());
             Result rcDir2 = fs.GetEntryType(out DirectoryEntryType dir2Type, "/dir2".ToU8Span());
 
-            Assert.Equal(ResultFs.PathAlreadyExists.Value, rcRename);
+            Assert.Result(ResultFs.PathAlreadyExists, rcRename);
 
-            Assert.True(rcDir1.IsSuccess());
-            Assert.True(rcDir2.IsSuccess());
+            Assert.Success(rcDir1);
+            Assert.Success(rcDir2);
             Assert.Equal(DirectoryEntryType.Directory, dir1Type);
             Assert.Equal(DirectoryEntryType.Directory, dir2Type);
         }

@@ -16,7 +16,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             Result rc = fs.OpenDirectory(out _, "/file".ToU8Span(), OpenDirectoryMode.All);
 
-            Assert.Equal(ResultFs.PathNotFound.Value, rc);
+            Assert.Result(ResultFs.PathNotFound, rc);
         }
     }
 }

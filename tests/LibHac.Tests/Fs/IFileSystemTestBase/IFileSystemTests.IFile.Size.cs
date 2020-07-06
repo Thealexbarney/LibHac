@@ -21,7 +21,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             file.GetSize(out long fileSize);
             file.Dispose();
 
-            Assert.True(rc.IsSuccess());
+            Assert.Success(rc);
             Assert.Equal(54321, fileSize);
         }
     }
