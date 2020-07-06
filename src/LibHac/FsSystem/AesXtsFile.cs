@@ -42,7 +42,10 @@ namespace LibHac.FsSystem
                 ThrowHelper.ThrowResult(ResultFs.AesXtsFileTooShort.Value, "NAX0 key derivation failed.");
             }
 
-            IStorage encStorage = BaseFile.AsStorage().Slice(HeaderLength, Utilities.AlignUp(Header.Size, 0x10));
+            var fileStorage = new FileStorage2(baseFile);
+            var encStorage = new SubStorage(fileStorage, HeaderLength, fileSize - HeaderLength);
+            encStorage.SetResizable(true);
+
             BaseStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Header.DecryptedKey1, Header.DecryptedKey2, BlockSize, true), 4, true);
         }
 

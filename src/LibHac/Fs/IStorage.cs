@@ -126,7 +126,7 @@ namespace LibHac.Fs
         {
             return offset >= 0 &&
                    size >= 0 &&
-                   offset <= offset - size;
+                   offset <= offset + size;
         }
 
         protected abstract Result DoRead(long offset, Span<byte> destination);
