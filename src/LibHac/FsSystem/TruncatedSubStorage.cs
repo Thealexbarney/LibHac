@@ -3,6 +3,14 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem
 {
+    /// <summary>
+    /// A <see cref="SubStorage"/> that truncates reads and writes that extend past the end of the base storage.
+    /// </summary>
+    /// <remarks>
+    /// When reading and writing from a <see cref="TruncatedSubStorage"/>, the size of the base
+    /// storage will be checked. If needed, the size of the requested read/write will be truncated
+    /// to stay within the bounds of the base storage.
+    /// </remarks>
     public class TruncatedSubStorage : SubStorage
     {
         public TruncatedSubStorage() { }

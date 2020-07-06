@@ -3,6 +3,21 @@ using LibHac.Diag;
 
 namespace LibHac.Fs
 {
+    /// <summary>
+    /// Presents a subsection of a base IStorage as a new IStorage.
+    /// </summary>
+    /// <remarks>
+    /// A SubStorage presents a sub-range of an IStorage as a separate IStorage.
+    ///
+    /// The SubStorage doesn't check if the offset and size provided are actually in the base storage.
+    /// GetSize will return the size given to the SubStorage at initialization and will not query
+    /// the base storage's size.
+    ///
+    /// A SubStorage is non-resizable by default. <see cref="SetResizable"/> may be used to mark
+    /// the SubStorage as resizable. The SubStorage may only be resized if the end of the SubStorage
+    /// is located at the end of the base storage. When resizing the SubStorage, the base storage
+    /// will be resized to the appropriate length. 
+    /// </remarks>
     public class SubStorage : IStorage
     {
         private ReferenceCountedDisposable<IStorage> SharedBaseStorage { get; set; }
@@ -11,6 +26,9 @@ namespace LibHac.Fs
         private long Size { get; set; }
         private bool IsResizable { get; set; }
 
+        /// <summary>
+        /// Creates an uninitialized <see cref="SubStorage"/>. It must be initialized with <see cref="InitializeFrom"/> before using.
+        /// </summary>
         public SubStorage()
         {
             BaseStorage = null;
@@ -19,6 +37,11 @@ namespace LibHac.Fs
             IsResizable = false;
         }
 
+        /// <summary>
+        /// Creates a copy of <paramref name="other"/>.
+        /// <paramref name="other"/> will not be disposed when the created <see cref="SubStorage"/> is disposed.
+        /// </summary>
+        /// <param name="other">The <see cref="SubStorage"/> to create a copy of. Caller retains ownership.</param>
         public SubStorage(SubStorage other)
         {
             BaseStorage = other.BaseStorage;
@@ -27,10 +50,16 @@ namespace LibHac.Fs
             IsResizable = other.IsResizable;
         }
 
+        /// <summary>
+        /// Initializes or reinitializes this <see cref="SubStorage"/> as a copy of <paramref name="other"/>.
+        /// Any shared references in <paramref name="other"/> will be copied.
+        /// </summary>
+        /// <param name="other">The <see cref="SubStorage"/> used to initialize this one.</param>
         public void InitializeFrom(SubStorage other)
         {
             if (this != other)
             {
+                SharedBaseStorage = other.SharedBaseStorage.AddReference();
                 BaseStorage = other.BaseStorage;
                 Offset = other.Offset;
                 Size = other.Size;
@@ -38,6 +67,13 @@ namespace LibHac.Fs
             }
         }
 
+        /// <summary>
+        /// Creates a <see cref="SubStorage"/> from a subsection of another <see cref="IStorage"/>.
+        /// <paramref name="baseStorage"/> will not be disposed when the created <see cref="SubStorage"/> is disposed.
+        /// </summary>
+        /// <param name="baseStorage">The base <see cref="IStorage"/>. Caller retains ownership.</param>
+        /// <param name="offset">The offset in the base storage at which to begin the created SubStorage.</param>
+        /// <param name="size">The size of the SubStorage.</param>
         public SubStorage(IStorage baseStorage, long offset, long size)
         {
             BaseStorage = baseStorage;
@@ -50,6 +86,13 @@ namespace LibHac.Fs
             Assert.AssertTrue(Size >= 0);
         }
 
+        /// <summary>
+        /// Creates a <see cref="SubStorage"/> from a subsection of another <see cref="IStorage"/>.
+        /// Holds a reference to <paramref name="sharedBaseStorage"/> until disposed.
+        /// </summary>
+        /// <param name="sharedBaseStorage">The base IStorage.</param>
+        /// <param name="offset">The offset in the base storage at which to begin the created SubStorage.</param>
+        /// <param name="size">The size of the SubStorage.</param>
         public SubStorage(ReferenceCountedDisposable<IStorage> sharedBaseStorage, long offset, long size)
         {
             SharedBaseStorage = sharedBaseStorage.AddReference();
@@ -63,21 +106,38 @@ namespace LibHac.Fs
             Assert.AssertTrue(Size >= 0);
         }
 
-        public SubStorage(SubStorage subStorage, long offset, long size)
+        /// <summary>
+        /// Creates a <see cref="SubStorage"/> from a subsection of another <see cref="SubStorage"/>.
+        /// <paramref name="other"/> will not be disposed when the created <see cref="SubStorage"/> is disposed.
+        /// </summary>
+        /// <remarks>
+        /// The created SubStorage will directly use the base SubStorage of <paramref name="other"/> and will
+        /// adjust the <paramref name="offset"/> and <paramref name="size"/> accordingly.
+        /// This avoids the overhead of going through two SubStorage layers.
+        /// </remarks>
+        /// <param name="other">The base SubStorage.</param>
+        /// <param name="offset">The offset in the base storage at which to begin the created SubStorage.</param>
+        /// <param name="size">The size of the SubStorage.</param>
+        public SubStorage(SubStorage other, long offset, long size)
         {
-            BaseStorage = subStorage.BaseStorage;
-            Offset = subStorage.Offset + offset;
+            BaseStorage = other.BaseStorage;
+            Offset = other.Offset + offset;
             Size = size;
             IsResizable = false;
 
             Assert.AssertTrue(IsValid());
             Assert.AssertTrue(Offset >= 0);
             Assert.AssertTrue(Size >= 0);
-            Assert.AssertTrue(subStorage.Size >= offset + size);
+            Assert.AssertTrue(other.Size >= offset + size);
         }
 
         private bool IsValid() => BaseStorage != null;
 
+        /// <summary>
+        /// Sets whether the <see cref="SubStorage"/> is resizable or not.
+        /// </summary>
+        /// <param name="isResizable"><see langword="true"/> if the <see cref="SubStorage"/> should
+        /// be resizable. <see langword="false"/> if not.</param>
         public void SetResizable(bool isResizable)
         {
             IsResizable = isResizable;
