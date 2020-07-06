@@ -22,13 +22,13 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             Result rcDir2Type = fs.GetEntryType(out _, "/dir/dir2".ToU8Span());
             Result rcFileType = fs.GetEntryType(out _, "/dir/file1".ToU8Span());
 
-            Assert.True(rcDelete.IsSuccess());
+            Assert.Success(rcDelete);
 
-            Assert.True(rcDir1Type.IsSuccess());
+            Assert.Success(rcDir1Type);
             Assert.Equal(DirectoryEntryType.Directory, dir1Type);
 
-            Assert.Equal(ResultFs.PathNotFound.Value, rcDir2Type);
-            Assert.Equal(ResultFs.PathNotFound.Value, rcFileType);
+            Assert.Result(ResultFs.PathNotFound, rcDir2Type);
+            Assert.Result(ResultFs.PathNotFound, rcFileType);
         }
     }
 }

@@ -13,9 +13,8 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             IFileSystem fs = CreateFileSystem();
 
             fs.CreateDirectory("/dir".ToU8Span());
-            Result rc = fs.GetEntryType(out DirectoryEntryType type, "/dir".ToU8Span());
 
-            Assert.True(rc.IsSuccess());
+            Assert.Success(fs.GetEntryType(out DirectoryEntryType type, "/dir".ToU8Span()));
             Assert.Equal(DirectoryEntryType.Directory, type);
         }
 
@@ -28,7 +27,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             Result rc = fs.CreateDirectory("/dir".ToU8Span());
 
-            Assert.Equal(ResultFs.PathAlreadyExists.Value, rc);
+            Assert.Result(ResultFs.PathAlreadyExists, rc);
         }
 
         [Fact]
@@ -40,7 +39,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             Result rc = fs.CreateDirectory("/file".ToU8Span());
 
-            Assert.Equal(ResultFs.PathAlreadyExists.Value, rc);
+            Assert.Result(ResultFs.PathAlreadyExists, rc);
         }
 
         [Fact]
@@ -50,7 +49,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             Result rc = fs.CreateFile("/dir1/dir2".ToU8Span(), 0, CreateFileOptions.None);
 
-            Assert.Equal(ResultFs.PathNotFound.Value, rc);
+            Assert.Result(ResultFs.PathNotFound, rc);
         }
 
         [Fact]
@@ -61,7 +60,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.CreateDirectory("/dir/".ToU8Span());
             Result rc = fs.GetEntryType(out DirectoryEntryType type, "/dir/".ToU8Span());
 
-            Assert.True(rc.IsSuccess());
+            Assert.Success(rc);
             Assert.Equal(DirectoryEntryType.Directory, type);
         }
 
@@ -76,8 +75,8 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             Result rc1 = fs.GetEntryType(out DirectoryEntryType type1, "/dir1".ToU8Span());
             Result rc2 = fs.GetEntryType(out DirectoryEntryType type2, "/dir2".ToU8Span());
 
-            Assert.True(rc1.IsSuccess());
-            Assert.True(rc2.IsSuccess());
+            Assert.Success(rc1);
+            Assert.Success(rc2);
             Assert.Equal(DirectoryEntryType.Directory, type1);
             Assert.Equal(DirectoryEntryType.Directory, type2);
         }
@@ -96,8 +95,8 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             Result rc1 = fs.GetEntryType(out DirectoryEntryType type1, "/dir1/dir1a".ToU8Span());
             Result rc2 = fs.GetEntryType(out DirectoryEntryType type2, "/dir2/dir2a".ToU8Span());
 
-            Assert.True(rc1.IsSuccess());
-            Assert.True(rc2.IsSuccess());
+            Assert.Success(rc1);
+            Assert.Success(rc2);
             Assert.Equal(DirectoryEntryType.Directory, type1);
             Assert.Equal(DirectoryEntryType.Directory, type2);
         }

@@ -26,7 +26,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out file, "/file".ToU8Span(), OpenMode.Read);
             using (file)
             {
-                Assert.True(file.Read(out long bytesRead, 0, readData, ReadOption.None).IsSuccess());
+                Assert.Success(file.Read(out long bytesRead, 0, readData, ReadOption.None));
                 Assert.Equal(data.Length, bytesRead);
             }
 
@@ -45,7 +45,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             using (file)
             {
                 Result rc = file.Write(5, buffer, WriteOption.None);
-                Assert.Equal(ResultFs.FileExtensionWithoutOpenModeAllowAppend.Value, rc);
+                Assert.Result(ResultFs.FileExtensionWithoutOpenModeAllowAppend, rc);
             }
         }
 
@@ -61,7 +61,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             using (file)
             {
                 Result rc = file.Write(5, buffer, WriteOption.None);
-                Assert.Equal(ResultFs.InvalidOpenModeForWrite.Value, rc);
+                Assert.Result(ResultFs.InvalidOpenModeForWrite, rc);
             }
         }
 
@@ -77,7 +77,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             using (file)
             {
                 Result rc = file.Write(-5, buffer, WriteOption.None);
-                Assert.Equal(ResultFs.OutOfRange.Value, rc);
+                Assert.Result(ResultFs.OutOfRange, rc);
             }
         }
 
@@ -93,7 +93,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             using (file)
             {
                 Result rc = file.Write(long.MaxValue - 5, buffer, WriteOption.None);
-                Assert.Equal(ResultFs.OutOfRange.Value, rc);
+                Assert.Result(ResultFs.OutOfRange, rc);
             }
         }
 
@@ -108,7 +108,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.All);
             using (file)
             {
-                Assert.True(file.Write(5, buffer, WriteOption.None).IsSuccess());
+                Assert.Success(file.Write(5, buffer, WriteOption.None));
 
                 file.GetSize(out long newSize);
                 Assert.Equal(15, newSize);
@@ -126,7 +126,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.All);
             using (file)
             {
-                Assert.True(file.Write(15, buffer, WriteOption.None).IsSuccess());
+                Assert.Success(file.Write(15, buffer, WriteOption.None));
 
                 file.GetSize(out long newSize);
                 Assert.Equal(25, newSize);
@@ -149,7 +149,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.All);
             using (file)
             {
-                Assert.True(file.Write(15, writeBuffer, WriteOption.None).IsSuccess());
+                Assert.Success(file.Write(15, writeBuffer, WriteOption.None));
 
                 // Unwritten portions of new files are undefined, so write to the other portions
                 file.Write(0, new byte[15], WriteOption.None);

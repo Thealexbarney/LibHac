@@ -14,9 +14,9 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IAttributeFileSystem fs = CreateAttributeFileSystem();
 
-            Assert.True(fs.CreateDirectory("/dir".ToU8Span(), NxFileAttributes.None).IsSuccess());
+            Assert.Success(fs.CreateDirectory("/dir".ToU8Span(), NxFileAttributes.None));
 
-            Assert.True(fs.GetFileAttributes(out NxFileAttributes attributes, "/dir".ToU8Span()).IsSuccess());
+            Assert.Success(fs.GetFileAttributes(out NxFileAttributes attributes, "/dir".ToU8Span()));
             Assert.Equal(NxFileAttributes.Directory, attributes);
         }
 
@@ -25,9 +25,9 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IAttributeFileSystem fs = CreateAttributeFileSystem();
 
-            Assert.True(fs.CreateDirectory("/dir".ToU8Span(), NxFileAttributes.Archive).IsSuccess());
+            Assert.Success(fs.CreateDirectory("/dir".ToU8Span(), NxFileAttributes.Archive));
 
-            Assert.True(fs.GetFileAttributes(out NxFileAttributes attributes, "/dir".ToU8Span()).IsSuccess());
+            Assert.Success(fs.GetFileAttributes(out NxFileAttributes attributes, "/dir".ToU8Span()));
             Assert.Equal(NxFileAttributes.Directory | NxFileAttributes.Archive, attributes);
         }
 
@@ -37,9 +37,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             IAttributeFileSystem fs = CreateAttributeFileSystem();
             fs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
 
-            Result rc = fs.GetFileAttributes(out NxFileAttributes attributes, "/file".ToU8Span());
-
-            Assert.True(rc.IsSuccess());
+            Assert.Success(fs.GetFileAttributes(out NxFileAttributes attributes, "/file".ToU8Span()));
             Assert.Equal(NxFileAttributes.None, attributes);
         }
 
@@ -49,9 +47,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             IAttributeFileSystem fs = CreateAttributeFileSystem();
             fs.CreateDirectory("/dir".ToU8Span());
 
-            Result rc = fs.GetFileAttributes(out NxFileAttributes attributes, "/dir".ToU8Span());
-
-            Assert.True(rc.IsSuccess());
+            Assert.Success(fs.GetFileAttributes(out NxFileAttributes attributes, "/dir".ToU8Span()));
             Assert.Equal(NxFileAttributes.Directory, attributes);
         }
 
@@ -62,7 +58,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             Result rc = fs.GetFileAttributes(out _, "/path".ToU8Span());
 
-            Assert.Equal(ResultFs.PathNotFound.Value, rc);
+            Assert.Result(ResultFs.PathNotFound, rc);
         }
 
         [Fact]
@@ -72,7 +68,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             Result rc = fs.SetFileAttributes("/path".ToU8Span(), NxFileAttributes.None);
 
-            Assert.Equal(ResultFs.PathNotFound.Value, rc);
+            Assert.Result(ResultFs.PathNotFound, rc);
         }
 
         [Fact]
@@ -84,8 +80,8 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             Result rcSet = fs.SetFileAttributes("/file".ToU8Span(), NxFileAttributes.Archive);
             Result rcGet = fs.GetFileAttributes(out NxFileAttributes attributes, "/file".ToU8Span());
 
-            Assert.True(rcSet.IsSuccess());
-            Assert.True(rcGet.IsSuccess());
+            Assert.Success(rcSet);
+            Assert.Success(rcGet);
             Assert.Equal(NxFileAttributes.Archive, attributes);
         }
 
@@ -98,8 +94,8 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             Result rcSet = fs.SetFileAttributes("/dir".ToU8Span(), NxFileAttributes.Archive);
             Result rcGet = fs.GetFileAttributes(out NxFileAttributes attributes, "/dir".ToU8Span());
 
-            Assert.True(rcSet.IsSuccess());
-            Assert.True(rcGet.IsSuccess());
+            Assert.Success(rcSet);
+            Assert.Success(rcGet);
             Assert.Equal(NxFileAttributes.Directory | NxFileAttributes.Archive, attributes);
         }
 
@@ -110,7 +106,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             fs.CreateFile("/file".ToU8Span(), 845, CreateFileOptions.None);
 
-            Assert.True(fs.GetFileSize(out long fileSize, "/file".ToU8Span()).IsSuccess());
+            Assert.Success(fs.GetFileSize(out long fileSize, "/file".ToU8Span()));
             Assert.Equal(845, fileSize);
         }
 
@@ -121,7 +117,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             Result rc = fs.GetFileSize(out _, "/path".ToU8Span());
 
-            Assert.Equal(ResultFs.PathNotFound.Value, rc);
+            Assert.Result(ResultFs.PathNotFound, rc);
         }
 
         [Fact]
@@ -132,7 +128,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             Result rc = fs.GetFileSize(out _, "/dir".ToU8Span());
 
-            Assert.Equal(ResultFs.PathNotFound.Value, rc);
+            Assert.Result(ResultFs.PathNotFound, rc);
         }
     }
 }

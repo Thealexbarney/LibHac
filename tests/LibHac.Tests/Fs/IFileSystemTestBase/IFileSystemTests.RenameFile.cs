@@ -14,13 +14,13 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             fs.CreateFile("/file1".ToU8Span(), 0, CreateFileOptions.None);
 
-            Assert.True(fs.RenameFile("/file1".ToU8Span(), "/file2".ToU8Span()).IsSuccess());
+            Assert.Success(fs.RenameFile("/file1".ToU8Span(), "/file2".ToU8Span()));
 
-            Assert.True(fs.GetEntryType(out DirectoryEntryType type, "/file2".ToU8Span()).IsSuccess());
+            Assert.Success(fs.GetEntryType(out DirectoryEntryType type, "/file2".ToU8Span()));
             Result rc = fs.GetEntryType(out _, "/file1".ToU8Span());
 
             Assert.Equal(DirectoryEntryType.File, type);
-            Assert.Equal(ResultFs.PathNotFound.Value, rc);
+            Assert.Result(ResultFs.PathNotFound, rc);
         }
         [Fact]
         public void RenameFile_DifferentParentDirectory_EntryIsRenamed()
@@ -30,13 +30,13 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.CreateFile("/file1".ToU8Span(), 0, CreateFileOptions.None);
             fs.CreateDirectory("/dir".ToU8Span());
 
-            Assert.True(fs.RenameFile("/file1".ToU8Span(), "/dir/file2".ToU8Span()).IsSuccess());
+            Assert.Success(fs.RenameFile("/file1".ToU8Span(), "/dir/file2".ToU8Span()));
 
-            Assert.True(fs.GetEntryType(out DirectoryEntryType type, "/dir/file2".ToU8Span()).IsSuccess());
+            Assert.Success(fs.GetEntryType(out DirectoryEntryType type, "/dir/file2".ToU8Span()));
             Result rc = fs.GetEntryType(out _, "/file1".ToU8Span());
 
             Assert.Equal(DirectoryEntryType.File, type);
-            Assert.Equal(ResultFs.PathNotFound.Value, rc);
+            Assert.Result(ResultFs.PathNotFound, rc);
         }
 
         [Fact]
@@ -49,7 +49,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             Result rc = fs.RenameFile("/file1".ToU8Span(), "/file2".ToU8Span());
 
-            Assert.Equal(ResultFs.PathAlreadyExists.Value, rc);
+            Assert.Result(ResultFs.PathAlreadyExists, rc);
         }
 
         [Fact]
@@ -62,7 +62,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             Result rc = fs.RenameFile("/file".ToU8Span(), "/dir".ToU8Span());
 
-            Assert.Equal(ResultFs.PathAlreadyExists.Value, rc);
+            Assert.Result(ResultFs.PathAlreadyExists, rc);
         }
 
         [Fact]
@@ -75,14 +75,14 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             fs.RenameFile("/file1".ToU8Span(), "/file2".ToU8Span());
 
-            Assert.True(fs.OpenFile(out IFile file1, "/file1".ToU8Span(), OpenMode.Read).IsSuccess());
-            Assert.True(fs.OpenFile(out IFile file2, "/file2".ToU8Span(), OpenMode.Read).IsSuccess());
+            Assert.Success(fs.OpenFile(out IFile file1, "/file1".ToU8Span(), OpenMode.Read));
+            Assert.Success(fs.OpenFile(out IFile file2, "/file2".ToU8Span(), OpenMode.Read));
 
             using (file1)
             using (file2)
             {
-                Assert.True(file1.GetSize(out long file1Size).IsSuccess());
-                Assert.True(file2.GetSize(out long file2Size).IsSuccess());
+                Assert.Success(file1.GetSize(out long file1Size));
+                Assert.Success(file2.GetSize(out long file2Size));
 
                 Assert.Equal(54321, file1Size);
                 Assert.Equal(12345, file2Size);
@@ -110,7 +110,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             Result rc = file.Read(out long bytesRead, 0, readData, ReadOption.None);
             file.Dispose();
 
-            Assert.True(rc.IsSuccess());
+            Assert.Success(rc);
             Assert.Equal(data.Length, bytesRead);
             Assert.Equal(data, readData);
         }

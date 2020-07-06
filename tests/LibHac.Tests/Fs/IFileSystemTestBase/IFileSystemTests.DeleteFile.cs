@@ -13,7 +13,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             IFileSystem fs = CreateFileSystem();
 
             Result rc = fs.DeleteFile("/file".ToU8Span());
-            Assert.Equal(ResultFs.PathNotFound.Value, rc);
+            Assert.Result(ResultFs.PathNotFound, rc);
         }
 
         [Fact]
@@ -26,8 +26,8 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             Result rcDelete = fs.DeleteFile("/file".ToU8Span());
             Result rcEntry = fs.GetEntryType(out _, "/file".ToU8Span());
 
-            Assert.True(rcDelete.IsSuccess());
-            Assert.Equal(ResultFs.PathNotFound.Value, rcEntry);
+            Assert.Success(rcDelete);
+            Assert.Result(ResultFs.PathNotFound, rcEntry);
         }
 
         [Fact]
@@ -39,7 +39,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             Result rc = fs.DeleteFile("/dir".ToU8Span());
 
-            Assert.Equal(ResultFs.PathNotFound.Value, rc);
+            Assert.Result(ResultFs.PathNotFound, rc);
         }
 
         [Fact]
@@ -54,9 +54,9 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             Result rcEntry1 = fs.GetEntryType(out DirectoryEntryType dir1Type, "/file1".ToU8Span());
             Result rcEntry2 = fs.GetEntryType(out _, "/file2".ToU8Span());
 
-            Assert.True(rcDelete.IsSuccess());
-            Assert.True(rcEntry1.IsSuccess());
-            Assert.Equal(ResultFs.PathNotFound.Value, rcEntry2);
+            Assert.Success(rcDelete);
+            Assert.Success(rcEntry1);
+            Assert.Result(ResultFs.PathNotFound, rcEntry2);
 
             Assert.Equal(DirectoryEntryType.File, dir1Type);
         }
@@ -73,9 +73,9 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             Result rcEntry1 = fs.GetEntryType(out DirectoryEntryType dir1Type, "/file1".ToU8Span());
             Result rcEntry2 = fs.GetEntryType(out _, "/file2".ToU8Span());
 
-            Assert.True(rcDelete.IsSuccess());
-            Assert.True(rcEntry1.IsSuccess());
-            Assert.Equal(ResultFs.PathNotFound.Value, rcEntry2);
+            Assert.Success(rcDelete);
+            Assert.Success(rcEntry1);
+            Assert.Result(ResultFs.PathNotFound, rcEntry2);
 
             Assert.Equal(DirectoryEntryType.File, dir1Type);
         }
