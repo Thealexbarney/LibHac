@@ -9,7 +9,7 @@ namespace LibHac.Fs.Shim
 {
     public static class RightsId
     {
-        public static Result GetRightsId(this FileSystemClient fs, out FsRightsId rightsId, TitleId programId,
+        public static Result GetRightsId(this FileSystemClient fs, out FsRightsId rightsId, ProgramId programId,
             StorageId storageId)
         {
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();

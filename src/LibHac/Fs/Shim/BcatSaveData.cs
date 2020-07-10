@@ -2,13 +2,12 @@
 using LibHac.Common;
 using LibHac.Fs.Fsa;
 using LibHac.FsService;
-using LibHac.Ncm;
 
 namespace LibHac.Fs.Shim
 {
     public static class BcatSaveData
     {
-        public static Result MountBcatSaveData(this FileSystemClient fs, U8Span mountName, TitleId applicationId)
+        public static Result MountBcatSaveData(this FileSystemClient fs, U8Span mountName, Ncm.ApplicationId applicationId)
         {
             Result rc;
 
@@ -37,7 +36,7 @@ namespace LibHac.Fs.Shim
             return Result.Success;
         }
 
-        private static Result MountBcatSaveDataImpl(FileSystemClient fs, U8Span mountName, TitleId applicationId)
+        private static Result MountBcatSaveDataImpl(FileSystemClient fs, U8Span mountName, Ncm.ApplicationId applicationId)
         {
             Result rc = MountHelpers.CheckMountName(mountName);
             if (rc.IsFailure()) return rc;
@@ -45,7 +44,7 @@ namespace LibHac.Fs.Shim
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
             SaveDataAttribute attribute = default;
-            attribute.TitleId = applicationId;
+            attribute.ProgramId = applicationId;
             attribute.Type = SaveDataType.Bcat;
 
             rc = fsProxy.OpenSaveDataFileSystem(out IFileSystem fileSystem, SaveDataSpaceId.User, ref attribute);

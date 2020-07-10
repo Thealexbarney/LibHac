@@ -61,7 +61,7 @@ namespace LibHac.FsService
         [FieldOffset(0x01)] public SaveDataSpaceId SpaceId;
 
         [FieldOffset(0x08)] public bool FilterByProgramId;
-        [FieldOffset(0x10)] public TitleId ProgramId;
+        [FieldOffset(0x10)] public ProgramId ProgramId;
 
         [FieldOffset(0x18)] public bool FilterBySaveDataType;
         [FieldOffset(0x19)] public SaveDataType SaveDataType;
@@ -123,7 +123,7 @@ namespace LibHac.FsService
             SpaceId = spaceId;
         }
 
-        public void SetProgramId(TitleId value)
+        public void SetProgramId(ProgramId value)
         {
             FilterByProgramId = true;
             ProgramId = value;
@@ -160,7 +160,7 @@ namespace LibHac.FsService
                 return false;
             }
 
-            if (FilterByProgramId && info.TitleId != ProgramId)
+            if (FilterByProgramId && info.ProgramId != ProgramId)
             {
                 return false;
             }

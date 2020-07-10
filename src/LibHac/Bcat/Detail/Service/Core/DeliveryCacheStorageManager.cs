@@ -3,7 +3,6 @@ using System.Diagnostics;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Shim;
-using LibHac.Ncm;
 using static LibHac.Fs.StringTraits;
 
 namespace LibHac.Bcat.Detail.Service.Core
@@ -56,7 +55,7 @@ namespace LibHac.Bcat.Detail.Service.Core
                 if (!DisableStorage)
                 {
                     rc = Server.GetFsClient()
-                        .MountBcatSaveData(new U8Span(mountName.Name), new TitleId(applicationId));
+                        .MountBcatSaveData(new U8Span(mountName.Name), new Ncm.ApplicationId(applicationId));
 
                     if (rc.IsFailure())
                     {

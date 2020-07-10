@@ -12,9 +12,9 @@ namespace LibHac.FsService
     {
         Result SetCurrentProcess(long processId);
         Result OpenDataFileSystemByCurrentProcess(out IFileSystem fileSystem);
-        Result OpenFileSystemWithPatch(out IFileSystem fileSystem, TitleId titleId, FileSystemProxyType type);
-        Result OpenFileSystemWithId(out IFileSystem fileSystem, ref FsPath path, TitleId titleId, FileSystemProxyType type);
-        Result OpenDataFileSystemByProgramId(out IFileSystem fileSystem, TitleId titleId);
+        Result OpenFileSystemWithPatch(out IFileSystem fileSystem, ProgramId programId, FileSystemProxyType type);
+        Result OpenFileSystemWithId(out IFileSystem fileSystem, ref FsPath path, ulong id, FileSystemProxyType type);
+        Result OpenDataFileSystemByProgramId(out IFileSystem fileSystem, ProgramId programId);
         Result OpenBisFileSystem(out IFileSystem fileSystem, ref FsPath rootPath, BisPartitionId partitionId);
         Result OpenBisStorage(out IStorage storage, BisPartitionId partitionId);
         Result InvalidateBisCache();
@@ -54,14 +54,14 @@ namespace LibHac.FsService
         Result WriteSaveDataFileSystemExtraDataBySaveDataAttribute(ref SaveDataAttribute attribute, SaveDataSpaceId spaceId, ReadOnlySpan<byte> extraDataBuffer, ReadOnlySpan<byte> maskBuffer);
         Result OpenSaveDataMetaFile(out IFile file, SaveDataSpaceId spaceId, ref SaveDataAttribute attribute, SaveDataMetaType type);
 
-        Result ListAccessibleSaveDataOwnerId(out int readCount, Span<TitleId> idBuffer, TitleId programId, int startIndex, int bufferIdCount);
+        Result ListAccessibleSaveDataOwnerId(out int readCount, Span<Ncm.ApplicationId> idBuffer, ProgramId programId, int startIndex, int bufferIdCount);
         Result OpenImageDirectoryFileSystem(out IFileSystem fileSystem, ImageDirectoryId dirId);
         Result OpenContentStorageFileSystem(out IFileSystem fileSystem, ContentStorageId storageId);
         Result OpenCloudBackupWorkStorageFileSystem(out IFileSystem fileSystem, CloudBackupWorkStorageId storageId);
         Result OpenCustomStorageFileSystem(out IFileSystem fileSystem, CustomStorageId storageId);
         Result OpenDataStorageByCurrentProcess(out IStorage storage);
-        Result OpenDataStorageByProgramId(out IStorage storage, TitleId programId);
-        Result OpenDataStorageByDataId(out IStorage storage, TitleId dataId, StorageId storageId);
+        Result OpenDataStorageByProgramId(out IStorage storage, ProgramId programId);
+        Result OpenDataStorageByDataId(out IStorage storage, DataId dataId, StorageId storageId);
         Result OpenPatchDataStorageByCurrentProcess(out IStorage storage);
         Result OpenDataFileSystemWithProgramIndex(out IFileSystem fileSystem, byte programIndex);
         Result OpenDataStorageWithProgramIndex(out IStorage storage, byte programIndex);
@@ -72,7 +72,7 @@ namespace LibHac.FsService
         Result CorruptSaveDataFileSystem(ulong saveDataId);
         Result CreatePaddingFile(long size);
         Result DeleteAllPaddingFiles();
-        Result GetRightsId(out RightsId rightsId, TitleId programId, StorageId storageId);
+        Result GetRightsId(out RightsId rightsId, ProgramId programId, StorageId storageId);
         Result RegisterExternalKey(ref RightsId rightsId, ref AccessKey externalKey);
         Result UnregisterAllExternalKey();
         Result GetRightsIdByPath(out RightsId rightsId, ref FsPath path);

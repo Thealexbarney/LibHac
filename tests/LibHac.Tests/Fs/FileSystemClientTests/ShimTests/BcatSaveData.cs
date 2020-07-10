@@ -1,7 +1,6 @@
 ﻿using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Shim;
-using LibHac.Ncm;
 using Xunit;
 
 namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
@@ -11,7 +10,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
         [Fact]
         public void MountBcatSaveData_SaveDoesNotExist_ReturnsTargetNotFound()
         {
-            var applicationId = new TitleId(1);
+            var applicationId = new Ncm.ApplicationId(1);
             FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
             Assert.Result(ResultFs.TargetNotFound, fs.MountBcatSaveData("bcat_test".ToU8Span(), applicationId));
@@ -20,7 +19,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
         [Fact]
         public void MountBcatSaveData_SaveExists_ReturnsSuccess()
         {
-            var applicationId = new TitleId(1);
+            var applicationId = new Ncm.ApplicationId(1);
             FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
             Assert.Success(fs.CreateBcatSaveData(applicationId, 0x400000));
@@ -30,7 +29,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
         [Fact]
         public void MountBcatSaveData_WrittenDataPersists()
         {
-            var applicationId = new TitleId(1);
+            var applicationId = new Ncm.ApplicationId(1);
             FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
             Assert.Success(fs.CreateBcatSaveData(applicationId, 0x400000));

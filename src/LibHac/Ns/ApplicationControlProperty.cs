@@ -38,7 +38,7 @@ namespace LibHac.Ns
         [FieldOffset(0x3040)] private sbyte _ratingAge;
         [FieldOffset(0x3060)] private byte _displayVersion;
         [FieldOffset(0x3070)] public ulong AddOnContentBaseId;
-        [FieldOffset(0x3078)] public TitleId SaveDataOwnerId;
+        [FieldOffset(0x3078)] public ProgramId SaveDataOwnerId;
         [FieldOffset(0x3080)] public long UserAccountSaveDataSize;
         [FieldOffset(0x3088)] public long UserAccountSaveDataJournalSize;
         [FieldOffset(0x3090)] public long DeviceSaveDataSize;

@@ -9,15 +9,16 @@ namespace LibHac.Fs.Shim
 {
     public static class Content
     {
+        // todo: add logging
         public static Result MountContent(this FileSystemClient fs, U8Span mountName, U8Span path, ContentType type)
         {
             if (type == ContentType.Meta)
                 return ResultFs.InvalidArgument.Log();
 
-            return MountContent(fs, mountName, path, TitleId.Zero, type);
+            return MountContent(fs, mountName, path, ProgramId.InvalidId, type);
         }
 
-        public static Result MountContent(this FileSystemClient fs, U8Span mountName, TitleId programId, ContentType type)
+        public static Result MountContent(this FileSystemClient fs, U8Span mountName, ProgramId programId, ContentType type)
         {
             Result rc = MountHelpers.CheckMountNameAcceptingReservedMountName(mountName);
             if (rc.IsFailure()) return rc;
@@ -32,23 +33,33 @@ namespace LibHac.Fs.Shim
             return fs.Register(mountName, fileSystem);
         }
 
-        public static Result MountContent(this FileSystemClient fs, U8Span mountName, U8Span path, TitleId titleId, ContentType type)
+        public static Result MountContent(this FileSystemClient fs, U8Span mountName, U8Span path, ProgramId programId, ContentType type)
         {
             Result rc = MountHelpers.CheckMountNameAcceptingReservedMountName(mountName);
             if (rc.IsFailure()) return rc;
 
             FileSystemProxyType fspType = ConvertToFileSystemProxyType(type);
 
-            return MountContentImpl(fs, mountName, path, titleId, fspType);
+            return MountContentImpl(fs, mountName, path, programId.Value, fspType);
         }
 
-        private static Result MountContentImpl(FileSystemClient fs, U8Span mountName, U8Span path, TitleId titleId, FileSystemProxyType type)
+        public static Result MountContent(this FileSystemClient fs, U8Span mountName, U8Span path, DataId dataId, ContentType type)
+        {
+            Result rc = MountHelpers.CheckMountNameAcceptingReservedMountName(mountName);
+            if (rc.IsFailure()) return rc;
+
+            FileSystemProxyType fspType = ConvertToFileSystemProxyType(type);
+
+            return MountContentImpl(fs, mountName, path, dataId.Value, fspType);
+        }
+
+        private static Result MountContentImpl(FileSystemClient fs, U8Span mountName, U8Span path, ulong id, FileSystemProxyType type)
         {
             FsPath.FromSpan(out FsPath fsPath, path);
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            Result rc = fsProxy.OpenFileSystemWithId(out IFileSystem fileSystem, ref fsPath, titleId, type);
+            Result rc = fsProxy.OpenFileSystemWithId(out IFileSystem fileSystem, ref fsPath, id, type);
             if (rc.IsFailure()) return rc;
 
             return fs.Register(mountName, fileSystem);

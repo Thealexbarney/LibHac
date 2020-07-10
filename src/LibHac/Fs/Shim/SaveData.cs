@@ -8,7 +8,7 @@ namespace LibHac.Fs.Shim
 {
     public static class SaveData
     {
-        public static Result MountSaveData(this FileSystemClient fs, U8Span mountName, TitleId applicationId, UserId userId)
+        public static Result MountSaveData(this FileSystemClient fs, U8Span mountName, Ncm.ApplicationId applicationId, UserId userId)
         {
             Result rc;
 
@@ -33,7 +33,7 @@ namespace LibHac.Fs.Shim
             return rc;
         }
 
-        public static Result MountSaveDataReadOnly(this FileSystemClient fs, U8Span mountName, TitleId applicationId, UserId userId)
+        public static Result MountSaveDataReadOnly(this FileSystemClient fs, U8Span mountName, Ncm.ApplicationId applicationId, UserId userId)
         {
             Result rc;
 
@@ -133,7 +133,7 @@ namespace LibHac.Fs.Shim
             return rc;
         }
 
-        public static Result MountCacheStorage(this FileSystemClient fs, U8Span mountName, TitleId applicationId)
+        public static Result MountCacheStorage(this FileSystemClient fs, U8Span mountName, Ncm.ApplicationId applicationId)
         {
             Result rc;
 
@@ -158,7 +158,7 @@ namespace LibHac.Fs.Shim
             return rc;
         }
 
-        public static Result MountCacheStorage(this FileSystemClient fs, U8Span mountName, TitleId applicationId, int index)
+        public static Result MountCacheStorage(this FileSystemClient fs, U8Span mountName, Ncm.ApplicationId applicationId, int index)
         {
             Result rc;
 
@@ -184,7 +184,7 @@ namespace LibHac.Fs.Shim
         }
 
         private static Result MountSaveDataImpl(this FileSystemClient fs, U8Span mountName, SaveDataSpaceId spaceId,
-            TitleId titleId, UserId userId, SaveDataType type, bool openReadOnly, short index)
+            ProgramId programId, UserId userId, SaveDataType type, bool openReadOnly, short index)
         {
             Result rc = MountHelpers.CheckMountName(mountName);
             if (rc.IsFailure()) return rc;
@@ -192,7 +192,7 @@ namespace LibHac.Fs.Shim
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
             SaveDataAttribute attribute = default;
-            attribute.TitleId = titleId;
+            attribute.ProgramId = programId;
             attribute.UserId = userId;
             attribute.Type = type;
             attribute.Index = index;

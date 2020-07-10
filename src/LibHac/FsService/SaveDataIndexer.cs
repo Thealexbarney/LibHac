@@ -8,7 +8,6 @@ using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Shim;
 using LibHac.Kvdb;
-using LibHac.Ncm;
 
 namespace LibHac.FsService
 {
@@ -47,7 +46,7 @@ namespace LibHac.FsService
                 Type = key.Type,
                 UserId = key.UserId,
                 SaveDataIdFromKey = key.SaveDataId,
-                TitleId = key.TitleId,
+                ProgramId = key.ProgramId,
                 Size = value.Size,
                 Index = key.Index,
                 Rank = key.Rank,
@@ -589,7 +588,7 @@ namespace LibHac.FsService
                 {
                     if (ResultFs.TargetNotFound.Includes(rc))
                     {
-                        rc = FsClient.CreateSystemSaveData(spaceId, saveDataId, TitleId.Zero, 0xC0000, 0xC0000, 0);
+                        rc = FsClient.CreateSystemSaveData(spaceId, saveDataId, 0, 0xC0000, 0xC0000, 0);
                         if (rc.IsFailure()) return rc;
 
                         rc = FsClient.MountSystemSaveData(MountName, spaceId, saveDataId);
@@ -605,7 +604,7 @@ namespace LibHac.FsService
                         rc = FsClient.DeleteSaveData(spaceId, saveDataId);
                         if (rc.IsFailure()) return rc;
 
-                        rc = FsClient.CreateSystemSaveData(spaceId, saveDataId, TitleId.Zero, 0xC0000, 0xC0000, 0);
+                        rc = FsClient.CreateSystemSaveData(spaceId, saveDataId, 0, 0xC0000, 0xC0000, 0);
                         if (rc.IsFailure()) return rc;
 
                         rc = FsClient.MountSystemSaveData(MountName, spaceId, saveDataId);
