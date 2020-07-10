@@ -34,7 +34,7 @@ namespace LibHac.FsService
             AutoCreateSaveData = true;
         }
 
-        public Result OpenFileSystemWithId(out IFileSystem fileSystem, ref FsPath path, TitleId titleId, FileSystemProxyType type)
+        public Result OpenFileSystemWithId(out IFileSystem fileSystem, ref FsPath path, ulong id, FileSystemProxyType type)
         {
             fileSystem = default;
 
@@ -46,7 +46,7 @@ namespace LibHac.FsService
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-            return FsProxyCore.OpenFileSystem(out fileSystem, normalizer.Path, type, canMountSystemDataPrivate, titleId);
+            return FsProxyCore.OpenFileSystem(out fileSystem, normalizer.Path, type, canMountSystemDataPrivate, id);
         }
 
         private PathNormalizer.Option GetPathNormalizerOptions(U8Span path)
@@ -60,7 +60,7 @@ namespace LibHac.FsService
             return PathNormalizer.Option.HasMountName | PathNormalizer.Option.PreserveTailSeparator | hostOption;
         }
 
-        public Result OpenFileSystemWithPatch(out IFileSystem fileSystem, TitleId titleId, FileSystemProxyType type)
+        public Result OpenFileSystemWithPatch(out IFileSystem fileSystem, ProgramId programId, FileSystemProxyType type)
         {
             throw new NotImplementedException();
         }
@@ -82,7 +82,7 @@ namespace LibHac.FsService
             throw new NotImplementedException();
         }
 
-        public Result OpenDataFileSystemByProgramId(out IFileSystem fileSystem, TitleId titleId)
+        public Result OpenDataFileSystemByProgramId(out IFileSystem fileSystem, ProgramId programId)
         {
             throw new NotImplementedException();
         }
@@ -92,12 +92,12 @@ namespace LibHac.FsService
             throw new NotImplementedException();
         }
 
-        public Result OpenDataStorageByProgramId(out IStorage storage, TitleId programId)
+        public Result OpenDataStorageByProgramId(out IStorage storage, ProgramId programId)
         {
             throw new NotImplementedException();
         }
 
-        public Result OpenDataStorageByDataId(out IStorage storage, TitleId dataId, StorageId storageId)
+        public Result OpenDataStorageByDataId(out IStorage storage, DataId dataId, StorageId storageId)
         {
             throw new NotImplementedException();
         }
@@ -459,7 +459,7 @@ namespace LibHac.FsService
 
             SaveDataCreationInfo newCreationInfo = creationInfo;
 
-            if (creationInfo.OwnerId == TitleId.Zero)
+            if (creationInfo.OwnerId == 0)
             {
                 // todo: Assign the current program's ID
                 // throw new NotImplementedException();
@@ -469,7 +469,7 @@ namespace LibHac.FsService
 
             if (attribute.Type == SaveDataType.SystemBcat)
             {
-                newCreationInfo.OwnerId = SystemTitleIds.Bcat;
+                newCreationInfo.OwnerId = SystemProgramId.Bcat.Value;
             }
 
             SaveMetaCreateInfo metaCreateInfo = default;
@@ -563,7 +563,7 @@ namespace LibHac.FsService
 
             SaveDataAttribute attributeCopy;
 
-            if (attribute.TitleId == TitleId.Zero)
+            if (attribute.ProgramId == ProgramId.InvalidId)
             {
                 throw new NotImplementedException();
             }
@@ -577,7 +577,7 @@ namespace LibHac.FsService
             if (attributeCopy.Type == SaveDataType.Cache)
             {
                 // Check whether the save is on the SD card or the BIS
-                Result rc = GetSpaceIdForCacheStorage(out actualSpaceId, attributeCopy.TitleId);
+                Result rc = GetSpaceIdForCacheStorage(out actualSpaceId, attributeCopy.ProgramId);
                 if (rc.IsFailure()) return rc;
             }
             else
@@ -885,7 +885,7 @@ namespace LibHac.FsService
             throw new NotImplementedException();
         }
 
-        private Result GetSpaceIdForCacheStorage(out SaveDataSpaceId spaceId, TitleId programId)
+        private Result GetSpaceIdForCacheStorage(out SaveDataSpaceId spaceId, ProgramId programId)
         {
             spaceId = default;
 
@@ -937,7 +937,7 @@ namespace LibHac.FsService
             throw new NotImplementedException();
         }
 
-        public Result ListAccessibleSaveDataOwnerId(out int readCount, Span<TitleId> idBuffer, TitleId programId, int startIndex,
+        public Result ListAccessibleSaveDataOwnerId(out int readCount, Span<Ncm.ApplicationId> idBuffer, ProgramId programId, int startIndex,
             int bufferIdCount)
         {
             throw new NotImplementedException();
@@ -1010,7 +1010,7 @@ namespace LibHac.FsService
             throw new NotImplementedException();
         }
 
-        public Result GetRightsId(out RightsId rightsId, TitleId programId, StorageId storageId)
+        public Result GetRightsId(out RightsId rightsId, ProgramId programId, StorageId storageId)
         {
             throw new NotImplementedException();
         }
@@ -1188,7 +1188,7 @@ namespace LibHac.FsService
             fileSystem = default;
 
             SaveDataAttribute attribute = default;
-            attribute.TitleId = new TitleId(MultiCommitManager.ProgramId);
+            attribute.ProgramId = new ProgramId(MultiCommitManager.ProgramId);
             attribute.SaveDataId = MultiCommitManager.SaveDataId;
 
             Result rc = OpenSaveDataFileSystemImpl(out IFileSystem saveFs, out _, SaveDataSpaceId.System, ref attribute,

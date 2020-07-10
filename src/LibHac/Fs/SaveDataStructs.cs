@@ -8,8 +8,7 @@ namespace LibHac.Fs
     [StructLayout(LayoutKind.Explicit, Size = 0x40)]
     public struct SaveDataAttribute : IEquatable<SaveDataAttribute>, IComparable<SaveDataAttribute>
     {
-        // todo: rename to ProgramId
-        [FieldOffset(0x00)] public TitleId TitleId;
+        [FieldOffset(0x00)] public ProgramId ProgramId;
         [FieldOffset(0x08)] public UserId UserId;
         [FieldOffset(0x18)] public ulong SaveDataId;
         [FieldOffset(0x20)] public SaveDataType Type;
@@ -23,7 +22,7 @@ namespace LibHac.Fs
 
         public bool Equals(SaveDataAttribute other)
         {
-            return TitleId == other.TitleId &&
+            return ProgramId == other.ProgramId &&
                    Type == other.Type &&
                    UserId.Equals(other.UserId) &&
                    SaveDataId == other.SaveDataId &&
@@ -34,13 +33,13 @@ namespace LibHac.Fs
         public override int GetHashCode()
         {
             // ReSharper disable NonReadonlyMemberInGetHashCode
-            return HashCode.Combine(TitleId, Type, UserId, SaveDataId, Rank, Index);
+            return HashCode.Combine(ProgramId, Type, UserId, SaveDataId, Rank, Index);
             // ReSharper restore NonReadonlyMemberInGetHashCode
         }
 
         public int CompareTo(SaveDataAttribute other)
         {
-            int titleIdComparison = TitleId.CompareTo(other.TitleId);
+            int titleIdComparison = ProgramId.CompareTo(other.ProgramId);
             if (titleIdComparison != 0) return titleIdComparison;
             int typeComparison = Type.CompareTo(other.Type);
             if (typeComparison != 0) return typeComparison;
@@ -64,13 +63,13 @@ namespace LibHac.Fs
         [FieldOffset(0x04)] public bool FilterByIndex;
         [FieldOffset(0x05)] public SaveDataRank Rank;
 
-        [FieldOffset(0x08)] public TitleId ProgramId;
+        [FieldOffset(0x08)] public ProgramId ProgramId;
         [FieldOffset(0x10)] public UserId UserId;
         [FieldOffset(0x20)] public ulong SaveDataId;
         [FieldOffset(0x28)] public SaveDataType SaveDataType;
         [FieldOffset(0x2A)] public short Index;
 
-        public void SetProgramId(TitleId value)
+        public void SetProgramId(ProgramId value)
         {
             FilterByProgramId = true;
             ProgramId = value;
@@ -131,7 +130,7 @@ namespace LibHac.Fs
         [FieldOffset(0x00)] public long Size;
         [FieldOffset(0x08)] public long JournalSize;
         [FieldOffset(0x10)] public ulong BlockSize;
-        [FieldOffset(0x18)] public TitleId OwnerId;
+        [FieldOffset(0x18)] public ulong OwnerId;
         [FieldOffset(0x20)] public SaveDataFlags Flags;
         [FieldOffset(0x24)] public SaveDataSpaceId SpaceId;
         [FieldOffset(0x25)] public bool Field25;
@@ -145,7 +144,7 @@ namespace LibHac.Fs
         [FieldOffset(0x09)] public SaveDataType Type;
         [FieldOffset(0x10)] public UserId UserId;
         [FieldOffset(0x20)] public ulong SaveDataIdFromKey;
-        [FieldOffset(0x28)] public TitleId TitleId;
+        [FieldOffset(0x28)] public ProgramId ProgramId;
         [FieldOffset(0x30)] public long Size;
         [FieldOffset(0x38)] public short Index;
         [FieldOffset(0x3A)] public SaveDataRank Rank;

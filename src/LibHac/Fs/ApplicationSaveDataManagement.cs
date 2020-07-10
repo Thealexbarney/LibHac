@@ -9,14 +9,14 @@ namespace LibHac.Fs
 {
     public static class ApplicationSaveDataManagement
     {
-        public static Result EnsureApplicationSaveData(FileSystemClient fs, out long requiredSize, TitleId applicationId,
+        public static Result EnsureApplicationSaveData(FileSystemClient fs, out long requiredSize, Ncm.ApplicationId applicationId,
             ref ApplicationControlProperty nacp, ref Uid uid)
         {
             requiredSize = default;
             long requiredSizeSum = 0;
 
             // Create local variable for use in closures
-            TitleId saveDataOwnerId = nacp.SaveDataOwnerId;
+            ProgramId saveDataOwnerId = nacp.SaveDataOwnerId;
 
             // Ensure the user account save exists
             if (uid != Uid.Zero && nacp.UserAccountSaveDataSize > 0)
@@ -29,7 +29,7 @@ namespace LibHac.Fs
                 Result CreateAccountSaveFunc()
                 {
                     UserId userId = ConvertAccountUidToFsUserId(uidLocal);
-                    return fs.CreateSaveData(applicationId, userId, saveDataOwnerId, accountSaveDataSize,
+                    return fs.CreateSaveData(applicationId, userId, saveDataOwnerId.Value, accountSaveDataSize,
                         accountSaveJournalSize, SaveDataFlags.None);
                 }
 
@@ -51,7 +51,7 @@ namespace LibHac.Fs
                 long deviceSaveDataSize = nacp.DeviceSaveDataSize;
                 long deviceSaveJournalSize = nacp.DeviceSaveDataJournalSize;
 
-                Result CreateDeviceSaveFunc() => fs.CreateDeviceSaveData(applicationId, saveDataOwnerId,
+                Result CreateDeviceSaveFunc() => fs.CreateDeviceSaveData(applicationId, saveDataOwnerId.Value,
                     deviceSaveDataSize, deviceSaveJournalSize, 0);
 
                 var filter = new SaveDataFilter();
@@ -106,7 +106,7 @@ namespace LibHac.Fs
                 }
                 else
                 {
-                    Result createRc = fs.CreateTemporaryStorage(applicationId, nacp.SaveDataOwnerId,
+                    Result createRc = fs.CreateTemporaryStorage(applicationId, nacp.SaveDataOwnerId.Value,
                         nacp.TemporaryStorageSize, 0);
 
                     if (createRc.IsFailure())
@@ -202,7 +202,7 @@ namespace LibHac.Fs
         }
 
         private static Result EnsureApplicationBcatDeliveryCacheStorageImpl(FileSystemClient fs, out long requiredSize,
-            TitleId applicationId, ref ApplicationControlProperty nacp)
+            Ncm.ApplicationId applicationId, ref ApplicationControlProperty nacp)
         {
             const long bcatDeliveryCacheJournalSize = 0x200000;
 
@@ -232,7 +232,7 @@ namespace LibHac.Fs
         }
 
         private static Result EnsureApplicationCacheStorageImpl(this FileSystemClient fs, out long requiredSize,
-            out CacheStorageTargetMedia target, TitleId applicationId, TitleId saveDataOwnerId, short index,
+            out CacheStorageTargetMedia target, Ncm.ApplicationId applicationId, ulong saveDataOwnerId, short index,
             long dataSize, long journalSize, bool allowExisting)
         {
             requiredSize = default;
@@ -299,7 +299,7 @@ namespace LibHac.Fs
         }
 
         public static Result EnsureApplicationCacheStorage(this FileSystemClient fs, out long requiredSize,
-            out CacheStorageTargetMedia target, TitleId applicationId, TitleId saveDataOwnerId, short index,
+            out CacheStorageTargetMedia target, Ncm.ApplicationId applicationId, ulong saveDataOwnerId, short index,
             long dataSize, long journalSize, bool allowExisting)
         {
             return EnsureApplicationCacheStorageImpl(fs, out requiredSize, out target, applicationId, saveDataOwnerId,
@@ -307,14 +307,14 @@ namespace LibHac.Fs
         }
 
         public static Result EnsureApplicationCacheStorage(this FileSystemClient fs, out long requiredSize,
-            TitleId applicationId, ref ApplicationControlProperty nacp)
+            Ncm.ApplicationId applicationId, ref ApplicationControlProperty nacp)
         {
-            return EnsureApplicationCacheStorageImpl(fs, out requiredSize, out _, applicationId, nacp.SaveDataOwnerId,
+            return EnsureApplicationCacheStorageImpl(fs, out requiredSize, out _, applicationId, nacp.SaveDataOwnerId.Value,
                 0, nacp.CacheStorageSize, nacp.CacheStorageJournalSize, true);
         }
 
         public static Result EnsureApplicationCacheStorage(this FileSystemClient fs, out long requiredSize,
-            out CacheStorageTargetMedia target, TitleId applicationId, ref ApplicationControlProperty nacp)
+            out CacheStorageTargetMedia target, Ncm.ApplicationId applicationId, ref ApplicationControlProperty nacp)
         {
             if (nacp.CacheStorageSize <= 0)
             {
@@ -324,18 +324,18 @@ namespace LibHac.Fs
             }
 
             return EnsureApplicationCacheStorageImpl(fs, out requiredSize, out target, applicationId,
-                nacp.SaveDataOwnerId, 0, nacp.CacheStorageSize, nacp.CacheStorageJournalSize, true);
+                nacp.SaveDataOwnerId.Value, 0, nacp.CacheStorageSize, nacp.CacheStorageJournalSize, true);
         }
 
         public static Result EnsureApplicationBcatDeliveryCacheStorage(this FileSystemClient fs, out long requiredSize,
-            TitleId applicationId, ref ApplicationControlProperty nacp)
+            Ncm.ApplicationId applicationId, ref ApplicationControlProperty nacp)
         {
             return EnsureApplicationBcatDeliveryCacheStorageImpl(fs, out requiredSize, applicationId, ref nacp);
         }
 
         public static Result TryCreateCacheStorage(this FileSystemClient fs, out long requiredSize,
-            SaveDataSpaceId spaceId, TitleId applicationId, TitleId saveDataOwnerId, short index, long dataSize,
-            long journalSize, bool allowExisting)
+            SaveDataSpaceId spaceId, Ncm.ApplicationId applicationId, ulong saveDataOwnerId, short index,
+            long dataSize, long journalSize, bool allowExisting)
         {
             requiredSize = default;
             long requiredSizeLocal = 0;
@@ -383,12 +383,14 @@ namespace LibHac.Fs
             return rc;
         }
 
-        public static Result GetCacheStorageTargetMedia(this FileSystemClient fs, out CacheStorageTargetMedia target, TitleId applicationId)
+        public static Result GetCacheStorageTargetMedia(this FileSystemClient fs, out CacheStorageTargetMedia target,
+            Ncm.ApplicationId applicationId)
         {
             return GetCacheStorageTargetMediaImpl(fs, out target, applicationId);
         }
 
-        private static Result GetCacheStorageTargetMediaImpl(this FileSystemClient fs, out CacheStorageTargetMedia target, TitleId applicationId)
+        private static Result GetCacheStorageTargetMediaImpl(this FileSystemClient fs,
+            out CacheStorageTargetMedia target, Ncm.ApplicationId applicationId)
         {
             target = CacheStorageTargetMedia.None;
 

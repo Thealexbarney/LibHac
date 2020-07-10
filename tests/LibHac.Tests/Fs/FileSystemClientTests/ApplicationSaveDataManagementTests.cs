@@ -1,7 +1,6 @@
 ﻿using LibHac.Account;
 using LibHac.Fs;
 using LibHac.Fs.Shim;
-using LibHac.Ncm;
 using LibHac.Ns;
 using Xunit;
 
@@ -16,7 +15,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
         {
             FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-            var applicationId = new TitleId(11);
+            var applicationId = new Ncm.ApplicationId(11);
             var userId = new Uid(2, 3);
 
             var nacp = new ApplicationControlProperty
@@ -33,7 +32,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
             Assert.Success(iterator.ReadSaveDataInfo(out long entriesRead, info));
 
             Assert.Equal(1, entriesRead);
-            Assert.Equal(applicationId, info[0].TitleId);
+            Assert.Equal(applicationId, info[0].ProgramId);
             Assert.Equal(ConvertAccountUidToFsUserId(userId), info[0].UserId);
             Assert.Equal(SaveDataType.Account, info[0].Type);
         }
@@ -43,7 +42,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
         {
             FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-            var applicationId = new TitleId(11);
+            var applicationId = new Ncm.ApplicationId(11);
             var userId = new Uid(2, 3);
 
             var nacp = new ApplicationControlProperty
@@ -60,7 +59,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
             Assert.Success(iterator.ReadSaveDataInfo(out long entriesRead, info));
 
             Assert.Equal(1, entriesRead);
-            Assert.Equal(applicationId, info[0].TitleId);
+            Assert.Equal(applicationId, info[0].ProgramId);
             Assert.Equal(UserId.Zero, info[0].UserId);
             Assert.Equal(SaveDataType.Device, info[0].Type);
         }
@@ -70,7 +69,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
         {
             FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-            var applicationId = new TitleId(11);
+            var applicationId = new Ncm.ApplicationId(11);
             var userId = new Uid(2, 3);
 
             var nacp = new ApplicationControlProperty
@@ -86,7 +85,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
             Assert.Success(iterator.ReadSaveDataInfo(out long entriesRead, info));
 
             Assert.Equal(1, entriesRead);
-            Assert.Equal(applicationId, info[0].TitleId);
+            Assert.Equal(applicationId, info[0].ProgramId);
             Assert.Equal(UserId.Zero, info[0].UserId);
             Assert.Equal(SaveDataType.Bcat, info[0].Type);
         }
@@ -96,7 +95,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
         {
             FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-            var applicationId = new TitleId(11);
+            var applicationId = new Ncm.ApplicationId(11);
             var userId = new Uid(2, 3);
 
             var nacp = new ApplicationControlProperty
@@ -112,7 +111,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
             Assert.Success(iterator.ReadSaveDataInfo(out long entriesRead, info));
 
             Assert.Equal(1, entriesRead);
-            Assert.Equal(applicationId, info[0].TitleId);
+            Assert.Equal(applicationId, info[0].ProgramId);
             Assert.Equal(UserId.Zero, info[0].UserId);
             Assert.Equal(SaveDataType.Temporary, info[0].Type);
         }
@@ -122,7 +121,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
         {
             FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-            var applicationId = new TitleId(11);
+            var applicationId = new Ncm.ApplicationId(11);
 
             var nacp = new ApplicationControlProperty
             {
@@ -141,7 +140,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
             Assert.Success(iterator.ReadSaveDataInfo(out long entriesRead, info));
 
             Assert.Equal(1, entriesRead);
-            Assert.Equal(applicationId, info[0].TitleId);
+            Assert.Equal(applicationId, info[0].ProgramId);
             Assert.Equal(SaveDataType.Cache, info[0].Type);
         }
 
@@ -150,7 +149,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
         {
             FileSystemClient fs = FileSystemServerFactory.CreateClient(false);
 
-            var applicationId = new TitleId(11);
+            var applicationId = new Ncm.ApplicationId(11);
 
             var nacp = new ApplicationControlProperty
             {
@@ -169,7 +168,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
             Assert.Success(iterator.ReadSaveDataInfo(out long entriesRead, info));
 
             Assert.Equal(1, entriesRead);
-            Assert.Equal(applicationId, info[0].TitleId);
+            Assert.Equal(applicationId, info[0].ProgramId);
             Assert.Equal(SaveDataType.Cache, info[0].Type);
         }
 
@@ -180,7 +179,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
         {
             FileSystemClient fs = FileSystemServerFactory.CreateClient(isSdCardInserted);
 
-            var applicationId = new TitleId(11);
+            var applicationId = new Ncm.ApplicationId(11);
 
             var nacp = new ApplicationControlProperty
             {
@@ -199,7 +198,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
         {
             FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-            Assert.Success(fs.GetCacheStorageTargetMedia(out CacheStorageTargetMedia target, new TitleId(11)));
+            Assert.Success(fs.GetCacheStorageTargetMedia(out CacheStorageTargetMedia target, new Ncm.ApplicationId(11)));
             Assert.Equal(CacheStorageTargetMedia.None, target);
         }
     }

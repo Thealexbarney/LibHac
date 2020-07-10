@@ -8,7 +8,6 @@ using LibHac.Fs.Shim;
 using LibHac.FsSystem;
 using LibHac.FsService.Creators;
 using LibHac.FsSystem.NcaUtils;
-using LibHac.Ncm;
 using LibHac.Spl;
 using RightsId = LibHac.Fs.RightsId;
 
@@ -36,15 +35,15 @@ namespace LibHac.FsService
         }
 
         public Result OpenFileSystem(out IFileSystem fileSystem, U8Span path, FileSystemProxyType type,
-            bool canMountSystemDataPrivate, TitleId titleId)
+            bool canMountSystemDataPrivate, ulong programId)
         {
             fileSystem = default;
 
             // Get a reference to the path that will be advanced as each part of the path is parsed
-            U8Span path2 = path.Slice(0, StringUtils.GetLength(path));
+            U8Span currentPath = path.Slice(0, StringUtils.GetLength(path));
 
             // Open the root filesystem based on the path's mount name
-            Result rc = OpenFileSystemFromMountName(ref path2, out IFileSystem baseFileSystem, out bool shouldContinue,
+            Result rc = OpenFileSystemFromMountName(ref currentPath, out IFileSystem baseFileSystem, out bool shouldContinue,
                 out MountNameInfo mountNameInfo);
             if (rc.IsFailure()) return rc;
 
@@ -64,7 +63,7 @@ namespace LibHac.FsService
                     return rc;
             }
 
-            rc = IsContentPathDir(ref path2, out bool isDirectory);
+            rc = IsContentPathDir(ref currentPath, out bool isDirectory);
             if (rc.IsFailure()) return rc;
 
             if (isDirectory)
@@ -74,22 +73,22 @@ namespace LibHac.FsService
 
                 if (type == FileSystemProxyType.Manual)
                 {
-                    rc = TryOpenCaseSensitiveContentDirectory(out IFileSystem manualFileSystem, baseFileSystem, path2);
+                    rc = TryOpenCaseSensitiveContentDirectory(out IFileSystem manualFileSystem, baseFileSystem, currentPath);
                     if (rc.IsFailure()) return rc;
 
                     fileSystem = new ReadOnlyFileSystem(manualFileSystem);
                     return Result.Success;
                 }
 
-                return TryOpenContentDirectory(path2, out fileSystem, baseFileSystem, type, true);
+                return TryOpenContentDirectory(currentPath, out fileSystem, baseFileSystem, type, true);
             }
 
-            rc = TryOpenNsp(ref path2, out IFileSystem nspFileSystem, baseFileSystem);
+            rc = TryOpenNsp(ref currentPath, out IFileSystem nspFileSystem, baseFileSystem);
 
             if (rc.IsSuccess())
             {
                 // Must be the end of the path to open Application Package FS type
-                if (path2.Length == 0 || path2[0] == 0)
+                if (currentPath.Length == 0 || currentPath[0] == 0)
                 {
                     if (type == FileSystemProxyType.Package)
                     {
@@ -108,9 +107,9 @@ namespace LibHac.FsService
                 return ResultFs.InvalidNcaMountPoint.Log();
             }
 
-            TitleId openTitleId = mountNameInfo.IsHostFs ? new TitleId(ulong.MaxValue) : titleId;
+            ulong openProgramId = mountNameInfo.IsHostFs ? ulong.MaxValue : programId;
 
-            rc = TryOpenNca(ref path2, out Nca nca, baseFileSystem, openTitleId);
+            rc = TryOpenNca(ref currentPath, out Nca nca, baseFileSystem, openProgramId);
             if (rc.IsFailure()) return rc;
 
             rc = OpenNcaStorage(out IStorage ncaSectionStorage, nca, out NcaFormatType fsType, type,
@@ -403,8 +402,6 @@ namespace LibHac.FsService
                 case FileSystemProxyType.Control:
                 case FileSystemProxyType.Manual:
                 case FileSystemProxyType.Meta:
-                // Nintendo doesn't include the Data case in the switch. Maybe an oversight?
-                case FileSystemProxyType.Data:
                 case FileSystemProxyType.RegisteredUpdate:
                     dirName = new[] { (byte)'/', (byte)'d', (byte)'a', (byte)'t', (byte)'a', (byte)'/' };
                     break;
@@ -487,7 +484,7 @@ namespace LibHac.FsService
             return rc;
         }
 
-        private Result TryOpenNca(ref U8Span path, out Nca nca, IFileSystem baseFileSystem, TitleId programId)
+        private Result TryOpenNca(ref U8Span path, out Nca nca, IFileSystem baseFileSystem, ulong ncaId)
         {
             nca = default;
 
@@ -498,11 +495,11 @@ namespace LibHac.FsService
             rc = FsCreators.StorageOnNcaCreator.OpenNca(out Nca ncaTemp, ncaFileStorage);
             if (rc.IsFailure()) return rc;
 
-            if (programId.Value == ulong.MaxValue)
+            if (ncaId == ulong.MaxValue)
             {
                 ulong ncaProgramId = ncaTemp.Header.TitleId;
 
-                if (ncaProgramId != ulong.MaxValue && programId.Value != ncaProgramId)
+                if (ncaProgramId != ulong.MaxValue && ncaId != ncaProgramId)
                 {
                     return ResultFs.InvalidNcaProgramId.Log();
                 }
