@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -19,9 +19,13 @@ namespace LibHac.FsSystem.NcaUtils
 
         public Nca(Keyset keyset, IStorage storage)
         {
+            Span<byte> magic = stackalloc byte[3];
+            storage.Read(0x200, magic);
+            bool encrypted = magic[0] != 'N' && magic[1] != 'C' && magic[2] != 'A';
+
             Keyset = keyset;
             BaseStorage = storage;
-            Header = new NcaHeader(keyset, storage);
+            Header = encrypted ? new NcaHeader(keyset, storage) : new NcaHeader(storage);
         }
 
         public byte[] GetDecryptedKey(int index)
@@ -117,7 +121,7 @@ namespace LibHac.FsSystem.NcaUtils
             return Header.IsSectionEnabled(index);
         }
 
-        private IStorage OpenEncryptedStorage(int index)
+        private IStorage OpenSectionStorage(int index)
         {
             if (!SectionExists(index)) throw new ArgumentException(nameof(index), Messages.NcaSectionMissing);
 
@@ -215,7 +219,7 @@ namespace LibHac.FsSystem.NcaUtils
 
         public IStorage OpenRawStorage(int index)
         {
-            IStorage encryptedStorage = OpenEncryptedStorage(index);
+            IStorage encryptedStorage = OpenSectionStorage(index);
             IStorage decryptedStorage = OpenDecryptedStorage(encryptedStorage, index);
 
             return decryptedStorage;
@@ -353,10 +357,12 @@ namespace LibHac.FsSystem.NcaUtils
             return OpenStorageWithPatch(patchNca, GetSectionIndexFromType(type), integrityCheckLevel);
         }
 
-        public IStorage OpenDecryptedNca()
+        public IStorage OpenDecryptedNca() => TransformNca(true);
+
+        public IStorage TransformNca(bool decrypting)
         {
             var builder = new ConcatenationStorageBuilder();
-            builder.Add(OpenDecryptedHeaderStorage(), 0);
+            builder.Add(TransformHeaderStorage(decrypting), 0);
 
             for (int i = 0; i < NcaHeader.SectionCount; i++)
             {
@@ -499,7 +505,9 @@ namespace LibHac.FsSystem.NcaUtils
             return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel, leaveOpen);
         }
 
-        public IStorage OpenDecryptedHeaderStorage()
+        public IStorage OpenDecryptedHeaderStorage() => TransformHeaderStorage(true);
+
+        public IStorage TransformHeaderStorage(bool decrypting)
         {
             long firstSectionOffset = long.MaxValue;
             bool hasEnabledSection = false;
@@ -514,9 +522,10 @@ namespace LibHac.FsSystem.NcaUtils
                 }
             }
 
-            long headerSize = hasEnabledSection ? NcaHeader.HeaderSize : firstSectionOffset;
+            long headerSize = hasEnabledSection ? firstSectionOffset : NcaHeader.HeaderSize;
 
-            IStorage header = new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, headerSize), Keyset.HeaderKey, NcaHeader.HeaderSectorSize, true), 1, true);
+            IStorage header = new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, headerSize), Keyset.HeaderKey, NcaHeader.HeaderSectorSize, true, decrypting), 1, true);
+            
             int version = ReadHeaderVersion(header);
 
             if (version == 2)
