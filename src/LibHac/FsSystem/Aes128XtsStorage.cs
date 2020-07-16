@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem
@@ -9,24 +9,27 @@ namespace LibHac.FsSystem
 
         private readonly byte[] _tempBuffer;
 
-        private Aes128XtsTransform _decryptor;
-        private Aes128XtsTransform _encryptor;
+        private Aes128XtsTransform _readTransform;
+        private Aes128XtsTransform _writeTransform;
 
         private readonly byte[] _key1;
         private readonly byte[] _key2;
 
-        public Aes128XtsStorage(IStorage baseStorage, Span<byte> key, int sectorSize, bool leaveOpen)
+        private readonly bool _decryptRead;
+
+        public Aes128XtsStorage(IStorage baseStorage, Span<byte> key, int sectorSize, bool leaveOpen, bool decryptRead = true)
             : base(baseStorage, sectorSize, leaveOpen)
         {
             if (key == null) throw new NullReferenceException(nameof(key));
             if (key.Length != BlockSize * 2) throw new ArgumentException(nameof(key), $"Key must be {BlockSize * 2} bytes long");
 
             _tempBuffer = new byte[sectorSize];
+            _decryptRead = decryptRead;
             _key1 = key.Slice(0, BlockSize).ToArray();
             _key2 = key.Slice(BlockSize, BlockSize).ToArray();
         }
 
-        public Aes128XtsStorage(IStorage baseStorage, Span<byte> key1, Span<byte> key2, int sectorSize, bool leaveOpen)
+        public Aes128XtsStorage(IStorage baseStorage, Span<byte> key1, Span<byte> key2, int sectorSize, bool leaveOpen, bool decryptRead = true)
             : base(baseStorage, sectorSize, leaveOpen)
         {
             if (key1 == null) throw new NullReferenceException(nameof(key1));
@@ -34,6 +37,7 @@ namespace LibHac.FsSystem
             if (key1.Length != BlockSize || key1.Length != BlockSize) throw new ArgumentException($"Keys must be {BlockSize} bytes long");
 
             _tempBuffer = new byte[sectorSize];
+            _decryptRead = decryptRead;
             _key1 = key1.ToArray();
             _key2 = key2.ToArray();
         }
@@ -43,12 +47,12 @@ namespace LibHac.FsSystem
             int size = destination.Length;
             long sectorIndex = offset / SectorSize;
 
-            if (_decryptor == null) _decryptor = new Aes128XtsTransform(_key1, _key2, true);
+            if (_readTransform == null) _readTransform = new Aes128XtsTransform(_key1, _key2, _decryptRead);
 
             Result rc = base.DoRead(offset, _tempBuffer.AsSpan(0, size));
             if (rc.IsFailure()) return rc;
 
-            _decryptor.TransformBlock(_tempBuffer, 0, size, (ulong)sectorIndex);
+            _readTransform.TransformBlock(_tempBuffer, 0, size, (ulong)sectorIndex);
             _tempBuffer.AsSpan(0, size).CopyTo(destination);
 
             return Result.Success;
@@ -59,10 +63,10 @@ namespace LibHac.FsSystem
             int size = source.Length;
             long sectorIndex = offset / SectorSize;
 
-            if (_encryptor == null) _encryptor = new Aes128XtsTransform(_key1, _key2, false);
+            if (_writeTransform == null) _writeTransform = new Aes128XtsTransform(_key1, _key2, !_decryptRead);
 
             source.CopyTo(_tempBuffer);
-            _encryptor.TransformBlock(_tempBuffer, 0, size, (ulong)sectorIndex);
+            _writeTransform.TransformBlock(_tempBuffer, 0, size, (ulong)sectorIndex);
 
             return base.DoWrite(offset, _tempBuffer.AsSpan(0, size));
         }
