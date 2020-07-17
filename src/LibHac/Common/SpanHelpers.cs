@@ -33,29 +33,29 @@ namespace LibHac.Common
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<T> CreateReadOnlySpan<T>(ref T reference, int length)
+        public static ReadOnlySpan<T> CreateReadOnlySpan<T>(in T reference, int length)
         {
-            return MemoryMarshal.CreateReadOnlySpan(ref reference, length);
+            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in reference), length);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<T> AsReadOnlySpan<T>(ref T reference) where T : unmanaged
+        public static ReadOnlySpan<T> AsReadOnlySpan<T>(in T reference) where T : unmanaged
         {
-            return CreateReadOnlySpan(ref reference, 1);
+            return CreateReadOnlySpan(in reference, 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<TSpan> AsReadOnlySpan<TStruct, TSpan>(ref TStruct reference)
+        public static ReadOnlySpan<TSpan> AsReadOnlySpan<TStruct, TSpan>(in TStruct reference)
             where TStruct : unmanaged where TSpan : unmanaged
         {
-            return CreateReadOnlySpan(ref Unsafe.As<TStruct, TSpan>(ref reference),
+            return CreateReadOnlySpan(in Unsafe.As<TStruct, TSpan>(ref Unsafe.AsRef(in reference)),
                 Unsafe.SizeOf<TStruct>() / Unsafe.SizeOf<TSpan>());
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> AsReadOnlyByteSpan<T>(ref T reference) where T : unmanaged
+        public static ReadOnlySpan<byte> AsReadOnlyByteSpan<T>(in T reference) where T : unmanaged
         {
-            return CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref reference), Unsafe.SizeOf<T>());
+            return CreateReadOnlySpan(in Unsafe.As<T, byte>(ref Unsafe.AsRef(in reference)), Unsafe.SizeOf<T>());
         }
 
         // All AsStruct methods do bounds checks on the input
