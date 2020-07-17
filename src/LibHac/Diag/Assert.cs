@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace LibHac.Diag
@@ -40,6 +41,22 @@ namespace LibHac.Diag
             if (value < lowerInclusive || value >= upperExclusive)
             {
                 throw new LibHacException($"Value {value} is not in the range {lowerInclusive} to {upperExclusive}");
+            }
+        }
+
+        public static void Equal<T>(T value1, T value2) where T : IEquatable<T>
+        {
+            if (!value1.Equals(value2))
+            {
+                throw new LibHacException($"Values were not equal: {value1}, {value2}");
+            }
+        }
+
+        public static void NotEqual<T>(T value1, T value2) where T : IEquatable<T>
+        {
+            if (value1.Equals(value2))
+            {
+                throw new LibHacException($"Values should not be equal: {value1}, {value2}");
             }
         }
     }

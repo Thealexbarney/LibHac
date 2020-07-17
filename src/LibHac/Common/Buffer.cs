@@ -34,7 +34,7 @@ namespace LibHac.Common
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator ReadOnlySpan<byte>(in Buffer16 value)
         {
-            return SpanHelpers.AsReadOnlyByteSpan(ref Unsafe.AsRef(in value));
+            return SpanHelpers.AsReadOnlyByteSpan(in value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -57,7 +57,7 @@ namespace LibHac.Common
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly ReadOnlySpan<T> AsReadOnlySpan<T>() where T : unmanaged
         {
-            return SpanHelpers.AsReadOnlySpan<Buffer16, T>(ref Unsafe.AsRef(in this));
+            return SpanHelpers.AsReadOnlySpan<Buffer16, T>(in this);
         }
 
         public override string ToString()
@@ -93,7 +93,7 @@ namespace LibHac.Common
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator ReadOnlySpan<byte>(in Buffer32 value)
         {
-            return SpanHelpers.AsReadOnlyByteSpan(ref Unsafe.AsRef(in value));
+            return SpanHelpers.AsReadOnlyByteSpan(in value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -116,7 +116,7 @@ namespace LibHac.Common
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly ReadOnlySpan<T> AsReadOnlySpan<T>() where T : unmanaged
         {
-            return SpanHelpers.AsReadOnlySpan<Buffer32, T>(ref Unsafe.AsRef(in this));
+            return SpanHelpers.AsReadOnlySpan<Buffer32, T>(in this);
         }
 
         public override string ToString()

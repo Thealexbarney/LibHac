@@ -37,7 +37,7 @@ namespace LibHac.Sm
         public override string ToString()
         {
             ulong name = Name;
-            return StringUtils.Utf8ZToString(SpanHelpers.AsReadOnlyByteSpan(ref name));
+            return StringUtils.Utf8ZToString(SpanHelpers.AsReadOnlyByteSpan(in name));
         }
     }
 }

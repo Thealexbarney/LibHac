@@ -76,7 +76,7 @@ namespace LibHac.Sm
             int nameLen;
             for (nameLen = 1; nameLen < Unsafe.SizeOf<ServiceName>(); nameLen++)
             {
-                if (SpanHelpers.AsReadOnlyByteSpan(ref name)[nameLen] == 0)
+                if (SpanHelpers.AsReadOnlyByteSpan(in name)[nameLen] == 0)
                 {
                     break;
                 }
@@ -85,7 +85,7 @@ namespace LibHac.Sm
             // Names must be all-zero after they end.
             for (; nameLen < Unsafe.SizeOf<ServiceName>(); nameLen++)
             {
-                if (SpanHelpers.AsReadOnlyByteSpan(ref name)[nameLen] != 0)
+                if (SpanHelpers.AsReadOnlyByteSpan(in name)[nameLen] != 0)
                 {
                     return ResultSm.InvalidServiceName.Log();
                 }

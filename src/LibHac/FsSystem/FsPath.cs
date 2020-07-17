@@ -33,7 +33,7 @@ namespace LibHac.FsSystem
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static implicit operator U8Span(in FsPath value) => new U8Span(SpanHelpers.AsReadOnlyByteSpan(ref Unsafe.AsRef(in value)));
+        public static implicit operator U8Span(in FsPath value) => new U8Span(SpanHelpers.AsReadOnlyByteSpan(in value));
 
         public override string ToString() => StringUtils.Utf8ZToString(Str);
     }
