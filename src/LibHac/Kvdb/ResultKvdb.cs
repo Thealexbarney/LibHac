@@ -15,8 +15,8 @@ namespace LibHac.Kvdb
     {
         public const int ModuleKvdb = 20;
 
-        /// <summary>Error code: 2020-0001; Inner value: 0x214</summary>
-        public static Result.Base TooLargeKeyOrDbFull => new Result.Base(ModuleKvdb, 1);
+        /// <summary>There is no more space in the database or the key is too long.<br/>Error code: 2020-0001; Inner value: 0x214</summary>
+        public static Result.Base OutOfKeyResource => new Result.Base(ModuleKvdb, 1);
         /// <summary>Error code: 2020-0002; Inner value: 0x414</summary>
         public static Result.Base KeyNotFound => new Result.Base(ModuleKvdb, 2);
         /// <summary>Error code: 2020-0004; Inner value: 0x814</summary>

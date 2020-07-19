@@ -312,7 +312,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 10,811,819,RequestDeferred,
 10,812,,RequestDeferredByUser,
 
-20,1,,TooLargeKeyOrDbFull,
+20,1,,OutOfKeyResource,There is no more space in the database or the key is too long.
 20,2,,KeyNotFound,
 20,4,,AllocationFailed,
 20,5,,InvalidKeyValue,
