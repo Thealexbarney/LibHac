@@ -21,9 +21,18 @@ namespace LibHac.Diag
         }
 
         [Conditional("DEBUG")]
-        public static void NotNull<T>([NotNull] T item) where T : class
+        public static void Null<T>([NotNull] T item) where T : class
         {
             if (!(item is null))
+            {
+                throw new LibHacException("Null assertion failed.");
+            }
+        }
+
+        [Conditional("DEBUG")]
+        public static void NotNull<T>([NotNull] T item) where T : class
+        {
+            if (item is null)
             {
                 throw new LibHacException("Not-null assertion failed.");
             }

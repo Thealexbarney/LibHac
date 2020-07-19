@@ -316,7 +316,7 @@ namespace LibHac.FsService
                         {
                             if (reader.Indexer.IsFull())
                             {
-                                return ResultKvdb.TooLargeKeyOrDbFull.Log();
+                                return ResultKvdb.OutOfKeyResource.Log();
                             }
                         }
 
