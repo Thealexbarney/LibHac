@@ -268,11 +268,14 @@ namespace hactoolnet
 
             foreach (Application app in sdfs.Applications.Values.OrderBy(x => x.Name))
             {
-                sb.AppendLine($"{app.Name} v{app.DisplayVersion}");
-
                 if (app.Main != null)
                 {
+                    sb.AppendLine($"{app.Name} v{app.DisplayVersion} ({app.Main.Id.ToString("X16")})");
                     sb.AppendLine($"Software: {Utilities.GetBytesReadable(app.Main.GetSize())}");
+                }
+                else
+                {
+                    sb.AppendLine($"{app.Name} v{app.DisplayVersion}");
                 }
 
                 if (app.Patch != null)
