@@ -38,6 +38,7 @@ namespace hactoolnet
             new CliOption("outdir", 1, (o, a) => o.OutDir = a[0]),
             new CliOption("outfile", 1, (o, a) => o.OutFile = a[0]),
             new CliOption("plaintext", 1, (o, a) => o.PlaintextOut = a[0]),
+            new CliOption("ciphertext", 1, (o, a) => o.CiphertextOut = a[0]),
             new CliOption("uncompressed", 1, (o, a) => o.UncompressedOut = a[0]),
             new CliOption("nspout", 1, (o, a) => o.NspOut = a[0]),
             new CliOption("sdseed", 1, (o, a) => o.SdSeed = a[0]),
@@ -207,6 +208,7 @@ namespace hactoolnet
             sb.AppendLine("  --accesslog <file>   Specify the access log file path.");
             sb.AppendLine("NCA options:");
             sb.AppendLine("  --plaintext <file>   Specify file path for saving a decrypted copy of the NCA.");
+            sb.AppendLine("  --ciphertext <file>  Specify file path for saving an encrypted copy of the NCA.");
             sb.AppendLine("  --header <file>      Specify Header file path.");
             sb.AppendLine("  --section0 <file>    Specify Section 0 file path.");
             sb.AppendLine("  --section1 <file>    Specify Section 1 file path.");
