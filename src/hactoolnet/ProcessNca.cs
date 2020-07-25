@@ -170,6 +170,11 @@ namespace hactoolnet
                     nca.OpenDecryptedNca().WriteAllBytes(ctx.Options.PlaintextOut, ctx.Logger);
                 }
 
+                if (ctx.Options.CiphertextOut != null)
+                {
+                    nca.OpenEncryptedNca().WriteAllBytes(ctx.Options.CiphertextOut, ctx.Logger);
+                }
+
                 if (!ctx.Options.ReadBench) ctx.Logger.LogMessage(ncaHolder.Print());
 
                 IStorage OpenStorage(int index)

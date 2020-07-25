@@ -13,6 +13,7 @@ namespace LibHac.FsSystem.NcaUtils
     public class Nca
     {
         private Keyset Keyset { get; }
+        private bool IsEncrypted { get; set; }
         public IStorage BaseStorage { get; }
 
         public NcaHeader Header { get; }
@@ -21,11 +22,11 @@ namespace LibHac.FsSystem.NcaUtils
         {
             Span<byte> magic = stackalloc byte[3];
             storage.Read(0x200, magic);
-            bool encrypted = magic[0] != 'N' && magic[1] != 'C' && magic[2] != 'A';
+            IsEncrypted = magic[0] != 'N' && magic[1] != 'C' && magic[2] != 'A';
 
             Keyset = keyset;
             BaseStorage = storage;
-            Header = encrypted ? new NcaHeader(keyset, storage) : new NcaHeader(storage);
+            Header = IsEncrypted ? new NcaHeader(keyset, storage) : new NcaHeader(storage);
         }
 
         public byte[] GetDecryptedKey(int index)
@@ -139,7 +140,7 @@ namespace LibHac.FsSystem.NcaUtils
             return BaseStorage.Slice(offset, size);
         }
 
-        private IStorage OpenDecryptedStorage(IStorage baseStorage, int index)
+        private IStorage OpenDecryptedStorage(IStorage baseStorage, int index, bool decrypting)
         {
             NcaFsHeader header = Header.GetFsHeader(index);
 
@@ -148,18 +149,18 @@ namespace LibHac.FsSystem.NcaUtils
                 case NcaEncryptionType.None:
                     return baseStorage;
                 case NcaEncryptionType.XTS:
-                    return OpenAesXtsStorage(baseStorage, index);
+                    return OpenAesXtsStorage(baseStorage, index, decrypting);
                 case NcaEncryptionType.AesCtr:
                     return OpenAesCtrStorage(baseStorage, index);
                 case NcaEncryptionType.AesCtrEx:
-                    return OpenAesCtrExStorage(baseStorage, index);
+                    return OpenAesCtrExStorage(baseStorage, index, decrypting);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
 
         // ReSharper disable UnusedParameter.Local
-        private IStorage OpenAesXtsStorage(IStorage baseStorage, int index)
+        private IStorage OpenAesXtsStorage(IStorage baseStorage, int index, bool decrypting)
         {
             const int sectorSize = 0x200;
 
@@ -167,7 +168,7 @@ namespace LibHac.FsSystem.NcaUtils
             byte[] key1 = GetContentKey(NcaKeyType.AesXts1);
 
             // todo: Handle xts for nca version 3
-            return new CachedStorage(new Aes128XtsStorage(baseStorage, key0, key1, sectorSize, true), 2, true);
+            return new CachedStorage(new Aes128XtsStorage(baseStorage, key0, key1, sectorSize, true, decrypting), 2, true);
         }
         // ReSharper restore UnusedParameter.Local
 
@@ -181,7 +182,7 @@ namespace LibHac.FsSystem.NcaUtils
             return new CachedStorage(aesStorage, 0x4000, 4, true);
         }
 
-        private IStorage OpenAesCtrExStorage(IStorage baseStorage, int index)
+        private IStorage OpenAesCtrExStorage(IStorage baseStorage, int index, bool decrypting)
         {
             NcaFsHeader fsHeader = Header.GetFsHeader(index);
             NcaFsPatchInfo info = fsHeader.GetPatchInfo();
@@ -197,7 +198,20 @@ namespace LibHac.FsSystem.NcaUtils
             byte[] counter = Aes128CtrStorage.CreateCounter(fsHeader.Counter, bktrOffset + sectionOffset);
             byte[] counterEx = Aes128CtrStorage.CreateCounter(fsHeader.Counter, sectionOffset);
 
-            IStorage bucketTreeData = new CachedStorage(new Aes128CtrStorage(baseStorage.Slice(bktrOffset, bktrSize), key, counter, true), 4, true);
+            IStorage bucketTreeData;
+            IStorage outputBucketTreeData;
+
+            if (decrypting)
+            {
+                bucketTreeData = new CachedStorage(new Aes128CtrStorage(baseStorage.Slice(bktrOffset, bktrSize), key, counter, true), 4, true);
+                outputBucketTreeData = bucketTreeData;
+            }
+            else
+            {
+                bucketTreeData = baseStorage.Slice(bktrOffset, bktrSize);
+                outputBucketTreeData = new CachedStorage(new Aes128CtrStorage(baseStorage.Slice(bktrOffset, bktrSize), key, counter, true), 4, true);
+            }
+
             var encryptionBucketTreeData = new SubStorage(bucketTreeData,
                 info.EncryptionTreeOffset - bktrOffset, sectionSize - info.EncryptionTreeOffset);
 
@@ -214,16 +228,24 @@ namespace LibHac.FsSystem.NcaUtils
             IStorage decStorage = new Aes128CtrExStorage(baseStorage.Slice(0, dataSize), tableNodeStorage,
                 tableEntryStorage, treeHeader.EntryCount, key, counterEx, true);
 
-            return new ConcatenationStorage(new[] { decStorage, bucketTreeData }, true);
+            return new ConcatenationStorage(new[] { decStorage, outputBucketTreeData }, true);
         }
 
-        public IStorage OpenRawStorage(int index)
+        public IStorage OpenRawStorage(int index, bool openEncrypted)
         {
-            IStorage encryptedStorage = OpenSectionStorage(index);
-            IStorage decryptedStorage = OpenDecryptedStorage(encryptedStorage, index);
+            IStorage storage = OpenSectionStorage(index);
+
+            if (IsEncrypted == openEncrypted)
+            {
+                return storage;
+            }
+
+            IStorage decryptedStorage = OpenDecryptedStorage(storage, index, !openEncrypted);
 
             return decryptedStorage;
         }
+
+        public IStorage OpenRawStorage(int index) => OpenRawStorage(index, false);
 
         public IStorage OpenRawStorageWithPatch(Nca patchNca, int index)
         {
@@ -357,18 +379,24 @@ namespace LibHac.FsSystem.NcaUtils
             return OpenStorageWithPatch(patchNca, GetSectionIndexFromType(type), integrityCheckLevel);
         }
 
-        public IStorage OpenDecryptedNca() => TransformNca(true);
+        public IStorage OpenEncryptedNca() => OpenFullNca(true);
+        public IStorage OpenDecryptedNca() => OpenFullNca(false);
 
-        public IStorage TransformNca(bool decrypting)
+        public IStorage OpenFullNca(bool openEncrypted)
         {
+            if (openEncrypted == IsEncrypted)
+            {
+                return BaseStorage;
+            }
+
             var builder = new ConcatenationStorageBuilder();
-            builder.Add(TransformHeaderStorage(decrypting), 0);
+            builder.Add(OpenHeaderStorage(openEncrypted), 0);
 
             for (int i = 0; i < NcaHeader.SectionCount; i++)
             {
                 if (Header.IsSectionEnabled(i))
                 {
-                    builder.Add(OpenRawStorage(i), Header.GetSectionStartOffset(i));
+                    builder.Add(OpenRawStorage(i, openEncrypted), Header.GetSectionStartOffset(i));
                 }
             }
 
@@ -505,9 +533,9 @@ namespace LibHac.FsSystem.NcaUtils
             return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel, leaveOpen);
         }
 
-        public IStorage OpenDecryptedHeaderStorage() => TransformHeaderStorage(true);
+        public IStorage OpenDecryptedHeaderStorage() => OpenHeaderStorage(true);
 
-        public IStorage TransformHeaderStorage(bool decrypting)
+        public IStorage OpenHeaderStorage(bool openEncrypted)
         {
             long firstSectionOffset = long.MaxValue;
             bool hasEnabledSection = false;
@@ -523,36 +551,38 @@ namespace LibHac.FsSystem.NcaUtils
             }
 
             long headerSize = hasEnabledSection ? firstSectionOffset : NcaHeader.HeaderSize;
+            IStorage rawHeaderStorage = BaseStorage.Slice(0, headerSize);
 
-            IStorage header = new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, headerSize), Keyset.HeaderKey, NcaHeader.HeaderSectorSize, true, decrypting), 1, true);
-            
-            int version = ReadHeaderVersion(header);
+            if (openEncrypted == IsEncrypted)
+                return rawHeaderStorage;
 
-            if (version == 2)
+            IStorage header;
+
+            switch (Header.Version)
             {
-                header = OpenNca2Header(headerSize);
+                case 3:
+                    header = new CachedStorage(new Aes128XtsStorage(rawHeaderStorage, Keyset.HeaderKey, NcaHeader.HeaderSectorSize, true, !openEncrypted), 1, true);
+                    break;
+                case 2:
+                    header = OpenNca2Header(headerSize, !openEncrypted);
+                    break;
+                default:
+                    throw new NotSupportedException("Unsupported NCA version");
             }
 
             return header;
         }
 
-        private int ReadHeaderVersion(IStorage header)
-        {
-            Span<byte> buf = stackalloc byte[1];
-            header.Read(0x203, buf).Log();
-            return buf[0] - '0';
-        }
-
-        private IStorage OpenNca2Header(long size)
+        private IStorage OpenNca2Header(long size, bool decrypting)
         {
             const int sectorSize = NcaHeader.HeaderSectorSize;
 
             var sources = new List<IStorage>();
-            sources.Add(new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, 0x400), Keyset.HeaderKey, sectorSize, true), 1, true));
+            sources.Add(new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, 0x400), Keyset.HeaderKey, sectorSize, true, decrypting), 1, true));
 
             for (int i = 0x400; i < size; i += sectorSize)
             {
-                sources.Add(new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(i, sectorSize), Keyset.HeaderKey, sectorSize, true), 1, true));
+                sources.Add(new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(i, sectorSize), Keyset.HeaderKey, sectorSize, true, decrypting), 1, true));
             }
 
             return new ConcatenationStorage(sources, true);
