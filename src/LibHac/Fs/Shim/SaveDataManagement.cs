@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.FsService;
 using LibHac.Ncm;
 
@@ -228,7 +229,7 @@ namespace LibHac.Fs.Shim
                     var attribute = new SaveDataAttribute
                     {
                         UserId = userId,
-                        SaveDataId = saveDataId
+                        StaticSaveDataId = saveDataId
                     };
 
                     var createInfo = new SaveDataCreationInfo
@@ -364,7 +365,8 @@ namespace LibHac.Fs.Shim
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                    Result rc = fsProxy.OpenSaveDataInfoReaderBySaveDataSpaceId(out ISaveDataInfoReader reader, spaceId);
+                    Result rc = fsProxy.OpenSaveDataInfoReaderBySaveDataSpaceId(
+                        out ReferenceCountedDisposable<ISaveDataInfoReader> reader, spaceId);
                     if (rc.IsFailure()) return rc;
 
                     tempIterator = new SaveDataIterator(fs, reader);
@@ -388,7 +390,8 @@ namespace LibHac.Fs.Shim
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                    Result rc = fsProxy.OpenSaveDataInfoReaderWithFilter(out ISaveDataInfoReader reader, spaceId, ref tempFilter);
+                    Result rc = fsProxy.OpenSaveDataInfoReaderWithFilter(
+                        out ReferenceCountedDisposable<ISaveDataInfoReader> reader, spaceId, ref tempFilter);
                     if (rc.IsFailure()) return rc;
 
                     tempIterator = new SaveDataIterator(fs, reader);
@@ -402,20 +405,25 @@ namespace LibHac.Fs.Shim
             return result;
         }
 
-        public static Result DisableAutoSaveDataCreation(this FileSystemClient fsClient)
+        public static void DisableAutoSaveDataCreation(this FileSystemClient fsClient)
         {
             IFileSystemProxy fsProxy = fsClient.GetFileSystemProxyServiceObject();
 
-            return fsProxy.DisableAutoSaveDataCreation();
+            Result rc = fsProxy.DisableAutoSaveDataCreation();
+
+            if (rc.IsFailure())
+            {
+                Abort.DoAbort();
+            }
         }
     }
 
     public struct SaveDataIterator : IDisposable
     {
         private FileSystemClient FsClient { get; }
-        private ISaveDataInfoReader Reader { get; }
+        private ReferenceCountedDisposable<ISaveDataInfoReader> Reader { get; }
 
-        internal SaveDataIterator(FileSystemClient fsClient, ISaveDataInfoReader reader)
+        internal SaveDataIterator(FileSystemClient fsClient, ReferenceCountedDisposable<ISaveDataInfoReader> reader)
         {
             FsClient = fsClient;
             Reader = reader;
@@ -430,14 +438,14 @@ namespace LibHac.Fs.Shim
             if (FsClient.IsEnabledAccessLog(AccessLogTarget.System))
             {
                 TimeSpan startTime = FsClient.Time.GetCurrent();
-                rc = Reader.ReadSaveDataInfo(out readCount, byteBuffer);
+                rc = Reader.Target.Read(out readCount, byteBuffer);
                 TimeSpan endTime = FsClient.Time.GetCurrent();
 
                 FsClient.OutputAccessLog(rc, startTime, endTime, $", size: {buffer.Length}");
             }
             else
             {
-                rc = Reader.ReadSaveDataInfo(out readCount, byteBuffer);
+                rc = Reader.Target.Read(out readCount, byteBuffer);
             }
 
             return rc;

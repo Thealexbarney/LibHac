@@ -27,6 +27,8 @@ namespace LibHac.FsService
         private GlobalAccessLogMode LogMode { get; set; }
         public bool IsSdCardAccessible { get; set; }
 
+        internal ISaveDataIndexerManager SaveDataIndexerManager { get; private set; }
+
         public FileSystemProxyCore(FileSystemCreators fsCreators, ExternalKeySet externalKeys, IDeviceOperator deviceOperator)
         {
             FsCreators = fsCreators;
@@ -813,6 +815,9 @@ namespace LibHac.FsService
             seed.Value.CopyTo(SdEncryptionSeed);
             // todo: FsCreators.SaveDataFileSystemCreator.SetSdCardEncryptionSeed(seed);
 
+            SaveDataIndexerManager.InvalidateSdCardIndexer(SaveDataSpaceId.SdSystem);
+            SaveDataIndexerManager.InvalidateSdCardIndexer(SaveDataSpaceId.SdCache);
+
             return Result.Success;
         }
 
@@ -1056,6 +1061,16 @@ namespace LibHac.FsService
         {
             mode = LogMode;
             return Result.Success;
+        }
+
+        internal void SetSaveDataIndexerManager(ISaveDataIndexerManager manager)
+        {
+            SaveDataIndexerManager = manager;
+        }
+
+        internal Result OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, out bool neededInit, SaveDataSpaceId spaceId)
+        {
+            return SaveDataIndexerManager.OpenAccessor(out accessor, out neededInit, spaceId);
         }
 
         private string GetSaveDataIdPath(ulong saveDataId)

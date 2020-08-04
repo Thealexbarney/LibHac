@@ -25,8 +25,8 @@ namespace LibHac.Kvdb
         private static ReadOnlySpan<byte> ArchiveFileName => // /imkvdb.arc
             new[]
             {
-            (byte) '/', (byte) 'i', (byte) 'm', (byte) 'k', (byte) 'v', (byte) 'd', (byte) 'b', (byte) '.',
-            (byte) 'a', (byte) 'r', (byte) 'c'
+                (byte) '/', (byte) 'i', (byte) 'm', (byte) 'k', (byte) 'v', (byte) 'd', (byte) 'b', (byte) '.',
+                (byte) 'a', (byte) 'r', (byte) 'c'
             };
 
         public int Count => _index.Count;
@@ -645,6 +645,11 @@ namespace LibHac.Kvdb
 
             public ref KeyValue Get() => ref _entries[_index];
             public Span<byte> GetValue() => _entries[_index].Value.Get();
+
+            public ref T GetValue<T>() where T : unmanaged
+            {
+                return ref SpanHelpers.AsStruct<T>(_entries[_index].Value.Get());
+            }
 
             public void Next() => _index++;
             public bool IsEnd() => _index == _length;

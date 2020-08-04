@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace LibHac.Diag
 {
@@ -21,6 +22,11 @@ namespace LibHac.Diag
                 return;
 
             DoAbort(message);
+        }
+
+        public static void UnexpectedDefault([CallerMemberName] string caller = "")
+        {
+            throw new LibHacException($"Unexpected value passed to switch statement in {caller}");
         }
     }
 }

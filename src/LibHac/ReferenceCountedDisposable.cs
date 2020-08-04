@@ -135,6 +135,54 @@ namespace LibHac
                throw new ObjectDisposedException(nameof(ReferenceCountedDisposable<T>));
 
         /// <summary>
+        /// Increments the reference count for the disposable object, and returns a new disposable reference to it
+        /// of type <typeparamref name="TTo"/>. The type of the disposable object must be compatible with type
+        /// <typeparamref name="TTo"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>The returned object is an independent reference to the same underlying object. Disposing of the
+        /// returned value multiple times will only cause the reference count to be decreased once.</para>
+        /// </remarks>
+        /// <typeparam name="TTo">The type of the new reference to the disposable object.</typeparam>
+        /// <returns>A new <see cref="ReferenceCountedDisposable{TTo}"/> pointing to the same underlying object, if it
+        /// has not yet been disposed; otherwise, <see cref="ObjectDisposedException"/> is thrown if this reference
+        /// to the underlying object has already been disposed, and <see cref="InvalidCastException"/> is thrown if
+        /// <typeparamref name="T"/> is not compatible with <typeparamref name="TTo"/>.</returns>
+        public ReferenceCountedDisposable<TTo> AddReference<TTo>() where TTo : class, IDisposable
+        {
+            ReferenceCountedDisposable<TTo>? newReference =
+                TryAddReferenceImpl<T, TTo>(_instance, _boxedReferenceCount, out CreateResult result);
+
+            if (newReference != null)
+            {
+                return newReference;
+            }
+
+            throw result switch
+            {
+                CreateResult.Disposed => new ObjectDisposedException(nameof(ReferenceCountedDisposable<T>)),
+                CreateResult.NotCastable => new InvalidCastException(),
+                _ => new NotSupportedException("This exception should never be thrown.")
+            };
+        }
+
+        /// <summary>
+        /// Increments the reference count for the disposable object, and returns a new disposable reference to it
+        /// of type <typeparamref name="TTo"/>. The type of the disposable object must be compatible with type
+        /// <typeparamref name="TTo"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>The returned object is an independent reference to the same underlying object. Disposing of the
+        /// returned value multiple times will only cause the reference count to be decreased once.</para>
+        /// </remarks>
+        /// <returns>A new <see cref="ReferenceCountedDisposable{TTo}"/> pointing to the same underlying object, if it
+        /// has not yet been disposed, and <typeparamref name="T"/> is compatible with <typeparamref name="TTo"/>;
+        /// otherwise, <see langword="null"/> if this reference to the underlying object has already been disposed.
+        /// </returns>
+        public ReferenceCountedDisposable<TTo>? TryAddReference<TTo>() where TTo : class, IDisposable
+            => TryAddReferenceImpl<T, TTo>(_instance, _boxedReferenceCount, out _);
+
+        /// <summary>
         /// Increments the reference count for the disposable object, and returns a new disposable reference to it.
         /// </summary>
         /// <remarks>
@@ -180,6 +228,51 @@ namespace LibHac
         }
 
         /// <summary>
+        /// Provides the implementation for <see cref="TryAddReference"/> and
+        /// <see cref="WeakReference.TryAddReference"/> when casting the underlying object to another type.
+        /// </summary>
+        private static ReferenceCountedDisposable<TTo>? TryAddReferenceImpl<TFrom, TTo>(TFrom? target, StrongBox<int> referenceCount,
+            out CreateResult result)
+            where TFrom : class, IDisposable
+            where TTo : class, IDisposable
+        {
+            lock (referenceCount)
+            {
+                if (referenceCount.Value == 0)
+                {
+                    // The target is already disposed, and cannot be reused
+                    result = CreateResult.Disposed;
+                    return null;
+                }
+
+                if (target == null)
+                {
+                    // The current reference has been disposed, so even though it isn't disposed yet we don't have a
+                    // reference to the target
+                    result = CreateResult.Disposed;
+                    return null;
+                }
+
+                if (!(target is TTo castedTarget))
+                {
+                    // The target cannot be casted to type TTo
+                    result = CreateResult.NotCastable;
+                    return null;
+                }
+
+                checked
+                {
+                    referenceCount.Value++;
+                }
+
+                // Must return a new instance, in order for the Dispose operation on each individual instance to
+                // be idempotent.
+                result = CreateResult.Success;
+                return new ReferenceCountedDisposable<TTo>(castedTarget, referenceCount);
+            }
+        }
+
+        /// <summary>
         /// Releases the current reference, causing the underlying object to be disposed if this was the last
         /// reference.
         /// </summary>
@@ -210,6 +303,16 @@ namespace LibHac
             }
 
             instanceToDispose?.Dispose();
+        }
+
+        /// <summary>
+        /// Represents the result of the TryAddReferenceImpl method.
+        /// </summary>
+        private enum CreateResult
+        {
+            Success,
+            Disposed,
+            NotCastable
         }
 
         /// <summary>
