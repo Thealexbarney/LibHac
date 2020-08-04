@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Buffers.Binary;
-using LibHac.Kvdb;
 
 namespace LibHac.Ncm
 {
-    public class ContentMetaKey : IComparable<ContentMetaKey>, IComparable, IEquatable<ContentMetaKey>, IExportable
+    public class ContentMetaKey : IComparable<ContentMetaKey>, IComparable, IEquatable<ContentMetaKey>
     {
         public ulong TitleId { get; private set; }
         public uint Version { get; private set; }
