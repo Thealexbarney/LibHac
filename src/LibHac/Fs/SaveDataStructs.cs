@@ -10,7 +10,7 @@ namespace LibHac.Fs
     {
         [FieldOffset(0x00)] public ProgramId ProgramId;
         [FieldOffset(0x08)] public UserId UserId;
-        [FieldOffset(0x18)] public ulong SaveDataId;
+        [FieldOffset(0x18)] public ulong StaticSaveDataId;
         [FieldOffset(0x20)] public SaveDataType Type;
         [FieldOffset(0x21)] public SaveDataRank Rank;
         [FieldOffset(0x22)] public short Index;
@@ -25,15 +25,18 @@ namespace LibHac.Fs
             return ProgramId == other.ProgramId &&
                    Type == other.Type &&
                    UserId.Equals(other.UserId) &&
-                   SaveDataId == other.SaveDataId &&
+                   StaticSaveDataId == other.StaticSaveDataId &&
                    Rank == other.Rank &&
                    Index == other.Index;
         }
 
+        public static bool operator ==(SaveDataAttribute left, SaveDataAttribute right) => left.Equals(right);
+        public static bool operator !=(SaveDataAttribute left, SaveDataAttribute right) => !(left == right);
+
         public override int GetHashCode()
         {
             // ReSharper disable NonReadonlyMemberInGetHashCode
-            return HashCode.Combine(ProgramId, Type, UserId, SaveDataId, Rank, Index);
+            return HashCode.Combine(ProgramId, Type, UserId, StaticSaveDataId, Rank, Index);
             // ReSharper restore NonReadonlyMemberInGetHashCode
         }
 
@@ -45,7 +48,7 @@ namespace LibHac.Fs
             if (typeComparison != 0) return typeComparison;
             int userIdComparison = UserId.CompareTo(other.UserId);
             if (userIdComparison != 0) return userIdComparison;
-            int saveDataIdComparison = SaveDataId.CompareTo(other.SaveDataId);
+            int saveDataIdComparison = StaticSaveDataId.CompareTo(other.StaticSaveDataId);
             if (saveDataIdComparison != 0) return saveDataIdComparison;
             int rankComparison = Rank.CompareTo(other.Rank);
             if (rankComparison != 0) return rankComparison;
@@ -143,7 +146,7 @@ namespace LibHac.Fs
         [FieldOffset(0x08)] public SaveDataSpaceId SpaceId;
         [FieldOffset(0x09)] public SaveDataType Type;
         [FieldOffset(0x10)] public UserId UserId;
-        [FieldOffset(0x20)] public ulong SaveDataIdFromKey;
+        [FieldOffset(0x20)] public ulong StaticSaveDataId;
         [FieldOffset(0x28)] public ProgramId ProgramId;
         [FieldOffset(0x30)] public long Size;
         [FieldOffset(0x38)] public short Index;

@@ -8,16 +8,16 @@ namespace LibHac.FsService
 {
     internal class SaveDataInfoFilterReader : ISaveDataInfoReader
     {
-        private ISaveDataInfoReader Reader { get; }
+        private ReferenceCountedDisposable<ISaveDataInfoReader> Reader { get; }
         private SaveDataFilterInternal Filter { get; }
 
-        public SaveDataInfoFilterReader(ISaveDataInfoReader reader, ref SaveDataFilterInternal filter)
+        public SaveDataInfoFilterReader(ReferenceCountedDisposable<ISaveDataInfoReader> reader, ref SaveDataFilterInternal filter)
         {
             Reader = reader;
             Filter = filter;
         }
 
-        public Result ReadSaveDataInfo(out long readCount, Span<byte> saveDataInfoBuffer)
+        public Result Read(out long readCount, Span<byte> saveDataInfoBuffer)
         {
             readCount = default;
 
@@ -26,11 +26,12 @@ namespace LibHac.FsService
             SaveDataInfo tempInfo = default;
             Span<byte> tempInfoBytes = SpanHelpers.AsByteSpan(ref tempInfo);
 
+            ISaveDataInfoReader reader = Reader.Target;
             int count = 0;
 
             while (count < outInfo.Length)
             {
-                Result rc = Reader.ReadSaveDataInfo(out long baseReadCount, tempInfoBytes);
+                Result rc = reader.Read(out long baseReadCount, tempInfoBytes);
                 if (rc.IsFailure()) return rc;
 
                 if (baseReadCount == 0) break;

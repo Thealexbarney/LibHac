@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Shim;
 using LibHac.Kvdb;
@@ -13,31 +14,85 @@ namespace LibHac.FsService
 {
     public class SaveDataIndexer : ISaveDataIndexer
     {
-        private const string LastIdFileName = "lastPublishedId";
-        private const long LastIdFileSize = 8;
+        private const int KvDatabaseCapacity = 0x1080;
+        private const int KvDatabaseReservedEntryCount = 0x80;
+
+        private const int SaveDataAvailableSize = 0xC0000;
+        private const int SaveDataJournalSize = 0xC0000;
+
+        private const long LastPublishedIdFileSize = sizeof(long);
+        private const int MaxPathLength = 0x30;
+
+        private static ReadOnlySpan<byte> LastPublishedIdFileName => // lastPublishedId
+            new[]
+            {
+                (byte) 'l', (byte) 'a', (byte) 's', (byte) 't', (byte) 'P', (byte) 'u', (byte) 'b', (byte) 'l',
+                (byte) 'i', (byte) 's', (byte) 'h', (byte) 'e', (byte) 'd', (byte) 'I', (byte) 'd'
+            };
+
+        private static ReadOnlySpan<byte> MountDelimiter => // :/
+            new[] { (byte)':', (byte)'/' };
+
+        private delegate void SaveDataValueTransform(ref SaveDataIndexerValue value, ReadOnlySpan<byte> updateData);
 
         private FileSystemClient FsClient { get; }
         private U8String MountName { get; }
         private ulong SaveDataId { get; }
         private SaveDataSpaceId SpaceId { get; }
-        private KeyValueDatabase<SaveDataAttribute> KvDatabase { get; set; }
+        private MemoryResource MemoryResource { get; }
+        private MemoryResource BufferMemoryResource { get; }
+
+        private FlatMapKeyValueStore<SaveDataAttribute> KvDatabase { get; }
+
         private object Locker { get; } = new object();
         private bool IsInitialized { get; set; }
         private bool IsKvdbLoaded { get; set; }
-        private ulong LastPublishedId { get; set; }
-        private int Version { get; set; }
-        private List<SaveDataInfoReader> OpenedReaders { get; } = new List<SaveDataInfoReader>();
+        private ulong _lastPublishedId;
+        private int Handle { get; set; }
 
-        public SaveDataIndexer(FileSystemClient fsClient, U8Span mountName, SaveDataSpaceId spaceId, ulong saveDataId)
+        private List<ReaderAccessor> OpenReaders { get; } = new List<ReaderAccessor>();
+
+        public SaveDataIndexer(FileSystemClient fsClient, U8Span mountName, SaveDataSpaceId spaceId, ulong saveDataId, MemoryResource memoryResource)
         {
             FsClient = fsClient;
-            MountName = mountName.ToU8String();
             SaveDataId = saveDataId;
             SpaceId = spaceId;
-            Version = 1;
+            MemoryResource = memoryResource;
+
+            // note: FS uses a separate PooledBufferMemoryResource here
+            BufferMemoryResource = memoryResource;
+
+            KvDatabase = new FlatMapKeyValueStore<SaveDataAttribute>();
+
+            IsInitialized = false;
+            IsKvdbLoaded = false;
+            Handle = 1;
+
+            MountName = mountName.ToU8String();
         }
 
-        public static void GetSaveDataInfo(out SaveDataInfo info, ref SaveDataAttribute key, ref SaveDataIndexerValue value)
+        private static void MakeLastPublishedIdSaveFilePath(Span<byte> buffer, ReadOnlySpan<byte> mountName)
+        {
+            // returns "%s:/%s", mountName, "lastPublishedId"
+            var sb = new U8StringBuilder(buffer);
+            sb.Append(mountName);
+            sb.Append(MountDelimiter);
+            sb.Append(LastPublishedIdFileName);
+
+            Debug.Assert(!sb.Overflowed);
+        }
+
+        private static void MakeRootPath(Span<byte> buffer, ReadOnlySpan<byte> mountName)
+        {
+            // returns "%s:/", mountName
+            var sb = new U8StringBuilder(buffer);
+            sb.Append(mountName);
+            sb.Append(MountDelimiter);
+
+            Debug.Assert(!sb.Overflowed);
+        }
+
+        public static void GenerateSaveDataInfo(out SaveDataInfo info, in SaveDataAttribute key, in SaveDataIndexerValue value)
         {
             info = new SaveDataInfo
             {
@@ -45,7 +100,7 @@ namespace LibHac.FsService
                 SpaceId = value.SpaceId,
                 Type = key.Type,
                 UserId = key.UserId,
-                SaveDataIdFromKey = key.SaveDataId,
+                StaticSaveDataId = key.StaticSaveDataId,
                 ProgramId = key.ProgramId,
                 Size = value.Size,
                 Index = key.Index,
@@ -58,47 +113,46 @@ namespace LibHac.FsService
         {
             lock (Locker)
             {
-                Result rc = Initialize();
+                Result rc = TryInitializeDatabase();
                 if (rc.IsFailure()) return rc;
 
-                rc = EnsureKvDatabaseLoaded(false);
+                rc = TryLoadDatabase(false);
                 if (rc.IsFailure()) return rc;
 
                 var mount = new Mounter();
 
                 try
                 {
-                    rc = mount.Initialize(FsClient, MountName, SpaceId, SaveDataId);
+                    rc = mount.Mount(FsClient, MountName, SpaceId, SaveDataId);
                     if (rc.IsFailure()) return rc;
 
-                    rc = KvDatabase.WriteDatabaseToFile();
+                    rc = KvDatabase.Save();
                     if (rc.IsFailure()) return rc;
 
-                    string idFilePath = $"{MountName}:/{LastIdFileName}";
+                    Span<byte> lastPublishedIdPath = stackalloc byte[MaxPathLength];
+                    MakeLastPublishedIdSaveFilePath(lastPublishedIdPath, MountName);
 
-                    rc = FsClient.OpenFile(out FileHandle handle, idFilePath.ToU8Span(), OpenMode.Write);
+                    rc = FsClient.OpenFile(out FileHandle handle, new U8Span(lastPublishedIdPath), OpenMode.Write);
                     if (rc.IsFailure()) return rc;
 
-                    bool fileAlreadyClosed = false;
+                    bool isFileClosed = false;
 
                     try
                     {
-                        ulong lastId = LastPublishedId;
-
-                        rc = FsClient.WriteFile(handle, 0, SpanHelpers.AsByteSpan(ref lastId), WriteOption.None);
+                        rc = FsClient.WriteFile(handle, 0, SpanHelpers.AsByteSpan(ref _lastPublishedId), WriteOption.None);
                         if (rc.IsFailure()) return rc;
 
                         rc = FsClient.FlushFile(handle);
                         if (rc.IsFailure()) return rc;
 
                         FsClient.CloseFile(handle);
-                        fileAlreadyClosed = true;
+                        isFileClosed = true;
 
                         return FsClient.Commit(MountName);
                     }
                     finally
                     {
-                        if (!fileAlreadyClosed)
+                        if (!isFileClosed)
                         {
                             FsClient.CloseFile(handle);
                         }
@@ -108,6 +162,21 @@ namespace LibHac.FsService
                 {
                     mount.Dispose();
                 }
+            }
+        }
+
+        public Result Rollback()
+        {
+            lock (Locker)
+            {
+                Result rc = TryInitializeDatabase();
+                if (rc.IsFailure()) return rc;
+
+                rc = TryLoadDatabase(forceLoad: true);
+                if (rc.IsFailure()) return rc;
+
+                UpdateHandle();
+                return Result.Success;
             }
         }
 
@@ -121,36 +190,37 @@ namespace LibHac.FsService
 
                 if (rc.IsSuccess() || ResultFs.TargetNotFound.Includes(rc))
                 {
-                    Version++;
+                    UpdateHandle();
                 }
 
                 return rc;
             }
         }
 
-        public Result Add(out ulong saveDataId, ref SaveDataAttribute key)
+        public Result Publish(out ulong saveDataId, ref SaveDataAttribute key)
         {
             saveDataId = default;
 
             lock (Locker)
             {
-                Result rc = Initialize();
+                Result rc = TryInitializeDatabase();
                 if (rc.IsFailure()) return rc;
 
-                rc = EnsureKvDatabaseLoaded(false);
+                rc = TryLoadDatabase(false);
                 if (rc.IsFailure()) return rc;
 
-                SaveDataIndexerValue value = default;
+                Unsafe.SkipInit(out SaveDataIndexerValue value);
 
-                rc = KvDatabase.Get(ref key, SpanHelpers.AsByteSpan(ref value));
+                // Make sure the key isn't in the database already.
+                rc = KvDatabase.Get(out _, ref key, SpanHelpers.AsByteSpan(ref value));
 
                 if (rc.IsSuccess())
                 {
                     return ResultFs.SaveDataPathAlreadyExists.Log();
                 }
 
-                LastPublishedId++;
-                ulong newSaveDataId = LastPublishedId;
+                _lastPublishedId++;
+                ulong newSaveDataId = _lastPublishedId;
 
                 value = new SaveDataIndexerValue { SaveDataId = newSaveDataId };
 
@@ -158,11 +228,11 @@ namespace LibHac.FsService
 
                 if (rc.IsFailure())
                 {
-                    LastPublishedId--;
+                    _lastPublishedId--;
                     return rc;
                 }
 
-                rc = AdjustOpenedInfoReaders(ref key);
+                rc = FixReader(ref key);
                 if (rc.IsFailure()) return rc;
 
                 saveDataId = newSaveDataId;
@@ -172,17 +242,17 @@ namespace LibHac.FsService
 
         public Result Get(out SaveDataIndexerValue value, ref SaveDataAttribute key)
         {
-            value = default;
+            Unsafe.SkipInit(out value);
 
             lock (Locker)
             {
-                Result rc = Initialize();
+                Result rc = TryInitializeDatabase();
                 if (rc.IsFailure()) return rc;
 
-                rc = EnsureKvDatabaseLoaded(false);
+                rc = TryLoadDatabase(false);
                 if (rc.IsFailure()) return rc;
 
-                rc = KvDatabase.Get(ref key, SpanHelpers.AsByteSpan(ref value));
+                rc = KvDatabase.Get(out _, ref key, SpanHelpers.AsByteSpan(ref value));
 
                 if (rc.IsFailure())
                 {
@@ -193,174 +263,224 @@ namespace LibHac.FsService
             }
         }
 
-        public Result AddSystemSaveData(ref SaveDataAttribute key)
+        public Result PutStaticSaveDataIdIndex(ref SaveDataAttribute key)
         {
             lock (Locker)
             {
-                Result rc = Initialize();
+                Result rc = TryInitializeDatabase();
                 if (rc.IsFailure()) return rc;
 
-                rc = EnsureKvDatabaseLoaded(false);
+                rc = TryLoadDatabase(false);
                 if (rc.IsFailure()) return rc;
 
-                foreach (KeyValuePair<SaveDataAttribute, byte[]> kvp in KvDatabase)
+                // Iterate through all existing values to check if the save ID is already in use.
+                FlatMapKeyValueStore<SaveDataAttribute>.Iterator iterator = KvDatabase.GetBeginIterator();
+                while (!iterator.IsEnd())
                 {
-                    ref SaveDataIndexerValue value = ref Unsafe.As<byte, SaveDataIndexerValue>(ref kvp.Value[0]);
-
-                    if (key.SaveDataId == value.SaveDataId)
+                    if (iterator.GetValue<SaveDataIndexerValue>().SaveDataId == key.StaticSaveDataId)
                     {
                         return ResultFs.SaveDataPathAlreadyExists.Log();
                     }
+
+                    iterator.Next();
                 }
 
                 var newValue = new SaveDataIndexerValue
                 {
-                    SaveDataId = key.SaveDataId
+                    SaveDataId = key.StaticSaveDataId
                 };
 
-                rc = KvDatabase.Set(ref key, SpanHelpers.AsByteSpan(ref newValue));
+                rc = KvDatabase.Set(ref key, SpanHelpers.AsReadOnlyByteSpan(in newValue));
                 if (rc.IsFailure()) return rc;
 
-                rc = AdjustOpenedInfoReaders(ref key);
+                rc = FixReader(ref key);
                 if (rc.IsFailure()) return rc;
 
-                return rc;
+                return Result.Success;
             }
         }
 
-        public bool IsFull()
+        public bool IsRemainedReservedOnly()
         {
-            return false;
+            return KvDatabase.Count >= KvDatabaseCapacity - KvDatabaseReservedEntryCount;
         }
 
         public Result Delete(ulong saveDataId)
         {
             lock (Locker)
             {
-                Result rc = Initialize();
+                Result rc = TryInitializeDatabase();
                 if (rc.IsFailure()) return rc;
 
-                rc = EnsureKvDatabaseLoaded(false);
+                rc = TryLoadDatabase(false);
                 if (rc.IsFailure()) return rc;
 
-                if (!TryGetBySaveDataIdInternal(out SaveDataAttribute key, out _, saveDataId))
+                FlatMapKeyValueStore<SaveDataAttribute>.Iterator iterator = KvDatabase.GetBeginIterator();
+
+                while (true)
                 {
-                    return ResultFs.TargetNotFound.Log();
+                    if (iterator.IsEnd())
+                        return ResultFs.TargetNotFound.Log();
+
+                    if (iterator.GetValue<SaveDataIndexerValue>().SaveDataId == saveDataId)
+                        break;
+
+                    iterator.Next();
                 }
+
+                SaveDataAttribute key = iterator.Get().Key;
 
                 rc = KvDatabase.Delete(ref key);
                 if (rc.IsFailure()) return rc;
 
-                return AdjustOpenedInfoReaders(ref key);
+                rc = FixReader(ref key);
+                if (rc.IsFailure()) return rc;
+
+                return Result.Success;
+            }
+        }
+
+        private Result UpdateValueBySaveDataId(ulong saveDataId, SaveDataValueTransform func, ReadOnlySpan<byte> data)
+        {
+            lock (Locker)
+            {
+                Result rc = TryInitializeDatabase();
+                if (rc.IsFailure()) return rc;
+
+                rc = TryLoadDatabase(false);
+                if (rc.IsFailure()) return rc;
+
+                SaveDataIndexerValue value;
+                FlatMapKeyValueStore<SaveDataAttribute>.Iterator iterator = KvDatabase.GetBeginIterator();
+
+                while (true)
+                {
+                    if (iterator.IsEnd())
+                        return ResultFs.TargetNotFound.Log();
+
+                    ref SaveDataIndexerValue val = ref iterator.GetValue<SaveDataIndexerValue>();
+
+                    if (val.SaveDataId == saveDataId)
+                    {
+                        value = val;
+                        break;
+                    }
+
+                    iterator.Next();
+                }
+
+                func(ref value, data);
+
+                rc = KvDatabase.Set(ref iterator.Get().Key, SpanHelpers.AsReadOnlyByteSpan(in value));
+                if (rc.IsFailure()) return rc;
+
+                return Result.Success;
             }
         }
 
         public Result SetSpaceId(ulong saveDataId, SaveDataSpaceId spaceId)
         {
-            lock (Locker)
+            return UpdateValueBySaveDataId(saveDataId, SetSpaceIdImpl, SpanHelpers.AsReadOnlyByteSpan(in spaceId));
+
+            static void SetSpaceIdImpl(ref SaveDataIndexerValue value, ReadOnlySpan<byte> updateData)
             {
-                Result rc = Initialize();
-                if (rc.IsFailure()) return rc;
-
-                rc = EnsureKvDatabaseLoaded(false);
-                if (rc.IsFailure()) return rc;
-
-                if (!TryGetBySaveDataIdInternal(out SaveDataAttribute key, out SaveDataIndexerValue value, saveDataId))
-                {
-                    return ResultFs.TargetNotFound.Log();
-                }
-
-                value.SpaceId = spaceId;
-
-                return KvDatabase.Set(ref key, SpanHelpers.AsByteSpan(ref value));
+                value.SpaceId = (SaveDataSpaceId)updateData[0];
             }
         }
 
         public Result SetSize(ulong saveDataId, long size)
         {
-            lock (Locker)
+            return UpdateValueBySaveDataId(saveDataId, SetSizeImpl, SpanHelpers.AsReadOnlyByteSpan(in size));
+
+            static void SetSizeImpl(ref SaveDataIndexerValue value, ReadOnlySpan<byte> updateData)
             {
-                Result rc = Initialize();
-                if (rc.IsFailure()) return rc;
-
-                rc = EnsureKvDatabaseLoaded(false);
-                if (rc.IsFailure()) return rc;
-
-                if (!TryGetBySaveDataIdInternal(out SaveDataAttribute key, out SaveDataIndexerValue value, saveDataId))
-                {
-                    return ResultFs.TargetNotFound.Log();
-                }
-
-                value.Size = size;
-
-                return KvDatabase.Set(ref key, SpanHelpers.AsByteSpan(ref value));
+                value.Size = BinaryPrimitives.ReadInt64LittleEndian(updateData);
             }
         }
 
         public Result SetState(ulong saveDataId, SaveDataState state)
         {
-            lock (Locker)
+            return UpdateValueBySaveDataId(saveDataId, SetSizeImpl, SpanHelpers.AsReadOnlyByteSpan(in state));
+
+            static void SetSizeImpl(ref SaveDataIndexerValue value, ReadOnlySpan<byte> updateData)
             {
-                Result rc = Initialize();
-                if (rc.IsFailure()) return rc;
-
-                rc = EnsureKvDatabaseLoaded(false);
-                if (rc.IsFailure()) return rc;
-
-                if (!TryGetBySaveDataIdInternal(out SaveDataAttribute key, out SaveDataIndexerValue value, saveDataId))
-                {
-                    return ResultFs.TargetNotFound.Log();
-                }
-
-                value.State = state;
-
-                return KvDatabase.Set(ref key, SpanHelpers.AsByteSpan(ref value));
+                value.State = (SaveDataState)updateData[0];
             }
         }
 
         public Result GetKey(out SaveDataAttribute key, ulong saveDataId)
         {
-            key = default;
+            Unsafe.SkipInit(out key);
 
-            lock (Locker)
+            Result rc = TryInitializeDatabase();
+            if (rc.IsFailure()) return rc;
+
+            rc = TryLoadDatabase(false);
+            if (rc.IsFailure()) return rc;
+
+            FlatMapKeyValueStore<SaveDataAttribute>.Iterator iterator = KvDatabase.GetBeginIterator();
+
+            while (!iterator.IsEnd())
             {
-                Result rc = Initialize();
-                if (rc.IsFailure()) return rc;
-
-                rc = EnsureKvDatabaseLoaded(false);
-                if (rc.IsFailure()) return rc;
-
-                if (TryGetBySaveDataIdInternal(out key, out _, saveDataId))
+                if (iterator.GetValue<SaveDataIndexerValue>().SaveDataId == saveDataId)
                 {
+                    key = iterator.Get().Key;
                     return Result.Success;
                 }
 
-                return ResultFs.TargetNotFound.Log();
+                iterator.Next();
             }
+
+            return ResultFs.TargetNotFound.Log();
         }
 
-        public Result GetBySaveDataId(out SaveDataIndexerValue value, ulong saveDataId)
+        public Result GetValue(out SaveDataIndexerValue value, ulong saveDataId)
         {
-            value = default;
+            Unsafe.SkipInit(out value);
 
-            lock (Locker)
+            Result rc = TryInitializeDatabase();
+            if (rc.IsFailure()) return rc;
+
+            rc = TryLoadDatabase(false);
+            if (rc.IsFailure()) return rc;
+
+            FlatMapKeyValueStore<SaveDataAttribute>.Iterator iterator = KvDatabase.GetBeginIterator();
+
+            while (!iterator.IsEnd())
             {
-                Result rc = Initialize();
-                if (rc.IsFailure()) return rc;
+                ref SaveDataIndexerValue val = ref iterator.GetValue<SaveDataIndexerValue>();
 
-                rc = EnsureKvDatabaseLoaded(false);
-                if (rc.IsFailure()) return rc;
-
-                if (TryGetBySaveDataIdInternal(out _, out value, saveDataId))
+                if (val.SaveDataId == saveDataId)
                 {
+                    value = val;
                     return Result.Success;
                 }
 
-                return ResultFs.TargetNotFound.Log();
+                iterator.Next();
             }
+
+            return ResultFs.TargetNotFound.Log();
         }
 
-        public int GetCount()
+        public Result SetValue(ref SaveDataAttribute key, ref SaveDataIndexerValue value)
+        {
+            Result rc = TryInitializeDatabase();
+            if (rc.IsFailure()) return rc;
+
+            rc = TryLoadDatabase(false);
+            if (rc.IsFailure()) return rc;
+
+            FlatMapKeyValueStore<SaveDataAttribute>.Iterator iterator = KvDatabase.GetLowerBoundIterator(ref key);
+
+            // Key was not found
+            if (iterator.IsEnd())
+                return ResultFs.TargetNotFound.Log();
+
+            iterator.GetValue<SaveDataIndexerValue>() = value;
+            return Result.Success;
+        }
+
+        public int GetIndexCount()
         {
             lock (Locker)
             {
@@ -368,48 +488,49 @@ namespace LibHac.FsService
             }
         }
 
-        public Result OpenSaveDataInfoReader(out ISaveDataInfoReader infoReader)
+        public Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader)
         {
             infoReader = default;
 
             lock (Locker)
             {
-                Result rc = Initialize();
+                Result rc = TryInitializeDatabase();
                 if (rc.IsFailure()) return rc;
 
-                rc = EnsureKvDatabaseLoaded(false);
+                rc = TryLoadDatabase(false);
                 if (rc.IsFailure()) return rc;
 
-                var reader = new SaveDataInfoReader(this);
-
-                OpenedReaders.Add(reader);
-
-                infoReader = reader;
-
-                return Result.Success;
-            }
-        }
-
-        private bool TryGetBySaveDataIdInternal(out SaveDataAttribute key, out SaveDataIndexerValue value, ulong saveDataId)
-        {
-            foreach (KeyValuePair<SaveDataAttribute, byte[]> kvp in KvDatabase)
-            {
-                ref SaveDataIndexerValue currentValue = ref Unsafe.As<byte, SaveDataIndexerValue>(ref kvp.Value[0]);
-
-                if (currentValue.SaveDataId == saveDataId)
+                // Create the reader and register it in the opened-reader list
+                using (var reader = new ReferenceCountedDisposable<Reader>(new Reader(this)))
                 {
-                    key = kvp.Key;
-                    value = currentValue;
-                    return true;
+                    rc = RegisterReader(reader);
+                    if (rc.IsFailure()) return rc;
+
+                    infoReader = reader.AddReference<ISaveDataInfoReader>();
+                    return Result.Success;
                 }
             }
-
-            key = default;
-            value = default;
-            return false;
         }
 
-        private Result Initialize()
+        private FlatMapKeyValueStore<SaveDataAttribute>.Iterator GetBeginIterator()
+        {
+            Assert.AssertTrue(IsKvdbLoaded);
+
+            return KvDatabase.GetBeginIterator();
+        }
+
+        private void FixIterator(ref FlatMapKeyValueStore<SaveDataAttribute>.Iterator iterator,
+            ref SaveDataAttribute key)
+        {
+            KvDatabase.FixIterator(ref iterator, ref key);
+        }
+
+        /// <summary>
+        /// Initializes <see cref="KvDatabase"/> and ensures that the indexer's save data is created.
+        /// Does nothing if this <see cref="SaveDataIndexer"/> has already been initialized.
+        /// </summary>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
+        private Result TryInitializeDatabase()
         {
             if (IsInitialized) return Result.Success;
 
@@ -417,20 +538,14 @@ namespace LibHac.FsService
 
             try
             {
-                Result rc = mount.Initialize(FsClient, MountName, SpaceId, SaveDataId);
+                Result rc = mount.Mount(FsClient, MountName, SpaceId, SaveDataId);
                 if (rc.IsFailure()) return rc;
 
-                string dbDirectory = $"{MountName}:/";
+                Span<byte> rootPath = stackalloc byte[MaxPathLength];
+                MakeRootPath(rootPath, MountName);
 
-                rc = FsClient.GetEntryType(out DirectoryEntryType entryType, dbDirectory.ToU8Span());
+                rc = KvDatabase.Initialize(FsClient, new U8Span(rootPath), KvDatabaseCapacity, MemoryResource, BufferMemoryResource);
                 if (rc.IsFailure()) return rc;
-
-                if (entryType == DirectoryEntryType.File)
-                    return ResultFs.PathNotFound.Log();
-
-                string dbArchiveFile = $"{dbDirectory}imkvdb.arc";
-
-                KvDatabase = new KeyValueDatabase<SaveDataAttribute>(FsClient, dbArchiveFile.ToU8Span());
 
                 IsInitialized = true;
                 return Result.Success;
@@ -441,10 +556,15 @@ namespace LibHac.FsService
             }
         }
 
-        private Result EnsureKvDatabaseLoaded(bool forceLoad)
+        /// <summary>
+        /// Ensures that the database file exists and loads any existing entries.
+        /// Does nothing if the database has already been loaded and <paramref name="forceLoad"/> is <see langword="true"/>.
+        /// </summary>
+        /// <param name="forceLoad">If <see langword="true"/>, forces the database to be reloaded,
+        /// even it it was already loaded previously.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
+        private Result TryLoadDatabase(bool forceLoad)
         {
-            Debug.Assert(KvDatabase != null);
-
             if (forceLoad)
             {
                 IsKvdbLoaded = false;
@@ -458,55 +578,63 @@ namespace LibHac.FsService
 
             try
             {
-                Result rc = mount.Initialize(FsClient, MountName, SpaceId, SaveDataId);
+                Result rc = mount.Mount(FsClient, MountName, SpaceId, SaveDataId);
                 if (rc.IsFailure()) return rc;
 
-                rc = KvDatabase.ReadDatabaseFromFile();
+                rc = KvDatabase.Load();
                 if (rc.IsFailure()) return rc;
 
                 bool createdNewFile = false;
-                var idFilePath = $"{MountName}:/{LastIdFileName}".ToU8String();
 
-                rc = FsClient.OpenFile(out FileHandle handle, idFilePath, OpenMode.Read);
-
-                if (rc.IsFailure())
-                {
-                    if (!ResultFs.PathNotFound.Includes(rc)) return rc;
-
-                    rc = FsClient.CreateFile(idFilePath, LastIdFileSize);
-                    if (rc.IsFailure()) return rc;
-
-                    rc = FsClient.OpenFile(out handle, idFilePath, OpenMode.Read);
-                    if (rc.IsFailure()) return rc;
-
-                    createdNewFile = true;
-
-                    LastPublishedId = 0;
-                    IsKvdbLoaded = true;
-                }
+                Span<byte> lastPublishedIdPath = stackalloc byte[MaxPathLength];
+                MakeLastPublishedIdSaveFilePath(lastPublishedIdPath, MountName);
 
                 try
                 {
-                    if (!createdNewFile)
-                    {
-                        ulong lastId = default;
+                    rc = FsClient.OpenFile(out FileHandle handle, new U8Span(lastPublishedIdPath), OpenMode.Read);
 
-                        rc = FsClient.ReadFile(handle, 0, SpanHelpers.AsByteSpan(ref lastId));
+                    // Create the last published ID file if it doesn't exist.
+                    if (rc.IsFailure())
+                    {
+                        if (!ResultFs.PathNotFound.Includes(rc)) return rc;
+
+                        rc = FsClient.CreateFile(new U8Span(lastPublishedIdPath), LastPublishedIdFileSize);
                         if (rc.IsFailure()) return rc;
 
-                        LastPublishedId = lastId;
+                        rc = FsClient.OpenFile(out handle, new U8Span(lastPublishedIdPath), OpenMode.Read);
+                        if (rc.IsFailure()) return rc;
+
+                        createdNewFile = true;
+
+                        _lastPublishedId = 0;
                         IsKvdbLoaded = true;
                     }
 
-                    return Result.Success;
+                    try
+                    {
+                        // If we had to create the file earlier, we don't need to load the value again.
+                        if (!createdNewFile)
+                        {
+                            rc = FsClient.ReadFile(handle, 0, SpanHelpers.AsByteSpan(ref _lastPublishedId));
+                            if (rc.IsFailure()) return rc;
+
+                            IsKvdbLoaded = true;
+                        }
+
+                        return Result.Success;
+                    }
+                    finally
+                    {
+                        FsClient.CloseFile(handle);
+                    }
                 }
                 finally
                 {
-                    FsClient.CloseFile(handle);
-
+                    // The save data needs to be committed if we created the last published ID file.
                     if (createdNewFile)
                     {
-                        FsClient.Commit(MountName);
+                        // Note: Nintendo does not check this return value, probably because it's in a scope-exit block.
+                        FsClient.Commit(MountName).IgnoreResult();
                     }
                 }
             }
@@ -516,56 +644,61 @@ namespace LibHac.FsService
             }
         }
 
-        private Result AdjustOpenedInfoReaders(ref SaveDataAttribute key)
+        private void UpdateHandle() => Handle++;
+
+        /// <summary>
+        /// Adds a <see cref="Reader"/> to the list of registered readers.
+        /// </summary>
+        /// <param name="reader">The reader to add.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
+        private Result RegisterReader(ReferenceCountedDisposable<Reader> reader)
         {
-            // If a new key is added or removed during iteration of the list,
-            // make sure the current item of the iterator remains the same
-
-            // Todo: A more efficient way of doing this
-            List<SaveDataAttribute> list = KvDatabase.ToList().Select(x => x.key).ToList();
-
-            int index = list.BinarySearch(key);
-
-            bool keyWasAdded = index >= 0;
-
-            if (!keyWasAdded)
-            {
-                // If the item was not found, List<T>.BinarySearch returns a negative number that
-                // is the bitwise complement of the index of the next element that is larger than the item
-                index = ~index;
-            }
-
-            foreach (SaveDataInfoReader reader in OpenedReaders)
-            {
-                if (keyWasAdded)
-                {
-                    // New key was inserted before the iterator's position
-                    // increment the position to compensate
-                    if (reader.Position >= index)
-                    {
-                        reader.Position++;
-                    }
-                }
-                else
-                {
-                    // The position should be decremented if the iterator's position is
-                    // after the key that came directly after the deleted key
-                    if (reader.Position > index)
-                    {
-                        reader.Position--;
-                    }
-                }
-            }
+            OpenReaders.Add(new ReaderAccessor(reader));
 
             return Result.Success;
         }
 
-        private void CloseReader(SaveDataInfoReader reader)
+        /// <summary>
+        /// Removes any <see cref="Reader"/>s that are no longer in use from the registered readers.
+        /// </summary>
+        private void UnregisterReader()
         {
-            // ReSharper disable once RedundantAssignment
-            bool wasRemoved = OpenedReaders.Remove(reader);
+            int i = 0;
+            List<ReaderAccessor> readers = OpenReaders;
 
-            Debug.Assert(wasRemoved);
+            while (i < readers.Count)
+            {
+                // Remove the reader if there are no references to it. There is no need to increment
+                // i in this case because the next reader in the list will be shifted to index i
+                if (readers[i].IsExpired())
+                {
+                    readers.RemoveAt(i);
+                }
+                else
+                {
+                    i++;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adjusts the position of any opened <see cref="Reader"/>s so that they still point to the
+        /// same element after the addition or removal of another element. If the reader was on the
+        /// element that was removed, it will now point to the element that was next in the list.
+        /// </summary>
+        /// <param name="key">The key of the element that was removed or added.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
+        private Result FixReader(ref SaveDataAttribute key)
+        {
+            foreach (ReaderAccessor accessor in OpenReaders)
+            {
+                using (ReferenceCountedDisposable<Reader> reader = accessor.Lock())
+                {
+                    reader?.Target.Fix(ref key);
+                }
+            }
+
+            return Result.Success;
         }
 
         private ref struct Mounter
@@ -574,7 +707,7 @@ namespace LibHac.FsService
             private U8String MountName { get; set; }
             private bool IsMounted { get; set; }
 
-            public Result Initialize(FileSystemClient fsClient, U8String mountName, SaveDataSpaceId spaceId,
+            public Result Mount(FileSystemClient fsClient, U8String mountName, SaveDataSpaceId spaceId,
                 ulong saveDataId)
             {
                 FsClient = fsClient;
@@ -588,7 +721,7 @@ namespace LibHac.FsService
                 {
                     if (ResultFs.TargetNotFound.Includes(rc))
                     {
-                        rc = FsClient.CreateSystemSaveData(spaceId, saveDataId, 0, 0xC0000, 0xC0000, 0);
+                        rc = FsClient.CreateSystemSaveData(spaceId, saveDataId, 0, SaveDataAvailableSize, SaveDataJournalSize, 0);
                         if (rc.IsFailure()) return rc;
 
                         rc = FsClient.MountSystemSaveData(MountName, spaceId, saveDataId);
@@ -626,61 +759,90 @@ namespace LibHac.FsService
             }
         }
 
-        private class SaveDataInfoReader : ISaveDataInfoReader
+        private class ReaderAccessor
         {
-            private SaveDataIndexer Indexer { get; }
-            private int Version { get; }
-            public int Position { get; set; }
+            private ReferenceCountedDisposable<Reader>.WeakReference _reader;
 
-            public SaveDataInfoReader(SaveDataIndexer indexer)
+            public ReaderAccessor(ReferenceCountedDisposable<Reader> reader)
             {
-                Indexer = indexer;
-                Version = indexer.Version;
+                _reader = new ReferenceCountedDisposable<Reader>.WeakReference(reader);
             }
 
-            public Result ReadSaveDataInfo(out long readCount, Span<byte> saveDataInfoBuffer)
+            public ReferenceCountedDisposable<Reader> Lock()
             {
-                readCount = default;
+                return _reader.TryAddReference();
+            }
 
-                lock (Indexer.Locker)
+            public bool IsExpired()
+            {
+                using (ReferenceCountedDisposable<Reader> reference = _reader.TryAddReference())
+                {
+                    return reference == null;
+                }
+            }
+        }
+
+        private class Reader : ISaveDataInfoReader
+        {
+            private readonly SaveDataIndexer _indexer;
+            private FlatMapKeyValueStore<SaveDataAttribute>.Iterator _iterator;
+            private readonly int _handle;
+
+            public Reader(SaveDataIndexer indexer)
+            {
+                _indexer = indexer;
+                _handle = indexer.Handle;
+
+                _iterator = indexer.GetBeginIterator();
+            }
+
+            public Result Read(out long readCount, Span<byte> saveDataInfoBuffer)
+            {
+                Unsafe.SkipInit(out readCount);
+
+                lock (_indexer.Locker)
                 {
                     // Indexer has been reloaded since this info reader was created
-                    if (Version != Indexer.Version)
+                    if (_handle != _indexer.Handle)
                     {
                         return ResultFs.InvalidSaveDataInfoReader.Log();
                     }
 
-                    // No more to iterate
-                    if (Position == Indexer.KvDatabase.Count)
-                    {
-                        readCount = 0;
-                        return Result.Success;
-                    }
-
                     Span<SaveDataInfo> outInfo = MemoryMarshal.Cast<byte, SaveDataInfo>(saveDataInfoBuffer);
 
-                    // Todo: A more efficient way of doing this
-                    List<(SaveDataAttribute key, byte[] value)> list = Indexer.KvDatabase.ToList();
-
                     int i;
-                    for (i = 0; i < outInfo.Length && Position < list.Count; i++, Position++)
+                    for (i = 0; !_iterator.IsEnd() && i < outInfo.Length; i++)
                     {
-                        SaveDataAttribute key = list[Position].key;
-                        ref SaveDataIndexerValue value = ref Unsafe.As<byte, SaveDataIndexerValue>(ref list[Position].value[0]);
+                        ref SaveDataAttribute key = ref _iterator.Get().Key;
+                        ref SaveDataIndexerValue value = ref _iterator.GetValue<SaveDataIndexerValue>();
 
-                        GetSaveDataInfo(out outInfo[i], ref key, ref value);
+                        GenerateSaveDataInfo(out outInfo[i], in key, in value);
+
+                        _iterator.Next();
                     }
 
                     readCount = i;
-
                     return Result.Success;
                 }
             }
 
+            public void Fix(ref SaveDataAttribute attribute)
+            {
+                _indexer.FixIterator(ref _iterator, ref attribute);
+            }
+
             public void Dispose()
             {
-                Indexer?.CloseReader(this);
+                lock (_indexer.Locker)
+                {
+                    _indexer.UnregisterReader();
+                }
             }
+        }
+
+        public void Dispose()
+        {
+            KvDatabase?.Dispose();
         }
     }
 }

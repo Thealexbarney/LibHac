@@ -1,5 +1,6 @@
 ﻿using System;
 using LibHac.Fs;
+using LibHac.Fs.Impl;
 using LibHac.Fs.Shim;
 using LibHac.FsService.Creators;
 
@@ -14,8 +15,6 @@ namespace LibHac.FsService
         /// <summary>The client instance to be used for internal operations like save indexer access.</summary>
         public FileSystemClient FsClient { get; }
         private ITimeSpanGenerator Timer { get; }
-
-        internal SaveDataIndexerManager SaveDataIndexerManager { get; }
 
         /// <summary>
         /// Creates a new <see cref="FileSystemServer"/>.
@@ -40,7 +39,8 @@ namespace LibHac.FsService
             if (FsClient.IsSdCardInserted())
                 FsClient.SetSdCardAccessibility(true);
 
-            SaveDataIndexerManager = new SaveDataIndexerManager(FsClient, SaveIndexerId);
+            FsProxyCore.SetSaveDataIndexerManager(new SaveDataIndexerManager(FsClient, SaveIndexerId,
+                new ArrayPoolMemoryResource(), new SdHandleManager(), false));
 
             fsProxy.CleanUpTemporaryStorage().IgnoreResult();
         }

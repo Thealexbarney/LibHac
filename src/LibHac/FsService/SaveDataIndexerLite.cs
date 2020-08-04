@@ -18,6 +18,11 @@ namespace LibHac.FsService
             return Result.Success;
         }
 
+        public Result Rollback()
+        {
+            return Result.Success;
+        }
+
         public Result Reset()
         {
             lock (Locker)
@@ -27,11 +32,11 @@ namespace LibHac.FsService
             }
         }
 
-        public Result Add(out ulong saveDataId, ref SaveDataAttribute key)
+        public Result Publish(out ulong saveDataId, ref SaveDataAttribute key)
         {
             lock (Locker)
             {
-                if (IsKeyValueSet && _key.Equals(key))
+                if (IsKeyValueSet && _key == key)
                 {
                     saveDataId = default;
                     return ResultFs.SaveDataPathAlreadyExists.Log();
@@ -52,7 +57,7 @@ namespace LibHac.FsService
         {
             lock (Locker)
             {
-                if (IsKeyValueSet && _key.Equals(key))
+                if (IsKeyValueSet && _key == key)
                 {
                     value = _value;
                     return Result.Success;
@@ -63,11 +68,11 @@ namespace LibHac.FsService
             }
         }
 
-        public Result AddSystemSaveData(ref SaveDataAttribute key)
+        public Result PutStaticSaveDataIdIndex(ref SaveDataAttribute key)
         {
             lock (Locker)
             {
-                if (IsKeyValueSet && _key.Equals(key))
+                if (IsKeyValueSet && _key == key)
                 {
                     return ResultFs.SaveDataPathAlreadyExists.Log();
                 }
@@ -81,7 +86,7 @@ namespace LibHac.FsService
             }
         }
 
-        public bool IsFull()
+        public bool IsRemainedReservedOnly()
         {
             return false;
         }
@@ -159,7 +164,7 @@ namespace LibHac.FsService
             }
         }
 
-        public Result GetBySaveDataId(out SaveDataIndexerValue value, ulong saveDataId)
+        public Result GetValue(out SaveDataIndexerValue value, ulong saveDataId)
         {
             lock (Locker)
             {
@@ -174,21 +179,39 @@ namespace LibHac.FsService
             }
         }
 
-        public int GetCount()
+        public Result SetValue(ref SaveDataAttribute key, ref SaveDataIndexerValue value)
+        {
+            lock (Locker)
+            {
+                if (IsKeyValueSet && _key == key)
+                {
+                    _value = value;
+                    return Result.Success;
+                }
+
+                return ResultFs.TargetNotFound.Log();
+            }
+        }
+
+        public int GetIndexCount()
         {
             return 1;
         }
 
-        public Result OpenSaveDataInfoReader(out ISaveDataInfoReader infoReader)
+        public Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader)
         {
+            SaveDataIndexerLiteInfoReader reader;
+
             if (IsKeyValueSet)
             {
-                infoReader = new SaveDataIndexerLiteInfoReader(ref _key, ref _value);
+                reader = new SaveDataIndexerLiteInfoReader(ref _key, ref _value);
             }
             else
             {
-                infoReader = new SaveDataIndexerLiteInfoReader();
+                reader = new SaveDataIndexerLiteInfoReader();
             }
+
+            infoReader = new ReferenceCountedDisposable<ISaveDataInfoReader>(reader);
 
             return Result.Success;
         }
@@ -205,14 +228,14 @@ namespace LibHac.FsService
 
             public SaveDataIndexerLiteInfoReader(ref SaveDataAttribute key, ref SaveDataIndexerValue value)
             {
-                SaveDataIndexer.GetSaveDataInfo(out _info, ref key, ref value);
+                SaveDataIndexer.GenerateSaveDataInfo(out _info, in key, in value);
             }
 
-            public Result ReadSaveDataInfo(out long readCount, Span<byte> saveDataInfoBuffer)
+            public Result Read(out long readCount, Span<byte> saveDataInfoBuffer)
             {
                 Span<SaveDataInfo> outInfo = MemoryMarshal.Cast<byte, SaveDataInfo>(saveDataInfoBuffer);
 
-                // Nintendo doesn't check if the buffer is too small here
+                // Note: Nintendo doesn't check if the buffer is too small here
                 if (_finishedIterating || outInfo.IsEmpty)
                 {
                     readCount = 0;
@@ -229,5 +252,7 @@ namespace LibHac.FsService
 
             public void Dispose() { }
         }
+
+        public void Dispose() { }
     }
 }

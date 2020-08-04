@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsService.Impl;
@@ -129,13 +130,11 @@ namespace LibHac.FsService
 
         private Result DeleteSaveDataFileSystemImpl(SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            SaveDataIndexerReader reader = default;
+            Result rc = OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, spaceId);
+            if (rc.IsFailure()) return rc;
 
-            try
+            using (accessor)
             {
-                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out reader, spaceId);
-                if (rc.IsFailure()) return rc;
-
                 if (saveDataId == FileSystemServer.SaveIndexerId)
                 {
                     // missing: This save can only be deleted by the FS process itself
@@ -144,13 +143,13 @@ namespace LibHac.FsService
                 {
                     if (spaceId != SaveDataSpaceId.ProperSystem && spaceId != SaveDataSpaceId.SafeMode)
                     {
-                        rc = reader.Indexer.GetBySaveDataId(out SaveDataIndexerValue value, saveDataId);
+                        rc = accessor.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
                         if (rc.IsFailure()) return rc;
 
                         spaceId = value.SpaceId;
                     }
 
-                    rc = reader.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
+                    rc = accessor.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
                     if (rc.IsFailure()) return rc;
 
                     if (key.Type == SaveDataType.System || key.Type == SaveDataType.SystemBcat)
@@ -162,10 +161,10 @@ namespace LibHac.FsService
                         // Check if permissions allow deleting save data
                     }
 
-                    rc = reader.Indexer.SetState(saveDataId, SaveDataState.Creating);
+                    rc = accessor.Indexer.SetState(saveDataId, SaveDataState.Creating);
                     if (rc.IsFailure()) return rc;
 
-                    rc = reader.Indexer.Commit();
+                    rc = accessor.Indexer.Commit();
                     if (rc.IsFailure()) return rc;
                 }
 
@@ -174,18 +173,14 @@ namespace LibHac.FsService
 
                 if (saveDataId != FileSystemServer.SaveIndexerId)
                 {
-                    rc = reader.Indexer.Delete(saveDataId);
+                    rc = accessor.Indexer.Delete(saveDataId);
                     if (rc.IsFailure()) return rc;
 
-                    rc = reader.Indexer.Commit();
+                    rc = accessor.Indexer.Commit();
                     if (rc.IsFailure()) return rc;
                 }
 
                 return Result.Success;
-            }
-            finally
-            {
-                reader.Dispose();
             }
         }
 
@@ -215,22 +210,17 @@ namespace LibHac.FsService
         {
             if (saveDataId != FileSystemServer.SaveIndexerId)
             {
-                SaveDataIndexerReader reader = default;
+                Result rc = OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, spaceId);
+                if (rc.IsFailure()) return rc;
 
-                try
+                using (accessor)
                 {
-                    Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out reader, spaceId);
-                    if (rc.IsFailure()) return rc;
 
-                    rc = reader.Indexer.GetBySaveDataId(out SaveDataIndexerValue value, saveDataId);
+                    rc = accessor.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
                     if (rc.IsFailure()) return rc;
 
                     if (value.SpaceId != GetSpaceIdForIndexer(spaceId))
                         return ResultFs.TargetNotFound.Log();
-                }
-                finally
-                {
-                    reader.Dispose();
                 }
             }
 
@@ -239,24 +229,18 @@ namespace LibHac.FsService
 
         private Result GetSaveDataInfo(out SaveDataInfo info, SaveDataSpaceId spaceId, ref SaveDataAttribute attribute)
         {
-            info = default;
+            Unsafe.SkipInit(out info);
 
-            SaveDataIndexerReader reader = default;
+            Result rc = OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, spaceId);
+            if (rc.IsFailure()) return rc;
 
-            try
+            using (accessor)
             {
-                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out reader, spaceId);
+                rc = accessor.Indexer.Get(out SaveDataIndexerValue value, ref attribute);
                 if (rc.IsFailure()) return rc;
 
-                rc = reader.Indexer.Get(out SaveDataIndexerValue value, ref attribute);
-                if (rc.IsFailure()) return rc;
-
-                SaveDataIndexer.GetSaveDataInfo(out info, ref attribute, ref value);
+                SaveDataIndexer.GenerateSaveDataInfo(out info, in attribute, in value);
                 return Result.Success;
-            }
-            finally
-            {
-                reader.Dispose();
             }
         }
 
@@ -280,11 +264,11 @@ namespace LibHac.FsService
             bool isDeleteNeeded = false;
             Result rc;
 
-            SaveDataIndexerReader reader = default;
+            SaveDataIndexerAccessor accessor = null;
 
             try
             {
-                if (attribute.SaveDataId == FileSystemServer.SaveIndexerId)
+                if (attribute.StaticSaveDataId == FileSystemServer.SaveIndexerId)
                 {
                     saveDataId = FileSystemServer.SaveIndexerId;
                     rc = FsProxyCore.DoesSaveDataExist(out bool saveExists, creationInfo.SpaceId, saveDataId);
@@ -298,29 +282,29 @@ namespace LibHac.FsService
                 }
                 else
                 {
-                    rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out reader, creationInfo.SpaceId);
+                    rc = OpenSaveDataIndexerAccessor(out accessor, creationInfo.SpaceId);
                     if (rc.IsFailure()) return rc;
 
                     SaveDataAttribute indexerKey = attribute;
 
-                    if (attribute.SaveDataId != 0 && attribute.UserId == UserId.Zero)
+                    if (attribute.StaticSaveDataId != 0 && attribute.UserId == UserId.Zero)
                     {
-                        saveDataId = attribute.SaveDataId;
+                        saveDataId = attribute.StaticSaveDataId;
 
-                        rc = reader.Indexer.AddSystemSaveData(ref indexerKey);
+                        rc = accessor.Indexer.PutStaticSaveDataIdIndex(ref indexerKey);
                     }
                     else
                     {
                         if (attribute.Type != SaveDataType.System &&
                             attribute.Type != SaveDataType.SystemBcat)
                         {
-                            if (reader.Indexer.IsFull())
+                            if (accessor.Indexer.IsRemainedReservedOnly())
                             {
                                 return ResultKvdb.OutOfKeyResource.Log();
                             }
                         }
 
-                        rc = reader.Indexer.Add(out saveDataId, ref indexerKey);
+                        rc = accessor.Indexer.Publish(out saveDataId, ref indexerKey);
                     }
 
                     if (ResultFs.SaveDataPathAlreadyExists.Includes(rc))
@@ -330,21 +314,21 @@ namespace LibHac.FsService
 
                     isDeleteNeeded = true;
 
-                    rc = reader.Indexer.SetState(saveDataId, SaveDataState.Creating);
+                    rc = accessor.Indexer.SetState(saveDataId, SaveDataState.Creating);
                     if (rc.IsFailure()) return rc;
 
                     SaveDataSpaceId indexerSpaceId = GetSpaceIdForIndexer(creationInfo.SpaceId);
 
-                    rc = reader.Indexer.SetSpaceId(saveDataId, indexerSpaceId);
+                    rc = accessor.Indexer.SetSpaceId(saveDataId, indexerSpaceId);
                     if (rc.IsFailure()) return rc;
 
                     // todo: calculate size
                     long size = 0;
 
-                    rc = reader.Indexer.SetSize(saveDataId, size);
+                    rc = accessor.Indexer.SetSize(saveDataId, size);
                     if (rc.IsFailure()) return rc;
 
-                    rc = reader.Indexer.Commit();
+                    rc = accessor.Indexer.Commit();
                     if (rc.IsFailure()) return rc;
                 }
 
@@ -386,17 +370,20 @@ namespace LibHac.FsService
                     }
                 }
 
-                if (attribute.SaveDataId == FileSystemServer.SaveIndexerId || something)
+                if (attribute.StaticSaveDataId == FileSystemServer.SaveIndexerId || something)
                 {
                     isDeleteNeeded = false;
 
                     return Result.Success;
                 }
 
-                rc = reader.Indexer.SetState(saveDataId, SaveDataState.Normal);
+                // accessor shouldn't ever be null, but checking makes the analyzers happy
+                Abort.DoAbortUnless(accessor != null);
+
+                rc = accessor.Indexer.SetState(saveDataId, SaveDataState.Normal);
                 if (rc.IsFailure()) return rc;
 
-                rc = reader.Indexer.Commit();
+                rc = accessor.Indexer.Commit();
                 if (rc.IsFailure()) return rc;
 
                 isDeleteNeeded = false;
@@ -410,19 +397,19 @@ namespace LibHac.FsService
                 {
                     DeleteSaveDataFileSystemImpl2(creationInfo.SpaceId, saveDataId).IgnoreResult();
 
-                    if (reader.IsInitialized && saveDataId != FileSystemServer.SaveIndexerId)
+                    if (accessor != null && saveDataId != FileSystemServer.SaveIndexerId)
                     {
-                        rc = reader.Indexer.GetBySaveDataId(out SaveDataIndexerValue value, saveDataId);
+                        rc = accessor.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
 
                         if (rc.IsSuccess() && value.SpaceId == creationInfo.SpaceId)
                         {
-                            reader.Indexer.Delete(saveDataId).IgnoreResult();
-                            reader.Indexer.Commit().IgnoreResult();
+                            accessor.Indexer.Delete(saveDataId).IgnoreResult();
+                            accessor.Indexer.Commit().IgnoreResult();
                         }
                     }
                 }
 
-                reader.Dispose();
+                accessor?.Dispose();
             }
         }
 
@@ -454,7 +441,7 @@ namespace LibHac.FsService
 
         public Result CreateSaveDataFileSystemBySystemSaveDataId(ref SaveDataAttribute attribute, ref SaveDataCreationInfo creationInfo)
         {
-            if (!IsSystemSaveDataId(attribute.SaveDataId))
+            if (!IsSystemSaveDataId(attribute.StaticSaveDataId))
                 return ResultFs.InvalidArgument.Log();
 
             SaveDataCreationInfo newCreationInfo = creationInfo;
@@ -490,21 +477,21 @@ namespace LibHac.FsService
             fileSystem = default;
             saveDataId = default;
 
-            bool hasFixedId = attribute.SaveDataId != 0 && attribute.UserId == UserId.Zero;
+            bool hasFixedId = attribute.StaticSaveDataId != 0 && attribute.UserId == UserId.Zero;
 
             if (hasFixedId)
             {
-                saveDataId = attribute.SaveDataId;
+                saveDataId = attribute.StaticSaveDataId;
             }
             else
             {
                 SaveDataAttribute indexerKey = attribute;
 
-                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out SaveDataIndexerReader tmpReader, spaceId);
-                using SaveDataIndexerReader reader = tmpReader;
+                Result rc = OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor tempAccessor, spaceId);
+                using SaveDataIndexerAccessor accessor = tempAccessor;
                 if (rc.IsFailure()) return rc;
 
-                rc = reader.Indexer.Get(out SaveDataIndexerValue indexerValue, ref indexerKey);
+                rc = accessor.Indexer.Get(out SaveDataIndexerValue indexerValue, ref indexerKey);
                 if (rc.IsFailure()) return rc;
 
                 SaveDataSpaceId indexerSpaceId = GetSpaceIdForIndexer(spaceId);
@@ -605,7 +592,7 @@ namespace LibHac.FsService
             // Missing permission check, speed emulation storage type wrapper, and FileSystemInterfaceAdapter
             fileSystem = default;
 
-            if (!IsSystemSaveDataId(attribute.SaveDataId)) return ResultFs.InvalidArgument.Log();
+            if (!IsSystemSaveDataId(attribute.StaticSaveDataId)) return ResultFs.InvalidArgument.Log();
 
             Result rc = OpenSaveDataFileSystemImpl(out IFileSystem saveFs, out _, spaceId,
                 ref attribute, false, true);
@@ -732,41 +719,34 @@ namespace LibHac.FsService
             return FsProxyCore.OpenDeviceOperator(out deviceOperator);
         }
 
-        public Result OpenSaveDataInfoReader(out ISaveDataInfoReader infoReader)
+        public Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader)
         {
             infoReader = default;
 
             // Missing permission check
 
-            SaveDataIndexerReader indexReader = default;
+            Result rc = OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, SaveDataSpaceId.System);
+            if (rc.IsFailure()) return rc;
 
-            try
+            using (accessor)
             {
-                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out indexReader, SaveDataSpaceId.System);
-                if (rc.IsFailure()) return rc;
-
-                return indexReader.Indexer.OpenSaveDataInfoReader(out infoReader);
-            }
-            finally
-            {
-                indexReader.Dispose();
+                return accessor.Indexer.OpenSaveDataInfoReader(out infoReader);
             }
         }
 
-        public Result OpenSaveDataInfoReaderBySaveDataSpaceId(out ISaveDataInfoReader infoReader, SaveDataSpaceId spaceId)
+        public Result OpenSaveDataInfoReaderBySaveDataSpaceId(out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader, SaveDataSpaceId spaceId)
         {
             infoReader = default;
 
             // Missing permission check
 
-            SaveDataIndexerReader indexReader = default;
+            Result rc = OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, spaceId);
+            if (rc.IsFailure()) return rc;
 
-            try
+            using (accessor)
             {
-                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out indexReader, spaceId);
-                if (rc.IsFailure()) return rc;
-
-                rc = indexReader.Indexer.OpenSaveDataInfoReader(out ISaveDataInfoReader baseInfoReader);
+                rc = accessor.Indexer.OpenSaveDataInfoReader(
+                    out ReferenceCountedDisposable<ISaveDataInfoReader> baseInfoReader);
                 if (rc.IsFailure()) return rc;
 
                 var filter = new SaveDataFilterInternal
@@ -775,42 +755,35 @@ namespace LibHac.FsService
                     SpaceId = GetSpaceIdForIndexer(spaceId)
                 };
 
-                infoReader = new SaveDataInfoFilterReader(baseInfoReader, ref filter);
+                var filterReader = new SaveDataInfoFilterReader(baseInfoReader, ref filter);
+                infoReader = new ReferenceCountedDisposable<ISaveDataInfoReader>(filterReader);
 
                 return Result.Success;
             }
-            finally
-            {
-                indexReader.Dispose();
-            }
         }
 
-        public Result OpenSaveDataInfoReaderWithFilter(out ISaveDataInfoReader infoReader, SaveDataSpaceId spaceId,
+        public Result OpenSaveDataInfoReaderWithFilter(out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader, SaveDataSpaceId spaceId,
             ref SaveDataFilter filter)
         {
             infoReader = default;
 
             // Missing permission check
 
-            SaveDataIndexerReader indexReader = default;
+            Result rc = OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, spaceId);
+            if (rc.IsFailure()) return rc;
 
-            try
+            using (accessor)
             {
-                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out indexReader, spaceId);
-                if (rc.IsFailure()) return rc;
-
-                rc = indexReader.Indexer.OpenSaveDataInfoReader(out ISaveDataInfoReader baseInfoReader);
+                rc = accessor.Indexer.OpenSaveDataInfoReader(
+                    out ReferenceCountedDisposable<ISaveDataInfoReader> baseInfoReader);
                 if (rc.IsFailure()) return rc;
 
                 var filterInternal = new SaveDataFilterInternal(ref filter, spaceId);
 
-                infoReader = new SaveDataInfoFilterReader(baseInfoReader, ref filterInternal);
+                var filterReader = new SaveDataInfoFilterReader(baseInfoReader, ref filterInternal);
+                infoReader = new ReferenceCountedDisposable<ISaveDataInfoReader>(filterReader);
 
                 return Result.Success;
-            }
-            finally
-            {
-                indexReader.Dispose();
             }
         }
 
@@ -839,23 +812,20 @@ namespace LibHac.FsService
             count = default;
             info = default;
 
-            SaveDataIndexerReader indexReader = default;
 
-            try
+            Result rc = OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, spaceId);
+            if (rc.IsFailure()) return rc;
+
+            using (accessor)
             {
-                Result rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out indexReader, spaceId);
+                rc = accessor.Indexer.OpenSaveDataInfoReader(
+                    out ReferenceCountedDisposable<ISaveDataInfoReader> baseInfoReader);
                 if (rc.IsFailure()) return rc;
 
-                rc = indexReader.Indexer.OpenSaveDataInfoReader(out ISaveDataInfoReader baseInfoReader);
-                if (rc.IsFailure()) return rc;
-
-                var infoReader = new SaveDataInfoFilterReader(baseInfoReader, ref filter);
-
-                return infoReader.ReadSaveDataInfo(out count, SpanHelpers.AsByteSpan(ref info));
-            }
-            finally
-            {
-                indexReader.Dispose();
+                using (var infoReader = new SaveDataInfoFilterReader(baseInfoReader, ref filter))
+                {
+                    return infoReader.Read(out count, SpanHelpers.AsByteSpan(ref info));
+                }
             }
         }
 
@@ -874,7 +844,7 @@ namespace LibHac.FsService
             throw new NotImplementedException();
         }
 
-        public Result OpenSaveDataInfoReaderOnlyCacheStorage(out ISaveDataInfoReader infoReader)
+        public Result OpenSaveDataInfoReaderOnlyCacheStorage(out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader)
         {
             throw new NotImplementedException();
         }
@@ -1053,8 +1023,6 @@ namespace LibHac.FsService
             Result rc = FsProxyCore.SetSdCardEncryptionSeed(ref seed);
             if (rc.IsFailure()) return rc;
 
-            FsServer.SaveDataIndexerManager.ResetSdCardIndexer();
-
             return Result.Success;
         }
 
@@ -1146,21 +1114,9 @@ namespace LibHac.FsService
             rc = saveDirFs.CleanDirectoryRecursively("/".ToU8Span());
             if (rc.IsFailure()) return rc;
 
-            SaveDataIndexerReader reader = default;
+            FsProxyCore.SaveDataIndexerManager.ResetTemporaryStorageIndexer(SaveDataSpaceId.Temporary);
 
-            try
-            {
-                rc = FsServer.SaveDataIndexerManager.GetSaveDataIndexer(out reader, SaveDataSpaceId.Temporary);
-                if (rc.IsFailure()) return rc;
-
-                reader.Indexer.Reset().IgnoreResult();
-
-                return Result.Success;
-            }
-            finally
-            {
-                reader.Dispose();
-            }
+            return Result.Success;
         }
 
         public Result SetSdCardAccessibility(bool isAccessible)
@@ -1189,7 +1145,7 @@ namespace LibHac.FsService
 
             SaveDataAttribute attribute = default;
             attribute.ProgramId = new ProgramId(MultiCommitManager.ProgramId);
-            attribute.SaveDataId = MultiCommitManager.SaveDataId;
+            attribute.StaticSaveDataId = MultiCommitManager.SaveDataId;
 
             Result rc = OpenSaveDataFileSystemImpl(out IFileSystem saveFs, out _, SaveDataSpaceId.System, ref attribute,
                 false, true);
@@ -1197,6 +1153,35 @@ namespace LibHac.FsService
 
             fileSystem = saveFs;
             return Result.Success;
+        }
+
+        // todo: split the FileSystemProxy classes
+        // nn::fssrv::SaveDataFileSystemService::GetSaveDataIndexerAccessor
+        private Result OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, SaveDataSpaceId spaceId)
+        {
+            accessor = default;
+
+            Result rc = FsProxyCore.OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessorTemp,
+                out bool neededInit, spaceId);
+            if (rc.IsFailure()) return rc;
+
+            try
+            {
+                if (neededInit)
+                {
+                    // todo: nn::fssrv::SaveDataFileSystemService::CleanUpSaveDataCore
+                    // nn::fssrv::SaveDataFileSystemService::CompleteSaveDataExtensionCore
+                }
+
+                accessor = accessorTemp;
+                accessorTemp = null;
+
+                return Result.Success;
+            }
+            finally
+            {
+                accessorTemp?.Dispose();
+            }
         }
 
         private static bool IsSystemSaveDataId(ulong id)

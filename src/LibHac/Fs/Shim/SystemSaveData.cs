@@ -21,7 +21,7 @@ namespace LibHac.Fs.Shim
 
             SaveDataAttribute attribute = default;
             attribute.UserId = userId;
-            attribute.SaveDataId = saveDataId;
+            attribute.StaticSaveDataId = saveDataId;
 
             rc = fsProxy.OpenSaveDataFileSystemBySystemSaveDataId(out IFileSystem fileSystem, spaceId, ref attribute);
             if (rc.IsFailure()) return rc;
