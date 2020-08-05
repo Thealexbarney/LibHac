@@ -63,7 +63,7 @@ namespace LibHac.Tests.Kvdb
             {
                 for (TTest i = 0; i < count; i++)
                 {
-                    Result rc = kvStore.Set(ref i, values[i]);
+                    Result rc = kvStore.Set(in i, values[i]);
                     if (rc.IsFailure()) return rc;
                 }
             }
@@ -74,7 +74,7 @@ namespace LibHac.Tests.Kvdb
                 for (int i = 0; i < count; i++)
                 {
                     TTest index = rng.Next();
-                    Result rc = kvStore.Set(ref index, values[index]);
+                    Result rc = kvStore.Set(in index, values[index]);
                     if (rc.IsFailure()) return rc;
                 }
             }
@@ -191,7 +191,7 @@ namespace LibHac.Tests.Kvdb
             TTest key = 20;
             var value = new byte[20];
 
-            Result rc = kvStore.Get(out int _, ref key, value);
+            Result rc = kvStore.Get(out int _, in key, value);
             Assert.Result(ResultKvdb.KeyNotFound, rc);
         }
 
@@ -210,7 +210,7 @@ namespace LibHac.Tests.Kvdb
 
             for (TTest i = 0; i < count; i++)
             {
-                Assert.Success(kvStore.Get(out int valueSize, ref i, value));
+                Assert.Success(kvStore.Get(out int valueSize, in i, value));
                 Assert.Equal(startingValueSize + i, valueSize);
             }
         }
@@ -231,7 +231,7 @@ namespace LibHac.Tests.Kvdb
             for (int i = 0; i < count; i++)
             {
                 TTest key = i;
-                Assert.Success(kvStore.Get(out int _, ref key, value));
+                Assert.Success(kvStore.Get(out int _, in key, value));
                 Assert.Equal(values[i], value.AsSpan(0, startingValueSize + i).ToArray());
             }
         }
@@ -246,7 +246,7 @@ namespace LibHac.Tests.Kvdb
             Assert.Success(PopulateKvStore(kvStore, out byte[][] values, count));
 
             TTest key = count;
-            Result rc = kvStore.Set(ref key, values[0]);
+            Result rc = kvStore.Set(in key, values[0]);
 
             Assert.Result(ResultKvdb.OutOfKeyResource, rc);
         }
@@ -266,11 +266,11 @@ namespace LibHac.Tests.Kvdb
             var value = new byte[15];
             value.AsSpan().Fill(0xFF);
 
-            Assert.Success(kvStore.Set(ref key, value));
+            Assert.Success(kvStore.Set(in key, value));
 
             // Read back the value
             var readValue = new byte[20];
-            Assert.Success(kvStore.Get(out int valueSize, ref key, readValue));
+            Assert.Success(kvStore.Get(out int valueSize, in key, readValue));
 
             // Check the value contents and size
             Assert.Equal(value.Length, valueSize);
@@ -314,7 +314,7 @@ namespace LibHac.Tests.Kvdb
 
             (FlatMapKeyValueStore<TTest> kvStore, FileSystemClient _) = Create<TTest>(count);
 
-            Result rc = kvStore.Delete(ref keyToDelete);
+            Result rc = kvStore.Delete(in keyToDelete);
             Assert.Result(ResultKvdb.KeyNotFound, rc);
         }
 
@@ -327,7 +327,7 @@ namespace LibHac.Tests.Kvdb
             (FlatMapKeyValueStore<TTest> kvStore, FileSystemClient _) = Create<TTest>(count);
             Assert.Success(PopulateKvStore(kvStore, out _, count));
 
-            Result rc = kvStore.Delete(ref keyToDelete);
+            Result rc = kvStore.Delete(in keyToDelete);
             Assert.Result(ResultKvdb.KeyNotFound, rc);
         }
 
@@ -345,11 +345,11 @@ namespace LibHac.Tests.Kvdb
             Assert.Success(PopulateKvStore(kvStore, out _, count, startingValueSize, rngSeed));
 
             TTest keyToDelete = entryToDelete;
-            Assert.Success(kvStore.Delete(ref keyToDelete));
+            Assert.Success(kvStore.Delete(in keyToDelete));
 
             var value = new byte[20];
 
-            Result rc = kvStore.Get(out int _, ref keyToDelete, value);
+            Result rc = kvStore.Get(out int _, in keyToDelete, value);
             Assert.Result(ResultKvdb.KeyNotFound, rc);
         }
 
@@ -365,7 +365,7 @@ namespace LibHac.Tests.Kvdb
             Assert.Success(PopulateKvStore(kvStore, out _, count));
 
             TTest keyToDelete = entryToDelete;
-            Assert.Success(kvStore.Delete(ref keyToDelete));
+            Assert.Success(kvStore.Delete(in keyToDelete));
 
             Assert.Equal(count - 1, kvStore.Count);
         }
@@ -382,7 +382,7 @@ namespace LibHac.Tests.Kvdb
             Assert.Success(PopulateKvStore(kvStore, out _, count));
 
             TTest keyToDelete = entryToDelete;
-            Assert.Success(kvStore.Delete(ref keyToDelete));
+            Assert.Success(kvStore.Delete(in keyToDelete));
 
             FlatMapKeyValueStore<TTest>.Iterator iterator = kvStore.GetBeginIterator();
 
@@ -414,7 +414,7 @@ namespace LibHac.Tests.Kvdb
             Assert.Success(PopulateKvStore(kvStore, out _, count));
 
             TTest startingKey = startEntry;
-            FlatMapKeyValueStore<TTest>.Iterator iterator = kvStore.GetLowerBoundIterator(ref startingKey);
+            FlatMapKeyValueStore<TTest>.Iterator iterator = kvStore.GetLowerBoundIterator(in startingKey);
 
             Assert.False(iterator.IsEnd());
             Assert.Equal(startingKey, iterator.Get().Key);
@@ -436,12 +436,12 @@ namespace LibHac.Tests.Kvdb
             for (int i = 0; i < count; i++)
             {
                 TTest key = i * 2;
-                Assert.Success(kvStore.Set(ref key, values[i]));
+                Assert.Success(kvStore.Set(in key, values[i]));
             }
 
             TTest startingKey = startIndex;
             TTest nextLargestKey = startIndex + 1;
-            FlatMapKeyValueStore<TTest>.Iterator iterator = kvStore.GetLowerBoundIterator(ref startingKey);
+            FlatMapKeyValueStore<TTest>.Iterator iterator = kvStore.GetLowerBoundIterator(in startingKey);
 
             Assert.False(iterator.IsEnd());
             Assert.Equal(nextLargestKey, iterator.Get().Key);
@@ -457,7 +457,7 @@ namespace LibHac.Tests.Kvdb
             Assert.Success(PopulateKvStore(kvStore, out _, count));
 
             TTest key = startIndex;
-            FlatMapKeyValueStore<TTest>.Iterator iterator = kvStore.GetLowerBoundIterator(ref key);
+            FlatMapKeyValueStore<TTest>.Iterator iterator = kvStore.GetLowerBoundIterator(in key);
 
             Assert.True(iterator.IsEnd());
         }
@@ -481,9 +481,9 @@ namespace LibHac.Tests.Kvdb
             }
 
             TTest keyToRemove = entryToRemove;
-            Assert.Success(kvStore.Delete(ref keyToRemove));
+            Assert.Success(kvStore.Delete(in keyToRemove));
 
-            kvStore.FixIterator(ref iterator, ref keyToRemove);
+            kvStore.FixIterator(ref iterator, in keyToRemove);
 
             TTest expectedKey = expectedNewPosition;
             Assert.Equal(expectedKey, iterator.Get().Key);
@@ -504,7 +504,7 @@ namespace LibHac.Tests.Kvdb
             for (int i = 0; i < count; i++)
             {
                 TTest key = i * 2;
-                Assert.Success(kvStore.Set(ref key, values[i]));
+                Assert.Success(kvStore.Set(in key, values[i]));
             }
 
             FlatMapKeyValueStore<TTest>.Iterator iterator = kvStore.GetBeginIterator();
@@ -517,9 +517,9 @@ namespace LibHac.Tests.Kvdb
             TTest keyToAdd = entryToAdd;
             var valueToAdd = new byte[10];
 
-            Assert.Success(kvStore.Set(ref keyToAdd, valueToAdd));
+            Assert.Success(kvStore.Set(in keyToAdd, valueToAdd));
 
-            kvStore.FixIterator(ref iterator, ref keyToAdd);
+            kvStore.FixIterator(ref iterator, in keyToAdd);
 
             TTest expectedKey = expectedNewPosition;
             Assert.Equal(expectedKey, iterator.Get().Key);

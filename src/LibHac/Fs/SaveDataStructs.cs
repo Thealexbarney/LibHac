@@ -15,12 +15,31 @@ namespace LibHac.Fs
         [FieldOffset(0x21)] public SaveDataRank Rank;
         [FieldOffset(0x22)] public short Index;
 
-        public override bool Equals(object obj)
+        public SaveDataAttribute(ProgramId programId, SaveDataType type, UserId userId, ulong saveDataId) : this(
+            programId, type, userId, saveDataId, 0, SaveDataRank.Primary)
+        { }
+
+        public SaveDataAttribute(ProgramId programId, SaveDataType type, UserId userId, ulong saveDataId,
+            short index) : this(programId, type, userId, saveDataId, index, SaveDataRank.Primary)
+        { }
+
+        public SaveDataAttribute(ProgramId programId, SaveDataType type, UserId userId, ulong saveDataId, short index,
+            SaveDataRank rank)
+        {
+            ProgramId = programId;
+            Type = type;
+            UserId = userId;
+            StaticSaveDataId = saveDataId;
+            Index = index;
+            Rank = rank;
+        }
+
+        public override readonly bool Equals(object obj)
         {
             return obj is SaveDataAttribute attribute && Equals(attribute);
         }
 
-        public bool Equals(SaveDataAttribute other)
+        public readonly bool Equals(SaveDataAttribute other)
         {
             return ProgramId == other.ProgramId &&
                    Type == other.Type &&
@@ -33,24 +52,24 @@ namespace LibHac.Fs
         public static bool operator ==(SaveDataAttribute left, SaveDataAttribute right) => left.Equals(right);
         public static bool operator !=(SaveDataAttribute left, SaveDataAttribute right) => !(left == right);
 
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             // ReSharper disable NonReadonlyMemberInGetHashCode
             return HashCode.Combine(ProgramId, Type, UserId, StaticSaveDataId, Rank, Index);
             // ReSharper restore NonReadonlyMemberInGetHashCode
         }
 
-        public int CompareTo(SaveDataAttribute other)
+        public readonly int CompareTo(SaveDataAttribute other)
         {
             int titleIdComparison = ProgramId.CompareTo(other.ProgramId);
             if (titleIdComparison != 0) return titleIdComparison;
-            int typeComparison = Type.CompareTo(other.Type);
+            int typeComparison = ((int)Type).CompareTo((int)other.Type);
             if (typeComparison != 0) return typeComparison;
             int userIdComparison = UserId.CompareTo(other.UserId);
             if (userIdComparison != 0) return userIdComparison;
             int saveDataIdComparison = StaticSaveDataId.CompareTo(other.StaticSaveDataId);
             if (saveDataIdComparison != 0) return saveDataIdComparison;
-            int rankComparison = Rank.CompareTo(other.Rank);
+            int rankComparison = ((int)Rank).CompareTo((int)other.Rank);
             if (rankComparison != 0) return rankComparison;
             return Index.CompareTo(other.Index);
         }

@@ -197,7 +197,7 @@ namespace LibHac.FsService
             }
         }
 
-        public Result Publish(out ulong saveDataId, ref SaveDataAttribute key)
+        public Result Publish(out ulong saveDataId, in SaveDataAttribute key)
         {
             saveDataId = default;
 
@@ -212,7 +212,7 @@ namespace LibHac.FsService
                 Unsafe.SkipInit(out SaveDataIndexerValue value);
 
                 // Make sure the key isn't in the database already.
-                rc = KvDatabase.Get(out _, ref key, SpanHelpers.AsByteSpan(ref value));
+                rc = KvDatabase.Get(out _, in key, SpanHelpers.AsByteSpan(ref value));
 
                 if (rc.IsSuccess())
                 {
@@ -224,7 +224,7 @@ namespace LibHac.FsService
 
                 value = new SaveDataIndexerValue { SaveDataId = newSaveDataId };
 
-                rc = KvDatabase.Set(ref key, SpanHelpers.AsByteSpan(ref value));
+                rc = KvDatabase.Set(in key, SpanHelpers.AsByteSpan(ref value));
 
                 if (rc.IsFailure())
                 {
@@ -232,7 +232,7 @@ namespace LibHac.FsService
                     return rc;
                 }
 
-                rc = FixReader(ref key);
+                rc = FixReader(in key);
                 if (rc.IsFailure()) return rc;
 
                 saveDataId = newSaveDataId;
@@ -240,7 +240,7 @@ namespace LibHac.FsService
             }
         }
 
-        public Result Get(out SaveDataIndexerValue value, ref SaveDataAttribute key)
+        public Result Get(out SaveDataIndexerValue value, in SaveDataAttribute key)
         {
             Unsafe.SkipInit(out value);
 
@@ -252,7 +252,7 @@ namespace LibHac.FsService
                 rc = TryLoadDatabase(false);
                 if (rc.IsFailure()) return rc;
 
-                rc = KvDatabase.Get(out _, ref key, SpanHelpers.AsByteSpan(ref value));
+                rc = KvDatabase.Get(out _, in key, SpanHelpers.AsByteSpan(ref value));
 
                 if (rc.IsFailure())
                 {
@@ -263,7 +263,7 @@ namespace LibHac.FsService
             }
         }
 
-        public Result PutStaticSaveDataIdIndex(ref SaveDataAttribute key)
+        public Result PutStaticSaveDataIdIndex(in SaveDataAttribute key)
         {
             lock (Locker)
             {
@@ -290,10 +290,10 @@ namespace LibHac.FsService
                     SaveDataId = key.StaticSaveDataId
                 };
 
-                rc = KvDatabase.Set(ref key, SpanHelpers.AsReadOnlyByteSpan(in newValue));
+                rc = KvDatabase.Set(in key, SpanHelpers.AsReadOnlyByteSpan(in newValue));
                 if (rc.IsFailure()) return rc;
 
-                rc = FixReader(ref key);
+                rc = FixReader(in key);
                 if (rc.IsFailure()) return rc;
 
                 return Result.Success;
@@ -330,10 +330,10 @@ namespace LibHac.FsService
 
                 SaveDataAttribute key = iterator.Get().Key;
 
-                rc = KvDatabase.Delete(ref key);
+                rc = KvDatabase.Delete(in key);
                 if (rc.IsFailure()) return rc;
 
-                rc = FixReader(ref key);
+                rc = FixReader(in key);
                 if (rc.IsFailure()) return rc;
 
                 return Result.Success;
@@ -371,7 +371,7 @@ namespace LibHac.FsService
 
                 func(ref value, data);
 
-                rc = KvDatabase.Set(ref iterator.Get().Key, SpanHelpers.AsReadOnlyByteSpan(in value));
+                rc = KvDatabase.Set(in iterator.Get().Key, SpanHelpers.AsReadOnlyByteSpan(in value));
                 if (rc.IsFailure()) return rc;
 
                 return Result.Success;
@@ -462,7 +462,7 @@ namespace LibHac.FsService
             return ResultFs.TargetNotFound.Log();
         }
 
-        public Result SetValue(ref SaveDataAttribute key, ref SaveDataIndexerValue value)
+        public Result SetValue(in SaveDataAttribute key, in SaveDataIndexerValue value)
         {
             Result rc = TryInitializeDatabase();
             if (rc.IsFailure()) return rc;
@@ -470,7 +470,7 @@ namespace LibHac.FsService
             rc = TryLoadDatabase(false);
             if (rc.IsFailure()) return rc;
 
-            FlatMapKeyValueStore<SaveDataAttribute>.Iterator iterator = KvDatabase.GetLowerBoundIterator(ref key);
+            FlatMapKeyValueStore<SaveDataAttribute>.Iterator iterator = KvDatabase.GetLowerBoundIterator(in key);
 
             // Key was not found
             if (iterator.IsEnd())
@@ -520,9 +520,9 @@ namespace LibHac.FsService
         }
 
         private void FixIterator(ref FlatMapKeyValueStore<SaveDataAttribute>.Iterator iterator,
-            ref SaveDataAttribute key)
+            in SaveDataAttribute key)
         {
-            KvDatabase.FixIterator(ref iterator, ref key);
+            KvDatabase.FixIterator(ref iterator, in key);
         }
 
         /// <summary>
@@ -688,13 +688,13 @@ namespace LibHac.FsService
         /// </summary>
         /// <param name="key">The key of the element that was removed or added.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        private Result FixReader(ref SaveDataAttribute key)
+        private Result FixReader(in SaveDataAttribute key)
         {
             foreach (ReaderAccessor accessor in OpenReaders)
             {
                 using (ReferenceCountedDisposable<Reader> reader = accessor.Lock())
                 {
-                    reader?.Target.Fix(ref key);
+                    reader?.Target.Fix(in key);
                 }
             }
 
@@ -826,9 +826,9 @@ namespace LibHac.FsService
                 }
             }
 
-            public void Fix(ref SaveDataAttribute attribute)
+            public void Fix(in SaveDataAttribute attribute)
             {
-                _indexer.FixIterator(ref _iterator, ref attribute);
+                _indexer.FixIterator(ref _iterator, in attribute);
             }
 
             public void Dispose()

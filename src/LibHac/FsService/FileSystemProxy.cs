@@ -227,7 +227,7 @@ namespace LibHac.FsService
             return DeleteSaveDataFileSystemImpl(spaceId, saveDataId);
         }
 
-        private Result GetSaveDataInfo(out SaveDataInfo info, SaveDataSpaceId spaceId, ref SaveDataAttribute attribute)
+        private Result GetSaveDataInfo(out SaveDataInfo info, SaveDataSpaceId spaceId, in SaveDataAttribute attribute)
         {
             Unsafe.SkipInit(out info);
 
@@ -236,7 +236,7 @@ namespace LibHac.FsService
 
             using (accessor)
             {
-                rc = accessor.Indexer.Get(out SaveDataIndexerValue value, ref attribute);
+                rc = accessor.Indexer.Get(out SaveDataIndexerValue value, in attribute);
                 if (rc.IsFailure()) return rc;
 
                 SaveDataIndexer.GenerateSaveDataInfo(out info, in attribute, in value);
@@ -246,7 +246,7 @@ namespace LibHac.FsService
 
         public Result DeleteSaveDataFileSystemBySaveDataAttribute(SaveDataSpaceId spaceId, ref SaveDataAttribute attribute)
         {
-            Result rs = GetSaveDataInfo(out SaveDataInfo info, spaceId, ref attribute);
+            Result rs = GetSaveDataInfo(out SaveDataInfo info, spaceId, in attribute);
             if (rs.IsFailure()) return rs;
 
             return DeleteSaveDataFileSystemBySaveDataSpaceIdImpl(spaceId, info.SaveDataId);
@@ -291,7 +291,7 @@ namespace LibHac.FsService
                     {
                         saveDataId = attribute.StaticSaveDataId;
 
-                        rc = accessor.Indexer.PutStaticSaveDataIdIndex(ref indexerKey);
+                        rc = accessor.Indexer.PutStaticSaveDataIdIndex(in indexerKey);
                     }
                     else
                     {
@@ -304,7 +304,7 @@ namespace LibHac.FsService
                             }
                         }
 
-                        rc = accessor.Indexer.Publish(out saveDataId, ref indexerKey);
+                        rc = accessor.Indexer.Publish(out saveDataId, in indexerKey);
                     }
 
                     if (ResultFs.SaveDataPathAlreadyExists.Includes(rc))
@@ -491,7 +491,7 @@ namespace LibHac.FsService
                 using SaveDataIndexerAccessor accessor = tempAccessor;
                 if (rc.IsFailure()) return rc;
 
-                rc = accessor.Indexer.Get(out SaveDataIndexerValue indexerValue, ref indexerKey);
+                rc = accessor.Indexer.Get(out SaveDataIndexerValue indexerValue, in indexerKey);
                 if (rc.IsFailure()) return rc;
 
                 SaveDataSpaceId indexerSpaceId = GetSpaceIdForIndexer(spaceId);
@@ -1143,9 +1143,8 @@ namespace LibHac.FsService
         {
             fileSystem = default;
 
-            SaveDataAttribute attribute = default;
-            attribute.ProgramId = new ProgramId(MultiCommitManager.ProgramId);
-            attribute.StaticSaveDataId = MultiCommitManager.SaveDataId;
+            var attribute = new SaveDataAttribute(new ProgramId(MultiCommitManager.ProgramId), SaveDataType.System,
+                UserId.Zero, MultiCommitManager.SaveDataId);
 
             Result rc = OpenSaveDataFileSystemImpl(out IFileSystem saveFs, out _, SaveDataSpaceId.System, ref attribute,
                 false, true);
