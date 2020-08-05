@@ -32,7 +32,7 @@ namespace LibHac.FsService
             }
         }
 
-        public Result Publish(out ulong saveDataId, ref SaveDataAttribute key)
+        public Result Publish(out ulong saveDataId, in SaveDataAttribute key)
         {
             lock (Locker)
             {
@@ -53,7 +53,7 @@ namespace LibHac.FsService
             }
         }
 
-        public Result Get(out SaveDataIndexerValue value, ref SaveDataAttribute key)
+        public Result Get(out SaveDataIndexerValue value, in SaveDataAttribute key)
         {
             lock (Locker)
             {
@@ -68,7 +68,7 @@ namespace LibHac.FsService
             }
         }
 
-        public Result PutStaticSaveDataIdIndex(ref SaveDataAttribute key)
+        public Result PutStaticSaveDataIdIndex(in SaveDataAttribute key)
         {
             lock (Locker)
             {
@@ -179,7 +179,7 @@ namespace LibHac.FsService
             }
         }
 
-        public Result SetValue(ref SaveDataAttribute key, ref SaveDataIndexerValue value)
+        public Result SetValue(in SaveDataAttribute key, in SaveDataIndexerValue value)
         {
             lock (Locker)
             {
@@ -235,7 +235,7 @@ namespace LibHac.FsService
             {
                 Span<SaveDataInfo> outInfo = MemoryMarshal.Cast<byte, SaveDataInfo>(saveDataInfoBuffer);
 
-                // Note: Nintendo doesn't check if the buffer is too small here
+                // Note: Nintendo doesn't check if the buffer is large enough here
                 if (_finishedIterating || outInfo.IsEmpty)
                 {
                     readCount = 0;

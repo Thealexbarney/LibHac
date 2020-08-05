@@ -43,9 +43,7 @@ namespace LibHac.Fs.Shim
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            SaveDataAttribute attribute = default;
-            attribute.ProgramId = applicationId;
-            attribute.Type = SaveDataType.Bcat;
+            var attribute = new SaveDataAttribute(applicationId, SaveDataType.Bcat, UserId.Zero, 0);
 
             rc = fsProxy.OpenSaveDataFileSystem(out IFileSystem fileSystem, SaveDataSpaceId.User, ref attribute);
             if (rc.IsFailure()) return rc;

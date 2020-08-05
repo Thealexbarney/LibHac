@@ -191,11 +191,7 @@ namespace LibHac.Fs.Shim
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            SaveDataAttribute attribute = default;
-            attribute.ProgramId = programId;
-            attribute.UserId = userId;
-            attribute.Type = type;
-            attribute.Index = index;
+            var attribute = new SaveDataAttribute(programId, type, userId, 0, index);
 
             IFileSystem saveFs;
 

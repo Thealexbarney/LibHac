@@ -17,12 +17,7 @@ namespace LibHac.Fs.Shim
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                    var attribute = new SaveDataAttribute
-                    {
-                        ProgramId = applicationId,
-                        UserId = userId,
-                        Type = SaveDataType.Account
-                    };
+                    var attribute = new SaveDataAttribute(applicationId, SaveDataType.Account, userId, 0);
 
                     var createInfo = new SaveDataCreationInfo
                     {
@@ -54,12 +49,7 @@ namespace LibHac.Fs.Shim
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                    var attribute = new SaveDataAttribute
-                    {
-                        ProgramId = applicationId,
-                        UserId = userId,
-                        Type = SaveDataType.Account
-                    };
+                    var attribute = new SaveDataAttribute(applicationId, SaveDataType.Account, userId, 0);
 
                     var createInfo = new SaveDataCreationInfo
                     {
@@ -91,11 +81,7 @@ namespace LibHac.Fs.Shim
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                    var attribute = new SaveDataAttribute
-                    {
-                        ProgramId = applicationId,
-                        Type = SaveDataType.Bcat
-                    };
+                    var attribute = new SaveDataAttribute(applicationId, SaveDataType.Bcat, UserId.Zero, 0);
 
                     var createInfo = new SaveDataCreationInfo
                     {
@@ -122,11 +108,7 @@ namespace LibHac.Fs.Shim
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                    var attribute = new SaveDataAttribute
-                    {
-                        ProgramId = applicationId,
-                        Type = SaveDataType.Device
-                    };
+                    var attribute = new SaveDataAttribute(applicationId, SaveDataType.Device, UserId.Zero, 0);
 
                     var createInfo = new SaveDataCreationInfo
                     {
@@ -152,11 +134,7 @@ namespace LibHac.Fs.Shim
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                    var attribute = new SaveDataAttribute
-                    {
-                        ProgramId = applicationId,
-                        Type = SaveDataType.Temporary
-                    };
+                    var attribute = new SaveDataAttribute(applicationId, SaveDataType.Temporary, UserId.Zero, 0);
 
                     var createInfo = new SaveDataCreationInfo
                     {
@@ -182,12 +160,7 @@ namespace LibHac.Fs.Shim
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                    var attribute = new SaveDataAttribute
-                    {
-                        ProgramId = applicationId,
-                        Type = SaveDataType.Cache,
-                        Index = index
-                    };
+                    var attribute = new SaveDataAttribute(applicationId, SaveDataType.Cache, UserId.Zero, 0, index);
 
                     var creationInfo = new SaveDataCreationInfo
                     {
@@ -226,11 +199,7 @@ namespace LibHac.Fs.Shim
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                    var attribute = new SaveDataAttribute
-                    {
-                        UserId = userId,
-                        StaticSaveDataId = saveDataId
-                    };
+                    var attribute = new SaveDataAttribute(ProgramId.InvalidId, SaveDataType.System, userId, saveDataId);
 
                     var createInfo = new SaveDataCreationInfo
                     {

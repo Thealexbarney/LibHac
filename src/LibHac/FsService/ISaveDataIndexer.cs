@@ -8,9 +8,9 @@ namespace LibHac.FsService
         Result Commit();
         Result Rollback();
         Result Reset();
-        Result Publish(out ulong saveDataId, ref SaveDataAttribute key);
-        Result Get(out SaveDataIndexerValue value, ref SaveDataAttribute key);
-        Result PutStaticSaveDataIdIndex(ref SaveDataAttribute key);
+        Result Publish(out ulong saveDataId, in SaveDataAttribute key);
+        Result Get(out SaveDataIndexerValue value, in SaveDataAttribute key);
+        Result PutStaticSaveDataIdIndex(in SaveDataAttribute key);
         bool IsRemainedReservedOnly();
         Result Delete(ulong saveDataId);
         Result SetSpaceId(ulong saveDataId, SaveDataSpaceId spaceId);
@@ -18,7 +18,7 @@ namespace LibHac.FsService
         Result SetState(ulong saveDataId, SaveDataState state);
         Result GetKey(out SaveDataAttribute key, ulong saveDataId);
         Result GetValue(out SaveDataIndexerValue value, ulong saveDataId);
-        Result SetValue(ref SaveDataAttribute key, ref SaveDataIndexerValue value);
+        Result SetValue(in SaveDataAttribute key, in SaveDataIndexerValue value);
         int GetIndexCount();
         Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader);
     }

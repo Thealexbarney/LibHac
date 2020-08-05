@@ -154,12 +154,12 @@ namespace LibHac.Kvdb
         /// <remarks>Possible <see cref="Result"/>s:<br/>
         /// <see cref="ResultKvdb.KeyNotFound"/>
         /// The specified key was not found in the <see cref="FlatMapKeyValueStore{T}"/>.</remarks>
-        public Result Get(out int valueSize, ref TKey key, Span<byte> valueBuffer)
+        public Result Get(out int valueSize, in TKey key, Span<byte> valueBuffer)
         {
             Unsafe.SkipInit(out valueSize);
 
             // Find entry.
-            ConstIterator iterator = _index.GetLowerBoundConstIterator(ref key);
+            ConstIterator iterator = _index.GetLowerBoundConstIterator(in key);
             if (iterator.IsEnd())
                 return ResultKvdb.KeyNotFound.Log();
 
@@ -182,9 +182,9 @@ namespace LibHac.Kvdb
         /// <param name="key">The key to add.</param>
         /// <param name="value">The value to add.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        public Result Set(ref TKey key, ReadOnlySpan<byte> value)
+        public Result Set(in TKey key, ReadOnlySpan<byte> value)
         {
-            return _index.Set(ref key, value);
+            return _index.Set(in key, value);
         }
 
         /// <summary>
@@ -195,9 +195,9 @@ namespace LibHac.Kvdb
         /// <remarks>Possible <see cref="Result"/>s:<br/>
         /// <see cref="ResultKvdb.KeyNotFound"/>
         /// The specified key was not found in the <see cref="FlatMapKeyValueStore{T}"/>.</remarks>
-        public Result Delete(ref TKey key)
+        public Result Delete(in TKey key)
         {
-            if (!_index.Delete(ref key))
+            if (!_index.Delete(in key))
                 return ResultKvdb.KeyNotFound.Log();
 
             return Result.Success;
@@ -218,9 +218,9 @@ namespace LibHac.Kvdb
         /// </summary>
         /// <param name="key">The key at which to begin iteration.</param>
         /// <returns>The created iterator.</returns>
-        public Iterator GetLowerBoundIterator(ref TKey key)
+        public Iterator GetLowerBoundIterator(in TKey key)
         {
-            return _index.GetLowerBoundIterator(ref key);
+            return _index.GetLowerBoundIterator(in key);
         }
 
         /// <summary>
@@ -229,9 +229,9 @@ namespace LibHac.Kvdb
         /// </summary>
         /// <param name="iterator">The iterator to fix.</param>
         /// <param name="key">The key that was added or removed.</param>
-        public void FixIterator(ref Iterator iterator, ref TKey key)
+        public void FixIterator(ref Iterator iterator, in TKey key)
         {
-            _index.FixIterator(ref iterator, ref key);
+            _index.FixIterator(ref iterator, in key);
         }
 
         /// <summary>
@@ -296,7 +296,7 @@ namespace LibHac.Kvdb
                     rc = reader.ReadKeyValue(SpanHelpers.AsByteSpan(ref key), newValue.Get());
                     if (rc.IsFailure()) return rc;
 
-                    rc = _index.AppendUnsafe(ref key, newValue);
+                    rc = _index.AppendUnsafe(in key, newValue);
                     if (rc.IsFailure()) return rc;
 
                     success = true;
@@ -377,7 +377,7 @@ namespace LibHac.Kvdb
             public TKey Key;
             public MemoryResource.Buffer Value;
 
-            public KeyValue(ref TKey key, MemoryResource.Buffer value)
+            public KeyValue(in TKey key, MemoryResource.Buffer value)
             {
                 Key = key;
                 Value = value;
@@ -437,10 +437,10 @@ namespace LibHac.Kvdb
             /// <param name="key">The key to add.</param>
             /// <param name="value">The value to add.</param>
             /// <returns>The <see cref="Result"/> of the operation.</returns>
-            public Result Set(ref TKey key, ReadOnlySpan<byte> value)
+            public Result Set(in TKey key, ReadOnlySpan<byte> value)
             {
                 // The list is sorted by key. Find the index to insert at.
-                int index = GetLowerBoundIndex(ref key);
+                int index = GetLowerBoundIndex(in key);
 
                 if (index != _count && _entries[index].Key.Equals(key))
                 {
@@ -465,7 +465,7 @@ namespace LibHac.Kvdb
                 value.CopyTo(newValue.Get());
 
                 // Add the new entry to the list.
-                _entries[index] = new KeyValue(ref key, newValue);
+                _entries[index] = new KeyValue(in key, newValue);
 
                 return Result.Success;
             }
@@ -478,7 +478,7 @@ namespace LibHac.Kvdb
             /// <param name="key">The key to add.</param>
             /// <param name="value">The value to add.</param>
             /// <returns>The <see cref="Result"/> of the operation.</returns>
-            public Result AppendUnsafe(ref TKey key, MemoryResource.Buffer value)
+            public Result AppendUnsafe(in TKey key, MemoryResource.Buffer value)
             {
                 if (_count >= _capacity)
                     return ResultKvdb.OutOfKeyResource.Log();
@@ -489,7 +489,7 @@ namespace LibHac.Kvdb
                     Assert.AssertTrue(key.CompareTo(_entries[_count - 1].Key) > 0);
                 }
 
-                _entries[_count] = new KeyValue(ref key, value);
+                _entries[_count] = new KeyValue(in key, value);
                 _count++;
 
                 return Result.Success;
@@ -516,9 +516,9 @@ namespace LibHac.Kvdb
             /// <param name="key">The key of the element to delete.</param>
             /// <returns><see langword="true"/> if the item was found and deleted.
             /// <see langword="false"/> if the key was not in the store.</returns>
-            public bool Delete(ref TKey key)
+            public bool Delete(in TKey key)
             {
-                int index = GetLowerBoundIndex(ref key);
+                int index = GetLowerBoundIndex(in key);
 
                 // Make sure the key was found.
                 if (index == _count || !_entries[index].Key.Equals(key))
@@ -558,9 +558,9 @@ namespace LibHac.Kvdb
             /// </summary>
             /// <param name="key">The key at which to begin iteration.</param>
             /// <returns>The created iterator.</returns>
-            public Iterator GetLowerBoundIterator(ref TKey key)
+            public Iterator GetLowerBoundIterator(in TKey key)
             {
-                int index = GetLowerBoundIndex(ref key);
+                int index = GetLowerBoundIndex(in key);
 
                 return new Iterator(_entries, index, _count);
             }
@@ -570,9 +570,9 @@ namespace LibHac.Kvdb
             /// </summary>
             /// <param name="key">The key at which to begin iteration.</param>
             /// <returns>The created iterator.</returns>
-            public ConstIterator GetLowerBoundConstIterator(ref TKey key)
+            public ConstIterator GetLowerBoundConstIterator(in TKey key)
             {
-                int index = GetLowerBoundIndex(ref key);
+                int index = GetLowerBoundIndex(in key);
 
                 return new ConstIterator(_entries, index, _count);
             }
@@ -583,31 +583,33 @@ namespace LibHac.Kvdb
             /// </summary>
             /// <param name="iterator">The iterator to fix.</param>
             /// <param name="key">The key that was added or removed.</param>
-            public void FixIterator(ref Iterator iterator, ref TKey key)
+            public void FixIterator(ref Iterator iterator, in TKey key)
             {
-                int keyIndex = GetLowerBoundIndex(ref key);
+                int keyIndex = GetLowerBoundIndex(in key);
                 iterator.Fix(keyIndex, _count);
             }
 
-            private int GetLowerBoundIndex(ref TKey key)
+            private int GetLowerBoundIndex(in TKey key)
             {
                 // The AsSpan takes care of any bounds checking
                 ReadOnlySpan<KeyValue> entries = _entries.AsSpan(0, _count);
 
-                return BinarySearch(ref MemoryMarshal.GetReference(entries), entries.Length, ref key);
+                return BinarySearch(ref MemoryMarshal.GetReference(entries), entries.Length, in key);
             }
 
-            private static int BinarySearch(ref KeyValue spanStart, int length, ref TKey item)
+            private static int BinarySearch(ref KeyValue spanStart, int length, in TKey item)
             {
                 // A tweaked version of .NET's SpanHelpers.BinarySearch
                 int lo = 0;
                 int hi = length - 1;
 
+                TKey tempItem = item;
+
                 while (lo <= hi)
                 {
                     int i = (int)(((uint)hi + (uint)lo) >> 1);
 
-                    int c = item.CompareTo(Unsafe.Add(ref spanStart, i).Key);
+                    int c = tempItem.CompareTo(Unsafe.Add(ref spanStart, i).Key);
                     if (c == 0)
                     {
                         return i;

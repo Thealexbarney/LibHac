@@ -1,6 +1,7 @@
 ﻿using LibHac.Common;
 using LibHac.Fs.Fsa;
 using LibHac.FsService;
+using LibHac.Ncm;
 
 namespace LibHac.Fs.Shim
 {
@@ -19,9 +20,7 @@ namespace LibHac.Fs.Shim
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            SaveDataAttribute attribute = default;
-            attribute.UserId = userId;
-            attribute.StaticSaveDataId = saveDataId;
+            var attribute = new SaveDataAttribute(ProgramId.InvalidId, SaveDataType.System, userId, saveDataId);
 
             rc = fsProxy.OpenSaveDataFileSystemBySystemSaveDataId(out IFileSystem fileSystem, spaceId, ref attribute);
             if (rc.IsFailure()) return rc;
