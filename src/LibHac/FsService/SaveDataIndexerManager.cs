@@ -7,6 +7,11 @@ using LibHac.FsService.Storage;
 
 namespace LibHac.FsService
 {
+    /// <summary>
+    /// Initializes and holds <see cref="ISaveDataIndexer"/>s for each save data space.
+    /// Creates accessors for individual SaveDataIndexers.
+    /// </summary>
+    /// <remarks>Based on FS 10.0.0 (nnSdk 10.4.0)</remarks>
     internal class SaveDataIndexerManager : ISaveDataIndexerManager
     {
         private FileSystemClient FsClient { get; }
@@ -37,6 +42,18 @@ namespace LibHac.FsService
             _tempIndexer.Indexer = new SaveDataIndexerLite();
         }
 
+        /// <summary>
+        /// Opens a <see cref="SaveDataIndexerAccessor"/> for the specified save data space.
+        /// </summary>
+        /// <remarks>
+        /// The returned <see cref="SaveDataIndexerAccessor"/> will have exclusive access to the requested indexer.
+        /// The accessor must be disposed after use.
+        /// </remarks>
+        /// <param name="accessor">If the method returns successfully, contains the created accessor.</param>
+        /// <param name="neededInit">If the method returns successfully, contains <see langword="true"/>
+        /// if the indexer needed to be initialized.</param>
+        /// <param name="spaceId">The <see cref="SaveDataSpaceId"/> of the indexer to open.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
         public Result OpenAccessor(out SaveDataIndexerAccessor accessor, out bool neededInit, SaveDataSpaceId spaceId)
         {
             neededInit = false;
@@ -200,6 +217,11 @@ namespace LibHac.FsService
             };
     }
 
+    /// <summary>
+    /// Gives exclusive access to an <see cref="ISaveDataIndexer"/>.
+    /// Releases the lock to the <see cref="ISaveDataIndexer"/> upon disposal.
+    /// </summary>
+    /// <remarks>Based on FS 10.0.0 (nnSdk 10.4.0)</remarks>
     public class SaveDataIndexerAccessor : IDisposable
     {
         public ISaveDataIndexer Indexer { get; }

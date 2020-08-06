@@ -4,6 +4,15 @@ using LibHac.Fs;
 
 namespace LibHac.FsService
 {
+    /// <summary>
+    /// Indexes metadata for temporary save data, holding a key-value pair of types
+    /// <see cref="SaveDataAttribute"/> and <see cref="SaveDataIndexerValue"/> respectively. 
+    /// </summary>
+    /// <remarks>
+    /// Only one temporary save data may exist at a time. When a new
+    /// save data is added to the index, the existing key-value pair is replaced.<br/>
+    /// Based on FS 10.0.0 (nnSdk 10.4.0)
+    /// </remarks>
     public class SaveDataIndexerLite : ISaveDataIndexer
     {
         private object Locker { get; } = new object();
