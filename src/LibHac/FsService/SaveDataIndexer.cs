@@ -12,6 +12,16 @@ using LibHac.Kvdb;
 
 namespace LibHac.FsService
 {
+    /// <summary>
+    /// Indexes metadata for persistent save data stored on disk, holding key-value pairs of types
+    /// <see cref="SaveDataAttribute"/> and <see cref="SaveDataIndexerValue"/> respectively.
+    /// </summary>
+    /// <remarks>
+    /// Each <see cref="SaveDataIndexer"/> manages one to two save data spaces.
+    /// Each save data space is identified by a <see cref="SaveDataSpaceId"/>,
+    /// and has its own unique storage location on disk.<br/>
+    /// Based on FS 10.0.0 (nnSdk 10.4.0)
+    /// </remarks>
     public class SaveDataIndexer : ISaveDataIndexer
     {
         private const int KvDatabaseCapacity = 0x1080;
@@ -92,6 +102,12 @@ namespace LibHac.FsService
             Debug.Assert(!sb.Overflowed);
         }
 
+        /// <summary>
+        /// Generates a <see cref="SaveDataInfo"/> from the provided <see cref="SaveDataAttribute"/> and <see cref="SaveDataIndexerValue"/>.
+        /// </summary>
+        /// <param name="info">When this method returns, contains the generated <see cref="SaveDataInfo"/>.</param>
+        /// <param name="key">The key used to generate the <see cref="SaveDataInfo"/>.</param>
+        /// <param name="value">The value used to generate the <see cref="SaveDataInfo"/>.</param>
         public static void GenerateSaveDataInfo(out SaveDataInfo info, in SaveDataAttribute key, in SaveDataIndexerValue value)
         {
             info = new SaveDataInfo
@@ -701,6 +717,10 @@ namespace LibHac.FsService
             return Result.Success;
         }
 
+        /// <summary>
+        /// Mounts the storage for a <see cref="SaveDataIndexer"/>, and unmounts the storage
+        /// when the <see cref="Mounter"/> is disposed;
+        /// </summary>
         private ref struct Mounter
         {
             private FileSystemClient FsClient { get; set; }
