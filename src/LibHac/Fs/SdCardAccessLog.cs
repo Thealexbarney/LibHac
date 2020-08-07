@@ -1,5 +1,5 @@
 ﻿using System;
-using LibHac.FsService;
+using LibHac.FsSrv;
 
 namespace LibHac.Fs
 {

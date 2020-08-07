@@ -1,6 +1,6 @@
 ﻿using LibHac.Fs;
 using LibHac.Fs.Fsa;
-using LibHac.FsService;
+using LibHac.FsSrv;
 
 namespace LibHac.Tests.Fs.FileSystemClientTests
 {

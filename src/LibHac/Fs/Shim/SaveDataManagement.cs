@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Diag;
-using LibHac.FsService;
+using LibHac.FsSrv;
 using LibHac.Ncm;
 
 namespace LibHac.Fs.Shim
