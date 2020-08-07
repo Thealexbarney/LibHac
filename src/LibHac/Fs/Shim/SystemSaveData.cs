@@ -1,6 +1,6 @@
 ﻿using LibHac.Common;
 using LibHac.Fs.Fsa;
-using LibHac.FsService;
+using LibHac.FsSrv;
 using LibHac.Ncm;
 
 namespace LibHac.Fs.Shim

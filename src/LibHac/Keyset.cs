@@ -5,7 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using LibHac.Fs;
-using LibHac.FsService;
+using LibHac.FsSrv;
 using LibHac.Spl;
 using Aes = LibHac.Crypto.Aes;
 

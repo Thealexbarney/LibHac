@@ -1,5 +1,5 @@
-﻿using LibHac.FsService;
-using LibHac.FsService.Storage;
+﻿using LibHac.FsSrv;
+using LibHac.FsSrv.Storage;
 
 namespace LibHac.Fs.Impl
 {

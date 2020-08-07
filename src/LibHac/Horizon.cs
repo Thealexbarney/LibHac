@@ -1,7 +1,7 @@
 ﻿using LibHac.Common;
 using LibHac.Fs;
-using LibHac.FsService;
-using LibHac.FsService.Creators;
+using LibHac.FsSrv;
+using LibHac.FsSrv.Creators;
 using LibHac.Sm;
 
 namespace LibHac

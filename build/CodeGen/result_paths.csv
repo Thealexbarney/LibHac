@@ -4,6 +4,6 @@ Loader,LibHac.Loader,LibHac/Loader/ResultLoader.cs
 Sf,LibHac.Sf,LibHac/Sf/ResultSf.cs
 Kvdb,LibHac.Kvdb,LibHac/Kvdb/ResultKvdb.cs
 Sm,LibHac.Sm,LibHac/Sm/ResultSm.cs
-Sdmmc,LibHac.FsService,LibHac/FsService/ResultSdmmc.cs
+Sdmmc,LibHac.FsSrv,LibHac/FsSrv/ResultSdmmc.cs
 Bcat,LibHac.Bcat,LibHac/Bcat/ResultBcat.cs
 LibHac,LibHac.Common,LibHac/Common/ResultLibHac.cs

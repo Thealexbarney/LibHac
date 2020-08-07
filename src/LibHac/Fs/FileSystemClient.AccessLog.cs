@@ -2,7 +2,7 @@
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs.Accessors;
-using LibHac.FsService;
+using LibHac.FsSrv;
 
 namespace LibHac.Fs
 {
