@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Buffers;
 using System.IO;
 using System.Runtime.InteropServices;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
@@ -74,7 +74,7 @@ namespace LibHac.FsSystem
         public static void CopyTo(this IStorage input, IStorage output, IProgressReport progress = null)
         {
             const int bufferSize = 81920;
-
+            
             input.GetSize(out long inputSize).ThrowIfFailure();
             output.GetSize(out long outputSize).ThrowIfFailure();
 
@@ -84,25 +84,18 @@ namespace LibHac.FsSystem
 
             long pos = 0;
 
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
-            try
+            using var buffer = new RentedArray<byte>(bufferSize);
+            while (remaining > 0)
             {
-                while (remaining > 0)
-                {
-                    int toCopy = (int)Math.Min(bufferSize, remaining);
-                    Span<byte> buf = buffer.AsSpan(0, toCopy);
-                    input.Read(pos, buf);
-                    output.Write(pos, buf);
+                int toCopy = (int)Math.Min(bufferSize, remaining);
+                Span<byte> buf = buffer.Span.Slice(0, toCopy);
+                input.Read(pos, buf);
+                output.Write(pos, buf);
 
-                    remaining -= toCopy;
-                    pos += toCopy;
+                remaining -= toCopy;
+                pos += toCopy;
 
-                    progress?.ReportAdd(toCopy);
-                }
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(buffer);
+                progress?.ReportAdd(toCopy);
             }
 
             progress?.SetTotal(0);
@@ -140,27 +133,20 @@ namespace LibHac.FsSystem
 
             long pos = offset;
 
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
-            try
+            using var buffer = new RentedArray<byte>(bufferSize);
+            buffer.Span.Slice(0, (int)Math.Min(remaining, bufferSize)).Fill(value);
+
+            while (remaining > 0)
             {
-                buffer.AsSpan(0, (int)Math.Min(remaining, bufferSize)).Fill(value);
+                int toFill = (int)Math.Min(bufferSize, remaining);
+                Span<byte> buf = buffer.Span.Slice(0, toFill);
 
-                while (remaining > 0)
-                {
-                    int toFill = (int)Math.Min(bufferSize, remaining);
-                    Span<byte> buf = buffer.AsSpan(0, toFill);
+                input.Write(pos, buf);
 
-                    input.Write(pos, buf);
+                remaining -= toFill;
+                pos += toFill;
 
-                    remaining -= toFill;
-                    pos += toFill;
-
-                    progress?.ReportAdd(toFill);
-                }
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(buffer);
+                progress?.ReportAdd(toFill);
             }
 
             progress?.SetTotal(0);
@@ -205,15 +191,16 @@ namespace LibHac.FsSystem
             const int bufferSize = 0x8000;
             long remaining = length;
             long inOffset = 0;
-            var buffer = new byte[bufferSize];
+            using var buffer = new RentedArray<byte>(bufferSize);
+
             progress?.SetTotal(length);
 
             while (remaining > 0)
             {
-                int toWrite = (int)Math.Min(buffer.Length, remaining);
-                input.Read(inOffset, buffer.AsSpan(0, toWrite));
+                int toWrite = (int)Math.Min(bufferSize, remaining);
+                input.Read(inOffset, buffer.Span.Slice(0, toWrite));
 
-                output.Write(buffer, 0, toWrite);
+                output.Write(buffer.Array, 0, toWrite);
                 remaining -= toWrite;
                 inOffset += toWrite;
                 progress?.ReportAdd(toWrite);
