@@ -71,10 +71,8 @@ namespace LibHac.FsSystem
 
         public static IFile AsFile(this IStorage storage, OpenMode mode) => new StorageFile(storage, mode);
 
-        public static void CopyTo(this IStorage input, IStorage output, IProgressReport progress = null)
+        public static void CopyTo(this IStorage input, IStorage output, IProgressReport progress = null, int bufferSize = 81920)
         {
-            const int bufferSize = 81920;
-            
             input.GetSize(out long inputSize).ThrowIfFailure();
             output.GetSize(out long outputSize).ThrowIfFailure();
 
@@ -186,9 +184,8 @@ namespace LibHac.FsSystem
             return arr;
         }
 
-        public static void CopyToStream(this IStorage input, Stream output, long length, IProgressReport progress = null)
+        public static void CopyToStream(this IStorage input, Stream output, long length, IProgressReport progress = null, int bufferSize = 0x8000)
         {
-            const int bufferSize = 0x8000;
             long remaining = length;
             long inOffset = 0;
             using var buffer = new RentedArray<byte>(bufferSize);
@@ -207,10 +204,10 @@ namespace LibHac.FsSystem
             }
         }
 
-        public static void CopyToStream(this IStorage input, Stream output)
+        public static void CopyToStream(this IStorage input, Stream output, int bufferSize = 0x8000)
         {
             input.GetSize(out long inputSize).ThrowIfFailure();
-            CopyToStream(input, output, inputSize);
+            CopyToStream(input, output, inputSize, bufferSize: bufferSize);
         }
 
         public static IStorage AsStorage(this Stream stream)
