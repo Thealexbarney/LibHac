@@ -5,6 +5,7 @@ using LibHac.FsSystem;
 
 namespace LibHac
 {
+    [Obsolete("This class has been deprecated. LibHac.Boot.Package2StorageReader should be used instead.")]
     public class Package2
     {
         private const uint Pk21Magic = 0x31324B50; // PK21

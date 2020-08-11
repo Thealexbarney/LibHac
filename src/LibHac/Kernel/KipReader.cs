@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
 
-namespace LibHac.Loader
+namespace LibHac.Kernel
 {
     public class KipReader
     {

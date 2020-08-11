@@ -2,7 +2,7 @@
 using System.IO;
 using LibHac.Fs;
 using LibHac.FsSystem;
-using LibHac.Loader;
+using LibHac.Kernel;
 
 namespace LibHac
 {

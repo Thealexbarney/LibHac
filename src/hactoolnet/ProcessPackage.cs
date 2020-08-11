@@ -1,6 +1,8 @@
 ﻿using System.IO;
 using System.Text;
 using LibHac;
+using LibHac.Boot;
+using LibHac.Fs;
 using LibHac.FsSystem;
 using static hactoolnet.Print;
 
@@ -31,7 +33,8 @@ namespace hactoolnet
         {
             using (var file = new CachedStorage(new LocalStorage(ctx.Options.InFile, FileAccess.Read), 0x4000, 4, false))
             {
-                var package2 = new Package2(ctx.Keyset, file);
+                var package2 = new Package2StorageReader();
+                package2.Initialize(ctx.Keyset, file).ThrowIfFailure();
 
                 ctx.Logger.LogMessage(package2.Print());
 
@@ -41,33 +44,43 @@ namespace hactoolnet
                 {
                     Directory.CreateDirectory(outDir);
 
-                    package2.OpenKernel().WriteAllBytes(Path.Combine(outDir, "Kernel.bin"), ctx.Logger);
-                    package2.OpenIni1().WriteAllBytes(Path.Combine(outDir, "INI1.bin"), ctx.Logger);
-                    package2.OpenDecryptedPackage().WriteAllBytes(Path.Combine(outDir, "Decrypted.bin"), ctx.Logger);
+                    package2.OpenPayload(out IStorage kernelStorage, 0).ThrowIfFailure();
+                    kernelStorage.WriteAllBytes(Path.Combine(outDir, "Kernel.bin"), ctx.Logger);
+
+                    package2.OpenPayload(out IStorage ini1Storage, 1).ThrowIfFailure();
+                    ini1Storage.WriteAllBytes(Path.Combine(outDir, "INI1.bin"), ctx.Logger);
+
+                    package2.OpenDecryptedPackage(out IStorage decPackageStorage).ThrowIfFailure();
+                    decPackageStorage.WriteAllBytes(Path.Combine(outDir, "Decrypted.bin"), ctx.Logger);
                 }
             }
         }
 
         private static readonly string[] Package2SectionNames = { "Kernel", "INI1", "Empty" };
 
-        private static string Print(this Package2 package2)
+        private static string Print(this Package2StorageReader package2)
         {
+            Result rc = package2.VerifySignature();
+
+            Validity signatureValidity = rc.IsSuccess() ? Validity.Valid : Validity.Invalid;
+
             int colLen = 36;
             var sb = new StringBuilder();
             sb.AppendLine();
 
             sb.AppendLine("PK21:");
-            PrintItem(sb, colLen, $"Signature{package2.Header.SignatureValidity.GetValidityString()}:", package2.Header.Signature);
-            PrintItem(sb, colLen, "Header Version:", $"{package2.HeaderVersion:x2}");
+            PrintItem(sb, colLen, $"Signature{signatureValidity.GetValidityString()}:", package2.Header.Signature.ToArray());
+            PrintItem(sb, colLen, "Header Version:", $"{package2.Header.Meta.KeyGeneration:x2}");
 
             for (int i = 0; i < 3; i++)
             {
-                sb.AppendLine($"Section {i} ({Package2SectionNames[i]}):");
+                string name = package2.Header.Meta.PayloadSizes[i] != 0 ? Package2SectionNames[i] : "Empty";
+                sb.AppendLine($"Section {i} ({name}):");
 
-                PrintItem(sb, colLen, "    Hash:", package2.Header.SectionHashes[i]);
-                PrintItem(sb, colLen, "    CTR:", package2.Header.SectionCounters[i]);
-                PrintItem(sb, colLen, "    Load Address:", $"{package2.Header.SectionOffsets[i] + 0x80000000:x8}");
-                PrintItem(sb, colLen, "    Size:", $"{package2.Header.SectionSizes[i]:x8}");
+                PrintItem(sb, colLen, "    Hash:", package2.Header.Meta.PayloadHashes[i]);
+                PrintItem(sb, colLen, "    CTR:", package2.Header.Meta.PayloadIvs[i]);
+                PrintItem(sb, colLen, "    Load Address:", $"{package2.Header.Meta.PayloadOffsets[i] + 0x80000000:x8}");
+                PrintItem(sb, colLen, "    Size:", $"{package2.Header.Meta.PayloadSizes[i]:x8}");
             }
 
             return sb.ToString();
