@@ -28,6 +28,8 @@ namespace LibHac.Common
 
         /// <summary>Error code: 2428-0051; Inner value: 0x67ac</summary>
         public static Result.Base ServiceNotInitialized => new Result.Base(ModuleLibHac, 51);
+        /// <summary>Error code: 2428-0101; Inner value: 0xcbac</summary>
+        public static Result.Base NotImplemented => new Result.Base(ModuleLibHac, 101);
 
         /// <summary>Error code: 2428-1000; Range: 1000-1999; Inner value: 0x7d1ac</summary>
         public static Result.Base InvalidData { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleLibHac, 1000, 1999); }

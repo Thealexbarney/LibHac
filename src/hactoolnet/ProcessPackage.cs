@@ -39,6 +39,12 @@ namespace hactoolnet
                 ctx.Logger.LogMessage(package2.Print());
 
                 string outDir = ctx.Options.OutDir;
+                string iniDir = ctx.Options.Ini1OutDir;
+
+                if (iniDir == null && ctx.Options.ExtractIni1)
+                {
+                    iniDir = Path.Combine(outDir, "INI1");
+                }
 
                 if (outDir != null)
                 {
@@ -47,11 +53,20 @@ namespace hactoolnet
                     package2.OpenPayload(out IStorage kernelStorage, 0).ThrowIfFailure();
                     kernelStorage.WriteAllBytes(Path.Combine(outDir, "Kernel.bin"), ctx.Logger);
 
-                    package2.OpenPayload(out IStorage ini1Storage, 1).ThrowIfFailure();
+                    package2.OpenIni(out IStorage ini1Storage).ThrowIfFailure();
                     ini1Storage.WriteAllBytes(Path.Combine(outDir, "INI1.bin"), ctx.Logger);
 
                     package2.OpenDecryptedPackage(out IStorage decPackageStorage).ThrowIfFailure();
                     decPackageStorage.WriteAllBytes(Path.Combine(outDir, "Decrypted.bin"), ctx.Logger);
+                }
+
+                if (iniDir != null)
+                {
+                    Directory.CreateDirectory(iniDir);
+
+                    package2.OpenIni(out IStorage ini1Storage).ThrowIfFailure();
+
+                    ProcessKip.ExtractIni1(ini1Storage, iniDir);
                 }
             }
         }

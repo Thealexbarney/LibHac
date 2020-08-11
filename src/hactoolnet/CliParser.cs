@@ -36,6 +36,7 @@ namespace hactoolnet
             new CliOption("debugoutdir", 1, (o, a) => o.DebugOutDir = a[0]),
             new CliOption("savedir", 1, (o, a) => o.SaveOutDir = a[0]),
             new CliOption("outdir", 1, (o, a) => o.OutDir = a[0]),
+            new CliOption("ini1dir", 1, (o, a) => o.Ini1OutDir = a[0]),
             new CliOption("outfile", 1, (o, a) => o.OutFile = a[0]),
             new CliOption("plaintext", 1, (o, a) => o.PlaintextOut = a[0]),
             new CliOption("ciphertext", 1, (o, a) => o.CiphertextOut = a[0]),
@@ -60,6 +61,7 @@ namespace hactoolnet
             new CliOption("trim", 0, (o, a) => o.TrimSave = true),
             new CliOption("readbench", 0, (o, a) => o.ReadBench = true),
             new CliOption("hashedfs", 0, (o, a) => o.BuildHfs = true),
+            new CliOption("extractini1", 0, (o, a) => o.ExtractIni1 = true),
             new CliOption("title", 1, (o, a) => o.TitleId = ParseTitleId(a[0])),
             new CliOption("bench", 1, (o, a) => o.BenchType = a[0]),
             new CliOption("cpufreq", 1, (o, a) => o.CpuFrequencyGhz = ParseDouble(a[0])),
@@ -254,6 +256,8 @@ namespace hactoolnet
             sb.AppendLine("  --outdir <dir>       Specify Package1 directory path.");
             sb.AppendLine("Package2 options:");
             sb.AppendLine("  --outdir <dir>       Specify Package2 directory path.");
+            sb.AppendLine("  --extractini1        Enable INI1 extraction to default directory (redundant with --ini1dir set).");
+            sb.AppendLine("  --ini1dir <dir>      Specify INI1 directory path. Overrides default path, if present.");
             sb.AppendLine("INI1 options:");
             sb.AppendLine("  --outdir <dir>       Specify INI1 directory path.");
             sb.AppendLine("Switch FS options:");
