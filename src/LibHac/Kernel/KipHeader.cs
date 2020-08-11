@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 
-namespace LibHac.Loader
+namespace LibHac.Kernel
 {
     [StructLayout(LayoutKind.Explicit, Size = 0x100)]
     public struct KipHeader

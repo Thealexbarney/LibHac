@@ -388,8 +388,29 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 428,51,,ServiceNotInitialized,
 
 428,1000,1999,InvalidData,
-428,1001,1019,InvalidKip,
-428,1002,,InvalidKipFileSize,The size of the KIP file was smaller than expected.
-428,1003,,InvalidKipMagic,The magic value of the KIP file was not KIP1.
-428,1004,,InvalidKipSegmentSize,The size of the compressed KIP segment was smaller than expected.
-428,1005,,KipSegmentDecompressionFailed,An error occurred while decompressing a KIP segment.
+428,1001,1019,InvalidInitialProcessData,
+428,1002,1009,InvalidKip,
+428,1003,,InvalidKipFileSize,The size of the KIP file was smaller than expected.
+428,1004,,InvalidKipMagic,The magic value of the KIP file was not KIP1.
+428,1005,,InvalidKipSegmentSize,The size of the compressed KIP segment was smaller than expected.
+428,1006,,KipSegmentDecompressionFailed,An error occurred while decompressing a KIP segment.
+
+428,1010,1019,InvalidIni,
+428,1011,,InvalidIniFileSize,The size of the INI file was smaller than expected.
+428,1012,,InvalidIniMagic,The magic value of the INI file was not INI1.
+428,1013,,InvalidIniProcessCount,The INI had an invalid process count.
+
+428,1020,1039,InvalidPackage2,
+428,1021,,InvalidPackage2HeaderSignature,
+428,1022,,InvalidPackage2MetaSizeA,
+428,1023,,InvalidPackage2MetaSizeB,
+428,1024,,InvalidPackage2MetaKeyGeneration,
+428,1025,,InvalidPackage2MetaMagic,
+428,1026,,InvalidPackage2MetaEntryPointAlignment,
+428,1027,,InvalidPackage2MetaPayloadAlignment,
+428,1028,,InvalidPackage2MetaPayloadSizeAlignment,
+428,1029,,InvalidPackage2MetaTotalSize,
+428,1030,,InvalidPackage2MetaPayloadSize,
+428,1031,,InvalidPackage2MetaPayloadsOverlap,
+428,1032,,InvalidPackage2MetaEntryPointNotFound,
+428,1033,,InvalidPackage2PayloadCorrupted,

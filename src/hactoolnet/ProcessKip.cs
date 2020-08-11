@@ -1,7 +1,7 @@
 ﻿using System.IO;
-using LibHac;
+using LibHac.Fs;
 using LibHac.FsSystem;
-using LibHac.Loader;
+using LibHac.Kernel;
 
 namespace hactoolnet
 {
@@ -19,7 +19,7 @@ namespace hactoolnet
                     var uncompressed = new byte[kip.GetUncompressedSize()];
 
                     kip.ReadUncompressedKip(uncompressed).ThrowIfFailure();
-                    
+
                     File.WriteAllBytes(ctx.Options.UncompressedOut, uncompressed);
                 }
             }
@@ -29,21 +29,24 @@ namespace hactoolnet
         {
             using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
-                var ini1 = new Ini1(file);
+
+                var ini1 = new InitialProcessBinaryReader();
+                ini1.Initialize(file).ThrowIfFailure();
 
                 string outDir = ctx.Options.OutDir;
 
                 if (outDir != null)
                 {
                     Directory.CreateDirectory(outDir);
+                    var kipReader = new KipReader();
 
-                    foreach (KipReader kip in ini1.Kips)
+                    for (int i = 0; i < ini1.ProcessCount; i++)
                     {
-                        var uncompressed = new byte[kip.GetUncompressedSize()];
+                        ini1.OpenKipStorage(out IStorage kipStorage, i).ThrowIfFailure();
 
-                        kip.ReadUncompressedKip(uncompressed).ThrowIfFailure();
+                        kipReader.Initialize(kipStorage).ThrowIfFailure();
 
-                        File.WriteAllBytes(Path.Combine(outDir, $"{kip.Name.ToString()}.kip1"), uncompressed);
+                        kipStorage.WriteAllBytes(Path.Combine(outDir, $"{kipReader.Name.ToString()}.kip1"));
                     }
                 }
             }

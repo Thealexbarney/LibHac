@@ -1,10 +1,12 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.IO;
 using LibHac.Fs;
 using LibHac.FsSystem;
 
 namespace LibHac
 {
+    [Obsolete("This class has been deprecated. LibHac.Loader.NsoReader should be used instead.")]
     public class Nso
     {
         public NsoSection[] Sections { get; }
