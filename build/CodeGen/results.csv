@@ -387,6 +387,8 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 
 428,51,,ServiceNotInitialized,
 
+428,101,,NotImplemented,
+
 428,1000,1999,InvalidData,
 428,1001,1019,InvalidInitialProcessData,
 428,1002,1009,InvalidKip,

@@ -8,7 +8,7 @@ namespace LibHac.Kernel
 {
     public class InitialProcessBinaryReader
     {
-        private const uint ExpectedMagic = 0x31494E49; // INI1
+        internal const uint ExpectedMagic = 0x31494E49; // INI1
         private const int MaxProcessCount = 80;
 
         private IStorage _storage;

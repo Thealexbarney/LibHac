@@ -5,6 +5,7 @@ using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.FsSystem;
+using LibHac.Kernel;
 
 namespace LibHac.Boot
 {
@@ -13,6 +14,9 @@ namespace LibHac.Boot
     /// </summary>
     public class Package2StorageReader
     {
+        private const int KernelPayloadIndex = 0;
+        private const int IniPayloadIndex = 1;
+
         private IStorage _storage;
         private Package2Header _header;
         private Keyset _keyset;
@@ -66,6 +70,47 @@ namespace LibHac.Boot
 
             byte[] iv = _header.Meta.PayloadIvs[index].Bytes.ToArray();
             payloadStorage = new CachedStorage(new Aes128CtrStorage(payloadSubStorage, _key, iv, true), 0x4000, 1, true);
+            return Result.Success;
+        }
+
+        /// <summary>
+        /// Opens an <see cref="IStorage"/> of the kernel payload.
+        /// </summary>
+        /// <param name="kernelStorage">If the method returns successfully, contains an <see cref="IStorage"/>
+        /// of the kernel payload.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
+        public Result OpenKernel(out IStorage kernelStorage)
+        {
+            return OpenPayload(out kernelStorage, KernelPayloadIndex);
+        }
+
+        /// <summary>
+        /// Opens an <see cref="IStorage"/> of the initial process binary. If the binary is embedded in
+        /// the kernel, this method will attempt to locate and return the embedded binary.
+        /// </summary>
+        /// <param name="iniStorage">If the method returns successfully, contains an <see cref="IStorage"/>
+        /// of the initial process binary.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
+        public Result OpenIni(out IStorage iniStorage)
+        {
+            if (HasIniPayload())
+            {
+                return OpenPayload(out iniStorage, IniPayloadIndex);
+            }
+
+            // Ini is embedded in the kernel
+            iniStorage = default;
+
+            Result rc = OpenKernel(out IStorage kernelStorage);
+            if (rc.IsFailure()) return rc;
+
+            if (!IniExtract.TryGetIni1Offset(out int offset, out int size, kernelStorage))
+            {
+                // Unable to find the ini. Could be a new, unsupported layout.
+                return ResultLibHac.NotImplemented.Log();
+            }
+
+            iniStorage = new SubStorage(kernelStorage, offset, size);
             return Result.Success;
         }
 
@@ -215,6 +260,11 @@ namespace LibHac.Boot
 
             // Copy the IV to the output because the IV field will be garbage after "decrypting" it
             Unsafe.As<Package2Meta, Buffer16>(ref dest) = iv;
+        }
+
+        private bool HasIniPayload()
+        {
+            return _header.Meta.PayloadSizes[IniPayloadIndex] != 0;
         }
     }
 }

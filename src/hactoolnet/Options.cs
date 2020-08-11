@@ -27,6 +27,7 @@ namespace hactoolnet
         public string RomfsOutDir;
         public string DebugOutDir;
         public string SaveOutDir;
+        public string Ini1OutDir;
         public string OutDir;
         public string OutFile;
         public string PlaintextOut;
@@ -54,6 +55,7 @@ namespace hactoolnet
         public bool TrimSave;
         public bool ReadBench;
         public bool BuildHfs;
+        public bool ExtractIni1;
         public ulong TitleId;
         public string BenchType;
         public double CpuFrequencyGhz;

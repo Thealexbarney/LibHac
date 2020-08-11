@@ -29,26 +29,30 @@ namespace hactoolnet
         {
             using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
-
-                var ini1 = new InitialProcessBinaryReader();
-                ini1.Initialize(file).ThrowIfFailure();
-
                 string outDir = ctx.Options.OutDir;
 
                 if (outDir != null)
                 {
-                    Directory.CreateDirectory(outDir);
-                    var kipReader = new KipReader();
-
-                    for (int i = 0; i < ini1.ProcessCount; i++)
-                    {
-                        ini1.OpenKipStorage(out IStorage kipStorage, i).ThrowIfFailure();
-
-                        kipReader.Initialize(kipStorage).ThrowIfFailure();
-
-                        kipStorage.WriteAllBytes(Path.Combine(outDir, $"{kipReader.Name.ToString()}.kip1"));
-                    }
+                    ExtractIni1(file, outDir);
                 }
+            }
+        }
+
+        public static void ExtractIni1(IStorage iniStorage, string outDir)
+        {
+            var ini1 = new InitialProcessBinaryReader();
+            ini1.Initialize(iniStorage).ThrowIfFailure();
+
+            Directory.CreateDirectory(outDir);
+            var kipReader = new KipReader();
+
+            for (int i = 0; i < ini1.ProcessCount; i++)
+            {
+                ini1.OpenKipStorage(out IStorage kipStorage, i).ThrowIfFailure();
+
+                kipReader.Initialize(kipStorage).ThrowIfFailure();
+
+                kipStorage.WriteAllBytes(Path.Combine(outDir, $"{kipReader.Name.ToString()}.kip1"));
             }
         }
     }
