@@ -90,10 +90,10 @@ namespace LibHac
             }
         }
 
-        internal static BigInteger GetBigInteger(byte[] bytes)
+        internal static BigInteger GetBigInteger(ReadOnlySpan<byte> bytes)
         {
             var signPadded = new byte[bytes.Length + 1];
-            Buffer.BlockCopy(bytes, 0, signPadded, 1, bytes.Length);
+            bytes.CopyTo(signPadded.AsSpan(1));
             Array.Reverse(signPadded);
             return new BigInteger(signPadded);
         }
@@ -142,11 +142,18 @@ namespace LibHac
         {
             using (var rsa = RSA.Create())
             {
-                rsa.ImportParameters(new RSAParameters { Exponent = new byte[] { 1, 0, 1 }, Modulus = modulus });
+                try
+                {
+                    rsa.ImportParameters(new RSAParameters { Exponent = new byte[] { 1, 0, 1 }, Modulus = modulus });
 
-                return rsa.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
+                    return rsa.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
                     ? Validity.Valid
                     : Validity.Invalid;
+                }
+                catch (CryptographicException)
+                {
+                    return Validity.Invalid;
+                }
             }
         }
 
@@ -154,20 +161,54 @@ namespace LibHac
         {
             using (var rsa = RSA.Create())
             {
-                rsa.ImportParameters(new RSAParameters { Exponent = new byte[] { 1, 0, 1 }, Modulus = modulus });
+                try
+                {
+                    rsa.ImportParameters(new RSAParameters { Exponent = new byte[] { 1, 0, 1 }, Modulus = modulus });
 
-                return rsa.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss)
-                    ? Validity.Valid
-                    : Validity.Invalid;
+                    return rsa.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss)
+                        ? Validity.Valid
+                        : Validity.Invalid;
+                }
+                catch (CryptographicException)
+                {
+                    return Validity.Invalid;
+                }
             }
         }
 
-        public static byte[] DecryptTitleKey(byte[] titleKeyblock, RSAParameters rsaParams)
+        public static byte[] DecryptRsaOaep(byte[] data, RSAParameters rsaParams)
         {
             var rsa = RSA.Create();
 
             rsa.ImportParameters(rsaParams);
-            return rsa.Decrypt(titleKeyblock, RSAEncryptionPadding.OaepSHA256);
+            return rsa.Decrypt(data, RSAEncryptionPadding.OaepSHA256);
+        }
+
+        public static bool DecryptRsaOaep(ReadOnlySpan<byte> data, Span<byte> destination, RSAParameters rsaParams, out int bytesWritten)
+        {
+            using (var rsa = RSA.Create())
+            {
+                try
+                {
+                    rsa.ImportParameters(rsaParams);
+
+                    return rsa.TryDecrypt(data, destination, RSAEncryptionPadding.OaepSHA256, out bytesWritten);
+                }
+                catch (CryptographicException)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+            }
+        }
+
+        public static RSAParameters RecoverRsaParameters(ReadOnlySpan<byte> modulus, ReadOnlySpan<byte> exponent)
+        {
+            BigInteger dInt = GetBigInteger(exponent);
+            BigInteger nInt = GetBigInteger(modulus);
+            BigInteger eInt = GetBigInteger(new byte[] { 1, 0, 1 });
+
+            return RecoverRsaParameters(nInt, eInt, dInt);
         }
 
         private static RSAParameters RecoverRsaParameters(BigInteger n, BigInteger e, BigInteger d)

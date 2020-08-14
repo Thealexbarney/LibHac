@@ -40,14 +40,25 @@ namespace LibHac.Npdm
             int kernelAccessControlOffset = reader.ReadInt32();
             int kernelAccessControlSize = reader.ReadInt32();
 
-            var accessHeader = new FsAccessHeader(stream, offset + fsAccessHeaderOffset);
+            if (fsAccessHeaderSize > 0)
+            {
+                var accessHeader = new FsAccessHeader(stream, offset + fsAccessHeaderOffset);
 
-            FsVersion = accessHeader.Version;
-            FsPermissionsBitmask = accessHeader.PermissionsBitmask;
+                FsVersion = accessHeader.Version;
+                FsPermissionsBitmask = accessHeader.PermissionsBitmask;
+            }
 
-            ServiceAccess = new ServiceAccessControl(stream, offset + serviceAccessControlOffset, serviceAccessControlSize);
+            if (serviceAccessControlSize > 0)
+            {
+                ServiceAccess = new ServiceAccessControl(stream, offset + serviceAccessControlOffset,
+                    serviceAccessControlSize);
+            }
 
-            KernelAccess = new KernelAccessControl(stream, offset + kernelAccessControlOffset, kernelAccessControlSize);
+            if (kernelAccessControlSize > 0)
+            {
+                KernelAccess =
+                    new KernelAccessControl(stream, offset + kernelAccessControlOffset, kernelAccessControlSize);
+            }
         }
     }
 }

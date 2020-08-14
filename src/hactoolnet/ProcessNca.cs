@@ -60,7 +60,7 @@ namespace hactoolnet
 
                     if (ctx.Options.Validate && nca.SectionExists(i))
                     {
-                        if (nca.Header.GetFsHeader(i).IsPatchSection() && baseNca != null)
+                        if (nca.GetFsHeader(i).IsPatchSection() && baseNca != null)
                         {
                             ncaHolder.Validities[i] = baseNca.VerifySection(nca, i, ctx.Logger);
                         }
@@ -261,23 +261,54 @@ namespace hactoolnet
             }
             else
             {
-                PrintItem(sb, colLen, "Key Area Encryption Key:", nca.Header.KeyAreaKeyIndex);
-                sb.AppendLine("Key Area (Encrypted):");
-                for (int i = 0; i < 4; i++)
-                {
-                    PrintItem(sb, colLen, $"    Key {i} (Encrypted):", nca.Header.GetEncryptedKey(i).ToArray());
-                }
-
-                sb.AppendLine("Key Area (Decrypted):");
-                for (int i = 0; i < 4; i++)
-                {
-                    PrintItem(sb, colLen, $"    Key {i} (Decrypted):", nca.GetDecryptedKey(i));
-                }
+                PrintKeyArea();
             }
 
             PrintSections();
 
             return sb.ToString();
+
+            void PrintKeyArea()
+            {
+                NcaVersion version = nca.Header.FormatVersion;
+
+                if (version == NcaVersion.Nca0RsaOaep)
+                {
+                    sb.AppendLine("Key Area (Encrypted):");
+                    PrintItem(sb, colLen, "Key (RSA-OAEP Encrypted):", nca.Header.GetKeyArea().ToArray());
+
+                    sb.AppendLine("Key Area (Decrypted):");
+                    for (int i = 0; i < 2; i++)
+                    {
+                        PrintItem(sb, colLen, $"    Key {i} (Encrypted):", nca.Header.GetEncryptedKey(i).ToArray());
+                    }
+                }
+                else if (version == NcaVersion.Nca0FixedKey)
+                {
+                    sb.AppendLine("Key Area:");
+                    for (int i = 0; i < 2; i++)
+                    {
+                        PrintItem(sb, colLen, $"    Key {i}:", nca.Header.GetEncryptedKey(i).ToArray());
+                    }
+                }
+                else
+                {
+                    int keyCount = version == NcaVersion.Nca0 ? 2 : 4;
+
+                    PrintItem(sb, colLen, "Key Area Encryption Key:", nca.Header.KeyAreaKeyIndex);
+                    sb.AppendLine("Key Area (Encrypted):");
+                    for (int i = 0; i < keyCount; i++)
+                    {
+                        PrintItem(sb, colLen, $"    Key {i} (Encrypted):", nca.Header.GetEncryptedKey(i).ToArray());
+                    }
+
+                    sb.AppendLine("Key Area (Decrypted):");
+                    for (int i = 0; i < keyCount; i++)
+                    {
+                        PrintItem(sb, colLen, $"    Key {i} (Decrypted):", nca.GetDecryptedKey(i));
+                    }
+                }
+            }
 
             void PrintSections()
             {
@@ -287,13 +318,13 @@ namespace hactoolnet
                 {
                     if (!nca.Header.IsSectionEnabled(i)) continue;
 
-                    NcaFsHeader sectHeader = nca.Header.GetFsHeader(i);
+                    NcaFsHeader sectHeader = nca.GetFsHeader(i);
                     bool isExefs = nca.Header.ContentType == NcaContentType.Program && i == 0;
 
                     sb.AppendLine($"    Section {i}:");
                     PrintItem(sb, colLen, "        Offset:", $"0x{nca.Header.GetSectionStartOffset(i):x12}");
                     PrintItem(sb, colLen, "        Size:", $"0x{nca.Header.GetSectionSize(i):x12}");
-                    PrintItem(sb, colLen, "        Partition Type:", (isExefs ? "ExeFS" : sectHeader.FormatType.ToString()) + (sectHeader.IsPatchSection() ? " patch" : ""));
+                    PrintItem(sb, colLen, "        Partition Type:", GetPartitionType(sectHeader, isExefs, nca.Header.IsNca0()));
                     PrintItem(sb, colLen, "        Section CTR:", $"{sectHeader.Counter:x16}");
                     PrintItem(sb, colLen, "        Section Validity:", $"{ncaHolder.Validities[i]}");
 
@@ -314,12 +345,20 @@ namespace hactoolnet
                 }
             }
 
+            static string GetPartitionType(NcaFsHeader fsHeader, bool isExefs, bool isNca0)
+            {
+                if (isExefs) return "ExeFS";
+                if (isNca0 && fsHeader.FormatType == NcaFormatType.Romfs) return "NCA0 RomFS";
+
+                return fsHeader.FormatType + (fsHeader.IsPatchSection() ? " patch" : "");
+            }
+
             void PrintSha256Hash(NcaFsHeader sect, int index)
             {
                 NcaFsIntegrityInfoSha256 hashInfo = sect.GetIntegrityInfoSha256();
 
                 PrintItem(sb, colLen, $"        Master Hash{nca.ValidateSectionMasterHash(index).GetValidityString()}:", hashInfo.MasterHash.ToArray());
-                sb.AppendLine($"        Hash Table:");
+                sb.AppendLine("        Hash Table:");
 
                 PrintItem(sb, colLen, "            Offset:", $"0x{hashInfo.GetLevelOffset(0):x12}");
                 PrintItem(sb, colLen, "            Size:", $"0x{hashInfo.GetLevelSize(0):x12}");

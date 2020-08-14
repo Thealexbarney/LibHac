@@ -40,7 +40,7 @@ namespace LibHac.FsSrv.Creators
             }
 
             storage = storageTemp;
-            fsHeader = nca.Header.GetFsHeader(fsIndex);
+            fsHeader = nca.GetFsHeader(fsIndex);
 
             return Result.Success;
         }

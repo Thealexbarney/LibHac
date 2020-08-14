@@ -56,7 +56,7 @@ namespace LibHac.FsSystem.NcaUtils
             if (!nca.SectionExists(index)) throw new ArgumentException(nameof(index), Messages.NcaSectionMissing);
             if (!nca.CanOpenSection(index)) return Validity.MissingKey;
 
-            NcaFsHeader header = nca.Header.GetFsHeader(index);
+            NcaFsHeader header = nca.GetFsHeader(index);
 
             // The base data is needed to validate the hash, so use a trick involving the AES-CTR extended
             // encryption table to check if the decryption is invalid.
@@ -116,7 +116,7 @@ namespace LibHac.FsSystem.NcaUtils
 
             Debug.Assert(nca.CanOpenSection(index));
 
-            NcaFsPatchInfo header = nca.Header.GetFsHeader(index).GetPatchInfo();
+            NcaFsPatchInfo header = nca.GetFsHeader(index).GetPatchInfo();
             IStorage decryptedStorage = nca.OpenRawStorage(index);
 
             Span<byte> buffer = stackalloc byte[sizeof(long)];
@@ -145,7 +145,7 @@ namespace LibHac.FsSystem.NcaUtils
 
         public static Validity VerifySection(this Nca nca, int index, IProgressReport logger = null, bool quiet = false)
         {
-            NcaFsHeader sect = nca.Header.GetFsHeader(index);
+            NcaFsHeader sect = nca.GetFsHeader(index);
             NcaHashType hashType = sect.HashType;
             if (hashType != NcaHashType.Sha256 && hashType != NcaHashType.Ivfc) return Validity.Unchecked;
 
@@ -176,7 +176,7 @@ namespace LibHac.FsSystem.NcaUtils
 
         public static Validity VerifySection(this Nca nca, Nca patchNca, int index, IProgressReport logger = null, bool quiet = false)
         {
-            NcaFsHeader sect = nca.Header.GetFsHeader(index);
+            NcaFsHeader sect = nca.GetFsHeader(index);
             NcaHashType hashType = sect.HashType;
             if (hashType != NcaHashType.Sha256 && hashType != NcaHashType.Ivfc) return Validity.Unchecked;
 
