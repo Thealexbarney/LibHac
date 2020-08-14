@@ -153,7 +153,7 @@ namespace LibHac
                 return commonKey;
             }
 
-            return CryptoOld.DecryptTitleKey(TitleKeyBlock, keyset.EticketExtKeyRsa);
+            return CryptoOld.DecryptRsaOaep(TitleKeyBlock, keyset.EticketExtKeyRsa);
         }
     }
 

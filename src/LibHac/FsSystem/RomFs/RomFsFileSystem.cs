@@ -1,4 +1,5 @@
-﻿using LibHac.Common;
+﻿using System;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
@@ -125,16 +126,30 @@ namespace LibHac.FsSystem.RomFs
         {
             var reader = new FileReader(file);
 
-            HeaderSize = reader.ReadInt64();
-            DirHashTableOffset = reader.ReadInt64();
-            DirHashTableSize = reader.ReadInt64();
-            DirMetaTableOffset = reader.ReadInt64();
-            DirMetaTableSize = reader.ReadInt64();
-            FileHashTableOffset = reader.ReadInt64();
-            FileHashTableSize = reader.ReadInt64();
-            FileMetaTableOffset = reader.ReadInt64();
-            FileMetaTableSize = reader.ReadInt64();
-            DataOffset = reader.ReadInt64();
+            HeaderSize = reader.ReadInt32();
+
+            Func<long> func;
+
+            // Old pre-release romfs is exactly the same except the fields in the header are 32-bit instead of 64-bit
+            if (HeaderSize == 0x28)
+            {
+                func = () => reader.ReadInt32();
+            }
+            else
+            {
+                func = reader.ReadInt64;
+                reader.Position += 4;
+            }
+
+            DirHashTableOffset = func();
+            DirHashTableSize = func();
+            DirMetaTableOffset = func();
+            DirMetaTableSize = func();
+            FileHashTableOffset = func();
+            FileHashTableSize = func();
+            FileMetaTableOffset = func();
+            FileMetaTableSize = func();
+            DataOffset = func();
         }
     }
 }
