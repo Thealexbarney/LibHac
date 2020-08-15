@@ -14,7 +14,7 @@ namespace LibHac.FsSystem.NcaUtils
     public class Nca
     {
         private Keyset Keyset { get; }
-        private bool IsEncrypted { get; set; }
+        private bool IsEncrypted => Header.IsEncrypted;
 
         private byte[] Nca0KeyArea { get; set; }
         private IStorage Nca0TransformedBody { get; set; }
@@ -25,13 +25,9 @@ namespace LibHac.FsSystem.NcaUtils
 
         public Nca(Keyset keyset, IStorage storage)
         {
-            Span<byte> magic = stackalloc byte[3];
-            storage.Read(0x200, magic);
-            IsEncrypted = magic[0] != 'N' && magic[1] != 'C' && magic[2] != 'A';
-
             Keyset = keyset;
             BaseStorage = storage;
-            Header = IsEncrypted ? new NcaHeader(keyset, storage) : new NcaHeader(storage);
+            Header = new NcaHeader(keyset, storage);
         }
 
         public byte[] GetDecryptedKey(int index)
