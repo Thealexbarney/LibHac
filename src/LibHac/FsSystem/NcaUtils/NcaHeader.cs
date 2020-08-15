@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Crypto;
+using LibHac.Diag;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem.NcaUtils
@@ -17,21 +18,15 @@ namespace LibHac.FsSystem.NcaUtils
 
         private readonly Memory<byte> _header;
 
-        public NcaVersion FormatVersion { get; private set; }
-
-        public NcaHeader(IStorage headerStorage)
-        {
-            _header = new byte[HeaderSize];
-            Span<byte> headerSpan = _header.Span;
-            headerStorage.Read(0, headerSpan).ThrowIfFailure();
-
-            FormatVersion = DetectNcaVersion(headerSpan);
-        }
+        public NcaVersion FormatVersion { get; }
+        public bool IsEncrypted { get; }
 
         public NcaHeader(Keyset keyset, IStorage headerStorage)
         {
-            _header = DecryptHeader(keyset, headerStorage);
+            (byte[] header, bool isEncrypted) = DecryptHeader(keyset, headerStorage);
 
+            _header = header;
+            IsEncrypted = isEncrypted;
             FormatVersion = DetectNcaVersion(_header.Span);
         }
 
@@ -200,10 +195,22 @@ namespace LibHac.FsSystem.NcaUtils
             return (long)blockIndex * BlockSize;
         }
 
-        public static byte[] DecryptHeader(Keyset keyset, IStorage storage)
+        private static (byte[] header, bool isEncrypted) DecryptHeader(Keyset keyset, IStorage storage)
         {
             var buf = new byte[HeaderSize];
-            storage.Read(0, buf);
+            storage.Read(0, buf).ThrowIfFailure();
+
+            if (CheckIfDecrypted(buf))
+            {
+                int decVersion = buf[0x203] - '0';
+
+                if (decVersion != 0 && decVersion != 2 && decVersion != 3)
+                {
+                    throw new NotSupportedException($"NCA version {decVersion} is not supported.");
+                }
+
+                return (buf, false);
+            }
 
             byte[] key1 = keyset.HeaderKey.AsSpan(0, 0x10).ToArray();
             byte[] key2 = keyset.HeaderKey.AsSpan(0x10, 0x10).ToArray();
@@ -240,7 +247,30 @@ namespace LibHac.FsSystem.NcaUtils
                 throw new NotSupportedException($"NCA version {version} is not supported.");
             }
 
-            return buf;
+            return (buf, true);
+        }
+
+        private static bool CheckIfDecrypted(ReadOnlySpan<byte> header)
+        {
+            Assert.AssertTrue(header.Length >= 0x400);
+
+            // Check the magic value
+            if (header[0x200] != 'N' || header[0x201] != 'C' || header[0x202] != 'A')
+                return false;
+
+            // Check the version in the magic value
+            if (!StringUtils.IsDigit(header[0x203]))
+                return false;
+
+            // Is the distribution type valid?
+            if (header[0x204] > (int)DistributionType.GameCard)
+                return false;
+
+            // Is the content type valid?
+            if (header[0x205] > (int)NcaContentType.PublicData)
+                return false;
+
+            return true;
         }
 
         private static NcaVersion DetectNcaVersion(ReadOnlySpan<byte> header)
