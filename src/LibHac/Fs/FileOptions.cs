@@ -6,8 +6,7 @@ namespace LibHac.Fs
     {
         public readonly int Value;
 
-        // ReSharper disable once UnusedMember.Local
-        private ReadOption(int value)
+        public ReadOption(int value)
         {
             Value = value;
         }
@@ -19,14 +18,19 @@ namespace LibHac.Fs
     {
         public readonly WriteOptionFlag Flags;
 
-        private WriteOption(WriteOptionFlag flags)
+        public WriteOption(int flags)
+        {
+            Flags = (WriteOptionFlag) flags;
+        }
+
+        public WriteOption(WriteOptionFlag flags)
         {
             Flags = flags;
         }
 
         public bool HasFlushFlag() => Flags.HasFlag(WriteOptionFlag.Flush);
 
-        public static WriteOption None => default;
+        public static WriteOption None => new WriteOption(WriteOptionFlag.None);
         public static WriteOption Flush => new WriteOption(WriteOptionFlag.Flush);
     }
 
