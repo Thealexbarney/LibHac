@@ -104,12 +104,19 @@ namespace LibHacBuild
                 }
                 catch (Exception e)
                 {
-                    Logger.Error(e);
+                    if (!e.Message.Contains("not a git repository", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Logger.Error(e);
+                    }
                 }
 
                 if (gitRepository == null || gitVersion == null)
                 {
                     Logger.Normal("Unable to read Git version.");
+
+                    VersionString = GetCsprojVersion();
+                    Logger.Normal($"Using version from .csproj: {VersionString}");
+
                     return;
                 }
 
@@ -655,6 +662,11 @@ namespace LibHacBuild
             Console.WriteLine();
 
             return pwd.ToString();
+        }
+
+        public string GetCsprojVersion()
+        {
+            return XmlTasks.XmlPeekSingle(LibHacProject.Path, "/Project/PropertyGroup/VersionPrefix", null);
         }
     }
 }

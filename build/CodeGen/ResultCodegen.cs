@@ -321,6 +321,12 @@ namespace LibHacBuild.CodeGen
                     hasBom = oldFile.AsSpan(0, 3).SequenceEqual(bom);
             }
 
+            // Make line endings the same on Windows and Unix
+            if (Environment.NewLine == "\n")
+            {
+                text = text.Replace("\n", "\r\n");
+            }
+
             byte[] newFile = (hasBom ? bom : new byte[0]).Concat(Encoding.UTF8.GetBytes(text)).ToArray();
 
             if (oldFile?.SequenceEqual(newFile) == true)
