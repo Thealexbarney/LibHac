@@ -557,7 +557,7 @@ namespace LibHac.FsSystem.NcaUtils
             return new HierarchicalIntegrityVerificationStorage(initInfo, integrityCheckLevel, leaveOpen);
         }
 
-        public IStorage OpenDecryptedHeaderStorage() => OpenHeaderStorage(true);
+        public IStorage OpenDecryptedHeaderStorage() => OpenHeaderStorage(false);
 
         public IStorage OpenHeaderStorage(bool openEncrypted)
         {
