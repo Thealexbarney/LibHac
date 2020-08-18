@@ -250,8 +250,8 @@ namespace hactoolnet
             }
 
             PrintItem(sb, colLen, "SDK Version:", nca.Header.SdkVersion);
-            PrintItem(sb, colLen, "Distribution type:", nca.Header.DistributionType);
-            PrintItem(sb, colLen, "Content Type:", nca.Header.ContentType);
+            PrintItem(sb, colLen, "Distribution type:", nca.Header.DistributionType.Print());
+            PrintItem(sb, colLen, "Content Type:", nca.Header.ContentType.Print());
             PrintItem(sb, colLen, "Master Key Revision:", $"{masterKey} ({Utilities.GetKeyRevisionSummary(masterKey)})");
             PrintItem(sb, colLen, "Encryption Type:", $"{(nca.Header.HasRightsId ? "Titlekey crypto" : "Standard crypto")}");
 
@@ -326,7 +326,7 @@ namespace hactoolnet
                     PrintItem(sb, colLen, "        Size:", $"0x{nca.Header.GetSectionSize(i):x12}");
                     PrintItem(sb, colLen, "        Partition Type:", GetPartitionType(sectHeader, isExefs, nca.Header.IsNca0()));
                     PrintItem(sb, colLen, "        Section CTR:", $"{sectHeader.Counter:x16}");
-                    PrintItem(sb, colLen, "        Section Validity:", $"{ncaHolder.Validities[i]}");
+                    PrintItem(sb, colLen, "        Section Validity:", $"{ncaHolder.Validities[i].Print()}");
 
                     switch (sectHeader.HashType)
                     {
@@ -350,7 +350,7 @@ namespace hactoolnet
                 if (isExefs) return "ExeFS";
                 if (isNca0 && fsHeader.FormatType == NcaFormatType.Romfs) return "NCA0 RomFS";
 
-                return fsHeader.FormatType + (fsHeader.IsPatchSection() ? " patch" : "");
+                return fsHeader.FormatType.Print() + (fsHeader.IsPatchSection() ? " patch" : "");
             }
 
             void PrintSha256Hash(NcaFsHeader sect, int index)

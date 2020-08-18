@@ -241,7 +241,7 @@ namespace hactoolnet
                 table.AddRow($"{title.Id:X16}",
                     $"v{title.Version?.Version}",
                     title.Version?.ToString(),
-                    title.Metadata?.Type.ToString(),
+                    title.Metadata?.Type.Print(),
                     Utilities.GetBytesReadable(title.GetSize()),
                     title.Control.Value.DisplayVersion.ToString(),
                     title.Name);
