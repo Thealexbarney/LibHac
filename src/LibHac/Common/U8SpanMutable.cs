@@ -86,7 +86,7 @@ namespace LibHac.Common
         /// </summary>
         /// <returns><see langword="true"/> if the span has no buffer.
         /// Otherwise, <see langword="false"/>.</returns>
-        public bool IsNull() => _buffer.IsEmpty;
+        public unsafe bool IsNull() => (IntPtr)Unsafe.AsPointer(ref MemoryMarshal.GetReference(_buffer)) == IntPtr.Zero;
 
         /// <summary>
         /// Checks if the <see cref="U8StringMutable"/> has no buffer or begins with a null terminator.
