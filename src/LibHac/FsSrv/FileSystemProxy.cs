@@ -21,7 +21,7 @@ namespace LibHac.FsSrv
 
         public long SaveDataSize { get; private set; }
         public long SaveDataJournalSize { get; private set; }
-        public FsPath SaveDataRootPath { get; } = default;
+        public FsPath SaveDataRootPath { get; }
         public bool AutoCreateSaveData { get; private set; }
 
         internal FileSystemProxy(FileSystemProxyCore fsProxyCore, FileSystemServer fsServer)

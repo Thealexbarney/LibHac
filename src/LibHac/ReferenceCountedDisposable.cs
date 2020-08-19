@@ -336,7 +336,7 @@ namespace LibHac
                 }
 
                 T? instance = reference._instance;
-                var referenceCount = reference._boxedReferenceCount;
+                StrongBox<int> referenceCount = reference._boxedReferenceCount;
                 if (instance == null)
                 {
                     // The specified reference is already not valid. This case is supported by WeakReference (not
