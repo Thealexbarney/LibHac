@@ -189,11 +189,11 @@ namespace hactoolnet
 
                 foreach (SwitchFsNca nca in title.Ncas)
                 {
-                    ctx.Logger.LogMessage($"    {nca.Nca.Header.ContentType.ToString()}");
+                    ctx.Logger.LogMessage($"    {nca.Nca.Header.ContentType.Print()}");
 
                     Validity validity = nca.VerifyNca(ctx.Logger, true);
 
-                    ctx.Logger.LogMessage($"      {validity.ToString()}");
+                    ctx.Logger.LogMessage($"      {validity.Print()}");
                 }
             }
             catch (Exception ex)
@@ -256,7 +256,7 @@ namespace hactoolnet
 
             foreach (SwitchFsNca nca in sdfs.Ncas.Values.OrderBy(x => x.NcaId))
             {
-                table.AddRow(nca.NcaId, nca.Nca.Header.ContentType.ToString(), nca.Nca.Header.TitleId.ToString("X16"));
+                table.AddRow(nca.NcaId, nca.Nca.Header.ContentType.Print(), nca.Nca.Header.TitleId.ToString("X16"));
             }
 
             return table.Print();

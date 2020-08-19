@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Text;
 using LibHac;
@@ -155,8 +154,9 @@ namespace hactoolnet
 
             PrintPartition(sb, colLen, xci.OpenPartition(XciPartitionType.Root), XciPartitionType.Root);
 
-            foreach (XciPartitionType type in Enum.GetValues(typeof(XciPartitionType)))
+            for (int i = 0; i <= (int)XciPartitionType.Root; i++)
             {
+                var type = (XciPartitionType)i;
                 if (type == XciPartitionType.Root || !xci.HasPartition(type)) continue;
 
                 XciPartition partition = xci.OpenPartition(type);
@@ -170,7 +170,7 @@ namespace hactoolnet
         {
             const int fileNameLen = 57;
 
-            sb.AppendLine($"{type.ToString()} Partition:{partition.HashValidity.GetValidityString()}");
+            sb.AppendLine($"{type.Print()} Partition:{partition.HashValidity.GetValidityString()}");
             PrintItem(sb, colLen, "    Magic:", partition.Header.Magic);
             PrintItem(sb, colLen, "    Offset:", $"{partition.Offset:x12}");
             PrintItem(sb, colLen, "    Number of files:", partition.Files.Length);

@@ -72,6 +72,19 @@ namespace hactoolnet
             };
         }
 
+        public static string Print(this XciPartitionType value)
+        {
+            return value switch
+            {
+                XciPartitionType.Update => nameof(XciPartitionType.Update),
+                XciPartitionType.Normal => nameof(XciPartitionType.Normal),
+                XciPartitionType.Secure => nameof(XciPartitionType.Secure),
+                XciPartitionType.Logo => nameof(XciPartitionType.Logo),
+                XciPartitionType.Root => nameof(XciPartitionType.Root),
+                _ => value.ToString()
+            };
+        }
+
         public static string Print(this Validity value)
         {
             return value switch
