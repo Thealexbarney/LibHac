@@ -383,7 +383,7 @@ namespace LibHacBuild
 
             DotNetPublish(publishSettings);
 
-            if (EnvironmentInfo.IsUnix && !Untrimmed && !NoReflection)
+            if (EnvironmentInfo.IsUnix && !Untrimmed)
             {
                 File.Copy(CliNativeExe, CliNativeExe + "_unstripped", true);
                 ProcessTasks.StartProcess("strip", CliNativeExe).AssertZeroExitCode();

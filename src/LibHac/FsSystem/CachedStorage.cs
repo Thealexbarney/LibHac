@@ -145,12 +145,6 @@ namespace LibHac.FsSystem
                     Blocks.AddFirst(node);
                 }
 
-                // If a supposedly active block is null, something's really wrong
-                if (node is null)
-                {
-                    throw new NullReferenceException("CachedStorage cache block is unexpectedly null.");
-                }
-
                 return node.Value;
             }
 

@@ -14,9 +14,9 @@ namespace LibHac.FsSystem
             private SubStorage NodeStorage { get; set; }
             private SubStorage EntryStorage { get; set; }
 
-            private NodeBuffer _l1Node = new NodeBuffer();
-            private NodeBuffer _l2Node = new NodeBuffer();
-            private NodeBuffer _entrySet = new NodeBuffer();
+            private NodeBuffer _l1Node;
+            private NodeBuffer _l2Node;
+            private NodeBuffer _entrySet;
 
             private int NodeSize { get; set; }
             private int EntrySize { get; set; }
