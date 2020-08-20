@@ -14,6 +14,7 @@ namespace LibHac.FsSrv
 
         /// <summary>The client instance to be used for internal operations like save indexer access.</summary>
         public FileSystemClient FsClient { get; }
+        public bool IsDebugMode { get; }
         private ITimeSpanGenerator Timer { get; }
 
         /// <summary>
@@ -27,6 +28,8 @@ namespace LibHac.FsSrv
 
             if (config.DeviceOperator == null)
                 throw new ArgumentException("DeviceOperator must not be null");
+
+            IsDebugMode = false;
 
             ExternalKeySet externalKeySet = config.ExternalKeySet ?? new ExternalKeySet();
             Timer = config.TimeSpanGenerator ?? new StopWatchTimeSpanGenerator();

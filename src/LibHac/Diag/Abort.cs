@@ -24,6 +24,7 @@ namespace LibHac.Diag
             DoAbort(message);
         }
 
+        [DoesNotReturn]
         public static void UnexpectedDefault([CallerMemberName] string caller = "")
         {
             throw new LibHacException($"Unexpected value passed to switch statement in {caller}");
