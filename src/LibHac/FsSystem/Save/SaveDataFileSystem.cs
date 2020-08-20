@@ -269,7 +269,7 @@ namespace LibHac.FsSystem.Save
             headerStream.Position = 0x100;
             headerStream.Read(cmacData, 0, 0x200);
 
-            CryptoOld.CalculateAesCmac(keyset.SaveMacKey, cmacData, 0, cmac, 0, 0x200);
+            Aes.CalculateCmac(keyset.SaveMacKey, cmacData, 0, cmac, 0, 0x200);
 
             headerStream.Position = 0;
             headerStream.Write(cmac, 0, 0x10);

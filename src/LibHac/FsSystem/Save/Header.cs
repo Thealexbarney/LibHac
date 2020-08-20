@@ -93,7 +93,7 @@ namespace LibHac.FsSystem.Save
         {
             var calculatedCmac = new byte[0x10];
 
-            CryptoOld.CalculateAesCmac(keyset.SaveMacKey, Data, 0x100, calculatedCmac, 0, 0x200);
+            Aes.CalculateCmac(keyset.SaveMacKey, Data, 0x100, calculatedCmac, 0, 0x200);
 
             return Utilities.ArraysEqual(calculatedCmac, Cmac) ? Validity.Valid : Validity.Invalid;
         }

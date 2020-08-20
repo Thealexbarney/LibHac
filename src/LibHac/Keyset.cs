@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.FsSrv;
 using LibHac.Spl;
@@ -81,7 +82,7 @@ namespace LibHac
                 if (_nca0RsaKeyAreaKey.HasValue)
                     return _nca0RsaKeyAreaKey.Value;
 
-                _nca0RsaKeyAreaKey = CryptoOld.RecoverRsaParameters(BetaNca0Modulus, BetaNca0Exponent);
+                _nca0RsaKeyAreaKey = Rsa.RecoverParameters(BetaNca0Modulus, BetaNca0Exponent, new byte[] { 1, 0, 1 });
                 return _nca0RsaKeyAreaKey.Value;
             }
         }
@@ -349,7 +350,7 @@ namespace LibHac
                 }
 
                 Array.Copy(EncryptedKeyblobs[i], expectedCmac, 0x10);
-                CryptoOld.CalculateAesCmac(KeyblobMacKeys[i], EncryptedKeyblobs[i], 0x10, cmac, 0, 0xa0);
+                Aes.CalculateCmac(KeyblobMacKeys[i], EncryptedKeyblobs[i], 0x10, cmac, 0, 0xa0);
 
                 if (!Utilities.ArraysEqual(cmac, expectedCmac))
                 {

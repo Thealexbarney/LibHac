@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using LibHac.Crypto;
+using Xunit;
 
 namespace LibHac.Tests
 {
@@ -57,7 +58,7 @@ namespace LibHac.Tests
         {
             var actual = new byte[0x10];
 
-            CryptoOld.CalculateAesCmac(data.Key, data.Message, data.Start, actual, 0, data.Length);
+            Aes.CalculateCmac(data.Key, data.Message, data.Start, actual, 0, data.Length);
 
             Assert.Equal(data.Expected, actual);
         }

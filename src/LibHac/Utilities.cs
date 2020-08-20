@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -498,6 +498,67 @@ namespace LibHac
         public static bool IsPowerOfTwo(long value)
         {
             return value > 0 && ResetLeastSignificantOneBit(value) == 0;
+        }
+
+        public static BigInteger GetBigInteger(this ReadOnlySpan<byte> bytes)
+        {
+            var signPadded = new byte[bytes.Length + 1];
+            bytes.CopyTo(signPadded.AsSpan(1));
+            Array.Reverse(signPadded);
+            return new BigInteger(signPadded);
+        }
+
+        public static byte[] GetBytes(this BigInteger value, int size)
+        {
+            byte[] bytes = value.ToByteArray();
+
+            if (size == -1)
+            {
+                size = bytes.Length;
+            }
+
+            if (bytes.Length > size + 1)
+            {
+                throw new InvalidOperationException($"Cannot squeeze value {value} to {size} bytes from {bytes.Length}.");
+            }
+
+            if (bytes.Length == size + 1 && bytes[bytes.Length - 1] != 0)
+            {
+                throw new InvalidOperationException($"Cannot squeeze value {value} to {size} bytes from {bytes.Length}.");
+            }
+
+            Array.Resize(ref bytes, size);
+            Array.Reverse(bytes);
+            return bytes;
+        }
+
+        public static BigInteger ModInverse(BigInteger e, BigInteger n)
+        {
+            BigInteger r = n;
+            BigInteger newR = e;
+            BigInteger t = 0;
+            BigInteger newT = 1;
+
+            while (newR != 0)
+            {
+                BigInteger quotient = r / newR;
+                BigInteger temp;
+
+                temp = t;
+                t = newT;
+                newT = temp - quotient * newT;
+
+                temp = r;
+                r = newR;
+                newR = temp - quotient * newR;
+            }
+
+            if (t < 0)
+            {
+                t = t + n;
+            }
+
+            return t;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
