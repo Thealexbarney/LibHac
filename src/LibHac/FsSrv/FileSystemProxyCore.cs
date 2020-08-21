@@ -15,7 +15,10 @@ namespace LibHac.FsSrv
 {
     public class FileSystemProxyCore
     {
-        private FileSystemCreators FsCreators { get; }
+        internal FileSystemProxyConfiguration Config { get; }
+        private FileSystemCreators FsCreators => Config.FsCreatorInterfaces;
+        internal ProgramRegistryImpl ProgramRegistry { get; }
+
         private ExternalKeySet ExternalKeys { get; }
         private IDeviceOperator DeviceOperator { get; }
 
@@ -29,9 +32,10 @@ namespace LibHac.FsSrv
 
         internal ISaveDataIndexerManager SaveDataIndexerManager { get; private set; }
 
-        public FileSystemProxyCore(FileSystemCreators fsCreators, ExternalKeySet externalKeys, IDeviceOperator deviceOperator)
+        public FileSystemProxyCore(FileSystemProxyConfiguration config, ExternalKeySet externalKeys, IDeviceOperator deviceOperator)
         {
-            FsCreators = fsCreators;
+            Config = config;
+            ProgramRegistry = new ProgramRegistryImpl(Config.ProgramRegistryService);
             ExternalKeys = externalKeys ?? new ExternalKeySet();
             DeviceOperator = deviceOperator;
         }
