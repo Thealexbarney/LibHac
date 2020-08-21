@@ -34,7 +34,13 @@ namespace LibHac.FsSrv
             ExternalKeySet externalKeySet = config.ExternalKeySet ?? new ExternalKeySet();
             Timer = config.TimeSpanGenerator ?? new StopWatchTimeSpanGenerator();
 
-            FsProxyCore = new FileSystemProxyCore(config.FsCreators, externalKeySet, config.DeviceOperator);
+            var fspConfig = new FileSystemProxyConfiguration
+            {
+                FsCreatorInterfaces = config.FsCreators,
+                ProgramRegistryService = new ProgramRegistryServiceImpl(this)
+            };
+
+            FsProxyCore = new FileSystemProxyCore(fspConfig, externalKeySet, config.DeviceOperator);
             var fsProxy = new FileSystemProxy(FsProxyCore, this);
             FsClient = new FileSystemClient(this, fsProxy, Timer);
 

@@ -96,16 +96,18 @@ namespace LibHac.Fs
 
         /// <summary>Error code: 2002-3200; Range: 3200-3499; Inner value: 0x190002</summary>
         public static Result.Base AllocationMemoryFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 3200, 3499); }
-            /// <summary>Error code: 2002-3312; Inner value: 0x19e002</summary>
-            public static Result.Base AesXtsFileFileStorageAllocationError => new Result.Base(ModuleFs, 3312);
-            /// <summary>Error code: 2002-3313; Inner value: 0x19e202</summary>
-            public static Result.Base AesXtsFileXtsStorageAllocationError => new Result.Base(ModuleFs, 3313);
-            /// <summary>Error code: 2002-3314; Inner value: 0x19e402</summary>
-            public static Result.Base AesXtsFileAlignmentStorageAllocationError => new Result.Base(ModuleFs, 3314);
-            /// <summary>Error code: 2002-3315; Inner value: 0x19e602</summary>
-            public static Result.Base AesXtsFileStorageFileAllocationError => new Result.Base(ModuleFs, 3315);
-            /// <summary>Error code: 2002-3383; Inner value: 0x1a6e02</summary>
-            public static Result.Base AesXtsFileSubStorageAllocationError => new Result.Base(ModuleFs, 3383);
+            /// <summary>In RegisterProgram allocating ProgramInfoNode<br/>Error code: 2002-3258; Inner value: 0x197402</summary>
+            public static Result.Base AllocationFailureInProgramRegistryManagerA => new Result.Base(ModuleFs, 3258);
+            /// <summary>In Initialize allocating FileStorage<br/>Error code: 2002-3312; Inner value: 0x19e002</summary>
+            public static Result.Base AllocationFailureInAesXtsFileA => new Result.Base(ModuleFs, 3312);
+            /// <summary>In Initialize allocating AesXtsStorage<br/>Error code: 2002-3313; Inner value: 0x19e202</summary>
+            public static Result.Base AllocationFailureInAesXtsFileB => new Result.Base(ModuleFs, 3313);
+            /// <summary>In Initialize allocating AlignmentMatchingStoragePooledBuffer<br/>Error code: 2002-3314; Inner value: 0x19e402</summary>
+            public static Result.Base AllocationFailureInAesXtsFileC => new Result.Base(ModuleFs, 3314);
+            /// <summary>In Initialize allocating StorageFile<br/>Error code: 2002-3315; Inner value: 0x19e602</summary>
+            public static Result.Base AllocationFailureInAesXtsFileD => new Result.Base(ModuleFs, 3315);
+            /// <summary>In Initialize allocating SubStorage<br/>Error code: 2002-3383; Inner value: 0x1a6e02</summary>
+            public static Result.Base AllocationFailureInAesXtsFileE => new Result.Base(ModuleFs, 3383);
 
         /// <summary>Error code: 2002-3500; Range: 3500-3999; Inner value: 0x1b5802</summary>
         public static Result.Base MmcAccessFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 3500, 3999); }
@@ -452,6 +454,8 @@ namespace LibHac.Fs
 
         /// <summary>Error code: 2002-6600; Range: 6600-6699; Inner value: 0x339002</summary>
         public static Result.Base EntryNotFound { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6600, 6699); }
+            /// <summary>Specified program is not found in the program registry.<br/>Error code: 2002-6605; Inner value: 0x339a02</summary>
+            public static Result.Base TargetProgramNotFound => new Result.Base(ModuleFs, 6605);
             /// <summary>Specified program index is not found<br/>Error code: 2002-6606; Inner value: 0x339c02</summary>
             public static Result.Base TargetProgramIndexNotFound => new Result.Base(ModuleFs, 6606);
 

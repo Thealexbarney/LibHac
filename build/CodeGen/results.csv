@@ -40,11 +40,12 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,3005,,OutOfRange,
 
 2,3200,3499,AllocationMemoryFailed,
-2,3312,,AesXtsFileFileStorageAllocationError,
-2,3313,,AesXtsFileXtsStorageAllocationError,
-2,3314,,AesXtsFileAlignmentStorageAllocationError,
-2,3315,,AesXtsFileStorageFileAllocationError,
-2,3383,,AesXtsFileSubStorageAllocationError,
+2,3258,,AllocationFailureInProgramRegistryManagerA,In RegisterProgram allocating ProgramInfoNode
+2,3312,,AllocationFailureInAesXtsFileA,In Initialize allocating FileStorage
+2,3313,,AllocationFailureInAesXtsFileB,In Initialize allocating AesXtsStorage
+2,3314,,AllocationFailureInAesXtsFileC,In Initialize allocating AlignmentMatchingStoragePooledBuffer
+2,3315,,AllocationFailureInAesXtsFileD,In Initialize allocating StorageFile
+2,3383,,AllocationFailureInAesXtsFileE,In Initialize allocating SubStorage
 
 2,3500,3999,MmcAccessFailed,
 
@@ -234,6 +235,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6465,,UserNotExist,
 
 2,6600,6699,EntryNotFound,
+2,6605,,TargetProgramNotFound,Specified program is not found in the program registry.
 2,6606,,TargetProgramIndexNotFound,Specified program index is not found
 
 2,6700,6799,OutOfResource,

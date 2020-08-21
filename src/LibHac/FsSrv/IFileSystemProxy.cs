@@ -10,7 +10,7 @@ namespace LibHac.FsSrv
 {
     public interface IFileSystemProxy
     {
-        Result SetCurrentProcess(long processId);
+        Result SetCurrentProcess(ulong processId);
         Result OpenDataFileSystemByCurrentProcess(out IFileSystem fileSystem);
         Result OpenFileSystemWithPatch(out IFileSystem fileSystem, ProgramId programId, FileSystemProxyType type);
         Result OpenFileSystemWithId(out IFileSystem fileSystem, ref FsPath path, ulong id, FileSystemProxyType type);

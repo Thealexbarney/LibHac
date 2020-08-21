@@ -17,7 +17,7 @@ namespace LibHac.FsSrv
         private FileSystemProxyCore FsProxyCore { get; }
         internal FileSystemServer FsServer { get; }
 
-        public long CurrentProcess { get; private set; }
+        public ulong CurrentProcess { get; private set; }
 
         public long SaveDataSize { get; private set; }
         public long SaveDataJournalSize { get; private set; }
@@ -29,10 +29,15 @@ namespace LibHac.FsSrv
             FsProxyCore = fsProxyCore;
             FsServer = fsServer;
 
-            CurrentProcess = -1;
+            CurrentProcess = ulong.MaxValue;
             SaveDataSize = 0x2000000;
             SaveDataJournalSize = 0x1000000;
             AutoCreateSaveData = true;
+        }
+
+        private ProgramRegistryService GetProgramRegistryService()
+        {
+            return new ProgramRegistryService(FsProxyCore.Config.ProgramRegistryService, CurrentProcess);
         }
 
         public Result OpenFileSystemWithId(out IFileSystem fileSystem, ref FsPath path, ulong id, FileSystemProxyType type)
@@ -66,7 +71,7 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result SetCurrentProcess(long processId)
+        public Result SetCurrentProcess(ulong processId)
         {
             CurrentProcess = processId;
 
