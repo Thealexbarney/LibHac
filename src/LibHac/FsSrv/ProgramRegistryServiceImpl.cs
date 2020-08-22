@@ -8,10 +8,12 @@ namespace LibHac.FsSrv
     public class ProgramRegistryServiceImpl
     {
         private ProgramRegistryManager RegistryManager { get; }
+        private ProgramIndexMapInfoManager ProgramIndexManager { get; }
 
         public ProgramRegistryServiceImpl(FileSystemServer fsServer)
         {
             RegistryManager = new ProgramRegistryManager(fsServer);
+            ProgramIndexManager = new ProgramIndexMapInfoManager();
         }
 
         /// <summary>
@@ -66,6 +68,19 @@ namespace LibHac.FsSrv
         public Result GetProgramInfoByProgramId(out ProgramInfo programInfo, ulong programId)
         {
             return RegistryManager.GetProgramInfoByProgramId(out programInfo, programId);
+        }
+
+        /// <summary>
+        /// Gets the <see cref="ProgramId"/> of the program with index <paramref name="programIndex"/> in the
+        /// multi-program app <paramref name="programId"/> is part of.
+        /// </summary>
+        /// <param name="programId">A program ID in the multi-program app to query.</param>
+        /// <param name="programIndex">The index of the program to get.</param>
+        /// <returns>If the program exists, the ID of the program with the specified index,
+        /// otherwise <see cref="ProgramId.InvalidId"/></returns>
+        public ProgramId GetProgramId(ProgramId programId, byte programIndex)
+        {
+            return ProgramIndexManager.GetProgramId(programId, programIndex);
         }
     }
 }
