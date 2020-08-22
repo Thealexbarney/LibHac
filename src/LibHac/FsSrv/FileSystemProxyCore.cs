@@ -35,7 +35,7 @@ namespace LibHac.FsSrv
         public FileSystemProxyCore(FileSystemProxyConfiguration config, ExternalKeySet externalKeys, IDeviceOperator deviceOperator)
         {
             Config = config;
-            ProgramRegistry = new ProgramRegistryImpl(Config.ProgramRegistryService);
+            ProgramRegistry = new ProgramRegistryImpl(Config.ProgramRegistryServiceImpl);
             ExternalKeys = externalKeys ?? new ExternalKeySet();
             DeviceOperator = deviceOperator;
         }

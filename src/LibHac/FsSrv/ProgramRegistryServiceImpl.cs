@@ -5,6 +5,9 @@ using LibHac.Ncm;
 
 namespace LibHac.FsSrv
 {
+    /// <summary>
+    /// Manages the main program registry and the multi-program registry.
+    /// </summary>
     public class ProgramRegistryServiceImpl
     {
         private ProgramRegistryManager RegistryManager { get; }
@@ -16,16 +19,7 @@ namespace LibHac.FsSrv
             ProgramIndexManager = new ProgramIndexMapInfoManager();
         }
 
-        /// <summary>
-        /// Registers a program with information about the program in the program registry.
-        /// </summary>
-        /// <param name="processId">The process ID of the program.</param>
-        /// <param name="programId">The <see cref="ProgramId"/> of the program.</param>
-        /// <param name="storageId">The <see cref="StorageId"/> where the program is located.</param>
-        /// <param name="accessControlData">The FS access control data header located in the program's ACI.</param>
-        /// <param name="accessControlDescriptor">The FS access control descriptor located in the program's ACID.</param>
-        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
-        /// <see cref="ResultFs.InvalidArgument"/>: The process ID is already registered.</returns>
+        /// <inheritdoc cref="ProgramRegistryManager.RegisterProgram"/>
         public Result RegisterProgram(ulong processId, ProgramId programId, StorageId storageId,
             ReadOnlySpan<byte> accessControlData, ReadOnlySpan<byte> accessControlDescriptor)
         {
@@ -33,54 +27,49 @@ namespace LibHac.FsSrv
                 accessControlDescriptor);
         }
 
-        /// <summary>
-        /// Unregisters the program with the specified process ID.
-        /// </summary>
-        /// <param name="processId">The process ID of the program to unregister.</param>
-        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
-        /// <see cref="ResultFs.InvalidArgument"/>: The process ID is not registered.</returns>
+        /// <inheritdoc cref="ProgramRegistryManager.UnregisterProgram" />
         public Result UnregisterProgram(ulong processId)
         {
             return RegistryManager.UnregisterProgram(processId);
         }
 
-        /// <summary>
-        /// Gets the <see cref="ProgramInfo"/> associated with the specified process ID.
-        /// </summary>
-        /// <param name="programInfo">If the method returns successfully, contains the <see cref="ProgramInfo"/>
-        /// associated with the specified process ID.</param>
-        /// <param name="processId">The process ID of the <see cref="ProgramInfo"/> to get.</param>
-        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
-        /// <see cref="ResultFs.TargetProgramNotFound"/>: The <see cref="ProgramInfo"/> was not found.</returns>
+        /// <inheritdoc cref="ProgramRegistryManager.GetProgramInfo"/>
         public Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
         {
             return RegistryManager.GetProgramInfo(out programInfo, processId);
         }
 
-        /// <summary>
-        /// Gets the <see cref="ProgramInfo"/> associated with the specified program ID.
-        /// </summary>
-        /// <param name="programInfo">If the method returns successfully, contains the <see cref="ProgramInfo"/>
-        /// associated with the specified program ID.</param>
-        /// <param name="programId">The program ID of the <see cref="ProgramInfo"/> to get.</param>
-        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
-        /// <see cref="ResultFs.TargetProgramNotFound"/>: The <see cref="ProgramInfo"/> was not found.</returns>
+        /// <inheritdoc cref="ProgramRegistryManager.GetProgramInfoByProgramId"/>
         public Result GetProgramInfoByProgramId(out ProgramInfo programInfo, ulong programId)
         {
             return RegistryManager.GetProgramInfoByProgramId(out programInfo, programId);
         }
 
-        /// <summary>
-        /// Gets the <see cref="ProgramId"/> of the program with index <paramref name="programIndex"/> in the
-        /// multi-program app <paramref name="programId"/> is part of.
-        /// </summary>
-        /// <param name="programId">A program ID in the multi-program app to query.</param>
-        /// <param name="programIndex">The index of the program to get.</param>
-        /// <returns>If the program exists, the ID of the program with the specified index,
-        /// otherwise <see cref="ProgramId.InvalidId"/></returns>
+        /// <inheritdoc cref="ProgramIndexMapInfoManager.GetProgramId"/>
         public ProgramId GetProgramId(ProgramId programId, byte programIndex)
         {
             return ProgramIndexManager.GetProgramId(programId, programIndex);
+        }
+
+        /// <inheritdoc cref="ProgramIndexMapInfoManager.Get"/>
+        public ProgramIndexMapInfo? GetProgramIndexMapInfo(ProgramId programId)
+        {
+            return ProgramIndexManager.Get(programId);
+        }
+
+        /// <summary>
+        /// Gets the number of programs in the currently registered application.
+        /// </summary>
+        /// <returns>The number of programs.</returns>
+        public int GetProgramIndexMapInfoCount()
+        {
+            return ProgramIndexManager.GetProgramCount();
+        }
+
+        /// <inheritdoc cref="ProgramIndexMapInfoManager.Reset"/>
+        public Result RegisterProgramIndexMapInfo(ReadOnlySpan<ProgramIndexMapInfo> programIndexMapInfo)
+        {
+            return ProgramIndexManager.Reset(programIndexMapInfo);
         }
     }
 }

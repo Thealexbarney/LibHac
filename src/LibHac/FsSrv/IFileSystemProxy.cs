@@ -88,6 +88,7 @@ namespace LibHac.FsSrv
         Result SetSdCardAccessibility(bool isAccessible);
         Result IsSdCardAccessible(out bool isAccessible);
 
+        Result RegisterProgramIndexMapInfo(ReadOnlySpan<byte> programIndexMapInfoBuffer, int programCount);
         Result SetBisRootForHost(BisPartitionId partitionId, ref FsPath path);
         Result SetSaveDataSize(long saveDataSize, long saveDataJournalSize);
         Result SetSaveDataRootPath(ref FsPath path);
