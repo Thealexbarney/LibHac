@@ -37,7 +37,7 @@ namespace LibHac.FsSrv.Impl
         }
 
         /// <summary>
-        /// Registers a program with information about the program in the program registry.
+        /// Registers a program with information about that program in the program registry.
         /// </summary>
         /// <param name="processId">The process ID of the program.</param>
         /// <param name="programId">The <see cref="ProgramId"/> of the program.</param>

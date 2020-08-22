@@ -37,7 +37,7 @@ namespace LibHac.FsSrv
             var fspConfig = new FileSystemProxyConfiguration
             {
                 FsCreatorInterfaces = config.FsCreators,
-                ProgramRegistryService = new ProgramRegistryServiceImpl(this)
+                ProgramRegistryServiceImpl = new ProgramRegistryServiceImpl(this)
             };
 
             FsProxyCore = new FileSystemProxyCore(fspConfig, externalKeySet, config.DeviceOperator);

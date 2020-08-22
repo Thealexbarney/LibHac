@@ -37,7 +37,7 @@ namespace LibHac.FsSrv
 
         private ProgramRegistryService GetProgramRegistryService()
         {
-            return new ProgramRegistryService(FsProxyCore.Config.ProgramRegistryService, CurrentProcess);
+            return new ProgramRegistryService(FsProxyCore.Config.ProgramRegistryServiceImpl, CurrentProcess);
         }
 
         public Result OpenFileSystemWithId(out IFileSystem fileSystem, ref FsPath path, ulong id, FileSystemProxyType type)
@@ -649,6 +649,11 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
+        public Result RegisterProgramIndexMapInfo(ReadOnlySpan<byte> programIndexMapInfoBuffer, int programCount)
+        {
+            return GetProgramRegistryService().RegisterProgramIndexMapInfo(programIndexMapInfoBuffer, programCount);
+        }
+
         public Result SetBisRootForHost(BisPartitionId partitionId, ref FsPath path)
         {
             throw new NotImplementedException();
@@ -1087,7 +1092,7 @@ namespace LibHac.FsSrv
 
         public Result GetProgramIndexForAccessLog(out int programIndex, out int programCount)
         {
-            throw new NotImplementedException();
+            return GetProgramRegistryService().GetProgramIndexForAccessLog(out programIndex, out programCount);
         }
 
         public Result OutputAccessLogToSdCard(U8Span logString)
@@ -1186,6 +1191,11 @@ namespace LibHac.FsSrv
             {
                 accessorTemp?.Dispose();
             }
+        }
+
+        private Result GetProgramInfo(out ProgramInfo programInfo)
+        {
+            return FsProxyCore.ProgramRegistry.GetProgramInfo(out programInfo, CurrentProcess);
         }
 
         private static bool IsSystemSaveDataId(ulong id)

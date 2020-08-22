@@ -5,30 +5,36 @@ using LibHac.Ncm;
 
 namespace LibHac.FsSrv
 {
+    /// <summary>
+    /// Keeps track of the program IDs and program indexes of each program in a multi-program application.
+    /// </summary>
     public class ProgramIndexMapInfoManager
     {
         private LinkedList<ProgramIndexMapInfo> MapEntries { get; } = new LinkedList<ProgramIndexMapInfo>();
 
         /// <summary>
-        /// Clears any existing 
+        /// Unregisters any previously registered program index map info and registers the provided map info.
         /// </summary>
-        /// <param name="entries">The entries </param>
+        /// <param name="programIndexMapInfo">The program map info entries to register.</param>
         /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
-        public Result Reset(ReadOnlySpan<ProgramIndexMapInfo> entries)
+        public Result Reset(ReadOnlySpan<ProgramIndexMapInfo> programIndexMapInfo)
         {
             lock (MapEntries)
             {
                 ClearImpl();
 
-                for (int i = 0; i < entries.Length; i++)
+                for (int i = 0; i < programIndexMapInfo.Length; i++)
                 {
-                    MapEntries.AddLast(entries[i]);
+                    MapEntries.AddLast(programIndexMapInfo[i]);
                 }
 
                 return Result.Success;
             }
         }
 
+        /// <summary>
+        /// Unregisters all currently registered program index map info.
+        /// </summary>
         public void Clear()
         {
             lock (MapEntries)
@@ -37,6 +43,12 @@ namespace LibHac.FsSrv
             }
         }
 
+        /// <summary>
+        /// Gets the <see cref="ProgramIndexMapInfo"/> associated with the specified program ID.
+        /// </summary>
+        /// <param name="programId">The program ID of the map info to get.</param>
+        /// <returns>If the program ID was found, the <see cref="ProgramIndexMapInfo"/> associated
+        /// with that ID; otherwise, <see langword="null"/>.</returns>
         public ProgramIndexMapInfo? Get(ProgramId programId)
         {
             lock (MapEntries)
@@ -72,6 +84,10 @@ namespace LibHac.FsSrv
             }
         }
 
+        /// <summary>
+        /// Gets the number of currently registered programs,
+        /// </summary>
+        /// <returns>The number of registered programs.</returns>
         public int GetProgramCount()
         {
             lock (MapEntries)
