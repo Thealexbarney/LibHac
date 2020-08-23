@@ -29,7 +29,7 @@ namespace LibHac.Sm
             throw new InvalidCastException("The service object is not of the specified type.");
         }
 
-        public Result RegisterService(object serviceObject, ReadOnlySpan<char> name)
+        public Result RegisterService(IServiceObject serviceObject, ReadOnlySpan<char> name)
         {
             return Server.RegisterService(serviceObject, ServiceName.Encode(name));
         }

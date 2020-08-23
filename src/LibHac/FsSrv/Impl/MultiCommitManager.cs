@@ -109,7 +109,7 @@ namespace LibHac.FsSrv.Impl
                     return rc;
                 }
 
-                rc = FsProxy.FsServer.FsClient.CreateSystemSaveData(SaveDataId, SaveDataSize, SaveJournalSize,
+                rc = FsProxy.Hos.Fs.CreateSystemSaveData(SaveDataId, SaveDataSize, SaveJournalSize,
                     SaveDataFlags.None);
                 if (rc.IsFailure()) return rc;
             }

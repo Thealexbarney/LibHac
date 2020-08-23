@@ -1,7 +1,7 @@
-﻿using LibHac.Common;
-using LibHac.Fs;
+﻿using System.Threading;
+using LibHac.Bcat;
 using LibHac.FsSrv;
-using LibHac.FsSrv.Creators;
+using LibHac.Os;
 using LibHac.Sm;
 
 namespace LibHac
@@ -9,63 +9,32 @@ namespace LibHac
     public class Horizon
     {
         internal ITimeSpanGenerator Time { get; }
-        private FileSystemServer FileSystemServer { get; set; }
         internal ServiceManager ServiceManager { get; }
 
-        private readonly object _initLocker = new object();
+        // long instead of ulong because the ulong Interlocked.Increment overload
+        // wasn't added until .NET 5
+        private long _currentProcessId;
 
-        public Horizon(ITimeSpanGenerator timer)
+        public Horizon(ITimeSpanGenerator timer, FileSystemServerConfig fsServerConfig)
         {
+            _currentProcessId = 0;
+
             Time = timer ?? new StopWatchTimeSpanGenerator();
-            ServiceManager = new ServiceManager(this);
+            ServiceManager = new ServiceManager();
+
+            // ReSharper disable ObjectCreationAsStatement
+            new FileSystemServer(CreateHorizonClient(), fsServerConfig);
+            new BcatServer(CreateHorizonClient());
+            // ReSharper restore ObjectCreationAsStatement
         }
 
-        public Horizon(ITimeSpanGenerator timer, FileSystemServer fsServer)
+        public HorizonClient CreateHorizonClient()
         {
-            Time = timer ?? new StopWatchTimeSpanGenerator();
-            FileSystemServer = fsServer;
-            ServiceManager = new ServiceManager(this);
-        }
+            ulong processId = (ulong)Interlocked.Increment(ref _currentProcessId);
 
-        private Result OpenFileSystemClient(out FileSystemClient client)
-        {
-            if (FileSystemServer is null)
-            {
-                client = default;
-                return ResultLibHac.ServiceNotInitialized.Log();
-            }
+            // Todo: Register process with FS
 
-            client = FileSystemServer.CreateFileSystemClient();
-            return Result.Success;
-        }
-
-        public Result CreateHorizonClient(out HorizonClient client)
-        {
-            Result rc = OpenFileSystemClient(out FileSystemClient fsClient);
-            if (rc.IsFailure())
-            {
-                client = default;
-                return rc;
-            }
-
-            client = new HorizonClient(this, fsClient);
-            return Result.Success;
-        }
-
-        public void InitializeFileSystemServer(FileSystemCreators fsCreators, IDeviceOperator deviceOperator)
-        {
-            if (FileSystemServer != null) return;
-
-            lock (_initLocker)
-            {
-                if (FileSystemServer != null) return;
-
-                var config = new FileSystemServerConfig();
-                config.FsCreators = fsCreators;
-                config.DeviceOperator = deviceOperator;
-
-                FileSystemServer = new FileSystemServer(config);
-            }
+            return new HorizonClient(this, new ProcessId(processId));
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs.Accessors;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv;
@@ -11,7 +12,7 @@ namespace LibHac.Fs
 {
     public partial class FileSystemClient
     {
-        private FileSystemServer FsSrv { get; }
+        private HorizonClient Hos { get; }
         private IFileSystemProxy FsProxy { get; set; }
 
         private readonly object _fspInitLocker = new object();
@@ -26,22 +27,17 @@ namespace LibHac.Fs
             Time = timer ?? new StopWatchTimeSpanGenerator();
         }
 
-        public FileSystemClient(FileSystemServer fsServer, ITimeSpanGenerator timer)
+        public FileSystemClient(HorizonClient horizonClient)
         {
-            FsSrv = fsServer;
-            Time = timer ?? new StopWatchTimeSpanGenerator();
-        }
+            Hos = horizonClient;
+            Time = horizonClient.Time;
 
-        internal FileSystemClient(FileSystemServer fsServer, IFileSystemProxy fsProxy, ITimeSpanGenerator timer)
-        {
-            FsSrv = fsServer;
-            FsProxy = fsProxy;
-            Time = timer ?? new StopWatchTimeSpanGenerator();
+            Assert.NotNull(Time);
         }
 
         public bool HasFileSystemServer()
         {
-            return FsSrv != null;
+            return Hos != null;
         }
 
         public IFileSystemProxy GetFileSystemProxyServiceObject()
@@ -57,8 +53,16 @@ namespace LibHac.Fs
                     throw new InvalidOperationException("Client was not initialized with a server object.");
                 }
 
-                FsProxy = FsSrv.CreateFileSystemProxyService();
+                Result rc = Hos.Sm.GetService(out IFileSystemProxy fsProxy, "fsp-srv");
 
+                if (rc.IsFailure())
+                {
+                    throw new HorizonResultException(rc, "Failed to create file system proxy service object.");
+                }
+
+                fsProxy.SetCurrentProcess(Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
+
+                FsProxy = fsProxy;
                 return FsProxy;
             }
         }

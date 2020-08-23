@@ -3,6 +3,7 @@ using LibHac.Fs;
 using LibHac.Fs.Impl;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Creators;
+using LibHac.Sm;
 
 namespace LibHac.FsSrv
 {
@@ -13,21 +14,25 @@ namespace LibHac.FsSrv
         private FileSystemProxyCore FsProxyCore { get; }
 
         /// <summary>The client instance to be used for internal operations like save indexer access.</summary>
-        public FileSystemClient FsClient { get; }
+        public HorizonClient Hos { get; }
+
         public bool IsDebugMode { get; }
         private ITimeSpanGenerator Timer { get; }
 
         /// <summary>
-        /// Creates a new <see cref="FileSystemServer"/>.
+        /// Creates a new <see cref="FileSystemServer"/> and registers its services using the provided HOS client.
         /// </summary>
+        /// <param name="horizonClient">The <see cref="HorizonClient"/> that will be used by this server.</param>
         /// <param name="config">The configuration for the created <see cref="FileSystemServer"/>.</param>
-        public FileSystemServer(FileSystemServerConfig config)
+        public FileSystemServer(HorizonClient horizonClient, FileSystemServerConfig config)
         {
             if (config.FsCreators == null)
                 throw new ArgumentException("FsCreators must not be null");
 
             if (config.DeviceOperator == null)
                 throw new ArgumentException("DeviceOperator must not be null");
+
+            Hos = horizonClient;
 
             IsDebugMode = false;
 
@@ -41,17 +46,19 @@ namespace LibHac.FsSrv
             };
 
             FsProxyCore = new FileSystemProxyCore(fspConfig, externalKeySet, config.DeviceOperator);
-            var fsProxy = new FileSystemProxy(FsProxyCore, this);
-            FsClient = new FileSystemClient(this, fsProxy, Timer);
 
-            // NS usually takes care of this
-            if (FsClient.IsSdCardInserted())
-                FsClient.SetSdCardAccessibility(true);
-
-            FsProxyCore.SetSaveDataIndexerManager(new SaveDataIndexerManager(FsClient, SaveIndexerId,
+            FsProxyCore.SetSaveDataIndexerManager(new SaveDataIndexerManager(Hos.Fs, SaveIndexerId,
                 new ArrayPoolMemoryResource(), new SdHandleManager(), false));
 
+            FileSystemProxy fsProxy = GetFileSystemProxyServiceObject();
+            fsProxy.SetCurrentProcess(Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
             fsProxy.CleanUpTemporaryStorage().IgnoreResult();
+
+            Hos.Sm.RegisterService(new FileSystemProxyService(this), "fsp-srv").IgnoreResult();
+
+            // NS usually takes care of this
+            if (Hos.Fs.IsSdCardInserted())
+                Hos.Fs.SetSdCardAccessibility(true);
         }
 
         /// <summary>
@@ -69,12 +76,35 @@ namespace LibHac.FsSrv
         /// <returns>The created <see cref="FileSystemClient"/>.</returns>
         public FileSystemClient CreateFileSystemClient(ITimeSpanGenerator timer)
         {
-            return new FileSystemClient(this, timer);
+            return new FileSystemClient(Hos);
         }
 
-        public IFileSystemProxy CreateFileSystemProxyService()
+        private FileSystemProxy GetFileSystemProxyServiceObject()
         {
-            return new FileSystemProxy(FsProxyCore, this);
+            return new FileSystemProxy(Hos, FsProxyCore);
+        }
+
+        internal bool IsCurrentProcess(ulong processId)
+        {
+            ulong currentId = Hos.Os.GetCurrentProcessId().Value;
+
+            return processId == currentId;
+        }
+
+        private class FileSystemProxyService : IServiceObject
+        {
+            private readonly FileSystemServer _server;
+
+            public FileSystemProxyService(FileSystemServer server)
+            {
+                _server = server;
+            }
+
+            public Result GetServiceObject(out object serviceObject)
+            {
+                serviceObject = _server.GetFileSystemProxyServiceObject();
+                return Result.Success;
+            }
         }
     }
 
