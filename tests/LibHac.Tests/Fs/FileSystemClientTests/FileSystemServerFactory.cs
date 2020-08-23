@@ -6,7 +6,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
 {
     public static class FileSystemServerFactory
     {
-        public static FileSystemServer CreateServer(bool sdCardInserted, out IFileSystem rootFs)
+        private static FileSystemClient CreateClientImpl(bool sdCardInserted, out IFileSystem rootFs)
         {
             rootFs = new InMemoryFileSystem();
 
@@ -19,23 +19,21 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
             config.DeviceOperator = defaultObjects.DeviceOperator;
             config.ExternalKeySet = new ExternalKeySet();
 
-            var fsServer = new FileSystemServer(config);
+            var horizon = new Horizon(new StopWatchTimeSpanGenerator(), config);
 
-            return fsServer;
+            HorizonClient horizonClient = horizon.CreateHorizonClient();
+
+            return horizonClient.Fs;
         }
 
         public static FileSystemClient CreateClient(bool sdCardInserted)
         {
-            FileSystemServer fsServer = CreateServer(sdCardInserted, out _);
-
-            return fsServer.CreateFileSystemClient();
+            return CreateClientImpl(sdCardInserted, out _);
         }
 
         public static FileSystemClient CreateClient(out IFileSystem rootFs)
         {
-            FileSystemServer fsServer = CreateServer(false, out rootFs);
-
-            return fsServer.CreateFileSystemClient();
+            return CreateClientImpl(false, out rootFs);
         }
     }
 }

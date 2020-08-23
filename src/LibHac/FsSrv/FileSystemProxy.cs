@@ -15,7 +15,7 @@ namespace LibHac.FsSrv
     public class FileSystemProxy : IFileSystemProxy
     {
         private FileSystemProxyCore FsProxyCore { get; }
-        internal FileSystemServer FsServer { get; }
+        internal HorizonClient Hos { get; }
 
         public ulong CurrentProcess { get; private set; }
 
@@ -24,10 +24,10 @@ namespace LibHac.FsSrv
         public FsPath SaveDataRootPath { get; }
         public bool AutoCreateSaveData { get; private set; }
 
-        internal FileSystemProxy(FileSystemProxyCore fsProxyCore, FileSystemServer fsServer)
+        internal FileSystemProxy(HorizonClient horizonClient, FileSystemProxyCore fsProxyCore)
         {
             FsProxyCore = fsProxyCore;
-            FsServer = fsServer;
+            Hos = horizonClient;
 
             CurrentProcess = ulong.MaxValue;
             SaveDataSize = 0x2000000;

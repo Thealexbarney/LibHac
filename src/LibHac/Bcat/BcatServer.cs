@@ -34,7 +34,7 @@ namespace LibHac.Bcat
 
             IServiceCreator service = GetServiceCreator(type);
 
-            Result rc = Hos.Sm.RegisterService(service, name);
+            Result rc = Hos.Sm.RegisterService(new BcatServiceObject(service), name);
             if (rc.IsFailure())
             {
                 throw new HorizonResultException(rc, "Abort");

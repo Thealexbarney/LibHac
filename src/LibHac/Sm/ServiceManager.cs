@@ -11,14 +11,7 @@ namespace LibHac.Sm
     // isn't blocked waiting for something better.
     internal class ServiceManager
     {
-        // ReSharper disable once UnusedAutoPropertyAccessor.Local
-        private Horizon Horizon { get; }
-        private Dictionary<ServiceName, object> Services { get; } = new Dictionary<ServiceName, object>();
-
-        public ServiceManager(Horizon horizon)
-        {
-            Horizon = horizon;
-        }
+        private Dictionary<ServiceName, IServiceObject> Services { get; } = new Dictionary<ServiceName, IServiceObject>();
 
         internal Result GetService(out object serviceObject, ServiceName serviceName)
         {
@@ -27,20 +20,20 @@ namespace LibHac.Sm
             Result rc = ValidateServiceName(serviceName);
             if (rc.IsFailure()) return rc;
 
-            if (!Services.TryGetValue(serviceName, out serviceObject))
+            if (!Services.TryGetValue(serviceName, out IServiceObject service))
             {
                 return ResultSf.RequestDeferredByUser.Log();
             }
 
-            return Result.Success;
+            return service.GetServiceObject(out serviceObject);
         }
 
-        internal Result RegisterService(object serviceObject, ServiceName serviceName)
+        internal Result RegisterService(IServiceObject service, ServiceName serviceName)
         {
             Result rc = ValidateServiceName(serviceName);
             if (rc.IsFailure()) return rc;
 
-            if (!Services.TryAdd(serviceName, serviceObject))
+            if (!Services.TryAdd(serviceName, service))
             {
                 return ResultSm.AlreadyRegistered.Log();
             }
@@ -53,11 +46,12 @@ namespace LibHac.Sm
             Result rc = ValidateServiceName(serviceName);
             if (rc.IsFailure()) return rc;
 
-            if (!Services.Remove(serviceName, out object service))
+            if (!Services.Remove(serviceName, out IServiceObject service))
             {
                 return ResultSm.NotRegistered.Log();
             }
 
+            // ReSharper disable once SuspiciousTypeConversion.Global
             if (service is IDisposable disposable)
             {
                 disposable.Dispose();

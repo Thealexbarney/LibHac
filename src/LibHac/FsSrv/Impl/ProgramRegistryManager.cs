@@ -183,12 +183,6 @@ namespace LibHac.FsSrv.Impl
             return initialProcessIdLowerBound >= processId && processId <= initialProcessIdUpperBound;
         }
 
-        public static bool IsCurrentProcess(ulong processId)
-        {
-            // Todo: Don't use hardcoded value
-            return true;
-        }
-
         internal static ProgramInfo CreateProgramInfoForInitialProcess(FileSystemServer fsServer)
         {
             return new ProgramInfo(fsServer, InitialProcessAccessControlDataHeader,
