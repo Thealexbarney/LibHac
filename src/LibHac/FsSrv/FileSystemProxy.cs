@@ -45,15 +45,58 @@ namespace LibHac.FsSrv
         {
             fileSystem = default;
 
-            // Missing permission check, speed emulation storage type wrapper, and FileSystemInterfaceAdapter
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
 
-            bool canMountSystemDataPrivate = false;
+            AccessControl ac = programInfo.AccessControl;
+
+            switch (type)
+            {
+                case FileSystemProxyType.Logo:
+                    if (!ac.GetAccessibilityFor(AccessibilityType.MountLogo).CanRead)
+                        return ResultFs.PermissionDenied.Log();
+                    break;
+                case FileSystemProxyType.Control:
+                    if (!ac.GetAccessibilityFor(AccessibilityType.MountContentControl).CanRead)
+                        return ResultFs.PermissionDenied.Log();
+                    break;
+                case FileSystemProxyType.Manual:
+                    if (!ac.GetAccessibilityFor(AccessibilityType.MountContentManual).CanRead)
+                        return ResultFs.PermissionDenied.Log();
+                    break;
+                case FileSystemProxyType.Meta:
+                    if (!ac.GetAccessibilityFor(AccessibilityType.MountContentMeta).CanRead)
+                        return ResultFs.PermissionDenied.Log();
+                    break;
+                case FileSystemProxyType.Data:
+                    if (!ac.GetAccessibilityFor(AccessibilityType.MountContentData).CanRead)
+                        return ResultFs.PermissionDenied.Log();
+                    break;
+                case FileSystemProxyType.Package:
+                    if (!ac.GetAccessibilityFor(AccessibilityType.MountApplicationPackage).CanRead)
+                        return ResultFs.PermissionDenied.Log();
+                    break;
+                default:
+                    return ResultFs.InvalidArgument.Log();
+            }
+
+            if (type == FileSystemProxyType.Meta)
+            {
+                id = ulong.MaxValue;
+            }
+            else if (id == ulong.MaxValue)
+            {
+                return ResultFs.InvalidArgument.Log();
+            }
+
+            bool canMountSystemDataPrivate = ac.GetAccessibilityFor(AccessibilityType.MountSystemDataPrivate).CanRead;
 
             var normalizer = new PathNormalizer(path, GetPathNormalizerOptions(path));
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
             return FsProxyCore.OpenFileSystem(out fileSystem, normalizer.Path, type, canMountSystemDataPrivate, id);
+
+            // Missing speed emulation storage type wrapper, async wrapper, and FileSystemInterfaceAdapter
         }
 
         private PathNormalizer.Option GetPathNormalizerOptions(U8Span path)

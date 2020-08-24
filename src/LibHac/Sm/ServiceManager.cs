@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
-using LibHac.Sf;
+using LibHac.Svc;
 
 namespace LibHac.Sm
 {
@@ -22,7 +22,7 @@ namespace LibHac.Sm
 
             if (!Services.TryGetValue(serviceName, out IServiceObject service))
             {
-                return ResultSf.RequestDeferredByUser.Log();
+                return ResultSvc.NotFound.Log();
             }
 
             return service.GetServiceObject(out serviceObject);
