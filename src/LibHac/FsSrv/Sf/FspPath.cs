@@ -29,7 +29,7 @@ namespace LibHac.FsSrv.Sf
             Span<byte> str = SpanHelpers.AsByteSpan(ref fspPath);
 
             // Ensure null terminator even if the creation fails for safety
-            str[0x301] = 0;
+            str[MaxLength] = 0;
 
             var sb = new U8StringBuilder(str);
             bool overflowed = sb.Append(path).Overflowed;

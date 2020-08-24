@@ -27,7 +27,7 @@ namespace LibHac.FsSystem
             Unsafe.SkipInit(out fsPath);
 
             // Ensure null terminator even if the creation fails for safety
-            fsPath.Str[0x301] = 0;
+            fsPath.Str[MaxLength] = 0;
 
             var sb = new U8StringBuilder(fsPath.Str);
             bool overflowed = sb.Append(path).Overflowed;

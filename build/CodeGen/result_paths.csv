@@ -1,4 +1,5 @@
 Name,Namespace,Path
+Svc,LibHac.Svc,LibHac/Svc/ResultSvc.cs
 Fs,LibHac.Fs,LibHac/Fs/ResultFs.cs
 Loader,LibHac.Loader,LibHac/Loader/ResultLoader.cs
 Sf,LibHac.Sf,LibHac/Sf/ResultSf.cs

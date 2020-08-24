@@ -180,7 +180,7 @@ namespace LibHac.FsSrv.Impl
             const int initialProcessIdLowerBound = 1;
             const int initialProcessIdUpperBound = 0x50;
 
-            return initialProcessIdLowerBound >= processId && processId <= initialProcessIdUpperBound;
+            return initialProcessIdLowerBound <= processId && processId <= initialProcessIdUpperBound;
         }
 
         internal static ProgramInfo CreateProgramInfoForInitialProcess(FileSystemServer fsServer)

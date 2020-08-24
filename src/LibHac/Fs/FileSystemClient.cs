@@ -64,7 +64,7 @@ namespace LibHac.Fs
 
                 if (rc.IsFailure())
                 {
-                    throw new HorizonResultException(rc, "Failed to create file system proxy service object.");
+                    throw new HorizonResultException(rc, "Failed to get file system proxy service object.");
                 }
 
                 fsProxy.SetCurrentProcess(Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
@@ -91,7 +91,7 @@ namespace LibHac.Fs
 
                 if (rc.IsFailure())
                 {
-                    throw new HorizonResultException(rc, "Failed to create file system proxy service object.");
+                    throw new HorizonResultException(rc, "Failed to get file system proxy service object.");
                 }
 
                 fsProxy.SetCurrentProcess(Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
@@ -118,7 +118,7 @@ namespace LibHac.Fs
 
                 if (rc.IsFailure())
                 {
-                    throw new HorizonResultException(rc, "Failed to create registry service object.");
+                    throw new HorizonResultException(rc, "Failed to get registry service object.");
                 }
 
                 ProgramRegistry = registry;
