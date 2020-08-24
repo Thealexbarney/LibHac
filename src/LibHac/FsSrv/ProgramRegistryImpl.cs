@@ -1,11 +1,12 @@
 ﻿using System;
 using LibHac.Fs;
 using LibHac.FsSrv.Impl;
+using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 
 namespace LibHac.FsSrv
 {
-    internal class ProgramRegistryImpl
+    internal class ProgramRegistryImpl : IProgramRegistry
     {
         private ulong _processId;
 

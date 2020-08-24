@@ -5,6 +5,7 @@ using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv.Impl;
+using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
 using LibHac.Kvdb;
 using LibHac.Ncm;
@@ -12,7 +13,7 @@ using LibHac.Spl;
 
 namespace LibHac.FsSrv
 {
-    public class FileSystemProxy : IFileSystemProxy
+    public class FileSystemProxy : IFileSystemProxy, IFileSystemProxyForLoader
     {
         private FileSystemProxyCore FsProxyCore { get; }
         internal HorizonClient Hos { get; }
@@ -67,6 +68,17 @@ namespace LibHac.FsSrv
         }
 
         public Result OpenFileSystemWithPatch(out IFileSystem fileSystem, ProgramId programId, FileSystemProxyType type)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result OpenCodeFileSystem(out IFileSystem fileSystem, out CodeVerificationData verificationData, in FspPath path,
+            ProgramId programId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result IsArchivedProgram(out bool isArchived, ulong processId)
         {
             throw new NotImplementedException();
         }

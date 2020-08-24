@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
 
-namespace LibHac.FsSystem
+namespace LibHac.FsSrv.Sf
 {
     [DebuggerDisplay("{ToString()}")]
     [StructLayout(LayoutKind.Sequential, Size = MaxLength + 1)]
-    public struct FsPath
+    public readonly struct FspPath
     {
         internal const int MaxLength = 0x300;
 
@@ -20,23 +20,25 @@ namespace LibHac.FsSystem
         [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly byte Padding300;
 #endif
 
-        public Span<byte> Str => SpanHelpers.AsByteSpan(ref this);
+        public ReadOnlySpan<byte> Str => SpanHelpers.AsReadOnlyByteSpan(in this);
 
-        public static Result FromSpan(out FsPath fsPath, ReadOnlySpan<byte> path)
+        public static Result FromSpan(out FspPath fspPath, ReadOnlySpan<byte> path)
         {
-            Unsafe.SkipInit(out fsPath);
+            Unsafe.SkipInit(out fspPath);
+
+            Span<byte> str = SpanHelpers.AsByteSpan(ref fspPath);
 
             // Ensure null terminator even if the creation fails for safety
-            fsPath.Str[0x301] = 0;
+            str[0x301] = 0;
 
-            var sb = new U8StringBuilder(fsPath.Str);
+            var sb = new U8StringBuilder(str);
             bool overflowed = sb.Append(path).Overflowed;
 
             return overflowed ? ResultFs.TooLongPath.Log() : Result.Success;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static implicit operator U8Span(in FsPath value) => new U8Span(SpanHelpers.AsReadOnlyByteSpan(in value));
+        public static implicit operator U8Span(in FspPath value) => new U8Span(SpanHelpers.AsReadOnlyByteSpan(in value));
 
         public override string ToString() => StringUtils.Utf8ZToString(Str);
     }

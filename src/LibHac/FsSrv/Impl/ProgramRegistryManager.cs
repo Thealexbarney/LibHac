@@ -100,7 +100,7 @@ namespace LibHac.FsSrv.Impl
         {
             lock (ProgramInfoList)
             {
-                if(ProgramInfo.IsInitialProgram(processId))
+                if (ProgramInfo.IsInitialProgram(processId))
                 {
                     programInfo = GetProgramInfoForInitialProcess();
                     return Result.Success;
@@ -178,7 +178,7 @@ namespace LibHac.FsSrv.Impl
         {
             // Todo: We have no kernel to call into, so use hardcoded values for now
             const int initialProcessIdLowerBound = 1;
-            const int initialProcessIdUpperBound = 10;
+            const int initialProcessIdUpperBound = 0x50;
 
             return initialProcessIdLowerBound >= processId && processId <= initialProcessIdUpperBound;
         }

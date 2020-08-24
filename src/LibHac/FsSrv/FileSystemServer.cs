@@ -55,6 +55,8 @@ namespace LibHac.FsSrv
             fsProxy.CleanUpTemporaryStorage().IgnoreResult();
 
             Hos.Sm.RegisterService(new FileSystemProxyService(this), "fsp-srv").IgnoreResult();
+            Hos.Sm.RegisterService(new FileSystemProxyForLoaderService(this), "fsp-ldr").IgnoreResult();
+            Hos.Sm.RegisterService(new ProgramRegistryService(this), "fsp-pr").IgnoreResult();
 
             // NS usually takes care of this
             if (Hos.Fs.IsSdCardInserted())
@@ -84,6 +86,16 @@ namespace LibHac.FsSrv
             return new FileSystemProxy(Hos, FsProxyCore);
         }
 
+        private FileSystemProxy GetFileSystemProxyForLoaderServiceObject()
+        {
+            return new FileSystemProxy(Hos, FsProxyCore);
+        }
+
+        private ProgramRegistryImpl GetProgramRegistryServiceObject()
+        {
+            return new ProgramRegistryImpl(FsProxyCore.Config.ProgramRegistryServiceImpl);
+        }
+
         internal bool IsCurrentProcess(ulong processId)
         {
             ulong currentId = Hos.Os.GetCurrentProcessId().Value;
@@ -103,6 +115,38 @@ namespace LibHac.FsSrv
             public Result GetServiceObject(out object serviceObject)
             {
                 serviceObject = _server.GetFileSystemProxyServiceObject();
+                return Result.Success;
+            }
+        }
+
+        private class FileSystemProxyForLoaderService : IServiceObject
+        {
+            private readonly FileSystemServer _server;
+
+            public FileSystemProxyForLoaderService(FileSystemServer server)
+            {
+                _server = server;
+            }
+
+            public Result GetServiceObject(out object serviceObject)
+            {
+                serviceObject = _server.GetFileSystemProxyForLoaderServiceObject();
+                return Result.Success;
+            }
+        }
+
+        private class ProgramRegistryService : IServiceObject
+        {
+            private readonly FileSystemServer _server;
+
+            public ProgramRegistryService(FileSystemServer server)
+            {
+                _server = server;
+            }
+
+            public Result GetServiceObject(out object serviceObject)
+            {
+                serviceObject = _server.GetProgramRegistryServiceObject();
                 return Result.Success;
             }
         }

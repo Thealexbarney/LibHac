@@ -6,16 +6,23 @@ using LibHac.Diag;
 using LibHac.Fs.Accessors;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv;
+using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
 
 namespace LibHac.Fs
 {
     public partial class FileSystemClient
     {
-        private HorizonClient Hos { get; }
-        private IFileSystemProxy FsProxy { get; set; }
+        internal HorizonClient Hos { get; }
 
+        private IFileSystemProxy FsProxy { get; set; }
         private readonly object _fspInitLocker = new object();
+
+        private IFileSystemProxyForLoader FsProxyForLoader { get; set; }
+        private readonly object _fsplInitLocker = new object();
+
+        private IProgramRegistry ProgramRegistry { get; set; }
+        private readonly object _progRegInitLocker = new object();
 
         internal ITimeSpanGenerator Time { get; }
         private IAccessLog AccessLog { get; set; }
@@ -44,7 +51,7 @@ namespace LibHac.Fs
         {
             if (FsProxy != null) return FsProxy;
 
-            lock (_fspInitLocker)
+            lock (_fsplInitLocker)
             {
                 if (FsProxy != null) return FsProxy;
 
@@ -64,6 +71,58 @@ namespace LibHac.Fs
 
                 FsProxy = fsProxy;
                 return FsProxy;
+            }
+        }
+
+        public IFileSystemProxyForLoader GetFileSystemProxyForLoaderServiceObject()
+        {
+            if (FsProxyForLoader != null) return FsProxyForLoader;
+
+            lock (_fspInitLocker)
+            {
+                if (FsProxyForLoader != null) return FsProxyForLoader;
+
+                if (!HasFileSystemServer())
+                {
+                    throw new InvalidOperationException("Client was not initialized with a server object.");
+                }
+
+                Result rc = Hos.Sm.GetService(out IFileSystemProxyForLoader fsProxy, "fsp-ldr");
+
+                if (rc.IsFailure())
+                {
+                    throw new HorizonResultException(rc, "Failed to create file system proxy service object.");
+                }
+
+                fsProxy.SetCurrentProcess(Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
+
+                FsProxyForLoader = fsProxy;
+                return FsProxyForLoader;
+            }
+        }
+
+        public IProgramRegistry GetProgramRegistryServiceObject()
+        {
+            if (ProgramRegistry != null) return ProgramRegistry;
+
+            lock (_progRegInitLocker)
+            {
+                if (ProgramRegistry != null) return ProgramRegistry;
+
+                if (!HasFileSystemServer())
+                {
+                    throw new InvalidOperationException("Client was not initialized with a server object.");
+                }
+
+                Result rc = Hos.Sm.GetService(out IProgramRegistry registry, "fsp-pr");
+
+                if (rc.IsFailure())
+                {
+                    throw new HorizonResultException(rc, "Failed to create registry service object.");
+                }
+
+                ProgramRegistry = registry;
+                return ProgramRegistry;
             }
         }
 
