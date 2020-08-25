@@ -512,7 +512,7 @@ namespace LibHac.FsSrv.Impl
         public bool CanWrite => ((_value >> 1) & 1) == 1;
     }
 
-    internal readonly struct AccessControlBits
+    public readonly struct AccessControlBits
     {
         public readonly ulong Value;
 
