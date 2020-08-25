@@ -1,7 +1,11 @@
 ﻿using System.Threading;
 using LibHac.Bcat;
+using LibHac.Common;
 using LibHac.Diag;
+using LibHac.Fs.Shim;
 using LibHac.FsSrv;
+using LibHac.FsSrv.Impl;
+using LibHac.Ncm;
 using LibHac.Os;
 using LibHac.Sm;
 
@@ -12,6 +16,7 @@ namespace LibHac
         private const int InitialProcessCountMax = 0x50;
         internal ITimeSpanGenerator Time { get; }
         internal ServiceManager ServiceManager { get; }
+        private HorizonClient LoaderClient { get; }
 
         // long instead of ulong because the ulong Interlocked.Increment overload
         // wasn't added until .NET 5
@@ -29,6 +34,8 @@ namespace LibHac
             new FileSystemServer(CreatePrivilegedHorizonClient(), fsServerConfig);
             new BcatServer(CreateHorizonClient());
             // ReSharper restore ObjectCreationAsStatement
+
+            LoaderClient = CreatePrivilegedHorizonClient();
         }
 
         public HorizonClient CreatePrivilegedHorizonClient()
@@ -49,6 +56,26 @@ namespace LibHac
             // Todo: Register process with FS
 
             return new HorizonClient(this, new ProcessId(processId));
+        }
+
+        public HorizonClient CreateHorizonClient(ProgramId programId, AccessControlBits.Bits fsPermissions)
+        {
+            HorizonClient client = CreateHorizonClient();
+
+            var dataHeader = new AccessControlDataHeader();
+            var descriptor = new AccessControlDescriptor();
+
+            descriptor.Version = 1;
+            dataHeader.Version = 1;
+
+            descriptor.AccessFlags = (ulong)fsPermissions;
+            dataHeader.AccessFlags = (ulong)fsPermissions;
+
+            LoaderClient.Fs.RegisterProgram(client.ProcessId.Value, programId, StorageId.BuiltInUser,
+                    SpanHelpers.AsReadOnlyByteSpan(in dataHeader), SpanHelpers.AsReadOnlyByteSpan(in descriptor))
+                .ThrowIfFailure();
+
+            return client;
         }
     }
 }
