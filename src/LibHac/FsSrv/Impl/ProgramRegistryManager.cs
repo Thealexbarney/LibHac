@@ -167,7 +167,7 @@ namespace LibHac.FsSrv.Impl
             ReadOnlySpan<byte> accessControlDescriptor)
         {
             ProcessId = 0;
-            AccessControl = new AccessControl(fsServer, accessControlData, accessControlDescriptor);
+            AccessControl = new AccessControl(fsServer, accessControlData, accessControlDescriptor, ulong.MaxValue);
             ProgramId = default;
             StorageId = 0;
         }

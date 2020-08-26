@@ -190,17 +190,27 @@ namespace LibHac.FsSrv
 
         private Result DeleteSaveDataFileSystemImpl(SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            Result rc = OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, spaceId);
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
 
-            using (accessor)
+            SaveDataIndexerAccessor accessor = null;
+
+            try
             {
+                SaveDataType saveType;
+
                 if (saveDataId == FileSystemServer.SaveIndexerId)
                 {
-                    // missing: This save can only be deleted by the FS process itself
+                    if (!IsCurrentProcess(CurrentProcess))
+                        return ResultFs.PermissionDenied.Log();
+
+                    saveType = SaveDataType.System;
                 }
                 else
                 {
+                    rc = OpenSaveDataIndexerAccessor(out accessor, spaceId);
+                    if (rc.IsFailure()) return rc;
+
                     if (spaceId != SaveDataSpaceId.ProperSystem && spaceId != SaveDataSpaceId.SafeMode)
                     {
                         rc = accessor.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
@@ -214,12 +224,16 @@ namespace LibHac.FsSrv
 
                     if (key.Type == SaveDataType.System || key.Type == SaveDataType.SystemBcat)
                     {
-                        // Check if permissions allow deleting system save data
+                        if (!programInfo.AccessControl.CanCall(OperationType.DeleteSystemSaveData))
+                            return ResultFs.PermissionDenied.Log();
                     }
                     else
                     {
-                        // Check if permissions allow deleting save data
+                        if (!programInfo.AccessControl.CanCall(OperationType.DeleteSaveData))
+                            return ResultFs.PermissionDenied.Log();
                     }
+
+                    saveType = key.Type;
 
                     rc = accessor.Indexer.SetState(saveDataId, SaveDataState.Creating);
                     if (rc.IsFailure()) return rc;
@@ -228,11 +242,12 @@ namespace LibHac.FsSrv
                     if (rc.IsFailure()) return rc;
                 }
 
-                rc = DeleteSaveDataFileSystemImpl2(spaceId, saveDataId);
+                rc = DeleteSaveDataFileSystemImpl2(spaceId, saveDataId, saveType, false);
                 if (rc.IsFailure()) return rc;
 
                 if (saveDataId != FileSystemServer.SaveIndexerId)
                 {
+                    // ReSharper disable once PossibleNullReferenceException
                     rc = accessor.Indexer.Delete(saveDataId);
                     if (rc.IsFailure()) return rc;
 
@@ -242,12 +257,14 @@ namespace LibHac.FsSrv
 
                 return Result.Success;
             }
+            finally { accessor?.Dispose(); }
         }
 
-        private Result DeleteSaveDataFileSystemImpl2(SaveDataSpaceId spaceId, ulong saveDataId)
+        // ReSharper disable once UnusedParameter.Local
+        private Result DeleteSaveDataFileSystemImpl2(SaveDataSpaceId spaceId, ulong saveDataId, SaveDataType type, bool shouldWipe)
         {
             // missing: Check extra data flags for this value. Bit 3
-            bool doSecureDelete = false;
+            bool doSecureDelete = shouldWipe;
 
             Result rc = FsProxyCore.DeleteSaveDataMetaFiles(saveDataId, spaceId);
             if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc))
@@ -275,7 +292,6 @@ namespace LibHac.FsSrv
 
                 using (accessor)
                 {
-
                     rc = accessor.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
                     if (rc.IsFailure()) return rc;
 
@@ -325,6 +341,8 @@ namespace LibHac.FsSrv
             Result rc;
 
             SaveDataIndexerAccessor accessor = null;
+
+            // Missing permission checks
 
             try
             {
@@ -399,7 +417,7 @@ namespace LibHac.FsSrv
                 {
                     if (!ResultFs.PathAlreadyExists.Includes(rc)) return rc;
 
-                    rc = DeleteSaveDataFileSystemImpl2(creationInfo.SpaceId, saveDataId);
+                    rc = DeleteSaveDataFileSystemImpl2(creationInfo.SpaceId, saveDataId, attribute.Type, false);
                     if (rc.IsFailure()) return rc;
 
                     rc = FsProxyCore.CreateSaveDataFileSystem(saveDataId, ref attribute, ref creationInfo, SaveDataRootPath,
@@ -455,7 +473,7 @@ namespace LibHac.FsSrv
                 // Revert changes if an error happened in the middle of creation
                 if (isDeleteNeeded)
                 {
-                    DeleteSaveDataFileSystemImpl2(creationInfo.SpaceId, saveDataId).IgnoreResult();
+                    DeleteSaveDataFileSystemImpl2(creationInfo.SpaceId, saveDataId, attribute.Type, false).IgnoreResult();
 
                     if (accessor != null && saveDataId != FileSystemServer.SaveIndexerId)
                     {
@@ -1251,6 +1269,13 @@ namespace LibHac.FsSrv
         private Result GetProgramInfo(out ProgramInfo programInfo)
         {
             return FsProxyCore.ProgramRegistry.GetProgramInfo(out programInfo, CurrentProcess);
+        }
+
+        internal bool IsCurrentProcess(ulong processId)
+        {
+            ulong currentId = Hos.Os.GetCurrentProcessId().Value;
+
+            return processId == currentId;
         }
 
         private static bool IsSystemSaveDataId(ulong id)
