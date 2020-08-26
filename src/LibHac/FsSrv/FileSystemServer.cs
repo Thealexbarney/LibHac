@@ -96,13 +96,6 @@ namespace LibHac.FsSrv
             return new ProgramRegistryImpl(FsProxyCore.Config.ProgramRegistryServiceImpl);
         }
 
-        internal bool IsCurrentProcess(ulong processId)
-        {
-            ulong currentId = Hos.Os.GetCurrentProcessId().Value;
-
-            return processId == currentId;
-        }
-
         private class FileSystemProxyService : IServiceObject
         {
             private readonly FileSystemServer _server;

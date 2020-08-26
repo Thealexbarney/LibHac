@@ -21,7 +21,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
 
             var horizon = new Horizon(new StopWatchTimeSpanGenerator(), config);
 
-            HorizonClient horizonClient = horizon.CreateHorizonClient();
+            HorizonClient horizonClient = horizon.CreatePrivilegedHorizonClient();
 
             return horizonClient.Fs;
         }
