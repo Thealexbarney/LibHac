@@ -8,6 +8,7 @@ namespace LibHac.FsSrv
     /// <summary>
     /// Manages the main program registry and the multi-program registry.
     /// </summary>
+    /// <remarks>Based on FS 10.0.0 (nnSdk 10.4.0)</remarks>
     public class ProgramRegistryServiceImpl
     {
         private ProgramRegistryManager RegistryManager { get; }

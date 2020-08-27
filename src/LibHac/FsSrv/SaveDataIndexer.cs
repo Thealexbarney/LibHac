@@ -19,8 +19,8 @@ namespace LibHac.FsSrv
     /// <remarks>
     /// Each <see cref="SaveDataIndexer"/> manages one to two save data spaces.
     /// Each save data space is identified by a <see cref="SaveDataSpaceId"/>,
-    /// and has its own unique storage location on disk.<br/>
-    /// Based on FS 10.0.0 (nnSdk 10.4.0)
+    /// and has its own unique storage location on disk.
+    /// <br/>Based on FS 10.0.0 (nnSdk 10.4.0)
     /// </remarks>
     public class SaveDataIndexer : ISaveDataIndexer
     {

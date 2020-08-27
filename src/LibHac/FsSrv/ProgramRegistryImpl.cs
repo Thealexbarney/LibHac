@@ -6,6 +6,14 @@ using LibHac.Ncm;
 
 namespace LibHac.FsSrv
 {
+    /// <summary>
+    /// Used to add, remove or access the Program Registry.
+    /// </summary>
+    /// <remarks>Every process that is launched has information registered with FS. This information
+    /// is stored in a <see cref="ProgramInfo"/> and includes the process' process ID, program ID,
+    /// storage location and file system permissions. This allows FS to resolve the program ID and
+    /// verify the permissions of any process calling it. 
+    /// <br/>Based on FS 10.0.0 (nnSdk 10.4.0)</remarks>
     internal class ProgramRegistryImpl : IProgramRegistry
     {
         private ulong _processId;

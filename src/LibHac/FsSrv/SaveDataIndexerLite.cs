@@ -10,8 +10,8 @@ namespace LibHac.FsSrv
     /// </summary>
     /// <remarks>
     /// Only one temporary save data may exist at a time. When a new
-    /// save data is added to the index, the existing key-value pair is replaced.<br/>
-    /// Based on FS 10.0.0 (nnSdk 10.4.0)
+    /// save data is added to the index, the existing key-value pair is replaced.
+    /// <br/>Based on FS 10.0.0 (nnSdk 10.4.0)
     /// </remarks>
     public class SaveDataIndexerLite : ISaveDataIndexer
     {
