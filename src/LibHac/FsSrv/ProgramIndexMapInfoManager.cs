@@ -8,6 +8,7 @@ namespace LibHac.FsSrv
     /// <summary>
     /// Keeps track of the program IDs and program indexes of each program in a multi-program application.
     /// </summary>
+    /// <remarks>Based on FS 10.0.0 (nnSdk 10.4.0)</remarks>
     public class ProgramIndexMapInfoManager
     {
         private LinkedList<ProgramIndexMapInfo> MapEntries { get; } = new LinkedList<ProgramIndexMapInfo>();

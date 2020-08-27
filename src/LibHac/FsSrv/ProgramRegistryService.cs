@@ -6,6 +6,12 @@ using LibHac.FsSrv.Impl;
 
 namespace LibHac.FsSrv
 {
+    /// <summary>
+    /// Used to perform operations on the Program Index Map.
+    /// </summary>
+    /// <remarks>Appropriate methods calls on IFileSystemProxy are forwarded to this class
+    /// which then checks the calling process' permissions and performs the requested operation.
+    /// <br/>Based on FS 10.0.0 (nnSdk 10.4.0)</remarks>
     internal readonly struct ProgramRegistryService
     {
         private ProgramRegistryServiceImpl ServiceImpl { get; }

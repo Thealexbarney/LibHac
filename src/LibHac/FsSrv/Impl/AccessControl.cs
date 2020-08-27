@@ -8,6 +8,12 @@ using LibHac.Diag;
 
 namespace LibHac.FsSrv.Impl
 {
+    /// <summary>
+    /// Controls access to FS resources for a single process.
+    /// </summary>
+    /// <remarks>Each process has it's own FS permissions. Every time a process tries to access various FS resources
+    /// or perform certain actions, this class determines if the process has the permissions to do so.
+    /// <br/>Based on FS 10.0.0 (nnSdk 10.4.0)</remarks>
     public class AccessControl
     {
         private AccessControlBits? AccessBits { get; }

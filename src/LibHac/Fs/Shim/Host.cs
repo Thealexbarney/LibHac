@@ -12,9 +12,7 @@ namespace LibHac.Fs.Shim
     /// <summary>
     /// Contains functions for mounting file systems from a host computer.
     /// </summary>
-    /// <remarks>
-    /// All functions in this file are based on SDK 9.3
-    /// </remarks>
+    /// <remarks>Based on nnSdk 9.3.0</remarks>
     public static class Host
     {
         private static ReadOnlySpan<byte> HostRootFileSystemPath => new[]

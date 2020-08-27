@@ -10,8 +10,8 @@ namespace LibHac.FsSystem
     /// </summary>
     /// <remarks>
     /// Transactional commits should be atomic as long as the <see cref="IFileSystem.RenameDirectory"/> function of the
-    /// underlying <see cref="IFileSystem"/> is atomic.<br/>
-    /// Based on FS 10.0.0 (nnSdk 10.4.0)
+    /// underlying <see cref="IFileSystem"/> is atomic.
+    /// <br/>Based on FS 10.0.0 (nnSdk 10.4.0)
     /// </remarks>
     public class DirectorySaveDataFileSystem : IFileSystem
     {

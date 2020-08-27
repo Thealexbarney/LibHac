@@ -5,6 +5,10 @@ using LibHac.Ncm;
 
 namespace LibHac.FsSrv.Impl
 {
+    /// <summary>
+    /// Handles adding, removing, and accessing <see cref="ProgramInfo"/> from the <see cref="ProgramRegistryImpl"/>.
+    /// </summary>
+    /// <remarks>Based on FS 10.0.0 (nnSdk 10.4.0)</remarks>
     internal class ProgramRegistryManager
     {
         // Note: FS keeps each ProgramInfo in a shared_ptr, but there aren't any non-memory resources
