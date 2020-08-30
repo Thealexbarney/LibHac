@@ -4,6 +4,10 @@ using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSrv.Creators
 {
+    /// <summary>
+    /// Configuration for <see cref="EmulatedBisFileSystemCreator"/> that specifies how each
+    /// BIS partition is opened.
+    /// </summary>
     public class EmulatedBisFileSystemCreatorConfig
     {
         private const int ValidPartitionCount = 4;
