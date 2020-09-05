@@ -14,7 +14,7 @@ namespace LibHac.FsSrv
     /// storage location and file system permissions. This allows FS to resolve the program ID and
     /// verify the permissions of any process calling it. 
     /// <br/>Based on FS 10.0.0 (nnSdk 10.4.0)</remarks>
-    internal class ProgramRegistryImpl : IProgramRegistry
+    public class ProgramRegistryImpl : IProgramRegistry
     {
         private ulong _processId;
 

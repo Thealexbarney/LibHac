@@ -4,7 +4,7 @@ using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSrv.Creators
 {
-    public class EmulatedSdFileSystemCreator : ISdFileSystemCreator
+    public class EmulatedSdCardFileSystemCreator : ISdCardProxyFileSystemCreator
     {
         private const string DefaultPath = "/sdcard";
 
@@ -14,20 +14,20 @@ namespace LibHac.FsSrv.Creators
 
         private IFileSystem SdCardFileSystem { get; set; }
 
-        public EmulatedSdFileSystemCreator(EmulatedSdCard sdCard, IFileSystem rootFileSystem)
+        public EmulatedSdCardFileSystemCreator(EmulatedSdCard sdCard, IFileSystem rootFileSystem)
         {
             SdCard = sdCard;
             RootFileSystem = rootFileSystem;
         }
 
-        public EmulatedSdFileSystemCreator(EmulatedSdCard sdCard, IFileSystem rootFileSystem, string path)
+        public EmulatedSdCardFileSystemCreator(EmulatedSdCard sdCard, IFileSystem rootFileSystem, string path)
         {
             SdCard = sdCard;
             RootFileSystem = rootFileSystem;
             Path = path;
         }
 
-        public Result Create(out IFileSystem fileSystem)
+        public Result Create(out IFileSystem fileSystem, bool isCaseSensitive)
         {
             fileSystem = default;
 
@@ -61,7 +61,12 @@ namespace LibHac.FsSrv.Creators
             return Result.Success;
         }
 
-        public Result Format(bool closeOpenEntries)
+        public Result Format(bool removeFromFatFsCache)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result Format()
         {
             throw new NotImplementedException();
         }

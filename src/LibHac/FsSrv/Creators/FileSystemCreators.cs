@@ -17,6 +17,6 @@
         public IEncryptedFileSystemCreator EncryptedFileSystemCreator { get; set; }
         public IMemoryStorageCreator MemoryStorageCreator { get; set; }
         public IBuiltInStorageFileSystemCreator BuiltInStorageFileSystemCreator { get; set; }
-        public ISdFileSystemCreator SdFileSystemCreator { get; set; }
+        public ISdCardProxyFileSystemCreator SdCardFileSystemCreator { get; set; }
     }
 }

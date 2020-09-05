@@ -305,6 +305,8 @@ namespace LibHac.Fs
 
         /// <summary>Error code: 2002-5000; Range: 5000-5999; Inner value: 0x271002</summary>
         public static Result.Base Unexpected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 5000, 5999); }
+            /// <summary>Error code: 2002-5121; Inner value: 0x280202</summary>
+            public static Result.Base UnexpectedFatFileSystemSectorCount => new Result.Base(ModuleFs, 5121);
             /// <summary>Error code: 2002-5307; Inner value: 0x297602</summary>
             public static Result.Base UnexpectedErrorInHostFileFlush => new Result.Base(ModuleFs, 5307);
             /// <summary>Error code: 2002-5308; Inner value: 0x297802</summary>

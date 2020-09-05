@@ -627,7 +627,7 @@ namespace LibHac.FsSrv
 
         public Result OpenSdCardFileSystem(out IFileSystem fileSystem)
         {
-            return FsCreators.SdFileSystemCreator.Create(out fileSystem);
+            return FsCreators.SdCardFileSystemCreator.Create(out fileSystem, false);
         }
 
         public Result OpenGameCardStorage(out IStorage storage, GameCardHandle handle, GameCardPartitionRaw partitionId)
@@ -707,7 +707,7 @@ namespace LibHac.FsSrv
             {
                 case CustomStorageId.SdCard:
                 {
-                    Result rc = FsCreators.SdFileSystemCreator.Create(out IFileSystem sdFs);
+                    Result rc = FsCreators.SdCardFileSystemCreator.Create(out IFileSystem sdFs, false);
                     if (rc.IsFailure()) return rc;
 
                     string customStorageDir = CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.SdCard);

@@ -205,6 +205,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,4812,,IncompleteBlockInZeroBitmapHashStorageFile,
 
 2,5000,5999,Unexpected,
+2,5121,,UnexpectedFatFileSystemSectorCount,
 2,5307,,UnexpectedErrorInHostFileFlush,
 2,5308,,UnexpectedErrorInHostFileGetSize,
 2,5309,,UnknownHostFileSystemError,
