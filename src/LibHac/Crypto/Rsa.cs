@@ -50,11 +50,9 @@ namespace LibHac.Crypto
             }
         }
 
-        /**
-         * <param name="n">The RSA Modulus (n)</param>
-         * <param name="e">The RSA Public Exponent (e)</param>
-         * <param name="d">The RSA Private Exponent (d)</param>
-         */
+        /// <param name="n">The RSA Modulus (n)</param>
+        /// <param name="e">The RSA Public Exponent (e)</param>
+        /// <param name="d">The RSA Private Exponent (d)</param>
         public static RSAParameters RecoverParameters(BigInteger n, BigInteger e, BigInteger d)
         {
             (BigInteger p, BigInteger q) = DeriveRsaPrimeNumberPair(n, e, d);
@@ -79,23 +77,19 @@ namespace LibHac.Crypto
             };
         }
 
-        /**
-         * <param name="n">The RSA Modulus (n)</param>
-         * <param name="e">The RSA Public Exponent (e)</param>
-         * <param name="d">The RSA Private Exponent (d)</param>
-         */
+        /// <param name="n">The RSA Modulus (n)</param>
+        /// <param name="e">The RSA Public Exponent (e)</param>
+        /// <param name="d">The RSA Private Exponent (d)</param>
         public static RSAParameters RecoverParameters(ReadOnlySpan<byte> n, ReadOnlySpan<byte> e, ReadOnlySpan<byte> d) =>
             RecoverParameters(n.GetBigInteger(), e.GetBigInteger(), d.GetBigInteger());
 
-        /**
-         * <summary>
-         * Derive RSA Prime Number Pair (p, q) from RSA Modulus (n), RSA Public Exponent (e) and RSA Private Exponent (d)
-         * </summary>
-         * <param name="n">The RSA Modulus (n)</param>
-         * <param name="e">The RSA Public Exponent (e)</param>
-         * <param name="d">The RSA Private Exponent (d)</param>
-         * <returns>RSA Prime Number Pair</returns>
-         */
+        /// <summary>
+        /// Derive RSA Prime Number Pair (p, q) from RSA Modulus (n), RSA Public Exponent (e) and RSA Private Exponent (d)
+        /// </summary>
+        /// <param name="n">The RSA Modulus (n)</param>
+        /// <param name="e">The RSA Public Exponent (e)</param>
+        /// <param name="d">The RSA Private Exponent (d)</param>
+        /// <returns>RSA Prime Number Pair</returns>
         private static (BigInteger p, BigInteger q) DeriveRsaPrimeNumberPair(BigInteger n, BigInteger e, BigInteger d)
         {
             BigInteger k = d * e - BigInteger.One;

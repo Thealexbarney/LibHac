@@ -330,7 +330,7 @@ namespace hactoolnet
             PrintItem(sb, colLen, "Title ID:", $"{save.Header.ExtraData.TitleId:x16}");
             PrintItem(sb, colLen, "User ID:", save.Header.ExtraData.UserId);
             PrintItem(sb, colLen, "Save ID:", $"{save.Header.ExtraData.SaveId:x16}");
-            PrintItem(sb, colLen, "Save Type:", $"{save.Header.ExtraData.Type}");
+            PrintItem(sb, colLen, "Save Type:", $"{save.Header.ExtraData.Type.Print()}");
             PrintItem(sb, colLen, "Owner ID:", $"{save.Header.ExtraData.SaveOwnerId:x16}");
             PrintItem(sb, colLen, "Timestamp:", $"{DateTimeOffset.FromUnixTimeSeconds(save.Header.ExtraData.Timestamp):yyyy-MM-dd HH:mm:ss} UTC");
             PrintItem(sb, colLen, "Save Data Size:", $"0x{save.Header.ExtraData.DataSize:x16} ({Utilities.GetBytesReadable(save.Header.ExtraData.DataSize)})");

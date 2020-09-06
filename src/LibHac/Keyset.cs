@@ -350,7 +350,7 @@ namespace LibHac
                 }
 
                 Array.Copy(EncryptedKeyblobs[i], expectedCmac, 0x10);
-                Aes.CalculateCmac(KeyblobMacKeys[i], EncryptedKeyblobs[i], 0x10, cmac, 0, 0xa0);
+                Aes.CalculateCmac(cmac, EncryptedKeyblobs[i].AsSpan(0x10, 0xA0), KeyblobMacKeys[i]);
 
                 if (!Utilities.ArraysEqual(cmac, expectedCmac))
                 {

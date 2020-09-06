@@ -83,10 +83,12 @@ namespace LibHac.FsSystem
             long pos = 0;
 
             using var buffer = new RentedArray<byte>(bufferSize);
+            int rentedBufferSize = buffer.Array.Length;
+
             while (remaining > 0)
             {
-                int toCopy = (int)Math.Min(bufferSize, remaining);
-                Span<byte> buf = buffer.Span.Slice(0, toCopy);
+                int toCopy = (int)Math.Min(rentedBufferSize, remaining);
+                Span<byte> buf = buffer.Array.AsSpan(0, toCopy);
                 input.Read(pos, buf);
                 output.Write(pos, buf);
 
@@ -132,12 +134,14 @@ namespace LibHac.FsSystem
             long pos = offset;
 
             using var buffer = new RentedArray<byte>(bufferSize);
-            buffer.Span.Slice(0, (int)Math.Min(remaining, bufferSize)).Fill(value);
+            int rentedBufferSize = buffer.Array.Length;
+
+            buffer.Array.AsSpan(0, (int)Math.Min(remaining, rentedBufferSize)).Fill(value);
 
             while (remaining > 0)
             {
-                int toFill = (int)Math.Min(bufferSize, remaining);
-                Span<byte> buf = buffer.Span.Slice(0, toFill);
+                int toFill = (int)Math.Min(rentedBufferSize, remaining);
+                Span<byte> buf = buffer.Array.AsSpan(0, toFill);
 
                 input.Write(pos, buf);
 
@@ -188,14 +192,16 @@ namespace LibHac.FsSystem
         {
             long remaining = length;
             long inOffset = 0;
+
             using var buffer = new RentedArray<byte>(bufferSize);
+            int rentedBufferSize = buffer.Array.Length;
 
             progress?.SetTotal(length);
 
             while (remaining > 0)
             {
-                int toWrite = (int)Math.Min(bufferSize, remaining);
-                input.Read(inOffset, buffer.Span.Slice(0, toWrite));
+                int toWrite = (int)Math.Min(rentedBufferSize, remaining);
+                input.Read(inOffset, buffer.Array.AsSpan(0, toWrite));
 
                 output.Write(buffer.Array, 0, toWrite);
                 remaining -= toWrite;
