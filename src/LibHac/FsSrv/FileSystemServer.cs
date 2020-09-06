@@ -3,6 +3,7 @@ using LibHac.Fs;
 using LibHac.Fs.Impl;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Creators;
+using LibHac.FsSrv.Impl;
 using LibHac.Sm;
 
 namespace LibHac.FsSrv
@@ -39,11 +40,7 @@ namespace LibHac.FsSrv
             ExternalKeySet externalKeySet = config.ExternalKeySet ?? new ExternalKeySet();
             Timer = config.TimeSpanGenerator ?? new StopWatchTimeSpanGenerator();
 
-            var fspConfig = new FileSystemProxyConfiguration
-            {
-                FsCreatorInterfaces = config.FsCreators,
-                ProgramRegistryServiceImpl = new ProgramRegistryServiceImpl(this)
-            };
+            FileSystemProxyConfiguration fspConfig = InitializeFileSystemProxyConfiguration(config);
 
             FsProxyCore = new FileSystemProxyCore(fspConfig, externalKeySet, config.DeviceOperator);
 
@@ -79,6 +76,29 @@ namespace LibHac.FsSrv
         public FileSystemClient CreateFileSystemClient(ITimeSpanGenerator timer)
         {
             return new FileSystemClient(Hos);
+        }
+
+        private FileSystemProxyConfiguration InitializeFileSystemProxyConfiguration(FileSystemServerConfig config)
+        {
+            var programRegistryService = new ProgramRegistryServiceImpl(this);
+            var programRegistry = new ProgramRegistryImpl(programRegistryService);
+
+            var baseFsServiceConfig = new BaseFileSystemServiceImpl.Configuration();
+            baseFsServiceConfig.BisFileSystemCreator = config.FsCreators.BuiltInStorageFileSystemCreator;
+            baseFsServiceConfig.GameCardFileSystemCreator = config.FsCreators.GameCardFileSystemCreator;
+            baseFsServiceConfig.SdCardFileSystemCreator = config.FsCreators.SdCardFileSystemCreator;
+            baseFsServiceConfig.BisWiperCreator = BisWiper.CreateWiper;
+            baseFsServiceConfig.ProgramRegistry = programRegistry;
+            var baseFsService = new BaseFileSystemServiceImpl(in baseFsServiceConfig);
+
+            var fspConfig = new FileSystemProxyConfiguration
+            {
+                FsCreatorInterfaces = config.FsCreators,
+                BaseFileSystemServiceImpl = baseFsService,
+                ProgramRegistryServiceImpl = programRegistryService
+            };
+
+            return fspConfig;
         }
 
         private FileSystemProxy GetFileSystemProxyServiceObject()

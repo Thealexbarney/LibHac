@@ -9,6 +9,7 @@ using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
 using LibHac.Kvdb;
 using LibHac.Ncm;
+using LibHac.Sf;
 using LibHac.Spl;
 using LibHac.Util;
 
@@ -718,9 +719,9 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result OpenImageDirectoryFileSystem(out IFileSystem fileSystem, ImageDirectoryId dirId)
+        public Result OpenImageDirectoryFileSystem(out IFileSystem fileSystem, ImageDirectoryId directoryId)
         {
-            throw new NotImplementedException();
+            return GetBaseFileSystemService().OpenImageDirectoryFileSystem(out fileSystem, directoryId);
         }
 
         public Result RegisterProgramIndexMapInfo(ReadOnlySpan<byte> programIndexMapInfoBuffer, int programCount)
@@ -733,16 +734,9 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result OpenBisFileSystem(out IFileSystem fileSystem, ref FsPath rootPath, BisPartitionId partitionId)
+        public Result OpenBisFileSystem(out IFileSystem fileSystem, in FspPath rootPath, BisPartitionId partitionId)
         {
-            fileSystem = default;
-
-            // Missing permission check, speed emulation storage type wrapper, and FileSystemInterfaceAdapter
-
-            Result rc = PathTools.Normalize(out U8Span normalizedPath, rootPath);
-            if (rc.IsFailure()) return rc;
-
-            return FsProxyCore.OpenBisFileSystem(out fileSystem, normalizedPath.ToString(), partitionId);
+            return GetBaseFileSystemService().OpenBisFileSystem(out fileSystem, in rootPath, partitionId);
         }
 
         public Result OpenBisStorage(out IStorage storage, BisPartitionId partitionId)
@@ -769,24 +763,22 @@ namespace LibHac.FsSrv
 
         public Result OpenSdCardFileSystem(out IFileSystem fileSystem)
         {
-            // Missing permission check, speed emulation storage type wrapper, and FileSystemInterfaceAdapter
-
-            return FsProxyCore.OpenSdCardFileSystem(out fileSystem);
+            return GetBaseFileSystemService().OpenSdCardFileSystem(out fileSystem);
         }
 
         public Result FormatSdCardFileSystem()
         {
-            throw new NotImplementedException();
+            return GetBaseFileSystemService().FormatSdCardFileSystem();
         }
 
         public Result FormatSdCardDryRun()
         {
-            throw new NotImplementedException();
+            return GetBaseFileSystemService().FormatSdCardDryRun();
         }
 
         public Result IsExFatSupported(out bool isSupported)
         {
-            throw new NotImplementedException();
+            return GetBaseFileSystemService().IsExFatSupported(out isSupported);
         }
 
         public Result OpenGameCardStorage(out IStorage storage, GameCardHandle handle, GameCardPartitionRaw partitionId)
@@ -1045,9 +1037,7 @@ namespace LibHac.FsSrv
         public Result OpenGameCardFileSystem(out IFileSystem fileSystem, GameCardHandle handle,
             GameCardPartition partitionId)
         {
-            // Missing permission check and FileSystemInterfaceAdapter
-
-            return FsProxyCore.OpenGameCardFileSystem(out fileSystem, handle, partitionId);
+            return GetBaseFileSystemService().OpenGameCardFileSystem(out fileSystem, handle, partitionId);
         }
 
         public Result QuerySaveDataTotalSize(out long totalSize, long dataSize, long journalSize)
@@ -1137,12 +1127,12 @@ namespace LibHac.FsSrv
 
         public Result CreatePaddingFile(long size)
         {
-            throw new NotImplementedException();
+            return GetBaseFileSystemService().CreatePaddingFile(size);
         }
 
         public Result DeleteAllPaddingFiles()
         {
-            throw new NotImplementedException();
+            return GetBaseFileSystemService().DeleteAllPaddingFiles();
         }
 
         public Result DisableAutoSaveDataCreation()
@@ -1223,6 +1213,11 @@ namespace LibHac.FsSrv
             return Result.Success;
         }
 
+        public Result OpenBisWiper(out IWiper bisWiper, NativeHandle transferMemoryHandle, ulong transferMemorySize)
+        {
+            return GetBaseFileSystemService().OpenBisWiper(out bisWiper, transferMemoryHandle, transferMemorySize);
+        }
+
         internal Result OpenMultiCommitContextSaveData(out IFileSystem fileSystem)
         {
             fileSystem = default;
@@ -1270,6 +1265,11 @@ namespace LibHac.FsSrv
         private Result GetProgramInfo(out ProgramInfo programInfo)
         {
             return FsProxyCore.ProgramRegistry.GetProgramInfo(out programInfo, CurrentProcess);
+        }
+
+        private BaseFileSystemService GetBaseFileSystemService()
+        {
+            return new BaseFileSystemService(FsProxyCore.Config.BaseFileSystemServiceImpl, CurrentProcess);
         }
 
         internal bool IsCurrentProcess(ulong processId)

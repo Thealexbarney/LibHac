@@ -38,6 +38,12 @@ namespace LibHac.FsSrv.Sf
             return overflowed ? ResultFs.TooLongPath.Log() : Result.Success;
         }
 
+        public static void CreateEmpty(out FspPath fspPath)
+        {
+            Unsafe.SkipInit(out fspPath);
+            SpanHelpers.AsByteSpan(ref fspPath)[0] = 0;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator U8Span(in FspPath value) => new U8Span(SpanHelpers.AsReadOnlyByteSpan(in value));
 

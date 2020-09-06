@@ -2,8 +2,10 @@
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
 using LibHac.Ncm;
+using LibHac.Sf;
 using LibHac.Spl;
 
 namespace LibHac.FsSrv
@@ -15,7 +17,7 @@ namespace LibHac.FsSrv
         Result OpenFileSystemWithPatch(out IFileSystem fileSystem, ProgramId programId, FileSystemProxyType type);
         Result OpenFileSystemWithId(out IFileSystem fileSystem, ref FsPath path, ulong id, FileSystemProxyType type);
         Result OpenDataFileSystemByProgramId(out IFileSystem fileSystem, ProgramId programId);
-        Result OpenBisFileSystem(out IFileSystem fileSystem, ref FsPath rootPath, BisPartitionId partitionId);
+        Result OpenBisFileSystem(out IFileSystem fileSystem, in FspPath rootPath, BisPartitionId partitionId);
         Result OpenBisStorage(out IStorage storage, BisPartitionId partitionId);
         Result InvalidateBisCache();
         Result OpenHostFileSystemWithOption(out IFileSystem fileSystem, ref FsPath path, MountHostOption option);
@@ -55,7 +57,7 @@ namespace LibHac.FsSrv
         Result OpenSaveDataMetaFile(out IFile file, SaveDataSpaceId spaceId, ref SaveDataAttribute attribute, SaveDataMetaType type);
 
         Result ListAccessibleSaveDataOwnerId(out int readCount, Span<Ncm.ApplicationId> idBuffer, ProgramId programId, int startIndex, int bufferIdCount);
-        Result OpenImageDirectoryFileSystem(out IFileSystem fileSystem, ImageDirectoryId dirId);
+        Result OpenImageDirectoryFileSystem(out IFileSystem fileSystem, ImageDirectoryId directoryId);
         Result OpenContentStorageFileSystem(out IFileSystem fileSystem, ContentStorageId storageId);
         Result OpenCloudBackupWorkStorageFileSystem(out IFileSystem fileSystem, CloudBackupWorkStorageId storageId);
         Result OpenCustomStorageFileSystem(out IFileSystem fileSystem, CustomStorageId storageId);
@@ -103,5 +105,6 @@ namespace LibHac.FsSrv
         Result OverrideSaveDataTransferTokenSignVerificationKey(ReadOnlySpan<byte> key);
         Result CorruptSaveDataFileSystemByOffset(SaveDataSpaceId spaceId, ulong saveDataId, long offset);
         Result OpenMultiCommitManager(out IMultiCommitManager commitManager);
+        Result OpenBisWiper(out IWiper bisWiper, NativeHandle transferMemoryHandle, ulong transferMemorySize);
     }
 }

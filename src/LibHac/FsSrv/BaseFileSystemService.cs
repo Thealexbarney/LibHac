@@ -37,7 +37,7 @@ namespace LibHac.FsSrv
 
             // Reject opening invalid partitions
             if (requiredAccess == AccessibilityType.NotMount)
-                return ResultFs.InvalidAlignment.Log();
+                return ResultFs.InvalidArgument.Log();
 
             // Verify the caller has the required permissions
             Accessibility accessibility = programInfo.AccessControl.GetAccessibilityFor(requiredAccess);

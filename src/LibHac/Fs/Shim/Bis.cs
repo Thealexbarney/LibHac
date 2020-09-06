@@ -3,6 +3,7 @@ using System.Diagnostics;
 using LibHac.Common;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv;
+using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
 using LibHac.Util;
 using static LibHac.Fs.CommonMountNames;
@@ -85,15 +86,12 @@ namespace LibHac.Fs.Shim
             Result rc = MountHelpers.CheckMountNameAcceptingReservedMountName(mountName);
             if (rc.IsFailure()) return rc;
 
-            FsPath sfPath;
-            unsafe { _ = &sfPath; } // workaround for CS0165
-
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
             // Nintendo doesn't use the provided rootPath
-            sfPath.Str[0] = 0;
+            FspPath.CreateEmpty(out FspPath sfPath);
 
-            rc = fsProxy.OpenBisFileSystem(out IFileSystem fileSystem, ref sfPath, partitionId);
+            rc = fsProxy.OpenBisFileSystem(out IFileSystem fileSystem, in sfPath, partitionId);
             if (rc.IsFailure()) return rc;
 
             var nameGenerator = new BisCommonMountNameGenerator(partitionId);
