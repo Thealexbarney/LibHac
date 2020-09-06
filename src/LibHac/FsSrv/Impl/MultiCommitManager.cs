@@ -25,11 +25,11 @@ namespace LibHac.FsSrv.Impl
 
         private static readonly object Locker = new object();
 
-        private FileSystemProxy FsProxy { get; }
+        private FileSystemProxyImpl FsProxy { get; }
         private List<IFileSystem> FileSystems { get; } = new List<IFileSystem>(MaxFileSystemCount);
         private long CommitCount { get; set; }
 
-        public MultiCommitManager(FileSystemProxy fsProxy)
+        public MultiCommitManager(FileSystemProxyImpl fsProxy)
         {
             FsProxy = fsProxy;
         }

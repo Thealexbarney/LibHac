@@ -4,7 +4,7 @@ using LibHac.FsSrv;
 namespace LibHac.Fs
 {
     /// <summary>
-    /// The default access logger that will output to the SD card via <see cref="FileSystemProxy"/>.
+    /// The default access logger that will output to the SD card via <see cref="FileSystemProxyImpl"/>.
     /// </summary>
     public class SdCardAccessLog : IAccessLog
     {

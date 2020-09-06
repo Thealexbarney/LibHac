@@ -12,7 +12,7 @@ namespace LibHac.FsSrv
     {
         internal const ulong SaveIndexerId = 0x8000000000000000;
 
-        private FileSystemProxyCore FsProxyCore { get; }
+        private FileSystemProxyCoreImpl FsProxyCore { get; }
 
         /// <summary>The client instance to be used for internal operations like save indexer access.</summary>
         public HorizonClient Hos { get; }
@@ -42,12 +42,12 @@ namespace LibHac.FsSrv
 
             FileSystemProxyConfiguration fspConfig = InitializeFileSystemProxyConfiguration(config);
 
-            FsProxyCore = new FileSystemProxyCore(fspConfig, externalKeySet, config.DeviceOperator);
+            FsProxyCore = new FileSystemProxyCoreImpl(fspConfig, externalKeySet, config.DeviceOperator);
 
             FsProxyCore.SetSaveDataIndexerManager(new SaveDataIndexerManager(Hos.Fs, SaveIndexerId,
                 new ArrayPoolMemoryResource(), new SdHandleManager(), false));
 
-            FileSystemProxy fsProxy = GetFileSystemProxyServiceObject();
+            FileSystemProxyImpl fsProxy = GetFileSystemProxyServiceObject();
             fsProxy.SetCurrentProcess(Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
             fsProxy.CleanUpTemporaryStorage().IgnoreResult();
 
@@ -101,14 +101,14 @@ namespace LibHac.FsSrv
             return fspConfig;
         }
 
-        private FileSystemProxy GetFileSystemProxyServiceObject()
+        private FileSystemProxyImpl GetFileSystemProxyServiceObject()
         {
-            return new FileSystemProxy(Hos, FsProxyCore);
+            return new FileSystemProxyImpl(Hos, FsProxyCore);
         }
 
-        private FileSystemProxy GetFileSystemProxyForLoaderServiceObject()
+        private FileSystemProxyImpl GetFileSystemProxyForLoaderServiceObject()
         {
-            return new FileSystemProxy(Hos, FsProxyCore);
+            return new FileSystemProxyImpl(Hos, FsProxyCore);
         }
 
         private ProgramRegistryImpl GetProgramRegistryServiceObject()

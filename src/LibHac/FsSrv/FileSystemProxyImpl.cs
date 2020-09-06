@@ -15,9 +15,9 @@ using LibHac.Util;
 
 namespace LibHac.FsSrv
 {
-    public class FileSystemProxy : IFileSystemProxy, IFileSystemProxyForLoader
+    public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
     {
-        private FileSystemProxyCore FsProxyCore { get; }
+        private FileSystemProxyCoreImpl FsProxyCore { get; }
         internal HorizonClient Hos { get; }
 
         public ulong CurrentProcess { get; private set; }
@@ -27,7 +27,7 @@ namespace LibHac.FsSrv
         public FsPath SaveDataRootPath { get; }
         public bool AutoCreateSaveData { get; private set; }
 
-        internal FileSystemProxy(HorizonClient horizonClient, FileSystemProxyCore fsProxyCore)
+        internal FileSystemProxyImpl(HorizonClient horizonClient, FileSystemProxyCoreImpl fsProxyCore)
         {
             FsProxyCore = fsProxyCore;
             Hos = horizonClient;
