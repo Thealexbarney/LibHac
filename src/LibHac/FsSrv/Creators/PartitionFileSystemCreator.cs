@@ -21,5 +21,20 @@ namespace LibHac.FsSrv.Creators
             fileSystem = partitionFs;
             return Result.Success;
         }
+
+        public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, ReferenceCountedDisposable<IStorage> pFsStorage)
+        {
+            var partitionFs = new PartitionFileSystemCore<StandardEntry>();
+
+            Result rc = partitionFs.Initialize(pFsStorage);
+            if (rc.IsFailure())
+            {
+                fileSystem = default;
+                return rc;
+            }
+
+            fileSystem = new ReferenceCountedDisposable<IFileSystem>(partitionFs);
+            return Result.Success;
+        }
     }
 }

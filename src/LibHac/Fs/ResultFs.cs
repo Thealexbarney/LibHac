@@ -96,8 +96,16 @@ namespace LibHac.Fs
 
         /// <summary>Error code: 2002-3200; Range: 3200-3499; Inner value: 0x190002</summary>
         public static Result.Base AllocationMemoryFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 3200, 3499); }
+            /// <summary>In ParseNsp allocating FileStorageBasedFileSystem<br/>Error code: 2002-3256; Inner value: 0x197002</summary>
+            public static Result.Base AllocationFailureInNcaFileSystemServiceImplA => new Result.Base(ModuleFs, 3256);
+            /// <summary>In ParseNca allocating FileStorageBasedFileSystem<br/>Error code: 2002-3257; Inner value: 0x197202</summary>
+            public static Result.Base AllocationFailureInNcaFileSystemServiceImplB => new Result.Base(ModuleFs, 3257);
             /// <summary>In RegisterProgram allocating ProgramInfoNode<br/>Error code: 2002-3258; Inner value: 0x197402</summary>
             public static Result.Base AllocationFailureInProgramRegistryManagerA => new Result.Base(ModuleFs, 3258);
+            /// <summary>In Initialize allocating ProgramInfoNode<br/>Error code: 2002-3264; Inner value: 0x198002</summary>
+            public static Result.Base AllocationFailureFatFileSystemA => new Result.Base(ModuleFs, 3264);
+            /// <summary>In Create allocating PartitionFileSystemCore<br/>Error code: 2002-3280; Inner value: 0x19a002</summary>
+            public static Result.Base AllocationFailureInPartitionFileSystemCreatorA => new Result.Base(ModuleFs, 3280);
             /// <summary>In Initialize allocating FileStorage<br/>Error code: 2002-3312; Inner value: 0x19e002</summary>
             public static Result.Base AllocationFailureInAesXtsFileA => new Result.Base(ModuleFs, 3312);
             /// <summary>In Initialize allocating AesXtsStorage<br/>Error code: 2002-3313; Inner value: 0x19e202</summary>
@@ -106,8 +114,32 @@ namespace LibHac.Fs
             public static Result.Base AllocationFailureInAesXtsFileC => new Result.Base(ModuleFs, 3314);
             /// <summary>In Initialize allocating StorageFile<br/>Error code: 2002-3315; Inner value: 0x19e602</summary>
             public static Result.Base AllocationFailureInAesXtsFileD => new Result.Base(ModuleFs, 3315);
-            /// <summary>In Initialize allocating SubStorage<br/>Error code: 2002-3383; Inner value: 0x1a6e02</summary>
+            /// <summary>In Initialize allocating PartitionFileSystemMetaCore<br/>Error code: 2002-3347; Inner value: 0x1a2602</summary>
+            public static Result.Base AllocationFailureInPartitionFileSystemA => new Result.Base(ModuleFs, 3347);
+            /// <summary>In DoOpenFile allocating PartitionFile<br/>Error code: 2002-3348; Inner value: 0x1a2802</summary>
+            public static Result.Base AllocationFailureInPartitionFileSystemB => new Result.Base(ModuleFs, 3348);
+            /// <summary>In DoOpenDirectory allocating PartitionDirectory<br/>Error code: 2002-3349; Inner value: 0x1a2a02</summary>
+            public static Result.Base AllocationFailureInPartitionFileSystemC => new Result.Base(ModuleFs, 3349);
+            /// <summary>In Initialize allocating metadata buffer<br/>Error code: 2002-3350; Inner value: 0x1a2c02</summary>
+            public static Result.Base AllocationFailureInPartitionFileSystemMetaA => new Result.Base(ModuleFs, 3350);
+            /// <summary>In Sha256 Initialize allocating metadata buffer<br/>Error code: 2002-3351; Inner value: 0x1a2e02</summary>
+            public static Result.Base AllocationFailureInPartitionFileSystemMetaB => new Result.Base(ModuleFs, 3351);
+            /// <summary>In Initialize allocating RootPathBuffer<br/>Error code: 2002-3355; Inner value: 0x1a3602</summary>
+            public static Result.Base AllocationFailureInSubdirectoryFileSystemA => new Result.Base(ModuleFs, 3355);
+            /// <summary>In Initialize<br/>Error code: 2002-3383; Inner value: 0x1a6e02</summary>
             public static Result.Base AllocationFailureInAesXtsFileE => new Result.Base(ModuleFs, 3383);
+            /// <summary>In Create allocating AesXtsFileSystem<br/>Error code: 2002-3394; Inner value: 0x1a8402</summary>
+            public static Result.Base AllocationFailureInEncryptedFileSystemCreatorA => new Result.Base(ModuleFs, 3394);
+            /// <summary>Error code: 2002-3420; Inner value: 0x1ab802</summary>
+            public static Result.Base AllocationFailureInNew => new Result.Base(ModuleFs, 3420);
+            /// <summary>Error code: 2002-3421; Inner value: 0x1aba02</summary>
+            public static Result.Base AllocationFailureInCreateShared => new Result.Base(ModuleFs, 3421);
+            /// <summary>Error code: 2002-3422; Inner value: 0x1abc02</summary>
+            public static Result.Base AllocationFailureInMakeUnique => new Result.Base(ModuleFs, 3422);
+            /// <summary>Error code: 2002-3423; Inner value: 0x1abe02</summary>
+            public static Result.Base AllocationFailureInAllocateShared => new Result.Base(ModuleFs, 3423);
+            /// <summary>Error code: 2002-3424; Inner value: 0x1ac002</summary>
+            public static Result.Base AllocationFailurePooledBufferNotEnoughSize => new Result.Base(ModuleFs, 3424);
 
         /// <summary>Error code: 2002-3500; Range: 3500-3999; Inner value: 0x1b5802</summary>
         public static Result.Base MmcAccessFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 3500, 3999); }
@@ -205,9 +237,9 @@ namespace LibHac.Fs
             /// <summary>Error code: 2002-4501; Range: 4501-4599; Inner value: 0x232a02</summary>
             public static Result.Base NcaCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4501, 4599); }
                 /// <summary>Error code: 2002-4512; Inner value: 0x234002</summary>
-                public static Result.Base InvalidNcaFsType => new Result.Base(ModuleFs, 4512);
+                public static Result.Base InvalidNcaFileSystemType => new Result.Base(ModuleFs, 4512);
                 /// <summary>Error code: 2002-4527; Inner value: 0x235e02</summary>
-                public static Result.Base InvalidNcaProgramId => new Result.Base(ModuleFs, 4527);
+                public static Result.Base InvalidNcaId => new Result.Base(ModuleFs, 4527);
 
             /// <summary>Error code: 2002-4601; Range: 4601-4639; Inner value: 0x23f202</summary>
             public static Result.Base IntegrityVerificationStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4601, 4639); }

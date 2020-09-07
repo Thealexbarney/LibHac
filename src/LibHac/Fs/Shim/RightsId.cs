@@ -1,6 +1,6 @@
 ﻿using LibHac.Common;
 using LibHac.FsSrv;
-using LibHac.FsSystem;
+using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 using LibHac.Spl;
 using FsRightsId = LibHac.Fs.RightsId;
@@ -23,10 +23,10 @@ namespace LibHac.Fs.Shim
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            Result rc = FsPath.FromSpan(out FsPath fsPath, path);
+            Result rc = FspPath.FromSpan(out FspPath sfPath, path);
             if (rc.IsFailure()) return rc;
 
-            return fsProxy.GetRightsIdByPath(out rightsId, ref fsPath);
+            return fsProxy.GetRightsIdByPath(out rightsId, in sfPath);
         }
 
         public static Result GetRightsId(this FileSystemClient fs, out FsRightsId rightsId, out byte keyGeneration, U8Span path)
@@ -36,24 +36,24 @@ namespace LibHac.Fs.Shim
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            Result rc = FsPath.FromSpan(out FsPath fsPath, path);
+            Result rc = FspPath.FromSpan(out FspPath sfPath, path);
             if (rc.IsFailure()) return rc;
 
-            return fsProxy.GetRightsIdAndKeyGenerationByPath(out rightsId, out keyGeneration, ref fsPath);
+            return fsProxy.GetRightsIdAndKeyGenerationByPath(out rightsId, out keyGeneration, in sfPath);
         }
 
-        public static Result RegisterExternalKey(this FileSystemClient fs, ref FsRightsId rightsId, ref AccessKey key)
+        public static Result RegisterExternalKey(this FileSystemClient fs, in FsRightsId rightsId, in AccessKey key)
         {
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            return fsProxy.RegisterExternalKey(ref rightsId, ref key);
+            return fsProxy.RegisterExternalKey(in rightsId, in key);
         }
 
         public static Result UnregisterExternalKey(this FileSystemClient fs, ref FsRightsId rightsId)
         {
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            return fsProxy.UnregisterExternalKey(ref rightsId);
+            return fsProxy.UnregisterExternalKey(in rightsId);
         }
 
         public static Result UnregisterAllExternalKey(this FileSystemClient fs)

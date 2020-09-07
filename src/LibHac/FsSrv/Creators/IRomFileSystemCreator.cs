@@ -5,6 +5,6 @@ namespace LibHac.FsSrv.Creators
 {
     public interface IRomFileSystemCreator
     {
-        Result Create(out IFileSystem fileSystem, IStorage romFsStorage);
+        Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, ReferenceCountedDisposable<IStorage> romFsStorage);
     }
 }

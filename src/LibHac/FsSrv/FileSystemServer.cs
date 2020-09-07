@@ -12,6 +12,9 @@ namespace LibHac.FsSrv
     {
         internal const ulong SaveIndexerId = 0x8000000000000000;
 
+        private const ulong SpeedEmulationProgramIdMinimum = 0x100000000000000;
+        private const ulong SpeedEmulationProgramIdMaximum = 0x100000000001FFF;
+
         private FileSystemProxyCoreImpl FsProxyCore { get; }
 
         /// <summary>The client instance to be used for internal operations like save indexer access.</summary>
@@ -91,11 +94,30 @@ namespace LibHac.FsSrv
             baseFsServiceConfig.ProgramRegistry = programRegistry;
             var baseFsService = new BaseFileSystemServiceImpl(in baseFsServiceConfig);
 
+            var ncaFsServiceConfig = new NcaFileSystemServiceImpl.Configuration();
+            ncaFsServiceConfig.BaseFsService = baseFsService;
+            ncaFsServiceConfig.HostFsCreator = config.FsCreators.HostFileSystemCreator;
+            ncaFsServiceConfig.TargetManagerFsCreator = config.FsCreators.TargetManagerFileSystemCreator;
+            ncaFsServiceConfig.PartitionFsCreator = config.FsCreators.PartitionFileSystemCreator;
+            ncaFsServiceConfig.RomFsCreator = config.FsCreators.RomFileSystemCreator;
+            ncaFsServiceConfig.StorageOnNcaCreator = config.FsCreators.StorageOnNcaCreator;
+            ncaFsServiceConfig.SubDirectoryFsCreator = config.FsCreators.SubDirectoryFileSystemCreator;
+            ncaFsServiceConfig.EncryptedFsCreator = config.FsCreators.EncryptedFileSystemCreator;
+            ncaFsServiceConfig.ProgramRegistryService = programRegistryService;
+            ncaFsServiceConfig.HorizonClient = Hos;
+            ncaFsServiceConfig.ProgramRegistry = programRegistry;
+            ncaFsServiceConfig.SpeedEmulationRange =
+                new InternalProgramIdRangeForSpeedEmulation(SpeedEmulationProgramIdMinimum,
+                    SpeedEmulationProgramIdMaximum);
+
+            var ncaFsService = new NcaFileSystemServiceImpl(in ncaFsServiceConfig, config.ExternalKeySet);
+
             var fspConfig = new FileSystemProxyConfiguration
             {
                 FsCreatorInterfaces = config.FsCreators,
-                BaseFileSystemServiceImpl = baseFsService,
-                ProgramRegistryServiceImpl = programRegistryService
+                BaseFileSystemService = baseFsService,
+                NcaFileSystemService = ncaFsService,
+                ProgramRegistryService = programRegistryService
             };
 
             return fspConfig;
@@ -113,7 +135,7 @@ namespace LibHac.FsSrv
 
         private ProgramRegistryImpl GetProgramRegistryServiceObject()
         {
-            return new ProgramRegistryImpl(FsProxyCore.Config.ProgramRegistryServiceImpl);
+            return new ProgramRegistryImpl(FsProxyCore.Config.ProgramRegistryService);
         }
 
         private class FileSystemProxyService : IServiceObject

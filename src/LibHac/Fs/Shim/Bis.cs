@@ -91,12 +91,13 @@ namespace LibHac.Fs.Shim
             // Nintendo doesn't use the provided rootPath
             FspPath.CreateEmpty(out FspPath sfPath);
 
-            rc = fsProxy.OpenBisFileSystem(out IFileSystem fileSystem, in sfPath, partitionId);
+            rc = fsProxy.OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, in sfPath,
+                partitionId);
             if (rc.IsFailure()) return rc;
 
             var nameGenerator = new BisCommonMountNameGenerator(partitionId);
 
-            return fs.Register(mountName, fileSystem, nameGenerator);
+            return fs.Register(mountName, fileSystem.Target, nameGenerator);
         }
 
         public static U8Span GetBisMountName(BisPartitionId partitionId)

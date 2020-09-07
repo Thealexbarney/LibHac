@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.FsSrv.Impl;
 
 namespace LibHac.FsSrv.Creators
 {
@@ -83,6 +85,43 @@ namespace LibHac.FsSrv.Creators
             }
 
             return Util.CreateSubFileSystemImpl(out fileSystem, subFileSystem, rootPath);
+        }
+
+        public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, U8Span rootPath, BisPartitionId partitionId)
+        {
+            fileSystem = default;
+
+            if (!IsValidPartitionId(partitionId)) return ResultFs.InvalidArgument.Log();
+            if (rootPath.IsNull()) return ResultFs.NullptrArgument.Log();
+
+            if (Config.TryGetFileSystem(out IFileSystem fs, partitionId))
+            {
+                fileSystem = new ReferenceCountedDisposable<IFileSystem>(fs);
+                return Result.Success;
+            }
+
+            if (Config.RootFileSystem == null)
+            {
+                return ResultFs.PreconditionViolation.Log();
+            }
+
+            var partitionPath = GetPartitionPath(partitionId).ToU8String();
+
+            // Todo: Store shared file systems
+            using var sharedRootFs = new ReferenceCountedDisposable<IFileSystem>(Config.RootFileSystem);
+
+            Result rc = Utility.WrapSubDirectory(out ReferenceCountedDisposable<IFileSystem> partitionFileSystem,
+                sharedRootFs, partitionPath, true);
+
+            if (rc.IsFailure()) return rc;
+
+            if (rootPath.IsEmpty())
+            {
+                fileSystem = partitionFileSystem.AddReference();
+                return Result.Success;
+            }
+
+            return Utility.CreateSubDirectoryFileSystem(out fileSystem, partitionFileSystem, rootPath);
         }
 
         public Result CreateFatFileSystem(out IFileSystem fileSystem, BisPartitionId partitionId)

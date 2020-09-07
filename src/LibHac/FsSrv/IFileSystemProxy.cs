@@ -13,16 +13,16 @@ namespace LibHac.FsSrv
     public interface IFileSystemProxy
     {
         Result SetCurrentProcess(ulong processId);
-        Result OpenDataFileSystemByCurrentProcess(out IFileSystem fileSystem);
-        Result OpenFileSystemWithPatch(out IFileSystem fileSystem, ProgramId programId, FileSystemProxyType type);
-        Result OpenFileSystemWithId(out IFileSystem fileSystem, ref FsPath path, ulong id, FileSystemProxyType type);
-        Result OpenDataFileSystemByProgramId(out IFileSystem fileSystem, ProgramId programId);
-        Result OpenBisFileSystem(out IFileSystem fileSystem, in FspPath rootPath, BisPartitionId partitionId);
+        Result OpenDataFileSystemByCurrentProcess(out ReferenceCountedDisposable<IFileSystem> fileSystem);
+        Result OpenFileSystemWithPatch(out ReferenceCountedDisposable<IFileSystem> fileSystem, ProgramId programId, FileSystemProxyType fsType);
+        Result OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystem> fileSystem, in FspPath path, ulong id, FileSystemProxyType fsType);
+        Result OpenDataFileSystemByProgramId(out ReferenceCountedDisposable<IFileSystem> fileSystem, ProgramId programId);
+        Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, in FspPath rootPath, BisPartitionId partitionId);
         Result OpenBisStorage(out IStorage storage, BisPartitionId partitionId);
         Result InvalidateBisCache();
         Result OpenHostFileSystemWithOption(out IFileSystem fileSystem, ref FsPath path, MountHostOption option);
         Result OpenHostFileSystem(out IFileSystem fileSystem, ref FsPath path);
-        Result OpenSdCardFileSystem(out IFileSystem fileSystem);
+        Result OpenSdCardFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem);
         Result FormatSdCardFileSystem();
         Result DeleteSaveDataFileSystem(ulong saveDataId);
         Result CreateSaveDataFileSystem(ref SaveDataAttribute attribute, ref SaveDataCreationInfo creationInfo, ref SaveMetaCreateInfo metaCreateInfo);
@@ -33,7 +33,7 @@ namespace LibHac.FsSrv
         Result IsExFatSupported(out bool isSupported);
         Result DeleteSaveDataFileSystemBySaveDataAttribute(SaveDataSpaceId spaceId, ref SaveDataAttribute attribute);
         Result OpenGameCardStorage(out IStorage storage, GameCardHandle handle, GameCardPartitionRaw partitionId);
-        Result OpenGameCardFileSystem(out IFileSystem fileSystem, GameCardHandle handle, GameCardPartition partitionId);
+        Result OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, GameCardHandle handle, GameCardPartition partitionId);
         Result ExtendSaveDataFileSystem(SaveDataSpaceId spaceId, ulong saveDataId, long dataSize, long journalSize);
         Result DeleteCacheStorage(short index);
         Result GetCacheStorageSize(out long dataSize, out long journalSize, short index);
@@ -57,17 +57,20 @@ namespace LibHac.FsSrv
         Result OpenSaveDataMetaFile(out IFile file, SaveDataSpaceId spaceId, ref SaveDataAttribute attribute, SaveDataMetaType type);
 
         Result ListAccessibleSaveDataOwnerId(out int readCount, Span<Ncm.ApplicationId> idBuffer, ProgramId programId, int startIndex, int bufferIdCount);
-        Result OpenImageDirectoryFileSystem(out IFileSystem fileSystem, ImageDirectoryId directoryId);
-        Result OpenContentStorageFileSystem(out IFileSystem fileSystem, ContentStorageId storageId);
+        Result OpenImageDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, ImageDirectoryId directoryId);
+        Result OpenContentStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, ContentStorageId storageId);
         Result OpenCloudBackupWorkStorageFileSystem(out IFileSystem fileSystem, CloudBackupWorkStorageId storageId);
         Result OpenCustomStorageFileSystem(out IFileSystem fileSystem, CustomStorageId storageId);
-        Result OpenDataStorageByCurrentProcess(out IStorage storage);
-        Result OpenDataStorageByProgramId(out IStorage storage, ProgramId programId);
-        Result OpenDataStorageByDataId(out IStorage storage, DataId dataId, StorageId storageId);
+        Result OpenDataStorageByCurrentProcess(out ReferenceCountedDisposable<IStorage> storage);
+        Result OpenDataStorageByProgramId(out ReferenceCountedDisposable<IStorage> storage, ProgramId programId);
+        Result OpenDataStorageByDataId(out ReferenceCountedDisposable<IStorage> storage, DataId dataId, StorageId storageId);
         Result OpenPatchDataStorageByCurrentProcess(out IStorage storage);
-        Result OpenDataFileSystemWithProgramIndex(out IFileSystem fileSystem, byte programIndex);
-        Result OpenDataStorageWithProgramIndex(out IStorage storage, byte programIndex);
+        Result OpenDataFileSystemWithProgramIndex(out ReferenceCountedDisposable<IFileSystem> fileSystem, byte programIndex);
+        Result OpenDataStorageWithProgramIndex(out ReferenceCountedDisposable<IStorage> storage, byte programIndex);
         Result OpenDeviceOperator(out IDeviceOperator deviceOperator);
+
+        Result OpenSystemDataUpdateEventNotifier(out ReferenceCountedDisposable<IEventNotifier> eventNotifier);
+        Result NotifySystemDataUpdateEvent();
 
         Result QuerySaveDataTotalSize(out long totalSize, long dataSize, long journalSize);
         Result VerifySaveDataFileSystem(ulong saveDataId, Span<byte> readBuffer);
@@ -75,18 +78,18 @@ namespace LibHac.FsSrv
         Result CreatePaddingFile(long size);
         Result DeleteAllPaddingFiles();
         Result GetRightsId(out RightsId rightsId, ProgramId programId, StorageId storageId);
-        Result RegisterExternalKey(ref RightsId rightsId, ref AccessKey externalKey);
+        Result RegisterExternalKey(in RightsId rightsId, in AccessKey externalKey);
         Result UnregisterAllExternalKey();
-        Result GetRightsIdByPath(out RightsId rightsId, ref FsPath path);
-        Result GetRightsIdAndKeyGenerationByPath(out RightsId rightsId, out byte keyGeneration, ref FsPath path);
+        Result GetRightsIdByPath(out RightsId rightsId, in FspPath path);
+        Result GetRightsIdAndKeyGenerationByPath(out RightsId rightsId, out byte keyGeneration, in FspPath path);
         Result SetCurrentPosixTimeWithTimeDifference(long time, int difference);
         Result GetFreeSpaceSizeForSaveData(out long freeSpaceSize, SaveDataSpaceId spaceId);
         Result VerifySaveDataFileSystemBySaveDataSpaceId(SaveDataSpaceId spaceId, ulong saveDataId, Span<byte> readBuffer);
         Result CorruptSaveDataFileSystemBySaveDataSpaceId(SaveDataSpaceId spaceId, ulong saveDataId);
         Result QuerySaveDataInternalStorageTotalSize(out long size, SaveDataSpaceId spaceId, ulong saveDataId);
         Result GetSaveDataCommitId(out long commitId, SaveDataSpaceId spaceId, ulong saveDataId);
-        Result UnregisterExternalKey(ref RightsId rightsId);
-        Result SetSdCardEncryptionSeed(ref EncryptionSeed seed);
+        Result UnregisterExternalKey(in RightsId rightsId);
+        Result SetSdCardEncryptionSeed(in EncryptionSeed seed);
         Result SetSdCardAccessibility(bool isAccessible);
         Result IsSdCardAccessible(out bool isAccessible);
 
@@ -99,7 +102,7 @@ namespace LibHac.FsSrv
         Result GetGlobalAccessLogMode(out GlobalAccessLogMode mode);
         Result OutputAccessLogToSdCard(U8Span logString);
         Result RegisterUpdatePartition();
-        Result OpenRegisteredUpdatePartition(out IFileSystem fileSystem);
+        Result OpenRegisteredUpdatePartition(out ReferenceCountedDisposable<IFileSystem> fileSystem);
 
         Result GetProgramIndexForAccessLog(out int programIndex, out int programCount);
         Result OverrideSaveDataTransferTokenSignVerificationKey(ReadOnlySpan<byte> key);

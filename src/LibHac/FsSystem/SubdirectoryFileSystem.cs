@@ -10,6 +10,7 @@ namespace LibHac.FsSystem
     public class SubdirectoryFileSystem : IFileSystem
     {
         private IFileSystem BaseFileSystem { get; }
+        private ReferenceCountedDisposable<IFileSystem> BaseFileSystemShared { get; }
         private U8String RootPath { get; set; }
         private bool PreserveUnc { get; }
 
@@ -35,7 +36,24 @@ namespace LibHac.FsSystem
             PreserveUnc = preserveUnc;
         }
 
-        private Result Initialize(U8Span rootPath)
+        public SubdirectoryFileSystem(ReferenceCountedDisposable<IFileSystem> baseFileSystem, bool preserveUnc = false)
+        {
+            BaseFileSystemShared = baseFileSystem.AddReference();
+            BaseFileSystem = BaseFileSystemShared.Target;
+            PreserveUnc = preserveUnc;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                BaseFileSystemShared?.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        public Result Initialize(U8Span rootPath)
         {
             if (StringUtils.GetLength(rootPath, PathTools.MaxPathLength + 1) > PathTools.MaxPathLength)
                 return ResultFs.TooLongPath.Log();

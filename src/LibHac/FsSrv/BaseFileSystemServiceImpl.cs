@@ -35,14 +35,20 @@ namespace LibHac.FsSrv
             public ProgramRegistryImpl ProgramRegistry;
         }
 
-        public Result OpenBaseFileSystem(out IFileSystem fileSystem, int fileSystemId)
+        public Result OpenBaseFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, int fileSystemId)
         {
             throw new NotImplementedException();
         }
 
-        public Result OpenBisFileSystem(out IFileSystem fileSystem, U8Span rootPath, BisPartitionId partitionId)
+        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, U8Span rootPath, BisPartitionId partitionId)
         {
-            return _config.BisFileSystemCreator.Create(out fileSystem, rootPath.ToString(), partitionId);
+            fileSystem = default;
+
+            Result rc = _config.BisFileSystemCreator.Create(out IFileSystem fs, rootPath.ToString(), partitionId);
+            if (rc.IsFailure()) return rc;
+
+            fileSystem = new ReferenceCountedDisposable<IFileSystem>(fs);
+            return Result.Success;
         }
 
         public Result CreatePaddingFile(long size)
@@ -55,7 +61,7 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result OpenGameCardFileSystem(out IFileSystem fileSystem, GameCardHandle handle,
+        public Result OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, GameCardHandle handle,
             GameCardPartition partitionId)
         {
             Result rc;
@@ -74,14 +80,21 @@ namespace LibHac.FsSrv
             return rc;
         }
 
-        public Result OpenSdCardProxyFileSystem(out IFileSystem fileSystem)
+        public Result OpenSdCardProxyFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem)
         {
             return OpenSdCardProxyFileSystem(out fileSystem, false);
         }
 
-        public Result OpenSdCardProxyFileSystem(out IFileSystem fileSystem, bool isCaseSensitive)
+        public Result OpenSdCardProxyFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, bool isCaseSensitive)
         {
-            return _config.SdCardFileSystemCreator.Create(out fileSystem, isCaseSensitive);
+            fileSystem = default;
+
+            // Todo: Shared
+            Result rc = _config.SdCardFileSystemCreator.Create(out IFileSystem fs, isCaseSensitive);
+            if (rc.IsFailure()) return rc;
+
+            fileSystem = new ReferenceCountedDisposable<IFileSystem>(fs);
+            return Result.Success;
         }
 
         public Result FormatSdCardProxyFileSystem()

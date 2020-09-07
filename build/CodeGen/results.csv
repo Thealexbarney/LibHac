@@ -89,12 +89,28 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,3005,,OutOfRange,
 
 2,3200,3499,AllocationMemoryFailed,
+2,3256,,AllocationFailureInNcaFileSystemServiceImplA,In ParseNsp allocating FileStorageBasedFileSystem
+2,3257,,AllocationFailureInNcaFileSystemServiceImplB,In ParseNca allocating FileStorageBasedFileSystem
 2,3258,,AllocationFailureInProgramRegistryManagerA,In RegisterProgram allocating ProgramInfoNode
+2,3264,,AllocationFailureFatFileSystemA,In Initialize allocating ProgramInfoNode
+2,3280,,AllocationFailureInPartitionFileSystemCreatorA,In Create allocating PartitionFileSystemCore
 2,3312,,AllocationFailureInAesXtsFileA,In Initialize allocating FileStorage
 2,3313,,AllocationFailureInAesXtsFileB,In Initialize allocating AesXtsStorage
 2,3314,,AllocationFailureInAesXtsFileC,In Initialize allocating AlignmentMatchingStoragePooledBuffer
 2,3315,,AllocationFailureInAesXtsFileD,In Initialize allocating StorageFile
-2,3383,,AllocationFailureInAesXtsFileE,In Initialize allocating SubStorage
+2,3347,,AllocationFailureInPartitionFileSystemA,In Initialize allocating PartitionFileSystemMetaCore
+2,3348,,AllocationFailureInPartitionFileSystemB,In DoOpenFile allocating PartitionFile
+2,3349,,AllocationFailureInPartitionFileSystemC,In DoOpenDirectory allocating PartitionDirectory
+2,3350,,AllocationFailureInPartitionFileSystemMetaA,In Initialize allocating metadata buffer
+2,3351,,AllocationFailureInPartitionFileSystemMetaB,In Sha256 Initialize allocating metadata buffer
+2,3355,,AllocationFailureInSubdirectoryFileSystemA,In Initialize allocating RootPathBuffer
+2,3383,,AllocationFailureInAesXtsFileE,In Initialize
+2,3394,,AllocationFailureInEncryptedFileSystemCreatorA,In Create allocating AesXtsFileSystem
+2,3420,,AllocationFailureInNew,
+2,3421,,AllocationFailureInCreateShared,
+2,3422,,AllocationFailureInMakeUnique,
+2,3423,,AllocationFailureInAllocateShared,
+2,3424,,AllocationFailurePooledBufferNotEnoughSize,
 
 2,3500,3999,MmcAccessFailed,
 
@@ -148,8 +164,8 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,4464,,AllocationTableIteratedRangeEntry,
 
 2,4501,4599,NcaCorrupted,
-2,4512,,InvalidNcaFsType,
-2,4527,,InvalidNcaProgramId,
+2,4512,,InvalidNcaFileSystemType,
+2,4527,,InvalidNcaId,
 
 2,4601,4639,IntegrityVerificationStorageCorrupted,
 2,4602,,InvalidIvfcMagic,
@@ -302,6 +318,17 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6902,,NotInitialized,
 2,6905,,NotMounted,
 2,6906,,SaveDataIsExtending,
+
+8,2,,ProgramNotFound,
+8,3,,DataNotFound,
+8,4,,UnknownStorageId,
+8,5,,LocationResolverNotFound,
+8,6,,HtmlDocumentNotFound,
+8,7,,AddOnContentNotFound,
+8,8,,ControlNotFound,
+8,9,,LegalInformationNotFound,
+8,10,,DebugProgramNotFound,
+8,90,,TooManyRegisteredPaths,
 
 9,1,,TooLongArgument,
 9,2,,TooManyArguments,

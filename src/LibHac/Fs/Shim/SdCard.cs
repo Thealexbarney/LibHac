@@ -41,10 +41,10 @@ namespace LibHac.Fs.Shim
 
                 IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                rc = fsProxy.OpenSdCardFileSystem(out IFileSystem fileSystem);
+                rc = fsProxy.OpenSdCardFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem);
                 if (rc.IsFailure()) return rc;
 
-                return fs.Register(mountName, fileSystem);
+                return fs.Register(mountName, fileSystem.Target);
             }
         }
 
@@ -61,11 +61,11 @@ namespace LibHac.Fs.Shim
             return isInserted;
         }
 
-        public static Result SetSdCardEncryptionSeed(this FileSystemClient fs, ref EncryptionSeed seed)
+        public static Result SetSdCardEncryptionSeed(this FileSystemClient fs, in EncryptionSeed seed)
         {
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            Result rc = fsProxy.SetSdCardEncryptionSeed(ref seed);
+            Result rc = fsProxy.SetSdCardEncryptionSeed(in seed);
             if (rc.IsFailure()) throw new HorizonResultException(rc, "Abort");
 
             return Result.Success;

@@ -2,7 +2,7 @@
 using LibHac.Common;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv;
-using LibHac.FsSystem;
+using LibHac.FsSrv.Sf;
 
 namespace LibHac.Fs.Shim
 {
@@ -40,14 +40,15 @@ namespace LibHac.Fs.Shim
                 Result rc = MountHelpers.CheckMountName(mountName);
                 if (rc.IsFailure()) return rc;
 
-                FsPath.FromSpan(out FsPath fsPath, path);
+                FspPath.FromSpan(out FspPath sfPath, path);
 
                 IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                rc = fsProxy.OpenFileSystemWithId(out IFileSystem fileSystem, ref fsPath, default, FileSystemProxyType.Package);
+                rc = fsProxy.OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystem> fileSystem, in sfPath,
+                    default, FileSystemProxyType.Package);
                 if (rc.IsFailure()) return rc;
 
-                return fs.Register(mountName, fileSystem);
+                return fs.Register(mountName, fileSystem.Target);
             }
         }
     }

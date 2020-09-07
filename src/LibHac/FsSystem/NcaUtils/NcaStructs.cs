@@ -39,7 +39,7 @@
         Code,
         Data,
         Logo
-    };
+    }
 
     public enum NcaContentType
     {

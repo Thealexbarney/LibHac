@@ -7,10 +7,18 @@ namespace LibHac.FsSystem
     public class ReadOnlyFileSystem : IFileSystem
     {
         private IFileSystem BaseFs { get; }
+        private ReferenceCountedDisposable<IFileSystem> BaseFsShared { get; }
 
+        // Todo: Remove non-shared constructor
         public ReadOnlyFileSystem(IFileSystem baseFileSystem)
         {
             BaseFs = baseFileSystem;
+        }
+
+        public ReadOnlyFileSystem(ReferenceCountedDisposable<IFileSystem> baseFileSystem)
+        {
+            BaseFsShared = baseFileSystem;
+            BaseFs = BaseFsShared.Target;
         }
 
         protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
@@ -36,11 +44,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
         {
-            freeSpace = 0;
-            return Result.Success;
-
-            // FS does:
-            // return ResultFs.UnsupportedOperationReadOnlyFileSystemGetSpace.Log();
+            return BaseFs.GetFreeSpaceSize(out freeSpace, path);
         }
 
         protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
@@ -79,5 +83,15 @@ namespace LibHac.FsSystem
         protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
 
         protected override Result DoRenameFile(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                BaseFsShared?.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
     }
 }

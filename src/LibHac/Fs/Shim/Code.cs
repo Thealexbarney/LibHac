@@ -49,10 +49,11 @@ namespace LibHac.Fs.Shim
 
             IFileSystemProxyForLoader fsProxy = fs.GetFileSystemProxyForLoaderServiceObject();
 
-            rc = fsProxy.OpenCodeFileSystem(out IFileSystem codeFs, out verificationData, in fsPath, programId);
+            rc = fsProxy.OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystem> codeFs, out verificationData,
+                in fsPath, programId);
             if (rc.IsFailure()) return rc;
 
-            return fs.Register(mountName, codeFs);
+            return fs.Register(mountName, codeFs.Target);
         }
     }
 }

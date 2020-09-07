@@ -20,12 +20,12 @@ namespace LibHac.Fs.Shim
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            rc = fsProxy.OpenContentStorageFileSystem(out IFileSystem contentFs, storageId);
+            rc = fsProxy.OpenContentStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> contentFs, storageId);
             if (rc.IsFailure()) return rc;
 
             var mountNameGenerator = new ContentStorageCommonMountNameGenerator(storageId);
 
-            return fs.Register(mountName, contentFs, mountNameGenerator);
+            return fs.Register(mountName, contentFs.Target, mountNameGenerator);
         }
 
         public static U8String GetContentStorageMountName(ContentStorageId storageId)

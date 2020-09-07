@@ -48,12 +48,12 @@ namespace LibHac.Fs.Shim
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            rc = fsProxy.OpenGameCardFileSystem(out IFileSystem cardFs, handle, partitionId);
+            rc = fsProxy.OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystem> cardFs, handle, partitionId);
             if (rc.IsFailure()) return rc;
 
             var mountNameGenerator = new GameCardCommonMountNameGenerator(handle, partitionId);
 
-            return fs.Register(mountName, cardFs, mountNameGenerator);
+            return fs.Register(mountName, cardFs.Target, mountNameGenerator);
         }
 
         private class GameCardCommonMountNameGenerator : ICommonMountNameGenerator

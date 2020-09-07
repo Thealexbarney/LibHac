@@ -5,7 +5,8 @@ namespace LibHac.FsSrv
     public class FileSystemProxyConfiguration
     {
         public FileSystemCreators FsCreatorInterfaces { get; set; }
-        public BaseFileSystemServiceImpl BaseFileSystemServiceImpl { get; set; }
-        public ProgramRegistryServiceImpl ProgramRegistryServiceImpl { get; set; }
+        public BaseFileSystemServiceImpl BaseFileSystemService { get; set; }
+        public NcaFileSystemServiceImpl NcaFileSystemService { get; set; }
+        public ProgramRegistryServiceImpl ProgramRegistryService { get; set; }
     }
 }

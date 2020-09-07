@@ -17,7 +17,8 @@ namespace LibHac.FsSrv
             _processId = processId;
         }
 
-        public Result OpenBisFileSystem(out IFileSystem fileSystem, in FspPath rootPath, BisPartitionId partitionId)
+        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, in FspPath rootPath,
+            BisPartitionId partitionId)
         {
             fileSystem = default;
 
@@ -49,7 +50,8 @@ namespace LibHac.FsSrv
             var normalizer = new PathNormalizer(rootPath, PathNormalizer.Option.AcceptEmpty);
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
-            rc = _serviceImpl.OpenBisFileSystem(out IFileSystem bisFs, normalizer.Path, partitionId);
+            rc = _serviceImpl.OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> bisFs, normalizer.Path,
+                partitionId);
             if (rc.IsFailure()) return rc;
 
             fileSystem = bisFs;
@@ -84,7 +86,7 @@ namespace LibHac.FsSrv
             return _serviceImpl.DeleteAllPaddingFiles();
         }
 
-        public Result OpenGameCardFileSystem(out IFileSystem fileSystem, GameCardHandle handle,
+        public Result OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, GameCardHandle handle,
             GameCardPartition partitionId)
         {
             fileSystem = default;
@@ -95,14 +97,14 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountGameCard).CanRead)
                 return ResultFs.PermissionDenied.Log();
 
-            rc = _serviceImpl.OpenGameCardFileSystem(out IFileSystem gcFs, handle, partitionId);
+            rc = _serviceImpl.OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystem> gcFs, handle, partitionId);
             if (rc.IsFailure()) return rc;
 
             fileSystem = gcFs;
             return Result.Success;
         }
 
-        public Result OpenSdCardFileSystem(out IFileSystem fileSystem)
+        public Result OpenSdCardFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem)
         {
             fileSystem = default;
 
@@ -114,7 +116,7 @@ namespace LibHac.FsSrv
             if (!accessibility.CanRead || !accessibility.CanWrite)
                 return ResultFs.PermissionDenied.Log();
 
-            rc = _serviceImpl.OpenSdCardProxyFileSystem(out IFileSystem sdCardFs);
+            rc = _serviceImpl.OpenSdCardProxyFileSystem(out ReferenceCountedDisposable<IFileSystem> sdCardFs);
             if (rc.IsFailure()) return rc;
 
             fileSystem = sdCardFs;
@@ -148,7 +150,8 @@ namespace LibHac.FsSrv
             return Result.Success;
         }
 
-        public Result OpenImageDirectoryFileSystem(out IFileSystem fileSystem, ImageDirectoryId directoryId)
+        public Result OpenImageDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+            ImageDirectoryId directoryId)
         {
             fileSystem = default;
 
@@ -166,13 +169,17 @@ namespace LibHac.FsSrv
             int id;
             switch (directoryId)
             {
-                case ImageDirectoryId.Nand: id = 0; break;
-                case ImageDirectoryId.SdCard: id = 1; break;
+                case ImageDirectoryId.Nand:
+                    id = 0;
+                    break;
+                case ImageDirectoryId.SdCard:
+                    id = 1;
+                    break;
                 default:
                     return ResultFs.InvalidArgument.Log();
             }
 
-            rc = _serviceImpl.OpenBaseFileSystem(out IFileSystem imageFs, id);
+            rc = _serviceImpl.OpenBaseFileSystem(out ReferenceCountedDisposable<IFileSystem> imageFs, id);
             if (rc.IsFailure()) return rc;
 
             fileSystem = imageFs;

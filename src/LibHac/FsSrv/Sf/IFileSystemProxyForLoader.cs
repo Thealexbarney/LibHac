@@ -6,8 +6,8 @@ namespace LibHac.FsSrv.Sf
 {
     public interface IFileSystemProxyForLoader
     {
-        Result OpenCodeFileSystem(out IFileSystem fileSystem, out CodeVerificationData verificationData,
-            in FspPath path, ProgramId programId);
+        Result OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+            out CodeVerificationData verificationData, in FspPath path, ProgramId programId);
 
         Result IsArchivedProgram(out bool isArchived, ulong processId);
         Result SetCurrentProcess(ulong processId);
