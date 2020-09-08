@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 using System.Security.Cryptography;
 
 namespace LibHac.Crypto
@@ -6,7 +7,15 @@ namespace LibHac.Crypto
     public static class Rsa
     {
         public static bool VerifyRsa2048PssSha256(ReadOnlySpan<byte> signature, ReadOnlySpan<byte> modulus,
-            ReadOnlySpan<byte> exponent, ReadOnlySpan<byte> message)
+            ReadOnlySpan<byte> exponent, ReadOnlySpan<byte> message) =>
+                VerifyRsa2048Sha256(signature, modulus, exponent, message, RSASignaturePadding.Pss);
+
+        public static bool VerifyRsa2048Pkcs1Sha256(ReadOnlySpan<byte> signature, ReadOnlySpan<byte> modulus,
+            ReadOnlySpan<byte> exponent, ReadOnlySpan<byte> message) =>
+                VerifyRsa2048Sha256(signature, modulus, exponent, message, RSASignaturePadding.Pkcs1);
+
+        private static bool VerifyRsa2048Sha256(ReadOnlySpan<byte> signature, ReadOnlySpan<byte> modulus,
+            ReadOnlySpan<byte> exponent, ReadOnlySpan<byte> message, RSASignaturePadding padding)
         {
             try
             {
@@ -14,7 +23,7 @@ namespace LibHac.Crypto
 
                 using (var rsa = RSA.Create(param))
                 {
-                    return rsa.VerifyData(message, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+                    return rsa.VerifyData(message, signature, HashAlgorithmName.SHA256, padding);
                 }
             }
             catch (CryptographicException)
@@ -39,6 +48,130 @@ namespace LibHac.Crypto
             {
                 return false;
             }
+        }
+
+        /// <param name="n">The RSA Modulus (n)</param>
+        /// <param name="e">The RSA Public Exponent (e)</param>
+        /// <param name="d">The RSA Private Exponent (d)</param>
+        public static RSAParameters RecoverParameters(BigInteger n, BigInteger e, BigInteger d)
+        {
+            (BigInteger p, BigInteger q) = DeriveRsaPrimeNumberPair(n, e, d);
+
+            BigInteger dp = d % (p - BigInteger.One);
+            BigInteger dq = d % (q - BigInteger.One);
+            BigInteger inverseQ = Utilities.ModInverse(q, p);
+
+            int modLen = n.ToByteArray().Length;
+            int halfModLen = (modLen + 1) / 2;
+
+            return new RSAParameters
+            {
+                Modulus = n.GetBytes(modLen),
+                Exponent = e.GetBytes(-1),
+                D = d.GetBytes(modLen),
+                P = p.GetBytes(halfModLen),
+                Q = q.GetBytes(halfModLen),
+                DP = dp.GetBytes(halfModLen),
+                DQ = dq.GetBytes(halfModLen),
+                InverseQ = inverseQ.GetBytes(halfModLen)
+            };
+        }
+
+        /// <param name="n">The RSA Modulus (n)</param>
+        /// <param name="e">The RSA Public Exponent (e)</param>
+        /// <param name="d">The RSA Private Exponent (d)</param>
+        public static RSAParameters RecoverParameters(ReadOnlySpan<byte> n, ReadOnlySpan<byte> e, ReadOnlySpan<byte> d) =>
+            RecoverParameters(n.GetBigInteger(), e.GetBigInteger(), d.GetBigInteger());
+
+        /// <summary>
+        /// Derive RSA Prime Number Pair (p, q) from RSA Modulus (n), RSA Public Exponent (e) and RSA Private Exponent (d)
+        /// </summary>
+        /// <param name="n">The RSA Modulus (n)</param>
+        /// <param name="e">The RSA Public Exponent (e)</param>
+        /// <param name="d">The RSA Private Exponent (d)</param>
+        /// <returns>RSA Prime Number Pair</returns>
+        private static (BigInteger p, BigInteger q) DeriveRsaPrimeNumberPair(BigInteger n, BigInteger e, BigInteger d)
+        {
+            BigInteger k = d * e - BigInteger.One;
+
+            if (!k.IsEven)
+            {
+                throw new InvalidOperationException("d*e - 1 is odd");
+            }
+
+            BigInteger two = BigInteger.One + BigInteger.One;
+            BigInteger t = BigInteger.One;
+
+            BigInteger r = k / two;
+
+            while (r.IsEven)
+            {
+                t++;
+                r /= two;
+            }
+
+            byte[] rndBuf = n.ToByteArray();
+
+            if (rndBuf[^1] == 0)
+            {
+                rndBuf = new byte[rndBuf.Length - 1];
+            }
+
+            BigInteger nMinusOne = n - BigInteger.One;
+
+            bool cracked = false;
+            BigInteger y = BigInteger.Zero;
+
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                for (int i = 0; i < 100 && !cracked; i++)
+                {
+                    BigInteger g;
+
+                    do
+                    {
+                        rng.GetBytes(rndBuf);
+                        g = Utilities.GetBigInteger(rndBuf);
+                    }
+                    while (g >= n);
+
+                    y = BigInteger.ModPow(g, r, n);
+
+                    if (y.IsOne || y == nMinusOne)
+                    {
+                        i--;
+                        continue;
+                    }
+
+                    for (BigInteger j = BigInteger.One; j < t; j++)
+                    {
+                        BigInteger x = BigInteger.ModPow(y, two, n);
+
+                        if (x.IsOne)
+                        {
+                            cracked = true;
+                            break;
+                        }
+
+                        if (x == nMinusOne)
+                        {
+                            break;
+                        }
+
+                        y = x;
+                    }
+                }
+            }
+
+            if (!cracked)
+            {
+                throw new InvalidOperationException("Prime factors not found");
+            }
+
+            BigInteger p = BigInteger.GreatestCommonDivisor(y - BigInteger.One, n);
+            BigInteger q = n / p;
+
+            return (p, q);
         }
     }
 }

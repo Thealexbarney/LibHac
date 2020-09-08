@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using LibHac.Common;
+using LibHac.Crypto;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
@@ -50,9 +51,9 @@ namespace LibHac.FsSystem.NcaUtils
             }
 
             byte[] encryptedKey = Header.GetEncryptedKey(index).ToArray();
-            var decryptedKey = new byte[CryptoOld.Aes128Size];
+            var decryptedKey = new byte[Aes.KeySize128];
 
-            CryptoOld.DecryptEcb(keyAreaKey, encryptedKey, decryptedKey, CryptoOld.Aes128Size);
+            Aes.DecryptEcb128(encryptedKey, decryptedKey, keyAreaKey);
 
             return decryptedKey;
         }
@@ -76,9 +77,9 @@ namespace LibHac.FsSystem.NcaUtils
             }
 
             byte[] encryptedKey = accessKey.Value.ToArray();
-            var decryptedKey = new byte[CryptoOld.Aes128Size];
+            var decryptedKey = new byte[Aes.KeySize128];
 
-            CryptoOld.DecryptEcb(titleKek, encryptedKey, decryptedKey, CryptoOld.Aes128Size);
+            Aes.DecryptEcb128(encryptedKey, decryptedKey, titleKek);
 
             return decryptedKey;
         }

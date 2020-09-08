@@ -160,8 +160,8 @@ namespace LibHac.FsSystem.NcaUtils
                 throw new ArgumentOutOfRangeException($"Key index must be between 0 and 3. Actual: {index}");
             }
 
-            int offset = NcaHeaderStruct.KeyAreaOffset + CryptoOld.Aes128Size * index;
-            return _header.Span.Slice(offset, CryptoOld.Aes128Size);
+            int offset = NcaHeaderStruct.KeyAreaOffset + Aes.KeySize128 * index;
+            return _header.Span.Slice(offset, Aes.KeySize128);
         }
 
         public NcaFsHeader GetFsHeader(int index)

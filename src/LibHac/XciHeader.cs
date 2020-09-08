@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text;
 using LibHac.Crypto;
@@ -96,7 +96,7 @@ namespace LibHac
                 Flags = (GameCardAttribute)reader.ReadByte();
                 PackageId = reader.ReadUInt64();
                 ValidDataEndPage = reader.ReadInt64();
-                AesCbcIv = reader.ReadBytes(CryptoOld.Aes128Size);
+                AesCbcIv = reader.ReadBytes(Aes.KeySize128);
                 Array.Reverse(AesCbcIv);
                 RootPartitionOffset = reader.ReadInt64();
                 RootPartitionHeaderSize = reader.ReadInt64();
@@ -111,7 +111,7 @@ namespace LibHac
                 {
                     byte[] encHeader = reader.ReadBytes(EncryptedHeaderSize);
                     var decHeader = new byte[EncryptedHeaderSize];
-                    CryptoOld.DecryptCbc(keyset.XciHeaderKey, AesCbcIv, encHeader, decHeader, EncryptedHeaderSize);
+                    Aes.DecryptCbc128(encHeader, decHeader, keyset.XciHeaderKey, AesCbcIv);
 
                     using (var decreader = new BinaryReader(new MemoryStream(decHeader)))
                     {

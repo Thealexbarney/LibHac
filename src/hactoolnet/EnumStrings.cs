@@ -1,6 +1,8 @@
 ﻿using LibHac;
+using LibHac.Fs;
 using LibHac.FsSystem.NcaUtils;
 using LibHac.Ncm;
+using ContentType = LibHac.Ncm.ContentType;
 
 namespace hactoolnet
 {
@@ -93,6 +95,21 @@ namespace hactoolnet
                 Validity.Invalid => nameof(Validity.Invalid),
                 Validity.Valid => nameof(Validity.Valid),
                 Validity.MissingKey => nameof(Validity.MissingKey),
+                _ => value.ToString()
+            };
+        }
+
+        public static string Print(this SaveDataType value)
+        {
+            return value switch
+            {
+                SaveDataType.System => nameof(SaveDataType.System),
+                SaveDataType.Account => nameof(SaveDataType.Account),
+                SaveDataType.Bcat => nameof(SaveDataType.Bcat),
+                SaveDataType.Device => nameof(SaveDataType.Device),
+                SaveDataType.Temporary => nameof(SaveDataType.Temporary),
+                SaveDataType.Cache => nameof(SaveDataType.Cache),
+                SaveDataType.SystemBcat => nameof(SaveDataType.SystemBcat),
                 _ => value.ToString()
             };
         }

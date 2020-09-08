@@ -5,6 +5,8 @@ using System.Text;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
+using Aes = LibHac.Crypto.Aes;
+
 namespace LibHac.FsSystem
 {
     public class AesXtsFileHeader
@@ -79,14 +81,14 @@ namespace LibHac.FsSystem
 
         private void DecryptKeys()
         {
-            CryptoOld.DecryptEcb(Kek1, EncryptedKey1, DecryptedKey1, 0x10);
-            CryptoOld.DecryptEcb(Kek2, EncryptedKey2, DecryptedKey2, 0x10);
+            Aes.DecryptEcb128(EncryptedKey1, DecryptedKey1, Kek1);
+            Aes.DecryptEcb128(EncryptedKey2, DecryptedKey2, Kek2);
         }
 
         private void EncryptKeys()
         {
-            CryptoOld.EncryptEcb(Kek1, DecryptedKey1, EncryptedKey1, 0x10);
-            CryptoOld.EncryptEcb(Kek2, DecryptedKey2, EncryptedKey2, 0x10);
+            Aes.EncryptEcb128(DecryptedKey1, EncryptedKey1, Kek1);
+            Aes.EncryptEcb128(DecryptedKey2, EncryptedKey2, Kek2);
         }
 
         private void GenerateKek(byte[] kekSeed, string path)

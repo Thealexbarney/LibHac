@@ -91,11 +91,11 @@ namespace LibHac.FsSystem.Save
 
         private Validity ValidateSignature(Keyset keyset)
         {
-            var calculatedCmac = new byte[0x10];
+            Span<byte> calculatedCmac = stackalloc byte[0x10];
 
-            CryptoOld.CalculateAesCmac(keyset.SaveMacKey, Data, 0x100, calculatedCmac, 0, 0x200);
+            Aes.CalculateCmac(calculatedCmac, Data.AsSpan(0x100, 0x200), keyset.SaveMacKey);
 
-            return Utilities.ArraysEqual(calculatedCmac, Cmac) ? Validity.Valid : Validity.Invalid;
+            return CryptoUtil.IsSameBytes(calculatedCmac, Cmac, Aes.BlockSize) ? Validity.Valid : Validity.Invalid;
         }
     }
 
