@@ -17,7 +17,7 @@ namespace LibHac.FsSrv
             _processId = processId;
         }
 
-        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, in FspPath rootPath,
+        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath rootPath,
             BisPartitionId partitionId)
         {
             fileSystem = default;
@@ -50,12 +50,24 @@ namespace LibHac.FsSrv
             var normalizer = new PathNormalizer(rootPath, PathNormalizer.Option.AcceptEmpty);
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
-            rc = _serviceImpl.OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> bisFs, normalizer.Path,
-                partitionId);
-            if (rc.IsFailure()) return rc;
+            ReferenceCountedDisposable<IFileSystem> fs = null;
 
-            fileSystem = bisFs;
-            return Result.Success;
+            try
+            {
+                // Open the file system
+                rc = _serviceImpl.OpenBisFileSystem(out fs, normalizer.Path,
+                    partitionId);
+                if (rc.IsFailure()) return rc;
+
+                // Create an SF adapter for the file system
+                fileSystem = FileSystemInterfaceAdapter.CreateSharedSfFileSystem(ref fs);
+
+                return Result.Success;
+            }
+            finally
+            {
+                fs?.Dispose();
+            }
         }
 
         public Result CreatePaddingFile(long size)
@@ -86,7 +98,7 @@ namespace LibHac.FsSrv
             return _serviceImpl.DeleteAllPaddingFiles();
         }
 
-        public Result OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, GameCardHandle handle,
+        public Result OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, GameCardHandle handle,
             GameCardPartition partitionId)
         {
             fileSystem = default;
@@ -97,14 +109,25 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountGameCard).CanRead)
                 return ResultFs.PermissionDenied.Log();
 
-            rc = _serviceImpl.OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystem> gcFs, handle, partitionId);
-            if (rc.IsFailure()) return rc;
+            ReferenceCountedDisposable<IFileSystem> fs = null;
 
-            fileSystem = gcFs;
-            return Result.Success;
+            try
+            {
+                rc = _serviceImpl.OpenGameCardFileSystem(out fs, handle, partitionId);
+                if (rc.IsFailure()) return rc;
+
+                // Create an SF adapter for the file system
+                fileSystem = FileSystemInterfaceAdapter.CreateSharedSfFileSystem(ref fs);
+
+                return Result.Success;
+            }
+            finally
+            {
+                fs?.Dispose();
+            }
         }
 
-        public Result OpenSdCardFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem)
+        public Result OpenSdCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
         {
             fileSystem = default;
 
@@ -116,11 +139,22 @@ namespace LibHac.FsSrv
             if (!accessibility.CanRead || !accessibility.CanWrite)
                 return ResultFs.PermissionDenied.Log();
 
-            rc = _serviceImpl.OpenSdCardProxyFileSystem(out ReferenceCountedDisposable<IFileSystem> sdCardFs);
-            if (rc.IsFailure()) return rc;
+            ReferenceCountedDisposable<IFileSystem> fs = null;
 
-            fileSystem = sdCardFs;
-            return Result.Success;
+            try
+            {
+                rc = _serviceImpl.OpenSdCardProxyFileSystem(out fs);
+                if (rc.IsFailure()) return rc;
+
+                // Create an SF adapter for the file system
+                fileSystem = FileSystemInterfaceAdapter.CreateSharedSfFileSystem(ref fs);
+
+                return Result.Success;
+            }
+            finally
+            {
+                fs?.Dispose();
+            }
         }
 
         public Result FormatSdCardFileSystem()
@@ -150,7 +184,7 @@ namespace LibHac.FsSrv
             return Result.Success;
         }
 
-        public Result OpenImageDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenImageDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             ImageDirectoryId directoryId)
         {
             fileSystem = default;
@@ -178,15 +212,25 @@ namespace LibHac.FsSrv
                 default:
                     return ResultFs.InvalidArgument.Log();
             }
+            ReferenceCountedDisposable<IFileSystem> fs = null;
 
-            rc = _serviceImpl.OpenBaseFileSystem(out ReferenceCountedDisposable<IFileSystem> imageFs, id);
-            if (rc.IsFailure()) return rc;
+            try
+            {
+                rc = _serviceImpl.OpenBaseFileSystem(out fs, id);
+                if (rc.IsFailure()) return rc;
 
-            fileSystem = imageFs;
-            return Result.Success;
+                // Create an SF adapter for the file system
+                fileSystem = FileSystemInterfaceAdapter.CreateSharedSfFileSystem(ref fs);
+
+                return Result.Success;
+            }
+            finally
+            {
+                fs?.Dispose();
+            }
         }
 
-        public Result OpenBisWiper(out IWiper bisWiper, NativeHandle transferMemoryHandle, ulong transferMemorySize)
+        public Result OpenBisWiper(out ReferenceCountedDisposable<IWiper> bisWiper, NativeHandle transferMemoryHandle, ulong transferMemorySize)
         {
             bisWiper = default;
 
@@ -200,7 +244,7 @@ namespace LibHac.FsSrv
             rc = _serviceImpl.OpenBisWiper(out IWiper wiper, transferMemoryHandle, transferMemorySize);
             if (rc.IsFailure()) return rc;
 
-            bisWiper = wiper;
+            bisWiper = new ReferenceCountedDisposable<IWiper>(wiper);
             return Result.Success;
         }
 

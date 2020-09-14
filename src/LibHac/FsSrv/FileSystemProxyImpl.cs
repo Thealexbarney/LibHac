@@ -18,7 +18,7 @@ namespace LibHac.FsSrv
     public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
     {
         private FileSystemProxyCoreImpl FsProxyCore { get; }
-        private ReferenceCountedDisposable<NcaFileSystemService> NcaFileSystemService { get; set; }
+        private ReferenceCountedDisposable<NcaFileSystemService> NcaFsService { get; set; }
         internal HorizonClient Hos { get; }
 
         public ulong CurrentProcess { get; private set; }
@@ -44,7 +44,7 @@ namespace LibHac.FsSrv
             return new ProgramRegistryService(FsProxyCore.Config.ProgramRegistryService, CurrentProcess);
         }
 
-        public Result OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystem> fileSystem, in FspPath path,
+        public Result OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath path,
             ulong id, FileSystemProxyType fsType)
         {
 
@@ -58,7 +58,7 @@ namespace LibHac.FsSrv
             return ncaFsService.OpenFileSystemWithId(out fileSystem, in path, id, fsType);
         }
 
-        public Result OpenFileSystemWithPatch(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenFileSystemWithPatch(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             ProgramId programId, FileSystemProxyType fsType)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
@@ -71,7 +71,7 @@ namespace LibHac.FsSrv
             return ncaFsService.OpenFileSystemWithPatch(out fileSystem, programId, fsType);
         }
 
-        public Result OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             out CodeVerificationData verificationData, in FspPath path, ProgramId programId)
         {
             Unsafe.SkipInit(out verificationData);
@@ -101,9 +101,7 @@ namespace LibHac.FsSrv
             CurrentProcess = processId;
 
             // Initialize the NCA file system service
-            var ncaService = new NcaFileSystemService(FsProxyCore.Config.NcaFileSystemService, processId);
-            NcaFileSystemService = new ReferenceCountedDisposable<NcaFileSystemService>(ncaService);
-            NcaFileSystemService.Target.SetSelfReference(NcaFileSystemService);
+            NcaFsService = NcaFileSystemService.Create(FsProxyCore.Config.NcaFileSystemService, processId);
 
             return Result.Success;
         }
@@ -113,7 +111,7 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result OpenDataFileSystemByCurrentProcess(out ReferenceCountedDisposable<IFileSystem> fileSystem)
+        public Result OpenDataFileSystemByCurrentProcess(out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
@@ -125,7 +123,7 @@ namespace LibHac.FsSrv
             return ncaFsService.OpenDataFileSystemByCurrentProcess(out fileSystem);
         }
 
-        public Result OpenDataFileSystemByProgramId(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenDataFileSystemByProgramId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             ProgramId programId)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
@@ -138,7 +136,7 @@ namespace LibHac.FsSrv
             return ncaFsService.OpenDataFileSystemByProgramId(out fileSystem, programId);
         }
 
-        public Result OpenDataStorageByCurrentProcess(out ReferenceCountedDisposable<IStorage> storage)
+        public Result OpenDataStorageByCurrentProcess(out ReferenceCountedDisposable<IStorageSf> storage)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
@@ -150,7 +148,7 @@ namespace LibHac.FsSrv
             return ncaFsService.OpenDataStorageByCurrentProcess(out storage);
         }
 
-        public Result OpenDataStorageByProgramId(out ReferenceCountedDisposable<IStorage> storage, ProgramId programId)
+        public Result OpenDataStorageByProgramId(out ReferenceCountedDisposable<IStorageSf> storage, ProgramId programId)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
@@ -162,7 +160,7 @@ namespace LibHac.FsSrv
             return ncaFsService.OpenDataStorageByProgramId(out storage, programId);
         }
 
-        public Result OpenDataStorageByDataId(out ReferenceCountedDisposable<IStorage> storage, DataId dataId, StorageId storageId)
+        public Result OpenDataStorageByDataId(out ReferenceCountedDisposable<IStorageSf> storage, DataId dataId, StorageId storageId)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
@@ -174,13 +172,13 @@ namespace LibHac.FsSrv
             return ncaFsService.OpenDataStorageByDataId(out storage, dataId, storageId);
         }
 
-        public Result OpenPatchDataStorageByCurrentProcess(out IStorage storage)
+        public Result OpenPatchDataStorageByCurrentProcess(out ReferenceCountedDisposable<IStorageSf> storage)
         {
             storage = default;
             return ResultFs.TargetNotFound.Log();
         }
 
-        public Result OpenDataFileSystemWithProgramIndex(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenDataFileSystemWithProgramIndex(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             byte programIndex)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
@@ -193,7 +191,7 @@ namespace LibHac.FsSrv
             return ncaFsService.OpenDataFileSystemWithProgramIndex(out fileSystem, programIndex);
         }
 
-        public Result OpenDataStorageWithProgramIndex(out ReferenceCountedDisposable<IStorage> storage, byte programIndex)
+        public Result OpenDataStorageWithProgramIndex(out ReferenceCountedDisposable<IStorageSf> storage, byte programIndex)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
@@ -744,7 +742,7 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result OpenImageDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenImageDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             ImageDirectoryId directoryId)
         {
             return GetBaseFileSystemService().OpenImageDirectoryFileSystem(out fileSystem, directoryId);
@@ -760,13 +758,13 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, in FspPath rootPath,
+        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath rootPath,
             BisPartitionId partitionId)
         {
             return GetBaseFileSystemService().OpenBisFileSystem(out fileSystem, in rootPath, partitionId);
         }
 
-        public Result OpenBisStorage(out IStorage storage, BisPartitionId partitionId)
+        public Result OpenBisStorage(out ReferenceCountedDisposable<IStorageSf> storage, BisPartitionId partitionId)
         {
             throw new NotImplementedException();
         }
@@ -788,7 +786,7 @@ namespace LibHac.FsSrv
             return OpenHostFileSystemWithOption(out fileSystem, ref path, MountHostOption.None);
         }
 
-        public Result OpenSdCardFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem)
+        public Result OpenSdCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
         {
             return GetBaseFileSystemService().OpenSdCardFileSystem(out fileSystem);
         }
@@ -952,7 +950,8 @@ namespace LibHac.FsSrv
             }
         }
 
-        public Result OpenSaveDataInternalStorageFileSystem(out IFileSystem fileSystem, SaveDataSpaceId spaceId, ulong saveDataId)
+        public Result OpenSaveDataInternalStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+            SaveDataSpaceId spaceId, ulong saveDataId)
         {
             throw new NotImplementedException();
         }
@@ -1062,7 +1061,7 @@ namespace LibHac.FsSrv
             return Result.Success;
         }
 
-        public Result OpenContentStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, ContentStorageId storageId)
+        public Result OpenContentStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, ContentStorageId storageId)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
@@ -1074,7 +1073,8 @@ namespace LibHac.FsSrv
             return ncaFsService.OpenContentStorageFileSystem(out fileSystem, storageId);
         }
 
-        public Result OpenCloudBackupWorkStorageFileSystem(out IFileSystem fileSystem, CloudBackupWorkStorageId storageId)
+        public Result OpenCloudBackupWorkStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+            CloudBackupWorkStorageId storageId)
         {
             throw new NotImplementedException();
         }
@@ -1086,7 +1086,7 @@ namespace LibHac.FsSrv
             return FsProxyCore.OpenCustomStorageFileSystem(out fileSystem, storageId);
         }
 
-        public Result OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             GameCardHandle handle, GameCardPartition partitionId)
         {
             return GetBaseFileSystemService().OpenGameCardFileSystem(out fileSystem, handle, partitionId);
@@ -1245,7 +1245,7 @@ namespace LibHac.FsSrv
             return ncaFsService.RegisterUpdatePartition();
         }
 
-        public Result OpenRegisteredUpdatePartition(out ReferenceCountedDisposable<IFileSystem> fileSystem)
+        public Result OpenRegisteredUpdatePartition(out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
@@ -1296,7 +1296,8 @@ namespace LibHac.FsSrv
             return Result.Success;
         }
 
-        public Result OpenBisWiper(out IWiper bisWiper, NativeHandle transferMemoryHandle, ulong transferMemorySize)
+        public Result OpenBisWiper(out ReferenceCountedDisposable<IWiper> bisWiper, NativeHandle transferMemoryHandle,
+            ulong transferMemorySize)
         {
             return GetBaseFileSystemService().OpenBisWiper(out bisWiper, transferMemoryHandle, transferMemorySize);
         }
@@ -1357,13 +1358,13 @@ namespace LibHac.FsSrv
 
         private Result GetNcaFileSystemService(out NcaFileSystemService ncaFsService)
         {
-            if (NcaFileSystemService is null)
+            if (NcaFsService is null)
             {
                 ncaFsService = null;
                 return ResultFs.PreconditionViolation.Log();
             }
 
-            ncaFsService = NcaFileSystemService.Target;
+            ncaFsService = NcaFsService.Target;
             return Result.Success;
         }
 

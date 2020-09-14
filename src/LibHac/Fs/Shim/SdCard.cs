@@ -1,7 +1,8 @@
 ﻿using System;
 using LibHac.Common;
-using LibHac.Fs.Fsa;
+using LibHac.Fs.Impl;
 using LibHac.FsSrv;
+using LibHac.FsSrv.Sf;
 
 namespace LibHac.Fs.Shim
 {
@@ -41,10 +42,15 @@ namespace LibHac.Fs.Shim
 
                 IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                rc = fsProxy.OpenSdCardFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem);
+                rc = fsProxy.OpenSdCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem);
                 if (rc.IsFailure()) return rc;
 
-                return fs.Register(mountName, fileSystem.Target);
+                using (fileSystem)
+                {
+                    var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
+
+                    return fs.Register(mountName, fileSystemAdapter);
+                }
             }
         }
 

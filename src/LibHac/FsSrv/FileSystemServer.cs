@@ -40,12 +40,11 @@ namespace LibHac.FsSrv
 
             IsDebugMode = false;
 
-            ExternalKeySet externalKeySet = config.ExternalKeySet ?? new ExternalKeySet();
             Timer = config.TimeSpanGenerator ?? new StopWatchTimeSpanGenerator();
 
             FileSystemProxyConfiguration fspConfig = InitializeFileSystemProxyConfiguration(config);
 
-            FsProxyCore = new FileSystemProxyCoreImpl(fspConfig, externalKeySet, config.DeviceOperator);
+            FsProxyCore = new FileSystemProxyCoreImpl(fspConfig, config.DeviceOperator);
 
             FsProxyCore.SetSaveDataIndexerManager(new SaveDataIndexerManager(Hos.Fs, SaveIndexerId,
                 new ArrayPoolMemoryResource(), new SdHandleManager(), false));

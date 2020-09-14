@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using LibHac.Common;
-using LibHac.Fs.Fsa;
+using LibHac.Fs.Impl;
 using LibHac.FsSrv;
 using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
@@ -91,13 +91,17 @@ namespace LibHac.Fs.Shim
             // Nintendo doesn't use the provided rootPath
             FspPath.CreateEmpty(out FspPath sfPath);
 
-            rc = fsProxy.OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, in sfPath,
+            rc = fsProxy.OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in sfPath,
                 partitionId);
             if (rc.IsFailure()) return rc;
 
-            var nameGenerator = new BisCommonMountNameGenerator(partitionId);
+            using (fileSystem)
+            {
+                var nameGenerator = new BisCommonMountNameGenerator(partitionId);
+                var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
 
-            return fs.Register(mountName, fileSystem.Target, nameGenerator);
+                return fs.Register(mountName, fileSystemAdapter, nameGenerator);
+            }
         }
 
         public static U8Span GetBisMountName(BisPartitionId partitionId)
@@ -165,11 +169,16 @@ namespace LibHac.Fs.Shim
             partitionStorage = default;
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
-            Result rc = fsProxy.OpenBisStorage(out IStorage storage, partitionId);
+            Result rc = fsProxy.OpenBisStorage(out ReferenceCountedDisposable<IStorageSf> storage, partitionId);
             if (rc.IsFailure()) return rc;
 
-            partitionStorage = storage;
-            return Result.Success;
+            using (storage)
+            {
+                var storageAdapter = new StorageServiceObjectAdapter(storage);
+
+                partitionStorage = storageAdapter;
+                return Result.Success;
+            }
         }
 
         public static Result InvalidateBisCache(this FileSystemClient fs)

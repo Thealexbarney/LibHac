@@ -25,5 +25,9 @@ namespace LibHac.FsSrv.Impl
             wiper = new BisWiper(memoryHandle, memorySize);
             return Result.Success;
         }
+
+        public void Dispose()
+        {
+        }
     }
 }

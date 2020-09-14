@@ -14,7 +14,6 @@ namespace LibHac.FsSrv
         private FileSystemCreators FsCreators => Config.FsCreatorInterfaces;
         internal ProgramRegistryImpl ProgramRegistry { get; }
 
-        private ExternalKeySet ExternalKeys { get; }
         private IDeviceOperator DeviceOperator { get; }
 
         private byte[] SdEncryptionSeed { get; } = new byte[0x10];
@@ -26,11 +25,10 @@ namespace LibHac.FsSrv
 
         internal ISaveDataIndexerManager SaveDataIndexerManager { get; private set; }
 
-        public FileSystemProxyCoreImpl(FileSystemProxyConfiguration config, ExternalKeySet externalKeys, IDeviceOperator deviceOperator)
+        public FileSystemProxyCoreImpl(FileSystemProxyConfiguration config, IDeviceOperator deviceOperator)
         {
             Config = config;
             ProgramRegistry = new ProgramRegistryImpl(Config.ProgramRegistryService);
-            ExternalKeys = externalKeys ?? new ExternalKeySet();
             DeviceOperator = deviceOperator;
         }
 

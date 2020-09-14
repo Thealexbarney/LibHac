@@ -1,7 +1,8 @@
 ﻿using System;
 using LibHac.Common;
-using LibHac.Fs.Fsa;
+using LibHac.Fs.Impl;
 using LibHac.FsSrv;
+using LibHac.FsSrv.Sf;
 
 namespace LibHac.Fs.Shim
 {
@@ -48,12 +49,16 @@ namespace LibHac.Fs.Shim
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            rc = fsProxy.OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystem> cardFs, handle, partitionId);
+            rc = fsProxy.OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> cardFs, handle, partitionId);
             if (rc.IsFailure()) return rc;
 
-            var mountNameGenerator = new GameCardCommonMountNameGenerator(handle, partitionId);
+            using (cardFs)
+            {
+                var mountNameGenerator = new GameCardCommonMountNameGenerator(handle, partitionId);
+                var fileSystemAdapter = new FileSystemServiceObjectAdapter(cardFs);
 
-            return fs.Register(mountName, cardFs.Target, mountNameGenerator);
+                return fs.Register(mountName, fileSystemAdapter, mountNameGenerator);
+            }
         }
 
         private class GameCardCommonMountNameGenerator : ICommonMountNameGenerator

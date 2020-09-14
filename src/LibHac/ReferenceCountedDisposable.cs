@@ -8,6 +8,7 @@
 #nullable enable
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace LibHac
@@ -26,14 +27,14 @@ namespace LibHac
     /// released through either of the following actions:</para>
     ///
     /// <list type="bullet">
-    /// <item>The reference is explicitly released by a call to <see cref="Dispose"/>.</item>
+    /// <item>The reference is explicitly released by a call to <see cref="Dispose()"/>.</item>
     /// <item>The reference is no longer in use by managed code and gets reclaimed by the garbage collector.</item>
     /// </list>
     ///
     /// <para>While each instance of <see cref="ReferenceCountedDisposable{T}"/> should be explicitly disposed when
     /// the object is no longer needed by the code owning the reference, this implementation will not leak resources
     /// in the event one or more callers fail to do so. When all references to an object are explicitly released
-    /// (i.e. by calling <see cref="Dispose"/>), the target object will itself be deterministically released by a
+    /// (i.e. by calling <see cref="Dispose()"/>), the target object will itself be deterministically released by a
     /// call to <see cref="IDisposable.Dispose"/> when the last reference to it is released. However, in the event
     /// one or more references is not explicitly released, the underlying object will still become eligible for
     /// non-deterministic release (i.e. finalization) as soon as each reference to it is released by one of the
@@ -65,7 +66,7 @@ namespace LibHac
         /// </summary>
         /// <remarks>
         /// <para>This value is only cleared in order to support cases where one or more references is garbage
-        /// collected without having <see cref="Dispose"/> called.</para>
+        /// collected without having <see cref="Dispose()"/> called.</para>
         /// </remarks>
         private T? _instance;
 
@@ -110,15 +111,36 @@ namespace LibHac
         /// Gets the target object.
         /// </summary>
         /// <remarks>
-        /// <para>This call is not valid after <see cref="Dispose"/> is called. If this property or the target
-        /// object is used concurrently with a call to <see cref="Dispose"/>, it is possible for the code to be
+        /// <para>This call is not valid after <see cref="Dispose()"/> is called. If this property or the target
+        /// object is used concurrently with a call to <see cref="Dispose()"/>, it is possible for the code to be
         /// using a disposed object. After the current instance is disposed, this property throws
         /// <see cref="ObjectDisposedException"/>. However, the exact time when this property starts throwing after
-        /// <see cref="Dispose"/> is called is unspecified; code is expected to not use this property or the object
-        /// it returns after any code invokes <see cref="Dispose"/>.</para>
+        /// <see cref="Dispose()"/> is called is unspecified; code is expected to not use this property or the object
+        /// it returns after any code invokes <see cref="Dispose()"/>.</para>
         /// </remarks>
         /// <value>The target object.</value>
         public T Target => _instance ?? throw new ObjectDisposedException(nameof(ReferenceCountedDisposable<T>));
+
+        /// <summary>
+        /// Initializes a new reference counting wrapper around an <see cref="IDisposable"/> object.
+        /// Returns a reference counting wrapper of the base type of the input object, and creates a
+        /// <see cref="WeakReference"/> of the object's derived type.
+        /// </summary>
+        /// <typeparam name="TDerived">The derived type of the object to be wrapped.</typeparam>
+        /// <param name="instance">The object owned by this wrapper.</param>
+        /// <param name="derivedWeakReference">The weak reference of the derived type.</param>
+        /// <returns></returns>
+        public static ReferenceCountedDisposable<T> Create<TDerived>(TDerived instance,
+            out ReferenceCountedDisposable<TDerived>.WeakReference derivedWeakReference)
+            where TDerived : class, IDisposable, T
+        {
+            var baseStrongRef = new ReferenceCountedDisposable<T>(instance);
+
+            derivedWeakReference =
+                new ReferenceCountedDisposable<TDerived>.WeakReference(instance, baseStrongRef._boxedReferenceCount);
+
+            return baseStrongRef;
+        }
 
         /// <summary>
         /// Increments the reference count for the disposable object, and returns a new disposable reference to it.
@@ -272,6 +294,11 @@ namespace LibHac
             }
         }
 
+        // Print info on non-disposed references in debug mode
+#if DEBUG
+        ~ReferenceCountedDisposable() => Dispose(false);
+#endif
+
         /// <summary>
         /// Releases the current reference, causing the underlying object to be disposed if this was the last
         /// reference.
@@ -283,26 +310,42 @@ namespace LibHac
         /// </remarks>
         public void Dispose()
         {
-            T? instanceToDispose = null;
-            lock (_boxedReferenceCount)
+            Dispose(true);
+
+#if DEBUG
+            GC.SuppressFinalize(this);
+#endif
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (disposing)
             {
-                if (_instance == null)
+                T? instanceToDispose = null;
+                lock (_boxedReferenceCount)
                 {
-                    // Already disposed; allow multiple without error.
-                    return;
+                    if (_instance == null)
+                    {
+                        // Already disposed; allow multiple without error.
+                        return;
+                    }
+
+                    _boxedReferenceCount.Value--;
+                    if (_boxedReferenceCount.Value == 0)
+                    {
+                        instanceToDispose = _instance;
+                    }
+
+                    // Ensure multiple calls to Dispose for this instance are a NOP.
+                    _instance = null;
                 }
 
-                _boxedReferenceCount.Value--;
-                if (_boxedReferenceCount.Value == 0)
-                {
-                    instanceToDispose = _instance;
-                }
-
-                // Ensure multiple calls to Dispose for this instance are a NOP.
-                _instance = null;
+                instanceToDispose?.Dispose();
             }
-
-            instanceToDispose?.Dispose();
+            else
+            {
+                Trace.WriteLine($"Failed to dispose object with type {GetType().FullName}.");
+            }
         }
 
         /// <summary>
@@ -343,6 +386,24 @@ namespace LibHac
                     // unlike `new System.WeakReference(null)`), but we return early to avoid an unnecessary
                     // allocation in this case.
                     return;
+                }
+
+                _weakInstance = new WeakReference<T>(instance);
+                _boxedReferenceCount = referenceCount;
+            }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="instance"></param>
+            /// <param name="referenceCount"></param>
+            internal WeakReference(T instance, StrongBox<int> referenceCount)
+            {
+                // This constructor is meant for internal use when creating a weak reference
+                // to an instance that is already wrapped by a ReferenceCountedDisposable. 
+                if (instance == null)
+                {
+                    throw new ArgumentNullException(nameof(instance));
                 }
 
                 _weakInstance = new WeakReference<T>(instance);

@@ -61,7 +61,7 @@ namespace LibHac.FsSystem
 
             if (PathTool.IsSubpath(normalizedPath1, normalizedPath2))
             {
-                return ResultFs.DestinationIsSubPathOfSource.Log();
+                return ResultFs.DirectoryNotRenamable.Log();
             }
 
             return Result.Success;

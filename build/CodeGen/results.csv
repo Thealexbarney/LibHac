@@ -106,6 +106,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,3355,,AllocationFailureInSubdirectoryFileSystemA,In Initialize allocating RootPathBuffer
 2,3383,,AllocationFailureInAesXtsFileE,In Initialize
 2,3394,,AllocationFailureInEncryptedFileSystemCreatorA,In Create allocating AesXtsFileSystem
+2,3407,,AllocationFailureInFileSystemInterfaceAdapter, In OpenFile or OpenDirectory
 2,3420,,AllocationFailureInNew,
 2,3421,,AllocationFailureInCreateShared,
 2,3422,,AllocationFailureInMakeUnique,
@@ -238,7 +239,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 
 2,6030,6059,InvalidPathForOperation,
 2,6031,,DirectoryNotDeletable,
-2,6032,,DestinationIsSubPathOfSource,
+2,6032,,DirectoryNotRenamable,
 2,6033,,PathNotFoundInSaveDataFileTable,
 2,6034,,DifferentDestFileSystem,
 
@@ -277,6 +278,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6350,,UnsupportedOperationInRoGameCardStorageWrite,
 2,6351,,UnsupportedOperationInRoGameCardStorageSetSize,
 2,6359,,UnsupportedOperationInConcatFsQueryEntry,
+2,6362,,UnsupportedOperationInFileServiceObjectAdapterA,Called OperateRange with an invalid operation ID.
 2,6364,,UnsupportedOperationModifyRomFsFileSystem,
 2,6365,,UnsupportedOperationInRomFsFileSystem,Called RomFsFileSystem::CommitProvisionally.
 2,6366,,UnsupportedOperationRomFsFileSystemGetSpace,

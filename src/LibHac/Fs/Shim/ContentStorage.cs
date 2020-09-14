@@ -1,7 +1,8 @@
 ﻿using System;
 using LibHac.Common;
-using LibHac.Fs.Fsa;
+using LibHac.Fs.Impl;
 using LibHac.FsSrv;
+using LibHac.FsSrv.Sf;
 using LibHac.Util;
 
 namespace LibHac.Fs.Shim
@@ -20,12 +21,17 @@ namespace LibHac.Fs.Shim
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            rc = fsProxy.OpenContentStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> contentFs, storageId);
+            rc = fsProxy.OpenContentStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> contentFs, storageId);
             if (rc.IsFailure()) return rc;
 
-            var mountNameGenerator = new ContentStorageCommonMountNameGenerator(storageId);
+            using (contentFs)
+            {
+                var mountNameGenerator = new ContentStorageCommonMountNameGenerator(storageId);
 
-            return fs.Register(mountName, contentFs.Target, mountNameGenerator);
+                var fileSystemAdapter = new FileSystemServiceObjectAdapter(contentFs);
+
+                return fs.Register(mountName, fileSystemAdapter, mountNameGenerator);
+            }
         }
 
         public static U8String GetContentStorageMountName(ContentStorageId storageId)

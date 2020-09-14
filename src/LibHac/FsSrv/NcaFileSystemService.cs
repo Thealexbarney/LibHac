@@ -22,7 +22,7 @@ namespace LibHac.FsSrv
         private SemaphoreAdaptor AocMountCountSemaphore { get; }
         private SemaphoreAdaptor RomMountCountSemaphore { get; }
 
-        public NcaFileSystemService(NcaFileSystemServiceImpl serviceImpl, ulong processId)
+        private NcaFileSystemService(NcaFileSystemServiceImpl serviceImpl, ulong processId)
         {
             ServiceImpl = serviceImpl;
             ProcessId = processId;
@@ -30,19 +30,33 @@ namespace LibHac.FsSrv
             RomMountCountSemaphore = new SemaphoreAdaptor(RomSemaphoreCount, RomSemaphoreCount);
         }
 
-        public Result OpenFileSystemWithPatch(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public static ReferenceCountedDisposable<NcaFileSystemService> Create(NcaFileSystemServiceImpl serviceImpl,
+            ulong processId)
+        {
+            // Create the service
+            var ncaService = new NcaFileSystemService(serviceImpl, processId);
+
+            // Wrap the service in a ref-counter and give the service a weak self-reference
+            var sharedService = new ReferenceCountedDisposable<NcaFileSystemService>(ncaService);
+            ncaService.SelfReference =
+                new ReferenceCountedDisposable<NcaFileSystemService>.WeakReference(sharedService);
+
+            return sharedService;
+        }
+
+        public Result OpenFileSystemWithPatch(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             ProgramId programId, FileSystemProxyType fsType)
         {
             throw new NotImplementedException();
         }
 
-        public Result OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             out CodeVerificationData verificationData, in FspPath path, ProgramId programId)
         {
             throw new NotImplementedException();
         }
 
-        public Result OpenDataFileSystemByCurrentProcess(out ReferenceCountedDisposable<IFileSystem> fileSystem)
+        public Result OpenDataFileSystemByCurrentProcess(out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
         {
             throw new NotImplementedException();
         }
@@ -53,17 +67,17 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result OpenDataStorageByCurrentProcess(out ReferenceCountedDisposable<IStorage> storage)
+        public Result OpenDataStorageByCurrentProcess(out ReferenceCountedDisposable<IStorageSf> storage)
         {
             throw new NotImplementedException();
         }
 
-        public Result OpenDataStorageByProgramId(out ReferenceCountedDisposable<IStorage> storage, ProgramId programId)
+        public Result OpenDataStorageByProgramId(out ReferenceCountedDisposable<IStorageSf> storage, ProgramId programId)
         {
             throw new NotImplementedException();
         }
 
-        public Result OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystem> fileSystem, in FspPath path,
+        public Result OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath path,
             ulong id, FileSystemProxyType fsType)
         {
             fileSystem = default;
@@ -117,33 +131,44 @@ namespace LibHac.FsSrv
             var normalizer = new PathNormalizer(path, GetPathNormalizerOptions(path));
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
-            rc = ServiceImpl.OpenFileSystem(out ReferenceCountedDisposable<IFileSystem> baseFs, out _, path, fsType,
-                canMountSystemDataPrivate, id);
-            if (rc.IsFailure()) return rc;
+            ReferenceCountedDisposable<IFileSystem> fs = null;
 
-            fileSystem = baseFs;
-            return Result.Success;
+            try
+            {
+                rc = ServiceImpl.OpenFileSystem(out fs, out _, path, fsType,
+                    canMountSystemDataPrivate, id);
+                if (rc.IsFailure()) return rc;
+
+                // Create an SF adapter for the file system
+                fileSystem = FileSystemInterfaceAdapter.CreateSharedSfFileSystem(ref fs);
+
+                return Result.Success;
+            }
+            finally
+            {
+                fs?.Dispose();
+            }
         }
 
-        public Result OpenDataFileSystemByProgramId(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenDataFileSystemByProgramId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             ProgramId programId)
         {
             throw new NotImplementedException();
         }
 
-        public Result OpenDataStorageByDataId(out ReferenceCountedDisposable<IStorage> storage, DataId dataId,
+        public Result OpenDataStorageByDataId(out ReferenceCountedDisposable<IStorageSf> storage, DataId dataId,
             StorageId storageId)
         {
             throw new NotImplementedException();
         }
 
-        public Result OpenDataFileSystemWithProgramIndex(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenDataFileSystemWithProgramIndex(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             byte programIndex)
         {
             throw new NotImplementedException();
         }
 
-        public Result OpenDataStorageWithProgramIndex(out ReferenceCountedDisposable<IStorage> storage,
+        public Result OpenDataStorageWithProgramIndex(out ReferenceCountedDisposable<IStorageSf> storage,
             byte programIndex)
         {
             throw new NotImplementedException();
@@ -165,7 +190,7 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result OpenContentStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenContentStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             ContentStorageId contentStorageId)
         {
             fileSystem = default;
@@ -179,12 +204,22 @@ namespace LibHac.FsSrv
             if (!accessibility.CanRead || !accessibility.CanWrite)
                 return ResultFs.PermissionDenied.Log();
 
-            rc = ServiceImpl.OpenContentStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> contentFs,
-                contentStorageId);
-            if (rc.IsFailure()) return rc;
+            ReferenceCountedDisposable<IFileSystem> fs = null;
 
-            fileSystem = contentFs;
-            return Result.Success;
+            try
+            {
+                rc = ServiceImpl.OpenContentStorageFileSystem(out fs, contentStorageId);
+                if (rc.IsFailure()) return rc;
+
+                // Create an SF adapter for the file system
+                fileSystem = FileSystemInterfaceAdapter.CreateSharedSfFileSystem(ref fs);
+
+                return Result.Success;
+            }
+            finally
+            {
+                fs?.Dispose();
+            }
         }
 
         public Result RegisterExternalKey(in RightsId rightsId, in AccessKey accessKey)
@@ -225,7 +260,7 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result OpenRegisteredUpdatePartition(out ReferenceCountedDisposable<IFileSystem> fileSystem)
+        public Result OpenRegisteredUpdatePartition(out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
         {
             throw new NotImplementedException();
         }
@@ -280,11 +315,6 @@ namespace LibHac.FsSrv
             out Hash ncaHeaderDigest, ulong id, StorageId storageId)
         {
             return OpenDataStorageCore(out storage, out ncaHeaderDigest, id, storageId);
-        }
-
-        internal void SetSelfReference(ReferenceCountedDisposable<NcaFileSystemService> reference)
-        {
-            SelfReference = new ReferenceCountedDisposable<NcaFileSystemService>.WeakReference(reference);
         }
 
         private Result TryAcquireAddOnContentOpenCountSemaphore(out IUniqueLock semaphoreLock)

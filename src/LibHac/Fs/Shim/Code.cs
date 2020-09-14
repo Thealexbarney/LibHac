@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
-using LibHac.Fs.Fsa;
+using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 
@@ -49,11 +49,16 @@ namespace LibHac.Fs.Shim
 
             IFileSystemProxyForLoader fsProxy = fs.GetFileSystemProxyForLoaderServiceObject();
 
-            rc = fsProxy.OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystem> codeFs, out verificationData,
+            rc = fsProxy.OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystemSf> codeFs, out verificationData,
                 in fsPath, programId);
             if (rc.IsFailure()) return rc;
 
-            return fs.Register(mountName, codeFs.Target);
+            using (codeFs)
+            {
+                var fileSystemAdapter = new FileSystemServiceObjectAdapter(codeFs);
+
+                return fs.Register(mountName, fileSystemAdapter);
+            }
         }
     }
 }
