@@ -145,7 +145,7 @@ namespace LibHac.FsSystem
                     Blocks.AddFirst(node);
                 }
 
-                return node.Value;
+                return node!.Value;
             }
 
             // An inactive node shouldn't be null, but we'll fix it if it is anyway

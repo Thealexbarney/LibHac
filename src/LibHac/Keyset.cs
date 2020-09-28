@@ -59,6 +59,8 @@ namespace LibHac
         public byte[] BisKekSource { get; } = new byte[0x10];
         public byte[][] BisKeySource { get; } = Utilities.CreateJaggedByteArray(4, 0x20);
         public byte[] SslRsaKek { get; } = new byte[0x10];
+        public byte[] MarikoBek { get; } = new byte[0x10];
+        public byte[] MarikoKek { get; } = new byte[0x10];
 
         // Device-specific keys
         public byte[] SecureBootKey { get; } = new byte[0x10];
@@ -697,7 +699,7 @@ namespace LibHac
 
                 if (keySlot.Group > currentGroup)
                 {
-                    if (currentGroup > 0) sb.AppendLine();
+                    sb.AppendLine();
                     currentGroup = keySlot.Group;
                 }
 
@@ -759,6 +761,9 @@ namespace LibHac
             var keys = new List<KeyValue>
             {
                 new KeyValue("keyblob_mac_key_source", 0x10, 0, set => set.KeyblobMacKeySource),
+
+                new KeyValue("mariko_bek", 0x10, 32, set => set.MarikoBek),
+                new KeyValue("mariko_kek", 0x10, 32, set => set.MarikoKek),
 
                 new KeyValue("master_key_source", 0x10, 60, set => set.MasterKeySource),
                 new KeyValue("package2_key_source", 0x10, 60, set => set.Package2KeySource),

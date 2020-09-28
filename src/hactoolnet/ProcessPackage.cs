@@ -1,7 +1,9 @@
 ﻿using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 using LibHac;
 using LibHac.Boot;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSystem;
 using static hactoolnet.Print;
@@ -14,19 +16,90 @@ namespace hactoolnet
         {
             using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
-                var package1 = new Package1(ctx.Keyset, file);
+                var package1 = new LibHac.Boot.Package1();
+                package1.Initialize(ctx.Keyset, file).ThrowIfFailure();
+
+                ctx.Logger.LogMessage(package1.Print());
+
                 string outDir = ctx.Options.OutDir;
 
-                if (outDir != null)
+                if (package1.IsDecrypted && outDir != null)
                 {
                     Directory.CreateDirectory(outDir);
 
-                    package1.Pk11.OpenWarmboot().WriteAllBytes(Path.Combine(outDir, "Warmboot.bin"), ctx.Logger);
-                    package1.Pk11.OpenNxBootloader().WriteAllBytes(Path.Combine(outDir, "NX_Bootloader.bin"), ctx.Logger);
-                    package1.Pk11.OpenSecureMonitor().WriteAllBytes(Path.Combine(outDir, "Secure_Monitor.bin"), ctx.Logger);
-                    package1.OpenDecryptedPackage().WriteAllBytes(Path.Combine(outDir, "Decrypted.bin"), ctx.Logger);
+                    IStorage decryptedStorage = package1.OpenDecryptedPackage1Storage();
+
+                    WriteFile(decryptedStorage, "Decrypted.bin");
+                    WriteFile(package1.OpenWarmBootStorage(), "Warmboot.bin");
+                    WriteFile(package1.OpenNxBootloaderStorage(), "NX_Bootloader.bin");
+                    WriteFile(package1.OpenSecureMonitorStorage(), "Secure_Monitor.bin");
+
+                    if (package1.IsMariko)
+                    {
+                        WriteFile(package1.OpenDecryptedWarmBootStorage(), "Warmboot_Decrypted.bin");
+
+                        var marikoOemLoader = new SubStorage(decryptedStorage, Unsafe.SizeOf<Package1MarikoOemHeader>(),
+                            package1.MarikoOemHeader.Size);
+
+                        WriteFile(marikoOemLoader, "Mariko_OEM_Bootloader.bin");
+                    }
+                }
+
+                void WriteFile(IStorage storage, string filename)
+                {
+                    string path = Path.Combine(outDir, filename);
+                    ctx.Logger.LogMessage($"Writing {path}...");
+                    storage.WriteAllBytes(path, ctx.Logger);
                 }
             }
+        }
+
+        private static string Print(this LibHac.Boot.Package1 package1)
+        {
+            int colLen = 36;
+            var sb = new StringBuilder();
+            sb.AppendLine();
+
+            if (package1.IsMariko)
+            {
+                sb.AppendLine("Mariko OEM Header:");
+                PrintItem(sb, colLen, "    Signature:", package1.MarikoOemHeader.RsaSig.ToArray());
+                PrintItem(sb, colLen, "    Random Salt:", package1.MarikoOemHeader.Salt.ToArray());
+                PrintItem(sb, colLen, "    OEM Bootloader Hash:", package1.MarikoOemHeader.Hash.ToArray());
+                PrintItem(sb, colLen, "    OEM Bootloader Version:", $"{package1.MarikoOemHeader.Version:x2}");
+                PrintItem(sb, colLen, "    OEM Bootloader Size:", $"{package1.MarikoOemHeader.Size:x8}");
+                PrintItem(sb, colLen, "    OEM Bootloader Load Address:", $"{package1.MarikoOemHeader.LoadAddress:x8}");
+                PrintItem(sb, colLen, "    OEM Bootloader Entrypoint:", $"{package1.MarikoOemHeader.EntryPoint:x8}");
+            }
+
+            sb.AppendLine("Package1 Metadata:");
+            PrintItem(sb, colLen, "    Build Date:", package1.MetaData.BuildDate.ToString());
+            PrintItem(sb, colLen, "    Package1ldr Hash:", SpanHelpers.AsReadOnlyByteSpan(in package1.MetaData.LoaderHash).ToArray());
+            PrintItem(sb, colLen, "    Secure Monitor Hash:", SpanHelpers.AsReadOnlyByteSpan(in package1.MetaData.SecureMonitorHash).ToArray());
+            PrintItem(sb, colLen, "    NX Bootloader Hash:", SpanHelpers.AsReadOnlyByteSpan(in package1.MetaData.BootloaderHash).ToArray());
+            PrintItem(sb, colLen, "    Version:", $"{package1.MetaData.Version:x2}");
+
+            if (!package1.IsMariko && package1.IsModern)
+            {
+                PrintItem(sb, colLen, "    PK11 MAC:", package1.Pk11Mac);
+            }
+
+            if (package1.IsDecrypted)
+            {
+                sb.AppendLine("PK11:");
+
+                if (!package1.IsMariko)
+                {
+                    PrintItem(sb, colLen, "    Key Revision:", $"{package1.KeyRevision:x2} ({Utilities.GetKeyRevisionSummary(package1.KeyRevision)})");
+                }
+
+                PrintItem(sb, colLen, "    PK11 Size:", $"{package1.Pk11Size:x8}");
+                PrintItem(sb, colLen, "    Warmboot.bin Size:", $"{package1.GetSectionSize(Package1Section.WarmBoot):x8}");
+                PrintItem(sb, colLen, "    NX_Bootloader.bin Size:", $"{package1.GetSectionSize(Package1Section.Bootloader):x8}");
+                PrintItem(sb, colLen, "    Secure_Monitor.bin Size:", $"{package1.GetSectionSize(Package1Section.SecureMonitor):x8}");
+            }
+
+            return sb.ToString();
         }
 
         public static void ProcessPk21(Context ctx)

@@ -83,5 +83,14 @@ namespace LibHac.Common
                 public static Result.Base InvalidPackage2MetaEntryPointNotFound => new Result.Base(ModuleLibHac, 1032);
                 /// <summary>Error code: 2428-1033; Inner value: 0x813ac</summary>
                 public static Result.Base InvalidPackage2PayloadCorrupted => new Result.Base(ModuleLibHac, 1033);
+
+            /// <summary>Error code: 2428-1040; Range: 1040-1059; Inner value: 0x821ac</summary>
+            public static Result.Base InvalidPackage1 { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleLibHac, 1040, 1059); }
+                /// <summary>Error code: 2428-1041; Inner value: 0x823ac</summary>
+                public static Result.Base InvalidPackage1SectionSize => new Result.Base(ModuleLibHac, 1041);
+                /// <summary>Error code: 2428-1042; Inner value: 0x825ac</summary>
+                public static Result.Base InvalidPackage1MarikoBodySize => new Result.Base(ModuleLibHac, 1042);
+                /// <summary>Error code: 2428-1043; Inner value: 0x827ac</summary>
+                public static Result.Base InvalidPackage1Pk11Size => new Result.Base(ModuleLibHac, 1043);
     }
 }
