@@ -29,6 +29,7 @@ namespace LibHac
         public byte[] KeyblobMacKeySource { get; } = new byte[0x10];
         public byte[][] TsecRootKeys { get; } = Utilities.CreateJaggedByteArray(0x20, 0x10);
         public byte[][] MasterKekSources { get; } = Utilities.CreateJaggedByteArray(0x20, 0x10);
+        public byte[][] MarikoMasterKekSources { get; } = Utilities.CreateJaggedByteArray(0x20, 0x10);
         public byte[][] MasterKeks { get; } = Utilities.CreateJaggedByteArray(0x20, 0x10);
         public byte[] MasterKeySource { get; } = new byte[0x10];
         public byte[][] MasterKeys { get; } = Utilities.CreateJaggedByteArray(0x20, 0x10);
@@ -806,6 +807,7 @@ namespace LibHac
                 keys.Add(new KeyValue($"keyblob_{i:x2}", 0x90, 10, set => set.Keyblobs[i]));
                 keys.Add(new KeyValue($"tsec_root_key_{i:x2}", 0x10, 20, set => set.TsecRootKeys[i]));
                 keys.Add(new KeyValue($"master_kek_source_{i:x2}", 0x10, 30, set => set.MasterKekSources[i]));
+                keys.Add(new KeyValue($"mariko_master_kek_source_{i:x2}", 0x10, 35, set => set.MarikoMasterKekSources[i]));
                 keys.Add(new KeyValue($"master_kek_{i:x2}", 0x10, 40, set => set.MasterKeks[i]));
                 keys.Add(new KeyValue($"package1_key_{i:x2}", 0x10, 50, set => set.Package1Keys[i]));
 

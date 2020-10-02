@@ -62,6 +62,11 @@ namespace LibHac
             return a1.SequenceEqual(a2);
         }
 
+        public static bool SpansEqual<T>(ReadOnlySpan<T> a1, ReadOnlySpan<T> a2) where T : IEquatable<T>
+        {
+            return a1.SequenceEqual(a2);
+        }
+
         public static ReadOnlySpan<byte> GetUtf8Bytes(string value)
         {
             return Encoding.UTF8.GetBytes(value).AsSpan();
@@ -84,6 +89,7 @@ namespace LibHac
         }
 
         public static bool IsEmpty(this byte[] array) => ((ReadOnlySpan<byte>)array).IsEmpty();
+        public static bool IsEmpty(this Span<byte> span) => ((ReadOnlySpan<byte>)span).IsEmpty();
 
         public static bool IsEmpty(this ReadOnlySpan<byte> span)
         {
@@ -316,6 +322,26 @@ namespace LibHac
                 result[lastcell - (i >> 1)] |= ByteLookup[i & 1, hexInt];
             }
             bytes = result;
+            return true;
+        }
+
+        public static bool TryToBytes(this ReadOnlySpan<char> input, Span<byte> output)
+        {
+            if (input.Length != output.Length * 2)
+                return false;
+
+            int lastcell = output.Length - 1;
+            int lastchar = input.Length - 1;
+            for (int i = 0; i < input.Length; i++)
+            {
+                if (!TryHexToInt(input[lastchar - i], out int hexInt))
+                {
+                    return false;
+                }
+
+                output[lastcell - (i >> 1)] |= ByteLookup[i & 1, hexInt];
+            }
+
             return true;
         }
 

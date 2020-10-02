@@ -5,6 +5,7 @@ using LibHac.FsSystem;
 
 namespace LibHac
 {
+    [Obsolete("This class has been deprecated. LibHac.Boot.Package1 should be used instead.")]
     public class Package1
     {
         private const uint Pk11Magic = 0x31314B50; // PK11

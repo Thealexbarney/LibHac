@@ -1,5 +1,6 @@
 ﻿// ReSharper disable AssignmentIsFullyDiscarded
 using System;
+using System.Runtime.CompilerServices;
 using LibHac.Diag;
 #if HAS_INTRINSICS
 using LibHac.Crypto.Detail;
@@ -133,6 +134,7 @@ namespace LibHac.Crypto
             cipher.Transform(input, output);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void DecryptEcb128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
             bool preferDotNetCrypto = false)
         {
