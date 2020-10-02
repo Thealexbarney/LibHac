@@ -61,7 +61,14 @@ namespace LibHac.Crypto
             BigInteger dq = d % (q - BigInteger.One);
             BigInteger inverseQ = Utilities.ModInverse(q, p);
 
-            int modLen = n.ToByteArray().Length;
+            byte[] nBytes = n.ToByteArray();
+            int modLen = nBytes.Length;
+
+            if (nBytes[^1] == 0)
+            {
+                modLen--;
+            }
+
             int halfModLen = (modLen + 1) / 2;
 
             return new RSAParameters
@@ -122,44 +129,43 @@ namespace LibHac.Crypto
             bool cracked = false;
             BigInteger y = BigInteger.Zero;
 
-            using (var rng = RandomNumberGenerator.Create())
+            var rng = new Random(0);
+
+            for (int i = 0; i < 100 && !cracked; i++)
             {
-                for (int i = 0; i < 100 && !cracked; i++)
+                BigInteger g;
+
+                do
                 {
-                    BigInteger g;
+                    rng.NextBytes(rndBuf);
+                    g = Utilities.GetBigInteger(rndBuf);
+                }
+                while (g >= n);
 
-                    do
+                y = BigInteger.ModPow(g, r, n);
+
+                if (y.IsOne || y == nMinusOne)
+                {
+                    i--;
+                    continue;
+                }
+
+                for (BigInteger j = BigInteger.One; j < t; j++)
+                {
+                    BigInteger x = BigInteger.ModPow(y, two, n);
+
+                    if (x.IsOne)
                     {
-                        rng.GetBytes(rndBuf);
-                        g = Utilities.GetBigInteger(rndBuf);
+                        cracked = true;
+                        break;
                     }
-                    while (g >= n);
 
-                    y = BigInteger.ModPow(g, r, n);
-
-                    if (y.IsOne || y == nMinusOne)
+                    if (x == nMinusOne)
                     {
-                        i--;
-                        continue;
+                        break;
                     }
 
-                    for (BigInteger j = BigInteger.One; j < t; j++)
-                    {
-                        BigInteger x = BigInteger.ModPow(y, two, n);
-
-                        if (x.IsOne)
-                        {
-                            cracked = true;
-                            break;
-                        }
-
-                        if (x == nMinusOne)
-                        {
-                            break;
-                        }
-
-                        y = x;
-                    }
+                    y = x;
                 }
             }
 

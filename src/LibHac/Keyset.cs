@@ -85,7 +85,7 @@ namespace LibHac
                 if (_nca0RsaKeyAreaKey.HasValue)
                     return _nca0RsaKeyAreaKey.Value;
 
-                _nca0RsaKeyAreaKey = Rsa.RecoverParameters(BetaNca0Modulus, BetaNca0Exponent, new byte[] { 1, 0, 1 });
+                _nca0RsaKeyAreaKey = Rsa.RecoverParameters(BetaNca0Modulus, new byte[] { 1, 0, 1 }, BetaNca0Exponent);
                 return _nca0RsaKeyAreaKey.Value;
             }
         }

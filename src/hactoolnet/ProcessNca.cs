@@ -280,7 +280,7 @@ namespace hactoolnet
                     sb.AppendLine("Key Area (Decrypted):");
                     for (int i = 0; i < 2; i++)
                     {
-                        PrintItem(sb, colLen, $"    Key {i} (Encrypted):", nca.Header.GetEncryptedKey(i).ToArray());
+                        PrintItem(sb, colLen, $"    Key {i} (Decrypted):", nca.GetDecryptedKey(i));
                     }
                 }
                 else if (version == NcaVersion.Nca0FixedKey)
