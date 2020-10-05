@@ -53,43 +53,84 @@ namespace LibHac.Common.Keys
                 Getter = retrieveFunc;
             }
 
-            public bool Matches(string keyName, out int keyIndex)
+            public bool Matches(string keyName, out int keyIndex, out bool isDev)
             {
                 keyIndex = default;
+                isDev = default;
 
-                if (RangeType == KeyRangeType.Single)
+                return RangeType switch
                 {
-                    return keyName == Name;
+                    KeyRangeType.Single => MatchesSingle(keyName, out isDev),
+                    KeyRangeType.Range => MatchesRangedKey(keyName, ref keyIndex, out isDev),
+                    _ => false
+                };
+            }
+
+            private bool MatchesSingle(string keyName, out bool isDev)
+            {
+                Assert.Equal((int)KeyRangeType.Single, (int)RangeType);
+
+                isDev = false;
+
+                if (keyName.Length == NameLength + 4)
+                {
+                    // Might be a dev key. Check if "_dev" comes after the base key name
+                    if (!keyName.AsSpan(Name.Length, 4).SequenceEqual("_dev"))
+                        return false;
+
+                    isDev = true;
                 }
-                else if (RangeType == KeyRangeType.Range)
+                else if (keyName.Length != NameLength)
                 {
-                    // Check that the length of the key name with the trailing index matches
-                    if (keyName.Length != Name.Length + 3)
-                        return false;
-
-                    // Check if the name before the "_XX" index matches
-                    if (!keyName.AsSpan(0, Name.Length).SequenceEqual(Name))
-                        return false;
-
-                    // The name should have an underscore before the index value
-                    if (keyName[keyName.Length - 3] != '_')
-                        return false;
-
-                    byte index = default;
-
-                    // Try to get the index of the key name
-                    if (!Utilities.TryToBytes(keyName.AsSpan(keyName.Length - 2, 2), SpanHelpers.AsSpan(ref index)))
-                        return false;
-
-                    // Check if the index is in this key's range
-                    if (index < RangeStart || index >= RangeEnd)
-                        return false;
-
-                    keyIndex = index;
-                    return true;
+                    return false;
                 }
 
-                return false;
+                // Check if the base name matches
+                if (!keyName.AsSpan(0, Name.Length).SequenceEqual(Name))
+                    return false;
+
+                return true;
+            }
+
+            private bool MatchesRangedKey(string keyName, ref int keyIndex, out bool isDev)
+            {
+                Assert.Equal((int)KeyRangeType.Range, (int)RangeType);
+
+                isDev = false;
+
+                // Check if this is an explicit dev key
+                if (keyName.Length == Name.Length + 7)
+                {
+                    // Check if "_dev" comes after the base key name
+                    if (!keyName.AsSpan(Name.Length, 4).SequenceEqual("_dev"))
+                        return false;
+
+                    isDev = true;
+                }
+                // Not a dev key. Check that the length of the key name with the trailing index matches
+                else if (keyName.Length != Name.Length + 3)
+                    return false;
+
+                // Check if the name before the "_XX" index matches
+                if (!keyName.AsSpan(0, Name.Length).SequenceEqual(Name))
+                    return false;
+
+                // The name should have an underscore before the index value
+                if (keyName[keyName.Length - 3] != '_')
+                    return false;
+
+                byte index = default;
+
+                // Try to get the index of the key name
+                if (!keyName.AsSpan(keyName.Length - 2, 2).TryToBytes(SpanHelpers.AsSpan(ref index)))
+                    return false;
+
+                // Check if the index is in this key's range
+                if (index < RangeStart || index >= RangeEnd)
+                    return false;
+
+                keyIndex = index;
+                return true;
             }
 
             private static bool IsKeyTypeValid(KeyType type)
@@ -102,6 +143,24 @@ namespace LibHac.Common.Keys
                 bool isValid2 = type2 == KeyType.Root || type2 == KeyType.Seed || type2 == KeyType.Derived;
 
                 return isValid1 && isValid2;
+            }
+        }
+
+        // Contains info from a specific key being read from a file
+        [DebuggerDisplay("{" + nameof(Name) + "}")]
+        private struct SpecificKeyInfo
+        {
+            public KeyInfo Key;
+            public int Index;
+            public bool IsDev;
+
+            public string Name => Key.Name;
+
+            public SpecificKeyInfo(KeyInfo info, int index, bool isDev)
+            {
+                Key = info;
+                Index = index;
+                IsDev = isDev;
             }
         }
 
@@ -120,11 +179,14 @@ namespace LibHac.Common.Keys
             Seed = 1 << 3,
             Derived = 1 << 4,
 
+            /// <summary>Specifies that a seed is different in prod and dev.</summary>
+            DifferentDev = 1 << 5,
+
             CommonRoot = Common | Root,
             CommonSeed = Common | Seed,
+            CommonSeedDiff = Common | Seed | DifferentDev,
             CommonDrvd = Common | Derived,
             DeviceRoot = Device | Root,
-            DeviceSeed = Device | Seed,
             DeviceDrvd = Device | Derived,
         }
 
@@ -140,6 +202,13 @@ namespace LibHac.Common.Keys
             if (titleKeysFilename != null) ReadTitleKeys(keySet, titleKeysFilename, logger);
 
             keySet.DeriveKeys(logger);
+
+            if (keySet.CurrentMode == KeySet.Mode.Prod)
+            {
+                keySet.SetMode(KeySet.Mode.Dev);
+                keySet.DeriveKeys(logger);
+                keySet.SetMode(KeySet.Mode.Prod);
+            }
         }
 
         public static KeySet ReadKeyFile(string filename, string titleKeysFilename = null,
@@ -168,13 +237,25 @@ namespace LibHac.Common.Keys
                     string keyName = a[0].Trim();
                     string valueStr = a[1].Trim();
 
-                    if (!TryGetKeyInfo(out KeyInfo info, out int keyIndex, keyList, keyName))
+                    if (!TryGetKeyInfo(out SpecificKeyInfo info, keyList, keyName))
                     {
                         logger?.LogMessage($"Failed to match key {keyName}");
                         continue;
                     }
 
-                    Span<byte> key = info.Getter(keySet, keyIndex);
+                    Span<byte> key;
+
+                    // Get the dev key in the key set if needed.
+                    if (info.IsDev && keySet.CurrentMode == KeySet.Mode.Prod)
+                    {
+                        keySet.SetMode(KeySet.Mode.Dev);
+                        key = info.Key.Getter(keySet, info.Index);
+                        keySet.SetMode(KeySet.Mode.Prod);
+                    }
+                    else
+                    {
+                        key = info.Key.Getter(keySet, info.Index);
+                    }
 
                     if (valueStr.Length != key.Length * 2)
                     {
@@ -244,38 +325,41 @@ namespace LibHac.Common.Keys
             }
         }
 
-        private static bool TryGetKeyInfo(out KeyInfo info, out int keyIndex, List<KeyInfo> keyList, string keyName)
+        private static bool TryGetKeyInfo(out SpecificKeyInfo info, List<KeyInfo> keyList, string keyName)
         {
             for (int i = 0; i < keyList.Count; i++)
             {
-                if (keyList[i].Matches(keyName, out keyIndex))
+                if (keyList[i].Matches(keyName, out int keyIndex, out bool isDev))
                 {
-                    info = keyList[i];
+                    info = new SpecificKeyInfo(keyList[i], keyIndex, isDev);
                     return true;
                 }
             }
 
             info = default;
-            keyIndex = default;
             return false;
         }
 
-        public static string PrintKeys(KeySet keySet, List<KeyInfo> keys, KeyType filter)
+        public static void PrintKeys(KeySet keySet, StringBuilder sb, List<KeyInfo> keys, KeyType filter, bool isDev)
         {
-            if (keys.Count == 0) return string.Empty;
+            if (keys.Count == 0) return;
 
-            var sb = new StringBuilder();
+            string devSuffix = isDev ? "_dev" : string.Empty;
             int maxNameLength = keys.Max(x => x.NameLength);
             int currentGroup = 0;
 
+            // Todo: Better filtering
             bool FilterMatches(KeyInfo keyInfo)
             {
                 KeyType filter1 = filter & (KeyType.Common | KeyType.Device);
                 KeyType filter2 = filter & (KeyType.Root | KeyType.Seed | KeyType.Derived);
+                KeyType filter3 = filter & KeyType.DifferentDev;
 
                 // Skip sub-filters that have no flags set
                 return (filter1 == 0 || (filter1 & keyInfo.Type) != 0) &&
-                       (filter2 == 0 || (filter2 & keyInfo.Type) != 0);
+                       (filter2 == 0 || (filter2 & keyInfo.Type) != 0) &&
+                       filter3 == (filter3 & keyInfo.Type) ||
+                       isDev && keyInfo.Type.HasFlag(KeyType.DifferentDev);
             }
 
             bool isFirstPrint = true;
@@ -307,7 +391,9 @@ namespace LibHac.Common.Keys
                         sb.AppendLine();
                     }
 
-                    string line = $"{info.Name.PadRight(maxNameLength)} = {key.ToHexString()}";
+                    string keyName = $"{info.Name}{devSuffix}";
+
+                    string line = $"{keyName.PadRight(maxNameLength)} = {key.ToHexString()}";
                     sb.AppendLine(line);
                     isFirstPrint = false;
                     currentGroup = info.Group;
@@ -332,7 +418,7 @@ namespace LibHac.Common.Keys
                             hasPrintedKey = true;
                         }
 
-                        string keyName = $"{info.Name}_{i:x2}";
+                        string keyName = $"{info.Name}{devSuffix}_{i:x2}";
 
                         string line = $"{keyName.PadRight(maxNameLength)} = {key.ToHexString()}";
                         sb.AppendLine(line);
@@ -341,8 +427,6 @@ namespace LibHac.Common.Keys
                     }
                 }
             }
-
-            return sb.ToString();
         }
 
         public static string PrintTitleKeys(KeySet keySet)
@@ -361,17 +445,54 @@ namespace LibHac.Common.Keys
 
         public static string PrintCommonKeys(KeySet keySet)
         {
-            return PrintKeys(keySet, CreateKeyList(), KeyType.Common | KeyType.Root | KeyType.Seed | KeyType.Derived);
+            var sb = new StringBuilder();
+            PrintKeys(keySet, sb, CreateKeyList(), KeyType.Common | KeyType.Root | KeyType.Seed | KeyType.Derived, false);
+            return sb.ToString();
         }
 
         public static string PrintDeviceKeys(KeySet keySet)
         {
-            return PrintKeys(keySet, CreateKeyList(), KeyType.Device);
+            var sb = new StringBuilder();
+            PrintKeys(keySet, sb, CreateKeyList(), KeyType.Device, false);
+            return sb.ToString();
         }
 
         public static string PrintAllKeys(KeySet keySet)
         {
-            return PrintKeys(keySet, CreateKeyList(), 0);
+            var sb = new StringBuilder();
+            PrintKeys(keySet, sb, CreateKeyList(), 0, false);
+            return sb.ToString();
+        }
+
+        public static string PrintAllSeeds(KeySet keySet)
+        {
+            var sb = new StringBuilder();
+            PrintKeys(keySet, sb, CreateKeyList(), KeyType.Common | KeyType.Seed, false);
+
+            if (keySet.CurrentMode == KeySet.Mode.Prod)
+            {
+                sb.AppendLine();
+                keySet.SetMode(KeySet.Mode.Dev);
+                PrintKeys(keySet, sb, CreateKeyList(), KeyType.Common | KeyType.Seed | KeyType.DifferentDev, true);
+                keySet.SetMode(KeySet.Mode.Prod);
+            }
+            return sb.ToString();
+        }
+
+        public static string PrintCommonKeysWithDev(KeySet keySet)
+        {
+            var sb = new StringBuilder();
+            PrintKeys(keySet, sb, CreateKeyList(), KeyType.Common | KeyType.Root | KeyType.Seed | KeyType.Derived, false);
+
+            if (keySet.CurrentMode == KeySet.Mode.Prod)
+            {
+                sb.AppendLine();
+                keySet.SetMode(KeySet.Mode.Dev);
+                PrintKeys(keySet, sb, CreateKeyList(), KeyType.Common | KeyType.Root | KeyType.Derived, true);
+                keySet.SetMode(KeySet.Mode.Prod);
+            }
+
+            return sb.ToString();
         }
 
         public static List<KeyInfo> CreateKeyList()
@@ -414,7 +535,7 @@ namespace LibHac.Common.Keys
             keys.Add(new KeyInfo(101, KeyType.CommonRoot, "mariko_kek", (set, i) => set.MarikoKek));
 
             keys.Add(new KeyInfo(110, KeyType.CommonRoot, "mariko_aes_class_key", 0, 0xC, (set, i) => set.MarikoAesClassKeys[i]));
-            keys.Add(new KeyInfo(120, KeyType.CommonSeed, "mariko_master_kek_source", 0, 0x20, (set, i) => set.MarikoMasterKekSources[i]));
+            keys.Add(new KeyInfo(120, KeyType.CommonSeedDiff, "mariko_master_kek_source", 0, 0x20, (set, i) => set.MarikoMasterKekSources[i]));
             keys.Add(new KeyInfo(130, KeyType.CommonDrvd, "master_kek", 0, 0x20, (set, i) => set.MasterKeks[i]));
             keys.Add(new KeyInfo(140, KeyType.CommonSeed, "master_key_source", (set, i) => set.MasterKeySource));
             keys.Add(new KeyInfo(150, KeyType.CommonDrvd, "master_key", 0, 0x20, (set, i) => set.MasterKeys[i]));
@@ -461,7 +582,7 @@ namespace LibHac.Common.Keys
             keys.Add(new KeyInfo(263, KeyType.CommonSeed, "sd_card_nca_key_source", (set, i) => set.SdCardKeySources[1]));
             keys.Add(new KeyInfo(264, KeyType.CommonSeed, "sd_card_custom_storage_key_source", (set, i) => set.SdCardKeySources[2]));
 
-            keys.Add(new KeyInfo(270, KeyType.CommonRoot, "xci_header_key", (set, i) => set.XciHeaderKey));
+            keys.Add(new KeyInfo(270, KeyType.CommonSeedDiff, "xci_header_key", (set, i) => set.XciHeaderKey));
 
             keys.Add(new KeyInfo(280, KeyType.CommonRoot, "eticket_rsa_kek", (set, i) => set.ETicketRsaKek));
             keys.Add(new KeyInfo(281, KeyType.CommonRoot, "ssl_rsa_kek", (set, i) => set.SslRsaKek));

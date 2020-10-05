@@ -9,15 +9,15 @@ namespace LibHac.Common.FixedArrays
     {
         public const int Length = 32;
 
-        private T _item1;
-        private T _item2;
-        private T _item3;
-        private T _item4;
-        private T _item5;
-        private T _item6;
-        private T _item7;
-        private T _item8;
-        private T _item9;
+        private T _item01;
+        private T _item02;
+        private T _item03;
+        private T _item04;
+        private T _item05;
+        private T _item06;
+        private T _item07;
+        private T _item08;
+        private T _item09;
         private T _item10;
         private T _item11;
         private T _item12;
@@ -44,8 +44,8 @@ namespace LibHac.Common.FixedArrays
 
         public ref T this[int i] => ref Items[i];
 
-        public Span<T> Items => SpanHelpers.CreateSpan(ref _item1, Length);
-        public readonly ReadOnlySpan<T> ItemsRo => SpanHelpers.CreateReadOnlySpan(in _item1, Length);
+        public Span<T> Items => SpanHelpers.CreateSpan(ref _item01, Length);
+        public readonly ReadOnlySpan<T> ItemsRo => SpanHelpers.CreateReadOnlySpan(in _item01, Length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator ReadOnlySpan<T>(in Array32<T> value) => value.ItemsRo;

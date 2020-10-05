@@ -28,6 +28,7 @@ namespace LibHac.Common.Keys
         private Mode _mode = Mode.Prod;
 
         public ref AllKeys KeyStruct => ref _keys;
+        public Mode CurrentMode => _mode;
 
         private ref RootKeys RootKeys => ref _mode == Mode.Dev ? ref _keys._rootKeysDev : ref _keys._rootKeysProd;
         private ref StoredKeys StoredKeys => ref _mode == Mode.Dev ? ref _keys._storedKeysDev : ref _keys._storedKeysProd;
