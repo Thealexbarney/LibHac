@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using LibHac.Common;
+using LibHac.Common.Keys;
 using LibHac.Crypto;
 using LibHac.Diag;
 using LibHac.Fs;
@@ -14,7 +15,7 @@ namespace LibHac.FsSystem.NcaUtils
 {
     public class Nca
     {
-        private Keyset Keyset { get; }
+        private KeySet KeySet { get; }
         private bool IsEncrypted => Header.IsEncrypted;
 
         private byte[] Nca0KeyArea { get; set; }
@@ -24,11 +25,11 @@ namespace LibHac.FsSystem.NcaUtils
 
         public NcaHeader Header { get; }
 
-        public Nca(Keyset keyset, IStorage storage)
+        public Nca(KeySet keySet, IStorage storage)
         {
-            Keyset = keyset;
+            KeySet = keySet;
             BaseStorage = storage;
-            Header = new NcaHeader(keyset, storage);
+            Header = new NcaHeader(keySet, storage);
         }
 
         public byte[] GetDecryptedKey(int index)
@@ -42,11 +43,11 @@ namespace LibHac.FsSystem.NcaUtils
             }
 
             int keyRevision = Utilities.GetMasterKeyRevision(Header.KeyGeneration);
-            byte[] keyAreaKey = Keyset.KeyAreaKeys[keyRevision][Header.KeyAreaKeyIndex];
+            byte[] keyAreaKey = KeySet.KeyAreaKeys[keyRevision][Header.KeyAreaKeyIndex].DataRo.ToArray();
 
             if (keyAreaKey.IsEmpty())
             {
-                string keyName = $"key_area_key_{Keyset.KakNames[Header.KeyAreaKeyIndex]}_{keyRevision:x2}";
+                string keyName = $"key_area_key_{KakNames[Header.KeyAreaKeyIndex]}_{keyRevision:x2}";
                 throw new MissingKeyException("Unable to decrypt NCA section.", keyName, KeyType.Common);
             }
 
@@ -58,14 +59,16 @@ namespace LibHac.FsSystem.NcaUtils
             return decryptedKey;
         }
 
+        private static readonly string[] KakNames = { "application", "ocean", "system" };
+
         public byte[] GetDecryptedTitleKey()
         {
             int keyRevision = Utilities.GetMasterKeyRevision(Header.KeyGeneration);
-            byte[] titleKek = Keyset.TitleKeks[keyRevision];
+            byte[] titleKek = KeySet.TitleKeks[keyRevision].DataRo.ToArray();
 
             var rightsId = new RightsId(Header.RightsId);
 
-            if (Keyset.ExternalKeySet.Get(rightsId, out AccessKey accessKey).IsFailure())
+            if (KeySet.ExternalKeySet.Get(rightsId, out AccessKey accessKey).IsFailure())
             {
                 throw new MissingKeyException("Missing NCA title key.", rightsId.ToString(), KeyType.Title);
             }
@@ -108,11 +111,11 @@ namespace LibHac.FsSystem.NcaUtils
 
             if (Header.HasRightsId)
             {
-                return Keyset.ExternalKeySet.Contains(new RightsId(Header.RightsId)) &&
-                       !Keyset.TitleKeks[keyRevision].IsEmpty();
+                return KeySet.ExternalKeySet.Contains(new RightsId(Header.RightsId)) &&
+                       !KeySet.TitleKeks[keyRevision].IsEmpty();
             }
 
-            return !Keyset.KeyAreaKeys[keyRevision][Header.KeyAreaKeyIndex].IsEmpty();
+            return !KeySet.KeyAreaKeys[keyRevision][Header.KeyAreaKeyIndex].IsEmpty();
         }
 
         public bool SectionExists(NcaSectionType type)
@@ -586,13 +589,13 @@ namespace LibHac.FsSystem.NcaUtils
             switch (Header.Version)
             {
                 case 3:
-                    header = new CachedStorage(new Aes128XtsStorage(rawHeaderStorage, Keyset.HeaderKey, NcaHeader.HeaderSectorSize, true, !openEncrypted), 1, true);
+                    header = new CachedStorage(new Aes128XtsStorage(rawHeaderStorage, KeySet.HeaderKey, NcaHeader.HeaderSectorSize, true, !openEncrypted), 1, true);
                     break;
                 case 2:
                     header = OpenNca2Header(headerSize, !openEncrypted);
                     break;
                 case 0:
-                    header = new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, 0x400), Keyset.HeaderKey, NcaHeader.HeaderSectorSize, true, !openEncrypted), 1, true);
+                    header = new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, 0x400), KeySet.HeaderKey, NcaHeader.HeaderSectorSize, true, !openEncrypted), 1, true);
                     break;
                 default:
                     throw new NotSupportedException("Unsupported NCA version");
@@ -606,11 +609,11 @@ namespace LibHac.FsSystem.NcaUtils
             const int sectorSize = NcaHeader.HeaderSectorSize;
 
             var sources = new List<IStorage>();
-            sources.Add(new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, 0x400), Keyset.HeaderKey, sectorSize, true, decrypting), 1, true));
+            sources.Add(new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, 0x400), KeySet.HeaderKey, sectorSize, true, decrypting), 1, true));
 
             for (int i = 0x400; i < size; i += sectorSize)
             {
-                sources.Add(new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(i, sectorSize), Keyset.HeaderKey, sectorSize, true, decrypting), 1, true));
+                sources.Add(new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(i, sectorSize), KeySet.HeaderKey, sectorSize, true, decrypting), 1, true));
             }
 
             return new ConcatenationStorage(sources, true);
@@ -630,7 +633,7 @@ namespace LibHac.FsSystem.NcaUtils
                 Span<byte> keyArea = Header.GetKeyArea();
                 var decKeyArea = new byte[0x100];
 
-                if (CryptoOld.DecryptRsaOaep(keyArea, decKeyArea, Keyset.Nca0RsaKeyAreaKey, out _))
+                if (CryptoOld.DecryptRsaOaep(keyArea, decKeyArea, KeySet.BetaNca0KeyAreaKey, out _))
                 {
                     Nca0KeyArea = decKeyArea;
                 }
@@ -708,7 +711,7 @@ namespace LibHac.FsSystem.NcaUtils
 
         public Validity VerifyHeaderSignature()
         {
-            return Header.VerifySignature1(Keyset.NcaHdrFixedKeyModulus);
+            return Header.VerifySignature1(KeySet.NcaHeaderSigningKeys[0].Modulus);
         }
 
         internal void GenerateAesCounter(int sectionIndex, Ncm.ContentType type, int minorVersion)

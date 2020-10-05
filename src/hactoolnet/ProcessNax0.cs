@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text;
 using LibHac;
 using LibHac.Common;
+using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.FsSystem;
 using static hactoolnet.Print;
@@ -13,7 +14,13 @@ namespace hactoolnet
     {
         public static void Process(Context ctx)
         {
-            byte[][] keys = ctx.Keyset.SdCardKeys;
+            if (ctx.Options.SdPath == null)
+            {
+                ctx.Logger.LogMessage("SD path must be specified.");
+                return;
+            }
+
+            Span<AesXtsKey> keys = ctx.KeySet.SdCardEncryptionKeys;
 
             using var baseFile = new LocalFile(ctx.Options.InFile, OpenMode.Read);
 
@@ -22,8 +29,8 @@ namespace hactoolnet
 
             for (int i = 0; i < keys.Length; i++)
             {
-                byte[] kekSource = keys[i].AsSpan(0, 0x10).ToArray();
-                byte[] validationKey = keys[i].AsSpan(0x10, 0x10).ToArray();
+                byte[] kekSource = keys[i].SubKeys[0].DataRo.ToArray();
+                byte[] validationKey = keys[i].SubKeys[1].DataRo.ToArray();
 
                 try
                 {
@@ -37,7 +44,7 @@ namespace hactoolnet
 
             if (xtsFile == null)
             {
-                ctx.Logger.LogMessage($"Error: NAX0 key derivation failed. Check SD card seed and relative path.");
+                ctx.Logger.LogMessage("Error: NAX0 key derivation failed. Check SD card seed and relative path.");
                 return;
             }
 

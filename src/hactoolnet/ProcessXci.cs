@@ -15,7 +15,7 @@ namespace hactoolnet
         {
             using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
-                var xci = new Xci(ctx.Keyset, file);
+                var xci = new Xci(ctx.KeySet, file);
 
                 ctx.Logger.LogMessage(xci.Print());
 
@@ -125,7 +125,7 @@ namespace hactoolnet
             foreach (PartitionFileEntry fileEntry in partition.Files.Where(x => x.Name.EndsWith(".nca")))
             {
                 IStorage ncaStorage = partition.OpenFile(fileEntry, OpenMode.Read).AsStorage();
-                var nca = new Nca(ctx.Keyset, ncaStorage);
+                var nca = new Nca(ctx.KeySet, ncaStorage);
 
                 if (nca.Header.ContentType == NcaContentType.Program)
                 {

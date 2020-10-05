@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.Common.Keys;
 using LibHac.Crypto;
 using LibHac.Diag;
 using LibHac.Fs;
@@ -21,9 +22,9 @@ namespace LibHac.FsSystem.NcaUtils
         public NcaVersion FormatVersion { get; }
         public bool IsEncrypted { get; }
 
-        public NcaHeader(Keyset keyset, IStorage headerStorage)
+        public NcaHeader(KeySet keySet, IStorage headerStorage)
         {
-            (byte[] header, bool isEncrypted) = DecryptHeader(keyset, headerStorage);
+            (byte[] header, bool isEncrypted) = DecryptHeader(keySet, headerStorage);
 
             _header = header;
             IsEncrypted = isEncrypted;
@@ -195,7 +196,7 @@ namespace LibHac.FsSystem.NcaUtils
             return (long)blockIndex * BlockSize;
         }
 
-        private static (byte[] header, bool isEncrypted) DecryptHeader(Keyset keyset, IStorage storage)
+        private static (byte[] header, bool isEncrypted) DecryptHeader(KeySet keySet, IStorage storage)
         {
             var buf = new byte[HeaderSize];
             storage.Read(0, buf).ThrowIfFailure();
@@ -212,8 +213,8 @@ namespace LibHac.FsSystem.NcaUtils
                 return (buf, false);
             }
 
-            byte[] key1 = keyset.HeaderKey.AsSpan(0, 0x10).ToArray();
-            byte[] key2 = keyset.HeaderKey.AsSpan(0x10, 0x10).ToArray();
+            byte[] key1 = keySet.HeaderKey.SubKeys[0].DataRo.ToArray();
+            byte[] key2 = keySet.HeaderKey.SubKeys[1].DataRo.ToArray();
 
             var transform = new Aes128XtsTransform(key1, key2, true);
 

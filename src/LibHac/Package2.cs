@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.FsSystem;
 
@@ -18,15 +19,15 @@ namespace LibHac
 
         private IStorage Storage { get; }
 
-        public Package2(Keyset keyset, IStorage storage)
+        public Package2(KeySet keySet, IStorage storage)
         {
             Storage = storage;
             IStorage headerStorage = Storage.Slice(0, 0x200);
 
-            KeyRevision = FindKeyGeneration(keyset, headerStorage);
-            Key = keyset.Package2Keys[KeyRevision];
+            KeyRevision = FindKeyGeneration(keySet, headerStorage);
+            Key = keySet.Package2Keys[KeyRevision].DataRo.ToArray();
 
-            Header = new Package2Header(headerStorage, keyset, KeyRevision);
+            Header = new Package2Header(headerStorage, keySet, KeyRevision);
 
             PackageSize = BitConverter.ToInt32(Header.Counter, 0) ^ BitConverter.ToInt32(Header.Counter, 8) ^
                           BitConverter.ToInt32(Header.Counter, 12);
@@ -106,7 +107,7 @@ namespace LibHac
             return new CachedStorage(new Aes128CtrStorage(encStorage, Key, Header.SectionCounters[1], true), 0x4000, 4, true);
         }
 
-        private int FindKeyGeneration(Keyset keyset, IStorage storage)
+        private int FindKeyGeneration(KeySet keySet, IStorage storage)
         {
             var counter = new byte[0x10];
             var decBuffer = new byte[0x10];
@@ -115,7 +116,8 @@ namespace LibHac
 
             for (int i = 0; i < 0x20; i++)
             {
-                var dec = new Aes128CtrStorage(storage.Slice(0x100), keyset.Package2Keys[i], counter, false);
+                var dec = new Aes128CtrStorage(storage.Slice(0x100), keySet.Package2Keys[i].DataRo.ToArray(), counter,
+                    false);
                 dec.Read(0x50, decBuffer).ThrowIfFailure();
 
                 if (BitConverter.ToUInt32(decBuffer, 0) == Pk21Magic)
@@ -145,14 +147,14 @@ namespace LibHac
 
         public Validity SignatureValidity { get; }
 
-        public Package2Header(IStorage storage, Keyset keyset, int keyGeneration)
+        public Package2Header(IStorage storage, KeySet keySet, int keyGeneration)
         {
             var reader = new BinaryReader(storage.AsStream());
-            byte[] key = keyset.Package2Keys[keyGeneration];
+            byte[] key = keySet.Package2Keys[keyGeneration].DataRo.ToArray();
 
             Signature = reader.ReadBytes(0x100);
             byte[] sigData = reader.ReadBytes(0x100);
-            SignatureValidity = CryptoOld.Rsa2048PssVerify(sigData, Signature, keyset.Package2FixedKeyModulus);
+            SignatureValidity = CryptoOld.Rsa2048PssVerify(sigData, Signature, keySet.Package2SigningKey.Modulus);
 
             reader.BaseStream.Position -= 0x100;
             Counter = reader.ReadBytes(0x10);

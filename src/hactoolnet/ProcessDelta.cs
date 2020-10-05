@@ -28,7 +28,7 @@ namespace hactoolnet
                 {
                     try
                     {
-                        var nca = new Nca(ctx.Keyset, deltaStorage);
+                        var nca = new Nca(ctx.KeySet, deltaStorage);
                         IFileSystem fs = nca.OpenFileSystem(0, IntegrityCheckLevel.ErrorOnInvalid);
 
                         if (!fs.FileExists(FragmentFileName))

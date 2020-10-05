@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using LibHac.Common.Keys;
 using LibHac.Crypto;
 using LibHac.Fs;
 
@@ -37,7 +38,7 @@ namespace LibHac.FsSystem.Save
 
         public byte[] Data { get; }
 
-        public Header(IStorage storage, Keyset keyset)
+        public Header(IStorage storage, KeySet keySet)
         {
             MainStorage = storage;
             MainHeader = MainStorage.Slice(0x100, 0x200);
@@ -86,14 +87,14 @@ namespace LibHac.FsSystem.Save
             Sha256.GenerateSha256Hash(Data.AsSpan(0x300, 0x3d00), actualHeaderHash);
 
             HeaderHashValidity = Utilities.SpansEqual(Layout.Hash, actualHeaderHash) ? Validity.Valid : Validity.Invalid;
-            SignatureValidity = ValidateSignature(keyset);
+            SignatureValidity = ValidateSignature(keySet);
         }
 
-        private Validity ValidateSignature(Keyset keyset)
+        private Validity ValidateSignature(KeySet keySet)
         {
             Span<byte> calculatedCmac = stackalloc byte[0x10];
 
-            Aes.CalculateCmac(calculatedCmac, Data.AsSpan(0x100, 0x200), keyset.SaveMacKey);
+            Aes.CalculateCmac(calculatedCmac, Data.AsSpan(0x100, 0x200), keySet.DeviceUniqueSaveMacKeys[0]);
 
             return CryptoUtil.IsSameBytes(calculatedCmac, Cmac, Aes.BlockSize) ? Validity.Valid : Validity.Invalid;
         }

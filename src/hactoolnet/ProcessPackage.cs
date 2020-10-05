@@ -17,7 +17,7 @@ namespace hactoolnet
             using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
                 var package1 = new LibHac.Boot.Package1();
-                package1.Initialize(ctx.Keyset, file).ThrowIfFailure();
+                package1.Initialize(ctx.KeySet, file).ThrowIfFailure();
 
                 ctx.Logger.LogMessage(package1.Print());
 
@@ -107,7 +107,7 @@ namespace hactoolnet
             using (var file = new CachedStorage(new LocalStorage(ctx.Options.InFile, FileAccess.Read), 0x4000, 4, false))
             {
                 var package2 = new Package2StorageReader();
-                package2.Initialize(ctx.Keyset, file).ThrowIfFailure();
+                package2.Initialize(ctx.KeySet, file).ThrowIfFailure();
 
                 ctx.Logger.LogMessage(package2.Print());
 

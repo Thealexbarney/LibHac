@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using LibHac.Common;
+using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
@@ -16,7 +17,7 @@ namespace LibHac
 {
     public class SwitchFs : IDisposable
     {
-        public Keyset Keyset { get; }
+        public KeySet KeySet { get; }
         public IFileSystem ContentFs { get; }
         public IFileSystem SaveFs { get; }
 
@@ -25,9 +26,9 @@ namespace LibHac
         public Dictionary<ulong, Title> Titles { get; } = new Dictionary<ulong, Title>();
         public Dictionary<ulong, Application> Applications { get; } = new Dictionary<ulong, Application>();
 
-        public SwitchFs(Keyset keyset, IFileSystem contentFileSystem, IFileSystem saveFileSystem)
+        public SwitchFs(KeySet keySet, IFileSystem contentFileSystem, IFileSystem saveFileSystem)
         {
-            Keyset = keyset;
+            KeySet = keySet;
             ContentFs = contentFileSystem;
             SaveFs = saveFileSystem;
 
@@ -38,7 +39,7 @@ namespace LibHac
             CreateApplications();
         }
 
-        public static SwitchFs OpenSdCard(Keyset keyset, IAttributeFileSystem fileSystem)
+        public static SwitchFs OpenSdCard(KeySet keySet, IAttributeFileSystem fileSystem)
         {
             var concatFs = new ConcatenationFileSystem(fileSystem);
             SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem contentDirFs, concatFs, "/Nintendo/Contents".ToU8String()).ThrowIfFailure();
@@ -47,15 +48,15 @@ namespace LibHac
             if (fileSystem.DirectoryExists("/Nintendo/save"))
             {
                 SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem saveDirFs, concatFs, "/Nintendo/save".ToU8String()).ThrowIfFailure();
-                encSaveFs = new AesXtsFileSystem(saveDirFs, keyset.SdCardKeys[0], 0x4000);
+                encSaveFs = new AesXtsFileSystem(saveDirFs, keySet.SdCardEncryptionKeys[0].DataRo.ToArray(), 0x4000);
             }
 
-            var encContentFs = new AesXtsFileSystem(contentDirFs, keyset.SdCardKeys[1], 0x4000);
+            var encContentFs = new AesXtsFileSystem(contentDirFs, keySet.SdCardEncryptionKeys[1].DataRo.ToArray(), 0x4000);
 
-            return new SwitchFs(keyset, encContentFs, encSaveFs);
+            return new SwitchFs(keySet, encContentFs, encSaveFs);
         }
 
-        public static SwitchFs OpenNandPartition(Keyset keyset, IAttributeFileSystem fileSystem)
+        public static SwitchFs OpenNandPartition(KeySet keySet, IAttributeFileSystem fileSystem)
         {
             var concatFs = new ConcatenationFileSystem(fileSystem);
             SubdirectoryFileSystem saveDirFs = null;
@@ -67,12 +68,12 @@ namespace LibHac
 
             SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem contentDirFs, concatFs, "/Contents".ToU8String()).ThrowIfFailure();
 
-            return new SwitchFs(keyset, contentDirFs, saveDirFs);
+            return new SwitchFs(keySet, contentDirFs, saveDirFs);
         }
 
-        public static SwitchFs OpenNcaDirectory(Keyset keyset, IFileSystem fileSystem)
+        public static SwitchFs OpenNcaDirectory(KeySet keySet, IFileSystem fileSystem)
         {
-            return new SwitchFs(keyset, fileSystem, null);
+            return new SwitchFs(keySet, fileSystem, null);
         }
 
         private void OpenAllNcas()
@@ -88,7 +89,7 @@ namespace LibHac
                 {
                     ContentFs.OpenFile(out IFile ncaFile, fileEntry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
-                    nca = new SwitchFsNca(new Nca(Keyset, ncaFile.AsStorage()));
+                    nca = new SwitchFsNca(new Nca(KeySet, ncaFile.AsStorage()));
 
                     nca.NcaId = GetNcaFilename(fileEntry.Name, nca);
                     string extension = nca.Nca.Header.ContentType == NcaContentType.Meta ? ".cnmt.nca" : ".nca";
@@ -126,7 +127,7 @@ namespace LibHac
                 {
                     SaveFs.OpenFile(out IFile file, fileEntry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
-                    save = new SaveDataFileSystem(Keyset, file.AsStorage(), IntegrityCheckLevel.None, true);
+                    save = new SaveDataFileSystem(KeySet, file.AsStorage(), IntegrityCheckLevel.None, true);
                 }
                 catch (Exception ex)
                 {

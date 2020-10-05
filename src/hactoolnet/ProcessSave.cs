@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using LibHac;
 using LibHac.Common;
+using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
@@ -29,7 +30,7 @@ namespace hactoolnet
             {
                 bool signNeeded = ctx.Options.SignSave;
 
-                var save = new SaveDataFileSystem(ctx.Keyset, file, ctx.Options.IntegrityLevel, true);
+                var save = new SaveDataFileSystem(ctx.KeySet, file, ctx.Options.IntegrityLevel, true);
                 FileSystemClient fs = ctx.FsClient;
 
                 fs.Register("save".ToU8Span(), save);
@@ -104,9 +105,10 @@ namespace hactoolnet
                 {
                     if (signNeeded)
                     {
-                        if (save.Commit(ctx.Keyset).IsSuccess())
+                        if (save.Commit(ctx.KeySet).IsSuccess())
                         {
-                            ctx.Logger.LogMessage($"Successfully signed save file with key {ctx.Keyset.SaveMacKey.ToHexString()}");
+                            ctx.Logger.LogMessage(
+                                $"Successfully signed save file with key {ctx.KeySet.DeviceUniqueSaveMacKeys[0].ToString()}");
                         }
                         else
                         {
@@ -126,9 +128,10 @@ namespace hactoolnet
 
                 if (signNeeded)
                 {
-                    if (save.Commit(ctx.Keyset).IsSuccess())
+                    if (save.Commit(ctx.KeySet).IsSuccess())
                     {
-                        ctx.Logger.LogMessage($"Successfully signed save file with key {ctx.Keyset.SaveMacKey.ToHexString()}");
+                        ctx.Logger.LogMessage(
+                            $"Successfully signed save file with key {ctx.KeySet.DeviceUniqueSaveMacKeys[0].ToString()}");
                     }
                     else
                     {
@@ -147,7 +150,7 @@ namespace hactoolnet
                     }
                 }
 
-                ctx.Logger.LogMessage(save.Print(ctx.Keyset));
+                ctx.Logger.LogMessage(save.Print(ctx.KeySet));
                 //ctx.Logger.LogMessage(PrintFatLayout(save.SaveDataFileSystemCore));
 
                 fs.Unmount("save".ToU8Span());
@@ -316,7 +319,7 @@ namespace hactoolnet
             }
         }
 
-        private static string Print(this SaveDataFileSystem save, Keyset keyset)
+        private static string Print(this SaveDataFileSystem save, KeySet keySet)
         {
             int colLen = 25;
             var sb = new StringBuilder();
@@ -325,7 +328,7 @@ namespace hactoolnet
             save.GetFreeSpaceSize(out long freeSpace, "".ToU8String()).ThrowIfFailure();
 
             sb.AppendLine("Savefile:");
-            PrintItem(sb, colLen, "CMAC Key Used:", keyset.SaveMacKey);
+            PrintItem(sb, colLen, "CMAC Key Used:", keySet.DeviceUniqueSaveMacKeys[0].DataRo.ToArray());
             PrintItem(sb, colLen, $"CMAC Signature{save.Header.SignatureValidity.GetValidityString()}:", save.Header.Cmac);
             PrintItem(sb, colLen, "Title ID:", $"{save.Header.ExtraData.TitleId:x16}");
             PrintItem(sb, colLen, "User ID:", save.Header.ExtraData.UserId);

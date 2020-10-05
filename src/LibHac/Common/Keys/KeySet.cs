@@ -101,11 +101,15 @@ namespace LibHac.Common.Keys
         public Span<AesKey> DeviceUniqueSaveMacKeys => _keys._deviceKeys.DeviceUniqueSaveMacKeys.Items;
         public ref AesKey SeedUniqueSaveMacKey => ref _keys._deviceKeys.SeedUniqueSaveMacKey;
         public ref AesKey SdCardEncryptionSeed => ref _keys._deviceKeys.SdCardEncryptionSeed;
+
+        // Todo: Make a separate type? Not actually an AES-XTS key, but it's still the same shape.
         public Span<AesXtsKey> SdCardEncryptionKeys => _keys._deviceKeys.SdCardEncryptionKeys.Items;
 
         private RsaSigningKeyParameters _rsaSigningKeyParamsDev;
         private RsaSigningKeyParameters _rsaSigningKeyParamsProd;
         private RsaKeyParameters _rsaKeyParams;
+
+        public RSAParameters ETicketExtKeyRsa { get; set; }
 
         public Span<RSAParameters> NcaHeaderSigningKeys
         {

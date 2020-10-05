@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using LibHac.Common.Keys;
 using LibHac.Diag;
 
 namespace LibHac.Boot
@@ -80,7 +81,7 @@ namespace LibHac.Boot
         private const int MarikoWarmBootPlainTextSectionSize = 0x330;
 
         private IStorage BaseStorage { get; set; }
-        private Keyset Keyset { get; set; }
+        private KeySet KeySet { get; set; }
 
         public bool IsModern { get; private set; }
         public bool IsMariko { get; private set; }
@@ -107,9 +108,9 @@ namespace LibHac.Boot
         public ref readonly Package1Pk11Header Pk11Header => ref _pk11Header;
         public ref readonly Buffer16 Pk11Mac => ref _pk11Mac;
 
-        public Result Initialize(Keyset keyset, IStorage storage)
+        public Result Initialize(KeySet keySet, IStorage storage)
         {
-            Keyset = keyset;
+            KeySet = keySet;
             BaseStorage = storage;
 
             // Read what might be a mariko header and check if it actually is a mariko header
@@ -199,13 +200,13 @@ namespace LibHac.Boot
             }
 
             // If encrypted, check if the body can be decrypted
-            Crypto.Aes.DecryptCbc128(metaData2, metaData2, Keyset.MarikoBek, _metaData.Iv);
+            Crypto.Aes.DecryptCbc128(metaData2, metaData2, KeySet.MarikoBek, _metaData.Iv);
             IsDecrypted = metaData2.SequenceEqual(SpanHelpers.AsByteSpan(ref _metaData));
 
             // Get a decrypted body storage if we have the correct key
             if (IsDecrypted)
             {
-                var decStorage = new AesCbcStorage(bodySubStorage, Keyset.MarikoBek, _metaData.Iv, true);
+                var decStorage = new AesCbcStorage(bodySubStorage, KeySet.MarikoBek, _metaData.Iv, true);
                 BodyStorage = new CachedStorage(decStorage, 0x4000, 1, true);
             }
 
@@ -282,13 +283,13 @@ namespace LibHac.Boot
 
                 if (IsModern)
                 {
-                    decPk11Storage = new AesCbcStorage(encPk11Storage, Keyset.Package1Keys[KeyRevision],
+                    decPk11Storage = new AesCbcStorage(encPk11Storage, KeySet.Package1Keys[KeyRevision],
                         _stage1Footer.Iv, true);
                 }
                 else
                 {
-                    decPk11Storage = new Aes128CtrStorage(encPk11Storage, Keyset.Package1Keys[KeyRevision],
-                        _stage1Footer.Iv.ToArray(), true);
+                    decPk11Storage = new Aes128CtrStorage(encPk11Storage,
+                        KeySet.Package1Keys[KeyRevision].DataRo.ToArray(), _stage1Footer.Iv.ToArray(), true);
                 }
 
                 Pk11Storage = new CachedStorage(decPk11Storage, 0x4000, 1, true);
@@ -318,7 +319,7 @@ namespace LibHac.Boot
             for (int i = start; i < end; i++)
             {
                 decryptor(SpanHelpers.AsByteSpan(ref _pk11Header), SpanHelpers.AsByteSpan(ref decHeader),
-                    Keyset.Package1Keys[i], _stage1Footer.Iv);
+                    KeySet.Package1Keys[i], _stage1Footer.Iv);
 
                 if (decHeader.Magic == Package1Pk11Header.ExpectedMagic)
                 {
@@ -452,7 +453,7 @@ namespace LibHac.Boot
                 new SubStorage(warmBootStorage, MarikoWarmBootPlainTextSectionSize, encryptedSectionSize);
 
             var zeroIv = new Buffer16();
-            IStorage decryptedSection = new AesCbcStorage(encryptedSubStorage, Keyset.MarikoBek, zeroIv.Bytes, true);
+            IStorage decryptedSection = new AesCbcStorage(encryptedSubStorage, KeySet.MarikoBek, zeroIv.Bytes, true);
 
             decryptedSection = new CachedStorage(decryptedSection, 0x200, 1, true);
 

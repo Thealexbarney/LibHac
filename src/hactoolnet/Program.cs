@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using LibHac;
+using LibHac.Common.Keys;
 using LibHac.Fs;
 
 namespace hactoolnet
@@ -197,26 +198,34 @@ namespace hactoolnet
                 consoleKeyFile = homeConsoleKeyFile;
             }
 
-            ctx.Keyset = ExternalKeyReader.ReadKeyFile(keyFile, titleKeyFile, consoleKeyFile, ctx.Logger, ctx.Options.UseDevKeys);
+            ctx.KeySet = ExternalKeyReader.ReadKeyFile(keyFile, titleKeyFile, consoleKeyFile, ctx.Logger, ctx.Options.KeyMode);
+
             if (ctx.Options.SdSeed != null)
             {
-                ctx.Keyset.SetSdSeed(ctx.Options.SdSeed.ToBytes());
-            }
-
-            if (ctx.Options.InFileType == FileType.Keygen && ctx.Options.OutDir != null)
-            {
-                string dir = ctx.Options.OutDir;
-                Directory.CreateDirectory(dir);
-
-                File.WriteAllText(Path.Combine(dir, keyFileName), ExternalKeyReader.PrintCommonKeys(ctx.Keyset));
-                File.WriteAllText(Path.Combine(dir, "console.keys"), ExternalKeyReader.PrintUniqueKeys(ctx.Keyset));
-                File.WriteAllText(Path.Combine(dir, "title.keys"), ExternalKeyReader.PrintTitleKeys(ctx.Keyset));
+                ctx.KeySet.SetSdSeed(ctx.Options.SdSeed.ToBytes());
             }
         }
 
         private static void ProcessKeygen(Context ctx)
         {
-            Console.WriteLine(ExternalKeyReader.PrintCommonKeys(ctx.Keyset));
+            Console.WriteLine(ExternalKeyReader.PrintAllKeys(ctx.KeySet));
+
+            if (ctx.Options.OutDir != null)
+            {
+                string keyFileName = ctx.Options.UseDevKeys ? "dev.keys" : "prod.keys";
+                string dir = ctx.Options.OutDir;
+                Directory.CreateDirectory(dir);
+
+                File.WriteAllText(Path.Combine(dir, keyFileName), ExternalKeyReader.PrintCommonKeys(ctx.KeySet));
+                File.WriteAllText(Path.Combine(dir, "console.keys"), ExternalKeyReader.PrintDeviceKeys(ctx.KeySet));
+                File.WriteAllText(Path.Combine(dir, "title.keys"), ExternalKeyReader.PrintTitleKeys(ctx.KeySet));
+
+                if (!ctx.Options.UseDevKeys)
+                {
+                    File.WriteAllText(Path.Combine(dir, "prod+dev.keys"),
+                        ExternalKeyReader.PrintCommonKeysWithDev(ctx.KeySet));
+                }
+            }
         }
 
         // For running random stuff

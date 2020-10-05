@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common.Keys;
+using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv;
 
@@ -10,7 +11,7 @@ namespace LibHac.Tests
         {
             IFileSystem rootFs = new InMemoryFileSystem();
 
-            var defaultObjects = DefaultFsServerObjects.GetDefaultEmulatedCreators(rootFs, new Keyset());
+            var defaultObjects = DefaultFsServerObjects.GetDefaultEmulatedCreators(rootFs, new KeySet());
 
             var config = new FileSystemServerConfig();
             config.FsCreators = defaultObjects.FsCreators;
