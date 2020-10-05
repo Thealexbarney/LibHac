@@ -1,14 +1,22 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using LibHac.Boot;
 using LibHac.Common.FixedArrays;
 using LibHac.Crypto;
 using LibHac.FsSrv;
+using Aes = LibHac.Crypto.Aes;
 
 namespace LibHac.Common.Keys
 {
     public class KeySet
     {
+        public enum Mode
+        {
+            Dev,
+            Prod
+        }
+
         /// <summary>
         /// The number of keyblobs that were used for &lt; 6.2.0 crypto
         /// </summary>
@@ -17,29 +25,45 @@ namespace LibHac.Common.Keys
         private const int KeyRevisionCount = 0x20;
 
         private AllKeys _keys;
+        private Mode _mode = Mode.Prod;
+
         public ref AllKeys KeyStruct => ref _keys;
+
+        private ref RootKeys RootKeys => ref _mode == Mode.Dev ? ref _keys._rootKeysDev : ref _keys._rootKeysProd;
+        private ref StoredKeys StoredKeys => ref _mode == Mode.Dev ? ref _keys._storedKeysDev : ref _keys._storedKeysProd;
+        private ref DerivedKeys DerivedKeys => ref _mode == Mode.Dev ? ref _keys._derivedKeysDev : ref _keys._derivedKeysProd;
+        private ref RsaSigningKeys RsaSigningKeys => ref _mode == Mode.Dev ? ref _keys._rsaSigningKeysDev : ref _keys._rsaSigningKeysProd;
+        private ref RsaKeys RsaKeys => ref _keys._rsaKeys;
+
+        private ref RsaSigningKeyParameters RsaSigningKeyParams => ref _mode == Mode.Dev
+            ? ref _rsaSigningKeyParamsDev
+            : ref _rsaSigningKeyParamsProd;
 
         public ExternalKeySet ExternalKeySet { get; } = new ExternalKeySet();
 
-        public Span<AesKey> MarikoAesClassKeys => _keys._rootKeys.MarikoAesClassKeys.Items;
-        public ref AesKey MarikoKek => ref _keys._rootKeys.MarikoKek;
-        public ref AesKey MarikoBek => ref _keys._rootKeys.MarikoBek;
-        public Span<KeyBlob> KeyBlobs => _keys._rootKeys.KeyBlobs.Items;
+        public Span<AesKey> MarikoAesClassKeys => RootKeys.MarikoAesClassKeys.Items;
+        public ref AesKey MarikoKek => ref RootKeys.MarikoKek;
+        public ref AesKey MarikoBek => ref RootKeys.MarikoBek;
+        public Span<KeyBlob> KeyBlobs => RootKeys.KeyBlobs.Items;
         public Span<AesKey> KeyBlobKeySources => _keys._keySeeds.KeyBlobKeySources.Items;
         public ref AesKey KeyBlobMacKeySource => ref _keys._keySeeds.KeyBlobMacKeySource;
-        public ref AesKey TsecRootKek => ref _keys._rootKeys.TsecRootKek;
-        public ref AesKey Package1MacKek => ref _keys._rootKeys.Package1MacKek;
-        public ref AesKey Package1Kek => ref _keys._rootKeys.Package1Kek;
-        public Span<AesKey> TsecAuthSignatures => _keys._rootKeys.TsecAuthSignatures.Items;
-        public Span<AesKey> TsecRootKeys => _keys._rootKeys.TsecRootKeys.Items;
+        public ref AesKey TsecRootKek => ref RootKeys.TsecRootKek;
+        public ref AesKey Package1MacKek => ref RootKeys.Package1MacKek;
+        public ref AesKey Package1Kek => ref RootKeys.Package1Kek;
+        public Span<AesKey> TsecAuthSignatures => RootKeys.TsecAuthSignatures.Items;
+        public Span<AesKey> TsecRootKeys => RootKeys.TsecRootKeys.Items;
         public Span<AesKey> MasterKekSources => _keys._keySeeds.MasterKekSources.Items;
-        public Span<AesKey> MarikoMasterKekSources => _keys._keySeeds.MarikoMasterKekSources.Items;
-        public Span<AesKey> MasterKeks => _keys._derivedKeys.MasterKeks.Items;
+
+        public Span<AesKey> MarikoMasterKekSources => _mode == Mode.Dev
+            ? _keys._keySeeds.MarikoMasterKekSources_dev.Items
+            : _keys._keySeeds.MarikoMasterKekSources.Items;
+
+        public Span<AesKey> MasterKeks => DerivedKeys.MasterKeks.Items;
         public ref AesKey MasterKeySource => ref _keys._keySeeds.MasterKeySource;
-        public Span<AesKey> MasterKeys => _keys._derivedKeys.MasterKeys.Items;
-        public Span<AesKey> Package1MacKeys => _keys._derivedKeys.Package1MacKeys.Items;
-        public Span<AesKey> Package1Keys => _keys._derivedKeys.Package1Keys.Items;
-        public Span<AesKey> Package2Keys => _keys._derivedKeys.Package2Keys.Items;
+        public Span<AesKey> MasterKeys => DerivedKeys.MasterKeys.Items;
+        public Span<AesKey> Package1MacKeys => DerivedKeys.Package1MacKeys.Items;
+        public Span<AesKey> Package1Keys => DerivedKeys.Package1Keys.Items;
+        public Span<AesKey> Package2Keys => DerivedKeys.Package2Keys.Items;
         public ref AesKey Package2KeySource => ref _keys._keySeeds.Package2KeySource;
         public ref AesKey PerConsoleKeySource => ref _keys._keySeeds.PerConsoleKeySource;
         public ref AesKey RetailSpecificAesKeySource => ref _keys._keySeeds.RetailSpecificAesKeySource;
@@ -59,12 +83,12 @@ namespace LibHac.Common.Keys
         public ref AesKey SeedUniqueSaveMacKekSource => ref _keys._keySeeds.SeedUniqueSaveMacKekSource;
         public ref AesKey SeedUniqueSaveMacKeySource => ref _keys._keySeeds.SeedUniqueSaveMacKeySource;
         public ref AesXtsKey HeaderKeySource => ref _keys._keySeeds.HeaderKeySource;
-        public ref AesXtsKey HeaderKey => ref _keys._derivedKeys.HeaderKey;
-        public Span<AesKey> TitleKeks => _keys._derivedKeys.TitleKeks.Items;
-        public Span<Array3<AesKey>> KeyAreaKeys => _keys._derivedKeys.KeyAreaKeys.Items;
-        public ref AesKey XciHeaderKey => ref _keys._rootKeys.XciHeaderKey;
-        public ref AesKey EticketRsaKek => ref _keys._derivedKeys.EticketRsaKek;
-        public ref AesKey SslRsaKek => ref _keys._derivedKeys.SslRsaKek;
+        public ref AesXtsKey HeaderKey => ref DerivedKeys.HeaderKey;
+        public Span<AesKey> TitleKeks => DerivedKeys.TitleKeks.Items;
+        public Span<Array3<AesKey>> KeyAreaKeys => DerivedKeys.KeyAreaKeys.Items;
+        public ref AesKey XciHeaderKey => ref StoredKeys.XciHeaderKey;
+        public ref AesKey ETicketRsaKek => ref DerivedKeys.ETicketRsaKek;
+        public ref AesKey SslRsaKek => ref DerivedKeys.SslRsaKek;
 
         public ref AesKey SecureBootKey => ref _keys._deviceKeys.SecureBootKey;
         public ref AesKey TsecKey => ref _keys._deviceKeys.TsecKey;
@@ -78,6 +102,76 @@ namespace LibHac.Common.Keys
         public ref AesKey SdCardEncryptionSeed => ref _keys._deviceKeys.SdCardEncryptionSeed;
         public Span<AesXtsKey> SdCardEncryptionKeys => _keys._deviceKeys.SdCardEncryptionKeys.Items;
 
+        private RsaSigningKeyParameters _rsaSigningKeyParamsDev;
+        private RsaSigningKeyParameters _rsaSigningKeyParamsProd;
+        private RsaKeyParameters _rsaKeyParams;
+
+        public Span<RSAParameters> NcaHeaderSigningKeys
+        {
+            get
+            {
+                ref Array2<RSAParameters>? keys = ref RsaSigningKeyParams.NcaHeaderSigningKeys;
+
+                if (keys is null)
+                {
+                    keys = new Array2<RSAParameters>();
+                    keys.Value[0] = CreateRsaParameters(in RsaSigningKeys.NcaHeaderSigningKeys[0]);
+                    keys.Value[1] = CreateRsaParameters(in RsaSigningKeys.NcaHeaderSigningKeys[1]);
+                }
+
+                return keys.Value.Items;
+            }
+        }
+
+        public Span<RSAParameters> AcidSigningKeys
+        {
+            get
+            {
+                ref Array2<RSAParameters>? keys = ref RsaSigningKeyParams.AcidSigningKeys;
+
+                if (keys is null)
+                {
+                    keys = new Array2<RSAParameters>();
+                    keys.Value[0] = CreateRsaParameters(in RsaSigningKeys.AcidSigningKeys[0]);
+                    keys.Value[1] = CreateRsaParameters(in RsaSigningKeys.AcidSigningKeys[1]);
+                }
+
+                return keys.Value.Items;
+            }
+        }
+
+        public ref RSAParameters Package2SigningKey
+        {
+            get
+            {
+                ref Array1<RSAParameters>? keys = ref RsaSigningKeyParams.Package2SigningKey;
+
+                if (keys is null)
+                {
+                    keys = new Array1<RSAParameters>();
+                    keys.Value[0] = CreateRsaParameters(in RsaSigningKeys.Package2SigningKey);
+                }
+
+                return ref keys.Value[0];
+            }
+        }
+
+        public ref RSAParameters BetaNca0KeyAreaKey
+        {
+            get
+            {
+                ref Array1<RSAParameters>? keys = ref _rsaKeyParams.BetaNca0KeyAreaKey;
+
+                if (keys is null)
+                {
+                    keys = new Array1<RSAParameters>();
+                    keys.Value[0] = CreateRsaParameters(in RsaKeys.BetaNca0KeyAreaKey);
+                }
+
+                return ref keys.Value[0];
+            }
+        }
+
         public void SetSdSeed(ReadOnlySpan<byte> sdSeed)
         {
             if (sdSeed.Length != 0x10)
@@ -87,15 +181,22 @@ namespace LibHac.Common.Keys
             DeriveSdCardKeys();
         }
 
+        public void SetMode(Mode mode)
+        {
+            _mode = mode;
+        }
+
         public void DeriveKeys(IProgressReport logger = null)
         {
             DeriveKeyBlobKeys();
             DecryptKeyBlobs(logger);
             ReadKeyBlobs();
 
+            Derive620Keys();
             Derive620MasterKeks();
             DeriveMarikoMasterKeks();
             DeriveMasterKeys();
+            PopulateOldMasterKeys();
 
             DerivePerConsoleKeys();
             DerivePerFirmwareKeys();
@@ -157,6 +258,37 @@ namespace LibHac.Common.Keys
             }
         }
 
+        private void Derive620Keys()
+        {
+            bool haveTsecRootKek = !TsecRootKek.IsEmpty();
+            bool havePackage1MacKek = !Package1MacKek.IsEmpty();
+            bool havePackage1Kek = !Package1Kek.IsEmpty();
+
+            for (int i = UsedKeyBlobCount; i < KeyRevisionCount; i++)
+            {
+                if (TsecAuthSignatures[i - UsedKeyBlobCount].IsEmpty())
+                    continue;
+
+                if (haveTsecRootKek)
+                {
+                    Aes.EncryptEcb128(TsecAuthSignatures[i - UsedKeyBlobCount],
+                        TsecRootKeys[i - UsedKeyBlobCount], TsecRootKek);
+                }
+
+                if (havePackage1MacKek)
+                {
+                    Aes.EncryptEcb128(TsecAuthSignatures[i - UsedKeyBlobCount],
+                        Package1MacKeys[i], Package1MacKek);
+                }
+
+                if (havePackage1Kek)
+                {
+                    Aes.EncryptEcb128(TsecAuthSignatures[i - UsedKeyBlobCount],
+                        Package1Keys[i], Package1Kek);
+                }
+            }
+        }
+
         private void Derive620MasterKeks()
         {
             for (int i = UsedKeyBlobCount; i < KeyRevisionCount; i++)
@@ -193,8 +325,92 @@ namespace LibHac.Common.Keys
             }
         }
 
+        private void PopulateOldMasterKeys()
+        {
+            // Find the newest master key we have
+            int newestMasterKey = -1;
+
+            for (int i = MasterKeyVectors.Length - 1; i >= 0; i--)
+            {
+                if (!MasterKeys[i].IsEmpty())
+                {
+                    newestMasterKey = i;
+                    break;
+                }
+            }
+
+            if (newestMasterKey == -1)
+                return;
+
+            // Don't populate old master keys unless the newest master key is valid
+            if (!TestKeyGeneration(newestMasterKey))
+                return;
+
+            // Decrypt all previous master keys
+            for (int i = newestMasterKey; i > 0; i--)
+            {
+                Aes.DecryptEcb128(MasterKeyVectors[i], MasterKeys[i - 1], MasterKeys[i]);
+            }
+        }
+
+        /// <summary>
+        /// Check if the master key of the specified generation is correct.
+        /// </summary>
+        /// <param name="generation">The generation to test.</param>
+        /// <returns><see langword="true"/> if the key is correct.</returns>
+        private bool TestKeyGeneration(int generation)
+        {
+            // Decrypt the vector chain until we get Master Key 0
+            AesKey key = MasterKeys[generation];
+
+            for (int i = generation; i > 0; i--)
+            {
+                Aes.DecryptEcb128(MasterKeyVectors[i], key, key);
+            }
+
+            // Decrypt the zeros with Master Key 0
+            Aes.DecryptEcb128(MasterKeyVectors[0], key, key);
+
+            // If we don't get zeros, MasterKeys[generation] is incorrect
+            return key.IsEmpty();
+        }
+
+        private ReadOnlySpan<AesKey> MasterKeyVectors =>
+            MemoryMarshal.Cast<byte, AesKey>(_mode == Mode.Dev ? MasterKeyVectorsDev : MasterKeyVectorsProd);
+
+        private static ReadOnlySpan<byte> MasterKeyVectorsDev => new byte[]
+        {
+            0x46, 0x22, 0xB4, 0x51, 0x9A, 0x7E, 0xA7, 0x7F, 0x62, 0xA1, 0x1F, 0x8F, 0xC5, 0x3A, 0xDB, 0xFE, // Zeroes encrypted with Master Key 00.
+            0x39, 0x33, 0xF9, 0x31, 0xBA, 0xE4, 0xA7, 0x21, 0x2C, 0xDD, 0xB7, 0xD8, 0xB4, 0x4E, 0x37, 0x23, // Master key 00 encrypted with Master key 01.
+            0x97, 0x29, 0xB0, 0x32, 0x43, 0x14, 0x8C, 0xA6, 0x85, 0xE9, 0x5A, 0x94, 0x99, 0x39, 0xAC, 0x5D, // Master key 01 encrypted with Master key 02.
+            0x2C, 0xCA, 0x9C, 0x31, 0x1E, 0x07, 0xB0, 0x02, 0x97, 0x0A, 0xD8, 0x03, 0xA2, 0x76, 0x3F, 0xA3, // Master key 02 encrypted with Master key 03.
+            0x9B, 0x84, 0x76, 0x14, 0x72, 0x94, 0x52, 0xCB, 0x54, 0x92, 0x9B, 0xC4, 0x8C, 0x5B, 0x0F, 0xBA, // Master key 03 encrypted with Master key 04.
+            0x78, 0xD5, 0xF1, 0x20, 0x3D, 0x16, 0xE9, 0x30, 0x32, 0x27, 0x34, 0x6F, 0xCF, 0xE0, 0x27, 0xDC, // Master key 04 encrypted with Master key 05.
+            0x6F, 0xD2, 0x84, 0x1D, 0x05, 0xEC, 0x40, 0x94, 0x5F, 0x18, 0xB3, 0x81, 0x09, 0x98, 0x8D, 0x4E, // Master key 05 encrypted with Master key 06.
+            0x37, 0xAF, 0xAB, 0x35, 0x79, 0x09, 0xD9, 0x48, 0x29, 0xD2, 0xDB, 0xA5, 0xA5, 0xF5, 0x30, 0x19, // Master key 06 encrypted with Master key 07.
+            0xEC, 0xE1, 0x46, 0x89, 0x37, 0xFD, 0xD2, 0x15, 0x8C, 0x3F, 0x24, 0x82, 0xEF, 0x49, 0x68, 0x04, // Master key 07 encrypted with Master key 08.
+            0x43, 0x3D, 0xC5, 0x3B, 0xEF, 0x91, 0x02, 0x21, 0x61, 0x54, 0x63, 0x8A, 0x35, 0xE7, 0xCA, 0xEE, // Master key 08 encrypted with Master key 09.
+            0x6C, 0x2E, 0xCD, 0xB3, 0x34, 0x61, 0x77, 0xF5, 0xF9, 0xB1, 0xDD, 0x61, 0x98, 0x19, 0x3E, 0xD4  // Master key 09 encrypted with Master key 0A.
+        };
+
+        private static ReadOnlySpan<byte> MasterKeyVectorsProd => new byte[]
+        {
+            0x0C, 0xF0, 0x59, 0xAC, 0x85, 0xF6, 0x26, 0x65, 0xE1, 0xE9, 0x19, 0x55, 0xE6, 0xF2, 0x67, 0x3D, // Zeroes encrypted with Master Key 00.
+            0x29, 0x4C, 0x04, 0xC8, 0xEB, 0x10, 0xED, 0x9D, 0x51, 0x64, 0x97, 0xFB, 0xF3, 0x4D, 0x50, 0xDD, // Master key 00 encrypted with Master key 01.
+            0xDE, 0xCF, 0xEB, 0xEB, 0x10, 0xAE, 0x74, 0xD8, 0xAD, 0x7C, 0xF4, 0x9E, 0x62, 0xE0, 0xE8, 0x72, // Master key 01 encrypted with Master key 02.
+            0x0A, 0x0D, 0xDF, 0x34, 0x22, 0x06, 0x6C, 0xA4, 0xE6, 0xB1, 0xEC, 0x71, 0x85, 0xCA, 0x4E, 0x07, // Master key 02 encrypted with Master key 03.
+            0x6E, 0x7D, 0x2D, 0xC3, 0x0F, 0x59, 0xC8, 0xFA, 0x87, 0xA8, 0x2E, 0xD5, 0x89, 0x5E, 0xF3, 0xE9, // Master key 03 encrypted with Master key 04.
+            0xEB, 0xF5, 0x6F, 0x83, 0x61, 0x9E, 0xF8, 0xFA, 0xE0, 0x87, 0xD7, 0xA1, 0x4E, 0x25, 0x36, 0xEE, // Master key 04 encrypted with Master key 05.
+            0x1E, 0x1E, 0x22, 0xC0, 0x5A, 0x33, 0x3C, 0xB9, 0x0B, 0xA9, 0x03, 0x04, 0xBA, 0xDB, 0x07, 0x57, // Master key 05 encrypted with Master key 06.
+            0xA4, 0xD4, 0x52, 0x6F, 0xD1, 0xE4, 0x36, 0xAA, 0x9F, 0xCB, 0x61, 0x27, 0x1C, 0x67, 0x65, 0x1F, // Master key 06 encrypted with Master key 07.
+            0xEA, 0x60, 0xB3, 0xEA, 0xCE, 0x8F, 0x24, 0x46, 0x7D, 0x33, 0x9C, 0xD1, 0xBC, 0x24, 0x98, 0x29, // Master key 07 encrypted with Master key 08.
+            0x4D, 0xD9, 0x98, 0x42, 0x45, 0x0D, 0xB1, 0x3C, 0x52, 0x0C, 0x9A, 0x44, 0xBB, 0xAD, 0xAF, 0x80, // Master key 08 encrypted with Master key 09.
+            0xB8, 0x96, 0x9E, 0x4A, 0x00, 0x0D, 0xD6, 0x28, 0xB3, 0xD1, 0xDB, 0x68, 0x5F, 0xFB, 0xE1, 0x2A  // Master key 09 encrypted with Master key 0A.
+        };
+
         private void DerivePerConsoleKeys()
         {
+            // Todo: Dev and newer key generations
             var kek = new AesKey();
 
             // Derive the device key
@@ -350,30 +566,81 @@ namespace LibHac.Common.Keys
                 srcKek.Data.CopyTo(dest);
             }
         }
+
+        private static RSAParameters CreateRsaParameters(in RsaKey key)
+        {
+            return new RSAParameters
+            {
+                Exponent = key.PublicExponent.DataRo.ToArray(),
+                Modulus = key.Modulus.DataRo.ToArray()
+            };
+        }
+
+        private static RSAParameters CreateRsaParameters(in RsaFullKey key)
+        {
+            return new RSAParameters
+            {
+                D = key.PrivateExponent.DataRo.ToArray(),
+                DP = key.Dp.DataRo.ToArray(),
+                DQ = key.Dq.DataRo.ToArray(),
+                Exponent = key.PublicExponent.DataRo.ToArray(),
+                InverseQ = key.InverseQ.DataRo.ToArray(),
+                Modulus = key.Modulus.DataRo.ToArray(),
+                P = key.P.DataRo.ToArray(),
+                Q = key.Q.DataRo.ToArray()
+            };
+        }
+
+        private struct RsaSigningKeyParameters
+        {
+            public Array2<RSAParameters>? NcaHeaderSigningKeys;
+            public Array2<RSAParameters>? AcidSigningKeys;
+            public Array1<RSAParameters>? Package2SigningKey;
+        }
+
+        private struct RsaKeyParameters
+        {
+            public Array1<RSAParameters>? BetaNca0KeyAreaKey;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct AllKeys
     {
-        public RootKeys _rootKeys;
+        public RootKeys _rootKeysDev;
+        public RootKeys _rootKeysProd;
         public KeySeeds _keySeeds;
-        public DerivedKeys _derivedKeys;
+        public StoredKeys _storedKeysDev;
+        public StoredKeys _storedKeysProd;
+        public DerivedKeys _derivedKeysDev;
+        public DerivedKeys _derivedKeysProd;
         public DeviceKeys _deviceKeys;
+        public RsaSigningKeys _rsaSigningKeysDev;
+        public RsaSigningKeys _rsaSigningKeysProd;
+        public RsaKeys _rsaKeys;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct RootKeys
     {
-        public Array12<AesKey> MarikoAesClassKeys;
+        // Mariko keys. The AES class keys are currently unused.
         public AesKey MarikoKek;
         public AesKey MarikoBek;
+        public Array12<AesKey> MarikoAesClassKeys;
+
+        // The key blobs are technically derived from the encrypted key blobs and their keys,
+        // however those keys are device-unique. The decrypted key blobs are basically the common root
+        // keys used by pre-6.2.0 Erista.
         public Array32<KeyBlob> KeyBlobs;
+
+        // Used by TSEC in >= 6.2.0 Erista firmware
+        public Array32<AesKey> TsecAuthSignatures;
         public AesKey TsecRootKek;
         public AesKey Package1MacKek;
         public AesKey Package1Kek;
-        public Array32<AesKey> TsecAuthSignatures;
+
+        // Derived by TSEC. This is the first public root key for >= 6.2.0 Erista
         public Array32<AesKey> TsecRootKeys;
-        public AesKey XciHeaderKey;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -383,6 +650,7 @@ namespace LibHac.Common.Keys
         public AesKey KeyBlobMacKeySource;
         public Array32<AesKey> MasterKekSources;
         public Array32<AesKey> MarikoMasterKekSources;
+        public Array32<AesKey> MarikoMasterKekSources_dev;
         public AesKey MasterKeySource;
         public AesKey Package2KeySource;
         public AesKey PerConsoleKeySource;
@@ -405,6 +673,15 @@ namespace LibHac.Common.Keys
         public AesXtsKey HeaderKeySource;
     }
 
+    /// <summary>
+    /// Holds keys that are stored directly in Horizon programs.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct StoredKeys
+    {
+        public AesKey XciHeaderKey;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct DerivedKeys
     {
@@ -416,7 +693,7 @@ namespace LibHac.Common.Keys
         public Array32<Array3<AesKey>> KeyAreaKeys;
         public Array32<AesKey> TitleKeks;
         public AesXtsKey HeaderKey;
-        public AesKey EticketRsaKek;
+        public AesKey ETicketRsaKek;
         public AesKey SslRsaKek;
     }
 
@@ -434,5 +711,19 @@ namespace LibHac.Common.Keys
         public AesKey SeedUniqueSaveMacKey;
         public AesKey SdCardEncryptionSeed;
         public Array3<AesXtsKey> SdCardEncryptionKeys;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RsaSigningKeys
+    {
+        public Array2<RsaKey> NcaHeaderSigningKeys;
+        public Array2<RsaKey> AcidSigningKeys;
+        public RsaKey Package2SigningKey;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RsaKeys
+    {
+        public RsaFullKey BetaNca0KeyAreaKey;
     }
 }

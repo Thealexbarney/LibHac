@@ -15,9 +15,9 @@ namespace LibHac.Common.FixedArrays
         public ref T this[int i] => ref Items[i];
 
         public Span<T> Items => SpanHelpers.CreateSpan(ref _item1, Length);
-        public readonly ReadOnlySpan<T> ReadOnlyItems => SpanHelpers.CreateReadOnlySpan(in _item1, Length);
+        public readonly ReadOnlySpan<T> ItemsRo => SpanHelpers.CreateReadOnlySpan(in _item1, Length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static implicit operator ReadOnlySpan<T>(in Array2<T> value) => value.ReadOnlyItems;
+        public static implicit operator ReadOnlySpan<T>(in Array2<T> value) => value.ItemsRo;
     }
 }

@@ -143,10 +143,11 @@ namespace LibHac.Common.Keys
         }
 
         public static KeySet ReadKeyFile(string filename, string titleKeysFilename = null,
-            string consoleKeysFilename = null, IProgressReport logger = null, bool dev = false)
+            string consoleKeysFilename = null, IProgressReport logger = null, KeySet.Mode mode = KeySet.Mode.Prod)
         {
             var keySet = new KeySet();
-            //keyset.KeysetForDev = dev;
+            keySet.SetMode(mode);
+
             ReadKeyFile(keySet, filename, titleKeysFilename, consoleKeysFilename, logger);
 
             return keySet;
@@ -360,7 +361,7 @@ namespace LibHac.Common.Keys
 
         public static string PrintCommonKeys(KeySet keySet)
         {
-            return PrintKeys(keySet, CreateKeyList(), KeyType.Common | KeyType.Root | KeyType.Seed);
+            return PrintKeys(keySet, CreateKeyList(), KeyType.Common | KeyType.Root | KeyType.Seed | KeyType.Derived);
         }
 
         public static string PrintDeviceKeys(KeySet keySet)
@@ -370,7 +371,7 @@ namespace LibHac.Common.Keys
 
         public static string PrintAllKeys(KeySet keySet)
         {
-            return PrintKeys(keySet, CreateKeyList(), KeyType.Common | KeyType.Device);
+            return PrintKeys(keySet, CreateKeyList(), 0);
         }
 
         public static List<KeyInfo> CreateKeyList()
@@ -415,7 +416,7 @@ namespace LibHac.Common.Keys
             keys.Add(new KeyInfo(110, KeyType.CommonRoot, "mariko_aes_class_key", 0, 0xC, (set, i) => set.MarikoAesClassKeys[i]));
             keys.Add(new KeyInfo(120, KeyType.CommonSeed, "mariko_master_kek_source", 0, 0x20, (set, i) => set.MarikoMasterKekSources[i]));
             keys.Add(new KeyInfo(130, KeyType.CommonDrvd, "master_kek", 0, 0x20, (set, i) => set.MasterKeks[i]));
-            keys.Add(new KeyInfo(140, KeyType.CommonDrvd, "master_key_source", (set, i) => set.MasterKeySource));
+            keys.Add(new KeyInfo(140, KeyType.CommonSeed, "master_key_source", (set, i) => set.MasterKeySource));
             keys.Add(new KeyInfo(150, KeyType.CommonDrvd, "master_key", 0, 0x20, (set, i) => set.MasterKeys[i]));
 
             keys.Add(new KeyInfo(160, KeyType.CommonDrvd, "package1_key", 0, 0x20, (set, i) => set.Package1Keys[i]));
@@ -462,7 +463,7 @@ namespace LibHac.Common.Keys
 
             keys.Add(new KeyInfo(270, KeyType.CommonRoot, "xci_header_key", (set, i) => set.XciHeaderKey));
 
-            keys.Add(new KeyInfo(280, KeyType.CommonRoot, "eticket_rsa_kek", (set, i) => set.EticketRsaKek));
+            keys.Add(new KeyInfo(280, KeyType.CommonRoot, "eticket_rsa_kek", (set, i) => set.ETicketRsaKek));
             keys.Add(new KeyInfo(281, KeyType.CommonRoot, "ssl_rsa_kek", (set, i) => set.SslRsaKek));
 
             keys.Add(new KeyInfo(290, KeyType.CommonDrvd, "key_area_key_application", 0, 0x20, (set, i) => set.KeyAreaKeys[i][0]));
