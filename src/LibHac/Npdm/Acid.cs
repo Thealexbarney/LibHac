@@ -46,7 +46,7 @@ namespace LibHac.Npdm
                 reader.BaseStream.Position = offset + 0x100;
                 byte[] signatureData = reader.ReadBytes(Size);
                 SignatureValidity =
-                    CryptoOld.Rsa2048PssVerify(signatureData, Rsa2048Signature, keySet.AcidSigningKeys[0].Modulus);
+                    CryptoOld.Rsa2048PssVerify(signatureData, Rsa2048Signature, keySet.AcidSigningKeyParams[0].Modulus);
             }
 
             reader.BaseStream.Position = offset + 0x208;

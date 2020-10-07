@@ -143,7 +143,7 @@ namespace LibHac.Boot
             Result rc = _storage.Read(Package2Header.SignatureSize, metaBytes);
             if (rc.IsFailure()) return rc;
 
-            return _header.VerifySignature(_keySet.Package2SigningKey.Modulus, metaBytes);
+            return _header.VerifySignature(_keySet.Package2SigningKeyParams.Modulus, metaBytes);
         }
 
         /// <summary>

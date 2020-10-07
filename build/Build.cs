@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using ICSharpCode.SharpZipLib.Zip;
-using LibHacBuild.CodeGen;
+using LibHacBuild.CodeGen.Stage1;
 using Nuke.Common;
 using Nuke.Common.CI.AppVeyor;
 using Nuke.Common.Git;
@@ -53,6 +53,8 @@ namespace LibHacBuild
         Project LibHacProject => _solution.GetProject("LibHac").NotNull();
         Project LibHacTestProject => _solution.GetProject("LibHac.Tests").NotNull();
         Project HactoolnetProject => _solution.GetProject("hactoolnet").NotNull();
+
+        Project CodeGenProject => _solution.GetProject("_buildCodeGen").NotNull();
 
         private bool HasGitDir { get; set; }
 
@@ -196,6 +198,7 @@ namespace LibHacBuild
             .Executes(() =>
             {
                 ResultCodeGen.Run();
+                RunCodegenStage2();
             });
 
         Target Compile => _ => _
@@ -667,6 +670,25 @@ namespace LibHacBuild
         public string GetCsprojVersion()
         {
             return XmlTasks.XmlPeekSingle(LibHacProject.Path, "/Project/PropertyGroup/VersionPrefix", null);
+        }
+
+        public void RunCodegenStage2()
+        {
+            Logger.Normal("\nBuilding stage 2 codegen project.");
+
+            DotNetRunSettings settings = new DotNetRunSettings()
+                .SetProjectFile(CodeGenProject.Path);
+            //  .SetLogOutput(false);
+
+            try
+            {
+                DotNetRun(settings);
+                Logger.Normal();
+            }
+            catch (ProcessException)
+            {
+                Logger.Error("\nError running stage 2 codegen. Skipping...\n");
+            }
         }
     }
 }

@@ -11,6 +11,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibHac.Tests", "tests\LibHa
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_build", "build\_build.csproj", "{C7150117-90B8-4083-8141-BBC35C9F44F6}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_buildCodeGen", "build\CodeGen\_buildCodeGen.csproj", "{93B175E1-F12F-4A8C-85CA-CAC74691102A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FFCA6C31-D9D4-4ED8-A06D-0CC6B94422B8} = {FFCA6C31-D9D4-4ED8-A06D-0CC6B94422B8}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,6 +36,8 @@ Global
 		{679C89BD-5FDF-4CC2-9129-ABABD759035B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C7150117-90B8-4083-8141-BBC35C9F44F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C7150117-90B8-4083-8141-BBC35C9F44F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93B175E1-F12F-4A8C-85CA-CAC74691102A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93B175E1-F12F-4A8C-85CA-CAC74691102A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

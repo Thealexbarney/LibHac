@@ -633,7 +633,7 @@ namespace LibHac.FsSystem.NcaUtils
                 Span<byte> keyArea = Header.GetKeyArea();
                 var decKeyArea = new byte[0x100];
 
-                if (CryptoOld.DecryptRsaOaep(keyArea, decKeyArea, KeySet.BetaNca0KeyAreaKey, out _))
+                if (CryptoOld.DecryptRsaOaep(keyArea, decKeyArea, KeySet.BetaNca0KeyAreaKeyParams, out _))
                 {
                     Nca0KeyArea = decKeyArea;
                 }
@@ -711,7 +711,7 @@ namespace LibHac.FsSystem.NcaUtils
 
         public Validity VerifyHeaderSignature()
         {
-            return Header.VerifySignature1(KeySet.NcaHeaderSigningKeys[0].Modulus);
+            return Header.VerifySignature1(KeySet.NcaHeaderSigningKeyParams[0].Modulus);
         }
 
         internal void GenerateAesCounter(int sectionIndex, Ncm.ContentType type, int minorVersion)
