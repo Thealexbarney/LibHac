@@ -208,7 +208,7 @@ namespace hactoolnet
 
         private static void ProcessKeygen(Context ctx)
         {
-            Console.WriteLine(ExternalKeyReader.PrintAllKeys(ctx.KeySet));
+            Console.WriteLine(ExternalKeyWriter.PrintAllKeys(ctx.KeySet));
 
             if (ctx.Options.OutDir != null)
             {
@@ -216,14 +216,14 @@ namespace hactoolnet
                 string dir = ctx.Options.OutDir;
                 Directory.CreateDirectory(dir);
 
-                File.WriteAllText(Path.Combine(dir, keyFileName), ExternalKeyReader.PrintCommonKeys(ctx.KeySet));
-                File.WriteAllText(Path.Combine(dir, "console.keys"), ExternalKeyReader.PrintDeviceKeys(ctx.KeySet));
-                File.WriteAllText(Path.Combine(dir, "title.keys"), ExternalKeyReader.PrintTitleKeys(ctx.KeySet));
+                File.WriteAllText(Path.Combine(dir, keyFileName), ExternalKeyWriter.PrintCommonKeys(ctx.KeySet));
+                File.WriteAllText(Path.Combine(dir, "console.keys"), ExternalKeyWriter.PrintDeviceKeys(ctx.KeySet));
+                File.WriteAllText(Path.Combine(dir, "title.keys"), ExternalKeyWriter.PrintTitleKeys(ctx.KeySet));
 
                 if (!ctx.Options.UseDevKeys)
                 {
                     File.WriteAllText(Path.Combine(dir, "prod+dev.keys"),
-                        ExternalKeyReader.PrintCommonKeysWithDev(ctx.KeySet));
+                        ExternalKeyWriter.PrintCommonKeysWithDev(ctx.KeySet));
                 }
             }
         }
