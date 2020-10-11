@@ -194,8 +194,7 @@ namespace LibHac.Util
 
         public static bool IsHexDigit(byte c)
         {
-            return (uint)(c - (byte)'0') <= 9 ||
-                   (c | 0x20u) - (byte)'a' <= 'f' - 'a';
+            return HexConverter.CharToHexLookup[c] != 0xFF;
         }
 
         public static bool TryFromHexString(ReadOnlySpan<char> chars, Span<byte> outputBytes)

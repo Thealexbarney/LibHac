@@ -177,6 +177,8 @@ namespace LibHac.Common.Keys
             Span<char> buffer = stackalloc char[1024];
             var ctx = new KvPairReaderContext(streamReader, buffer);
 
+            // Estimate the number of keys by assuming each line is about 69 bytes.
+            // Subtract 2 from that so we estimate slightly high. 
             keySet.ExternalKeySet.EnsureCapacity((int)reader.Length / 67);
 
             while (true)
@@ -310,11 +312,18 @@ namespace LibHac.Common.Keys
                         continue;
                     case ReaderState.Initial when IsValidNameChar(c):
                         state = ReaderState.Key;
-                        ToLower(ref buffer[i]);
                         keyOffset = i;
-                        continue;
-                    case ReaderState.Key when IsValidNameChar(c):
-                        ToLower(ref buffer[i]);
+
+                        // Skip the next few rounds through the state machine since we know we should be 
+                        // encountering a string of name characters
+                        do
+                        {
+                            ToLower(ref buffer[i]);
+                            i++;
+                        } while (i < buffer.Length && IsValidNameChar(buffer[i]));
+
+                        // Decrement so we can process this character the next round through the state machine
+                        i--;
                         continue;
                     case ReaderState.Key when IsWhiteSpace(c):
                         state = ReaderState.WhiteSpace1;
@@ -334,6 +343,13 @@ namespace LibHac.Common.Keys
                     case ReaderState.Delimiter when StringUtils.IsHexDigit((byte)c):
                         state = ReaderState.Value;
                         valueOffset = i;
+
+                        do
+                        {
+                            i++;
+                        } while (i < buffer.Length && !IsEndOfLine(buffer[i]) && !IsWhiteSpace(buffer[i]));
+
+                        i--;
                         continue;
                     case ReaderState.Value when IsEndOfLine(c):
                         state = ReaderState.End;
@@ -342,8 +358,6 @@ namespace LibHac.Common.Keys
                     case ReaderState.Value when IsWhiteSpace(c):
                         state = ReaderState.WhiteSpace2;
                         valueLength = i - valueOffset;
-                        continue;
-                    case ReaderState.Value when StringUtils.IsHexDigit((byte)c):
                         continue;
                     case ReaderState.WhiteSpace2 when IsWhiteSpace(c):
                         continue;
