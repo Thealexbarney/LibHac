@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Util;
 
 namespace LibHac.FsSystem.Save
 {

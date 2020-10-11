@@ -10,6 +10,7 @@ using LibHac.FsSystem;
 using LibHac.Kvdb;
 using LibHac.Ncm;
 using LibHac.Spl;
+using LibHac.Util;
 
 namespace LibHac.FsSrv
 {

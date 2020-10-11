@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using LibHac.Fs;
 using LibHac.Spl;
+using LibHac.Util;
 
 using Type = LibHac.Common.Keys.KeyInfo.KeyType;
 using RangeType = LibHac.Common.Keys.KeyInfo.KeyRangeType;

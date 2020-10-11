@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Text;
+using LibHac.Util.Impl;
 
-namespace LibHac.Common
+namespace LibHac.Util
 {
     public static class StringUtils
     {
@@ -159,9 +160,21 @@ namespace LibHac.Common
             return iDest;
         }
 
+        public static ReadOnlySpan<byte> StringToUtf8(string value)
+        {
+            return Encoding.UTF8.GetBytes(value).AsSpan();
+        }
+
         public static string Utf8ToString(ReadOnlySpan<byte> value)
         {
             return Encoding.UTF8.GetString(value);
+        }
+
+        public static string NullTerminatedUtf8ToString(ReadOnlySpan<byte> value)
+        {
+            int length = GetLength(value);
+
+            return Encoding.UTF8.GetString(value.Slice(0, length));
         }
 
         public static string Utf8ZToString(ReadOnlySpan<byte> value)
@@ -183,6 +196,70 @@ namespace LibHac.Common
         {
             return (uint)(c - (byte)'0') <= 9 ||
                    (c | 0x20u) - (byte)'a' <= 'f' - 'a';
+        }
+
+        public static bool TryFromHexString(ReadOnlySpan<char> chars, Span<byte> outputBytes)
+        {
+            if ((uint)chars.Length % 2 != 0)
+                return false;
+
+            uint bytesLength = (uint)chars.Length / 2;
+
+            if ((uint)outputBytes.Length >= bytesLength)
+            {
+                Span<byte> bytes = outputBytes.Slice(0, (int)bytesLength);
+                return HexConverter.TryDecodeFromUtf16(chars, bytes);
+            }
+
+            return false;
+        }
+
+        public static byte[] ToBytes(this string input)
+        {
+            return FromHexString(input);
+        }
+
+        public static byte[] FromHexString(string input)
+        {
+            if ((uint)input.Length % 2 != 0)
+                throw new FormatException("Hex input must be a multiple of 2.");
+
+            var result = new byte[input.Length >> 1];
+
+            if (!HexConverter.TryDecodeFromUtf16(input, result))
+            {
+                throw new FormatException("Hex input contains invalid characters.");
+            }
+
+            return result;
+        }
+
+        public static void FromHexString(ReadOnlySpan<char> chars, Span<byte> outputBytes)
+        {
+            if ((uint)chars.Length % 2 != 0)
+                throw new FormatException("Hex input must be a multiple of 2.");
+
+            uint bytesLength = (uint)chars.Length / 2;
+
+            if ((uint)outputBytes.Length >= bytesLength)
+            {
+                Span<byte> bytes = outputBytes.Slice(0, (int)bytesLength);
+
+                if (!HexConverter.TryDecodeFromUtf16(chars, bytes))
+                {
+                    throw new FormatException("Hex input contains invalid characters.");
+                }
+            }
+
+            throw new ArgumentException("Buffer is not large enough to fit the input hex string.", nameof(outputBytes));
+        }
+
+        public static string ToHexString(this byte[] bytes) => ToHexString((ReadOnlySpan<byte>)bytes);
+        public static string ToHexString(this Span<byte> bytes) => ToHexString((ReadOnlySpan<byte>)bytes);
+
+        public static string ToHexString(this ReadOnlySpan<byte> bytes)
+        {
+            return HexConverter.ToString(bytes);
         }
     }
 }

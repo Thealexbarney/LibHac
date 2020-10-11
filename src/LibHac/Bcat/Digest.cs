@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.Util;
 
 namespace LibHac.Bcat
 {

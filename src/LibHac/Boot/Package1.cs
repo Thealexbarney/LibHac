@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common.Keys;
 using LibHac.Diag;
+using LibHac.Util;
 
 namespace LibHac.Boot
 {

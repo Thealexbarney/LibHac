@@ -4,6 +4,7 @@ using System.Text;
 using LibHac;
 using LibHac.Common.Keys;
 using LibHac.Fs;
+using LibHac.Util;
 
 namespace hactoolnet
 {

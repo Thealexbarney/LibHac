@@ -12,6 +12,7 @@ using LibHac.FsSystem.NcaUtils;
 using LibHac.FsSystem.Save;
 using LibHac.Ncm;
 using LibHac.Ns;
+using LibHac.Util;
 
 namespace LibHac
 {

@@ -6,6 +6,7 @@ using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.FsSystem;
+using LibHac.Util;
 using static hactoolnet.Print;
 
 namespace hactoolnet
@@ -67,7 +68,7 @@ namespace hactoolnet
             AesXtsFileHeader header = xtsFile.Header;
             uint magic = header.Magic;
 
-            PrintItem(sb, colLen, "    Magic:", Utilities.GetUtf8String(SpanHelpers.AsReadOnlyByteSpan(in magic)));
+            PrintItem(sb, colLen, "    Magic:", StringUtils.Utf8ToString(SpanHelpers.AsReadOnlyByteSpan(in magic)));
             PrintItem(sb, colLen, "    Content Type:", GetContentType(contentType));
             PrintItem(sb, colLen, "    Content Size:", $"{header.Size:x12}");
             PrintItem(sb, colLen, "    Header HMAC:", header.Signature);

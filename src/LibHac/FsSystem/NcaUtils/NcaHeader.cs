@@ -7,6 +7,7 @@ using LibHac.Common.Keys;
 using LibHac.Crypto;
 using LibHac.Diag;
 using LibHac.Fs;
+using LibHac.Util;
 
 namespace LibHac.FsSystem.NcaUtils
 {

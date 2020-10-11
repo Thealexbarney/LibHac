@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using LibHac.Diag;
+using LibHac.Util;
 
 namespace LibHac.Common.Keys
 {
@@ -140,7 +141,7 @@ namespace LibHac.Common.Keys
             byte index = default;
 
             // Try to get the index of the key name
-            if (!keyName.Slice(keyName.Length - 2, 2).TryToBytes(SpanHelpers.AsSpan(ref index)))
+            if (!StringUtils.TryFromHexString(keyName.Slice(keyName.Length - 2, 2), SpanHelpers.AsSpan(ref index)))
                 return false;
 
             // Check if the index is in this key's range

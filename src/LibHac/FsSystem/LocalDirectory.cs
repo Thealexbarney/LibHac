@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
-using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.Util;
 
 namespace LibHac.FsSystem
 {
@@ -35,7 +35,7 @@ namespace LibHac.FsSystem
 
                 if (!CanReturnEntry(isDir, Mode)) continue;
 
-                ReadOnlySpan<byte> name = Utilities.GetUtf8Bytes(localEntry.Name);
+                ReadOnlySpan<byte> name = StringUtils.StringToUtf8(localEntry.Name);
                 DirectoryEntryType type = isDir ? DirectoryEntryType.Directory : DirectoryEntryType.File;
                 long length = isDir ? 0 : ((FileInfo)localEntry).Length;
 

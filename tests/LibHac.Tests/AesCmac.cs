@@ -1,5 +1,6 @@
 ﻿using System;
 using LibHac.Crypto;
+using LibHac.Util;
 using Xunit;
 
 namespace LibHac.Tests

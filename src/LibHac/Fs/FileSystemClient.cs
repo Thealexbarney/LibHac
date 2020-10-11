@@ -8,6 +8,7 @@ using LibHac.Fs.Fsa;
 using LibHac.FsSrv;
 using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
+using LibHac.Util;
 
 namespace LibHac.Fs
 {

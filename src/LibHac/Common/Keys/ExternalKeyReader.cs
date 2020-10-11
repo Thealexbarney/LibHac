@@ -5,6 +5,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using LibHac.Fs;
 using LibHac.Spl;
+using LibHac.Util;
 
 namespace LibHac.Common.Keys
 {
@@ -148,7 +149,7 @@ namespace LibHac.Common.Keys
                         continue;
                     }
 
-                    if (!Utilities.TryToBytes(ctx.CurrentValue, key))
+                    if (!StringUtils.TryFromHexString(ctx.CurrentValue, key))
                     {
                         key.Clear();
 
@@ -204,13 +205,13 @@ namespace LibHac.Common.Keys
                     var rightsId = new RightsId();
                     var titleKey = new AccessKey();
 
-                    if (!Utilities.TryToBytes(ctx.CurrentKey, SpanHelpers.AsByteSpan(ref rightsId)))
+                    if (!StringUtils.TryFromHexString(ctx.CurrentKey, SpanHelpers.AsByteSpan(ref rightsId)))
                     {
                         logger?.LogMessage($"Invalid rights ID \"{ctx.CurrentKey.ToString()}\" in title key file");
                         continue;
                     }
 
-                    if (!Utilities.TryToBytes(ctx.CurrentValue, SpanHelpers.AsByteSpan(ref titleKey)))
+                    if (!StringUtils.TryFromHexString(ctx.CurrentValue, SpanHelpers.AsByteSpan(ref titleKey)))
                     {
                         logger?.LogMessage($"Invalid title key \"{ctx.CurrentValue.ToString()}\" in title key file");
                         continue;
@@ -261,7 +262,7 @@ namespace LibHac.Common.Keys
             Delimiter,
             Value,
             WhiteSpace2,
-            End,
+            End
         }
 
         private static ReaderStatus GetKeyValuePair(ref KvPairReaderContext reader)
