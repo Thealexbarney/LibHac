@@ -71,7 +71,7 @@ namespace LibHac.Common.Keys
             Getter = retrieveFunc;
         }
 
-        public bool Matches(string keyName, out int keyIndex, out bool isDev)
+        public bool Matches(ReadOnlySpan<char> keyName, out int keyIndex, out bool isDev)
         {
             keyIndex = default;
             isDev = default;
@@ -84,7 +84,7 @@ namespace LibHac.Common.Keys
             };
         }
 
-        private bool MatchesSingle(string keyName, out bool isDev)
+        private bool MatchesSingle(ReadOnlySpan<char> keyName, out bool isDev)
         {
             Assert.Equal((int)KeyRangeType.Single, (int)RangeType);
 
@@ -93,7 +93,7 @@ namespace LibHac.Common.Keys
             if (keyName.Length == NameLength + 4)
             {
                 // Might be a dev key. Check if "_dev" comes after the base key name
-                if (!keyName.AsSpan(Name.Length, 4).SequenceEqual("_dev"))
+                if (!keyName.Slice(Name.Length, 4).SequenceEqual("_dev"))
                     return false;
 
                 isDev = true;
@@ -104,13 +104,13 @@ namespace LibHac.Common.Keys
             }
 
             // Check if the base name matches
-            if (!keyName.AsSpan(0, Name.Length).SequenceEqual(Name))
+            if (!keyName.Slice(0, Name.Length).SequenceEqual(Name))
                 return false;
 
             return true;
         }
 
-        private bool MatchesRangedKey(string keyName, ref int keyIndex, out bool isDev)
+        private bool MatchesRangedKey(ReadOnlySpan<char> keyName, ref int keyIndex, out bool isDev)
         {
             Assert.Equal((int)KeyRangeType.Range, (int)RangeType);
 
@@ -120,7 +120,7 @@ namespace LibHac.Common.Keys
             if (keyName.Length == Name.Length + 7)
             {
                 // Check if "_dev" comes after the base key name
-                if (!keyName.AsSpan(Name.Length, 4).SequenceEqual("_dev"))
+                if (!keyName.Slice(Name.Length, 4).SequenceEqual("_dev"))
                     return false;
 
                 isDev = true;
@@ -130,7 +130,7 @@ namespace LibHac.Common.Keys
                 return false;
 
             // Check if the name before the "_XX" index matches
-            if (!keyName.AsSpan(0, Name.Length).SequenceEqual(Name))
+            if (!keyName.Slice(0, Name.Length).SequenceEqual(Name))
                 return false;
 
             // The name should have an underscore before the index value
@@ -140,7 +140,7 @@ namespace LibHac.Common.Keys
             byte index = default;
 
             // Try to get the index of the key name
-            if (!keyName.AsSpan(keyName.Length - 2, 2).TryToBytes(SpanHelpers.AsSpan(ref index)))
+            if (!keyName.Slice(keyName.Length - 2, 2).TryToBytes(SpanHelpers.AsSpan(ref index)))
                 return false;
 
             // Check if the index is in this key's range

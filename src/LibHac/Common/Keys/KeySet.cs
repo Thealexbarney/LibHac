@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using LibHac.Boot;
@@ -199,6 +200,11 @@ namespace LibHac.Common.Keys
         public static KeySet CreateDefaultKeySet()
         {
             return DefaultKeySet.CreateDefaultKeySet();
+        }
+
+        public static List<KeyInfo> CreateKeyInfoList()
+        {
+            return DefaultKeySet.CreateKeyList();
         }
 
         public void DeriveKeys(IProgressReport logger = null) => KeyDerivation.DeriveAllKeys(this, logger);

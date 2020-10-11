@@ -18,6 +18,10 @@ mariko_master_kek_source_08       = 5C24E3B8B4F700C23CFD0ACE13C3DC23
 mariko_master_kek_source_09       = 8669F00987C805AEB57B4874DE62A613
 mariko_master_kek_source_0a       = 0E440CEDB436C03FAA1DAEBF62B10982
 
+mariko_master_kek_source_dev_06   = CC974C462A0CB0A6C9C0B7BE302EC368
+mariko_master_kek_source_dev_07   = 86BD1D7650DF6DFA2C7D3322ABF18218
+mariko_master_kek_source_dev_08   = A3B1E0A958A2267F40BF5BBB87330B66
+mariko_master_kek_source_dev_09   = 82729165403B9D6660D01B3D4DA570E1
 mariko_master_kek_source_dev_0a   = F937CF9ABD86BBA99C9E03C4FCBC3BCE
 
 master_key_source                 = D8A2410AC6C59001C61D6A267C513F3C

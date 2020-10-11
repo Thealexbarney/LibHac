@@ -178,5 +178,11 @@ namespace LibHac.Common
         {
             return (uint)(c - (byte)'0') <= 9;
         }
+
+        public static bool IsHexDigit(byte c)
+        {
+            return (uint)(c - (byte)'0') <= 9 ||
+                   (c | 0x20u) - (byte)'a' <= 'f' - 'a';
+        }
     }
 }

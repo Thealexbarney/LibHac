@@ -91,10 +91,10 @@ namespace LibHacBuild.CodeGen.Stage2
             var keySet = new KeySet();
 
             // Populate the key set with all the keys in IncludedKeys.txt
-            using (var reader = new StreamReader(Common.GetResource(InputMainKeyFileName)))
+            using (Stream keyFile = Common.GetResource(InputMainKeyFileName))
             {
-                List<ExternalKeyReader.KeyInfo> list = ExternalKeyReader.CreateKeyList();
-                ExternalKeyReader.ReadMainKeys(keySet, reader, list);
+                List<KeyInfo> list = KeySet.CreateKeyInfoList();
+                ExternalKeyReader.ReadMainKeys(keySet, keyFile, list);
             }
 
             // Recover all the RSA key parameters and write the key to the key set
