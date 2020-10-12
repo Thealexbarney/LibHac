@@ -107,7 +107,7 @@ namespace LibHac.FsSystem.NcaUtils
 
         public Span<byte> RightsId => _header.Span.Slice(NcaHeaderStruct.RightsIdOffset, NcaHeaderStruct.RightsIdSize);
 
-        public bool HasRightsId => !Utilities.IsEmpty(RightsId);
+        public bool HasRightsId => !Utilities.IsZeros(RightsId);
 
         public Span<byte> GetKeyArea()
         {

@@ -22,7 +22,7 @@ namespace LibHac.Crypto
         public readonly ReadOnlySpan<ulong> DataRo64 => SpanHelpers.CreateReadOnlySpan(in _ulong, Size / sizeof(ulong));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool IsEmpty() => (DataRo64[0] | DataRo64[1]) == 0;
+        public readonly bool IsZeros() => (DataRo64[0] | DataRo64[1]) == 0;
 
         public static implicit operator Span<byte>(in AesKey value) => Unsafe.AsRef(in value).Data;
 
@@ -58,7 +58,7 @@ namespace LibHac.Crypto
         public static implicit operator ReadOnlySpan<byte>(in AesXtsKey value) => value.DataRo;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool IsEmpty() => (DataRo64[0] | DataRo64[1] | DataRo64[2] | DataRo64[3]) == 0;
+        public readonly bool IsZeros() => (DataRo64[0] | DataRo64[1] | DataRo64[2] | DataRo64[3]) == 0;
 
         public override readonly string ToString() => DataRo.ToHexString();
     }
@@ -78,7 +78,7 @@ namespace LibHac.Crypto
         public readonly ReadOnlySpan<ulong> DataRo64 => SpanHelpers.CreateReadOnlySpan(in _ulong, Size / sizeof(ulong));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool IsEmpty() => (DataRo64[0] | DataRo64[1]) == 0;
+        public readonly bool IsZeros() => (DataRo64[0] | DataRo64[1]) == 0;
 
         public static implicit operator Span<byte>(in AesIv value) => Unsafe.AsRef(in value).Data;
         public static implicit operator ReadOnlySpan<byte>(in AesIv value) => value.DataRo;
@@ -105,7 +105,7 @@ namespace LibHac.Crypto
         public readonly ReadOnlySpan<ulong> DataRo64 => SpanHelpers.CreateReadOnlySpan(in _ulong, Size / sizeof(ulong));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool IsEmpty() => (DataRo64[0] | DataRo64[1]) == 0;
+        public readonly bool IsZeros() => (DataRo64[0] | DataRo64[1]) == 0;
 
         public static implicit operator Span<byte>(in AesCmac value) => Unsafe.AsRef(in value).Data;
         public static implicit operator ReadOnlySpan<byte>(in AesCmac value) => value.DataRo;

@@ -26,14 +26,14 @@ namespace LibHac.Common.Keys
 
         private static void DeriveKeyBlobKeys(KeySet s)
         {
-            if (s.SecureBootKey.IsEmpty() || s.TsecKey.IsEmpty()) return;
+            if (s.SecureBootKey.IsZeros() || s.TsecKey.IsZeros()) return;
 
-            bool haveKeyBlobMacKeySource = !s.MasterKeySource.IsEmpty();
+            bool haveKeyBlobMacKeySource = !s.MasterKeySource.IsZeros();
             var temp = new AesKey();
 
             for (int i = 0; i < KeySet.UsedKeyBlobCount; i++)
             {
-                if (s.KeyBlobKeySources[i].IsEmpty()) continue;
+                if (s.KeyBlobKeySources[i].IsZeros()) continue;
 
                 Aes.DecryptEcb128(s.KeyBlobKeySources[i], temp, s.TsecKey);
                 Aes.DecryptEcb128(temp, s.KeyBlobKeys[i], s.SecureBootKey);
@@ -50,7 +50,7 @@ namespace LibHac.Common.Keys
 
             for (int i = 0; i < KeySet.UsedKeyBlobCount; i++)
             {
-                if (s.KeyBlobKeys[i].IsEmpty() || s.KeyBlobMacKeys[i].IsEmpty() || s.EncryptedKeyBlobs[i].IsEmpty())
+                if (s.KeyBlobKeys[i].IsZeros() || s.KeyBlobMacKeys[i].IsZeros() || s.EncryptedKeyBlobs[i].IsZeros())
                 {
                     continue;
                 }
@@ -71,7 +71,7 @@ namespace LibHac.Common.Keys
         {
             for (int i = 0; i < KeySet.UsedKeyBlobCount; i++)
             {
-                if (s.KeyBlobs[i].IsEmpty()) continue;
+                if (s.KeyBlobs[i].IsZeros()) continue;
 
                 s.MasterKeks[i] = s.KeyBlobs[i].MasterKek;
                 s.Package1Keys[i] = s.KeyBlobs[i].Package1Key;
@@ -80,13 +80,13 @@ namespace LibHac.Common.Keys
 
         private static void Derive620Keys(KeySet s)
         {
-            bool haveTsecRootKek = !s.TsecRootKek.IsEmpty();
-            bool havePackage1MacKek = !s.Package1MacKek.IsEmpty();
-            bool havePackage1Kek = !s.Package1Kek.IsEmpty();
+            bool haveTsecRootKek = !s.TsecRootKek.IsZeros();
+            bool havePackage1MacKek = !s.Package1MacKek.IsZeros();
+            bool havePackage1Kek = !s.Package1Kek.IsZeros();
 
             for (int i = KeySet.UsedKeyBlobCount; i < KeySet.KeyRevisionCount; i++)
             {
-                if (s.TsecAuthSignatures[i - KeySet.UsedKeyBlobCount].IsEmpty())
+                if (s.TsecAuthSignatures[i - KeySet.UsedKeyBlobCount].IsZeros())
                     continue;
 
                 if (haveTsecRootKek)
@@ -114,7 +114,7 @@ namespace LibHac.Common.Keys
             {
                 // Key revisions >= 8 all use the same TSEC root key
                 int tsecRootKeyIndex = Math.Min(i, 8) - KeySet.UsedKeyBlobCount;
-                if (s.TsecRootKeys[tsecRootKeyIndex].IsEmpty() || s.MasterKekSources[i].IsEmpty()) continue;
+                if (s.TsecRootKeys[tsecRootKeyIndex].IsZeros() || s.MasterKekSources[i].IsZeros()) continue;
 
                 Aes.DecryptEcb128(s.MasterKekSources[i], s.MasterKeks[i], s.TsecRootKeys[tsecRootKeyIndex]);
             }
@@ -122,11 +122,11 @@ namespace LibHac.Common.Keys
 
         private static void DeriveMarikoMasterKeks(KeySet s)
         {
-            if (s.MarikoKek.IsEmpty()) return;
+            if (s.MarikoKek.IsZeros()) return;
 
             for (int i = 0; i < KeySet.KeyRevisionCount; i++)
             {
-                if (s.MarikoMasterKekSources[i].IsEmpty()) continue;
+                if (s.MarikoMasterKekSources[i].IsZeros()) continue;
 
                 Aes.DecryptEcb128(s.MarikoMasterKekSources[i], s.MasterKeks[i], s.MarikoKek);
             }
@@ -134,11 +134,11 @@ namespace LibHac.Common.Keys
 
         private static void DeriveMasterKeys(KeySet s)
         {
-            if (s.MasterKeySource.IsEmpty()) return;
+            if (s.MasterKeySource.IsZeros()) return;
 
             for (int i = 0; i < KeySet.KeyRevisionCount; i++)
             {
-                if (s.MasterKeks[i].IsEmpty()) continue;
+                if (s.MasterKeks[i].IsZeros()) continue;
 
                 Aes.DecryptEcb128(s.MasterKeySource, s.MasterKeys[i], s.MasterKeks[i]);
             }
@@ -153,7 +153,7 @@ namespace LibHac.Common.Keys
 
             for (int i = keyVectors.Length - 1; i >= 0; i--)
             {
-                if (!s.MasterKeys[i].IsEmpty())
+                if (!s.MasterKeys[i].IsZeros())
                 {
                     newestMasterKey = i;
                     break;
@@ -196,7 +196,7 @@ namespace LibHac.Common.Keys
             Aes.DecryptEcb128(keyVectors[0], key, key);
 
             // If we don't get zeros, MasterKeys[generation] is incorrect
-            return key.IsEmpty();
+            return key.IsZeros();
         }
 
         private static ReadOnlySpan<AesKey> MasterKeyVectors(KeySet s) =>
@@ -240,7 +240,7 @@ namespace LibHac.Common.Keys
             var kek = new AesKey();
 
             // Derive the device key
-            if (!s.PerConsoleKeySource.IsEmpty() && !s.KeyBlobKeys[0].IsEmpty())
+            if (!s.PerConsoleKeySource.IsZeros() && !s.KeyBlobKeys[0].IsZeros())
             {
                 Aes.DecryptEcb128(s.PerConsoleKeySource, s.DeviceKey, s.KeyBlobKeys[0]);
             }
@@ -248,8 +248,8 @@ namespace LibHac.Common.Keys
             // Derive device-unique save keys
             for (int i = 0; i < s.DeviceUniqueSaveMacKeySources.Length; i++)
             {
-                if (!s.DeviceUniqueSaveMacKekSource.IsEmpty() && !s.DeviceUniqueSaveMacKeySources[i].IsEmpty() &&
-                    !s.DeviceKey.IsEmpty())
+                if (!s.DeviceUniqueSaveMacKekSource.IsZeros() && !s.DeviceUniqueSaveMacKeySources[i].IsZeros() &&
+                    !s.DeviceKey.IsZeros())
                 {
                     GenerateKek(s.DeviceKey, s.DeviceUniqueSaveMacKekSource, kek, s.AesKekGenerationSource, null);
                     Aes.DecryptEcb128(s.DeviceUniqueSaveMacKeySources[i], s.DeviceUniqueSaveMacKeys[i], kek);
@@ -257,44 +257,44 @@ namespace LibHac.Common.Keys
             }
 
             // Derive BIS keys
-            if (s.DeviceKey.IsEmpty()
-                || s.BisKekSource.IsEmpty()
-                || s.AesKekGenerationSource.IsEmpty()
-                || s.AesKeyGenerationSource.IsEmpty()
-                || s.RetailSpecificAesKeySource.IsEmpty())
+            if (s.DeviceKey.IsZeros()
+                || s.BisKekSource.IsZeros()
+                || s.AesKekGenerationSource.IsZeros()
+                || s.AesKeyGenerationSource.IsZeros()
+                || s.RetailSpecificAesKeySource.IsZeros())
             {
                 return;
             }
 
             // If the user doesn't provide bis_key_source_03 we can assume it's the same as bis_key_source_02
-            if (s.BisKeySources[3].IsEmpty() && !s.BisKeySources[2].IsEmpty())
+            if (s.BisKeySources[3].IsZeros() && !s.BisKeySources[2].IsZeros())
             {
                 s.BisKeySources[3] = s.BisKeySources[2];
             }
 
             Aes.DecryptEcb128(s.RetailSpecificAesKeySource, kek, s.DeviceKey);
-            if (!s.BisKeySources[0].IsEmpty()) Aes.DecryptEcb128(s.BisKeySources[0], s.BisKeys[0], kek);
+            if (!s.BisKeySources[0].IsZeros()) Aes.DecryptEcb128(s.BisKeySources[0], s.BisKeys[0], kek);
 
             GenerateKek(s.DeviceKey, s.BisKekSource, kek, s.AesKekGenerationSource, s.AesKeyGenerationSource);
 
             for (int i = 1; i < 4; i++)
             {
-                if (!s.BisKeySources[i].IsEmpty())
+                if (!s.BisKeySources[i].IsZeros())
                     Aes.DecryptEcb128(s.BisKeySources[i], s.BisKeys[i], kek);
             }
         }
 
         private static void DerivePerFirmwareKeys(KeySet s)
         {
-            bool haveKakSource0 = !s.KeyAreaKeyApplicationSource.IsEmpty();
-            bool haveKakSource1 = !s.KeyAreaKeyOceanSource.IsEmpty();
-            bool haveKakSource2 = !s.KeyAreaKeySystemSource.IsEmpty();
-            bool haveTitleKekSource = !s.TitleKekSource.IsEmpty();
-            bool havePackage2KeySource = !s.Package2KeySource.IsEmpty();
+            bool haveKakSource0 = !s.KeyAreaKeyApplicationSource.IsZeros();
+            bool haveKakSource1 = !s.KeyAreaKeyOceanSource.IsZeros();
+            bool haveKakSource2 = !s.KeyAreaKeySystemSource.IsZeros();
+            bool haveTitleKekSource = !s.TitleKekSource.IsZeros();
+            bool havePackage2KeySource = !s.Package2KeySource.IsZeros();
 
             for (int i = 0; i < KeySet.KeyRevisionCount; i++)
             {
-                if (s.MasterKeys[i].IsEmpty())
+                if (s.MasterKeys[i].IsZeros())
                 {
                     continue;
                 }
@@ -331,7 +331,7 @@ namespace LibHac.Common.Keys
 
         private static void DeriveNcaHeaderKey(KeySet s)
         {
-            if (s.HeaderKekSource.IsEmpty() || s.HeaderKeySource.IsEmpty() || s.MasterKeys[0].IsEmpty()) return;
+            if (s.HeaderKekSource.IsZeros() || s.HeaderKeySource.IsZeros() || s.MasterKeys[0].IsZeros()) return;
 
             var headerKek = new AesKey();
 
@@ -362,7 +362,7 @@ namespace LibHac.Common.Keys
             }
 
             // Derive sd card save key
-            if (!s.SeedUniqueSaveMacKekSource.IsEmpty() && !s.SeedUniqueSaveMacKeySource.IsEmpty())
+            if (!s.SeedUniqueSaveMacKekSource.IsZeros() && !s.SeedUniqueSaveMacKeySource.IsZeros())
             {
                 var keySource = new AesKey();
 
@@ -383,7 +383,7 @@ namespace LibHac.Common.Keys
             Aes.DecryptEcb128(kekSeed, kek, key);
             Aes.DecryptEcb128(src, srcKek, kek);
 
-            if (!keySeed.IsEmpty)
+            if (!keySeed.IsZeros())
             {
                 Aes.DecryptEcb128(keySeed, dest, srcKek);
             }

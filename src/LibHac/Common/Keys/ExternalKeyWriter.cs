@@ -56,7 +56,7 @@ namespace LibHac.Common.Keys
                 if (info.RangeType == RangeType.Single)
                 {
                     Span<byte> key = info.Getter(keySet, 0);
-                    if (key.IsEmpty())
+                    if (key.IsZeros())
                         continue;
 
                     if (isNewGroup)
@@ -78,7 +78,7 @@ namespace LibHac.Common.Keys
                     for (int i = info.RangeStart; i < info.RangeEnd; i++)
                     {
                         Span<byte> key = info.Getter(keySet, i);
-                        if (key.IsEmpty())
+                        if (key.IsZeros())
                             continue;
 
                         if (hasPrintedKey == false)

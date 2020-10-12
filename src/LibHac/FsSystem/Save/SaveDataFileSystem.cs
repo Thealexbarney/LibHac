@@ -262,7 +262,7 @@ namespace LibHac.FsSystem.Save
             headerStream.Position = 0x108;
             headerStream.Write(hash, 0, hash.Length);
 
-            if (keySet == null || keySet.DeviceUniqueSaveMacKeys[0].IsEmpty()) return ResultFs.PreconditionViolation.Log();
+            if (keySet == null || keySet.DeviceUniqueSaveMacKeys[0].IsZeros()) return ResultFs.PreconditionViolation.Log();
 
             var cmacData = new byte[0x200];
             var cmac = new byte[0x10];

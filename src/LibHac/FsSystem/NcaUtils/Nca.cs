@@ -45,7 +45,7 @@ namespace LibHac.FsSystem.NcaUtils
             int keyRevision = Utilities.GetMasterKeyRevision(Header.KeyGeneration);
             byte[] keyAreaKey = KeySet.KeyAreaKeys[keyRevision][Header.KeyAreaKeyIndex].DataRo.ToArray();
 
-            if (keyAreaKey.IsEmpty())
+            if (keyAreaKey.IsZeros())
             {
                 string keyName = $"key_area_key_{KakNames[Header.KeyAreaKeyIndex]}_{keyRevision:x2}";
                 throw new MissingKeyException("Unable to decrypt NCA section.", keyName, KeyType.Common);
@@ -73,7 +73,7 @@ namespace LibHac.FsSystem.NcaUtils
                 throw new MissingKeyException("Missing NCA title key.", rightsId.ToString(), KeyType.Title);
             }
 
-            if (titleKek.IsEmpty())
+            if (titleKek.IsZeros())
             {
                 string keyName = $"titlekek_{keyRevision:x2}";
                 throw new MissingKeyException("Unable to decrypt title key.", keyName, KeyType.Common);
@@ -112,10 +112,10 @@ namespace LibHac.FsSystem.NcaUtils
             if (Header.HasRightsId)
             {
                 return KeySet.ExternalKeySet.Contains(new RightsId(Header.RightsId)) &&
-                       !KeySet.TitleKeks[keyRevision].IsEmpty();
+                       !KeySet.TitleKeks[keyRevision].IsZeros();
             }
 
-            return !KeySet.KeyAreaKeys[keyRevision][Header.KeyAreaKeyIndex].IsEmpty();
+            return !KeySet.KeyAreaKeys[keyRevision][Header.KeyAreaKeyIndex].IsZeros();
         }
 
         public bool SectionExists(NcaSectionType type)

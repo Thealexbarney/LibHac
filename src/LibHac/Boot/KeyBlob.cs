@@ -30,7 +30,7 @@ namespace LibHac.Boot
         public readonly ReadOnlySpan<byte> ReadOnlyBytes => SpanHelpers.AsReadOnlyByteSpan(in this);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool IsEmpty()
+        public readonly bool IsZeros()
         {
             ReadOnlySpan<ulong> ulongSpan = MemoryMarshal.Cast<byte, ulong>(ReadOnlyBytes);
 
@@ -70,7 +70,7 @@ namespace LibHac.Boot
         public readonly ReadOnlySpan<byte> ReadOnlyBytes => SpanHelpers.AsReadOnlyByteSpan(in this);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool IsEmpty()
+        public readonly bool IsZeros()
         {
             ReadOnlySpan<ulong> ulongSpan = MemoryMarshal.Cast<byte, ulong>(ReadOnlyBytes);
 

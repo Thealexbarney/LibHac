@@ -108,7 +108,7 @@ namespace LibHac
                 SelKey = reader.ReadInt32();
                 LimAreaPage = reader.ReadInt32();
 
-                if (keySet != null && !keySet.XciHeaderKey.IsEmpty())
+                if (keySet != null && !keySet.XciHeaderKey.IsZeros())
                 {
                     byte[] encHeader = reader.ReadBytes(EncryptedHeaderSize);
                     var decHeader = new byte[EncryptedHeaderSize];

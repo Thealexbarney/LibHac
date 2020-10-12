@@ -67,10 +67,10 @@ namespace LibHac
             return a1.SequenceEqual(a2);
         }
 
-        public static bool IsEmpty(this byte[] array) => ((ReadOnlySpan<byte>)array).IsEmpty();
-        public static bool IsEmpty(this Span<byte> span) => ((ReadOnlySpan<byte>)span).IsEmpty();
+        public static bool IsZeros(this byte[] array) => ((ReadOnlySpan<byte>)array).IsZeros();
+        public static bool IsZeros(this Span<byte> span) => ((ReadOnlySpan<byte>)span).IsZeros();
 
-        public static bool IsEmpty(this ReadOnlySpan<byte> span)
+        public static bool IsZeros(this ReadOnlySpan<byte> span)
         {
             for (int i = 0; i < span.Length; i++)
             {

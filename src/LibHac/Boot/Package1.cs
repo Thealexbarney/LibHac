@@ -354,7 +354,7 @@ namespace LibHac.Boot
         // MarikoOemHeader must be read first
         private bool IsMarikoImpl()
         {
-            return MarikoOemHeader.AesMac.IsEmpty() && MarikoOemHeader.Reserved.IsEmpty();
+            return MarikoOemHeader.AesMac.IsZeros() && MarikoOemHeader.Reserved.IsZeros();
         }
 
         /// <summary>

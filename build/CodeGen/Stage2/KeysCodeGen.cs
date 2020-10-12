@@ -61,7 +61,7 @@ namespace LibHacBuild.CodeGen.Stage2
             sb.AppendSpacerLine();
             sb.Append($"private static ReadOnlySpan<byte> {name} => new byte[]");
 
-            if (data.IsEmpty())
+            if (data.IsZeros())
             {
                 sb.AppendLine(" { };");
                 return;
