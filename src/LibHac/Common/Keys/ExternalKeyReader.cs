@@ -65,6 +65,61 @@ namespace LibHac.Common.Keys
 
             keySet.DeriveKeys(logger);
 
+            // Dev keys can be read from prod key files, so derive any missing keys if necessary.
+            if (keySet.CurrentMode == KeySet.Mode.Prod)
+            {
+                keySet.SetMode(KeySet.Mode.Dev);
+                keySet.DeriveKeys(logger);
+                keySet.SetMode(KeySet.Mode.Prod);
+            }
+        }
+
+        /// <summary>
+        /// Loads keys from key files into an existing <see cref="KeySet"/>. Missing keys will be
+        /// derived from existing keys if possible. Any <see langword="null"/> file names will be skipped.
+        /// </summary>
+        /// <param name="keySet">The <see cref="KeySet"/> where the loaded keys will be placed.</param>
+        /// <param name="prodKeysFilename">The path of the file containing common prod keys. Can be <see langword="null"/>.</param>
+        /// <param name="devKeysFilename">The path of the file containing common dev keys. Can be <see langword="null"/>.</param>
+        /// <param name="titleKeysFilename">The path of the file containing title keys. Can be <see langword="null"/>.</param>
+        /// <param name="consoleKeysFilename">The path of the file containing device-unique keys. Can be <see langword="null"/>.</param>
+        /// <param name="logger">An optional logger that key-parsing errors will be written to.</param>
+        public static void ReadKeyFile(KeySet keySet, string prodKeysFilename = null, string devKeysFilename = null,
+            string titleKeysFilename = null, string consoleKeysFilename = null, IProgressReport logger = null)
+        {
+            KeySet.Mode originalMode = keySet.CurrentMode;
+            List<KeyInfo> keyInfos = DefaultKeySet.CreateKeyList();
+
+            if (prodKeysFilename != null)
+            {
+                keySet.SetMode(KeySet.Mode.Prod);
+                using var storage = new FileStream(prodKeysFilename, FileMode.Open, FileAccess.Read);
+                ReadMainKeys(keySet, storage, keyInfos, logger);
+            }
+
+            if (devKeysFilename != null)
+            {
+                keySet.SetMode(KeySet.Mode.Dev);
+                using var storage = new FileStream(devKeysFilename, FileMode.Open, FileAccess.Read);
+                ReadMainKeys(keySet, storage, keyInfos, logger);
+            }
+
+            keySet.SetMode(originalMode);
+
+            if (consoleKeysFilename != null)
+            {
+                using var storage = new FileStream(consoleKeysFilename, FileMode.Open, FileAccess.Read);
+                ReadMainKeys(keySet, storage, keyInfos, logger);
+            }
+
+            if (titleKeysFilename != null)
+            {
+                using var storage = new FileStream(titleKeysFilename, FileMode.Open, FileAccess.Read);
+                ReadTitleKeys(keySet, storage, logger);
+            }
+
+            keySet.DeriveKeys(logger);
+
             // Dev keys can read from prod key files, so derive any missing keys if necessary.
             if (keySet.CurrentMode == KeySet.Mode.Prod)
             {
@@ -283,7 +338,12 @@ namespace LibHac.Common.Keys
                     return ReaderStatus.Finished;
                 }
 
-                buffer = buffer.Slice(0, buffer.Length - reader.BufferPos + charsRead);
+                // ReadBlock will only read less than the buffer size if there's nothing left to read
+                if (charsRead != reader.BufferPos)
+                {
+                    buffer = buffer.Slice(0, buffer.Length - reader.BufferPos + charsRead);
+                    reader.Buffer = buffer;
+                }
 
                 reader.NeedFillBuffer = false;
                 reader.BufferPos = 0;

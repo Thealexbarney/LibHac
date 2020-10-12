@@ -13,7 +13,6 @@ namespace LibHac.Common.Keys
 {
     public static class ExternalKeyWriter
     {
-
         public static void PrintKeys(KeySet keySet, StringBuilder sb, List<KeyInfo> keys, Type filter, bool isDev)
         {
             if (keys.Count == 0) return;
@@ -156,18 +155,18 @@ namespace LibHac.Common.Keys
 
         public static string PrintCommonKeysWithDev(KeySet keySet)
         {
+            KeySet.Mode originalMode = keySet.CurrentMode;
             var sb = new StringBuilder();
+
+            keySet.SetMode(KeySet.Mode.Prod);
             PrintKeys(keySet, sb, DefaultKeySet.CreateKeyList(), Type.Common | Type.Root | Type.Seed | Type.Derived,
                 false);
 
-            if (keySet.CurrentMode == KeySet.Mode.Prod)
-            {
-                sb.AppendLine();
-                keySet.SetMode(KeySet.Mode.Dev);
-                PrintKeys(keySet, sb, DefaultKeySet.CreateKeyList(), Type.Common | Type.Root | Type.Derived, true);
-                keySet.SetMode(KeySet.Mode.Prod);
-            }
+            sb.AppendLine();
+            keySet.SetMode(KeySet.Mode.Dev);
+            PrintKeys(keySet, sb, DefaultKeySet.CreateKeyList(), Type.Common | Type.Root | Type.Derived, true);
 
+            keySet.SetMode(originalMode);
             return sb.ToString();
         }
     }

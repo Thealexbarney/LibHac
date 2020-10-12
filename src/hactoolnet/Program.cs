@@ -85,7 +85,7 @@ namespace hactoolnet
                         Result.SetLogger(resultLogger);
                     }
 
-                    OpenKeyset(ctx);
+                    OpenKeySet(ctx);
 
                     if (ctx.Options.RunCustom)
                     {
@@ -168,43 +168,65 @@ namespace hactoolnet
             }
         }
 
-        private static void OpenKeyset(Context ctx)
+        private static void OpenKeySet(Context ctx)
         {
-            string keyFileName = ctx.Options.UseDevKeys ? "dev.keys" : "prod.keys";
-
 #if CORERT_NO_REFLECTION
             string home = HomeFolder.GetFolderPath(Environment.SpecialFolder.UserProfile);
 #else
             string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 #endif
-            string homeKeyFile = Path.Combine(home, ".switch", keyFileName);
             string homeTitleKeyFile = Path.Combine(home, ".switch", "title.keys");
             string homeConsoleKeyFile = Path.Combine(home, ".switch", "console.keys");
-            string keyFile = ctx.Options.Keyfile;
+
+            string prodKeyFile = Path.Combine(home, ".switch", "prod.keys");
+            string devKeyFile = Path.Combine(home, ".switch", "dev.keys");
             string titleKeyFile = ctx.Options.TitleKeyFile;
             string consoleKeyFile = ctx.Options.ConsoleKeyFile;
 
-            if (keyFile == null && File.Exists(homeKeyFile))
-            {
-                keyFile = homeKeyFile;
-            }
+            // Check if the files from the command line exist
+            if (titleKeyFile != null && !File.Exists(titleKeyFile))
+                titleKeyFile = null;
+
+            if (consoleKeyFile != null && !File.Exists(consoleKeyFile))
+                consoleKeyFile = null;
+
+            if (!File.Exists(prodKeyFile))
+                prodKeyFile = null;
+
+            if (!File.Exists(devKeyFile))
+                devKeyFile = null;
+
+            // Check the home directory if no existing key files were specified
+            if (consoleKeyFile == null && File.Exists(homeConsoleKeyFile))
+                consoleKeyFile = homeConsoleKeyFile;
 
             if (titleKeyFile == null && File.Exists(homeTitleKeyFile))
-            {
                 titleKeyFile = homeTitleKeyFile;
-            }
 
-            if (consoleKeyFile == null && File.Exists(homeConsoleKeyFile))
+            var keySet = KeySet.CreateDefaultKeySet();
+
+            // If the user specifies a key file then only load that file into the mode they specified,
+            // otherwise load both prod.keys and dev.keys.
+            // Todo: Should we add a way that both dev-only key files and mixed prod/dev key files
+            // can both be loaded when specifying a key file in dev mode?
+            if (ctx.Options.Keyfile != null && File.Exists(ctx.Options.Keyfile))
             {
-                consoleKeyFile = homeConsoleKeyFile;
+                keySet.SetMode(ctx.Options.KeyMode);
+                ExternalKeyReader.ReadKeyFile(keySet, ctx.Options.Keyfile, titleKeyFile, consoleKeyFile, ctx.Logger);
+            }
+            else
+            {
+                ExternalKeyReader.ReadKeyFile(keySet, prodKeyFile, devKeyFile, titleKeyFile, consoleKeyFile, ctx.Logger);
             }
 
-            ctx.KeySet = ExternalKeyReader.ReadKeyFile(keyFile, titleKeyFile, consoleKeyFile, ctx.Logger, ctx.Options.KeyMode);
+            keySet.SetMode(ctx.Options.KeyMode);
 
             if (ctx.Options.SdSeed != null)
             {
-                ctx.KeySet.SetSdSeed(ctx.Options.SdSeed.ToBytes());
+                keySet.SetSdSeed(ctx.Options.SdSeed.ToBytes());
             }
+
+            ctx.KeySet = keySet;
         }
 
         private static void ProcessKeygen(Context ctx)
@@ -213,19 +235,23 @@ namespace hactoolnet
 
             if (ctx.Options.OutDir != null)
             {
-                string keyFileName = ctx.Options.UseDevKeys ? "dev.keys" : "prod.keys";
+                KeySet.Mode originalMode = ctx.KeySet.CurrentMode;
+
                 string dir = ctx.Options.OutDir;
                 Directory.CreateDirectory(dir);
 
-                File.WriteAllText(Path.Combine(dir, keyFileName), ExternalKeyWriter.PrintCommonKeys(ctx.KeySet));
+                ctx.KeySet.SetMode(KeySet.Mode.Prod);
+                File.WriteAllText(Path.Combine(dir, "prod.keys"), ExternalKeyWriter.PrintCommonKeys(ctx.KeySet));
+
+                ctx.KeySet.SetMode(KeySet.Mode.Dev);
+                File.WriteAllText(Path.Combine(dir, "dev.keys"), ExternalKeyWriter.PrintCommonKeys(ctx.KeySet));
+
+                ctx.KeySet.SetMode(originalMode);
                 File.WriteAllText(Path.Combine(dir, "console.keys"), ExternalKeyWriter.PrintDeviceKeys(ctx.KeySet));
                 File.WriteAllText(Path.Combine(dir, "title.keys"), ExternalKeyWriter.PrintTitleKeys(ctx.KeySet));
 
-                if (!ctx.Options.UseDevKeys)
-                {
-                    File.WriteAllText(Path.Combine(dir, "prod+dev.keys"),
-                        ExternalKeyWriter.PrintCommonKeysWithDev(ctx.KeySet));
-                }
+                File.WriteAllText(Path.Combine(dir, "prod+dev.keys"),
+                    ExternalKeyWriter.PrintCommonKeysWithDev(ctx.KeySet));
             }
         }
 
