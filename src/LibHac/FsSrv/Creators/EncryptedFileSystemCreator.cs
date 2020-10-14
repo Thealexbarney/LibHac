@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
@@ -7,11 +8,11 @@ namespace LibHac.FsSrv.Creators
 {
     public class EncryptedFileSystemCreator : IEncryptedFileSystemCreator
     {
-        private Keyset Keyset { get; }
+        private KeySet KeySet { get; }
 
-        public EncryptedFileSystemCreator(Keyset keyset)
+        public EncryptedFileSystemCreator(KeySet keySet)
         {
-            Keyset = keyset;
+            KeySet = keySet;
         }
 
         public Result Create(out IFileSystem encryptedFileSystem, IFileSystem baseFileSystem, EncryptedFsKeyId keyId,
@@ -25,9 +26,10 @@ namespace LibHac.FsSrv.Creators
             }
 
             // todo: "proper" key generation instead of a lazy hack
-            Keyset.SetSdSeed(encryptionSeed.ToArray());
+            KeySet.SetSdSeed(encryptionSeed.ToArray());
 
-            encryptedFileSystem = new AesXtsFileSystem(baseFileSystem, Keyset.SdCardKeys[(int)keyId], 0x4000);
+            encryptedFileSystem = new AesXtsFileSystem(baseFileSystem,
+                KeySet.SdCardEncryptionKeys[(int) keyId].DataRo.ToArray(), 0x4000);
 
             return Result.Success;
         }

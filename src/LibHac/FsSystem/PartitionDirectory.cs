@@ -1,9 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Text;
-using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.Util;
 
 namespace LibHac.FsSystem
 {

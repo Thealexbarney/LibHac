@@ -1,5 +1,6 @@
 ﻿using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Util;
 using Xunit;
 
 namespace LibHac.Tests.Fs

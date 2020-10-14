@@ -22,6 +22,9 @@
     <NukeExternalFiles Include="**\*.*.ext" Exclude="bin\**;obj\**" />
     <None Remove="*.csproj.DotSettings;*.ref.*.txt" />
     <EmbeddedResource Include="CodeGen\*.csv" />
+    <Compile Remove="CodeGen\Stage2\**" />
+    <Compile Remove="CodeGen\bin\**;CodeGen\obj\**" />
+    <None Remove="CodeGen\bin\**;CodeGen\obj\**" />
   </ItemGroup>
 
 </Project>

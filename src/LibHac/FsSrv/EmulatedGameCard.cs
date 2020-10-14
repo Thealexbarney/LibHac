@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common.Keys;
 using LibHac.Fs;
 
 namespace LibHac.FsSrv
@@ -9,13 +10,13 @@ namespace LibHac.FsSrv
         private int Handle { get; set; }
         private XciHeader CardHeader { get; set; }
         private Xci CardImage { get; set; }
-        private Keyset Keyset { get; set; }
+        private KeySet KeySet { get; set; }
 
         public EmulatedGameCard() { }
 
-        public EmulatedGameCard(Keyset keyset)
+        public EmulatedGameCard(KeySet keySet)
         {
-            Keyset = keyset;
+            KeySet = keySet;
         }
         public GameCardHandle GetGameCardHandle()
         {
@@ -38,7 +39,7 @@ namespace LibHac.FsSrv
 
             CardImageStorage = cardImageStorage;
 
-            CardImage = new Xci(Keyset, cardImageStorage);
+            CardImage = new Xci(KeySet, cardImageStorage);
             CardHeader = CardImage.Header;
         }
 

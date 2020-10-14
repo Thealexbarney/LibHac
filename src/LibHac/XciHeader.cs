@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
+using LibHac.Common.Keys;
 using LibHac.Crypto;
 using LibHac.Fs;
 
@@ -69,7 +70,7 @@ namespace LibHac
         public Validity SignatureValidity { get; set; }
         public Validity PartitionFsHeaderValidity { get; set; }
 
-        public XciHeader(Keyset keyset, Stream stream)
+        public XciHeader(KeySet keySet, Stream stream)
         {
             using (var reader = new BinaryReader(stream, Encoding.Default, true))
             {
@@ -107,11 +108,11 @@ namespace LibHac
                 SelKey = reader.ReadInt32();
                 LimAreaPage = reader.ReadInt32();
 
-                if (keyset != null && !keyset.XciHeaderKey.IsEmpty())
+                if (keySet != null && !keySet.XciHeaderKey.IsZeros())
                 {
                     byte[] encHeader = reader.ReadBytes(EncryptedHeaderSize);
                     var decHeader = new byte[EncryptedHeaderSize];
-                    Aes.DecryptCbc128(encHeader, decHeader, keyset.XciHeaderKey, AesCbcIv);
+                    Aes.DecryptCbc128(encHeader, decHeader, keySet.XciHeaderKey, AesCbcIv);
 
                     using (var decreader = new BinaryReader(new MemoryStream(decHeader)))
                     {

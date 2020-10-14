@@ -2,6 +2,7 @@
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.Util;
 
 namespace LibHac.FsSystem
 {
@@ -38,7 +39,7 @@ namespace LibHac.FsSystem
                     }
                     else
                     {
-                        string entryName = Utilities.GetUtf8StringNullTerminated(entry.Name);
+                        string entryName = StringUtils.NullTerminatedUtf8ToString(entry.Name);
                         entry.Size = GetAesXtsFileSize(PathTools.Combine(Path.ToString(), entryName).ToU8Span());
                     }
                 }

@@ -9,6 +9,7 @@ using LibHac.FsSystem;
 using LibHac.FsSrv.Creators;
 using LibHac.FsSystem.NcaUtils;
 using LibHac.Spl;
+using LibHac.Util;
 using RightsId = LibHac.Fs.RightsId;
 
 namespace LibHac.FsSrv

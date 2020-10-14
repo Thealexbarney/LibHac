@@ -93,5 +93,10 @@ namespace LibHac.FsSrv
                 ExternalKeys.TrimExcess(newCapacity);
             }
         }
+
+        public void EnsureCapacity(int capacity)
+        {
+            ExternalKeys.EnsureCapacity(capacity);
+        }
     }
 }

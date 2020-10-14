@@ -1,10 +1,12 @@
 ﻿using System;
 using System.IO;
+using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.FsSystem;
 
 namespace LibHac
 {
+    [Obsolete("This class has been deprecated. LibHac.Boot.Package1 should be used instead.")]
     public class Package1
     {
         private const uint Pk11Magic = 0x31314B50; // PK11
@@ -19,7 +21,7 @@ namespace LibHac
 
         private IStorage Storage { get; }
 
-        public Package1(Keyset keyset, IStorage storage)
+        public Package1(KeySet keySet, IStorage storage)
         {
             Storage = storage;
             var reader = new BinaryReader(storage.AsStream());
@@ -40,7 +42,7 @@ namespace LibHac
 
             for (int i = 0; i < 0x20; i++)
             {
-                var dec = new Aes128CtrStorage(encStorage, keyset.Package1Keys[i], Counter, true);
+                var dec = new Aes128CtrStorage(encStorage, keySet.Package1Keys[i].DataRo.ToArray(), Counter, true);
                 dec.Read(0, decBuffer).ThrowIfFailure();
 
                 if (BitConverter.ToUInt32(decBuffer, 0) == Pk11Magic)

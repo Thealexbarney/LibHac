@@ -1,6 +1,7 @@
 // ReSharper disable UnusedVariable
 using System;
 using System.IO;
+using LibHac.Common.Keys;
 
 namespace LibHac.Npdm
 {
@@ -23,7 +24,7 @@ namespace LibHac.Npdm
 
         public Acid(Stream stream, int offset) : this(stream, offset, null) { }
 
-        public Acid(Stream stream, int offset, Keyset keyset)
+        public Acid(Stream stream, int offset, KeySet keySet)
         {
             stream.Seek(offset, SeekOrigin.Begin);
 
@@ -40,11 +41,12 @@ namespace LibHac.Npdm
 
             Size = reader.ReadInt32();
 
-            if (keyset != null)
+            if (keySet != null)
             {
                 reader.BaseStream.Position = offset + 0x100;
                 byte[] signatureData = reader.ReadBytes(Size);
-                SignatureValidity = CryptoOld.Rsa2048PssVerify(signatureData, Rsa2048Signature, keyset.AcidFixedKeyModulus);
+                SignatureValidity =
+                    CryptoOld.Rsa2048PssVerify(signatureData, Rsa2048Signature, keySet.AcidSigningKeyParams[0].Modulus);
             }
 
             reader.BaseStream.Position = offset + 0x208;

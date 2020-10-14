@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using LibHac.Common;
 using LibHac.FsSystem;
+using LibHac.Util;
 using Xunit;
 
 namespace LibHac.Tests

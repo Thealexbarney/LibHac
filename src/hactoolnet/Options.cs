@@ -1,4 +1,5 @@
 ﻿using LibHac;
+using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.FsSystem;
 
@@ -69,6 +70,8 @@ namespace hactoolnet
                 return IntegrityCheckLevel.None;
             }
         }
+
+        public KeySet.Mode KeyMode => UseDevKeys ? KeySet.Mode.Dev : KeySet.Mode.Prod;
     }
 
     internal enum FileType
@@ -95,7 +98,7 @@ namespace hactoolnet
     internal class Context
     {
         public Options Options;
-        public Keyset Keyset;
+        public KeySet KeySet;
         public ProgressBar Logger;
         public FileSystemClient FsClient;
     }

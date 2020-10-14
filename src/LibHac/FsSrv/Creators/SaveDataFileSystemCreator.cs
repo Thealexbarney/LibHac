@@ -1,5 +1,6 @@
 ﻿using System;
 using LibHac.Common;
+using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
@@ -9,11 +10,11 @@ namespace LibHac.FsSrv.Creators
 {
     public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
     {
-        private Keyset Keyset { get; }
+        private KeySet KeySet { get; }
 
-        public SaveDataFileSystemCreator(Keyset keyset)
+        public SaveDataFileSystemCreator(KeySet keySet)
         {
-            Keyset = keyset;
+            KeySet = keySet;
         }
 
         public Result CreateFile(out IFile file, IFileSystem sourceFileSystem, ulong saveDataId, OpenMode openMode)
@@ -61,7 +62,7 @@ namespace LibHac.FsSrv.Creators
                     if (rc.IsFailure()) return rc;
 
                     var saveDataStorage = new DisposingFileStorage(saveDataFile);
-                    fileSystem = new SaveDataFileSystem(Keyset, saveDataStorage, IntegrityCheckLevel.ErrorOnInvalid, false);
+                    fileSystem = new SaveDataFileSystem(KeySet, saveDataStorage, IntegrityCheckLevel.ErrorOnInvalid, false);
 
                     // Todo: ISaveDataExtraDataAccessor
 

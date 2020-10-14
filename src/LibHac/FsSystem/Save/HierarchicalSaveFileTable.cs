@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Util;
 
 namespace LibHac.FsSystem.Save
 {
@@ -59,7 +60,7 @@ namespace LibHac.FsSystem.Save
             position.NextFile = entry.NextSibling;
             info = entry.Value;
 
-            name = Utilities.GetUtf8StringNullTerminated(nameBytes);
+            name = StringUtils.NullTerminatedUtf8ToString(nameBytes);
 
             return true;
         }
@@ -85,7 +86,7 @@ namespace LibHac.FsSystem.Save
 
             position.NextDirectory = entry.NextSibling;
 
-            name = Utilities.GetUtf8StringNullTerminated(nameBytes);
+            name = StringUtils.NullTerminatedUtf8ToString(nameBytes);
 
             return true;
         }

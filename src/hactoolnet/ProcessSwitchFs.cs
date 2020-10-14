@@ -24,21 +24,21 @@ namespace hactoolnet
             if (Directory.Exists(Path.Combine(ctx.Options.InFile, "Nintendo", "Contents", "registered")))
             {
                 ctx.Logger.LogMessage("Treating path as SD card storage");
-                switchFs = SwitchFs.OpenSdCard(ctx.Keyset, baseFs);
+                switchFs = SwitchFs.OpenSdCard(ctx.KeySet, baseFs);
 
                 CheckForNcaFolders(ctx, switchFs);
             }
             else if (Directory.Exists(Path.Combine(ctx.Options.InFile, "Contents", "registered")))
             {
                 ctx.Logger.LogMessage("Treating path as NAND storage");
-                switchFs = SwitchFs.OpenNandPartition(ctx.Keyset, baseFs);
+                switchFs = SwitchFs.OpenNandPartition(ctx.KeySet, baseFs);
 
                 CheckForNcaFolders(ctx, switchFs);
             }
             else
             {
                 ctx.Logger.LogMessage("Treating path as a directory of loose NCAs");
-                switchFs = SwitchFs.OpenNcaDirectory(ctx.Keyset, baseFs);
+                switchFs = SwitchFs.OpenNcaDirectory(ctx.KeySet, baseFs);
             }
 
             if (ctx.Options.ListNcas)

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using LibHac.Fs;
 using LibHac.FsSystem;
+using LibHac.Util;
 
 namespace LibHac.Common
 {

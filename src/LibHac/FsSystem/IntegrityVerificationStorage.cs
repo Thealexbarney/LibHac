@@ -63,7 +63,7 @@ namespace LibHac.FsSystem
 
             if (Type == IntegrityStorageType.Save)
             {
-                if (Utilities.IsEmpty(hashBuffer))
+                if (Utilities.IsZeros(hashBuffer))
                 {
                     destination.Clear();
                     BlockValidities[blockIndex] = Validity.Valid;
@@ -144,7 +144,7 @@ namespace LibHac.FsSystem
                 source.CopyTo(dataBuffer);
                 byte[] hash = DoHash(dataBuffer, 0, toWrite);
 
-                if (Type == IntegrityStorageType.Save && source.IsEmpty())
+                if (Type == IntegrityStorageType.Save && source.IsZeros())
                 {
                     Array.Clear(hash, 0, DigestSize);
                 }
@@ -207,7 +207,7 @@ namespace LibHac.FsSystem
                 long hashPos = i * DigestSize;
                 HashStorage.Read(hashPos, digest).ThrowIfFailure();
 
-                if (!Utilities.IsEmpty(digest)) continue;
+                if (!Utilities.IsZeros(digest)) continue;
 
                 int dataOffset = i * SectorSize;
                 BaseStorage.Fill(SaveDataFileSystem.TrimFillValue, dataOffset, SectorSize);

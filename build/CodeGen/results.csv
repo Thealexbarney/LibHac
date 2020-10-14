@@ -467,3 +467,8 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 428,1031,,InvalidPackage2MetaPayloadsOverlap,
 428,1032,,InvalidPackage2MetaEntryPointNotFound,
 428,1033,,InvalidPackage2PayloadCorrupted,
+
+428,1040,1059,InvalidPackage1,
+428,1041,,InvalidPackage1SectionSize,
+428,1042,,InvalidPackage1MarikoBodySize,
+428,1043,,InvalidPackage1Pk11Size,

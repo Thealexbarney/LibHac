@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
@@ -11,11 +12,11 @@ namespace LibHac.FsSrv.Creators
     {
         // ReSharper disable once UnusedMember.Local
         private bool IsEnabledProgramVerification { get; set; }
-        private Keyset Keyset { get; }
+        private KeySet KeySet { get; }
 
-        public StorageOnNcaCreator(Keyset keyset)
+        public StorageOnNcaCreator(KeySet keySet)
         {
-            Keyset = keyset;
+            KeySet = keySet;
         }
 
         // todo: Implement NcaReader and other Nca classes
@@ -52,7 +53,7 @@ namespace LibHac.FsSrv.Creators
 
         public Result OpenNca(out Nca nca, IStorage ncaStorage)
         {
-            nca = new Nca(Keyset, ncaStorage);
+            nca = new Nca(KeySet, ncaStorage);
             return Result.Success;
         }
 

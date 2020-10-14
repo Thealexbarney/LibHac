@@ -4,6 +4,7 @@ using System.IO;
 using LibHac.Common;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
+using LibHac.Util;
 
 namespace LibHac.Fs
 {

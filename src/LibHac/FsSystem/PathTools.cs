@@ -4,6 +4,7 @@ using System.IO.Enumeration;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Util;
 
 namespace LibHac.FsSystem
 {

@@ -2,6 +2,7 @@
 using System;
 using System.Buffers.Binary;
 using System.IO;
+using LibHac.Common.Keys;
 
 namespace LibHac.Npdm
 {
@@ -27,7 +28,7 @@ namespace LibHac.Npdm
 
         public NpdmBinary(Stream stream) : this(stream, null) { }
 
-        public NpdmBinary(Stream stream, Keyset keyset)
+        public NpdmBinary(Stream stream, KeySet keySet)
         {
             var reader = new BinaryReader(stream);
 
@@ -74,7 +75,7 @@ namespace LibHac.Npdm
             int acidSize   = reader.ReadInt32();
 
             Aci0 = new Aci0(stream, aci0Offset);
-            AciD = new Acid(stream, acidOffset, keyset);
+            AciD = new Acid(stream, acidOffset, keySet);
         }
     }
 }

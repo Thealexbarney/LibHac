@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using LibHac.Bcat.Detail.Ipc;
 using LibHac.Bcat.Detail.Service.Core;
-using LibHac.Common;
+using LibHac.Util;
 
 namespace LibHac.Bcat.Detail.Service
 {

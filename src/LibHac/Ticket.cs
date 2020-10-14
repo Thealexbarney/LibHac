@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using LibHac.Common.Keys;
 
 namespace LibHac
 {
@@ -144,7 +145,7 @@ namespace LibHac
             return stream.ToArray();
         }
 
-        public byte[] GetTitleKey(Keyset keyset)
+        public byte[] GetTitleKey(KeySet keySet)
         {
             if (TitleKeyType == TitleKeyType.Common)
             {
@@ -153,7 +154,7 @@ namespace LibHac
                 return commonKey;
             }
 
-            return CryptoOld.DecryptRsaOaep(TitleKeyBlock, keyset.EticketExtKeyRsa);
+            return CryptoOld.DecryptRsaOaep(TitleKeyBlock, keySet.ETicketExtKeyRsa);
         }
     }
 

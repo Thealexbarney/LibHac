@@ -17,7 +17,7 @@ namespace hactoolnet
         {
             using (IStorage file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
             {
-                var nca = new Nca(ctx.Keyset, file);
+                var nca = new Nca(ctx.KeySet, file);
                 Nca baseNca = null;
 
                 var ncaHolder = new NcaHolder { Nca = nca };
@@ -33,7 +33,7 @@ namespace hactoolnet
                 if (ctx.Options.BaseNca != null)
                 {
                     IStorage baseFile = new LocalStorage(ctx.Options.BaseNca, FileAccess.Read);
-                    baseNca = new Nca(ctx.Keyset, baseFile);
+                    baseNca = new Nca(ctx.KeySet, baseFile);
                 }
 
                 for (int i = 0; i < 3; i++)
@@ -223,10 +223,17 @@ namespace hactoolnet
             return nca.Header.VerifySignature2(npdm.AciD.Rsa2048Modulus);
         }
 
+        public static int GetMasterKeyRevisionFromKeyGeneration(int keyGeneration)
+        {
+            if (keyGeneration == 0) return 0;
+
+            return keyGeneration - 1;
+        }
+
         private static string Print(this NcaHolder ncaHolder)
         {
             Nca nca = ncaHolder.Nca;
-            int masterKey = Keyset.GetMasterKeyRevisionFromKeyGeneration(nca.Header.KeyGeneration);
+            int masterKey = GetMasterKeyRevisionFromKeyGeneration(nca.Header.KeyGeneration);
 
             int colLen = 36;
             var sb = new StringBuilder();
@@ -280,7 +287,7 @@ namespace hactoolnet
                     sb.AppendLine("Key Area (Decrypted):");
                     for (int i = 0; i < 2; i++)
                     {
-                        PrintItem(sb, colLen, $"    Key {i} (Encrypted):", nca.Header.GetEncryptedKey(i).ToArray());
+                        PrintItem(sb, colLen, $"    Key {i} (Decrypted):", nca.GetDecryptedKey(i));
                     }
                 }
                 else if (version == NcaVersion.Nca0FixedKey)

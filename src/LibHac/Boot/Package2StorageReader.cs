@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Common.Keys;
 using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.FsSystem;
@@ -19,27 +20,27 @@ namespace LibHac.Boot
 
         private IStorage _storage;
         private Package2Header _header;
-        private Keyset _keyset;
-        private byte[] _key;
+        private KeySet _keySet;
+        private AesKey _key;
 
         public ref readonly Package2Header Header => ref _header;
 
         /// <summary>
         /// Initializes the <see cref="Package2StorageReader"/>.
         /// </summary>
-        /// <param name="keyset">The keyset to use for decrypting the package.</param>
+        /// <param name="keySet">The keyset to use for decrypting the package.</param>
         /// <param name="storage">An <see cref="IStorage"/> of the encrypted package2.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        public Result Initialize(Keyset keyset, IStorage storage)
+        public Result Initialize(KeySet keySet, IStorage storage)
         {
             Result rc = storage.Read(0, SpanHelpers.AsByteSpan(ref _header));
             if (rc.IsFailure()) return rc;
 
-            _key = keyset.Package2Keys[_header.Meta.KeyGeneration];
+            _key = keySet.Package2Keys[_header.Meta.KeyGeneration];
             DecryptHeader(_key, ref _header.Meta, ref _header.Meta);
 
             _storage = storage;
-            _keyset = keyset;
+            _keySet = keySet;
             return Result.Success;
         }
 
@@ -69,7 +70,7 @@ namespace LibHac.Boot
             }
 
             byte[] iv = _header.Meta.PayloadIvs[index].Bytes.ToArray();
-            payloadStorage = new CachedStorage(new Aes128CtrStorage(payloadSubStorage, _key, iv, true), 0x4000, 1, true);
+            payloadStorage = new CachedStorage(new Aes128CtrStorage(payloadSubStorage, _key.DataRo.ToArray(), iv, true), 0x4000, 1, true);
             return Result.Success;
         }
 
@@ -142,7 +143,7 @@ namespace LibHac.Boot
             Result rc = _storage.Read(Package2Header.SignatureSize, metaBytes);
             if (rc.IsFailure()) return rc;
 
-            return _header.VerifySignature(_keyset.Package2FixedKeyModulus, metaBytes);
+            return _header.VerifySignature(_keySet.Package2SigningKeyParams.Modulus, metaBytes);
         }
 
         /// <summary>
@@ -230,7 +231,7 @@ namespace LibHac.Boot
             byte[] iv = _header.Meta.HeaderIv.Bytes.ToArray();
             Utilities.IncrementByteArray(iv);
 
-            storages.Add(new CachedStorage(new Aes128CtrStorage(encMetaStorage, _key, iv, true), 0x100, 1, true));
+            storages.Add(new CachedStorage(new Aes128CtrStorage(encMetaStorage, _key.DataRo.ToArray(), iv, true), 0x100, 1, true));
 
             // Open all the payloads
             for (int i = 0; i < Package2Header.PayloadCount; i++)
@@ -252,7 +253,7 @@ namespace LibHac.Boot
             return Result.Success;
         }
 
-        private void DecryptHeader(byte[] key, ref Package2Meta source, ref Package2Meta dest)
+        private void DecryptHeader(ReadOnlySpan<byte> key, ref Package2Meta source, ref Package2Meta dest)
         {
             Buffer16 iv = source.HeaderIv;
 

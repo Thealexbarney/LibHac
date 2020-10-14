@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using LibHac.Common;
+using LibHac.Common.Keys;
 using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
@@ -28,16 +29,16 @@ namespace LibHac.FsSystem.Save
         public HierarchicalIntegrityVerificationStorage CoreDataIvfcStorage { get; }
         public HierarchicalIntegrityVerificationStorage FatIvfcStorage { get; }
 
-        private Keyset Keyset { get; }
+        private KeySet KeySet { get; }
 
-        public SaveDataFileSystem(Keyset keyset, IStorage storage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
+        public SaveDataFileSystem(KeySet keySet, IStorage storage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         {
             BaseStorage = storage;
             LeaveOpen = leaveOpen;
-            Keyset = keyset;
+            KeySet = keySet;
 
-            var headerA = new Header(BaseStorage, keyset);
-            var headerB = new Header(BaseStorage.Slice(0x4000), keyset);
+            var headerA = new Header(BaseStorage, keySet);
+            var headerB = new Header(BaseStorage.Slice(0x4000), keySet);
 
             if (headerA.HeaderHashValidity == Validity.Valid)
             {
@@ -238,12 +239,12 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoCommit()
         {
-            Result result = Commit(Keyset);
+            Result result = Commit(KeySet);
 
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
-        public Result Commit(Keyset keyset)
+        public Result Commit(KeySet keySet)
         {
             CoreDataIvfcStorage.Flush();
             FatIvfcStorage?.Flush();
@@ -261,7 +262,7 @@ namespace LibHac.FsSystem.Save
             headerStream.Position = 0x108;
             headerStream.Write(hash, 0, hash.Length);
 
-            if (keyset == null || keyset.SaveMacKey.IsEmpty()) return ResultFs.PreconditionViolation.Log();
+            if (keySet == null || keySet.DeviceUniqueSaveMacKeys[0].IsZeros()) return ResultFs.PreconditionViolation.Log();
 
             var cmacData = new byte[0x200];
             var cmac = new byte[0x10];
@@ -269,7 +270,7 @@ namespace LibHac.FsSystem.Save
             headerStream.Position = 0x100;
             headerStream.Read(cmacData, 0, 0x200);
 
-            Aes.CalculateCmac(cmac, cmacData, keyset.SaveMacKey);
+            Aes.CalculateCmac(cmac, cmacData, keySet.DeviceUniqueSaveMacKeys[0]);
 
             headerStream.Position = 0;
             headerStream.Write(cmac, 0, 0x10);
