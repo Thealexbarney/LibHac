@@ -207,7 +207,19 @@ namespace LibHac.Common.Keys
             return DefaultKeySet.CreateKeyList();
         }
 
-        public void DeriveKeys(IProgressReport logger = null) => KeyDerivation.DeriveAllKeys(this, logger);
+        public void DeriveKeys(IProgressReport logger = null)
+        {
+            Mode originalMode = CurrentMode;
+
+            SetMode(Mode.Prod);
+            KeyDerivation.DeriveAllKeys(this, logger);
+
+            SetMode(Mode.Dev);
+            KeyDerivation.DeriveAllKeys(this, logger);
+
+            SetMode(originalMode);
+        }
+
         public void DeriveSdCardKeys() => KeyDerivation.DeriveSdCardKeys(this);
 
         private static RSAParameters CreateRsaParameters(in RsaKey key)

@@ -91,7 +91,7 @@ namespace LibHacBuild.CodeGen.Stage2
             var keySet = new KeySet();
 
             // Populate the key set with all the keys in IncludedKeys.txt
-            using (Stream keyFile = Common.GetResource(InputMainKeyFileName))
+            using (Stream keyFile = GetResource(InputMainKeyFileName))
             {
                 List<KeyInfo> list = KeySet.CreateKeyInfoList();
                 ExternalKeyReader.ReadMainKeys(keySet, keyFile, list);

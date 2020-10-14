@@ -67,14 +67,6 @@ namespace LibHac.Common.Keys
             }
 
             keySet.DeriveKeys(logger);
-
-            // Dev keys can be read from prod key files, so derive any missing keys if necessary.
-            if (keySet.CurrentMode == KeySet.Mode.Prod)
-            {
-                keySet.SetMode(KeySet.Mode.Dev);
-                keySet.DeriveKeys(logger);
-                keySet.SetMode(KeySet.Mode.Prod);
-            }
         }
 
         /// <summary>
@@ -122,14 +114,6 @@ namespace LibHac.Common.Keys
             }
 
             keySet.DeriveKeys(logger);
-
-            // Dev keys can read from prod key files, so derive any missing keys if necessary.
-            if (keySet.CurrentMode == KeySet.Mode.Prod)
-            {
-                keySet.SetMode(KeySet.Mode.Dev);
-                keySet.DeriveKeys(logger);
-                keySet.SetMode(KeySet.Mode.Prod);
-            }
         }
 
         /// <summary>
