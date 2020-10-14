@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
+using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Spl;
 using LibHac.Util;
@@ -11,6 +12,8 @@ namespace LibHac.Common.Keys
 {
     public static class ExternalKeyReader
     {
+        private const int ReadBufferSize = 1024;
+
         // Contains info from a specific key being read from a file
         [DebuggerDisplay("{" + nameof(Name) + "}")]
         private struct SpecificKeyInfo
@@ -165,7 +168,7 @@ namespace LibHac.Common.Keys
             if (reader == null) return;
 
             using var streamReader = new StreamReader(reader);
-            Span<char> buffer = stackalloc char[1024];
+            Span<char> buffer = stackalloc char[ReadBufferSize];
             var ctx = new KvPairReaderContext(streamReader, buffer);
 
             while (true)
@@ -229,7 +232,7 @@ namespace LibHac.Common.Keys
             if (reader == null) return;
 
             using var streamReader = new StreamReader(reader);
-            Span<char> buffer = stackalloc char[1024];
+            Span<char> buffer = stackalloc char[ReadBufferSize];
             var ctx = new KvPairReaderContext(streamReader, buffer);
 
             // Estimate the number of keys by assuming each line is about 69 bytes.
@@ -291,6 +294,8 @@ namespace LibHac.Common.Keys
             public Span<char> CurrentValue;
             public int BufferPos;
             public bool NeedFillBuffer;
+            public bool HasReadEndOfFile;
+            public bool SkipNextLine;
 
             public KvPairReaderContext(TextReader reader, Span<char> buffer)
             {
@@ -300,6 +305,8 @@ namespace LibHac.Common.Keys
                 CurrentValue = default;
                 BufferPos = buffer.Length;
                 NeedFillBuffer = true;
+                HasReadEndOfFile = false;
+                SkipNextLine = false;
             }
         }
 
@@ -307,24 +314,35 @@ namespace LibHac.Common.Keys
         {
             ReadKey,
             NoKeyRead,
+            ReadComment,
             Finished,
+            LineTooLong,
             Error
         }
 
         private enum ReaderState
         {
             Initial,
+            Comment,
             Key,
             WhiteSpace1,
             Delimiter,
             Value,
             WhiteSpace2,
-            End
+            Success,
+            CommentSuccess,
+            Error
         }
 
         private static ReaderStatus GetKeyValuePair(ref KvPairReaderContext reader)
         {
             Span<char> buffer = reader.Buffer;
+
+            if (reader.BufferPos == buffer.Length && reader.HasReadEndOfFile)
+            {
+                // There is no more text to parse. Return that we've finished.
+                return ReaderStatus.Finished;
+            }
 
             if (reader.NeedFillBuffer)
             {
@@ -333,20 +351,30 @@ namespace LibHac.Common.Keys
 
                 int charsRead = reader.Reader.ReadBlock(buffer.Slice(buffer.Length - reader.BufferPos));
 
-                if (charsRead == 0)
-                {
-                    return ReaderStatus.Finished;
-                }
-
                 // ReadBlock will only read less than the buffer size if there's nothing left to read
                 if (charsRead != reader.BufferPos)
                 {
                     buffer = buffer.Slice(0, buffer.Length - reader.BufferPos + charsRead);
                     reader.Buffer = buffer;
+                    reader.HasReadEndOfFile = true;
                 }
 
                 reader.NeedFillBuffer = false;
                 reader.BufferPos = 0;
+            }
+
+            if (reader.SkipNextLine)
+            {
+                while (reader.BufferPos < buffer.Length && !IsEndOfLine(buffer[reader.BufferPos]))
+                {
+                    reader.BufferPos++;
+                }
+
+                // Stop skipping once we reach a new line
+                if (reader.BufferPos < buffer.Length)
+                {
+                    reader.SkipNextLine = false;
+                }
             }
 
             // Skip any empty lines
@@ -385,6 +413,14 @@ namespace LibHac.Common.Keys
                         // Decrement so we can process this character the next round through the state machine
                         i--;
                         continue;
+                    case ReaderState.Initial when c == '#':
+                        state = ReaderState.Comment;
+                        keyOffset = i;
+                        continue;
+                    case ReaderState.Initial when IsEndOfLine(c):
+                        // The line was empty. Update the buffer position to indicate a new line
+                        reader.BufferPos = i;
+                        continue;
                     case ReaderState.Key when IsWhiteSpace(c):
                         state = ReaderState.WhiteSpace1;
                         keyLength = i - keyOffset;
@@ -412,9 +448,9 @@ namespace LibHac.Common.Keys
                         i--;
                         continue;
                     case ReaderState.Value when IsEndOfLine(c):
-                        state = ReaderState.End;
+                        state = ReaderState.Success;
                         valueLength = i - valueOffset;
-                        continue;
+                        break;
                     case ReaderState.Value when IsWhiteSpace(c):
                         state = ReaderState.WhiteSpace2;
                         valueLength = i - valueOffset;
@@ -422,20 +458,89 @@ namespace LibHac.Common.Keys
                     case ReaderState.WhiteSpace2 when IsWhiteSpace(c):
                         continue;
                     case ReaderState.WhiteSpace2 when IsEndOfLine(c):
-                        state = ReaderState.End;
-                        continue;
-                    case ReaderState.End when IsEndOfLine(c):
-                        continue;
-                    case ReaderState.End when !IsEndOfLine(c):
+                        state = ReaderState.Success;
                         break;
+                    case ReaderState.Comment when IsEndOfLine(c):
+                        keyLength = i - keyOffset;
+                        state = ReaderState.CommentSuccess;
+                        break;
+                    case ReaderState.Comment:
+                        continue;
+
+                    // If none of the expected characters were found while in these states, the
+                    // line is considered invalid.
+                    case ReaderState.Initial:
+                    case ReaderState.Key:
+                    case ReaderState.WhiteSpace1:
+                    case ReaderState.Delimiter:
+                        state = ReaderState.Error;
+                        continue;
+                    case ReaderState.Error when !IsEndOfLine(c):
+                        continue;
                 }
 
                 // We've exited the state machine for one reason or another
                 break;
             }
 
+            // First check if hit the end of the buffer or read the entire buffer without seeing a new line
+            if (i == buffer.Length && !reader.HasReadEndOfFile)
+            {
+                reader.NeedFillBuffer = true;
+
+                // If the entire buffer is part of a single long line
+                if (reader.BufferPos == 0 || reader.SkipNextLine)
+                {
+                    reader.BufferPos = i;
+
+                    // The line might continue past the end of the current buffer, so skip the
+                    // remainder of the line after the buffer is refilled.
+                    reader.SkipNextLine = true;
+                    return ReaderStatus.LineTooLong;
+                }
+
+                return ReaderStatus.NoKeyRead;
+            }
+
+            // The only way we should exit the loop in the "Value" or "WhiteSpace2" state is if we reached
+            // the end of the buffer in that state, meaning i == buffer.Length.
+            // Running out of buffer when we haven't read the end of the file will have been handled by the
+            // previous "if" block. If we get to this point in those states, we should be at the very end
+            // of the file which will be treated as the end of a line.
+            if (state == ReaderState.Value || state == ReaderState.WhiteSpace2)
+            {
+                Assert.AssertTrue(i == buffer.Length);
+                Assert.AssertTrue(reader.HasReadEndOfFile);
+
+                // WhiteSpace2 will have already set this value
+                if (state == ReaderState.Value)
+                    valueLength = i - valueOffset;
+
+                state = ReaderState.Success;
+            }
+
+            // Same situation as the two above states
+            if (state == ReaderState.Comment)
+            {
+                Assert.AssertTrue(i == buffer.Length);
+                Assert.AssertTrue(reader.HasReadEndOfFile);
+
+                keyLength = i - keyOffset;
+                state = ReaderState.CommentSuccess;
+            }
+
+            // Same as the above states except the final line was empty or whitespace.
+            if (state == ReaderState.Initial)
+            {
+                Assert.AssertTrue(i == buffer.Length);
+                Assert.AssertTrue(reader.HasReadEndOfFile);
+
+                reader.BufferPos = i;
+                return ReaderStatus.NoKeyRead;
+            }
+
             // If we successfully read both the key and value
-            if (state == ReaderState.End || state == ReaderState.WhiteSpace2)
+            if (state == ReaderState.Success)
             {
                 reader.CurrentKey = reader.Buffer.Slice(keyOffset, keyLength);
                 reader.CurrentValue = reader.Buffer.Slice(valueOffset, valueLength);
@@ -444,40 +549,24 @@ namespace LibHac.Common.Keys
                 return ReaderStatus.ReadKey;
             }
 
-            // We either ran out of buffer or hit an error reading the key-value pair.
-            // Advance to the end of the line if possible.
-            while (i < buffer.Length && !IsEndOfLine(buffer[i]))
+            if (state == ReaderState.CommentSuccess)
             {
-                i++;
+                reader.CurrentKey = reader.Buffer.Slice(keyOffset, keyLength);
+                reader.BufferPos = i;
+
+                return ReaderStatus.ReadComment;
             }
 
-            // We don't have a complete line. Return that the buffer needs to be refilled.
-            if (i == buffer.Length)
-            {
-                reader.NeedFillBuffer = true;
-                return ReaderStatus.NoKeyRead;
-            }
-
-            // If we hit a line with an error, it'll be returned as "CurrentKey" in the reader context
-            reader.CurrentKey = buffer.Slice(reader.BufferPos, i - reader.BufferPos);
+            // A bad line was encountered if we're in any of the other states
+            // Return the line as "CurrentKey"
+            reader.CurrentKey = reader.Buffer.Slice(reader.BufferPos, i - reader.BufferPos);
             reader.BufferPos = i;
 
             return ReaderStatus.Error;
 
-            static bool IsWhiteSpace(char c)
-            {
-                return c == ' ' || c == '\t';
-            }
-
-            static bool IsDelimiter(char c)
-            {
-                return c == '=' || c == ',';
-            }
-
-            static bool IsEndOfLine(char c)
-            {
-                return c == '\0' || c == '\r' || c == '\n';
-            }
+            static bool IsWhiteSpace(char c) => c == ' ' || c == '\t';
+            static bool IsDelimiter(char c) => c == '=' || c == ',';
+            static bool IsEndOfLine(char c) => c == '\0' || c == '\r' || c == '\n';
 
             static void ToLower(ref char c)
             {

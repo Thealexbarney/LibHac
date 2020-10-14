@@ -19,7 +19,7 @@ namespace LibHac.Common.Keys
             PopulateOldMasterKeys(keySet);
 
             DerivePerConsoleKeys(keySet);
-            DerivePerFirmwareKeys(keySet);
+            DerivePerGenerationKeys(keySet);
             DeriveNcaHeaderKey(keySet);
             DeriveSdCardKeys(keySet);
         }
@@ -284,7 +284,7 @@ namespace LibHac.Common.Keys
             }
         }
 
-        private static void DerivePerFirmwareKeys(KeySet s)
+        private static void DerivePerGenerationKeys(KeySet s)
         {
             bool haveKakSource0 = !s.KeyAreaKeyApplicationSource.IsZeros();
             bool haveKakSource1 = !s.KeyAreaKeyOceanSource.IsZeros();
