@@ -270,4 +270,3 @@ global.json
 # Files generated at build time
 ResultNameResolver.Generated.cs
 DefaultKeySet.Generated.cs
-ResultNameResolver.Generated.cs
