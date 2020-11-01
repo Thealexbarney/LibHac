@@ -60,7 +60,7 @@ namespace LibHac.FsSrv
                 if (rc.IsFailure()) return rc;
 
                 // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateSharedSfFileSystem(ref fs);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs);
 
                 return Result.Success;
             }
@@ -117,7 +117,7 @@ namespace LibHac.FsSrv
                 if (rc.IsFailure()) return rc;
 
                 // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateSharedSfFileSystem(ref fs);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs);
 
                 return Result.Success;
             }
@@ -147,7 +147,7 @@ namespace LibHac.FsSrv
                 if (rc.IsFailure()) return rc;
 
                 // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateSharedSfFileSystem(ref fs);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs);
 
                 return Result.Success;
             }
@@ -220,7 +220,7 @@ namespace LibHac.FsSrv
                 if (rc.IsFailure()) return rc;
 
                 // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateSharedSfFileSystem(ref fs);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs);
 
                 return Result.Success;
             }

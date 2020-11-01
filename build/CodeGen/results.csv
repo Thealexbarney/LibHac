@@ -267,6 +267,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6203,,InvalidOpenModeForWrite,
 
 2,6300,6399,UnsupportedOperation,
+2,6301,,UnsupportedCommitTarget,
 2,6302,,UnsupportedOperationInSubStorageSetSize,Attempted to resize a non-resizable SubStorage.
 2,6303,,UnsupportedOperationInResizableSubStorageSetSize,Attempted to resize a SubStorage that wasn't located at the end of the base storage.
 2,6304,,UnsupportedOperationInMemoryStorageSetSize,
@@ -297,10 +298,15 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 
 2,6452,,ExternalKeyAlreadyRegistered,
 2,6454,,WriteStateUnflushed,
+2,6456,,DirectoryNotClosed,
 2,6457,,WriteModeFileNotClosed,
+2,6458,,AllocatorAlreadyRegistered,
+2,6459,,DefaultAllocatorUsed,
 2,6461,,AllocatorAlignmentViolation,
 2,6463,,MultiCommitFileSystemAlreadyAdded,The provided file system has already been added to the multi-commit manager.
 2,6465,,UserNotExist,
+2,6466,,DefaultGlobalFileDataCacheEnabled,
+2,6467,,SaveDataRootPathUnavailable,
 
 2,6600,6699,EntryNotFound,
 2,6605,,TargetProgramNotFound,Specified program is not found in the program registry.

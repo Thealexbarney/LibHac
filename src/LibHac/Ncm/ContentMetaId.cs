@@ -1,6 +1,8 @@
-﻿namespace LibHac.Ncm
+﻿using System;
+
+namespace LibHac.Ncm
 {
-    public readonly struct ApplicationId
+    public readonly struct ApplicationId : IEquatable<ApplicationId>
     {
         public readonly ulong Value;
 
@@ -20,6 +22,13 @@
         {
             return Start <= programId && programId <= End;
         }
+
+        public bool Equals(ApplicationId other) => Value == other.Value;
+        public override bool Equals(object obj) => obj is ApplicationId id && Equals(id);
+        public override int GetHashCode() => Value.GetHashCode();
+
+        public static bool operator ==(ApplicationId left, ApplicationId right) => left.Equals(right);
+        public static bool operator !=(ApplicationId left, ApplicationId right) => !left.Equals(right);
     }
 
     public readonly struct PatchId

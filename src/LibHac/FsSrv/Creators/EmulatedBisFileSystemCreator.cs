@@ -87,7 +87,9 @@ namespace LibHac.FsSrv.Creators
             return Util.CreateSubFileSystemImpl(out fileSystem, subFileSystem, rootPath);
         }
 
-        public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, U8Span rootPath, BisPartitionId partitionId)
+        // Todo: Make case sensitive
+        public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, U8Span rootPath,
+            BisPartitionId partitionId, bool caseSensitive)
         {
             fileSystem = default;
 
@@ -107,21 +109,28 @@ namespace LibHac.FsSrv.Creators
 
             var partitionPath = GetPartitionPath(partitionId).ToU8String();
 
-            // Todo: Store shared file systems
-            using var sharedRootFs = new ReferenceCountedDisposable<IFileSystem>(Config.RootFileSystem);
-
-            Result rc = Utility.WrapSubDirectory(out ReferenceCountedDisposable<IFileSystem> partitionFileSystem,
-                sharedRootFs, partitionPath, true);
-
-            if (rc.IsFailure()) return rc;
-
-            if (rootPath.IsEmpty())
+            ReferenceCountedDisposable<IFileSystem> partitionFileSystem = null;
+            try
             {
-                fileSystem = partitionFileSystem.AddReference();
-                return Result.Success;
-            }
+                // Todo: Store shared file systems
+                using var sharedRootFs = new ReferenceCountedDisposable<IFileSystem>(Config.RootFileSystem);
 
-            return Utility.CreateSubDirectoryFileSystem(out fileSystem, partitionFileSystem, rootPath);
+                Result rc = Utility.WrapSubDirectory(out partitionFileSystem, sharedRootFs, partitionPath, true);
+
+                if (rc.IsFailure()) return rc;
+
+                if (rootPath.IsEmpty())
+                {
+                    Shared.Move(out fileSystem, ref partitionFileSystem);
+                    return Result.Success;
+                }
+
+                return Utility.CreateSubDirectoryFileSystem(out fileSystem, partitionFileSystem, rootPath);
+            }
+            finally
+            {
+                partitionFileSystem?.Dispose();
+            }
         }
 
         public Result CreateFatFileSystem(out IFileSystem fileSystem, BisPartitionId partitionId)

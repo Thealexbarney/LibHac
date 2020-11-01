@@ -43,7 +43,7 @@ namespace LibHac.FsSrv
             if (!ProgramInfo.IsInitialProgram(_processId))
                 return ResultFs.PermissionDenied.Log();
 
-            return _registryService.RegisterProgram(processId, programId, storageId, accessControlData,
+            return _registryService.RegisterProgramInfo(processId, programId, storageId, accessControlData,
                 accessControlDescriptor);
         }
 
@@ -56,7 +56,7 @@ namespace LibHac.FsSrv
             if (!ProgramInfo.IsInitialProgram(_processId))
                 return ResultFs.PermissionDenied.Log();
 
-            return _registryService.UnregisterProgram(processId);
+            return _registryService.UnregisterProgramInfo(processId);
         }
 
         /// <inheritdoc cref="ProgramRegistryManager.GetProgramInfo"/>

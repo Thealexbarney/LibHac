@@ -48,7 +48,7 @@ namespace LibHac.FsSrv.Creators
             KeySet.SetSdSeed(encryptionSeed.Value);
 
             // Todo: pass ReferenceCountedDisposable to AesXtsFileSystem
-            var fs = new AesXtsFileSystem(baseFileSystem.AddReference().Target, KeySet.SdCardEncryptionKeys[(int)keyId].DataRo.ToArray(), 0x4000);
+            var fs = new AesXtsFileSystem(baseFileSystem, KeySet.SdCardEncryptionKeys[(int)keyId].DataRo.ToArray(), 0x4000);
             encryptedFileSystem = new ReferenceCountedDisposable<IFileSystem>(fs);
 
             return Result.Success;

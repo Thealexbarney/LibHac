@@ -50,8 +50,16 @@ namespace LibHac.FsSrv
                 new ArrayPoolMemoryResource(), new SdHandleManager(), false));
 
             FileSystemProxyImpl fsProxy = GetFileSystemProxyServiceObject();
-            fsProxy.SetCurrentProcess(Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
-            fsProxy.CleanUpTemporaryStorage().IgnoreResult();
+            ulong processId = Hos.Os.GetCurrentProcessId().Value;
+            fsProxy.SetCurrentProcess(processId).IgnoreResult();
+
+            var saveService = new SaveDataFileSystemService(fspConfig.SaveDataFileSystemService, processId);
+
+            saveService.CleanUpTemporaryStorage().IgnoreResult();
+            saveService.CleanUpSaveData().IgnoreResult();
+            saveService.CompleteSaveDataExtension().IgnoreResult();
+            saveService.FixSaveData().IgnoreResult();
+            saveService.RecoverMultiCommit().IgnoreResult();
 
             Hos.Sm.RegisterService(new FileSystemProxyService(this), "fsp-srv").IgnoreResult();
             Hos.Sm.RegisterService(new FileSystemProxyForLoaderService(this), "fsp-ldr").IgnoreResult();
@@ -82,6 +90,9 @@ namespace LibHac.FsSrv
 
         private FileSystemProxyConfiguration InitializeFileSystemProxyConfiguration(FileSystemServerConfig config)
         {
+            var saveDataIndexerManager = new SaveDataIndexerManager(Hos.Fs, SaveIndexerId,
+                new ArrayPoolMemoryResource(), new SdHandleManager(), false);
+
             var programRegistryService = new ProgramRegistryServiceImpl(this);
             var programRegistry = new ProgramRegistryImpl(programRegistryService);
 
@@ -111,11 +122,26 @@ namespace LibHac.FsSrv
 
             var ncaFsService = new NcaFileSystemServiceImpl(in ncaFsServiceConfig, config.ExternalKeySet);
 
+            var saveFsServiceConfig = new SaveDataFileSystemServiceImpl.Configuration();
+            saveFsServiceConfig.BaseFsService = baseFsService;
+            saveFsServiceConfig.HostFsCreator = config.FsCreators.HostFileSystemCreator;
+            saveFsServiceConfig.TargetManagerFsCreator = config.FsCreators.TargetManagerFileSystemCreator;
+            saveFsServiceConfig.SaveFsCreator = config.FsCreators.SaveDataFileSystemCreator;
+            saveFsServiceConfig.EncryptedFsCreator = config.FsCreators.EncryptedFileSystemCreator;
+            saveFsServiceConfig.ProgramRegistryService = programRegistryService;
+            saveFsServiceConfig.ShouldCreateDirectorySaveData = () => true;
+            saveFsServiceConfig.SaveIndexerManager = saveDataIndexerManager;
+            saveFsServiceConfig.HorizonClient = Hos;
+            saveFsServiceConfig.ProgramRegistry = programRegistry;
+
+            var saveFsService = new SaveDataFileSystemServiceImpl(in saveFsServiceConfig);
+
             var fspConfig = new FileSystemProxyConfiguration
             {
                 FsCreatorInterfaces = config.FsCreators,
                 BaseFileSystemService = baseFsService,
                 NcaFileSystemService = ncaFsService,
+                SaveDataFileSystemService = saveFsService,
                 ProgramRegistryService = programRegistryService
             };
 
@@ -124,12 +150,12 @@ namespace LibHac.FsSrv
 
         private FileSystemProxyImpl GetFileSystemProxyServiceObject()
         {
-            return new FileSystemProxyImpl(Hos, FsProxyCore);
+            return new FileSystemProxyImpl(FsProxyCore);
         }
 
         private FileSystemProxyImpl GetFileSystemProxyForLoaderServiceObject()
         {
-            return new FileSystemProxyImpl(Hos, FsProxyCore);
+            return new FileSystemProxyImpl(FsProxyCore);
         }
 
         private ProgramRegistryImpl GetProgramRegistryServiceObject()

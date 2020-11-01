@@ -40,7 +40,14 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, U8Span rootPath, BisPartitionId partitionId)
+        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, U8Span rootPath,
+            BisPartitionId partitionId)
+        {
+            return OpenBisFileSystem(out fileSystem, rootPath, partitionId, false);
+        }
+
+        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, U8Span rootPath,
+            BisPartitionId partitionId, bool caseSensitive)
         {
             fileSystem = default;
 
@@ -85,12 +92,12 @@ namespace LibHac.FsSrv
             return OpenSdCardProxyFileSystem(out fileSystem, false);
         }
 
-        public Result OpenSdCardProxyFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, bool isCaseSensitive)
+        public Result OpenSdCardProxyFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, bool openCaseSensitive)
         {
             fileSystem = default;
 
             // Todo: Shared
-            Result rc = _config.SdCardFileSystemCreator.Create(out IFileSystem fs, isCaseSensitive);
+            Result rc = _config.SdCardFileSystemCreator.Create(out IFileSystem fs, openCaseSensitive);
             if (rc.IsFailure()) return rc;
 
             fileSystem = new ReferenceCountedDisposable<IFileSystem>(fs);

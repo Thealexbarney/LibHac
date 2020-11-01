@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using LibHac.Common;
 using LibHac.Diag;
 using LibHac.FsSrv;
+using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
+using LibHac.Sf;
 
 namespace LibHac.Fs.Shim
 {
@@ -29,13 +30,13 @@ namespace LibHac.Fs.Shim
                         SpaceId = SaveDataSpaceId.User
                     };
 
-                    var metaInfo = new SaveMetaCreateInfo
+                    var metaInfo = new SaveDataMetaInfo
                     {
                         Type = SaveDataMetaType.Thumbnail,
                         Size = 0x40060
                     };
 
-                    return fsProxy.CreateSaveDataFileSystem(ref attribute, ref createInfo, ref metaInfo);
+                    return fsProxy.CreateSaveDataFileSystem(in attribute, in createInfo, in metaInfo);
                 },
                 () =>
                     $", applicationid: 0x{applicationId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:X8}");
@@ -61,14 +62,14 @@ namespace LibHac.Fs.Shim
                         SpaceId = SaveDataSpaceId.User
                     };
 
-                    var metaInfo = new SaveMetaCreateInfo
+                    var metaInfo = new SaveDataMetaInfo
                     {
                         Type = SaveDataMetaType.Thumbnail,
                         Size = 0x40060
                     };
 
-                    return fsProxy.CreateSaveDataFileSystemWithHashSalt(ref attribute, ref createInfo, ref metaInfo,
-                        ref hashSalt);
+                    return fsProxy.CreateSaveDataFileSystemWithHashSalt(in attribute, in createInfo, in metaInfo,
+                        in hashSalt);
                 },
                 () =>
                     $", applicationid: 0x{applicationId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:X8}");
@@ -81,7 +82,7 @@ namespace LibHac.Fs.Shim
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                    var attribute = new SaveDataAttribute(applicationId, SaveDataType.Bcat, UserId.Zero, 0);
+                    var attribute = new SaveDataAttribute(applicationId, SaveDataType.Bcat, UserId.InvalidId, 0);
 
                     var createInfo = new SaveDataCreationInfo
                     {
@@ -93,9 +94,9 @@ namespace LibHac.Fs.Shim
                         SpaceId = SaveDataSpaceId.User
                     };
 
-                    var metaInfo = new SaveMetaCreateInfo();
+                    var metaInfo = new SaveDataMetaInfo();
 
-                    return fsProxy.CreateSaveDataFileSystem(ref attribute, ref createInfo, ref metaInfo);
+                    return fsProxy.CreateSaveDataFileSystem(in attribute, in createInfo, in metaInfo);
                 },
                 () => $", applicationid: 0x{applicationId.Value:X}, save_data_size: {size}");
         }
@@ -108,7 +109,7 @@ namespace LibHac.Fs.Shim
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                    var attribute = new SaveDataAttribute(applicationId, SaveDataType.Device, UserId.Zero, 0);
+                    var attribute = new SaveDataAttribute(applicationId, SaveDataType.Device, UserId.InvalidId, 0);
 
                     var createInfo = new SaveDataCreationInfo
                     {
@@ -120,9 +121,9 @@ namespace LibHac.Fs.Shim
                         SpaceId = SaveDataSpaceId.User
                     };
 
-                    var metaInfo = new SaveMetaCreateInfo();
+                    var metaInfo = new SaveDataMetaInfo();
 
-                    return fsProxy.CreateSaveDataFileSystem(ref attribute, ref createInfo, ref metaInfo);
+                    return fsProxy.CreateSaveDataFileSystem(in attribute, in createInfo, in metaInfo);
                 },
                 () => $", applicationid: 0x{applicationId.Value:X}, save_data_owner_id: 0x{ownerId:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:X8}");
         }
@@ -134,7 +135,7 @@ namespace LibHac.Fs.Shim
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                    var attribute = new SaveDataAttribute(applicationId, SaveDataType.Temporary, UserId.Zero, 0);
+                    var attribute = new SaveDataAttribute(applicationId, SaveDataType.Temporary, UserId.InvalidId, 0);
 
                     var createInfo = new SaveDataCreationInfo
                     {
@@ -145,22 +146,22 @@ namespace LibHac.Fs.Shim
                         SpaceId = SaveDataSpaceId.Temporary
                     };
 
-                    var metaInfo = new SaveMetaCreateInfo();
+                    var metaInfo = new SaveDataMetaInfo();
 
-                    return fsProxy.CreateSaveDataFileSystem(ref attribute, ref createInfo, ref metaInfo);
+                    return fsProxy.CreateSaveDataFileSystem(in attribute, in createInfo, in metaInfo);
                 },
                 () => $", applicationid: 0x{applicationId.Value:X}, save_data_owner_id: 0x{ownerId:X}, save_data_size: {size}, save_data_flags: 0x{(int)flags:X8}");
         }
 
         public static Result CreateCacheStorage(this FileSystemClient fs, Ncm.ApplicationId applicationId,
-            SaveDataSpaceId spaceId, ulong ownerId, short index, long size, long journalSize, SaveDataFlags flags)
+            SaveDataSpaceId spaceId, ulong ownerId, ushort index, long size, long journalSize, SaveDataFlags flags)
         {
             return fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                    var attribute = new SaveDataAttribute(applicationId, SaveDataType.Cache, UserId.Zero, 0, index);
+                    var attribute = new SaveDataAttribute(applicationId, SaveDataType.Cache, UserId.InvalidId, 0, index);
 
                     var creationInfo = new SaveDataCreationInfo
                     {
@@ -172,9 +173,9 @@ namespace LibHac.Fs.Shim
                         SpaceId = spaceId
                     };
 
-                    var metaInfo = new SaveMetaCreateInfo();
+                    var metaInfo = new SaveDataMetaInfo();
 
-                    return fsProxy.CreateSaveDataFileSystem(ref attribute, ref creationInfo, ref metaInfo);
+                    return fsProxy.CreateSaveDataFileSystem(in attribute, in creationInfo, in metaInfo);
                 },
                 () => $", applicationid: 0x{applicationId.Value:X}, savedataspaceid: {spaceId}, save_data_owner_id: 0x{ownerId:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:X8}");
         }
@@ -231,19 +232,19 @@ namespace LibHac.Fs.Shim
         public static Result CreateSystemSaveData(this FileSystemClient fs, ulong saveDataId, ulong ownerId, long size,
             long journalSize, SaveDataFlags flags)
         {
-            return CreateSystemSaveData(fs, SaveDataSpaceId.System, saveDataId, UserId.Zero, ownerId, size, journalSize, flags);
+            return CreateSystemSaveData(fs, SaveDataSpaceId.System, saveDataId, UserId.InvalidId, ownerId, size, journalSize, flags);
         }
 
         public static Result CreateSystemSaveData(this FileSystemClient fs, ulong saveDataId, long size,
             long journalSize, SaveDataFlags flags)
         {
-            return CreateSystemSaveData(fs, SaveDataSpaceId.System, saveDataId, UserId.Zero, 0, size, journalSize, flags);
+            return CreateSystemSaveData(fs, SaveDataSpaceId.System, saveDataId, UserId.InvalidId, 0, size, journalSize, flags);
         }
 
         public static Result CreateSystemSaveData(this FileSystemClient fs, SaveDataSpaceId spaceId, ulong saveDataId,
             ulong ownerId, long size, long journalSize, SaveDataFlags flags)
         {
-            return CreateSystemSaveData(fs, spaceId, saveDataId, UserId.Zero, ownerId, size, journalSize, flags);
+            return CreateSystemSaveData(fs, spaceId, saveDataId, UserId.InvalidId, ownerId, size, journalSize, flags);
         }
 
         public static Result DeleteSaveData(this FileSystemClient fs, ulong saveDataId)
@@ -283,8 +284,8 @@ namespace LibHac.Fs.Shim
 
                     tempInfo = new SaveDataInfo();
 
-                    Result rc = fsProxy.FindSaveDataWithFilter(out long count, SpanHelpers.AsByteSpan(ref tempInfo),
-                        spaceId, ref tempFilter);
+                    Result rc = fsProxy.FindSaveDataWithFilter(out long count, OutBuffer.FromStruct(ref tempInfo),
+                        spaceId, in tempFilter);
                     if (rc.IsFailure()) return rc;
 
                     if (count == 0)
@@ -329,49 +330,64 @@ namespace LibHac.Fs.Shim
         {
             var tempIterator = new SaveDataIterator();
 
-            Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
-                () =>
-                {
-                    IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            try
+            {
+                Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
+                    () =>
+                    {
+                        IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                    Result rc = fsProxy.OpenSaveDataInfoReaderBySaveDataSpaceId(
-                        out ReferenceCountedDisposable<ISaveDataInfoReader> reader, spaceId);
-                    if (rc.IsFailure()) return rc;
+                        Result rc = fsProxy.OpenSaveDataInfoReaderBySaveDataSpaceId(
+                            out ReferenceCountedDisposable<ISaveDataInfoReader> reader, spaceId);
+                        if (rc.IsFailure()) return rc;
 
-                    tempIterator = new SaveDataIterator(fs, reader);
+                        tempIterator = new SaveDataIterator(fs, reader);
 
-                    return Result.Success;
-                },
-                () => $", savedataspaceid: {spaceId}");
+                        return Result.Success;
+                    },
+                    () => $", savedataspaceid: {spaceId}");
 
-            iterator = result.IsSuccess() ? tempIterator : default;
+                iterator = result.IsSuccess() ? tempIterator : default;
+                tempIterator = default;
 
-            return result;
+                return result;
+            }
+            finally
+            {
+                tempIterator.Dispose();
+            }
         }
 
         public static Result OpenSaveDataIterator(this FileSystemClient fs, out SaveDataIterator iterator, SaveDataSpaceId spaceId, ref SaveDataFilter filter)
         {
+            ReferenceCountedDisposable<ISaveDataInfoReader> reader = null;
             var tempIterator = new SaveDataIterator();
             SaveDataFilter tempFilter = filter;
 
-            Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
-                () =>
-                {
-                    IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            try
+            {
+                Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
+                    () =>
+                    {
+                        IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                    Result rc = fsProxy.OpenSaveDataInfoReaderWithFilter(
-                        out ReferenceCountedDisposable<ISaveDataInfoReader> reader, spaceId, ref tempFilter);
-                    if (rc.IsFailure()) return rc;
+                        Result rc = fsProxy.OpenSaveDataInfoReaderWithFilter(out reader, spaceId, in tempFilter);
+                        if (rc.IsFailure()) return rc;
 
-                    tempIterator = new SaveDataIterator(fs, reader);
+                        tempIterator = new SaveDataIterator(fs, reader);
 
-                    return Result.Success;
-                },
-                () => $", savedataspaceid: {spaceId}");
+                        return Result.Success;
+                    },
+                    () => $", savedataspaceid: {spaceId}");
 
-            iterator = result.IsSuccess() ? tempIterator : default;
+                iterator = result.IsSuccess() ? tempIterator : default;
 
-            return result;
+                return result;
+            }
+            finally
+            {
+                reader?.Dispose();
+            }
         }
 
         public static void DisableAutoSaveDataCreation(this FileSystemClient fsClient)
@@ -395,14 +411,14 @@ namespace LibHac.Fs.Shim
         internal SaveDataIterator(FileSystemClient fsClient, ReferenceCountedDisposable<ISaveDataInfoReader> reader)
         {
             FsClient = fsClient;
-            Reader = reader;
+            Reader = reader.AddReference();
         }
 
         public Result ReadSaveDataInfo(out long readCount, Span<SaveDataInfo> buffer)
         {
             Result rc;
 
-            Span<byte> byteBuffer = MemoryMarshal.Cast<SaveDataInfo, byte>(buffer);
+            var byteBuffer = new OutBuffer(MemoryMarshal.Cast<SaveDataInfo, byte>(buffer));
 
             if (FsClient.IsEnabledAccessLog(AccessLogTarget.System))
             {

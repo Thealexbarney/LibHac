@@ -47,7 +47,7 @@ namespace LibHac.FsSrv
 
         public static Result VerifyHostPath(U8Span path)
         {
-            if(path.IsEmpty())
+            if (path.IsEmpty())
                 return Result.Success;
 
             if (path[0] != StringTraits.DirectorySeparator)
@@ -55,7 +55,7 @@ namespace LibHac.FsSrv
 
             U8Span path2 = path.Slice(1);
 
-            if(path2.IsEmpty())
+            if (path2.IsEmpty())
                 return Result.Success;
 
             int skipLength = PathUtility.GetWindowsPathSkipLength(path2);

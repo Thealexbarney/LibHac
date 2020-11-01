@@ -60,7 +60,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
 
             Assert.Equal(1, entriesRead);
             Assert.Equal(applicationId, info[0].ProgramId);
-            Assert.Equal(UserId.Zero, info[0].UserId);
+            Assert.Equal(UserId.InvalidId, info[0].UserId);
             Assert.Equal(SaveDataType.Device, info[0].Type);
         }
 
@@ -86,7 +86,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
 
             Assert.Equal(1, entriesRead);
             Assert.Equal(applicationId, info[0].ProgramId);
-            Assert.Equal(UserId.Zero, info[0].UserId);
+            Assert.Equal(UserId.InvalidId, info[0].UserId);
             Assert.Equal(SaveDataType.Bcat, info[0].Type);
         }
 
@@ -112,7 +112,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
 
             Assert.Equal(1, entriesRead);
             Assert.Equal(applicationId, info[0].ProgramId);
-            Assert.Equal(UserId.Zero, info[0].UserId);
+            Assert.Equal(UserId.InvalidId, info[0].UserId);
             Assert.Equal(SaveDataType.Temporary, info[0].Type);
         }
 

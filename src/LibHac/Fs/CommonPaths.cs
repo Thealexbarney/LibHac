@@ -1,8 +1,9 @@
-﻿using LibHac.Common;
+﻿using System;
+using LibHac.Common;
 
 namespace LibHac.Fs
 {
-    internal static class CommonMountNames
+    internal static class CommonPaths
     {
         public const char ReservedMountNamePrefixCharacter = '@';
 
@@ -21,5 +22,11 @@ namespace LibHac.Fs
         public const char GameCardFileSystemMountNameUpdateSuffix = 'U';
         public const char GameCardFileSystemMountNameNormalSuffix = 'N';
         public const char GameCardFileSystemMountNameSecureSuffix = 'S';
+
+        public static ReadOnlySpan<byte> SdCardNintendoRootDirectoryName => // Nintendo
+            new[]
+            {
+                (byte) 'N', (byte) 'i', (byte) 'n', (byte) 't', (byte) 'e', (byte) 'n', (byte) 'd', (byte) 'o'
+            };
     }
 }

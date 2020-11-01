@@ -423,6 +423,8 @@ namespace LibHac.Fs
 
             /// <summary>Error code: 2002-6300; Range: 6300-6399; Inner value: 0x313802</summary>
             public static Result.Base UnsupportedOperation { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6300, 6399); }
+                /// <summary>Error code: 2002-6301; Inner value: 0x313a02</summary>
+                public static Result.Base UnsupportedCommitTarget => new Result.Base(ModuleFs, 6301);
                 /// <summary>Attempted to resize a non-resizable SubStorage.<br/>Error code: 2002-6302; Inner value: 0x313c02</summary>
                 public static Result.Base UnsupportedOperationInSubStorageSetSize => new Result.Base(ModuleFs, 6302);
                 /// <summary>Attempted to resize a SubStorage that wasn't located at the end of the base storage.<br/>Error code: 2002-6303; Inner value: 0x313e02</summary>
@@ -481,14 +483,24 @@ namespace LibHac.Fs
             public static Result.Base ExternalKeyAlreadyRegistered => new Result.Base(ModuleFs, 6452);
             /// <summary>Error code: 2002-6454; Inner value: 0x326c02</summary>
             public static Result.Base WriteStateUnflushed => new Result.Base(ModuleFs, 6454);
+            /// <summary>Error code: 2002-6456; Inner value: 0x327002</summary>
+            public static Result.Base DirectoryNotClosed => new Result.Base(ModuleFs, 6456);
             /// <summary>Error code: 2002-6457; Inner value: 0x327202</summary>
             public static Result.Base WriteModeFileNotClosed => new Result.Base(ModuleFs, 6457);
+            /// <summary>Error code: 2002-6458; Inner value: 0x327402</summary>
+            public static Result.Base AllocatorAlreadyRegistered => new Result.Base(ModuleFs, 6458);
+            /// <summary>Error code: 2002-6459; Inner value: 0x327602</summary>
+            public static Result.Base DefaultAllocatorUsed => new Result.Base(ModuleFs, 6459);
             /// <summary>Error code: 2002-6461; Inner value: 0x327a02</summary>
             public static Result.Base AllocatorAlignmentViolation => new Result.Base(ModuleFs, 6461);
             /// <summary>The provided file system has already been added to the multi-commit manager.<br/>Error code: 2002-6463; Inner value: 0x327e02</summary>
             public static Result.Base MultiCommitFileSystemAlreadyAdded => new Result.Base(ModuleFs, 6463);
             /// <summary>Error code: 2002-6465; Inner value: 0x328202</summary>
             public static Result.Base UserNotExist => new Result.Base(ModuleFs, 6465);
+            /// <summary>Error code: 2002-6466; Inner value: 0x328402</summary>
+            public static Result.Base DefaultGlobalFileDataCacheEnabled => new Result.Base(ModuleFs, 6466);
+            /// <summary>Error code: 2002-6467; Inner value: 0x328602</summary>
+            public static Result.Base SaveDataRootPathUnavailable => new Result.Base(ModuleFs, 6467);
 
         /// <summary>Error code: 2002-6600; Range: 6600-6699; Inner value: 0x339002</summary>
         public static Result.Base EntryNotFound { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6600, 6699); }

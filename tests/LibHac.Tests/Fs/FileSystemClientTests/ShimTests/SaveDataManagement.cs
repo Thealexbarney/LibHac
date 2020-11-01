@@ -80,8 +80,8 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
             Assert.Equal(applicationId, info[0].ProgramId);
             Assert.Equal(applicationId, info[1].ProgramId);
 
-            var expectedIndexes = new short[] { 0, 1 };
-            short[] actualIndexes = info.Take(2).Select(x => x.Index).OrderBy(x => x).ToArray();
+            var expectedIndexes = new ushort[] { 0, 1 };
+            ushort[] actualIndexes = info.Take(2).Select(x => x.Index).OrderBy(x => x).ToArray();
 
             Assert.Equal(expectedIndexes, actualIndexes);
         }
@@ -294,7 +294,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
                 for (int i = 1; i <= count; i++)
                 {
                     var applicationId = new Ncm.ApplicationId((uint)i);
-                    Result rc = fs.CreateSaveData(applicationId, UserId.Zero, 0, 0x4000, 0x4000, SaveDataFlags.None);
+                    Result rc = fs.CreateSaveData(applicationId, UserId.InvalidId, 0, 0x4000, 0x4000, SaveDataFlags.None);
                     if (rc.IsFailure()) return rc;
                 }
             }
@@ -305,7 +305,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
                 for (int i = 1; i <= count; i++)
                 {
                     var applicationId = new Ncm.ApplicationId((uint)rng.Next());
-                    Result rc = fs.CreateSaveData(applicationId, UserId.Zero, 0, 0x4000, 0x4000, SaveDataFlags.None);
+                    Result rc = fs.CreateSaveData(applicationId, UserId.InvalidId, 0, 0x4000, 0x4000, SaveDataFlags.None);
                     if (rc.IsFailure()) return rc;
                 }
             }

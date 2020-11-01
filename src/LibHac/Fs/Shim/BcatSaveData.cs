@@ -1,7 +1,8 @@
 ﻿using System;
 using LibHac.Common;
-using LibHac.Fs.Fsa;
+using LibHac.Fs.Impl;
 using LibHac.FsSrv;
+using LibHac.FsSrv.Sf;
 
 namespace LibHac.Fs.Shim
 {
@@ -43,12 +44,23 @@ namespace LibHac.Fs.Shim
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            var attribute = new SaveDataAttribute(applicationId, SaveDataType.Bcat, UserId.Zero, 0);
+            var attribute = new SaveDataAttribute(applicationId, SaveDataType.Bcat, UserId.InvalidId, 0);
 
-            rc = fsProxy.OpenSaveDataFileSystem(out IFileSystem fileSystem, SaveDataSpaceId.User, ref attribute);
-            if (rc.IsFailure()) return rc;
+            ReferenceCountedDisposable<IFileSystemSf> saveFs = null;
 
-            return fs.Register(mountName, fileSystem);
+            try
+            {
+                rc = fsProxy.OpenSaveDataFileSystem(out saveFs, SaveDataSpaceId.User, in attribute);
+                if (rc.IsFailure()) return rc;
+
+                var fileSystemAdapter = new FileSystemServiceObjectAdapter(saveFs);
+
+                return fs.Register(mountName, fileSystemAdapter);
+            }
+            finally
+            {
+                saveFs?.Dispose();
+            }
         }
     }
 }

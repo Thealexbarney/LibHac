@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using LibHac.Fs;
 using LibHac.Ncm;
+using LibHac.Util;
 
 namespace LibHac.FsSrv
 {
@@ -50,7 +51,7 @@ namespace LibHac.FsSrv
         /// <param name="programId">The program ID of the map info to get.</param>
         /// <returns>If the program ID was found, the <see cref="ProgramIndexMapInfo"/> associated
         /// with that ID; otherwise, <see langword="null"/>.</returns>
-        public ProgramIndexMapInfo? Get(ProgramId programId)
+        public Optional<ProgramIndexMapInfo> Get(ProgramId programId)
         {
             lock (MapEntries)
             {
@@ -70,12 +71,13 @@ namespace LibHac.FsSrv
         {
             lock (MapEntries)
             {
-                ProgramIndexMapInfo? mainProgramMapInfo = GetImpl((in ProgramIndexMapInfo x) => x.ProgramId == programId);
+                Optional<ProgramIndexMapInfo> mainProgramMapInfo =
+                    GetImpl((in ProgramIndexMapInfo x) => x.ProgramId == programId);
 
                 if(!mainProgramMapInfo.HasValue)
                     return ProgramId.InvalidId;
 
-                ProgramIndexMapInfo? requestedMapInfo = GetImpl((in ProgramIndexMapInfo x) =>
+                Optional<ProgramIndexMapInfo> requestedMapInfo = GetImpl((in ProgramIndexMapInfo x) =>
                     x.MainProgramId == mainProgramMapInfo.Value.MainProgramId && x.ProgramIndex == programIndex);
 
                 if (!requestedMapInfo.HasValue)
@@ -99,17 +101,17 @@ namespace LibHac.FsSrv
 
         private delegate bool EntrySelector(in ProgramIndexMapInfo candidate);
 
-        private ProgramIndexMapInfo? GetImpl(EntrySelector selector)
+        private Optional<ProgramIndexMapInfo> GetImpl(EntrySelector selector)
         {
             foreach (ProgramIndexMapInfo entry in MapEntries)
             {
                 if (selector(in entry))
                 {
-                    return entry;
+                    return new Optional<ProgramIndexMapInfo>(entry);
                 }
             }
 
-            return null;
+            return new Optional<ProgramIndexMapInfo>();
         }
 
         private void ClearImpl()

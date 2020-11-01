@@ -830,6 +830,7 @@ namespace LibHac.FsSrv.Impl
         RegisterProgramIndexMapInfo,
         ChallengeCardExistence,
         CreateOwnSaveData,
+        DeleteOwnSaveData,
         ReadOwnSaveDataFileSystemExtraData,
         ExtendOwnSaveData,
         OpenOwnSaveDataTransferProhibiter,

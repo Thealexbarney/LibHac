@@ -12,7 +12,7 @@ namespace LibHac.FsSrv.Impl
     {
         public static Result EnsureDirectory(IFileSystem fileSystem, U8Span path)
         {
-            FsPath.FromSpan(out FsPath pathBuffer, ReadOnlySpan<byte>.Empty).IgnoreResult();
+            FsPath.FromSpan(out FsPath pathBuffer, path.Value).IgnoreResult();
 
             int pathLength = StringUtils.GetLength(path);
 
@@ -36,7 +36,7 @@ namespace LibHac.FsSrv.Impl
         private static Result EnsureDirectoryImpl(IFileSystem fileSystem, Span<byte> path)
         {
             // Double check the trailing separators have been trimmed
-            Assert.AssertTrue(path.Length == 0 || path[path.Length - 1] != StringTraits.DirectorySeparator);
+            Assert.AssertTrue(path.Length <= 1 || path[path.Length - 1] != StringTraits.DirectorySeparator);
 
             // Use the root path if the input path is empty
             var pathToCheck = new U8Span(path.IsEmpty ? FileSystemRootPath : path);
@@ -99,8 +99,8 @@ namespace LibHac.FsSrv.Impl
                 return ResultFs.TooLongPath.Log();
 
             // Iterate until we run out of path or find the next separator
-            int length = path.Length;
-            while (length > 0 && path[length - 1] != StringTraits.DirectorySeparator)
+            int length = path.Length - 1;
+            while (length > 0 && path[length] != StringTraits.DirectorySeparator)
             {
                 length--;
             }
@@ -112,25 +112,22 @@ namespace LibHac.FsSrv.Impl
             }
 
             // We found the length of the parent directory. Ensure it exists
-            path[length - 1] = StringTraits.NullTerminator;
+            path[length] = StringTraits.NullTerminator;
             Result rc = EnsureDirectoryImpl(fileSystem, path.Slice(0, length));
             if (rc.IsFailure()) return rc;
 
             // Restore the separator
-            path[length - 1] = StringTraits.DirectorySeparator;
+            path[length] = StringTraits.DirectorySeparator;
             return Result.Success;
         }
 
         public static Result CreateSubDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystem> subDirFileSystem,
-            ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span path, bool preserveUnc = false)
+            ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span subPath, bool preserveUnc = false)
         {
             subDirFileSystem = default;
 
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
             // Check if the directory exists
-            Result rc = baseFileSystem.Target.OpenDirectory(out IDirectory dir, path, OpenDirectoryMode.Directory);
+            Result rc = baseFileSystem.Target.OpenDirectory(out IDirectory dir, subPath, OpenDirectoryMode.Directory);
             if (rc.IsFailure()) return rc;
 
             dir.Dispose();
@@ -138,7 +135,7 @@ namespace LibHac.FsSrv.Impl
             var fs = new SubdirectoryFileSystem(baseFileSystem, preserveUnc);
             using (var subDirFs = new ReferenceCountedDisposable<SubdirectoryFileSystem>(fs))
             {
-                rc = subDirFs.Target.Initialize(path);
+                rc = subDirFs.Target.Initialize(subPath);
                 if (rc.IsFailure()) return rc;
 
                 subDirFileSystem = subDirFs.AddReference<IFileSystem>();

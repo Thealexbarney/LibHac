@@ -38,6 +38,31 @@ namespace LibHac.Fs.Fsa
         }
 
         /// <summary>
+        /// Creates or overwrites a file at the specified path.
+        /// </summary>
+        /// <param name="path">The full path of the file to create.</param>
+        /// <param name="size">The initial size of the created file.
+        /// Should usually be <see cref="CreateFileOptions.None"/></param>
+        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
+        /// <remarks>
+        /// The following <see cref="Result"/> codes may be returned under certain conditions:
+        /// 
+        /// The parent directory of the specified path does not exist: <see cref="ResultFs.PathNotFound"/>
+        /// Specified path already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
+        /// Insufficient free space to create the file: <see cref="ResultFs.InsufficientFreeSpace"/>
+        /// </remarks>
+        public Result CreateFile(U8Span path, long size)
+        {
+            if (path.IsNull())
+                return ResultFs.NullptrArgument.Log();
+
+            if (size < 0)
+                return ResultFs.OutOfRange.Log();
+
+            return DoCreateFile(path, size, CreateFileOptions.None);
+        }
+
+        /// <summary>
         /// Deletes the specified file.
         /// </summary>
         /// <param name="path">The full path of the file to delete.</param>

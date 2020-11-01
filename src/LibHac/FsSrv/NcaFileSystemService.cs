@@ -30,8 +30,8 @@ namespace LibHac.FsSrv
             RomMountCountSemaphore = new SemaphoreAdaptor(RomSemaphoreCount, RomSemaphoreCount);
         }
 
-        public static ReferenceCountedDisposable<NcaFileSystemService> Create(NcaFileSystemServiceImpl serviceImpl,
-            ulong processId)
+        public static ReferenceCountedDisposable<NcaFileSystemService> CreateShared(
+            NcaFileSystemServiceImpl serviceImpl, ulong processId)
         {
             // Create the service
             var ncaService = new NcaFileSystemService(serviceImpl, processId);
@@ -140,7 +140,7 @@ namespace LibHac.FsSrv
                 if (rc.IsFailure()) return rc;
 
                 // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateSharedSfFileSystem(ref fs);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs);
 
                 return Result.Success;
             }
@@ -212,7 +212,7 @@ namespace LibHac.FsSrv
                 if (rc.IsFailure()) return rc;
 
                 // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateSharedSfFileSystem(ref fs);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs);
 
                 return Result.Success;
             }
@@ -341,10 +341,10 @@ namespace LibHac.FsSrv
 
         private bool IsHostFs(U8Span path)
         {
-            int hostMountLength = StringUtils.GetLength(CommonMountNames.HostRootFileSystemMountName,
+            int hostMountLength = StringUtils.GetLength(CommonPaths.HostRootFileSystemMountName,
                 PathTools.MountNameLengthMax);
 
-            return StringUtils.Compare(path, CommonMountNames.HostRootFileSystemMountName, hostMountLength) == 0;
+            return StringUtils.Compare(path, CommonPaths.HostRootFileSystemMountName, hostMountLength) == 0;
         }
 
         public void Dispose()

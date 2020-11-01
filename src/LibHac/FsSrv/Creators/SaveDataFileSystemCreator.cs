@@ -22,9 +22,10 @@ namespace LibHac.FsSrv.Creators
             throw new NotImplementedException();
         }
 
-        public Result Create(out IFileSystem fileSystem, out ISaveDataExtraDataAccessor extraDataAccessor,
-            IFileSystem sourceFileSystem, ulong saveDataId, bool allowDirectorySaveData, bool useDeviceUniqueMac,
-            SaveDataType type, ITimeStampGenerator timeStampGenerator)
+        public Result Create(out IFileSystem fileSystem,
+            out ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor, IFileSystem sourceFileSystem,
+            ulong saveDataId, bool allowDirectorySaveData, bool useDeviceUniqueMac, SaveDataType type,
+            ITimeStampGenerator timeStampGenerator)
         {
             fileSystem = default;
             extraDataAccessor = default;
@@ -42,13 +43,15 @@ namespace LibHac.FsSrv.Creators
                 case DirectoryEntryType.Directory:
                     if (!allowDirectorySaveData) return ResultFs.InvalidSaveDataEntryType.Log();
 
-                    rc = SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem subDirFs, sourceFileSystem, saveDataPath);
+                    rc = SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem subDirFs, sourceFileSystem,
+                        saveDataPath);
                     if (rc.IsFailure()) return rc;
 
                     bool isPersistentSaveData = type != SaveDataType.Temporary;
                     bool isUserSaveData = type == SaveDataType.Account || type == SaveDataType.Device;
 
-                    rc = DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, subDirFs, isPersistentSaveData, isUserSaveData);
+                    rc = DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, subDirFs,
+                        isPersistentSaveData, isUserSaveData);
                     if (rc.IsFailure()) return rc;
 
                     fileSystem = saveFs;
@@ -62,7 +65,8 @@ namespace LibHac.FsSrv.Creators
                     if (rc.IsFailure()) return rc;
 
                     var saveDataStorage = new DisposingFileStorage(saveDataFile);
-                    fileSystem = new SaveDataFileSystem(KeySet, saveDataStorage, IntegrityCheckLevel.ErrorOnInvalid, false);
+                    fileSystem = new SaveDataFileSystem(KeySet, saveDataStorage, IntegrityCheckLevel.ErrorOnInvalid,
+                        false);
 
                     // Todo: ISaveDataExtraDataAccessor
 

@@ -8,7 +8,9 @@ using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Shim;
+using LibHac.FsSrv.Sf;
 using LibHac.Kvdb;
+using LibHac.Sf;
 
 namespace LibHac.FsSrv
 {
@@ -504,7 +506,7 @@ namespace LibHac.FsSrv
             }
         }
 
-        public Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader)
+        public Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<SaveDataInfoReaderImpl> infoReader)
         {
             infoReader = default;
 
@@ -522,7 +524,7 @@ namespace LibHac.FsSrv
                     rc = RegisterReader(reader);
                     if (rc.IsFailure()) return rc;
 
-                    infoReader = reader.AddReference<ISaveDataInfoReader>();
+                    infoReader = reader.AddReference<SaveDataInfoReaderImpl>();
                     return Result.Success;
                 }
             }
@@ -802,7 +804,7 @@ namespace LibHac.FsSrv
             }
         }
 
-        private class Reader : ISaveDataInfoReader
+        private class Reader : SaveDataInfoReaderImpl, ISaveDataInfoReader
         {
             private readonly SaveDataIndexer _indexer;
             private FlatMapKeyValueStore<SaveDataAttribute>.Iterator _iterator;
@@ -816,7 +818,7 @@ namespace LibHac.FsSrv
                 _iterator = indexer.GetBeginIterator();
             }
 
-            public Result Read(out long readCount, Span<byte> saveDataInfoBuffer)
+            public Result Read(out long readCount, OutBuffer saveDataInfoBuffer)
             {
                 Unsafe.SkipInit(out readCount);
 
@@ -828,7 +830,7 @@ namespace LibHac.FsSrv
                         return ResultFs.InvalidSaveDataInfoReader.Log();
                     }
 
-                    Span<SaveDataInfo> outInfo = MemoryMarshal.Cast<byte, SaveDataInfo>(saveDataInfoBuffer);
+                    Span<SaveDataInfo> outInfo = MemoryMarshal.Cast<byte, SaveDataInfo>(saveDataInfoBuffer.Buffer);
 
                     int i;
                     for (i = 0; !_iterator.IsEnd() && i < outInfo.Length; i++)

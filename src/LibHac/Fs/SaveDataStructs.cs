@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Ncm;
+using LibHac.Util;
 
 namespace LibHac.Fs
 {
@@ -13,17 +15,17 @@ namespace LibHac.Fs
         [FieldOffset(0x18)] public ulong StaticSaveDataId;
         [FieldOffset(0x20)] public SaveDataType Type;
         [FieldOffset(0x21)] public SaveDataRank Rank;
-        [FieldOffset(0x22)] public short Index;
+        [FieldOffset(0x22)] public ushort Index;
 
         public SaveDataAttribute(ProgramId programId, SaveDataType type, UserId userId, ulong saveDataId) : this(
             programId, type, userId, saveDataId, 0, SaveDataRank.Primary)
         { }
 
         public SaveDataAttribute(ProgramId programId, SaveDataType type, UserId userId, ulong saveDataId,
-            short index) : this(programId, type, userId, saveDataId, index, SaveDataRank.Primary)
+            ushort index) : this(programId, type, userId, saveDataId, index, SaveDataRank.Primary)
         { }
 
-        public SaveDataAttribute(ProgramId programId, SaveDataType type, UserId userId, ulong saveDataId, short index,
+        public SaveDataAttribute(ProgramId programId, SaveDataType type, UserId userId, ulong saveDataId, ushort index,
             SaveDataRank rank)
         {
             ProgramId = programId;
@@ -32,6 +34,38 @@ namespace LibHac.Fs
             StaticSaveDataId = saveDataId;
             Index = index;
             Rank = rank;
+        }
+
+        public static Result Make(out SaveDataAttribute attribute, ProgramId programId, SaveDataType type,
+            UserId userId, ulong staticSaveDataId)
+        {
+            return Make(out attribute, programId, type, userId, staticSaveDataId, 0, SaveDataRank.Primary);
+        }
+
+        public static Result Make(out SaveDataAttribute attribute, ProgramId programId, SaveDataType type,
+            UserId userId, ulong staticSaveDataId, ushort index)
+        {
+            return Make(out attribute, programId, type, userId, staticSaveDataId, index, SaveDataRank.Primary);
+        }
+
+        public static Result Make(out SaveDataAttribute attribute, ProgramId programId, SaveDataType type,
+            UserId userId, ulong staticSaveDataId, ushort index, SaveDataRank rank)
+        {
+            Unsafe.SkipInit(out attribute);
+            SaveDataAttribute tempAttribute = default;
+
+            tempAttribute.ProgramId = programId;
+            tempAttribute.Type = type;
+            tempAttribute.UserId = userId;
+            tempAttribute.StaticSaveDataId = staticSaveDataId;
+            tempAttribute.Index = index;
+            tempAttribute.Rank = rank;
+
+            if (!SaveDataTypesValidity.IsValid(in tempAttribute))
+                return ResultFs.InvalidArgument.Log();
+
+            attribute = tempAttribute;
+            return Result.Success;
         }
 
         public override readonly bool Equals(object obj)
@@ -85,40 +119,96 @@ namespace LibHac.Fs
         [FieldOffset(0x04)] public bool FilterByIndex;
         [FieldOffset(0x05)] public SaveDataRank Rank;
 
-        [FieldOffset(0x08)] public ProgramId ProgramId;
-        [FieldOffset(0x10)] public UserId UserId;
-        [FieldOffset(0x20)] public ulong SaveDataId;
-        [FieldOffset(0x28)] public SaveDataType SaveDataType;
-        [FieldOffset(0x2A)] public short Index;
+        [FieldOffset(0x08)] public SaveDataAttribute Attribute;
 
         public void SetProgramId(ProgramId value)
         {
             FilterByProgramId = true;
-            ProgramId = value;
+            Attribute.ProgramId = value;
         }
 
         public void SetSaveDataType(SaveDataType value)
         {
             FilterBySaveDataType = true;
-            SaveDataType = value;
+            Attribute.Type = value;
         }
 
         public void SetUserId(UserId value)
         {
             FilterByUserId = true;
-            UserId = value;
+            Attribute.UserId = value;
         }
 
         public void SetSaveDataId(ulong value)
         {
             FilterBySaveDataId = true;
-            SaveDataId = value;
+            Attribute.StaticSaveDataId = value;
         }
 
-        public void SetIndex(short value)
+        public void SetIndex(ushort value)
         {
             FilterByIndex = true;
-            Index = value;
+            Attribute.Index = value;
+        }
+
+        public static Result Make(out SaveDataFilter filter, Optional<ulong> programId, Optional<SaveDataType> saveType,
+            Optional<UserId> userId, Optional<ulong> saveDataId, Optional<ushort> index)
+        {
+            return Make(out filter, programId, saveType, userId, saveDataId, index, SaveDataRank.Primary);
+        }
+
+        public static Result Make(out SaveDataFilter filter, Optional<ulong> programId, Optional<SaveDataType> saveType,
+            Optional<UserId> userId, Optional<ulong> saveDataId, Optional<ushort> index, SaveDataRank rank)
+        {
+            Unsafe.SkipInit(out filter);
+
+            SaveDataFilter tempFilter = Make(programId, saveType, userId, saveDataId, index, rank);
+
+            if (!SaveDataTypesValidity.IsValid(in tempFilter))
+                return ResultFs.InvalidArgument.Log();
+
+            filter = tempFilter;
+            return Result.Success;
+        }
+
+        public static SaveDataFilter Make(Optional<ulong> programId, Optional<SaveDataType> saveType,
+            Optional<UserId> userId, Optional<ulong> saveDataId, Optional<ushort> index, SaveDataRank rank)
+        {
+            var filter = new SaveDataFilter();
+
+            if (programId.HasValue)
+            {
+                filter.FilterByProgramId = true;
+                filter.Attribute.ProgramId = new ProgramId(programId.Value);
+            }
+
+            if (saveType.HasValue)
+            {
+                filter.FilterBySaveDataType = true;
+                filter.Attribute.Type = saveType.Value;
+            }
+
+            if (userId.HasValue)
+            {
+                filter.FilterByUserId = true;
+                filter.Attribute.UserId = userId.Value;
+            }
+
+            if (saveDataId.HasValue)
+            {
+                filter.FilterBySaveDataId = true;
+                filter.Attribute.StaticSaveDataId = saveDataId.Value;
+            }
+
+            if (index.HasValue)
+            {
+                filter.FilterByIndex = true;
+                filter.Attribute.Index = index.Value;
+            }
+
+            filter.Rank = rank;
+
+            return filter;
         }
     }
 
@@ -130,6 +220,7 @@ namespace LibHac.Fs
         [FieldOffset(0x00)] private byte _hashStart;
 
         public Span<byte> Hash => SpanHelpers.CreateSpan(ref _hashStart, HashLength);
+        public ReadOnlySpan<byte> HashRo => SpanHelpers.CreateReadOnlySpan(in _hashStart, HashLength);
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -140,7 +231,7 @@ namespace LibHac.Fs
     }
 
     [StructLayout(LayoutKind.Explicit, Size = 0x10)]
-    public struct SaveMetaCreateInfo
+    public struct SaveDataMetaInfo
     {
         [FieldOffset(0)] public int Size;
         [FieldOffset(4)] public SaveDataMetaType Type;
@@ -151,7 +242,7 @@ namespace LibHac.Fs
     {
         [FieldOffset(0x00)] public long Size;
         [FieldOffset(0x08)] public long JournalSize;
-        [FieldOffset(0x10)] public ulong BlockSize;
+        [FieldOffset(0x10)] public long BlockSize;
         [FieldOffset(0x18)] public ulong OwnerId;
         [FieldOffset(0x20)] public SaveDataFlags Flags;
         [FieldOffset(0x24)] public SaveDataSpaceId SpaceId;
@@ -168,8 +259,66 @@ namespace LibHac.Fs
         [FieldOffset(0x20)] public ulong StaticSaveDataId;
         [FieldOffset(0x28)] public ProgramId ProgramId;
         [FieldOffset(0x30)] public long Size;
-        [FieldOffset(0x38)] public short Index;
+        [FieldOffset(0x38)] public ushort Index;
         [FieldOffset(0x3A)] public SaveDataRank Rank;
         [FieldOffset(0x3B)] public SaveDataState State;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 0x200)]
+    public struct SaveDataExtraData
+    {
+        [FieldOffset(0x00)] public SaveDataAttribute Attribute;
+        [FieldOffset(0x40)] public ulong OwnerId;
+        [FieldOffset(0x48)] public ulong TimeStamp;
+        [FieldOffset(0x50)] public SaveDataFlags Flags;
+        [FieldOffset(0x58)] public long DataSize;
+        [FieldOffset(0x60)] public long JournalSize;
+        [FieldOffset(0x68)] public long CommitId;
+    }
+
+    internal static class SaveDataTypesValidity
+    {
+        public static bool IsValid(in SaveDataAttribute attribute)
+        {
+            return IsValid(in attribute.Type) && IsValid(in attribute.Rank);
+        }
+
+        public static bool IsValid(in SaveDataCreationInfo creationInfo)
+        {
+            return creationInfo.Size >= 0 && creationInfo.JournalSize >= 0 && creationInfo.BlockSize >= 0 &&
+                   IsValid(in creationInfo.SpaceId);
+        }
+
+        public static bool IsValid(in SaveDataMetaInfo metaInfo)
+        {
+            return IsValid(in metaInfo.Type);
+        }
+
+        public static bool IsValid(in SaveDataFilter filter)
+        {
+            return IsValid(in filter.Attribute);
+        }
+
+        public static bool IsValid(in SaveDataType type)
+        {
+            // SaveDataType.SystemBcat is excluded in this check
+            return (uint)type <= (uint)SaveDataType.Cache;
+        }
+
+        public static bool IsValid(in SaveDataRank rank)
+        {
+            return (uint)rank <= (uint)SaveDataRank.Secondary;
+        }
+
+        public static bool IsValid(in SaveDataSpaceId spaceId)
+        {
+            return (uint)spaceId <= (uint)SaveDataSpaceId.SdCache || spaceId == SaveDataSpaceId.ProperSystem ||
+                   spaceId == SaveDataSpaceId.SafeMode;
+        }
+
+        public static bool IsValid(in SaveDataMetaType metaType)
+        {
+            return (uint)metaType <= (uint)SaveDataMetaType.ExtensionContext;
+        }
     }
 }

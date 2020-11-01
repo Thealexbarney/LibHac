@@ -3,21 +3,23 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Fs;
 using LibHac.FsSrv.Impl;
+using LibHac.Sf;
+using LibHac.Util;
 
 namespace LibHac.FsSrv
 {
     /// <summary>
-    /// Used to perform operations on the Program Index Map.
+    /// Used to perform operations on the program index registry.
     /// </summary>
     /// <remarks>Appropriate methods calls on IFileSystemProxy are forwarded to this class
     /// which then checks the calling process' permissions and performs the requested operation.
     /// <br/>Based on FS 10.0.0 (nnSdk 10.4.0)</remarks>
-    internal readonly struct ProgramRegistryService
+    internal readonly struct ProgramIndexRegistryService
     {
         private ProgramRegistryServiceImpl ServiceImpl { get; }
         private ulong ProcessId { get; }
 
-        public ProgramRegistryService(ProgramRegistryServiceImpl serviceImpl, ulong processId)
+        public ProgramIndexRegistryService(ProgramRegistryServiceImpl serviceImpl, ulong processId)
         {
             ServiceImpl = serviceImpl;
             ProcessId = processId;
@@ -33,7 +35,7 @@ namespace LibHac.FsSrv
         /// <see cref="ResultFs.PermissionDenied"/>: Insufficient permissions.<br/>
         /// <see cref="ResultFs.InvalidSize"/>: The buffer was too small to hold the specified
         /// number of <see cref="ProgramIndexMapInfo"/> entries.</returns>
-        public Result RegisterProgramIndexMapInfo(ReadOnlySpan<byte> programIndexMapInfo, int programCount)
+        public Result RegisterProgramIndexMapInfo(InBuffer programIndexMapInfo, int programCount)
         {
             // Verify the caller's permissions
             Result rc = GetProgramInfo(out ProgramInfo programInfo, ProcessId);
@@ -49,7 +51,7 @@ namespace LibHac.FsSrv
 
             // Verify that the provided buffer is large enough to hold "programCount" entries
             ReadOnlySpan<ProgramIndexMapInfo>
-                mapInfo = MemoryMarshal.Cast<byte, ProgramIndexMapInfo>(programIndexMapInfo);
+                mapInfo = MemoryMarshal.Cast<byte, ProgramIndexMapInfo>(programIndexMapInfo.Buffer);
 
             if (mapInfo.Length < programCount)
                 return ResultFs.InvalidSize.Log();
@@ -69,7 +71,7 @@ namespace LibHac.FsSrv
         /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
         /// <see cref="ResultFs.TargetProgramNotFound"/>: The calling program was not found
         /// in the program registry. Something's wrong with Loader if this happens.</returns>
-        public Result GetProgramIndexForAccessLog(out int programIndex, out int programCount)
+        public Result GetProgramIndex(out int programIndex, out int programCount)
         {
             Unsafe.SkipInit(out programIndex);
             Unsafe.SkipInit(out programCount);
@@ -79,10 +81,10 @@ namespace LibHac.FsSrv
             if (rc.IsFailure()) return rc;
 
             // Try to get map info for this process
-            ProgramIndexMapInfo? mapInfo = ServiceImpl.GetProgramIndexMapInfo(programInfo.ProgramId);
+            Optional<ProgramIndexMapInfo> mapInfo = ServiceImpl.GetProgramIndexMapInfo(programInfo.ProgramId);
 
             // Set the output program index if map info was found
-            programIndex = mapInfo?.ProgramIndex ?? 0;
+            programIndex = mapInfo.HasValue ? mapInfo.ValueRo.ProgramIndex : 0;
 
             // Set the number of programs in the current application
             programCount = ServiceImpl.GetProgramIndexMapInfoCount();

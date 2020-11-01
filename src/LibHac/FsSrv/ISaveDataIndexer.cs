@@ -139,10 +139,10 @@ namespace LibHac.FsSrv
         int GetIndexCount();
 
         /// <summary>
-        /// Returns an <see cref="ISaveDataInfoReader"/> that iterates through the <see cref="SaveDataIndexer"/>.
+        /// Returns an <see cref="SaveDataInfoReaderImpl"/> that iterates through the <see cref="SaveDataIndexer"/>.
         /// </summary>
-        /// <param name="infoReader">If the method returns successfully, contains the created <see cref="ISaveDataInfoReader"/>.</param>
+        /// <param name="infoReader">If the method returns successfully, contains the created <see cref="SaveDataInfoReaderImpl"/>.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader);
+        Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<SaveDataInfoReaderImpl> infoReader);
     }
 }

@@ -63,7 +63,7 @@ namespace LibHac.FsSrv.Impl
         /// </summary>
         /// <param name="baseFileSystem">The base file system. Will be null upon returning.</param>
         /// <param name="isHostFsRoot">Does the base file system come from the root directory of a host file system?</param>
-        public static ReferenceCountedDisposable<IFileSystemSf> CreateSharedSfFileSystem(
+        public static ReferenceCountedDisposable<IFileSystemSf> CreateShared(
             ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, bool isHostFsRoot = false)
         {
             var adapter = new FileSystemInterfaceAdapter(ref baseFileSystem, isHostFsRoot);

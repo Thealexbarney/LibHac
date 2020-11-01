@@ -8,6 +8,6 @@ namespace LibHac.FsSrv.Creators
         // Todo: Remove raw IFilesystem function
         Result Create(out IFileSystem fileSystem, bool openCaseSensitive);
         Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, bool openCaseSensitive);
-        Result GetCaseSensitivePath(out bool isSuccess, Span<byte> path);
+        Result NormalizeCaseOfPath(out bool isSupported, Span<byte> path);
     }
 }

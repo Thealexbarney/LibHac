@@ -441,6 +441,24 @@ namespace LibHac
 
                 return TryAddReferenceImpl(target, referenceCount);
             }
+
+            /// <summary>
+            /// Increments the reference count for the disposable object, and returns a new disposable reference to
+            /// it.
+            /// </summary>
+            /// <remarks>
+            /// <para>Unlike <see cref="ReferenceCountedDisposable{T}.TryAddReference"/>, this method is capable of
+            /// adding a reference to the underlying instance all the way up to the point where it is finally
+            /// disposed.</para>
+            ///
+            /// <para>The returned object is an independent reference to the same underlying object. Disposing of
+            /// the returned value multiple times will only cause the reference count to be decreased once.</para>
+            /// </remarks>
+            /// <returns>A new <see cref="ReferenceCountedDisposable{T}"/> pointing to the same underlying object,
+            /// if it has not yet been disposed; otherwise, <see cref="ObjectDisposedException"/> is thrown if the
+            /// underlying object has already been disposed.</returns>
+            public ReferenceCountedDisposable<T> AddReference() =>
+                TryAddReference() ?? throw new ObjectDisposedException(nameof(WeakReference));
         }
     }
 }

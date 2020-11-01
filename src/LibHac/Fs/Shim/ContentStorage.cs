@@ -39,11 +39,11 @@ namespace LibHac.Fs.Shim
             switch (storageId)
             {
                 case ContentStorageId.System:
-                    return CommonMountNames.ContentStorageSystemMountName;
+                    return CommonPaths.ContentStorageSystemMountName;
                 case ContentStorageId.User:
-                    return CommonMountNames.ContentStorageUserMountName;
+                    return CommonPaths.ContentStorageUserMountName;
                 case ContentStorageId.SdCard:
-                    return CommonMountNames.ContentStorageSdCardMountName;
+                    return CommonPaths.ContentStorageSdCardMountName;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(storageId), storageId, null);
             }

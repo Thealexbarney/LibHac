@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using LibHac.Common;
 using LibHac.Fs.Fsa;
+using LibHac.FsSrv.Sf;
 
 namespace LibHac.Fs.Accessors
 {
@@ -20,10 +21,13 @@ namespace LibHac.Fs.Accessors
         private readonly object _locker = new object();
 
         internal bool IsAccessLogEnabled { get; set; }
+        public IMultiCommitTarget MultiCommitTarget { get; }
 
-        public FileSystemAccessor(string name, IFileSystem baseFileSystem, FileSystemClient fsClient, ICommonMountNameGenerator nameGenerator)
+        public FileSystemAccessor(U8Span name, IMultiCommitTarget multiCommitTarget, IFileSystem baseFileSystem,
+            FileSystemClient fsClient, ICommonMountNameGenerator nameGenerator)
         {
-            Name = name;
+            Name = name.ToString();
+            MultiCommitTarget = multiCommitTarget;
             FileSystem = baseFileSystem;
             FsClient = fsClient;
             MountNameGenerator = nameGenerator;
@@ -145,6 +149,11 @@ namespace LibHac.Fs.Accessors
             if (MountNameGenerator == null) return ResultFs.PreconditionViolation.Log();
 
             return MountNameGenerator.GenerateCommonMountName(nameBuffer);
+        }
+
+        public ReferenceCountedDisposable<IFileSystemSf> GetMultiCommitTarget()
+        {
+            return MultiCommitTarget?.GetMultiCommitTarget();
         }
 
         internal void NotifyCloseFile(FileAccessor file)

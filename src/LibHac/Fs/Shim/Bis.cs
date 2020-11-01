@@ -6,7 +6,7 @@ using LibHac.FsSrv;
 using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
 using LibHac.Util;
-using static LibHac.Fs.CommonMountNames;
+using static LibHac.Fs.CommonPaths;
 
 namespace LibHac.Fs.Shim
 {

@@ -1,7 +1,8 @@
 ﻿using System;
 using LibHac.Common;
-using LibHac.Fs.Fsa;
+using LibHac.Fs.Impl;
 using LibHac.FsSrv;
+using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 
 namespace LibHac.Fs.Shim
@@ -115,14 +116,14 @@ namespace LibHac.Fs.Shim
             if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
             {
                 TimeSpan startTime = fs.Time.GetCurrent();
-                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, default, default, SaveDataType.Cache, false, (short)index);
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, default, default, SaveDataType.Cache, false, (ushort)index);
                 TimeSpan endTime = fs.Time.GetCurrent();
 
                 fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\", index: {index}");
             }
             else
             {
-                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, default, default, SaveDataType.Cache, false, (short)index);
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, default, default, SaveDataType.Cache, false, (ushort)index);
             }
 
             if (rc.IsSuccess() && fs.IsEnabledAccessLog(AccessLogTarget.Application))
@@ -165,14 +166,14 @@ namespace LibHac.Fs.Shim
             if (fs.IsEnabledAccessLog(AccessLogTarget.System))
             {
                 TimeSpan startTime = fs.Time.GetCurrent();
-                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, applicationId, default, SaveDataType.Cache, false, (short)index);
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, applicationId, default, SaveDataType.Cache, false, (ushort)index);
                 TimeSpan endTime = fs.Time.GetCurrent();
 
                 fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\", applicationid: 0x{applicationId}, index: {index}");
             }
             else
             {
-                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, applicationId, default, SaveDataType.Cache, false, (short)index);
+                rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, applicationId, default, SaveDataType.Cache, false, (ushort)index);
             }
 
             if (rc.IsSuccess() && fs.IsEnabledAccessLog(AccessLogTarget.System))
@@ -184,7 +185,7 @@ namespace LibHac.Fs.Shim
         }
 
         private static Result MountSaveDataImpl(this FileSystemClient fs, U8Span mountName, SaveDataSpaceId spaceId,
-            ProgramId programId, UserId userId, SaveDataType type, bool openReadOnly, short index)
+            ProgramId programId, UserId userId, SaveDataType type, bool openReadOnly, ushort index)
         {
             Result rc = MountHelpers.CheckMountName(mountName);
             if (rc.IsFailure()) return rc;
@@ -193,20 +194,29 @@ namespace LibHac.Fs.Shim
 
             var attribute = new SaveDataAttribute(programId, type, userId, 0, index);
 
-            IFileSystem saveFs;
+            ReferenceCountedDisposable<IFileSystemSf> saveFs = null;
 
-            if (openReadOnly)
+            try
             {
-                rc = fsProxy.OpenReadOnlySaveDataFileSystem(out saveFs, spaceId, ref attribute);
+                if (openReadOnly)
+                {
+                    rc = fsProxy.OpenReadOnlySaveDataFileSystem(out saveFs, spaceId, in attribute);
+                }
+                else
+                {
+                    rc = fsProxy.OpenSaveDataFileSystem(out saveFs, spaceId, in attribute);
+                }
+
+                if (rc.IsFailure()) return rc;
+
+                var fileSystemAdapter = new FileSystemServiceObjectAdapter(saveFs);
+
+                return fs.Register(mountName, fileSystemAdapter, fileSystemAdapter, null);
             }
-            else
+            finally
             {
-                rc = fsProxy.OpenSaveDataFileSystem(out saveFs, spaceId, ref attribute);
+                saveFs?.Dispose();
             }
-
-            if (rc.IsFailure()) return rc;
-
-            return fs.Register(mountName, saveFs);
         }
     }
 }

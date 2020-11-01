@@ -83,7 +83,7 @@ namespace LibHac.Fs.Shim
             ContentType.Control => FileSystemProxyType.Control,
             ContentType.Manual => FileSystemProxyType.Manual,
             ContentType.Data => FileSystemProxyType.Data,
-            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null),
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
     }
 }

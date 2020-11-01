@@ -1,7 +1,8 @@
 ﻿using System;
 using LibHac.Fs;
+using LibHac.Sf;
 
-namespace LibHac.FsSrv
+namespace LibHac.FsSrv.Sf
 {
     /// <summary>
     /// Iterates through the <see cref="SaveDataInfo"/> of the save data
@@ -19,6 +20,6 @@ namespace LibHac.FsSrv
         /// A value of 0 indicates that there are no more entries to iterate, or the buffer is too small.</param>
         /// <param name="saveDataInfoBuffer">The buffer in which to write the <see cref="SaveDataInfo"/>.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        Result Read(out long readCount, Span<byte> saveDataInfoBuffer);
+        Result Read(out long readCount, OutBuffer saveDataInfoBuffer);
     }
 }

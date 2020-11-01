@@ -25,7 +25,7 @@ namespace LibHac.Fs
         {
             InternalKeyForSoftwareAes = 1 << 0,
             InternalKeyForHardwareAes = 1 << 1,
-            ExternalKeyForHardwareAes = 1 << 2,
+            ExternalKeyForHardwareAes = 1 << 2
         }
     }
 }

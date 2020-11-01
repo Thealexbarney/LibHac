@@ -129,11 +129,19 @@ namespace LibHac.Fs.Impl
             Result rc = GetPathForServiceObject(out Path sfPath, path);
             if (rc.IsFailure()) return rc;
 
-            rc = BaseFs.Target.OpenFile(out ReferenceCountedDisposable<IFileSf> sfFile, in sfPath, (uint)mode);
-            if (rc.IsFailure()) return rc;
+            ReferenceCountedDisposable<IFileSf> sfFile = null;
+            try
+            {
+                rc = BaseFs.Target.OpenFile(out sfFile, in sfPath, (uint)mode);
+                if (rc.IsFailure()) return rc;
 
-            file = new FileServiceObjectAdapter(sfFile);
-            return Result.Success;
+                file = new FileServiceObjectAdapter(sfFile);
+                return Result.Success;
+            }
+            finally
+            {
+                sfFile?.Dispose();
+            }
         }
 
         protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
@@ -143,11 +151,19 @@ namespace LibHac.Fs.Impl
             Result rc = GetPathForServiceObject(out Path sfPath, path);
             if (rc.IsFailure()) return rc;
 
-            rc = BaseFs.Target.OpenDirectory(out ReferenceCountedDisposable<IDirectorySf> sfDir, in sfPath, (uint)mode);
-            if (rc.IsFailure()) return rc;
+            ReferenceCountedDisposable<IDirectorySf> sfDir = null;
+            try
+            {
+                rc = BaseFs.Target.OpenDirectory(out sfDir, in sfPath, (uint)mode);
+                if (rc.IsFailure()) return rc;
 
-            directory = new DirectoryServiceObjectAdapter(sfDir);
-            return Result.Success;
+                directory = new DirectoryServiceObjectAdapter(sfDir);
+                return Result.Success;
+            }
+            finally
+            {
+                sfDir?.Dispose();
+            }
         }
 
         protected override Result DoCommit()
@@ -175,7 +191,7 @@ namespace LibHac.Fs.Impl
 
         public ReferenceCountedDisposable<IFileSystemSf> GetMultiCommitTarget()
         {
-            return BaseFs;
+            return BaseFs.AddReference();
         }
 
         protected override void Dispose(bool disposing)

@@ -158,6 +158,8 @@ namespace LibHac.FsSrv.Impl
         public StorageId StorageId { get; }
         public AccessControl AccessControl { get; }
 
+        public ulong ProgramIdValue => ProgramId.Value;
+
         public ProgramInfo(FileSystemServer fsServer, ulong processId, ProgramId programId, StorageId storageId,
             ReadOnlySpan<byte> accessControlData, ReadOnlySpan<byte> accessControlDescriptor)
         {

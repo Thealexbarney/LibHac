@@ -21,6 +21,13 @@ namespace LibHac.FsSystem
             BaseFs = BaseFsShared.Target;
         }
 
+        public static ReferenceCountedDisposable<IFileSystem> CreateShared(
+            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem)
+        {
+            var fs = new ReadOnlyFileSystem(Shared.Move(ref baseFileSystem));
+            return new ReferenceCountedDisposable<IFileSystem>(fs);
+        }
+
         protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
             return BaseFs.OpenDirectory(out directory, path, mode);
