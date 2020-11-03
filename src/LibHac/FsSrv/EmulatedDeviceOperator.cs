@@ -13,6 +13,8 @@ namespace LibHac.FsSrv
             SdCard = sdCard;
         }
 
+        public void Dispose() { }
+
         public Result IsSdCardInserted(out bool isInserted)
         {
             isInserted = SdCard.IsSdCardInserted();

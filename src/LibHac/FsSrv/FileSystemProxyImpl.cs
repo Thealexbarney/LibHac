@@ -254,8 +254,8 @@ namespace LibHac.FsSrv
                 in hashSalt);
         }
 
-        public Result CreateSaveDataFileSystemBySystemSaveDataId(ref SaveDataAttribute attribute,
-            ref SaveDataCreationInfo creationInfo)
+        public Result CreateSaveDataFileSystemBySystemSaveDataId(in SaveDataAttribute attribute,
+            in SaveDataCreationInfo creationInfo)
         {
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
@@ -399,17 +399,44 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result OpenHostFileSystem(out IFileSystem fileSystem, ref FsPath path)
+        public Result OpenHostFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath path)
         {
-            return OpenHostFileSystemWithOption(out fileSystem, ref path, MountHostOption.None);
+            return OpenHostFileSystemWithOption(out fileSystem, in path, MountHostOption.None);
         }
 
-        public Result OpenHostFileSystemWithOption(out IFileSystem fileSystem, ref FsPath path, MountHostOption option)
+        public Result OpenHostFileSystemWithOption(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+            in FspPath path, MountHostOption option)
         {
-            // Missing permission check
+            fileSystem = default;
 
-            return FsProxyCore.OpenHostFileSystem(out fileSystem, new U8Span(path.Str),
-                option.HasFlag(MountHostOption.PseudoCaseSensitive));
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            Accessibility accessibility = programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountHost);
+
+            if (!accessibility.CanRead || !accessibility.CanWrite)
+                return ResultFs.PermissionDenied.Log();
+
+            ReferenceCountedDisposable<IFileSystem> hostFs = null;
+            try
+            {
+                rc = FsProxyCore.OpenHostFileSystem(out hostFs, new U8Span(path.Str),
+                    option.HasFlag(MountHostOption.PseudoCaseSensitive));
+                if (rc.IsFailure()) return rc;
+
+                bool isRootPath = path.Str[0] == 0;
+
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref hostFs, isRootPath);
+
+                if (fileSystem is null)
+                    return ResultFs.AllocationFailureInCreateShared.Log();
+
+                return Result.Success;
+            }
+            finally
+            {
+                hostFs?.Dispose();
+            }
         }
 
         public Result OpenSdCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
@@ -432,18 +459,29 @@ namespace LibHac.FsSrv
             return GetBaseFileSystemService().IsExFatSupported(out isSupported);
         }
 
-        public Result OpenGameCardStorage(out IStorage storage, GameCardHandle handle, GameCardPartitionRaw partitionId)
+        public Result OpenGameCardStorage(out ReferenceCountedDisposable<IStorageSf> storage, GameCardHandle handle,
+            GameCardPartitionRaw partitionId)
         {
             // Missing permission check and StorageInterfaceAdapter
 
             return FsProxyCore.OpenGameCardStorage(out storage, handle, partitionId);
         }
 
-        public Result OpenDeviceOperator(out IDeviceOperator deviceOperator)
+        public Result OpenDeviceOperator(out ReferenceCountedDisposable<IDeviceOperator> deviceOperator)
         {
             // Missing permission check
 
             return FsProxyCore.OpenDeviceOperator(out deviceOperator);
+        }
+
+        public Result OpenSdCardDetectionEventNotifier(out ReferenceCountedDisposable<IEventNotifier> eventNotifier)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result OpenGameCardDetectionEventNotifier(out ReferenceCountedDisposable<IEventNotifier> eventNotifier)
+        {
+            throw new NotImplementedException();
         }
 
         public Result OpenSystemDataUpdateEventNotifier(out ReferenceCountedDisposable<IEventNotifier> eventNotifier)
@@ -659,11 +697,37 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result OpenCustomStorageFileSystem(out IFileSystem fileSystem, CustomStorageId storageId)
+        public Result OpenCustomStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, CustomStorageId storageId)
         {
-            // Missing permission check, speed emulation storage type wrapper, and FileSystemInterfaceAdapter
+            fileSystem = default;
+            var storageFlag = StorageType.NonGameCard;
+            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
 
-            return FsProxyCore.OpenCustomStorageFileSystem(out fileSystem, storageId);
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            AccessibilityType accessType = storageId > CustomStorageId.SdCard
+                ? AccessibilityType.NotMount
+                : AccessibilityType.MountCustomStorage;
+
+            Accessibility accessibility = programInfo.AccessControl.GetAccessibilityFor(accessType);
+
+            if (!accessibility.CanRead || !accessibility.CanWrite)
+                return ResultFs.PermissionDenied.Log();
+
+            ReferenceCountedDisposable<IFileSystem> customFs = null;
+            try
+            {
+                customFs = StorageLayoutTypeSetFileSystem.CreateShared(ref customFs, storageFlag);
+                customFs = AsynchronousAccessFileSystem.CreateShared(ref customFs);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref customFs);
+
+                return Result.Success;
+            }
+            finally
+            {
+                customFs?.Dispose();
+            }
         }
 
         public Result OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
@@ -766,7 +830,7 @@ namespace LibHac.FsSrv
                 .RegisterProgramIndexMapInfo(programIndexMapInfoBuffer, programCount);
         }
 
-        public Result SetBisRootForHost(BisPartitionId partitionId, ref FsPath path)
+        public Result SetBisRootForHost(BisPartitionId partitionId, in FspPath path)
         {
             throw new NotImplementedException();
         }
@@ -839,7 +903,7 @@ namespace LibHac.FsSrv
             return GetProgramIndexRegistryService().GetProgramIndex(out programIndex, out programCount);
         }
 
-        public Result OutputAccessLogToSdCard(U8Span logString)
+        public Result OutputAccessLogToSdCard(InBuffer logString)
         {
             throw new NotImplementedException();
         }

@@ -56,15 +56,23 @@ namespace LibHac.Fs.Shim
 
         public static bool IsSdCardInserted(this FileSystemClient fs)
         {
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
+            try
+            {
+                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            Result rc = fsProxy.OpenDeviceOperator(out IDeviceOperator deviceOperator);
-            if (rc.IsFailure()) throw new HorizonResultException(rc, "Abort");
+                Result rc = fsProxy.OpenDeviceOperator(out deviceOperator);
+                if (rc.IsFailure()) throw new HorizonResultException(rc, "Abort");
 
-            rc = deviceOperator.IsSdCardInserted(out bool isInserted);
-            if (rc.IsFailure()) throw new HorizonResultException(rc, "Abort");
+                rc = deviceOperator.Target.IsSdCardInserted(out bool isInserted);
+                if (rc.IsFailure()) throw new HorizonResultException(rc, "Abort");
 
-            return isInserted;
+                return isInserted;
+            }
+            finally
+            {
+                deviceOperator?.Dispose();
+            }
         }
 
         public static Result SetSdCardEncryptionSeed(this FileSystemClient fs, in EncryptionSeed seed)

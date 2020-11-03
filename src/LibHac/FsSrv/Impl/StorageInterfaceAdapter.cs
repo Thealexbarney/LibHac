@@ -10,9 +10,21 @@ namespace LibHac.FsSrv.Impl
     {
         private ReferenceCountedDisposable<IStorage> BaseStorage { get; }
 
-        public StorageInterfaceAdapter(ReferenceCountedDisposable<IStorage> baseStorage)
+        private StorageInterfaceAdapter(ref ReferenceCountedDisposable<IStorage> baseStorage)
         {
-            BaseStorage = baseStorage.AddReference();
+            BaseStorage = Shared.Move(ref baseStorage);
+        }
+
+        public static ReferenceCountedDisposable<IStorageSf> CreateShared(
+            ref ReferenceCountedDisposable<IStorage> baseStorage)
+        {
+            var adapter = new StorageInterfaceAdapter(ref baseStorage);
+            return new ReferenceCountedDisposable<IStorageSf>(adapter);
+        }
+
+        public void Dispose()
+        {
+            BaseStorage?.Dispose();
         }
 
         public Result Read(long offset, Span<byte> destination)
@@ -47,7 +59,7 @@ namespace LibHac.FsSrv.Impl
             if (source.Length < 0)
                 return ResultFs.InvalidSize.Log();
 
-            // Note: Thread priority is temporarily when writing in FS
+            // Note: Thread priority is temporarily increased when writing in FS
 
             return BaseStorage.Target.Write(offset, source);
         }
@@ -92,10 +104,6 @@ namespace LibHac.FsSrv.Impl
             }
 
             return Result.Success;
-        }
-        public void Dispose()
-        {
-            BaseStorage?.Dispose();
         }
     }
 }

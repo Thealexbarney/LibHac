@@ -4,6 +4,8 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Creators;
+using LibHac.FsSrv.Impl;
+using LibHac.FsSrv.Sf;
 
 namespace LibHac.FsSrv
 {
@@ -13,7 +15,7 @@ namespace LibHac.FsSrv
         private FileSystemCreators FsCreators => Config.FsCreatorInterfaces;
         internal ProgramRegistryImpl ProgramRegistry { get; }
 
-        private IDeviceOperator DeviceOperator { get; }
+        private ReferenceCountedDisposable<IDeviceOperator> DeviceOperator { get; }
 
         private byte[] SdEncryptionSeed { get; } = new byte[0x10];
 
@@ -27,31 +29,57 @@ namespace LibHac.FsSrv
         {
             Config = config;
             ProgramRegistry = new ProgramRegistryImpl(Config.ProgramRegistryService);
-            DeviceOperator = deviceOperator;
+            DeviceOperator = new ReferenceCountedDisposable<IDeviceOperator>(deviceOperator);
         }
 
-        public Result OpenGameCardStorage(out IStorage storage, GameCardHandle handle, GameCardPartitionRaw partitionId)
+        public Result OpenGameCardStorage(out ReferenceCountedDisposable<IStorageSf> storage, GameCardHandle handle,
+            GameCardPartitionRaw partitionId)
         {
-            switch (partitionId)
+            storage = default;
+
+            Result rc;
+            IStorage gcStorage = null;
+            ReferenceCountedDisposable<IStorage> sharedGcStorage = null;
+            try
             {
-                case GameCardPartitionRaw.NormalReadOnly:
-                    return FsCreators.GameCardStorageCreator.CreateNormal(handle, out storage);
-                case GameCardPartitionRaw.SecureReadOnly:
-                    return FsCreators.GameCardStorageCreator.CreateSecure(handle, out storage);
-                case GameCardPartitionRaw.RootWriteOnly:
-                    return FsCreators.GameCardStorageCreator.CreateWritable(handle, out storage);
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(partitionId), partitionId, null);
+                switch (partitionId)
+                {
+                    case GameCardPartitionRaw.NormalReadOnly:
+                        rc = FsCreators.GameCardStorageCreator.CreateNormal(handle, out gcStorage);
+                        break;
+                    case GameCardPartitionRaw.SecureReadOnly:
+                        rc = FsCreators.GameCardStorageCreator.CreateSecure(handle, out gcStorage);
+                        break;
+                    case GameCardPartitionRaw.RootWriteOnly:
+                        rc = FsCreators.GameCardStorageCreator.CreateWritable(handle, out gcStorage);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(partitionId), partitionId, null);
+                }
+
+                if (rc.IsFailure()) return rc;
+
+                sharedGcStorage = new ReferenceCountedDisposable<IStorage>(gcStorage);
+                gcStorage = null;
+
+                storage = StorageInterfaceAdapter.CreateShared(ref sharedGcStorage);
+                return Result.Success;
+            }
+            finally
+            {
+                gcStorage?.Dispose();
+                sharedGcStorage?.Dispose();
             }
         }
 
-        public Result OpenDeviceOperator(out IDeviceOperator deviceOperator)
+        public Result OpenDeviceOperator(out ReferenceCountedDisposable<IDeviceOperator> deviceOperator)
         {
-            deviceOperator = DeviceOperator;
+            deviceOperator = DeviceOperator.AddReference();
             return Result.Success;
         }
 
-        public Result OpenCustomStorageFileSystem(out IFileSystem fileSystem, CustomStorageId storageId)
+        public Result OpenCustomStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+            CustomStorageId storageId)
         {
             fileSystem = default;
 
@@ -72,7 +100,7 @@ namespace LibHac.FsSrv
                         EncryptedFsKeyId.CustomStorage, SdEncryptionSeed);
                     if (rc.IsFailure()) return rc;
 
-                    fileSystem = encryptedFs;
+                    fileSystem = new ReferenceCountedDisposable<IFileSystem>(encryptedFs);
                     return Result.Success;
                 }
                 case CustomStorageId.System:
@@ -87,7 +115,8 @@ namespace LibHac.FsSrv
                     rc = Util.CreateSubFileSystem(out IFileSystem subFs, userFs, subDirName, true);
                     if (rc.IsFailure()) return rc;
 
-                    fileSystem = subFs;
+                    // Todo: Get shared object from earlier functions
+                    fileSystem = new ReferenceCountedDisposable<IFileSystem>(subFs);
                     return Result.Success;
                 }
                 default:
@@ -95,7 +124,8 @@ namespace LibHac.FsSrv
             }
         }
 
-        public Result OpenHostFileSystem(out IFileSystem fileSystem, U8Span path, bool openCaseSensitive)
+        public Result OpenHostFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, U8Span path,
+            bool openCaseSensitive)
         {
             fileSystem = default;
             Result rc;
@@ -106,27 +136,42 @@ namespace LibHac.FsSrv
                 if (rc.IsFailure()) return rc;
             }
 
+            // Todo: Return shared fs from Create
             rc = FsCreators.TargetManagerFileSystemCreator.Create(out IFileSystem hostFs, openCaseSensitive);
             if (rc.IsFailure()) return rc;
 
-            if (path.IsEmpty())
+            ReferenceCountedDisposable<IFileSystem> sharedHostFs = null;
+            ReferenceCountedDisposable<IFileSystem> subDirFs = null;
+
+            try
             {
-                ReadOnlySpan<byte> rootHostPath = new[] { (byte)'C', (byte)':', (byte)'/' };
-                rc = hostFs.GetEntryType(out _, new U8Span(rootHostPath));
+                sharedHostFs = new ReferenceCountedDisposable<IFileSystem>(hostFs);
 
-                // Nintendo ignores all results other than this one
-                if (ResultFs.TargetNotFound.Includes(rc))
-                    return rc;
+                if (path.IsEmpty())
+                {
+                    ReadOnlySpan<byte> rootHostPath = new[] { (byte)'C', (byte)':', (byte)'/' };
+                    rc = sharedHostFs.Target.GetEntryType(out _, new U8Span(rootHostPath));
 
-                fileSystem = hostFs;
+                    // Nintendo ignores all results other than this one
+                    if (ResultFs.TargetNotFound.Includes(rc))
+                        return rc;
+
+                    Shared.Move(out fileSystem, ref sharedHostFs);
+                    return Result.Success;
+                }
+
+                rc = FsCreators.SubDirectoryFileSystemCreator.Create(out subDirFs, ref sharedHostFs, path,
+                    preserveUnc: true);
+                if (rc.IsFailure()) return rc;
+
+                fileSystem = subDirFs;
                 return Result.Success;
             }
-
-            rc = FsCreators.SubDirectoryFileSystemCreator.Create(out IFileSystem subDirFs, hostFs, path, preserveUnc: true);
-            if (rc.IsFailure()) return rc;
-
-            fileSystem = subDirFs;
-            return Result.Success;
+            finally
+            {
+                sharedHostFs?.Dispose();
+                subDirFs?.Dispose();
+            }
         }
 
         public Result SetSdCardEncryptionSeed(in EncryptionSeed seed)
@@ -139,7 +184,7 @@ namespace LibHac.FsSrv
 
             return Result.Success;
         }
-        
+
         public Result SetGlobalAccessLogMode(GlobalAccessLogMode mode)
         {
             LogMode = mode;

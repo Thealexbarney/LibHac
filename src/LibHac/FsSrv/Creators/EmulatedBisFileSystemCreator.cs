@@ -110,12 +110,12 @@ namespace LibHac.FsSrv.Creators
             var partitionPath = GetPartitionPath(partitionId).ToU8String();
 
             ReferenceCountedDisposable<IFileSystem> partitionFileSystem = null;
+            ReferenceCountedDisposable<IFileSystem> sharedRootFs = null;
             try
             {
-                // Todo: Store shared file systems
-                using var sharedRootFs = new ReferenceCountedDisposable<IFileSystem>(Config.RootFileSystem);
+                sharedRootFs = new ReferenceCountedDisposable<IFileSystem>(Config.RootFileSystem);
 
-                Result rc = Utility.WrapSubDirectory(out partitionFileSystem, sharedRootFs, partitionPath, true);
+                Result rc = Utility.WrapSubDirectory(out partitionFileSystem, ref sharedRootFs, partitionPath, true);
 
                 if (rc.IsFailure()) return rc;
 
@@ -125,11 +125,12 @@ namespace LibHac.FsSrv.Creators
                     return Result.Success;
                 }
 
-                return Utility.CreateSubDirectoryFileSystem(out fileSystem, partitionFileSystem, rootPath);
+                return Utility.CreateSubDirectoryFileSystem(out fileSystem, ref partitionFileSystem, rootPath);
             }
             finally
             {
                 partitionFileSystem?.Dispose();
+                sharedRootFs?.Dispose();
             }
         }
 

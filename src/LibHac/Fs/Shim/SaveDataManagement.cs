@@ -212,7 +212,7 @@ namespace LibHac.Fs.Shim
                         SpaceId = spaceId
                     };
 
-                    return fsProxy.CreateSaveDataFileSystemBySystemSaveDataId(ref attribute, ref createInfo);
+                    return fsProxy.CreateSaveDataFileSystemBySystemSaveDataId(in attribute, in createInfo);
                 },
                 () => $", savedataspaceid: {spaceId}, savedataid: 0x{saveDataId:X}, userid: 0x{userId.Id.High:X16}{userId.Id.Low:X16}, save_data_owner_id: 0x{ownerId:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:x8}");
         }

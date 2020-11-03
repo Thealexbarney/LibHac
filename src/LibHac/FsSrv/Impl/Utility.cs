@@ -122,7 +122,7 @@ namespace LibHac.FsSrv.Impl
         }
 
         public static Result CreateSubDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystem> subDirFileSystem,
-            ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span subPath, bool preserveUnc = false)
+            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span subPath, bool preserveUnc = false)
         {
             subDirFileSystem = default;
 
@@ -132,7 +132,7 @@ namespace LibHac.FsSrv.Impl
 
             dir.Dispose();
 
-            var fs = new SubdirectoryFileSystem(baseFileSystem, preserveUnc);
+            var fs = new SubdirectoryFileSystem(ref baseFileSystem, preserveUnc);
             using (var subDirFs = new ReferenceCountedDisposable<SubdirectoryFileSystem>(fs))
             {
                 rc = subDirFs.Target.Initialize(subPath);
@@ -144,7 +144,7 @@ namespace LibHac.FsSrv.Impl
         }
 
         public static Result WrapSubDirectory(out ReferenceCountedDisposable<IFileSystem> fileSystem,
-            ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span path, bool createIfMissing)
+            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span path, bool createIfMissing)
         {
             fileSystem = default;
 
@@ -159,7 +159,7 @@ namespace LibHac.FsSrv.Impl
             Result rc = EnsureDirectory(baseFileSystem.Target, path);
             if (rc.IsFailure()) return rc;
 
-            return CreateSubDirectoryFileSystem(out fileSystem, baseFileSystem, path);
+            return CreateSubDirectoryFileSystem(out fileSystem, ref baseFileSystem, path);
         }
 
         private static ReadOnlySpan<byte> FileSystemRootPath => // /

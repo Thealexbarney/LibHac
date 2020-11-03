@@ -100,17 +100,29 @@ namespace LibHac.FsSrv
 
                 if (type == FileSystemProxyType.Manual)
                 {
-                    rc = TryOpenCaseSensitiveContentDirectory(
-                        out ReferenceCountedDisposable<IFileSystem> manualFileSystem, baseFileSystem, currentPath);
-                    if (rc.IsFailure()) return rc;
+                    ReferenceCountedDisposable<IFileSystem> manualFileSystem = null;
+                    ReferenceCountedDisposable<IFileSystem> readOnlyFileSystem = null;
+                    try
+                    {
+                        rc = TryOpenCaseSensitiveContentDirectory(out manualFileSystem, ref baseFileSystem,
+                            currentPath);
+                        if (rc.IsFailure()) return rc;
 
-                    var readOnlyFs = new ReadOnlyFileSystem(manualFileSystem);
-                    fileSystem = new ReferenceCountedDisposable<IFileSystem>(readOnlyFs);
+                        readOnlyFileSystem = ReadOnlyFileSystem.CreateShared(ref manualFileSystem);
+                        if (readOnlyFileSystem?.Target is null)
+                            return ResultFs.AllocationFailureInAllocateShared.Log();
 
-                    return Result.Success;
+                        Shared.Move(out fileSystem, ref readOnlyFileSystem);
+                        return Result.Success;
+                    }
+                    finally
+                    {
+                        manualFileSystem?.Dispose();
+                        readOnlyFileSystem?.Dispose();
+                    }
                 }
 
-                return TryOpenContentDirectory(currentPath, out fileSystem, baseFileSystem, type, true);
+                return TryOpenContentDirectory(currentPath, out fileSystem, ref baseFileSystem, type, true);
             }
 
             rc = TryOpenNsp(ref currentPath, out ReferenceCountedDisposable<IFileSystem> nspFileSystem, baseFileSystem);
@@ -371,20 +383,27 @@ namespace LibHac.FsSrv
 
         private Result TryOpenContentDirectory(U8Span path,
             out ReferenceCountedDisposable<IFileSystem> contentFileSystem,
-            ReferenceCountedDisposable<IFileSystem> baseFileSystem, FileSystemProxyType fsType, bool preserveUnc)
+            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, FileSystemProxyType fsType, bool preserveUnc)
         {
             contentFileSystem = default;
 
-            Result rc = _config.SubDirectoryFsCreator.Create(out ReferenceCountedDisposable<IFileSystem> subDirFs,
-                baseFileSystem, path, preserveUnc);
-            if (rc.IsFailure()) return rc;
+            ReferenceCountedDisposable<IFileSystem> subDirFs = null;
+            try
+            {
+                Result rc = _config.SubDirectoryFsCreator.Create(out subDirFs, ref baseFileSystem, path, preserveUnc);
+                if (rc.IsFailure()) return rc;
 
-            return OpenSubDirectoryForFsType(out contentFileSystem, subDirFs, fsType);
+                return OpenSubDirectoryForFsType(out contentFileSystem, ref subDirFs, fsType);
+            }
+            finally
+            {
+                subDirFs?.Dispose();
+            }
         }
 
         private Result TryOpenCaseSensitiveContentDirectory(
             out ReferenceCountedDisposable<IFileSystem> contentFileSystem,
-            ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span path)
+           ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span path)
         {
             contentFileSystem = default;
             Unsafe.SkipInit(out FsPath fullPath);
@@ -408,11 +427,11 @@ namespace LibHac.FsSrv
                 if (rc.IsFailure()) return rc;
             }
 
-            return _config.SubDirectoryFsCreator.Create(out contentFileSystem, baseFileSystem, fullPath);
+            return _config.SubDirectoryFsCreator.Create(out contentFileSystem, ref baseFileSystem, fullPath);
         }
 
         private Result OpenSubDirectoryForFsType(out ReferenceCountedDisposable<IFileSystem> fileSystem,
-            ReferenceCountedDisposable<IFileSystem> baseFileSystem, FileSystemProxyType fsType)
+            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, FileSystemProxyType fsType)
         {
             fileSystem = default;
             ReadOnlySpan<byte> dirName;
@@ -442,19 +461,26 @@ namespace LibHac.FsSrv
                     return ResultFs.InvalidArgument.Log();
             }
 
-            // Open the subdirectory filesystem
-            Result rc = _config.SubDirectoryFsCreator.Create(out ReferenceCountedDisposable<IFileSystem> subDirFs,
-                baseFileSystem, new U8Span(dirName));
-            if (rc.IsFailure()) return rc;
-
-            if (fsType == FileSystemProxyType.Code)
+            ReferenceCountedDisposable<IFileSystem> subDirFs = null;
+            try
             {
-                rc = _config.StorageOnNcaCreator.VerifyAcidSignature(subDirFs.Target, null);
+                // Open the subdirectory filesystem
+                Result rc = _config.SubDirectoryFsCreator.Create(out subDirFs, ref baseFileSystem, new U8Span(dirName));
                 if (rc.IsFailure()) return rc;
-            }
 
-            fileSystem = subDirFs;
-            return Result.Success;
+                if (fsType == FileSystemProxyType.Code)
+                {
+                    rc = _config.StorageOnNcaCreator.VerifyAcidSignature(subDirFs.Target, null);
+                    if (rc.IsFailure()) return rc;
+                }
+
+                Shared.Move(out fileSystem, ref subDirFs);
+                return Result.Success;
+            }
+            finally
+            {
+                subDirFs?.Dispose();
+            }
         }
 
         private Result TryOpenNsp(ref U8Span path, out ReferenceCountedDisposable<IFileSystem> fileSystem,
@@ -659,29 +685,37 @@ namespace LibHac.FsSrv
                 if (rc.IsFailure()) return rc;
             }
 
-            rc = _config.TargetManagerFsCreator.Create(out ReferenceCountedDisposable<IFileSystem> hostFs,
-                openCaseSensitive);
-            if (rc.IsFailure()) return rc;
-
-            if (path.IsEmpty())
+            ReferenceCountedDisposable<IFileSystem> hostFs = null;
+            ReferenceCountedDisposable<IFileSystem> subDirFs = null;
+            try
             {
-                ReadOnlySpan<byte> rootHostPath = new[] { (byte)'C', (byte)':', (byte)'/' };
-                rc = hostFs.Target.GetEntryType(out _, new U8Span(rootHostPath));
+                rc = _config.TargetManagerFsCreator.Create(out hostFs, openCaseSensitive);
+                if (rc.IsFailure()) return rc;
 
-                // Nintendo ignores all results other than this one
-                if (ResultFs.TargetNotFound.Includes(rc))
-                    return rc;
+                if (path.IsEmpty())
+                {
+                    ReadOnlySpan<byte> rootHostPath = new[] { (byte)'C', (byte)':', (byte)'/' };
+                    rc = hostFs.Target.GetEntryType(out _, new U8Span(rootHostPath));
 
-                fileSystem = hostFs;
+                    // Nintendo ignores all results other than this one
+                    if (ResultFs.TargetNotFound.Includes(rc))
+                        return rc;
+
+                    Shared.Move(out fileSystem, ref hostFs);
+                    return Result.Success;
+                }
+
+                rc = _config.SubDirectoryFsCreator.Create(out subDirFs, ref hostFs, path, preserveUnc: true);
+                if (rc.IsFailure()) return rc;
+
+                Shared.Move(out fileSystem, ref subDirFs);
                 return Result.Success;
             }
-
-            rc = _config.SubDirectoryFsCreator.Create(out ReferenceCountedDisposable<IFileSystem> subDirFs, hostFs,
-                path, preserveUnc: true);
-            if (rc.IsFailure()) return rc;
-
-            fileSystem = subDirFs;
-            return Result.Success;
+            finally
+            {
+                hostFs?.Dispose();
+                subDirFs?.Dispose();
+            }
         }
 
         public Result OpenFileSystemWithPatch(out ReferenceCountedDisposable<IFileSystem> fileSystem,
@@ -746,7 +780,7 @@ namespace LibHac.FsSrv
                 rc = Utility.EnsureDirectory(baseFileSystem.Target, new U8Span(contentStoragePath));
                 if (rc.IsFailure()) return rc;
 
-                rc = _config.SubDirectoryFsCreator.Create(out subDirFileSystem, baseFileSystem,
+                rc = _config.SubDirectoryFsCreator.Create(out subDirFileSystem, ref baseFileSystem,
                     new U8Span(contentStoragePath));
                 if (rc.IsFailure()) return rc;
 
@@ -754,8 +788,7 @@ namespace LibHac.FsSrv
                 if (contentStorageId != ContentStorageId.SdCard)
                 {
                     // Move the shared reference to the out variable
-                    fileSystem = subDirFileSystem;
-                    subDirFileSystem = null;
+                    Shared.Move(out fileSystem, ref subDirFileSystem);
 
                     return Result.Success;
                 }
@@ -765,8 +798,7 @@ namespace LibHac.FsSrv
                     EncryptedFsKeyId.Content, in _encryptionSeed);
                 if (rc.IsFailure()) return rc;
 
-                fileSystem = encryptedFileSystem;
-                encryptedFileSystem = null;
+                Shared.Move(out fileSystem, ref encryptedFileSystem);
 
                 return Result.Success;
             }

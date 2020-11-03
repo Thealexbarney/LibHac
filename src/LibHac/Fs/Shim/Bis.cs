@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv;
@@ -137,8 +138,7 @@ namespace LibHac.Fs.Shim
         // todo: Decide how to handle SetBisRootForHost since it allows mounting any directory on the user's computer
         public static Result SetBisRootForHost(this FileSystemClient fs, BisPartitionId partitionId, U8Span rootPath)
         {
-            FsPath sfPath;
-            unsafe { _ = &sfPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath path);
 
             int pathLen = StringUtils.GetLength(rootPath, PathTools.MaxPathLength + 1);
             if (pathLen > PathTools.MaxPathLength)
@@ -150,18 +150,20 @@ namespace LibHac.Fs.Shim
                     ? StringTraits.NullTerminator
                     : StringTraits.DirectorySeparator;
 
-                var sb = new U8StringBuilder(sfPath.Str);
+                var sb = new U8StringBuilder(path.Str);
                 Result rc = sb.Append(rootPath).Append(endingSeparator).ToSfPath();
                 if (rc.IsFailure()) return rc;
             }
             else
             {
-                sfPath.Str[0] = StringTraits.NullTerminator;
+                path.Str[0] = StringTraits.NullTerminator;
             }
+
+            FspPath.FromSpan(out FspPath sfPath, path.Str);
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            return fsProxy.SetBisRootForHost(partitionId, ref sfPath);
+            return fsProxy.SetBisRootForHost(partitionId, in sfPath);
         }
 
         public static Result OpenBisPartition(this FileSystemClient fs, out IStorage partitionStorage, BisPartitionId partitionId)

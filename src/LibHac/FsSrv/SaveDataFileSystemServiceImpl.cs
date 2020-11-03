@@ -437,7 +437,7 @@ namespace LibHac.FsSrv
                     rc = _config.TargetManagerFsCreator.Create(out tmFs, isTargetFsCaseSensitive);
                     if (rc.IsFailure()) return rc;
 
-                    return Utility.CreateSubDirectoryFileSystem(out fileSystem, tmFs, new U8Span(path.Str), true);
+                    return Utility.CreateSubDirectoryFileSystem(out fileSystem, ref tmFs, new U8Span(path.Str), true);
                 }
                 finally
                 {
@@ -482,14 +482,14 @@ namespace LibHac.FsSrv
                         rc = _config.BaseFsService.OpenBisFileSystem(out tempFs, U8Span.Empty, BisPartitionId.System, true);
                         if (rc.IsFailure()) return rc;
 
-                        return Utility.WrapSubDirectory(out fileSystem, tempFs, basePath, createIfMissing);
+                        return Utility.WrapSubDirectory(out fileSystem, ref tempFs, basePath, createIfMissing);
 
                     case SaveDataSpaceId.User:
                     case SaveDataSpaceId.Temporary:
                         rc = _config.BaseFsService.OpenBisFileSystem(out tempFs, U8Span.Empty, BisPartitionId.User, true);
                         if (rc.IsFailure()) return rc;
 
-                        return Utility.WrapSubDirectory(out fileSystem, tempFs, basePath, createIfMissing);
+                        return Utility.WrapSubDirectory(out fileSystem, ref tempFs, basePath, createIfMissing);
 
                     case SaveDataSpaceId.SdSystem:
                     case SaveDataSpaceId.SdCache:
@@ -503,7 +503,7 @@ namespace LibHac.FsSrv
                             .Append((byte)'/')
                             .Append(CommonPaths.SdCardNintendoRootDirectoryName);
 
-                        rc = Utility.WrapSubDirectory(out tempSubFs, tempFs, path, createIfMissing);
+                        rc = Utility.WrapSubDirectory(out tempSubFs, ref tempFs, path, createIfMissing);
                         if (rc.IsFailure()) return rc;
 
                         return _config.EncryptedFsCreator.Create(out fileSystem, tempSubFs, EncryptedFsKeyId.Save,
@@ -513,13 +513,13 @@ namespace LibHac.FsSrv
                         rc = _config.BaseFsService.OpenBisFileSystem(out tempFs, U8Span.Empty, BisPartitionId.SystemProperPartition, true);
                         if (rc.IsFailure()) return rc;
 
-                        return Utility.WrapSubDirectory(out fileSystem, tempFs, basePath, createIfMissing);
+                        return Utility.WrapSubDirectory(out fileSystem, ref tempFs, basePath, createIfMissing);
 
                     case SaveDataSpaceId.SafeMode:
                         rc = _config.BaseFsService.OpenBisFileSystem(out tempFs, U8Span.Empty, BisPartitionId.SafeMode, true);
                         if (rc.IsFailure()) return rc;
 
-                        return Utility.WrapSubDirectory(out fileSystem, tempFs, basePath, createIfMissing);
+                        return Utility.WrapSubDirectory(out fileSystem, ref tempFs, basePath, createIfMissing);
 
                     default:
                         return ResultFs.InvalidArgument.Log();

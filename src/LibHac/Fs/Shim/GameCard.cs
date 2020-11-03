@@ -12,33 +12,63 @@ namespace LibHac.Fs.Shim
         {
             handle = default;
 
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
+            try
+            {
+                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            Result rc = fsProxy.OpenDeviceOperator(out IDeviceOperator deviceOperator);
-            if (rc.IsFailure()) return rc;
+                Result rc = fsProxy.OpenDeviceOperator(out deviceOperator);
+                if (rc.IsFailure()) return rc;
 
-            return deviceOperator.GetGameCardHandle(out handle);
+                return deviceOperator.Target.GetGameCardHandle(out handle);
+            }
+            finally
+            {
+                deviceOperator?.Dispose();
+            }
         }
 
         public static bool IsGameCardInserted(this FileSystemClient fs)
         {
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
+            try
+            {
+                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            Result rc = fsProxy.OpenDeviceOperator(out IDeviceOperator deviceOperator);
-            if (rc.IsFailure()) throw new LibHacException("Abort");
+                Result rc = fsProxy.OpenDeviceOperator(out deviceOperator);
+                if (rc.IsFailure()) throw new LibHacException("Abort");
 
-            rc = deviceOperator.IsGameCardInserted(out bool isInserted);
-            if (rc.IsFailure()) throw new LibHacException("Abort");
+                rc = deviceOperator.Target.IsGameCardInserted(out bool isInserted);
+                if (rc.IsFailure()) throw new LibHacException("Abort");
 
-            return isInserted;
+                return isInserted;
+            }
+            finally
+            {
+                deviceOperator?.Dispose();
+            }
         }
 
         public static Result OpenGameCardPartition(this FileSystemClient fs, out IStorage storage,
             GameCardHandle handle, GameCardPartitionRaw partitionType)
         {
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            storage = default;
 
-            return fsProxy.OpenGameCardStorage(out storage, handle, partitionType);
+            ReferenceCountedDisposable<IStorageSf> sfStorage = null;
+            try
+            {
+                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+
+                Result rc = fsProxy.OpenGameCardStorage(out sfStorage, handle, partitionType);
+                if (rc.IsFailure()) return rc;
+
+                storage = new StorageServiceObjectAdapter(sfStorage);
+                return Result.Success;
+            }
+            finally
+            {
+                sfStorage?.Dispose();
+            }
         }
 
         public static Result MountGameCardPartition(this FileSystemClient fs, U8Span mountName, GameCardHandle handle,

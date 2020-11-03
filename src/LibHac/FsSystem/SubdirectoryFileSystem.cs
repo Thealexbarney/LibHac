@@ -36,9 +36,9 @@ namespace LibHac.FsSystem
             PreserveUnc = preserveUnc;
         }
 
-        public SubdirectoryFileSystem(ReferenceCountedDisposable<IFileSystem> baseFileSystem, bool preserveUnc = false)
+        public SubdirectoryFileSystem(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, bool preserveUnc = false)
         {
-            BaseFileSystemShared = baseFileSystem.AddReference();
+            BaseFileSystemShared = Shared.Move(ref baseFileSystem);
             BaseFileSystem = BaseFileSystemShared.Target;
             PreserveUnc = preserveUnc;
         }
