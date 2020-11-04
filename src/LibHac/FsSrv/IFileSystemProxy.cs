@@ -86,7 +86,7 @@ namespace LibHac.FsSrv
         Result UnregisterAllExternalKey();
         Result GetRightsIdByPath(out RightsId rightsId, in FspPath path);
         Result GetRightsIdAndKeyGenerationByPath(out RightsId rightsId, out byte keyGeneration, in FspPath path);
-        Result SetCurrentPosixTimeWithTimeDifference(long time, int difference);
+        Result SetCurrentPosixTimeWithTimeDifference(long currentTime, int timeDifference);
         Result GetFreeSpaceSizeForSaveData(out long freeSpaceSize, SaveDataSpaceId spaceId);
         Result VerifySaveDataFileSystemBySaveDataSpaceId(SaveDataSpaceId spaceId, ulong saveDataId, OutBuffer readBuffer);
         Result CorruptSaveDataFileSystemBySaveDataSpaceId(SaveDataSpaceId spaceId, ulong saveDataId);

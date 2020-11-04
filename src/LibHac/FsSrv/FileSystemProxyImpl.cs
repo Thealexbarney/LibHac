@@ -25,11 +25,6 @@ namespace LibHac.FsSrv
             CurrentProcess = ulong.MaxValue;
         }
 
-        private ProgramIndexRegistryService GetProgramIndexRegistryService()
-        {
-            return new ProgramIndexRegistryService(FsProxyCore.Config.ProgramRegistryService, CurrentProcess);
-        }
-
         public Result OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath path,
             ulong id, FileSystemProxyType fsType)
         {
@@ -746,9 +741,9 @@ namespace LibHac.FsSrv
             return saveFsService.QuerySaveDataTotalSize(out totalSize, dataSize, journalSize);
         }
 
-        public Result SetCurrentPosixTimeWithTimeDifference(long time, int difference)
+        public Result SetCurrentPosixTimeWithTimeDifference(long currentTime, int timeDifference)
         {
-            throw new NotImplementedException();
+            return GetTimeService().SetCurrentPosixTimeWithTimeDifference(currentTime, timeDifference);
         }
 
         public Result GetRightsId(out RightsId rightsId, ProgramId programId, StorageId storageId)
@@ -1003,6 +998,16 @@ namespace LibHac.FsSrv
 
             saveFsService = SaveFsService.Target;
             return Result.Success;
+        }
+
+        private TimeService GetTimeService()
+        {
+            return new TimeService(FsProxyCore.Config.TimeService, CurrentProcess);
+        }
+
+        private ProgramIndexRegistryService GetProgramIndexRegistryService()
+        {
+            return new ProgramIndexRegistryService(FsProxyCore.Config.ProgramRegistryService, CurrentProcess);
         }
 
         private AccessLogService GetAccessLogService()

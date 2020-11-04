@@ -96,6 +96,11 @@ namespace LibHac.FsSrv
             var programRegistryService = new ProgramRegistryServiceImpl(this);
             var programRegistry = new ProgramRegistryImpl(programRegistryService);
 
+            var timeServiceConfig = new TimeServiceImpl.Configuration();
+            timeServiceConfig.HorizonClient = Hos;
+            timeServiceConfig.ProgramRegistry = programRegistry;
+            var timeService = new TimeServiceImpl(in timeServiceConfig);
+
             var baseFsServiceConfig = new BaseFileSystemServiceImpl.Configuration();
             baseFsServiceConfig.BisFileSystemCreator = config.FsCreators.BuiltInStorageFileSystemCreator;
             baseFsServiceConfig.GameCardFileSystemCreator = config.FsCreators.GameCardFileSystemCreator;
@@ -148,6 +153,7 @@ namespace LibHac.FsSrv
                 BaseFileSystemService = baseFsService,
                 NcaFileSystemService = ncaFsService,
                 SaveDataFileSystemService = saveFsService,
+                TimeService = timeService,
                 ProgramRegistryService = programRegistryService,
                 AccessLogService = accessLogService
             };
