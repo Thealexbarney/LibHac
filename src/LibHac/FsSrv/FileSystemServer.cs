@@ -136,13 +136,20 @@ namespace LibHac.FsSrv
 
             var saveFsService = new SaveDataFileSystemServiceImpl(in saveFsServiceConfig);
 
+            var accessLogServiceConfig = new AccessLogServiceImpl.Configuration();
+            accessLogServiceConfig.MinimumProgramIdForSdCardLog = 0x0100000000003000;
+            accessLogServiceConfig.HorizonClient = Hos;
+            accessLogServiceConfig.ProgramRegistry = programRegistry;
+            var accessLogService = new AccessLogServiceImpl(in accessLogServiceConfig);
+
             var fspConfig = new FileSystemProxyConfiguration
             {
                 FsCreatorInterfaces = config.FsCreators,
                 BaseFileSystemService = baseFsService,
                 NcaFileSystemService = ncaFsService,
                 SaveDataFileSystemService = saveFsService,
-                ProgramRegistryService = programRegistryService
+                ProgramRegistryService = programRegistryService,
+                AccessLogService = accessLogService
             };
 
             return fspConfig;

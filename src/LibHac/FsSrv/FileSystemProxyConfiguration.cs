@@ -9,5 +9,6 @@ namespace LibHac.FsSrv
         public NcaFileSystemServiceImpl NcaFileSystemService { get; set; }
         public SaveDataFileSystemServiceImpl SaveDataFileSystemService { get; set; }
         public ProgramRegistryServiceImpl ProgramRegistryService { get; set; }
+        public AccessLogServiceImpl AccessLogService { get; set; }
     }
 }

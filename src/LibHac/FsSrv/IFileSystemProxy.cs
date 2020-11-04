@@ -104,13 +104,14 @@ namespace LibHac.FsSrv
         Result DisableAutoSaveDataCreation();
         Result SetGlobalAccessLogMode(GlobalAccessLogMode mode);
         Result GetGlobalAccessLogMode(out GlobalAccessLogMode mode);
-        Result OutputAccessLogToSdCard(InBuffer logString);
+        Result OutputAccessLogToSdCard(InBuffer textBuffer);
         Result RegisterUpdatePartition();
         Result OpenRegisteredUpdatePartition(out ReferenceCountedDisposable<IFileSystemSf> fileSystem);
 
         Result GetProgramIndexForAccessLog(out int programIndex, out int programCount);
         Result UnsetSaveDataRootPath();
-        Result OverrideSaveDataTransferTokenSignVerificationKey(ReadOnlySpan<byte> key);
+        Result OutputMultiProgramTagAccessLog();
+        Result OverrideSaveDataTransferTokenSignVerificationKey(InBuffer key);
         Result CorruptSaveDataFileSystemByOffset(SaveDataSpaceId spaceId, ulong saveDataId, long offset);
         Result OpenMultiCommitManager(out ReferenceCountedDisposable<IMultiCommitManager> commitManager);
         Result OpenBisWiper(out ReferenceCountedDisposable<IWiper> bisWiper, NativeHandle transferMemoryHandle, ulong transferMemorySize);

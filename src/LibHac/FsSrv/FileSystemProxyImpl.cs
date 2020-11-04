@@ -888,14 +888,13 @@ namespace LibHac.FsSrv
 
         public Result SetGlobalAccessLogMode(GlobalAccessLogMode mode)
         {
-            // Missing permission check
+            return GetAccessLogService().SetAccessLogMode(mode);
 
-            return FsProxyCore.SetGlobalAccessLogMode(mode);
         }
 
         public Result GetGlobalAccessLogMode(out GlobalAccessLogMode mode)
         {
-            return FsProxyCore.GetGlobalAccessLogMode(out mode);
+            return GetAccessLogService().GetAccessLogMode(out mode);
         }
 
         public Result GetProgramIndexForAccessLog(out int programIndex, out int programCount)
@@ -903,9 +902,14 @@ namespace LibHac.FsSrv
             return GetProgramIndexRegistryService().GetProgramIndex(out programIndex, out programCount);
         }
 
-        public Result OutputAccessLogToSdCard(InBuffer logString)
+        public Result OutputAccessLogToSdCard(InBuffer textBuffer)
         {
-            throw new NotImplementedException();
+            return GetAccessLogService().OutputAccessLogToSdCard(textBuffer);
+        }
+
+        public Result OutputMultiProgramTagAccessLog()
+        {
+            return GetAccessLogService().OutputMultiProgramTagAccessLog();
         }
 
         public Result RegisterUpdatePartition()
@@ -928,7 +932,7 @@ namespace LibHac.FsSrv
             return ncaFsService.OpenRegisteredUpdatePartition(out fileSystem);
         }
 
-        public Result OverrideSaveDataTransferTokenSignVerificationKey(ReadOnlySpan<byte> key)
+        public Result OverrideSaveDataTransferTokenSignVerificationKey(InBuffer key)
         {
             throw new NotImplementedException();
         }
@@ -999,6 +1003,11 @@ namespace LibHac.FsSrv
 
             saveFsService = SaveFsService.Target;
             return Result.Success;
+        }
+
+        private AccessLogService GetAccessLogService()
+        {
+            return new AccessLogService(FsProxyCore.Config.AccessLogService, CurrentProcess);
         }
     }
 }
