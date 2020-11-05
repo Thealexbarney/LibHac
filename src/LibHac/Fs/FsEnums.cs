@@ -190,4 +190,11 @@ namespace LibHac.Fs
         None = 0,
         PseudoCaseSensitive = 1
     }
+
+    public enum SimulatingDeviceDetectionMode
+    {
+        None = 0,
+        Inserted = 1,
+        NotInserted = 2
+    }
 }

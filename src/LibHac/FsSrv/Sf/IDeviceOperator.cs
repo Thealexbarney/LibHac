@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LibHac.FsSrv
+namespace LibHac.FsSrv.Sf
 {
     public interface IDeviceOperator : IDisposable
     {

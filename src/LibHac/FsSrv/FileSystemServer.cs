@@ -4,6 +4,7 @@ using LibHac.Fs.Impl;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Creators;
 using LibHac.FsSrv.Impl;
+using LibHac.FsSrv.Sf;
 using LibHac.Sm;
 
 namespace LibHac.FsSrv
@@ -44,10 +45,7 @@ namespace LibHac.FsSrv
 
             FileSystemProxyConfiguration fspConfig = InitializeFileSystemProxyConfiguration(config);
 
-            FsProxyCore = new FileSystemProxyCoreImpl(fspConfig, config.DeviceOperator);
-
-            FsProxyCore.SetSaveDataIndexerManager(new SaveDataIndexerManager(Hos.Fs, SaveIndexerId,
-                new ArrayPoolMemoryResource(), new SdHandleManager(), false));
+            FsProxyCore = new FileSystemProxyCoreImpl(fspConfig);
 
             FileSystemProxyImpl fsProxy = GetFileSystemProxyServiceObject();
             ulong processId = Hos.Os.GetCurrentProcessId().Value;
@@ -95,6 +93,13 @@ namespace LibHac.FsSrv
 
             var programRegistryService = new ProgramRegistryServiceImpl(this);
             var programRegistry = new ProgramRegistryImpl(programRegistryService);
+
+            var baseStorageConfig = new BaseStorageServiceImpl.Configuration();
+            baseStorageConfig.BisStorageCreator = config.FsCreators.BuiltInStorageCreator;
+            baseStorageConfig.GameCardStorageCreator = config.FsCreators.GameCardStorageCreator;
+            baseStorageConfig.ProgramRegistry = programRegistry;
+            baseStorageConfig.DeviceOperator = new ReferenceCountedDisposable<IDeviceOperator>(config.DeviceOperator);
+            var baseStorageService = new BaseStorageServiceImpl(in baseStorageConfig);
 
             var timeServiceConfig = new TimeServiceImpl.Configuration();
             timeServiceConfig.HorizonClient = Hos;
@@ -150,6 +155,7 @@ namespace LibHac.FsSrv
             var fspConfig = new FileSystemProxyConfiguration
             {
                 FsCreatorInterfaces = config.FsCreators,
+                BaseStorageService = baseStorageService,
                 BaseFileSystemService = baseFsService,
                 NcaFileSystemService = ncaFsService,
                 SaveDataFileSystemService = saveFsService,

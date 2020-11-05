@@ -1,9 +1,5 @@
-﻿using System;
-using LibHac.Common;
-using LibHac.Fs;
-using LibHac.Fs.Fsa;
+﻿using LibHac.Fs;
 using LibHac.FsSrv.Sf;
-using LibHac.FsSystem;
 using LibHac.Ncm;
 using LibHac.Sf;
 using LibHac.Spl;
@@ -75,6 +71,7 @@ namespace LibHac.FsSrv
         Result OpenGameCardDetectionEventNotifier(out ReferenceCountedDisposable<IEventNotifier> eventNotifier);
         Result OpenSystemDataUpdateEventNotifier(out ReferenceCountedDisposable<IEventNotifier> eventNotifier);
         Result NotifySystemDataUpdateEvent();
+        Result SimulateDeviceDetectionEvent(SdmmcPort port, SimulatingDeviceDetectionMode mode, bool signalEvent);
 
         Result QuerySaveDataTotalSize(out long totalSize, long dataSize, long journalSize);
         Result VerifySaveDataFileSystem(ulong saveDataId, OutBuffer readBuffer);

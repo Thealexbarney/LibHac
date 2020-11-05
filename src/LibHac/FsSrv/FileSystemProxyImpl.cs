@@ -386,12 +386,12 @@ namespace LibHac.FsSrv
 
         public Result OpenBisStorage(out ReferenceCountedDisposable<IStorageSf> storage, BisPartitionId partitionId)
         {
-            throw new NotImplementedException();
+            return GetBaseStorageService().OpenBisStorage(out storage, partitionId);
         }
 
         public Result InvalidateBisCache()
         {
-            throw new NotImplementedException();
+            return GetBaseStorageService().InvalidateBisCache();
         }
 
         public Result OpenHostFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath path)
@@ -457,26 +457,27 @@ namespace LibHac.FsSrv
         public Result OpenGameCardStorage(out ReferenceCountedDisposable<IStorageSf> storage, GameCardHandle handle,
             GameCardPartitionRaw partitionId)
         {
-            // Missing permission check and StorageInterfaceAdapter
-
-            return FsProxyCore.OpenGameCardStorage(out storage, handle, partitionId);
+            return GetBaseStorageService().OpenGameCardStorage(out storage, handle, partitionId);
         }
 
         public Result OpenDeviceOperator(out ReferenceCountedDisposable<IDeviceOperator> deviceOperator)
         {
-            // Missing permission check
-
-            return FsProxyCore.OpenDeviceOperator(out deviceOperator);
+            return GetBaseStorageService().OpenDeviceOperator(out deviceOperator);
         }
 
         public Result OpenSdCardDetectionEventNotifier(out ReferenceCountedDisposable<IEventNotifier> eventNotifier)
         {
-            throw new NotImplementedException();
+            return GetBaseStorageService().OpenSdCardDetectionEventNotifier(out eventNotifier);
         }
 
         public Result OpenGameCardDetectionEventNotifier(out ReferenceCountedDisposable<IEventNotifier> eventNotifier)
         {
-            throw new NotImplementedException();
+            return GetBaseStorageService().OpenGameCardDetectionEventNotifier(out eventNotifier);
+        }
+
+        public Result SimulateDeviceDetectionEvent(SdmmcPort port, SimulatingDeviceDetectionMode mode, bool signalEvent)
+        {
+            return GetBaseStorageService().SimulateDeviceDetectionEvent(port, mode, signalEvent);
         }
 
         public Result OpenSystemDataUpdateEventNotifier(out ReferenceCountedDisposable<IEventNotifier> eventNotifier)
@@ -713,6 +714,9 @@ namespace LibHac.FsSrv
             ReferenceCountedDisposable<IFileSystem> customFs = null;
             try
             {
+                rc = FsProxyCore.OpenCustomStorageFileSystem(out customFs, storageId);
+                if (rc.IsFailure()) return rc;
+
                 customFs = StorageLayoutTypeSetFileSystem.CreateShared(ref customFs, storageFlag);
                 customFs = AsynchronousAccessFileSystem.CreateShared(ref customFs);
                 fileSystem = FileSystemInterfaceAdapter.CreateShared(ref customFs);
@@ -971,11 +975,6 @@ namespace LibHac.FsSrv
             return FsProxyCore.ProgramRegistry.GetProgramInfo(out programInfo, CurrentProcess);
         }
 
-        private BaseFileSystemService GetBaseFileSystemService()
-        {
-            return new BaseFileSystemService(FsProxyCore.Config.BaseFileSystemService, CurrentProcess);
-        }
-
         private Result GetNcaFileSystemService(out NcaFileSystemService ncaFsService)
         {
             if (NcaFsService is null)
@@ -998,6 +997,16 @@ namespace LibHac.FsSrv
 
             saveFsService = SaveFsService.Target;
             return Result.Success;
+        }
+
+        private BaseStorageService GetBaseStorageService()
+        {
+            return new BaseStorageService(FsProxyCore.Config.BaseStorageService, CurrentProcess);
+        }
+
+        private BaseFileSystemService GetBaseFileSystemService()
+        {
+            return new BaseFileSystemService(FsProxyCore.Config.BaseFileSystemService, CurrentProcess);
         }
 
         private TimeService GetTimeService()

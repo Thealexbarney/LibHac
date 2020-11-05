@@ -1,6 +1,7 @@
 ﻿using LibHac.Common.Keys;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv.Creators;
+using LibHac.FsSrv.Sf;
 
 namespace LibHac.FsSrv
 {

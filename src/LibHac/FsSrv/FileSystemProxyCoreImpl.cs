@@ -4,8 +4,6 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Creators;
-using LibHac.FsSrv.Impl;
-using LibHac.FsSrv.Sf;
 
 namespace LibHac.FsSrv
 {
@@ -15,67 +13,14 @@ namespace LibHac.FsSrv
         private FileSystemCreators FsCreators => Config.FsCreatorInterfaces;
         internal ProgramRegistryImpl ProgramRegistry { get; }
 
-        private ReferenceCountedDisposable<IDeviceOperator> DeviceOperator { get; }
-
         private byte[] SdEncryptionSeed { get; } = new byte[0x10];
 
         private const string NintendoDirectoryName = "Nintendo";
 
-        private GlobalAccessLogMode LogMode { get; set; }
-
-        internal ISaveDataIndexerManager SaveDataIndexerManager { get; private set; }
-
-        public FileSystemProxyCoreImpl(FileSystemProxyConfiguration config, IDeviceOperator deviceOperator)
+        public FileSystemProxyCoreImpl(FileSystemProxyConfiguration config)
         {
             Config = config;
             ProgramRegistry = new ProgramRegistryImpl(Config.ProgramRegistryService);
-            DeviceOperator = new ReferenceCountedDisposable<IDeviceOperator>(deviceOperator);
-        }
-
-        public Result OpenGameCardStorage(out ReferenceCountedDisposable<IStorageSf> storage, GameCardHandle handle,
-            GameCardPartitionRaw partitionId)
-        {
-            storage = default;
-
-            Result rc;
-            IStorage gcStorage = null;
-            ReferenceCountedDisposable<IStorage> sharedGcStorage = null;
-            try
-            {
-                switch (partitionId)
-                {
-                    case GameCardPartitionRaw.NormalReadOnly:
-                        rc = FsCreators.GameCardStorageCreator.CreateNormal(handle, out gcStorage);
-                        break;
-                    case GameCardPartitionRaw.SecureReadOnly:
-                        rc = FsCreators.GameCardStorageCreator.CreateSecure(handle, out gcStorage);
-                        break;
-                    case GameCardPartitionRaw.RootWriteOnly:
-                        rc = FsCreators.GameCardStorageCreator.CreateWritable(handle, out gcStorage);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(partitionId), partitionId, null);
-                }
-
-                if (rc.IsFailure()) return rc;
-
-                sharedGcStorage = new ReferenceCountedDisposable<IStorage>(gcStorage);
-                gcStorage = null;
-
-                storage = StorageInterfaceAdapter.CreateShared(ref sharedGcStorage);
-                return Result.Success;
-            }
-            finally
-            {
-                gcStorage?.Dispose();
-                sharedGcStorage?.Dispose();
-            }
-        }
-
-        public Result OpenDeviceOperator(out ReferenceCountedDisposable<IDeviceOperator> deviceOperator)
-        {
-            deviceOperator = DeviceOperator.AddReference();
-            return Result.Success;
         }
 
         public Result OpenCustomStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
@@ -177,29 +122,7 @@ namespace LibHac.FsSrv
         public Result SetSdCardEncryptionSeed(in EncryptionSeed seed)
         {
             seed.Value.CopyTo(SdEncryptionSeed);
-            // todo: FsCreators.SaveDataFileSystemCreator.SetSdCardEncryptionSeed(seed);
-
-            SaveDataIndexerManager.InvalidateIndexer(SaveDataSpaceId.SdSystem);
-            SaveDataIndexerManager.InvalidateIndexer(SaveDataSpaceId.SdCache);
-
             return Result.Success;
-        }
-
-        public Result SetGlobalAccessLogMode(GlobalAccessLogMode mode)
-        {
-            LogMode = mode;
-            return Result.Success;
-        }
-
-        public Result GetGlobalAccessLogMode(out GlobalAccessLogMode mode)
-        {
-            mode = LogMode;
-            return Result.Success;
-        }
-
-        internal void SetSaveDataIndexerManager(ISaveDataIndexerManager manager)
-        {
-            SaveDataIndexerManager = manager;
         }
     }
 }

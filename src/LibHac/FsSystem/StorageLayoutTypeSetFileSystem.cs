@@ -42,6 +42,7 @@ namespace LibHac.FsSystem
         {
             if (disposing)
             {
+                using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
                 BaseFileSystem?.Dispose();
             }
 
