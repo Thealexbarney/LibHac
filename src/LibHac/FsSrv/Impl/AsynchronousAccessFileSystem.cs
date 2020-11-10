@@ -7,19 +7,9 @@ namespace LibHac.FsSrv.Impl
 {
     public class AsynchronousAccessFileSystem : ForwardingFileSystem
     {
-        public AsynchronousAccessFileSystem(ReferenceCountedDisposable<IFileSystem> baseFileSystem) : base(
-            baseFileSystem)
-        { }
-
         protected AsynchronousAccessFileSystem(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem) : base(
             ref baseFileSystem)
         { }
-
-        public static ReferenceCountedDisposable<IFileSystem> CreateShared(
-            ReferenceCountedDisposable<IFileSystem> baseFileSystem)
-        {
-            return new ReferenceCountedDisposable<IFileSystem>(new AsynchronousAccessFileSystem(baseFileSystem));
-        }
 
         public static ReferenceCountedDisposable<IFileSystem> CreateShared(
             ref ReferenceCountedDisposable<IFileSystem> fileSystem)

@@ -1,5 +1,6 @@
 ﻿using System;
 using LibHac.Ncm;
+using LibHac.Sf;
 
 namespace LibHac.Lr
 {
@@ -45,7 +46,7 @@ namespace LibHac.Lr
         public Result RedirectApplicationProgramPath(in Path path, ProgramId id, ProgramId ownerId) =>
             _interface.Target.RedirectApplicationProgramPath(in path, id, ownerId);
 
-        public Result ClearApplicationRedirection(ReadOnlySpan<ProgramId> excludingIds) =>
+        public Result ClearApplicationRedirection(InArray<ProgramId> excludingIds) =>
             _interface.Target.ClearApplicationRedirection(excludingIds);
 
         public Result EraseProgramRedirection(ProgramId id) =>
@@ -66,8 +67,8 @@ namespace LibHac.Lr
         public Result RedirectProgramPathForDebug(in Path path, ProgramId id) =>
             _interface.Target.RedirectProgramPathForDebug(in path, id);
 
-        public Result RedirectApplicationProgramPathForDebug(in Path path, ProgramId id) =>
-            _interface.Target.RedirectApplicationProgramPathForDebug(in path, id);
+        public Result RedirectApplicationProgramPathForDebug(in Path path, ProgramId id, ProgramId ownerId) =>
+            _interface.Target.RedirectApplicationProgramPathForDebug(in path, id, ownerId);
 
         public Result EraseProgramRedirectionForDebug(ProgramId id) =>
             _interface.Target.EraseProgramRedirectionForDebug(id);

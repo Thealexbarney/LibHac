@@ -165,6 +165,7 @@ namespace LibHac.FsSrv
             {
                 saveDirectoryFs?.Dispose();
                 // ReSharper disable once ExpressionIsAlwaysNull
+                // ReSharper disable once ConstantConditionalAccessQualifier
                 cachedSaveDataFs?.Dispose();
                 saveDataFs?.Dispose();
             }

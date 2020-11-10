@@ -108,28 +108,28 @@ namespace LibHac.FsSrv.Impl
             return Result.Success;
         }
 
-        public Result ResolveProgramPath(out Path path, ProgramId programId, StorageId storageId)
+        public virtual Result ResolveProgramPath(out Path path, ulong id, StorageId storageId)
         {
             Path.InitEmpty(out path);
 
             Result rc = GetLocationResolver(out LocationResolver resolver, storageId);
             if (rc.IsFailure()) return rc;
 
-            rc = resolver.ResolveProgramPath(out path, programId);
+            rc = resolver.ResolveProgramPath(out path, new ProgramId(id));
             if (rc.IsFailure()) return rc;
 
             PathUtility.Replace(path.StrMutable, (byte)'\\', (byte)'/');
             return Result.Success;
         }
 
-        public Result ResolveRomPath(out Path path, ProgramId programId, StorageId storageId)
+        public Result ResolveRomPath(out Path path, ulong id, StorageId storageId)
         {
             Path.InitEmpty(out path);
 
             Result rc = GetLocationResolver(out LocationResolver resolver, storageId);
             if (rc.IsFailure()) return rc;
 
-            rc = resolver.ResolveProgramPath(out path, programId);
+            rc = resolver.ResolveProgramPath(out path, new ProgramId(id));
             if (rc.IsFailure()) return rc;
 
             PathUtility.Replace(path.StrMutable, (byte)'\\', (byte)'/');
@@ -159,7 +159,7 @@ namespace LibHac.FsSrv.Impl
             return resolver.ResolveDataPath(out path, dataId);
         }
 
-        public Result ResolveRegisteredProgramPath(out Path path, ProgramId programId)
+        public Result ResolveRegisteredProgramPath(out Path path, ulong id)
         {
             Path.InitEmpty(out path);
 
@@ -168,11 +168,11 @@ namespace LibHac.FsSrv.Impl
 
             using (resolver)
             {
-                return resolver.ResolveProgramPath(out path, programId);
+                return resolver.ResolveProgramPath(out path, new ProgramId(id));
             }
         }
 
-        public Result ResolveRegisteredHtmlDocumentPath(out Path path, ProgramId programId)
+        public Result ResolveRegisteredHtmlDocumentPath(out Path path, ulong id)
         {
             Path.InitEmpty(out path);
 
@@ -181,7 +181,7 @@ namespace LibHac.FsSrv.Impl
 
             using (resolver)
             {
-                return resolver.ResolveHtmlDocumentPath(out path, programId);
+                return resolver.ResolveHtmlDocumentPath(out path, new ProgramId(id));
             }
         }
 

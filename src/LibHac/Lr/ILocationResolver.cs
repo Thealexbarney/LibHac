@@ -1,5 +1,6 @@
 ﻿using System;
 using LibHac.Ncm;
+using LibHac.Sf;
 
 namespace LibHac.Lr
 {
@@ -16,14 +17,14 @@ namespace LibHac.Lr
         Result RedirectApplicationLegalInformationPath(in Path path, ProgramId id, ProgramId ownerId);
         Result Refresh();
         Result RedirectApplicationProgramPath(in Path path, ProgramId id, ProgramId ownerId);
-        Result ClearApplicationRedirection(ReadOnlySpan<ProgramId> excludingIds);
+        Result ClearApplicationRedirection(InArray<ProgramId> excludingIds);
         Result EraseProgramRedirection(ProgramId id);
         Result EraseApplicationControlRedirection(ProgramId id);
         Result EraseApplicationHtmlDocumentRedirection(ProgramId id);
         Result EraseApplicationLegalInformationRedirection(ProgramId id);
         Result ResolveProgramPathForDebug(out Path path, ProgramId id);
         Result RedirectProgramPathForDebug(in Path path, ProgramId id);
-        Result RedirectApplicationProgramPathForDebug(in Path path, ProgramId id);
+        Result RedirectApplicationProgramPathForDebug(in Path path, ProgramId id, ProgramId ownerId);
         Result EraseProgramRedirectionForDebug(ProgramId id);
     }
 }

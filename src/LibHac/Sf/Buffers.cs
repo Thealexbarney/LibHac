@@ -41,4 +41,34 @@ namespace LibHac.Sf
             return new OutBuffer(SpanHelpers.AsByteSpan(ref value));
         }
     }
+
+    public readonly ref struct InArray<T> where T : unmanaged
+    {
+        private readonly ReadOnlySpan<T> _array;
+
+        public int Size => _array.Length;
+        public ReadOnlySpan<T> Array => _array;
+
+        public InArray(ReadOnlySpan<T> array)
+        {
+            _array = array;
+        }
+
+        public ref readonly T this[int i] => ref _array[i];
+    }
+
+    public readonly ref struct OutArray<T> where T : unmanaged
+    {
+        private readonly Span<T> _array;
+
+        public int Size => _array.Length;
+        public Span<T> Array => _array;
+
+        public OutArray(Span<T> array)
+        {
+            _array = array;
+        }
+
+        public ref T this[int i] => ref _array[i];
+    }
 }

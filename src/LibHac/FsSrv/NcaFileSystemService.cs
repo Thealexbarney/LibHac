@@ -1,17 +1,21 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
+using LibHac.Lr;
 using LibHac.Ncm;
 using LibHac.Spl;
 using LibHac.Util;
+using Path = LibHac.Lr.Path;
 
 namespace LibHac.FsSrv
 {
-    internal class NcaFileSystemService : IRomFileSystemAccessFailureManager, IDisposable
+    internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
     {
         private const int AocSemaphoreCount = 128;
         private const int RomSemaphoreCount = 10;
@@ -44,10 +48,125 @@ namespace LibHac.FsSrv
             return sharedService;
         }
 
+        public void Dispose()
+        {
+            AocMountCountSemaphore?.Dispose();
+            RomMountCountSemaphore?.Dispose();
+        }
+
         public Result OpenFileSystemWithPatch(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             ProgramId programId, FileSystemProxyType fsType)
         {
-            throw new NotImplementedException();
+            fileSystem = default;
+
+            const StorageType storageFlag = StorageType.All;
+            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
+
+            // Get the program info for the caller and verify permissions
+            Result rc = GetProgramInfo(out ProgramInfo callerProgramInfo);
+            if (rc.IsFailure()) return rc;
+
+            if (fsType != FileSystemProxyType.Manual)
+            {
+                if (fsType == FileSystemProxyType.Logo || fsType == FileSystemProxyType.Control)
+                    return ResultFs.NotImplemented.Log();
+                else
+                    return ResultFs.InvalidArgument.Log();
+            }
+
+            Accessibility accessibility =
+                callerProgramInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountContentManual);
+
+            if (!accessibility.CanRead)
+                return ResultFs.PermissionDenied.Log();
+
+            // Get the program info for the owner of the file system being opened
+            rc = GetProgramInfoByProgramId(out ProgramInfo ownerProgramInfo, programId.Value);
+            if (rc.IsFailure()) return rc;
+
+            // Try to find the path to the original version of the file system
+            Result originalResult = ServiceImpl.ResolveApplicationHtmlDocumentPath(out Path originalPath,
+                new Ncm.ApplicationId(programId.Value), ownerProgramInfo.StorageId);
+
+            // The file system might have a patch version with no original version, so continue if not found
+            if (originalResult.IsFailure() && !ResultLr.HtmlDocumentNotFound.Includes(originalResult))
+                return originalResult;
+
+            // Use a separate bool because ref structs can't be used as type parameters
+            bool originalPathNormalizerHasValue = false;
+            PathNormalizer originalPathNormalizer = default;
+
+            // Normalize the original version path if found
+            if (originalResult.IsSuccess())
+            {
+                originalPathNormalizer = new PathNormalizer(originalPath, GetPathNormalizerOptions(originalPath));
+                if (originalPathNormalizer.Result.IsFailure()) return originalPathNormalizer.Result;
+
+                originalPathNormalizerHasValue = true;
+            }
+
+            // Try to find the path to the patch file system
+            Result patchResult = ServiceImpl.ResolveRegisteredHtmlDocumentPath(out Path patchPath, programId.Value);
+
+            ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
+            ReferenceCountedDisposable<IRomFileSystemAccessFailureManager> accessFailureManager = null;
+            try
+            {
+                if (ResultLr.HtmlDocumentNotFound.Includes(patchResult))
+                {
+                    // There must either be an original version or patch version of the file system being opened
+                    if (originalResult.IsFailure())
+                        return originalResult;
+
+                    Assert.AssertTrue(originalPathNormalizerHasValue);
+
+                    // There is an original version and no patch version. Open the original directly
+                    rc = ServiceImpl.OpenFileSystem(out tempFileSystem, originalPathNormalizer.Path, fsType, programId.Value);
+                    if (rc.IsFailure()) return rc;
+                }
+                else
+                {
+                    // Get the normalized path to the original file system
+                    U8Span normalizedOriginalPath;
+                    if (originalPathNormalizerHasValue)
+                    {
+                        normalizedOriginalPath = originalPathNormalizer.Path;
+                    }
+                    else
+                    {
+                        normalizedOriginalPath = U8Span.Empty;
+                    }
+
+                    // Normalize the path to the patch file system
+                    var patchPathNormalizer = new PathNormalizer(patchPath, GetPathNormalizerOptions(patchPath));
+                    if (patchPathNormalizer.Result.IsFailure()) return patchPathNormalizer.Result;
+
+                    if (patchResult.IsFailure())
+                        return patchResult;
+
+                    U8Span normalizedPatchPath = patchPathNormalizer.Path;
+
+                    // Open the file system using both the original and patch versions
+                    rc = ServiceImpl.OpenFileSystemWithPatch(out tempFileSystem, normalizedOriginalPath,
+                        normalizedPatchPath, fsType, programId.Value);
+                    if (rc.IsFailure()) return rc;
+                }
+
+                // Add all the file system wrappers
+                tempFileSystem = StorageLayoutTypeSetFileSystem.CreateShared(ref tempFileSystem, storageFlag);
+                tempFileSystem = AsynchronousAccessFileSystem.CreateShared(ref tempFileSystem);
+
+                accessFailureManager = SelfReference.AddReference<IRomFileSystemAccessFailureManager>();
+                tempFileSystem = DeepRetryFileSystem.CreateShared(ref tempFileSystem, ref accessFailureManager);
+
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem);
+                return Result.Success;
+            }
+            finally
+            {
+                tempFileSystem?.Dispose();
+                accessFailureManager?.Dispose();
+            }
         }
 
         public Result OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
@@ -62,7 +181,7 @@ namespace LibHac.FsSrv
         }
 
         private Result OpenDataStorageCore(out ReferenceCountedDisposable<IStorage> storage, out Hash ncaHeaderDigest,
-            ulong id, StorageId storageId)
+                ulong id, StorageId storageId)
         {
             throw new NotImplementedException();
         }
@@ -165,7 +284,44 @@ namespace LibHac.FsSrv
         public Result OpenDataFileSystemWithProgramIndex(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             byte programIndex)
         {
-            throw new NotImplementedException();
+            fileSystem = default;
+
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            // Get the program ID of the program with the specified index if in a multi-program application
+            rc = ServiceImpl.ResolveRomReferenceProgramId(out ProgramId targetProgramId, programInfo.ProgramId,
+                programIndex);
+            if (rc.IsFailure()) return rc;
+
+            ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
+            try
+            {
+                rc = OpenDataFileSystemCore(out tempFileSystem, out _, targetProgramId.Value,
+                    programInfo.StorageId);
+                if (rc.IsFailure()) return rc;
+
+                // Verify the caller has access to the file system
+                if (targetProgramId != programInfo.ProgramId &&
+                    !programInfo.AccessControl.HasContentOwnerId(targetProgramId.Value))
+                {
+                    return ResultFs.PermissionDenied.Log();
+                }
+
+                tempFileSystem = AsynchronousAccessFileSystem.CreateShared(ref tempFileSystem);
+                if (tempFileSystem is null)
+                    return ResultFs.AllocationFailureInAllocateShared.Log();
+
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem);
+                if (fileSystem is null)
+                    return ResultFs.AllocationFailureInCreateShared.Log();
+
+                return Result.Success;
+            }
+            finally
+            {
+                tempFileSystem?.Dispose();
+            }
         }
 
         public Result OpenDataStorageWithProgramIndex(out ReferenceCountedDisposable<IStorageSf> storage,
@@ -176,24 +332,99 @@ namespace LibHac.FsSrv
 
         public Result GetRightsId(out RightsId rightsId, ProgramId programId, StorageId storageId)
         {
-            throw new NotImplementedException();
+            Unsafe.SkipInit(out rightsId);
+
+            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.All);
+
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            if (!programInfo.AccessControl.CanCall(OperationType.GetRightsId))
+                return ResultFs.PermissionDenied.Log();
+
+            rc = ServiceImpl.ResolveProgramPath(out Path programPath, programId, storageId);
+            if (rc.IsFailure()) return rc;
+
+            var normalizer = new PathNormalizer(programPath, GetPathNormalizerOptions(programPath));
+            if (normalizer.Result.IsFailure()) return normalizer.Result;
+
+            rc = ServiceImpl.GetRightsId(out RightsId tempRightsId, out _, normalizer.Path, programId);
+            if (rc.IsFailure()) return rc;
+
+            rightsId = tempRightsId;
+            return Result.Success;
         }
 
         public Result GetRightsIdAndKeyGenerationByPath(out RightsId rightsId, out byte keyGeneration, in FspPath path)
         {
-            throw new NotImplementedException();
+            Unsafe.SkipInit(out rightsId);
+            Unsafe.SkipInit(out keyGeneration);
+
+            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.All);
+
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            if (!programInfo.AccessControl.CanCall(OperationType.GetRightsId))
+                return ResultFs.PermissionDenied.Log();
+
+            var normalizer = new PathNormalizer(path, GetPathNormalizerOptions(path));
+            if (normalizer.Result.IsFailure()) return normalizer.Result;
+
+            rc = ServiceImpl.GetRightsId(out RightsId tempRightsId, out byte tempKeyGeneration, normalizer.Path,
+                new ProgramId(ulong.MaxValue));
+            if (rc.IsFailure()) return rc;
+
+            rightsId = tempRightsId;
+            keyGeneration = tempKeyGeneration;
+            return Result.Success;
         }
 
         private Result OpenDataFileSystemCore(out ReferenceCountedDisposable<IFileSystem> fileSystem, out bool isHostFs,
-            ulong id, StorageId storageId)
+            ulong programId, StorageId storageId)
         {
-            throw new NotImplementedException();
+            fileSystem = default;
+            Unsafe.SkipInit(out isHostFs);
+
+            if (Unsafe.IsNullRef(ref isHostFs))
+                return ResultFs.NullptrArgument.Log();
+
+            StorageType storageFlag = ServiceImpl.GetStorageFlag(programId);
+            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
+
+            Result rc = ServiceImpl.ResolveRomPath(out Path romPath, programId, storageId);
+            if (rc.IsFailure()) return rc;
+
+            var normalizer = new PathNormalizer(romPath, GetPathNormalizerOptions(romPath));
+            if (normalizer.Result.IsFailure()) return normalizer.Result;
+
+            isHostFs = IsHostFs(romPath);
+
+            ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
+            try
+            {
+                rc = ServiceImpl.OpenDataFileSystem(out tempFileSystem, normalizer.Path, FileSystemProxyType.Rom,
+                    programId);
+                if (rc.IsFailure()) return rc;
+
+                tempFileSystem = StorageLayoutTypeSetFileSystem.CreateShared(ref tempFileSystem, storageFlag);
+
+                Shared.Move(out fileSystem, ref tempFileSystem);
+                return Result.Success;
+            }
+            finally
+            {
+                tempFileSystem?.Dispose();
+            }
         }
 
         public Result OpenContentStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             ContentStorageId contentStorageId)
         {
             fileSystem = default;
+
+            StorageType storageFlag = contentStorageId == ContentStorageId.System ? StorageType.Bis : StorageType.All;
+            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -204,21 +435,24 @@ namespace LibHac.FsSrv
             if (!accessibility.CanRead || !accessibility.CanWrite)
                 return ResultFs.PermissionDenied.Log();
 
-            ReferenceCountedDisposable<IFileSystem> fs = null;
+            ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
 
             try
             {
-                rc = ServiceImpl.OpenContentStorageFileSystem(out fs, contentStorageId);
+                rc = ServiceImpl.OpenContentStorageFileSystem(out tempFileSystem, contentStorageId);
                 if (rc.IsFailure()) return rc;
 
+                tempFileSystem = StorageLayoutTypeSetFileSystem.CreateShared(ref tempFileSystem, storageFlag);
+                tempFileSystem = AsynchronousAccessFileSystem.CreateShared(ref tempFileSystem);
+
                 // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem);
 
                 return Result.Success;
             }
             finally
             {
-                fs?.Dispose();
+                tempFileSystem?.Dispose();
             }
         }
 
@@ -257,12 +491,60 @@ namespace LibHac.FsSrv
 
         public Result RegisterUpdatePartition()
         {
-            throw new NotImplementedException();
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            if (!programInfo.AccessControl.CanCall(OperationType.RegisterUpdatePartition))
+                return ResultFs.PermissionDenied.Log();
+
+            rc = ServiceImpl.ResolveRomPath(out Path romPath, programInfo.ProgramIdValue, programInfo.StorageId);
+            if (rc.IsFailure()) return rc;
+
+            var normalizer = new PathNormalizer(romPath, GetPathNormalizerOptions(romPath));
+            if (normalizer.Result.IsFailure()) return normalizer.Result;
+
+            return ServiceImpl.RegisterUpdatePartition(programInfo.ProgramIdValue, normalizer.Path);
         }
 
         public Result OpenRegisteredUpdatePartition(out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
         {
-            throw new NotImplementedException();
+            fileSystem = default;
+
+            var storageFlag = StorageType.All;
+            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
+
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            Accessibility accessibility =
+                programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountRegisteredUpdatePartition);
+            if (!accessibility.CanRead)
+                return ResultFs.PermissionDenied.Log();
+
+            ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
+            try
+            {
+                rc = ServiceImpl.OpenRegisteredUpdatePartition(out tempFileSystem);
+                if (rc.IsFailure()) return rc;
+
+                tempFileSystem = StorageLayoutTypeSetFileSystem.CreateShared(ref tempFileSystem, storageFlag);
+                if (tempFileSystem is null)
+                    return ResultFs.AllocationFailureInAllocateShared.Log();
+
+                tempFileSystem = AsynchronousAccessFileSystem.CreateShared(ref tempFileSystem);
+                if (tempFileSystem is null)
+                    return ResultFs.AllocationFailureInAllocateShared.Log();
+
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem);
+                if (fileSystem is null)
+                    return ResultFs.AllocationFailureInCreateShared.Log();
+
+                return Result.Success;
+            }
+            finally
+            {
+                tempFileSystem?.Dispose();
+            }
         }
 
         public Result IsArchivedProgram(out bool isArchived, ulong processId)
@@ -291,30 +573,24 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result HandleResolubleAccessFailure(out bool wasDeferred, in Result nonDeferredResult)
+        public Result HandleResolubleAccessFailure(out bool wasDeferred, Result resultForNoFailureDetected)
         {
-            throw new NotImplementedException();
+            return ServiceImpl.HandleResolubleAccessFailure(out wasDeferred, resultForNoFailureDetected, ProcessId);
         }
 
         public void IncrementRomFsRemountForDataCorruptionCount()
         {
-            throw new NotImplementedException();
+            ServiceImpl.IncrementRomFsRemountForDataCorruptionCount();
         }
 
         public void IncrementRomFsUnrecoverableDataCorruptionByRemountCount()
         {
-            throw new NotImplementedException();
+            ServiceImpl.IncrementRomFsUnrecoverableDataCorruptionByRemountCount();
         }
 
         public void IncrementRomFsRecoveredByInvalidateCacheCount()
         {
-            throw new NotImplementedException();
-        }
-
-        Result IRomFileSystemAccessFailureManager.OpenDataStorageCore(out ReferenceCountedDisposable<IStorage> storage,
-            out Hash ncaHeaderDigest, ulong id, StorageId storageId)
-        {
-            return OpenDataStorageCore(out storage, out ncaHeaderDigest, id, storageId);
+            ServiceImpl.IncrementRomFsRecoveredByInvalidateCacheCount();
         }
 
         private Result TryAcquireAddOnContentOpenCountSemaphore(out IUniqueLock semaphoreLock)
@@ -329,7 +605,17 @@ namespace LibHac.FsSrv
 
         private Result GetProgramInfo(out ProgramInfo programInfo)
         {
-            return ServiceImpl.GetProgramInfo(out programInfo, ProcessId);
+            return ServiceImpl.GetProgramInfoByProcessId(out programInfo, ProcessId);
+        }
+
+        private Result GetProgramInfoByProcessId(out ProgramInfo programInfo, ulong processId)
+        {
+            return ServiceImpl.GetProgramInfoByProcessId(out programInfo, processId);
+        }
+
+        private Result GetProgramInfoByProgramId(out ProgramInfo programInfo, ulong programId)
+        {
+            return ServiceImpl.GetProgramInfoByProgramId(out programInfo, programId);
         }
 
         private PathNormalizer.Option GetPathNormalizerOptions(U8Span path)
@@ -347,10 +633,10 @@ namespace LibHac.FsSrv
             return StringUtils.Compare(path, CommonPaths.HostRootFileSystemMountName, hostMountLength) == 0;
         }
 
-        public void Dispose()
+        Result IRomFileSystemAccessFailureManager.OpenDataStorageCore(out ReferenceCountedDisposable<IStorage> storage,
+            out Hash ncaHeaderDigest, ulong id, StorageId storageId)
         {
-            AocMountCountSemaphore?.Dispose();
-            RomMountCountSemaphore?.Dispose();
+            return OpenDataStorageCore(out storage, out ncaHeaderDigest, id, storageId);
         }
     }
 }

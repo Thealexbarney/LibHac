@@ -442,6 +442,24 @@ namespace LibHac
                 return TryAddReferenceImpl(target, referenceCount);
             }
 
+            public ReferenceCountedDisposable<TTo>? TryAddReference<TTo>()
+                where TTo : class, IDisposable
+            {
+                WeakReference<T>? weakInstance = _weakInstance;
+                if (weakInstance == null || !weakInstance.TryGetTarget(out var target))
+                {
+                    return null;
+                }
+
+                StrongBox<int>? referenceCount = _boxedReferenceCount;
+                if (referenceCount == null)
+                {
+                    return null;
+                }
+
+                return TryAddReferenceImpl<T, TTo>(target, referenceCount, out _);
+            }
+
             /// <summary>
             /// Increments the reference count for the disposable object, and returns a new disposable reference to
             /// it.
@@ -459,6 +477,36 @@ namespace LibHac
             /// underlying object has already been disposed.</returns>
             public ReferenceCountedDisposable<T> AddReference() =>
                 TryAddReference() ?? throw new ObjectDisposedException(nameof(WeakReference));
+
+            public ReferenceCountedDisposable<TTo> AddReference<TTo>() where TTo : class, IDisposable
+            {
+                WeakReference<T>? weakInstance = _weakInstance;
+                if (weakInstance == null || !weakInstance.TryGetTarget(out var target))
+                {
+                    throw new ObjectDisposedException(nameof(WeakReference));
+                }
+
+                StrongBox<int>? referenceCount = _boxedReferenceCount;
+                if (referenceCount == null)
+                {
+                    throw new ObjectDisposedException(nameof(WeakReference));
+                }
+
+                ReferenceCountedDisposable<TTo>? newReference =
+                    TryAddReferenceImpl<T, TTo>(target, referenceCount, out CreateResult result);
+
+                if (newReference != null)
+                {
+                    return newReference;
+                }
+
+                throw result switch
+                {
+                    CreateResult.Disposed => new ObjectDisposedException(nameof(ReferenceCountedDisposable<T>)),
+                    CreateResult.NotCastable => new InvalidCastException(),
+                    _ => new NotSupportedException("This exception should never be thrown.")
+                };
+            }
         }
     }
 }

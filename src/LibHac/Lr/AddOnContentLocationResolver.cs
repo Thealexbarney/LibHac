@@ -1,5 +1,6 @@
 ﻿using System;
 using LibHac.Ncm;
+using LibHac.Sf;
 
 namespace LibHac.Lr
 {
@@ -21,7 +22,7 @@ namespace LibHac.Lr
         public Result UnregisterAllAddOnContentPath() =>
             _interface.Target.UnregisterAllAddOnContentPath();
 
-        public Result RefreshApplicationAddOnContent(ReadOnlySpan<Ncm.ApplicationId> ids) =>
+        public Result RefreshApplicationAddOnContent(InArray<Ncm.ApplicationId> ids) =>
             _interface.Target.RefreshApplicationAddOnContent(ids);
 
         public Result UnregisterApplicationAddOnContent(Ncm.ApplicationId id) =>
