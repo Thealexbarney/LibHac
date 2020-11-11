@@ -5,6 +5,10 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv.Sf;
 using LibHac.Util;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
+using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
+using IFileSf = LibHac.FsSrv.Sf.IFile;
+using IDirectorySf = LibHac.FsSrv.Sf.IDirectory;
 
 namespace LibHac.FsSrv.Impl
 {
@@ -178,7 +182,7 @@ namespace LibHac.FsSrv.Impl
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             Result rc = Result.Success;
-            IFile fileInterface = null;
+            Fs.Fsa.IFile fileInterface = null;
 
             for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
             {
@@ -207,7 +211,7 @@ namespace LibHac.FsSrv.Impl
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             Result rc = Result.Success;
-            IDirectory dirInterface = null;
+            Fs.Fsa.IDirectory dirInterface = null;
 
             for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
             {

@@ -2,6 +2,7 @@
 using LibHac.Common;
 using LibHac.Fs.Accessors;
 using LibHac.FsSrv.Sf;
+using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim
 {

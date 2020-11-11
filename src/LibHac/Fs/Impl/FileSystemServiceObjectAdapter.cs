@@ -4,14 +4,17 @@ using LibHac.Common;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv.Sf;
 using LibHac.Util;
+using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
+using IFileSf = LibHac.FsSrv.Sf.IFile;
+using IDirectorySf = LibHac.FsSrv.Sf.IDirectory;
 
 namespace LibHac.Fs.Impl
 {
     /// <summary>
-    /// An adapter for using an <see cref="IFileSystemSf"/> service object as an <see cref="IFileSystem"/>. Used
-    /// when receiving a Horizon IPC file system object so it can be used as an <see cref="IFileSystem"/> locally.
+    /// An adapter for using an <see cref="IFileSystemSf"/> service object as an <see cref="Fsa.IFileSystem"/>. Used
+    /// when receiving a Horizon IPC file system object so it can be used as an <see cref="Fsa.IFileSystem"/> locally.
     /// </summary>
-    internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
+    internal class FileSystemServiceObjectAdapter : Fsa.IFileSystem, IMultiCommitTarget
     {
         private ReferenceCountedDisposable<IFileSystemSf> BaseFs { get; }
 
@@ -122,7 +125,7 @@ namespace LibHac.Fs.Impl
             return BaseFs.Target.GetTotalSpaceSize(out totalSpace, in sfPath);
         }
 
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out Fsa.IFile file, U8Span path, OpenMode mode)
         {
             file = default;
 
@@ -144,7 +147,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out Fsa.IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
             directory = default;
 
@@ -181,7 +184,8 @@ namespace LibHac.Fs.Impl
             return BaseFs.Target.GetFileTimeStampRaw(out timeStamp, in sfPath);
         }
 
-        protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, U8Span path)
+        protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
+            U8Span path)
         {
             Result rc = GetPathForServiceObject(out Path sfPath, path);
             if (rc.IsFailure()) return rc;

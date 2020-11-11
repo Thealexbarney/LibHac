@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
-using LibHac.FsSrv.Sf;
+using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.Fs.Impl
 {

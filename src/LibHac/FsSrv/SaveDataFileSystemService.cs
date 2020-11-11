@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
-using LibHac.Fs.Fsa;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
@@ -11,6 +10,10 @@ using LibHac.Kvdb;
 using LibHac.Ncm;
 using LibHac.Sf;
 using LibHac.Util;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
+using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
+using IFile = LibHac.Fs.Fsa.IFile;
+using IFileSf = LibHac.FsSrv.Sf.IFile;
 using Utility = LibHac.FsSystem.Utility;
 
 namespace LibHac.FsSrv

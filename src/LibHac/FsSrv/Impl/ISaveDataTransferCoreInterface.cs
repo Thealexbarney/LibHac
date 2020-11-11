@@ -1,8 +1,8 @@
 ﻿using System;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
-using LibHac.FsSrv.Sf;
 using LibHac.Util;
+using IFileSf = LibHac.FsSrv.Sf.IFile;
 
 namespace LibHac.FsSrv.Impl
 {

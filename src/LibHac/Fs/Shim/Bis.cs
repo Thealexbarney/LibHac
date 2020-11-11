@@ -8,6 +8,8 @@ using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
 using LibHac.Util;
 using static LibHac.Fs.CommonPaths;
+using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
+using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.Fs.Shim
 {
@@ -82,7 +84,8 @@ namespace LibHac.Fs.Shim
         }
 
         // ReSharper disable once UnusedParameter.Local
-        private static Result MountBisImpl(FileSystemClient fs, U8Span mountName, BisPartitionId partitionId, U8Span rootPath)
+        private static Result MountBisImpl(FileSystemClient fs, U8Span mountName, BisPartitionId partitionId,
+            U8Span rootPath)
         {
             Result rc = MountHelpers.CheckMountNameAcceptingReservedMountName(mountName);
             if (rc.IsFailure()) return rc;
@@ -166,7 +169,8 @@ namespace LibHac.Fs.Shim
             return fsProxy.SetBisRootForHost(partitionId, in sfPath);
         }
 
-        public static Result OpenBisPartition(this FileSystemClient fs, out IStorage partitionStorage, BisPartitionId partitionId)
+        public static Result OpenBisPartition(this FileSystemClient fs, out IStorage partitionStorage,
+            BisPartitionId partitionId)
         {
             partitionStorage = default;
 

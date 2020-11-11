@@ -5,6 +5,8 @@ using LibHac.FsSrv.Creators;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
+using IStorage = LibHac.Fs.IStorage;
+using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.FsSrv
 {

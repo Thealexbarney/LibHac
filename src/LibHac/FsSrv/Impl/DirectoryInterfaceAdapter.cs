@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using LibHac.Fs;
-using LibHac.Fs.Fsa;
-using LibHac.FsSrv.Sf;
+using LibHac.Sf;
+using IDirectory = LibHac.Fs.Fsa.IDirectory;
+using IDirectorySf = LibHac.FsSrv.Sf.IDirectory;
 
 namespace LibHac.FsSrv.Impl
 {
@@ -19,12 +20,12 @@ namespace LibHac.FsSrv.Impl
             parentFileSystem = null;
         }
 
-        public Result Read(out long entriesRead, Span<byte> entryBuffer)
+        public Result Read(out long entriesRead, OutBuffer entryBuffer)
         {
             const int maxTryCount = 2;
             entriesRead = default;
 
-            Span<DirectoryEntry> entries = MemoryMarshal.Cast<byte, DirectoryEntry>(entryBuffer);
+            Span<DirectoryEntry> entries = MemoryMarshal.Cast<byte, DirectoryEntry>(entryBuffer.Buffer);
 
             Result rc = Result.Success;
             long tmpEntriesRead = 0;

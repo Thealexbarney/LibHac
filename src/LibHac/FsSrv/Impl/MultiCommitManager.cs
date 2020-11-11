@@ -8,6 +8,9 @@ using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Sf;
 using LibHac.Sf;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
+using IFile = LibHac.Fs.Fsa.IFile;
+using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.FsSrv.Impl
 {

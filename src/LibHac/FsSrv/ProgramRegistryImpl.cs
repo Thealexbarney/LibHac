@@ -1,8 +1,8 @@
-﻿using System;
-using LibHac.Fs;
+﻿using LibHac.Fs;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
+using LibHac.Sf;
 
 namespace LibHac.FsSrv
 {
@@ -38,13 +38,13 @@ namespace LibHac.FsSrv
         /// <see cref="ResultFs.PermissionDenied"/>: Insufficient permissions.</returns>
         /// <inheritdoc cref="ProgramRegistryManager.RegisterProgram"/>
         public Result RegisterProgram(ulong processId, ProgramId programId, StorageId storageId,
-            ReadOnlySpan<byte> accessControlData, ReadOnlySpan<byte> accessControlDescriptor)
+            InBuffer accessControlData, InBuffer accessControlDescriptor)
         {
             if (!ProgramInfo.IsInitialProgram(_processId))
                 return ResultFs.PermissionDenied.Log();
 
-            return _registryService.RegisterProgramInfo(processId, programId, storageId, accessControlData,
-                accessControlDescriptor);
+            return _registryService.RegisterProgramInfo(processId, programId, storageId, accessControlData.Buffer,
+                accessControlDescriptor.Buffer);
         }
 
         /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>

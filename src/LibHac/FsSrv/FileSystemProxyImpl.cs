@@ -2,13 +2,16 @@
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
-using LibHac.Fs.Fsa;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
 using LibHac.Ncm;
 using LibHac.Sf;
 using LibHac.Spl;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
+using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
+using IFileSf = LibHac.FsSrv.Sf.IFile;
+using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.FsSrv
 {

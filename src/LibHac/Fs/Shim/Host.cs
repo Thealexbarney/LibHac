@@ -2,13 +2,14 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
-using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv;
 using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
 using LibHac.Util;
 using static LibHac.Fs.CommonPaths;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
+using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim
 {

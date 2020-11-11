@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using LibHac.Fs.Fsa;
-using LibHac.FsSrv.Sf;
+using LibHac.Sf;
+using IDirectory = LibHac.Fs.Fsa.IDirectory;
+using IDirectorySf = LibHac.FsSrv.Sf.IDirectory;
 
 namespace LibHac.Fs.Impl
 {
@@ -21,7 +22,7 @@ namespace LibHac.Fs.Impl
         protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)
         {
             Span<byte> buffer = MemoryMarshal.Cast<DirectoryEntry, byte>(entryBuffer);
-            return BaseDirectory.Target.Read(out entriesRead, buffer);
+            return BaseDirectory.Target.Read(out entriesRead, new OutBuffer(buffer));
         }
 
         protected override Result DoGetEntryCount(out long entryCount)

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using LibHac.Common;
 using LibHac.Fs.Fsa;
-using LibHac.FsSrv.Sf;
+using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Accessors
 {

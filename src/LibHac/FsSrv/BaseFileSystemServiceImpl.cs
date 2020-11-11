@@ -1,11 +1,11 @@
 ﻿using System;
 using LibHac.Common;
 using LibHac.Fs;
-using LibHac.Fs.Fsa;
 using LibHac.FsSrv.Creators;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Sf;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 
 namespace LibHac.FsSrv
 {

@@ -9,6 +9,7 @@ using LibHac.FsSrv;
 using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
 using LibHac.Util;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 
 namespace LibHac.Fs
 {

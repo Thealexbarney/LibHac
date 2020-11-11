@@ -1,12 +1,13 @@
 ﻿using System;
 using LibHac.Fs;
-using LibHac.Fs.Fsa;
+using IFileSf = LibHac.FsSrv.Sf.IFile;
+using IDirectorySf = LibHac.FsSrv.Sf.IDirectory;
 
 namespace LibHac.FsSrv.Sf
 {
-    public interface IFileSystemSf : IDisposable
+    public interface IFileSystem : IDisposable
     {
-        Result GetImpl(out ReferenceCountedDisposable<IFileSystem> fileSystem);
+        Result GetImpl(out ReferenceCountedDisposable<Fs.Fsa.IFileSystem> fileSystem);
         Result CreateFile(in Path path, long size, int option);
         Result DeleteFile(in Path path);
         Result CreateDirectory(in Path path);

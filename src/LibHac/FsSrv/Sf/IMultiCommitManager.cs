@@ -1,4 +1,5 @@
 ﻿using System;
+using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.FsSrv.Sf
 {

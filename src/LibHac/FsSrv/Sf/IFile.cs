@@ -3,7 +3,7 @@ using LibHac.Fs;
 
 namespace LibHac.FsSrv.Sf
 {
-    public interface IFileSf : IDisposable
+    public interface IFile : IDisposable
     {
         Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption option);
         Result Write(long offset, ReadOnlySpan<byte> source, WriteOption option);
