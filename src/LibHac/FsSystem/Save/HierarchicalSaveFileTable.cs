@@ -347,7 +347,7 @@ namespace LibHac.FsSystem.Save
 
             if (PathTools.IsSubPath(srcPath, dstPath))
             {
-                return ResultFs.DestinationIsSubPathOfSource.Log();
+                return ResultFs.DirectoryNotRenamable.Log();
             }
 
             if (oldKey.Parent != newKey.Parent)

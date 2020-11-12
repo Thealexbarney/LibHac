@@ -1,9 +1,10 @@
 ﻿using System;
 using LibHac.Common;
-using LibHac.Fs.Fsa;
+using LibHac.Fs.Impl;
 using LibHac.FsSrv;
-using LibHac.FsSystem;
+using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
+using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim
 {
@@ -27,10 +28,16 @@ namespace LibHac.Fs.Shim
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            rc = fsProxy.OpenFileSystemWithPatch(out IFileSystem fileSystem, programId, fspType);
+            rc = fsProxy.OpenFileSystemWithPatch(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, programId,
+                fspType);
             if (rc.IsFailure()) return rc;
 
-            return fs.Register(mountName, fileSystem);
+            using (fileSystem)
+            {
+                var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
+
+                return fs.Register(mountName, fileSystemAdapter);
+            }
         }
 
         public static Result MountContent(this FileSystemClient fs, U8Span mountName, U8Span path, ProgramId programId, ContentType type)
@@ -55,14 +62,20 @@ namespace LibHac.Fs.Shim
 
         private static Result MountContentImpl(FileSystemClient fs, U8Span mountName, U8Span path, ulong id, FileSystemProxyType type)
         {
-            FsPath.FromSpan(out FsPath fsPath, path);
+            FspPath.FromSpan(out FspPath fsPath, path);
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            Result rc = fsProxy.OpenFileSystemWithId(out IFileSystem fileSystem, ref fsPath, id, type);
+            Result rc = fsProxy.OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in fsPath,
+                id, type);
             if (rc.IsFailure()) return rc;
 
-            return fs.Register(mountName, fileSystem);
+            using (fileSystem)
+            {
+                var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
+
+                return fs.Register(mountName, fileSystemAdapter);
+            }
         }
 
         private static FileSystemProxyType ConvertToFileSystemProxyType(ContentType type) => type switch
@@ -71,7 +84,7 @@ namespace LibHac.Fs.Shim
             ContentType.Control => FileSystemProxyType.Control,
             ContentType.Manual => FileSystemProxyType.Manual,
             ContentType.Data => FileSystemProxyType.Data,
-            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null),
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
     }
 }

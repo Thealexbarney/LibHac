@@ -1,7 +1,8 @@
 ﻿using System;
 using LibHac.Common;
-using LibHac.Fs.Fsa;
+using LibHac.Fs.Impl;
 using LibHac.FsSrv;
+using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim
 {
@@ -12,12 +13,22 @@ namespace LibHac.Fs.Shim
             Result rc = MountHelpers.CheckMountName(mountName);
             if (rc.IsFailure()) return rc;
 
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            ReferenceCountedDisposable<IFileSystemSf> customFs = null;
+            try
+            {
+                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            rc = fsProxy.OpenCustomStorageFileSystem(out IFileSystem customFs, storageId);
-            if (rc.IsFailure()) return rc;
+                rc = fsProxy.OpenCustomStorageFileSystem(out customFs, storageId);
+                if (rc.IsFailure()) return rc;
 
-            return fs.Register(mountName, customFs);
+                var adapter = new FileSystemServiceObjectAdapter(customFs);
+
+                return fs.Register(mountName, adapter);
+            }
+            finally
+            {
+                customFs?.Dispose();
+            }
         }
 
         public static string GetCustomStorageDirectoryName(CustomStorageId storageId)

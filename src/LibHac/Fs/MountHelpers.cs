@@ -1,5 +1,5 @@
 ﻿using LibHac.Common;
-using static LibHac.Fs.CommonMountNames;
+using static LibHac.Fs.CommonPaths;
 
 namespace LibHac.Fs
 {

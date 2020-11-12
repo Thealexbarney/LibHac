@@ -232,7 +232,7 @@ namespace LibHac.Fs
         }
 
         private static Result EnsureApplicationCacheStorageImpl(this FileSystemClient fs, out long requiredSize,
-            out CacheStorageTargetMedia target, Ncm.ApplicationId applicationId, ulong saveDataOwnerId, short index,
+            out CacheStorageTargetMedia target, Ncm.ApplicationId applicationId, ulong saveDataOwnerId, ushort index,
             long dataSize, long journalSize, bool allowExisting)
         {
             requiredSize = default;
@@ -299,7 +299,7 @@ namespace LibHac.Fs
         }
 
         public static Result EnsureApplicationCacheStorage(this FileSystemClient fs, out long requiredSize,
-            out CacheStorageTargetMedia target, Ncm.ApplicationId applicationId, ulong saveDataOwnerId, short index,
+            out CacheStorageTargetMedia target, Ncm.ApplicationId applicationId, ulong saveDataOwnerId, ushort index,
             long dataSize, long journalSize, bool allowExisting)
         {
             return EnsureApplicationCacheStorageImpl(fs, out requiredSize, out target, applicationId, saveDataOwnerId,
@@ -334,7 +334,7 @@ namespace LibHac.Fs
         }
 
         public static Result TryCreateCacheStorage(this FileSystemClient fs, out long requiredSize,
-            SaveDataSpaceId spaceId, Ncm.ApplicationId applicationId, ulong saveDataOwnerId, short index,
+            SaveDataSpaceId spaceId, Ncm.ApplicationId applicationId, ulong saveDataOwnerId, ushort index,
             long dataSize, long journalSize, bool allowExisting)
         {
             requiredSize = default;

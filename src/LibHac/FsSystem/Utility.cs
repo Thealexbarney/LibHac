@@ -226,6 +226,48 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
+        public static Result TryAcquireCountSemaphore(out UniqueLockSemaphore uniqueLock, SemaphoreAdaptor semaphore)
+        {
+            UniqueLockSemaphore tempUniqueLock = default;
+            try
+            {
+                tempUniqueLock = new UniqueLockSemaphore(semaphore);
+
+                if (!tempUniqueLock.TryLock())
+                {
+                    uniqueLock = default;
+                    return ResultFs.OpenCountLimit.Log();
+                }
+
+                uniqueLock = new UniqueLockSemaphore(ref tempUniqueLock);
+                return Result.Success;
+            }
+            finally
+            {
+                tempUniqueLock.Dispose();
+            }
+        }
+
+        public static Result MakeUniqueLockWithPin<T>(out IUniqueLock uniqueLock, SemaphoreAdaptor semaphore,
+            ref ReferenceCountedDisposable<T> objectToPin) where T : class, IDisposable
+        {
+            uniqueLock = default;
+
+            UniqueLockSemaphore tempUniqueLock = default;
+            try
+            {
+                Result rc = TryAcquireCountSemaphore(out tempUniqueLock, semaphore);
+                if (rc.IsFailure()) return rc;
+
+                uniqueLock = new UniqueLockWithPin<T>(ref tempUniqueLock, ref objectToPin);
+                return Result.Success;
+            }
+            finally
+            {
+                tempUniqueLock.Dispose();
+            }
+        }
+
         public static Result RetryFinitelyForTargetLocked(Func<Result> function)
         {
             const int maxRetryCount = 10;

@@ -4,6 +4,7 @@ using LibHac.Fs.Shim;
 using LibHac.FsSrv;
 using LibHac.FsSrv.Impl;
 using LibHac.Ncm;
+using LibHac.Util;
 using Xunit;
 
 namespace LibHac.Tests.FsSrv
@@ -72,10 +73,10 @@ namespace LibHac.Tests.FsSrv
 
             ProgramIndexMapInfoManager manager = CreatePopulatedManager(count, x => x + 3);
 
-            Assert.Null(manager.Get(new ProgramId(0)));
-            Assert.Null(manager.Get(new ProgramId(2)));
-            Assert.Null(manager.Get(new ProgramId(8)));
-            Assert.Null(manager.Get(new ProgramId(9001)));
+            Assert.False(manager.Get(new ProgramId(0)).HasValue);
+            Assert.False(manager.Get(new ProgramId(2)).HasValue);
+            Assert.False(manager.Get(new ProgramId(8)).HasValue);
+            Assert.False(manager.Get(new ProgramId(9001)).HasValue);
         }
 
         [Fact]
@@ -86,14 +87,14 @@ namespace LibHac.Tests.FsSrv
             ProgramIndexMapInfoManager manager = CreatePopulatedManager(count, x => x + 1);
 
             // ReSharper disable PossibleInvalidOperationException
-            ProgramIndexMapInfo? map = manager.Get(new ProgramId(1));
-            Assert.NotNull(map);
+            Optional<ProgramIndexMapInfo> map = manager.Get(new ProgramId(1));
+            Assert.True(map.HasValue);
             Assert.Equal(new ProgramId(1), map.Value.MainProgramId);
             Assert.Equal(new ProgramId(1), map.Value.ProgramId);
             Assert.Equal(0, map.Value.ProgramIndex);
 
             map = manager.Get(new ProgramId(4));
-            Assert.NotNull(map);
+            Assert.True(map.HasValue);
             Assert.Equal(new ProgramId(1), map.Value.MainProgramId);
             Assert.Equal(new ProgramId(4), map.Value.ProgramId);
             Assert.Equal(3, map.Value.ProgramIndex);
@@ -186,7 +187,7 @@ namespace LibHac.Tests.FsSrv
 
             manager.Clear();
 
-            Assert.Null(manager.Get(new ProgramId(2)));
+            Assert.False(manager.Get(new ProgramId(2)).HasValue);
         }
     }
 }

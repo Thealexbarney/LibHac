@@ -9,6 +9,7 @@ using LibHac.FsSrv;
 using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
 using LibHac.Util;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 
 namespace LibHac.Fs
 {
@@ -134,7 +135,13 @@ namespace LibHac.Fs
 
         public Result Register(U8Span mountName, IFileSystem fileSystem, ICommonMountNameGenerator nameGenerator)
         {
-            var accessor = new FileSystemAccessor(mountName.ToString(), fileSystem, this, nameGenerator);
+            return Register(mountName, null, fileSystem, nameGenerator);
+        }
+
+        public Result Register(U8Span mountName, IMultiCommitTarget multiCommitTarget, IFileSystem fileSystem,
+            ICommonMountNameGenerator nameGenerator)
+        {
+            var accessor = new FileSystemAccessor(mountName, multiCommitTarget, fileSystem, this, nameGenerator);
 
             Result rc = MountTable.Mount(accessor);
             if (rc.IsFailure()) return rc;
@@ -173,8 +180,8 @@ namespace LibHac.Fs
             if (path.IsNull())
                 return ResultFs.NullptrArgument.Log();
 
-            int hostMountNameLen = StringUtils.GetLength(CommonMountNames.HostRootFileSystemMountName);
-            if (StringUtils.Compare(path, CommonMountNames.HostRootFileSystemMountName, hostMountNameLen) == 0)
+            int hostMountNameLen = StringUtils.GetLength(CommonPaths.HostRootFileSystemMountName);
+            if (StringUtils.Compare(path, CommonPaths.HostRootFileSystemMountName, hostMountNameLen) == 0)
             {
                 return ResultFs.NotMounted.Log();
             }
@@ -195,7 +202,7 @@ namespace LibHac.Fs
 
             if (PathUtility.IsWindowsDrive(path) || PathUtility.IsUnc(path))
             {
-                StringUtils.Copy(mountName.Name, CommonMountNames.HostRootFileSystemMountName);
+                StringUtils.Copy(mountName.Name, CommonPaths.HostRootFileSystemMountName);
                 mountName.Name[PathTools.MountNameLengthMax] = StringTraits.NullTerminator;
 
                 subPath = path;

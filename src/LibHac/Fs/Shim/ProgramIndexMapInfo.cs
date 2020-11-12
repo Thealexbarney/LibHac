@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using LibHac.FsSrv;
+using LibHac.Sf;
 
 namespace LibHac.Fs.Shim
 {
@@ -21,7 +22,7 @@ namespace LibHac.Fs.Shim
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            ReadOnlySpan<byte> mapInfoBuffer = MemoryMarshal.Cast<ProgramIndexMapInfo, byte>(mapInfo);
+            var mapInfoBuffer = new InBuffer(MemoryMarshal.Cast<ProgramIndexMapInfo, byte>(mapInfo));
 
             return fsProxy.RegisterProgramIndexMapInfo(mapInfoBuffer, mapInfo.Length);
         }

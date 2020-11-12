@@ -10,7 +10,12 @@ namespace LibHac.FsSrv.Creators
             throw new NotImplementedException();
         }
 
-        public Result GetCaseSensitivePath(out bool isSuccess, Span<byte> path)
+        public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, bool openCaseSensitive)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result NormalizeCaseOfPath(out bool isSupported, Span<byte> path)
         {
             throw new NotImplementedException();
         }

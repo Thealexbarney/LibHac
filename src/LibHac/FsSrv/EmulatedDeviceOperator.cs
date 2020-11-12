@@ -1,4 +1,5 @@
 ﻿using LibHac.Fs;
+using LibHac.FsSrv.Sf;
 
 namespace LibHac.FsSrv
 {
@@ -12,6 +13,8 @@ namespace LibHac.FsSrv
             GameCard = gameCard;
             SdCard = sdCard;
         }
+
+        public void Dispose() { }
 
         public Result IsSdCardInserted(out bool isInserted)
         {

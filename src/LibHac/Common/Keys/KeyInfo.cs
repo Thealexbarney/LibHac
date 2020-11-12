@@ -31,7 +31,7 @@ namespace LibHac.Common.Keys
             CommonSeedDiff = Common | Seed | DifferentDev,
             CommonDrvd = Common | Derived,
             DeviceRoot = Device | Root,
-            DeviceDrvd = Device | Derived,
+            DeviceDrvd = Device | Derived
         }
 
         public readonly string Name;

@@ -11,14 +11,16 @@ namespace LibHac.FsSystem
         public int BlockSize { get; }
 
         private IFileSystem BaseFileSystem { get; }
+        private ReferenceCountedDisposable<IFileSystem> SharedBaseFileSystem { get; }
         private byte[] KekSource { get; }
         private byte[] ValidationKey { get; }
 
-        public AesXtsFileSystem(IFileSystem fs, byte[] kekSource, byte[] validationKey, int blockSize)
+        public AesXtsFileSystem(ReferenceCountedDisposable<IFileSystem> fs, byte[] keys, int blockSize)
         {
-            BaseFileSystem = fs;
-            KekSource = kekSource;
-            ValidationKey = validationKey;
+            SharedBaseFileSystem = fs.AddReference();
+            BaseFileSystem = SharedBaseFileSystem.Target;
+            KekSource = keys.AsSpan(0, 0x10).ToArray();
+            ValidationKey = keys.AsSpan(0x10, 0x10).ToArray();
             BlockSize = blockSize;
         }
 
@@ -28,6 +30,16 @@ namespace LibHac.FsSystem
             KekSource = keys.AsSpan(0, 0x10).ToArray();
             ValidationKey = keys.AsSpan(0x10, 0x10).ToArray();
             BlockSize = blockSize;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                SharedBaseFileSystem?.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
 
         protected override Result DoCreateDirectory(U8Span path)

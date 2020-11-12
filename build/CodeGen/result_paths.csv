@@ -1,6 +1,7 @@
 Name,Namespace,Path
 Svc,LibHac.Svc,LibHac/Svc/ResultSvc.cs
 Fs,LibHac.Fs,LibHac/Fs/ResultFs.cs
+Lr,LibHac.Lr,LibHac/Lr/ResultLr.cs
 Loader,LibHac.Loader,LibHac/Loader/ResultLoader.cs
 Sf,LibHac.Sf,LibHac/Sf/ResultSf.cs
 Kvdb,LibHac.Kvdb,LibHac/Kvdb/ResultKvdb.cs

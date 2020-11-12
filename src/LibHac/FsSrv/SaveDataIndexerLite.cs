@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using LibHac.Fs;
+using LibHac.FsSrv.Sf;
+using LibHac.Sf;
 
 namespace LibHac.FsSrv
 {
@@ -207,7 +209,7 @@ namespace LibHac.FsSrv
             return 1;
         }
 
-        public Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader)
+        public Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<SaveDataInfoReaderImpl> infoReader)
         {
             SaveDataIndexerLiteInfoReader reader;
 
@@ -220,12 +222,12 @@ namespace LibHac.FsSrv
                 reader = new SaveDataIndexerLiteInfoReader();
             }
 
-            infoReader = new ReferenceCountedDisposable<ISaveDataInfoReader>(reader);
+            infoReader = new ReferenceCountedDisposable<SaveDataInfoReaderImpl>(reader);
 
             return Result.Success;
         }
 
-        private class SaveDataIndexerLiteInfoReader : ISaveDataInfoReader
+        private class SaveDataIndexerLiteInfoReader : SaveDataInfoReaderImpl, ISaveDataInfoReader
         {
             private bool _finishedIterating;
             private SaveDataInfo _info;
@@ -240,9 +242,9 @@ namespace LibHac.FsSrv
                 SaveDataIndexer.GenerateSaveDataInfo(out _info, in key, in value);
             }
 
-            public Result Read(out long readCount, Span<byte> saveDataInfoBuffer)
+            public Result Read(out long readCount, OutBuffer saveDataInfoBuffer)
             {
-                Span<SaveDataInfo> outInfo = MemoryMarshal.Cast<byte, SaveDataInfo>(saveDataInfoBuffer);
+                Span<SaveDataInfo> outInfo = MemoryMarshal.Cast<byte, SaveDataInfo>(saveDataInfoBuffer.Buffer);
 
                 // Note: Nintendo doesn't check if the buffer is large enough here
                 if (_finishedIterating || outInfo.IsEmpty)

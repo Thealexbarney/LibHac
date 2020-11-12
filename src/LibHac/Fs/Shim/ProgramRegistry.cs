@@ -2,6 +2,7 @@
 using LibHac.FsSrv;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
+using LibHac.Sf;
 
 namespace LibHac.Fs.Shim
 {
@@ -16,8 +17,8 @@ namespace LibHac.Fs.Shim
             Result rc = registry.SetCurrentProcess(fs.Hos.ProcessId.Value);
             if (rc.IsFailure()) return rc;
 
-            return registry.RegisterProgram(processId, programId, storageId, accessControlData,
-                accessControlDescriptor);
+            return registry.RegisterProgram(processId, programId, storageId, new InBuffer(accessControlData),
+                new InBuffer(accessControlDescriptor));
         }
 
         /// <inheritdoc cref="ProgramRegistryImpl.UnregisterProgram"/>

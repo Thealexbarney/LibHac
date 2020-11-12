@@ -19,6 +19,7 @@ namespace LibHac.Fs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsWindowsDriveCharacter(byte c)
         {
+            // Mask lowercase letters to uppercase and check if it's in range
             return (0b1101_1111 & c) - 'A' <= 'Z' - 'A';
             //return 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z';
         }

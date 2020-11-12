@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs.Accessors;
 using LibHac.FsSrv;
+using LibHac.Sf;
 
 namespace LibHac.Fs
 {
@@ -187,7 +188,7 @@ namespace LibHac.Fs
                 string logString = AccessLogHelpers.BuildDefaultLogLine(result, startTime, endTime, handleId, message, caller);
 
                 IFileSystemProxy fsProxy = GetFileSystemProxyServiceObject();
-                fsProxy.OutputAccessLogToSdCard(logString.ToU8Span());
+                fsProxy.OutputAccessLogToSdCard(new InBuffer(logString.ToU8Span())).IgnoreResult();
             }
         }
 

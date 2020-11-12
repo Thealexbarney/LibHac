@@ -4,8 +4,8 @@ namespace LibHac.FsSrv
 {
     public interface ISaveDataIndexerManager
     {
-        Result OpenAccessor(out SaveDataIndexerAccessor accessor, out bool neededInit, SaveDataSpaceId spaceId);
-        void ResetTemporaryStorageIndexer(SaveDataSpaceId spaceId);
-        void InvalidateSdCardIndexer(SaveDataSpaceId spaceId);
+        Result OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, out bool neededInit, SaveDataSpaceId spaceId);
+        void ResetIndexer(SaveDataSpaceId spaceId);
+        void InvalidateIndexer(SaveDataSpaceId spaceId);
     }
 }

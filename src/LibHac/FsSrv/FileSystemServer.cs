@@ -3,6 +3,8 @@ using LibHac.Fs;
 using LibHac.Fs.Impl;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Creators;
+using LibHac.FsSrv.Impl;
+using LibHac.FsSrv.Sf;
 using LibHac.Sm;
 
 namespace LibHac.FsSrv
@@ -11,7 +13,10 @@ namespace LibHac.FsSrv
     {
         internal const ulong SaveIndexerId = 0x8000000000000000;
 
-        private FileSystemProxyCore FsProxyCore { get; }
+        private const ulong SpeedEmulationProgramIdMinimum = 0x100000000000000;
+        private const ulong SpeedEmulationProgramIdMaximum = 0x100000000001FFF;
+
+        private FileSystemProxyCoreImpl FsProxyCore { get; }
 
         /// <summary>The client instance to be used for internal operations like save indexer access.</summary>
         public HorizonClient Hos { get; }
@@ -36,23 +41,23 @@ namespace LibHac.FsSrv
 
             IsDebugMode = false;
 
-            ExternalKeySet externalKeySet = config.ExternalKeySet ?? new ExternalKeySet();
             Timer = config.TimeSpanGenerator ?? new StopWatchTimeSpanGenerator();
 
-            var fspConfig = new FileSystemProxyConfiguration
-            {
-                FsCreatorInterfaces = config.FsCreators,
-                ProgramRegistryServiceImpl = new ProgramRegistryServiceImpl(this)
-            };
+            FileSystemProxyConfiguration fspConfig = InitializeFileSystemProxyConfiguration(config);
 
-            FsProxyCore = new FileSystemProxyCore(fspConfig, externalKeySet, config.DeviceOperator);
+            FsProxyCore = new FileSystemProxyCoreImpl(fspConfig);
 
-            FsProxyCore.SetSaveDataIndexerManager(new SaveDataIndexerManager(Hos.Fs, SaveIndexerId,
-                new ArrayPoolMemoryResource(), new SdHandleManager(), false));
+            FileSystemProxyImpl fsProxy = GetFileSystemProxyServiceObject();
+            ulong processId = Hos.Os.GetCurrentProcessId().Value;
+            fsProxy.SetCurrentProcess(processId).IgnoreResult();
 
-            FileSystemProxy fsProxy = GetFileSystemProxyServiceObject();
-            fsProxy.SetCurrentProcess(Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
-            fsProxy.CleanUpTemporaryStorage().IgnoreResult();
+            var saveService = new SaveDataFileSystemService(fspConfig.SaveDataFileSystemService, processId);
+
+            saveService.CleanUpTemporaryStorage().IgnoreResult();
+            saveService.CleanUpSaveData().IgnoreResult();
+            saveService.CompleteSaveDataExtension().IgnoreResult();
+            saveService.FixSaveData().IgnoreResult();
+            saveService.RecoverMultiCommit().IgnoreResult();
 
             Hos.Sm.RegisterService(new FileSystemProxyService(this), "fsp-srv").IgnoreResult();
             Hos.Sm.RegisterService(new FileSystemProxyForLoaderService(this), "fsp-ldr").IgnoreResult();
@@ -81,19 +86,100 @@ namespace LibHac.FsSrv
             return new FileSystemClient(Hos);
         }
 
-        private FileSystemProxy GetFileSystemProxyServiceObject()
+        private FileSystemProxyConfiguration InitializeFileSystemProxyConfiguration(FileSystemServerConfig config)
         {
-            return new FileSystemProxy(Hos, FsProxyCore);
+            var saveDataIndexerManager = new SaveDataIndexerManager(Hos.Fs, SaveIndexerId,
+                new ArrayPoolMemoryResource(), new SdHandleManager(), false);
+
+            var programRegistryService = new ProgramRegistryServiceImpl(this);
+            var programRegistry = new ProgramRegistryImpl(programRegistryService);
+
+            var baseStorageConfig = new BaseStorageServiceImpl.Configuration();
+            baseStorageConfig.BisStorageCreator = config.FsCreators.BuiltInStorageCreator;
+            baseStorageConfig.GameCardStorageCreator = config.FsCreators.GameCardStorageCreator;
+            baseStorageConfig.ProgramRegistry = programRegistry;
+            baseStorageConfig.DeviceOperator = new ReferenceCountedDisposable<IDeviceOperator>(config.DeviceOperator);
+            var baseStorageService = new BaseStorageServiceImpl(in baseStorageConfig);
+
+            var timeServiceConfig = new TimeServiceImpl.Configuration();
+            timeServiceConfig.HorizonClient = Hos;
+            timeServiceConfig.ProgramRegistry = programRegistry;
+            var timeService = new TimeServiceImpl(in timeServiceConfig);
+
+            var baseFsServiceConfig = new BaseFileSystemServiceImpl.Configuration();
+            baseFsServiceConfig.BisFileSystemCreator = config.FsCreators.BuiltInStorageFileSystemCreator;
+            baseFsServiceConfig.GameCardFileSystemCreator = config.FsCreators.GameCardFileSystemCreator;
+            baseFsServiceConfig.SdCardFileSystemCreator = config.FsCreators.SdCardFileSystemCreator;
+            baseFsServiceConfig.BisWiperCreator = BisWiper.CreateWiper;
+            baseFsServiceConfig.ProgramRegistry = programRegistry;
+            var baseFsService = new BaseFileSystemServiceImpl(in baseFsServiceConfig);
+
+            var ncaFsServiceConfig = new NcaFileSystemServiceImpl.Configuration();
+            ncaFsServiceConfig.BaseFsService = baseFsService;
+            ncaFsServiceConfig.HostFsCreator = config.FsCreators.HostFileSystemCreator;
+            ncaFsServiceConfig.TargetManagerFsCreator = config.FsCreators.TargetManagerFileSystemCreator;
+            ncaFsServiceConfig.PartitionFsCreator = config.FsCreators.PartitionFileSystemCreator;
+            ncaFsServiceConfig.RomFsCreator = config.FsCreators.RomFileSystemCreator;
+            ncaFsServiceConfig.StorageOnNcaCreator = config.FsCreators.StorageOnNcaCreator;
+            ncaFsServiceConfig.SubDirectoryFsCreator = config.FsCreators.SubDirectoryFileSystemCreator;
+            ncaFsServiceConfig.EncryptedFsCreator = config.FsCreators.EncryptedFileSystemCreator;
+            ncaFsServiceConfig.ProgramRegistryService = programRegistryService;
+            ncaFsServiceConfig.HorizonClient = Hos;
+            ncaFsServiceConfig.ProgramRegistry = programRegistry;
+            ncaFsServiceConfig.SpeedEmulationRange =
+                new InternalProgramIdRangeForSpeedEmulation(SpeedEmulationProgramIdMinimum,
+                    SpeedEmulationProgramIdMaximum);
+
+            var ncaFsService = new NcaFileSystemServiceImpl(in ncaFsServiceConfig, config.ExternalKeySet);
+
+            var saveFsServiceConfig = new SaveDataFileSystemServiceImpl.Configuration();
+            saveFsServiceConfig.BaseFsService = baseFsService;
+            saveFsServiceConfig.HostFsCreator = config.FsCreators.HostFileSystemCreator;
+            saveFsServiceConfig.TargetManagerFsCreator = config.FsCreators.TargetManagerFileSystemCreator;
+            saveFsServiceConfig.SaveFsCreator = config.FsCreators.SaveDataFileSystemCreator;
+            saveFsServiceConfig.EncryptedFsCreator = config.FsCreators.EncryptedFileSystemCreator;
+            saveFsServiceConfig.ProgramRegistryService = programRegistryService;
+            saveFsServiceConfig.ShouldCreateDirectorySaveData = () => true;
+            saveFsServiceConfig.SaveIndexerManager = saveDataIndexerManager;
+            saveFsServiceConfig.HorizonClient = Hos;
+            saveFsServiceConfig.ProgramRegistry = programRegistry;
+
+            var saveFsService = new SaveDataFileSystemServiceImpl(in saveFsServiceConfig);
+
+            var accessLogServiceConfig = new AccessLogServiceImpl.Configuration();
+            accessLogServiceConfig.MinimumProgramIdForSdCardLog = 0x0100000000003000;
+            accessLogServiceConfig.HorizonClient = Hos;
+            accessLogServiceConfig.ProgramRegistry = programRegistry;
+            var accessLogService = new AccessLogServiceImpl(in accessLogServiceConfig);
+
+            var fspConfig = new FileSystemProxyConfiguration
+            {
+                FsCreatorInterfaces = config.FsCreators,
+                BaseStorageService = baseStorageService,
+                BaseFileSystemService = baseFsService,
+                NcaFileSystemService = ncaFsService,
+                SaveDataFileSystemService = saveFsService,
+                TimeService = timeService,
+                ProgramRegistryService = programRegistryService,
+                AccessLogService = accessLogService
+            };
+
+            return fspConfig;
         }
 
-        private FileSystemProxy GetFileSystemProxyForLoaderServiceObject()
+        private FileSystemProxyImpl GetFileSystemProxyServiceObject()
         {
-            return new FileSystemProxy(Hos, FsProxyCore);
+            return new FileSystemProxyImpl(FsProxyCore);
+        }
+
+        private FileSystemProxyImpl GetFileSystemProxyForLoaderServiceObject()
+        {
+            return new FileSystemProxyImpl(FsProxyCore);
         }
 
         private ProgramRegistryImpl GetProgramRegistryServiceObject()
         {
-            return new ProgramRegistryImpl(FsProxyCore.Config.ProgramRegistryServiceImpl);
+            return new ProgramRegistryImpl(FsProxyCore.Config.ProgramRegistryService);
         }
 
         private class FileSystemProxyService : IServiceObject

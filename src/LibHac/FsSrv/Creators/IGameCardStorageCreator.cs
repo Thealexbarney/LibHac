@@ -4,8 +4,8 @@ namespace LibHac.FsSrv.Creators
 {
     public interface IGameCardStorageCreator
     {
-        Result CreateNormal(GameCardHandle handle, out IStorage storage);
-        Result CreateSecure(GameCardHandle handle, out IStorage storage);
-        Result CreateWritable(GameCardHandle handle, out IStorage storage);
+        Result CreateReadOnly(GameCardHandle handle, out ReferenceCountedDisposable<IStorage> storage);
+        Result CreateSecureReadOnly(GameCardHandle handle, out ReferenceCountedDisposable<IStorage> storage);
+        Result CreateWriteOnly(GameCardHandle handle, out ReferenceCountedDisposable<IStorage> storage);
     }
 }

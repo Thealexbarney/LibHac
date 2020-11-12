@@ -1,6 +1,7 @@
 ﻿using System;
 using LibHac.Arp;
 using LibHac.Fs;
+using LibHac.Lr;
 using LibHac.Os;
 using LibHac.Sm;
 
@@ -17,6 +18,7 @@ namespace LibHac
         public FileSystemClient Fs { get; }
         public ServiceManagerClient Sm { get; }
         public OsClient Os { get; }
+        public LrClient Lr { get; }
         public ArpClient Arp => ArpLazy.Value;
 
         public ITimeSpanGenerator Time => Horizon.Time;
@@ -29,6 +31,7 @@ namespace LibHac
             Fs = new FileSystemClient(this);
             Sm = new ServiceManagerClient(horizon.ServiceManager);
             Os = new OsClient(this);
+            Lr = new LrClient(this);
 
             ArpLazy = new Lazy<ArpClient>(InitArpClient, true);
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.FsSystem;
 
@@ -34,6 +35,31 @@ namespace LibHac.Fs.Fsa
                 return ResultFs.OutOfRange.Log();
 
             return DoCreateFile(path, size, option);
+        }
+
+        /// <summary>
+        /// Creates or overwrites a file at the specified path.
+        /// </summary>
+        /// <param name="path">The full path of the file to create.</param>
+        /// <param name="size">The initial size of the created file.
+        /// Should usually be <see cref="CreateFileOptions.None"/></param>
+        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
+        /// <remarks>
+        /// The following <see cref="Result"/> codes may be returned under certain conditions:
+        /// 
+        /// The parent directory of the specified path does not exist: <see cref="ResultFs.PathNotFound"/>
+        /// Specified path already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
+        /// Insufficient free space to create the file: <see cref="ResultFs.InsufficientFreeSpace"/>
+        /// </remarks>
+        public Result CreateFile(U8Span path, long size)
+        {
+            if (path.IsNull())
+                return ResultFs.NullptrArgument.Log();
+
+            if (size < 0)
+                return ResultFs.OutOfRange.Log();
+
+            return DoCreateFile(path, size, CreateFileOptions.None);
         }
 
         /// <summary>
@@ -167,7 +193,7 @@ namespace LibHac.Fs.Fsa
         /// <paramref name="oldPath"/> does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
         /// <paramref name="newPath"/>'s parent directory does not exist: <see cref="ResultFs.PathNotFound"/>
         /// <paramref name="newPath"/> already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
-        /// Either <paramref name="oldPath"/> or <paramref name="newPath"/> is a subpath of the other: <see cref="ResultFs.DestinationIsSubPathOfSource"/>
+        /// Either <paramref name="oldPath"/> or <paramref name="newPath"/> is a subpath of the other: <see cref="ResultFs.DirectoryNotRenamable"/>
         /// </remarks>
         public Result RenameDirectory(U8Span oldPath, U8Span newPath)
         {
@@ -391,7 +417,7 @@ namespace LibHac.Fs.Fsa
 
         protected virtual Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
         {
-            timeStamp = default;
+            Unsafe.SkipInit(out timeStamp);
             return ResultFs.NotImplemented.Log();
         }
 

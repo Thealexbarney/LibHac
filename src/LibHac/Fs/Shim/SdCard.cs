@@ -1,7 +1,9 @@
 ﻿using System;
 using LibHac.Common;
-using LibHac.Fs.Fsa;
+using LibHac.Fs.Impl;
 using LibHac.FsSrv;
+using LibHac.FsSrv.Sf;
+using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim
 {
@@ -41,31 +43,44 @@ namespace LibHac.Fs.Shim
 
                 IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                rc = fsProxy.OpenSdCardFileSystem(out IFileSystem fileSystem);
+                rc = fsProxy.OpenSdCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem);
                 if (rc.IsFailure()) return rc;
 
-                return fs.Register(mountName, fileSystem);
+                using (fileSystem)
+                {
+                    var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
+
+                    return fs.Register(mountName, fileSystemAdapter);
+                }
             }
         }
 
         public static bool IsSdCardInserted(this FileSystemClient fs)
         {
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
+            try
+            {
+                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            Result rc = fsProxy.OpenDeviceOperator(out IDeviceOperator deviceOperator);
-            if (rc.IsFailure()) throw new HorizonResultException(rc, "Abort");
+                Result rc = fsProxy.OpenDeviceOperator(out deviceOperator);
+                if (rc.IsFailure()) throw new HorizonResultException(rc, "Abort");
 
-            rc = deviceOperator.IsSdCardInserted(out bool isInserted);
-            if (rc.IsFailure()) throw new HorizonResultException(rc, "Abort");
+                rc = deviceOperator.Target.IsSdCardInserted(out bool isInserted);
+                if (rc.IsFailure()) throw new HorizonResultException(rc, "Abort");
 
-            return isInserted;
+                return isInserted;
+            }
+            finally
+            {
+                deviceOperator?.Dispose();
+            }
         }
 
-        public static Result SetSdCardEncryptionSeed(this FileSystemClient fs, ref EncryptionSeed seed)
+        public static Result SetSdCardEncryptionSeed(this FileSystemClient fs, in EncryptionSeed seed)
         {
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            Result rc = fsProxy.SetSdCardEncryptionSeed(ref seed);
+            Result rc = fsProxy.SetSdCardEncryptionSeed(in seed);
             if (rc.IsFailure()) throw new HorizonResultException(rc, "Abort");
 
             return Result.Success;

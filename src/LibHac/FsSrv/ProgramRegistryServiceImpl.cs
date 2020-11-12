@@ -2,6 +2,7 @@
 using LibHac.Fs;
 using LibHac.FsSrv.Impl;
 using LibHac.Ncm;
+using LibHac.Util;
 
 namespace LibHac.FsSrv
 {
@@ -21,7 +22,7 @@ namespace LibHac.FsSrv
         }
 
         /// <inheritdoc cref="ProgramRegistryManager.RegisterProgram"/>
-        public Result RegisterProgram(ulong processId, ProgramId programId, StorageId storageId,
+        public Result RegisterProgramInfo(ulong processId, ProgramId programId, StorageId storageId,
             ReadOnlySpan<byte> accessControlData, ReadOnlySpan<byte> accessControlDescriptor)
         {
             return RegistryManager.RegisterProgram(processId, programId, storageId, accessControlData,
@@ -29,7 +30,7 @@ namespace LibHac.FsSrv
         }
 
         /// <inheritdoc cref="ProgramRegistryManager.UnregisterProgram" />
-        public Result UnregisterProgram(ulong processId)
+        public Result UnregisterProgramInfo(ulong processId)
         {
             return RegistryManager.UnregisterProgram(processId);
         }
@@ -47,13 +48,13 @@ namespace LibHac.FsSrv
         }
 
         /// <inheritdoc cref="ProgramIndexMapInfoManager.GetProgramId"/>
-        public ProgramId GetProgramId(ProgramId programId, byte programIndex)
+        public ProgramId GetProgramIdByIndex(ProgramId programId, byte programIndex)
         {
             return ProgramIndexManager.GetProgramId(programId, programIndex);
         }
 
         /// <inheritdoc cref="ProgramIndexMapInfoManager.Get"/>
-        public ProgramIndexMapInfo? GetProgramIndexMapInfo(ProgramId programId)
+        public Optional<ProgramIndexMapInfo> GetProgramIndexMapInfo(ProgramId programId)
         {
             return ProgramIndexManager.Get(programId);
         }

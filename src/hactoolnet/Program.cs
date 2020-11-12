@@ -14,7 +14,13 @@ namespace hactoolnet
         {
             try
             {
-                if (Run(args)) return 0;
+                if (Run(args))
+                {
+                   // Console.ReadKey();
+                    return 0;
+                }
+
+
             }
             catch (MissingKeyException ex)
             {

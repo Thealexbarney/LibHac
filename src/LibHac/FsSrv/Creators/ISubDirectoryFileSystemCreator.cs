@@ -5,7 +5,7 @@ namespace LibHac.FsSrv.Creators
 {
     public interface ISubDirectoryFileSystemCreator
     {
-        Result Create(out IFileSystem subDirFileSystem, IFileSystem baseFileSystem, U8Span path);
-        Result Create(out IFileSystem subDirFileSystem, IFileSystem baseFileSystem, U8Span path, bool preserveUnc);
+        Result Create(out ReferenceCountedDisposable<IFileSystem> subDirFileSystem, ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span path);
+        Result Create(out ReferenceCountedDisposable<IFileSystem> subDirFileSystem, ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span path, bool preserveUnc);
     }
 }

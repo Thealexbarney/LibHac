@@ -1,12 +1,12 @@
-﻿using System;
-using LibHac.Ncm;
+﻿using LibHac.Ncm;
+using LibHac.Sf;
 
 namespace LibHac.FsSrv.Sf
 {
     public interface IProgramRegistry
     {
         Result RegisterProgram(ulong processId, ProgramId programId, StorageId storageId,
-            ReadOnlySpan<byte> accessControlData, ReadOnlySpan<byte> accessControlDescriptor);
+            InBuffer accessControlData, InBuffer accessControlDescriptor);
 
         Result UnregisterProgram(ulong processId);
         Result SetCurrentProcess(ulong processId);

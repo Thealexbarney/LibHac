@@ -1,6 +1,7 @@
 ﻿using LibHac.Common.Keys;
-using LibHac.Fs.Fsa;
 using LibHac.FsSrv.Creators;
+using LibHac.FsSrv.Sf;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 
 namespace LibHac.FsSrv
 {
@@ -29,7 +30,7 @@ namespace LibHac.FsSrv
             creators.GameCardFileSystemCreator = new EmulatedGameCardFsCreator(gcStorageCreator, gameCard);
             creators.EncryptedFileSystemCreator = new EncryptedFileSystemCreator(keySet);
             creators.BuiltInStorageFileSystemCreator = new EmulatedBisFileSystemCreator(rootFileSystem);
-            creators.SdFileSystemCreator = new EmulatedSdFileSystemCreator(sdCard, rootFileSystem);
+            creators.SdCardFileSystemCreator = new EmulatedSdCardFileSystemCreator(sdCard, rootFileSystem);
 
             var deviceOperator = new EmulatedDeviceOperator(gameCard, sdCard);
 

@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
-using LibHac.Fs.Fsa;
+using LibHac.Fs.Impl;
 using LibHac.FsSrv;
+using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
 using LibHac.Util;
-using static LibHac.Fs.CommonMountNames;
+using static LibHac.Fs.CommonPaths;
+using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
+using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.Fs.Shim
 {
@@ -80,25 +84,28 @@ namespace LibHac.Fs.Shim
         }
 
         // ReSharper disable once UnusedParameter.Local
-        private static Result MountBisImpl(FileSystemClient fs, U8Span mountName, BisPartitionId partitionId, U8Span rootPath)
+        private static Result MountBisImpl(FileSystemClient fs, U8Span mountName, BisPartitionId partitionId,
+            U8Span rootPath)
         {
             Result rc = MountHelpers.CheckMountNameAcceptingReservedMountName(mountName);
             if (rc.IsFailure()) return rc;
 
-            FsPath sfPath;
-            unsafe { _ = &sfPath; } // workaround for CS0165
-
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
             // Nintendo doesn't use the provided rootPath
-            sfPath.Str[0] = 0;
+            FspPath.CreateEmpty(out FspPath sfPath);
 
-            rc = fsProxy.OpenBisFileSystem(out IFileSystem fileSystem, ref sfPath, partitionId);
+            rc = fsProxy.OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in sfPath,
+                partitionId);
             if (rc.IsFailure()) return rc;
 
-            var nameGenerator = new BisCommonMountNameGenerator(partitionId);
+            using (fileSystem)
+            {
+                var nameGenerator = new BisCommonMountNameGenerator(partitionId);
+                var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
 
-            return fs.Register(mountName, fileSystem, nameGenerator);
+                return fs.Register(mountName, fileSystemAdapter, nameGenerator);
+            }
         }
 
         public static U8Span GetBisMountName(BisPartitionId partitionId)
@@ -134,8 +141,7 @@ namespace LibHac.Fs.Shim
         // todo: Decide how to handle SetBisRootForHost since it allows mounting any directory on the user's computer
         public static Result SetBisRootForHost(this FileSystemClient fs, BisPartitionId partitionId, U8Span rootPath)
         {
-            FsPath sfPath;
-            unsafe { _ = &sfPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath path);
 
             int pathLen = StringUtils.GetLength(rootPath, PathTools.MaxPathLength + 1);
             if (pathLen > PathTools.MaxPathLength)
@@ -147,30 +153,38 @@ namespace LibHac.Fs.Shim
                     ? StringTraits.NullTerminator
                     : StringTraits.DirectorySeparator;
 
-                var sb = new U8StringBuilder(sfPath.Str);
+                var sb = new U8StringBuilder(path.Str);
                 Result rc = sb.Append(rootPath).Append(endingSeparator).ToSfPath();
                 if (rc.IsFailure()) return rc;
             }
             else
             {
-                sfPath.Str[0] = StringTraits.NullTerminator;
+                path.Str[0] = StringTraits.NullTerminator;
             }
+
+            FspPath.FromSpan(out FspPath sfPath, path.Str);
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            return fsProxy.SetBisRootForHost(partitionId, ref sfPath);
+            return fsProxy.SetBisRootForHost(partitionId, in sfPath);
         }
 
-        public static Result OpenBisPartition(this FileSystemClient fs, out IStorage partitionStorage, BisPartitionId partitionId)
+        public static Result OpenBisPartition(this FileSystemClient fs, out IStorage partitionStorage,
+            BisPartitionId partitionId)
         {
             partitionStorage = default;
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
-            Result rc = fsProxy.OpenBisStorage(out IStorage storage, partitionId);
+            Result rc = fsProxy.OpenBisStorage(out ReferenceCountedDisposable<IStorageSf> storage, partitionId);
             if (rc.IsFailure()) return rc;
 
-            partitionStorage = storage;
-            return Result.Success;
+            using (storage)
+            {
+                var storageAdapter = new StorageServiceObjectAdapter(storage);
+
+                partitionStorage = storageAdapter;
+                return Result.Success;
+            }
         }
 
         public static Result InvalidateBisCache(this FileSystemClient fs)

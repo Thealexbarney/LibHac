@@ -2,11 +2,14 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
-using LibHac.Fs.Fsa;
+using LibHac.Fs.Impl;
 using LibHac.FsSrv;
+using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
 using LibHac.Util;
-using static LibHac.Fs.CommonMountNames;
+using static LibHac.Fs.CommonPaths;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
+using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim
 {
@@ -76,12 +79,11 @@ namespace LibHac.Fs.Shim
         public static Result MountHostRoot(this FileSystemClient fs)
         {
             IFileSystem hostFileSystem = default;
-            var path = new FsPath();
-            path.Str[0] = 0;
+            FspPath.CreateEmpty(out FspPath path);
 
             static string LogMessageGenerator() => $", name: \"{HostRootFileSystemMountName.ToString()}\"";
 
-            Result OpenHostFs() => OpenHostFileSystemImpl(fs, out hostFileSystem, ref path, MountHostOption.None);
+            Result OpenHostFs() => OpenHostFileSystemImpl(fs, out hostFileSystem, in path, MountHostOption.None);
 
             Result MountHostFs() => fs.Register(HostRootFileSystemMountName, hostFileSystem,
                 new HostRootCommonMountNameGenerator());
@@ -110,13 +112,12 @@ namespace LibHac.Fs.Shim
         public static Result MountHostRoot(this FileSystemClient fs, MountHostOption option)
         {
             IFileSystem hostFileSystem = default;
-            var path = new FsPath();
-            path.Str[0] = 0;
+            FspPath.CreateEmpty(out FspPath path);
 
             string LogMessageGenerator() =>
                 $", name: \"{HostRootFileSystemMountName.ToString()}, mount_host_option: {option}\"";
 
-            Result OpenHostFs() => OpenHostFileSystemImpl(fs, out hostFileSystem, ref path, option);
+            Result OpenHostFs() => OpenHostFileSystemImpl(fs, out hostFileSystem, in path, option);
 
             Result MountHostFs() => fs.Register(HostRootFileSystemMountName, hostFileSystem,
                 new HostRootCommonMountNameGenerator());
@@ -318,8 +319,7 @@ namespace LibHac.Fs.Shim
             if (pathLength + 1 > PathTools.MaxPathLength)
                 return ResultFs.TooLongPath.Log();
 
-            FsPath fullPath;
-            unsafe { _ = &fullPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath fullPath);
 
             var sb = new U8StringBuilder(fullPath.Str);
             sb.Append(StringTraits.DirectorySeparator).Append(path);
@@ -341,7 +341,9 @@ namespace LibHac.Fs.Shim
                 }
             }
 
-            return OpenHostFileSystemImpl(fs, out fileSystem, ref fullPath, option);
+            FspPath.FromSpan(out FspPath sfPath, fullPath.Str);
+
+            return OpenHostFileSystemImpl(fs, out fileSystem, in sfPath, option);
         }
 
         /// <summary>
@@ -352,26 +354,34 @@ namespace LibHac.Fs.Shim
         /// <param name="path">The path on the host computer to open. e.g. /C:\Windows\System32/</param>
         /// <param name="option">Options for opening the host file system.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        private static Result OpenHostFileSystemImpl(FileSystemClient fs, out IFileSystem fileSystem, ref FsPath path, MountHostOption option)
+        private static Result OpenHostFileSystemImpl(FileSystemClient fs, out IFileSystem fileSystem, in FspPath path,
+            MountHostOption option)
         {
             fileSystem = default;
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
-            IFileSystem hostFs;
+            ReferenceCountedDisposable<IFileSystemSf> hostFs = null;
 
-            if (option == MountHostOption.None)
+            try
             {
-                Result rc = fsProxy.OpenHostFileSystem(out hostFs, ref path);
-                if (rc.IsFailure()) return rc;
-            }
-            else
-            {
-                Result rc = fsProxy.OpenHostFileSystemWithOption(out hostFs, ref path, option);
-                if (rc.IsFailure()) return rc;
-            }
+                if (option == MountHostOption.None)
+                {
+                    Result rc = fsProxy.OpenHostFileSystem(out hostFs, in path);
+                    if (rc.IsFailure()) return rc;
+                }
+                else
+                {
+                    Result rc = fsProxy.OpenHostFileSystemWithOption(out hostFs, in path, option);
+                    if (rc.IsFailure()) return rc;
+                }
 
-            fileSystem = hostFs;
-            return Result.Success;
+                fileSystem = new FileSystemServiceObjectAdapter(hostFs);
+                return Result.Success;
+            }
+            finally
+            {
+                hostFs?.Dispose();
+            }
         }
     }
 }

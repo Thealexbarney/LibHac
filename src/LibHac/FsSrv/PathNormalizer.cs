@@ -69,7 +69,7 @@ namespace LibHac.FsSrv
             PreserveUnc = (1 << 0),
             PreserveTailSeparator = (1 << 1),
             HasMountName = (1 << 2),
-            AcceptEmpty = (1 << 3),
+            AcceptEmpty = (1 << 3)
         }
     }
 }

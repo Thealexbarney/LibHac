@@ -89,12 +89,29 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,3005,,OutOfRange,
 
 2,3200,3499,AllocationMemoryFailed,
+2,3256,,AllocationFailureInNcaFileSystemServiceImplA,In ParseNsp allocating FileStorageBasedFileSystem
+2,3257,,AllocationFailureInNcaFileSystemServiceImplB,In ParseNca allocating FileStorageBasedFileSystem
 2,3258,,AllocationFailureInProgramRegistryManagerA,In RegisterProgram allocating ProgramInfoNode
+2,3264,,AllocationFailureFatFileSystemA,In Initialize allocating ProgramInfoNode
+2,3280,,AllocationFailureInPartitionFileSystemCreatorA,In Create allocating PartitionFileSystemCore
 2,3312,,AllocationFailureInAesXtsFileA,In Initialize allocating FileStorage
 2,3313,,AllocationFailureInAesXtsFileB,In Initialize allocating AesXtsStorage
 2,3314,,AllocationFailureInAesXtsFileC,In Initialize allocating AlignmentMatchingStoragePooledBuffer
 2,3315,,AllocationFailureInAesXtsFileD,In Initialize allocating StorageFile
-2,3383,,AllocationFailureInAesXtsFileE,In Initialize allocating SubStorage
+2,3347,,AllocationFailureInPartitionFileSystemA,In Initialize allocating PartitionFileSystemMetaCore
+2,3348,,AllocationFailureInPartitionFileSystemB,In DoOpenFile allocating PartitionFile
+2,3349,,AllocationFailureInPartitionFileSystemC,In DoOpenDirectory allocating PartitionDirectory
+2,3350,,AllocationFailureInPartitionFileSystemMetaA,In Initialize allocating metadata buffer
+2,3351,,AllocationFailureInPartitionFileSystemMetaB,In Sha256 Initialize allocating metadata buffer
+2,3355,,AllocationFailureInSubdirectoryFileSystemA,In Initialize allocating RootPathBuffer
+2,3383,,AllocationFailureInAesXtsFileE,In Initialize
+2,3394,,AllocationFailureInEncryptedFileSystemCreatorA,In Create allocating AesXtsFileSystem
+2,3407,,AllocationFailureInFileSystemInterfaceAdapter, In OpenFile or OpenDirectory
+2,3420,,AllocationFailureInNew,
+2,3421,,AllocationFailureInCreateShared,
+2,3422,,AllocationFailureInMakeUnique,
+2,3423,,AllocationFailureInAllocateShared,
+2,3424,,AllocationFailurePooledBufferNotEnoughSize,
 
 2,3500,3999,MmcAccessFailed,
 
@@ -148,8 +165,8 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,4464,,AllocationTableIteratedRangeEntry,
 
 2,4501,4599,NcaCorrupted,
-2,4512,,InvalidNcaFsType,
-2,4527,,InvalidNcaProgramId,
+2,4512,,InvalidNcaFileSystemType,
+2,4527,,InvalidNcaId,
 
 2,4601,4639,IntegrityVerificationStorageCorrupted,
 2,4602,,InvalidIvfcMagic,
@@ -205,6 +222,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,4812,,IncompleteBlockInZeroBitmapHashStorageFile,
 
 2,5000,5999,Unexpected,
+2,5121,,UnexpectedFatFileSystemSectorCount,
 2,5307,,UnexpectedErrorInHostFileFlush,
 2,5308,,UnexpectedErrorInHostFileGetSize,
 2,5309,,UnknownHostFileSystemError,
@@ -221,7 +239,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 
 2,6030,6059,InvalidPathForOperation,
 2,6031,,DirectoryNotDeletable,
-2,6032,,DestinationIsSubPathOfSource,
+2,6032,,DirectoryNotRenamable,
 2,6033,,PathNotFoundInSaveDataFileTable,
 2,6034,,DifferentDestFileSystem,
 
@@ -249,6 +267,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6203,,InvalidOpenModeForWrite,
 
 2,6300,6399,UnsupportedOperation,
+2,6301,,UnsupportedCommitTarget,
 2,6302,,UnsupportedOperationInSubStorageSetSize,Attempted to resize a non-resizable SubStorage.
 2,6303,,UnsupportedOperationInResizableSubStorageSetSize,Attempted to resize a SubStorage that wasn't located at the end of the base storage.
 2,6304,,UnsupportedOperationInMemoryStorageSetSize,
@@ -260,6 +279,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6350,,UnsupportedOperationInRoGameCardStorageWrite,
 2,6351,,UnsupportedOperationInRoGameCardStorageSetSize,
 2,6359,,UnsupportedOperationInConcatFsQueryEntry,
+2,6362,,UnsupportedOperationInFileServiceObjectAdapterA,Called OperateRange with an invalid operation ID.
 2,6364,,UnsupportedOperationModifyRomFsFileSystem,
 2,6365,,UnsupportedOperationInRomFsFileSystem,Called RomFsFileSystem::CommitProvisionally.
 2,6366,,UnsupportedOperationRomFsFileSystemGetSpace,
@@ -278,10 +298,15 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 
 2,6452,,ExternalKeyAlreadyRegistered,
 2,6454,,WriteStateUnflushed,
+2,6456,,DirectoryNotClosed,
 2,6457,,WriteModeFileNotClosed,
+2,6458,,AllocatorAlreadyRegistered,
+2,6459,,DefaultAllocatorUsed,
 2,6461,,AllocatorAlignmentViolation,
 2,6463,,MultiCommitFileSystemAlreadyAdded,The provided file system has already been added to the multi-commit manager.
 2,6465,,UserNotExist,
+2,6466,,DefaultGlobalFileDataCacheEnabled,
+2,6467,,SaveDataRootPathUnavailable,
 
 2,6600,6699,EntryNotFound,
 2,6605,,TargetProgramNotFound,Specified program is not found in the program registry.
@@ -301,6 +326,17 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6902,,NotInitialized,
 2,6905,,NotMounted,
 2,6906,,SaveDataIsExtending,
+
+8,2,,ProgramNotFound,
+8,3,,DataNotFound,
+8,4,,UnknownStorageId,
+8,5,,LocationResolverNotFound,
+8,6,,HtmlDocumentNotFound,
+8,7,,AddOnContentNotFound,
+8,8,,ControlNotFound,
+8,9,,LegalInformationNotFound,
+8,10,,DebugProgramNotFound,
+8,90,,TooManyRegisteredPaths,
 
 9,1,,TooLongArgument,
 9,2,,TooManyArguments,

@@ -11,7 +11,7 @@ namespace LibHac.Fs
     {
         private readonly Key128 Key;
 
-        public ReadOnlySpan<byte> Value => SpanHelpers.AsByteSpan(ref this);
+        public readonly ReadOnlySpan<byte> Value => SpanHelpers.AsReadOnlyByteSpan(in this);
 
         public EncryptionSeed(ReadOnlySpan<byte> bytes)
         {

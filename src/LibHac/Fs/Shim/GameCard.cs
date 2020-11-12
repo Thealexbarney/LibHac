@@ -1,7 +1,10 @@
 ﻿using System;
 using LibHac.Common;
-using LibHac.Fs.Fsa;
+using LibHac.Fs.Impl;
 using LibHac.FsSrv;
+using LibHac.FsSrv.Sf;
+using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
+using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.Fs.Shim
 {
@@ -11,33 +14,63 @@ namespace LibHac.Fs.Shim
         {
             handle = default;
 
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
+            try
+            {
+                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            Result rc = fsProxy.OpenDeviceOperator(out IDeviceOperator deviceOperator);
-            if (rc.IsFailure()) return rc;
+                Result rc = fsProxy.OpenDeviceOperator(out deviceOperator);
+                if (rc.IsFailure()) return rc;
 
-            return deviceOperator.GetGameCardHandle(out handle);
+                return deviceOperator.Target.GetGameCardHandle(out handle);
+            }
+            finally
+            {
+                deviceOperator?.Dispose();
+            }
         }
 
         public static bool IsGameCardInserted(this FileSystemClient fs)
         {
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
+            try
+            {
+                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            Result rc = fsProxy.OpenDeviceOperator(out IDeviceOperator deviceOperator);
-            if (rc.IsFailure()) throw new LibHacException("Abort");
+                Result rc = fsProxy.OpenDeviceOperator(out deviceOperator);
+                if (rc.IsFailure()) throw new LibHacException("Abort");
 
-            rc = deviceOperator.IsGameCardInserted(out bool isInserted);
-            if (rc.IsFailure()) throw new LibHacException("Abort");
+                rc = deviceOperator.Target.IsGameCardInserted(out bool isInserted);
+                if (rc.IsFailure()) throw new LibHacException("Abort");
 
-            return isInserted;
+                return isInserted;
+            }
+            finally
+            {
+                deviceOperator?.Dispose();
+            }
         }
 
         public static Result OpenGameCardPartition(this FileSystemClient fs, out IStorage storage,
             GameCardHandle handle, GameCardPartitionRaw partitionType)
         {
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            storage = default;
 
-            return fsProxy.OpenGameCardStorage(out storage, handle, partitionType);
+            ReferenceCountedDisposable<IStorageSf> sfStorage = null;
+            try
+            {
+                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+
+                Result rc = fsProxy.OpenGameCardStorage(out sfStorage, handle, partitionType);
+                if (rc.IsFailure()) return rc;
+
+                storage = new StorageServiceObjectAdapter(sfStorage);
+                return Result.Success;
+            }
+            finally
+            {
+                sfStorage?.Dispose();
+            }
         }
 
         public static Result MountGameCardPartition(this FileSystemClient fs, U8Span mountName, GameCardHandle handle,
@@ -48,12 +81,16 @@ namespace LibHac.Fs.Shim
 
             IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            rc = fsProxy.OpenGameCardFileSystem(out IFileSystem cardFs, handle, partitionId);
+            rc = fsProxy.OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> cardFs, handle, partitionId);
             if (rc.IsFailure()) return rc;
 
-            var mountNameGenerator = new GameCardCommonMountNameGenerator(handle, partitionId);
+            using (cardFs)
+            {
+                var mountNameGenerator = new GameCardCommonMountNameGenerator(handle, partitionId);
+                var fileSystemAdapter = new FileSystemServiceObjectAdapter(cardFs);
 
-            return fs.Register(mountName, cardFs, mountNameGenerator);
+                return fs.Register(mountName, fileSystemAdapter, mountNameGenerator);
+            }
         }
 
         private class GameCardCommonMountNameGenerator : ICommonMountNameGenerator
@@ -71,7 +108,7 @@ namespace LibHac.Fs.Shim
             {
                 char letter = GetGameCardMountNameSuffix(PartitionId);
 
-                string mountName = $"{CommonMountNames.GameCardFileSystemMountName}{letter}{Handle.Value:x8}";
+                string mountName = $"{CommonPaths.GameCardFileSystemMountName}{letter}{Handle.Value:x8}";
                 new U8Span(mountName).Value.CopyTo(nameBuffer);
 
                 return Result.Success;

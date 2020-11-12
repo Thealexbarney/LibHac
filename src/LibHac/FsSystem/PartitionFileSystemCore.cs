@@ -15,6 +15,16 @@ namespace LibHac.FsSystem
         private PartitionFileSystemMetaCore<T> MetaData { get; set; }
         private bool IsInitialized { get; set; }
         private int DataOffset { get; set; }
+        private ReferenceCountedDisposable<IStorage> BaseStorageShared { get; set; }
+
+        public Result Initialize(ReferenceCountedDisposable<IStorage> baseStorage)
+        {
+            Result rc = Initialize(baseStorage.Target);
+            if (rc.IsFailure()) return rc;
+
+            BaseStorageShared = baseStorage.AddReference();
+            return Result.Success;
+        }
 
         public Result Initialize(IStorage baseStorage)
         {
@@ -31,6 +41,16 @@ namespace LibHac.FsSystem
             IsInitialized = true;
 
             return Result.Success;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                BaseStorageShared?.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
 
         protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)

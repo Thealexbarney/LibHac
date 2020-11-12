@@ -1,8 +1,8 @@
-﻿using System;
-using LibHac.Fs;
+﻿using LibHac.Fs;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
+using LibHac.Sf;
 
 namespace LibHac.FsSrv
 {
@@ -14,7 +14,7 @@ namespace LibHac.FsSrv
     /// storage location and file system permissions. This allows FS to resolve the program ID and
     /// verify the permissions of any process calling it. 
     /// <br/>Based on FS 10.0.0 (nnSdk 10.4.0)</remarks>
-    internal class ProgramRegistryImpl : IProgramRegistry
+    public class ProgramRegistryImpl : IProgramRegistry
     {
         private ulong _processId;
 
@@ -38,13 +38,13 @@ namespace LibHac.FsSrv
         /// <see cref="ResultFs.PermissionDenied"/>: Insufficient permissions.</returns>
         /// <inheritdoc cref="ProgramRegistryManager.RegisterProgram"/>
         public Result RegisterProgram(ulong processId, ProgramId programId, StorageId storageId,
-            ReadOnlySpan<byte> accessControlData, ReadOnlySpan<byte> accessControlDescriptor)
+            InBuffer accessControlData, InBuffer accessControlDescriptor)
         {
             if (!ProgramInfo.IsInitialProgram(_processId))
                 return ResultFs.PermissionDenied.Log();
 
-            return _registryService.RegisterProgram(processId, programId, storageId, accessControlData,
-                accessControlDescriptor);
+            return _registryService.RegisterProgramInfo(processId, programId, storageId, accessControlData.Buffer,
+                accessControlDescriptor.Buffer);
         }
 
         /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
@@ -56,7 +56,7 @@ namespace LibHac.FsSrv
             if (!ProgramInfo.IsInitialProgram(_processId))
                 return ResultFs.PermissionDenied.Log();
 
-            return _registryService.UnregisterProgram(processId);
+            return _registryService.UnregisterProgramInfo(processId);
         }
 
         /// <inheritdoc cref="ProgramRegistryManager.GetProgramInfo"/>

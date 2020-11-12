@@ -2,41 +2,45 @@
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
+using LibHac.Sf;
+using LibHac.Util;
 
 namespace LibHac.FsSrv
 {
-    internal class SaveDataInfoFilterReader : ISaveDataInfoReader
+    internal class SaveDataInfoFilterReader : SaveDataInfoReaderImpl, ISaveDataInfoReader
     {
-        private ReferenceCountedDisposable<ISaveDataInfoReader> Reader { get; }
-        private SaveDataFilterInternal Filter { get; }
+        private ReferenceCountedDisposable<SaveDataInfoReaderImpl> Reader { get; }
+        private SaveDataInfoFilter InfoFilter { get; }
 
-        public SaveDataInfoFilterReader(ReferenceCountedDisposable<ISaveDataInfoReader> reader, ref SaveDataFilterInternal filter)
+        public SaveDataInfoFilterReader(ReferenceCountedDisposable<SaveDataInfoReaderImpl> reader,
+            in SaveDataInfoFilter infoFilter)
         {
-            Reader = reader;
-            Filter = filter;
+            Reader = reader.AddReference();
+            InfoFilter = infoFilter;
         }
 
-        public Result Read(out long readCount, Span<byte> saveDataInfoBuffer)
+        public Result Read(out long readCount, OutBuffer saveDataInfoBuffer)
         {
             readCount = default;
 
-            Span<SaveDataInfo> outInfo = MemoryMarshal.Cast<byte, SaveDataInfo>(saveDataInfoBuffer);
+            Span<SaveDataInfo> outInfo = MemoryMarshal.Cast<byte, SaveDataInfo>(saveDataInfoBuffer.Buffer);
 
             SaveDataInfo tempInfo = default;
             Span<byte> tempInfoBytes = SpanHelpers.AsByteSpan(ref tempInfo);
 
-            ISaveDataInfoReader reader = Reader.Target;
+            SaveDataInfoReaderImpl reader = Reader.Target;
             int count = 0;
 
             while (count < outInfo.Length)
             {
-                Result rc = reader.Read(out long baseReadCount, tempInfoBytes);
+                Result rc = reader.Read(out long baseReadCount, new OutBuffer(tempInfoBytes));
                 if (rc.IsFailure()) return rc;
 
                 if (baseReadCount == 0) break;
 
-                if (Filter.Matches(ref tempInfo))
+                if (InfoFilter.Includes(in tempInfo))
                 {
                     outInfo[count] = tempInfo;
 
@@ -55,133 +59,97 @@ namespace LibHac.FsSrv
         }
     }
 
-    [StructLayout(LayoutKind.Explicit, Size = 0x50)]
-    internal struct SaveDataFilterInternal
+    [StructLayout(LayoutKind.Sequential, Size = 0x60)]
+    internal struct SaveDataInfoFilter
     {
-        [FieldOffset(0x00)] public bool FilterBySaveDataSpaceId;
-        [FieldOffset(0x01)] public SaveDataSpaceId SpaceId;
+        public Optional<SaveDataSpaceId> SpaceId;
+        public Optional<ProgramId> ProgramId;
+        public Optional<SaveDataType> SaveDataType;
+        public Optional<UserId> UserId;
+        public Optional<ulong> SaveDataId;
+        public Optional<ushort> Index;
+        public int Rank;
 
-        [FieldOffset(0x08)] public bool FilterByProgramId;
-        [FieldOffset(0x10)] public ProgramId ProgramId;
-
-        [FieldOffset(0x18)] public bool FilterBySaveDataType;
-        [FieldOffset(0x19)] public SaveDataType SaveDataType;
-
-        [FieldOffset(0x20)] public bool FilterByUserId;
-        [FieldOffset(0x28)] public UserId UserId;
-
-        [FieldOffset(0x38)] public bool FilterBySaveDataId;
-        [FieldOffset(0x40)] public ulong SaveDataId;
-
-        [FieldOffset(0x48)] public bool FilterByIndex;
-        [FieldOffset(0x4A)] public short Index;
-
-        [FieldOffset(0x4C)] public int Rank;
-
-        public SaveDataFilterInternal(ref SaveDataFilter filter, SaveDataSpaceId spaceId)
+        public SaveDataInfoFilter(in SaveDataInfoFilter filter)
         {
-            this = default;
+            this = filter;
+        }
 
-            FilterBySaveDataSpaceId = true;
-            SpaceId = spaceId;
+        public SaveDataInfoFilter(SaveDataSpaceId spaceId, in SaveDataFilter filter)
+        {
+            // Start out with no optional values
+            this = new SaveDataInfoFilter();
 
+            SpaceId = new Optional<SaveDataSpaceId>(spaceId);
             Rank = (int)filter.Rank;
 
             if (filter.FilterByProgramId)
             {
-                FilterByProgramId = true;
-                ProgramId = filter.ProgramId;
+                ProgramId = new Optional<ProgramId>(in filter.Attribute.ProgramId);
             }
 
             if (filter.FilterBySaveDataType)
             {
-                FilterBySaveDataType = true;
-                SaveDataType = filter.SaveDataType;
+                SaveDataType = new Optional<SaveDataType>(in filter.Attribute.Type);
             }
 
             if (filter.FilterByUserId)
             {
-                FilterByUserId = true;
-                UserId = filter.UserId;
+                UserId = new Optional<UserId>(in filter.Attribute.UserId);
             }
 
             if (filter.FilterBySaveDataId)
             {
-                FilterBySaveDataId = true;
-                SaveDataId = filter.SaveDataId;
+                SaveDataId = new Optional<ulong>(in filter.Attribute.StaticSaveDataId);
             }
 
             if (filter.FilterByIndex)
             {
-                FilterByIndex = true;
-                Index = filter.Index;
+                Index = new Optional<ushort>(in filter.Attribute.Index);
             }
         }
 
-        public void SetSaveDataSpaceId(SaveDataSpaceId spaceId)
+        public SaveDataInfoFilter(Optional<SaveDataSpaceId> spaceId, Optional<ProgramId> programId,
+            Optional<SaveDataType> saveDataType, Optional<UserId> userId, Optional<ulong> saveDataId,
+            Optional<ushort> index, int rank)
         {
-            FilterBySaveDataSpaceId = true;
             SpaceId = spaceId;
+            ProgramId = programId;
+            SaveDataType = saveDataType;
+            UserId = userId;
+            SaveDataId = saveDataId;
+            Index = index;
+            Rank = rank;
         }
 
-        public void SetProgramId(ProgramId value)
+        public bool Includes(in SaveDataInfo saveInfo)
         {
-            FilterByProgramId = true;
-            ProgramId = value;
-        }
-
-        public void SetSaveDataType(SaveDataType value)
-        {
-            FilterBySaveDataType = true;
-            SaveDataType = value;
-        }
-
-        public void SetUserId(UserId value)
-        {
-            FilterByUserId = true;
-            UserId = value;
-        }
-
-        public void SetSaveDataId(ulong value)
-        {
-            FilterBySaveDataId = true;
-            SaveDataId = value;
-        }
-
-        public void SetIndex(short value)
-        {
-            FilterByIndex = true;
-            Index = value;
-        }
-
-        public bool Matches(ref SaveDataInfo info)
-        {
-            if (FilterBySaveDataSpaceId && info.SpaceId != SpaceId)
+            if (SpaceId.HasValue && saveInfo.SpaceId != SpaceId.Value)
             {
                 return false;
             }
 
-            if (FilterByProgramId && info.ProgramId != ProgramId)
+            if (ProgramId.HasValue && saveInfo.ProgramId != ProgramId.Value)
             {
                 return false;
             }
 
-            if (FilterBySaveDataType && info.Type != SaveDataType)
+            if (SaveDataType.HasValue && saveInfo.Type != SaveDataType.Value)
             {
                 return false;
             }
 
-            if (FilterByUserId && info.UserId != UserId)
+            if (UserId.HasValue && saveInfo.UserId != UserId.Value)
             {
                 return false;
             }
 
-            if (FilterBySaveDataId && info.SaveDataId != SaveDataId)
+            if (SaveDataId.HasValue && saveInfo.SaveDataId != SaveDataId.Value)
             {
                 return false;
             }
 
-            if (FilterByIndex && info.Index != Index)
+            if (Index.HasValue && saveInfo.Index != Index.Value)
             {
                 return false;
             }
@@ -189,7 +157,7 @@ namespace LibHac.FsSrv
             var filterRank = (SaveDataRank)(Rank & 1);
 
             // When filtering by secondary rank, match on both primary and secondary ranks
-            if (filterRank == SaveDataRank.Primary && info.Rank == SaveDataRank.Secondary)
+            if (filterRank == SaveDataRank.Primary && saveInfo.Rank == SaveDataRank.Secondary)
             {
                 return false;
             }

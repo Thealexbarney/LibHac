@@ -6,35 +6,17 @@ namespace LibHac.Fs
     public class FileStorageBasedFileSystem : FileStorage2
     {
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
-        // FS keeps a shared pointer to the base filesystem
-        private IFileSystem BaseFileSystem { get; set; }
+        private ReferenceCountedDisposable<IFileSystem> BaseFileSystem { get; set; }
         private IFile BaseFile { get; set; }
 
-        private FileStorageBasedFileSystem()
+        public FileStorageBasedFileSystem()
         {
             FileSize = SizeNotInitialized;
         }
 
-        public static Result CreateNew(out FileStorageBasedFileSystem created, IFileSystem baseFileSystem, U8Span path,
-            OpenMode mode)
+        public Result Initialize(ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span path, OpenMode mode)
         {
-            var obj = new FileStorageBasedFileSystem();
-            Result rc = obj.Initialize(baseFileSystem, path, mode);
-
-            if (rc.IsSuccess())
-            {
-                created = obj;
-                return Result.Success;
-            }
-
-            obj.Dispose();
-            created = default;
-            return rc;
-        }
-
-        private Result Initialize(IFileSystem baseFileSystem, U8Span path, OpenMode mode)
-        {
-            Result rc = baseFileSystem.OpenFile(out IFile file, path, mode);
+            Result rc = baseFileSystem.Target.OpenFile(out IFile file, path, mode);
             if (rc.IsFailure()) return rc;
 
             SetFile(file);
@@ -49,6 +31,7 @@ namespace LibHac.Fs
             if (disposing)
             {
                 BaseFile?.Dispose();
+                BaseFileSystem?.Dispose();
             }
 
             base.Dispose(disposing);

@@ -20,7 +20,9 @@ namespace LibHac.Tests.Fs
             baseFs.CreateDirectory("/sub".ToU8Span());
             baseFs.CreateDirectory("/sub/path".ToU8Span());
 
-            SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem subFs, baseFs, "/sub/path".ToU8String()).ThrowIfFailure();
+            var subFs = new SubdirectoryFileSystem(baseFs);
+            subFs.Initialize("/sub/path".ToU8String()).ThrowIfFailure();
+
             return (baseFs, subFs);
         }
 
@@ -53,7 +55,8 @@ namespace LibHac.Tests.Fs
         {
             var baseFs = new InMemoryFileSystem();
 
-            SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem subFs, baseFs, "/".ToU8String()).ThrowIfFailure();
+            var subFs = new SubdirectoryFileSystem(baseFs);
+            subFs.Initialize("/".ToU8String()).ThrowIfFailure();
             return subFs;
         }
     }

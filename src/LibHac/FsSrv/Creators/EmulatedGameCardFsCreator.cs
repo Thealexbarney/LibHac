@@ -14,6 +14,7 @@ namespace LibHac.FsSrv.Creators
             StorageCreator = storageCreator;
             GameCard = gameCard;
         }
+
         public Result Create(out IFileSystem fileSystem, GameCardHandle handle, GameCardPartition partitionType)
         {
             // Use the old xci code temporarily
@@ -29,6 +30,25 @@ namespace LibHac.FsSrv.Creators
             }
 
             fileSystem = xci.OpenPartition((XciPartitionType)partitionType);
+            return Result.Success;
+        }
+
+        public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, GameCardHandle handle, GameCardPartition partitionType)
+        {
+            // Use the old xci code temporarily
+
+            fileSystem = default;
+
+            Result rc = GameCard.GetXci(out Xci xci, handle);
+            if (rc.IsFailure()) return rc;
+
+            if (!xci.HasPartition((XciPartitionType)partitionType))
+            {
+                return ResultFs.PartitionNotFound.Log();
+            }
+
+            XciPartition fs = xci.OpenPartition((XciPartitionType)partitionType);
+            fileSystem = new ReferenceCountedDisposable<IFileSystem>(fs);
             return Result.Success;
         }
     }

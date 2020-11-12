@@ -502,7 +502,7 @@ namespace LibHac.Boot
                     Package1Section.Bootloader => 0,
                     Package1Section.SecureMonitor => 1,
                     Package1Section.WarmBoot => 2,
-                    _ => -1,
+                    _ => -1
                 };
             }
 
@@ -513,7 +513,7 @@ namespace LibHac.Boot
                     Package1Section.Bootloader => 1,
                     Package1Section.SecureMonitor => 2,
                     Package1Section.WarmBoot => 0,
-                    _ => -1,
+                    _ => -1
                 };
             }
 
@@ -522,7 +522,7 @@ namespace LibHac.Boot
                 Package1Section.Bootloader => 1,
                 Package1Section.SecureMonitor => 0,
                 Package1Section.WarmBoot => 2,
-                _ => -1,
+                _ => -1
             };
         }
 

@@ -7,9 +7,10 @@ namespace LibHac.FsSrv.Creators
     public class RomFileSystemCreator : IRomFileSystemCreator
     {
         // todo: Implement properly
-        public Result Create(out IFileSystem fileSystem, IStorage romFsStorage)
+        public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, ReferenceCountedDisposable<IStorage> romFsStorage)
         {
-            fileSystem = new RomFsFileSystem(romFsStorage);
+            // Todo: Properly use shared references
+            fileSystem = new ReferenceCountedDisposable<IFileSystem>(new RomFsFileSystem(romFsStorage.AddReference().Target));
             return Result.Success;
         }
     }

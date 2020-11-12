@@ -96,10 +96,11 @@ namespace LibHac.Fs
     public enum SaveDataState : byte
     {
         Normal = 0,
-        Creating = 1,
+        Processing = 1,
         State2 = 2,
         MarkedForDeletion = 3,
-        Extending = 4
+        Extending = 4,
+        ImportSuspended = 5
     }
 
     public enum ImageDirectoryId
@@ -165,7 +166,8 @@ namespace LibHac.Fs
         KeepAfterResettingSystemSaveData = 1 << 0,
         KeepAfterRefurbishment = 1 << 1,
         KeepAfterResettingSystemSaveDataWithoutUserSaveData = 1 << 2,
-        NeedsSecureDelete = 1 << 3
+        NeedsSecureDelete = 1 << 3,
+        Restore = 1 << 4
     }
 
     public enum SdmmcPort
@@ -187,5 +189,12 @@ namespace LibHac.Fs
     {
         None = 0,
         PseudoCaseSensitive = 1
+    }
+
+    public enum SimulatingDeviceDetectionMode
+    {
+        None = 0,
+        Inserted = 1,
+        NotInserted = 2
     }
 }

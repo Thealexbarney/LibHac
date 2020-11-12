@@ -9,7 +9,7 @@ namespace LibHac.Fs
     [StructLayout(LayoutKind.Sequential, Size = 0x10)]
     public struct UserId : IEquatable<UserId>, IComparable<UserId>, IComparable
     {
-        public static UserId Zero => default;
+        public static UserId InvalidId => default;
 
         public readonly Id128 Id;
 
