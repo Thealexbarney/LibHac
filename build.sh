@@ -74,6 +74,22 @@ elif [[ ! (-x "$DOTNET_EXE" && (-z ${DOTNET_VERSION+x} || $($DOTNET_EXE --versio
     fi
 fi
 
+# Make sure we have a 3.1 runtime. At the time of writing GitVersion doesn't have a 5.0 build
+# Remove when a 5.0 build is available
+if [[ $($DOTNET_EXE --list-runtimes) != *"Microsoft.NETCore.App 3.1."* ]]; then
+
+    # Download install script
+    DOTNET_INSTALL_FILE="$TEMP_DIRECTORY/dotnet-install.sh"
+    mkdir -p "$TEMP_DIRECTORY"
+
+    if [ ! -x "$DOTNET_INSTALL_FILE" ]; then
+        curl -Lsfo "$DOTNET_INSTALL_FILE" "$DOTNET_INSTALL_URL"
+        chmod +x "$DOTNET_INSTALL_FILE"
+    fi
+    
+    "$DOTNET_INSTALL_FILE" --install-dir "$DOTNET_DIRECTORY" --channel 3.1 --runtime dotnet --no-path
+fi
+
 echo "Microsoft (R) .NET Core SDK version $("$DOTNET_EXE" --version)"
 
 "$DOTNET_EXE" run --project "$BUILD_PROJECT_FILE" -- ${BUILD_ARGUMENTS[@]}

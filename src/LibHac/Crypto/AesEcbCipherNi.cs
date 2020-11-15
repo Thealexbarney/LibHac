@@ -1,5 +1,4 @@
-﻿#if HAS_INTRINSICS
-using System;
+﻿using System;
 using LibHac.Crypto.Detail;
 
 namespace LibHac.Crypto
@@ -36,4 +35,3 @@ namespace LibHac.Crypto
         }
     }
 }
-#endif
