@@ -1,5 +1,4 @@
-﻿#if HAS_INTRINSICS
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -10,9 +9,7 @@ namespace LibHac.Crypto.Detail
 {
     public struct AesCbcModeNi
     {
-#pragma warning disable 649
         private AesCoreNi _aesCore;
-#pragma warning restore 649
 
         public Vector128<byte> Iv;
 
@@ -110,4 +107,3 @@ namespace LibHac.Crypto.Detail
         }
     }
 }
-#endif

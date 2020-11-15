@@ -1,5 +1,4 @@
-﻿#if HAS_INTRINSICS
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -578,4 +577,3 @@ namespace LibHac.Crypto.Detail
         }
     }
 }
-#endif

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -44,7 +43,7 @@ namespace LibHacBuild
         AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
         AbsolutePath SignedArtifactsDirectory => ArtifactsDirectory / "signed";
         AbsolutePath TempDirectory => RootDirectory / ".tmp";
-        AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_netcoreapp3.1";
+        AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_net5.0";
         AbsolutePath CliNativeDir => TempDirectory / $"hactoolnet_{HostOsName}";
         AbsolutePath CliNativeExe => CliNativeDir / $"hactoolnet{NativeProgramExtension}";
         AbsolutePath CliCoreZip => ArtifactsDirectory / $"hactoolnet-{VersionString}-netcore.zip";
@@ -221,7 +220,7 @@ namespace LibHacBuild
 
                 DotNetPublish(s => publishSettings
                     .SetProject(HactoolnetProject)
-                    .SetFramework("netcoreapp3.1")
+                    .SetFramework("net5.0")
                     .SetOutput(CliCoreDir)
                     .SetNoBuild(true)
                     .SetProperties(VersionProps));
@@ -273,7 +272,7 @@ namespace LibHacBuild
                     .EnableNoBuild()
                     .SetConfiguration(Configuration);
 
-                if (EnvironmentInfo.IsUnix) settings = settings.SetProperty("TargetFramework", "netcoreapp3.1");
+                if (EnvironmentInfo.IsUnix) settings = settings.SetProperty("TargetFramework", "net5.0");
 
                 DotNetTest(s => settings);
             });
@@ -366,7 +365,6 @@ namespace LibHacBuild
             }
         }
 
-        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         public void BuildNative()
         {
             string buildType = Untrimmed ? "native-untrimmed" : "native";
@@ -614,7 +612,7 @@ namespace LibHacBuild
                 SignAssemblies(password, toSign.Select(x => x.ToString()).ToArray());
 
                 // Avoid having multiple signed versions of the same file
-                File.Copy(nupkgDir / "lib" / "netcoreapp3.0" / "LibHac.dll", coreFxDir / "LibHac.dll", true);
+                File.Copy(nupkgDir / "lib" / "net5.0" / "LibHac.dll", coreFxDir / "LibHac.dll", true);
 
                 ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(nupkgFile), nupkgDir, pkgFileList);
                 ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliCoreZip), coreFxDir);

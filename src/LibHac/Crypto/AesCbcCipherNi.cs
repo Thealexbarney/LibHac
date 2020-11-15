@@ -1,5 +1,4 @@
-﻿#if HAS_INTRINSICS
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using LibHac.Common;
@@ -12,7 +11,7 @@ namespace LibHac.Crypto
         private AesCbcModeNi _baseCipher;
 
         public ref Buffer16 Iv => ref Unsafe.As<Vector128<byte>, Buffer16>(ref _baseCipher.Iv);
-        
+
         public AesCbcEncryptorNi(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
         {
             _baseCipher = new AesCbcModeNi();
@@ -43,4 +42,3 @@ namespace LibHac.Crypto
         }
     }
 }
-#endif

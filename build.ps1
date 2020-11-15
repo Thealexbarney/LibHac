@@ -69,6 +69,19 @@ try {
         }
     }
 
+    # Make sure we have a 3.1 runtime. At the time of writing GitVersion doesn't have a 5.0 build
+    # Remove when a 5.0 build is available
+    if((& $env:DOTNET_EXE --list-runtimes | Out-String) -notlike "*Microsoft.NETCore.App 3.1.*") {
+
+        # Download install script
+        $DotNetInstallFile = "$TempDirectory\dotnet-install.ps1"
+        New-Item -ItemType Directory -Path $TempDirectory -Force | Out-Null
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        (New-Object System.Net.WebClient).DownloadFile($DotNetInstallUrl, $DotNetInstallFile)
+
+        ExecSafe { & $DotNetInstallFile -InstallDir $DotNetDirectory -Channel 3.1 -Runtime dotnet -NoPath }
+    }
+
     Write-Output "Microsoft (R) .NET Core SDK version $(& $env:DOTNET_EXE --version)"
 
     ExecSafe { & $env:DOTNET_EXE run --project $BuildProjectFile -- $BuildArguments }

@@ -1,13 +1,10 @@
-﻿#if HAS_INTRINSICS
-using System;
+﻿using System;
 
 namespace LibHac.Crypto.Detail
 {
     public struct AesEcbModeNi
     {
-#pragma warning disable 649
         private AesCoreNi _aesCore;
-#pragma warning restore 649
 
         public void Initialize(ReadOnlySpan<byte> key, bool isDecrypting)
         {
@@ -25,4 +22,3 @@ namespace LibHac.Crypto.Detail
         }
     }
 }
-#endif
