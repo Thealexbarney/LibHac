@@ -100,7 +100,7 @@ namespace LibHacBuild
 
                     gitVersion = GitVersionTasks.GitVersion(s => s
                             .SetFramework("netcoreapp3.1")
-                            .DisableLogOutput())
+                            .DisableProcessLogOutput())
                         .Result;
                 }
                 catch (Exception e)
