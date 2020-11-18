@@ -62,7 +62,7 @@ namespace LibHac.FsSystem
                 end++;
             }
 
-            _finished = end + 1 >= _path.Length || _path[end + 1] == '\0';
+            _finished = end + 1 >= _path.Length || _path[end] == '\0';
             _length = end - _offset;
 
             return true;

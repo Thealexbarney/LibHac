@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
@@ -160,8 +161,7 @@ namespace LibHac.FsSystem
 
                 for (int i = currentSubFileCount; i < newSubFileCount; i++)
                 {
-                    FsPath newSubFilePath;
-                    unsafe { _ = &newSubFilePath; } // workaround for CS0165
+                    Unsafe.SkipInit(out FsPath newSubFilePath);
 
                     rc = ConcatenationFileSystem.GetSubFilePath(newSubFilePath.Str, FilePath, i);
                     if (rc.IsFailure()) return rc;
@@ -184,8 +184,7 @@ namespace LibHac.FsSystem
                     Sources[i].Dispose();
                     Sources.RemoveAt(i);
 
-                    FsPath subFilePath;
-                    unsafe { _ = &subFilePath; } // workaround for CS0165
+                    Unsafe.SkipInit(out FsPath subFilePath);
 
                     rc = ConcatenationFileSystem.GetSubFilePath(subFilePath.Str, FilePath, i);
                     if (rc.IsFailure()) return rc;

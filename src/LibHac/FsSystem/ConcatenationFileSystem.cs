@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
@@ -138,8 +139,7 @@ namespace LibHac.FsSystem
             {
                 long fileSize = Math.Min(SubFileSize, remaining);
 
-                FsPath fileName;
-                unsafe { _ = &fileName; } // workaround for CS0165
+                Unsafe.SkipInit(out FsPath fileName);
 
                 rc = GetSubFilePath(fileName.Str, path, i);
                 if (rc.IsFailure()) return rc;
@@ -194,8 +194,7 @@ namespace LibHac.FsSystem
 
             for (int i = 0; i < count; i++)
             {
-                FsPath subFilePath;
-                unsafe { _ = &subFilePath; } // workaround for CS0165
+                Unsafe.SkipInit(out FsPath subFilePath);
 
                 rc = GetSubFilePath(subFilePath.Str, path, i);
                 if (rc.IsFailure()) return rc;
@@ -239,8 +238,7 @@ namespace LibHac.FsSystem
 
             for (int i = 0; i < fileCount; i++)
             {
-                FsPath subFilePath;
-                unsafe { _ = &subFilePath; } // workaround for CS0165
+                Unsafe.SkipInit(out FsPath subFilePath);
 
                 rc = GetSubFilePath(subFilePath.Str, path, i);
                 if (rc.IsFailure()) return rc;
@@ -330,8 +328,7 @@ namespace LibHac.FsSystem
         {
             fileCount = default;
 
-            FsPath buffer;
-            unsafe { _ = &buffer; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath buffer);
 
             int pathLen = StringUtils.Copy(buffer.Str, dirPath);
 
@@ -381,8 +378,7 @@ namespace LibHac.FsSystem
         {
             size = default;
 
-            FsPath buffer;
-            unsafe { _ = &buffer; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath buffer);
 
             int pathLen = StringUtils.Copy(buffer.Str, path);
 

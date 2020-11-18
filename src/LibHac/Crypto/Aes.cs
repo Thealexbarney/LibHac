@@ -1,6 +1,7 @@
 ﻿// ReSharper disable AssignmentIsFullyDiscarded
 using System;
 using System.Runtime.CompilerServices;
+using LibHac.Common;
 using LibHac.Crypto.Detail;
 using LibHac.Diag;
 
@@ -106,8 +107,7 @@ namespace LibHac.Crypto
         {
             if (IsAesNiSupported() && !preferDotNetCrypto)
             {
-                AesEcbModeNi cipherNi;
-                unsafe { _ = &cipherNi; } // workaround for CS0165
+                Unsafe.SkipInit(out AesEcbModeNi cipherNi);
 
                 cipherNi.Initialize(key, false);
                 cipherNi.Encrypt(input, output);
@@ -119,14 +119,12 @@ namespace LibHac.Crypto
             cipher.Transform(input, output);
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void DecryptEcb128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
             bool preferDotNetCrypto = false)
         {
             if (IsAesNiSupported() && !preferDotNetCrypto)
             {
-                AesEcbModeNi cipherNi;
-                unsafe { _ = &cipherNi; } // workaround for CS0165
+                Unsafe.SkipInit(out AesEcbModeNi cipherNi);
 
                 cipherNi.Initialize(key, true);
                 cipherNi.Decrypt(input, output);
@@ -143,8 +141,7 @@ namespace LibHac.Crypto
         {
             if (IsAesNiSupported() && !preferDotNetCrypto)
             {
-                AesCbcModeNi cipherNi;
-                unsafe { _ = &cipherNi; } // workaround for CS0165
+                Unsafe.SkipInit(out AesCbcModeNi cipherNi);
 
                 cipherNi.Initialize(key, iv, false);
                 cipherNi.Encrypt(input, output);
@@ -161,8 +158,7 @@ namespace LibHac.Crypto
         {
             if (IsAesNiSupported() && !preferDotNetCrypto)
             {
-                AesCbcModeNi cipherNi;
-                unsafe { _ = &cipherNi; } // workaround for CS0165
+                Unsafe.SkipInit(out AesCbcModeNi cipherNi);
 
                 cipherNi.Initialize(key, iv, true);
                 cipherNi.Decrypt(input, output);
@@ -179,8 +175,7 @@ namespace LibHac.Crypto
         {
             if (IsAesNiSupported() && !preferDotNetCrypto)
             {
-                AesCtrModeNi cipherNi;
-                unsafe { _ = &cipherNi; } // workaround for CS0165
+                Unsafe.SkipInit(out AesCtrModeNi cipherNi);
 
                 cipherNi.Initialize(key, iv);
                 cipherNi.Transform(input, output);
@@ -197,8 +192,7 @@ namespace LibHac.Crypto
         {
             if (IsAesNiSupported() && !preferDotNetCrypto)
             {
-                AesCtrModeNi cipherNi;
-                unsafe { _ = &cipherNi; } // workaround for CS0165
+                Unsafe.SkipInit(out AesCtrModeNi cipherNi);
 
                 cipherNi.Initialize(key, iv);
                 cipherNi.Transform(input, output);
@@ -215,8 +209,7 @@ namespace LibHac.Crypto
         {
             if (IsAesNiSupported() && !preferDotNetCrypto)
             {
-                AesXtsModeNi cipherNi;
-                unsafe { _ = &cipherNi; } // workaround for CS0165
+                Unsafe.SkipInit(out AesXtsModeNi cipherNi);
 
                 cipherNi.Initialize(key1, key2, iv, false);
                 cipherNi.Encrypt(input, output);
@@ -233,8 +226,7 @@ namespace LibHac.Crypto
         {
             if (IsAesNiSupported() && !preferDotNetCrypto)
             {
-                AesXtsModeNi cipherNi;
-                unsafe { _ = &cipherNi; } // workaround for CS0165
+                Unsafe.SkipInit(out AesXtsModeNi cipherNi);
 
                 cipherNi.Initialize(key1, key2, iv, true);
                 cipherNi.Decrypt(input, output);
@@ -255,7 +247,7 @@ namespace LibHac.Crypto
         /// <remarks>https://tools.ietf.org/html/rfc4493</remarks>
         public static void CalculateCmac(Span<byte> mac, ReadOnlySpan<byte> data, ReadOnlySpan<byte> key)
         {
-            ReadOnlySpan<byte> zero = stackalloc byte[16];
+            ReadOnlySpan<byte> zero = new Buffer16();
             int len = data.Length;
 
             // Step 1, AES-128 with key K is applied to an all-zero input block.
@@ -289,6 +281,8 @@ namespace LibHac.Crypto
             {
                 int paddedLength = len + (16 - len % 16);
                 paddedMessage = paddedLength < 0x800 ? stackalloc byte[paddedLength] : new byte[paddedLength];
+
+                paddedMessage.Slice(len).Clear();
                 paddedMessage[len] = 0x80;
                 data.CopyTo(paddedMessage);
 

@@ -189,8 +189,7 @@ namespace LibHac.FsSystem
             using (sourceFile)
             {
                 // Open dest file.
-                FsPath destPath;
-                unsafe { _ = &destPath; } // workaround for CS0165
+                Unsafe.SkipInit(out FsPath destPath);
 
                 var sb = new U8StringBuilder(destPath.Str);
                 sb.Append(destParentPath).Append(entry.Name);

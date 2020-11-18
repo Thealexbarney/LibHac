@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
@@ -101,8 +102,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoCreateDirectory(U8Span path)
         {
-            FsPath fullPath;
-            unsafe { _ = &fullPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath fullPath);
 
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure()) return rc;
@@ -115,8 +115,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
         {
-            FsPath fullPath;
-            unsafe { _ = &fullPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath fullPath);
 
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure()) return rc;
@@ -129,8 +128,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoDeleteDirectory(U8Span path)
         {
-            FsPath fullPath;
-            unsafe { _ = &fullPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath fullPath);
 
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure()) return rc;
@@ -143,8 +141,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoDeleteDirectoryRecursively(U8Span path)
         {
-            FsPath fullPath;
-            unsafe { _ = &fullPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath fullPath);
 
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure()) return rc;
@@ -157,8 +154,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoCleanDirectoryRecursively(U8Span path)
         {
-            FsPath fullPath;
-            unsafe { _ = &fullPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath fullPath);
 
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure()) return rc;
@@ -171,8 +167,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoDeleteFile(U8Span path)
         {
-            FsPath fullPath;
-            unsafe { _ = &fullPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath fullPath);
 
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure()) return rc;
@@ -185,8 +180,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
-            FsPath fullPath;
-            unsafe { _ = &fullPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath fullPath);
 
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure())
@@ -205,8 +199,7 @@ namespace LibHac.FsSystem
         {
             file = default;
 
-            FsPath fullPath;
-            unsafe { _ = &fullPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath fullPath);
 
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure()) return rc;
@@ -229,10 +222,8 @@ namespace LibHac.FsSystem
 
         protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
         {
-            FsPath fullCurrentPath;
-            FsPath fullNewPath;
-            unsafe { _ = &fullCurrentPath; } // workaround for CS0165
-            unsafe { _ = &fullNewPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath fullCurrentPath);
+            Unsafe.SkipInit(out FsPath fullNewPath);
 
             Result rc = ResolveFullPath(fullCurrentPath.Str, oldPath);
             if (rc.IsFailure()) return rc;
@@ -248,10 +239,8 @@ namespace LibHac.FsSystem
 
         protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
         {
-            FsPath fullCurrentPath;
-            FsPath fullNewPath;
-            unsafe { _ = &fullCurrentPath; } // workaround for CS0165
-            unsafe { _ = &fullNewPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath fullCurrentPath);
+            Unsafe.SkipInit(out FsPath fullNewPath);
 
             Result rc = ResolveFullPath(fullCurrentPath.Str, oldPath);
             if (rc.IsFailure()) return rc;
@@ -267,8 +256,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
-            FsPath fullPath;
-            unsafe { _ = &fullPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath fullPath);
 
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure())
@@ -338,8 +326,7 @@ namespace LibHac.FsSystem
         {
             freeSpace = default;
 
-            FsPath fullPath;
-            unsafe { _ = &fullPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath fullPath);
 
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure()) return rc;
@@ -354,8 +341,7 @@ namespace LibHac.FsSystem
         {
             totalSpace = default;
 
-            FsPath fullPath;
-            unsafe { _ = &fullPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath fullPath);
 
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure()) return rc;
