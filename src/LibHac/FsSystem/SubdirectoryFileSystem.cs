@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
@@ -200,8 +201,7 @@ namespace LibHac.FsSystem
         {
             entryType = default;
 
-            FsPath fullPath;
-            unsafe { _ = &fullPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath fullPath);
 
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure()) return rc;

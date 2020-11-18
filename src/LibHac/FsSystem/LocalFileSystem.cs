@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using LibHac.Common;
 using LibHac.Fs;
@@ -36,8 +37,7 @@ namespace LibHac.FsSystem
         {
             fullPath = default;
 
-            FsPath normalizedPath;
-            unsafe { _ = &normalizedPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath normalizedPath);
 
             Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
@@ -48,10 +48,8 @@ namespace LibHac.FsSystem
 
         private Result CheckSubPath(U8Span path1, U8Span path2)
         {
-            FsPath normalizedPath1;
-            FsPath normalizedPath2;
-            unsafe { _ = &normalizedPath1; } // workaround for CS0165
-            unsafe { _ = &normalizedPath2; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath normalizedPath1);
+            Unsafe.SkipInit(out FsPath normalizedPath2);
 
             Result rc = PathTool.Normalize(normalizedPath1.Str, out _, path1, false, false);
             if (rc.IsFailure()) return rc;

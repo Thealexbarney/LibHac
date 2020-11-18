@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
@@ -31,8 +32,7 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoCreateDirectory(U8Span path)
         {
-            FsPath normalizedPath;
-            unsafe { _ = &normalizedPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath normalizedPath);
 
             Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
@@ -44,8 +44,7 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
         {
-            FsPath normalizedPath;
-            unsafe { _ = &normalizedPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath normalizedPath);
 
             Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
@@ -75,8 +74,7 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoDeleteDirectory(U8Span path)
         {
-            FsPath normalizedPath;
-            unsafe { _ = &normalizedPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath normalizedPath);
 
             Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
@@ -88,8 +86,7 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoDeleteDirectoryRecursively(U8Span path)
         {
-            FsPath normalizedPath;
-            unsafe { _ = &normalizedPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath normalizedPath);
 
             Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
@@ -105,8 +102,7 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoCleanDirectoryRecursively(U8Span path)
         {
-            FsPath normalizedPath;
-            unsafe { _ = &normalizedPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath normalizedPath);
 
             Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
@@ -118,8 +114,7 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoDeleteFile(U8Span path)
         {
-            FsPath normalizedPath;
-            unsafe { _ = &normalizedPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath normalizedPath);
 
             Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
@@ -143,8 +138,7 @@ namespace LibHac.FsSystem.Save
         {
             directory = default;
 
-            FsPath normalizedPath;
-            unsafe { _ = &normalizedPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath normalizedPath);
 
             Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
@@ -163,8 +157,7 @@ namespace LibHac.FsSystem.Save
         {
             file = default;
 
-            FsPath normalizedPath;
-            unsafe { _ = &normalizedPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath normalizedPath);
 
             Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
@@ -183,10 +176,8 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
         {
-            FsPath normalizedCurrentPath;
-            FsPath normalizedNewPath;
-            unsafe { _ = &normalizedCurrentPath; } // workaround for CS0165
-            unsafe { _ = &normalizedNewPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath normalizedCurrentPath);
+            Unsafe.SkipInit(out FsPath normalizedNewPath);
 
             Result rc = PathTool.Normalize(normalizedCurrentPath.Str, out _, oldPath, false, false);
             if (rc.IsFailure()) return rc;
@@ -199,10 +190,8 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
         {
-            FsPath normalizedCurrentPath;
-            FsPath normalizedNewPath;
-            unsafe { _ = &normalizedCurrentPath; } // workaround for CS0165
-            unsafe { _ = &normalizedNewPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath normalizedCurrentPath);
+            Unsafe.SkipInit(out FsPath normalizedNewPath);
 
             Result rc = PathTool.Normalize(normalizedCurrentPath.Str, out _, oldPath, false, false);
             if (rc.IsFailure()) return rc;
@@ -219,8 +208,7 @@ namespace LibHac.FsSystem.Save
         {
             entryType = default;
 
-            FsPath normalizedPath;
-            unsafe { _ = &normalizedPath; } // workaround for CS0165
+            Unsafe.SkipInit(out FsPath normalizedPath);
 
             Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
