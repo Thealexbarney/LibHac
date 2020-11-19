@@ -150,7 +150,7 @@ namespace LibHac.FsSystem.NcaUtils
 
             BaseStorage.GetSize(out long baseSize).ThrowIfFailure();
 
-            if (!Utilities.IsSubRange(offset, size, baseSize))
+            if (!IsSubRange(offset, size, baseSize))
             {
                 throw new InvalidDataException(
                     $"Section offset (0x{offset:x}) and length (0x{size:x}) fall outside the total NCA length (0x{baseSize:x}).");
@@ -693,7 +693,7 @@ namespace LibHac.FsSystem.NcaUtils
 
             bodyStorage.GetSize(out long baseSize).ThrowIfFailure();
 
-            if (!Utilities.IsSubRange(offset, size, baseSize))
+            if (!IsSubRange(offset, size, baseSize))
             {
                 throw new InvalidDataException(
                     $"Section offset (0x{offset + 0x400:x}) and length (0x{size:x}) fall outside the total NCA length (0x{baseSize + 0x400:x}).");
@@ -762,6 +762,12 @@ namespace LibHac.FsSystem.NcaUtils
 
             header.CounterType = counterType;
             header.CounterVersion = counterVersion;
+        }
+
+        private static bool IsSubRange(long startIndex, long subLength, long length)
+        {
+            bool isOutOfRange = startIndex < 0 || startIndex > length || subLength < 0 || startIndex > length - subLength;
+            return !isOutOfRange;
         }
     }
 }

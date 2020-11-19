@@ -4,6 +4,7 @@ using LibHac.Account;
 using LibHac.Fs.Shim;
 using LibHac.Ncm;
 using LibHac.Ns;
+using LibHac.Util;
 
 namespace LibHac.Fs
 {
@@ -101,7 +102,7 @@ namespace LibHac.Fs
 
                         if (queryRc.IsFailure()) return queryRc;
 
-                        requiredSizeSum += Utilities.AlignUp(tempSaveTotalSize, 0x4000) + 0x4000;
+                        requiredSizeSum += Alignment.AlignUp(tempSaveTotalSize, 0x4000) + 0x4000;
                     }
                 }
                 else
@@ -118,7 +119,7 @@ namespace LibHac.Fs
 
                             if (queryRc.IsFailure()) return queryRc;
 
-                            requiredSizeSum += Utilities.AlignUp(tempSaveTotalSize, 0x4000) + 0x4000;
+                            requiredSizeSum += Alignment.AlignUp(tempSaveTotalSize, 0x4000) + 0x4000;
                         }
                         else if (ResultFs.PathAlreadyExists.Includes(createRc))
                         {
@@ -162,7 +163,7 @@ namespace LibHac.Fs
                 Result queryRc = fs.QuerySaveDataTotalSize(out long totalSize, dataSize, journalSize);
                 if (queryRc.IsFailure()) return queryRc;
 
-                requiredSize += Utilities.AlignUp(totalSize, 0x4000) + baseSize;
+                requiredSize += Alignment.AlignUp(totalSize, 0x4000) + baseSize;
             }
             else if (!ResultFs.PathAlreadyExists.Includes(rc))
             {

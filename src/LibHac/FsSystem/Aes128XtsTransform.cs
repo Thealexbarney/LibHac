@@ -28,6 +28,7 @@ using System;
 using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using LibHac.Util;
 
 namespace LibHac.FsSystem
 {
@@ -83,7 +84,7 @@ namespace LibHac.FsSystem
             /* get number of blocks */
             int m = count >> 4;
             int mo = count & 15;
-            int alignedCount = Utilities.AlignUp(count, BlockSizeBytes);
+            int alignedCount = Alignment.AlignUp(count, BlockSizeBytes);
 
             /* for i = 0 to m-2 do */
             if (mo == 0)

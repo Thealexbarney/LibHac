@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
+using LibHac.Util;
 
 namespace LibHac.FsSystem
 {
@@ -37,7 +38,7 @@ namespace LibHac.FsSystem
             Assert.AssertTrue(entrySize >= sizeof(long));
             Assert.AssertTrue(nodeSize >= entrySize + Unsafe.SizeOf<NodeHeader>());
             Assert.AssertTrue(NodeSizeMin <= nodeSize && nodeSize <= NodeSizeMax);
-            Assert.AssertTrue(Utilities.IsPowerOfTwo(nodeSize));
+            Assert.AssertTrue(BitUtil.IsPowerOfTwo(nodeSize));
             Assert.AssertTrue(!IsInitialized());
 
             // Ensure valid entry count.
@@ -139,7 +140,7 @@ namespace LibHac.FsSystem
             Assert.AssertTrue(entrySize >= sizeof(long));
             Assert.AssertTrue(nodeSize >= entrySize + Unsafe.SizeOf<NodeHeader>());
             Assert.AssertTrue(NodeSizeMin <= nodeSize && nodeSize <= NodeSizeMax);
-            Assert.AssertTrue(Utilities.IsPowerOfTwo(nodeSize));
+            Assert.AssertTrue(BitUtil.IsPowerOfTwo(nodeSize));
             Assert.AssertTrue(entryCount >= 0);
 
             if (entryCount <= 0)
@@ -153,7 +154,7 @@ namespace LibHac.FsSystem
             Assert.AssertTrue(entrySize >= sizeof(long));
             Assert.AssertTrue(nodeSize >= entrySize + Unsafe.SizeOf<NodeHeader>());
             Assert.AssertTrue(NodeSizeMin <= nodeSize && nodeSize <= NodeSizeMax);
-            Assert.AssertTrue(Utilities.IsPowerOfTwo(nodeSize));
+            Assert.AssertTrue(BitUtil.IsPowerOfTwo(nodeSize));
             Assert.AssertTrue(entryCount >= 0);
 
             if (entryCount <= 0)
@@ -175,7 +176,7 @@ namespace LibHac.FsSystem
         private static int GetEntrySetCount(long nodeSize, long entrySize, int entryCount)
         {
             int entryCountPerNode = GetEntryCount(nodeSize, entrySize);
-            return Utilities.DivideByRoundUp(entryCount, entryCountPerNode);
+            return BitUtil.DivideUp(entryCount, entryCountPerNode);
         }
 
         public static int GetNodeL2Count(long nodeSize, long entrySize, int entryCount)
@@ -186,10 +187,10 @@ namespace LibHac.FsSystem
             if (entrySetCount <= offsetCountPerNode)
                 return 0;
 
-            int nodeL2Count = Utilities.DivideByRoundUp(entrySetCount, offsetCountPerNode);
+            int nodeL2Count = BitUtil.DivideUp(entrySetCount, offsetCountPerNode);
             Abort.DoAbortUnless(nodeL2Count <= offsetCountPerNode);
 
-            return Utilities.DivideByRoundUp(entrySetCount - (offsetCountPerNode - (nodeL2Count - 1)), offsetCountPerNode);
+            return BitUtil.DivideUp(entrySetCount - (offsetCountPerNode - (nodeL2Count - 1)), offsetCountPerNode);
         }
 
         private static long GetBucketTreeEntryOffset(long entrySetOffset, long entrySize, int entryIndex)
