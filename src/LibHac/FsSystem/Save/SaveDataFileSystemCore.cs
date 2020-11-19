@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.Util;
 
 namespace LibHac.FsSystem.Save
 {
@@ -57,7 +58,7 @@ namespace LibHac.FsSystem.Save
                 return Result.Success;
             }
 
-            int blockCount = (int)Utilities.DivideByRoundUp(size, AllocationTable.Header.BlockSize);
+            int blockCount = (int)BitUtil.DivideUp(size, AllocationTable.Header.BlockSize);
             int startBlock = AllocationTable.Allocate(blockCount);
 
             if (startBlock == -1)

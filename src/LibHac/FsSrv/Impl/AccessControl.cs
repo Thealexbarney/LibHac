@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Diag;
+using LibHac.Util;
 
 namespace LibHac.FsSrv.Impl
 {
@@ -127,7 +128,7 @@ namespace LibHac.FsSrv.Impl
                     accessControlData.Slice(data.SaveDataOwnerInfoOffset + sizeof(int), infoCount);
 
                 // The ID list must be 4-byte aligned
-                int idsOffset = Utilities.AlignUp(data.SaveDataOwnerInfoOffset + sizeof(int) + infoCount, 4);
+                int idsOffset = Alignment.AlignUp(data.SaveDataOwnerInfoOffset + sizeof(int) + infoCount, 4);
                 ReadOnlySpan<ulong> ids = MemoryMarshal.Cast<byte, ulong>(
                     accessControlData.Slice(idsOffset, infoCount * sizeof(ulong)));
 

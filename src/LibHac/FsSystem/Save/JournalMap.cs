@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using LibHac.Fs;
+using LibHac.Util;
 
 namespace LibHac.FsSystem.Save
 {
@@ -64,8 +65,8 @@ namespace LibHac.FsSystem.Save
             int physicalBlockCount = virtualBlockCount + Header.JournalBlockCount;
 
             int blockMapLength = virtualBlockCount * MapEntryLength;
-            int physicalBitmapLength = Utilities.AlignUp(physicalBlockCount, 32) / 8;
-            int virtualBitmapLength = Utilities.AlignUp(virtualBlockCount, 32) / 8;
+            int physicalBitmapLength = Alignment.AlignUp(physicalBlockCount, 32) / 8;
+            int virtualBitmapLength = Alignment.AlignUp(virtualBlockCount, 32) / 8;
 
             MapStorage.Slice(blockMapLength).Fill(SaveDataFileSystem.TrimFillValue);
             FreeBlocks.Slice(physicalBitmapLength).Fill(SaveDataFileSystem.TrimFillValue);

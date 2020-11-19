@@ -340,7 +340,7 @@ namespace LibHac.Boot
             int pk11Size = Unsafe.SizeOf<Package1Pk11Header>() + GetSectionSize(Package1Section.WarmBoot) +
                     GetSectionSize(Package1Section.Bootloader) + GetSectionSize(Package1Section.SecureMonitor);
 
-            pk11Size = Utilities.AlignUp(pk11Size, 0x10);
+            pk11Size = Alignment.AlignUp(pk11Size, 0x10);
 
             return pk11Size == Pk11Size;
         }

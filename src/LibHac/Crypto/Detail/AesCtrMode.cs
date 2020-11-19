@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using LibHac.Common;
+using LibHac.Util;
 
 namespace LibHac.Crypto.Detail
 {
@@ -25,7 +26,7 @@ namespace LibHac.Crypto.Detail
 
         public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            int blockCount = Utilities.DivideByRoundUp(input.Length, Aes.BlockSize);
+            int blockCount = BitUtil.DivideUp(input.Length, Aes.BlockSize);
             int length = blockCount * Aes.BlockSize;
 
             using var counterBuffer = new RentedArray<byte>(length);

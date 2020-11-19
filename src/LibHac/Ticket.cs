@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using LibHac.Common.Keys;
+using LibHac.Util;
 
 namespace LibHac
 {
@@ -112,7 +113,7 @@ namespace LibHac
                     throw new ArgumentOutOfRangeException();
             }
 
-            long bodyStart = Utilities.GetNextMultiple(4 + sigLength, 0x40);
+            long bodyStart = Alignment.AlignUp(4 + sigLength, 0x40);
 
             writer.Write((int)SignatureType);
 

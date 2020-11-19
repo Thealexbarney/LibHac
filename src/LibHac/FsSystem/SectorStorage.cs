@@ -1,5 +1,6 @@
 ﻿using System;
 using LibHac.Fs;
+using LibHac.Util;
 
 namespace LibHac.FsSystem
 {
@@ -20,7 +21,7 @@ namespace LibHac.FsSystem
 
             baseStorage.GetSize(out long baseSize).ThrowIfFailure();
 
-            SectorCount = (int)Utilities.DivideByRoundUp(baseSize, SectorSize);
+            SectorCount = (int)BitUtil.DivideUp(baseSize, SectorSize);
             Length = baseSize;
 
             LeaveOpen = leaveOpen;
@@ -57,7 +58,7 @@ namespace LibHac.FsSystem
             rc = BaseStorage.GetSize(out long newSize);
             if (rc.IsFailure()) return rc;
 
-            SectorCount = (int)Utilities.DivideByRoundUp(newSize, SectorSize);
+            SectorCount = (int)BitUtil.DivideUp(newSize, SectorSize);
             Length = newSize;
 
             return Result.Success;

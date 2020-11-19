@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Fs;
+using LibHac.Util;
 
 namespace LibHac.FsSystem.RomFs
 {
@@ -140,7 +141,7 @@ namespace LibHac.FsSystem.RomFs
 
         private int CreateNewEntry(int nameLength)
         {
-            int bytesNeeded = Utilities.AlignUp(_sizeOfEntry + nameLength, 4);
+            int bytesNeeded = Alignment.AlignUp(_sizeOfEntry + nameLength, 4);
 
             if (_length + bytesNeeded > _capacity)
             {

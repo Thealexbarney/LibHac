@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -10,35 +9,6 @@ namespace LibHac
     public static class Utilities
     {
         private const int MediaSize = 0x200;
-
-        public static byte[][] CreateJaggedByteArray(int len1, int len2)
-        {
-            var array = new byte[len1][];
-
-            for (int i = 0; i < array.Length; i++)
-            {
-                array[i] = new byte[len2];
-            }
-
-            return array;
-        }
-
-        public static byte[][][] CreateJaggedByteArray(int len1, int len2, int len3)
-        {
-            var array = new byte[len1][][];
-
-            for (int i = 0; i < array.Length; i++)
-            {
-                array[i] = new byte[len2][];
-
-                for (int j = 0; j < array[i].Length; j++)
-                {
-                    array[i][j] = new byte[len3];
-                }
-            }
-
-            return array;
-        }
 
         public static bool ArraysEqual<T>(T[] a1, T[] a2)
         {
@@ -265,26 +235,7 @@ namespace LibHac
             // Return formatted number with suffix
             return readable.ToString("0.### ") + suffix;
         }
-
-        public static long GetNextMultiple(long value, int multiple)
-        {
-            if (multiple <= 0)
-                return value;
-
-            if (value % multiple == 0)
-                return value;
-
-            return value + multiple - value % multiple;
-        }
-
-        public static int DivideByRoundUp(int value, int divisor) => (value + divisor - 1) / divisor;
-        public static long DivideByRoundUp(long value, long divisor) => (value + divisor - 1) / divisor;
-
-        public static int AlignUp(int value, int multiple) => AlignDown(value + multiple - 1, multiple);
-        public static long AlignUp(long value, long multiple) => AlignDown(value + multiple - 1, multiple);
-        public static int AlignDown(int value, int multiple) => value - value % multiple;
-        public static long AlignDown(long value, long multiple) => value - value % multiple;
-
+        
         public static void IncrementByteArray(byte[] array)
         {
             for (int i = array.Length - 1; i >= 0; i--)
@@ -341,100 +292,11 @@ namespace LibHac
             _ => "Unknown"
         };
 
-        public static bool IsSubRange(long startIndex, long subLength, long length)
-        {
-            bool isOutOfRange = startIndex < 0 || startIndex > length || subLength < 0 || startIndex > length - subLength;
-            return !isOutOfRange;
-        }
-
         public static int GetMasterKeyRevision(int keyGeneration)
         {
             if (keyGeneration == 0) return 0;
 
             return keyGeneration - 1;
-        }
-
-        public static bool IsPowerOfTwo(int value)
-        {
-            return value > 0 && ResetLeastSignificantOneBit(value) == 0;
-        }
-
-        public static bool IsPowerOfTwo(long value)
-        {
-            return value > 0 && ResetLeastSignificantOneBit(value) == 0;
-        }
-
-        public static BigInteger GetBigInteger(this ReadOnlySpan<byte> bytes)
-        {
-            var signPadded = new byte[bytes.Length + 1];
-            bytes.CopyTo(signPadded.AsSpan(1));
-            Array.Reverse(signPadded);
-            return new BigInteger(signPadded);
-        }
-
-        public static byte[] GetBytes(this BigInteger value, int size)
-        {
-            byte[] bytes = value.ToByteArray();
-
-            if (size == -1)
-            {
-                size = bytes.Length;
-            }
-
-            if (bytes.Length > size + 1)
-            {
-                throw new InvalidOperationException($"Cannot squeeze value {value} to {size} bytes from {bytes.Length}.");
-            }
-
-            if (bytes.Length == size + 1 && bytes[bytes.Length - 1] != 0)
-            {
-                throw new InvalidOperationException($"Cannot squeeze value {value} to {size} bytes from {bytes.Length}.");
-            }
-
-            Array.Resize(ref bytes, size);
-            Array.Reverse(bytes);
-            return bytes;
-        }
-
-        public static BigInteger ModInverse(BigInteger e, BigInteger n)
-        {
-            BigInteger r = n;
-            BigInteger newR = e;
-            BigInteger t = 0;
-            BigInteger newT = 1;
-
-            while (newR != 0)
-            {
-                BigInteger quotient = r / newR;
-                BigInteger temp;
-
-                temp = t;
-                t = newT;
-                newT = temp - quotient * newT;
-
-                temp = r;
-                r = newR;
-                newR = temp - quotient * newR;
-            }
-
-            if (t < 0)
-            {
-                t = t + n;
-            }
-
-            return t;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int ResetLeastSignificantOneBit(int value)
-        {
-            return value & (value - 1);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static long ResetLeastSignificantOneBit(long value)
-        {
-            return value & (value - 1);
         }
     }
 }

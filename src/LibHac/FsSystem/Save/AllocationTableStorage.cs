@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using LibHac.Fs;
+using LibHac.Util;
 
 namespace LibHac.FsSystem.Save
 {
@@ -104,8 +105,8 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoSetSize(long size)
         {
-            int oldBlockCount = (int)Utilities.DivideByRoundUp(_length, BlockSize);
-            int newBlockCount = (int)Utilities.DivideByRoundUp(size, BlockSize);
+            int oldBlockCount = (int)BitUtil.DivideUp(_length, BlockSize);
+            int newBlockCount = (int)BitUtil.DivideUp(size, BlockSize);
 
             if (oldBlockCount == newBlockCount) return Result.Success;
 

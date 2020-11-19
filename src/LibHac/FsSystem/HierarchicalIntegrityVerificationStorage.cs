@@ -4,6 +4,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using LibHac.Fs;
+using LibHac.Util;
 
 namespace LibHac.FsSystem
 {
@@ -37,7 +38,7 @@ namespace LibHac.FsSystem
                 var levelData = new IntegrityVerificationStorage(levelInfo[i], Levels[i - 1], integrityCheckLevel, leaveOpen);
                 levelData.GetSize(out long levelSize).ThrowIfFailure();
 
-                int cacheCount = Math.Min((int)Utilities.DivideByRoundUp(levelSize, levelInfo[i].BlockSize), 4);
+                int cacheCount = Math.Min((int)BitUtil.DivideUp(levelSize, levelInfo[i].BlockSize), 4);
 
                 Levels[i] = new CachedStorage(levelData, cacheCount, leaveOpen);
                 LevelValidities[i - 1] = levelData.BlockValidities;
@@ -145,7 +146,7 @@ namespace LibHac.FsSystem
             IntegrityVerificationStorage storage = IntegrityStorages[IntegrityStorages.Length - 1];
 
             long blockSize = storage.SectorSize;
-            int blockCount = (int)Utilities.DivideByRoundUp(Length, blockSize);
+            int blockCount = (int)BitUtil.DivideUp(Length, blockSize);
 
             var buffer = new byte[blockSize];
             var result = Validity.Valid;

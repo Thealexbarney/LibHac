@@ -59,7 +59,7 @@ namespace LibHac.Crypto
 
             BigInteger dp = d % (p - BigInteger.One);
             BigInteger dq = d % (q - BigInteger.One);
-            BigInteger inverseQ = Utilities.ModInverse(q, p);
+            BigInteger inverseQ = ModInverse(q, p);
 
             byte[] nBytes = n.ToByteArray();
             int modLen = nBytes.Length;
@@ -138,7 +138,7 @@ namespace LibHac.Crypto
                 do
                 {
                     rng.NextBytes(rndBuf);
-                    g = Utilities.GetBigInteger(rndBuf);
+                    g = GetBigInteger(rndBuf);
                 }
                 while (g >= n);
 
@@ -178,6 +178,67 @@ namespace LibHac.Crypto
             BigInteger q = n / p;
 
             return (p, q);
+        }
+
+        private static BigInteger GetBigInteger(this ReadOnlySpan<byte> bytes)
+        {
+            var signPadded = new byte[bytes.Length + 1];
+            bytes.CopyTo(signPadded.AsSpan(1));
+            Array.Reverse(signPadded);
+            return new BigInteger(signPadded);
+        }
+
+        private static byte[] GetBytes(this BigInteger value, int size)
+        {
+            byte[] bytes = value.ToByteArray();
+
+            if (size == -1)
+            {
+                size = bytes.Length;
+            }
+
+            if (bytes.Length > size + 1)
+            {
+                throw new InvalidOperationException($"Cannot squeeze value {value} to {size} bytes from {bytes.Length}.");
+            }
+
+            if (bytes.Length == size + 1 && bytes[bytes.Length - 1] != 0)
+            {
+                throw new InvalidOperationException($"Cannot squeeze value {value} to {size} bytes from {bytes.Length}.");
+            }
+
+            Array.Resize(ref bytes, size);
+            Array.Reverse(bytes);
+            return bytes;
+        }
+
+        private static BigInteger ModInverse(BigInteger e, BigInteger n)
+        {
+            BigInteger r = n;
+            BigInteger newR = e;
+            BigInteger t = 0;
+            BigInteger newT = 1;
+
+            while (newR != 0)
+            {
+                BigInteger quotient = r / newR;
+                BigInteger temp;
+
+                temp = t;
+                t = newT;
+                newT = temp - quotient * newT;
+
+                temp = r;
+                r = newR;
+                newR = temp - quotient * newR;
+            }
+
+            if (t < 0)
+            {
+                t = t + n;
+            }
+
+            return t;
         }
     }
 }

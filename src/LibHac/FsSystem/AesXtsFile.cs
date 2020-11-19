@@ -2,6 +2,7 @@
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.Util;
 
 namespace LibHac.FsSystem
 {
@@ -37,7 +38,7 @@ namespace LibHac.FsSystem
                 ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderInvalidKeys.Value, "NAX0 key derivation failed.");
             }
 
-            if (HeaderLength + Utilities.AlignUp(Header.Size, 0x10) > fileSize)
+            if (HeaderLength + Alignment.AlignUp(Header.Size, 0x10) > fileSize)
             {
                 ThrowHelper.ThrowResult(ResultFs.AesXtsFileTooShort.Value, "NAX0 key derivation failed.");
             }
@@ -118,7 +119,7 @@ namespace LibHac.FsSystem
             Result rc = BaseFile.Write(0, Header.ToBytes(false));
             if (rc.IsFailure()) return rc;
 
-            return BaseStorage.SetSize(Utilities.AlignUp(size, 0x10));
+            return BaseStorage.SetSize(Alignment.AlignUp(size, 0x10));
         }
 
         protected override void Dispose(bool disposing)

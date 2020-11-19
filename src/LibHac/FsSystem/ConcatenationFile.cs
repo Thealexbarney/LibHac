@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.Util;
 
 namespace LibHac.FsSystem
 {
@@ -227,7 +228,7 @@ namespace LibHac.FsSystem
 
             if (size == 0) return 1;
 
-            return (int)Utilities.DivideByRoundUp(size, subFileSize);
+            return (int)BitUtil.DivideUp(size, subFileSize);
         }
 
         private static long QuerySubFileSize(int subFileIndex, long totalSize, long subFileSize)

@@ -5,6 +5,7 @@ using System.Linq;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.Util;
 
 namespace LibHac.FsSystem.RomFs
 {
@@ -61,7 +62,7 @@ namespace LibHac.FsSystem.RomFs
             Sources.Add(fileStorage);
 
             long newOffset = CurrentOffset + fileSize;
-            CurrentOffset = Utilities.AlignUp(newOffset, FileAlignment);
+            CurrentOffset = Alignment.AlignUp(newOffset, FileAlignment);
 
             var padding = new NullStorage(CurrentOffset - newOffset);
             Sources.Add(padding);

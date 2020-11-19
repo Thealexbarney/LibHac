@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using LibHac.Util;
 
 namespace LibHac.FsSystem
 {
@@ -36,7 +37,7 @@ namespace LibHac.FsSystem
 
         public int TransformBlock(Span<byte> data)
         {
-            int blockCount = Utilities.DivideByRoundUp(data.Length, BlockSizeBytes);
+            int blockCount = BitUtil.DivideUp(data.Length, BlockSizeBytes);
             int length = blockCount * BlockSizeBytes;
 
             byte[] counterXor = ArrayPool<byte>.Shared.Rent(length);

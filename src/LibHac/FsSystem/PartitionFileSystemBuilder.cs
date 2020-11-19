@@ -7,6 +7,7 @@ using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.Util;
 
 namespace LibHac.FsSystem
 {
@@ -121,7 +122,7 @@ namespace LibHac.FsSystem
                 size += entry.NameLength + 1;
             }
 
-            int endOffset = Utilities.AlignUp(startOffset + size, GetMetaDataAlignment(type));
+            int endOffset = Alignment.AlignUpPow2(startOffset + size, GetMetaDataAlignment(type));
             return endOffset - startOffset;
         }
 
@@ -135,7 +136,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        private int GetMetaDataAlignment(PartitionFileSystemType type)
+        private uint GetMetaDataAlignment(PartitionFileSystemType type)
         {
             switch (type)
             {
