@@ -35,11 +35,11 @@ namespace LibHac.FsSystem
         public Result Initialize(SubStorage nodeStorage, SubStorage entryStorage, int nodeSize, int entrySize,
             int entryCount)
         {
-            Assert.AssertTrue(entrySize >= sizeof(long));
-            Assert.AssertTrue(nodeSize >= entrySize + Unsafe.SizeOf<NodeHeader>());
-            Assert.AssertTrue(NodeSizeMin <= nodeSize && nodeSize <= NodeSizeMax);
-            Assert.AssertTrue(BitUtil.IsPowerOfTwo(nodeSize));
-            Assert.AssertTrue(!IsInitialized());
+            Assert.True(entrySize >= sizeof(long));
+            Assert.True(nodeSize >= entrySize + Unsafe.SizeOf<NodeHeader>());
+            Assert.True(NodeSizeMin <= nodeSize && nodeSize <= NodeSizeMax);
+            Assert.True(BitUtil.IsPowerOfTwo(nodeSize));
+            Assert.True(!IsInitialized());
 
             // Ensure valid entry count.
             if (entryCount <= 0)
@@ -119,7 +119,7 @@ namespace LibHac.FsSystem
 
         public Result Find(ref Visitor visitor, long virtualAddress)
         {
-            Assert.AssertTrue(IsInitialized());
+            Assert.True(IsInitialized());
 
             if (virtualAddress < 0)
                 return ResultFs.InvalidOffset.Log();
@@ -137,11 +137,11 @@ namespace LibHac.FsSystem
 
         public static long QueryNodeStorageSize(long nodeSize, long entrySize, int entryCount)
         {
-            Assert.AssertTrue(entrySize >= sizeof(long));
-            Assert.AssertTrue(nodeSize >= entrySize + Unsafe.SizeOf<NodeHeader>());
-            Assert.AssertTrue(NodeSizeMin <= nodeSize && nodeSize <= NodeSizeMax);
-            Assert.AssertTrue(BitUtil.IsPowerOfTwo(nodeSize));
-            Assert.AssertTrue(entryCount >= 0);
+            Assert.True(entrySize >= sizeof(long));
+            Assert.True(nodeSize >= entrySize + Unsafe.SizeOf<NodeHeader>());
+            Assert.True(NodeSizeMin <= nodeSize && nodeSize <= NodeSizeMax);
+            Assert.True(BitUtil.IsPowerOfTwo(nodeSize));
+            Assert.True(entryCount >= 0);
 
             if (entryCount <= 0)
                 return 0;
@@ -151,11 +151,11 @@ namespace LibHac.FsSystem
 
         public static long QueryEntryStorageSize(long nodeSize, long entrySize, int entryCount)
         {
-            Assert.AssertTrue(entrySize >= sizeof(long));
-            Assert.AssertTrue(nodeSize >= entrySize + Unsafe.SizeOf<NodeHeader>());
-            Assert.AssertTrue(NodeSizeMin <= nodeSize && nodeSize <= NodeSizeMax);
-            Assert.AssertTrue(BitUtil.IsPowerOfTwo(nodeSize));
-            Assert.AssertTrue(entryCount >= 0);
+            Assert.True(entrySize >= sizeof(long));
+            Assert.True(nodeSize >= entrySize + Unsafe.SizeOf<NodeHeader>());
+            Assert.True(NodeSizeMin <= nodeSize && nodeSize <= NodeSizeMax);
+            Assert.True(BitUtil.IsPowerOfTwo(nodeSize));
+            Assert.True(entryCount >= 0);
 
             if (entryCount <= 0)
                 return 0;
@@ -276,7 +276,7 @@ namespace LibHac.FsSystem
 
             public bool Allocate(int nodeSize)
             {
-                Assert.AssertTrue(_header == null);
+                Assert.True(_header == null);
 
                 _header = new long[nodeSize / sizeof(long)];
 
@@ -298,7 +298,7 @@ namespace LibHac.FsSystem
 
             public ref NodeHeader GetHeader()
             {
-                Assert.AssertTrue(_header.Length / sizeof(long) >= Unsafe.SizeOf<NodeHeader>());
+                Assert.True(_header.Length / sizeof(long) >= Unsafe.SizeOf<NodeHeader>());
 
                 return ref Unsafe.As<long, NodeHeader>(ref _header[0]);
             }
@@ -322,8 +322,8 @@ namespace LibHac.FsSystem
             {
                 _buffer = buffer;
 
-                Assert.AssertTrue(_buffer.Length >= Unsafe.SizeOf<NodeHeader>());
-                Assert.AssertTrue(_buffer.Length >= Unsafe.SizeOf<NodeHeader>() + GetHeader().Count * Unsafe.SizeOf<TEntry>());
+                Assert.True(_buffer.Length >= Unsafe.SizeOf<NodeHeader>());
+                Assert.True(_buffer.Length >= Unsafe.SizeOf<NodeHeader>() + GetHeader().Count * Unsafe.SizeOf<TEntry>());
             }
 
             public int GetCount() => GetHeader().Count;
@@ -381,8 +381,8 @@ namespace LibHac.FsSystem
 
             public Result Initialize(BucketTree tree)
             {
-                Assert.AssertTrue(tree != null);
-                Assert.AssertTrue(Tree == null || tree == Tree);
+                Assert.True(tree != null);
+                Assert.True(Tree == null || tree == Tree);
 
                 if (Entry == null)
                 {

@@ -188,7 +188,7 @@ namespace LibHac.Fs.Fsa
             if (!openMode.HasFlag(OpenMode.Write))
                 return ResultFs.InvalidOpenModeForWrite.Log();
 
-            Assert.AssertTrue(size >= 0);
+            Assert.True(size >= 0);
 
             return Result.Success;
         }

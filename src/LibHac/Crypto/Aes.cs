@@ -296,7 +296,7 @@ namespace LibHac.Crypto
 
         private static void LeftShiftBytes(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            Assert.AssertTrue(output.Length >= input.Length);
+            Assert.True(output.Length >= input.Length);
 
             byte carry = 0;
 

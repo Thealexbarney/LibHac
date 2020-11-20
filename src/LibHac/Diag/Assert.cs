@@ -7,7 +7,7 @@ namespace LibHac.Diag
     public static class Assert
     {
         [Conditional("DEBUG")]
-        public static void AssertTrue([DoesNotReturnIf(false)] bool condition, string message = null)
+        public static void True([DoesNotReturnIf(false)] bool condition, string message = null)
         {
             if (condition)
                 return;

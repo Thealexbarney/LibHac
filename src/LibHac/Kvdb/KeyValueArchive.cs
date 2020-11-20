@@ -75,7 +75,7 @@ namespace LibHac.Kvdb
             Unsafe.SkipInit(out count);
 
             // This should only be called at the start of reading stream.
-            Assert.AssertTrue(_offset == 0);
+            Assert.True(_offset == 0);
 
             // Read and validate header.
             var header = new KeyValueArchiveHeader();
@@ -177,7 +177,7 @@ namespace LibHac.Kvdb
         private void Write(ReadOnlySpan<byte> source)
         {
             // Bounds check.
-            Assert.AssertTrue(_offset + source.Length <= _buffer.Length &&
+            Assert.True(_offset + source.Length <= _buffer.Length &&
                               _offset + source.Length > _offset);
 
             source.CopyTo(_buffer.Slice(_offset));

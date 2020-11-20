@@ -48,7 +48,7 @@ namespace LibHac.Common.Keys
 
         public KeyInfo(int group, KeyType type, string name, KeyGetter retrieveFunc)
         {
-            Assert.AssertTrue(IsKeyTypeValid(type));
+            Assert.True(IsKeyTypeValid(type));
 
             Name = name;
             RangeType = KeyRangeType.Single;
@@ -61,7 +61,7 @@ namespace LibHac.Common.Keys
 
         public KeyInfo(int group, KeyType type, string name, byte rangeStart, byte rangeEnd, KeyGetter retrieveFunc)
         {
-            Assert.AssertTrue(IsKeyTypeValid(type));
+            Assert.True(IsKeyTypeValid(type));
 
             Name = name;
             RangeType = KeyRangeType.Range;

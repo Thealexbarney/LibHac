@@ -335,7 +335,7 @@ namespace LibHac.Boot
 
         private bool VerifyPk11Sizes()
         {
-            Assert.AssertTrue(IsDecrypted);
+            Assert.True(IsDecrypted);
 
             int pk11Size = Unsafe.SizeOf<Package1Pk11Header>() + GetSectionSize(Package1Section.WarmBoot) +
                     GetSectionSize(Package1Section.Bootloader) + GetSectionSize(Package1Section.SecureMonitor);

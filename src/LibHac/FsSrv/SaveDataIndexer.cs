@@ -532,7 +532,7 @@ namespace LibHac.FsSrv
 
         private FlatMapKeyValueStore<SaveDataAttribute>.Iterator GetBeginIterator()
         {
-            Assert.AssertTrue(IsKvdbLoaded);
+            Assert.True(IsKvdbLoaded);
 
             return KvDatabase.GetBeginIterator();
         }

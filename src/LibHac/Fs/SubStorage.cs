@@ -81,9 +81,9 @@ namespace LibHac.Fs
             Size = size;
             IsResizable = false;
 
-            Assert.AssertTrue(IsValid());
-            Assert.AssertTrue(Offset >= 0);
-            Assert.AssertTrue(Size >= 0);
+            Assert.True(IsValid());
+            Assert.True(Offset >= 0);
+            Assert.True(Size >= 0);
         }
 
         /// <summary>
@@ -101,9 +101,9 @@ namespace LibHac.Fs
             Size = size;
             IsResizable = false;
 
-            Assert.AssertTrue(IsValid());
-            Assert.AssertTrue(Offset >= 0);
-            Assert.AssertTrue(Size >= 0);
+            Assert.True(IsValid());
+            Assert.True(Offset >= 0);
+            Assert.True(Size >= 0);
         }
 
         /// <summary>
@@ -125,10 +125,10 @@ namespace LibHac.Fs
             Size = size;
             IsResizable = false;
 
-            Assert.AssertTrue(IsValid());
-            Assert.AssertTrue(Offset >= 0);
-            Assert.AssertTrue(Size >= 0);
-            Assert.AssertTrue(other.Size >= offset + size);
+            Assert.True(IsValid());
+            Assert.True(Offset >= 0);
+            Assert.True(Size >= 0);
+            Assert.True(other.Size >= offset + size);
         }
 
         private bool IsValid() => BaseStorage != null;

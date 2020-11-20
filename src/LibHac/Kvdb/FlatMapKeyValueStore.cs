@@ -486,7 +486,7 @@ namespace LibHac.Kvdb
                 if (_count > 0)
                 {
                     // The key being added must be greater than the last key in the list.
-                    Assert.AssertTrue(key.CompareTo(_entries[_count - 1].Key) > 0);
+                    Assert.True(key.CompareTo(_entries[_count - 1].Key) > 0);
                 }
 
                 _entries[_count] = new KeyValue(in key, value);
