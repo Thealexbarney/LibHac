@@ -14,7 +14,7 @@ namespace LibHac.Util
         {
             get
             {
-                Assert.AssertTrue(_hasValue);
+                Assert.True(_hasValue);
                 // It's beautiful
                 return ref MemoryMarshal.CreateSpan(ref _value, 1)[0];
             }
@@ -23,7 +23,7 @@ namespace LibHac.Util
         {
             get
             {
-                Assert.AssertTrue(_hasValue);
+                Assert.True(_hasValue);
                 return ref SpanHelpers.CreateReadOnlySpan(in _value, 1)[0];
             }
         }

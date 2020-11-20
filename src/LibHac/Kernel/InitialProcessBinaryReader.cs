@@ -64,7 +64,7 @@ namespace LibHac.Kernel
         private static Result GetKipOffsets(out (int offset, int size)[] kipOffsets, IStorage iniStorage,
             int processCount)
         {
-            Assert.AssertTrue(processCount <= MaxProcessCount);
+            Assert.True(processCount <= MaxProcessCount);
 
             kipOffsets = default;
 

@@ -84,9 +84,9 @@ namespace LibHac.FsSystem
         public Result GetEntryList(Span<Entry> entryBuffer, out int outputEntryCount, long offset, long size)
         {
             // Validate pre-conditions
-            Assert.AssertTrue(offset >= 0);
-            Assert.AssertTrue(size >= 0);
-            Assert.AssertTrue(IsInitialized());
+            Assert.True(offset >= 0);
+            Assert.True(size >= 0);
+            Assert.True(IsInitialized());
 
             // Clear the out count
             outputEntryCount = 0;
@@ -153,8 +153,8 @@ namespace LibHac.FsSystem
         protected override unsafe Result DoRead(long offset, Span<byte> destination)
         {
             // Validate pre-conditions
-            Assert.AssertTrue(offset >= 0);
-            Assert.AssertTrue(IsInitialized());
+            Assert.True(offset >= 0);
+            Assert.True(IsInitialized());
 
             // Succeed if there's nothing to read
             if (destination.Length == 0)
@@ -206,9 +206,9 @@ namespace LibHac.FsSystem
         private Result OperatePerEntry(long offset, long size, OperateFunc func)
         {
             // Validate preconditions
-            Assert.AssertTrue(offset >= 0);
-            Assert.AssertTrue(size >= 0);
-            Assert.AssertTrue(IsInitialized());
+            Assert.True(offset >= 0);
+            Assert.True(size >= 0);
+            Assert.True(IsInitialized());
 
             // Succeed if there's nothing to operate on
             if (size == 0)
@@ -272,12 +272,12 @@ namespace LibHac.FsSystem
                     // Get the offset of the entry in the data we read
                     long dataOffset = currentOffset - currentEntryOffset;
                     long dataSize = nextEntryOffset - currentEntryOffset - dataOffset;
-                    Assert.AssertTrue(dataSize > 0);
+                    Assert.True(dataSize > 0);
 
                     // Determine how much is left
                     long remainingSize = endOffset - currentOffset;
                     long currentSize = Math.Min(remainingSize, dataSize);
-                    Assert.AssertTrue(currentSize <= size);
+                    Assert.True(currentSize <= size);
 
                     {
                         SubStorage currentStorage = DataStorage[currentEntry.StorageIndex];
