@@ -12,12 +12,14 @@ master_kek_source_08              = DEDCE339308816F8AE97ADEC642D4141
 master_kek_source_09              = 1AEC11822B32387A2BEDBA01477E3B67
 master_kek_source_0a              = 303F027ED838ECD7932534B530EBCA7A
 
+mariko_master_kek_source_05       = 77605AD2EE6EF83C3F72E2599DAC5E56
 mariko_master_kek_source_06       = 1E80B8173EC060AA11BE1A4AA66FE4AE
 mariko_master_kek_source_07       = 940867BD0A00388411D31ADBDD8DF18A
 mariko_master_kek_source_08       = 5C24E3B8B4F700C23CFD0ACE13C3DC23
 mariko_master_kek_source_09       = 8669F00987C805AEB57B4874DE62A613
 mariko_master_kek_source_0a       = 0E440CEDB436C03FAA1DAEBF62B10982
 
+mariko_master_kek_source_dev_05   = 32C0976B636D4464F23AA5C0DE46CCE9
 mariko_master_kek_source_dev_06   = CC974C462A0CB0A6C9C0B7BE302EC368
 mariko_master_kek_source_dev_07   = 86BD1D7650DF6DFA2C7D3322ABF18218
 mariko_master_kek_source_dev_08   = A3B1E0A958A2267F40BF5BBB87330B66
