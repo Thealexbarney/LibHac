@@ -106,6 +106,10 @@ namespace LibHac.Fs
             public static Result.Base AllocationFailureFatFileSystemA => new Result.Base(ModuleFs, 3264);
             /// <summary>In Create allocating PartitionFileSystemCore<br/>Error code: 2002-3280; Inner value: 0x19a002</summary>
             public static Result.Base AllocationFailureInPartitionFileSystemCreatorA => new Result.Base(ModuleFs, 3280);
+            /// <summary>In Initialize allocating free areas array<br/>Error code: 2002-3294; Inner value: 0x19bc02</summary>
+            public static Result.Base AllocationFailureInFileSystemBuddyHeapA => new Result.Base(ModuleFs, 3294);
+            /// <summary>In CacheHandleTable::Initialize allocating an entry buffer<br/>Error code: 2002-3295; Inner value: 0x19be02</summary>
+            public static Result.Base AllocationFailureInFileSystemBufferManagerA => new Result.Base(ModuleFs, 3295);
             /// <summary>In Initialize allocating FileStorage<br/>Error code: 2002-3312; Inner value: 0x19e002</summary>
             public static Result.Base AllocationFailureInAesXtsFileA => new Result.Base(ModuleFs, 3312);
             /// <summary>In Initialize allocating AesXtsStorage<br/>Error code: 2002-3313; Inner value: 0x19e202</summary>
