@@ -94,6 +94,8 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,3258,,AllocationFailureInProgramRegistryManagerA,In RegisterProgram allocating ProgramInfoNode
 2,3264,,AllocationFailureFatFileSystemA,In Initialize allocating ProgramInfoNode
 2,3280,,AllocationFailureInPartitionFileSystemCreatorA,In Create allocating PartitionFileSystemCore
+2,3294,,AllocationFailureInFileSystemBuddyHeapA,In Initialize allocating free areas array
+2,3295,,AllocationFailureInFileSystemBufferManagerA,In CacheHandleTable::Initialize allocating an entry buffer
 2,3312,,AllocationFailureInAesXtsFileA,In Initialize allocating FileStorage
 2,3313,,AllocationFailureInAesXtsFileB,In Initialize allocating AesXtsStorage
 2,3314,,AllocationFailureInAesXtsFileC,In Initialize allocating AlignmentMatchingStoragePooledBuffer
