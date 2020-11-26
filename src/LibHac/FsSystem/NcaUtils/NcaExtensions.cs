@@ -97,6 +97,12 @@ namespace LibHac.FsSystem.NcaUtils
 
             IStorage storage = nca.OpenRawStorage(index);
 
+            // The FS header of an NCA0 section with IVFC verification must be manually skipped
+            if (nca.Header.IsNca0() && header.HashType == NcaHashType.Ivfc)
+            {
+                offset += 0x200;
+            }
+
             var data = new byte[size];
             storage.Read(offset, data).ThrowIfFailure();
 

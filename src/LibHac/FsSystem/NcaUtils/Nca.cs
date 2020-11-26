@@ -315,15 +315,7 @@ namespace LibHac.FsSystem.NcaUtils
                 return rawStorage.Slice(0, header.GetPatchInfo().RelocationTreeOffset);
             }
 
-            switch (header.HashType)
-            {
-                case NcaHashType.Sha256:
-                    return InitIvfcForPartitionFs(header.GetIntegrityInfoSha256(), rawStorage, integrityCheckLevel, true);
-                case NcaHashType.Ivfc:
-                    return InitIvfcForRomFs(header.GetIntegrityInfoIvfc(), rawStorage, integrityCheckLevel, true);
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+            return CreateVerificationStorage(integrityCheckLevel, header, rawStorage);
         }
 
         public IStorage OpenStorageWithPatch(Nca patchNca, int index, IntegrityCheckLevel integrityCheckLevel)
@@ -331,11 +323,24 @@ namespace LibHac.FsSystem.NcaUtils
             IStorage rawStorage = OpenRawStorageWithPatch(patchNca, index);
             NcaFsHeader header = patchNca.GetFsHeader(index);
 
+            return CreateVerificationStorage(integrityCheckLevel, header, rawStorage);
+        }
+
+        private IStorage CreateVerificationStorage(IntegrityCheckLevel integrityCheckLevel, NcaFsHeader header,
+            IStorage rawStorage)
+        {
             switch (header.HashType)
             {
                 case NcaHashType.Sha256:
-                    return InitIvfcForPartitionFs(header.GetIntegrityInfoSha256(), rawStorage, integrityCheckLevel, true);
+                    return InitIvfcForPartitionFs(header.GetIntegrityInfoSha256(), rawStorage, integrityCheckLevel,
+                        true);
                 case NcaHashType.Ivfc:
+                    // The FS header of an NCA0 section with IVFC verification must be manually skipped
+                    if (Header.IsNca0())
+                    {
+                        rawStorage = rawStorage.Slice(0x200);
+                    }
+
                     return InitIvfcForRomFs(header.GetIntegrityInfoIvfc(), rawStorage, integrityCheckLevel, true);
                 default:
                     throw new ArgumentOutOfRangeException();
