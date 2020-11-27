@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Util;
+using Buffer = LibHac.Fs.Buffer;
 
 // ReSharper disable once CheckNamespace
 namespace LibHac.FsSystem
@@ -24,9 +25,6 @@ namespace LibHac.FsSystem
         private nuint TotalFreeSize { get; set; }
         private PageList* ExternalFreeLists { get; set; }
         private PageList[] InternalFreeLists { get; set; }
-
-        // Addition: Handle to allow initialization with a Memory<byte>
-        private MemoryHandle PinnedMemoryHandle { get; set; }
 
         private struct PageList
         {
@@ -157,7 +155,8 @@ namespace LibHac.FsSystem
             FreeLists = null;
             ExternalFreeLists = null;
             InternalFreeLists = null;
-            PinnedMemoryHandle.Dispose();
+            PinnedHeapMemoryHandle.Dispose();
+            PinnedWorkMemoryHandle.Dispose();
         }
 
         public static int GetBlockCountFromOrder(int order)
@@ -190,16 +189,6 @@ namespace LibHac.FsSystem
                 if (blockCount <= GetBlockCountFromOrder(order))
                     return order;
             }
-        }
-
-        public Result Initialize(Memory<byte> heapBuffer, uint blockSize, int orderMax)
-        {
-            PinnedMemoryHandle = heapBuffer.Pin();
-
-            var address = (UIntPtr)PinnedMemoryHandle.Pointer;
-            var size = (nuint)heapBuffer.Length;
-
-            return Initialize(address, size, blockSize, orderMax);
         }
 
         public Result Initialize(UIntPtr address, nuint size, nuint blockSize, void* workBuffer, nuint workBufferSize)
@@ -250,14 +239,14 @@ namespace LibHac.FsSystem
             Assert.True(maxPageCount > 0);
 
             // Setup the free lists
-            if (ExternalFreeLists is not null)
+            if (ExternalFreeLists != null)
             {
                 Assert.Null(InternalFreeLists);
                 FreeLists = ExternalFreeLists;
             }
             else
             {
-                InternalFreeLists = new PageList[OrderMax + 1];
+                InternalFreeLists = GC.AllocateArray<PageList>(OrderMax + 1, true);
                 FreeLists = (PageList*)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(InternalFreeLists));
                 if (InternalFreeLists == null)
                     return ResultFs.AllocationFailureInFileSystemBuddyHeapA.Log();
@@ -403,20 +392,6 @@ namespace LibHac.FsSystem
         {
             Assert.True(FreeLists != null);
             return BlockSize;
-        }
-
-        // Not in original
-        public int GetPageBlockCountMax()
-        {
-            Assert.True(FreeLists != null);
-            return 1 << GetOrderMax();
-        }
-
-        // Not in original
-        public nuint GetPageSizeMax()
-        {
-            Assert.True(FreeLists != null);
-            return (nuint)GetPageBlockCountMax() * GetBlockSize();
         }
 
         private void DivideBuddies(PageEntry* pageEntry, int requiredOrder, int chosenOrder)
@@ -590,6 +565,82 @@ namespace LibHac.FsSystem
         private bool IsAlignedToOrder(PageEntry* pageEntry, int order)
         {
             return Alignment.IsAlignedPow2(GetIndexFromPageEntry(pageEntry), (uint)GetBlockCountFromOrder(order));
+        }
+
+        // Addition: The below fields and methods allow using Memory<byte> with the class instead
+        // of raw pointers.
+        private MemoryHandle PinnedHeapMemoryHandle { get; set; }
+        private Memory<byte> HeapBuffer { get; set; }
+        private MemoryHandle PinnedWorkMemoryHandle { get; set; }
+        private Memory<byte> WorkBuffer { get; set; }
+
+        public Result Initialize(Memory<byte> heapBuffer, int blockSize, Memory<byte> workBuffer)
+        {
+            return Initialize(heapBuffer, blockSize, QueryOrderMax((nuint)heapBuffer.Length, (nuint)blockSize),
+                workBuffer);
+        }
+
+        public Result Initialize(Memory<byte> heapBuffer, int blockSize, int orderMax, Memory<byte> workBuffer)
+        {
+            PinnedWorkMemoryHandle = workBuffer.Pin();
+            WorkBuffer = workBuffer;
+
+            PinnedHeapMemoryHandle = heapBuffer.Pin();
+            HeapBuffer = heapBuffer;
+
+            var heapAddress = (UIntPtr)PinnedHeapMemoryHandle.Pointer;
+            var heapSize = (nuint)heapBuffer.Length;
+
+            void* workAddress = PinnedHeapMemoryHandle.Pointer;
+            var workSize = (nuint)heapBuffer.Length;
+
+            return Initialize(heapAddress, heapSize, (nuint)blockSize, orderMax, workAddress, workSize);
+        }
+
+        public Result Initialize(Memory<byte> heapBuffer, int blockSize)
+        {
+            return Initialize(heapBuffer, blockSize, QueryOrderMax((nuint)heapBuffer.Length, (nuint)blockSize));
+        }
+
+        public Result Initialize(Memory<byte> heapBuffer, int blockSize, int orderMax)
+        {
+            PinnedHeapMemoryHandle = heapBuffer.Pin();
+            HeapBuffer = heapBuffer;
+
+            var address = (UIntPtr)PinnedHeapMemoryHandle.Pointer;
+            var size = (nuint)heapBuffer.Length;
+
+            return Initialize(address, size, (nuint)blockSize, orderMax);
+        }
+
+        public Buffer AllocateBufferByOrder(int order)
+        {
+            Assert.True(!HeapBuffer.IsEmpty);
+
+            void* address = AllocateByOrder(order);
+
+            if (address == null)
+                return Buffer.Empty;
+
+            nuint size = GetBytesFromOrder(order);
+            Assert.True(size <= int.MaxValue);
+
+            // Get the offset relative to the heap start
+            nuint offset = (nuint)address - (nuint)PinnedHeapMemoryHandle.Pointer;
+            Assert.True(offset <= (nuint)HeapBuffer.Length);
+
+            // Get a slice of the Memory<byte> containing the entire heap
+            return new Buffer(HeapBuffer.Slice((int)offset, (int)size));
+        }
+
+        public void Free(Buffer buffer)
+        {
+            Assert.True(!HeapBuffer.IsEmpty);
+            Assert.True(!buffer.IsNull);
+
+            int order = GetOrderFromBytes((nuint)buffer.Length);
+            void* pointer = Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer.Span));
+            Free(pointer, order);
         }
     }
 }
