@@ -20,33 +20,33 @@ namespace LibHac.Fs
 
         public const int BufferLevelMin = 0;
 
-        public (UIntPtr address, nuint size) AllocateBuffer(nuint size, BufferAttribute attribute) =>
+        public Buffer AllocateBuffer(int size, BufferAttribute attribute) =>
             DoAllocateBuffer(size, attribute);
 
-        public void DeallocateBuffer(UIntPtr address, nuint size) => DoDeallocateBuffer(address, size);
+        public void DeallocateBuffer(Buffer buffer) => DoDeallocateBuffer(buffer);
 
-        public CacheHandle RegisterCache(UIntPtr address, nuint size, BufferAttribute attribute) =>
-            DoRegisterCache(address, size, attribute);
+        public CacheHandle RegisterCache(Buffer buffer, BufferAttribute attribute) =>
+            DoRegisterCache(buffer, attribute);
 
-        public (UIntPtr address, nuint size) AcquireCache(CacheHandle handle) => DoAcquireCache(handle);
-        public nuint GetTotalSize() => DoGetTotalSize();
-        public nuint GetFreeSize() => DoGetFreeSize();
-        public nuint GetTotalAllocatableSize() => DoGetTotalAllocatableSize();
-        public nuint GetFreeSizePeak() => DoGetFreeSizePeak();
-        public nuint GetTotalAllocatableSizePeak() => DoGetTotalAllocatableSizePeak();
-        public nuint GetRetriedCount() => DoGetRetriedCount();
+        public Buffer AcquireCache(CacheHandle handle) => DoAcquireCache(handle);
+        public int GetTotalSize() => DoGetTotalSize();
+        public int GetFreeSize() => DoGetFreeSize();
+        public int GetTotalAllocatableSize() => DoGetTotalAllocatableSize();
+        public int GetFreeSizePeak() => DoGetFreeSizePeak();
+        public int GetTotalAllocatableSizePeak() => DoGetTotalAllocatableSizePeak();
+        public int GetRetriedCount() => DoGetRetriedCount();
         public void ClearPeak() => DoClearPeak();
 
-        protected abstract (UIntPtr address, nuint size) DoAllocateBuffer(nuint size, BufferAttribute attribute);
-        protected abstract void DoDeallocateBuffer(UIntPtr address, nuint size);
-        protected abstract CacheHandle DoRegisterCache(UIntPtr address, nuint size, BufferAttribute attribute);
-        protected abstract (UIntPtr address, nuint size) DoAcquireCache(CacheHandle handle);
-        protected abstract nuint DoGetTotalSize();
-        protected abstract nuint DoGetFreeSize();
-        protected abstract nuint DoGetTotalAllocatableSize();
-        protected abstract nuint DoGetFreeSizePeak();
-        protected abstract nuint DoGetTotalAllocatableSizePeak();
-        protected abstract nuint DoGetRetriedCount();
+        protected abstract Buffer DoAllocateBuffer(int size, BufferAttribute attribute);
+        protected abstract void DoDeallocateBuffer(Buffer buffer);
+        protected abstract CacheHandle DoRegisterCache(Buffer buffer, BufferAttribute attribute);
+        protected abstract Buffer DoAcquireCache(CacheHandle handle);
+        protected abstract int DoGetTotalSize();
+        protected abstract int DoGetFreeSize();
+        protected abstract int DoGetTotalAllocatableSize();
+        protected abstract int DoGetFreeSizePeak();
+        protected abstract int DoGetTotalAllocatableSizePeak();
+        protected abstract int DoGetRetriedCount();
         protected abstract void DoClearPeak();
 
         protected virtual void Dispose(bool disposing) { }

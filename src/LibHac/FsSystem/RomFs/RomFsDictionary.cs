@@ -7,9 +7,7 @@ using LibHac.Util;
 
 namespace LibHac.FsSystem.RomFs
 {
-    // todo: Change constraint to "unmanaged" after updating to
-    // a newer SDK https://github.com/dotnet/csharplang/issues/1937
-    internal class RomFsDictionary<T> where T : struct
+    internal class RomFsDictionary<T> where T : unmanaged
     {
         private int _count;
         private int _length;
@@ -194,7 +192,7 @@ namespace LibHac.FsSystem.RomFs
             if (value != _capacity)
             {
                 var newBuffer = new byte[value];
-                Buffer.BlockCopy(Entries, 0, newBuffer, 0, _length);
+                System.Buffer.BlockCopy(Entries, 0, newBuffer, 0, _length);
 
                 Entries = newBuffer;
                 _capacity = value;
