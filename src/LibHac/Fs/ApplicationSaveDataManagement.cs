@@ -70,7 +70,7 @@ namespace LibHac.Fs
 
             if (bcatRc.IsFailure())
             {
-                if (!ResultFs.InsufficientFreeSpace.Includes(bcatRc))
+                if (!ResultFs.UsableSpaceNotEnough.Includes(bcatRc))
                 {
                     return bcatRc;
                 }
@@ -112,7 +112,7 @@ namespace LibHac.Fs
 
                     if (createRc.IsFailure())
                     {
-                        if (ResultFs.InsufficientFreeSpace.Includes(createRc))
+                        if (ResultFs.UsableSpaceNotEnough.Includes(createRc))
                         {
                             Result queryRc = fs.QuerySaveDataTotalSize(out long tempSaveTotalSize,
                                 nacp.TemporaryStorageSize, 0);
@@ -135,7 +135,7 @@ namespace LibHac.Fs
 
             requiredSize = requiredSizeSum;
 
-            return requiredSize == 0 ? Result.Success : ResultFs.InsufficientFreeSpace.Log();
+            return requiredSize == 0 ? Result.Success : ResultFs.UsableSpaceNotEnough.Log();
         }
 
         [SuppressMessage("ReSharper", "UnusedParameter.Local")]
@@ -158,7 +158,7 @@ namespace LibHac.Fs
             if (rc.IsSuccess())
                 return Result.Success;
 
-            if (ResultFs.InsufficientFreeSpace.Includes(rc))
+            if (ResultFs.UsableSpaceNotEnough.Includes(rc))
             {
                 Result queryRc = fs.QuerySaveDataTotalSize(out long totalSize, dataSize, journalSize);
                 if (queryRc.IsFailure()) return queryRc;
@@ -193,7 +193,7 @@ namespace LibHac.Fs
 
             if (rc.IsFailure())
             {
-                if (!ResultFs.InsufficientFreeSpace.Includes(rc))
+                if (!ResultFs.UsableSpaceNotEnough.Includes(rc))
                     return rc;
 
                 requiredSize += requiredSizeExtend;
@@ -229,7 +229,7 @@ namespace LibHac.Fs
             if (rc.IsFailure()) return rc;
 
             requiredSize = requiredSizeBcat;
-            return requiredSizeBcat > 0 ? ResultFs.InsufficientFreeSpace.Log() : Result.Success;
+            return requiredSizeBcat > 0 ? ResultFs.UsableSpaceNotEnough.Log() : Result.Success;
         }
 
         private static Result EnsureApplicationCacheStorageImpl(this FileSystemClient fs, out long requiredSize,
@@ -291,7 +291,7 @@ namespace LibHac.Fs
                 {
                     target = CacheStorageTargetMedia.None;
                     requiredSize = requiredSizeLocal;
-                    return ResultFs.InsufficientFreeSpace.Log();
+                    return ResultFs.UsableSpaceNotEnough.Log();
                 }
             }
 
@@ -370,7 +370,7 @@ namespace LibHac.Fs
 
             rc = ExtendSaveDataIfNeeded(fs, out requiredSizeLocal, spaceId, info.SaveDataId, dataSize, journalSize);
 
-            if (rc.IsSuccess() || ResultFs.InsufficientFreeSpace.Includes(rc))
+            if (rc.IsSuccess() || ResultFs.UsableSpaceNotEnough.Includes(rc))
             {
                 requiredSize = requiredSizeLocal;
                 return Result.Success;

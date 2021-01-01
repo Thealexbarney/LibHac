@@ -129,7 +129,7 @@ namespace LibHac.FsSrv
 
                         readOnlyFileSystem = ReadOnlyFileSystem.CreateShared(ref manualFileSystem);
                         if (readOnlyFileSystem?.Target is null)
-                            return ResultFs.AllocationFailureInAllocateShared.Log();
+                            return ResultFs.AllocationMemoryFailedInAllocateShared.Log();
 
                         Shared.Move(out fileSystem, ref readOnlyFileSystem);
                         return Result.Success;

@@ -21,7 +21,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
         {
             FileSystemClient fs = FileSystemServerFactory.CreateClient(false);
 
-            Assert.Result(ResultFs.SdCardNotFound, fs.MountSdCard("sdcard".ToU8Span()));
+            Assert.Result(ResultFs.PortSdCardNoDevice, fs.MountSdCard("sdcard".ToU8Span()));
         }
 
         [Fact]

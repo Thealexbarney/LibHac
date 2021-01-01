@@ -74,7 +74,7 @@ namespace LibHac.FsSystem
         protected override Result DoSetSize(long size)
         {
             if (!Mode.HasFlag(OpenMode.Write))
-                return ResultFs.InvalidOpenModeForWrite.Log();
+                return ResultFs.WriteUnpermitted.Log();
 
             return BaseStorage.SetSize(size);
         }

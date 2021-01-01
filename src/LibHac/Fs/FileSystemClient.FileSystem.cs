@@ -148,7 +148,7 @@ namespace LibHac.Fs
 
             if (oldFileSystem != newFileSystem)
             {
-                return ResultFs.DifferentDestFileSystem.Log();
+                return ResultFs.RenameToOtherFileSystem.Log();
             }
 
             if (IsEnabledAccessLog() && oldFileSystem.IsAccessLogEnabled)
@@ -177,7 +177,7 @@ namespace LibHac.Fs
 
             if (oldFileSystem != newFileSystem)
             {
-                return ResultFs.DifferentDestFileSystem.Log();
+                return ResultFs.RenameToOtherFileSystem.Log();
             }
 
             if (IsEnabledAccessLog() && oldFileSystem.IsAccessLogEnabled)

@@ -27,14 +27,14 @@ namespace LibHac.Common
             ERROR_ACCESS_DENIED => ResultFs.TargetLocked.Value,
             ERROR_SHARING_VIOLATION => ResultFs.TargetLocked.Value,
             ERROR_HANDLE_EOF => ResultFs.OutOfRange.Value,
-            ERROR_HANDLE_DISK_FULL => ResultFs.InsufficientFreeSpace.Value,
+            ERROR_HANDLE_DISK_FULL => ResultFs.UsableSpaceNotEnough.Value,
             ERROR_FILE_EXISTS => ResultFs.PathAlreadyExists.Value,
-            ERROR_DISK_FULL => ResultFs.InsufficientFreeSpace.Value,
+            ERROR_DISK_FULL => ResultFs.UsableSpaceNotEnough.Value,
             ERROR_INVALID_NAME => ResultFs.PathNotFound.Value,
             ERROR_DIR_NOT_EMPTY => ResultFs.DirectoryNotEmpty.Value,
             ERROR_ALREADY_EXISTS => ResultFs.PathAlreadyExists.Value,
             ERROR_DIRECTORY => ResultFs.PathNotFound.Value,
-            ERROR_SPACES_NOT_ENOUGH_DRIVES => ResultFs.InsufficientFreeSpace.Value,
+            ERROR_SPACES_NOT_ENOUGH_DRIVES => ResultFs.UsableSpaceNotEnough.Value,
             _ => ResultFs.UnknownHostFileSystemError.Value
         };
     }

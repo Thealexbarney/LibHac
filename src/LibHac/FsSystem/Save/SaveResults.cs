@@ -25,27 +25,27 @@ namespace LibHac.FsSystem.Save
 
             if (ResultFs.IntegrityVerificationStorageCorrupted.Includes(result))
             {
-                if (ResultFs.InvalidIvfcMagic.Includes(result))
+                if (ResultFs.IncorrectIntegrityVerificationMagic.Includes(result))
                 {
                     return ResultFs.InvalidSaveDataIvfcMagic.Value;
                 }
 
-                if (ResultFs.InvalidIvfcHashValidationBit.Includes(result))
+                if (ResultFs.InvalidZeroHash.Includes(result))
                 {
                     return ResultFs.InvalidSaveDataIvfcHashValidationBit.Value;
                 }
 
-                if (ResultFs.InvalidIvfcHash.Includes(result))
+                if (ResultFs.NonRealDataVerificationFailed.Includes(result))
                 {
                     return ResultFs.InvalidSaveDataIvfcHash.Value;
                 }
 
-                if (ResultFs.EmptyIvfcHash.Includes(result))
+                if (ResultFs.ClearedRealDataVerificationFailed.Includes(result))
                 {
                     return ResultFs.EmptySaveDataIvfcHash.Value;
                 }
 
-                if (ResultFs.InvalidHashInIvfcTopLayer.Includes(result))
+                if (ResultFs.UnclearedRealDataVerificationFailed.Includes(result))
                 {
                     return ResultFs.InvalidSaveDataHashInIvfcTopLayer.Value;
                 }
@@ -98,7 +98,7 @@ namespace LibHac.FsSystem.Save
                 return result;
             }
 
-            if (ResultFs.EntryNotFound.Includes(result))
+            if (ResultFs.NotFound.Includes(result))
             {
                 return ResultFs.PathNotFound.Value;
             }
@@ -108,7 +108,7 @@ namespace LibHac.FsSystem.Save
                 return ResultFs.PathAlreadyExists.Value;
             }
 
-            if (ResultFs.PathNotFoundInSaveDataFileTable.Includes(result))
+            if (ResultFs.IncompatiblePath.Includes(result))
             {
                 return ResultFs.PathNotFound.Value;
             }
@@ -120,7 +120,7 @@ namespace LibHac.FsSystem.Save
 
             if (ResultFs.AllocationTableInsufficientFreeBlocks.Includes(result))
             {
-                return ResultFs.InsufficientFreeSpace.Value;
+                return ResultFs.UsableSpaceNotEnough.Value;
             }
 
             return result;

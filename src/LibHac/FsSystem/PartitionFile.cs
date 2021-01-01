@@ -39,7 +39,7 @@ namespace LibHac.FsSystem
             Result rc = DryWrite(out bool isResizeNeeded, offset, source.Length, in option, Mode);
             if (rc.IsFailure()) return rc;
 
-            if (isResizeNeeded) return ResultFs.UnsupportedOperationInPartitionFileSetSize.Log();
+            if (isResizeNeeded) return ResultFs.UnsupportedWriteForPartitionFile.Log();
 
             if (offset > Size) return ResultFs.OutOfRange.Log();
 
@@ -81,10 +81,10 @@ namespace LibHac.FsSystem
         {
             if (!Mode.HasFlag(OpenMode.Write))
             {
-                return ResultFs.InvalidOpenModeForWrite.Log();
+                return ResultFs.WriteUnpermitted.Log();
             }
 
-            return ResultFs.UnsupportedOperationInPartitionFileSetSize.Log();
+            return ResultFs.UnsupportedWriteForPartitionFile.Log();
         }
     }
 }

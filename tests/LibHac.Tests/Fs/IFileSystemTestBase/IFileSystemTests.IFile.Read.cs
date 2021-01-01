@@ -52,7 +52,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             using (file)
             {
                 Result rc = file.Read(out _, 0, buffer, ReadOption.None);
-                Assert.Result(ResultFs.InvalidOpenModeForRead, rc);
+                Assert.Result(ResultFs.ReadUnpermitted, rc);
             }
         }
 

@@ -308,7 +308,7 @@ namespace LibHac.FsSystem
         protected override Result DoCommitProvisionally(long counter)
         {
             if (!CanCommitProvisionally)
-                return ResultFs.UnsupportedOperationInDirectorySaveDataFileSystem.Log();
+                return ResultFs.UnsupportedCommitProvisionallyForDirectorySaveDataFileSystem.Log();
 
             return Result.Success;
         }

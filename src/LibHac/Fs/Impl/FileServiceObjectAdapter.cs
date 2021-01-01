@@ -58,7 +58,7 @@ namespace LibHac.Fs.Impl
 
                     return BaseFile.Target.OperateRange(out info, (int)OperationId.QueryRange, offset, size);
                 default:
-                    return ResultFs.UnsupportedOperationInFileServiceObjectAdapterA.Log();
+                    return ResultFs.UnsupportedOperateRangeForFileServiceObjectAdapter.Log();
             }
         }
 

@@ -161,7 +161,7 @@ namespace LibHac.Fs.Fsa
             if (!openMode.HasFlag(OpenMode.Read))
             {
                 readableBytes = default;
-                return ResultFs.InvalidOpenModeForRead.Log();
+                return ResultFs.ReadUnpermitted.Log();
             }
 
             // Get the file size, and validate our offset.
@@ -186,7 +186,7 @@ namespace LibHac.Fs.Fsa
         {
             // Check that we can write.
             if (!openMode.HasFlag(OpenMode.Write))
-                return ResultFs.InvalidOpenModeForWrite.Log();
+                return ResultFs.WriteUnpermitted.Log();
 
             Assert.True(size >= 0);
 
@@ -200,7 +200,7 @@ namespace LibHac.Fs.Fsa
             if (!openMode.HasFlag(OpenMode.Write))
             {
                 needsAppend = default;
-                return ResultFs.InvalidOpenModeForWrite.Log();
+                return ResultFs.WriteUnpermitted.Log();
             }
 
             // Get the file size.

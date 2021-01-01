@@ -98,7 +98,7 @@ namespace LibHac.FsSystem
 
                 if (Entries == null)
                 {
-                    return ResultFs.AllocationFailureInFileSystemBufferManagerA.Log();
+                    return ResultFs.AllocationMemoryFailedInFileSystemBufferManagerA.Log();
                 }
 
                 // Set entries.

@@ -182,7 +182,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
-            return ResultFs.UnsupportedOperationInIndirectStorageWrite.Log();
+            return ResultFs.UnsupportedWriteForIndirectStorage.Log();
         }
 
         protected override Result DoFlush()
@@ -192,7 +192,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoSetSize(long size)
         {
-            return ResultFs.UnsupportedOperationInIndirectStorageSetSize.Log();
+            return ResultFs.UnsupportedSetSizeForIndirectStorage.Log();
         }
 
         protected override Result DoGetSize(out long size)

@@ -87,7 +87,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
-            return ResultFs.UnsupportedOperationInAesCtrExStorageWrite.Log();
+            return ResultFs.UnsupportedWriteForAesCtrCounterExtendedStorage.Log();
         }
 
         protected override Result DoFlush()

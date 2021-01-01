@@ -188,7 +188,7 @@ namespace LibHac.Fs
                 if (!Mode.HasFlag(OpenMode.Read))
                 {
                     bytesRead = 0;
-                    return ResultFs.InvalidOpenModeForRead.Log();
+                    return ResultFs.ReadUnpermitted.Log();
                 }
 
                 return BaseStream.Read(out bytesRead, offset, destination);
@@ -198,7 +198,7 @@ namespace LibHac.Fs
             {
                 if (!Mode.HasFlag(OpenMode.Write))
                 {
-                    return ResultFs.InvalidOpenModeForWrite.Log();
+                    return ResultFs.WriteUnpermitted.Log();
                 }
 
                 return BaseStream.Write(offset, source, Mode.HasFlag(OpenMode.AllowAppend));

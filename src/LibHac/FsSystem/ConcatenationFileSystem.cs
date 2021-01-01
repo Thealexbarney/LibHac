@@ -319,7 +319,7 @@ namespace LibHac.FsSystem
         protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
             U8Span path)
         {
-            if (queryId != QueryId.MakeConcatFile) return ResultFs.UnsupportedOperationInConcatFsQueryEntry.Log();
+            if (queryId != QueryId.MakeConcatFile) return ResultFs.UnsupportedQueryEntryForConcatenationFileSystem.Log();
 
             return SetConcatenationFileAttribute(path);
         }

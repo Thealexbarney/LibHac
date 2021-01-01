@@ -97,7 +97,7 @@ namespace LibHac.FsSystem
             {
                 if (stringTableSize <= entries[i].NameOffset)
                 {
-                    throw new HorizonResultException(ResultFs.InvalidPartitionFileSystemEntryNameOffset.Log());
+                    throw new HorizonResultException(ResultFs.InvalidPartitionEntryOffset.Log());
                 }
 
                 ReadOnlySpan<byte> entryName = names.Slice(entries[i].NameOffset);
@@ -127,7 +127,7 @@ namespace LibHac.FsSystem
             // Nintendo doesn't check the offset here like they do in FindEntry, but we will for safety
             if (table.Length <= nameOffset)
             {
-                throw new HorizonResultException(ResultFs.InvalidPartitionFileSystemEntryNameOffset.Log());
+                throw new HorizonResultException(ResultFs.InvalidPartitionEntryOffset.Log());
             }
 
             return new U8Span(table.Slice(nameOffset));
@@ -157,12 +157,12 @@ namespace LibHac.FsSystem
         {
             if (typeof(T) == typeof(StandardEntry))
             {
-                return ResultFs.InvalidPartitionFileSystemMagic.Log();
+                return ResultFs.PartitionSignatureVerificationFailed.Log();
             }
 
             if (typeof(T) == typeof(HashedEntry))
             {
-                return ResultFs.InvalidHashedPartitionFileSystemMagic.Log();
+                return ResultFs.Sha256PartitionSignatureVerificationFailed.Log();
             }
 
             throw new NotSupportedException();

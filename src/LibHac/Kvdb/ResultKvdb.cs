@@ -25,5 +25,9 @@ namespace LibHac.Kvdb
         public static Result.Base InvalidKeyValue => new Result.Base(ModuleKvdb, 5);
         /// <summary>Error code: 2020-0006; Inner value: 0xc14</summary>
         public static Result.Base BufferInsufficient => new Result.Base(ModuleKvdb, 6);
+        /// <summary>Error code: 2020-0008; Inner value: 0x1014</summary>
+        public static Result.Base InvalidFileSystemState => new Result.Base(ModuleKvdb, 8);
+        /// <summary>Error code: 2020-0009; Inner value: 0x1214</summary>
+        public static Result.Base NotCreated => new Result.Base(ModuleKvdb, 9);
     }
 }
