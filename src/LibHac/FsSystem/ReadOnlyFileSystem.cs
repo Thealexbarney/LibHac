@@ -75,21 +75,21 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoCreateDirectory(U8Span path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
+        protected override Result DoCreateDirectory(U8Span path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override Result DoDeleteDirectory(U8Span path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
+        protected override Result DoDeleteDirectory(U8Span path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override Result DoDeleteDirectoryRecursively(U8Span path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
+        protected override Result DoDeleteDirectoryRecursively(U8Span path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override Result DoCleanDirectoryRecursively(U8Span path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
+        protected override Result DoCleanDirectoryRecursively(U8Span path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override Result DoDeleteFile(U8Span path) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
+        protected override Result DoDeleteFile(U8Span path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
+        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyReadOnlyFileSystem.Log();
+        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
         protected override void Dispose(bool disposing)
         {

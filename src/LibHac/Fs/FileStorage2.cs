@@ -124,7 +124,7 @@ namespace LibHac.Fs
                     return BaseFile.OperateRange(outBuffer, operationId, offset, size, inBuffer);
 
                 default:
-                    return ResultFs.UnsupportedOperationInFileStorageOperateRange.Log();
+                    return ResultFs.UnsupportedOperateRangeForFileStorage.Log();
             }
         }
     }

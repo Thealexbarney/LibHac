@@ -122,15 +122,15 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoCreateDirectory(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DoDeleteDirectory(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DoDeleteDirectoryRecursively(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DoCleanDirectoryRecursively(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DoDeleteFile(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DoCommitProvisionally(long counter) => ResultFs.UnsupportedOperationInPartitionFileSystem.Log();
+        protected override Result DoCreateDirectory(U8Span path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoDeleteDirectory(U8Span path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoDeleteDirectoryRecursively(U8Span path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoCleanDirectoryRecursively(U8Span path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoDeleteFile(U8Span path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoCommitProvisionally(long counter) => ResultFs.UnsupportedCommitProvisionallyForPartitionFileSystem.Log();
 
         private class PartitionFile : IFile
         {
@@ -181,7 +181,7 @@ namespace LibHac.FsSystem
                     // Make sure the hashed region doesn't extend past the end of the file
                     // N's code requires that the hashed region starts at the beginning of the file
                     if (entry.HashOffset != 0 || hashEnd > entry.Size)
-                        return ResultFs.InvalidPartitionFileSystemHashOffset.Log();
+                        return ResultFs.InvalidSha256PartitionHashTarget.Log();
 
                     long storageOffset = fileStorageOffset + offset;
 
@@ -208,7 +208,7 @@ namespace LibHac.FsSystem
                         // Can't start a read in the middle of the hashed region
                         if (readEnd > hashEnd || entry.HashOffset > offset)
                         {
-                            return ResultFs.InvalidPartitionFileSystemHashOffset.Log();
+                            return ResultFs.InvalidSha256PartitionHashTarget.Log();
                         }
 
                         int hashRemaining = entry.HashSize;
@@ -251,7 +251,7 @@ namespace LibHac.FsSystem
                     {
                         destination.Slice(0, (int)bytesToRead).Clear();
 
-                        return ResultFs.InvalidPartitionFileSystemHash.Log();
+                        return ResultFs.Sha256PartitionHashVerificationFailed.Log();
                     }
 
                     rc = Result.Success;
@@ -269,7 +269,7 @@ namespace LibHac.FsSystem
                 if (rc.IsFailure()) return rc;
 
                 if (isResizeNeeded)
-                    return ResultFs.UnsupportedOperationInPartitionFileSetSize.Log();
+                    return ResultFs.UnsupportedWriteForPartitionFile.Log();
 
                 if (_entry.Size < offset)
                     return ResultFs.OutOfRange.Log();
@@ -294,10 +294,10 @@ namespace LibHac.FsSystem
             {
                 if (Mode.HasFlag(OpenMode.Write))
                 {
-                    return ResultFs.UnsupportedOperationInPartitionFileSetSize.Log();
+                    return ResultFs.UnsupportedWriteForPartitionFile.Log();
                 }
 
-                return ResultFs.InvalidOpenModeForWrite.Log();
+                return ResultFs.WriteUnpermitted.Log();
             }
 
             protected override Result DoGetSize(out long size)
@@ -313,16 +313,16 @@ namespace LibHac.FsSystem
                 {
                     case OperationId.InvalidateCache:
                         if (!Mode.HasFlag(OpenMode.Read))
-                            return ResultFs.InvalidOpenModeForRead.Log();
+                            return ResultFs.ReadUnpermitted.Log();
 
                         if (Mode.HasFlag(OpenMode.Write))
-                            return ResultFs.UnsupportedOperationIdInPartitionFileSystem.Log();
+                            return ResultFs.UnsupportedOperateRangeForPartitionFile.Log();
 
                         break;
                     case OperationId.QueryRange:
                         break;
                     default:
-                        return ResultFs.UnsupportedOperationIdInPartitionFileSystem.Log();
+                        return ResultFs.UnsupportedOperateRangeForPartitionFile.Log();
                 }
 
                 if (offset < 0 || offset > _entry.Size)

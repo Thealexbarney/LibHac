@@ -76,14 +76,14 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result DoCreateDirectory(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DoDeleteDirectory(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DoDeleteDirectoryRecursively(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DoCleanDirectoryRecursively(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DoDeleteFile(U8Span path) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperationModifyPartitionFileSystem.Log();
+        protected override Result DoCreateDirectory(U8Span path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoDeleteDirectory(U8Span path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoDeleteDirectoryRecursively(U8Span path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoCleanDirectoryRecursively(U8Span path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoDeleteFile(U8Span path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
 
         protected override Result DoCommit()
         {
@@ -123,7 +123,7 @@ namespace LibHac.FsSystem
                     Type = PartitionFileSystemType.Hashed;
                     break;
                 default:
-                    ThrowHelper.ThrowResult(ResultFs.InvalidPartitionFileSystemMagic.Value, $"Invalid Partition FS type \"{Magic}\"");
+                    ThrowHelper.ThrowResult(ResultFs.PartitionSignatureVerificationFailed.Value, $"Invalid Partition FS type \"{Magic}\"");
                     break;
             }
 

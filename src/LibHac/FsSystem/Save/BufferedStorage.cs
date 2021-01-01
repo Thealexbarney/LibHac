@@ -1015,7 +1015,7 @@ namespace LibHac.FsSystem.Save
             Caches = new Cache[cacheCount];
             if (Caches == null)
             {
-                return ResultFs.AllocationFailureInBufferedStorageA.Log();
+                return ResultFs.AllocationMemoryFailedInBufferedStorageA.Log();
             }
 
             // Initialize the caches.
@@ -1294,7 +1294,7 @@ namespace LibHac.FsSystem.Save
 
                     // If the read fails due to insufficient pooled buffer size,
                     // then we want to fall back to the normal read path.
-                    if (!ResultFs.AllocationFailurePooledBufferNotEnoughSize.Includes(rc))
+                    if (!ResultFs.AllocationMemoryFailedPooledBufferNotEnoughSize.Includes(rc))
                         return rc;
                 }
             }
@@ -1518,7 +1518,7 @@ namespace LibHac.FsSystem.Save
             {
                 pooledBuffer.AllocateParticularlyLarge((int)alignedSize, 1);
                 if (pooledBuffer.GetSize() < alignedSize)
-                    return ResultFs.AllocationFailurePooledBufferNotEnoughSize.Log();
+                    return ResultFs.AllocationMemoryFailedPooledBufferNotEnoughSize.Log();
 
                 workBuffer = pooledBuffer.GetBuffer();
             }

@@ -252,7 +252,7 @@ namespace LibHac.FsSystem
                 InternalFreeLists = GC.AllocateArray<PageList>(OrderMax + 1, true);
                 FreeLists = (PageList*)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(InternalFreeLists));
                 if (InternalFreeLists == null)
-                    return ResultFs.AllocationFailureInFileSystemBuddyHeapA.Log();
+                    return ResultFs.AllocationMemoryFailedInFileSystemBuddyHeapA.Log();
             }
 
             // All but the last page region should go to the max order.

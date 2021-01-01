@@ -114,7 +114,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoSetSize(long size)
         {
-            return ResultFs.UnsupportedOperationInHierarchicalIvfcStorageSetSize.Log();
+            return ResultFs.UnsupportedSetSizeForHierarchicalIntegrityVerificationStorage.Log();
         }
 
         protected override Result DoGetSize(out long size)

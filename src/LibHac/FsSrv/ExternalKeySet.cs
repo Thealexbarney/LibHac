@@ -40,7 +40,7 @@ namespace LibHac.FsSrv
                     return Result.Success;
                 }
 
-                return ResultFs.ExternalKeyNotFound.Log();
+                return ResultFs.NcaExternalKeyUnavailable.Log();
             }
         }
 

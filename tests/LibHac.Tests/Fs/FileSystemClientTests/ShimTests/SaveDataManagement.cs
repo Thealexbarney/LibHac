@@ -49,7 +49,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
             var applicationId = new Ncm.ApplicationId(1);
             FileSystemClient fs = FileSystemServerFactory.CreateClient(false);
 
-            Assert.Result(ResultFs.SdCardNotFound, fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdCache, applicationId.Value, 0, 0, SaveDataFlags.None));
+            Assert.Result(ResultFs.PortSdCardNoDevice, fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdCache, applicationId.Value, 0, 0, SaveDataFlags.None));
         }
 
         [Fact]

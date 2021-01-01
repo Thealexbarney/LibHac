@@ -37,7 +37,7 @@ namespace LibHac.FsSystem.RomFs
 
         protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
-            return ResultFs.UnsupportedOperationModifyRomFsFile.Log();
+            return ResultFs.UnsupportedWriteForRomFsFile.Log();
         }
 
         protected override Result DoFlush()
@@ -53,7 +53,7 @@ namespace LibHac.FsSystem.RomFs
 
         protected override Result DoSetSize(long size)
         {
-            return ResultFs.UnsupportedOperationModifyRomFsFile.Log();
+            return ResultFs.UnsupportedWriteForRomFsFile.Log();
         }
 
         protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,

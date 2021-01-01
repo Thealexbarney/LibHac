@@ -44,7 +44,7 @@ namespace LibHac.Fs
 
         protected override Result DoSetSize(long size)
         {
-            return ResultFs.UnsupportedOperationInMemoryStorageSetSize.Log();
+            return ResultFs.UnsupportedSetSizeForMemoryStorage.Log();
         }
 
         protected override Result DoGetSize(out long size)

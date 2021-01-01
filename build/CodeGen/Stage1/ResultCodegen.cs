@@ -28,7 +28,7 @@ namespace LibHacBuild.CodeGen.Stage1
             ValidateHierarchy(modules);
             CheckIfAggressiveInliningNeeded(modules);
 
-            foreach (ModuleInfo module in modules)
+            foreach (ModuleInfo module in modules.Where(x => !string.IsNullOrWhiteSpace(x.Path)))
             {
                 string moduleResultFile = PrintModule(module);
 
@@ -39,6 +39,9 @@ namespace LibHacBuild.CodeGen.Stage1
             byte[] compressedArchive = Build.DeflateBytes(archive);
             string archiveStr = PrintArchive(compressedArchive);
             WriteOutput("LibHac/ResultNameResolver.Generated.cs", archiveStr);
+
+            string enumStr = PrintEnum(modules);
+            WriteOutput("../.tmp/result_enums.txt", enumStr);
         }
 
         private static ModuleInfo[] ReadResults()
@@ -122,13 +125,26 @@ namespace LibHacBuild.CodeGen.Stage1
 
         private static void CheckForDuplicates(ModuleInfo[] modules)
         {
+            var moduleIndexSet = new HashSet<int>();
+            var moduleNameSet = new HashSet<string>();
+
             foreach (ModuleInfo module in modules)
             {
-                var set = new HashSet<int>();
+                var descriptionSet = new HashSet<int>();
+
+                if (!moduleIndexSet.Add(module.Index))
+                {
+                    throw new InvalidDataException($"Duplicate result module index {module.Index}.");
+                }
+
+                if (!moduleNameSet.Add(module.Name))
+                {
+                    throw new InvalidDataException($"Duplicate result module name {module.Name}.");
+                }
 
                 foreach (ResultInfo result in module.Results)
                 {
-                    if (!set.Add(result.DescriptionStart))
+                    if (!descriptionSet.Add(result.DescriptionStart))
                     {
                         throw new InvalidDataException($"Duplicate result {result.Module}-{result.DescriptionStart}-{result.DescriptionEnd}.");
                     }
@@ -377,6 +393,50 @@ namespace LibHacBuild.CodeGen.Stage1
 
                 return 5; // ldc.i4 XXXXXXXX
             }
+        }
+
+        public static string PrintEnum(ModuleInfo[] modules)
+        {
+            var sb = new StringBuilder();
+            int[] printUnknownResultsForModules = { 2 };
+            int[] skipModules = { 428 };
+
+            foreach (ModuleInfo module in modules.Where(x => !skipModules.Contains(x.Index)))
+            {
+                bool printAllResults = printUnknownResultsForModules.Contains(module.Index);
+                int prevResult = 1;
+
+                foreach (ResultInfo result in module.Results)
+                {
+                    if (printAllResults && result.DescriptionStart > prevResult + 1)
+                    {
+                        for (int i = prevResult + 1; i < result.DescriptionStart; i++)
+                        {
+                            int innerValue = 2 & 0x1ff | ((i & 0x7ffff) << 9);
+                            string unknownResultLine = $"Result_{result.Module}_{i} = {innerValue},";
+                            sb.AppendLine(unknownResultLine);
+                        }
+                    }
+
+                    string name = string.IsNullOrWhiteSpace(result.Name) ? string.Empty : $"_{result.Name}";
+                    string line = $"Result_{result.Module}_{result.DescriptionStart}{name} = {result.InnerValue},";
+
+                    sb.AppendLine(line);
+                    prevResult = result.DescriptionStart;
+                }
+
+                if (printAllResults)
+                {
+                    for (int i = prevResult + 1; i < 8192; i++)
+                    {
+                        int innerValue = 2 & 0x1ff | ((i & 0x7ffff) << 9);
+                        string unknownResultLine = $"Result_{module.Index}_{i} = {innerValue},";
+                        sb.AppendLine(unknownResultLine);
+                    }
+                }
+            }
+
+            return sb.ToString();
         }
     }
 

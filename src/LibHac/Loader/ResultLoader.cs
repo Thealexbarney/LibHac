@@ -35,6 +35,10 @@ namespace LibHac.Loader
         public static Result.Base InvalidProgramId => new Result.Base(ModuleLoader, 9);
         /// <summary>Error code: 2009-0010; Inner value: 0x1409</summary>
         public static Result.Base InvalidVersion => new Result.Base(ModuleLoader, 10);
+        /// <summary>Error code: 2009-0011; Inner value: 0x1609</summary>
+        public static Result.Base InvalidAcidSignature => new Result.Base(ModuleLoader, 11);
+        /// <summary>Error code: 2009-0012; Inner value: 0x1809</summary>
+        public static Result.Base InvalidNcaSignature => new Result.Base(ModuleLoader, 12);
         /// <summary>Error code: 2009-0051; Inner value: 0x6609</summary>
         public static Result.Base InsufficientAddressSpace => new Result.Base(ModuleLoader, 51);
         /// <summary>Error code: 2009-0052; Inner value: 0x6809</summary>

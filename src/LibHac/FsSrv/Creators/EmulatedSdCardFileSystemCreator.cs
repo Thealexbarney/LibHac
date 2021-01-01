@@ -33,7 +33,7 @@ namespace LibHac.FsSrv.Creators
 
             if (!SdCard.IsSdCardInserted())
             {
-                return ResultFs.SdCardNotFound.Log();
+                return ResultFs.PortSdCardNoDevice.Log();
             }
 
             if (SdCardFileSystem != null)

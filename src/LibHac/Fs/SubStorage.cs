@@ -173,7 +173,7 @@ namespace LibHac.Fs
         protected override Result DoSetSize(long size)
         {
             if (!IsValid()) return ResultFs.NotInitialized.Log();
-            if (!IsResizable) return ResultFs.UnsupportedOperationInSubStorageSetSize.Log();
+            if (!IsResizable) return ResultFs.UnsupportedSetSizeForNotResizableSubStorage.Log();
             if (!IsOffsetAndSizeValid(Offset, size)) return ResultFs.InvalidSize.Log();
 
             Result rc = BaseStorage.GetSize(out long currentSize);
@@ -182,7 +182,7 @@ namespace LibHac.Fs
             if (currentSize != Offset + Size)
             {
                 // SubStorage cannot be resized unless it is located at the end of the base storage.
-                return ResultFs.UnsupportedOperationInResizableSubStorageSetSize.Log();
+                return ResultFs.UnsupportedSetSizeForResizableSubStorage.Log();
             }
 
             rc = BaseStorage.SetSize(Offset + size);

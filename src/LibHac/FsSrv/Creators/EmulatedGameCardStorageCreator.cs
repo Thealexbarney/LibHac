@@ -101,7 +101,7 @@ namespace LibHac.FsSrv.Creators
 
             protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
             {
-                return ResultFs.UnsupportedOperationInRoGameCardStorageWrite.Log();
+                return ResultFs.UnsupportedWriteForReadOnlyGameCardStorage.Log();
             }
 
             protected override Result DoFlush()
@@ -111,7 +111,7 @@ namespace LibHac.FsSrv.Creators
 
             protected override Result DoSetSize(long size)
             {
-                return ResultFs.UnsupportedOperationInRoGameCardStorageSetSize.Log();
+                return ResultFs.UnsupportedSetSizeForReadOnlyGameCardStorage.Log();
             }
 
             protected override Result DoGetSize(out long size)

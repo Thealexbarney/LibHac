@@ -61,7 +61,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             using (file)
             {
                 Result rc = file.Write(5, buffer, WriteOption.None);
-                Assert.Result(ResultFs.InvalidOpenModeForWrite, rc);
+                Assert.Result(ResultFs.WriteUnpermitted, rc);
             }
         }
 

@@ -24,7 +24,7 @@ namespace LibHac.Fs.Fsa
         /// 
         /// The parent directory of the specified path does not exist: <see cref="ResultFs.PathNotFound"/>
         /// Specified path already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
-        /// Insufficient free space to create the file: <see cref="ResultFs.InsufficientFreeSpace"/>
+        /// Insufficient free space to create the file: <see cref="ResultFs.UsableSpaceNotEnough"/>
         /// </remarks>
         public Result CreateFile(U8Span path, long size, CreateFileOptions option)
         {
@@ -49,7 +49,7 @@ namespace LibHac.Fs.Fsa
         /// 
         /// The parent directory of the specified path does not exist: <see cref="ResultFs.PathNotFound"/>
         /// Specified path already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
-        /// Insufficient free space to create the file: <see cref="ResultFs.InsufficientFreeSpace"/>
+        /// Insufficient free space to create the file: <see cref="ResultFs.UsableSpaceNotEnough"/>
         /// </remarks>
         public Result CreateFile(U8Span path, long size)
         {
@@ -90,7 +90,7 @@ namespace LibHac.Fs.Fsa
         /// 
         /// The parent directory of the specified path does not exist: <see cref="ResultFs.PathNotFound"/>
         /// Specified path already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
-        /// Insufficient free space to create the directory: <see cref="ResultFs.InsufficientFreeSpace"/>
+        /// Insufficient free space to create the directory: <see cref="ResultFs.UsableSpaceNotEnough"/>
         /// </remarks>
         public Result CreateDirectory(U8Span path)
         {

@@ -31,12 +31,12 @@ namespace LibHac.FsSystem
 
         protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
-            return ResultFs.InvalidOpenModeForWrite.Log();
+            return ResultFs.WriteUnpermitted.Log();
         }
 
         protected override Result DoSetSize(long size)
         {
-            return ResultFs.InvalidOpenModeForWrite.Log();
+            return ResultFs.WriteUnpermitted.Log();
         }
 
         protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
@@ -47,7 +47,7 @@ namespace LibHac.FsSystem
                 case OperationId.QueryRange:
                     return BaseFile.OperateRange(outBuffer, operationId, offset, size, inBuffer);
                 default:
-                    return ResultFs.UnsupportedOperationInReadOnlyFile.Log();
+                    return ResultFs.UnsupportedOperateRangeForReadOnlyFile.Log();
             }
         }
     }
