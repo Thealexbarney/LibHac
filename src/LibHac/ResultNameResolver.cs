@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
@@ -19,8 +20,16 @@ namespace LibHac
 
         private static Dictionary<Result, string> GetResultNames()
         {
-            var archiveReader = new ResultArchiveReader(ArchiveData);
+            var archiveReader = new ResultArchiveReader(DecompressArchive());
             return archiveReader.GetDictionary();
+        }
+
+        private static byte[] DecompressArchive()
+        {
+            var deflateStream = new DeflateStream(new MemoryStream(ArchiveData.ToArray()), CompressionMode.Decompress);
+            var archiveDataStream = new MemoryStream();
+            deflateStream.CopyTo(archiveDataStream);
+            return archiveDataStream.ToArray();
         }
 
         // To save a bunch of space in the assembly, Results with their names are packed into
