@@ -36,7 +36,8 @@ namespace LibHacBuild.CodeGen.Stage1
             }
 
             byte[] archive = BuildArchive(modules);
-            string archiveStr = PrintArchive(archive);
+            byte[] compressedArchive = Build.DeflateBytes(archive);
+            string archiveStr = PrintArchive(compressedArchive);
             WriteOutput("LibHac/ResultNameResolver.Generated.cs", archiveStr);
         }
 

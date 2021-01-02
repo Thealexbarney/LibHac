@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using ICSharpCode.SharpZipLib.Zip;
+using ICSharpCode.SharpZipLib.Zip.Compression;
 using LibHacBuild.CodeGen.Stage1;
 using Nuke.Common;
 using Nuke.Common.CI.AppVeyor;
@@ -512,6 +513,21 @@ namespace LibHacBuild
                     }
                 }
             }
+        }
+
+        public static byte[] DeflateBytes(byte[] data)
+        {
+            var s = new Deflater(9, true);
+            s.SetInput(data);
+            s.Finish();
+            byte[] buffer = new byte[data.Length];
+            s.Deflate(buffer);
+
+            Debug.Assert(s.IsFinished);
+
+            byte[] compressed = new byte[s.TotalOut];
+            Array.Copy(buffer, compressed, compressed.Length);
+            return compressed;
         }
 
         public static void PushArtifact(string path)
