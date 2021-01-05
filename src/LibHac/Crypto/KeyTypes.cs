@@ -45,7 +45,7 @@ namespace LibHac.Crypto
         [FieldOffset(0)] private ulong _ulong;
 
         [FieldOffset(0)] public AesKey DataKey;
-        [FieldOffset(0)] public AesKey TweakKey;
+        [FieldOffset(0x10)] public AesKey TweakKey;
 
         public Span<byte> Data => SpanHelpers.CreateSpan(ref _byte, Size);
         public readonly ReadOnlySpan<byte> DataRo => SpanHelpers.CreateReadOnlySpan(in _byte, Size);

@@ -21,7 +21,7 @@ namespace LibHac.Boot
         private IStorage _storage;
         private Package2Header _header;
         private KeySet _keySet;
-        private AesKey _key;
+        private Crypto.AesKey _key;
 
         public ref readonly Package2Header Header => ref _header;
 
