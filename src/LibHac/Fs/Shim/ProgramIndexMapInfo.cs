@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using LibHac.FsSrv;
+using LibHac.FsSrv.Sf;
 using LibHac.Sf;
 
 namespace LibHac.Fs.Shim

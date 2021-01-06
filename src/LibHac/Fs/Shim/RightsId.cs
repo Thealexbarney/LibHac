@@ -1,5 +1,4 @@
 ﻿using LibHac.Common;
-using LibHac.FsSrv;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 using LibHac.Spl;

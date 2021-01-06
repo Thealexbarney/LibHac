@@ -1,5 +1,4 @@
 ﻿using LibHac.Fs;
-using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 using LibHac.Sf;
 using LibHac.Spl;
@@ -7,7 +6,7 @@ using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using IFileSf = LibHac.FsSrv.Sf.IFile;
 using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
-namespace LibHac.FsSrv
+namespace LibHac.FsSrv.Sf
 {
     public interface IFileSystemProxy
     {
