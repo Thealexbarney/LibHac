@@ -381,6 +381,12 @@ namespace LibHac.FsSrv
             return GetBaseFileSystemService().OpenImageDirectoryFileSystem(out fileSystem, directoryId);
         }
 
+        public Result OpenBaseFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+            BaseFileSystemId fileSystemId)
+        {
+            throw new NotImplementedException();
+        }
+
         public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath rootPath,
             BisPartitionId partitionId)
         {
@@ -630,6 +636,35 @@ namespace LibHac.FsSrv
             return saveFsService.GetCacheStorageSize(out dataSize, out journalSize, index);
         }
 
+        public Result OpenSaveDataTransferManager(out ReferenceCountedDisposable<ISaveDataTransferManager> manager)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result OpenSaveDataTransferManagerVersion2(
+            out ReferenceCountedDisposable<ISaveDataTransferManagerWithDivision> manager)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result OpenSaveDataTransferManagerForSaveDataRepair(
+            out ReferenceCountedDisposable<ISaveDataTransferManagerForSaveDataRepair> manager)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result OpenSaveDataTransferManagerForRepair(
+            out ReferenceCountedDisposable<ISaveDataTransferManagerForRepair> manager)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result OpenSaveDataTransferProhibiter(
+            out ReferenceCountedDisposable<ISaveDataTransferProhibiter> prohibiter, Ncm.ApplicationId applicationId)
+        {
+            throw new NotImplementedException();
+        }
+
         public Result ListAccessibleSaveDataOwnerId(out int readCount, OutBuffer idBuffer, ProgramId programId,
             int startIndex, int bufferIdCount)
         {
@@ -826,6 +861,11 @@ namespace LibHac.FsSrv
             return ncaFsService.SetSdCardEncryptionSeed(in seed);
         }
 
+        public Result GetAndClearErrorInfo(out FileSystemProxyErrorInfo errorInfo)
+        {
+            throw new NotImplementedException();
+        }
+
         public Result RegisterProgramIndexMapInfo(InBuffer programIndexMapInfoBuffer, int programCount)
         {
             return GetProgramIndexRegistryService()
@@ -914,6 +954,16 @@ namespace LibHac.FsSrv
             return GetAccessLogService().OutputMultiProgramTagAccessLog();
         }
 
+        public Result OutputApplicationInfoAccessLog(in ApplicationInfo applicationInfo)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result FlushAccessLogOnSdCard()
+        {
+            throw new NotImplementedException();
+        }
+
         public Result RegisterUpdatePartition()
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
@@ -932,6 +982,16 @@ namespace LibHac.FsSrv
             }
 
             return ncaFsService.OpenRegisteredUpdatePartition(out fileSystem);
+        }
+
+        public Result GetAndClearMemoryReportInfo(out MemoryReportInfo report)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result GetFsStackUsage(out uint stackUsage, FsStackUsageThreadType threadType)
+        {
+            throw new NotImplementedException();
         }
 
         public Result OverrideSaveDataTransferTokenSignVerificationKey(InBuffer key)
@@ -955,6 +1015,32 @@ namespace LibHac.FsSrv
             if (rc.IsFailure()) return rc;
 
             return saveFsService.IsSdCardAccessible(out isAccessible);
+        }
+
+        public Result OpenAccessFailureDetectionEventNotifier(out ReferenceCountedDisposable<IEventNotifier> notifier,
+            ulong processId, bool notifyOnDeepRetry)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result GetAccessFailureDetectionEvent(out NativeHandle eventHandle)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result IsAccessFailureDetected(out bool isDetected, ulong processId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result ResolveAccessFailure(ulong processId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result AbandonAccessFailure(ulong processId)
+        {
+            throw new NotImplementedException();
         }
 
         public Result OpenMultiCommitManager(out ReferenceCountedDisposable<IMultiCommitManager> commitManager)
