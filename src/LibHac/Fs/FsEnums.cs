@@ -115,6 +115,13 @@ namespace LibHac.Fs
         SdCard = 1
     }
 
+    public enum BaseFileSystemId
+    {
+        ImageDirectoryNand = 0,
+        ImageDirectorySdCard = 1,
+        TemporaryDirectory = 2
+    }
+
     /// <summary>
     /// Specifies which operations are available on an <see cref="IFile"/>.
     /// </summary>
@@ -196,5 +203,12 @@ namespace LibHac.Fs
         None = 0,
         Inserted = 1,
         NotInserted = 2
+    }
+
+    public enum FsStackUsageThreadType
+    {
+        MainThread = 0,
+        IpcWorker = 1,
+        PipelineWorker = 2
     }
 }
