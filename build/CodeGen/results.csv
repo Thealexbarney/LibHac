@@ -853,14 +853,14 @@ Module,DescriptionStart,DescriptionEnd,Flags,Name,Summary
 10,301,,,OutOfDomainEntries,
 
 # These should be in the sf::impl namespace
-10,800,899,,RequestContextChanged,
-10,801,809,,RequestInvalidated,
+10,800,899,a,RequestContextChanged,
+10,801,809,a,RequestInvalidated,
 10,802,,,RequestInvalidatedByUser,
 
-10,811,819,,RequestDeferred,
+10,811,819,a,RequestDeferred,
 10,812,,,RequestDeferredByUser,
 
-11,100,299,,OutOfResource,
+11,100,299,a,OutOfResource,
 11,102,,,OutOfSessionMemory,
 11,131,139,,OutOfSessions,
 11,141,,,PointerBufferTooSmall,
@@ -1088,7 +1088,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Name,Summary
 
 116,801,,,OutOfMemory,
 
-116,900,919,,InvalidArgument,
+116,900,919,a,InvalidArgument,
 116,901,,,InvalidPointer,
 116,902,,,OutOfRange,
 116,903,,,InvalidTimeZoneBinary,

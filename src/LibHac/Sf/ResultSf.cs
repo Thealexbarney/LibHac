@@ -40,15 +40,15 @@ namespace LibHac.Sf
         /// <summary>Error code: 2010-0301; Inner value: 0x25a0a</summary>
         public static Result.Base OutOfDomainEntries => new Result.Base(ModuleSf, 301);
 
-        /// <summary>Error code: 2010-0800; Range: 800-899; Inner value: 0x6400a</summary>
-        public static Result.Base RequestContextChanged { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleSf, 800, 899); }
-            /// <summary>Error code: 2010-0801; Range: 801-809; Inner value: 0x6420a</summary>
-            public static Result.Base RequestInvalidated { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleSf, 801, 809); }
+        /// <summary>Error code: 2010-0800; Range: 800-899</summary>
+        public static Result.Base.Abstract RequestContextChanged { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base.Abstract(ModuleSf, 800, 899); }
+            /// <summary>Error code: 2010-0801; Range: 801-809</summary>
+            public static Result.Base.Abstract RequestInvalidated { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base.Abstract(ModuleSf, 801, 809); }
                 /// <summary>Error code: 2010-0802; Inner value: 0x6440a</summary>
                 public static Result.Base RequestInvalidatedByUser => new Result.Base(ModuleSf, 802);
 
-            /// <summary>Error code: 2010-0811; Range: 811-819; Inner value: 0x6560a</summary>
-            public static Result.Base RequestDeferred { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleSf, 811, 819); }
+            /// <summary>Error code: 2010-0811; Range: 811-819</summary>
+            public static Result.Base.Abstract RequestDeferred { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base.Abstract(ModuleSf, 811, 819); }
                 /// <summary>Error code: 2010-0812; Inner value: 0x6580a</summary>
                 public static Result.Base RequestDeferredByUser => new Result.Base(ModuleSf, 812);
     }
