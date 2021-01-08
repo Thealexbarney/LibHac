@@ -57,6 +57,9 @@ namespace LibHac
 
                 foreach (ref readonly Element element in elements)
                 {
+                    if (element.IsAbstract)
+                        continue;
+
                     var result = new Result(element.Module, element.DescriptionStart);
 
                     if (!dict.TryAdd(result, GetName(element.NameOffset).ToString()))
@@ -89,6 +92,7 @@ namespace LibHac
                 public short Module;
                 public short DescriptionStart;
                 public short DescriptionEnd;
+                public bool IsAbstract;
             }
 #pragma warning restore 649
         }

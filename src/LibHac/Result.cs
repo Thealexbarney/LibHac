@@ -311,6 +311,54 @@ namespace LibHac
             {
                 return ((uint)value & ~(~default(ulong) << bitsCount)) << bitsOffset;
             }
+
+            /// <summary>
+            /// A <see cref="Base"/> that can't be used as a <see cref="Result"/> itself, but can check if its
+            /// range includes other <see cref="Result"/>s.
+            /// </summary>
+            public readonly struct Abstract
+            {
+                private readonly ulong _value;
+
+                public Abstract(int module, int description) : this(module, description, description) { }
+
+                public Abstract(int module, int descriptionStart, int descriptionEnd)
+                {
+                    Debug.Assert(ModuleBegin <= module && module < ModuleEnd, "Invalid Module");
+                    Debug.Assert(DescriptionBegin <= descriptionStart && descriptionStart < DescriptionEnd, "Invalid Description Start");
+                    Debug.Assert(DescriptionBegin <= descriptionEnd && descriptionEnd < DescriptionEnd, "Invalid Description End");
+                    Debug.Assert(descriptionStart <= descriptionEnd, "descriptionStart must be <= descriptionEnd");
+
+                    _value = SetBitsValueLong(module, ModuleBitsOffset, ModuleBitsCount) |
+                             SetBitsValueLong(descriptionStart, DescriptionBitsOffset, DescriptionBitsCount) |
+                             SetBitsValueLong(descriptionEnd, DescriptionEndBitsOffset, DescriptionBitsCount);
+                }
+
+                public BaseType Module => GetBitsValueLong(_value, ModuleBitsOffset, ModuleBitsCount);
+                public BaseType DescriptionRangeStart => GetBitsValueLong(_value, DescriptionBitsOffset, DescriptionBitsCount);
+                public BaseType DescriptionRangeEnd => GetBitsValueLong(_value, DescriptionEndBitsOffset, DescriptionBitsCount);
+
+                private Result Value => new Result((BaseType)_value);
+
+                /// <summary>
+                /// Checks if the range of this <see cref="Result.Base"/> includes the provided <see cref="Result"/>.
+                /// </summary>
+                /// <param name="result">The <see cref="Result"/> to check.</param>
+                /// <returns><see langword="true"/> if the range includes <paramref name="result"/>. Otherwise, <see langword="false"/>.</returns>
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                public bool Includes(Result result)
+                {
+                    // 99% of the time the values in this struct will be constants.
+                    // This check allows the compiler to optimize this method down to a simple comparison when possible.
+                    if (DescriptionRangeStart == DescriptionRangeEnd)
+                    {
+                        return result.Value == Value.Value;
+                    }
+
+                    return result.Module == Module &&
+                           result.Description - DescriptionRangeStart <= DescriptionRangeEnd - DescriptionRangeStart;
+                }
+            }
         }
 
         public interface IResultLogger

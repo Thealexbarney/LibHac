@@ -131,6 +131,7 @@ namespace LibHacBuild.CodeGen.Stage1
             foreach (ModuleInfo module in modules)
             {
                 var descriptionSet = new HashSet<int>();
+                var descriptionSetAbstract = new HashSet<int>();
 
                 if (!moduleIndexSet.Add(module.Index))
                 {
@@ -144,9 +145,21 @@ namespace LibHacBuild.CodeGen.Stage1
 
                 foreach (ResultInfo result in module.Results)
                 {
-                    if (!descriptionSet.Add(result.DescriptionStart))
+                    if (result.IsAbstract)
                     {
-                        throw new InvalidDataException($"Duplicate result {result.Module}-{result.DescriptionStart}-{result.DescriptionEnd}.");
+                        if (!descriptionSetAbstract.Add(result.DescriptionStart))
+                        {
+                            throw new InvalidDataException(
+                                $"Duplicate abstract result {result.Module}-{result.DescriptionStart}-{result.DescriptionEnd}.");
+                        }
+                    }
+                    else
+                    {
+                        if (!descriptionSet.Add(result.DescriptionStart))
+                        {
+                            throw new InvalidDataException(
+                                $"Duplicate result {result.Module}-{result.DescriptionStart}-{result.DescriptionEnd}.");
+                        }
                     }
                 }
             }
@@ -263,8 +276,10 @@ namespace LibHacBuild.CodeGen.Stage1
 
             sb.AppendLine(GetXmlDoc(result));
 
-            string resultCtor = $"new Result.Base(Module{moduleName}, {descriptionArgs});";
-            sb.Append($"public static Result.Base {result.Name} ");
+            string type = result.IsAbstract ? "Result.Base.Abstract" : "Result.Base";
+
+            string resultCtor = $"new {type}(Module{moduleName}, {descriptionArgs});";
+            sb.Append($"public static {type} {result.Name} ");
 
             if (EstimateCilSize(result) > InlineThreshold)
             {
@@ -292,7 +307,11 @@ namespace LibHacBuild.CodeGen.Stage1
                 doc += $"; Range: {result.DescriptionStart}-{result.DescriptionEnd}";
             }
 
-            doc += $"; Inner value: 0x{result.InnerValue:x}";
+            if (!result.IsAbstract)
+            {
+                doc += $"; Inner value: 0x{result.InnerValue:x}";
+            }
+
             doc += "</summary>";
 
             return doc;
@@ -473,6 +492,7 @@ namespace LibHacBuild.CodeGen.Stage1
                 element.Module = (short)result.Module;
                 element.DescriptionStart = (short)result.DescriptionStart;
                 element.DescriptionEnd = (short)result.DescriptionEnd;
+                element.IsAbstract = result.IsAbstract;
 
                 Span<byte> utf8Name = Encoding.UTF8.GetBytes(result.FullName);
                 utf8Name.CopyTo(nameTable.Slice(curNameOffset));
@@ -515,6 +535,7 @@ namespace LibHacBuild.CodeGen.Stage1
             public short Module;
             public short DescriptionStart;
             public short DescriptionEnd;
+            public bool IsAbstract;
         }
         // ReSharper restore NotAccessedField.Local
     }
@@ -550,6 +571,7 @@ namespace LibHacBuild.CodeGen.Stage1
         public int Module { get; set; }
         public int DescriptionStart { get; set; }
         public int DescriptionEnd { get; set; }
+        public ResultInfoFlags Flags { get; set; }
         public string Name { get; set; }
         public string FullName { get; set; }
         public string Summary { get; set; }
@@ -557,6 +579,14 @@ namespace LibHacBuild.CodeGen.Stage1
         public bool IsRange => DescriptionStart != DescriptionEnd;
         public string ErrorCode => $"{2000 + Module:d4}-{DescriptionStart:d4}";
         public int InnerValue => Module & 0x1ff | ((DescriptionStart & 0x7ffff) << 9);
+        public bool IsAbstract => Flags.HasFlag(ResultInfoFlags.Abstract);
+    }
+
+    [Flags]
+    public enum ResultInfoFlags
+    {
+        None = 0,
+        Abstract = 1 << 0
     }
 
     public sealed class ResultMap : ClassMap<ResultInfo>
@@ -574,6 +604,27 @@ namespace LibHacBuild.CodeGen.Stage1
                     field = row.GetField("DescriptionStart");
 
                 return int.Parse(field);
+            });
+
+            Map(m => m.Flags).ConvertUsing(row =>
+            {
+                string field = row.GetField("Flags");
+                var flags = ResultInfoFlags.None;
+
+                foreach (char c in field)
+                {
+                    switch (c)
+                    {
+                        case 'a':
+                            flags |= ResultInfoFlags.Abstract;
+                            break;
+
+                        default:
+                            throw new InvalidDataException($"Invalid Result flag '{c}'");
+                    }
+                }
+
+                return flags;
             });
         }
     }
