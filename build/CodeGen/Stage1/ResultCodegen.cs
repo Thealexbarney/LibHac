@@ -20,7 +20,7 @@ namespace LibHacBuild.CodeGen.Stage1
 
         public static void Run()
         {
-            ModuleInfo[] modules = ReadResults();
+            ResultSet modules = ReadResults();
 
             SetEmptyResultValues(modules);
             ValidateResults(modules);
@@ -28,11 +28,12 @@ namespace LibHacBuild.CodeGen.Stage1
             ValidateHierarchy(modules);
             CheckIfAggressiveInliningNeeded(modules);
 
-            foreach (ModuleInfo module in modules.Where(x => !string.IsNullOrWhiteSpace(x.Path)))
+            foreach (NamespaceInfo module in modules.Namespaces.Where(x =>
+                !string.IsNullOrWhiteSpace(x.Path) && x.Results.Any()))
             {
                 string moduleResultFile = PrintModule(module);
 
-                WriteOutput(module.Path, moduleResultFile);
+                WriteOutput($"LibHac/{module.Path}", moduleResultFile);
             }
 
             byte[] archive = BuildArchive(modules);
@@ -44,104 +45,143 @@ namespace LibHacBuild.CodeGen.Stage1
             WriteOutput("../.tmp/result_enums.txt", enumStr);
         }
 
-        private static ModuleInfo[] ReadResults()
+        private static ResultSet ReadResults()
         {
-            ModuleIndex[] moduleNames = ReadCsv<ModuleIndex>("result_modules.csv");
-            ModulePath[] modulePaths = ReadCsv<ModulePath>("result_paths.csv");
+            ModuleInfo[] modules = ReadCsv<ModuleInfo>("result_modules.csv");
+            NamespaceInfo[] nsInfos = ReadCsv<NamespaceInfo>("result_namespaces.csv");
             ResultInfo[] results = ReadCsv<ResultInfo>("results.csv");
+            
+            Dictionary<int, ModuleInfo> moduleDict = modules.ToDictionary(m => m.Id);
 
-            var modules = new Dictionary<string, ModuleInfo>();
-
-            foreach (ModuleIndex name in moduleNames)
-            {
-                var module = new ModuleInfo();
-                module.Name = name.Name;
-                module.Index = name.Index;
-
-                modules.Add(name.Name, module);
-            }
-
-            foreach (ModulePath path in modulePaths)
-            {
-                ModuleInfo module = modules[path.Name];
-                module.Namespace = path.Namespace;
-                module.Path = path.Path;
-            }
-
-            foreach (ModuleInfo module in modules.Values)
-            {
-                module.Results = results.Where(x => x.Module == module.Index).OrderBy(x => x.DescriptionStart)
-                    .ToArray();
-            }
-
-            return modules.Values.ToArray();
-        }
-
-        private static void SetEmptyResultValues(ModuleInfo[] modules)
-        {
+            // Make sure modules have a default namespace
             foreach (ModuleInfo module in modules)
             {
-                foreach (ResultInfo result in module.Results)
+                if (string.IsNullOrWhiteSpace(module.Namespace))
                 {
-                    result.FullName = $"Result{module.Name}{result.Name}";
+                    module.Namespace = module.Name;
+                }
+            }
 
-                    if (string.IsNullOrWhiteSpace(result.Name))
+            // Populate result module name and namespace fields if needed
+            foreach (ResultInfo result in results)
+            {
+                result.ModuleName = moduleDict[result.ModuleId].Name;
+
+                if (string.IsNullOrWhiteSpace(result.Namespace))
+                {
+                    result.Namespace = moduleDict[result.ModuleId].Namespace;
+                }
+            }
+
+            // Group results by namespace
+            foreach (NamespaceInfo nsInfo in nsInfos)
+            {
+                // Sort DescriptionEnd by descending so any abstract ranges are put before an actual result at that description value
+                nsInfo.Results = results.Where(x => x.Namespace == nsInfo.Name).OrderBy(x => x.DescriptionStart)
+                    .ThenByDescending(x => x.DescriptionEnd).ToArray();
+
+                if (nsInfo.Results.Length == 0)
+                    continue;
+
+                // Set the namespace's result module name
+                string moduleName = nsInfo.Results.First().ModuleName;
+                if (nsInfo.Results.Any(x => x.ModuleName != moduleName))
+                {
+                    throw new InvalidDataException(
+                        $"Error with namespace \"{nsInfo.Name}\": All results in a namespace must be from the same module.");
+                }
+
+                nsInfo.ModuleId = nsInfo.Results.First().ModuleId;
+                nsInfo.ModuleName = moduleName;
+            }
+
+            // Group results by module
+            foreach (ModuleInfo module in modules)
+            {
+                // Sort DescriptionEnd by descending so any abstract ranges are put before an actual result at that description value
+                module.Results = results.Where(x => x.ModuleId == module.Id).OrderBy(x => x.DescriptionStart)
+                    .ThenByDescending(x => x.DescriptionEnd).ToArray();
+            }
+
+            return new ResultSet
+            {
+                Modules = modules.ToList(),
+                Namespaces = nsInfos.ToList(),
+                Results = results.ToList()
+            };
+        }
+
+        private static void SetEmptyResultValues(ResultSet resultSet)
+        {
+            foreach (ResultInfo result in resultSet.Results)
+            {
+                result.FullName = $"Result{result.ModuleName}{result.Name}";
+
+                if (string.IsNullOrWhiteSpace(result.Name))
+                {
+                    if (result.IsRange)
                     {
-                        if (result.IsRange)
-                        {
-                            result.Name += $"Range{result.DescriptionStart}To{result.DescriptionEnd}";
-                        }
-                        else
-                        {
-                            result.Name = $"Result{result.DescriptionStart}";
-                            result.DescriptionEnd = result.DescriptionStart;
-                        }
+                        result.Name += $"Range{result.DescriptionStart}To{result.DescriptionEnd}";
+                    }
+                    else
+                    {
+                        result.Name = $"Result{result.DescriptionStart}";
+                        result.DescriptionEnd = result.DescriptionStart;
                     }
                 }
             }
         }
 
-        private static void ValidateResults(ModuleInfo[] modules)
+        private static void ValidateResults(ResultSet resultSet)
         {
-            foreach (ModuleInfo module in modules)
+            // Make sure all the result values are in range
+            foreach (ResultInfo result in resultSet.Results)
             {
-                foreach (ResultInfo result in module.Results)
-                {
-                    // Logic should match Result.Base.ctor
-                    Assert(1 <= result.Module && result.Module < 512, "Invalid Module");
-                    Assert(0 <= result.DescriptionStart && result.DescriptionStart < 8192, "Invalid Description Start");
-                    Assert(0 <= result.DescriptionEnd && result.DescriptionEnd < 8192, "Invalid Description End");
-                    Assert(result.DescriptionStart <= result.DescriptionEnd, "descriptionStart must be <= descriptionEnd");
+                // Logic should match Result.Base.ctor
+                Assert(1 <= result.ModuleId && result.ModuleId < 512, "Invalid Module");
+                Assert(0 <= result.DescriptionStart && result.DescriptionStart < 8192, "Invalid Description Start");
+                Assert(0 <= result.DescriptionEnd && result.DescriptionEnd < 8192, "Invalid Description End");
+                Assert(result.DescriptionStart <= result.DescriptionEnd, "descriptionStart must be <= descriptionEnd");
 
-                    // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
-                    void Assert(bool condition, string message)
-                    {
-                        if (!condition)
-                            throw new InvalidDataException($"Result {result.Module}-{result.DescriptionStart}: {message}");
-                    }
+                // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+                void Assert(bool condition, string message)
+                {
+                    if (!condition)
+                        throw new InvalidDataException($"Result {result.ModuleId}-{result.DescriptionStart}: {message}");
+                }
+            }
+
+            // Make sure all the result namespaces match a known namespace
+            string[] namespaceNames = resultSet.Namespaces.Select(x => x.Name).ToArray();
+
+            foreach (string nsName in resultSet.Results.Select(x => x.Namespace).Distinct())
+            {
+                if (!namespaceNames.Contains(nsName))
+                {
+                    throw new InvalidDataException($"Invalid result namespace \"{nsName}\"");
                 }
             }
         }
 
-        private static void CheckForDuplicates(ModuleInfo[] modules)
+        private static void CheckForDuplicates(ResultSet resultSet)
         {
-            var moduleIndexSet = new HashSet<int>();
+            var moduleIdSet = new HashSet<int>();
             var moduleNameSet = new HashSet<string>();
 
-            foreach (ModuleInfo module in modules)
+            foreach (ModuleInfo module in resultSet.Modules)
             {
-                var descriptionSet = new HashSet<int>();
-                var descriptionSetAbstract = new HashSet<int>();
-
-                if (!moduleIndexSet.Add(module.Index))
+                if (!moduleIdSet.Add(module.Id))
                 {
-                    throw new InvalidDataException($"Duplicate result module index {module.Index}.");
+                    throw new InvalidDataException($"Duplicate result module index {module.Id}.");
                 }
 
                 if (!moduleNameSet.Add(module.Name))
                 {
                     throw new InvalidDataException($"Duplicate result module name {module.Name}.");
                 }
+
+                var descriptionSet = new HashSet<int>();
+                var descriptionSetAbstract = new HashSet<int>();
 
                 foreach (ResultInfo result in module.Results)
                 {
@@ -150,7 +190,7 @@ namespace LibHacBuild.CodeGen.Stage1
                         if (!descriptionSetAbstract.Add(result.DescriptionStart))
                         {
                             throw new InvalidDataException(
-                                $"Duplicate abstract result {result.Module}-{result.DescriptionStart}-{result.DescriptionEnd}.");
+                                $"Duplicate abstract result {result.ModuleId}-{result.DescriptionStart}-{result.DescriptionEnd}.");
                         }
                     }
                     else
@@ -158,16 +198,16 @@ namespace LibHacBuild.CodeGen.Stage1
                         if (!descriptionSet.Add(result.DescriptionStart))
                         {
                             throw new InvalidDataException(
-                                $"Duplicate result {result.Module}-{result.DescriptionStart}-{result.DescriptionEnd}.");
+                                $"Duplicate result {result.ModuleId}-{result.DescriptionStart}-{result.DescriptionEnd}.");
                         }
                     }
                 }
             }
         }
 
-        private static void ValidateHierarchy(ModuleInfo[] modules)
+        private static void ValidateHierarchy(ResultSet resultSet)
         {
-            foreach (ModuleInfo module in modules)
+            foreach (ModuleInfo module in resultSet.Modules)
             {
                 var hierarchy = new Stack<ResultInfo>();
 
@@ -182,7 +222,7 @@ namespace LibHacBuild.CodeGen.Stage1
                     {
                         if (hierarchy.Count > 0 && result.DescriptionEnd > hierarchy.Peek().DescriptionEnd)
                         {
-                            throw new InvalidDataException($"Result {result.Module}-{result.DescriptionStart} is not nested properly.");
+                            throw new InvalidDataException($"Result {result.ModuleId}-{result.DescriptionStart} is not nested properly.");
                         }
 
                         hierarchy.Push(result);
@@ -191,40 +231,40 @@ namespace LibHacBuild.CodeGen.Stage1
             }
         }
 
-        private static void CheckIfAggressiveInliningNeeded(ModuleInfo[] modules)
+        private static void CheckIfAggressiveInliningNeeded(ResultSet resultSet)
         {
-            foreach (ModuleInfo module in modules)
+            foreach (NamespaceInfo ns in resultSet.Namespaces)
             {
-                module.NeedsAggressiveInlining = module.Results.Any(x => EstimateCilSize(x) > InlineThreshold);
+                ns.NeedsAggressiveInlining = ns.Results.Any(x => EstimateCilSize(x) > InlineThreshold);
             }
         }
 
-        private static string PrintModule(ModuleInfo module)
+        private static string PrintModule(NamespaceInfo ns)
         {
             var sb = new IndentingStringBuilder();
 
             sb.AppendLine(GetHeader());
             sb.AppendLine();
 
-            if (module.NeedsAggressiveInlining)
+            if (ns.NeedsAggressiveInlining)
             {
                 sb.AppendLine("using System.Runtime.CompilerServices;");
                 sb.AppendLine();
             }
 
-            sb.AppendLine($"namespace {module.Namespace}");
+            sb.AppendLine($"namespace LibHac.{ns.Name}");
             sb.AppendLineAndIncrease("{");
 
-            sb.AppendLine($"public static class Result{module.Name}");
+            sb.AppendLine($"public static class Result{ns.ClassName}");
             sb.AppendLineAndIncrease("{");
 
-            sb.AppendLine($"public const int Module{module.Name} = {module.Index};");
+            sb.AppendLine($"public const int Module{ns.ModuleName} = {ns.ModuleId};");
             sb.AppendLine();
 
             var hierarchy = new Stack<ResultInfo>();
             bool justIndented = false;
 
-            foreach (ResultInfo result in module.Results)
+            foreach (ResultInfo result in ns.Results)
             {
                 while (hierarchy.Count > 0 && hierarchy.Peek().DescriptionEnd < result.DescriptionStart)
                 {
@@ -238,7 +278,7 @@ namespace LibHacBuild.CodeGen.Stage1
                     sb.AppendSpacerLine();
                 }
 
-                PrintResult(sb, module.Name, result);
+                PrintResult(sb, ns.ModuleName, result);
 
                 if (result.IsRange)
                 {
@@ -317,11 +357,11 @@ namespace LibHacBuild.CodeGen.Stage1
             return doc;
         }
 
-        private static byte[] BuildArchive(ModuleInfo[] modules)
+        private static byte[] BuildArchive(ResultSet resultSet)
         {
             var builder = new ResultArchiveBuilder();
 
-            foreach (ModuleInfo module in modules.OrderBy(x => x.Index))
+            foreach (NamespaceInfo module in resultSet.Namespaces.OrderBy(x => x.ModuleId))
             {
                 foreach (ResultInfo result in module.Results.OrderBy(x => x.DescriptionStart))
                 {
@@ -378,10 +418,9 @@ namespace LibHacBuild.CodeGen.Stage1
                 csv.Configuration.AllowComments = true;
                 csv.Configuration.DetectColumnCountChanges = true;
 
-                if (typeof(T) == typeof(ResultInfo))
-                {
-                    csv.Configuration.RegisterClassMap<ResultMap>();
-                }
+                csv.Configuration.RegisterClassMap<ModuleMap>();
+                csv.Configuration.RegisterClassMap<NamespaceMap>();
+                csv.Configuration.RegisterClassMap<ResultMap>();
 
                 return csv.GetRecords<T>().ToArray();
             }
@@ -391,7 +430,7 @@ namespace LibHacBuild.CodeGen.Stage1
         {
             int size = 0;
 
-            size += GetLoadSize(result.Module);
+            size += GetLoadSize(result.ModuleId);
             size += GetLoadSize(result.DescriptionStart);
 
             if (result.IsRange)
@@ -414,15 +453,15 @@ namespace LibHacBuild.CodeGen.Stage1
             }
         }
 
-        public static string PrintEnum(ModuleInfo[] modules)
+        public static string PrintEnum(ResultSet resultSet)
         {
             var sb = new StringBuilder();
             int[] printUnknownResultsForModules = { 2 };
             int[] skipModules = { 428 };
 
-            foreach (ModuleInfo module in modules.Where(x => !skipModules.Contains(x.Index)))
+            foreach (ModuleInfo module in resultSet.Modules.Where(x => !skipModules.Contains(x.Id)))
             {
-                bool printAllResults = printUnknownResultsForModules.Contains(module.Index);
+                bool printAllResults = printUnknownResultsForModules.Contains(module.Id);
                 int prevResult = 1;
 
                 foreach (ResultInfo result in module.Results)
@@ -432,13 +471,13 @@ namespace LibHacBuild.CodeGen.Stage1
                         for (int i = prevResult + 1; i < result.DescriptionStart; i++)
                         {
                             int innerValue = 2 & 0x1ff | ((i & 0x7ffff) << 9);
-                            string unknownResultLine = $"Result_{result.Module}_{i} = {innerValue},";
+                            string unknownResultLine = $"Result_{result.ModuleId}_{i} = {innerValue},";
                             sb.AppendLine(unknownResultLine);
                         }
                     }
 
                     string name = string.IsNullOrWhiteSpace(result.Name) ? string.Empty : $"_{result.Name}";
-                    string line = $"Result_{result.Module}_{result.DescriptionStart}{name} = {result.InnerValue},";
+                    string line = $"Result_{result.ModuleId}_{result.DescriptionStart}{name} = {result.InnerValue},";
 
                     sb.AppendLine(line);
                     prevResult = result.DescriptionStart;
@@ -449,7 +488,7 @@ namespace LibHacBuild.CodeGen.Stage1
                     for (int i = prevResult + 1; i < 8192; i++)
                     {
                         int innerValue = 2 & 0x1ff | ((i & 0x7ffff) << 9);
-                        string unknownResultLine = $"Result_{module.Index}_{i} = {innerValue},";
+                        string unknownResultLine = $"Result_{module.Id}_{i} = {innerValue},";
                         sb.AppendLine(unknownResultLine);
                     }
                 }
@@ -471,7 +510,7 @@ namespace LibHacBuild.CodeGen.Stage1
         public byte[] Build()
         {
             int tableOffset = CalculateNameTableOffset();
-            var archive = new byte[tableOffset + CalculateNameTableSize()];
+            byte[] archive = new byte[tableOffset + CalculateNameTableSize()];
 
             ref HeaderStruct header = ref Unsafe.As<byte, HeaderStruct>(ref archive[0]);
             Span<Element> elements = MemoryMarshal.Cast<byte, Element>(
@@ -489,7 +528,7 @@ namespace LibHacBuild.CodeGen.Stage1
                 ref Element element = ref elements[i];
 
                 element.NameOffset = curNameOffset;
-                element.Module = (short)result.Module;
+                element.Module = (short)result.ModuleId;
                 element.DescriptionStart = (short)result.DescriptionStart;
                 element.DescriptionEnd = (short)result.DescriptionEnd;
                 element.IsAbstract = result.IsAbstract;
@@ -540,25 +579,22 @@ namespace LibHacBuild.CodeGen.Stage1
         // ReSharper restore NotAccessedField.Local
     }
 
-    public class ModuleIndex
-    {
-        public string Name { get; set; }
-        public int Index { get; set; }
-    }
-
-    public class ModulePath
-    {
-        public string Name { get; set; }
-        public string Namespace { get; set; }
-        public string Path { get; set; }
-    }
-
-    [DebuggerDisplay("{" + nameof(Name) + ",nq}")]
     public class ModuleInfo
     {
+        public int Id { get; set; }
         public string Name { get; set; }
-        public int Index { get; set; }
         public string Namespace { get; set; }
+
+        public ResultInfo[] Results { get; set; }
+    }
+
+    [DebuggerDisplay("{" + nameof(ClassName) + ",nq}")]
+    public class NamespaceInfo
+    {
+        public string Name { get; set; }
+        public string ClassName { get; set; }
+        public int ModuleId { get; set; }
+        public string ModuleName { get; set; }
         public string Path { get; set; }
 
         public bool NeedsAggressiveInlining { get; set; }
@@ -568,18 +604,27 @@ namespace LibHacBuild.CodeGen.Stage1
     [DebuggerDisplay("{" + nameof(Name) + ",nq}")]
     public class ResultInfo
     {
-        public int Module { get; set; }
+        public int ModuleId { get; set; }
         public int DescriptionStart { get; set; }
         public int DescriptionEnd { get; set; }
         public ResultInfoFlags Flags { get; set; }
         public string Name { get; set; }
+        public string ModuleName { get; set; }
+        public string Namespace { get; set; }
         public string FullName { get; set; }
         public string Summary { get; set; }
 
         public bool IsRange => DescriptionStart != DescriptionEnd;
-        public string ErrorCode => $"{2000 + Module:d4}-{DescriptionStart:d4}";
-        public int InnerValue => Module & 0x1ff | ((DescriptionStart & 0x7ffff) << 9);
+        public string ErrorCode => $"{2000 + ModuleId:d4}-{DescriptionStart:d4}";
+        public int InnerValue => ModuleId & 0x1ff | ((DescriptionStart & 0x7ffff) << 9);
         public bool IsAbstract => Flags.HasFlag(ResultInfoFlags.Abstract);
+    }
+
+    public class ResultSet
+    {
+        public List<ModuleInfo> Modules { get; set; }
+        public List<NamespaceInfo> Namespaces { get; set; }
+        public List<ResultInfo> Results { get; set; }
     }
 
     [Flags]
@@ -589,13 +634,49 @@ namespace LibHacBuild.CodeGen.Stage1
         Abstract = 1 << 0
     }
 
+    public sealed class ModuleMap : ClassMap<ModuleInfo>
+    {
+        public ModuleMap()
+        {
+            Map(m => m.Id);
+            Map(m => m.Name);
+            Map(m => m.Namespace).ConvertUsing(row =>
+            {
+                string field = row.GetField("Default Namespace");
+                if (string.IsNullOrWhiteSpace(field))
+                    field = row.GetField("Name");
+
+                return field;
+            });
+        }
+    }
+
+    public sealed class NamespaceMap : ClassMap<NamespaceInfo>
+    {
+        public NamespaceMap()
+        {
+            Map(m => m.Name).Name("Namespace");
+            Map(m => m.Path);
+            Map(m => m.ClassName).ConvertUsing(row =>
+            {
+                string field = row.GetField("Class Name");
+                if (string.IsNullOrWhiteSpace(field))
+                    field = row.GetField("Namespace");
+
+                return field;
+            });
+        }
+    }
+
     public sealed class ResultMap : ClassMap<ResultInfo>
     {
         public ResultMap()
         {
-            Map(m => m.Module);
+            Map(m => m.ModuleId).Name("Module");
+            Map(m => m.Namespace);
             Map(m => m.Name);
             Map(m => m.Summary);
+
             Map(m => m.DescriptionStart);
             Map(m => m.DescriptionEnd).ConvertUsing(row =>
             {

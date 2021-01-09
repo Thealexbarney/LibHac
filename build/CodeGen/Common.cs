@@ -34,6 +34,15 @@ namespace LibHacBuild.CodeGen
 
             string rootPath = FindProjectDirectory();
             string fullPath = Path.Combine(rootPath, relativePath);
+            string directoryName = Path.GetDirectoryName(fullPath);
+
+            if (directoryName == null)
+                throw new InvalidDataException($"Invalid output path {relativePath}");
+
+            if (!Directory.Exists(directoryName))
+            {
+                Directory.CreateDirectory(directoryName);
+            }
 
             // Default is true because Visual Studio saves .cs files with the BOM by default
             bool hasBom = true;
