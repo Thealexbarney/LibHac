@@ -14,7 +14,7 @@ Id,Name,Default Namespace
 20,Kvdb,
 21,Sm,
 22,Ro,
-24,Sdmmc,FsSrv
+24,Sdmmc,
 26,Spl,
 30,Ddsf,
 101,I2C,

@@ -7,6 +7,8 @@ Dd,,
 Lr,,Lr/ResultLr.cs
 Loader,,Loader/ResultLoader.cs
 Sf,,Sf/ResultSf.cs
+Sf.Cmif,Cmif,Sf/Cmif/ResultCmif.cs
+Sf.Impl,SfImpl,Sf/Impl/ResultSfImpl.cs
 Hipc,,
 Dnmt,,
 Pm,,
@@ -14,7 +16,7 @@ Ns,,
 Kvdb,,Kvdb/ResultKvdb.cs
 Sm,,Sm/ResultSm.cs
 Ro,,
-FsSrv,Sdmmc,FsSrv/ResultSdmmc.cs
+Sdmmc,,Sdmmc/ResultSdmmc.cs
 Spl,,Spl/ResultSpl.cs
 Ddsf,,
 I2C,,
