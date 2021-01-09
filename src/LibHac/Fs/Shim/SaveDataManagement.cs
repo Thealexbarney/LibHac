@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using LibHac.Diag;
-using LibHac.FsSrv;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 using LibHac.Sf;

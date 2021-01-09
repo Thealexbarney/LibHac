@@ -841,21 +841,24 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 10,1,,,,NotSupported,
 10,3,,,,PreconditionViolation,
 
-# These should be in the sf::cmif namespace
-10,202,,,,InvalidHeaderSize,
-10,211,,,,InvalidInHeader,
-10,221,,,,UnknownCommandId,
-10,232,,,,InvalidOutRawSize,
-10,235,,,,InvalidNumInObjects,
-10,236,,,,InvalidNumOutObjects,
-10,239,,,,InvalidInObject,
-10,261,,,,TargetNotFound,
-10,301,,,,OutOfDomainEntries,
+10,10,19,,,MemoryAllocationFailed,
+10,11,,,Sf.Cmif,CmifProxyAllocationFailed,
 
-# These should be in the sf::impl namespace
-10,800,899,a,,RequestContextChanged,
-10,801,809,a,,RequestInvalidated,
-10,802,,,,RequestInvalidatedByUser,
+10,202,,,Sf.Cmif,InvalidCmifHeaderSize,
+10,211,,,Sf.Cmif,InvalidCmifInHeader,
+10,212,,,Sf.Cmif,InvalidCmifOutHeader,
+10,221,,,Sf.Cmif,UnknownMethodId,
+10,231,,,Sf.Cmif,InvalidInRawSize,
+10,232,,,Sf.Cmif,InvalidOutRawSize,
+10,235,,,Sf.Cmif,InvalidInObjectCount,
+10,236,,,Sf.Cmif,InvalidOutObjectCount,
+10,239,,,Sf.Cmif,InvalidInObject,
+10,261,,,Sf.Cmif,TargetObjectNotFound,
+10,301,,,Sf.Cmif,OutOfDomainEntry,
+
+10,800,899,a,Sf.Impl,RequestContextChanged,
+10,801,809,a,Sf.Impl,RequestInvalidated,
+10,802,,,Sf.Impl,RequestInvalidatedByUser,
 
 10,811,819,a,,RequestDeferred,
 10,812,,,,RequestDeferredByUser,
