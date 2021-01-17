@@ -136,6 +136,8 @@ namespace LibHac.Fs
             public static Result.Base AllocationFailureInEncryptedFileSystemCreatorA => new Result.Base(ModuleFs, 3394);
             /// <summary> In OpenFile or OpenDirectory<br/>Error code: 2002-3407; Inner value: 0x1a9e02</summary>
             public static Result.Base AllocationFailureInFileSystemInterfaceAdapter => new Result.Base(ModuleFs, 3407);
+            /// <summary> In Initialize allocating Cache array<br/>Error code: 2002-3411; Inner value: 0x1aa602</summary>
+            public static Result.Base AllocationFailureInBufferedStorageA => new Result.Base(ModuleFs, 3411);
             /// <summary>Error code: 2002-3420; Inner value: 0x1ab802</summary>
             public static Result.Base AllocationFailureInNew => new Result.Base(ModuleFs, 3420);
             /// <summary>Error code: 2002-3421; Inner value: 0x1aba02</summary>

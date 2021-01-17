@@ -90,7 +90,7 @@ namespace LibHac.FsSystem
                 // Validate pre-conditions.
                 Assert.True(Entries == null);
 
-                // Note: We don't have the option of using an external Entry buffer like the original
+                // Note: We don't have the option of using an external Entry buffer like the original C++ code
                 // because Entry includes managed references so we can't cast a byte* to Entry* without pinning.
                 // If we don't have an external buffer, try to allocate an internal one.
 
@@ -215,6 +215,7 @@ namespace LibHac.FsSystem
                     if (CanUnregister(this, ref Entries[i]))
                     {
                         entry = ref Entries[i];
+                        break;
                     }
                 }
 
@@ -278,7 +279,7 @@ namespace LibHac.FsSystem
                     entry = ref Entries[EntryCount];
                     entry.Initialize(PublishCacheHandle(), buffer, attr);
                     EntryCount++;
-                    Assert.True(EntryCount == 1 || Entries[EntryCount - 1].GetHandle() < entry.GetHandle());
+                    Assert.True(EntryCount == 1 || Entries[EntryCount - 2].GetHandle() < entry.GetHandle());
                 }
 
                 return ref entry;
@@ -292,7 +293,7 @@ namespace LibHac.FsSystem
 
                 // Ensure the entry is valid.
                 Span<Entry> entryBuffer = Entries;
-                Assert.True(Unsafe.IsAddressGreaterThan(ref entry, ref MemoryMarshal.GetReference(entryBuffer)));
+                Assert.True(!Unsafe.IsAddressLessThan(ref entry, ref MemoryMarshal.GetReference(entryBuffer)));
                 Assert.True(Unsafe.IsAddressLessThan(ref entry,
                     ref Unsafe.Add(ref MemoryMarshal.GetReference(entryBuffer), entryBuffer.Length)));
 
@@ -347,8 +348,9 @@ namespace LibHac.FsSystem
 
         public Result Initialize(int maxCacheCount, Memory<byte> heapBuffer, int blockSize, Memory<byte> workBuffer)
         {
-            // Note: We can't use an external buffer for the cache handle table,
+            // Note: We can't use an external buffer for the cache handle table since it contains managed pointers,
             // so pass the work buffer directly to the buddy heap.
+
             Result rc = CacheTable.Initialize(maxCacheCount);
             if (rc.IsFailure()) return rc;
 

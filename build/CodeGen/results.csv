@@ -109,6 +109,7 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,3383,,AllocationFailureInAesXtsFileE,In Initialize
 2,3394,,AllocationFailureInEncryptedFileSystemCreatorA,In Create allocating AesXtsFileSystem
 2,3407,,AllocationFailureInFileSystemInterfaceAdapter, In OpenFile or OpenDirectory
+2,3411,,AllocationFailureInBufferedStorageA, In Initialize allocating Cache array
 2,3420,,AllocationFailureInNew,
 2,3421,,AllocationFailureInCreateShared,
 2,3422,,AllocationFailureInMakeUnique,
