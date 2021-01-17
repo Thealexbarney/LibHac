@@ -199,12 +199,14 @@ namespace LibHac.FsSystem
         public Result Initialize(UIntPtr address, nuint size, nuint blockSize, int orderMax, void* workBuffer,
             nuint workBufferSize)
         {
-            // Note: Buffer size assert is done before adjusting for alignment
             Assert.True(workBufferSize >= QueryWorkBufferSize(orderMax));
 
             uint pageListAlignment = (uint)Unsafe.SizeOf<nint>();
             var alignedWork = (void*)Alignment.AlignUpPow2((ulong)workBuffer, pageListAlignment);
             ExternalFreeLists = (PageList*)alignedWork;
+
+            // Note: The original code does not have a buffer size assert after adjusting for alignment.
+            Assert.True(workBufferSize - ((nuint)alignedWork - (nuint)workBuffer) >= QueryWorkBufferSize(orderMax));
 
             return Initialize(address, size, blockSize, orderMax);
         }
@@ -264,7 +266,7 @@ namespace LibHac.FsSystem
             // Allocate remaining space to smaller orders as possible.
             {
                 nuint remaining = HeapSize - (maxPageCount - 1) * maxPageSize;
-                nuint curAddress = (nuint)HeapStart - (maxPageCount - 1) * maxPageSize;
+                nuint curAddress = HeapStart - (maxPageCount - 1) * maxPageSize;
                 Assert.True(Alignment.IsAlignedPow2(remaining, (uint)BlockSize));
 
                 do
@@ -572,7 +574,6 @@ namespace LibHac.FsSystem
         private MemoryHandle PinnedHeapMemoryHandle { get; set; }
         private Memory<byte> HeapBuffer { get; set; }
         private MemoryHandle PinnedWorkMemoryHandle { get; set; }
-        private Memory<byte> WorkBuffer { get; set; }
 
         public Result Initialize(Memory<byte> heapBuffer, int blockSize, Memory<byte> workBuffer)
         {
@@ -583,7 +584,6 @@ namespace LibHac.FsSystem
         public Result Initialize(Memory<byte> heapBuffer, int blockSize, int orderMax, Memory<byte> workBuffer)
         {
             PinnedWorkMemoryHandle = workBuffer.Pin();
-            WorkBuffer = workBuffer;
 
             PinnedHeapMemoryHandle = heapBuffer.Pin();
             HeapBuffer = heapBuffer;
@@ -591,8 +591,8 @@ namespace LibHac.FsSystem
             var heapAddress = (UIntPtr)PinnedHeapMemoryHandle.Pointer;
             var heapSize = (nuint)heapBuffer.Length;
 
-            void* workAddress = PinnedHeapMemoryHandle.Pointer;
-            var workSize = (nuint)heapBuffer.Length;
+            void* workAddress = PinnedWorkMemoryHandle.Pointer;
+            var workSize = (nuint)workBuffer.Length;
 
             return Initialize(heapAddress, heapSize, (nuint)blockSize, orderMax, workAddress, workSize);
         }

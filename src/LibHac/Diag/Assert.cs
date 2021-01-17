@@ -21,6 +21,20 @@ namespace LibHac.Diag
         }
 
         [Conditional("DEBUG")]
+        public static void False([DoesNotReturnIf(true)] bool condition, string message = null)
+        {
+            if (!condition)
+                return;
+
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                throw new LibHacException("Assertion failed.");
+            }
+
+            throw new LibHacException($"Assertion failed: {message}");
+        }
+
+        [Conditional("DEBUG")]
         public static void Null<T>([NotNull] T item) where T : class
         {
             if (!(item is null))

@@ -25,18 +25,12 @@ namespace LibHac.Util
             return (value & ~invMask);
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool IsAlignedPow2(ulong value, uint alignment)
         {
             Assert.True(BitUtil.IsPowerOfTwo(alignment));
 
             ulong invMask = alignment - 1;
             return (value & invMask) == 0;
-        }
-
-        public static bool IsAlignedPow2<T>(Span<T> buffer, uint alignment)
-        {
-            return IsAlignedPow2(buffer, alignment);
         }
 
         public static bool IsAlignedPow2<T>(ReadOnlySpan<T> buffer, uint alignment)
