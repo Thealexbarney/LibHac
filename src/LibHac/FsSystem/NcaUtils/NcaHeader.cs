@@ -199,7 +199,7 @@ namespace LibHac.FsSystem.NcaUtils
 
         private static (byte[] header, bool isEncrypted) DecryptHeader(KeySet keySet, IStorage storage)
         {
-            var buf = new byte[HeaderSize];
+            byte[] buf = new byte[HeaderSize];
             storage.Read(0, buf).ThrowIfFailure();
 
             if (CheckIfDecrypted(buf))

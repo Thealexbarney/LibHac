@@ -191,7 +191,7 @@ namespace LibHac.FsSystem.RomFs
 
             if (value != _capacity)
             {
-                var newBuffer = new byte[value];
+                byte[] newBuffer = new byte[value];
                 System.Buffer.BlockCopy(Entries, 0, newBuffer, 0, _length);
 
                 Entries = newBuffer;
@@ -223,7 +223,7 @@ namespace LibHac.FsSystem.RomFs
 
         private void Resize(int newSize)
         {
-            var newBuckets = new int[newSize];
+            int[] newBuckets = new int[newSize];
             newBuckets.AsSpan().Fill(-1);
 
             List<int> offsets = GetEntryOffsets();

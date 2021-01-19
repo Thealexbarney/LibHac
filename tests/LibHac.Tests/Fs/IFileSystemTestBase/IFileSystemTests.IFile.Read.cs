@@ -15,7 +15,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             fs.CreateFile("/file".ToU8Span(), 100, CreateFileOptions.None);
 
-            var buffer = new byte[20];
+            byte[] buffer = new byte[20];
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Read);
             using (file)
             {
@@ -31,7 +31,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             fs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
 
-            var buffer = new byte[10];
+            byte[] buffer = new byte[10];
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Read);
             using (file)
             {
@@ -47,7 +47,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             fs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
 
-            var buffer = new byte[10];
+            byte[] buffer = new byte[10];
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Write);
             using (file)
             {
@@ -63,7 +63,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             fs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
 
-            var buffer = new byte[10];
+            byte[] buffer = new byte[10];
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Write);
             using (file)
             {
@@ -79,7 +79,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             fs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
 
-            var buffer = new byte[10];
+            byte[] buffer = new byte[10];
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Write);
             using (file)
             {
@@ -95,7 +95,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             fs.CreateFile("/file".ToU8Span(), 100, CreateFileOptions.None);
 
-            var buffer = new byte[200];
+            byte[] buffer = new byte[200];
             fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Read);
             using (file)
             {
@@ -118,10 +118,10 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
                 file.Write(0, new byte[100], WriteOption.None);
             }
 
-            var bufferExpected = new byte[200];
+            byte[] bufferExpected = new byte[200];
             bufferExpected.AsSpan(10).Fill(0xCC);
 
-            var buffer = new byte[200];
+            byte[] buffer = new byte[200];
             buffer.AsSpan().Fill(0xCC);
 
             fs.OpenFile(out file, "/file".ToU8Span(), OpenMode.Read);

@@ -9,12 +9,12 @@ namespace hactoolnet
     {
         private static CliOption[] GetCliOptions() => new[]
         {
-            new CliOption("custom", 0, (o, a) => o.RunCustom = true),
+            new CliOption("custom", 0, (o, _) => o.RunCustom = true),
             new CliOption("intype", 't', 1, (o, a) => o.InFileType = ParseFileType(a[0])),
-            new CliOption("raw", 'r', 0, (o, a) => o.Raw = true),
-            new CliOption("verify", 'y', 0, (o, a) => o.Validate = true),
-            new CliOption("dev", 'd', 0, (o, a) => o.UseDevKeys = true),
-            new CliOption("enablehash", 'h', 0, (o, a) => o.EnableHash = true),
+            new CliOption("raw", 'r', 0, (o, _) => o.Raw = true),
+            new CliOption("verify", 'y', 0, (o, _) => o.Validate = true),
+            new CliOption("dev", 'd', 0, (o, _) => o.UseDevKeys = true),
+            new CliOption("enablehash", 'h', 0, (o, _) => o.EnableHash = true),
             new CliOption("keyset", 'k', 1, (o, a) => o.Keyfile = a[0]),
             new CliOption("titlekeys", 1, (o, a) => o.TitleKeyFile = a[0]),
             new CliOption("consolekeys", 1, (o, a) => o.ConsoleKeyFile = a[0]),
@@ -52,16 +52,16 @@ namespace hactoolnet
             new CliOption("securedir", 1, (o, a) => o.SecureDir = a[0]),
             new CliOption("logodir", 1, (o, a) => o.LogoDir = a[0]),
             new CliOption("repack", 1, (o, a) => o.RepackSource = a[0]),
-            new CliOption("listapps", 0, (o, a) => o.ListApps = true),
-            new CliOption("listtitles", 0, (o, a) => o.ListTitles = true),
-            new CliOption("listncas", 0, (o, a) => o.ListNcas = true),
-            new CliOption("listromfs", 0, (o, a) => o.ListRomFs = true),
-            new CliOption("listfiles", 0, (o, a) => o.ListFiles = true),
-            new CliOption("sign", 0, (o, a) => o.SignSave = true),
-            new CliOption("trim", 0, (o, a) => o.TrimSave = true),
-            new CliOption("readbench", 0, (o, a) => o.ReadBench = true),
-            new CliOption("hashedfs", 0, (o, a) => o.BuildHfs = true),
-            new CliOption("extractini1", 0, (o, a) => o.ExtractIni1 = true),
+            new CliOption("listapps", 0, (o, _) => o.ListApps = true),
+            new CliOption("listtitles", 0, (o, _) => o.ListTitles = true),
+            new CliOption("listncas", 0, (o, _) => o.ListNcas = true),
+            new CliOption("listromfs", 0, (o, _) => o.ListRomFs = true),
+            new CliOption("listfiles", 0, (o, _) => o.ListFiles = true),
+            new CliOption("sign", 0, (o, _) => o.SignSave = true),
+            new CliOption("trim", 0, (o, _) => o.TrimSave = true),
+            new CliOption("readbench", 0, (o, _) => o.ReadBench = true),
+            new CliOption("hashedfs", 0, (o, _) => o.BuildHfs = true),
+            new CliOption("extractini1", 0, (o, _) => o.ExtractIni1 = true),
             new CliOption("title", 1, (o, a) => o.TitleId = ParseTitleId(a[0])),
             new CliOption("bench", 1, (o, a) => o.BenchType = a[0]),
             new CliOption("cpufreq", 1, (o, a) => o.CpuFrequencyGhz = ParseDouble(a[0])),
@@ -118,7 +118,7 @@ namespace hactoolnet
                     return null;
                 }
 
-                var optionArgs = new string[option.ArgsNeeded];
+                string[] optionArgs = new string[option.ArgsNeeded];
                 Array.Copy(args, i + 1, optionArgs, 0, option.ArgsNeeded);
 
                 option.Assigner(options, optionArgs);

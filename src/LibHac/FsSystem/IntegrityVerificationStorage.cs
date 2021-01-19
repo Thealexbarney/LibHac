@@ -175,7 +175,7 @@ namespace LibHac.FsSystem
 
                 _hash.Update(buffer.AsSpan(offset, count));
 
-                var hash = new byte[Sha256.DigestSize];
+                byte[] hash = new byte[Sha256.DigestSize];
                 _hash.GetHash(hash);
 
                 if (Type == IntegrityStorageType.Save)

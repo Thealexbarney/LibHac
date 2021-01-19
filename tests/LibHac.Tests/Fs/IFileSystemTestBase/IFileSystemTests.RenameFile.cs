@@ -92,7 +92,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         [Fact]
         public void RenameFile_DataIsUnmodified()
         {
-            var data = new byte[] { 7, 4, 1, 0, 8, 5, 2, 9, 6, 3 };
+            byte[] data = { 7, 4, 1, 0, 8, 5, 2, 9, 6, 3 };
 
             IFileSystem fs = CreateFileSystem();
 
@@ -104,7 +104,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             fs.RenameFile("/file".ToU8Span(), "/renamed".ToU8Span());
 
-            var readData = new byte[data.Length];
+            byte[] readData = new byte[data.Length];
 
             fs.OpenFile(out file, "/renamed".ToU8Span(), OpenMode.Read);
             Result rc = file.Read(out long bytesRead, 0, readData, ReadOption.None);

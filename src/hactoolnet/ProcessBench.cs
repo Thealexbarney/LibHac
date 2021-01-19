@@ -53,7 +53,7 @@ namespace hactoolnet
             cipherGenerator().Transform(src, dst);
 
             var watch = new Stopwatch();
-            var runTimes = new double[iterations];
+            double[] runTimes = new double[iterations];
 
             logger.SetTotal(iterations);
 
@@ -90,7 +90,7 @@ namespace hactoolnet
             cipherGenerator().Transform(src, dst);
 
             var watch = new Stopwatch();
-            var runTimes = new double[iterations];
+            double[] runTimes = new double[iterations];
 
             logger.SetTotal(iterations);
 
@@ -139,7 +139,7 @@ namespace hactoolnet
             Debug.Assert(src.Length == dst.Length);
 
             var watch = new Stopwatch();
-            var runTimes = new double[iterations];
+            double[] runTimes = new double[iterations];
 
             ReadOnlySpan<byte> key1 = stackalloc byte[0x10];
             ReadOnlySpan<byte> key2 = stackalloc byte[0x10];
@@ -183,8 +183,8 @@ namespace hactoolnet
 
         private static void RegisterAesSequentialBenchmarks(MultiBenchmark bench)
         {
-            var input = new byte[BatchCipherBenchSize];
-            var output = new byte[BatchCipherBenchSize];
+            byte[] input = new byte[BatchCipherBenchSize];
+            byte[] output = new byte[BatchCipherBenchSize];
 
             Func<double, string> resultPrinter = time => GetPerformanceString(time, BatchCipherBenchSize);
 
@@ -231,8 +231,8 @@ namespace hactoolnet
         // ReSharper disable once UnusedParameter.Local
         private static void RegisterAesSingleBlockBenchmarks(MultiBenchmark bench)
         {
-            var input = new byte[SingleBlockCipherBenchSize];
-            var output = new byte[SingleBlockCipherBenchSize];
+            byte[] input = new byte[SingleBlockCipherBenchSize];
+            byte[] output = new byte[SingleBlockCipherBenchSize];
 
             Func<double, string> resultPrinter = time => GetPerformanceString(time, SingleBlockCipherBenchSize);
 
@@ -284,8 +284,8 @@ namespace hactoolnet
 
         private static void RegisterShaBenchmarks(MultiBenchmark bench)
         {
-            var input = new byte[ShaBenchSize];
-            var digest = new byte[Sha256.DigestSize];
+            byte[] input = new byte[ShaBenchSize];
+            byte[] digest = new byte[Sha256.DigestSize];
 
             Func<double, string> resultPrinter = time => GetPerformanceString(time, ShaBenchSize);
 
@@ -314,14 +314,14 @@ namespace hactoolnet
         private static void RunCipherBenchmark(Func<ICipher> cipherNet, Func<ICipher> cipherLibHac,
             CipherTaskSeparate function, bool benchBlocked, string label, IProgressReport logger)
         {
-            var srcData = new byte[Size];
+            byte[] srcData = new byte[Size];
 
-            var dstDataLh = new byte[Size];
-            var dstDataNet = new byte[Size];
-            var dstDataBlockedLh = new byte[Size];
-            var dstDataBlockedNet = new byte[Size];
-            var dstDataSeparateLh = new byte[Size];
-            var dstDataSeparateNet = new byte[Size];
+            byte[] dstDataLh = new byte[Size];
+            byte[] dstDataNet = new byte[Size];
+            byte[] dstDataBlockedLh = new byte[Size];
+            byte[] dstDataBlockedNet = new byte[Size];
+            byte[] dstDataSeparateLh = new byte[Size];
+            byte[] dstDataSeparateNet = new byte[Size];
 
             logger.LogMessage(string.Empty);
             logger.LogMessage(label);
@@ -437,14 +437,14 @@ namespace hactoolnet
                 {
                     Func<ICipher> encryptorNet = () => Aes.CreateEcbEncryptor(new byte[0x10], true);
                     Func<ICipher> encryptorLh = () => Aes.CreateEcbEncryptor(new byte[0x10]);
-                    CipherTaskSeparate encrypt = (input, output, key1, key2, iv, crypto) =>
+                    CipherTaskSeparate encrypt = (input, output, key1, _, _, crypto) =>
                         Aes.EncryptEcb128(input, output, key1, crypto);
 
                     RunCipherBenchmark(encryptorNet, encryptorLh, encrypt, true, "AES-ECB encrypt", ctx.Logger);
 
                     Func<ICipher> decryptorNet = () => Aes.CreateEcbDecryptor(new byte[0x10], true);
                     Func<ICipher> decryptorLh = () => Aes.CreateEcbDecryptor(new byte[0x10]);
-                    CipherTaskSeparate decrypt = (input, output, key1, key2, iv, crypto) =>
+                    CipherTaskSeparate decrypt = (input, output, key1, _, _, crypto) =>
                         Aes.DecryptEcb128(input, output, key1, crypto);
 
                     RunCipherBenchmark(decryptorNet, decryptorLh, decrypt, true, "AES-ECB decrypt", ctx.Logger);
@@ -456,14 +456,14 @@ namespace hactoolnet
                 {
                     Func<ICipher> encryptorNet = () => Aes.CreateCbcEncryptor(new byte[0x10], new byte[0x10], true);
                     Func<ICipher> encryptorLh = () => Aes.CreateCbcEncryptor(new byte[0x10], new byte[0x10]);
-                    CipherTaskSeparate encrypt = (input, output, key1, key2, iv, crypto) =>
+                    CipherTaskSeparate encrypt = (input, output, key1, _, iv, crypto) =>
                         Aes.EncryptCbc128(input, output, key1, iv, crypto);
 
                     RunCipherBenchmark(encryptorNet, encryptorLh, encrypt, true, "AES-CBC encrypt", ctx.Logger);
 
                     Func<ICipher> decryptorNet = () => Aes.CreateCbcDecryptor(new byte[0x10], new byte[0x10], true);
                     Func<ICipher> decryptorLh = () => Aes.CreateCbcDecryptor(new byte[0x10], new byte[0x10]);
-                    CipherTaskSeparate decrypt = (input, output, key1, key2, iv, crypto) =>
+                    CipherTaskSeparate decrypt = (input, output, key1, _, iv, crypto) =>
                         Aes.DecryptCbc128(input, output, key1, iv, crypto);
 
                     RunCipherBenchmark(decryptorNet, decryptorLh, decrypt, true, "AES-CBC decrypt", ctx.Logger);
@@ -475,7 +475,7 @@ namespace hactoolnet
                 {
                     Func<ICipher> encryptorNet = () => Aes.CreateCtrEncryptor(new byte[0x10], new byte[0x10], true);
                     Func<ICipher> encryptorLh = () => Aes.CreateCtrEncryptor(new byte[0x10], new byte[0x10]);
-                    CipherTaskSeparate encrypt = (input, output, key1, key2, iv, crypto) =>
+                    CipherTaskSeparate encrypt = (input, output, key1, _, iv, crypto) =>
                         Aes.EncryptCtr128(input, output, key1, iv, crypto);
 
                     RunCipherBenchmark(encryptorNet, encryptorLh, encrypt, true, "AES-CTR", ctx.Logger);

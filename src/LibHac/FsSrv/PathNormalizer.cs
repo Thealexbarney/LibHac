@@ -43,7 +43,7 @@ namespace LibHac.FsSrv
             }
             else
             {
-                var buffer = new byte[PathTools.MaxPathLength + 1];
+                byte[] buffer = new byte[PathTools.MaxPathLength + 1];
 
                 rc = PathTool.Normalize(buffer, out long normalizedLength, path, preserveUnc, hasMountName);
                 if (rc.IsFailure()) return rc;

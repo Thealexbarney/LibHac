@@ -52,7 +52,7 @@ namespace LibHac.FsSystem
 
         public byte[] GetKey()
         {
-            var key = new byte[0x20];
+            byte[] key = new byte[0x20];
             Array.Copy(Header.DecryptedKey1, 0, key, 0, 0x10);
             Array.Copy(Header.DecryptedKey2, 0, key, 0x10, 0x10);
 

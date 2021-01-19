@@ -52,7 +52,7 @@ namespace LibHac.FsSystem.NcaUtils
             }
 
             byte[] encryptedKey = Header.GetEncryptedKey(index).ToArray();
-            var decryptedKey = new byte[Aes.KeySize128];
+            byte[] decryptedKey = new byte[Aes.KeySize128];
 
             Aes.DecryptEcb128(encryptedKey, decryptedKey, keyAreaKey);
 
@@ -80,7 +80,7 @@ namespace LibHac.FsSystem.NcaUtils
             }
 
             byte[] encryptedKey = accessKey.Value.ToArray();
-            var decryptedKey = new byte[Aes.KeySize128];
+            byte[] decryptedKey = new byte[Aes.KeySize128];
 
             Aes.DecryptEcb128(encryptedKey, decryptedKey, titleKek);
 
@@ -636,7 +636,7 @@ namespace LibHac.FsSystem.NcaUtils
             else if (Header.FormatVersion == NcaVersion.Nca0RsaOaep)
             {
                 Span<byte> keyArea = Header.GetKeyArea();
-                var decKeyArea = new byte[0x100];
+                byte[] decKeyArea = new byte[0x100];
 
                 if (CryptoOld.DecryptRsaOaep(keyArea, decKeyArea, KeySet.BetaNca0KeyAreaKeyParams, out _))
                 {
@@ -708,7 +708,7 @@ namespace LibHac.FsSystem.NcaUtils
             IStorage bodyStorage = OpenNca0BodyStorage(false);
             long offset = Header.GetSectionStartOffset(index) - 0x400;
 
-            var fsHeaderData = new byte[0x200];
+            byte[] fsHeaderData = new byte[0x200];
             bodyStorage.Read(offset, fsHeaderData).ThrowIfFailure();
 
             return new NcaFsHeader(fsHeaderData);

@@ -116,7 +116,7 @@ namespace LibHac.FsSystem
             byte[] key1 = writeDecryptedKey ? DecryptedKey1 : EncryptedKey1;
             byte[] key2 = writeDecryptedKey ? DecryptedKey2 : EncryptedKey2;
 
-            var data = new byte[0x80];
+            byte[] data = new byte[0x80];
 
             Array.Copy(Signature, data, 0x20);
             MemoryMarshal.Write(data.AsSpan(0x20), ref magic);

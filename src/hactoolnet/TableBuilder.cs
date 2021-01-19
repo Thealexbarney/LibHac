@@ -33,7 +33,7 @@ namespace hactoolnet
         public string Print()
         {
             var sb = new StringBuilder();
-            var width = new int[ColumnCount];
+            int[] width = new int[ColumnCount];
 
             foreach (string[] row in Rows)
             {

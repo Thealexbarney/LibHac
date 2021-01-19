@@ -150,7 +150,7 @@ namespace LibHac
         {
             if (TitleKeyType == TitleKeyType.Common)
             {
-                var commonKey = new byte[0x10];
+                byte[] commonKey = new byte[0x10];
                 Array.Copy(TitleKeyBlock, commonKey, commonKey.Length);
                 return commonKey;
             }

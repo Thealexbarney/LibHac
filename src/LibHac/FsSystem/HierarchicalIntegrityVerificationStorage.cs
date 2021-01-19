@@ -148,7 +148,7 @@ namespace LibHac.FsSystem
             long blockSize = storage.SectorSize;
             int blockCount = (int)BitUtil.DivideUp(Length, blockSize);
 
-            var buffer = new byte[blockSize];
+            byte[] buffer = new byte[blockSize];
             var result = Validity.Valid;
 
             logger?.SetTotal(blockCount);

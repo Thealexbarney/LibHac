@@ -103,10 +103,10 @@ namespace LibHac.FsSystem.NcaUtils
                 offset += 0x200;
             }
 
-            var data = new byte[size];
+            byte[] data = new byte[size];
             storage.Read(offset, data).ThrowIfFailure();
 
-            var actualHash = new byte[Sha256.DigestSize];
+            byte[] actualHash = new byte[Sha256.DigestSize];
             Sha256.GenerateSha256Hash(data, actualHash);
 
             if (Utilities.ArraysEqual(expectedHash, actualHash)) return Validity.Valid;

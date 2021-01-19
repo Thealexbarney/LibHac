@@ -80,7 +80,7 @@ namespace LibHac.FsSystem.RomFs
         {
             FileTable.TrimExcess();
 
-            var header = new byte[HeaderWithPaddingSize];
+            byte[] header = new byte[HeaderWithPaddingSize];
             var headerWriter = new BinaryWriter(new MemoryStream(header));
 
             var sources = new List<IStorage>();

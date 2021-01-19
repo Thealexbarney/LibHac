@@ -7,6 +7,7 @@ namespace LibHac.FsSrv.Impl
 {
     public class DeepRetryFileSystem : ForwardingFileSystem
     {
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         private ReferenceCountedDisposable<DeepRetryFileSystem>.WeakReference SelfReference { get; set; }
         private ReferenceCountedDisposable<IRomFileSystemAccessFailureManager> AccessFailureManager { get; set; }
 

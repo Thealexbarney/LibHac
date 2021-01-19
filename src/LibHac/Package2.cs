@@ -67,7 +67,7 @@ namespace LibHac
 
             // The counter starts counting at 0x100, but the block at 0x100 isn't encrypted.
             // Increase the counter by one and start decrypting at 0x110.
-            var counter = new byte[0x10];
+            byte[] counter = new byte[0x10];
             Array.Copy(Header.Counter, counter, 0x10);
             Utilities.IncrementByteArray(counter);
 
@@ -109,8 +109,8 @@ namespace LibHac
 
         private int FindKeyGeneration(KeySet keySet, IStorage storage)
         {
-            var counter = new byte[0x10];
-            var decBuffer = new byte[0x10];
+            byte[] counter = new byte[0x10];
+            byte[] decBuffer = new byte[0x10];
 
             storage.Read(0x100, counter).ThrowIfFailure();
 

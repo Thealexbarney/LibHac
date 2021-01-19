@@ -16,7 +16,7 @@ namespace hactoolnet
 
                 if (!string.IsNullOrWhiteSpace(ctx.Options.UncompressedOut))
                 {
-                    var uncompressed = new byte[kip.GetUncompressedSize()];
+                    byte[] uncompressed = new byte[kip.GetUncompressedSize()];
 
                     kip.ReadUncompressedKip(uncompressed).ThrowIfFailure();
 

@@ -111,22 +111,22 @@ namespace LibHac
                 if (keySet != null && !keySet.XciHeaderKey.IsZeros())
                 {
                     byte[] encHeader = reader.ReadBytes(EncryptedHeaderSize);
-                    var decHeader = new byte[EncryptedHeaderSize];
+                    byte[] decHeader = new byte[EncryptedHeaderSize];
                     Aes.DecryptCbc128(encHeader, decHeader, keySet.XciHeaderKey, AesCbcIv);
 
-                    using (var decreader = new BinaryReader(new MemoryStream(decHeader)))
+                    using (var decReader = new BinaryReader(new MemoryStream(decHeader)))
                     {
-                        FwVersion = decreader.ReadUInt64();
-                        AccCtrl1 = (CardClockRate)decreader.ReadInt32();
-                        Wait1TimeRead = decreader.ReadInt32();
-                        Wait2TimeRead = decreader.ReadInt32();
-                        Wait1TimeWrite = decreader.ReadInt32();
-                        Wait2TimeWrite = decreader.ReadInt32();
-                        FwMode = decreader.ReadInt32();
-                        UppVersion = decreader.ReadInt32();
-                        decreader.BaseStream.Position += 4;
-                        UppHash = decreader.ReadBytes(8);
-                        UppId = decreader.ReadUInt64();
+                        FwVersion = decReader.ReadUInt64();
+                        AccCtrl1 = (CardClockRate)decReader.ReadInt32();
+                        Wait1TimeRead = decReader.ReadInt32();
+                        Wait2TimeRead = decReader.ReadInt32();
+                        Wait1TimeWrite = decReader.ReadInt32();
+                        Wait2TimeWrite = decReader.ReadInt32();
+                        FwMode = decReader.ReadInt32();
+                        UppVersion = decReader.ReadInt32();
+                        decReader.BaseStream.Position += 4;
+                        UppHash = decReader.ReadBytes(8);
+                        UppId = decReader.ReadUInt64();
                     }
                 }
 

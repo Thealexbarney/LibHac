@@ -8,7 +8,7 @@ namespace LibHac
     {
         public static byte[] Decompress(byte[] cmp, int decLength)
         {
-            var dec = new byte[decLength];
+            byte[] dec = new byte[decLength];
 
             int cmpPos = 0;
             int decPos = 0;
