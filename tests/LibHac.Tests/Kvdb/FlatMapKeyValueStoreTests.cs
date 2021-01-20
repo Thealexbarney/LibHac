@@ -41,11 +41,11 @@ namespace LibHac.Tests.Kvdb
 
         private static byte[][] GenerateValues(int count, int startingSize)
         {
-            var values = new byte[count][];
+            byte[][] values = new byte[count][];
 
             for (int i = 0; i < count; i++)
             {
-                var value = new byte[startingSize + i];
+                byte[] value = new byte[startingSize + i];
                 value.AsSpan().Fill((byte)count);
                 values[i] = value;
             }
@@ -189,7 +189,7 @@ namespace LibHac.Tests.Kvdb
             Assert.Success(PopulateKvStore(kvStore, out _, count));
 
             TTest key = 20;
-            var value = new byte[20];
+            byte[] value = new byte[20];
 
             Result rc = kvStore.Get(out int _, in key, value);
             Assert.Result(ResultKvdb.KeyNotFound, rc);
@@ -206,7 +206,7 @@ namespace LibHac.Tests.Kvdb
             Assert.Success(PopulateKvStore(kvStore, out _, count, startingValueSize, rngSeed));
 
             // Check the size of each entry
-            var value = new byte[100];
+            byte[] value = new byte[100];
 
             for (TTest i = 0; i < count; i++)
             {
@@ -226,7 +226,7 @@ namespace LibHac.Tests.Kvdb
             Assert.Success(PopulateKvStore(kvStore, out byte[][] values, count, startingValueSize, rngSeed));
 
             // Check if each value matches
-            var value = new byte[100];
+            byte[] value = new byte[100];
 
             for (int i = 0; i < count; i++)
             {
@@ -263,13 +263,13 @@ namespace LibHac.Tests.Kvdb
             Assert.Success(PopulateKvStore(kvStore, out _, count));
 
             TTest key = entryToReplace;
-            var value = new byte[15];
+            byte[] value = new byte[15];
             value.AsSpan().Fill(0xFF);
 
             Assert.Success(kvStore.Set(in key, value));
 
             // Read back the value
-            var readValue = new byte[20];
+            byte[] readValue = new byte[20];
             Assert.Success(kvStore.Get(out int valueSize, in key, readValue));
 
             // Check the value contents and size
@@ -347,7 +347,7 @@ namespace LibHac.Tests.Kvdb
             TTest keyToDelete = entryToDelete;
             Assert.Success(kvStore.Delete(in keyToDelete));
 
-            var value = new byte[20];
+            byte[] value = new byte[20];
 
             Result rc = kvStore.Get(out int _, in keyToDelete, value);
             Assert.Result(ResultKvdb.KeyNotFound, rc);
@@ -515,7 +515,7 @@ namespace LibHac.Tests.Kvdb
             }
 
             TTest keyToAdd = entryToAdd;
-            var valueToAdd = new byte[10];
+            byte[] valueToAdd = new byte[10];
 
             Assert.Success(kvStore.Set(in keyToAdd, valueToAdd));
 

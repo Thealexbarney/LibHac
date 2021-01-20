@@ -154,7 +154,7 @@ namespace LibHac.Fs
 
             if (ContainsParentDirectoryAlt(path2))
             {
-                var buffer2 = new byte[PathTools.MaxPathLength + 1];
+                byte[] buffer2 = new byte[PathTools.MaxPathLength + 1];
 
                 buffer2[0] = StringTraits.DirectorySeparator;
                 int j;

@@ -47,7 +47,7 @@ namespace LibHac.FsSystem
             if (key == null) throw new NullReferenceException(nameof(key));
             if (key.Length != BlockSize) throw new ArgumentException(nameof(key), $"Key must be {BlockSize} bytes long");
 
-            var initialCounter = new byte[BlockSize];
+            byte[] initialCounter = new byte[BlockSize];
             if (counterHi != null)
             {
                 Array.Copy(counterHi, initialCounter, 8);
@@ -114,7 +114,7 @@ namespace LibHac.FsSystem
 
         public static byte[] CreateCounter(ulong hiBytes, long offset)
         {
-            var counter = new byte[0x10];
+            byte[] counter = new byte[0x10];
 
             BinaryPrimitives.WriteUInt64BigEndian(counter, hiBytes);
             BinaryPrimitives.WriteInt64BigEndian(counter.AsSpan(8), offset / 0x10);

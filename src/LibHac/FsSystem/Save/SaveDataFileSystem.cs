@@ -251,12 +251,12 @@ namespace LibHac.FsSystem.Save
 
             Stream headerStream = BaseStorage.AsStream();
 
-            var hashData = new byte[0x3d00];
+            byte[] hashData = new byte[0x3d00];
 
             headerStream.Position = 0x300;
             headerStream.Read(hashData, 0, hashData.Length);
 
-            var hash = new byte[Sha256.DigestSize];
+            byte[] hash = new byte[Sha256.DigestSize];
             Sha256.GenerateSha256Hash(hashData, hash);
 
             headerStream.Position = 0x108;
@@ -264,8 +264,8 @@ namespace LibHac.FsSystem.Save
 
             if (keySet == null || keySet.DeviceUniqueSaveMacKeys[0].IsZeros()) return ResultFs.PreconditionViolation.Log();
 
-            var cmacData = new byte[0x200];
-            var cmac = new byte[0x10];
+            byte[] cmacData = new byte[0x200];
+            byte[] cmac = new byte[0x10];
 
             headerStream.Position = 0x100;
             headerStream.Read(cmacData, 0, 0x200);

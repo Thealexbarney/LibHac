@@ -75,7 +75,7 @@ namespace LibHac.FsSystem
             int stringTableSize = CalcStringTableSize(HeaderSize + entryTableSize, type);
             int metaDataSize = HeaderSize + entryTableSize + stringTableSize;
 
-            var metaData = new byte[metaDataSize];
+            byte[] metaData = new byte[metaDataSize];
             var writer = new BinaryWriter(new MemoryStream(metaData));
 
             writer.WriteUTF8(GetMagicValue(type));
@@ -154,7 +154,7 @@ namespace LibHac.FsSystem
             {
                 if (entry.HashLength == 0) entry.HashLength = 0x200;
 
-                var data = new byte[entry.HashLength];
+                byte[] data = new byte[entry.HashLength];
                 entry.File.Read(out long bytesRead, entry.HashOffset, data);
 
                 if (bytesRead != entry.HashLength)

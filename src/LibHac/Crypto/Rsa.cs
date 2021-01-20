@@ -182,7 +182,7 @@ namespace LibHac.Crypto
 
         private static BigInteger GetBigInteger(this ReadOnlySpan<byte> bytes)
         {
-            var signPadded = new byte[bytes.Length + 1];
+            byte[] signPadded = new byte[bytes.Length + 1];
             bytes.CopyTo(signPadded.AsSpan(1));
             Array.Reverse(signPadded);
             return new BigInteger(signPadded);

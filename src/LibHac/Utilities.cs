@@ -105,7 +105,7 @@ namespace LibHac
         {
             const int bufferSize = 0x8000;
             long remaining = length;
-            var buffer = new byte[bufferSize];
+            byte[] buffer = new byte[bufferSize];
             progress?.SetTotal(length);
 
             int read;

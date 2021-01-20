@@ -35,6 +35,7 @@ namespace LibHac.FsSystem
             public bool IsEmpty() => EntryCount == 0;
             public int GetSize() => EntryCount;
 
+            // ReSharper disable once UnusedMember.Local
             public PageEntry* GetFront() => FirstPageEntry;
 
             public PageEntry* PopFront()

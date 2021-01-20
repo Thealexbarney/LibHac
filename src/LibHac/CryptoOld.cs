@@ -12,8 +12,8 @@ namespace LibHac
     {
         public static void GenerateKek(byte[] key, byte[] src, byte[] dest, byte[] kekSeed, byte[] keySeed)
         {
-            var kek = new byte[Aes.KeySize128];
-            var srcKek = new byte[Aes.KeySize128];
+            byte[] kek = new byte[Aes.KeySize128];
+            byte[] srcKek = new byte[Aes.KeySize128];
 
             Aes.DecryptEcb128(kekSeed, kek, key);
             Aes.DecryptEcb128(src, srcKek, kek);
@@ -30,16 +30,16 @@ namespace LibHac
 
         public static RSAParameters DecryptRsaKey(byte[] encryptedKey, byte[] kek)
         {
-            var counter = new byte[0x10];
+            byte[] counter = new byte[0x10];
             Array.Copy(encryptedKey, counter, 0x10);
-            var key = new byte[0x230];
+            byte[] key = new byte[0x230];
             Array.Copy(encryptedKey, 0x10, key, 0, 0x230);
 
             new Aes128CtrTransform(kek, counter).TransformBlock(key);
 
-            var d = new byte[0x100];
-            var n = new byte[0x100];
-            var e = new byte[4];
+            byte[] d = new byte[0x100];
+            byte[] n = new byte[0x100];
+            byte[] e = new byte[4];
             Array.Copy(key, 0, d, 0, 0x100);
             Array.Copy(key, 0x100, n, 0, 0x100);
             Array.Copy(key, 0x200, e, 0, 4);
@@ -54,7 +54,7 @@ namespace LibHac
             var rsa = new RSACryptoServiceProvider();
             rsa.ImportParameters(keyParams);
 
-            var test = new byte[] { 12, 34, 56, 78 };
+            byte[] test = { 12, 34, 56, 78 };
             byte[] testEnc = rsa.Encrypt(test, false);
             byte[] testDec = rsa.Decrypt(testEnc, false);
 

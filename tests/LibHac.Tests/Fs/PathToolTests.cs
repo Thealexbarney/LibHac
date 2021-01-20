@@ -12,7 +12,7 @@ namespace LibHac.Tests.Fs
         public static void Normalize(string path, bool preserveUnc, bool hasMountName, string expectedNormalized,
             long expectedLength, Result expectedResult)
         {
-            var buffer = new byte[0x301];
+            byte[] buffer = new byte[0x301];
 
             Result result = PathTool.Normalize(buffer, out long normalizedLength, path.ToU8Span(), preserveUnc,
                 hasMountName);

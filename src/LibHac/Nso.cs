@@ -84,7 +84,7 @@ namespace LibHac
 
             public byte[] DecompressSection()
             {
-                var compressed = new byte[CompressedSize];
+                byte[] compressed = new byte[CompressedSize];
                 OpenSection().Read(0, compressed).ThrowIfFailure();
 
                 if (IsCompressed)

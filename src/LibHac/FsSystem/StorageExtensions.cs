@@ -170,7 +170,7 @@ namespace LibHac.FsSystem
 
             storage.GetSize(out long storageSize).ThrowIfFailure();
 
-            var arr = new byte[storageSize];
+            byte[] arr = new byte[storageSize];
             storage.CopyTo(new MemoryStorage(arr));
             return arr;
         }

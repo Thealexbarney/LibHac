@@ -276,7 +276,7 @@ namespace LibHac.FsSystem.Save
 
         private static Guid ToGuid(byte[] bytes)
         {
-            var b = new byte[0x10];
+            byte[] b = new byte[0x10];
             Array.Copy(bytes, b, 0x10);
 
             // The Guid constructor uses a weird, mixed-endian format

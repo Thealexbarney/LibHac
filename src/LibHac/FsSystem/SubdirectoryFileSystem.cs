@@ -74,7 +74,7 @@ namespace LibHac.FsSystem
                 normalizedPathLen++;
             }
 
-            var buffer = new byte[normalizedPathLen + 1];
+            byte[] buffer = new byte[normalizedPathLen + 1];
             normalizedPath.Slice(0, (int)normalizedPathLen).CopyTo(buffer);
             RootPath = new U8String(buffer);
 

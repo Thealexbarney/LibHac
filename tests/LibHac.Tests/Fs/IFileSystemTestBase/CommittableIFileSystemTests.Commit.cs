@@ -11,8 +11,8 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         public void Commit_AfterSuccessfulCommit_CanReadCommittedData()
         {
             // "Random" test data
-            var data1 = new byte[] { 7, 4, 1, 0, 8, 5, 2, 9, 6, 3 };
-            var data2 = new byte[] { 6, 1, 6, 8, 0, 3, 9, 7, 5, 1 };
+            byte[] data1 = { 7, 4, 1, 0, 8, 5, 2, 9, 6, 3 };
+            byte[] data2 = { 6, 1, 6, 8, 0, 3, 9, 7, 5, 1 };
 
             IReopenableFileSystemCreator fsCreator = GetFileSystemCreator();
             IFileSystem fs = fsCreator.Create();
@@ -39,8 +39,8 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             // Reopen after committing
             fs = fsCreator.Create();
 
-            var readData1 = new byte[data1.Length];
-            var readData2 = new byte[data2.Length];
+            byte[] readData1 = new byte[data1.Length];
+            byte[] readData2 = new byte[data2.Length];
 
             Assert.Success(fs.OpenFile(out file1, "/dir1/file".ToU8Span(), OpenMode.Read));
 
@@ -101,8 +101,8 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         public void Rollback_AfterChangingExistingFiles_GoesBackToOriginalData()
         {
             // "Random" test data
-            var data1 = new byte[] { 7, 4, 1, 0, 8, 5, 2, 9, 6, 3 };
-            var data2 = new byte[] { 6, 1, 6, 8, 0, 3, 9, 7, 5, 1 };
+            byte[] data1 = { 7, 4, 1, 0, 8, 5, 2, 9, 6, 3 };
+            byte[] data2 = { 6, 1, 6, 8, 0, 3, 9, 7, 5, 1 };
 
             IReopenableFileSystemCreator fsCreator = GetFileSystemCreator();
             IFileSystem fs = fsCreator.Create();
@@ -128,7 +128,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             Assert.Success(fs.Rollback());
 
             // The file should contain the original data after the rollback
-            var readData = new byte[data1.Length];
+            byte[] readData = new byte[data1.Length];
 
             Assert.Success(fs.OpenFile(out file, "/dir/file".ToU8Span(), OpenMode.Read));
 

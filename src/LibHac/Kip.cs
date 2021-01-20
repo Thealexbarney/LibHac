@@ -49,7 +49,7 @@ namespace LibHac
             IStorage compStorage = OpenSection(index);
             compStorage.GetSize(out long compressedSize).ThrowIfFailure();
 
-            var compressed = new byte[compressedSize];
+            byte[] compressed = new byte[compressedSize];
             compStorage.Read(0, compressed).ThrowIfFailure();
 
             return DecompressBlz(compressed);
@@ -63,7 +63,7 @@ namespace LibHac
             int headerSize = BitConverter.ToInt32(compressed, compressed.Length - 8);
             int totalCompSize = BitConverter.ToInt32(compressed, compressed.Length - 12);
 
-            var decompressed = new byte[totalCompSize + additionalSize];
+            byte[] decompressed = new byte[totalCompSize + additionalSize];
 
             int inOffset = totalCompSize - headerSize;
             int outOffset = totalCompSize + additionalSize;

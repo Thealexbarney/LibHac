@@ -58,7 +58,7 @@ namespace LibHac.Tests
         [MemberData(nameof(TestVectors))]
         public static void TestCmacTestVectors(TestData data)
         {
-            var actual = new byte[0x10];
+            byte[] actual = new byte[0x10];
 
             Aes.CalculateCmac(actual, data.Message.AsSpan(data.Start, data.Length), data.Key);
 

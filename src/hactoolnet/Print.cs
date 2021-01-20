@@ -106,7 +106,7 @@ namespace hactoolnet
 
         public static string MagicToString(uint value)
         {
-            var buf = new byte[4];
+            byte[] buf = new byte[4];
             BinaryPrimitives.WriteUInt32LittleEndian(buf, value);
 
             return Encoding.ASCII.GetString(buf);

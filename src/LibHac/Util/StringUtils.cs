@@ -223,7 +223,7 @@ namespace LibHac.Util
             if ((uint)input.Length % 2 != 0)
                 throw new FormatException("Hex input must be a multiple of 2.");
 
-            var result = new byte[input.Length >> 1];
+            byte[] result = new byte[input.Length >> 1];
 
             if (!HexConverter.TryDecodeFromUtf16(input, result))
             {

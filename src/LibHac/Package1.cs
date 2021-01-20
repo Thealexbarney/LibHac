@@ -38,7 +38,7 @@ namespace LibHac
 
             // Try decrypting the PK11 blob with all known package1 keys
             IStorage encStorage = Storage.Slice(0x4000, Pk11Size);
-            var decBuffer = new byte[0x10];
+            byte[] decBuffer = new byte[0x10];
 
             for (int i = 0; i < 0x20; i++)
             {

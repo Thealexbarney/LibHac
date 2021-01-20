@@ -122,7 +122,7 @@ namespace LibHac.FsSystem
 
         public byte[] ReadBytes(long offset, int length, bool updatePosition)
         {
-            var bytes = new byte[length];
+            byte[] bytes = new byte[length];
             _file.Read(out long _, offset, bytes).ThrowIfFailure();
 
             if (updatePosition) Position = offset + length;
@@ -138,7 +138,7 @@ namespace LibHac.FsSystem
 
         public string ReadAscii(long offset, int length, bool updatePosition)
         {
-            var bytes = new byte[length];
+            byte[] bytes = new byte[length];
             _file.Read(out long _, offset, bytes).ThrowIfFailure();
 
             if (updatePosition) Position = offset + length;

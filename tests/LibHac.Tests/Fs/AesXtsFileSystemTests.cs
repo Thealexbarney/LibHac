@@ -11,7 +11,7 @@ namespace LibHac.Tests.Fs
         {
             var baseFs = new InMemoryFileSystem();
 
-            var keys = new byte[0x20];
+            byte[] keys = new byte[0x20];
             var xtsFs = new AesXtsFileSystem(baseFs, keys, 0x4000);
 
             return xtsFs;
