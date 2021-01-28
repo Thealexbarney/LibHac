@@ -8,7 +8,7 @@ namespace hactoolnet
 {
     public class ConsoleAccessLog : IAccessLog
     {
-        public void Log(Result result, TimeSpan startTime, TimeSpan endTime, int handleId, string message, [CallerMemberName] string caller = "")
+        public void Log(Result result, System.TimeSpan startTime, System.TimeSpan endTime, int handleId, string message, [CallerMemberName] string caller = "")
         {
             Console.WriteLine(AccessLogHelpers.BuildDefaultLogLine(result, startTime, endTime, handleId, message, caller));
         }
@@ -22,7 +22,7 @@ namespace hactoolnet
             Logger = logger;
         }
 
-        public void Log(Result result, TimeSpan startTime, TimeSpan endTime, int handleId, string message, [CallerMemberName] string caller = "")
+        public void Log(Result result, System.TimeSpan startTime, System.TimeSpan endTime, int handleId, string message, [CallerMemberName] string caller = "")
         {
             Logger.LogMessage(AccessLogHelpers.BuildDefaultLogLine(result, startTime, endTime, handleId, message, caller));
         }
@@ -37,7 +37,7 @@ namespace hactoolnet
             Logger = logger;
         }
 
-        public void Log(Result result, TimeSpan startTime, TimeSpan endTime, int handleId, string message, [CallerMemberName] string caller = "")
+        public void Log(Result result, System.TimeSpan startTime, System.TimeSpan endTime, int handleId, string message, [CallerMemberName] string caller = "")
         {
             Logger.WriteLine(AccessLogHelpers.BuildDefaultLogLine(result, startTime, endTime, handleId, message, caller));
         }

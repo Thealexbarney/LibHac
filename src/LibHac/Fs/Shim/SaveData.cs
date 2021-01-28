@@ -1,5 +1,4 @@
-﻿using System;
-using LibHac.Common;
+﻿using LibHac.Common;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
@@ -15,9 +14,9 @@ namespace LibHac.Fs.Shim
 
             if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
             {
-                TimeSpan startTime = fs.Time.GetCurrent();
+                System.TimeSpan startTime = fs.Time.GetCurrent();
                 rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, applicationId, userId, SaveDataType.Account, false, 0);
-                TimeSpan endTime = fs.Time.GetCurrent();
+                System.TimeSpan endTime = fs.Time.GetCurrent();
 
                 fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\", applicationid: 0x{applicationId}, userid: 0x{userId}");
             }
@@ -40,9 +39,9 @@ namespace LibHac.Fs.Shim
 
             if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
             {
-                TimeSpan startTime = fs.Time.GetCurrent();
+                System.TimeSpan startTime = fs.Time.GetCurrent();
                 rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, applicationId, userId, SaveDataType.Account, true, 0);
-                TimeSpan endTime = fs.Time.GetCurrent();
+                System.TimeSpan endTime = fs.Time.GetCurrent();
 
                 fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\", applicationid: 0x{applicationId}, userid: 0x{userId}");
             }
@@ -65,9 +64,9 @@ namespace LibHac.Fs.Shim
 
             if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
             {
-                TimeSpan startTime = fs.Time.GetCurrent();
+                System.TimeSpan startTime = fs.Time.GetCurrent();
                 rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.Temporary, default, default, SaveDataType.Temporary, false, 0);
-                TimeSpan endTime = fs.Time.GetCurrent();
+                System.TimeSpan endTime = fs.Time.GetCurrent();
 
                 fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\"");
             }
@@ -90,9 +89,9 @@ namespace LibHac.Fs.Shim
 
             if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
             {
-                TimeSpan startTime = fs.Time.GetCurrent();
+                System.TimeSpan startTime = fs.Time.GetCurrent();
                 rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, default, default, SaveDataType.Cache, false, 0);
-                TimeSpan endTime = fs.Time.GetCurrent();
+                System.TimeSpan endTime = fs.Time.GetCurrent();
 
                 fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\"");
             }
@@ -115,9 +114,9 @@ namespace LibHac.Fs.Shim
 
             if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
             {
-                TimeSpan startTime = fs.Time.GetCurrent();
+                System.TimeSpan startTime = fs.Time.GetCurrent();
                 rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, default, default, SaveDataType.Cache, false, (ushort)index);
-                TimeSpan endTime = fs.Time.GetCurrent();
+                System.TimeSpan endTime = fs.Time.GetCurrent();
 
                 fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\", index: {index}");
             }
@@ -140,9 +139,9 @@ namespace LibHac.Fs.Shim
 
             if (fs.IsEnabledAccessLog(AccessLogTarget.System))
             {
-                TimeSpan startTime = fs.Time.GetCurrent();
+                System.TimeSpan startTime = fs.Time.GetCurrent();
                 rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, applicationId, default, SaveDataType.Cache, false, 0);
-                TimeSpan endTime = fs.Time.GetCurrent();
+                System.TimeSpan endTime = fs.Time.GetCurrent();
 
                 fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\", applicationid: 0x{applicationId}");
             }
@@ -165,9 +164,9 @@ namespace LibHac.Fs.Shim
 
             if (fs.IsEnabledAccessLog(AccessLogTarget.System))
             {
-                TimeSpan startTime = fs.Time.GetCurrent();
+                System.TimeSpan startTime = fs.Time.GetCurrent();
                 rc = MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, applicationId, default, SaveDataType.Cache, false, (ushort)index);
-                TimeSpan endTime = fs.Time.GetCurrent();
+                System.TimeSpan endTime = fs.Time.GetCurrent();
 
                 fs.OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\", applicationid: 0x{applicationId}, index: {index}");
             }

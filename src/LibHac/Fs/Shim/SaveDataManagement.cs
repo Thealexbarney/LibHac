@@ -421,9 +421,9 @@ namespace LibHac.Fs.Shim
 
             if (FsClient.IsEnabledAccessLog(AccessLogTarget.System))
             {
-                TimeSpan startTime = FsClient.Time.GetCurrent();
+                System.TimeSpan startTime = FsClient.Time.GetCurrent();
                 rc = Reader.Target.Read(out readCount, byteBuffer);
-                TimeSpan endTime = FsClient.Time.GetCurrent();
+                System.TimeSpan endTime = FsClient.Time.GetCurrent();
 
                 FsClient.OutputAccessLog(rc, startTime, endTime, $", size: {buffer.Length}");
             }

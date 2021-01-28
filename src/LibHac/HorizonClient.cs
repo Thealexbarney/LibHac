@@ -17,7 +17,7 @@ namespace LibHac
 
         public FileSystemClient Fs { get; }
         public ServiceManagerClient Sm { get; }
-        public OsClient Os { get; }
+        public OsState Os { get; }
         public LrClient Lr { get; }
         public ArpClient Arp => ArpLazy.Value;
 
@@ -30,7 +30,7 @@ namespace LibHac
 
             Fs = new FileSystemClient(this);
             Sm = new ServiceManagerClient(horizon.ServiceManager);
-            Os = new OsClient(this);
+            Os = new OsState(this, horizon.StartTick);
             Lr = new LrClient(this);
 
             ArpLazy = new Lazy<ArpClient>(InitArpClient, true);

@@ -14,7 +14,7 @@ namespace LibHac.FsSystem
 
         public bool TryLock()
         {
-            return _semaphore.Wait(TimeSpan.Zero);
+            return _semaphore.Wait(System.TimeSpan.Zero);
         }
 
         public void Unlock()

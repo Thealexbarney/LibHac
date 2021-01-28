@@ -15,9 +15,9 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = handle.Directory.Read(out entriesRead, entryBuffer);
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, handle, string.Empty);
             }
@@ -33,9 +33,9 @@ namespace LibHac.Fs
         {
             if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 handle.Directory.Dispose();
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(Result.Success, startTime, endTime, handle, string.Empty);
             }

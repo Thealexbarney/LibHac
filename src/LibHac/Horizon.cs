@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Diagnostics;
+using System.Threading;
 using LibHac.Bcat;
 using LibHac.Common;
 using LibHac.Diag;
@@ -14,20 +15,24 @@ namespace LibHac
     public class Horizon
     {
         private const int InitialProcessCountMax = 0x50;
+        internal long StartTick { get; }
         internal ITimeSpanGenerator Time { get; }
         internal ServiceManager ServiceManager { get; }
         private HorizonClient LoaderClient { get; }
 
         // long instead of ulong because the ulong Interlocked.Increment overload
         // wasn't added until .NET 5
-        private long _currentInitialProcessId;
-        private long _currentProcessId;
+        private ulong _currentInitialProcessId;
+        private ulong _currentProcessId;
 
+
+        // Todo: Initialize with a configuration object
         public Horizon(ITimeSpanGenerator timer, FileSystemServerConfig fsServerConfig)
         {
             _currentProcessId = InitialProcessCountMax;
 
             Time = timer ?? new StopWatchTimeSpanGenerator();
+            StartTick = Stopwatch.GetTimestamp();
             ServiceManager = new ServiceManager();
 
             // ReSharper disable ObjectCreationAsStatement
@@ -40,7 +45,7 @@ namespace LibHac
 
         public HorizonClient CreatePrivilegedHorizonClient()
         {
-            ulong processId = (ulong)Interlocked.Increment(ref _currentInitialProcessId);
+            ulong processId = Interlocked.Increment(ref _currentInitialProcessId);
 
             Abort.DoAbortUnless(processId <= InitialProcessCountMax, "Created too many privileged clients.");
 
@@ -51,7 +56,7 @@ namespace LibHac
 
         public HorizonClient CreateHorizonClient()
         {
-            ulong processId = (ulong)Interlocked.Increment(ref _currentProcessId);
+            ulong processId = Interlocked.Increment(ref _currentProcessId);
 
             // Todo: Register process with FS
 

@@ -17,6 +17,18 @@ namespace LibHac.Fs.Impl
         {
             BaseStorage = baseStorage.AddReference();
         }
+
+        protected StorageServiceObjectAdapter(ref ReferenceCountedDisposable<IStorageSf> baseStorage)
+        {
+            BaseStorage = Shared.Move(ref baseStorage);
+        }
+
+        public static ReferenceCountedDisposable<IStorage> CreateShared(
+            ref ReferenceCountedDisposable<IStorageSf> baseStorage)
+        {
+            return new ReferenceCountedDisposable<IStorage>(new StorageServiceObjectAdapter(ref baseStorage));
+        }
+
         protected override Result DoRead(long offset, Span<byte> destination)
         {
             return BaseStorage.Target.Read(offset, destination);

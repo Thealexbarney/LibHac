@@ -156,11 +156,11 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog() && IsEnabledFileSystemAccessorAccessLog(mountName))
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
 
                 rc = MountTable.Unmount(mountNameStr);
 
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
                 OutputAccessLog(rc, startTime, endTime, $", name: \"{mountNameStr}\"");
             }
             else

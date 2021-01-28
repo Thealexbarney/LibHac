@@ -205,9 +205,9 @@ namespace LibHac.Fs.Shim
                     logMessage = $", name: \"{mountName.ToString()}\"";
                 }
 
-                TimeSpan startTime = fs.Time.GetCurrent();
+                System.TimeSpan startTime = fs.Time.GetCurrent();
                 rc = PreMountHost(out nameGenerator, mountName, path);
-                TimeSpan endTime = fs.Time.GetCurrent();
+                System.TimeSpan endTime = fs.Time.GetCurrent();
 
                 fs.OutputAccessLogUnlessResultSuccess(rc, startTime, endTime, logMessage, caller);
             }
@@ -222,9 +222,9 @@ namespace LibHac.Fs.Shim
 
             if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
             {
-                TimeSpan startTime = fs.Time.GetCurrent();
+                System.TimeSpan startTime = fs.Time.GetCurrent();
                 rc = OpenHostFileSystem(fs, out hostFileSystem, mountName, path, option);
-                TimeSpan endTime = fs.Time.GetCurrent();
+                System.TimeSpan endTime = fs.Time.GetCurrent();
 
                 fs.OutputAccessLogUnlessResultSuccess(rc, startTime, endTime, logMessage, caller);
             }
@@ -237,9 +237,9 @@ namespace LibHac.Fs.Shim
 
             if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
             {
-                TimeSpan startTime = fs.Time.GetCurrent();
+                System.TimeSpan startTime = fs.Time.GetCurrent();
                 rc = fs.Register(mountName, hostFileSystem, nameGenerator);
-                TimeSpan endTime = fs.Time.GetCurrent();
+                System.TimeSpan endTime = fs.Time.GetCurrent();
 
                 fs.OutputAccessLog(rc, startTime, endTime, logMessage, caller);
             }

@@ -59,9 +59,9 @@ namespace LibHac.Fs.Shim
 
             if (fs.IsEnabledAccessLog(AccessLogTarget.System))
             {
-                TimeSpan startTime = fs.Time.GetCurrent();
+                System.TimeSpan startTime = fs.Time.GetCurrent();
                 rc = MountBisImpl(fs, mountName, partitionId, rootPath);
-                TimeSpan endTime = fs.Time.GetCurrent();
+                System.TimeSpan endTime = fs.Time.GetCurrent();
 
                 string logMessage = $", name: \"{mountName.ToString()}\", bispartitionid: {partitionId}, path: \"{rootPath.ToString()}\"";
 

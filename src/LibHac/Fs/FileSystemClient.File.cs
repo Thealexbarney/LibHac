@@ -30,9 +30,9 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = handle.File.Read(out bytesRead, offset, destination, in option);
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, handle, $", offset: {offset}, size: {destination.Length}");
             }
@@ -55,9 +55,9 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog() && IsEnabledHandleAccessLog(handle))
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = handle.File.Write(offset, source, in option);
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 string optionString = option.HasFlushFlag() ? "" : $", write_option: {option}";
 

@@ -24,6 +24,11 @@ namespace LibHac.FsSrv
         public bool IsDebugMode { get; }
         private ITimeSpanGenerator Timer { get; }
 
+        // Functions in the nn::fssrv::detail namespace use this field.
+        // Possibly move this to the main class if the separation doesn't seem necessary.
+        internal FileSystemServerImpl Impl;
+        internal ref FileSystemServerGlobals Globals => ref Impl.Globals;
+
         /// <summary>
         /// Creates a new <see cref="FileSystemServer"/> and registers its services using the provided HOS client.
         /// </summary>
@@ -36,6 +41,10 @@ namespace LibHac.FsSrv
 
             if (config.DeviceOperator == null)
                 throw new ArgumentException("DeviceOperator must not be null");
+
+            Impl = new FileSystemServerImpl();
+            Impl.Globals.Hos = horizonClient;
+            Impl.Globals.InitMutex = new object();
 
             Hos = horizonClient;
 
@@ -257,5 +266,19 @@ namespace LibHac.FsSrv
         /// If null, a new <see cref="StopWatchTimeSpanGenerator"/> will be created.
         /// </summary>
         public ITimeSpanGenerator TimeSpanGenerator { get; set; }
+    }
+
+    // Functions in the nn::fssrv::detail namespace use this struct.
+    // Possibly move this to the main class if the separation doesn't seem necessary.
+    internal struct FileSystemServerImpl
+    {
+        public FileSystemServerGlobals Globals;
+    }
+
+    internal struct FileSystemServerGlobals
+    {
+        public HorizonClient Hos;
+        public object InitMutex;
+        public DeviceEventSimulatorGlobals DeviceEventSimulator;
     }
 }
