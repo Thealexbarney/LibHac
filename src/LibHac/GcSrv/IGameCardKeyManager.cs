@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LibHac.FsSrv.Storage
+namespace LibHac.GcSrv
 {
     public interface IGameCardKeyManager
     {

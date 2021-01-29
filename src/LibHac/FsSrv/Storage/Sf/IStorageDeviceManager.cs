@@ -1,6 +1,6 @@
 ﻿using System;
 using LibHac.FsSrv.Sf;
-using IStorage = LibHac.Fs.IStorage;
+using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.FsSrv.Storage.Sf
 {
@@ -11,7 +11,7 @@ namespace LibHac.FsSrv.Storage.Sf
         Result OpenDetectionEvent(out ReferenceCountedDisposable<IEventNotifier> eventNotifier);
         Result OpenOperator(out ReferenceCountedDisposable<IStorageDeviceOperator> deviceOperator);
         Result OpenDevice(out ReferenceCountedDisposable<IStorageDevice> storageDevice, ulong attribute);
-        Result OpenStorage(out ReferenceCountedDisposable<IStorage> storage, ulong attribute);
+        Result OpenStorage(out ReferenceCountedDisposable<IStorageSf> storage, ulong attribute);
         Result PutToSleep();
         Result Awaken();
         Result Initialize();

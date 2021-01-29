@@ -503,6 +503,7 @@ namespace LibHac.FsSrv.Impl
     {
         private readonly byte _value;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Accessibility(bool canRead, bool canWrite)
         {
             int readValue = canRead ? 1 : 0;

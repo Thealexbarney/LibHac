@@ -1,6 +1,6 @@
 ﻿using LibHac.Fs;
 
-namespace LibHac.FsSrv.Storage
+namespace LibHac.SdmmcSrv
 {
     internal interface ISdmmcDeviceManager
     {
