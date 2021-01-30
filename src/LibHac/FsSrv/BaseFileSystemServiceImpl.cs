@@ -35,7 +35,8 @@ namespace LibHac.FsSrv
             public ProgramRegistryImpl ProgramRegistry;
         }
 
-        public Result OpenBaseFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, int fileSystemId)
+        public Result OpenBaseFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+            BaseFileSystemId fileSystemId)
         {
             throw new NotImplementedException();
         }

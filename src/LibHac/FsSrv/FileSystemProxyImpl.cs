@@ -443,7 +443,7 @@ namespace LibHac.FsSrv
         public Result OpenBaseFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             BaseFileSystemId fileSystemId)
         {
-            throw new NotImplementedException();
+            return GetBaseFileSystemService().OpenBaseFileSystem(out fileSystem, fileSystemId);
         }
 
         public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath rootPath,
@@ -697,31 +697,56 @@ namespace LibHac.FsSrv
 
         public Result OpenSaveDataTransferManager(out ReferenceCountedDisposable<ISaveDataTransferManager> manager)
         {
-            throw new NotImplementedException();
+            manager = default;
+
+            Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
+            if (rc.IsFailure()) return rc;
+
+            return saveFsService.OpenSaveDataTransferManager(out manager);
         }
 
         public Result OpenSaveDataTransferManagerVersion2(
             out ReferenceCountedDisposable<ISaveDataTransferManagerWithDivision> manager)
         {
-            throw new NotImplementedException();
+            manager = default;
+
+            Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
+            if (rc.IsFailure()) return rc;
+
+            return saveFsService.OpenSaveDataTransferManagerVersion2(out manager);
         }
 
         public Result OpenSaveDataTransferManagerForSaveDataRepair(
             out ReferenceCountedDisposable<ISaveDataTransferManagerForSaveDataRepair> manager)
         {
-            throw new NotImplementedException();
+            manager = default;
+
+            Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
+            if (rc.IsFailure()) return rc;
+
+            return saveFsService.OpenSaveDataTransferManagerForSaveDataRepair(out manager);
         }
 
         public Result OpenSaveDataTransferManagerForRepair(
             out ReferenceCountedDisposable<ISaveDataTransferManagerForRepair> manager)
         {
-            throw new NotImplementedException();
+            manager = default;
+
+            Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
+            if (rc.IsFailure()) return rc;
+
+            return saveFsService.OpenSaveDataTransferManagerForRepair(out manager);
         }
 
         public Result OpenSaveDataTransferProhibiter(
             out ReferenceCountedDisposable<ISaveDataTransferProhibiter> prohibiter, Ncm.ApplicationId applicationId)
         {
-            throw new NotImplementedException();
+            prohibiter = default;
+
+            Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
+            if (rc.IsFailure()) return rc;
+
+            return saveFsService.OpenSaveDataTransferProhibiter(out prohibiter, applicationId);
         }
 
         public Result ListAccessibleSaveDataOwnerId(out int readCount, OutBuffer idBuffer, ProgramId programId,
@@ -787,7 +812,35 @@ namespace LibHac.FsSrv
         public Result OpenCloudBackupWorkStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             CloudBackupWorkStorageId storageId)
         {
-            throw new NotImplementedException();
+            fileSystem = default;
+            var storageFlag = StorageType.NonGameCard;
+            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
+
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            Accessibility accessibility =
+                programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountCloudBackupWorkStorage);
+
+            if (!accessibility.CanRead || !accessibility.CanWrite)
+                return ResultFs.PermissionDenied.Log();
+
+            ReferenceCountedDisposable<IFileSystem> tempFs = null;
+            try
+            {
+                rc = FsProxyCore.OpenCloudBackupWorkStorageFileSystem(out tempFs, storageId);
+                if (rc.IsFailure()) return rc;
+
+                tempFs = StorageLayoutTypeSetFileSystem.CreateShared(ref tempFs, storageFlag);
+                tempFs = AsynchronousAccessFileSystem.CreateShared(ref tempFs);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFs);
+
+                return Result.Success;
+            }
+            finally
+            {
+                tempFs?.Dispose();
+            }
         }
 
         public Result OpenCustomStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, CustomStorageId storageId)
@@ -933,7 +986,7 @@ namespace LibHac.FsSrv
 
         public Result SetBisRootForHost(BisPartitionId partitionId, in FspPath path)
         {
-            throw new NotImplementedException();
+            return GetBaseFileSystemService().SetBisRootForHost(partitionId, in path);
         }
 
         public Result VerifySaveDataFileSystemBySaveDataSpaceId(SaveDataSpaceId spaceId, ulong saveDataId,
@@ -1015,12 +1068,12 @@ namespace LibHac.FsSrv
 
         public Result OutputApplicationInfoAccessLog(in ApplicationInfo applicationInfo)
         {
-            throw new NotImplementedException();
+            return GetAccessLogService().OutputApplicationInfoAccessLog(in applicationInfo);
         }
 
         public Result FlushAccessLogOnSdCard()
         {
-            throw new NotImplementedException();
+            return GetAccessLogService().FlushAccessLogOnSdCard();
         }
 
         public Result RegisterUpdatePartition()
@@ -1055,7 +1108,10 @@ namespace LibHac.FsSrv
 
         public Result OverrideSaveDataTransferTokenSignVerificationKey(InBuffer key)
         {
-            throw new NotImplementedException();
+            Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
+            if (rc.IsFailure()) return rc;
+
+            return saveFsService.OverrideSaveDataTransferTokenSignVerificationKey(key);
         }
 
         public Result SetSdCardAccessibility(bool isAccessible)

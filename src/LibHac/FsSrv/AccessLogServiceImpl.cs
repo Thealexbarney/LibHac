@@ -48,6 +48,16 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
+        public Result FlushAccessLogSdCardWriter()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result FinalizeAccessLogSdCardWriter()
+        {
+            throw new NotImplementedException();
+        }
+
         internal Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
         {
             return _config.ProgramRegistry.GetProgramInfo(out programInfo, processId);

@@ -1573,6 +1573,35 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
+        public Result OpenSaveDataTransferManager(out ReferenceCountedDisposable<ISaveDataTransferManager> manager)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result OpenSaveDataTransferManagerVersion2(
+            out ReferenceCountedDisposable<ISaveDataTransferManagerWithDivision> manager)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result OpenSaveDataTransferManagerForSaveDataRepair(
+            out ReferenceCountedDisposable<ISaveDataTransferManagerForSaveDataRepair> manager)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result OpenSaveDataTransferManagerForRepair(
+            out ReferenceCountedDisposable<ISaveDataTransferManagerForRepair> manager)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result OpenSaveDataTransferProhibiter(
+            out ReferenceCountedDisposable<ISaveDataTransferProhibiter> prohibiter, Ncm.ApplicationId applicationId)
+        {
+            throw new NotImplementedException();
+        }
+
         public Result OpenSaveDataMover(out ReferenceCountedDisposable<ISaveDataMover> saveMover,
             SaveDataSpaceId sourceSpaceId, SaveDataSpaceId destinationSpaceId, NativeHandle workBufferHandle,
             ulong workBufferSize)
@@ -1812,6 +1841,11 @@ namespace LibHac.FsSrv
                 saveService?.Dispose();
                 uniqueLock?.Dispose();
             }
+        }
+
+        public Result OverrideSaveDataTransferTokenSignVerificationKey(InBuffer key)
+        {
+            throw new NotImplementedException();
         }
 
         public Result SetSdCardAccessibility(bool isAccessible)

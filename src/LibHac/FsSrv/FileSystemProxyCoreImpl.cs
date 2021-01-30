@@ -23,6 +23,12 @@ namespace LibHac.FsSrv
             ProgramRegistry = new ProgramRegistryImpl(Config.ProgramRegistryService);
         }
 
+        public Result OpenCloudBackupWorkStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+            CloudBackupWorkStorageId storageId)
+        {
+            throw new NotImplementedException();
+        }
+
         public Result OpenCustomStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
             CustomStorageId storageId)
         {

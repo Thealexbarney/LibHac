@@ -396,7 +396,7 @@ namespace LibHac.FsSrv.Impl
                     return new Accessibility(accessBits.CanMountContentStorageRead(), accessBits.CanMountContentStorageWrite());
                 case AccessibilityType.MountImageAndVideoStorage:
                     return new Accessibility(accessBits.CanMountImageAndVideoStorageRead(), accessBits.CanMountImageAndVideoStorageWrite());
-                case AccessibilityType.MountCloudBackupWorkStorageRead:
+                case AccessibilityType.MountCloudBackupWorkStorage:
                     return new Accessibility(accessBits.CanMountCloudBackupWorkStorageRead(), accessBits.CanMountCloudBackupWorkStorageWrite());
                 case AccessibilityType.MountCustomStorage:
                     return new Accessibility(accessBits.CanMountCustomStorage0Read(), accessBits.CanMountCustomStorage0Write());
@@ -468,6 +468,10 @@ namespace LibHac.FsSrv.Impl
                     return new Accessibility(accessBits.CanMountRegisteredUpdatePartitionRead() && FsServer.IsDebugMode, false);
                 case AccessibilityType.MountSaveDataInternalStorage:
                     return new Accessibility(accessBits.CanOpenSaveDataInternalStorageRead(), accessBits.CanOpenSaveDataInternalStorageWrite());
+                case AccessibilityType.MountTemporaryDirectory:
+                    return new Accessibility(accessBits.CanMountTemporaryDirectoryRead(), accessBits.CanMountTemporaryDirectoryWrite());
+                case AccessibilityType.MountAllBaseFileSystem:
+                    return new Accessibility(accessBits.CanMountAllBaseFileSystemRead(), accessBits.CanMountAllBaseFileSystemWrite());
                 case AccessibilityType.NotMount:
                     return new Accessibility(false, false);
                 default:
@@ -611,6 +615,8 @@ namespace LibHac.FsSrv.Impl
         public bool CanInvalidateBisCache() => Has(Bits.BisAllRaw);
         public bool CanIsAccessFailureDetected() => Has(Bits.AccessFailureResolution);
         public bool CanListAccessibleSaveDataOwnerId() => Has(Bits.SaveDataTransferVersion2 | Bits.SaveDataTransfer | Bits.CreateSaveData);
+        public bool CanMountAllBaseFileSystemRead() => Has(Bits.None);
+        public bool CanMountAllBaseFileSystemWrite() => Has(Bits.None);
         public bool CanMountApplicationPackageRead() => Has(Bits.ContentManager | Bits.ApplicationInfo);
         public bool CanMountBisCalibrationFileRead() => Has(Bits.BisAllRaw | Bits.Calibration);
         public bool CanMountBisCalibrationFileWrite() => Has(Bits.BisAllRaw | Bits.Calibration);
@@ -654,6 +660,8 @@ namespace LibHac.FsSrv.Impl
         public bool CanMountSystemDataPrivateRead() => Has(Bits.SystemData | Bits.SystemSaveData);
         public bool CanMountSystemSaveDataRead() => Has(Bits.SaveDataBackUp | Bits.SystemSaveData);
         public bool CanMountSystemSaveDataWrite() => Has(Bits.SaveDataBackUp | Bits.SystemSaveData);
+        public bool CanMountTemporaryDirectoryRead() => Has(Bits.Debug);
+        public bool CanMountTemporaryDirectoryWrite() => Has(Bits.Debug);
         public bool CanNotifySystemDataUpdateEvent() => Has(Bits.SystemUpdate);
         public bool CanOpenAccessFailureDetectionEventNotifier() => Has(Bits.AccessFailureResolution);
         public bool CanOpenBisPartitionBootConfigAndPackage2Part1Read() => Has(Bits.SystemUpdate | Bits.BisAllRaw);
@@ -850,7 +858,7 @@ namespace LibHac.FsSrv.Impl
         MountSaveDataStorage,
         MountContentStorage,
         MountImageAndVideoStorage,
-        MountCloudBackupWorkStorageRead,
+        MountCloudBackupWorkStorage,
         MountCustomStorage,
         MountBisCalibrationFile,
         MountBisSafeMode,
@@ -886,6 +894,8 @@ namespace LibHac.FsSrv.Impl
         MountHost,
         MountRegisteredUpdatePartition,
         MountSaveDataInternalStorage,
+        MountTemporaryDirectory,
+        MountAllBaseFileSystem,
         NotMount
     }
 }
