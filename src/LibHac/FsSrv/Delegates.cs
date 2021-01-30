@@ -9,4 +9,6 @@ namespace LibHac.FsSrv
 
     public delegate Result SaveTransferCmacGenerator(Span<byte> mac, ReadOnlySpan<byte> data,
         SaveDataTransferCryptoConfiguration.KeyIndex index, int keyGeneration);
+
+    public delegate Result PatrolAllocateCountGetter(out long successCount, out long failureCount);
 }

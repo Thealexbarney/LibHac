@@ -1,10 +1,12 @@
 ﻿using System;
+using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Impl;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Creators;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
+using LibHac.FsSrv.Storage;
 using LibHac.Sm;
 
 namespace LibHac.FsSrv
@@ -17,6 +19,7 @@ namespace LibHac.FsSrv
         private const ulong SpeedEmulationProgramIdMaximum = 0x100000000001FFF;
 
         private FileSystemProxyCoreImpl FsProxyCore { get; }
+        public StorageService Storage { get; }
 
         /// <summary>The client instance to be used for internal operations like save indexer access.</summary>
         public HorizonClient Hos { get; }
@@ -47,6 +50,8 @@ namespace LibHac.FsSrv
             Impl.Globals.InitMutex = new object();
 
             Hos = horizonClient;
+
+            Storage = new StorageService(this);
 
             IsDebugMode = false;
 
@@ -155,6 +160,19 @@ namespace LibHac.FsSrv
 
             var saveFsService = new SaveDataFileSystemServiceImpl(in saveFsServiceConfig);
 
+            var statusReportServiceConfig = new StatusReportServiceImpl.Configuration();
+            statusReportServiceConfig.NcaFsServiceImpl = ncaFsService;
+            statusReportServiceConfig.SaveFsServiceImpl = saveFsService;
+            statusReportServiceConfig.BufferManagerMemoryReport = null;
+            statusReportServiceConfig.ExpHeapMemoryReport = null;
+            statusReportServiceConfig.BufferPoolMemoryReport = null;
+            statusReportServiceConfig.GetPatrolAllocateCounts = null;
+            statusReportServiceConfig.MainThreadStackUsageReporter = new DummyStackUsageReporter();
+            statusReportServiceConfig.IpcWorkerThreadStackUsageReporter = new DummyStackUsageReporter();
+            statusReportServiceConfig.PipeLineWorkerThreadStackUsageReporter = new DummyStackUsageReporter();
+
+            var statusReportService = new StatusReportServiceImpl(in statusReportServiceConfig);
+
             var accessLogServiceConfig = new AccessLogServiceImpl.Configuration();
             accessLogServiceConfig.MinimumProgramIdForSdCardLog = 0x0100000000003000;
             accessLogServiceConfig.HorizonClient = Hos;
@@ -169,6 +187,7 @@ namespace LibHac.FsSrv
                 NcaFileSystemService = ncaFsService,
                 SaveDataFileSystemService = saveFsService,
                 TimeService = timeService,
+                StatusReportService = statusReportService,
                 ProgramRegistryService = programRegistryService,
                 AccessLogService = accessLogService
             };
@@ -238,6 +257,11 @@ namespace LibHac.FsSrv
                 return Result.Success;
             }
         }
+
+        private class DummyStackUsageReporter : IStackUsageReporter
+        {
+            public uint GetStackUsage() => 0;
+        }
     }
 
     /// <summary>
@@ -266,6 +290,31 @@ namespace LibHac.FsSrv
         /// If null, a new <see cref="StopWatchTimeSpanGenerator"/> will be created.
         /// </summary>
         public ITimeSpanGenerator TimeSpanGenerator { get; set; }
+    }
+
+    public class StorageService
+    {
+        internal FileSystemServer Fs;
+        private IStorageDeviceManagerFactory _factory;
+
+        internal StorageService(FileSystemServer parentServer)
+        {
+            Fs = parentServer;
+        }
+
+        public void SetStorageDeviceManagerFactory(IStorageDeviceManagerFactory factory)
+        {
+            Assert.NotNull(factory);
+            Assert.Null(_factory);
+
+            _factory = factory;
+        }
+
+        public IStorageDeviceManagerFactory GetStorageDeviceManagerFactory()
+        {
+            Assert.NotNull(_factory);
+            return _factory;
+        }
     }
 
     // Functions in the nn::fssrv::detail namespace use this struct.

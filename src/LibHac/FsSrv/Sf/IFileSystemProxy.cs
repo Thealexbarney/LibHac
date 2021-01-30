@@ -114,7 +114,7 @@ namespace LibHac.FsSrv.Sf
         Result OutputAccessLogToSdCard(InBuffer textBuffer);
         Result RegisterUpdatePartition();
         Result OpenRegisteredUpdatePartition(out ReferenceCountedDisposable<IFileSystemSf> fileSystem);
-        Result GetAndClearMemoryReportInfo(out MemoryReportInfo report);
+        Result GetAndClearMemoryReportInfo(out MemoryReportInfo reportInfo);
         Result GetProgramIndexForAccessLog(out int programIndex, out int programCount);
         Result GetFsStackUsage(out uint stackUsage, FsStackUsageThreadType threadType);
         Result UnsetSaveDataRootPath();

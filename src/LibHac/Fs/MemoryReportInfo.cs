@@ -5,17 +5,16 @@ namespace LibHac.Fs
     [StructLayout(LayoutKind.Sequential, Size = 0x80)]
     public struct MemoryReportInfo
     {
-        long PooledBufferFreeSizePeak;
-        long PooledBufferRetriedCount;
-        long PooledBufferReduceAllocationCount;
-        long BufferManagerFreeSizePeak;
-        long BufferManagerRetiredCount;
-        long ExpHeapFreeSizePeak;
-        long BufferPoolFreeSizePeak;
-        long PatrolAllocateSuccessCount;
-        long PatrolAllocateFailureCount;
-        long BufferManagerTotalAllocatableSizePeak;
-        long BufferPoolAllocateSizeMax;
-    };
-
+        public long PooledBufferFreeSizePeak;
+        public long PooledBufferRetriedCount;
+        public long PooledBufferReduceAllocationCount;
+        public long BufferManagerFreeSizePeak;
+        public long BufferManagerRetriedCount;
+        public long ExpHeapFreeSizePeak;
+        public long BufferPoolFreeSizePeak;
+        public long PatrolAllocateSuccessCount;
+        public long PatrolAllocateFailureCount;
+        public long BufferManagerTotalAllocatableSizePeak;
+        public long BufferPoolAllocateSizeMax;
+    }
 }

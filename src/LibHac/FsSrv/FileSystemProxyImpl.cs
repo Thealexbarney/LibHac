@@ -28,6 +28,65 @@ namespace LibHac.FsSrv
             CurrentProcess = ulong.MaxValue;
         }
 
+        private Result GetProgramInfo(out ProgramInfo programInfo)
+        {
+            return FsProxyCore.ProgramRegistry.GetProgramInfo(out programInfo, CurrentProcess);
+        }
+
+        private Result GetNcaFileSystemService(out NcaFileSystemService ncaFsService)
+        {
+            if (NcaFsService is null)
+            {
+                ncaFsService = null;
+                return ResultFs.PreconditionViolation.Log();
+            }
+
+            ncaFsService = NcaFsService.Target;
+            return Result.Success;
+        }
+
+        private Result GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService)
+        {
+            if (SaveFsService is null)
+            {
+                saveFsService = null;
+                return ResultFs.PreconditionViolation.Log();
+            }
+
+            saveFsService = SaveFsService.Target;
+            return Result.Success;
+        }
+
+        private BaseStorageService GetBaseStorageService()
+        {
+            return new BaseStorageService(FsProxyCore.Config.BaseStorageService, CurrentProcess);
+        }
+
+        private BaseFileSystemService GetBaseFileSystemService()
+        {
+            return new BaseFileSystemService(FsProxyCore.Config.BaseFileSystemService, CurrentProcess);
+        }
+
+        private TimeService GetTimeService()
+        {
+            return new TimeService(FsProxyCore.Config.TimeService, CurrentProcess);
+        }
+
+        private StatusReportService GetStatusReportService()
+        {
+            return new StatusReportService(FsProxyCore.Config.StatusReportService);
+        }
+
+        private ProgramIndexRegistryService GetProgramIndexRegistryService()
+        {
+            return new ProgramIndexRegistryService(FsProxyCore.Config.ProgramRegistryService, CurrentProcess);
+        }
+
+        private AccessLogService GetAccessLogService()
+        {
+            return new AccessLogService(FsProxyCore.Config.AccessLogService, CurrentProcess);
+        }
+
         public Result OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath path,
             ulong id, FileSystemProxyType fsType)
         {
@@ -863,7 +922,7 @@ namespace LibHac.FsSrv
 
         public Result GetAndClearErrorInfo(out FileSystemProxyErrorInfo errorInfo)
         {
-            throw new NotImplementedException();
+            return GetStatusReportService().GetAndClearFileSystemProxyErrorInfo(out errorInfo);
         }
 
         public Result RegisterProgramIndexMapInfo(InBuffer programIndexMapInfoBuffer, int programCount)
@@ -984,14 +1043,14 @@ namespace LibHac.FsSrv
             return ncaFsService.OpenRegisteredUpdatePartition(out fileSystem);
         }
 
-        public Result GetAndClearMemoryReportInfo(out MemoryReportInfo report)
+        public Result GetAndClearMemoryReportInfo(out MemoryReportInfo reportInfo)
         {
-            throw new NotImplementedException();
+            return GetStatusReportService().GetAndClearMemoryReportInfo(out reportInfo);
         }
 
         public Result GetFsStackUsage(out uint stackUsage, FsStackUsageThreadType threadType)
         {
-            throw new NotImplementedException();
+            return GetStatusReportService().GetFsStackUsage(out stackUsage, threadType);
         }
 
         public Result OverrideSaveDataTransferTokenSignVerificationKey(InBuffer key)
@@ -1057,60 +1116,6 @@ namespace LibHac.FsSrv
             ulong transferMemorySize)
         {
             return GetBaseFileSystemService().OpenBisWiper(out bisWiper, transferMemoryHandle, transferMemorySize);
-        }
-
-        private Result GetProgramInfo(out ProgramInfo programInfo)
-        {
-            return FsProxyCore.ProgramRegistry.GetProgramInfo(out programInfo, CurrentProcess);
-        }
-
-        private Result GetNcaFileSystemService(out NcaFileSystemService ncaFsService)
-        {
-            if (NcaFsService is null)
-            {
-                ncaFsService = null;
-                return ResultFs.PreconditionViolation.Log();
-            }
-
-            ncaFsService = NcaFsService.Target;
-            return Result.Success;
-        }
-
-        private Result GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService)
-        {
-            if (SaveFsService is null)
-            {
-                saveFsService = null;
-                return ResultFs.PreconditionViolation.Log();
-            }
-
-            saveFsService = SaveFsService.Target;
-            return Result.Success;
-        }
-
-        private BaseStorageService GetBaseStorageService()
-        {
-            return new BaseStorageService(FsProxyCore.Config.BaseStorageService, CurrentProcess);
-        }
-
-        private BaseFileSystemService GetBaseFileSystemService()
-        {
-            return new BaseFileSystemService(FsProxyCore.Config.BaseFileSystemService, CurrentProcess);
-        }
-
-        private TimeService GetTimeService()
-        {
-            return new TimeService(FsProxyCore.Config.TimeService, CurrentProcess);
-        }
-
-        private ProgramIndexRegistryService GetProgramIndexRegistryService()
-        {
-            return new ProgramIndexRegistryService(FsProxyCore.Config.ProgramRegistryService, CurrentProcess);
-        }
-
-        private AccessLogService GetAccessLogService()
-        {
-            return new AccessLogService(FsProxyCore.Config.AccessLogService, CurrentProcess);
         }
     }
 }
