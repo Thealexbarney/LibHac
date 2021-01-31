@@ -128,6 +128,8 @@ namespace LibHac.FsSrv
             baseFsServiceConfig.ProgramRegistry = programRegistry;
             var baseFsService = new BaseFileSystemServiceImpl(in baseFsServiceConfig);
 
+            var accessFailureManagementService = new AccessFailureManagementServiceImpl(programRegistry, Hos);
+
             var ncaFsServiceConfig = new NcaFileSystemServiceImpl.Configuration();
             ncaFsServiceConfig.BaseFsService = baseFsService;
             ncaFsServiceConfig.HostFsCreator = config.FsCreators.HostFileSystemCreator;
@@ -186,6 +188,7 @@ namespace LibHac.FsSrv
                 BaseFileSystemService = baseFsService,
                 NcaFileSystemService = ncaFsService,
                 SaveDataFileSystemService = saveFsService,
+                AccessFailureManagementService = accessFailureManagementService,
                 TimeService = timeService,
                 StatusReportService = statusReportService,
                 ProgramRegistryService = programRegistryService,

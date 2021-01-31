@@ -1,21 +1,31 @@
-﻿namespace LibHac.Sf
+﻿using System;
+using LibHac.Os;
+using LibHac.Svc;
+
+namespace LibHac.Sf
 {
-    // How should this be handled? Using a C# struct would be more accurate, but C#
-    // doesn't have copy constructors or any way to prevent a struct from being copied.
-    public class NativeHandle
+    public class NativeHandle : IDisposable
     {
-        public uint Handle { get; private set; }
+        private OsState Os { get; }
+        public Handle Handle { get; private set; }
         public bool IsManaged { get; private set; }
 
-        public NativeHandle(uint handle)
+        public NativeHandle(OsState os, Handle handle)
         {
+            Os = os;
             Handle = handle;
         }
 
-        public NativeHandle(uint handle, bool isManaged)
+        public NativeHandle(OsState os, Handle handle, bool isManaged)
         {
             Handle = handle;
             IsManaged = isManaged;
+        }
+
+        public void Dispose()
+        {
+            if (IsManaged)
+                Os.CloseNativeHandle(Handle.Object);
         }
     }
 }
