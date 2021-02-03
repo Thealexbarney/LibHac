@@ -14,27 +14,27 @@ namespace LibHac.FsSrv.Impl
 
     internal static class DeviceEventSimulatorGlobalMethods
     {
-        public static SdCardEventSimulator GetSdCardEventSimulator(this ref FileSystemServerImpl fs)
+        public static SdCardEventSimulator GetSdCardEventSimulator(this FileSystemServerImpl fs)
         {
-            ref DeviceEventSimulatorGlobals g = ref fs.Globals.DeviceEventSimulator;
-            using var guard = new InitializationGuard(ref g.SdCardEventSimulatorInit, fs.Globals.InitMutex);
+            ref DeviceEventSimulatorGlobals g = ref fs.FsSrv.Globals.DeviceEventSimulator;
+            using var guard = new InitializationGuard(ref g.SdCardEventSimulatorInit, fs.FsSrv.Globals.InitMutex);
 
             if (guard.IsInitialized)
                 return g.SdCardEventSimulator;
 
-            g.SdCardEventSimulator = new SdCardEventSimulator(fs.Globals.Hos.Os);
+            g.SdCardEventSimulator = new SdCardEventSimulator(fs.FsSrv.Globals.Hos.Os);
             return g.SdCardEventSimulator;
         }
 
-        public static GameCardEventSimulator GetGameCardEventSimulator(this ref FileSystemServerImpl fs)
+        public static GameCardEventSimulator GetGameCardEventSimulator(this FileSystemServerImpl fs)
         {
-            ref DeviceEventSimulatorGlobals g = ref fs.Globals.DeviceEventSimulator;
-            using var guard = new InitializationGuard(ref g.GameCardEventSimulatorInit, fs.Globals.InitMutex);
+            ref DeviceEventSimulatorGlobals g = ref fs.FsSrv.Globals.DeviceEventSimulator;
+            using var guard = new InitializationGuard(ref g.GameCardEventSimulatorInit, fs.FsSrv.Globals.InitMutex);
 
             if (guard.IsInitialized)
                 return g.GameCardEventSimulator;
 
-            g.GameCardEventSimulator = new GameCardEventSimulator(fs.Globals.Hos.Os);
+            g.GameCardEventSimulator = new GameCardEventSimulator(fs.FsSrv.Globals.Hos.Os);
             return g.GameCardEventSimulator;
         }
     }

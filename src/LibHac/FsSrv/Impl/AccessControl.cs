@@ -9,6 +9,19 @@ using LibHac.Util;
 
 namespace LibHac.FsSrv.Impl
 {
+    public static class AccessControlGlobalMethods
+    {
+        public static void SetDebugFlagEnabled(this FileSystemServerImpl fsSrv, bool isEnabled)
+        {
+            fsSrv.FsSrv.Globals.AccessControl.DebugFlag = isEnabled;
+        }
+    }
+
+    internal struct AccessControlGlobals
+    {
+        public bool DebugFlag;
+    }
+
     /// <summary>
     /// Controls access to FS resources for a single process.
     /// </summary>
@@ -17,15 +30,16 @@ namespace LibHac.FsSrv.Impl
     /// <br/>Based on FS 10.0.0 (nnSdk 10.4.0)</remarks>
     public class AccessControl
     {
-        private AccessControlBits? AccessBits { get; }
+        private FileSystemServer FsServer { get; }
+        private ref AccessControlGlobals Globals => ref FsServer.Globals.AccessControl;
+
+        private Optional<AccessControlBits> AccessBits { get; }
         private LinkedList<ContentOwnerInfo> ContentOwners { get; } = new LinkedList<ContentOwnerInfo>();
         private LinkedList<SaveDataOwnerInfo> SaveDataOwners { get; } = new LinkedList<SaveDataOwnerInfo>();
 
-        private FileSystemServer FsServer { get; }
-
         public AccessControl(FileSystemServer fsServer, ReadOnlySpan<byte> accessControlData,
-            ReadOnlySpan<byte> accessControlDescriptor) :
-            this(fsServer, accessControlData, accessControlDescriptor, GetAccessBitsMask(fsServer.IsDebugMode))
+            ReadOnlySpan<byte> accessControlDescriptor) : this(fsServer, accessControlData, accessControlDescriptor,
+            GetAccessBitsMask(fsServer.Globals.AccessControl.DebugFlag))
         { }
 
         public AccessControl(FileSystemServer fsServer, ReadOnlySpan<byte> accessControlData,
@@ -302,7 +316,7 @@ namespace LibHac.FsSrv.Impl
                 case OperationType.ExtendOthersSystemSaveData:
                     return accessBits.CanExtendOthersSystemSaveData();
                 case OperationType.RegisterUpdatePartition:
-                    return accessBits.CanRegisterUpdatePartition() && FsServer.IsDebugMode;
+                    return accessBits.CanRegisterUpdatePartition() && Globals.DebugFlag;
                 case OperationType.OpenSaveDataTransferManager:
                     return accessBits.CanOpenSaveDataTransferManager();
                 case OperationType.OpenSaveDataTransferManagerVersion2:
@@ -465,7 +479,7 @@ namespace LibHac.FsSrv.Impl
                 case AccessibilityType.MountHost:
                     return new Accessibility(accessBits.CanMountHostRead(), accessBits.CanMountHostWrite());
                 case AccessibilityType.MountRegisteredUpdatePartition:
-                    return new Accessibility(accessBits.CanMountRegisteredUpdatePartitionRead() && FsServer.IsDebugMode, false);
+                    return new Accessibility(accessBits.CanMountRegisteredUpdatePartitionRead() && Globals.DebugFlag, false);
                 case AccessibilityType.MountSaveDataInternalStorage:
                     return new Accessibility(accessBits.CanOpenSaveDataInternalStorageRead(), accessBits.CanOpenSaveDataInternalStorageWrite());
                 case AccessibilityType.MountTemporaryDirectory:

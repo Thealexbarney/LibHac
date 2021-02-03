@@ -1,5 +1,6 @@
 ﻿using System;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
@@ -31,16 +32,24 @@ namespace LibHac.Fs.Shim
             }
         }
 
-        public static string GetCustomStorageDirectoryName(CustomStorageId storageId)
+        public static U8Span GetCustomStorageDirectoryName(CustomStorageId storageId)
         {
             switch (storageId)
             {
                 case CustomStorageId.System:
                 case CustomStorageId.SdCard:
-                    return "CustomStorage0";
+                    return new U8Span(CustomStorageDirectoryName);
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(storageId), storageId, null);
+                    Abort.UnexpectedDefault();
+                    return default;
             }
         }
+
+        private static ReadOnlySpan<byte> CustomStorageDirectoryName => // CustomStorage0
+            new[]
+            {
+                (byte) 'C', (byte) 'u', (byte) 's', (byte) 't', (byte) 'o', (byte) 'm', (byte) 'S', (byte) 't',
+                (byte) 'o', (byte) 'r', (byte) 'a', (byte) 'g', (byte) 'e', (byte) '0'
+            };
     }
 }

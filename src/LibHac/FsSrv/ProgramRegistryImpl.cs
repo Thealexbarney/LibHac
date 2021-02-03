@@ -6,6 +6,20 @@ using LibHac.Sf;
 
 namespace LibHac.FsSrv
 {
+    public static class ProgramRegistryImplGlobalMethods
+    {
+        public static void InitializeProgramRegistryImpl(this FileSystemServer fsSrv,
+            ProgramRegistryServiceImpl serviceImpl)
+        {
+            fsSrv.Globals.ProgramRegistryImpl.ServiceImpl = serviceImpl;
+        }
+    }
+
+    internal struct ProgramRegistryImplGlobals
+    {
+        public ProgramRegistryServiceImpl ServiceImpl;
+    }
+
     /// <summary>
     /// Used to add, remove or access the Program Registry.
     /// </summary>
@@ -16,21 +30,15 @@ namespace LibHac.FsSrv
     /// <br/>Based on FS 10.0.0 (nnSdk 10.4.0)</remarks>
     public class ProgramRegistryImpl : IProgramRegistry
     {
+        private FileSystemServer _fsServer;
         private ulong _processId;
 
-        // Note: FS keeps this object as a global variable
-        private readonly ProgramRegistryServiceImpl _registryService;
+        private ref ProgramRegistryImplGlobals Globals => ref _fsServer.Globals.ProgramRegistryImpl;
 
-        public ProgramRegistryImpl(ProgramRegistryServiceImpl registryService)
+        public ProgramRegistryImpl(FileSystemServer server)
         {
+            _fsServer = server;
             _processId = ulong.MaxValue;
-            _registryService = registryService;
-        }
-
-        public ProgramRegistryImpl(ProgramRegistryServiceImpl registryService, ulong processId)
-        {
-            _processId = processId;
-            _registryService = registryService;
         }
 
         /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
@@ -43,7 +51,7 @@ namespace LibHac.FsSrv
             if (!ProgramInfo.IsInitialProgram(_processId))
                 return ResultFs.PermissionDenied.Log();
 
-            return _registryService.RegisterProgramInfo(processId, programId, storageId, accessControlData.Buffer,
+            return Globals.ServiceImpl.RegisterProgramInfo(processId, programId, storageId, accessControlData.Buffer,
                 accessControlDescriptor.Buffer);
         }
 
@@ -56,19 +64,19 @@ namespace LibHac.FsSrv
             if (!ProgramInfo.IsInitialProgram(_processId))
                 return ResultFs.PermissionDenied.Log();
 
-            return _registryService.UnregisterProgramInfo(processId);
+            return Globals.ServiceImpl.UnregisterProgramInfo(processId);
         }
 
         /// <inheritdoc cref="ProgramRegistryManager.GetProgramInfo"/>
         public Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
         {
-            return _registryService.GetProgramInfo(out programInfo, processId);
+            return Globals.ServiceImpl.GetProgramInfo(out programInfo, processId);
         }
 
         /// <inheritdoc cref="ProgramRegistryManager.GetProgramInfoByProgramId"/>
         public Result GetProgramInfoByProgramId(out ProgramInfo programInfo, ulong programId)
         {
-            return _registryService.GetProgramInfoByProgramId(out programInfo, programId);
+            return Globals.ServiceImpl.GetProgramInfoByProgramId(out programInfo, programId);
         }
 
         /// <summary>

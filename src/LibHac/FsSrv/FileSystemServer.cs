@@ -1,5 +1,4 @@
 ﻿using System;
-using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Impl;
 using LibHac.Fs.Shim;
@@ -18,19 +17,15 @@ namespace LibHac.FsSrv
         private const ulong SpeedEmulationProgramIdMinimum = 0x100000000000000;
         private const ulong SpeedEmulationProgramIdMaximum = 0x100000000001FFF;
 
-        private FileSystemProxyCoreImpl FsProxyCore { get; }
-        public StorageService Storage { get; }
+        internal FileSystemServerImpl Impl => new FileSystemServerImpl(this);
+        public StorageService Storage => new StorageService(this);
 
         /// <summary>The client instance to be used for internal operations like save indexer access.</summary>
-        public HorizonClient Hos { get; }
+        public HorizonClient Hos => Globals.Hos;
 
-        public bool IsDebugMode { get; }
         private ITimeSpanGenerator Timer { get; }
 
-        // Functions in the nn::fssrv::detail namespace use this field.
-        // Possibly move this to the main class if the separation doesn't seem necessary.
-        internal FileSystemServerImpl Impl;
-        internal ref FileSystemServerGlobals Globals => ref Impl.Globals;
+        internal FileSystemServerGlobals Globals;
 
         /// <summary>
         /// Creates a new <see cref="FileSystemServer"/> and registers its services using the provided HOS client.
@@ -45,21 +40,13 @@ namespace LibHac.FsSrv
             if (config.DeviceOperator == null)
                 throw new ArgumentException("DeviceOperator must not be null");
 
-            Impl = new FileSystemServerImpl();
-            Impl.Globals.Hos = horizonClient;
-            Impl.Globals.InitMutex = new object();
-
-            Hos = horizonClient;
-
-            Storage = new StorageService(this);
-
-            IsDebugMode = false;
+            Globals.Hos = horizonClient;
+            Globals.InitMutex = new object();
 
             Timer = config.TimeSpanGenerator ?? new StopWatchTimeSpanGenerator();
 
             FileSystemProxyConfiguration fspConfig = InitializeFileSystemProxyConfiguration(config);
-
-            FsProxyCore = new FileSystemProxyCoreImpl(fspConfig);
+            this.InitializeFileSystemProxy(fspConfig);
 
             FileSystemProxyImpl fsProxy = GetFileSystemProxyServiceObject();
             ulong processId = Hos.Os.GetCurrentProcessId().Value;
@@ -106,7 +93,9 @@ namespace LibHac.FsSrv
                 new ArrayPoolMemoryResource(), new SdHandleManager(), false);
 
             var programRegistryService = new ProgramRegistryServiceImpl(this);
-            var programRegistry = new ProgramRegistryImpl(programRegistryService);
+            var programRegistry = new ProgramRegistryImpl(this);
+
+            this.InitializeProgramRegistryImpl(programRegistryService);
 
             var baseStorageConfig = new BaseStorageServiceImpl.Configuration();
             baseStorageConfig.BisStorageCreator = config.FsCreators.BuiltInStorageCreator;
@@ -200,17 +189,17 @@ namespace LibHac.FsSrv
 
         private FileSystemProxyImpl GetFileSystemProxyServiceObject()
         {
-            return new FileSystemProxyImpl(FsProxyCore);
+            return new FileSystemProxyImpl(this);
         }
 
         private FileSystemProxyImpl GetFileSystemProxyForLoaderServiceObject()
         {
-            return new FileSystemProxyImpl(FsProxyCore);
+            return new FileSystemProxyImpl(this);
         }
 
         private ProgramRegistryImpl GetProgramRegistryServiceObject()
         {
-            return new ProgramRegistryImpl(FsProxyCore.Config.ProgramRegistryService);
+            return new ProgramRegistryImpl(this);
         }
 
         private class FileSystemProxyService : IServiceObject
@@ -273,9 +262,9 @@ namespace LibHac.FsSrv
     public class FileSystemServerConfig
     {
         /// <summary>
-        /// The <see cref="FileSystemCreators"/> used for creating filesystems.
+        /// The <see cref="FileSystemCreatorInterfaces"/> used for creating filesystems.
         /// </summary>
-        public FileSystemCreators FsCreators { get; set; }
+        public FileSystemCreatorInterfaces FsCreators { get; set; }
 
         /// <summary>
         /// An <see cref="IDeviceOperator"/> for managing the gamecard and SD card.
@@ -295,42 +284,30 @@ namespace LibHac.FsSrv
         public ITimeSpanGenerator TimeSpanGenerator { get; set; }
     }
 
-    public class StorageService
+    public readonly struct StorageService
     {
-        internal FileSystemServer Fs;
-        private IStorageDeviceManagerFactory _factory;
+        internal readonly FileSystemServer FsSrv;
 
-        internal StorageService(FileSystemServer parentServer)
-        {
-            Fs = parentServer;
-        }
-
-        public void SetStorageDeviceManagerFactory(IStorageDeviceManagerFactory factory)
-        {
-            Assert.NotNull(factory);
-            Assert.Null(_factory);
-
-            _factory = factory;
-        }
-
-        public IStorageDeviceManagerFactory GetStorageDeviceManagerFactory()
-        {
-            Assert.NotNull(_factory);
-            return _factory;
-        }
+        internal StorageService(FileSystemServer parentServer) => FsSrv = parentServer;
     }
 
     // Functions in the nn::fssrv::detail namespace use this struct.
     // Possibly move this to the main class if the separation doesn't seem necessary.
-    internal struct FileSystemServerImpl
+    public readonly struct FileSystemServerImpl
     {
-        public FileSystemServerGlobals Globals;
+        internal readonly FileSystemServer FsSrv;
+
+        public FileSystemServerImpl(FileSystemServer parentServer) => FsSrv = parentServer;
     }
 
     internal struct FileSystemServerGlobals
     {
         public HorizonClient Hos;
         public object InitMutex;
+        public FileSystemProxyImplGlobals FileSystemProxyImpl;
+        public ProgramRegistryImplGlobals ProgramRegistryImpl;
         public DeviceEventSimulatorGlobals DeviceEventSimulator;
+        public AccessControlGlobals AccessControl;
+        public StorageDeviceManagerFactoryGlobals StorageDeviceManagerFactory;
     }
 }

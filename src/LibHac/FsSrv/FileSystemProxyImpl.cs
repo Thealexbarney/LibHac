@@ -7,6 +7,7 @@ using LibHac.FsSystem;
 using LibHac.Ncm;
 using LibHac.Sf;
 using LibHac.Spl;
+using LibHac.Util;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using IFileSf = LibHac.FsSrv.Sf.IFile;
@@ -14,22 +15,64 @@ using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.FsSrv
 {
+    public static class FileSystemProxyImplGlobalMethods
+    {
+        public static void InitializeFileSystemProxy(this FileSystemServer fsSrv,
+            FileSystemProxyConfiguration configuration)
+        {
+            ref FileSystemProxyImplGlobals g = ref fsSrv.Globals.FileSystemProxyImpl;
+
+            g.FileSystemProxyCoreImpl.Set(new FileSystemProxyCoreImpl(configuration.FsCreatorInterfaces,
+                configuration.BaseFileSystemService));
+
+            g.BaseStorageServiceImpl = configuration.BaseStorageService;
+            g.BaseFileSystemServiceImpl = configuration.BaseFileSystemService;
+            g.NcaFileSystemServiceImpl = configuration.NcaFileSystemService;
+            g.SaveDataFileSystemServiceImpl = configuration.SaveDataFileSystemService;
+            g.AccessFailureManagementServiceImpl = configuration.AccessFailureManagementService;
+            g.TimeServiceImpl = configuration.TimeService;
+            g.StatusReportServiceImpl = configuration.StatusReportService;
+            g.ProgramRegistryServiceImpl = configuration.ProgramRegistryService;
+            g.AccessLogServiceImpl = configuration.AccessLogService;
+        }
+    }
+
+    internal struct FileSystemProxyImplGlobals
+    {
+        public NcaFileSystemServiceImpl NcaFileSystemServiceImpl;
+        public SaveDataFileSystemServiceImpl SaveDataFileSystemServiceImpl;
+        public BaseStorageServiceImpl BaseStorageServiceImpl;
+        public BaseFileSystemServiceImpl BaseFileSystemServiceImpl;
+        public AccessFailureManagementServiceImpl AccessFailureManagementServiceImpl;
+        public TimeServiceImpl TimeServiceImpl;
+        public StatusReportServiceImpl StatusReportServiceImpl;
+        public ProgramRegistryServiceImpl ProgramRegistryServiceImpl;
+        public AccessLogServiceImpl AccessLogServiceImpl;
+        public Optional<FileSystemProxyCoreImpl> FileSystemProxyCoreImpl;
+    }
+
     public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
     {
+        private FileSystemServer FsServer { get; }
+        private ref FileSystemProxyImplGlobals Globals => ref FsServer.Globals.FileSystemProxyImpl;
+
         private FileSystemProxyCoreImpl FsProxyCore { get; }
         private ReferenceCountedDisposable<NcaFileSystemService> NcaFsService { get; set; }
         private ReferenceCountedDisposable<SaveDataFileSystemService> SaveFsService { get; set; }
         private ulong CurrentProcess { get; set; }
 
-        internal FileSystemProxyImpl(FileSystemProxyCoreImpl fsProxyCore)
+        internal FileSystemProxyImpl(FileSystemServer server)
         {
-            FsProxyCore = fsProxyCore;
+            FsServer = server;
+
+            FsProxyCore = Globals.FileSystemProxyCoreImpl.Value;
             CurrentProcess = ulong.MaxValue;
         }
 
         private Result GetProgramInfo(out ProgramInfo programInfo)
         {
-            return FsProxyCore.ProgramRegistry.GetProgramInfo(out programInfo, CurrentProcess);
+            var registry = new ProgramRegistryImpl(FsServer);
+            return registry.GetProgramInfo(out programInfo, CurrentProcess);
         }
 
         private Result GetNcaFileSystemService(out NcaFileSystemService ncaFsService)
@@ -58,38 +101,37 @@ namespace LibHac.FsSrv
 
         private BaseStorageService GetBaseStorageService()
         {
-            return new BaseStorageService(FsProxyCore.Config.BaseStorageService, CurrentProcess);
+            return new BaseStorageService(Globals.BaseStorageServiceImpl, CurrentProcess);
         }
 
         private BaseFileSystemService GetBaseFileSystemService()
         {
-            return new BaseFileSystemService(FsProxyCore.Config.BaseFileSystemService, CurrentProcess);
+            return new BaseFileSystemService(Globals.BaseFileSystemServiceImpl, CurrentProcess);
         }
 
         private AccessFailureManagementService GetAccessFailureManagementService()
         {
-            return new AccessFailureManagementService(FsProxyCore.Config.AccessFailureManagementService,
-                CurrentProcess);
+            return new AccessFailureManagementService(Globals.AccessFailureManagementServiceImpl, CurrentProcess);
         }
 
         private TimeService GetTimeService()
         {
-            return new TimeService(FsProxyCore.Config.TimeService, CurrentProcess);
+            return new TimeService(Globals.TimeServiceImpl, CurrentProcess);
         }
 
         private StatusReportService GetStatusReportService()
         {
-            return new StatusReportService(FsProxyCore.Config.StatusReportService);
+            return new StatusReportService(Globals.StatusReportServiceImpl);
         }
 
         private ProgramIndexRegistryService GetProgramIndexRegistryService()
         {
-            return new ProgramIndexRegistryService(FsProxyCore.Config.ProgramRegistryService, CurrentProcess);
+            return new ProgramIndexRegistryService(Globals.ProgramRegistryServiceImpl, CurrentProcess);
         }
 
         private AccessLogService GetAccessLogService()
         {
-            return new AccessLogService(FsProxyCore.Config.AccessLogService, CurrentProcess);
+            return new AccessLogService(Globals.AccessLogServiceImpl, CurrentProcess);
         }
 
         public Result OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath path,
@@ -138,10 +180,8 @@ namespace LibHac.FsSrv
             CurrentProcess = processId;
 
             // Initialize the NCA file system service
-            NcaFsService = NcaFileSystemService.CreateShared(FsProxyCore.Config.NcaFileSystemService, processId);
-
-            SaveFsService =
-                SaveDataFileSystemService.CreateShared(FsProxyCore.Config.SaveDataFileSystemService, processId);
+            NcaFsService = NcaFileSystemService.CreateShared(Globals.NcaFileSystemServiceImpl, processId);
+            SaveFsService = SaveDataFileSystemService.CreateShared(Globals.SaveDataFileSystemServiceImpl, processId);
 
             return Result.Success;
         }
@@ -1055,7 +1095,6 @@ namespace LibHac.FsSrv
         public Result SetGlobalAccessLogMode(GlobalAccessLogMode mode)
         {
             return GetAccessLogService().SetAccessLogMode(mode);
-
         }
 
         public Result GetGlobalAccessLogMode(out GlobalAccessLogMode mode)

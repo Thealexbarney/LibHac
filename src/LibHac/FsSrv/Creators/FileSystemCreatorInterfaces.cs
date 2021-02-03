@@ -1,6 +1,6 @@
 ﻿namespace LibHac.FsSrv.Creators
 {
-    public class FileSystemCreators
+    public class FileSystemCreatorInterfaces
     {
         public IRomFileSystemCreator RomFileSystemCreator { get; set; }
         public IPartitionFileSystemCreator PartitionFileSystemCreator { get; set; }

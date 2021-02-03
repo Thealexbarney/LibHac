@@ -101,7 +101,7 @@ namespace LibHac.FsSrv.Storage
 
                     tempStorage = StorageServiceObjectAdapter.CreateShared(ref sdCardStorage);
 
-                    SdCardEventSimulator eventSimulator = service.Fs.Impl.GetSdCardEventSimulator();
+                    SdCardEventSimulator eventSimulator = service.FsSrv.Impl.GetSdCardEventSimulator();
                     tempStorage = DeviceEventSimulationStorage.CreateShared(ref tempStorage, eventSimulator);
 
                     tempStorage = SpeedEmulationStorage.CreateShared(ref tempStorage);
