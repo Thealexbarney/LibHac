@@ -54,6 +54,7 @@ namespace LibHac.FsSrv
             public IStackUsageReporter IpcWorkerThreadStackUsageReporter;
             public IStackUsageReporter PipeLineWorkerThreadStackUsageReporter;
 
+            // LibHac additions
             public FileSystemServer FsServer;
         }
 

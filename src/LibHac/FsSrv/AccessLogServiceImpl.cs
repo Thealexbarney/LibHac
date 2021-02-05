@@ -24,8 +24,7 @@ namespace LibHac.FsSrv
             public ulong MinimumProgramIdForSdCardLog;
 
             // LibHac additions
-            public HorizonClient HorizonClient;
-            public ProgramRegistryImpl ProgramRegistry;
+            public FileSystemServer FsServer;
         }
 
         public void SetAccessLogMode(GlobalAccessLogMode mode)
@@ -60,7 +59,8 @@ namespace LibHac.FsSrv
 
         internal Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
         {
-            return _config.ProgramRegistry.GetProgramInfo(out programInfo, processId);
+            var registry = new ProgramRegistryImpl(_config.FsServer);
+            return registry.GetProgramInfo(out programInfo, processId);
         }
     }
 }

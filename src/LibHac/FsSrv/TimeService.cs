@@ -36,29 +36,23 @@ namespace LibHac.FsSrv
 
     public class TimeServiceImpl
     {
-        private Configuration _config;
         private long _basePosixTime;
         private int _timeDifference;
         private SdkMutexType _mutex;
 
-        public TimeServiceImpl(in Configuration configuration)
+        private FileSystemServer _fsServer;
+
+        public TimeServiceImpl(FileSystemServer fsServer)
         {
-            _config = configuration;
+            _fsServer = fsServer;
             _basePosixTime = 0;
             _timeDifference = 0;
             _mutex.Initialize();
         }
 
-        // The entire Configuration struct is a LibHac addition to avoid using global state
-        public struct Configuration
-        {
-            public HorizonClient HorizonClient;
-            public ProgramRegistryImpl ProgramRegistry;
-        }
-
         private long GetSystemSeconds()
         {
-            OsState os = _config.HorizonClient.Os;
+            OsState os = _fsServer.Globals.Hos.Os;
 
             Tick tick = os.GetSystemTick();
             TimeSpan timeSpan = os.ConvertToTimeSpan(tick);
@@ -103,7 +97,8 @@ namespace LibHac.FsSrv
 
         internal Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
         {
-            return _config.ProgramRegistry.GetProgramInfo(out programInfo, processId);
+            var registry = new ProgramRegistryImpl(_fsServer);
+            return registry.GetProgramInfo(out programInfo, processId);
         }
     }
 }

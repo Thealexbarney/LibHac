@@ -28,11 +28,11 @@ namespace LibHac.FsSrv
             public ISdCardProxyFileSystemCreator SdCardFileSystemCreator;
             // CurrentTimeFunction
             // FatFileSystemCacheManager
-            // AlbumDirectoryFileSystemManager
+            // BaseFileSystemCreatorHolder
             public BisWiperCreator BisWiperCreator;
 
-            // Note: The program registry service is global as of FS 10.0.0
-            public ProgramRegistryImpl ProgramRegistry;
+            // LibHac additions
+            public FileSystemServer FsServer;
         }
 
         public Result OpenBaseFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
@@ -128,7 +128,8 @@ namespace LibHac.FsSrv
 
         internal Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
         {
-            return _config.ProgramRegistry.GetProgramInfo(out programInfo, processId);
+            var registry = new ProgramRegistryImpl(_config.FsServer);
+            return registry.GetProgramInfo(out programInfo, processId);
         }
     }
 }

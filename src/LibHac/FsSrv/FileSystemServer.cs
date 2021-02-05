@@ -1,5 +1,4 @@
 ﻿using System;
-using LibHac.Fs;
 using LibHac.Fs.Impl;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Creators;
@@ -17,15 +16,11 @@ namespace LibHac.FsSrv
         private const ulong SpeedEmulationProgramIdMinimum = 0x100000000000000;
         private const ulong SpeedEmulationProgramIdMaximum = 0x100000000001FFF;
 
-        internal FileSystemServerImpl Impl => new FileSystemServerImpl(this);
-        public StorageService Storage => new StorageService(this);
-
-        /// <summary>The client instance to be used for internal operations like save indexer access.</summary>
-        public HorizonClient Hos => Globals.Hos;
-
-        private ITimeSpanGenerator Timer { get; }
-
         internal FileSystemServerGlobals Globals;
+
+        private HorizonClient Hos => Globals.Hos;
+        public FileSystemServerImpl Impl => new FileSystemServerImpl(this);
+        public StorageService Storage => new StorageService(this);
 
         /// <summary>
         /// Creates a new <see cref="FileSystemServer"/> and registers its services using the provided HOS client.
@@ -42,8 +37,6 @@ namespace LibHac.FsSrv
 
             Globals.Hos = horizonClient;
             Globals.InitMutex = new object();
-
-            Timer = config.TimeSpanGenerator ?? new StopWatchTimeSpanGenerator();
 
             FileSystemProxyConfiguration fspConfig = InitializeFileSystemProxyConfiguration(config);
             this.InitializeFileSystemProxy(fspConfig);
@@ -69,55 +62,41 @@ namespace LibHac.FsSrv
                 Hos.Fs.SetSdCardAccessibility(true);
         }
 
-        /// <summary>
-        /// Creates a new <see cref="FileSystemClient"/> using this <see cref="FileSystemServer"/>'s
-        /// <see cref="ITimeSpanGenerator"/> for the client's access log.
-        /// </summary>
-        /// <returns>The created <see cref="FileSystemClient"/>.</returns>
-        public FileSystemClient CreateFileSystemClient() => CreateFileSystemClient(Timer);
-
-        /// <summary>
-        /// Creates a new <see cref="FileSystemClient"/>.
-        /// </summary>
-        /// <param name="timer">The <see cref="ITimeSpanGenerator"/> to use for the created
-        /// <see cref="FileSystemClient"/>'s access log.</param>
-        /// <returns>The created <see cref="FileSystemClient"/>.</returns>
-        public FileSystemClient CreateFileSystemClient(ITimeSpanGenerator timer)
-        {
-            return new FileSystemClient(Hos);
-        }
-
         private FileSystemProxyConfiguration InitializeFileSystemProxyConfiguration(FileSystemServerConfig config)
         {
             var saveDataIndexerManager = new SaveDataIndexerManager(Hos.Fs, SaveIndexerId,
                 new ArrayPoolMemoryResource(), new SdHandleManager(), false);
 
             var programRegistryService = new ProgramRegistryServiceImpl(this);
-            var programRegistry = new ProgramRegistryImpl(this);
 
             this.InitializeProgramRegistryImpl(programRegistryService);
 
             var baseStorageConfig = new BaseStorageServiceImpl.Configuration();
             baseStorageConfig.BisStorageCreator = config.FsCreators.BuiltInStorageCreator;
             baseStorageConfig.GameCardStorageCreator = config.FsCreators.GameCardStorageCreator;
-            baseStorageConfig.ProgramRegistry = programRegistry;
+            baseStorageConfig.FsServer = this;
             baseStorageConfig.DeviceOperator = new ReferenceCountedDisposable<IDeviceOperator>(config.DeviceOperator);
             var baseStorageService = new BaseStorageServiceImpl(in baseStorageConfig);
 
-            var timeServiceConfig = new TimeServiceImpl.Configuration();
-            timeServiceConfig.HorizonClient = Hos;
-            timeServiceConfig.ProgramRegistry = programRegistry;
-            var timeService = new TimeServiceImpl(in timeServiceConfig);
+            var timeService = new TimeServiceImpl(this);
 
             var baseFsServiceConfig = new BaseFileSystemServiceImpl.Configuration();
             baseFsServiceConfig.BisFileSystemCreator = config.FsCreators.BuiltInStorageFileSystemCreator;
             baseFsServiceConfig.GameCardFileSystemCreator = config.FsCreators.GameCardFileSystemCreator;
             baseFsServiceConfig.SdCardFileSystemCreator = config.FsCreators.SdCardFileSystemCreator;
             baseFsServiceConfig.BisWiperCreator = BisWiper.CreateWiper;
-            baseFsServiceConfig.ProgramRegistry = programRegistry;
+            baseFsServiceConfig.FsServer = this;
             var baseFsService = new BaseFileSystemServiceImpl(in baseFsServiceConfig);
 
-            var accessFailureManagementService = new AccessFailureManagementServiceImpl(programRegistry, Hos);
+            var accessFailureManagementServiceConfig = new AccessFailureManagementServiceImpl.Configuration();
+            accessFailureManagementServiceConfig.FsServer = this;
+
+            var accessFailureManagementService =
+                new AccessFailureManagementServiceImpl(in accessFailureManagementServiceConfig);
+
+            var speedEmulationRange =
+                new InternalProgramIdRangeForSpeedEmulation(SpeedEmulationProgramIdMinimum,
+                    SpeedEmulationProgramIdMaximum);
 
             var ncaFsServiceConfig = new NcaFileSystemServiceImpl.Configuration();
             ncaFsServiceConfig.BaseFsService = baseFsService;
@@ -129,11 +108,9 @@ namespace LibHac.FsSrv
             ncaFsServiceConfig.SubDirectoryFsCreator = config.FsCreators.SubDirectoryFileSystemCreator;
             ncaFsServiceConfig.EncryptedFsCreator = config.FsCreators.EncryptedFileSystemCreator;
             ncaFsServiceConfig.ProgramRegistryService = programRegistryService;
-            ncaFsServiceConfig.HorizonClient = Hos;
-            ncaFsServiceConfig.ProgramRegistry = programRegistry;
-            ncaFsServiceConfig.SpeedEmulationRange =
-                new InternalProgramIdRangeForSpeedEmulation(SpeedEmulationProgramIdMinimum,
-                    SpeedEmulationProgramIdMaximum);
+            ncaFsServiceConfig.AccessFailureManagementService = accessFailureManagementService;
+            ncaFsServiceConfig.SpeedEmulationRange = speedEmulationRange;
+            ncaFsServiceConfig.FsServer = this;
 
             var ncaFsService = new NcaFileSystemServiceImpl(in ncaFsServiceConfig, config.ExternalKeySet);
 
@@ -146,8 +123,7 @@ namespace LibHac.FsSrv
             saveFsServiceConfig.ProgramRegistryService = programRegistryService;
             saveFsServiceConfig.ShouldCreateDirectorySaveData = () => true;
             saveFsServiceConfig.SaveIndexerManager = saveDataIndexerManager;
-            saveFsServiceConfig.HorizonClient = Hos;
-            saveFsServiceConfig.ProgramRegistry = programRegistry;
+            saveFsServiceConfig.FsServer = this;
 
             var saveFsService = new SaveDataFileSystemServiceImpl(in saveFsServiceConfig);
 
@@ -161,13 +137,14 @@ namespace LibHac.FsSrv
             statusReportServiceConfig.MainThreadStackUsageReporter = new DummyStackUsageReporter();
             statusReportServiceConfig.IpcWorkerThreadStackUsageReporter = new DummyStackUsageReporter();
             statusReportServiceConfig.PipeLineWorkerThreadStackUsageReporter = new DummyStackUsageReporter();
+            statusReportServiceConfig.FsServer = this;
 
             var statusReportService = new StatusReportServiceImpl(in statusReportServiceConfig);
 
             var accessLogServiceConfig = new AccessLogServiceImpl.Configuration();
             accessLogServiceConfig.MinimumProgramIdForSdCardLog = 0x0100000000003000;
-            accessLogServiceConfig.HorizonClient = Hos;
-            accessLogServiceConfig.ProgramRegistry = programRegistry;
+            accessLogServiceConfig.FsServer = this;
+
             var accessLogService = new AccessLogServiceImpl(in accessLogServiceConfig);
 
             var fspConfig = new FileSystemProxyConfiguration
@@ -276,12 +253,6 @@ namespace LibHac.FsSrv
         /// If null, an empty set will be created.
         /// </summary>
         public ExternalKeySet ExternalKeySet { get; set; }
-
-        /// <summary>
-        /// Used for generating access log timestamps.
-        /// If null, a new <see cref="StopWatchTimeSpanGenerator"/> will be created.
-        /// </summary>
-        public ITimeSpanGenerator TimeSpanGenerator { get; set; }
     }
 
     public readonly struct StorageService

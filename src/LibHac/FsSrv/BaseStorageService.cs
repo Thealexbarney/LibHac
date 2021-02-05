@@ -148,10 +148,11 @@ namespace LibHac.FsSrv
 
         private Result GetProgramInfo(out ProgramInfo programInfo)
         {
-            return _serviceImpl.GetProgramInfo(out programInfo, _processId);
+            var registry = new ProgramRegistryImpl(_serviceImpl.Config.FsServer);
+            return registry.GetProgramInfo(out programInfo, _processId);
         }
 
-        private Result GetAccessibilityForOpenBisPartition(out Accessibility accessibility, ProgramInfo programInfo,
+        private static Result GetAccessibilityForOpenBisPartition(out Accessibility accessibility, ProgramInfo programInfo,
             BisPartitionId partitionId)
         {
             Unsafe.SkipInit(out accessibility);
@@ -200,7 +201,7 @@ namespace LibHac.FsSrv
             public IGameCardStorageCreator GameCardStorageCreator;
 
             // LibHac additions
-            public ProgramRegistryImpl ProgramRegistry;
+            public FileSystemServer FsServer;
             // Todo: The DeviceOperator in FS uses mostly global state. Decide how to handle this.
             public ReferenceCountedDisposable<IDeviceOperator> DeviceOperator;
         }
@@ -230,11 +231,6 @@ namespace LibHac.FsSrv
                     storage = default;
                     return ResultFs.InvalidArgument.Log();
             }
-        }
-
-        internal Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
-        {
-            return Config.ProgramRegistry.GetProgramInfo(out programInfo, processId);
         }
     }
 }

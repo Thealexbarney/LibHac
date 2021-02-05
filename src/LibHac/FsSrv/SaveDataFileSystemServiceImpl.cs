@@ -24,7 +24,7 @@ namespace LibHac.FsSrv
         private bool _isSdCardAccessible;
         // Timestamp getter
 
-        internal HorizonClient Hos => _config.HorizonClient;
+        internal HorizonClient Hos => _config.FsServer.Globals.Hos;
 
         public SaveDataFileSystemServiceImpl(in Configuration configuration)
         {
@@ -48,13 +48,13 @@ namespace LibHac.FsSrv
             public ISaveDataIndexerManager SaveIndexerManager;
 
             // LibHac additions
-            public HorizonClient HorizonClient;
-            public ProgramRegistryImpl ProgramRegistry;
+            public FileSystemServer FsServer;
         }
 
         internal Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
         {
-            return _config.ProgramRegistry.GetProgramInfo(out programInfo, processId);
+            var registry = new ProgramRegistryImpl(_config.FsServer);
+            return registry.GetProgramInfo(out programInfo, processId);
         }
 
         public Result DoesSaveDataEntityExist(out bool exists, SaveDataSpaceId spaceId, ulong saveDataId)

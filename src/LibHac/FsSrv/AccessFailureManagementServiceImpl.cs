@@ -7,20 +7,27 @@ namespace LibHac.FsSrv
 {
     public class AccessFailureManagementServiceImpl
     {
-        private ProgramRegistryImpl _programRegistry;
-        internal HorizonClient HorizonClient { get; }
+        private Configuration _config;
         private AccessFailureDetectionEventManager _eventManager;
 
-        public AccessFailureManagementServiceImpl(ProgramRegistryImpl programRegistry, HorizonClient horizonClient)
+        internal HorizonClient HorizonClient => _config.FsServer.Globals.Hos;
+
+        public AccessFailureManagementServiceImpl(in Configuration configuration)
         {
-            _programRegistry = programRegistry;
-            HorizonClient = horizonClient;
+            _config = configuration;
             _eventManager = new AccessFailureDetectionEventManager();
+        }
+
+        // LibHac addition
+        public struct Configuration
+        {
+            public FileSystemServer FsServer;
         }
 
         internal Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
         {
-            return _programRegistry.GetProgramInfo(out programInfo, processId);
+            var registry = new ProgramRegistryImpl(_config.FsServer);
+            return registry.GetProgramInfo(out programInfo, processId);
         }
 
         public Result CreateNotifier(out IEventNotifier notifier, ulong processId, bool notifyOnDeepRetry)

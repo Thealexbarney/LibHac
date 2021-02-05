@@ -11,9 +11,9 @@ namespace LibHac.FsSrv.Impl
 {
     public static class AccessControlGlobalMethods
     {
-        public static void SetDebugFlagEnabled(this FileSystemServerImpl fsSrv, bool isEnabled)
+        public static void SetDebugFlagEnabled(this FileSystemServer fsSrv, bool isEnabled)
         {
-            fsSrv.FsSrv.Globals.AccessControl.DebugFlag = isEnabled;
+            fsSrv.Globals.AccessControl.DebugFlag = isEnabled;
         }
     }
 
