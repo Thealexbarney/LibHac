@@ -189,7 +189,7 @@ namespace LibHac.Fs.Shim
             Result rc = MountHelpers.CheckMountName(mountName);
             if (rc.IsFailure()) return rc;
 
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
             var attribute = new SaveDataAttribute(programId, type, userId, 0, index);
 
@@ -199,11 +199,11 @@ namespace LibHac.Fs.Shim
             {
                 if (openReadOnly)
                 {
-                    rc = fsProxy.OpenReadOnlySaveDataFileSystem(out saveFs, spaceId, in attribute);
+                    rc = fsProxy.Target.OpenReadOnlySaveDataFileSystem(out saveFs, spaceId, in attribute);
                 }
                 else
                 {
-                    rc = fsProxy.OpenSaveDataFileSystem(out saveFs, spaceId, in attribute);
+                    rc = fsProxy.Target.OpenSaveDataFileSystem(out saveFs, spaceId, in attribute);
                 }
 
                 if (rc.IsFailure()) return rc;

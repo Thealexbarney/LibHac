@@ -358,19 +358,19 @@ namespace LibHac.Fs.Shim
         {
             fileSystem = default;
 
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
             ReferenceCountedDisposable<IFileSystemSf> hostFs = null;
 
             try
             {
                 if (option == MountHostOption.None)
                 {
-                    Result rc = fsProxy.OpenHostFileSystem(out hostFs, in path);
+                    Result rc = fsProxy.Target.OpenHostFileSystem(out hostFs, in path);
                     if (rc.IsFailure()) return rc;
                 }
                 else
                 {
-                    Result rc = fsProxy.OpenHostFileSystemWithOption(out hostFs, in path, option);
+                    Result rc = fsProxy.Target.OpenHostFileSystemWithOption(out hostFs, in path, option);
                     if (rc.IsFailure()) return rc;
                 }
 

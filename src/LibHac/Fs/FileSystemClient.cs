@@ -5,7 +5,7 @@ using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs.Accessors;
 using LibHac.Fs.Fsa;
-using LibHac.FsSrv.Sf;
+using LibHac.Fs.Shim;
 using LibHac.FsSystem;
 using LibHac.Util;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
@@ -14,16 +14,9 @@ namespace LibHac.Fs
 {
     public partial class FileSystemClient
     {
-        internal HorizonClient Hos { get; }
+        internal FileSystemClientGlobals Globals;
 
-        private IFileSystemProxy FsProxy { get; set; }
-        private readonly object _fspInitLocker = new object();
-
-        private IFileSystemProxyForLoader FsProxyForLoader { get; set; }
-        private readonly object _fsplInitLocker = new object();
-
-        private IProgramRegistry ProgramRegistry { get; set; }
-        private readonly object _progRegInitLocker = new object();
+        internal HorizonClient Hos => Globals.Hos;
 
         internal ITimeSpanGenerator Time { get; }
         private IAccessLog AccessLog { get; set; }
@@ -37,94 +30,24 @@ namespace LibHac.Fs
 
         public FileSystemClient(HorizonClient horizonClient)
         {
-            Hos = horizonClient;
             Time = horizonClient.Time;
 
+            Globals.Hos = horizonClient;
+            Globals.InitMutex = new object();
+
             Assert.NotNull(Time);
+        }
+
+        internal struct FileSystemClientGlobals
+        {
+            public HorizonClient Hos;
+            public object InitMutex;
+            public FileSystemProxyServiceObjectGlobals FileSystemProxyServiceObject;
         }
 
         public bool HasFileSystemServer()
         {
             return Hos != null;
-        }
-
-        public IFileSystemProxy GetFileSystemProxyServiceObject()
-        {
-            if (FsProxy != null) return FsProxy;
-
-            lock (_fsplInitLocker)
-            {
-                if (FsProxy != null) return FsProxy;
-
-                if (!HasFileSystemServer())
-                {
-                    throw new InvalidOperationException("Client was not initialized with a server object.");
-                }
-
-                Result rc = Hos.Sm.GetService(out IFileSystemProxy fsProxy, "fsp-srv");
-
-                if (rc.IsFailure())
-                {
-                    throw new HorizonResultException(rc, "Failed to get file system proxy service object.");
-                }
-
-                fsProxy.SetCurrentProcess(Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
-
-                FsProxy = fsProxy;
-                return FsProxy;
-            }
-        }
-
-        public IFileSystemProxyForLoader GetFileSystemProxyForLoaderServiceObject()
-        {
-            if (FsProxyForLoader != null) return FsProxyForLoader;
-
-            lock (_fspInitLocker)
-            {
-                if (FsProxyForLoader != null) return FsProxyForLoader;
-
-                if (!HasFileSystemServer())
-                {
-                    throw new InvalidOperationException("Client was not initialized with a server object.");
-                }
-
-                Result rc = Hos.Sm.GetService(out IFileSystemProxyForLoader fsProxy, "fsp-ldr");
-
-                if (rc.IsFailure())
-                {
-                    throw new HorizonResultException(rc, "Failed to get file system proxy service object.");
-                }
-
-                fsProxy.SetCurrentProcess(Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
-
-                FsProxyForLoader = fsProxy;
-                return FsProxyForLoader;
-            }
-        }
-
-        public IProgramRegistry GetProgramRegistryServiceObject()
-        {
-            if (ProgramRegistry != null) return ProgramRegistry;
-
-            lock (_progRegInitLocker)
-            {
-                if (ProgramRegistry != null) return ProgramRegistry;
-
-                if (!HasFileSystemServer())
-                {
-                    throw new InvalidOperationException("Client was not initialized with a server object.");
-                }
-
-                Result rc = Hos.Sm.GetService(out IProgramRegistry registry, "fsp-pr");
-
-                if (rc.IsFailure())
-                {
-                    throw new HorizonResultException(rc, "Failed to get registry service object.");
-                }
-
-                ProgramRegistry = registry;
-                return ProgramRegistry;
-            }
         }
 
         public Result Register(U8Span mountName, IFileSystem fileSystem)

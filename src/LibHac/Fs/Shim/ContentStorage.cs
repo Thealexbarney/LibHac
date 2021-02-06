@@ -19,9 +19,10 @@ namespace LibHac.Fs.Shim
             Result rc = MountHelpers.CheckMountNameAcceptingReservedMountName(mountName);
             if (rc.IsFailure()) return rc;
 
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            rc = fsProxy.OpenContentStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> contentFs, storageId);
+            rc = fsProxy.Target.OpenContentStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> contentFs,
+                storageId);
             if (rc.IsFailure()) return rc;
 
             using (contentFs)

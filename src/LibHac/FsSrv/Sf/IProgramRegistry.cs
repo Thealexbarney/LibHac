@@ -1,9 +1,10 @@
-﻿using LibHac.Ncm;
+﻿using System;
+using LibHac.Ncm;
 using LibHac.Sf;
 
 namespace LibHac.FsSrv.Sf
 {
-    public interface IProgramRegistry
+    public interface IProgramRegistry : IDisposable
     {
         Result RegisterProgram(ulong processId, ProgramId programId, StorageId storageId,
             InBuffer accessControlData, InBuffer accessControlDescriptor);

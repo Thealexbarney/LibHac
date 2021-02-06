@@ -41,7 +41,7 @@ namespace LibHac.Fs.Shim
             Result rc = MountHelpers.CheckMountName(mountName);
             if (rc.IsFailure()) return rc;
 
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
             var attribute = new SaveDataAttribute(applicationId, SaveDataType.Bcat, UserId.InvalidId, 0);
 
@@ -49,7 +49,7 @@ namespace LibHac.Fs.Shim
 
             try
             {
-                rc = fsProxy.OpenSaveDataFileSystem(out saveFs, SaveDataSpaceId.User, in attribute);
+                rc = fsProxy.Target.OpenSaveDataFileSystem(out saveFs, SaveDataSpaceId.User, in attribute);
                 if (rc.IsFailure()) return rc;
 
                 var fileSystemAdapter = new FileSystemServiceObjectAdapter(saveFs);

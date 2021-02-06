@@ -89,12 +89,12 @@ namespace LibHac.Fs.Shim
             Result rc = MountHelpers.CheckMountNameAcceptingReservedMountName(mountName);
             if (rc.IsFailure()) return rc;
 
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
             // Nintendo doesn't use the provided rootPath
             FspPath.CreateEmpty(out FspPath sfPath);
 
-            rc = fsProxy.OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in sfPath,
+            rc = fsProxy.Target.OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in sfPath,
                 partitionId);
             if (rc.IsFailure()) return rc;
 
@@ -163,9 +163,9 @@ namespace LibHac.Fs.Shim
 
             FspPath.FromSpan(out FspPath sfPath, path.Str);
 
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            return fsProxy.SetBisRootForHost(partitionId, in sfPath);
+            return fsProxy.Target.SetBisRootForHost(partitionId, in sfPath);
         }
 
         public static Result OpenBisPartition(this FileSystemClient fs, out IStorage partitionStorage,
@@ -173,8 +173,8 @@ namespace LibHac.Fs.Shim
         {
             partitionStorage = default;
 
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
-            Result rc = fsProxy.OpenBisStorage(out ReferenceCountedDisposable<IStorageSf> storage, partitionId);
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            Result rc = fsProxy.Target.OpenBisStorage(out ReferenceCountedDisposable<IStorageSf> storage, partitionId);
             if (rc.IsFailure()) return rc;
 
             using (storage)
@@ -188,8 +188,8 @@ namespace LibHac.Fs.Shim
 
         public static Result InvalidateBisCache(this FileSystemClient fs)
         {
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
-            return fsProxy.InvalidateBisCache();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            return fsProxy.Target.InvalidateBisCache();
         }
     }
 }

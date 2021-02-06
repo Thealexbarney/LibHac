@@ -69,6 +69,12 @@ namespace LibHac.FsSrv
             CurrentProcess = ulong.MaxValue;
         }
 
+        public void Dispose()
+        {
+            NcaFsService?.Dispose();
+            SaveFsService?.Dispose();
+        }
+
         private Result GetProgramInfo(out ProgramInfo programInfo)
         {
             var registry = new ProgramRegistryImpl(FsServer);

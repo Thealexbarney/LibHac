@@ -47,10 +47,11 @@ namespace LibHac.Fs.Shim
             rc = FspPath.FromSpan(out FspPath fsPath, path);
             if (rc.IsFailure()) return rc;
 
-            IFileSystemProxyForLoader fsProxy = fs.GetFileSystemProxyForLoaderServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxyForLoader> fsProxy =
+                fs.GetFileSystemProxyForLoaderServiceObject();
 
-            rc = fsProxy.OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystemSf> codeFs, out verificationData,
-                in fsPath, programId);
+            rc = fsProxy.Target.OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystemSf> codeFs,
+                out verificationData, in fsPath, programId);
             if (rc.IsFailure()) return rc;
 
             using (codeFs)

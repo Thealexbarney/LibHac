@@ -25,10 +25,10 @@ namespace LibHac.Fs.Shim
 
             FileSystemProxyType fspType = ConvertToFileSystemProxyType(type);
 
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            rc = fsProxy.OpenFileSystemWithPatch(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, programId,
-                fspType);
+            rc = fsProxy.Target.OpenFileSystemWithPatch(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+                programId, fspType);
             if (rc.IsFailure()) return rc;
 
             using (fileSystem)
@@ -63,10 +63,10 @@ namespace LibHac.Fs.Shim
         {
             FspPath.FromSpan(out FspPath fsPath, path);
 
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            Result rc = fsProxy.OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in fsPath,
-                id, type);
+            Result rc = fsProxy.Target.OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+                in fsPath, id, type);
             if (rc.IsFailure()) return rc;
 
             using (fileSystem)

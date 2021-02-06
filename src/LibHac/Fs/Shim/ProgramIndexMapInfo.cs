@@ -20,11 +20,11 @@ namespace LibHac.Fs.Shim
             if (mapInfo.IsEmpty)
                 return Result.Success;
 
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
             var mapInfoBuffer = new InBuffer(MemoryMarshal.Cast<ProgramIndexMapInfo, byte>(mapInfo));
 
-            return fsProxy.RegisterProgramIndexMapInfo(mapInfoBuffer, mapInfo.Length);
+            return fsProxy.Target.RegisterProgramIndexMapInfo(mapInfoBuffer, mapInfo.Length);
         }
     }
 }

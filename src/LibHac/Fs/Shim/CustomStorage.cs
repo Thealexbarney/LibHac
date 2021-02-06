@@ -17,9 +17,9 @@ namespace LibHac.Fs.Shim
             ReferenceCountedDisposable<IFileSystemSf> customFs = null;
             try
             {
-                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                rc = fsProxy.OpenCustomStorageFileSystem(out customFs, storageId);
+                rc = fsProxy.Target.OpenCustomStorageFileSystem(out customFs, storageId);
                 if (rc.IsFailure()) return rc;
 
                 var adapter = new FileSystemServiceObjectAdapter(customFs);

@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs.Accessors;
+using LibHac.Fs.Shim;
 using LibHac.FsSrv.Sf;
 using LibHac.Sf;
 
@@ -19,9 +20,9 @@ namespace LibHac.Fs
         {
             if (HasFileSystemServer())
             {
-                IFileSystemProxy fsProxy = GetFileSystemProxyServiceObject();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = this.GetFileSystemProxyServiceObject();
 
-                return fsProxy.GetGlobalAccessLogMode(out mode);
+                return fsProxy.Target.GetGlobalAccessLogMode(out mode);
             }
 
             mode = GlobalAccessLogMode;
@@ -32,9 +33,9 @@ namespace LibHac.Fs
         {
             if (HasFileSystemServer())
             {
-                IFileSystemProxy fsProxy = GetFileSystemProxyServiceObject();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = this.GetFileSystemProxyServiceObject();
 
-                return fsProxy.SetGlobalAccessLogMode(mode);
+                return fsProxy.Target.SetGlobalAccessLogMode(mode);
             }
 
             GlobalAccessLogMode = mode;
@@ -69,9 +70,10 @@ namespace LibHac.Fs
                 {
                     if (HasFileSystemServer())
                     {
-                        IFileSystemProxy fsProxy = GetFileSystemProxyServiceObject();
+                        using ReferenceCountedDisposable<IFileSystemProxy> fsProxy =
+                            this.GetFileSystemProxyServiceObject();
 
-                        Result rc = fsProxy.GetGlobalAccessLogMode(out GlobalAccessLogMode globalMode);
+                        Result rc = fsProxy.Target.GetGlobalAccessLogMode(out GlobalAccessLogMode globalMode);
                         GlobalAccessLogMode = globalMode;
 
                         if (rc.IsFailure())
@@ -187,8 +189,8 @@ namespace LibHac.Fs
             {
                 string logString = AccessLogHelpers.BuildDefaultLogLine(result, startTime, endTime, handleId, message, caller);
 
-                IFileSystemProxy fsProxy = GetFileSystemProxyServiceObject();
-                fsProxy.OutputAccessLogToSdCard(new InBuffer(logString.ToU8Span())).IgnoreResult();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = this.GetFileSystemProxyServiceObject();
+                fsProxy.Target.OutputAccessLogToSdCard(new InBuffer(logString.ToU8Span())).IgnoreResult();
             }
         }
 

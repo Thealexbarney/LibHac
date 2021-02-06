@@ -41,6 +41,8 @@ namespace LibHac.FsSrv
             _processId = ulong.MaxValue;
         }
 
+        public void Dispose() { }
+
         /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
         /// <see cref="ResultFs.InvalidArgument"/>: The process ID is already registered.<br/>
         /// <see cref="ResultFs.PermissionDenied"/>: Insufficient permissions.</returns>

@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using System;
+using LibHac.Fs;
 using LibHac.Ncm;
 using LibHac.Sf;
 using LibHac.Spl;
@@ -8,7 +9,7 @@ using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.FsSrv.Sf
 {
-    public interface IFileSystemProxy
+    public interface IFileSystemProxy : IDisposable
     {
         Result SetCurrentProcess(ulong processId);
         Result OpenDataFileSystemByCurrentProcess(out ReferenceCountedDisposable<IFileSystemSf> fileSystem);
