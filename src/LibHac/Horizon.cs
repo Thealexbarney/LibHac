@@ -1,10 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Threading;
-using LibHac.Bcat;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs.Shim;
-using LibHac.FsSrv;
 using LibHac.FsSrv.Impl;
 using LibHac.Ncm;
 using LibHac.Os;
@@ -20,25 +18,17 @@ namespace LibHac
         internal ServiceManager ServiceManager { get; }
         private HorizonClient LoaderClient { get; }
 
-        // long instead of ulong because the ulong Interlocked.Increment overload
-        // wasn't added until .NET 5
         private ulong _currentInitialProcessId;
         private ulong _currentProcessId;
 
-
         // Todo: Initialize with a configuration object
-        public Horizon(ITimeSpanGenerator timer, FileSystemServerConfig fsServerConfig)
+        public Horizon(ITimeSpanGenerator timer)
         {
             _currentProcessId = InitialProcessCountMax;
 
             Time = timer ?? new StopWatchTimeSpanGenerator();
             StartTick = Stopwatch.GetTimestamp();
             ServiceManager = new ServiceManager();
-
-            // ReSharper disable ObjectCreationAsStatement
-            new FileSystemServer(CreatePrivilegedHorizonClient(), fsServerConfig);
-            new BcatServer(CreateHorizonClient());
-            // ReSharper restore ObjectCreationAsStatement
 
             LoaderClient = CreatePrivilegedHorizonClient();
         }

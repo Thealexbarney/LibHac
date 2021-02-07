@@ -403,7 +403,7 @@ namespace LibHac.FsSrv
 
         private Result DeleteSaveDataFileSystemBySaveDataSpaceIdCore(SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            if (saveDataId != FileSystemServer.SaveIndexerId)
+            if (saveDataId != SaveData.SaveIndexerId)
             {
                 SaveDataIndexerAccessor accessor = null;
                 try
@@ -449,7 +449,7 @@ namespace LibHac.FsSrv
                 SaveDataSpaceId actualSpaceId;
 
                 // Only the FS process may delete the save indexer's save data.
-                if (saveDataId == FileSystemServer.SaveIndexerId)
+                if (saveDataId == SaveData.SaveIndexerId)
                 {
                     if (!IsCurrentProcess(ProcessId))
                         return ResultFs.PermissionDenied.Log();
@@ -499,7 +499,7 @@ namespace LibHac.FsSrv
 
                 // Remove the save data from the indexer.
                 // The indexer doesn't track itself, so skip if deleting its save data.
-                if (saveDataId != FileSystemServer.SaveIndexerId)
+                if (saveDataId != SaveData.SaveIndexerId)
                 {
                     // accessor will never be null at this point
                     rc = accessor!.Indexer.Delete(saveDataId);
@@ -590,7 +590,7 @@ namespace LibHac.FsSrv
         // ReSharper disable once UnusedParameter.Global
         public Result UpdateSaveDataMacForDebug(SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            if (saveDataId == FileSystemServer.SaveIndexerId)
+            if (saveDataId == SaveData.SaveIndexerId)
                 return ResultFs.InvalidArgument.Log();
 
             return ResultFs.NotImplemented.Log();
@@ -630,10 +630,10 @@ namespace LibHac.FsSrv
             try
             {
                 // Add the new save data to the save indexer
-                if (attribute.StaticSaveDataId == FileSystemServer.SaveIndexerId)
+                if (attribute.StaticSaveDataId == SaveData.SaveIndexerId)
                 {
                     // The save indexer doesn't index itself
-                    saveDataId = FileSystemServer.SaveIndexerId;
+                    saveDataId = SaveData.SaveIndexerId;
                     rc = ServiceImpl.DoesSaveDataEntityExist(out bool saveExists, creationInfo.SpaceId, saveDataId);
 
                     if (rc.IsSuccess() && saveExists)
@@ -755,7 +755,7 @@ namespace LibHac.FsSrv
                 }
 
                 // The indexer's save data isn't tracked, so we don't need to update its state.
-                if (attribute.StaticSaveDataId != FileSystemServer.SaveIndexerId)
+                if (attribute.StaticSaveDataId != SaveData.SaveIndexerId)
                 {
                     // accessor shouldn't ever be null, but checking makes the analyzers happy
                     Abort.DoAbortUnless(accessor != null);
@@ -778,7 +778,7 @@ namespace LibHac.FsSrv
                 {
                     DeleteSaveDataFileSystemCore(creationInfo.SpaceId, saveDataId, false).IgnoreResult();
 
-                    if (accessor != null && saveDataId != FileSystemServer.SaveIndexerId)
+                    if (accessor != null && saveDataId != SaveData.SaveIndexerId)
                     {
                         rc = accessor.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
 
@@ -994,7 +994,7 @@ namespace LibHac.FsSrv
 
                 Result RemoveSaveIndexerEntry()
                 {
-                    if (tempSaveDataId == FileSystemServer.SaveIndexerId)
+                    if (tempSaveDataId == SaveData.SaveIndexerId)
                         return Result.Success;
 
                     if (isStaticSaveDataId)
