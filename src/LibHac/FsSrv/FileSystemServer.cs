@@ -41,9 +41,11 @@ namespace LibHac.FsSrv
             FileSystemProxyConfiguration fspConfig = InitializeFileSystemProxyConfiguration(config);
             this.InitializeFileSystemProxy(fspConfig);
 
-            FileSystemProxyImpl fsProxy = GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = Impl.GetFileSystemProxyServiceObject();
             ulong processId = Hos.Os.GetCurrentProcessId().Value;
-            fsProxy.SetCurrentProcess(processId).IgnoreResult();
+            fsProxy.Target.SetCurrentProcess(processId).IgnoreResult();
+
+            Hos.Fs.InitializeDfcFileSystemProxyServiceObject(fsProxy);
 
             var saveService = new SaveDataFileSystemService(fspConfig.SaveDataFileSystemService, processId);
 
@@ -164,21 +166,6 @@ namespace LibHac.FsSrv
             return fspConfig;
         }
 
-        private FileSystemProxyImpl GetFileSystemProxyServiceObject()
-        {
-            return new FileSystemProxyImpl(this);
-        }
-
-        private FileSystemProxyImpl GetFileSystemProxyForLoaderServiceObject()
-        {
-            return new FileSystemProxyImpl(this);
-        }
-
-        private ProgramRegistryImpl GetProgramRegistryServiceObject()
-        {
-            return new ProgramRegistryImpl(this);
-        }
-
         private class FileSystemProxyService : IServiceObject
         {
             private readonly FileSystemServer _server;
@@ -190,7 +177,7 @@ namespace LibHac.FsSrv
 
             public Result GetServiceObject(out object serviceObject)
             {
-                serviceObject = _server.GetFileSystemProxyServiceObject();
+                serviceObject = _server.Impl.GetFileSystemProxyServiceObject();
                 return Result.Success;
             }
         }
@@ -206,7 +193,7 @@ namespace LibHac.FsSrv
 
             public Result GetServiceObject(out object serviceObject)
             {
-                serviceObject = _server.GetFileSystemProxyForLoaderServiceObject();
+                serviceObject = _server.Impl.GetFileSystemProxyForLoaderServiceObject();
                 return Result.Success;
             }
         }
@@ -222,7 +209,7 @@ namespace LibHac.FsSrv
 
             public Result GetServiceObject(out object serviceObject)
             {
-                serviceObject = _server.GetProgramRegistryServiceObject();
+                serviceObject = _server.Impl.GetProgramRegistryServiceObject();
                 return Result.Success;
             }
         }

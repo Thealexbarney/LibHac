@@ -661,6 +661,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 
 2,6400,6449,,,PermissionDenied,
 
+2,6450,,,,PortAcceptableCountLimited,
 2,6452,,,,ExternalKeyAlreadyRegistered,
 2,6454,,,,NeedFlush,
 2,6455,,,,FileNotClosed,

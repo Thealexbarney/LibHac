@@ -1182,6 +1182,8 @@ namespace LibHac.Fs
                 /// <summary>Error code: 2002-6400; Range: 6400-6449; Inner value: 0x320002</summary>
                 public static Result.Base PermissionDenied { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6400, 6449); }
 
+                /// <summary>Error code: 2002-6450; Inner value: 0x326402</summary>
+                public static Result.Base PortAcceptableCountLimited => new Result.Base(ModuleFs, 6450);
                 /// <summary>Error code: 2002-6452; Inner value: 0x326802</summary>
                 public static Result.Base ExternalKeyAlreadyRegistered => new Result.Base(ModuleFs, 6452);
                 /// <summary>Error code: 2002-6454; Inner value: 0x326c02</summary>

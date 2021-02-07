@@ -54,15 +54,15 @@ namespace LibHac.Fs.Shim
                 throw new InvalidOperationException("Client was not initialized with a server object.");
             }
 
-            Result rc = fs.Hos.Sm.GetService(out IFileSystemProxy fsProxy, "fsp-srv");
+            Result rc = fs.Hos.Sm.GetService(out ReferenceCountedDisposable<IFileSystemProxy> fsProxy, "fsp-srv");
 
             if (rc.IsFailure())
             {
                 throw new HorizonResultException(rc, "Failed to get file system proxy service object.");
             }
 
-            fsProxy.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
-            return new ReferenceCountedDisposable<IFileSystemProxy>(fsProxy);
+            fsProxy.Target.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
+            return fsProxy;
         }
 
         public static ReferenceCountedDisposable<IFileSystemProxyForLoader> GetFileSystemProxyForLoaderServiceObject(
@@ -88,15 +88,16 @@ namespace LibHac.Fs.Shim
                 throw new InvalidOperationException("Client was not initialized with a server object.");
             }
 
-            Result rc = fs.Hos.Sm.GetService(out IFileSystemProxyForLoader fsProxy, "fsp-ldr");
+            Result rc = fs.Hos.Sm.GetService(out ReferenceCountedDisposable<IFileSystemProxyForLoader> fsProxy,
+                "fsp-ldr");
 
             if (rc.IsFailure())
             {
                 throw new HorizonResultException(rc, "Failed to get file system proxy service object.");
             }
 
-            fsProxy.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
-            return new ReferenceCountedDisposable<IFileSystemProxyForLoader>(fsProxy);
+            fsProxy.Target.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
+            return fsProxy;
         }
 
         public static ReferenceCountedDisposable<IProgramRegistry> GetProgramRegistryServiceObject(
@@ -122,19 +123,19 @@ namespace LibHac.Fs.Shim
                 throw new InvalidOperationException("Client was not initialized with a server object.");
             }
 
-            Result rc = fs.Hos.Sm.GetService(out IProgramRegistry registry, "fsp-pr");
+            Result rc = fs.Hos.Sm.GetService(out ReferenceCountedDisposable<IProgramRegistry> registry, "fsp-pr");
 
             if (rc.IsFailure())
             {
                 throw new HorizonResultException(rc, "Failed to get registry service object.");
             }
 
-            registry.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
-            return new ReferenceCountedDisposable<IProgramRegistry>(registry);
+            registry.Target.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
+            return registry;
         }
 
         /// <summary>
-        /// Sets a <see cref="IFileSystemProxy"/> service object to use for direct function calls
+        /// Sets an <see cref="IFileSystemProxy"/> service object to use for direct function calls
         /// instead of going over IPC. If using a DFC service object, this function should be
         /// called before calling <see cref="GetFileSystemProxyServiceObject"/>.
         /// </summary>
