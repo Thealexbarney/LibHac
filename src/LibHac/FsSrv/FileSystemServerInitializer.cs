@@ -57,7 +57,7 @@ namespace LibHac.FsSrv
         private static FileSystemProxyConfiguration InitializeFileSystemProxy(FileSystemServer server,
             FileSystemServerConfig config)
         {
-            var saveDataIndexerManager = new SaveDataIndexerManager(server.Globals.Hos.Fs, Fs.SaveData.SaveIndexerId,
+            var saveDataIndexerManager = new SaveDataIndexerManager(server.Hos.Fs, Fs.SaveData.SaveIndexerId,
                 new ArrayPoolMemoryResource(), new SdHandleManager(), false);
 
             var programRegistryService = new ProgramRegistryServiceImpl(server);

@@ -9,6 +9,7 @@ namespace LibHac.FsSrv
 
         public FileSystemServerImpl Impl => new FileSystemServerImpl(this);
         public StorageService Storage => new StorageService(this);
+        internal HorizonClient Hos => Globals.Hos;
 
         /// <summary>
         /// Creates a new <see cref="FileSystemServer"/> and registers its services using the provided HOS client.
@@ -36,6 +37,8 @@ namespace LibHac.FsSrv
     public readonly struct StorageService
     {
         internal readonly FileSystemServer FsSrv;
+        internal HorizonClient Hos => FsSrv.Hos;
+        internal ref FileSystemServerGlobals Globals => ref FsSrv.Globals;
 
         internal StorageService(FileSystemServer parentServer) => FsSrv = parentServer;
     }
@@ -44,7 +47,9 @@ namespace LibHac.FsSrv
     public readonly struct FileSystemServerImpl
     {
         internal readonly FileSystemServer FsSrv;
+        internal HorizonClient Hos => FsSrv.Hos;
+        internal ref FileSystemServerGlobals Globals => ref FsSrv.Globals;
 
-        public FileSystemServerImpl(FileSystemServer parentServer) => FsSrv = parentServer;
+        internal FileSystemServerImpl(FileSystemServer parentServer) => FsSrv = parentServer;
     }
 }

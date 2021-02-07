@@ -16,7 +16,7 @@ namespace LibHac.FsSrv.Impl
         private SdkMutexType _mutex;
 
         private FileSystemServer _fsServer;
-        private HorizonClient Hos => _fsServer.Globals.Hos;
+        private HorizonClient Hos => _fsServer.Hos;
 
         public LocationResolverSet(FileSystemServer fsServer)
         {

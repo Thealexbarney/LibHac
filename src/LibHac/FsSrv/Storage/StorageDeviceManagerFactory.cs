@@ -39,8 +39,8 @@ namespace LibHac.FsSrv.Storage
         public static IStorageDeviceManagerFactory GetStorageDeviceManagerFactory(this StorageService storage,
             IStorageDeviceManagerFactory factory)
         {
-            ref StorageDeviceManagerFactoryGlobals g = ref storage.FsSrv.Globals.StorageDeviceManagerFactory;
-            using var initGuard = new InitializationGuard(ref g.FactoryGuard, storage.FsSrv.Globals.InitMutex);
+            ref StorageDeviceManagerFactoryGlobals g = ref storage.Globals.StorageDeviceManagerFactory;
+            using var initGuard = new InitializationGuard(ref g.FactoryGuard, storage.Globals.InitMutex);
 
             if (initGuard.IsInitialized)
                 return g.Factory;

@@ -24,7 +24,7 @@ namespace LibHac.FsSrv
         private bool _isSdCardAccessible;
         // Timestamp getter
 
-        internal HorizonClient Hos => _config.FsServer.Globals.Hos;
+        internal HorizonClient Hos => _config.FsServer.Hos;
 
         public SaveDataFileSystemServiceImpl(in Configuration configuration)
         {

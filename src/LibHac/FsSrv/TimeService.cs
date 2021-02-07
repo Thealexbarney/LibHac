@@ -52,7 +52,7 @@ namespace LibHac.FsSrv
 
         private long GetSystemSeconds()
         {
-            OsState os = _fsServer.Globals.Hos.Os;
+            OsState os = _fsServer.Hos.Os;
 
             Tick tick = os.GetSystemTick();
             TimeSpan timeSpan = os.ConvertToTimeSpan(tick);

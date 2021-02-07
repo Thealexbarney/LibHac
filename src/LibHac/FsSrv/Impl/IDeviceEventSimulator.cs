@@ -16,25 +16,25 @@ namespace LibHac.FsSrv.Impl
     {
         public static SdCardEventSimulator GetSdCardEventSimulator(this FileSystemServerImpl fs)
         {
-            ref DeviceEventSimulatorGlobals g = ref fs.FsSrv.Globals.DeviceEventSimulator;
-            using var guard = new InitializationGuard(ref g.SdCardEventSimulatorInit, fs.FsSrv.Globals.InitMutex);
+            ref DeviceEventSimulatorGlobals g = ref fs.Globals.DeviceEventSimulator;
+            using var guard = new InitializationGuard(ref g.SdCardEventSimulatorInit, fs.Globals.InitMutex);
 
             if (guard.IsInitialized)
                 return g.SdCardEventSimulator;
 
-            g.SdCardEventSimulator = new SdCardEventSimulator(fs.FsSrv.Globals.Hos.Os);
+            g.SdCardEventSimulator = new SdCardEventSimulator(fs.Hos.Os);
             return g.SdCardEventSimulator;
         }
 
         public static GameCardEventSimulator GetGameCardEventSimulator(this FileSystemServerImpl fs)
         {
-            ref DeviceEventSimulatorGlobals g = ref fs.FsSrv.Globals.DeviceEventSimulator;
-            using var guard = new InitializationGuard(ref g.GameCardEventSimulatorInit, fs.FsSrv.Globals.InitMutex);
+            ref DeviceEventSimulatorGlobals g = ref fs.Globals.DeviceEventSimulator;
+            using var guard = new InitializationGuard(ref g.GameCardEventSimulatorInit, fs.Globals.InitMutex);
 
             if (guard.IsInitialized)
                 return g.GameCardEventSimulator;
 
-            g.GameCardEventSimulator = new GameCardEventSimulator(fs.FsSrv.Globals.Hos.Os);
+            g.GameCardEventSimulator = new GameCardEventSimulator(fs.Hos.Os);
             return g.GameCardEventSimulator;
         }
     }
