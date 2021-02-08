@@ -7,14 +7,14 @@ namespace LibHac.FsSrv
 {
     public class DefaultFsServerObjects
     {
-        public FileSystemCreators FsCreators { get; set; }
+        public FileSystemCreatorInterfaces FsCreators { get; set; }
         public IDeviceOperator DeviceOperator { get; set; }
         public EmulatedGameCard GameCard { get; set; }
         public EmulatedSdCard SdCard { get; set; }
 
         public static DefaultFsServerObjects GetDefaultEmulatedCreators(IFileSystem rootFileSystem, KeySet keySet)
         {
-            var creators = new FileSystemCreators();
+            var creators = new FileSystemCreatorInterfaces();
             var gameCard = new EmulatedGameCard(keySet);
             var sdCard = new EmulatedSdCard();
 

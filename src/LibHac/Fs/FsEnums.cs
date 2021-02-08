@@ -200,9 +200,25 @@ namespace LibHac.Fs
 
     public enum SimulatingDeviceDetectionMode
     {
+        NoSimulation = 0,
+        DeviceAttached = 1,
+        DeviceRemoved = 2
+    }
+
+    public enum SimulatingDeviceAccessFailureEventType
+    {
         None = 0,
-        Inserted = 1,
-        NotInserted = 2
+        AccessTimeoutFailure = 1,
+        AccessFailure = 2,
+        DataCorruption = 3
+    }
+
+    [Flags]
+    public enum SimulatingDeviceTargetOperation
+    {
+        None = 0,
+        Read = 1 << 0,
+        Write = 1 << 1
     }
 
     public enum FsStackUsageThreadType
@@ -210,5 +226,35 @@ namespace LibHac.Fs
         MainThread = 0,
         IpcWorker = 1,
         PipelineWorker = 2
+    }
+
+    public enum MmcPartition
+    {
+        UserData = 0,
+        BootPartition1 = 1,
+        BootPartition2 = 2
+    }
+
+    public enum MmcSpeedMode
+    {
+        Identification = 0,
+        LegacySpeed = 1,
+        HighSpeed = 2,
+        Hs200 = 3,
+        Hs400 = 4,
+        Unknown = 5
+    }
+
+    public enum SdCardSpeedMode
+    {
+        Identification = 0,
+        DefaultSpeed = 1,
+        HighSpeed = 2,
+        Sdr12 = 3,
+        Sdr25 = 4,
+        Sdr50 = 5,
+        Sdr104 = 6,
+        Ddr50 = 7,
+        Unknown = 8,
     }
 }

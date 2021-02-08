@@ -4,23 +4,26 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Creators;
+using LibHac.FsSrv.Impl;
 
 namespace LibHac.FsSrv
 {
     public class FileSystemProxyCoreImpl
     {
-        internal FileSystemProxyConfiguration Config { get; }
-        private FileSystemCreators FsCreators => Config.FsCreatorInterfaces;
-        internal ProgramRegistryImpl ProgramRegistry { get; }
+        private FileSystemCreatorInterfaces FsCreators { get; }
+        private BaseFileSystemServiceImpl BaseFileSystemService { get; }
+        private EncryptionSeed SdEncryptionSeed { get; set; }
 
-        private byte[] SdEncryptionSeed { get; } = new byte[0x10];
-
-        private const string NintendoDirectoryName = "Nintendo";
-
-        public FileSystemProxyCoreImpl(FileSystemProxyConfiguration config)
+        public FileSystemProxyCoreImpl(FileSystemCreatorInterfaces fsCreators, BaseFileSystemServiceImpl baseFsService)
         {
-            Config = config;
-            ProgramRegistry = new ProgramRegistryImpl(Config.ProgramRegistryService);
+            FsCreators = fsCreators;
+            BaseFileSystemService = baseFsService;
+        }
+
+        public Result OpenCloudBackupWorkStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+            CloudBackupWorkStorageId storageId)
+        {
+            throw new NotImplementedException();
         }
 
         public Result OpenCustomStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
@@ -28,44 +31,60 @@ namespace LibHac.FsSrv
         {
             fileSystem = default;
 
-            switch (storageId)
+            ReferenceCountedDisposable<IFileSystem> tempFs = null;
+            ReferenceCountedDisposable<IFileSystem> encryptedFs = null;
+            try
             {
-                case CustomStorageId.SdCard:
+                Span<byte> path = stackalloc byte[0x40];
+
+                switch (storageId)
                 {
-                    Result rc = FsCreators.SdCardFileSystemCreator.Create(out IFileSystem sdFs, false);
-                    if (rc.IsFailure()) return rc;
+                    case CustomStorageId.SdCard:
+                    {
+                        Result rc = BaseFileSystemService.OpenSdCardProxyFileSystem(out tempFs);
+                        if (rc.IsFailure()) return rc;
 
-                    string customStorageDir = CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.SdCard);
-                    string subDirName = $"/{NintendoDirectoryName}/{customStorageDir}";
+                        U8Span customStorageDir = CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.SdCard);
+                        var sb = new U8StringBuilder(path);
+                        sb.Append((byte)'/')
+                            .Append(CommonPaths.SdCardNintendoRootDirectoryName)
+                            .Append((byte)'/')
+                            .Append(customStorageDir);
 
-                    rc = Util.CreateSubFileSystem(out IFileSystem subFs, sdFs, subDirName, true);
-                    if (rc.IsFailure()) return rc;
+                        rc = Utility.WrapSubDirectory(out tempFs, ref tempFs, new U8Span(path), true);
+                        if (rc.IsFailure()) return rc;
 
-                    rc = FsCreators.EncryptedFileSystemCreator.Create(out IFileSystem encryptedFs, subFs,
-                        EncryptedFsKeyId.CustomStorage, SdEncryptionSeed);
-                    if (rc.IsFailure()) return rc;
+                        rc = FsCreators.EncryptedFileSystemCreator.Create(out encryptedFs, tempFs,
+                            EncryptedFsKeyId.CustomStorage, SdEncryptionSeed);
+                        if (rc.IsFailure()) return rc;
 
-                    fileSystem = new ReferenceCountedDisposable<IFileSystem>(encryptedFs);
-                    return Result.Success;
+                        return Result.Success;
+                    }
+                    case CustomStorageId.System:
+                    {
+                        Result rc = BaseFileSystemService.OpenBisFileSystem(out tempFs, U8Span.Empty,
+                            BisPartitionId.User);
+                        if (rc.IsFailure()) return rc;
+
+                        U8Span customStorageDir = CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System);
+                        var sb = new U8StringBuilder(path);
+                        sb.Append((byte)'/')
+                            .Append(customStorageDir);
+
+                        rc = Utility.WrapSubDirectory(out tempFs, ref tempFs, new U8Span(path), true);
+                        if (rc.IsFailure()) return rc;
+
+                        fileSystem = Shared.Move(ref tempFs);
+                        return Result.Success;
+                    }
+                    default:
+                        return ResultFs.InvalidArgument.Log();
                 }
-                case CustomStorageId.System:
-                {
-                    Result rc = FsCreators.BuiltInStorageFileSystemCreator.Create(out IFileSystem userFs, string.Empty,
-                        BisPartitionId.User);
-                    if (rc.IsFailure()) return rc;
-
-                    string customStorageDir = CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System);
-                    string subDirName = $"/{customStorageDir}";
-
-                    rc = Util.CreateSubFileSystem(out IFileSystem subFs, userFs, subDirName, true);
-                    if (rc.IsFailure()) return rc;
-
-                    // Todo: Get shared object from earlier functions
-                    fileSystem = new ReferenceCountedDisposable<IFileSystem>(subFs);
-                    return Result.Success;
-                }
-                default:
-                    return ResultFs.InvalidArgument.Log();
+            }
+            finally
+            {
+                tempFs?.Dispose();
+                encryptedFs?.Dispose();
             }
         }
 
@@ -121,7 +140,7 @@ namespace LibHac.FsSrv
 
         public Result SetSdCardEncryptionSeed(in EncryptionSeed seed)
         {
-            seed.Value.CopyTo(SdEncryptionSeed);
+            SdEncryptionSeed = seed;
             return Result.Success;
         }
     }

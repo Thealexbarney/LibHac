@@ -1,10 +1,11 @@
-﻿using LibHac.Fs;
+﻿using System;
+using LibHac.Fs;
 using LibHac.Ncm;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.FsSrv.Sf
 {
-    public interface IFileSystemProxyForLoader
+    public interface IFileSystemProxyForLoader : IDisposable
     {
         Result OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             out CodeVerificationData verificationData, in FspPath path, ProgramId programId);

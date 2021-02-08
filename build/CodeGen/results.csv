@@ -160,6 +160,8 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,2500,2999,,,GameCardAccessFailed,
 2,2503,,,,InvalidBufferForGameCard,
 2,2520,,,,GameCardNotInserted,
+2,2531,,,,GameCardCardAccessTimeout,
+
 2,2951,,,,GameCardNotInsertedOnGetHandle,
 2,2952,,,,InvalidGameCardHandleOnRead,
 2,2954,,,,InvalidGameCardHandleOnGetCardInfo,
@@ -517,6 +519,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 
 2,4771,4779,,,SignedSystemPartitionDataCorrupted,
 2,4781,,,,GameCardLogoDataCorrupted,
+2,4785,,,,SimulatedDeviceDataCorrupted,
 
 2,4790,4799,,,MultiCommitContextCorrupted,
 2,4791,,,,InvalidMultiCommitContextVersion,The version of the multi-commit context file is too high for the current MultiCommitManager implementation.
@@ -658,6 +661,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 
 2,6400,6449,,,PermissionDenied,
 
+2,6450,,,,PortAcceptableCountLimited,
 2,6452,,,,ExternalKeyAlreadyRegistered,
 2,6454,,,,NeedFlush,
 2,6455,,,,FileNotClosed,
@@ -863,10 +867,11 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 10,811,819,a,,RequestDeferred,
 10,812,,,,RequestDeferredByUser,
 
+11,1,,,,NotSupported,
 11,100,299,a,,OutOfResource,
 11,102,,,,OutOfSessionMemory,
 11,131,139,,,OutOfSessions,
-11,141,,,,PointerBufferTooSmall,
+11,141,,,,InsufficientPointerTransferBuffer,
 
 11,200,,,,OutOfDomains,
 11,301,,,,SessionClosed,

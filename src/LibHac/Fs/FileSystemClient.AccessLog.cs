@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs.Accessors;
+using LibHac.Fs.Shim;
 using LibHac.FsSrv.Sf;
 using LibHac.Sf;
 
@@ -19,9 +20,9 @@ namespace LibHac.Fs
         {
             if (HasFileSystemServer())
             {
-                IFileSystemProxy fsProxy = GetFileSystemProxyServiceObject();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = this.GetFileSystemProxyServiceObject();
 
-                return fsProxy.GetGlobalAccessLogMode(out mode);
+                return fsProxy.Target.GetGlobalAccessLogMode(out mode);
             }
 
             mode = GlobalAccessLogMode;
@@ -32,9 +33,9 @@ namespace LibHac.Fs
         {
             if (HasFileSystemServer())
             {
-                IFileSystemProxy fsProxy = GetFileSystemProxyServiceObject();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = this.GetFileSystemProxyServiceObject();
 
-                return fsProxy.SetGlobalAccessLogMode(mode);
+                return fsProxy.Target.SetGlobalAccessLogMode(mode);
             }
 
             GlobalAccessLogMode = mode;
@@ -69,9 +70,10 @@ namespace LibHac.Fs
                 {
                     if (HasFileSystemServer())
                     {
-                        IFileSystemProxy fsProxy = GetFileSystemProxyServiceObject();
+                        using ReferenceCountedDisposable<IFileSystemProxy> fsProxy =
+                            this.GetFileSystemProxyServiceObject();
 
-                        Result rc = fsProxy.GetGlobalAccessLogMode(out GlobalAccessLogMode globalMode);
+                        Result rc = fsProxy.Target.GetGlobalAccessLogMode(out GlobalAccessLogMode globalMode);
                         GlobalAccessLogMode = globalMode;
 
                         if (rc.IsFailure())
@@ -136,22 +138,22 @@ namespace LibHac.Fs
             return handle.Directory.Parent.IsAccessLogEnabled;
         }
 
-        internal void OutputAccessLog(Result result, TimeSpan startTime, TimeSpan endTime, string message, [CallerMemberName] string caller = "")
+        internal void OutputAccessLog(Result result, System.TimeSpan startTime, System.TimeSpan endTime, string message, [CallerMemberName] string caller = "")
         {
             OutputAccessLogImpl(result, startTime, endTime, 0, message, caller);
         }
 
-        internal void OutputAccessLog(Result result, TimeSpan startTime, TimeSpan endTime, FileHandle handle, string message, [CallerMemberName] string caller = "")
+        internal void OutputAccessLog(Result result, System.TimeSpan startTime, System.TimeSpan endTime, FileHandle handle, string message, [CallerMemberName] string caller = "")
         {
             OutputAccessLogImpl(result, startTime, endTime, handle.GetId(), message, caller);
         }
 
-        internal void OutputAccessLog(Result result, TimeSpan startTime, TimeSpan endTime, DirectoryHandle handle, string message, [CallerMemberName] string caller = "")
+        internal void OutputAccessLog(Result result, System.TimeSpan startTime, System.TimeSpan endTime, DirectoryHandle handle, string message, [CallerMemberName] string caller = "")
         {
             OutputAccessLogImpl(result, startTime, endTime, handle.GetId(), message, caller);
         }
 
-        internal void OutputAccessLogUnlessResultSuccess(Result result, TimeSpan startTime, TimeSpan endTime, string message, [CallerMemberName] string caller = "")
+        internal void OutputAccessLogUnlessResultSuccess(Result result, System.TimeSpan startTime, System.TimeSpan endTime, string message, [CallerMemberName] string caller = "")
         {
             if (result.IsFailure())
             {
@@ -159,7 +161,7 @@ namespace LibHac.Fs
             }
         }
 
-        internal void OutputAccessLogUnlessResultSuccess(Result result, TimeSpan startTime, TimeSpan endTime, FileHandle handle, string message, [CallerMemberName] string caller = "")
+        internal void OutputAccessLogUnlessResultSuccess(Result result, System.TimeSpan startTime, System.TimeSpan endTime, FileHandle handle, string message, [CallerMemberName] string caller = "")
         {
             if (result.IsFailure())
             {
@@ -167,7 +169,7 @@ namespace LibHac.Fs
             }
         }
 
-        internal void OutputAccessLogUnlessResultSuccess(Result result, TimeSpan startTime, TimeSpan endTime, DirectoryHandle handle, string message, [CallerMemberName] string caller = "")
+        internal void OutputAccessLogUnlessResultSuccess(Result result, System.TimeSpan startTime, System.TimeSpan endTime, DirectoryHandle handle, string message, [CallerMemberName] string caller = "")
         {
             if (result.IsFailure())
             {
@@ -175,7 +177,7 @@ namespace LibHac.Fs
             }
         }
 
-        internal void OutputAccessLogImpl(Result result, TimeSpan startTime, TimeSpan endTime, int handleId,
+        internal void OutputAccessLogImpl(Result result, System.TimeSpan startTime, System.TimeSpan endTime, int handleId,
             string message, [CallerMemberName] string caller = "")
         {
             if (GlobalAccessLogMode.HasFlag(GlobalAccessLogMode.Log))
@@ -187,8 +189,8 @@ namespace LibHac.Fs
             {
                 string logString = AccessLogHelpers.BuildDefaultLogLine(result, startTime, endTime, handleId, message, caller);
 
-                IFileSystemProxy fsProxy = GetFileSystemProxyServiceObject();
-                fsProxy.OutputAccessLogToSdCard(new InBuffer(logString.ToU8Span())).IgnoreResult();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = this.GetFileSystemProxyServiceObject();
+                fsProxy.Target.OutputAccessLogToSdCard(new InBuffer(logString.ToU8Span())).IgnoreResult();
             }
         }
 
@@ -199,9 +201,9 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog(logTarget))
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = operation();
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, textGenerator(), caller);
             }
@@ -220,9 +222,9 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog(logTarget) && handle.File.Parent.IsAccessLogEnabled)
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = operation();
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, handle, textGenerator(), caller);
             }
@@ -241,9 +243,9 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog(logTarget))
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = operation();
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLogUnlessResultSuccess(rc, startTime, endTime, textGenerator(), caller);
             }

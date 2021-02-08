@@ -17,9 +17,9 @@ namespace LibHac.Fs.Shim
             ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
             try
             {
-                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                Result rc = fsProxy.OpenDeviceOperator(out deviceOperator);
+                Result rc = fsProxy.Target.OpenDeviceOperator(out deviceOperator);
                 if (rc.IsFailure()) return rc;
 
                 return deviceOperator.Target.GetGameCardHandle(out handle);
@@ -35,9 +35,9 @@ namespace LibHac.Fs.Shim
             ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
             try
             {
-                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                Result rc = fsProxy.OpenDeviceOperator(out deviceOperator);
+                Result rc = fsProxy.Target.OpenDeviceOperator(out deviceOperator);
                 if (rc.IsFailure()) throw new LibHacException("Abort");
 
                 rc = deviceOperator.Target.IsGameCardInserted(out bool isInserted);
@@ -59,9 +59,9 @@ namespace LibHac.Fs.Shim
             ReferenceCountedDisposable<IStorageSf> sfStorage = null;
             try
             {
-                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                Result rc = fsProxy.OpenGameCardStorage(out sfStorage, handle, partitionType);
+                Result rc = fsProxy.Target.OpenGameCardStorage(out sfStorage, handle, partitionType);
                 if (rc.IsFailure()) return rc;
 
                 storage = new StorageServiceObjectAdapter(sfStorage);
@@ -79,9 +79,10 @@ namespace LibHac.Fs.Shim
             Result rc = MountHelpers.CheckMountNameAcceptingReservedMountName(mountName);
             if (rc.IsFailure()) return rc;
 
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
-            rc = fsProxy.OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> cardFs, handle, partitionId);
+            rc = fsProxy.Target.OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> cardFs, handle,
+                partitionId);
             if (rc.IsFailure()) return rc;
 
             using (cardFs)

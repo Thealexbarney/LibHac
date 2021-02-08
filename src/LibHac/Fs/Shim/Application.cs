@@ -1,5 +1,4 @@
-﻿using System;
-using LibHac.Common;
+﻿using LibHac.Common;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
@@ -14,9 +13,9 @@ namespace LibHac.Fs.Shim
 
             if (fs.IsEnabledAccessLog(AccessLogTarget.System))
             {
-                TimeSpan startTime = fs.Time.GetCurrent();
+                System.TimeSpan startTime = fs.Time.GetCurrent();
                 rc = Run(fs, mountName, path);
-                TimeSpan endTime = fs.Time.GetCurrent();
+                System.TimeSpan endTime = fs.Time.GetCurrent();
 
                 fs.OutputAccessLog(rc, startTime, endTime, "");
             }
@@ -42,10 +41,10 @@ namespace LibHac.Fs.Shim
 
                 FspPath.FromSpan(out FspPath sfPath, path);
 
-                IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
-                rc = fsProxy.OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in sfPath,
-                    default, FileSystemProxyType.Package);
+                rc = fsProxy.Target.OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+                    in sfPath, default, FileSystemProxyType.Package);
                 if (rc.IsFailure()) return rc;
 
                 using (fileSystem)

@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using System;
+using LibHac.Fs;
 using LibHac.Ncm;
 using LibHac.Sf;
 using LibHac.Spl;
@@ -8,7 +9,7 @@ using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.FsSrv.Sf
 {
-    public interface IFileSystemProxy
+    public interface IFileSystemProxy : IDisposable
     {
         Result SetCurrentProcess(ulong processId);
         Result OpenDataFileSystemByCurrentProcess(out ReferenceCountedDisposable<IFileSystemSf> fileSystem);
@@ -114,7 +115,7 @@ namespace LibHac.FsSrv.Sf
         Result OutputAccessLogToSdCard(InBuffer textBuffer);
         Result RegisterUpdatePartition();
         Result OpenRegisteredUpdatePartition(out ReferenceCountedDisposable<IFileSystemSf> fileSystem);
-        Result GetAndClearMemoryReportInfo(out MemoryReportInfo report);
+        Result GetAndClearMemoryReportInfo(out MemoryReportInfo reportInfo);
         Result GetProgramIndexForAccessLog(out int programIndex, out int programCount);
         Result GetFsStackUsage(out uint stackUsage, FsStackUsageThreadType threadType);
         Result UnsetSaveDataRootPath();

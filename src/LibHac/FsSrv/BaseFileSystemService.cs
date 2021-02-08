@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using System;
+using LibHac.Fs;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Sf;
@@ -16,6 +17,68 @@ namespace LibHac.FsSrv
         {
             _serviceImpl = serviceImpl;
             _processId = processId;
+        }
+
+        private Result GetProgramInfo(out ProgramInfo programInfo)
+        {
+            return GetProgramInfo(out programInfo, _processId);
+        }
+
+        private Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
+        {
+            return _serviceImpl.GetProgramInfo(out programInfo, processId);
+        }
+
+        private Result CheckCapabilityById(BaseFileSystemId id, ulong processId)
+        {
+            Result rc = GetProgramInfo(out ProgramInfo programInfo, processId);
+            if (rc.IsFailure()) return rc;
+
+            if (id == BaseFileSystemId.TemporaryDirectory)
+            {
+                Accessibility accessibility =
+                    programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountTemporaryDirectory);
+
+                if (!accessibility.CanRead || !accessibility.CanWrite)
+                    return ResultFs.PermissionDenied.Log();
+            }
+            else
+            {
+                Accessibility accessibility =
+                    programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountAllBaseFileSystem);
+
+                if (!accessibility.CanRead || !accessibility.CanWrite)
+                    return ResultFs.PermissionDenied.Log();
+            }
+
+            return Result.Success;
+        }
+
+        public Result OpenBaseFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+            BaseFileSystemId fileSystemId)
+        {
+            fileSystem = default;
+
+            Result rc = CheckCapabilityById(fileSystemId, _processId);
+            if (rc.IsFailure()) return rc;
+
+            ReferenceCountedDisposable<IFileSystem> fs = null;
+
+            try
+            {
+                // Open the file system
+                rc = _serviceImpl.OpenBaseFileSystem(out fs, fileSystemId);
+                if (rc.IsFailure()) return rc;
+
+                // Create an SF adapter for the file system
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs);
+
+                return Result.Success;
+            }
+            finally
+            {
+                fs?.Dispose();
+            }
         }
 
         public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath rootPath,
@@ -69,6 +132,11 @@ namespace LibHac.FsSrv
             {
                 fs?.Dispose();
             }
+        }
+
+        public Result SetBisRootForHost(BisPartitionId partitionId, in FspPath path)
+        {
+            throw new NotImplementedException();
         }
 
         public Result CreatePaddingFile(long size)
@@ -201,14 +269,14 @@ namespace LibHac.FsSrv
                 return ResultFs.PermissionDenied.Log();
 
             // Get the base file system ID
-            int id;
+            BaseFileSystemId fileSystemId;
             switch (directoryId)
             {
                 case ImageDirectoryId.Nand:
-                    id = 0;
+                    fileSystemId = BaseFileSystemId.ImageDirectoryNand;
                     break;
                 case ImageDirectoryId.SdCard:
-                    id = 1;
+                    fileSystemId = BaseFileSystemId.ImageDirectorySdCard;
                     break;
                 default:
                     return ResultFs.InvalidArgument.Log();
@@ -217,7 +285,7 @@ namespace LibHac.FsSrv
 
             try
             {
-                rc = _serviceImpl.OpenBaseFileSystem(out fs, id);
+                rc = _serviceImpl.OpenBaseFileSystem(out fs, fileSystemId);
                 if (rc.IsFailure()) return rc;
 
                 // Create an SF adapter for the file system
@@ -247,11 +315,6 @@ namespace LibHac.FsSrv
 
             bisWiper = new ReferenceCountedDisposable<IWiper>(wiper);
             return Result.Success;
-        }
-
-        private Result GetProgramInfo(out ProgramInfo programInfo)
-        {
-            return _serviceImpl.GetProgramInfo(out programInfo, _processId);
         }
     }
 }

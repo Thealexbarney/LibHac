@@ -1,7 +1,7 @@
 ﻿using System;
 using LibHac.Fs.Impl;
 
-namespace LibHac.FsSrv.Storage
+namespace LibHac.GcSrv
 {
     internal interface IGameCardDeviceManager
     {

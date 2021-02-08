@@ -1,9 +1,8 @@
-﻿using System.Threading;
-using LibHac.Bcat;
+﻿using System.Diagnostics;
+using System.Threading;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs.Shim;
-using LibHac.FsSrv;
 using LibHac.FsSrv.Impl;
 using LibHac.Ncm;
 using LibHac.Os;
@@ -14,33 +13,29 @@ namespace LibHac
     public class Horizon
     {
         private const int InitialProcessCountMax = 0x50;
+        internal long StartTick { get; }
         internal ITimeSpanGenerator Time { get; }
         internal ServiceManager ServiceManager { get; }
         private HorizonClient LoaderClient { get; }
 
-        // long instead of ulong because the ulong Interlocked.Increment overload
-        // wasn't added until .NET 5
-        private long _currentInitialProcessId;
-        private long _currentProcessId;
+        private ulong _currentInitialProcessId;
+        private ulong _currentProcessId;
 
-        public Horizon(ITimeSpanGenerator timer, FileSystemServerConfig fsServerConfig)
+        // Todo: Initialize with a configuration object
+        public Horizon(ITimeSpanGenerator timer)
         {
             _currentProcessId = InitialProcessCountMax;
 
             Time = timer ?? new StopWatchTimeSpanGenerator();
+            StartTick = Stopwatch.GetTimestamp();
             ServiceManager = new ServiceManager();
-
-            // ReSharper disable ObjectCreationAsStatement
-            new FileSystemServer(CreatePrivilegedHorizonClient(), fsServerConfig);
-            new BcatServer(CreateHorizonClient());
-            // ReSharper restore ObjectCreationAsStatement
 
             LoaderClient = CreatePrivilegedHorizonClient();
         }
 
         public HorizonClient CreatePrivilegedHorizonClient()
         {
-            ulong processId = (ulong)Interlocked.Increment(ref _currentInitialProcessId);
+            ulong processId = Interlocked.Increment(ref _currentInitialProcessId);
 
             Abort.DoAbortUnless(processId <= InitialProcessCountMax, "Created too many privileged clients.");
 
@@ -51,7 +46,7 @@ namespace LibHac
 
         public HorizonClient CreateHorizonClient()
         {
-            ulong processId = (ulong)Interlocked.Increment(ref _currentProcessId);
+            ulong processId = Interlocked.Increment(ref _currentProcessId);
 
             // Todo: Register process with FS
 

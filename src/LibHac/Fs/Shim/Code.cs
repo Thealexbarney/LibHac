@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
@@ -17,9 +16,9 @@ namespace LibHac.Fs.Shim
 
             if (fs.IsEnabledAccessLog(AccessLogTarget.System))
             {
-                TimeSpan startTime = fs.Time.GetCurrent();
+                System.TimeSpan startTime = fs.Time.GetCurrent();
                 rc = MountCodeImpl(fs, out verificationData, mountName, path, programId);
-                TimeSpan endTime = fs.Time.GetCurrent();
+                System.TimeSpan endTime = fs.Time.GetCurrent();
 
                 fs.OutputAccessLog(rc, startTime, endTime,
                     $", name: \"{mountName.ToString()}\", name: \"{path.ToString()}\", programid: 0x{programId}");
@@ -48,10 +47,11 @@ namespace LibHac.Fs.Shim
             rc = FspPath.FromSpan(out FspPath fsPath, path);
             if (rc.IsFailure()) return rc;
 
-            IFileSystemProxyForLoader fsProxy = fs.GetFileSystemProxyForLoaderServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxyForLoader> fsProxy =
+                fs.GetFileSystemProxyForLoaderServiceObject();
 
-            rc = fsProxy.OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystemSf> codeFs, out verificationData,
-                in fsPath, programId);
+            rc = fsProxy.Target.OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystemSf> codeFs,
+                out verificationData, in fsPath, programId);
             if (rc.IsFailure()) return rc;
 
             using (codeFs)

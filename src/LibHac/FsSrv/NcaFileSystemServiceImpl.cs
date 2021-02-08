@@ -10,6 +10,7 @@ using LibHac.FsSystem;
 using LibHac.FsSystem.NcaUtils;
 using LibHac.Lr;
 using LibHac.Ncm;
+using LibHac.Os;
 using LibHac.Spl;
 using LibHac.Util;
 using RightsId = LibHac.Fs.RightsId;
@@ -28,14 +29,14 @@ namespace LibHac.FsSrv
         private int _romFsRemountForDataCorruptionCount;
         private int _romfsUnrecoverableDataCorruptionByRemountCount;
         private int _romFsRecoveredByInvalidateCacheCount;
-        private object _romfsCountLocker;
+        private SdkMutexType _romfsCountMutex;
 
         public NcaFileSystemServiceImpl(in Configuration configuration, ExternalKeySet externalKeySet)
         {
             _config = configuration;
             _externalKeyManager = externalKeySet;
-            _locationResolverSet = new LocationResolverSet(_config.HorizonClient);
-            _romfsCountLocker = new object();
+            _locationResolverSet = new LocationResolverSet(_config.FsServer);
+            _romfsCountMutex.Initialize();
         }
 
         public struct Configuration
@@ -49,14 +50,12 @@ namespace LibHac.FsSrv
             public ISubDirectoryFileSystemCreator SubDirectoryFsCreator;
             public IEncryptedFileSystemCreator EncryptedFsCreator;
             public ProgramRegistryServiceImpl ProgramRegistryService;
-            // AccessFailureService
+            public AccessFailureManagementServiceImpl AccessFailureManagementService;
             public InternalProgramIdRangeForSpeedEmulation SpeedEmulationRange;
 
             // LibHac additions
-            public HorizonClient HorizonClient;
-            public ProgramRegistryImpl ProgramRegistry;
+            public FileSystemServer FsServer;
         }
-
 
         private struct MountInfo
         {
@@ -65,7 +64,6 @@ namespace LibHac.FsSrv
             public bool IsHostFs;
             public bool CanMountNca;
         }
-
 
         public Result OpenFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, U8Span path,
             FileSystemProxyType type, ulong id)
@@ -881,41 +879,37 @@ namespace LibHac.FsSrv
 
         public void IncrementRomFsRemountForDataCorruptionCount()
         {
-            lock (_romfsCountLocker)
-            {
-                _romFsRemountForDataCorruptionCount++;
-            }
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _romfsCountMutex);
+
+            _romFsRemountForDataCorruptionCount++;
         }
 
         public void IncrementRomFsUnrecoverableDataCorruptionByRemountCount()
         {
-            lock (_romfsCountLocker)
-            {
-                _romfsUnrecoverableDataCorruptionByRemountCount++;
-            }
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _romfsCountMutex);
+
+            _romfsUnrecoverableDataCorruptionByRemountCount++;
         }
 
         public void IncrementRomFsRecoveredByInvalidateCacheCount()
         {
-            lock (_romfsCountLocker)
-            {
-                _romFsRecoveredByInvalidateCacheCount++;
-            }
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _romfsCountMutex);
+
+            _romFsRecoveredByInvalidateCacheCount++;
         }
 
         public void GetAndClearRomFsErrorInfo(out int recoveredByRemountCount, out int unrecoverableCount,
             out int recoveredByCacheInvalidationCount)
         {
-            lock (_romfsCountLocker)
-            {
-                recoveredByRemountCount = _romFsRemountForDataCorruptionCount;
-                unrecoverableCount = _romfsUnrecoverableDataCorruptionByRemountCount;
-                recoveredByCacheInvalidationCount = _romFsRecoveredByInvalidateCacheCount;
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _romfsCountMutex);
 
-                _romFsRemountForDataCorruptionCount = 0;
-                _romfsUnrecoverableDataCorruptionByRemountCount = 0;
-                _romFsRecoveredByInvalidateCacheCount = 0;
-            }
+            recoveredByRemountCount = _romFsRemountForDataCorruptionCount;
+            unrecoverableCount = _romfsUnrecoverableDataCorruptionByRemountCount;
+            recoveredByCacheInvalidationCount = _romFsRecoveredByInvalidateCacheCount;
+
+            _romFsRemountForDataCorruptionCount = 0;
+            _romfsUnrecoverableDataCorruptionByRemountCount = 0;
+            _romFsRecoveredByInvalidateCacheCount = 0;
         }
 
         public Result OpenHostFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, U8Span path, bool openCaseSensitive)
@@ -964,12 +958,14 @@ namespace LibHac.FsSrv
 
         internal Result GetProgramInfoByProcessId(out ProgramInfo programInfo, ulong processId)
         {
-            return _config.ProgramRegistry.GetProgramInfo(out programInfo, processId);
+            var registry = new ProgramRegistryImpl(_config.FsServer);
+            return registry.GetProgramInfo(out programInfo, processId);
         }
 
         internal Result GetProgramInfoByProgramId(out ProgramInfo programInfo, ulong programId)
         {
-            return _config.ProgramRegistry.GetProgramInfoByProgramId(out programInfo, programId);
+            var registry = new ProgramRegistryImpl(_config.FsServer);
+            return registry.GetProgramInfoByProgramId(out programInfo, programId);
         }
 
         private Result GetPartitionIndex(out int index, FileSystemProxyType fspType)

@@ -7,14 +7,28 @@ namespace LibHac.Fs.Impl
     {
         public Result GetHandle(out StorageDeviceHandle handle)
         {
-            return SdCardManagement.GetCurrentSdCardHandle(out handle);
+            return GetCurrentSdCardHandle(out handle);
         }
 
         public bool IsValid(in StorageDeviceHandle handle)
         {
             // Note: Nintendo ignores the result here.
-            SdCardManagement.IsSdCardHandleValid(out bool isValid, in handle).IgnoreResult();
+            IsSdCardHandleValid(out bool isValid, in handle).IgnoreResult();
             return isValid;
+        }
+
+        // Todo: Use FsSrv.Storage
+        private static Result GetCurrentSdCardHandle(out StorageDeviceHandle handle)
+        {
+            handle = new StorageDeviceHandle(1, StorageDevicePortId.SdCard);
+            return Result.Success;
+        }
+
+        private static Result IsSdCardHandleValid(out bool isValid, in StorageDeviceHandle handle)
+        {
+            isValid = handle.PortId == StorageDevicePortId.SdCard;
+
+            return Result.Success;
         }
     }
 }

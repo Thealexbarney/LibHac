@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace LibHac
 {
@@ -7,7 +6,7 @@ namespace LibHac
     {
         private Stopwatch Timer = Stopwatch.StartNew();
 
-        public TimeSpan GetCurrent()
+        public System.TimeSpan GetCurrent()
         {
             return Timer.Elapsed;
         }

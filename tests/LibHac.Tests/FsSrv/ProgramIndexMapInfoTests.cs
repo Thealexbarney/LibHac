@@ -40,8 +40,9 @@ namespace LibHac.Tests.FsSrv
 
             for (int i = 0; i < programs.Length; i++)
             {
-                Assert.Success(programs[i].Fs.GetFileSystemProxyServiceObject()
-                    .GetProgramIndexForAccessLog(out int programIndex, out int programCount));
+                using ReferenceCountedDisposable<LibHac.FsSrv.Sf.IFileSystemProxy> fsProxy =
+                    programs[i].Fs.GetFileSystemProxyServiceObject();
+                Assert.Success(fsProxy.Target.GetProgramIndexForAccessLog(out int programIndex, out int programCount));
 
                 Assert.Equal(i, programIndex);
                 Assert.Equal(count, programCount);

@@ -24,7 +24,7 @@ namespace LibHac.FsSrv
         private bool _isSdCardAccessible;
         // Timestamp getter
 
-        internal HorizonClient Hos => _config.HorizonClient;
+        internal HorizonClient Hos => _config.FsServer.Hos;
 
         public SaveDataFileSystemServiceImpl(in Configuration configuration)
         {
@@ -48,13 +48,13 @@ namespace LibHac.FsSrv
             public ISaveDataIndexerManager SaveIndexerManager;
 
             // LibHac additions
-            public HorizonClient HorizonClient;
-            public ProgramRegistryImpl ProgramRegistry;
+            public FileSystemServer FsServer;
         }
 
         internal Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
         {
-            return _config.ProgramRegistry.GetProgramInfo(out programInfo, processId);
+            var registry = new ProgramRegistryImpl(_config.FsServer);
+            return registry.GetProgramInfo(out programInfo, processId);
         }
 
         public Result DoesSaveDataEntityExist(out bool exists, SaveDataSpaceId spaceId, ulong saveDataId)
@@ -612,15 +612,34 @@ namespace LibHac.FsSrv
             return programId;
         }
 
-        public void ResetTemporaryStorageIndexer()
+        public Result GetSaveDataIndexCount(out int count)
         {
-            _config.SaveIndexerManager.ResetIndexer(SaveDataSpaceId.Temporary);
+            Unsafe.SkipInit(out count);
+
+            SaveDataIndexerAccessor accessor = null;
+            try
+            {
+                Result rc = OpenSaveDataIndexerAccessor(out accessor, out bool _, SaveDataSpaceId.User);
+                if (rc.IsFailure()) return rc;
+
+                count = accessor.Indexer.GetIndexCount();
+                return Result.Success;
+            }
+            finally
+            {
+                accessor?.Dispose();
+            }
         }
 
         public Result OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, out bool neededInit,
             SaveDataSpaceId spaceId)
         {
             return _config.SaveIndexerManager.OpenSaveDataIndexerAccessor(out accessor, out neededInit, spaceId);
+        }
+
+        public void ResetTemporaryStorageIndexer()
+        {
+            _config.SaveIndexerManager.ResetIndexer(SaveDataSpaceId.Temporary);
         }
     }
 }

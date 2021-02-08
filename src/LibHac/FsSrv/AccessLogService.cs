@@ -42,10 +42,20 @@ namespace LibHac.FsSrv
             return _serviceImpl.OutputAccessLogToSdCard(textBuffer.Buffer, programInfo.ProgramIdValue, _processId);
         }
 
+        public Result OutputApplicationInfoAccessLog(in ApplicationInfo applicationInfo)
+        {
+            throw new NotImplementedException();
+        }
+
         public Result OutputMultiProgramTagAccessLog()
         {
             _serviceImpl.OutputAccessLogToSdCard(MultiProgramTag, _processId).IgnoreResult();
             return Result.Success;
+        }
+
+        public Result FlushAccessLogOnSdCard()
+        {
+            throw new NotImplementedException();
         }
 
         private Result GetProgramInfo(out ProgramInfo programInfo)

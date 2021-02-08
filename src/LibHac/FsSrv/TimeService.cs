@@ -1,6 +1,7 @@
-﻿using System;
+﻿using System.Runtime.CompilerServices;
 using LibHac.Fs;
 using LibHac.FsSrv.Impl;
+using LibHac.Os;
 
 namespace LibHac.FsSrv
 {
@@ -23,7 +24,8 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.CanCall(OperationType.SetCurrentPosixTime))
                 return ResultFs.PermissionDenied.Log();
 
-            return _serviceImpl.SetCurrentPosixTimeWithTimeDifference(currentTime, timeDifference);
+            _serviceImpl.SetCurrentPosixTimeWithTimeDifference(currentTime, timeDifference);
+            return Result.Success;
         }
 
         private Result GetProgramInfo(out ProgramInfo programInfo)
@@ -34,44 +36,69 @@ namespace LibHac.FsSrv
 
     public class TimeServiceImpl
     {
-        private Configuration _config;
-        private long _baseTime;
+        private long _basePosixTime;
         private int _timeDifference;
-        private object _lockObject;
+        private SdkMutexType _mutex;
 
-        public TimeServiceImpl(in Configuration configuration)
+        private FileSystemServer _fsServer;
+
+        public TimeServiceImpl(FileSystemServer fsServer)
         {
-            _config = configuration;
-            _baseTime = 0;
+            _fsServer = fsServer;
+            _basePosixTime = 0;
             _timeDifference = 0;
-            _lockObject = new object();
+            _mutex.Initialize();
         }
 
-        // The entire Configuration struct is a LibHac addition to avoid using global state
-        public struct Configuration
+        private long GetSystemSeconds()
         {
-            public HorizonClient HorizonClient;
-            public ProgramRegistryImpl ProgramRegistry;
+            OsState os = _fsServer.Hos.Os;
+
+            Tick tick = os.GetSystemTick();
+            TimeSpan timeSpan = os.ConvertToTimeSpan(tick);
+            return timeSpan.GetSeconds();
         }
 
-        public Result GetCurrentPosixTime(out long time)
+        public Result GetCurrentPosixTime(out long currentTime)
         {
-            throw new NotImplementedException();
+            return GetCurrentPosixTimeWithTimeDifference(out currentTime, out int _);
         }
 
         public Result GetCurrentPosixTimeWithTimeDifference(out long currentTime, out int timeDifference)
         {
-            throw new NotImplementedException();
+            Unsafe.SkipInit(out currentTime);
+            Unsafe.SkipInit(out timeDifference);
+
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+
+            if (_basePosixTime == 0)
+                return ResultFs.NotInitialized.Log();
+
+            if (!Unsafe.IsNullRef(ref currentTime))
+            {
+                currentTime = _basePosixTime + GetSystemSeconds();
+            }
+
+            if (!Unsafe.IsNullRef(ref timeDifference))
+            {
+                timeDifference = _timeDifference;
+            }
+
+            return Result.Success;
         }
 
-        public Result SetCurrentPosixTimeWithTimeDifference(long currentTime, int timeDifference)
+        public void SetCurrentPosixTimeWithTimeDifference(long currentTime, int timeDifference)
         {
-            throw new NotImplementedException();
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+
+            _basePosixTime = currentTime - GetSystemSeconds();
+            _timeDifference = timeDifference;
         }
 
         internal Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
         {
-            return _config.ProgramRegistry.GetProgramInfo(out programInfo, processId);
+            var registry = new ProgramRegistryImpl(_fsServer);
+            return registry.GetProgramInfo(out programInfo, processId);
         }
     }
 }

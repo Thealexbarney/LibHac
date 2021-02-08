@@ -1,5 +1,4 @@
-﻿using System;
-using LibHac.Common;
+﻿using LibHac.Common;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
@@ -14,9 +13,9 @@ namespace LibHac.Fs.Shim
 
             if (fs.IsEnabledAccessLog(AccessLogTarget.System))
             {
-                TimeSpan startTime = fs.Time.GetCurrent();
+                System.TimeSpan startTime = fs.Time.GetCurrent();
                 rc = MountBcatSaveDataImpl(fs, mountName, applicationId);
-                TimeSpan endTime = fs.Time.GetCurrent();
+                System.TimeSpan endTime = fs.Time.GetCurrent();
 
                 string logMessage = $", name: \"{mountName.ToString()}\", applicationid: 0x{applicationId}\"";
 
@@ -42,7 +41,7 @@ namespace LibHac.Fs.Shim
             Result rc = MountHelpers.CheckMountName(mountName);
             if (rc.IsFailure()) return rc;
 
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
             var attribute = new SaveDataAttribute(applicationId, SaveDataType.Bcat, UserId.InvalidId, 0);
 
@@ -50,7 +49,7 @@ namespace LibHac.Fs.Shim
 
             try
             {
-                rc = fsProxy.OpenSaveDataFileSystem(out saveFs, SaveDataSpaceId.User, in attribute);
+                rc = fsProxy.Target.OpenSaveDataFileSystem(out saveFs, SaveDataSpaceId.User, in attribute);
                 if (rc.IsFailure()) return rc;
 
                 var fileSystemAdapter = new FileSystemServiceObjectAdapter(saveFs);

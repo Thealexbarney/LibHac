@@ -205,9 +205,9 @@ namespace LibHac.Fs.Shim
                     logMessage = $", name: \"{mountName.ToString()}\"";
                 }
 
-                TimeSpan startTime = fs.Time.GetCurrent();
+                System.TimeSpan startTime = fs.Time.GetCurrent();
                 rc = PreMountHost(out nameGenerator, mountName, path);
-                TimeSpan endTime = fs.Time.GetCurrent();
+                System.TimeSpan endTime = fs.Time.GetCurrent();
 
                 fs.OutputAccessLogUnlessResultSuccess(rc, startTime, endTime, logMessage, caller);
             }
@@ -222,9 +222,9 @@ namespace LibHac.Fs.Shim
 
             if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
             {
-                TimeSpan startTime = fs.Time.GetCurrent();
+                System.TimeSpan startTime = fs.Time.GetCurrent();
                 rc = OpenHostFileSystem(fs, out hostFileSystem, mountName, path, option);
-                TimeSpan endTime = fs.Time.GetCurrent();
+                System.TimeSpan endTime = fs.Time.GetCurrent();
 
                 fs.OutputAccessLogUnlessResultSuccess(rc, startTime, endTime, logMessage, caller);
             }
@@ -237,9 +237,9 @@ namespace LibHac.Fs.Shim
 
             if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
             {
-                TimeSpan startTime = fs.Time.GetCurrent();
+                System.TimeSpan startTime = fs.Time.GetCurrent();
                 rc = fs.Register(mountName, hostFileSystem, nameGenerator);
-                TimeSpan endTime = fs.Time.GetCurrent();
+                System.TimeSpan endTime = fs.Time.GetCurrent();
 
                 fs.OutputAccessLog(rc, startTime, endTime, logMessage, caller);
             }
@@ -358,19 +358,19 @@ namespace LibHac.Fs.Shim
         {
             fileSystem = default;
 
-            IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
             ReferenceCountedDisposable<IFileSystemSf> hostFs = null;
 
             try
             {
                 if (option == MountHostOption.None)
                 {
-                    Result rc = fsProxy.OpenHostFileSystem(out hostFs, in path);
+                    Result rc = fsProxy.Target.OpenHostFileSystem(out hostFs, in path);
                     if (rc.IsFailure()) return rc;
                 }
                 else
                 {
-                    Result rc = fsProxy.OpenHostFileSystemWithOption(out hostFs, in path, option);
+                    Result rc = fsProxy.Target.OpenHostFileSystemWithOption(out hostFs, in path, option);
                     if (rc.IsFailure()) return rc;
                 }
 

@@ -18,7 +18,7 @@ namespace LibHac
         private Stopwatch _watch;
         private long _timedBytes;
 
-        private readonly TimeSpan _animationInterval = TimeSpan.FromSeconds(1.0 / 30);
+        private readonly System.TimeSpan _animationInterval = System.TimeSpan.FromSeconds(1.0 / 30);
         private const string Animation = @"|/-\";
 
         private string _currentText = string.Empty;
@@ -87,7 +87,7 @@ namespace LibHac
 
         public string GetRateString()
         {
-            return Utilities.GetBytesReadable((long) (_timedBytes / _watch.Elapsed.TotalSeconds)) + "/s";
+            return Utilities.GetBytesReadable((long)(_timedBytes / _watch.Elapsed.TotalSeconds)) + "/s";
         }
 
         private void TimerHandler(object state)
@@ -159,7 +159,7 @@ namespace LibHac
 
         private void ResetTimer()
         {
-            _timer.Change(_animationInterval, TimeSpan.FromMilliseconds(-1));
+            _timer.Change(_animationInterval, System.TimeSpan.FromMilliseconds(-1));
         }
 
         public void Dispose()

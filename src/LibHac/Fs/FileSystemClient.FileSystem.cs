@@ -1,4 +1,3 @@
-using System;
 using LibHac.Common;
 using LibHac.Fs.Accessors;
 using LibHac.Fs.Fsa;
@@ -14,9 +13,9 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = fileSystem.CreateDirectory(subPath);
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, $", path: \"{path.ToString()}\"");
             }
@@ -40,9 +39,9 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = fileSystem.CreateFile(subPath, size, options);
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, $", path: \"{path.ToString()}\", size: {size}");
             }
@@ -61,9 +60,9 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = fileSystem.DeleteDirectory(subPath);
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, $", path: \"{path.ToString()}\"");
             }
@@ -82,9 +81,9 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = fileSystem.DeleteDirectoryRecursively(subPath);
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, $", path: \"{path.ToString()}\"");
             }
@@ -103,9 +102,9 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = fileSystem.CleanDirectoryRecursively(subPath);
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, $", path: \"{path.ToString()}\"");
             }
@@ -124,9 +123,9 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = fileSystem.DeleteFile(subPath);
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, $", path: \"{path.ToString()}\"");
             }
@@ -153,9 +152,9 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog() && oldFileSystem.IsAccessLogEnabled)
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = oldFileSystem.RenameDirectory(oldSubPath, newSubPath);
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, $", path: \"{oldPath.ToString()}\", new_path: \"{newPath.ToString()}\"");
             }
@@ -182,9 +181,9 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog() && oldFileSystem.IsAccessLogEnabled)
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = oldFileSystem.RenameFile(oldSubPath, newSubPath);
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, $", path: \"{oldPath.ToString()}\", new_path: \"{newPath.ToString()}\"");
             }
@@ -205,9 +204,9 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = fileSystem.GetEntryType(out type, subPath);
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, $", path: \"{path.ToString()}\"");
             }
@@ -228,10 +227,10 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = fileSystem.OpenFile(out FileAccessor file, subPath, mode);
                 handle = new FileHandle(file);
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, handle, $", path: \"{path.ToString()}\", open_mode: {mode}");
             }
@@ -253,10 +252,10 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = fileSystem.OpenDirectory(out DirectoryAccessor dir, subPath, mode);
                 handle = new DirectoryHandle(dir);
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, handle, $", path: \"{path.ToString()}\", open_mode: {mode}");
             }
@@ -306,9 +305,9 @@ namespace LibHac.Fs
 
             if (IsEnabledAccessLog() && fileSystem.IsAccessLogEnabled)
             {
-                TimeSpan startTime = Time.GetCurrent();
+                System.TimeSpan startTime = Time.GetCurrent();
                 rc = fileSystem.Commit();
-                TimeSpan endTime = Time.GetCurrent();
+                System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, $", name: \"{mountName.ToString()}\"");
             }

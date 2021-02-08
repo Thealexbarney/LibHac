@@ -18,7 +18,7 @@ namespace LibHac.Tests
             config.DeviceOperator = defaultObjects.DeviceOperator;
             config.ExternalKeySet = new ExternalKeySet();
 
-            var horizon = new Horizon(new StopWatchTimeSpanGenerator(), config);
+            Horizon horizon = LibHac.HorizonFactory.CreateWithFsConfig(new StopWatchTimeSpanGenerator(), config);
 
             return horizon;
         }

@@ -1,9 +1,7 @@
-﻿using System;
-
-namespace LibHac
+﻿namespace LibHac
 {
     public interface ITimeSpanGenerator
     {
-        TimeSpan GetCurrent();
+        System.TimeSpan GetCurrent();
     }
 }

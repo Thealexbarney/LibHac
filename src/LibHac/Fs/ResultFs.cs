@@ -232,6 +232,8 @@ namespace LibHac.Fs
                 public static Result.Base InvalidBufferForGameCard => new Result.Base(ModuleFs, 2503);
                 /// <summary>Error code: 2002-2520; Inner value: 0x13b002</summary>
                 public static Result.Base GameCardNotInserted => new Result.Base(ModuleFs, 2520);
+                /// <summary>Error code: 2002-2531; Inner value: 0x13c602</summary>
+                public static Result.Base GameCardCardAccessTimeout => new Result.Base(ModuleFs, 2531);
                 /// <summary>Error code: 2002-2951; Inner value: 0x170e02</summary>
                 public static Result.Base GameCardNotInsertedOnGetHandle => new Result.Base(ModuleFs, 2951);
                 /// <summary>Error code: 2002-2952; Inner value: 0x171002</summary>
@@ -907,6 +909,8 @@ namespace LibHac.Fs
 
                 /// <summary>Error code: 2002-4781; Inner value: 0x255a02</summary>
                 public static Result.Base GameCardLogoDataCorrupted => new Result.Base(ModuleFs, 4781);
+                /// <summary>Error code: 2002-4785; Inner value: 0x256202</summary>
+                public static Result.Base SimulatedDeviceDataCorrupted => new Result.Base(ModuleFs, 4785);
 
                 /// <summary>Error code: 2002-4790; Range: 4790-4799; Inner value: 0x256c02</summary>
                 public static Result.Base MultiCommitContextCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4790, 4799); }
@@ -1178,6 +1182,8 @@ namespace LibHac.Fs
                 /// <summary>Error code: 2002-6400; Range: 6400-6449; Inner value: 0x320002</summary>
                 public static Result.Base PermissionDenied { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6400, 6449); }
 
+                /// <summary>Error code: 2002-6450; Inner value: 0x326402</summary>
+                public static Result.Base PortAcceptableCountLimited => new Result.Base(ModuleFs, 6450);
                 /// <summary>Error code: 2002-6452; Inner value: 0x326802</summary>
                 public static Result.Base ExternalKeyAlreadyRegistered => new Result.Base(ModuleFs, 6452);
                 /// <summary>Error code: 2002-6454; Inner value: 0x326c02</summary>
