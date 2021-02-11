@@ -1,5 +1,6 @@
 ﻿using System;
 using LibHac.Common;
+using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv;
 using LibHac.FsSrv.Sf;
@@ -104,6 +105,8 @@ namespace LibHac.Fs.Shim
                 Handle = handle;
                 PartitionId = partitionId;
             }
+
+            public void Dispose() { }
 
             public Result GenerateCommonMountName(Span<byte> nameBuffer)
             {

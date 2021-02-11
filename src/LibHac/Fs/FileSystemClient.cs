@@ -12,6 +12,23 @@ using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 
 namespace LibHac.Fs
 {
+    // Functions in the nn::fssrv::detail namespace use this struct.
+    public readonly struct FileSystemClientImpl
+    {
+        internal readonly FileSystemClient Fs;
+        internal HorizonClient Hos => Fs.Hos;
+        internal ref FileSystemClientGlobals Globals => ref Fs.Globals;
+
+        internal FileSystemClientImpl(FileSystemClient parentClient) => Fs = parentClient;
+    }
+
+    internal struct FileSystemClientGlobals
+    {
+        public HorizonClient Hos;
+        public object InitMutex;
+        public FileSystemProxyServiceObjectGlobals FileSystemProxyServiceObject;
+    }
+
     public partial class FileSystemClient
     {
         internal FileSystemClientGlobals Globals;
@@ -36,13 +53,6 @@ namespace LibHac.Fs
             Globals.InitMutex = new object();
 
             Assert.NotNull(Time);
-        }
-
-        internal struct FileSystemClientGlobals
-        {
-            public HorizonClient Hos;
-            public object InitMutex;
-            public FileSystemProxyServiceObjectGlobals FileSystemProxyServiceObject;
         }
 
         public bool HasFileSystemServer()

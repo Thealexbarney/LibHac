@@ -6,11 +6,11 @@ namespace LibHac.Diag
     public static class Abort
     {
         [DoesNotReturn]
-        public static void DoAbort(string message = null)
+        public static void DoAbort(Result result, string message = null)
         {
             if (string.IsNullOrWhiteSpace(message))
             {
-                throw new LibHacException("Abort.");
+                throw new HorizonResultException(result, "Abort.");
             }
 
             throw new LibHacException($"Abort: {message}");
@@ -21,7 +21,15 @@ namespace LibHac.Diag
             if (condition)
                 return;
 
-            DoAbort(message);
+            DoAbort(default, message);
+        }
+
+        public static void DoAbortUnless([DoesNotReturnIf(false)] bool condition, Result result, string message = null)
+        {
+            if (condition)
+                return;
+
+            DoAbort(result, message);
         }
 
         [DoesNotReturn]

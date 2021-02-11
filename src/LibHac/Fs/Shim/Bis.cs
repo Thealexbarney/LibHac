@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
@@ -22,6 +23,8 @@ namespace LibHac.Fs.Shim
             {
                 PartitionId = partitionId;
             }
+
+            public void Dispose() { }
 
             public Result GenerateCommonMountName(Span<byte> nameBuffer)
             {

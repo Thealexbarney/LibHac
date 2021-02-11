@@ -397,7 +397,7 @@ namespace LibHac.Fs.Shim
 
             if (rc.IsFailure())
             {
-                Abort.DoAbort();
+                Abort.DoAbort(rc);
             }
         }
     }

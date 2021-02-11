@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
@@ -38,6 +39,8 @@ namespace LibHac.Fs.Shim
                 }
             }
 
+            public void Dispose() { }
+
             public Result GenerateCommonMountName(Span<byte> nameBuffer)
             {
                 int requiredNameBufferSize = StringUtils.GetLength(_path.Str, FsPath.MaxLength) + HostRootFileSystemPathLength;
@@ -56,6 +59,8 @@ namespace LibHac.Fs.Shim
 
         private class HostRootCommonMountNameGenerator : ICommonMountNameGenerator
         {
+            public void Dispose() { }
+
             public Result GenerateCommonMountName(Span<byte> nameBuffer)
             {
                 const int requiredNameBufferSize = HostRootFileSystemPathLength;
