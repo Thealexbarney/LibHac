@@ -48,7 +48,7 @@ namespace LibHac.Fs.Shim
             if (rc.IsFailure()) return rc;
 
             using ReferenceCountedDisposable<IFileSystemProxyForLoader> fsProxy =
-                fs.GetFileSystemProxyForLoaderServiceObject();
+                fs.Impl.GetFileSystemProxyForLoaderServiceObject();
 
             rc = fsProxy.Target.OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystemSf> codeFs,
                 out verificationData, in fsPath, programId);

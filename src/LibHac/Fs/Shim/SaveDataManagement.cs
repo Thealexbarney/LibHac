@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using LibHac.Diag;
+using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 using LibHac.Sf;
@@ -15,7 +16,7 @@ namespace LibHac.Fs.Shim
             return fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
-                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                     var attribute = new SaveDataAttribute(applicationId, SaveDataType.Account, userId, 0);
 
@@ -47,7 +48,7 @@ namespace LibHac.Fs.Shim
             return fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
-                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                     var attribute = new SaveDataAttribute(applicationId, SaveDataType.Account, userId, 0);
 
@@ -79,7 +80,7 @@ namespace LibHac.Fs.Shim
             return fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
-                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                     var attribute = new SaveDataAttribute(applicationId, SaveDataType.Bcat, UserId.InvalidId, 0);
 
@@ -106,7 +107,7 @@ namespace LibHac.Fs.Shim
             return fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
-                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                     var attribute = new SaveDataAttribute(applicationId, SaveDataType.Device, UserId.InvalidId, 0);
 
@@ -132,7 +133,7 @@ namespace LibHac.Fs.Shim
             return fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
-                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                     var attribute = new SaveDataAttribute(applicationId, SaveDataType.Temporary, UserId.InvalidId, 0);
 
@@ -158,7 +159,7 @@ namespace LibHac.Fs.Shim
             return fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
-                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                     var attribute = new SaveDataAttribute(applicationId, SaveDataType.Cache, UserId.InvalidId, 0, index);
 
@@ -197,7 +198,7 @@ namespace LibHac.Fs.Shim
             return fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
-                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                     var attribute = new SaveDataAttribute(ProgramId.InvalidId, SaveDataType.System, userId, saveDataId);
 
@@ -251,7 +252,7 @@ namespace LibHac.Fs.Shim
             return fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
-                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
                     return fsProxy.Target.DeleteSaveDataFileSystem(saveDataId);
                 },
                 () => $", savedataid: 0x{saveDataId:X}");
@@ -262,7 +263,7 @@ namespace LibHac.Fs.Shim
             return fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
-                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
                     return fsProxy.Target.DeleteSaveDataFileSystemBySaveDataSpaceId(spaceId, saveDataId);
                 },
                 () => $", savedataspaceid: {spaceId}, savedataid: 0x{saveDataId:X}");
@@ -279,7 +280,7 @@ namespace LibHac.Fs.Shim
             Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
-                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                     tempInfo = new SaveDataInfo();
 
@@ -311,7 +312,7 @@ namespace LibHac.Fs.Shim
             Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
-                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                     return fsProxy.Target.QuerySaveDataTotalSize(out totalSizeTemp, size, journalSize);
                 },
@@ -334,7 +335,7 @@ namespace LibHac.Fs.Shim
                 Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
                     () =>
                     {
-                        using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                        using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                         Result rc = fsProxy.Target.OpenSaveDataInfoReaderBySaveDataSpaceId(
                             out ReferenceCountedDisposable<ISaveDataInfoReader> reader, spaceId);
@@ -368,7 +369,7 @@ namespace LibHac.Fs.Shim
                 Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
                     () =>
                     {
-                        using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                        using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                         Result rc = fsProxy.Target.OpenSaveDataInfoReaderWithFilter(out reader, spaceId, in tempFilter);
                         if (rc.IsFailure()) return rc;
@@ -391,7 +392,7 @@ namespace LibHac.Fs.Shim
 
         public static void DisableAutoSaveDataCreation(this FileSystemClient fsClient)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fsClient.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fsClient.Impl.GetFileSystemProxyServiceObject();
 
             Result rc = fsProxy.Target.DisableAutoSaveDataCreation();
 

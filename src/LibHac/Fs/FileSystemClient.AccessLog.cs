@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
-using LibHac.Fs.Accessors;
+using LibHac.Fs.Impl;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Sf;
 using LibHac.Sf;
+using FileSystemAccessor = LibHac.Fs.Accessors.FileSystemAccessor;
 
 namespace LibHac.Fs
 {
@@ -15,37 +16,6 @@ namespace LibHac.Fs
         private bool AccessLogInitialized { get; set; }
 
         private readonly object _accessLogInitLocker = new object();
-
-        public Result GetGlobalAccessLogMode(out GlobalAccessLogMode mode)
-        {
-            if (HasFileSystemServer())
-            {
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = this.GetFileSystemProxyServiceObject();
-
-                return fsProxy.Target.GetGlobalAccessLogMode(out mode);
-            }
-
-            mode = GlobalAccessLogMode;
-            return Result.Success;
-        }
-
-        public Result SetGlobalAccessLogMode(GlobalAccessLogMode mode)
-        {
-            if (HasFileSystemServer())
-            {
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = this.GetFileSystemProxyServiceObject();
-
-                return fsProxy.Target.SetGlobalAccessLogMode(mode);
-            }
-
-            GlobalAccessLogMode = mode;
-            return Result.Success;
-        }
-
-        public void SetAccessLogTarget(AccessLogTarget target)
-        {
-            AccessLogTarget = target;
-        }
 
         public void SetAccessLogObject(IAccessLog accessLog)
         {
@@ -71,7 +41,7 @@ namespace LibHac.Fs
                     if (HasFileSystemServer())
                     {
                         using ReferenceCountedDisposable<IFileSystemProxy> fsProxy =
-                            this.GetFileSystemProxyServiceObject();
+                            Impl.GetFileSystemProxyServiceObject();
 
                         Result rc = fsProxy.Target.GetGlobalAccessLogMode(out GlobalAccessLogMode globalMode);
                         GlobalAccessLogMode = globalMode;
@@ -189,7 +159,7 @@ namespace LibHac.Fs
             {
                 string logString = AccessLogHelpers.BuildDefaultLogLine(result, startTime, endTime, handleId, message, caller);
 
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = this.GetFileSystemProxyServiceObject();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = Impl.GetFileSystemProxyServiceObject();
                 fsProxy.Target.OutputAccessLogToSdCard(new InBuffer(logString.ToU8Span())).IgnoreResult();
             }
         }
@@ -256,23 +226,5 @@ namespace LibHac.Fs
 
             return rc;
         }
-    }
-
-    [Flags]
-    public enum AccessLogTarget
-    {
-        None = 0,
-        Application = 1 << 0,
-        System = 1 << 1,
-        All = Application | System
-    }
-
-    [Flags]
-    public enum GlobalAccessLogMode
-    {
-        None = 0,
-        Log = 1 << 0,
-        SdCard = 1 << 1,
-        All = Log | SdCard
     }
 }

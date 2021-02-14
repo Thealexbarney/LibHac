@@ -8,7 +8,7 @@ namespace LibHac.Fs.Shim
         public static Result IsArchivedProgram(this FileSystemClient fs, out bool isArchived, ProcessId processId)
         {
             using ReferenceCountedDisposable<IFileSystemProxyForLoader> fsProxy =
-                fs.GetFileSystemProxyForLoaderServiceObject();
+                fs.Impl.GetFileSystemProxyForLoaderServiceObject();
 
             return fsProxy.Target.IsArchivedProgram(out isArchived, processId.Value);
         }

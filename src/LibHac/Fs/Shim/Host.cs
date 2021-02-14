@@ -363,7 +363,7 @@ namespace LibHac.Fs.Shim
         {
             fileSystem = default;
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
             ReferenceCountedDisposable<IFileSystemSf> hostFs = null;
 
             try

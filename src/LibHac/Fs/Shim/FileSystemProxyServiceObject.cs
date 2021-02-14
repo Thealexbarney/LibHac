@@ -20,13 +20,13 @@ namespace LibHac.Fs.Shim
 
     public static class FileSystemProxyServiceObject
     {
-        private static bool HasFileSystemServer(FileSystemClient fs)
+        private static bool HasFileSystemServer(FileSystemClientImpl fs)
         {
             return fs.Hos is not null;
         }
 
         public static ReferenceCountedDisposable<IFileSystemProxy> GetFileSystemProxyServiceObject(
-            this FileSystemClient fs)
+            this FileSystemClientImpl fs)
         {
             ref FileSystemProxyServiceObjectGlobals g = ref fs.Globals.FileSystemProxyServiceObject;
             using var guard = new InitializationGuard(ref g.FileSystemProxyServiceObjectInitGuard,
@@ -41,7 +41,7 @@ namespace LibHac.Fs.Shim
         }
 
         private static ReferenceCountedDisposable<IFileSystemProxy> GetFileSystemProxyServiceObjectImpl(
-            FileSystemClient fs)
+            FileSystemClientImpl fs)
         {
             ReferenceCountedDisposable<IFileSystemProxy> dfcServiceObject =
                 fs.Globals.FileSystemProxyServiceObject.DfcFileSystemProxyServiceObject;
@@ -66,7 +66,7 @@ namespace LibHac.Fs.Shim
         }
 
         public static ReferenceCountedDisposable<IFileSystemProxyForLoader> GetFileSystemProxyForLoaderServiceObject(
-            this FileSystemClient fs)
+            this FileSystemClientImpl fs)
         {
             ref FileSystemProxyServiceObjectGlobals g = ref fs.Globals.FileSystemProxyServiceObject;
             using var guard = new InitializationGuard(ref g.FileSystemProxyForLoaderServiceObjectInitGuard,
@@ -81,7 +81,7 @@ namespace LibHac.Fs.Shim
         }
 
         private static ReferenceCountedDisposable<IFileSystemProxyForLoader>
-            GetFileSystemProxyForLoaderServiceObjectImpl(FileSystemClient fs)
+            GetFileSystemProxyForLoaderServiceObjectImpl(FileSystemClientImpl fs)
         {
             if (!HasFileSystemServer(fs))
             {
@@ -101,7 +101,7 @@ namespace LibHac.Fs.Shim
         }
 
         public static ReferenceCountedDisposable<IProgramRegistry> GetProgramRegistryServiceObject(
-            this FileSystemClient fs)
+            this FileSystemClientImpl fs)
         {
             ref FileSystemProxyServiceObjectGlobals g = ref fs.Globals.FileSystemProxyServiceObject;
             using var guard = new InitializationGuard(ref g.ProgramRegistryServiceObjectInitGuard,
@@ -116,7 +116,7 @@ namespace LibHac.Fs.Shim
         }
 
         private static ReferenceCountedDisposable<IProgramRegistry> GetProgramRegistryServiceObjectImpl(
-            FileSystemClient fs)
+            FileSystemClientImpl fs)
         {
             if (!HasFileSystemServer(fs))
             {
@@ -141,7 +141,7 @@ namespace LibHac.Fs.Shim
         /// </summary>
         /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
         /// <param name="serviceObject">The service object this <see cref="FileSystemClient"/> will use.</param>
-        public static void InitializeDfcFileSystemProxyServiceObject(this FileSystemClient fs,
+        public static void InitializeDfcFileSystemProxyServiceObject(this FileSystemClientImpl fs,
             ReferenceCountedDisposable<IFileSystemProxy> serviceObject)
         {
             fs.Globals.FileSystemProxyServiceObject.DfcFileSystemProxyServiceObject = serviceObject.AddReference();

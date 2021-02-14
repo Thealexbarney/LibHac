@@ -189,7 +189,7 @@ namespace LibHac.Fs.Shim
             Result rc = MountHelpers.CheckMountName(mountName);
             if (rc.IsFailure()) return rc;
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             var attribute = new SaveDataAttribute(programId, type, userId, 0, index);
 

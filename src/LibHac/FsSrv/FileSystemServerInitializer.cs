@@ -37,7 +37,7 @@ namespace LibHac.FsSrv
             ulong processId = client.Os.GetCurrentProcessId().Value;
             fsProxy.Target.SetCurrentProcess(processId).IgnoreResult();
 
-            client.Fs.InitializeDfcFileSystemProxyServiceObject(fsProxy);
+            client.Fs.Impl.InitializeDfcFileSystemProxyServiceObject(fsProxy);
 
             InitializeFileSystemProxyServer(client, server);
 

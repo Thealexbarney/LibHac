@@ -12,7 +12,7 @@ namespace LibHac.Fs.Shim
         public static Result RegisterProgram(this FileSystemClient fs, ulong processId, ProgramId programId,
             StorageId storageId, ReadOnlySpan<byte> accessControlData, ReadOnlySpan<byte> accessControlDescriptor)
         {
-            using ReferenceCountedDisposable<IProgramRegistry> registry = fs.GetProgramRegistryServiceObject();
+            using ReferenceCountedDisposable<IProgramRegistry> registry = fs.Impl.GetProgramRegistryServiceObject();
 
             Result rc = registry.Target.SetCurrentProcess(fs.Hos.ProcessId.Value);
             if (rc.IsFailure()) return rc;
@@ -24,7 +24,7 @@ namespace LibHac.Fs.Shim
         /// <inheritdoc cref="ProgramRegistryImpl.UnregisterProgram"/>
         public static Result UnregisterProgram(this FileSystemClient fs, ulong processId)
         {
-            using ReferenceCountedDisposable<IProgramRegistry> registry = fs.GetProgramRegistryServiceObject();
+            using ReferenceCountedDisposable<IProgramRegistry> registry = fs.Impl.GetProgramRegistryServiceObject();
 
             Result rc = registry.Target.SetCurrentProcess(fs.Hos.ProcessId.Value);
             if (rc.IsFailure()) return rc;
