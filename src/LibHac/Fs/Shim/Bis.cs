@@ -92,7 +92,7 @@ namespace LibHac.Fs.Shim
             Result rc = MountHelpers.CheckMountNameAcceptingReservedMountName(mountName);
             if (rc.IsFailure()) return rc;
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             // Nintendo doesn't use the provided rootPath
             FspPath.CreateEmpty(out FspPath sfPath);
@@ -166,7 +166,7 @@ namespace LibHac.Fs.Shim
 
             FspPath.FromSpan(out FspPath sfPath, path.Str);
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             return fsProxy.Target.SetBisRootForHost(partitionId, in sfPath);
         }
@@ -176,7 +176,7 @@ namespace LibHac.Fs.Shim
         {
             partitionStorage = default;
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
             Result rc = fsProxy.Target.OpenBisStorage(out ReferenceCountedDisposable<IStorageSf> storage, partitionId);
             if (rc.IsFailure()) return rc;
 
@@ -191,7 +191,7 @@ namespace LibHac.Fs.Shim
 
         public static Result InvalidateBisCache(this FileSystemClient fs)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
             return fsProxy.Target.InvalidateBisCache();
         }
     }

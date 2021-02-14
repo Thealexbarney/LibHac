@@ -26,6 +26,7 @@ namespace LibHac.Fs
     {
         public HorizonClient Hos;
         public object InitMutex;
+        public AccessLogGlobals AccessLog;
         public FileSystemProxyServiceObjectGlobals FileSystemProxyServiceObject;
     }
 
@@ -33,6 +34,7 @@ namespace LibHac.Fs
     {
         internal FileSystemClientGlobals Globals;
 
+        public FileSystemClientImpl Impl => new FileSystemClientImpl(this);
         internal HorizonClient Hos => Globals.Hos;
 
         internal ITimeSpanGenerator Time { get; }

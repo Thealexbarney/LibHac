@@ -22,7 +22,7 @@ namespace LibHac.Fs.Shim
             ReferenceCountedDisposable<IFileSystemSf> fileSystem = null;
             try
             {
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                 Result rc = fsProxy.Target.OpenMultiCommitManager(out commitManager);
                 if (rc.IsFailure()) return rc;

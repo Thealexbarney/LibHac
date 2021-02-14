@@ -39,7 +39,7 @@ namespace LibHac.Fs.Shim
                 Result rc = MountHelpers.CheckMountName(mountName);
                 if (rc.IsFailure()) return rc;
 
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                 rc = fsProxy.Target.OpenSdCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem);
                 if (rc.IsFailure()) return rc;
@@ -58,7 +58,7 @@ namespace LibHac.Fs.Shim
             ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
             try
             {
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                 Result rc = fsProxy.Target.OpenDeviceOperator(out deviceOperator);
                 if (rc.IsFailure()) throw new HorizonResultException(rc, "Abort");
@@ -76,7 +76,7 @@ namespace LibHac.Fs.Shim
 
         public static Result SetSdCardEncryptionSeed(this FileSystemClient fs, in EncryptionSeed seed)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             Result rc = fsProxy.Target.SetSdCardEncryptionSeed(in seed);
             if (rc.IsFailure()) throw new HorizonResultException(rc, "Abort");
@@ -86,7 +86,7 @@ namespace LibHac.Fs.Shim
 
         public static void SetSdCardAccessibility(this FileSystemClient fs, bool isAccessible)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             Result rc = fsProxy.Target.SetSdCardAccessibility(isAccessible);
             if (rc.IsFailure()) throw new HorizonResultException(rc, "Abort");
@@ -94,7 +94,7 @@ namespace LibHac.Fs.Shim
 
         public static bool IsSdCardAccessible(this FileSystemClient fs)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             Result rc = fsProxy.Target.IsSdCardAccessible(out bool isAccessible);
             if (rc.IsFailure()) throw new HorizonResultException(rc, "Abort");

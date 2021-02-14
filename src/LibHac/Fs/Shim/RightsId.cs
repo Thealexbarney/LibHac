@@ -11,7 +11,7 @@ namespace LibHac.Fs.Shim
         public static Result GetRightsId(this FileSystemClient fs, out FsRightsId rightsId, ProgramId programId,
             StorageId storageId)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             return fsProxy.Target.GetRightsId(out rightsId, programId, storageId);
         }
@@ -20,7 +20,7 @@ namespace LibHac.Fs.Shim
         {
             rightsId = default;
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             Result rc = FspPath.FromSpan(out FspPath sfPath, path);
             if (rc.IsFailure()) return rc;
@@ -33,7 +33,7 @@ namespace LibHac.Fs.Shim
             rightsId = default;
             keyGeneration = default;
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             Result rc = FspPath.FromSpan(out FspPath sfPath, path);
             if (rc.IsFailure()) return rc;
@@ -43,21 +43,21 @@ namespace LibHac.Fs.Shim
 
         public static Result RegisterExternalKey(this FileSystemClient fs, in FsRightsId rightsId, in AccessKey key)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             return fsProxy.Target.RegisterExternalKey(in rightsId, in key);
         }
 
         public static Result UnregisterExternalKey(this FileSystemClient fs, ref FsRightsId rightsId)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             return fsProxy.Target.UnregisterExternalKey(in rightsId);
         }
 
         public static Result UnregisterAllExternalKey(this FileSystemClient fs)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             return fsProxy.Target.UnregisterAllExternalKey();
         }

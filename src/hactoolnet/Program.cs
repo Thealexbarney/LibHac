@@ -4,6 +4,7 @@ using System.Text;
 using LibHac;
 using LibHac.Common.Keys;
 using LibHac.Fs;
+using LibHac.Fs.Impl;
 using LibHac.Util;
 
 namespace hactoolnet
@@ -74,7 +75,7 @@ namespace hactoolnet
                         logWriter = new StreamWriter(ctx.Options.AccessLog);
                         var accessLog = new TextWriterAccessLog(logWriter);
 
-                        ctx.FsClient.SetAccessLogTarget(AccessLogTarget.All);
+                        ctx.FsClient.SetLocalSystemAccessLogForDebug(true);
                         ctx.FsClient.SetGlobalAccessLogMode(GlobalAccessLogMode.Log);
 
                         ctx.FsClient.SetAccessLogObject(accessLog);

@@ -18,7 +18,7 @@ namespace LibHac.Fs.Shim
             ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
             try
             {
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                 Result rc = fsProxy.Target.OpenDeviceOperator(out deviceOperator);
                 if (rc.IsFailure()) return rc;
@@ -36,7 +36,7 @@ namespace LibHac.Fs.Shim
             ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
             try
             {
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                 Result rc = fsProxy.Target.OpenDeviceOperator(out deviceOperator);
                 if (rc.IsFailure()) throw new LibHacException("Abort");
@@ -60,7 +60,7 @@ namespace LibHac.Fs.Shim
             ReferenceCountedDisposable<IStorageSf> sfStorage = null;
             try
             {
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                 Result rc = fsProxy.Target.OpenGameCardStorage(out sfStorage, handle, partitionType);
                 if (rc.IsFailure()) return rc;
@@ -80,7 +80,7 @@ namespace LibHac.Fs.Shim
             Result rc = MountHelpers.CheckMountNameAcceptingReservedMountName(mountName);
             if (rc.IsFailure()) return rc;
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             rc = fsProxy.Target.OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> cardFs, handle,
                 partitionId);

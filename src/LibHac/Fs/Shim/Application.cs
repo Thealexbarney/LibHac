@@ -41,7 +41,7 @@ namespace LibHac.Fs.Shim
 
                 FspPath.FromSpan(out FspPath sfPath, path);
 
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                 rc = fsProxy.Target.OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
                     in sfPath, default, FileSystemProxyType.Package);
