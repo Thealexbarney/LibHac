@@ -991,6 +991,8 @@ namespace LibHac.Fs
                     public static Result.Base InvalidOpenMode => new Result.Base(ModuleFs, 6072);
                     /// <summary>Error code: 2002-6074; Inner value: 0x2f7402</summary>
                     public static Result.Base InvalidDirectoryOpenMode => new Result.Base(ModuleFs, 6074);
+                    /// <summary>Error code: 2002-6075; Inner value: 0x2f7602</summary>
+                    public static Result.Base InvalidCommitOption => new Result.Base(ModuleFs, 6075);
 
                     /// <summary>Error code: 2002-6080; Range: 6080-6099; Inner value: 0x2f8002</summary>
                     public static Result.Base InvalidEnumValue { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6080, 6099); }

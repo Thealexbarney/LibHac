@@ -27,7 +27,10 @@ namespace LibHac.Fs
         public HorizonClient Hos;
         public object InitMutex;
         public AccessLogGlobals AccessLog;
+        public UserMountTableGlobals UserMountTable;
         public FileSystemProxyServiceObjectGlobals FileSystemProxyServiceObject;
+        public FsContextHandlerGlobals FsContextHandler;
+        public ResultHandlingUtilityGlobals ResultHandlingUtility;
     }
 
     public partial class FileSystemClient
@@ -51,10 +54,17 @@ namespace LibHac.Fs
         {
             Time = horizonClient.Time;
 
-            Globals.Hos = horizonClient;
-            Globals.InitMutex = new object();
+            InitializeGlobals(horizonClient);
 
             Assert.NotNull(Time);
+        }
+
+        private void InitializeGlobals(HorizonClient horizonClient)
+        {
+            Globals.Hos = horizonClient;
+            Globals.InitMutex = new object();
+            Globals.UserMountTable.Initialize(this);
+            Globals.FsContextHandler.Initialize(this);
         }
 
         public bool HasFileSystemServer()

@@ -177,6 +177,12 @@ namespace LibHac.Fs
         Restore = 1 << 4
     }
 
+    public enum CommitOptionFlag
+    {
+        None = 1,
+        SetRestoreFlag = 2
+    }
+
     public enum SdmmcPort
     {
         Mmc = 0,

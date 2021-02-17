@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using LibHac.Diag;
 using LibHac.Util;
 
 namespace LibHac.Common
@@ -12,9 +13,12 @@ namespace LibHac.Common
     {
         private const int NullTerminatorLength = 1;
 
-        public Span<byte> Buffer { get; }
+        public Span<byte> Buffer { get; private set; }
         public int Length { get; private set; }
         public bool Overflowed { get; private set; }
+        public bool AutoExpand { get; }
+
+        private byte[] _rentedArray;
 
         public readonly int Capacity
         {
@@ -22,15 +26,34 @@ namespace LibHac.Common
             get => Buffer.Length - NullTerminatorLength;
         }
 
-        public U8StringBuilder(Span<byte> buffer)
+        public U8StringBuilder(Span<byte> buffer, bool autoExpand = false)
         {
             Buffer = buffer;
             Length = 0;
             Overflowed = false;
+            AutoExpand = autoExpand;
+            _rentedArray = null;
 
-            ThrowIfBufferLengthIsZero();
+            if (autoExpand)
+            {
+                TryEnsureAdditionalCapacity(1);
+            }
+            else
+            {
+                ThrowIfBufferLengthIsZero();
+            }
 
             AddNullTerminator();
+        }
+
+        public void Dispose()
+        {
+            byte[] toReturn = _rentedArray;
+            this = default;
+            if (toReturn is not null)
+            {
+                ArrayPool<byte>.Shared.Return(_rentedArray);
+            }
         }
 
         // These functions are internal so they can be called by the extension methods
@@ -42,7 +65,7 @@ namespace LibHac.Common
 
             int valueLength = StringUtils.GetLength(value);
 
-            if (!HasAdditionalCapacity(valueLength))
+            if (!TryEnsureAdditionalCapacity(valueLength))
             {
                 Overflowed = true;
                 return;
@@ -57,7 +80,7 @@ namespace LibHac.Common
         {
             if (Overflowed) return;
 
-            if (!HasAdditionalCapacity(1))
+            if (!TryEnsureAdditionalCapacity(1))
             {
                 Overflowed = true;
                 return;
@@ -114,16 +137,39 @@ namespace LibHac.Common
             return requiredCapacity <= Capacity;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private readonly bool HasAdditionalCapacity(int requiredAdditionalCapacity)
+        private bool TryEnsureAdditionalCapacity(int requiredAdditionalCapacity)
         {
-            return HasCapacity(Length + requiredAdditionalCapacity);
+            bool hasCapacity = HasCapacity(Length + requiredAdditionalCapacity);
+
+            if (!hasCapacity && AutoExpand)
+            {
+                Grow(requiredAdditionalCapacity);
+                Assert.True(HasCapacity(Length + requiredAdditionalCapacity));
+                hasCapacity = true;
+            }
+
+            return hasCapacity;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AddNullTerminator()
         {
             Buffer[Length] = 0;
+        }
+
+        private void Grow(int requiredAdditionalCapacity)
+        {
+            byte[] poolArray =
+                ArrayPool<byte>.Shared.Rent(Math.Max(Length + requiredAdditionalCapacity, Capacity * 2));
+
+            Buffer.Slice(0, Length).CopyTo(poolArray);
+
+            byte[] toReturn = _rentedArray;
+            _rentedArray = poolArray;
+            if (toReturn is not null)
+            {
+                ArrayPool<byte>.Shared.Return(toReturn);
+            }
         }
 
         private readonly void ThrowIfBufferLengthIsZero()
