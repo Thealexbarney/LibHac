@@ -19,4 +19,14 @@ namespace LibHac.Fs
             File.Parent.FsClient.CloseFile(this);
         }
     }
+
+    public readonly struct FileHandle2
+    {
+        internal readonly Impl.FileAccessor File;
+
+        internal FileHandle2(Impl.FileAccessor file)
+        {
+            File = file;
+        }
+    }
 }

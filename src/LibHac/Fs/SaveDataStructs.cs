@@ -223,13 +223,6 @@ namespace LibHac.Fs
         public ReadOnlySpan<byte> HashRo => SpanHelpers.CreateReadOnlySpan(in _hashStart, HashLength);
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct OptionalHashSalt
-    {
-        public bool IsSet;
-        public HashSalt HashSalt;
-    }
-
     [StructLayout(LayoutKind.Explicit, Size = 0x10)]
     public struct SaveDataMetaInfo
     {
@@ -274,6 +267,11 @@ namespace LibHac.Fs
         [FieldOffset(0x58)] public long DataSize;
         [FieldOffset(0x60)] public long JournalSize;
         [FieldOffset(0x68)] public long CommitId;
+    }
+
+    public struct CommitOption
+    {
+        public CommitOptionFlag Flags;
     }
 
     internal static class SaveDataTypesValidity

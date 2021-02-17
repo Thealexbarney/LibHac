@@ -19,4 +19,14 @@ namespace LibHac.Fs
             Directory.Parent.FsClient.CloseDirectory(this);
         }
     }
+
+    public readonly struct DirectoryHandle2
+    {
+        internal readonly Impl.DirectoryAccessor Directory;
+
+        internal DirectoryHandle2(Impl.DirectoryAccessor directory)
+        {
+            Directory = directory;
+        }
+    }
 }
