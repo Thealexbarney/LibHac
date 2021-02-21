@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
 using static LibHac.Fs.StringTraits;
 

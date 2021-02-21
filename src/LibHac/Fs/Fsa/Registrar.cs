@@ -14,7 +14,7 @@ namespace LibHac.Fs.Fsa
         Result GetSaveDataAttribute(out SaveDataAttribute attribute);
     }
 
-    internal static class Registrar
+    public static class Registrar
     {
         public static Result Register(this FileSystemClient fs, U8Span name, IFileSystem fileSystem)
         {

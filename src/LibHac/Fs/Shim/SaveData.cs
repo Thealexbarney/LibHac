@@ -1,4 +1,5 @@
 ﻿using LibHac.Common;
+using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
@@ -210,7 +211,7 @@ namespace LibHac.Fs.Shim
 
                 var fileSystemAdapter = new FileSystemServiceObjectAdapter(saveFs);
 
-                return fs.Register(mountName, fileSystemAdapter, fileSystemAdapter, null);
+                return fs.Register(mountName, fileSystemAdapter, fileSystemAdapter, null, false, false);
             }
             finally
             {

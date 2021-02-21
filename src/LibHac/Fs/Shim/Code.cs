@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;

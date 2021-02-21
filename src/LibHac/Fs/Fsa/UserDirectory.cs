@@ -9,13 +9,13 @@ namespace LibHac.Fs.Fsa
     [SkipLocalsInit]
     public static class UserDirectory
     {
-        private static DirectoryAccessor Get(DirectoryHandle2 handle)
+        private static DirectoryAccessor Get(DirectoryHandle handle)
         {
             return handle.Directory;
         }
 
         public static Result ReadDirectory(this FileSystemClient fs, out long entriesRead,
-            Span<DirectoryEntry> entryBuffer, DirectoryHandle2 handle)
+            Span<DirectoryEntry> entryBuffer, DirectoryHandle handle)
         {
             Result rc;
 
@@ -41,7 +41,7 @@ namespace LibHac.Fs.Fsa
             return rc;
         }
 
-        public static Result GetDirectoryEntryCount(this FileSystemClient fs, out long count, DirectoryHandle2 handle)
+        public static Result GetDirectoryEntryCount(this FileSystemClient fs, out long count, DirectoryHandle handle)
         {
             Result rc;
 
@@ -66,7 +66,7 @@ namespace LibHac.Fs.Fsa
             return rc;
         }
 
-        public static void CloseDirectory(this FileSystemClient fs, DirectoryHandle2 handle)
+        public static void CloseDirectory(this FileSystemClient fs, DirectoryHandle handle)
         {
             if (fs.Impl.IsEnabledAccessLog() && fs.Impl.IsEnabledHandleAccessLog(handle))
             {

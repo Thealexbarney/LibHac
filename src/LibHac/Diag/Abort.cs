@@ -29,6 +29,7 @@ namespace LibHac.Diag
             if (condition)
                 return;
 
+            result.Log();
             DoAbort(result, message);
         }
 

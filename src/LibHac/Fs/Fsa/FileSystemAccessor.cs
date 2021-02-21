@@ -59,10 +59,10 @@ namespace LibHac.Fs.Impl
 
             using (ScopedLock.Lock(ref _openListLock))
             {
-                Abort.DoAbortUnless(_openFiles.Count == 0, ResultFs.FileNotClosed.Log(),
+                Abort.DoAbortUnless(_openFiles.Count == 0, ResultFs.FileNotClosed.Value,
                     "All files must be closed before unmounting.");
 
-                Abort.DoAbortUnless(_openDirectories.Count == 0, ResultFs.DirectoryNotClosed.Log(),
+                Abort.DoAbortUnless(_openDirectories.Count == 0, ResultFs.DirectoryNotClosed.Value,
                     "All directories must be closed before unmounting.");
 
                 if (_isPathCacheAttached)
@@ -150,7 +150,7 @@ namespace LibHac.Fs.Impl
             Result rc = CheckPath(new U8Span(_mountName.Name), path);
             if (rc.IsFailure()) return rc;
 
-            return _fileSystem.DeleteDirectory(path);
+            return _fileSystem.DeleteFile(path);
         }
 
         public Result CreateDirectory(U8Span path)

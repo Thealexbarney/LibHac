@@ -56,7 +56,7 @@ namespace LibHac.Os
 
         public void Unlock()
         {
-            Abort.DoAbortUnless(!IsLockedByCurrentThread());
+            Abort.DoAbortUnless(IsLockedByCurrentThread());
             _cs.Leave();
         }
 

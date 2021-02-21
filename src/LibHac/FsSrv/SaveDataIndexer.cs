@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Sf;
 using LibHac.Kvdb;

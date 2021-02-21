@@ -6,9 +6,6 @@ using LibHac.Diag;
 using LibHac.Fs.Accessors;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
-using LibHac.FsSystem;
-using LibHac.Util;
-using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 
 namespace LibHac.Fs
 {
@@ -70,121 +67,6 @@ namespace LibHac.Fs
         public bool HasFileSystemServer()
         {
             return Hos != null;
-        }
-
-        public Result Register(U8Span mountName, IFileSystem fileSystem)
-        {
-            return Register(mountName, fileSystem, null);
-        }
-
-        public Result Register(U8Span mountName, IFileSystem fileSystem, ICommonMountNameGenerator nameGenerator)
-        {
-            return Register(mountName, null, fileSystem, nameGenerator);
-        }
-
-        public Result Register(U8Span mountName, IMultiCommitTarget multiCommitTarget, IFileSystem fileSystem,
-            ICommonMountNameGenerator nameGenerator)
-        {
-            var accessor = new FileSystemAccessor(mountName, multiCommitTarget, fileSystem, this, nameGenerator);
-
-            Result rc = MountTable.Mount(accessor);
-            if (rc.IsFailure()) return rc;
-
-            accessor.IsAccessLogEnabled = IsEnabledAccessLog();
-            return Result.Success;
-        }
-
-        public void Unmount(U8Span mountName)
-        {
-            Result rc;
-            string mountNameStr = mountName.ToString();
-
-            if (IsEnabledAccessLog() && IsEnabledFileSystemAccessorAccessLog(mountName))
-            {
-                System.TimeSpan startTime = Time.GetCurrent();
-
-                rc = MountTable.Unmount(mountNameStr);
-
-                System.TimeSpan endTime = Time.GetCurrent();
-                OutputAccessLog(rc, startTime, endTime, $", name: \"{mountNameStr}\"");
-            }
-            else
-            {
-                rc = MountTable.Unmount(mountNameStr);
-            }
-
-            rc.ThrowIfFailure();
-        }
-
-        internal Result FindFileSystem(out FileSystemAccessor fileSystem, out U8Span subPath, U8Span path)
-        {
-            fileSystem = default;
-            subPath = default;
-
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            int hostMountNameLen = StringUtils.GetLength(CommonPaths.HostRootFileSystemMountName);
-            if (StringUtils.Compare(path, CommonPaths.HostRootFileSystemMountName, hostMountNameLen) == 0)
-            {
-                return ResultFs.NotMounted.Log();
-            }
-
-            Result rc = GetMountNameAndSubPath(out MountName mountName, out subPath, path);
-            if (rc.IsFailure()) return rc;
-
-            rc = MountTable.Find(StringUtils.Utf8ZToString(mountName.Name), out fileSystem);
-            if (rc.IsFailure()) return rc;
-
-            return Result.Success;
-        }
-
-        internal static Result GetMountNameAndSubPath(out MountName mountName, out U8Span subPath, U8Span path)
-        {
-            int mountLen = 0;
-            int maxMountLen = Math.Min(path.Length, PathTools.MountNameLengthMax);
-
-            if (PathUtility.IsWindowsDrive(path) || PathUtility.IsUnc(path))
-            {
-                StringUtils.Copy(mountName.Name, CommonPaths.HostRootFileSystemMountName);
-                mountName.Name[PathTools.MountNameLengthMax] = StringTraits.NullTerminator;
-
-                subPath = path;
-                return Result.Success;
-            }
-
-            for (int i = 0; i <= maxMountLen; i++)
-            {
-                if (path[i] == PathTools.MountSeparator)
-                {
-                    mountLen = i;
-                    break;
-                }
-            }
-
-            if (mountLen == 0 || mountLen > maxMountLen)
-            {
-                mountName = default;
-                subPath = default;
-
-                return ResultFs.InvalidMountName.Log();
-            }
-
-            U8Span subPathTemp = path.Slice(mountLen + 1);
-
-            if (subPathTemp.Length == 0 || !PathTool.IsAnySeparator(subPathTemp[0]))
-            {
-                mountName = default;
-                subPath = default;
-
-                return ResultFs.InvalidPathFormat.Log();
-            }
-
-            path.Value.Slice(0, mountLen).CopyTo(mountName.Name);
-            mountName.Name[mountLen] = StringTraits.NullTerminator;
-            subPath = subPathTemp;
-
-            return Result.Success;
         }
     }
 

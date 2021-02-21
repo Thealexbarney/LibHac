@@ -73,21 +73,6 @@ namespace LibHac.Fs
 
         }
 
-        internal bool IsEnabledAccessLog()
-        {
-            return IsEnabledAccessLog(AccessLogTarget.All);
-        }
-
-        internal bool IsEnabledFileSystemAccessorAccessLog(U8Span mountName)
-        {
-            if (MountTable.Find(mountName.ToString(), out FileSystemAccessor accessor).IsFailure())
-            {
-                return true;
-            }
-
-            return accessor.IsAccessLogEnabled;
-        }
-
         internal void EnableFileSystemAccessorAccessLog(U8Span mountName)
         {
             if (MountTable.Find(mountName.ToString(), out FileSystemAccessor accessor).IsFailure())
@@ -98,29 +83,9 @@ namespace LibHac.Fs
             accessor.IsAccessLogEnabled = true;
         }
 
-        internal bool IsEnabledHandleAccessLog(FileHandle handle)
-        {
-            return handle.File.Parent.IsAccessLogEnabled;
-        }
-
-        internal bool IsEnabledHandleAccessLog(DirectoryHandle handle)
-        {
-            return handle.Directory.Parent.IsAccessLogEnabled;
-        }
-
         internal void OutputAccessLog(Result result, System.TimeSpan startTime, System.TimeSpan endTime, string message, [CallerMemberName] string caller = "")
         {
             OutputAccessLogImpl(result, startTime, endTime, 0, message, caller);
-        }
-
-        internal void OutputAccessLog(Result result, System.TimeSpan startTime, System.TimeSpan endTime, FileHandle handle, string message, [CallerMemberName] string caller = "")
-        {
-            OutputAccessLogImpl(result, startTime, endTime, handle.GetId(), message, caller);
-        }
-
-        internal void OutputAccessLog(Result result, System.TimeSpan startTime, System.TimeSpan endTime, DirectoryHandle handle, string message, [CallerMemberName] string caller = "")
-        {
-            OutputAccessLogImpl(result, startTime, endTime, handle.GetId(), message, caller);
         }
 
         internal void OutputAccessLogUnlessResultSuccess(Result result, System.TimeSpan startTime, System.TimeSpan endTime, string message, [CallerMemberName] string caller = "")
@@ -128,22 +93,6 @@ namespace LibHac.Fs
             if (result.IsFailure())
             {
                 OutputAccessLogImpl(result, startTime, endTime, 0, message, caller);
-            }
-        }
-
-        internal void OutputAccessLogUnlessResultSuccess(Result result, System.TimeSpan startTime, System.TimeSpan endTime, FileHandle handle, string message, [CallerMemberName] string caller = "")
-        {
-            if (result.IsFailure())
-            {
-                OutputAccessLogImpl(result, startTime, endTime, handle.GetId(), message, caller);
-            }
-        }
-
-        internal void OutputAccessLogUnlessResultSuccess(Result result, System.TimeSpan startTime, System.TimeSpan endTime, DirectoryHandle handle, string message, [CallerMemberName] string caller = "")
-        {
-            if (result.IsFailure())
-            {
-                OutputAccessLogImpl(result, startTime, endTime, handle.GetId(), message, caller);
             }
         }
 
@@ -176,27 +125,6 @@ namespace LibHac.Fs
                 System.TimeSpan endTime = Time.GetCurrent();
 
                 OutputAccessLog(rc, startTime, endTime, textGenerator(), caller);
-            }
-            else
-            {
-                rc = operation();
-            }
-
-            return rc;
-        }
-
-        public Result RunOperationWithAccessLog(AccessLogTarget logTarget, FileHandle handle, Func<Result> operation,
-            Func<string> textGenerator, [CallerMemberName] string caller = "")
-        {
-            Result rc;
-
-            if (IsEnabledAccessLog(logTarget) && handle.File.Parent.IsAccessLogEnabled)
-            {
-                System.TimeSpan startTime = Time.GetCurrent();
-                rc = operation();
-                System.TimeSpan endTime = Time.GetCurrent();
-
-                OutputAccessLog(rc, startTime, endTime, handle, textGenerator(), caller);
             }
             else
             {

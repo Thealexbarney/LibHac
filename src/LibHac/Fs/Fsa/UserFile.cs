@@ -9,18 +9,18 @@ namespace LibHac.Fs.Fsa
     [SkipLocalsInit]
     public static class UserFile
     {
-        private static FileAccessor Get(FileHandle2 handle)
+        private static FileAccessor Get(FileHandle handle)
         {
             return handle.File;
         }
 
-        private static Result ReadFileImpl(FileSystemClient fs, out long bytesRead, FileHandle2 handle, long offset,
+        private static Result ReadFileImpl(FileSystemClient fs, out long bytesRead, FileHandle handle, long offset,
             Span<byte> destination, in ReadOption option)
         {
             return Get(handle).Read(out bytesRead, offset, destination, in option);
         }
 
-        public static Result ReadFile(this FileSystemClient fs, FileHandle2 handle, long offset, Span<byte> destination,
+        public static Result ReadFile(this FileSystemClient fs, FileHandle handle, long offset, Span<byte> destination,
             in ReadOption option)
         {
             Result rc = ReadFileImpl(fs, out long bytesRead, handle, offset, destination, in option);
@@ -35,7 +35,7 @@ namespace LibHac.Fs.Fsa
             return rc;
         }
 
-        public static Result ReadFile(this FileSystemClient fs, FileHandle2 handle, long offset, Span<byte> destination)
+        public static Result ReadFile(this FileSystemClient fs, FileHandle handle, long offset, Span<byte> destination)
         {
             Result rc = ReadFileImpl(fs, out long bytesRead, handle, offset, destination, ReadOption.None);
             fs.Impl.AbortIfNeeded(rc);
@@ -49,7 +49,7 @@ namespace LibHac.Fs.Fsa
             return rc;
         }
 
-        public static Result ReadFile(this FileSystemClient fs, out long bytesRead, FileHandle2 handle, long offset,
+        public static Result ReadFile(this FileSystemClient fs, out long bytesRead, FileHandle handle, long offset,
             Span<byte> destination, in ReadOption option)
         {
             Result rc = ReadFileImpl(fs, out bytesRead, handle, offset, destination, in option);
@@ -57,7 +57,7 @@ namespace LibHac.Fs.Fsa
             return rc;
         }
 
-        public static Result ReadFile(this FileSystemClient fs, out long bytesRead, FileHandle2 handle, long offset,
+        public static Result ReadFile(this FileSystemClient fs, out long bytesRead, FileHandle handle, long offset,
             Span<byte> destination)
         {
             Result rc = ReadFileImpl(fs, out bytesRead, handle, offset, destination, ReadOption.None);
@@ -65,7 +65,7 @@ namespace LibHac.Fs.Fsa
             return rc;
         }
 
-        public static Result WriteFile(this FileSystemClient fs, FileHandle2 handle, long offset,
+        public static Result WriteFile(this FileSystemClient fs, FileHandle handle, long offset,
             ReadOnlySpan<byte> source, in WriteOption option)
         {
             Result rc;
@@ -96,7 +96,7 @@ namespace LibHac.Fs.Fsa
             return rc;
         }
 
-        public static Result FlushFile(this FileSystemClient fs, FileHandle2 handle)
+        public static Result FlushFile(this FileSystemClient fs, FileHandle handle)
         {
             Result rc;
 
@@ -117,7 +117,7 @@ namespace LibHac.Fs.Fsa
             return rc;
         }
 
-        public static Result SetFileSize(this FileSystemClient fs, FileHandle2 handle, long size)
+        public static Result SetFileSize(this FileSystemClient fs, FileHandle handle, long size)
         {
             Result rc;
 
@@ -142,7 +142,7 @@ namespace LibHac.Fs.Fsa
             return rc;
         }
 
-        public static Result GetFileSize(this FileSystemClient fs, out long size, FileHandle2 handle)
+        public static Result GetFileSize(this FileSystemClient fs, out long size, FileHandle handle)
         {
             Result rc;
 
@@ -167,7 +167,7 @@ namespace LibHac.Fs.Fsa
             return rc;
         }
 
-        public static OpenMode GetFileOpenMode(this FileSystemClient fs, FileHandle2 handle)
+        public static OpenMode GetFileOpenMode(this FileSystemClient fs, FileHandle handle)
         {
             OpenMode mode = Get(handle).GetOpenMode();
 
@@ -186,7 +186,7 @@ namespace LibHac.Fs.Fsa
             return mode;
         }
 
-        public static void CloseFile(this FileSystemClient fs, FileHandle2 handle)
+        public static void CloseFile(this FileSystemClient fs, FileHandle handle)
         {
             if (fs.Impl.IsEnabledAccessLog() && fs.Impl.IsEnabledHandleAccessLog(handle))
             {
@@ -202,7 +202,7 @@ namespace LibHac.Fs.Fsa
             }
         }
 
-        public static Result QueryRange(this FileSystemClient fs, out QueryRangeInfo rangeInfo, FileHandle2 handle,
+        public static Result QueryRange(this FileSystemClient fs, out QueryRangeInfo rangeInfo, FileHandle handle,
             long offset, long size)
         {
             Unsafe.SkipInit(out rangeInfo);
@@ -214,7 +214,7 @@ namespace LibHac.Fs.Fsa
             return rc;
         }
 
-        public static Result InvalidateCache(this FileSystemClient fs, FileHandle2 handle, long offset, long size)
+        public static Result InvalidateCache(this FileSystemClient fs, FileHandle handle, long offset, long size)
         {
             Result rc = Get(handle).OperateRange(Span<byte>.Empty, OperationId.InvalidateCache, offset, size,
                 ReadOnlySpan<byte>.Empty);

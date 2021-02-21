@@ -107,7 +107,7 @@ namespace LibHac.FsSrv.Impl
             var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
-            if (StringUtils.Compare(RootDir, normalizer.Path) != 0)
+            if (StringUtils.Compare(RootDir, normalizer.Path) == 0)
                 return ResultFs.PathAlreadyExists.Log();
 
             return BaseFileSystem.Target.CreateDirectory(normalizer.Path);
@@ -118,7 +118,7 @@ namespace LibHac.FsSrv.Impl
             var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
-            if (StringUtils.Compare(RootDir, normalizer.Path) != 0)
+            if (StringUtils.Compare(RootDir, normalizer.Path) == 0)
                 return ResultFs.DirectoryNotDeletable.Log();
 
             return BaseFileSystem.Target.DeleteDirectory(normalizer.Path);
@@ -129,7 +129,7 @@ namespace LibHac.FsSrv.Impl
             var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
-            if (StringUtils.Compare(RootDir, normalizer.Path) != 0)
+            if (StringUtils.Compare(RootDir, normalizer.Path) == 0)
                 return ResultFs.DirectoryNotDeletable.Log();
 
             return BaseFileSystem.Target.DeleteDirectoryRecursively(normalizer.Path);

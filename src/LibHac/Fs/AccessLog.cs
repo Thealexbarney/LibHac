@@ -293,13 +293,13 @@ namespace LibHac.Fs.Impl
         }
 
         public static void OutputAccessLog(this FileSystemClientImpl fs, Result result, Tick start, Tick end,
-            FileHandle2 handle, U8Span message, [CallerMemberName] string functionName = "")
+            FileHandle handle, U8Span message, [CallerMemberName] string functionName = "")
         {
             throw new NotImplementedException();
         }
 
         public static void OutputAccessLog(this FileSystemClientImpl fs, Result result, Tick start, Tick end,
-            DirectoryHandle2 handle, U8Span message, [CallerMemberName] string functionName = "")
+            DirectoryHandle handle, U8Span message, [CallerMemberName] string functionName = "")
         {
             throw new NotImplementedException();
         }
@@ -322,13 +322,13 @@ namespace LibHac.Fs.Impl
         }
 
         public static void OutputAccessLogUnlessResultSuccess(this FileSystemClientImpl fs, Result result, Tick start,
-            Tick end, FileHandle2 handle, U8Span message, [CallerMemberName] string functionName = "")
+            Tick end, FileHandle handle, U8Span message, [CallerMemberName] string functionName = "")
         {
             throw new NotImplementedException();
         }
 
         public static void OutputAccessLogUnlessResultSuccess(this FileSystemClientImpl fs, Result result, Tick start,
-            Tick end, DirectoryHandle2 handle, U8Span message, [CallerMemberName] string functionName = "")
+            Tick end, DirectoryHandle handle, U8Span message, [CallerMemberName] string functionName = "")
         {
             throw new NotImplementedException();
         }
@@ -383,7 +383,7 @@ namespace LibHac.Fs.Impl
             return fs.IsEnabledAccessLog(AccessLogTarget.All);
         }
 
-        public static bool IsEnabledHandleAccessLog(this FileSystemClientImpl _, FileHandle2 handle)
+        public static bool IsEnabledHandleAccessLog(this FileSystemClientImpl _, FileHandle handle)
         {
             if (handle.File is null)
                 return true;
@@ -392,7 +392,7 @@ namespace LibHac.Fs.Impl
             return fsAccessor is not null && fsAccessor.IsEnabledAccessLog();
         }
 
-        public static bool IsEnabledHandleAccessLog(this FileSystemClientImpl _, DirectoryHandle2 handle)
+        public static bool IsEnabledHandleAccessLog(this FileSystemClientImpl _, DirectoryHandle handle)
         {
             if (handle.Directory is null)
                 return true;

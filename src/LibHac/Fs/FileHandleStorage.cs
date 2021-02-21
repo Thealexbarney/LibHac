@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.Fs
 {
@@ -12,13 +13,13 @@ namespace LibHac.Fs
         private long FileSize { get; set; } = InvalidSize;
         private bool CloseHandle { get; }
 
-        public FileHandleStorage(FileHandle handle) : this(handle, false) { }
+        public FileHandleStorage(FileSystemClient fsClient, FileHandle handle) : this(fsClient, handle, false) { }
 
-        public FileHandleStorage(FileHandle handle, bool closeHandleOnDispose)
+        public FileHandleStorage(FileSystemClient fsClient, FileHandle handle, bool closeHandleOnDispose)
         {
+            FsClient = fsClient;
             Handle = handle;
             CloseHandle = closeHandleOnDispose;
-            FsClient = Handle.File.Parent.FsClient;
         }
 
         protected override Result DoRead(long offset, Span<byte> destination)
@@ -47,7 +48,7 @@ namespace LibHac.Fs
 
                 if (!IsRangeValid(offset, source.Length, FileSize)) return ResultFs.OutOfRange.Log();
 
-                return FsClient.WriteFile(Handle, offset, source);
+                return FsClient.WriteFile(Handle, offset, source, WriteOption.None);
             }
         }
 
