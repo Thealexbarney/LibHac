@@ -1,5 +1,4 @@
-﻿using System;
-using LibHac.Common;
+﻿using LibHac.Common;
 using LibHac.Fs.Impl;
 
 namespace LibHac.Fs.Fsa
@@ -18,17 +17,17 @@ namespace LibHac.Fs.Fsa
     {
         public static Result Register(this FileSystemClientImpl fs, FileSystemAccessor fileSystem)
         {
-            throw new NotImplementedException();
+            return fs.Globals.UserMountTable.MountTable.Mount(fileSystem);
         }
 
         public static Result Find(this FileSystemClientImpl fs, out FileSystemAccessor fileSystem, U8Span name)
         {
-            throw new NotImplementedException();
+            return fs.Globals.UserMountTable.MountTable.Find(out fileSystem, name);
         }
 
         public static void Unregister(this FileSystemClientImpl fs, U8Span name)
         {
-            throw new NotImplementedException();
+            fs.Globals.UserMountTable.MountTable.Unmount(name);
         }
     }
 }

@@ -88,7 +88,7 @@ namespace LibHac.Fs
                     filter.SetProgramId(applicationId);
                     filter.SetSaveDataType(SaveDataType.Temporary);
 
-                    Result rc = fs.FindSaveDataWithFilter(out _, SaveDataSpaceId.Temporary, ref filter);
+                    Result rc = fs.FindSaveDataWithFilter(out _, SaveDataSpaceId.Temporary, in filter);
 
                     if (rc.IsFailure())
                     {
@@ -176,7 +176,7 @@ namespace LibHac.Fs
         private static Result EnsureAndExtendSaveData(FileSystemClient fs, Func<Result> createFunc,
             ref long requiredSize, ref SaveDataFilter filter, long baseSize, long dataSize, long journalSize)
         {
-            Result rc = fs.FindSaveDataWithFilter(out SaveDataInfo info, SaveDataSpaceId.User, ref filter);
+            Result rc = fs.FindSaveDataWithFilter(out SaveDataInfo info, SaveDataSpaceId.User, in filter);
 
             if (rc.IsFailure())
             {
@@ -346,7 +346,7 @@ namespace LibHac.Fs
             filter.SetIndex(index);
             filter.SetSaveDataType(SaveDataType.Cache);
 
-            Result rc = fs.FindSaveDataWithFilter(out SaveDataInfo info, spaceId, ref filter);
+            Result rc = fs.FindSaveDataWithFilter(out SaveDataInfo info, spaceId, in filter);
 
             if (rc.IsFailure())
             {
@@ -401,7 +401,7 @@ namespace LibHac.Fs
 
             if (fs.IsSdCardAccessible())
             {
-                Result rc = fs.FindSaveDataWithFilter(out _, SaveDataSpaceId.SdCache, ref filter);
+                Result rc = fs.FindSaveDataWithFilter(out _, SaveDataSpaceId.SdCache, in filter);
                 if (rc.IsFailure() && !ResultFs.TargetNotFound.Includes(rc)) return rc;
 
                 if (rc.IsSuccess())
@@ -413,7 +413,7 @@ namespace LibHac.Fs
             // Not on the SD card. Check it it's in NAND
             if (target == CacheStorageTargetMedia.None)
             {
-                Result rc = fs.FindSaveDataWithFilter(out _, SaveDataSpaceId.User, ref filter);
+                Result rc = fs.FindSaveDataWithFilter(out _, SaveDataSpaceId.User, in filter);
                 if (rc.IsFailure() && !ResultFs.TargetNotFound.Includes(rc)) return rc;
 
                 if (rc.IsSuccess())
@@ -434,7 +434,7 @@ namespace LibHac.Fs
 
             while (true)
             {
-                rc = fs.FindSaveDataWithFilter(out SaveDataInfo saveInfo, SaveDataSpaceId.Temporary, ref filter);
+                rc = fs.FindSaveDataWithFilter(out SaveDataInfo saveInfo, SaveDataSpaceId.Temporary, in filter);
 
                 if (rc.IsFailure()) break;
 

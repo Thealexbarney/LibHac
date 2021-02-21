@@ -210,7 +210,7 @@ namespace LibHac.Fs.Fsa
             Result rc = Get(handle).OperateRange(SpanHelpers.AsByteSpan(ref rangeInfo), OperationId.QueryRange, offset,
                 size, ReadOnlySpan<byte>.Empty);
 
-            fs.Impl.IsAbortNeeded(rc);
+            fs.Impl.AbortIfNeeded(rc);
             return rc;
         }
 
@@ -219,7 +219,7 @@ namespace LibHac.Fs.Fsa
             Result rc = Get(handle).OperateRange(Span<byte>.Empty, OperationId.InvalidateCache, offset, size,
                 ReadOnlySpan<byte>.Empty);
 
-            fs.Impl.IsAbortNeeded(rc);
+            fs.Impl.AbortIfNeeded(rc);
             return rc;
         }
 

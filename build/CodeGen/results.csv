@@ -533,6 +533,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,5307,,,,UnexpectedErrorInHostFileFlush,
 2,5308,,,,UnexpectedErrorInHostFileGetSize,
 2,5309,,,,UnknownHostFileSystemError,
+2,5319,,,,UnexpectedInMountUtilityA,
 2,5320,,,,InvalidNcaMountPoint,
 
 2,6000,6499,,,PreconditionViolation,
