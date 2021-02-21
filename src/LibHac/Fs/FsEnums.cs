@@ -177,9 +177,11 @@ namespace LibHac.Fs
         Restore = 1 << 4
     }
 
+    [Flags]
     public enum CommitOptionFlag
     {
-        None = 1,
+        None = 0,
+        ClearRestoreFlag = 1,
         SetRestoreFlag = 2
     }
 

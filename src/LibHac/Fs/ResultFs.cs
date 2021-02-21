@@ -934,6 +934,8 @@ namespace LibHac.Fs
                 public static Result.Base UnexpectedErrorInHostFileGetSize => new Result.Base(ModuleFs, 5308);
                 /// <summary>Error code: 2002-5309; Inner value: 0x297a02</summary>
                 public static Result.Base UnknownHostFileSystemError => new Result.Base(ModuleFs, 5309);
+                /// <summary>Error code: 2002-5319; Inner value: 0x298e02</summary>
+                public static Result.Base UnexpectedInMountUtilityA => new Result.Base(ModuleFs, 5319);
                 /// <summary>Error code: 2002-5320; Inner value: 0x299002</summary>
                 public static Result.Base InvalidNcaMountPoint => new Result.Base(ModuleFs, 5320);
 

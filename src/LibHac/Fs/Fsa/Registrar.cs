@@ -1,5 +1,6 @@
 ﻿using System;
 using LibHac.Common;
+using LibHac.Fs.Impl;
 
 namespace LibHac.Fs.Fsa
 {
@@ -15,32 +16,47 @@ namespace LibHac.Fs.Fsa
 
     internal static class Registrar
     {
-        public static Result Register(U8Span name, IFileSystem fileSystem)
+        public static Result Register(this FileSystemClient fs, U8Span name, IFileSystem fileSystem)
         {
-            throw new NotImplementedException();
+            var accessor = new FileSystemAccessor(name, null, fileSystem, null, null);
+            fs.Impl.Register(accessor);
+
+            return Result.Success;
         }
 
-        public static Result Register(U8Span name, IFileSystem fileSystem, ICommonMountNameGenerator mountNameGenerator)
+        public static Result Register(this FileSystemClient fs, U8Span name, IFileSystem fileSystem,
+            ICommonMountNameGenerator mountNameGenerator)
         {
-            throw new NotImplementedException();
+            var accessor = new FileSystemAccessor(name, null, fileSystem, mountNameGenerator, null);
+            fs.Impl.Register(accessor);
+
+            return Result.Success;
         }
 
-        public static Result Register(U8Span name, IMultiCommitTarget multiCommitTarget, IFileSystem fileSystem,
-            ICommonMountNameGenerator mountNameGenerator, bool useDataCache, bool usePathCache)
+        public static Result Register(this FileSystemClient fs, U8Span name, IMultiCommitTarget multiCommitTarget,
+            IFileSystem fileSystem, ICommonMountNameGenerator mountNameGenerator, bool useDataCache, bool usePathCache)
         {
-            throw new NotImplementedException();
+            return fs.Register(name, multiCommitTarget, fileSystem, mountNameGenerator, null, useDataCache,
+                usePathCache);
         }
 
-        public static Result Register(U8Span name, IMultiCommitTarget multiCommitTarget, IFileSystem fileSystem,
-            ICommonMountNameGenerator mountNameGenerator, ISaveDataAttributeGetter saveAttributeGetter,
-            bool useDataCache, bool usePathCache)
+        public static Result Register(this FileSystemClient fs, U8Span name, IMultiCommitTarget multiCommitTarget,
+            IFileSystem fileSystem, ICommonMountNameGenerator mountNameGenerator,
+            ISaveDataAttributeGetter saveAttributeGetter, bool useDataCache, bool usePathCache)
         {
-            throw new NotImplementedException();
+            var accessor = new FileSystemAccessor(name, multiCommitTarget, fileSystem, mountNameGenerator,
+                saveAttributeGetter);
+
+            accessor.SetFileDataCacheAttachable(useDataCache);
+            accessor.SetPathBasedFileDataCacheAttachable(usePathCache);
+            fs.Impl.Register(accessor);
+
+            return Result.Success;
         }
 
-        public static void Unregister(U8Span name)
+        public static void Unregister(this FileSystemClient fs, U8Span name)
         {
-
+            fs.Impl.Unregister(name);
         }
     }
 }

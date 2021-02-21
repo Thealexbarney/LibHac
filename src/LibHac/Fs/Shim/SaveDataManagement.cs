@@ -10,6 +10,55 @@ namespace LibHac.Fs.Shim
 {
     public static class SaveDataManagement
     {
+        internal static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
+            out SaveDataExtraData extraData, ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
+            out SaveDataExtraData extraData, SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
+            out SaveDataExtraData extraData, SaveDataSpaceId spaceId, in SaveDataAttribute attribute)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
+            out SaveDataExtraData extraData, SaveDataSpaceId spaceId, in SaveDataAttribute attribute,
+            in SaveDataExtraData extraDataMask)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static Result WriteSaveDataFileSystemExtraData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId,
+            ulong saveDataId, in SaveDataExtraData extraData)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static Result WriteSaveDataFileSystemExtraData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId,
+            ulong saveDataId, in SaveDataExtraData extraData, in SaveDataExtraData extraDataMask)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static Result WriteSaveDataFileSystemExtraData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId,
+            in SaveDataAttribute attribute, in SaveDataExtraData extraData, in SaveDataExtraData extraDataMask)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static Result FindSaveDataWithFilter(this FileSystemClientImpl fs, out SaveDataInfo saveInfo,
+            SaveDataSpaceId spaceId, in SaveDataFilter filter)
+        {
+            throw new NotImplementedException();
+        }
+
         public static Result CreateSaveData(this FileSystemClient fs, Ncm.ApplicationId applicationId, UserId userId,
             ulong ownerId, long size, long journalSize, SaveDataFlags flags)
         {
@@ -37,39 +86,6 @@ namespace LibHac.Fs.Shim
                     };
 
                     return fsProxy.Target.CreateSaveDataFileSystem(in attribute, in createInfo, in metaInfo);
-                },
-                () =>
-                    $", applicationid: 0x{applicationId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:X8}");
-        }
-
-        public static Result CreateSaveData(this FileSystemClient fs, Ncm.ApplicationId applicationId, UserId userId,
-            ulong ownerId, long size, long journalSize, HashSalt hashSalt, SaveDataFlags flags)
-        {
-            return fs.RunOperationWithAccessLog(AccessLogTarget.System,
-                () =>
-                {
-                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
-
-                    var attribute = new SaveDataAttribute(applicationId, SaveDataType.Account, userId, 0);
-
-                    var createInfo = new SaveDataCreationInfo
-                    {
-                        Size = size,
-                        JournalSize = journalSize,
-                        BlockSize = 0x4000,
-                        OwnerId = ownerId,
-                        Flags = flags,
-                        SpaceId = SaveDataSpaceId.User
-                    };
-
-                    var metaInfo = new SaveDataMetaInfo
-                    {
-                        Type = SaveDataMetaType.Thumbnail,
-                        Size = 0x40060
-                    };
-
-                    return fsProxy.Target.CreateSaveDataFileSystemWithHashSalt(in attribute, in createInfo, in metaInfo,
-                        in hashSalt);
                 },
                 () =>
                     $", applicationid: 0x{applicationId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:X8}");
@@ -126,6 +142,159 @@ namespace LibHac.Fs.Shim
                     return fsProxy.Target.CreateSaveDataFileSystem(in attribute, in createInfo, in metaInfo);
                 },
                 () => $", applicationid: 0x{applicationId.Value:X}, save_data_owner_id: 0x{ownerId:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:X8}");
+        }
+
+        public static Result DeleteSaveData(this FileSystemClient fs, ulong saveDataId)
+        {
+            return fs.RunOperationWithAccessLog(AccessLogTarget.System,
+                () =>
+                {
+                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+                    return fsProxy.Target.DeleteSaveDataFileSystem(saveDataId);
+                },
+                () => $", savedataid: 0x{saveDataId:X}");
+        }
+
+        public static Result DeleteSaveData(this FileSystemClient fs, SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            return fs.RunOperationWithAccessLog(AccessLogTarget.System,
+                () =>
+                {
+                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+                    return fsProxy.Target.DeleteSaveDataFileSystemBySaveDataSpaceId(spaceId, saveDataId);
+                },
+                () => $", savedataspaceid: {spaceId}, savedataid: 0x{saveDataId:X}");
+        }
+
+        public static Result OpenSaveDataIterator(this FileSystemClient fs, out SaveDataIterator iterator, SaveDataSpaceId spaceId)
+        {
+            var tempIterator = new SaveDataIterator();
+
+            try
+            {
+                Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
+                    () =>
+                    {
+                        using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+
+                        Result rc = fsProxy.Target.OpenSaveDataInfoReaderBySaveDataSpaceId(
+                            out ReferenceCountedDisposable<ISaveDataInfoReader> reader, spaceId);
+                        if (rc.IsFailure()) return rc;
+
+                        tempIterator = new SaveDataIterator(fs, reader);
+
+                        return Result.Success;
+                    },
+                    () => $", savedataspaceid: {spaceId}");
+
+                iterator = result.IsSuccess() ? tempIterator : default;
+                tempIterator = default;
+
+                return result;
+            }
+            finally
+            {
+                tempIterator.Dispose();
+            }
+        }
+
+        public static Result OpenSaveDataIterator(this FileSystemClient fs, out SaveDataIterator iterator, SaveDataSpaceId spaceId, in SaveDataFilter filter)
+        {
+            ReferenceCountedDisposable<ISaveDataInfoReader> reader = null;
+            var tempIterator = new SaveDataIterator();
+            SaveDataFilter tempFilter = filter;
+
+            try
+            {
+                Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
+                    () =>
+                    {
+                        using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+
+                        Result rc = fsProxy.Target.OpenSaveDataInfoReaderWithFilter(out reader, spaceId, in tempFilter);
+                        if (rc.IsFailure()) return rc;
+
+                        tempIterator = new SaveDataIterator(fs, reader);
+
+                        return Result.Success;
+                    },
+                    () => $", savedataspaceid: {spaceId}");
+
+                iterator = result.IsSuccess() ? tempIterator : default;
+
+                return result;
+            }
+            finally
+            {
+                reader?.Dispose();
+            }
+        }
+
+        public static Result FindSaveDataWithFilter(this FileSystemClient fs, out SaveDataInfo info, SaveDataSpaceId spaceId,
+            in SaveDataFilter filter)
+        {
+            info = default;
+
+            SaveDataFilter tempFilter = filter;
+            var tempInfo = new SaveDataInfo();
+
+            Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
+                () =>
+                {
+                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+
+                    tempInfo = new SaveDataInfo();
+
+                    Result rc = fsProxy.Target.FindSaveDataWithFilter(out long count,
+                        OutBuffer.FromStruct(ref tempInfo), spaceId, in tempFilter);
+                    if (rc.IsFailure()) return rc;
+
+                    if (count == 0)
+                        return ResultFs.TargetNotFound.Log();
+
+                    return Result.Success;
+                },
+                () => $", savedataspaceid: {spaceId}");
+
+            if (result.IsSuccess())
+            {
+                info = tempInfo;
+            }
+
+            return result;
+        }
+
+        public static Result CreateSaveData(this FileSystemClient fs, Ncm.ApplicationId applicationId, UserId userId,
+            ulong ownerId, long size, long journalSize, HashSalt hashSalt, SaveDataFlags flags)
+        {
+            return fs.RunOperationWithAccessLog(AccessLogTarget.System,
+                () =>
+                {
+                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+
+                    var attribute = new SaveDataAttribute(applicationId, SaveDataType.Account, userId, 0);
+
+                    var createInfo = new SaveDataCreationInfo
+                    {
+                        Size = size,
+                        JournalSize = journalSize,
+                        BlockSize = 0x4000,
+                        OwnerId = ownerId,
+                        Flags = flags,
+                        SpaceId = SaveDataSpaceId.User
+                    };
+
+                    var metaInfo = new SaveDataMetaInfo
+                    {
+                        Type = SaveDataMetaType.Thumbnail,
+                        Size = 0x40060
+                    };
+
+                    return fsProxy.Target.CreateSaveDataFileSystemWithHashSalt(in attribute, in createInfo, in metaInfo,
+                        in hashSalt);
+                },
+                () =>
+                    $", applicationid: 0x{applicationId.Value:X}, userid: 0x{userId}, save_data_owner_id: 0x{ownerId:X}, save_data_size: {size}, save_data_journal_size: {journalSize}, save_data_flags: 0x{(int)flags:X8}");
         }
 
         public static Result CreateTemporaryStorage(this FileSystemClient fs, Ncm.ApplicationId applicationId, ulong ownerId, long size, SaveDataFlags flags)
@@ -247,62 +416,6 @@ namespace LibHac.Fs.Shim
             return CreateSystemSaveData(fs, spaceId, saveDataId, UserId.InvalidId, ownerId, size, journalSize, flags);
         }
 
-        public static Result DeleteSaveData(this FileSystemClient fs, ulong saveDataId)
-        {
-            return fs.RunOperationWithAccessLog(AccessLogTarget.System,
-                () =>
-                {
-                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
-                    return fsProxy.Target.DeleteSaveDataFileSystem(saveDataId);
-                },
-                () => $", savedataid: 0x{saveDataId:X}");
-        }
-
-        public static Result DeleteSaveData(this FileSystemClient fs, SaveDataSpaceId spaceId, ulong saveDataId)
-        {
-            return fs.RunOperationWithAccessLog(AccessLogTarget.System,
-                () =>
-                {
-                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
-                    return fsProxy.Target.DeleteSaveDataFileSystemBySaveDataSpaceId(spaceId, saveDataId);
-                },
-                () => $", savedataspaceid: {spaceId}, savedataid: 0x{saveDataId:X}");
-        }
-
-        public static Result FindSaveDataWithFilter(this FileSystemClient fs, out SaveDataInfo info, SaveDataSpaceId spaceId,
-            ref SaveDataFilter filter)
-        {
-            info = default;
-
-            SaveDataFilter tempFilter = filter;
-            var tempInfo = new SaveDataInfo();
-
-            Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
-                () =>
-                {
-                    using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
-
-                    tempInfo = new SaveDataInfo();
-
-                    Result rc = fsProxy.Target.FindSaveDataWithFilter(out long count,
-                        OutBuffer.FromStruct(ref tempInfo), spaceId, in tempFilter);
-                    if (rc.IsFailure()) return rc;
-
-                    if (count == 0)
-                        return ResultFs.TargetNotFound.Log();
-
-                    return Result.Success;
-                },
-                () => $", savedataspaceid: {spaceId}");
-
-            if (result.IsSuccess())
-            {
-                info = tempInfo;
-            }
-
-            return result;
-        }
-
         public static Result QuerySaveDataTotalSize(this FileSystemClient fs, out long totalSize, long size, long journalSize)
         {
             totalSize = default;
@@ -324,70 +437,6 @@ namespace LibHac.Fs.Shim
             }
 
             return result;
-        }
-
-        public static Result OpenSaveDataIterator(this FileSystemClient fs, out SaveDataIterator iterator, SaveDataSpaceId spaceId)
-        {
-            var tempIterator = new SaveDataIterator();
-
-            try
-            {
-                Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
-                    () =>
-                    {
-                        using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
-
-                        Result rc = fsProxy.Target.OpenSaveDataInfoReaderBySaveDataSpaceId(
-                            out ReferenceCountedDisposable<ISaveDataInfoReader> reader, spaceId);
-                        if (rc.IsFailure()) return rc;
-
-                        tempIterator = new SaveDataIterator(fs, reader);
-
-                        return Result.Success;
-                    },
-                    () => $", savedataspaceid: {spaceId}");
-
-                iterator = result.IsSuccess() ? tempIterator : default;
-                tempIterator = default;
-
-                return result;
-            }
-            finally
-            {
-                tempIterator.Dispose();
-            }
-        }
-
-        public static Result OpenSaveDataIterator(this FileSystemClient fs, out SaveDataIterator iterator, SaveDataSpaceId spaceId, ref SaveDataFilter filter)
-        {
-            ReferenceCountedDisposable<ISaveDataInfoReader> reader = null;
-            var tempIterator = new SaveDataIterator();
-            SaveDataFilter tempFilter = filter;
-
-            try
-            {
-                Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
-                    () =>
-                    {
-                        using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
-
-                        Result rc = fsProxy.Target.OpenSaveDataInfoReaderWithFilter(out reader, spaceId, in tempFilter);
-                        if (rc.IsFailure()) return rc;
-
-                        tempIterator = new SaveDataIterator(fs, reader);
-
-                        return Result.Success;
-                    },
-                    () => $", savedataspaceid: {spaceId}");
-
-                iterator = result.IsSuccess() ? tempIterator : default;
-
-                return result;
-            }
-            finally
-            {
-                reader?.Dispose();
-            }
         }
 
         public static void DisableAutoSaveDataCreation(this FileSystemClient fsClient)

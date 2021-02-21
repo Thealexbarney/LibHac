@@ -435,5 +435,19 @@ namespace LibHac.Fs.Impl
         {
             throw new NotImplementedException();
         }
+
+        public static ReadOnlySpan<byte> ConvertFromBoolToAccessLogBooleanValue(bool value)
+        {
+            return value ? LogTrue : LogFalse;
+        }
+
+        private static ReadOnlySpan<byte> LogTrue => // "true"
+            new[] { (byte)'t', (byte)'r', (byte)'u', (byte)'e' };
+
+        private static ReadOnlySpan<byte> LogFalse => // "false"
+            new[]
+            {
+                (byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e'
+            };
     }
 }
