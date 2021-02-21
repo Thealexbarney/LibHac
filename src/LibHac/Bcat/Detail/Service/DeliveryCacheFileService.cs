@@ -3,6 +3,7 @@ using LibHac.Bcat.Detail.Ipc;
 using LibHac.Bcat.Detail.Service.Core;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.Bcat.Detail.Service
 {

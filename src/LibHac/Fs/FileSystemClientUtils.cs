@@ -16,7 +16,7 @@ namespace LibHac.Fs
             Result rc = fs.OpenDirectory(out DirectoryHandle sourceHandle, sourcePath.ToU8Span(), OpenDirectoryMode.All);
             if (rc.IsFailure()) return rc;
 
-            using (sourceHandle)
+            try
             {
                 foreach (DirectoryEntryEx entry in fs.EnumerateEntries(sourcePath, "*", SearchOptions.Default))
                 {
@@ -41,6 +41,11 @@ namespace LibHac.Fs
                     }
                 }
             }
+            finally
+            {
+                if (sourceHandle.IsValid)
+                    fs.CloseDirectory(sourceHandle);
+            }
 
             return Result.Success;
         }
@@ -50,12 +55,13 @@ namespace LibHac.Fs
             Result rc = fs.OpenFile(out FileHandle sourceHandle, sourcePath.ToU8Span(), OpenMode.Read);
             if (rc.IsFailure()) return rc;
 
-            using (sourceHandle)
+            try
             {
-                rc = fs.OpenFile(out FileHandle destHandle, destPath.ToU8Span(), OpenMode.Write | OpenMode.AllowAppend);
+                rc = fs.OpenFile(out FileHandle destHandle, destPath.ToU8Span(),
+                    OpenMode.Write | OpenMode.AllowAppend);
                 if (rc.IsFailure()) return rc;
 
-                using (destHandle)
+                try
                 {
                     const int maxBufferSize = 0x10000;
 
@@ -77,7 +83,7 @@ namespace LibHac.Fs
                             rc = fs.ReadFile(out long _, sourceHandle, offset, buf);
                             if (rc.IsFailure()) return rc;
 
-                            rc = fs.WriteFile(destHandle, offset, buf);
+                            rc = fs.WriteFile(destHandle, offset, buf, WriteOption.None);
                             if (rc.IsFailure()) return rc;
 
                             logger?.ReportAdd(toRead);
@@ -92,6 +98,16 @@ namespace LibHac.Fs
                     rc = fs.FlushFile(destHandle);
                     if (rc.IsFailure()) return rc;
                 }
+                finally
+                {
+                    if (destHandle.IsValid)
+                        fs.CloseFile(destHandle);
+                }
+            }
+            finally
+            {
+                if (sourceHandle.IsValid)
+                    fs.CloseFile(sourceHandle);
             }
 
             return Result.Success;
@@ -114,7 +130,7 @@ namespace LibHac.Fs
 
             fs.OpenDirectory(out DirectoryHandle sourceHandle, path.ToU8Span(), OpenDirectoryMode.All).ThrowIfFailure();
 
-            using (sourceHandle)
+            try
             {
                 while (true)
                 {
@@ -140,6 +156,11 @@ namespace LibHac.Fs
                         yield return subEntry;
                     }
                 }
+            }
+            finally
+            {
+                if (sourceHandle.IsValid)
+                    fs.CloseDirectory(sourceHandle);
             }
         }
 

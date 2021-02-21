@@ -479,7 +479,7 @@ namespace LibHac.Fs.Fsa
             return rc;
         }
 
-        public static Result OpenFile(this FileSystemClient fs, out FileHandle2 handle, U8Span path, OpenMode mode)
+        public static Result OpenFile(this FileSystemClient fs, out FileHandle handle, U8Span path, OpenMode mode)
         {
             handle = default;
 
@@ -523,19 +523,19 @@ namespace LibHac.Fs.Fsa
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
-            handle = new FileHandle2(accessor);
+            handle = new FileHandle(accessor);
             return Result.Success;
         }
 
-        public static Result OpenFile(this FileSystemClient fs, out FileHandle2 handle, IFile file, OpenMode mode)
+        public static Result OpenFile(this FileSystemClient fs, out FileHandle handle, IFile file, OpenMode mode)
         {
             var accessor = new FileAccessor(ref file, null, mode);
-            handle = new FileHandle2(accessor);
+            handle = new FileHandle(accessor);
 
             return Result.Success;
         }
 
-        public static Result OpenDirectory(this FileSystemClient fs, out DirectoryHandle2 handle, U8Span path,
+        public static Result OpenDirectory(this FileSystemClient fs, out DirectoryHandle handle, U8Span path,
             OpenDirectoryMode mode)
         {
             handle = default;
@@ -580,7 +580,7 @@ namespace LibHac.Fs.Fsa
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
-            handle = new DirectoryHandle2(accessor);
+            handle = new DirectoryHandle(accessor);
             return Result.Success;
         }
 

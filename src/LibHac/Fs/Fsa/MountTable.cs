@@ -17,11 +17,12 @@ namespace LibHac.Fs.Impl
         {
             _fileSystemList = new LinkedList<FileSystemAccessor>();
             _mutex = new SdkMutexType();
+            _mutex.Initialize();
         }
 
         public Result Mount(FileSystemAccessor fileSystem)
         {
-            ScopedLock.Lock(ref _mutex);
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
 
             if (!CanAcceptMountName(fileSystem.GetName()))
                 return ResultFs.MountNameAlreadyExists.Log();
@@ -33,7 +34,7 @@ namespace LibHac.Fs.Impl
         public Result Find(out FileSystemAccessor accessor, U8Span name)
         {
             accessor = default;
-            ScopedLock.Lock(ref _mutex);
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
 
             for (LinkedListNode<FileSystemAccessor> currentNode = _fileSystemList.First;
                 currentNode is not null;
@@ -49,7 +50,7 @@ namespace LibHac.Fs.Impl
 
         public void Unmount(U8Span name)
         {
-            ScopedLock.Lock(ref _mutex);
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
 
             LinkedListNode<FileSystemAccessor> currentNode;
             for (currentNode = _fileSystemList.First; currentNode is not null; currentNode = currentNode.Next)

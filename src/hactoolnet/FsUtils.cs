@@ -34,7 +34,7 @@ namespace hactoolnet
             Result rc = fs.OpenDirectory(out DirectoryHandle sourceHandle, sourcePath, OpenDirectoryMode.All);
             if (rc.IsFailure()) return rc;
 
-            using (sourceHandle)
+            try
             {
                 foreach (DirectoryEntryEx entry in fs.EnumerateEntries(sourcePathStr, "*", SearchOptions.Default))
                 {
@@ -61,6 +61,11 @@ namespace hactoolnet
                     }
                 }
             }
+            finally
+            {
+                if (sourceHandle.IsValid)
+                    fs.CloseDirectory(sourceHandle);
+            }
 
             return Result.Success;
         }
@@ -82,12 +87,12 @@ namespace hactoolnet
             Result rc = fs.OpenFile(out FileHandle sourceHandle, sourcePath, OpenMode.Read);
             if (rc.IsFailure()) return rc;
 
-            using (sourceHandle)
+            try
             {
                 rc = fs.OpenFile(out FileHandle destHandle, destPath, OpenMode.Write | OpenMode.AllowAppend);
                 if (rc.IsFailure()) return rc;
 
-                using (destHandle)
+                try
                 {
                     const int maxBufferSize = 1024 * 1024;
 
@@ -107,7 +112,7 @@ namespace hactoolnet
                             rc = fs.ReadFile(out long _, sourceHandle, offset, buf);
                             if (rc.IsFailure()) return rc;
 
-                            rc = fs.WriteFile(destHandle, offset, buf);
+                            rc = fs.WriteFile(destHandle, offset, buf, WriteOption.None);
                             if (rc.IsFailure()) return rc;
 
                             logger?.ReportAdd(toRead);
@@ -121,6 +126,16 @@ namespace hactoolnet
                     rc = fs.FlushFile(destHandle);
                     if (rc.IsFailure()) return rc;
                 }
+                finally
+                {
+                    if (destHandle.IsValid)
+                        fs.CloseFile(destHandle);
+                }
+            }
+            finally
+            {
+                if (sourceHandle.IsValid)
+                    fs.CloseFile(sourceHandle);
             }
 
             return Result.Success;
