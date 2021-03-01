@@ -18,6 +18,11 @@ namespace LibHac.Fs
 
         public bool IsAccessLogInitialized;
         public SdkMutexType MutexForAccessLogInitialization;
+
+        public void Initialize(FileSystemClient _)
+        {
+            MutexForAccessLogInitialization.Initialize();
+        }
     }
 
     [StructLayout(LayoutKind.Sequential, Size = 0x20)]
@@ -40,35 +45,18 @@ namespace LibHac.Fs
 
     public static class AccessLog
     {
-        private static bool HasFileSystemServer(FileSystemClient fs)
-        {
-            return fs.Hos is not null;
-        }
-
         public static Result GetGlobalAccessLogMode(this FileSystemClient fs, out GlobalAccessLogMode mode)
         {
-            if (HasFileSystemServer(fs))
-            {
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-                return fsProxy.Target.GetGlobalAccessLogMode(out mode);
-            }
-
-            mode = fs.Globals.AccessLog.GlobalAccessLogMode;
-            return Result.Success;
+            return fsProxy.Target.GetGlobalAccessLogMode(out mode);
         }
 
         public static Result SetGlobalAccessLogMode(this FileSystemClient fs, GlobalAccessLogMode mode)
         {
-            if (HasFileSystemServer(fs))
-            {
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-                return fsProxy.Target.SetGlobalAccessLogMode(mode);
-            }
-
-            fs.Globals.AccessLog.GlobalAccessLogMode = mode;
-            return Result.Success;
+            return fsProxy.Target.SetGlobalAccessLogMode(mode);
         }
 
         public static void SetLocalAccessLog(this FileSystemClient fs, bool enabled)
@@ -103,6 +91,27 @@ namespace LibHac.Fs
             {
                 fs.Globals.AccessLog.LocalAccessLogTarget &= ~AccessLogTarget.Application;
             }
+        }
+
+        public static Result RunOperationWithAccessLog(this FileSystemClient fs, AccessLogTarget logTarget,
+            Func<Result> operation, Func<string> textGenerator, [CallerMemberName] string caller = "")
+        {
+            Result rc;
+
+            if (fs.Impl.IsEnabledAccessLog(logTarget))
+            {
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = operation();
+                Tick end = fs.Hos.Os.GetSystemTick();
+
+                fs.Impl.OutputAccessLog(rc, start, end, null, textGenerator().ToU8Span(), caller);
+            }
+            else
+            {
+                rc = operation();
+            }
+
+            return rc;
         }
     }
 }
@@ -257,10 +266,10 @@ namespace LibHac.Fs.Impl
 
         public ReadOnlySpan<byte> ToString(MountHostOption value)
         {
-            switch (value)
+            switch (value.Flags)
             {
-                case MountHostOption.PseudoCaseSensitive: return new[] { (byte)'M', (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)'H', (byte)'o', (byte)'s', (byte)'t', (byte)'O', (byte)'p', (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)'F', (byte)'l', (byte)'a', (byte)'g', (byte)'_', (byte)'P', (byte)'s', (byte)'e', (byte)'u', (byte)'d', (byte)'o', (byte)'C', (byte)'a', (byte)'s', (byte)'e', (byte)'S', (byte)'e', (byte)'n', (byte)'s', (byte)'i', (byte)'t', (byte)'i', (byte)'v', (byte)'e' };
-                default: return ToValueString((int)value);
+                case MountHostOptionFlag.PseudoCaseSensitive: return new[] { (byte)'M', (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)'H', (byte)'o', (byte)'s', (byte)'t', (byte)'O', (byte)'p', (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)'F', (byte)'l', (byte)'a', (byte)'g', (byte)'_', (byte)'P', (byte)'s', (byte)'e', (byte)'u', (byte)'d', (byte)'o', (byte)'C', (byte)'a', (byte)'s', (byte)'e', (byte)'S', (byte)'e', (byte)'n', (byte)'s', (byte)'i', (byte)'t', (byte)'i', (byte)'v', (byte)'e' };
+                default: return ToValueString((int)value.Flags);
             }
         }
     }
@@ -438,16 +447,242 @@ namespace LibHac.Fs.Impl
 
         public static ReadOnlySpan<byte> ConvertFromBoolToAccessLogBooleanValue(bool value)
         {
-            return value ? LogTrue : LogFalse;
+            return value ? AccessLogStrings.LogTrue : AccessLogStrings.LogFalse;
         }
+    }
 
-        private static ReadOnlySpan<byte> LogTrue => // "true"
+    internal static class AccessLogStrings
+    {
+        public static byte LogQuote => (byte)'"';
+
+        public static ReadOnlySpan<byte> LogTrue => // "true"
             new[] { (byte)'t', (byte)'r', (byte)'u', (byte)'e' };
 
-        private static ReadOnlySpan<byte> LogFalse => // "false"
+        public static ReadOnlySpan<byte> LogFalse => // "false"
+            new[] { (byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e' };
+
+        public static ReadOnlySpan<byte> LogEntryBufferCount => // ", entry_buffer_count: "
             new[]
             {
-                (byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e'
+                (byte)',', (byte)' ', (byte)'e', (byte)'n', (byte)'t', (byte)'r', (byte)'y', (byte)'_',
+                (byte)'b', (byte)'u', (byte)'f', (byte)'f', (byte)'e', (byte)'r', (byte)'_', (byte)'c',
+                (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogEntryCount => // ", entry_count: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'e', (byte)'n', (byte)'t', (byte)'r', (byte)'y', (byte)'_',
+                (byte)'c', (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogOffset => // ", offset: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'o', (byte)'f', (byte)'f', (byte)'s', (byte)'e', (byte)'t',
+                (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogSize => // ", size: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'s', (byte)'i', (byte)'z', (byte)'e', (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogWriteOptionFlush => // ", write_option: Flush"
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'w', (byte)'r', (byte)'i', (byte)'t', (byte)'e', (byte)'_',
+                (byte)'o', (byte)'p', (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)':', (byte)' ',
+                (byte)'F', (byte)'l', (byte)'u', (byte)'s', (byte)'h'
+            };
+
+        public static ReadOnlySpan<byte> LogOpenMode => // ", open_mode: 0x"
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'o', (byte)'p', (byte)'e', (byte)'n', (byte)'_', (byte)'m',
+                (byte)'o', (byte)'d', (byte)'e', (byte)':', (byte)' ', (byte)'0', (byte)'x'
+            };
+
+        public static ReadOnlySpan<byte> LogPath => // ", path: ""
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'p', (byte)'a', (byte)'t', (byte)'h', (byte)':', (byte)' ',
+                (byte)'"'
+            };
+
+        public static ReadOnlySpan<byte> LogNewPath => // "", new_path: ""
+            new[]
+            {
+                (byte)'"', (byte)',', (byte)' ', (byte)'n', (byte)'e', (byte)'w', (byte)'_', (byte)'p',
+                (byte)'a', (byte)'t', (byte)'h', (byte)':', (byte)' ', (byte)'"'
+            };
+
+        public static ReadOnlySpan<byte> LogEntryType => // "", entry_type: "
+            new[]
+            {
+                (byte)'"', (byte)',', (byte)' ', (byte)'e', (byte)'n', (byte)'t', (byte)'r', (byte)'y',
+                (byte)'_', (byte)'t', (byte)'y', (byte)'p', (byte)'e', (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogName => // ", name: ""
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'n', (byte)'a', (byte)'m', (byte)'e', (byte)':', (byte)' ',
+                (byte)'"'
+            };
+
+        public static ReadOnlySpan<byte> LogCommitOption => // "", commit_option: 0x"
+            new[]
+            {
+                (byte)'"', (byte)',', (byte)' ', (byte)'c', (byte)'o', (byte)'m', (byte)'m', (byte)'i',
+                (byte)'t', (byte)'_', (byte)'o', (byte)'p', (byte)'t', (byte)'i', (byte)'o', (byte)'n',
+                (byte)':', (byte)' ', (byte)'0', (byte)'x'
+            };
+
+        public static ReadOnlySpan<byte> LogIsMounted => // "", is_mounted: ""
+            new[]
+            {
+                (byte)'"', (byte)',', (byte)' ', (byte)'i', (byte)'s', (byte)'_', (byte)'m', (byte)'o',
+                (byte)'u', (byte)'n', (byte)'t', (byte)'e', (byte)'d', (byte)':', (byte)' ', (byte)'"'
+            };
+
+        public static ReadOnlySpan<byte> LogApplicationId => // ", applicationid: 0x"
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'a', (byte)'p', (byte)'p', (byte)'l', (byte)'i', (byte)'c',
+                (byte)'a', (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)'i', (byte)'d', (byte)':',
+                (byte)' ', (byte)'0', (byte)'x'
+            };
+
+        public static ReadOnlySpan<byte> LogProgramId => // ", programid: 0x"
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'p', (byte)'r', (byte)'o', (byte)'g', (byte)'r', (byte)'a',
+                (byte)'m', (byte)'i', (byte)'d', (byte)':', (byte)' ', (byte)'0', (byte)'x'
+            };
+
+        public static ReadOnlySpan<byte> LogDataId => // ", dataid: 0x"
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'d', (byte)'a', (byte)'t', (byte)'a', (byte)'i', (byte)'d',
+                (byte)':', (byte)' ', (byte)'0', (byte)'x'
+            };
+
+        public static ReadOnlySpan<byte> LogBisPartitionId => // ", bispartitionid: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'b', (byte)'i', (byte)'s', (byte)'p', (byte)'a', (byte)'r',
+                (byte)'t', (byte)'i', (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)'i', (byte)'d',
+                (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogContentType => // ", content_type: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'c', (byte)'o', (byte)'n', (byte)'t', (byte)'e', (byte)'n',
+                (byte)'t', (byte)'_', (byte)'t', (byte)'y', (byte)'p', (byte)'e', (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogContentStorageId => // ", contentstorageid: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'c', (byte)'o', (byte)'n', (byte)'t', (byte)'e', (byte)'n',
+                (byte)'t', (byte)'s', (byte)'t', (byte)'o', (byte)'r', (byte)'a', (byte)'g', (byte)'e',
+                (byte)'i', (byte)'d', (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogGameCardHandle => // ", gamecard_handle: 0x"
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'g', (byte)'a', (byte)'m', (byte)'e', (byte)'c', (byte)'a',
+                (byte)'r', (byte)'d', (byte)'_', (byte)'h', (byte)'a', (byte)'n', (byte)'d', (byte)'l',
+                (byte)'e', (byte)':', (byte)' ', (byte)'0', (byte)'x'
+            };
+
+        public static ReadOnlySpan<byte> LogGameCardPartition => // ", gamecard_partition: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'g', (byte)'a', (byte)'m', (byte)'e', (byte)'c', (byte)'a',
+                (byte)'r', (byte)'d', (byte)'_', (byte)'p', (byte)'a', (byte)'r', (byte)'t', (byte)'i',
+                (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogMountHostOption => // ", mount_host_option: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'m', (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)'_',
+                (byte)'h', (byte)'o', (byte)'s', (byte)'t', (byte)'_', (byte)'o', (byte)'p', (byte)'t',
+                (byte)'i', (byte)'o', (byte)'n', (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogRootPath => // ", root_path: ""
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'r', (byte)'o', (byte)'o', (byte)'t', (byte)'_', (byte)'p',
+                (byte)'a', (byte)'t', (byte)'h', (byte)':', (byte)' ', (byte)'"'
+            };
+
+        public static ReadOnlySpan<byte> LogUserId => // ", userid: 0x"
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'u', (byte)'s', (byte)'e', (byte)'r', (byte)'i', (byte)'d',
+                (byte)':', (byte)' ', (byte)'0', (byte)'x'
+            };
+
+        public static ReadOnlySpan<byte> LogIndex => // ", index: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'i', (byte)'n', (byte)'d', (byte)'e', (byte)'x', (byte)':',
+                (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogSaveDataOwnerId => // ", save_data_owner_id: 0x"
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'_', (byte)'d',
+                (byte)'a', (byte)'t', (byte)'a', (byte)'_', (byte)'o', (byte)'w', (byte)'n', (byte)'e',
+                (byte)'r', (byte)'_', (byte)'i', (byte)'d', (byte)':', (byte)' ', (byte)'0', (byte)'x'
+            };
+
+        public static ReadOnlySpan<byte> LogSaveDataSize => // ", save_data_size: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'_', (byte)'d',
+                (byte)'a', (byte)'t', (byte)'a', (byte)'_', (byte)'s', (byte)'i', (byte)'z', (byte)'e',
+                (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogSaveDataJournalSize => // ", save_data_journal_size: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'_', (byte)'d',
+                (byte)'a', (byte)'t', (byte)'a', (byte)'_', (byte)'j', (byte)'o', (byte)'u', (byte)'r',
+                (byte)'n', (byte)'a', (byte)'l', (byte)'_', (byte)'s', (byte)'i', (byte)'z', (byte)'e',
+                (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogSaveDataFlags => // ", save_data_flags: 0x"
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'_', (byte)'d',
+                (byte)'a', (byte)'t', (byte)'a', (byte)'_', (byte)'f', (byte)'l', (byte)'a', (byte)'g',
+                (byte)'s', (byte)':', (byte)' ', (byte)'0', (byte)'x'
+            };
+
+        public static ReadOnlySpan<byte> LogSaveDataId => // ", savedataid: 0x"
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'d', (byte)'a',
+                (byte)'t', (byte)'a', (byte)'i', (byte)'d', (byte)':', (byte)' ', (byte)'0', (byte)'x'
+            };
+
+        public static ReadOnlySpan<byte> LogSaveDataSpaceId => // ", savedataspaceid: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'d', (byte)'a',
+                (byte)'t', (byte)'a', (byte)'s', (byte)'p', (byte)'a', (byte)'c', (byte)'e', (byte)'i',
+                (byte)'d', (byte)':', (byte)' '
             };
     }
 }

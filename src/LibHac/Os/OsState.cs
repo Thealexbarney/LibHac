@@ -9,10 +9,10 @@ namespace LibHac.Os
         internal OsResourceManager ResourceManager { get; }
 
         // Todo: Use configuration object if/when more options are added
-        internal OsState(HorizonClient horizonClient, long startTick)
+        internal OsState(HorizonClient horizonClient, ITickGenerator tickGenerator)
         {
             Hos = horizonClient;
-            ResourceManager = new OsResourceManager(startTick);
+            ResourceManager = new OsResourceManager(tickGenerator);
         }
 
         public ProcessId GetCurrentProcessId()

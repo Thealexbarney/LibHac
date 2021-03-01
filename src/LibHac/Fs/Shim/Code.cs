@@ -1,65 +1,80 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
+using LibHac.Os;
+using static LibHac.Fs.Impl.AccessLogStrings;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim
 {
+    [SkipLocalsInit]
     public static class Code
     {
         public static Result MountCode(this FileSystemClient fs, out CodeVerificationData verificationData,
             U8Span mountName, U8Span path, ProgramId programId)
         {
             Result rc;
-
-            if (fs.IsEnabledAccessLog(AccessLogTarget.System))
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
             {
-                System.TimeSpan startTime = fs.Time.GetCurrent();
-                rc = MountCodeImpl(fs, out verificationData, mountName, path, programId);
-                System.TimeSpan endTime = fs.Time.GetCurrent();
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = Mount(fs, out verificationData, mountName, path, programId);
+                Tick end = fs.Hos.Os.GetSystemTick();
 
-                fs.OutputAccessLog(rc, startTime, endTime,
-                    $", name: \"{mountName.ToString()}\", name: \"{path.ToString()}\", programid: 0x{programId}");
+                Span<byte> logBuffer = stackalloc byte[0x300];
+                var sb = new U8StringBuilder(logBuffer, true);
+
+                sb.Append(LogName).Append(mountName).Append(LogQuote)
+                    .Append(LogPath).Append(path).Append(LogQuote)
+                    .Append(LogProgramId).AppendFormat(programId.Value, 'X');
+
+                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
             }
             else
             {
-                rc = MountCodeImpl(fs, out verificationData, mountName, path, programId);
+                rc = Mount(fs, out verificationData, mountName, path, programId);
             }
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc;
 
-            if (rc.IsSuccess() && fs.IsEnabledAccessLog(AccessLogTarget.System))
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
+                fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
+
+            return Result.Success;
+
+            static Result Mount(FileSystemClient fs, out CodeVerificationData verificationData,
+                U8Span mountName, U8Span path, ProgramId programId)
             {
-                fs.EnableFileSystemAccessorAccessLog(mountName);
-            }
+                Unsafe.SkipInit(out verificationData);
 
-            return rc;
-        }
+                Result rc = fs.Impl.CheckMountName(mountName);
+                if (rc.IsFailure()) return rc;
 
-        private static Result MountCodeImpl(this FileSystemClient fs, out CodeVerificationData verificationData,
-            U8Span mountName, U8Span path, ProgramId programId)
-        {
-            Unsafe.SkipInit(out verificationData);
+                if (path.IsNull())
+                    return ResultFs.NullptrArgument.Log();
 
-            Result rc = MountHelpers.CheckMountName(mountName);
-            if (rc.IsFailure()) return rc;
+                rc = FspPath.FromSpan(out FspPath fsPath, path);
+                if (rc.IsFailure()) return rc;
 
-            rc = FspPath.FromSpan(out FspPath fsPath, path);
-            if (rc.IsFailure()) return rc;
+                using ReferenceCountedDisposable<IFileSystemProxyForLoader> fsProxy =
+                    fs.Impl.GetFileSystemProxyForLoaderServiceObject();
 
-            using ReferenceCountedDisposable<IFileSystemProxyForLoader> fsProxy =
-                fs.Impl.GetFileSystemProxyForLoaderServiceObject();
+                ReferenceCountedDisposable<IFileSystemSf> fileSystem = null;
+                try
+                {
+                    rc = fsProxy.Target.OpenCodeFileSystem(out fileSystem, out verificationData, in fsPath, programId);
+                    if (rc.IsFailure()) return rc;
 
-            rc = fsProxy.Target.OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystemSf> codeFs,
-                out verificationData, in fsPath, programId);
-            if (rc.IsFailure()) return rc;
-
-            using (codeFs)
-            {
-                var fileSystemAdapter = new FileSystemServiceObjectAdapter(codeFs);
-
-                return fs.Register(mountName, fileSystemAdapter);
+                    var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
+                    return fs.Register(mountName, fileSystemAdapter);
+                }
+                finally
+                {
+                    fileSystem?.Dispose();
+                }
             }
         }
     }

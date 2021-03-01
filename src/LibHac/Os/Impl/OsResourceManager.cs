@@ -7,9 +7,9 @@ namespace LibHac.Os.Impl
         public TickManager TickManager { get; }
 
         // Todo: Use configuration object if/when more options are added
-        public OsResourceManager(long startTick)
+        public OsResourceManager(ITickGenerator tickGenerator)
         {
-            TickManager = new TickManager(startTick);
+            TickManager = new TickManager(tickGenerator);
         }
 
         public void Dispose()

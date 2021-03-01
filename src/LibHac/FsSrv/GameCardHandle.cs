@@ -2,7 +2,7 @@
 
 namespace LibHac.FsSrv
 {
-    public struct GameCardHandle : IEquatable<GameCardHandle>
+    public readonly struct GameCardHandle : IEquatable<GameCardHandle>
     {
         public readonly int Value;
 

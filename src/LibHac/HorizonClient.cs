@@ -21,16 +21,14 @@ namespace LibHac
         public LrClient Lr { get; }
         public ArpClient Arp => ArpLazy.Value;
 
-        public ITimeSpanGenerator Time => Horizon.Time;
-
         internal HorizonClient(Horizon horizon, ProcessId processId)
         {
             Horizon = horizon;
             ProcessId = processId;
 
             Fs = new FileSystemClient(this);
-            Sm = new ServiceManagerClient(horizon.ServiceManager);
-            Os = new OsState(this, horizon.StartTick);
+            Sm = new ServiceManagerClient(Horizon.ServiceManager);
+            Os = new OsState(this, horizon.TickGenerator);
             Lr = new LrClient(this);
 
             ArpLazy = new Lazy<ArpClient>(InitArpClient, true);

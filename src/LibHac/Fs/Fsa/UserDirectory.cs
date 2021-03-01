@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs.Impl;
 using LibHac.Os;
+using static LibHac.Fs.Impl.AccessLogStrings;
 
 namespace LibHac.Fs.Fsa
 {
@@ -81,20 +82,5 @@ namespace LibHac.Fs.Fsa
                 Get(handle).Dispose();
             }
         }
-
-        private static ReadOnlySpan<byte> LogEntryBufferCount => // ", entry_buffer_count: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'e', (byte)'n', (byte)'t', (byte)'r', (byte)'y', (byte)'_',
-                (byte)'b', (byte)'u', (byte)'f', (byte)'f', (byte)'e', (byte)'r', (byte)'_', (byte)'c',
-                (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)':', (byte)' '
-            };
-
-        private static ReadOnlySpan<byte> LogEntryCount => // ", entry_count: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'e', (byte)'n', (byte)'t', (byte)'r', (byte)'y', (byte)'_',
-                (byte)'c', (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)':', (byte)' '
-            };
     }
 }

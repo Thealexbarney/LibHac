@@ -1,56 +1,20 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
+using LibHac.Os;
 using LibHac.Util;
+using static LibHac.Fs.Impl.AccessLogStrings;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim
 {
+    [SkipLocalsInit]
     public static class ContentStorage
     {
-        public static Result MountContentStorage(this FileSystemClient fs, ContentStorageId storageId)
-        {
-            return MountContentStorage(fs, GetContentStorageMountName(storageId), storageId);
-        }
-
-        public static Result MountContentStorage(this FileSystemClient fs, U8Span mountName, ContentStorageId storageId)
-        {
-            Result rc = MountHelpers.CheckMountNameAcceptingReservedMountName(mountName);
-            if (rc.IsFailure()) return rc;
-
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
-
-            rc = fsProxy.Target.OpenContentStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> contentFs,
-                storageId);
-            if (rc.IsFailure()) return rc;
-
-            using (contentFs)
-            {
-                var mountNameGenerator = new ContentStorageCommonMountNameGenerator(storageId);
-
-                var fileSystemAdapter = new FileSystemServiceObjectAdapter(contentFs);
-
-                return fs.Register(mountName, fileSystemAdapter, mountNameGenerator);
-            }
-        }
-
-        public static U8String GetContentStorageMountName(ContentStorageId storageId)
-        {
-            switch (storageId)
-            {
-                case ContentStorageId.System:
-                    return CommonPaths.ContentStorageSystemMountName;
-                case ContentStorageId.User:
-                    return CommonPaths.ContentStorageUserMountName;
-                case ContentStorageId.SdCard:
-                    return CommonPaths.ContentStorageSdCardMountName;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(storageId), storageId, null);
-            }
-        }
-
         private class ContentStorageCommonMountNameGenerator : ICommonMountNameGenerator
         {
             private ContentStorageId StorageId { get; }
@@ -64,13 +28,114 @@ namespace LibHac.Fs.Shim
 
             public Result GenerateCommonMountName(Span<byte> nameBuffer)
             {
-                U8String mountName = GetContentStorageMountName(StorageId);
+                // Determine how much space we need.
+                int neededSize =
+                    StringUtils.GetLength(GetContentStorageMountName(StorageId), PathTool.MountNameLengthMax) + 2;
 
-                int length = StringUtils.Copy(nameBuffer, mountName);
-                nameBuffer[length] = (byte)':';
-                nameBuffer[length + 1] = 0;
+                Assert.True(nameBuffer.Length >= neededSize);
+
+                // Generate the name.
+                var sb = new U8StringBuilder(nameBuffer);
+                sb.Append(GetContentStorageMountName(StorageId))
+                    .Append(StringTraits.DriveSeparator);
+
+                Assert.True(sb.Length == neededSize - 1);
 
                 return Result.Success;
+            }
+        }
+
+        public static Result MountContentStorage(this FileSystemClient fs, ContentStorageId storageId)
+        {
+            return MountContentStorage(fs, new U8Span(GetContentStorageMountName(storageId)), storageId);
+        }
+
+        public static Result MountContentStorage(this FileSystemClient fs, U8Span mountName, ContentStorageId storageId)
+        {
+            Result rc;
+            Span<byte> logBuffer = stackalloc byte[0x40];
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
+            {
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = Mount(fs, mountName, storageId);
+                Tick end = fs.Hos.Os.GetSystemTick();
+
+                var idString = new IdString();
+                var sb = new U8StringBuilder(logBuffer, true);
+
+                sb.Append(LogName).Append(mountName).Append(LogQuote)
+                    .Append(LogContentStorageId).Append(idString.ToString(storageId));
+
+                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            }
+            else
+            {
+                rc = Mount(fs, mountName, storageId);
+            }
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc;
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
+                fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
+
+            return Result.Success;
+
+            static Result Mount(FileSystemClient fs, U8Span mountName, ContentStorageId storageId)
+            {
+                // It can take some time for the system partition to be ready (if it's on the SD card).
+                // Thus, we will retry up to 10 times, waiting one second each time.
+                const int maxRetries = 10;
+                const int retryInterval = 1000;
+
+                Result rc = fs.Impl.CheckMountNameAcceptingReservedMountName(mountName);
+                if (rc.IsFailure()) return rc;
+
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+
+                ReferenceCountedDisposable<IFileSystemSf> fileSystem = null;
+                try
+                {
+                    for (int i = 0; i < maxRetries; i++)
+                    {
+                        rc = fsProxy.Target.OpenContentStorageFileSystem(out fileSystem, storageId);
+
+                        if (rc.IsSuccess())
+                            break;
+
+                        if (!ResultFs.SystemPartitionNotReady.Includes(rc))
+                            return rc;
+
+                        if (i == maxRetries - 1)
+                            return rc;
+
+                        fs.Hos.Os.SleepThread(TimeSpan.FromMilliSeconds(retryInterval));
+                    }
+
+                    var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
+                    var mountNameGenerator = new ContentStorageCommonMountNameGenerator(storageId);
+                    return fs.Register(mountName, fileSystemAdapter, mountNameGenerator);
+                }
+                finally
+                {
+                    fileSystem?.Dispose();
+                }
+            }
+        }
+
+        public static ReadOnlySpan<byte> GetContentStorageMountName(ContentStorageId storageId)
+        {
+            switch (storageId)
+            {
+                case ContentStorageId.System:
+                    return CommonMountNames.ContentStorageSystemMountName;
+                case ContentStorageId.User:
+                    return CommonMountNames.ContentStorageUserMountName;
+                case ContentStorageId.SdCard:
+                    return CommonMountNames.ContentStorageSdCardMountName;
+                default:
+                    Abort.UnexpectedDefault();
+                    return default;
             }
         }
     }

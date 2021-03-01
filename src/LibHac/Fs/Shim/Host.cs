@@ -1,13 +1,15 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
+using LibHac.Os;
 using LibHac.Util;
-using static LibHac.Fs.CommonPaths;
+using static LibHac.Fs.Impl.AccessLogStrings;
+using static LibHac.Fs.Impl.CommonMountNames;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
@@ -16,13 +18,52 @@ namespace LibHac.Fs.Shim
     /// <summary>
     /// Contains functions for mounting file systems from a host computer.
     /// </summary>
-    /// <remarks>Based on nnSdk 9.3.0</remarks>
+    /// <remarks>Based on nnSdk 11.4.0</remarks>
+    [SkipLocalsInit]
     public static class Host
     {
-        private static ReadOnlySpan<byte> HostRootFileSystemPath => new[]
-            {(byte) '@', (byte) 'H', (byte) 'o', (byte) 's', (byte) 't', (byte) ':', (byte) '/'};
+        private static ReadOnlySpan<byte> HostRootFileSystemPath => // "@Host:/"
+            new[] { (byte)'@', (byte)'H', (byte)'o', (byte)'s', (byte)'t', (byte)':', (byte)'/' };
 
         private const int HostRootFileSystemPathLength = 8;
+
+        /// <summary>
+        /// Opens a host file system via <see cref="IFileSystemProxy"/>.
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        /// <param name="fileSystem">If successful, the opened host file system.</param>
+        /// <param name="path">The path on the host computer to open. e.g. /C:\Windows\System32/</param>
+        /// <param name="option">Options for opening the host file system.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
+        private static Result OpenHostFileSystemImpl(FileSystemClient fs, out IFileSystem fileSystem, in FspPath path,
+            MountHostOption option)
+        {
+            fileSystem = default;
+
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+
+            ReferenceCountedDisposable<IFileSystemSf> hostFs = null;
+            try
+            {
+                if (option.Flags != MountHostOptionFlag.None)
+                {
+                    Result rc = fsProxy.Target.OpenHostFileSystemWithOption(out hostFs, in path, option);
+                    if (rc.IsFailure()) return rc;
+                }
+                else
+                {
+                    Result rc = fsProxy.Target.OpenHostFileSystem(out hostFs, in path);
+                    if (rc.IsFailure()) return rc;
+                }
+
+                fileSystem = new FileSystemServiceObjectAdapter(hostFs);
+                return Result.Success;
+            }
+            finally
+            {
+                hostFs?.Dispose();
+            }
+        }
 
         private class HostCommonMountNameGenerator : ICommonMountNameGenerator
         {
@@ -43,7 +84,8 @@ namespace LibHac.Fs.Shim
 
             public Result GenerateCommonMountName(Span<byte> nameBuffer)
             {
-                int requiredNameBufferSize = StringUtils.GetLength(_path.Str, FsPath.MaxLength) + HostRootFileSystemPathLength;
+                int requiredNameBufferSize =
+                    StringUtils.GetLength(_path.Str, FsPath.MaxLength) + HostRootFileSystemPathLength;
 
                 if (nameBuffer.Length < requiredNameBufferSize)
                     return ResultFs.TooLongPath.Log();
@@ -51,7 +93,7 @@ namespace LibHac.Fs.Shim
                 var sb = new U8StringBuilder(nameBuffer);
                 sb.Append(HostRootFileSystemPath).Append(_path.Str);
 
-                Debug.Assert(sb.Length == requiredNameBufferSize - 1);
+                Assert.True(sb.Length == requiredNameBufferSize - 1);
 
                 return Result.Success;
             }
@@ -65,224 +107,15 @@ namespace LibHac.Fs.Shim
             {
                 const int requiredNameBufferSize = HostRootFileSystemPathLength;
 
-                Debug.Assert(nameBuffer.Length >= requiredNameBufferSize);
+                Assert.True(nameBuffer.Length >= requiredNameBufferSize);
 
-                // ReSharper disable once RedundantAssignment
-                int size = StringUtils.Copy(nameBuffer, HostRootFileSystemPath);
-                Debug.Assert(size == requiredNameBufferSize - 1);
+                var sb = new U8StringBuilder(nameBuffer);
+                sb.Append(HostRootFileSystemPath);
+
+                Assert.True(sb.Length == requiredNameBufferSize - 1);
 
                 return Result.Success;
             }
-        }
-
-        /// <summary>
-        /// Mounts the C:\ drive of a host Windows computer at @Host:/
-        /// </summary>
-        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
-        /// <returns>The <see cref="Result"/> of the operation.</returns>
-        public static Result MountHostRoot(this FileSystemClient fs)
-        {
-            IFileSystem hostFileSystem = default;
-            FspPath.CreateEmpty(out FspPath path);
-
-            static string LogMessageGenerator() => $", name: \"{HostRootFileSystemMountName.ToString()}\"";
-
-            Result OpenHostFs() => OpenHostFileSystemImpl(fs, out hostFileSystem, in path, MountHostOption.None);
-
-            Result MountHostFs() => fs.Register(HostRootFileSystemMountName, hostFileSystem,
-                new HostRootCommonMountNameGenerator());
-
-            // Open the host file system
-            Result result =
-                fs.RunOperationWithAccessLogOnFailure(AccessLogTarget.Application, OpenHostFs, LogMessageGenerator);
-            if (result.IsFailure()) return result;
-
-            // Mount the host file system
-            result = fs.RunOperationWithAccessLog(AccessLogTarget.Application, MountHostFs, LogMessageGenerator);
-            if (result.IsFailure()) return result;
-
-            if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
-                fs.EnableFileSystemAccessorAccessLog(HostRootFileSystemMountName);
-
-            return Result.Success;
-        }
-
-        /// <summary>
-        /// Mounts the C:\ drive of a host Windows computer at @Host:/
-        /// </summary>
-        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
-        /// <param name="option">Options for mounting the host file system.</param>
-        /// <returns>The <see cref="Result"/> of the operation.</returns>
-        public static Result MountHostRoot(this FileSystemClient fs, MountHostOption option)
-        {
-            IFileSystem hostFileSystem = default;
-            FspPath.CreateEmpty(out FspPath path);
-
-            string LogMessageGenerator() =>
-                $", name: \"{HostRootFileSystemMountName.ToString()}, mount_host_option: {option}\"";
-
-            Result OpenHostFs() => OpenHostFileSystemImpl(fs, out hostFileSystem, in path, option);
-
-            Result MountHostFs() => fs.Register(HostRootFileSystemMountName, hostFileSystem,
-                new HostRootCommonMountNameGenerator());
-
-            // Open the host file system
-            Result result =
-                fs.RunOperationWithAccessLogOnFailure(AccessLogTarget.Application, OpenHostFs, LogMessageGenerator);
-            if (result.IsFailure()) return result;
-
-            // Mount the host file system
-            result = fs.RunOperationWithAccessLog(AccessLogTarget.Application, MountHostFs, LogMessageGenerator);
-            if (result.IsFailure()) return result;
-
-            if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
-                fs.EnableFileSystemAccessorAccessLog(HostRootFileSystemMountName);
-
-            return Result.Success;
-        }
-
-        /// <summary>
-        /// Unmounts the file system at @Host:/
-        /// </summary>
-        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
-        public static void UnmountHostRoot(this FileSystemClient fs)
-        {
-            fs.Unmount(HostRootFileSystemMountName);
-        }
-
-        /// <summary>
-        /// Mounts a directory on a host Windows computer at the specified mount point.
-        /// </summary>
-        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
-        /// <param name="mountName">The mount name at which the file system will be mounted.</param>
-        /// <param name="path">The path on the host computer to mount. e.g. C:\Windows\System32</param>
-        /// <returns>The <see cref="Result"/> of the operation.</returns>
-        public static Result MountHost(this FileSystemClient fs, U8Span mountName, U8Span path)
-        {
-            return MountHostImpl(fs, mountName, path, null);
-        }
-
-        /// <summary>
-        /// Mounts a directory on a host Windows computer at the specified mount point.
-        /// </summary>
-        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
-        /// <param name="mountName">The mount name at which the file system will be mounted.</param>
-        /// <param name="path">The path on the host computer to mount. e.g. C:\Windows\System32</param>
-        /// <param name="option">Options for mounting the host file system.</param>
-        /// <returns>The <see cref="Result"/> of the operation.</returns>
-        public static Result MountHost(this FileSystemClient fs, U8Span mountName, U8Span path, MountHostOption option)
-        {
-            return MountHostImpl(fs, mountName, path, option);
-        }
-
-        /// <summary>
-        /// Mounts a directory on a host Windows computer at the specified mount point.
-        /// </summary>
-        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
-        /// <param name="mountName">The mount name at which the file system will be mounted.</param>
-        /// <param name="path">The path on the host computer to mount. e.g. C:\Windows\System32</param>
-        /// <param name="optionalOption">Options for mounting the host file system. Specifying this parameter is optional.</param>
-        /// <param name="caller">The caller of this function.</param>
-        /// <returns>The <see cref="Result"/> of the operation.</returns>
-        private static Result MountHostImpl(this FileSystemClient fs, U8Span mountName, U8Span path,
-            MountHostOption? optionalOption, [CallerMemberName] string caller = "")
-        {
-            Result rc;
-            ICommonMountNameGenerator nameGenerator;
-
-            string logMessage = null;
-            var option = MountHostOption.None;
-
-            // Set the mount option if it was specified
-            if (optionalOption.HasValue)
-            {
-                option = optionalOption.Value;
-            }
-
-            if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
-            {
-                if (optionalOption.HasValue)
-                {
-                    logMessage = $", name: \"{mountName.ToString()}\", mount_host_option: {option}";
-                }
-                else
-                {
-                    logMessage = $", name: \"{mountName.ToString()}\"";
-                }
-
-                System.TimeSpan startTime = fs.Time.GetCurrent();
-                rc = PreMountHost(out nameGenerator, mountName, path);
-                System.TimeSpan endTime = fs.Time.GetCurrent();
-
-                fs.OutputAccessLogUnlessResultSuccess(rc, startTime, endTime, logMessage, caller);
-            }
-            else
-            {
-                rc = PreMountHost(out nameGenerator, mountName, path);
-            }
-
-            if (rc.IsFailure()) return rc;
-
-            IFileSystem hostFileSystem;
-
-            if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
-            {
-                System.TimeSpan startTime = fs.Time.GetCurrent();
-                rc = OpenHostFileSystem(fs, out hostFileSystem, mountName, path, option);
-                System.TimeSpan endTime = fs.Time.GetCurrent();
-
-                fs.OutputAccessLogUnlessResultSuccess(rc, startTime, endTime, logMessage, caller);
-            }
-            else
-            {
-                rc = OpenHostFileSystem(fs, out hostFileSystem, mountName, path, option);
-            }
-
-            if (rc.IsFailure()) return rc;
-
-            if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
-            {
-                System.TimeSpan startTime = fs.Time.GetCurrent();
-                rc = fs.Register(mountName, hostFileSystem, nameGenerator);
-                System.TimeSpan endTime = fs.Time.GetCurrent();
-
-                fs.OutputAccessLog(rc, startTime, endTime, logMessage, caller);
-            }
-            else
-            {
-                rc = fs.Register(mountName, hostFileSystem, nameGenerator);
-            }
-
-            if (rc.IsFailure()) return rc;
-
-            if (fs.IsEnabledAccessLog(AccessLogTarget.Application))
-            {
-                fs.EnableFileSystemAccessorAccessLog(mountName);
-            }
-
-            return Result.Success;
-        }
-
-        /// <summary>
-        /// Creates an <see cref="ICommonMountNameGenerator"/> based on the <paramref name="mountName"/> and
-        /// <paramref name="path"/>, and verifies the <paramref name="mountName"/>.
-        /// </summary>
-        /// <param name="nameGenerator">If successful, the created <see cref="ICommonMountNameGenerator"/>.</param>
-        /// <param name="mountName">The mount name at which the file system will be mounted.</param>
-        /// <param name="path">The path that will be opened on the host computer. e.g. C:\Windows\System32</param>
-        /// <returns>The <see cref="Result"/> of the operation.</returns>
-        private static Result PreMountHost(out ICommonMountNameGenerator nameGenerator, U8Span mountName, U8Span path)
-        {
-            nameGenerator = default;
-
-            Result rc = MountHelpers.CheckMountName(mountName);
-            if (rc.IsFailure()) return rc;
-
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            nameGenerator = new HostCommonMountNameGenerator(path);
-            return Result.Success;
         }
 
         /// <summary>
@@ -308,7 +141,7 @@ namespace LibHac.Fs.Shim
             if (PathUtility.IsWindowsDrive(mountName))
                 return ResultFs.InvalidMountName.Log();
 
-            if (MountHelpers.IsReservedMountName(mountName))
+            if (fs.Impl.IsUsedReservedMountName(mountName))
                 return ResultFs.InvalidMountName.Log();
 
             bool needsTrailingSeparator = false;
@@ -345,47 +178,337 @@ namespace LibHac.Fs.Shim
                 }
             }
 
-            FspPath.FromSpan(out FspPath sfPath, fullPath.Str);
+            Result rc = FspPath.FromSpan(out FspPath sfPath, fullPath.Str);
+            if (rc.IsFailure()) return rc;
 
             return OpenHostFileSystemImpl(fs, out fileSystem, in sfPath, option);
         }
 
         /// <summary>
-        /// Opens a host file system via <see cref="IFileSystemProxy"/>.
+        /// Creates a <see cref="HostCommonMountNameGenerator"/> based on the <paramref name="mountName"/> and
+        /// <paramref name="path"/>, and verifies the <paramref name="mountName"/>.
         /// </summary>
         /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
-        /// <param name="fileSystem">If successful, the opened host file system.</param>
-        /// <param name="path">The path on the host computer to open. e.g. /C:\Windows\System32/</param>
-        /// <param name="option">Options for opening the host file system.</param>
+        /// <param name="nameGenerator">If successful, the created <see cref="ICommonMountNameGenerator"/>.</param>
+        /// <param name="mountName">The mount name at which the file system will be mounted.</param>
+        /// <param name="path">The path that will be opened on the host computer. e.g. C:\Windows\System32</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        private static Result OpenHostFileSystemImpl(FileSystemClient fs, out IFileSystem fileSystem, in FspPath path,
-            MountHostOption option)
+        private static Result PreMountHost(FileSystemClient fs, out HostCommonMountNameGenerator nameGenerator,
+            U8Span mountName, U8Span path)
         {
-            fileSystem = default;
+            nameGenerator = default;
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
-            ReferenceCountedDisposable<IFileSystemSf> hostFs = null;
+            Result rc = fs.Impl.CheckMountName(mountName);
+            if (rc.IsFailure()) return rc;
 
-            try
+            if (path.IsNull())
+                return ResultFs.NullptrArgument.Log();
+
+            nameGenerator = new HostCommonMountNameGenerator(path);
+            return Result.Success;
+        }
+
+        /// <summary>
+        /// Mounts a directory on a host Windows computer at the specified mount point.
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        /// <param name="mountName">The mount name at which the file system will be mounted.</param>
+        /// <param name="path">The path on the host computer to mount. e.g. C:\Windows\System32</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
+        public static Result MountHost(this FileSystemClient fs, U8Span mountName, U8Span path)
+        {
+            Result rc;
+            Span<byte> logBuffer = stackalloc byte[0x300];
+
+            HostCommonMountNameGenerator mountNameGenerator;
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             {
-                if (option == MountHostOption.None)
-                {
-                    Result rc = fsProxy.Target.OpenHostFileSystem(out hostFs, in path);
-                    if (rc.IsFailure()) return rc;
-                }
-                else
-                {
-                    Result rc = fsProxy.Target.OpenHostFileSystemWithOption(out hostFs, in path, option);
-                    if (rc.IsFailure()) return rc;
-                }
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = PreMountHost(fs, out mountNameGenerator, mountName, path);
+                Tick end = fs.Hos.Os.GetSystemTick();
 
-                fileSystem = new FileSystemServiceObjectAdapter(hostFs);
-                return Result.Success;
+                var sb = new U8StringBuilder(logBuffer, true);
+                sb.Append(LogName).Append(mountName).Append(LogQuote)
+                    .Append(LogRootPath).Append(path).Append(LogQuote);
+
+                logBuffer = sb.Buffer;
+
+                fs.Impl.OutputAccessLogUnlessResultSuccess(rc, start, end, null, new U8Span(logBuffer));
             }
-            finally
+            else
             {
-                hostFs?.Dispose();
+                rc = PreMountHost(fs, out mountNameGenerator, mountName, path);
             }
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc;
+
+            IFileSystem fileSystem;
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
+            {
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = OpenHostFileSystem(fs, out fileSystem, mountName, path, MountHostOption.None);
+                Tick end = fs.Hos.Os.GetSystemTick();
+
+                fs.Impl.OutputAccessLogUnlessResultSuccess(rc, start, end, null, new U8Span(logBuffer));
+            }
+            else
+            {
+                rc = OpenHostFileSystem(fs, out fileSystem, mountName, path, MountHostOption.None);
+            }
+            // No AbortIfNeeded here
+            if (rc.IsFailure()) return rc;
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
+            {
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = fs.Register(mountName, fileSystem, mountNameGenerator);
+                Tick end = fs.Hos.Os.GetSystemTick();
+
+                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(logBuffer));
+            }
+            else
+            {
+                rc = fs.Register(mountName, fileSystem, mountNameGenerator);
+            }
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc;
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
+                fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
+
+            return Result.Success;
+        }
+
+        /// <summary>
+        /// Mounts a directory on a host Windows computer at the specified mount point.
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        /// <param name="mountName">The mount name at which the file system will be mounted.</param>
+        /// <param name="path">The path on the host computer to mount. e.g. C:\Windows\System32</param>
+        /// <param name="option">Options for mounting the host file system.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
+        public static Result MountHost(this FileSystemClient fs, U8Span mountName, U8Span path, MountHostOption option)
+        {
+            Result rc;
+            Span<byte> logBuffer = stackalloc byte[0x300];
+
+            HostCommonMountNameGenerator mountNameGenerator;
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
+            {
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = PreMountHost(fs, out mountNameGenerator, mountName, path);
+                Tick end = fs.Hos.Os.GetSystemTick();
+
+                var idString = new IdString();
+                var sb = new U8StringBuilder(logBuffer, true);
+
+                sb.Append(LogName).Append(mountName).Append(LogQuote)
+                    .Append(LogRootPath).Append(path).Append(LogQuote)
+                    .Append(LogMountHostOption).Append(idString.ToString(option));
+
+                logBuffer = sb.Buffer;
+
+                fs.Impl.OutputAccessLogUnlessResultSuccess(rc, start, end, null, new U8Span(logBuffer));
+            }
+            else
+            {
+                rc = PreMountHost(fs, out mountNameGenerator, mountName, path);
+            }
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc;
+
+            IFileSystem fileSystem;
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
+            {
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = OpenHostFileSystem(fs, out fileSystem, mountName, path, option);
+                Tick end = fs.Hos.Os.GetSystemTick();
+
+                fs.Impl.OutputAccessLogUnlessResultSuccess(rc, start, end, null, new U8Span(logBuffer));
+            }
+            else
+            {
+                rc = OpenHostFileSystem(fs, out fileSystem, mountName, path, MountHostOption.None);
+            }
+            // No AbortIfNeeded here
+            if (rc.IsFailure()) return rc;
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
+            {
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = fs.Register(mountName, fileSystem, mountNameGenerator);
+                Tick end = fs.Hos.Os.GetSystemTick();
+
+                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(logBuffer));
+            }
+            else
+            {
+                rc = fs.Register(mountName, fileSystem, mountNameGenerator);
+            }
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc;
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
+                fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
+
+            return Result.Success;
+        }
+
+        /// <summary>
+        /// Mounts the C:\ drive of a host Windows computer at @Host:/
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
+        public static Result MountHostRoot(this FileSystemClient fs)
+        {
+            Result rc;
+            Span<byte> logBuffer = stackalloc byte[0x30];
+
+            IFileSystem fileSystem;
+            FspPath.CreateEmpty(out FspPath sfPath);
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
+            {
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = OpenHostFileSystemImpl(fs, out fileSystem, in sfPath, MountHostOption.None);
+                Tick end = fs.Hos.Os.GetSystemTick();
+
+                var sb = new U8StringBuilder(logBuffer, true);
+                sb.Append(LogName).Append(HostRootFileSystemMountName).Append(LogQuote);
+                logBuffer = sb.Buffer;
+
+                fs.Impl.OutputAccessLogUnlessResultSuccess(rc, start, end, null, new U8Span(logBuffer));
+            }
+            else
+            {
+                rc = OpenHostFileSystemImpl(fs, out fileSystem, in sfPath, MountHostOption.None);
+            }
+            // No AbortIfNeeded here
+            if (rc.IsFailure()) return rc;
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
+            {
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = MountHostFs(fs, fileSystem);
+                Tick end = fs.Hos.Os.GetSystemTick();
+
+                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(logBuffer));
+            }
+            else
+            {
+                rc = MountHostFs(fs, fileSystem);
+            }
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc;
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
+                fs.Impl.EnableFileSystemAccessorAccessLog(new U8Span(HostRootFileSystemMountName));
+
+            return Result.Success;
+
+            static Result MountHostFs(FileSystemClient fs, IFileSystem fileSystem)
+            {
+                return fs.Register(new U8Span(HostRootFileSystemMountName), fileSystem,
+                    new HostRootCommonMountNameGenerator());
+            }
+        }
+
+        /// <summary>
+        /// Mounts the C:\ drive of a host Windows computer at @Host:/
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        /// <param name="option">Options for mounting the host file system.</param>
+        /// <returns>The <see cref="Result"/> of the operation.</returns>
+        public static Result MountHostRoot(this FileSystemClient fs, MountHostOption option)
+        {
+            Result rc;
+            Span<byte> logBuffer = stackalloc byte[0x60];
+
+            IFileSystem fileSystem;
+            FspPath.CreateEmpty(out FspPath sfPath);
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
+            {
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = OpenHostFileSystemImpl(fs, out fileSystem, in sfPath, option);
+                Tick end = fs.Hos.Os.GetSystemTick();
+
+                var idString = new IdString();
+                var sb = new U8StringBuilder(logBuffer, true);
+
+                sb.Append(LogName).Append(HostRootFileSystemMountName).Append(LogQuote)
+                    .Append(LogMountHostOption).Append(idString.ToString(option));
+
+                logBuffer = sb.Buffer;
+
+                fs.Impl.OutputAccessLogUnlessResultSuccess(rc, start, end, null, new U8Span(logBuffer));
+            }
+            else
+            {
+                rc = OpenHostFileSystemImpl(fs, out fileSystem, in sfPath, option);
+            }
+            // No AbortIfNeeded here
+            if (rc.IsFailure()) return rc;
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
+            {
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = MountHostFs(fs, fileSystem);
+                Tick end = fs.Hos.Os.GetSystemTick();
+
+                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(logBuffer));
+            }
+            else
+            {
+                rc = MountHostFs(fs, fileSystem);
+            }
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc;
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
+                fs.Impl.EnableFileSystemAccessorAccessLog(new U8Span(HostRootFileSystemMountName));
+
+            return Result.Success;
+
+            static Result MountHostFs(FileSystemClient fs, IFileSystem fileSystem)
+            {
+                return fs.Register(new U8Span(HostRootFileSystemMountName), fileSystem,
+                    new HostRootCommonMountNameGenerator());
+            }
+        }
+
+        /// <summary>
+        /// Unmounts the file system at @Host:/
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        public static void UnmountHostRoot(this FileSystemClient fs)
+        {
+            Result rc;
+            Span<byte> logBuffer = stackalloc byte[0x30];
+
+            var mountName = new U8Span(HostRootFileSystemMountName);
+
+            if (fs.Impl.IsEnabledAccessLog() && fs.Impl.IsEnabledFileSystemAccessorAccessLog(mountName))
+            {
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = fs.Impl.Unmount(mountName);
+                Tick end = fs.Hos.Os.GetSystemTick();
+
+                var sb = new U8StringBuilder(logBuffer, true);
+                sb.Append(LogName).Append(mountName).Append((byte)'"');
+
+                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            }
+            else
+            {
+                rc = fs.Impl.Unmount(mountName);
+            }
+            fs.Impl.LogErrorMessage(rc);
+            Abort.DoAbortUnless(rc.IsSuccess());
         }
     }
 }

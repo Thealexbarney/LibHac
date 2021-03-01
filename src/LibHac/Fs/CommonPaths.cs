@@ -3,6 +3,7 @@ using LibHac.Common;
 
 namespace LibHac.Fs
 {
+    // Todo: Migrate to LibHac.Fs.Impl.CommonMountNames and remove
     internal static class CommonPaths
     {
         public const char ReservedMountNamePrefixCharacter = '@';

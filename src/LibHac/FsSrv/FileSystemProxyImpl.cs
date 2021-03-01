@@ -530,7 +530,7 @@ namespace LibHac.FsSrv
             try
             {
                 rc = FsProxyCore.OpenHostFileSystem(out hostFs, new U8Span(path.Str),
-                    option.HasFlag(MountHostOption.PseudoCaseSensitive));
+                    option.Flags.HasFlag(MountHostOptionFlag.PseudoCaseSensitive));
                 if (rc.IsFailure()) return rc;
 
                 bool isRootPath = path.Str[0] == 0;

@@ -2,7 +2,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using LibHac.Common;
-using LibHac.Fs.Accessors;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 
@@ -235,16 +234,6 @@ namespace LibHac.Fs
             }
 
             return fs.CreateFile(u8Path, size, CreateFileOptions.None);
-        }
-
-        internal static bool IsEnabledFileSystemAccessorAccessLog(this FileSystemClient fs, string mountName)
-        {
-            if (fs.MountTable.Find(mountName, out FileSystemAccessor accessor).IsFailure())
-            {
-                return true;
-            }
-
-            return accessor.IsAccessLogEnabled;
         }
     }
 }

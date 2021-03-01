@@ -17,8 +17,7 @@ namespace LibHac.FsSrv
         /// <param name="horizonClient">The <see cref="HorizonClient"/> that will be used by this server.</param>
         public FileSystemServer(HorizonClient horizonClient)
         {
-            Globals.Hos = horizonClient;
-            Globals.InitMutex = new object();
+            Globals.Initialize(horizonClient);
         }
     }
 
@@ -31,6 +30,12 @@ namespace LibHac.FsSrv
         public DeviceEventSimulatorGlobals DeviceEventSimulator;
         public AccessControlGlobals AccessControl;
         public StorageDeviceManagerFactoryGlobals StorageDeviceManagerFactory;
+
+        public void Initialize(HorizonClient horizonClient)
+        {
+            Hos = horizonClient;
+            InitMutex = new object();
+        }
     }
 
     // Functions in the nn::fssrv::storage namespace use this struct.
