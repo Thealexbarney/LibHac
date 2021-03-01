@@ -5,6 +5,9 @@ namespace LibHac.FsSrv.Impl
 {
     public static class SaveDataProperties
     {
+        public const long DefaultSaveDataBlockSize = 0x4000;
+        public const long BcatSaveDataJournalSize = 0x200000;
+
         public static bool IsJournalingSupported(SaveDataType type)
         {
             switch (type)

@@ -24,7 +24,9 @@ namespace LibHac.Fs.Shim
 
             var mapInfoBuffer = new InBuffer(MemoryMarshal.Cast<ProgramIndexMapInfo, byte>(mapInfo));
 
-            return fsProxy.Target.RegisterProgramIndexMapInfo(mapInfoBuffer, mapInfo.Length);
+            Result rc = fsProxy.Target.RegisterProgramIndexMapInfo(mapInfoBuffer, mapInfo.Length);
+            fs.Impl.AbortIfNeeded(rc);
+            return rc;
         }
     }
 }

@@ -1,5 +1,4 @@
-﻿using System;
-using LibHac.Common;
+﻿using LibHac.Common;
 using LibHac.FsSrv.Sf;
 
 namespace LibHac.Fs.Shim
@@ -20,11 +19,6 @@ namespace LibHac.Fs.Shim
 
     public static class FileSystemProxyServiceObject
     {
-        private static bool HasFileSystemServer(FileSystemClientImpl fs)
-        {
-            return fs.Hos is not null;
-        }
-
         public static ReferenceCountedDisposable<IFileSystemProxy> GetFileSystemProxyServiceObject(
             this FileSystemClientImpl fs)
         {
@@ -48,11 +42,6 @@ namespace LibHac.Fs.Shim
 
             if (dfcServiceObject is not null)
                 return dfcServiceObject.AddReference();
-
-            if (!HasFileSystemServer(fs))
-            {
-                throw new InvalidOperationException("Client was not initialized with a server object.");
-            }
 
             Result rc = fs.Hos.Sm.GetService(out ReferenceCountedDisposable<IFileSystemProxy> fsProxy, "fsp-srv");
 
@@ -83,11 +72,6 @@ namespace LibHac.Fs.Shim
         private static ReferenceCountedDisposable<IFileSystemProxyForLoader>
             GetFileSystemProxyForLoaderServiceObjectImpl(FileSystemClientImpl fs)
         {
-            if (!HasFileSystemServer(fs))
-            {
-                throw new InvalidOperationException("Client was not initialized with a server object.");
-            }
-
             Result rc = fs.Hos.Sm.GetService(out ReferenceCountedDisposable<IFileSystemProxyForLoader> fsProxy,
                 "fsp-ldr");
 
@@ -118,11 +102,6 @@ namespace LibHac.Fs.Shim
         private static ReferenceCountedDisposable<IProgramRegistry> GetProgramRegistryServiceObjectImpl(
             FileSystemClientImpl fs)
         {
-            if (!HasFileSystemServer(fs))
-            {
-                throw new InvalidOperationException("Client was not initialized with a server object.");
-            }
-
             Result rc = fs.Hos.Sm.GetService(out ReferenceCountedDisposable<IProgramRegistry> registry, "fsp-pr");
 
             if (rc.IsFailure())

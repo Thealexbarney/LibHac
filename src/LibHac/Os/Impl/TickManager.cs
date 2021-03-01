@@ -16,7 +16,7 @@ namespace LibHac.Os.Impl
 
         private TickManagerImpl _impl;
 
-        public TickManager(long startTick) => _impl = new TickManagerImpl(startTick);
+        public TickManager(ITickGenerator tickGenerator) => _impl = new TickManagerImpl(tickGenerator);
 
         ~TickManager()
         {

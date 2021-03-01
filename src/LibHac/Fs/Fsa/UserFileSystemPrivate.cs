@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs.Impl;
 using LibHac.Os;
+using static LibHac.Fs.Impl.AccessLogStrings;
 
 namespace LibHac.Fs.Fsa
 {
@@ -41,7 +42,7 @@ namespace LibHac.Fs.Fsa
                 Tick end = fs.Hos.Os.GetSystemTick();
 
                 var sb = new U8StringBuilder(logBuffer, true);
-                sb.Append(LogPath).Append(path).Append(LogSize).AppendFormat(size);
+                sb.Append(LogPath).Append(path).Append((byte)'"').Append(LogSize).AppendFormat(size);
                 logBuffer = sb.Buffer;
 
                 fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(logBuffer));
@@ -77,19 +78,5 @@ namespace LibHac.Fs.Fsa
             fs.Impl.AbortIfNeeded(rc);
             return rc;
         }
-
-        private static ReadOnlySpan<byte> LogPath => // ", path: ""
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'p', (byte)'a', (byte)'t', (byte)'h', (byte)':', (byte)' ',
-                (byte)'"'
-            };
-
-        private static ReadOnlySpan<byte> LogSize => // "", size: "
-            new[]
-            {
-                (byte)'"', (byte)',', (byte)' ', (byte)'s', (byte)'i', (byte)'z', (byte)'e', (byte)':',
-                (byte)' '
-            };
     }
 }

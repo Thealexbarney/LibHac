@@ -20,7 +20,7 @@ namespace LibHac.Fs
 
         public WriteOption(int flags)
         {
-            Flags = (WriteOptionFlag) flags;
+            Flags = (WriteOptionFlag)flags;
         }
 
         public WriteOption(WriteOptionFlag flags)

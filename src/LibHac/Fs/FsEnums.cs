@@ -199,13 +199,6 @@ namespace LibHac.Fs
         SdCard = 2
     }
 
-    [Flags]
-    public enum MountHostOption
-    {
-        None = 0,
-        PseudoCaseSensitive = 1
-    }
-
     public enum SimulatingDeviceDetectionMode
     {
         NoSimulation = 0,

@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.FsSrv.Impl;
 using LibHac.Ncm;
 using LibHac.Util;
 
@@ -106,6 +107,39 @@ namespace LibHac.Fs
             int rankComparison = ((int)Rank).CompareTo((int)other.Rank);
             if (rankComparison != 0) return rankComparison;
             return Index.CompareTo(other.Index);
+        }
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 0x40)]
+    public struct SaveDataCreationInfo
+    {
+        [FieldOffset(0x00)] public long Size;
+        [FieldOffset(0x08)] public long JournalSize;
+        [FieldOffset(0x10)] public long BlockSize;
+        [FieldOffset(0x18)] public ulong OwnerId;
+        [FieldOffset(0x20)] public SaveDataFlags Flags;
+        [FieldOffset(0x24)] public SaveDataSpaceId SpaceId;
+        [FieldOffset(0x25)] public bool Field25;
+
+        public static Result Make(out SaveDataCreationInfo creationInfo, long size, long journalSize, ulong ownerId,
+            SaveDataFlags flags, SaveDataSpaceId spaceId)
+        {
+            Unsafe.SkipInit(out creationInfo);
+            SaveDataCreationInfo tempCreationInfo = default;
+
+            tempCreationInfo.Size = size;
+            tempCreationInfo.JournalSize = journalSize;
+            tempCreationInfo.BlockSize = SaveDataProperties.DefaultSaveDataBlockSize;
+            tempCreationInfo.OwnerId = ownerId;
+            tempCreationInfo.Flags = flags;
+            tempCreationInfo.SpaceId = spaceId;
+            tempCreationInfo.Field25 = false;
+
+            if (!SaveDataTypesValidity.IsValid(in tempCreationInfo))
+                return ResultFs.InvalidArgument.Log();
+
+            creationInfo = tempCreationInfo;
+            return Result.Success;
         }
     }
 
@@ -228,18 +262,6 @@ namespace LibHac.Fs
     {
         [FieldOffset(0)] public int Size;
         [FieldOffset(4)] public SaveDataMetaType Type;
-    }
-
-    [StructLayout(LayoutKind.Explicit, Size = 0x40)]
-    public struct SaveDataCreationInfo
-    {
-        [FieldOffset(0x00)] public long Size;
-        [FieldOffset(0x08)] public long JournalSize;
-        [FieldOffset(0x10)] public long BlockSize;
-        [FieldOffset(0x18)] public ulong OwnerId;
-        [FieldOffset(0x20)] public SaveDataFlags Flags;
-        [FieldOffset(0x24)] public SaveDataSpaceId SpaceId;
-        [FieldOffset(0x25)] public bool Field25;
     }
 
     [StructLayout(LayoutKind.Explicit, Size = 0x60)]

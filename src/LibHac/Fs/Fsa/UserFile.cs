@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs.Impl;
 using LibHac.Os;
+using static LibHac.Fs.Impl.AccessLogStrings;
 
 namespace LibHac.Fs.Fsa
 {
@@ -222,33 +223,5 @@ namespace LibHac.Fs.Fsa
             fs.Impl.AbortIfNeeded(rc);
             return rc;
         }
-
-        private static ReadOnlySpan<byte> LogOffset => // ", offset: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'o', (byte)'f', (byte)'f', (byte)'s', (byte)'e', (byte)'t',
-                (byte)':', (byte)' '
-            };
-
-        private static ReadOnlySpan<byte> LogSize => // ", size: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'s', (byte)'i', (byte)'z', (byte)'e', (byte)':', (byte)' '
-            };
-
-        private static ReadOnlySpan<byte> LogWriteOptionFlush => // ", write_option: Flush"
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'w', (byte)'r', (byte)'i', (byte)'t', (byte)'e', (byte)'_',
-                (byte)'o', (byte)'p', (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)':', (byte)' ',
-                (byte)'F', (byte)'l', (byte)'u', (byte)'s', (byte)'h'
-            };
-
-        private static ReadOnlySpan<byte> LogOpenMode => // ", open_mode: 0x"
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'o', (byte)'p', (byte)'e', (byte)'n', (byte)'_', (byte)'m',
-                (byte)'o', (byte)'d', (byte)'e', (byte)':', (byte)' ', (byte)'0', (byte)'x'
-            };
     }
 }

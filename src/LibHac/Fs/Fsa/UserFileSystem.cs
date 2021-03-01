@@ -5,6 +5,7 @@ using LibHac.Fs.Impl;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Sf;
 using LibHac.Os;
+using static LibHac.Fs.Impl.AccessLogStrings;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Fsa
@@ -436,7 +437,7 @@ namespace LibHac.Fs.Fsa
                 Tick end = fs.Hos.Os.GetSystemTick();
 
                 var sb = new U8StringBuilder(logBuffer, true);
-                sb.Append(LogPath).Append(path).Append(LogSize)
+                sb.Append(LogPath).Append(path).Append((byte)'"').Append(LogSize)
                     .AppendFormat(AccessLogImpl.DereferenceOutValue(in freeSpace, rc));
                 logBuffer = sb.Buffer;
 
@@ -465,7 +466,7 @@ namespace LibHac.Fs.Fsa
                 Tick end = fs.Hos.Os.GetSystemTick();
 
                 var sb = new U8StringBuilder(logBuffer, true);
-                sb.Append(LogPath).Append(path).Append(LogSize)
+                sb.Append(LogPath).Append(path).Append((byte)'"').Append(LogSize)
                     .AppendFormat(AccessLogImpl.DereferenceOutValue(in freeSpace, rc));
                 logBuffer = sb.Buffer;
 
@@ -495,7 +496,7 @@ namespace LibHac.Fs.Fsa
                 Tick end = fs.Hos.Os.GetSystemTick();
 
                 var sb = new U8StringBuilder(logBuffer, true);
-                sb.Append(LogPath).Append(path).Append(LogOpenMode).AppendFormat((int)mode, 'X');
+                sb.Append(LogPath).Append(path).Append((byte)'"').Append(LogOpenMode).AppendFormat((int)mode, 'X');
                 logBuffer = sb.Buffer;
 
                 fs.Impl.OutputAccessLogUnlessResultSuccess(rc, start, end, null, new U8Span(logBuffer));
@@ -552,7 +553,7 @@ namespace LibHac.Fs.Fsa
                 Tick end = fs.Hos.Os.GetSystemTick();
 
                 var sb = new U8StringBuilder(logBuffer, true);
-                sb.Append(LogPath).Append(path).Append(LogOpenMode).AppendFormat((int)mode, 'X');
+                sb.Append(LogPath).Append(path).Append((byte)'"').Append(LogOpenMode).AppendFormat((int)mode, 'X');
                 logBuffer = sb.Buffer;
 
                 fs.Impl.OutputAccessLogUnlessResultSuccess(rc, start, end, null, new U8Span(logBuffer));
@@ -751,55 +752,5 @@ namespace LibHac.Fs.Fsa
         {
             return CommitImpl(fs, mountName);
         }
-
-        private static ReadOnlySpan<byte> LogPath => // ", path: ""
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'p', (byte)'a', (byte)'t', (byte)'h', (byte)':', (byte)' ',
-                (byte)'"'
-            };
-
-        private static ReadOnlySpan<byte> LogNewPath => // "", new_path: ""
-            new[]
-            {
-                (byte)'"', (byte)',', (byte)' ', (byte)'n', (byte)'e', (byte)'w', (byte)'_', (byte)'p',
-                (byte)'a', (byte)'t', (byte)'h', (byte)':', (byte)' ', (byte)'"'
-            };
-
-        private static ReadOnlySpan<byte> LogEntryType => // "", entry_type: "
-            new[]
-            {
-                (byte)'"', (byte)',', (byte)' ', (byte)'e', (byte)'n', (byte)'t', (byte)'r', (byte)'y',
-                (byte)'_', (byte)'t', (byte)'y', (byte)'p', (byte)'e', (byte)':', (byte)' '
-            };
-
-        private static ReadOnlySpan<byte> LogSize => // "", size: "
-            new[]
-            {
-                (byte)'"', (byte)',', (byte)' ', (byte)'s', (byte)'i', (byte)'z', (byte)'e', (byte)':',
-                (byte)' '
-            };
-
-        private static ReadOnlySpan<byte> LogOpenMode => // "", open_mode: 0x"
-            new[]
-            {
-                (byte)'"', (byte)',', (byte)' ', (byte)'o', (byte)'p', (byte)'e', (byte)'n', (byte)'_',
-                (byte)'m', (byte)'o', (byte)'d', (byte)'e', (byte)':', (byte)' ', (byte)'0', (byte)'x'
-            };
-
-        private static ReadOnlySpan<byte> LogName => // ", name: ""
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'n', (byte)'a', (byte)'m', (byte)'e', (byte)':', (byte)' ',
-                (byte)'"'
-            };
-
-        private static ReadOnlySpan<byte> LogCommitOption => // "", commit_option: 0x"
-            new[]
-            {
-                (byte)'"', (byte)',', (byte)' ', (byte)'c', (byte)'o', (byte)'m', (byte)'m', (byte)'i',
-                (byte)'t', (byte)'_', (byte)'o', (byte)'p', (byte)'t', (byte)'i', (byte)'o', (byte)'n',
-                (byte)':', (byte)' ', (byte)'0', (byte)'x'
-            };
     }
 }

@@ -175,6 +175,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,3005,,,,OutOfRange,
 
 2,3100,,,,SystemPartitionNotReady,
+2,3101,,,,StorageDeviceNotReady,
 
 2,3200,3499,,,AllocationMemoryFailed,
 2,3211,,,,AllocationMemoryFailedInFileSystemAccessorA,

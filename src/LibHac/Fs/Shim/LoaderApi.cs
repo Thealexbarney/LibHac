@@ -10,7 +10,9 @@ namespace LibHac.Fs.Shim
             using ReferenceCountedDisposable<IFileSystemProxyForLoader> fsProxy =
                 fs.Impl.GetFileSystemProxyForLoaderServiceObject();
 
-            return fsProxy.Target.IsArchivedProgram(out isArchived, processId.Value);
+            Result rc = fsProxy.Target.IsArchivedProgram(out isArchived, processId.Value);
+            fs.Impl.AbortIfNeeded(rc);
+            return rc;
         }
     }
 }

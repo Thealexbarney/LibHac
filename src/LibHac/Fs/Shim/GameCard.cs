@@ -1,97 +1,32 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv;
 using LibHac.FsSrv.Sf;
+using LibHac.Os;
+using LibHac.Util;
+using static LibHac.Fs.Impl.AccessLogStrings;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.Fs.Shim
 {
+    [SkipLocalsInit]
     public static class GameCard
     {
-        public static Result GetGameCardHandle(this FileSystemClient fs, out GameCardHandle handle)
+        private static ReadOnlySpan<byte> GetGameCardMountNameSuffix(GameCardPartition partition)
         {
-            handle = default;
-
-            ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
-            try
+            switch (partition)
             {
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
-
-                Result rc = fsProxy.Target.OpenDeviceOperator(out deviceOperator);
-                if (rc.IsFailure()) return rc;
-
-                return deviceOperator.Target.GetGameCardHandle(out handle);
-            }
-            finally
-            {
-                deviceOperator?.Dispose();
-            }
-        }
-
-        public static bool IsGameCardInserted(this FileSystemClient fs)
-        {
-            ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
-            try
-            {
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
-
-                Result rc = fsProxy.Target.OpenDeviceOperator(out deviceOperator);
-                if (rc.IsFailure()) throw new LibHacException("Abort");
-
-                rc = deviceOperator.Target.IsGameCardInserted(out bool isInserted);
-                if (rc.IsFailure()) throw new LibHacException("Abort");
-
-                return isInserted;
-            }
-            finally
-            {
-                deviceOperator?.Dispose();
-            }
-        }
-
-        public static Result OpenGameCardPartition(this FileSystemClient fs, out IStorage storage,
-            GameCardHandle handle, GameCardPartitionRaw partitionType)
-        {
-            storage = default;
-
-            ReferenceCountedDisposable<IStorageSf> sfStorage = null;
-            try
-            {
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
-
-                Result rc = fsProxy.Target.OpenGameCardStorage(out sfStorage, handle, partitionType);
-                if (rc.IsFailure()) return rc;
-
-                storage = new StorageServiceObjectAdapter(sfStorage);
-                return Result.Success;
-            }
-            finally
-            {
-                sfStorage?.Dispose();
-            }
-        }
-
-        public static Result MountGameCardPartition(this FileSystemClient fs, U8Span mountName, GameCardHandle handle,
-            GameCardPartition partitionId)
-        {
-            Result rc = MountHelpers.CheckMountNameAcceptingReservedMountName(mountName);
-            if (rc.IsFailure()) return rc;
-
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
-
-            rc = fsProxy.Target.OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> cardFs, handle,
-                partitionId);
-            if (rc.IsFailure()) return rc;
-
-            using (cardFs)
-            {
-                var mountNameGenerator = new GameCardCommonMountNameGenerator(handle, partitionId);
-                var fileSystemAdapter = new FileSystemServiceObjectAdapter(cardFs);
-
-                return fs.Register(mountName, fileSystemAdapter, mountNameGenerator);
+                case GameCardPartition.Update: return CommonMountNames.GameCardFileSystemMountNameUpdateSuffix;
+                case GameCardPartition.Normal: return CommonMountNames.GameCardFileSystemMountNameNormalSuffix;
+                case GameCardPartition.Secure: return CommonMountNames.GameCardFileSystemMountNameSecureSuffix;
+                default:
+                    Abort.UnexpectedDefault();
+                    return default;
             }
         }
 
@@ -110,24 +45,153 @@ namespace LibHac.Fs.Shim
 
             public Result GenerateCommonMountName(Span<byte> nameBuffer)
             {
-                char letter = GetGameCardMountNameSuffix(PartitionId);
+                int handleDigitCount = Unsafe.SizeOf<GameCardHandle>() * 2;
 
-                string mountName = $"{CommonPaths.GameCardFileSystemMountName}{letter}{Handle.Value:x8}";
-                new U8Span(mountName).Value.CopyTo(nameBuffer);
+                // Determine how much space we need.
+                int neededSize =
+                    StringUtils.GetLength(CommonMountNames.GameCardFileSystemMountName, PathTool.MountNameLengthMax) +
+                    StringUtils.GetLength(GetGameCardMountNameSuffix(PartitionId), PathTool.MountNameLengthMax) +
+                    handleDigitCount + 2;
+
+                Assert.True(nameBuffer.Length >= neededSize);
+
+                // Generate the name.
+                var sb = new U8StringBuilder(nameBuffer);
+                sb.Append(CommonMountNames.GameCardFileSystemMountName)
+                    .Append(GetGameCardMountNameSuffix(PartitionId))
+                    .AppendFormat(Handle.Value, 'x', (byte)handleDigitCount)
+                    .Append(StringTraits.DriveSeparator);
+
+                Assert.True(sb.Length == neededSize - 1);
 
                 return Result.Success;
             }
+        }
 
-            private static char GetGameCardMountNameSuffix(GameCardPartition partition)
+        public static Result GetGameCardHandle(this FileSystemClient fs, out GameCardHandle handle)
+        {
+            Unsafe.SkipInit(out handle);
+
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+
+            ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
+            try
             {
-                switch (partition)
+                Result rc = fsProxy.Target.OpenDeviceOperator(out deviceOperator);
+                fs.Impl.AbortIfNeeded(rc);
+                if (rc.IsFailure()) return rc;
+
+                rc = deviceOperator.Target.GetGameCardHandle(out handle);
+                fs.Impl.AbortIfNeeded(rc);
+                return rc;
+            }
+            finally
+            {
+                deviceOperator?.Dispose();
+            }
+        }
+
+        public static Result MountGameCardPartition(this FileSystemClient fs, U8Span mountName, GameCardHandle handle,
+            GameCardPartition partitionId)
+        {
+            Result rc;
+            Span<byte> logBuffer = stackalloc byte[0x60];
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
+            {
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = Mount(fs, mountName, handle, partitionId);
+                Tick end = fs.Hos.Os.GetSystemTick();
+
+                var idString = new IdString();
+                var sb = new U8StringBuilder(logBuffer, true);
+
+                sb.Append(LogName).Append(mountName).Append(LogQuote)
+                    .Append(LogGameCardHandle).AppendFormat(handle.Value)
+                    .Append(LogGameCardPartition).Append(idString.ToString(partitionId));
+
+                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            }
+            else
+            {
+                rc = Mount(fs, mountName, handle, partitionId);
+            }
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc;
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
+                fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
+
+            return Result.Success;
+
+            static Result Mount(FileSystemClient fs, U8Span mountName, GameCardHandle handle,
+                GameCardPartition partitionId)
+            {
+                Result rc = fs.Impl.CheckMountNameAcceptingReservedMountName(mountName);
+                if (rc.IsFailure()) return rc;
+
+                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+
+                ReferenceCountedDisposable<IFileSystemSf> fileSystem = null;
+                try
                 {
-                    case GameCardPartition.Update: return 'U';
-                    case GameCardPartition.Normal: return 'N';
-                    case GameCardPartition.Secure: return 'S';
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(partition), partition, null);
+                    rc = fsProxy.Target.OpenGameCardFileSystem(out fileSystem, handle, partitionId);
+                    if (rc.IsFailure()) return rc;
+
+                    var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
+                    var mountNameGenerator = new GameCardCommonMountNameGenerator(handle, partitionId);
+                    return fs.Register(mountName, fileSystemAdapter, mountNameGenerator);
                 }
+                finally
+                {
+                    fileSystem?.Dispose();
+                }
+            }
+        }
+
+        public static bool IsGameCardInserted(this FileSystemClient fs)
+        {
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+
+            ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
+            try
+            {
+                Result rc = fsProxy.Target.OpenDeviceOperator(out deviceOperator);
+                fs.Impl.LogErrorMessage(rc);
+                Abort.DoAbortUnless(rc.IsSuccess());
+
+                rc = deviceOperator.Target.IsGameCardInserted(out bool isInserted);
+                fs.Impl.LogErrorMessage(rc);
+                Abort.DoAbortUnless(rc.IsSuccess());
+
+                return isInserted;
+            }
+            finally
+            {
+                deviceOperator?.Dispose();
+            }
+        }
+
+        public static Result OpenGameCardPartition(this FileSystemClient fs, out IStorage storage,
+            GameCardHandle handle, GameCardPartitionRaw partitionType)
+        {
+            storage = default;
+
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+
+            ReferenceCountedDisposable<IStorageSf> sfStorage = null;
+            try
+            {
+                Result rc = fsProxy.Target.OpenGameCardStorage(out sfStorage, handle, partitionType);
+                fs.Impl.AbortIfNeeded(rc);
+                if (rc.IsFailure()) return rc;
+
+                storage = new StorageServiceObjectAdapter(sfStorage);
+                return Result.Success;
+            }
+            finally
+            {
+                sfStorage?.Dispose();
             }
         }
     }

@@ -67,17 +67,18 @@ namespace hactoolnet
                 using (var logger = new ProgressBar())
                 {
                     ctx.Logger = logger;
-                    ctx.FsClient = new FileSystemClient(new StopWatchTimeSpanGenerator());
+                    OpenKeySet(ctx);
+
+                    Horizon horizon = HorizonFactory.CreateWithDefaultFsConfig(new HorizonConfiguration(),
+                        new InMemoryFileSystem(), ctx.KeySet);
+                    ctx.FsClient = horizon.CreatePrivilegedHorizonClient().Fs;
 
                     if (ctx.Options.AccessLog != null)
                     {
                         logWriter = new StreamWriter(ctx.Options.AccessLog);
-                        var accessLog = new TextWriterAccessLog(logWriter);
 
                         ctx.FsClient.SetLocalSystemAccessLogForDebug(true);
                         ctx.FsClient.SetGlobalAccessLogMode(GlobalAccessLogMode.Log);
-
-                        ctx.FsClient.SetAccessLogObject(accessLog);
                     }
 
                     if (ctx.Options.ResultLog != null)
@@ -87,8 +88,6 @@ namespace hactoolnet
 
                         Result.SetLogger(resultLogger);
                     }
-
-                    OpenKeySet(ctx);
 
                     if (ctx.Options.RunCustom)
                     {

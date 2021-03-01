@@ -7,11 +7,11 @@ namespace LibHac.Os.Impl
     internal struct TickManagerImpl : IDisposable
     {
         private long _tickFrequency;
-        private long _startTick;
+        private ITickGenerator _tickGenerator;
         private TimeSpan _maxTimeSpan;
         private long _maxTick;
 
-        public TickManagerImpl(long startTick)
+        public TickManagerImpl(ITickGenerator tickGenerator)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -19,7 +19,7 @@ namespace LibHac.Os.Impl
             }
 
             _tickFrequency = Stopwatch.Frequency;
-            _startTick = startTick;
+            _tickGenerator = tickGenerator;
 
             long nanoSecondsPerSecond = TimeSpan.FromSeconds(1).GetNanoSeconds();
 
@@ -43,8 +43,8 @@ namespace LibHac.Os.Impl
             }
         }
 
-        public Tick GetTick() => new Tick(Stopwatch.GetTimestamp() - _startTick);
-        public Tick GetSystemTickOrdered() => new Tick(Stopwatch.GetTimestamp() - _startTick);
+        public Tick GetTick() => _tickGenerator.GetCurrentTick();
+        public Tick GetSystemTickOrdered() => _tickGenerator.GetCurrentTick();
         public long GetTickFrequency() => _tickFrequency;
         public long GetMaxTick() => _maxTick;
         public long GetMaxTimeSpanNs() => _maxTimeSpan.GetNanoSeconds();

@@ -14,11 +14,15 @@ namespace LibHac.Fs.Shim
         {
             using ReferenceCountedDisposable<IProgramRegistry> registry = fs.Impl.GetProgramRegistryServiceObject();
 
-            Result rc = registry.Target.SetCurrentProcess(fs.Hos.ProcessId.Value);
+            Result rc = registry.Target.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value);
+            fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
-            return registry.Target.RegisterProgram(processId, programId, storageId, new InBuffer(accessControlData),
+            rc = registry.Target.RegisterProgram(processId, programId, storageId, new InBuffer(accessControlData),
                 new InBuffer(accessControlDescriptor));
+
+            fs.Impl.AbortIfNeeded(rc);
+            return rc;
         }
 
         /// <inheritdoc cref="ProgramRegistryImpl.UnregisterProgram"/>
@@ -26,7 +30,7 @@ namespace LibHac.Fs.Shim
         {
             using ReferenceCountedDisposable<IProgramRegistry> registry = fs.Impl.GetProgramRegistryServiceObject();
 
-            Result rc = registry.Target.SetCurrentProcess(fs.Hos.ProcessId.Value);
+            Result rc = registry.Target.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value);
             if (rc.IsFailure()) return rc;
 
             return registry.Target.UnregisterProgram(processId);

@@ -20,7 +20,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
             config.DeviceOperator = defaultObjects.DeviceOperator;
             config.ExternalKeySet = new ExternalKeySet();
 
-            Horizon horizon = LibHac.HorizonFactory.CreateWithFsConfig(new StopWatchTimeSpanGenerator(), config);
+            Horizon horizon = LibHac.HorizonFactory.CreateWithFsConfig(new HorizonConfiguration(), config);
 
             HorizonClient horizonClient = horizon.CreatePrivilegedHorizonClient();
 

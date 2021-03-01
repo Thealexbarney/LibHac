@@ -257,6 +257,8 @@ namespace LibHac.Fs
             public static Result.Base OutOfRange => new Result.Base(ModuleFs, 3005);
             /// <summary>Error code: 2002-3100; Inner value: 0x183802</summary>
             public static Result.Base SystemPartitionNotReady => new Result.Base(ModuleFs, 3100);
+            /// <summary>Error code: 2002-3101; Inner value: 0x183a02</summary>
+            public static Result.Base StorageDeviceNotReady => new Result.Base(ModuleFs, 3101);
 
             /// <summary>Error code: 2002-3200; Range: 3200-3499; Inner value: 0x190002</summary>
             public static Result.Base AllocationMemoryFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 3200, 3499); }

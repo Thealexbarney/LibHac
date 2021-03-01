@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Threading;
+﻿using System.Threading;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs.Shim;
@@ -13,21 +12,19 @@ namespace LibHac
     public class Horizon
     {
         private const int InitialProcessCountMax = 0x50;
-        internal long StartTick { get; }
-        internal ITimeSpanGenerator Time { get; }
+
+        internal ITickGenerator TickGenerator { get; }
         internal ServiceManager ServiceManager { get; }
         private HorizonClient LoaderClient { get; }
 
         private ulong _currentInitialProcessId;
         private ulong _currentProcessId;
 
-        // Todo: Initialize with a configuration object
-        public Horizon(ITimeSpanGenerator timer)
+        public Horizon(HorizonConfiguration config)
         {
             _currentProcessId = InitialProcessCountMax;
 
-            Time = timer ?? new StopWatchTimeSpanGenerator();
-            StartTick = Stopwatch.GetTimestamp();
+            TickGenerator = config.TickGenerator;
             ServiceManager = new ServiceManager();
 
             LoaderClient = CreatePrivilegedHorizonClient();

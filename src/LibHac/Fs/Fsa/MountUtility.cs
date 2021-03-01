@@ -6,6 +6,7 @@ using LibHac.Fs.Impl;
 using LibHac.FsSystem;
 using LibHac.Os;
 using LibHac.Util;
+using static LibHac.Fs.Impl.AccessLogStrings;
 
 namespace LibHac.Fs.Fsa
 {
@@ -119,7 +120,7 @@ namespace LibHac.Fs.Fsa
             if (fs.IsUsedReservedMountName(name))
                 return ResultFs.InvalidMountName.Log();
 
-            if (fs.IsValidMountName(name))
+            if (!fs.IsValidMountName(name))
                 return ResultFs.InvalidMountName.Log();
 
             return Result.Success;
@@ -130,7 +131,7 @@ namespace LibHac.Fs.Fsa
             if (name.IsNull())
                 return ResultFs.NullptrArgument.Log();
 
-            if (fs.IsValidMountName(name))
+            if (!fs.IsValidMountName(name))
                 return ResultFs.InvalidMountName.Log();
 
             return Result.Success;
@@ -183,9 +184,8 @@ namespace LibHac.Fs.Fsa
 
                 var sb = new U8StringBuilder(logBuffer, true);
                 sb.Append(LogName).Append(mountName).Append((byte)'"');
-                logBuffer = sb.Buffer;
 
-                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(logBuffer));
+                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
             }
             else
             {
@@ -210,9 +210,8 @@ namespace LibHac.Fs.Fsa
                 var sb = new U8StringBuilder(logBuffer, true);
                 ReadOnlySpan<byte> boolString = AccessLogImpl.ConvertFromBoolToAccessLogBooleanValue(isMounted);
                 sb.Append(LogName).Append(mountName).Append(LogIsMounted).Append(boolString).Append((byte)'"');
-                logBuffer = sb.Buffer;
 
-                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(logBuffer));
+                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
             }
             else
             {
@@ -254,19 +253,5 @@ namespace LibHac.Fs.Fsa
             StringUtils.Copy(commonPathBuffer.Slice(commonPathLength), subPath);
             return Result.Success;
         }
-
-        private static ReadOnlySpan<byte> LogName => // ", name: ""
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'n', (byte)'a', (byte)'m', (byte)'e', (byte)':', (byte)' ',
-                (byte)'"'
-            };
-
-        private static ReadOnlySpan<byte> LogIsMounted => // "", is_mounted: ""
-            new[]
-            {
-                (byte)'"', (byte)',', (byte)' ', (byte)'i', (byte)'s', (byte)'_', (byte)'m', (byte)'o',
-                (byte)'u', (byte)'n', (byte)'t', (byte)'e', (byte)'d', (byte)':', (byte)' ', (byte)'"'
-            };
     }
 }
