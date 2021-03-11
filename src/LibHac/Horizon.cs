@@ -24,7 +24,7 @@ namespace LibHac
         {
             _currentProcessId = InitialProcessCountMax;
 
-            TickGenerator = config.TickGenerator;
+            TickGenerator = config.TickGenerator ?? new DefaultTickGenerator();
             ServiceManager = new ServiceManager();
 
             LoaderClient = CreatePrivilegedHorizonClient();

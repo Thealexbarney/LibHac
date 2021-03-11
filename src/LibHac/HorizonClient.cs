@@ -1,5 +1,6 @@
 ﻿using System;
 using LibHac.Arp;
+using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Lr;
 using LibHac.Os;
@@ -18,6 +19,7 @@ namespace LibHac
         public FileSystemClient Fs { get; }
         public ServiceManagerClient Sm { get; }
         public OsState Os { get; }
+        public DiagClient Diag { get; }
         public LrClient Lr { get; }
         public ArpClient Arp => ArpLazy.Value;
 
@@ -29,6 +31,7 @@ namespace LibHac
             Fs = new FileSystemClient(this);
             Sm = new ServiceManagerClient(Horizon.ServiceManager);
             Os = new OsState(this, horizon.TickGenerator);
+            Diag = new DiagClient(this);
             Lr = new LrClient(this);
 
             ArpLazy = new Lazy<ArpClient>(InitArpClient, true);

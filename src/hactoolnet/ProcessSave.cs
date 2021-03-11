@@ -31,7 +31,7 @@ namespace hactoolnet
                 bool signNeeded = ctx.Options.SignSave;
 
                 var save = new SaveDataFileSystem(ctx.KeySet, file, ctx.Options.IntegrityLevel, true);
-                FileSystemClient fs = ctx.FsClient;
+                FileSystemClient fs = ctx.Horizon.Fs;
 
                 fs.Register("save".ToU8Span(), save);
 

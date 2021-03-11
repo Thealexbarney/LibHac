@@ -14,9 +14,4 @@ namespace LibHac
         /// </summary>
         public ITickGenerator? TickGenerator { get; set; }
     }
-
-    public interface ITickGenerator
-    {
-        Tick GetCurrentTick();
-    }
 }

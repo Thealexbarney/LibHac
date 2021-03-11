@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using LibHac;
 using LibHac.Common.Keys;
+using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Util;
 
@@ -61,6 +62,7 @@ namespace hactoolnet
 
             StreamWriter logWriter = null;
             ResultLogger resultLogger = null;
+            LogObserverHolder logObserver = null;
 
             try
             {
@@ -71,14 +73,23 @@ namespace hactoolnet
 
                     Horizon horizon = HorizonFactory.CreateWithDefaultFsConfig(new HorizonConfiguration(),
                         new InMemoryFileSystem(), ctx.KeySet);
-                    ctx.FsClient = horizon.CreatePrivilegedHorizonClient().Fs;
+                    ctx.Horizon = horizon.CreatePrivilegedHorizonClient();
 
                     if (ctx.Options.AccessLog != null)
                     {
                         logWriter = new StreamWriter(ctx.Options.AccessLog);
+                        logObserver = new LogObserverHolder();
 
-                        ctx.FsClient.SetLocalSystemAccessLogForDebug(true);
-                        ctx.FsClient.SetGlobalAccessLogMode(GlobalAccessLogMode.Log);
+                        // ReSharper disable once AccessToDisposedClosure
+                        // References to logWriter should be gone by the time it's disposed
+                        ctx.Horizon.Diag.InitializeLogObserverHolder(ref logObserver,
+                            (in LogMetaData data, in LogBody body, object arguments) =>
+                                logWriter.Write(body.Message.ToString()), null);
+
+                        ctx.Horizon.Diag.RegisterLogObserver(logObserver);
+
+                        ctx.Horizon.Fs.SetLocalSystemAccessLogForDebug(true);
+                        ctx.Horizon.Fs.SetGlobalAccessLogMode(GlobalAccessLogMode.Log).ThrowIfFailure();
                     }
 
                     if (ctx.Options.ResultLog != null)
@@ -100,6 +111,11 @@ namespace hactoolnet
             }
             finally
             {
+                if (logObserver != null)
+                {
+                    ctx.Horizon.Diag.UnregisterLogObserver(logObserver);
+                }
+
                 logWriter?.Dispose();
 
                 if (resultLogger != null)
