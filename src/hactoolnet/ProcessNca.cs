@@ -4,6 +4,7 @@ using LibHac;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.Fs.Impl;
 using LibHac.FsSystem;
 using LibHac.FsSystem.NcaUtils;
 using LibHac.Npdm;
@@ -45,7 +46,7 @@ namespace hactoolnet
 
                     if (ctx.Options.SectionOutDir[i] != null)
                     {
-                        FileSystemClient fs = ctx.FsClient;
+                        FileSystemClient fs = ctx.Horizon.Fs;
 
                         string mountName = $"section{i}";
 
@@ -96,10 +97,13 @@ namespace hactoolnet
 
                     if (ctx.Options.RomfsOutDir != null)
                     {
-                        FileSystemClient fs = ctx.FsClient;
+                        FileSystemClient fs = ctx.Horizon.Fs;
 
                         fs.Register("rom".ToU8Span(), OpenFileSystemByType(NcaSectionType.Data));
                         fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.RomfsOutDir));
+
+                        fs.Impl.EnableFileSystemAccessorAccessLog("rom".ToU8Span());
+                        fs.Impl.EnableFileSystemAccessorAccessLog("output".ToU8Span());
 
                         FsUtils.CopyDirectoryWithProgress(fs, "rom:/".ToU8Span(), "output:/".ToU8Span(), logger: ctx.Logger).ThrowIfFailure();
 
@@ -153,7 +157,7 @@ namespace hactoolnet
 
                     if (ctx.Options.ExefsOutDir != null)
                     {
-                        FileSystemClient fs = ctx.FsClient;
+                        FileSystemClient fs = ctx.Horizon.Fs;
 
                         fs.Register("code".ToU8Span(), OpenFileSystemByType(NcaSectionType.Code));
                         fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.ExefsOutDir));
