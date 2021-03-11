@@ -515,7 +515,7 @@ namespace LibHac.Fs.Fsa
                 rc = fileSystem.OpenFile(out accessor, subPath, mode);
                 Tick end = fs.Hos.Os.GetSystemTick();
 
-                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(logBuffer));
+                fs.Impl.OutputAccessLog(rc, start, end, accessor, new U8Span(logBuffer));
             }
             else
             {
@@ -530,7 +530,7 @@ namespace LibHac.Fs.Fsa
 
         public static Result OpenFile(this FileSystemClient fs, out FileHandle handle, IFile file, OpenMode mode)
         {
-            var accessor = new FileAccessor(ref file, null, mode);
+            var accessor = new FileAccessor(fs, ref file, null, mode);
             handle = new FileHandle(accessor);
 
             return Result.Success;
@@ -572,7 +572,7 @@ namespace LibHac.Fs.Fsa
                 rc = fileSystem.OpenDirectory(out accessor, subPath, mode);
                 Tick end = fs.Hos.Os.GetSystemTick();
 
-                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(logBuffer));
+                fs.Impl.OutputAccessLog(rc, start, end, accessor, new U8Span(logBuffer));
             }
             else
             {

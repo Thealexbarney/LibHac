@@ -36,6 +36,12 @@ namespace LibHac.Fs.Shim
             // Todo
         }
 
+        public static PriorityRaw GetPriorityRawOnCurrentThreadForInternalUse(this FileSystemClient fs)
+        {
+            // Todo
+            return PriorityRaw.Normal;
+        }
+
         public static PriorityRaw GetPriorityRawOnCurrentThread(this FileSystemClient fs)
         {
             // Todo

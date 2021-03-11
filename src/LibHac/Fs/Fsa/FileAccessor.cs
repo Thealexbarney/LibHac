@@ -3,6 +3,8 @@ using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs.Fsa;
+using LibHac.Os;
+using static LibHac.Fs.Impl.AccessLogStrings;
 
 // ReSharper disable once CheckNamespace
 namespace LibHac.Fs.Impl
@@ -25,8 +27,13 @@ namespace LibHac.Fs.Impl
         // ReSharper disable once NotAccessedField.Local
         private int _pathHashIndex;
 
-        public FileAccessor(ref IFile file, FileSystemAccessor parentFileSystem, OpenMode mode)
+        private FileSystemClient _fsClient;
+
+        public FileAccessor(FileSystemClient fsClient, ref IFile file, FileSystemAccessor parentFileSystem,
+            OpenMode mode)
         {
+            _fsClient = fsClient;
+
             _file = Shared.Move(ref file);
             _parentFileSystem = parentFileSystem;
             _openMode = mode;
@@ -79,9 +86,27 @@ namespace LibHac.Fs.Impl
         {
             Unsafe.SkipInit(out bytesRead);
 
+            Result rc;
+            Span<byte> logBuffer = stackalloc byte[0x50];
+            var handle = new FileHandle(this);
+
             if (_lastResult.IsFailure())
             {
-                // Todo: Access log
+                if (_fsClient.Impl.IsEnabledAccessLog() && _fsClient.Impl.IsEnabledHandleAccessLog(handle))
+                {
+                    Tick start = _fsClient.Hos.Os.GetSystemTick();
+                    rc = _lastResult;
+                    Tick end = _fsClient.Hos.Os.GetSystemTick();
+
+                    var sb = new U8StringBuilder(logBuffer, true);
+                    sb.Append(LogOffset).AppendFormat(offset)
+                        .Append(LogSize).AppendFormat(destination.Length)
+                        .Append(LogReadSize).AppendFormat(AccessLogImpl.DereferenceOutValue(in bytesRead, rc));
+
+                    _fsClient.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(logBuffer),
+                        nameof(UserFile.ReadFile));
+                }
+
                 return _lastResult;
             }
 
@@ -99,7 +124,26 @@ namespace LibHac.Fs.Impl
             }
             else
             {
-                return ReadWithoutCacheAccessLog(out bytesRead, offset, destination, in option);
+                if (_fsClient.Impl.IsEnabledAccessLog() && _fsClient.Impl.IsEnabledHandleAccessLog(handle))
+                {
+                    Tick start = _fsClient.Hos.Os.GetSystemTick();
+                    rc = ReadWithoutCacheAccessLog(out bytesRead, offset, destination, in option);
+                    Tick end = _fsClient.Hos.Os.GetSystemTick();
+
+                    var sb = new U8StringBuilder(logBuffer, true);
+                    sb.Append(LogOffset).AppendFormat(offset)
+                        .Append(LogSize).AppendFormat(destination.Length)
+                        .Append(LogReadSize).AppendFormat(AccessLogImpl.DereferenceOutValue(in bytesRead, rc));
+
+                    _fsClient.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(logBuffer),
+                        nameof(UserFile.ReadFile));
+                }
+                else
+                {
+                    rc = ReadWithoutCacheAccessLog(out bytesRead, offset, destination, in option);
+                }
+
+                return rc;
             }
             // ReSharper restore ConditionIsAlwaysTrueOrFalse
         }

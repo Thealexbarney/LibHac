@@ -1,13 +1,19 @@
 ﻿using System;
+using System.Buffers;
 using System.Buffers.Text;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.Unicode;
 using LibHac.Common;
 using LibHac.Diag;
+using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Sf;
 using LibHac.Os;
+using LibHac.Sf;
+using static LibHac.Fs.Impl.AccessLogStrings;
 
 namespace LibHac.Fs
 {
@@ -18,6 +24,8 @@ namespace LibHac.Fs
 
         public bool IsAccessLogInitialized;
         public SdkMutexType MutexForAccessLogInitialization;
+
+        public AccessLogImpl.AccessLogPrinterCallbackManager CallbackManager;
 
         public void Initialize(FileSystemClient _)
         {
@@ -49,14 +57,18 @@ namespace LibHac.Fs
         {
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            return fsProxy.Target.GetGlobalAccessLogMode(out mode);
+            Result rc = fsProxy.Target.GetGlobalAccessLogMode(out mode);
+            fs.Impl.AbortIfNeeded(rc);
+            return rc;
         }
 
         public static Result SetGlobalAccessLogMode(this FileSystemClient fs, GlobalAccessLogMode mode)
         {
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            return fsProxy.Target.SetGlobalAccessLogMode(mode);
+            Result rc = fsProxy.Target.SetGlobalAccessLogMode(mode);
+            fs.Impl.AbortIfNeeded(rc);
+            return rc;
         }
 
         public static void SetLocalAccessLog(this FileSystemClient fs, bool enabled)
@@ -93,25 +105,10 @@ namespace LibHac.Fs
             }
         }
 
-        public static Result RunOperationWithAccessLog(this FileSystemClient fs, AccessLogTarget logTarget,
-            Func<Result> operation, Func<string> textGenerator, [CallerMemberName] string caller = "")
+        public static void OutputApplicationInfoAccessLog(this FileSystemClient fs, in ApplicationInfo applicationInfo)
         {
-            Result rc;
-
-            if (fs.Impl.IsEnabledAccessLog(logTarget))
-            {
-                Tick start = fs.Hos.Os.GetSystemTick();
-                rc = operation();
-                Tick end = fs.Hos.Os.GetSystemTick();
-
-                fs.Impl.OutputAccessLog(rc, start, end, null, textGenerator().ToU8Span(), caller);
-            }
-            else
-            {
-                rc = operation();
-            }
-
-            return rc;
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            fsProxy.Target.OutputApplicationInfoAccessLog(in applicationInfo).IgnoreResult();
         }
     }
 }
@@ -274,78 +271,317 @@ namespace LibHac.Fs.Impl
         }
     }
 
-    internal static class AccessLogImpl
+    internal delegate int AccessLogPrinterCallback(Span<byte> textBuffer);
+
+    public static class AccessLogImpl
     {
         internal static T DereferenceOutValue<T>(in T value, Result result) where T : unmanaged
         {
             return result.IsSuccess() ? value : default;
         }
 
-        private static void GetProgramIndexForAccessLog(FileSystemClient fs, out int index, out int count)
+        private static U8Span GetPriorityRawName(FileSystemClientImpl fs, ref IdString idString)
         {
-            throw new NotImplementedException();
+            // Note: The original function creates an IdString instead of taking one as a parameter.
+            // Because this might result in the function returning a string from its own stack frame,
+            // this implementation takes an IdString as a parameter.
+            return new U8Span(idString.ToString(fs.Fs.GetPriorityRawOnCurrentThreadForInternalUse()));
         }
 
-        private static void OutputAccessLogStart(FileSystemClient fs)
+        private static ref AccessLogPrinterCallbackManager GetStartAccessLogPrinterCallbackManager(
+            FileSystemClientImpl fs)
         {
-            throw new NotImplementedException();
+            return ref fs.Globals.AccessLog.CallbackManager;
         }
 
-        private static void OutputAccessLogStartForSystem(FileSystemClient fs)
+        private static void FlushAccessLogOnSdCardImpl(FileSystemClientImpl fs)
         {
-            throw new NotImplementedException();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            fsProxy.Target.FlushAccessLogOnSdCard().IgnoreResult();
         }
 
-        private static void OutputAccessLogStartGeneratedByCallback(FileSystemClient fs)
+        private static void OutputAccessLogToSdCardImpl(FileSystemClientImpl fs, U8Span message)
         {
-            throw new NotImplementedException();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            fsProxy.Target.OutputAccessLogToSdCard(new InBuffer(message.Value)).IgnoreResult();
         }
 
-        public static void OutputAccessLog(this FileSystemClientImpl fs, Result result, Tick start, Tick end,
-            FileHandle handle, U8Span message, [CallerMemberName] string functionName = "")
+        // The original function creates a string using the input format string and format args.
+        // We're not doing that in C#, so just pass the message through.
+        private static void OutputAccessLogToSdCard(this FileSystemClientImpl fs, U8Span message)
         {
-            throw new NotImplementedException();
+            if (fs.Globals.AccessLog.GlobalAccessLogMode.HasFlag(GlobalAccessLogMode.SdCard))
+            {
+                OutputAccessLogToSdCardImpl(fs, message);
+            }
         }
 
-        public static void OutputAccessLog(this FileSystemClientImpl fs, Result result, Tick start, Tick end,
-            DirectoryHandle handle, U8Span message, [CallerMemberName] string functionName = "")
+        private static void OutputAccessLog(this FileSystemClientImpl fs, Result result, U8Span priority, Tick start,
+            Tick end, string functionName, object handle, U8Span message)
         {
-            throw new NotImplementedException();
+            // ReSharper disable once RedundantAssignment
+            Span<byte> logBuffer = stackalloc byte[0];
+            Span<byte> nameBuffer = stackalloc byte[0];
+
+            // 1.5x the UTF-16 char length should probably be enough.
+            int nameBufferSize = Math.Max(0x10, functionName.Length + (functionName.Length >> 1));
+
+            // Go straight to the fallback code if the function name is too long.
+            // Although to be honest, if this happens, saving on some allocations is probably the least of your worries.
+            if (nameBufferSize <= 0x400)
+            {
+                nameBuffer = stackalloc byte[nameBufferSize];
+                OperationStatus status = Utf8.FromUtf16(functionName, nameBuffer, out _, out int bytesWritten);
+
+                // Set the length to 0 if the buffer is too small to signify it should be handled by the fallback code.
+                // This will most likely never happen unless the function name has a lot of non-ASCII characters.
+                if (status == OperationStatus.DestinationTooSmall)
+                    nameBuffer = Span<byte>.Empty;
+                else
+                    nameBuffer = nameBuffer.Slice(0, bytesWritten);
+            }
+
+            if (nameBuffer.Length == 0 && functionName.Length != 0)
+            {
+                nameBuffer = Encoding.UTF8.GetBytes(functionName);
+            }
+
+            // Because the message is passed in as preformatted bytes instead of using sprintf like in the original,
+            // we can easily calculate the size of the buffer needed beforehand.
+            // The base text length is ~0x80-0x90 bytes long. Add another 0x70 as buffer space to get 0x100.
+            const int baseLength = 0x100;
+            int functionNameLength = nameBuffer.Length;
+            int logBufferSize = baseLength + functionNameLength + message.Length;
+
+            // In case we need to rent an array.
+            RentedArray<byte> rentedLogBuffer = default;
+
+            try
+            {
+                // Use the stack for buffers up to 1 KB since .NET stack sizes are usually massive anyway.
+                if (logBufferSize <= 0x400)
+                {
+                    logBuffer = stackalloc byte[logBufferSize];
+                }
+                else
+                {
+                    rentedLogBuffer = new RentedArray<byte>(logBufferSize);
+                    logBuffer = rentedLogBuffer.Array;
+                }
+
+                OsState os = fs.Hos.Os;
+                long startMs = start.ToTimeSpan(os).GetMilliSeconds();
+                long endMs = end.ToTimeSpan(os).GetMilliSeconds();
+
+                var sb = new U8StringBuilder(logBuffer, true);
+                sb.Append(LogLineStart)
+                    .Append(LogStart).PadLeft((byte)' ', 9).AppendFormat(startMs)
+                    .Append(LogEnd).PadLeft((byte)' ', 9).AppendFormat(endMs)
+                    .Append(LogResult).AppendFormat(result.Value, 'x', 8)
+                    .Append(LogHandle).AppendFormat((uint)(handle?.GetHashCode() ?? 0), 'x',
+                        (byte)(Unsafe.SizeOf<nint>() * 2))
+                    .Append(LogPriority).Append(priority)
+                    .Append(LogFunction).Append(nameBuffer).Append(LogQuote)
+                    .Append(message)
+                    .Append(LogLineEnd);
+
+                OutputAccessLogImpl(fs, new U8Span(sb.Buffer));
+
+            }
+            finally
+            {
+                rentedLogBuffer.Dispose();
+            }
         }
 
-        public static void OutputAccessLog(this FileSystemClientImpl fs, Result result, Tick start, Tick end,
-            IdentifyAccessLogHandle handle, U8Span message, [CallerMemberName] string functionName = "")
+        private static void GetProgramIndexForAccessLog(FileSystemClientImpl fs, out int index, out int count)
         {
-            throw new NotImplementedException();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            Result rc = fsProxy.Target.GetProgramIndexForAccessLog(out index, out count);
+            Abort.DoAbortUnless(rc.IsSuccess());
         }
 
-        public static void OutputAccessLog(this FileSystemClientImpl fs, Result result, Tick start, Tick end,
-            object handle, U8Span message, [CallerMemberName] string functionName = "")
+        private static void OutputAccessLogStart(FileSystemClientImpl fs)
         {
-            throw new NotImplementedException();
+            Span<byte> logBuffer = stackalloc byte[0x80];
+
+            GetProgramIndexForAccessLog(fs, out int currentProgramIndex, out int programCount);
+
+            var sb = new U8StringBuilder(logBuffer, true);
+
+            if (programCount > 1)
+            {
+                sb.Append(LogLineStart).Append(LogSdkVersion).Append(LogLibHacVersion).Append(LogSpec).Append(LogNx)
+                    .Append(LogProgramIndex).AppendFormat(currentProgramIndex).Append(LogLineEnd);
+            }
+            else
+            {
+                sb.Append(LogLineStart).Append(LogSdkVersion).Append(LogLibHacVersion).Append(LogSpec).Append(LogNx)
+                    .Append(LogLineEnd);
+            }
+
+            OutputAccessLogImpl(fs, new U8Span(sb.Buffer.Slice(0, sb.Length)));
         }
 
-        public static void OutputAccessLogToOnlySdCard(this FileSystemClientImpl fs, U8Span message)
+        private static void OutputAccessLogStartForSystem(FileSystemClientImpl fs)
         {
-            throw new NotImplementedException();
+            Span<byte> logBuffer = stackalloc byte[0x60];
+
+            var sb = new U8StringBuilder(logBuffer, true);
+            sb.Append(LogLineStart).Append(LogSdkVersion).Append(LogLibHacVersion).Append(LogSpec).Append(LogNx)
+                .Append(LogForSystem).Append(LogLineEnd);
+
+            OutputAccessLogImpl(fs, new U8Span(sb.Buffer.Slice(0, sb.Length)));
         }
 
-        public static void OutputAccessLogUnlessResultSuccess(this FileSystemClientImpl fs, Result result, Tick start,
-            Tick end, FileHandle handle, U8Span message, [CallerMemberName] string functionName = "")
+        private static void OutputAccessLogStartGeneratedByCallback(FileSystemClientImpl fs)
         {
-            throw new NotImplementedException();
+            ref AccessLogPrinterCallbackManager manager = ref GetStartAccessLogPrinterCallbackManager(fs);
+
+            if (manager.IsRegisteredCallback())
+            {
+                Span<byte> logBuffer = stackalloc byte[0x80];
+                int length = manager.InvokeCallback(logBuffer);
+
+                if (length <= logBuffer.Length)
+                {
+                    OutputAccessLogImpl(fs, new U8Span(logBuffer.Slice(0, length)));
+                }
+            }
         }
 
-        public static void OutputAccessLogUnlessResultSuccess(this FileSystemClientImpl fs, Result result, Tick start,
-            Tick end, DirectoryHandle handle, U8Span message, [CallerMemberName] string functionName = "")
+        /// <summary>
+        /// Outputs the provided message to the access log. <paramref name="message"/> should be trimmed to the length
+        /// of the message text, and should not be null-terminated.
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        /// <param name="message">The message to output to the access log.</param>
+        private static void OutputAccessLogImpl(FileSystemClientImpl fs, U8Span message)
         {
-            throw new NotImplementedException();
+            if (fs.Globals.AccessLog.GlobalAccessLogMode.HasFlag(GlobalAccessLogMode.Log))
+            {
+                fs.Hos.Diag.Impl.LogImpl(FsModuleName, LogSeverity.Info, message);
+            }
+
+            if (fs.Globals.AccessLog.GlobalAccessLogMode.HasFlag(GlobalAccessLogMode.SdCard))
+            {
+                OutputAccessLogToSdCardImpl(fs, message.Slice(0, message.Length - 1));
+            }
         }
 
-        public static void OutputAccessLogUnlessResultSuccess(this FileSystemClientImpl fs, Result result, Tick start,
+        internal struct AccessLogPrinterCallbackManager
+        {
+            private AccessLogPrinterCallback _callback;
+
+            public bool IsRegisteredCallback()
+            {
+                return _callback is not null;
+            }
+
+            public void RegisterCallback(AccessLogPrinterCallback callback)
+            {
+                Assert.Null(_callback);
+                _callback = callback;
+            }
+
+            public int InvokeCallback(Span<byte> textBuffer)
+            {
+                Assert.True(IsRegisteredCallback());
+                return _callback(textBuffer);
+            }
+        }
+
+        internal static void RegisterStartAccessLogPrinterCallback(FileSystemClientImpl fs,
+            AccessLogPrinterCallback callback)
+        {
+            ref AccessLogPrinterCallbackManager manager = ref GetStartAccessLogPrinterCallbackManager(fs);
+            manager.RegisterCallback(callback);
+        }
+
+        internal static void OutputAccessLog(this FileSystemClientImpl fs, Result result, Priority priority, Tick start,
             Tick end, object handle, U8Span message, [CallerMemberName] string functionName = "")
         {
-            throw new NotImplementedException();
+            var idString = new IdString();
+            OutputAccessLog(fs, result, new U8Span(idString.ToString(priority)), start, end, functionName, handle,
+                message);
+        }
+
+        internal static void OutputAccessLog(this FileSystemClientImpl fs, Result result, PriorityRaw priorityRaw,
+            Tick start, Tick end, object handle, U8Span message, [CallerMemberName] string functionName = "")
+        {
+            var idString = new IdString();
+            OutputAccessLog(fs, result, new U8Span(idString.ToString(priorityRaw)), start, end, functionName, handle,
+                message);
+        }
+
+        internal static void OutputAccessLog(this FileSystemClientImpl fs, Result result, Tick start, Tick end,
+            FileHandle handle, U8Span message, [CallerMemberName] string functionName = "")
+        {
+            var idString = new IdString();
+            OutputAccessLog(fs, result, GetPriorityRawName(fs, ref idString), start, end, functionName, handle.File,
+                message);
+        }
+
+        internal static void OutputAccessLog(this FileSystemClientImpl fs, Result result, Tick start, Tick end,
+            DirectoryHandle handle, U8Span message, [CallerMemberName] string functionName = "")
+        {
+            var idString = new IdString();
+            OutputAccessLog(fs, result, GetPriorityRawName(fs, ref idString), start, end, functionName,
+                handle.Directory, message);
+        }
+
+        internal static void OutputAccessLog(this FileSystemClientImpl fs, Result result, Tick start, Tick end,
+            IdentifyAccessLogHandle handle, U8Span message, [CallerMemberName] string functionName = "")
+        {
+            var idString = new IdString();
+            OutputAccessLog(fs, result, GetPriorityRawName(fs, ref idString), start, end, functionName, handle.Handle,
+                message);
+        }
+
+        internal static void OutputAccessLog(this FileSystemClientImpl fs, Result result, Tick start, Tick end,
+            object handle, U8Span message, [CallerMemberName] string functionName = "")
+        {
+            var idString = new IdString();
+            OutputAccessLog(fs, result, GetPriorityRawName(fs, ref idString), start, end, functionName, handle,
+                message);
+        }
+
+        internal static void OutputAccessLogToOnlySdCard(this FileSystemClientImpl fs, U8Span message)
+        {
+            fs.OutputAccessLogToSdCard(message);
+        }
+
+        internal static void OutputAccessLogUnlessResultSuccess(this FileSystemClientImpl fs, Result result, Tick start,
+            Tick end, FileHandle handle, U8Span message, [CallerMemberName] string functionName = "")
+        {
+            if (result.IsFailure())
+            {
+                var idString = new IdString();
+                OutputAccessLog(fs, result, GetPriorityRawName(fs, ref idString), start, end, functionName, handle,
+                    message);
+            }
+        }
+
+        internal static void OutputAccessLogUnlessResultSuccess(this FileSystemClientImpl fs, Result result, Tick start,
+            Tick end, DirectoryHandle handle, U8Span message, [CallerMemberName] string functionName = "")
+        {
+            if (result.IsFailure())
+            {
+                var idString = new IdString();
+                OutputAccessLog(fs, result, GetPriorityRawName(fs, ref idString), start, end, functionName, handle,
+                    message);
+            }
+        }
+
+        internal static void OutputAccessLogUnlessResultSuccess(this FileSystemClientImpl fs, Result result, Tick start,
+            Tick end, object handle, U8Span message, [CallerMemberName] string functionName = "")
+        {
+            if (result.IsFailure())
+            {
+                var idString = new IdString();
+                OutputAccessLog(fs, result, GetPriorityRawName(fs, ref idString), start, end, functionName, handle,
+                    message);
+            }
         }
 
         internal static bool IsEnabledAccessLog(this FileSystemClientImpl fs, AccessLogTarget target)
@@ -355,33 +591,34 @@ namespace LibHac.Fs.Impl
             if ((g.LocalAccessLogTarget & target) == 0)
                 return false;
 
+            if (g.IsAccessLogInitialized)
+                return g.GlobalAccessLogMode != GlobalAccessLogMode.None;
+
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref g.MutexForAccessLogInitialization);
+
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
             if (!g.IsAccessLogInitialized)
             {
-                using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref g.MutexForAccessLogInitialization);
-
-                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-                if (!g.IsAccessLogInitialized)
+                if (g.LocalAccessLogTarget.HasFlag(AccessLogTarget.System))
                 {
-                    if (g.LocalAccessLogTarget.HasFlag(AccessLogTarget.System))
-                    {
-                        g.GlobalAccessLogMode = GlobalAccessLogMode.Log;
-                        OutputAccessLogStartForSystem(fs.Fs);
-                        OutputAccessLogStartGeneratedByCallback(fs.Fs);
-                    }
-                    else
-                    {
-                        Result rc = fs.Fs.GetGlobalAccessLogMode(out g.GlobalAccessLogMode);
-                        if (rc.IsFailure()) Abort.DoAbort(rc);
-
-                        if (g.GlobalAccessLogMode != GlobalAccessLogMode.None)
-                        {
-                            OutputAccessLogStart(fs.Fs);
-                            OutputAccessLogStartGeneratedByCallback(fs.Fs);
-                        }
-                    }
-
-                    g.IsAccessLogInitialized = true;
+                    g.GlobalAccessLogMode = GlobalAccessLogMode.Log;
+                    OutputAccessLogStartForSystem(fs);
+                    OutputAccessLogStartGeneratedByCallback(fs);
                 }
+                else
+                {
+                    Result rc = fs.Fs.GetGlobalAccessLogMode(out g.GlobalAccessLogMode);
+                    fs.LogErrorMessage(rc);
+                    if (rc.IsFailure()) Abort.DoAbort(rc);
+
+                    if (g.GlobalAccessLogMode != GlobalAccessLogMode.None)
+                    {
+                        OutputAccessLogStart(fs);
+                        OutputAccessLogStartGeneratedByCallback(fs);
+                    }
+                }
+
+                g.IsAccessLogInitialized = true;
             }
 
             return g.GlobalAccessLogMode != GlobalAccessLogMode.None;
@@ -392,7 +629,7 @@ namespace LibHac.Fs.Impl
             return fs.IsEnabledAccessLog(AccessLogTarget.All);
         }
 
-        public static bool IsEnabledHandleAccessLog(this FileSystemClientImpl _, FileHandle handle)
+        internal static bool IsEnabledHandleAccessLog(this FileSystemClientImpl _, FileHandle handle)
         {
             if (handle.File is null)
                 return true;
@@ -401,7 +638,7 @@ namespace LibHac.Fs.Impl
             return fsAccessor is not null && fsAccessor.IsEnabledAccessLog();
         }
 
-        public static bool IsEnabledHandleAccessLog(this FileSystemClientImpl _, DirectoryHandle handle)
+        internal static bool IsEnabledHandleAccessLog(this FileSystemClientImpl _, DirectoryHandle handle)
         {
             if (handle.Directory is null)
                 return true;
@@ -409,12 +646,12 @@ namespace LibHac.Fs.Impl
             return handle.Directory.GetParent().IsEnabledAccessLog();
         }
 
-        public static bool IsEnabledHandleAccessLog(this FileSystemClientImpl _, IdentifyAccessLogHandle handle)
+        internal static bool IsEnabledHandleAccessLog(this FileSystemClientImpl _, IdentifyAccessLogHandle handle)
         {
             return true;
         }
 
-        public static bool IsEnabledHandleAccessLog(this FileSystemClientImpl _, object handle)
+        internal static bool IsEnabledHandleAccessLog(this FileSystemClientImpl _, object handle)
         {
             if (handle is null)
                 return true;
@@ -425,34 +662,55 @@ namespace LibHac.Fs.Impl
             return false;
         }
 
-        public static bool IsEnabledFileSystemAccessorAccessLog(this FileSystemClientImpl fs, U8Span mountName)
+        internal static bool IsEnabledFileSystemAccessorAccessLog(this FileSystemClientImpl fs, U8Span mountName)
         {
-            throw new NotImplementedException();
+            Result rc = fs.Find(out FileSystemAccessor accessor, mountName);
+
+            if (rc.IsFailure())
+                return true;
+
+            return accessor.IsEnabledAccessLog();
         }
 
         public static void EnableFileSystemAccessorAccessLog(this FileSystemClientImpl fs, U8Span mountName)
         {
-            throw new NotImplementedException();
+            Result rc = fs.Find(out FileSystemAccessor fileSystem, mountName);
+            fs.LogErrorMessage(rc);
+            Abort.DoAbortUnless(rc.IsSuccess());
+
+            fileSystem.SetAccessLog(true);
         }
 
-        public static void FlushAccessLog(this FileSystemClientImpl fs)
+        internal static void FlushAccessLog(this FileSystemClientImpl fs)
         {
-            throw new NotImplementedException();
+            Assert.True(false, $"Unsupported {nameof(FlushAccessLog)}");
         }
 
-        public static void FlushAccessLogOnSdCard(this FileSystemClientImpl fs)
+        internal static void FlushAccessLogOnSdCard(this FileSystemClientImpl fs)
         {
-            throw new NotImplementedException();
+            if (fs.Globals.AccessLog.GlobalAccessLogMode.HasFlag(GlobalAccessLogMode.SdCard))
+            {
+                FlushAccessLogOnSdCardImpl(fs);
+            }
         }
 
-        public static ReadOnlySpan<byte> ConvertFromBoolToAccessLogBooleanValue(bool value)
+        internal static ReadOnlySpan<byte> ConvertFromBoolToAccessLogBooleanValue(bool value)
         {
-            return value ? AccessLogStrings.LogTrue : AccessLogStrings.LogFalse;
+            return value ? LogTrue : LogFalse;
         }
     }
 
     internal static class AccessLogStrings
     {
+        public static ReadOnlySpan<byte> FsModuleName => // "$fs"
+            new[] { (byte)'$', (byte)'f', (byte)'s' };
+
+        public static ReadOnlySpan<byte> LogLibHacVersion => // "0.13.0"
+            new[]
+            {
+                (byte)'0', (byte)'.', (byte)'1', (byte)'3', (byte)'.', (byte)'0'
+            };
+
         public static byte LogQuote => (byte)'"';
 
         public static ReadOnlySpan<byte> LogTrue => // "true"
@@ -487,6 +745,13 @@ namespace LibHac.Fs.Impl
             new[]
             {
                 (byte)',', (byte)' ', (byte)'s', (byte)'i', (byte)'z', (byte)'e', (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogReadSize => // ", read_size: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'r', (byte)'e', (byte)'a', (byte)'d', (byte)'_', (byte)'s',
+                (byte)'i', (byte)'z', (byte)'e', (byte)':', (byte)' '
             };
 
         public static ReadOnlySpan<byte> LogWriteOptionFlush => // ", write_option: Flush"
@@ -683,6 +948,88 @@ namespace LibHac.Fs.Impl
                 (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'d', (byte)'a',
                 (byte)'t', (byte)'a', (byte)'s', (byte)'p', (byte)'a', (byte)'c', (byte)'e', (byte)'i',
                 (byte)'d', (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogSdkVersion => // "sdk_version: "
+            new[]
+            {
+                (byte)'s', (byte)'d', (byte)'k', (byte)'_', (byte)'v', (byte)'e', (byte)'r', (byte)'s',
+                (byte)'i', (byte)'o', (byte)'n', (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogSpec => // ", spec: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'s', (byte)'p', (byte)'e', (byte)'c', (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogNx => // "NX"
+            new[] { (byte)'N', (byte)'X' };
+
+        public static ReadOnlySpan<byte> LogProgramIndex => // ", program_index: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'p', (byte)'r', (byte)'o', (byte)'g', (byte)'r', (byte)'a',
+                (byte)'m', (byte)'_', (byte)'i', (byte)'n', (byte)'d', (byte)'e', (byte)'x', (byte)':',
+                (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogForSystem => // ", for_system: true"
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'f', (byte)'o', (byte)'r', (byte)'_', (byte)'s', (byte)'y',
+                (byte)'s', (byte)'t', (byte)'e', (byte)'m', (byte)':', (byte)' ', (byte)'t', (byte)'r',
+                (byte)'u', (byte)'e'
+            };
+
+        public static ReadOnlySpan<byte> LogLineStart => // "FS_ACCESS: { "
+            new[]
+            {
+                (byte)'F', (byte)'S', (byte)'_', (byte)'A', (byte)'C', (byte)'C', (byte)'E', (byte)'S',
+                (byte)'S', (byte)':', (byte)' ', (byte)'{', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogLineEnd => // " }\n"
+            new[] { (byte)' ', (byte)'}', (byte)'\n' };
+
+        public static ReadOnlySpan<byte> LogStart => // "start: "
+            new[]
+            {
+                (byte)'s', (byte)'t', (byte)'a', (byte)'r', (byte)'t', (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogEnd => // ", end: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'e', (byte)'n', (byte)'d', (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogResult => // ", result: 0x"
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'r', (byte)'e', (byte)'s', (byte)'u', (byte)'l', (byte)'t',
+                (byte)':', (byte)' ', (byte)'0', (byte)'x'
+            };
+
+        public static ReadOnlySpan<byte> LogHandle => // ", handle: 0x"
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'h', (byte)'a', (byte)'n', (byte)'d', (byte)'l', (byte)'e',
+                (byte)':', (byte)' ', (byte)'0', (byte)'x'
+            };
+
+        public static ReadOnlySpan<byte> LogPriority => // ", priority: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'p', (byte)'r', (byte)'i', (byte)'o', (byte)'r', (byte)'i',
+                (byte)'t', (byte)'y', (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogFunction => // ", function: ""
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'f', (byte)'u', (byte)'n', (byte)'c', (byte)'t', (byte)'i',
+                (byte)'o', (byte)'n', (byte)':', (byte)' ', (byte)'"'
             };
     }
 }
