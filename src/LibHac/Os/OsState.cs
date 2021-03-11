@@ -5,7 +5,8 @@ namespace LibHac.Os
 {
     public class OsState : IDisposable
     {
-        private HorizonClient Hos { get; }
+        public OsStateImpl Impl => new OsStateImpl(this);
+        internal HorizonClient Hos { get; }
         internal OsResourceManager ResourceManager { get; }
 
         // Todo: Use configuration object if/when more options are added
@@ -24,5 +25,14 @@ namespace LibHac.Os
         {
             ResourceManager.Dispose();
         }
+    }
+
+    // Functions in the nn::os::detail namespace use this struct.
+    public readonly struct OsStateImpl
+    {
+        internal readonly OsState Os;
+        internal HorizonClient Hos => Os.Hos;
+
+        internal OsStateImpl(OsState parent) => Os = parent;
     }
 }
