@@ -18,6 +18,17 @@ namespace LibHac.Common
         public bool Overflowed { get; private set; }
         public bool AutoExpand { get; }
 
+        private enum PadType : byte
+        {
+            None,
+            Left,
+            Right
+        }
+
+        private PadType PaddingType { get; set; }
+        private byte PaddingCharacter { get; set; }
+        private byte PaddedLength { get; set; }
+
         private byte[] _rentedArray;
 
         public readonly int Capacity
@@ -32,6 +43,9 @@ namespace LibHac.Common
             Length = 0;
             Overflowed = false;
             AutoExpand = autoExpand;
+            PaddingType = PadType.None;
+            PaddingCharacter = 0;
+            PaddedLength = 0;
             _rentedArray = null;
 
             if (autoExpand)
@@ -61,17 +75,33 @@ namespace LibHac.Common
         // calls to be chained without accidentally creating a copy of the U8StringBuilder.
         internal void AppendInternal(ReadOnlySpan<byte> value)
         {
+            // Once in the Overflowed state, nothing else is written to the buffer.
             if (Overflowed) return;
 
             int valueLength = StringUtils.GetLength(value);
 
+            // If needed, expand the buffer size if allowed, or set the Overflowed state if not.
             if (!TryEnsureAdditionalCapacity(valueLength))
             {
                 Overflowed = true;
                 return;
             }
 
+            // Because we know the length of the output string beforehand, we can write the
+            // proper amount of padding bytes before writing the output string to the buffer.
+            if (PaddingType == PadType.Left && valueLength < PaddedLength)
+            {
+                int paddingNeeded = PaddedLength - valueLength;
+                Buffer.Slice(Length, paddingNeeded).Fill(PaddingCharacter);
+                PaddingType = PadType.None;
+                Length += paddingNeeded;
+            }
+
+            // Copy the string to the buffer and right pad if necessary.
             value.Slice(0, valueLength).CopyTo(Buffer.Slice(Length));
+            PadOutput(valueLength);
+
+            // Update the length and null-terminate the string.
             Length += valueLength;
             AddNullTerminator();
         }
@@ -86,8 +116,186 @@ namespace LibHac.Common
                 return;
             }
 
+            if (PaddingType == PadType.Left && 1 < PaddedLength)
+            {
+                int paddingNeeded = PaddedLength - 1;
+                Buffer.Slice(Length, paddingNeeded).Fill(PaddingCharacter);
+                PaddingType = PadType.None;
+                Length += paddingNeeded;
+            }
+
             Buffer[Length] = value;
+            PadOutput(1);
+
             Length++;
+            AddNullTerminator();
+        }
+
+        private void AppendFormatInt64(long value, ulong mask, char format, byte precision)
+        {
+            if (Overflowed) return;
+
+            // Check if we have enough remaining buffer to fit the required padding.
+            if (!TryEnsureAdditionalCapacity(0))
+            {
+                Overflowed = true;
+                return;
+            }
+
+            // Remove possible sign extension if needed
+            if (mask == 'x' || mask == 'X')
+            {
+                value &= (long)mask;
+            }
+
+            int bytesWritten;
+
+            // If auto-expand is enabled, try to expand the buffer until it can hold the output.
+            while (true)
+            {
+                // Exclude the null terminator from the buffer because Utf8Formatter doesn't handle it
+                Span<byte> availableBuffer = Buffer.Slice(Length, Capacity - Length);
+
+                bool bufferLargeEnough = Utf8Formatter.TryFormat(value, availableBuffer, out bytesWritten,
+                    new StandardFormat(format, precision));
+
+                // Continue if the buffer is large enough.
+                if (bufferLargeEnough)
+                    break;
+
+                // We can't expand the buffer. Mark the string builder as Overflowed
+                if (!AutoExpand)
+                {
+                    Overflowed = true;
+                    return;
+                }
+
+                // Grow the buffer and try again. The buffer size will at least double each time it grows,
+                // so asking for 0x10 additional bytes actually gets us more than that.
+                Grow(availableBuffer.Length + 0x10);
+                Assert.True(Length + availableBuffer.Length < Capacity);
+            }
+
+            PadOutput(bytesWritten);
+
+            Length += bytesWritten;
+            AddNullTerminator();
+        }
+
+        private void AppendFormatUInt64(ulong value, char format, byte precision)
+        {
+            if (Overflowed) return;
+
+            if (!TryEnsureAdditionalCapacity(0))
+            {
+                Overflowed = true;
+                return;
+            }
+
+            int bytesWritten;
+
+            while (true)
+            {
+                // Exclude the null terminator from the buffer because Utf8Formatter doesn't handle it
+                Span<byte> availableBuffer = Buffer.Slice(Length, Capacity - Length);
+
+                bool bufferLargeEnough = Utf8Formatter.TryFormat(value, availableBuffer, out bytesWritten,
+                    new StandardFormat(format, precision));
+
+                if (bufferLargeEnough)
+                    break;
+
+                if (!AutoExpand)
+                {
+                    Overflowed = true;
+                    return;
+                }
+
+                Grow(availableBuffer.Length + 0x10);
+                Assert.True(Length + availableBuffer.Length < Capacity);
+            }
+
+            PadOutput(bytesWritten);
+
+            Length += bytesWritten;
+            AddNullTerminator();
+        }
+
+        private void AppendFormatFloat(float value, char format, byte precision)
+        {
+            if (Overflowed) return;
+
+            if (!TryEnsureAdditionalCapacity(0))
+            {
+                Overflowed = true;
+                return;
+            }
+
+            int bytesWritten;
+
+            while (true)
+            {
+                // Exclude the null terminator from the buffer because Utf8Formatter doesn't handle it
+                Span<byte> availableBuffer = Buffer.Slice(Length, Capacity - Length);
+
+                bool bufferLargeEnough = Utf8Formatter.TryFormat(value, availableBuffer, out bytesWritten,
+                    new StandardFormat(format, precision));
+
+                if (bufferLargeEnough)
+                    break;
+
+                if (!AutoExpand)
+                {
+                    Overflowed = true;
+                    return;
+                }
+
+                Grow(availableBuffer.Length + 0x10);
+                Assert.True(Length + availableBuffer.Length < Capacity);
+            }
+
+            PadOutput(bytesWritten);
+
+            Length += bytesWritten;
+            AddNullTerminator();
+        }
+
+        private void AppendFormatDouble(double value, char format, byte precision)
+        {
+            if (Overflowed) return;
+
+            if (!TryEnsureAdditionalCapacity(0))
+            {
+                Overflowed = true;
+                return;
+            }
+
+            int bytesWritten;
+
+            while (true)
+            {
+                // Exclude the null terminator from the buffer because Utf8Formatter doesn't handle it
+                Span<byte> availableBuffer = Buffer.Slice(Length, Capacity - Length);
+
+                bool bufferLargeEnough = Utf8Formatter.TryFormat(value, availableBuffer, out bytesWritten,
+                    new StandardFormat(format, precision));
+
+                if (bufferLargeEnough)
+                    break;
+
+                if (!AutoExpand)
+                {
+                    Overflowed = true;
+                    return;
+                }
+
+                Grow(availableBuffer.Length + 0x10);
+                Assert.True(Length + availableBuffer.Length < Capacity);
+            }
+
+            PadOutput(bytesWritten);
+
+            Length += bytesWritten;
             AddNullTerminator();
         }
 
@@ -131,6 +339,20 @@ namespace LibHac.Common
         internal void AppendFormatInternal(double value, char format = 'G', byte precision = 255) =>
             AppendFormatDouble(value, format, precision);
 
+        internal void PadLeftInternal(byte paddingCharacter, byte paddedLength)
+        {
+            PaddingType = PadType.Left;
+            PaddingCharacter = paddingCharacter;
+            PaddedLength = paddedLength;
+        }
+
+        internal void PadRightInternal(byte paddingCharacter, byte paddedLength)
+        {
+            PaddingType = PadType.Right;
+            PaddingCharacter = paddingCharacter;
+            PaddedLength = paddedLength;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private readonly bool HasCapacity(int requiredCapacity)
         {
@@ -139,12 +361,14 @@ namespace LibHac.Common
 
         private bool TryEnsureAdditionalCapacity(int requiredAdditionalCapacity)
         {
-            bool hasCapacity = HasCapacity(Length + requiredAdditionalCapacity);
+            int paddedLength = PaddingType != PadType.None ? PaddedLength : 0;
+            int requiredAfterPadding = Math.Max(paddedLength, requiredAdditionalCapacity);
+            bool hasCapacity = HasCapacity(Length + requiredAfterPadding);
 
             if (!hasCapacity && AutoExpand)
             {
-                Grow(requiredAdditionalCapacity);
-                Assert.True(HasCapacity(Length + requiredAdditionalCapacity));
+                Grow(requiredAfterPadding);
+                Assert.True(HasCapacity(Length + requiredAfterPadding));
                 hasCapacity = true;
             }
 
@@ -163,6 +387,7 @@ namespace LibHac.Common
                 ArrayPool<byte>.Shared.Rent(Math.Max(Length + requiredAdditionalCapacity, Capacity * 2));
 
             Buffer.Slice(0, Length).CopyTo(poolArray);
+            Buffer = poolArray;
 
             byte[] toReturn = _rentedArray;
             _rentedArray = poolArray;
@@ -177,90 +402,37 @@ namespace LibHac.Common
             if (Buffer.Length == 0) throw new ArgumentException("Buffer length must be greater than 0.");
         }
 
-        private void AppendFormatInt64(long value, ulong mask, char format, byte precision)
+        /// <summary>
+        /// Pads the output after being written to the buffer if necessary,
+        /// resetting the padding type to <see cref="PadType.None"/> afterward.
+        /// </summary>
+        /// <param name="bytesWritten">The length of the unpadded output string.</param>
+        /// <remarks>Because it involves moving the output string when left padding, this function is only used
+        /// when the length of the output string isn't known before writing it to the buffer.</remarks>
+        private void PadOutput(int bytesWritten)
         {
-            if (Overflowed) return;
-
-            // Remove possible sign extension if needed
-            if (mask == 'x' | mask == 'X')
+            if (PaddingType == PadType.Right && bytesWritten < PaddedLength)
             {
-                value &= (long)mask;
+                // Fill the remaining bytes to the right with the padding character
+                int paddingNeeded = PaddedLength - bytesWritten;
+                Buffer.Slice(Length + bytesWritten, paddingNeeded).Fill(PaddingCharacter);
+                PaddingType = PadType.None;
+                Length += paddingNeeded;
             }
-
-            // Exclude the null terminator from the buffer because Utf8Formatter doesn't handle it
-            Span<byte> availableBuffer = Buffer.Slice(Length, Capacity - Length);
-
-            bool bufferLargeEnough = Utf8Formatter.TryFormat(value, availableBuffer, out int bytesWritten,
-                new StandardFormat(format, precision));
-
-            if (!bufferLargeEnough)
+            else if (PaddingType == PadType.Left && bytesWritten < PaddedLength)
             {
-                Overflowed = true;
-                return;
+                int paddingNeeded = PaddedLength - bytesWritten;
+
+                // Move the printed bytes to the right to make room for the padding
+                Span<byte> source = Buffer.Slice(Length, bytesWritten);
+                Span<byte> dest = Buffer.Slice(Length + paddingNeeded, bytesWritten);
+                source.CopyTo(dest);
+
+                // Fill the leading bytes with the padding character
+                Buffer.Slice(Length, paddingNeeded).Fill(PaddingCharacter);
+                PaddingType = PadType.None;
+                Length += paddingNeeded;
             }
-
-            Length += bytesWritten;
-            AddNullTerminator();
-        }
-
-        private void AppendFormatUInt64(ulong value, char format, byte precision)
-        {
-            if (Overflowed) return;
-
-            // Exclude the null terminator from the buffer because Utf8Formatter doesn't handle it
-            Span<byte> availableBuffer = Buffer.Slice(Length, Capacity - Length);
-
-            bool bufferLargeEnough = Utf8Formatter.TryFormat(value, availableBuffer, out int bytesWritten,
-                new StandardFormat(format, precision));
-
-            if (!bufferLargeEnough)
-            {
-                Overflowed = true;
-                return;
-            }
-
-            Length += bytesWritten;
-            AddNullTerminator();
-        }
-
-        private void AppendFormatFloat(float value, char format, byte precision)
-        {
-            if (Overflowed) return;
-
-            // Exclude the null terminator from the buffer because Utf8Formatter doesn't handle it
-            Span<byte> availableBuffer = Buffer.Slice(Length, Capacity - Length);
-
-            bool bufferLargeEnough = Utf8Formatter.TryFormat(value, availableBuffer, out int bytesWritten,
-                new StandardFormat(format, precision));
-
-            if (!bufferLargeEnough)
-            {
-                Overflowed = true;
-                return;
-            }
-
-            Length += bytesWritten;
-            AddNullTerminator();
-        }
-
-        private void AppendFormatDouble(double value, char format, byte precision)
-        {
-            if (Overflowed) return;
-
-            // Exclude the null terminator from the buffer because Utf8Formatter doesn't handle it
-            Span<byte> availableBuffer = Buffer.Slice(Length, Capacity - Length);
-
-            bool bufferLargeEnough = Utf8Formatter.TryFormat(value, availableBuffer, out int bytesWritten,
-                new StandardFormat(format, precision));
-
-            if (!bufferLargeEnough)
-            {
-                Overflowed = true;
-                return;
-            }
-
-            Length += bytesWritten;
-            AddNullTerminator();
         }
 
         public override readonly string ToString() => StringUtils.Utf8ZToString(Buffer);
@@ -359,6 +531,34 @@ namespace LibHac.Common
             byte precision = 255)
         {
             sb.AppendFormatInternal(value, format, precision);
+            return ref sb;
+        }
+
+        /// <summary>
+        /// Set the parameters used to left-pad the next appended value.
+        /// </summary>
+        /// <param name="sb">The used string builder.</param>
+        /// <param name="paddingCharacter">The character used to pad the output.</param>
+        /// <param name="paddedLength">The minimum length of the output after padding.</param>
+        /// <returns>The used string builder.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref U8StringBuilder PadLeft(this ref U8StringBuilder sb, byte paddingCharacter, byte paddedLength)
+        {
+            sb.PadLeftInternal(paddingCharacter, paddedLength);
+            return ref sb;
+        }
+
+        /// <summary>
+        /// Set the parameters used to right-pad the next appended value.
+        /// </summary>
+        /// <param name="sb">The used string builder.</param>
+        /// <param name="paddingCharacter">The character used to pad the output.</param>
+        /// <param name="paddedLength">The minimum length of the output after padding.</param>
+        /// <returns>The used string builder.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref U8StringBuilder PadRight(this ref U8StringBuilder sb, byte paddingCharacter, byte paddedLength)
+        {
+            sb.PadRightInternal(paddingCharacter, paddedLength);
             return ref sb;
         }
     }
