@@ -10,4 +10,11 @@
     {
         bool TryLock();
     }
+
+    public interface ISharedMutex : ILockable
+    {
+        void LockShared();
+        bool TryLockShared();
+        void UnlockShared();
+    }
 }
