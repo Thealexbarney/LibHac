@@ -4,7 +4,7 @@ using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
-using LibHac.FsSystem.Detail;
+using LibHac.FsSystem.Impl;
 using LibHac.FsSystem.NcaUtils;
 
 namespace LibHac.FsSrv.FsCreator

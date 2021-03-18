@@ -2,7 +2,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
-using LibHac.Crypto.Detail;
+using LibHac.Crypto.Impl;
 using LibHac.Diag;
 
 using AesNi = System.Runtime.Intrinsics.X86.Aes;

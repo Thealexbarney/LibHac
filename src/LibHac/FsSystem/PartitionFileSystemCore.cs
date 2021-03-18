@@ -4,7 +4,7 @@ using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
-using LibHac.FsSystem.Detail;
+using LibHac.FsSystem.Impl;
 using LibHac.Util;
 
 namespace LibHac.FsSystem
