@@ -2,7 +2,7 @@
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem.RomFs;
 
-namespace LibHac.FsSrv.Creators
+namespace LibHac.FsSrv.FsCreator
 {
     public class RomFileSystemCreator : IRomFileSystemCreator
     {

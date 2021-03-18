@@ -1,7 +1,7 @@
 ﻿using System;
 using LibHac.Fs.Fsa;
 
-namespace LibHac.FsSrv.Creators
+namespace LibHac.FsSrv.FsCreator
 {
     public class TargetManagerFileSystemCreator : ITargetManagerFileSystemCreator
     {

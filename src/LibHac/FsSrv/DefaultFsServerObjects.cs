@@ -1,5 +1,5 @@
 ﻿using LibHac.Common.Keys;
-using LibHac.FsSrv.Creators;
+using LibHac.FsSrv.FsCreator;
 using LibHac.FsSrv.Sf;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 

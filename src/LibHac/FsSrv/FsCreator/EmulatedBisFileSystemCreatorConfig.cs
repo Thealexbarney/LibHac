@@ -3,7 +3,7 @@ using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
-namespace LibHac.FsSrv.Creators
+namespace LibHac.FsSrv.FsCreator
 {
     /// <summary>
     /// Configuration for <see cref="EmulatedBisFileSystemCreator"/> that specifies how each

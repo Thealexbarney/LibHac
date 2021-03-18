@@ -4,7 +4,7 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv.Impl;
 
-namespace LibHac.FsSrv.Creators
+namespace LibHac.FsSrv.FsCreator
 {
     /// <summary>
     /// Provides <see cref="IFileSystem"/> objects for the built-in storage (BIS) partitions.

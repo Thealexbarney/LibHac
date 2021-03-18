@@ -1,4 +1,4 @@
-﻿using LibHac.FsSrv.Creators;
+﻿using LibHac.FsSrv.FsCreator;
 
 namespace LibHac.FsSrv
 {

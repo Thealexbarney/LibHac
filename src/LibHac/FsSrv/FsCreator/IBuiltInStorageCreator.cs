@@ -1,6 +1,6 @@
 ﻿using LibHac.Fs;
 
-namespace LibHac.FsSrv.Creators
+namespace LibHac.FsSrv.FsCreator
 {
     public interface IBuiltInStorageCreator
     {
