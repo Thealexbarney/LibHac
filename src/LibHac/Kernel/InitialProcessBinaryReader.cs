@@ -51,7 +51,7 @@ namespace LibHac.Kernel
 
         public Result OpenKipStorage(out IStorage storage, int index)
         {
-            storage = default;
+            UnsafeHelpers.SkipParamInit(out storage);
 
             if ((uint)index >= _header.ProcessCount)
                 return ResultLibHac.ArgumentOutOfRange.Log();
@@ -66,7 +66,7 @@ namespace LibHac.Kernel
         {
             Assert.True(processCount <= MaxProcessCount);
 
-            kipOffsets = default;
+            UnsafeHelpers.SkipParamInit(out kipOffsets);
 
             var offsets = new (int offset, int size)[processCount];
             int offset = Unsafe.SizeOf<IniHeader>();

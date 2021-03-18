@@ -296,7 +296,7 @@ namespace LibHac.FsSystem.NcaUtils
 
             // Key areas using fixed, unencrypted keys always use the same keys.
             // Check for these keys by comparing the key area with the known hash of the fixed body keys.
-            Buffer32 hash = default;
+            Unsafe.SkipInit(out Buffer32 hash);
             Sha256.GenerateSha256Hash(keyArea.Slice(0, 0x20), hash);
 
             if (Nca0FixedBodyKeySha256Hash.SequenceEqual(hash))

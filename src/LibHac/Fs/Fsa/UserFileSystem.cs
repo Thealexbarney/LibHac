@@ -362,7 +362,7 @@ namespace LibHac.Fs.Fsa
 
         public static Result GetEntryType(this FileSystemClient fs, out DirectoryEntryType type, U8Span path)
         {
-            Unsafe.SkipInit(out type);
+            UnsafeHelpers.SkipParamInit(out type);
 
             Result rc;
             U8Span subPath;
@@ -414,7 +414,7 @@ namespace LibHac.Fs.Fsa
 
         public static Result GetFreeSpaceSize(this FileSystemClient fs, out long freeSpace, U8Span path)
         {
-            Unsafe.SkipInit(out freeSpace);
+            UnsafeHelpers.SkipParamInit(out freeSpace);
 
             Result rc;
             var subPath = U8Span.Empty;
@@ -482,7 +482,7 @@ namespace LibHac.Fs.Fsa
 
         public static Result OpenFile(this FileSystemClient fs, out FileHandle handle, U8Span path, OpenMode mode)
         {
-            handle = default;
+            UnsafeHelpers.SkipParamInit(out handle);
 
             Result rc;
             U8Span subPath;
@@ -539,7 +539,7 @@ namespace LibHac.Fs.Fsa
         public static Result OpenDirectory(this FileSystemClient fs, out DirectoryHandle handle, U8Span path,
             OpenDirectoryMode mode)
         {
-            handle = default;
+            UnsafeHelpers.SkipParamInit(out handle);
 
             Result rc;
             U8Span subPath;

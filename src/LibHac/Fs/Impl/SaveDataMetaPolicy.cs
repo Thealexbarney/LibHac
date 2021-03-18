@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+﻿using LibHac.Common;
 
 namespace LibHac.Fs.Impl
 {
@@ -14,7 +14,7 @@ namespace LibHac.Fs.Impl
 
         public void GenerateMetaInfo(out SaveDataMetaInfo metaInfo)
         {
-            Unsafe.SkipInit(out metaInfo);
+            UnsafeHelpers.SkipParamInit(out metaInfo);
 
             if (_type == SaveDataType.Account || _type == SaveDataType.Device)
             {

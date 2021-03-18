@@ -46,7 +46,7 @@ namespace LibHac.FsSystem
             }
 
             obj.Dispose();
-            created = default;
+            UnsafeHelpers.SkipParamInit(out created);
             return rc;
         }
 
@@ -185,7 +185,7 @@ namespace LibHac.FsSystem
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure())
             {
-                directory = default;
+                UnsafeHelpers.SkipParamInit(out directory);
                 return rc;
             }
 
@@ -197,7 +197,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
-            file = default;
+            UnsafeHelpers.SkipParamInit(out file);
 
             Unsafe.SkipInit(out FsPath fullPath);
 
@@ -261,7 +261,7 @@ namespace LibHac.FsSystem
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure())
             {
-                entryType = default;
+                UnsafeHelpers.SkipParamInit(out entryType);
                 return rc;
             }
 
@@ -324,7 +324,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
         {
-            freeSpace = default;
+            UnsafeHelpers.SkipParamInit(out freeSpace);
 
             Unsafe.SkipInit(out FsPath fullPath);
 
@@ -339,7 +339,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
         {
-            totalSpace = default;
+            UnsafeHelpers.SkipParamInit(out totalSpace);
 
             Unsafe.SkipInit(out FsPath fullPath);
 

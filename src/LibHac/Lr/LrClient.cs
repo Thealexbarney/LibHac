@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Ncm;
 
 namespace LibHac.Lr
@@ -17,7 +18,7 @@ namespace LibHac.Lr
 
         public Result OpenLocationResolver(out LocationResolver resolver, StorageId storageId)
         {
-            resolver = default;
+            UnsafeHelpers.SkipParamInit(out resolver);
             EnsureInitialized();
 
             Result rc = LrManager.OpenLocationResolver(out ReferenceCountedDisposable<ILocationResolver> baseResolver,
@@ -33,7 +34,7 @@ namespace LibHac.Lr
 
         public Result OpenRegisteredLocationResolver(out RegisteredLocationResolver resolver)
         {
-            resolver = default;
+            UnsafeHelpers.SkipParamInit(out resolver);
             EnsureInitialized();
 
             Result rc = LrManager.OpenRegisteredLocationResolver(
@@ -49,7 +50,7 @@ namespace LibHac.Lr
 
         public Result OpenAddOnContentLocationResolver(out AddOnContentLocationResolver resolver)
         {
-            resolver = default;
+            UnsafeHelpers.SkipParamInit(out resolver);
             EnsureInitialized();
 
             Result rc = LrManager.OpenAddOnContentLocationResolver(

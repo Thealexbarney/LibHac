@@ -15,11 +15,10 @@ namespace LibHac.Fs.Fsa
 
         public Result GetFileAttributes(out NxFileAttributes attributes, U8Span path)
         {
+            UnsafeHelpers.SkipParamInit(out attributes);
+
             if (path.IsNull())
-            {
-                attributes = default;
                 return ResultFs.NullptrArgument.Log();
-            }
 
             return DoGetFileAttributes(out attributes, path);
         }
@@ -34,11 +33,10 @@ namespace LibHac.Fs.Fsa
 
         public Result GetFileSize(out long fileSize, U8Span path)
         {
+            UnsafeHelpers.SkipParamInit(out fileSize);
+
             if (path.IsNull())
-            {
-                fileSize = default;
                 return ResultFs.NullptrArgument.Log();
-            }
 
             return DoGetFileSize(out fileSize, path);
         }

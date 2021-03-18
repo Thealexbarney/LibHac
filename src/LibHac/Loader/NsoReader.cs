@@ -26,6 +26,8 @@ namespace LibHac.Loader
 
         public Result GetSegmentSize(SegmentType segment, out uint size)
         {
+            UnsafeHelpers.SkipParamInit(out size);
+
             switch (segment)
             {
                 case SegmentType.Text:
@@ -34,7 +36,6 @@ namespace LibHac.Loader
                     size = Header.Segments[(int)segment].Size;
                     return Result.Success;
                 default:
-                    size = default;
                     return ResultLibHac.ArgumentOutOfRange.Log();
             }
         }
@@ -88,7 +89,7 @@ namespace LibHac.Loader
             // Check hash if necessary.
             if (checkHash)
             {
-                Buffer32 hash = default;
+                var hash = new Buffer32();
                 Crypto.Sha256.GenerateSha256Hash(buffer.Slice(0, (int)segment.Size), hash.Bytes);
 
                 if (hash.Bytes.SequenceCompareTo(fileHash.Bytes) != 0)

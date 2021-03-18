@@ -29,7 +29,7 @@ namespace LibHac.FsSrv
         public Result OpenCustomStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
             CustomStorageId storageId)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             ReferenceCountedDisposable<IFileSystem> tempFs = null;
             ReferenceCountedDisposable<IFileSystem> encryptedFs = null;
@@ -91,7 +91,7 @@ namespace LibHac.FsSrv
         public Result OpenHostFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, U8Span path,
             bool openCaseSensitive)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
             Result rc;
 
             if (!path.IsEmpty())

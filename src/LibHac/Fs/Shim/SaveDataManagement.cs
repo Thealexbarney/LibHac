@@ -65,7 +65,6 @@ namespace LibHac.Fs.Shim
     [SkipLocalsInit]
     public static class SaveDataManagement
     {
-
         internal static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
             out SaveDataExtraData extraData, ulong saveDataId)
         {
@@ -112,7 +111,7 @@ namespace LibHac.Fs.Shim
         internal static Result FindSaveDataWithFilter(this FileSystemClientImpl fs, out SaveDataInfo saveInfo,
             SaveDataSpaceId spaceId, in SaveDataFilter filter)
         {
-            saveInfo = default;
+            UnsafeHelpers.SkipParamInit(out saveInfo);
 
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
@@ -285,7 +284,7 @@ namespace LibHac.Fs.Shim
         public static Result OpenSaveDataIterator(this FileSystemClientImpl fs, out SaveDataIterator iterator,
             SaveDataSpaceId spaceId)
         {
-            iterator = default;
+            UnsafeHelpers.SkipParamInit(out iterator);
 
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
@@ -308,7 +307,7 @@ namespace LibHac.Fs.Shim
         public static Result OpenSaveDataIterator(this FileSystemClientImpl fs, out SaveDataIterator iterator,
             SaveDataSpaceId spaceId, in SaveDataFilter filter)
         {
-            iterator = default;
+            UnsafeHelpers.SkipParamInit(out iterator);
 
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
@@ -725,7 +724,7 @@ namespace LibHac.Fs.Shim
         public static Result QuerySaveDataTotalSize(this FileSystemClientImpl fs, out long totalSize, long size,
             long journalSize)
         {
-            Unsafe.SkipInit(out totalSize);
+            UnsafeHelpers.SkipParamInit(out totalSize);
 
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 

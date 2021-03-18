@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs;
 
 namespace LibHac.FsSrv.Creators
@@ -14,7 +15,7 @@ namespace LibHac.FsSrv.Creators
 
         public Result CreateReadOnly(GameCardHandle handle, out ReferenceCountedDisposable<IStorage> storage)
         {
-            storage = default;
+            UnsafeHelpers.SkipParamInit(out storage);
 
             if (GameCard.IsGameCardHandleInvalid(handle))
             {
@@ -33,7 +34,7 @@ namespace LibHac.FsSrv.Creators
 
         public Result CreateSecureReadOnly(GameCardHandle handle, out ReferenceCountedDisposable<IStorage> storage)
         {
-            storage = default;
+            UnsafeHelpers.SkipParamInit(out storage);
 
             if (GameCard.IsGameCardHandleInvalid(handle))
             {
@@ -82,7 +83,8 @@ namespace LibHac.FsSrv.Creators
                 Handle = handle;
             }
 
-            public ReadOnlyGameCardStorage(EmulatedGameCard gameCard, GameCardHandle handle, ReadOnlySpan<byte> deviceId, ReadOnlySpan<byte> imageHash)
+            public ReadOnlyGameCardStorage(EmulatedGameCard gameCard, GameCardHandle handle,
+                ReadOnlySpan<byte> deviceId, ReadOnlySpan<byte> imageHash)
             {
                 GameCard = gameCard;
                 Handle = handle;
@@ -116,7 +118,7 @@ namespace LibHac.FsSrv.Creators
 
             protected override Result DoGetSize(out long size)
             {
-                size = 0;
+                UnsafeHelpers.SkipParamInit(out size);
 
                 Result rc = GameCard.GetCardInfo(out GameCardInfo info, Handle);
                 if (rc.IsFailure()) return rc;

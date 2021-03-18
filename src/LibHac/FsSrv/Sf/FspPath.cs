@@ -25,7 +25,7 @@ namespace LibHac.FsSrv.Sf
 
         public static Result FromSpan(out FspPath fspPath, ReadOnlySpan<byte> path)
         {
-            Unsafe.SkipInit(out fspPath);
+            UnsafeHelpers.SkipParamInit(out fspPath);
 
             Span<byte> str = SpanHelpers.AsByteSpan(ref fspPath);
 
@@ -40,7 +40,7 @@ namespace LibHac.FsSrv.Sf
 
         public static void CreateEmpty(out FspPath fspPath)
         {
-            Unsafe.SkipInit(out fspPath);
+            UnsafeHelpers.SkipParamInit(out fspPath);
             SpanHelpers.AsByteSpan(ref fspPath)[0] = 0;
         }
 

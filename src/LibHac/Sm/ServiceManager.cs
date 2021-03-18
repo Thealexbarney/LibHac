@@ -15,7 +15,7 @@ namespace LibHac.Sm
 
         internal Result GetService(out object serviceObject, ServiceName serviceName)
         {
-            serviceObject = default;
+            UnsafeHelpers.SkipParamInit(out serviceObject);
 
             Result rc = ValidateServiceName(serviceName);
             if (rc.IsFailure()) return rc;

@@ -208,7 +208,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
-            directory = default;
+            UnsafeHelpers.SkipParamInit(out directory);
 
             if (IsConcatenationFile(path))
             {
@@ -224,7 +224,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
-            file = default;
+            UnsafeHelpers.SkipParamInit(out file);
 
             if (!IsConcatenationFile(path))
             {
@@ -326,7 +326,7 @@ namespace LibHac.FsSystem
 
         private Result GetSubFileCount(out int fileCount, U8Span dirPath)
         {
-            fileCount = default;
+            UnsafeHelpers.SkipParamInit(out fileCount);
 
             Unsafe.SkipInit(out FsPath buffer);
 
@@ -376,8 +376,7 @@ namespace LibHac.FsSystem
 
         internal Result GetConcatenationFileSize(out long size, ReadOnlySpan<byte> path)
         {
-            size = default;
-
+            UnsafeHelpers.SkipParamInit(out size);
             Unsafe.SkipInit(out FsPath buffer);
 
             int pathLen = StringUtils.Copy(buffer.Str, path);

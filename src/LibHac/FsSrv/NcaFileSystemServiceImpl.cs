@@ -75,9 +75,8 @@ namespace LibHac.FsSrv
             out CodeVerificationData verificationData, U8Span path, FileSystemProxyType type,
             bool canMountSystemDataPrivate, ulong id)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem, out verificationData);
 
-            Unsafe.SkipInit(out verificationData);
             if (!Unsafe.IsNullRef(ref verificationData))
                 verificationData.IsValid = false;
 
@@ -201,7 +200,7 @@ namespace LibHac.FsSrv
         public Result OpenFileSystemWithPatch(out ReferenceCountedDisposable<IFileSystem> fileSystem,
             U8Span originalNcaPath, U8Span currentNcaPath, FileSystemProxyType fsType, ulong id)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             ReferenceCountedDisposable<IStorage> romFsStorage = null;
             try
@@ -223,12 +222,11 @@ namespace LibHac.FsSrv
         {
             const int storagePathMaxLen = 0x40;
 
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             ReferenceCountedDisposable<IFileSystem> baseFileSystem = null;
             ReferenceCountedDisposable<IFileSystem> subDirFileSystem = null;
             ReferenceCountedDisposable<IFileSystem> encryptedFileSystem = null;
-
             try
             {
                 Result rc;
@@ -341,7 +339,7 @@ namespace LibHac.FsSrv
         private Result ParseMountName(ref U8Span path,
             out ReferenceCountedDisposable<IFileSystem> fileSystem, out bool shouldContinue, out MountInfo info)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             info = new MountInfo();
             shouldContinue = true;
@@ -505,7 +503,7 @@ namespace LibHac.FsSrv
 
         private Result CheckDirOrNcaOrNsp(ref U8Span path, out bool isDirectory)
         {
-            isDirectory = default;
+            UnsafeHelpers.SkipParamInit(out isDirectory);
 
             ReadOnlySpan<byte> mountSeparator = new[] { (byte)':', (byte)'/' };
 
@@ -546,7 +544,7 @@ namespace LibHac.FsSrv
             out ReferenceCountedDisposable<IFileSystem> contentFileSystem,
             ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, FileSystemProxyType fsType, bool preserveUnc)
         {
-            contentFileSystem = default;
+            UnsafeHelpers.SkipParamInit(out contentFileSystem);
 
             ReferenceCountedDisposable<IFileSystem> subDirFs = null;
             try
@@ -566,7 +564,7 @@ namespace LibHac.FsSrv
             out ReferenceCountedDisposable<IFileSystem> contentFileSystem,
            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span path)
         {
-            contentFileSystem = default;
+            UnsafeHelpers.SkipParamInit(out contentFileSystem);
             Unsafe.SkipInit(out FsPath fullPath);
 
             var sb = new U8StringBuilder(fullPath.Str);
@@ -594,7 +592,7 @@ namespace LibHac.FsSrv
         private Result ParseNsp(ref U8Span path, out ReferenceCountedDisposable<IFileSystem> fileSystem,
             ReferenceCountedDisposable<IFileSystem> baseFileSystem)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             ReadOnlySpan<byte> nspExtension = new[] { (byte)'.', (byte)'n', (byte)'s', (byte)'p' };
 
@@ -653,7 +651,7 @@ namespace LibHac.FsSrv
         private Result ParseNca(ref U8Span path, out Nca nca, ReferenceCountedDisposable<IFileSystem> baseFileSystem,
             ulong ncaId)
         {
-            nca = default;
+            UnsafeHelpers.SkipParamInit(out nca);
 
             // Todo: Create ref-counted storage
             var ncaFileStorage = new FileStorageBasedFileSystem();
@@ -681,7 +679,7 @@ namespace LibHac.FsSrv
         private Result ParseContentTypeForDirectory(out ReferenceCountedDisposable<IFileSystem> fileSystem,
             ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, FileSystemProxyType fsType)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
             ReadOnlySpan<byte> dirName;
 
             // Get the name of the subdirectory for the filesystem type
@@ -751,8 +749,7 @@ namespace LibHac.FsSrv
         private Result OpenStorageByContentType(out ReferenceCountedDisposable<IStorage> ncaStorage, Nca nca,
             out NcaFormatType fsType, FileSystemProxyType fsProxyType, bool isGameCard, bool canMountSystemDataPrivate)
         {
-            ncaStorage = default;
-            fsType = default;
+            UnsafeHelpers.SkipParamInit(out ncaStorage, out fsType);
 
             NcaContentType contentType = nca.Header.ContentType;
 
@@ -821,7 +818,7 @@ namespace LibHac.FsSrv
         public Result ResolveRomReferenceProgramId(out ProgramId targetProgramId, ProgramId programId,
             byte programIndex)
         {
-            Unsafe.SkipInit(out targetProgramId);
+            UnsafeHelpers.SkipParamInit(out targetProgramId);
 
             ProgramId mainProgramId = _config.ProgramRegistryService.GetProgramIdByIndex(programId, programIndex);
             if (mainProgramId == ProgramId.InvalidId)
@@ -914,7 +911,7 @@ namespace LibHac.FsSrv
 
         public Result OpenHostFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, U8Span path, bool openCaseSensitive)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
             Result rc;
 
             if (!path.IsEmpty())
@@ -987,7 +984,7 @@ namespace LibHac.FsSrv
                     index = 2;
                     return Result.Success;
                 default:
-                    index = default;
+                    UnsafeHelpers.SkipParamInit(out index);
                     return ResultFs.InvalidArgument.Log();
             }
         }

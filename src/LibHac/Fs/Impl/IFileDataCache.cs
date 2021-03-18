@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
+using LibHac.Common;
 using LibHac.Common.FixedArrays;
 using LibHac.Diag;
 using LibHac.Fs.Fsa;
@@ -19,7 +19,7 @@ namespace LibHac.Fs.Impl
         public Result Read(IFile file, out long bytesRead, long offset, Span<byte> destination, in ReadOption option,
             ref FileDataCacheAccessResult cacheAccessResult)
         {
-            Unsafe.SkipInit(out bytesRead);
+            UnsafeHelpers.SkipParamInit(out bytesRead);
 
             if (destination.Length == 0)
             {

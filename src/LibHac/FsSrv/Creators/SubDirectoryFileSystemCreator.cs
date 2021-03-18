@@ -15,7 +15,7 @@ namespace LibHac.FsSrv.Creators
         public Result Create(out ReferenceCountedDisposable<IFileSystem> subDirFileSystem,
            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span path, bool preserveUnc)
         {
-            subDirFileSystem = default;
+            UnsafeHelpers.SkipParamInit(out subDirFileSystem);
 
             // Verify the sub-path exists
             Result rc = baseFileSystem.Target.OpenDirectory(out IDirectory _, path, OpenDirectoryMode.Directory);

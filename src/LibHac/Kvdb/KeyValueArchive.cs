@@ -72,7 +72,7 @@ namespace LibHac.Kvdb
 
         public Result ReadEntryCount(out int count)
         {
-            Unsafe.SkipInit(out count);
+            UnsafeHelpers.SkipParamInit(out count);
 
             // This should only be called at the start of reading stream.
             Assert.True(_offset == 0);
@@ -92,14 +92,13 @@ namespace LibHac.Kvdb
 
         public Result GetKeyValueSize(out int keySize, out int valueSize)
         {
-            Unsafe.SkipInit(out keySize);
-            Unsafe.SkipInit(out valueSize);
+            UnsafeHelpers.SkipParamInit(out keySize, out valueSize);
 
             // This should only be called after ReadEntryCount.
             Assert.NotEqual(_offset, 0);
 
             // Peek the next entry header.
-            KeyValueArchiveEntryHeader header = default;
+            Unsafe.SkipInit(out KeyValueArchiveEntryHeader header);
 
             Result rc = Peek(SpanHelpers.AsByteSpan(ref header));
             if (rc.IsFailure()) return rc;
@@ -119,7 +118,7 @@ namespace LibHac.Kvdb
             Assert.NotEqual(_offset, 0);
 
             // Read the next entry header.
-            KeyValueArchiveEntryHeader header = default;
+            Unsafe.SkipInit(out KeyValueArchiveEntryHeader header);
 
             Result rc = Read(SpanHelpers.AsByteSpan(ref header));
             if (rc.IsFailure()) return rc;

@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Lr;
@@ -27,7 +28,7 @@ namespace LibHac.FsSrv.Impl
 
         private Result GetLocationResolver(out LocationResolver resolver, StorageId storageId)
         {
-            resolver = default;
+            UnsafeHelpers.SkipParamInit(out resolver);
 
             if (!IsValidStorageId(storageId))
                 return ResultLr.LocationResolverNotFound.Log();
@@ -52,7 +53,7 @@ namespace LibHac.FsSrv.Impl
             if (rc.IsFailure())
             {
                 lr?.Dispose();
-                resolver = default;
+                UnsafeHelpers.SkipParamInit(out resolver);
                 return rc;
             }
 
@@ -69,7 +70,7 @@ namespace LibHac.FsSrv.Impl
                 Result rc = Hos.Lr.OpenAddOnContentLocationResolver(out AddOnContentLocationResolver lr);
                 if (rc.IsFailure())
                 {
-                    resolver = default;
+                    UnsafeHelpers.SkipParamInit(out resolver);
                     return rc;
                 }
 

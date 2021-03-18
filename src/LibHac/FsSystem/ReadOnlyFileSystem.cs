@@ -35,7 +35,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
-            file = default;
+            UnsafeHelpers.SkipParamInit(out file);
 
             Result rc = BaseFs.OpenFile(out IFile baseFile, path, mode);
             if (rc.IsFailure()) return rc;

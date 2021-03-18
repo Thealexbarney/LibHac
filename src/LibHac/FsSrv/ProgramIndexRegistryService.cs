@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSrv.Impl;
 using LibHac.Sf;
@@ -73,8 +73,7 @@ namespace LibHac.FsSrv
         /// in the program registry. Something's wrong with Loader if this happens.</returns>
         public Result GetProgramIndex(out int programIndex, out int programCount)
         {
-            Unsafe.SkipInit(out programIndex);
-            Unsafe.SkipInit(out programCount);
+            UnsafeHelpers.SkipParamInit(out programIndex, out programCount);
 
             // No permissions are needed to call this method
             Result rc = GetProgramInfo(out ProgramInfo programInfo, ProcessId);

@@ -22,7 +22,7 @@ namespace LibHac.FsSrv.Storage
         private static Result GetMmcManagerOperator(this StorageService service,
             out ReferenceCountedDisposable<IStorageDeviceOperator> deviceOperator)
         {
-            deviceOperator = null;
+            UnsafeHelpers.SkipParamInit(out deviceOperator);
 
             ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
             try
@@ -40,7 +40,7 @@ namespace LibHac.FsSrv.Storage
 
         private static Result GetAttribute(out ulong attribute, MmcPartition partition)
         {
-            Unsafe.SkipInit(out attribute);
+            UnsafeHelpers.SkipParamInit(out attribute);
 
             switch (partition)
             {
@@ -66,7 +66,7 @@ namespace LibHac.FsSrv.Storage
         private static Result GetMmcOperator(this StorageService service,
             out ReferenceCountedDisposable<IStorageDeviceOperator> mmcOperator, MmcPartition partition)
         {
-            mmcOperator = null;
+            UnsafeHelpers.SkipParamInit(out mmcOperator);
 
             ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
             try
@@ -109,7 +109,7 @@ namespace LibHac.FsSrv.Storage
         public static Result OpenMmcStorage(this StorageService service,
             out ReferenceCountedDisposable<IStorage> storage, MmcPartition partition)
         {
-            storage = default;
+            UnsafeHelpers.SkipParamInit(out storage);
 
             ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
             try
@@ -153,7 +153,7 @@ namespace LibHac.FsSrv.Storage
 
         public static Result GetMmcSpeedMode(this StorageService service, out MmcSpeedMode speedMode)
         {
-            Unsafe.SkipInit(out speedMode);
+            UnsafeHelpers.SkipParamInit(out speedMode);
 
             ReferenceCountedDisposable<IStorageDeviceOperator> mmcOperator = null;
             try
@@ -224,7 +224,7 @@ namespace LibHac.FsSrv.Storage
 
         public static Result GetMmcPartitionSize(this StorageService service, out long size, MmcPartition partition)
         {
-            Unsafe.SkipInit(out size);
+            UnsafeHelpers.SkipParamInit(out size);
 
             ReferenceCountedDisposable<IStorageDeviceOperator> mmcOperator = null;
             try
@@ -245,7 +245,7 @@ namespace LibHac.FsSrv.Storage
 
         public static Result GetMmcPatrolCount(this StorageService service, out uint count)
         {
-            Unsafe.SkipInit(out count);
+            UnsafeHelpers.SkipParamInit(out count);
 
             ReferenceCountedDisposable<IStorageDeviceOperator> mmcOperator = null;
             try
@@ -267,8 +267,7 @@ namespace LibHac.FsSrv.Storage
         public static Result GetAndClearMmcErrorInfo(this StorageService service, out StorageErrorInfo errorInfo,
             out long logSize, Span<byte> logBuffer)
         {
-            Unsafe.SkipInit(out errorInfo);
-            Unsafe.SkipInit(out logSize);
+            UnsafeHelpers.SkipParamInit(out errorInfo, out logSize);
 
             ReferenceCountedDisposable<IStorageDeviceOperator> mmcOperator = null;
             try
@@ -347,8 +346,7 @@ namespace LibHac.FsSrv.Storage
         public static Result GetAndClearPatrolReadAllocateBufferCount(this StorageService service,
             out long successCount, out long failureCount)
         {
-            Unsafe.SkipInit(out successCount);
-            Unsafe.SkipInit(out failureCount);
+            UnsafeHelpers.SkipParamInit(out successCount, out failureCount);
 
             ReferenceCountedDisposable<IStorageDeviceOperator> mmcOperator = null;
             try

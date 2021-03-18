@@ -1,6 +1,7 @@
 ﻿using System;
 using LibHac.Bcat.Detail.Ipc;
 using LibHac.Bcat.Detail.Service.Core;
+using LibHac.Common;
 
 namespace LibHac.Bcat.Detail.Service
 {
@@ -50,10 +51,10 @@ namespace LibHac.Bcat.Detail.Service
 
         public Result Read(out int entriesRead, Span<DeliveryCacheDirectoryEntry> entryBuffer)
         {
+            UnsafeHelpers.SkipParamInit(out entriesRead);
+
             lock (Locker)
             {
-                entriesRead = default;
-
                 if (!IsDirectoryOpen)
                     return ResultBcat.NotOpen.Log();
 
@@ -84,11 +85,12 @@ namespace LibHac.Bcat.Detail.Service
 
         public Result GetCount(out int count)
         {
+            UnsafeHelpers.SkipParamInit(out count);
+
             lock (Locker)
             {
                 if (!IsDirectoryOpen)
                 {
-                    count = default;
                     return ResultBcat.NotOpen.Log();
                 }
 

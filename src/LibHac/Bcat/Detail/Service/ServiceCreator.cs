@@ -1,5 +1,6 @@
 ﻿using LibHac.Arp;
 using LibHac.Bcat.Detail.Ipc;
+using LibHac.Common;
 
 namespace LibHac.Bcat.Detail.Service
 {
@@ -25,7 +26,7 @@ namespace LibHac.Bcat.Detail.Service
 
             if (rc.IsFailure())
             {
-                service = default;
+                UnsafeHelpers.SkipParamInit(out service);
                 return ResultBcat.NotFound.LogConverted(rc);
             }
 
@@ -37,7 +38,7 @@ namespace LibHac.Bcat.Detail.Service
         {
             if (!AccessControl.HasFlag(AccessControl.MountOthersDeliveryCacheStorage))
             {
-                service = default;
+                UnsafeHelpers.SkipParamInit(out service);
                 return ResultBcat.PermissionDenied.Log();
             }
 
@@ -47,7 +48,7 @@ namespace LibHac.Bcat.Detail.Service
         private Result CreateDeliveryCacheStorageServiceImpl(out IDeliveryCacheStorageService service,
             ApplicationId applicationId)
         {
-            service = default;
+            UnsafeHelpers.SkipParamInit(out service);
 
             Result rc = Server.GetStorageManager().Open(applicationId.Value);
             if (rc.IsFailure()) return rc;

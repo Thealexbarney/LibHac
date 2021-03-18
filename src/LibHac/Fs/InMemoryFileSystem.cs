@@ -70,7 +70,7 @@ namespace LibHac.Fs
 
         protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
-            directory = default;
+            UnsafeHelpers.SkipParamInit(out directory);
 
             Result rs = FsTable.GetDirectory(new U8Span(path), out DirectoryNode dirNode);
             if (rs.IsFailure()) return rs;
@@ -81,7 +81,7 @@ namespace LibHac.Fs
 
         protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
-            file = default;
+            UnsafeHelpers.SkipParamInit(out file);
 
             Result rc = FsTable.GetFile(path, out FileNode fileNode);
             if (rc.IsFailure()) return rc;
@@ -103,6 +103,8 @@ namespace LibHac.Fs
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
+            UnsafeHelpers.SkipParamInit(out entryType);
+
             if (FsTable.GetFile(path, out _).IsSuccess())
             {
                 entryType = DirectoryEntryType.File;
@@ -115,7 +117,6 @@ namespace LibHac.Fs
                 return Result.Success;
             }
 
-            entryType = default;
             return ResultFs.PathNotFound.Log();
         }
 
@@ -126,6 +127,8 @@ namespace LibHac.Fs
 
         protected override Result DoGetFileAttributes(out NxFileAttributes attributes, U8Span path)
         {
+            UnsafeHelpers.SkipParamInit(out attributes);
+
             if (FsTable.GetFile(path, out FileNode file).IsSuccess())
             {
                 attributes = file.Attributes;
@@ -138,7 +141,6 @@ namespace LibHac.Fs
                 return Result.Success;
             }
 
-            attributes = default;
             return ResultFs.PathNotFound.Log();
         }
 
@@ -161,12 +163,13 @@ namespace LibHac.Fs
 
         protected override Result DoGetFileSize(out long fileSize, U8Span path)
         {
+            UnsafeHelpers.SkipParamInit(out fileSize);
+
             if (FsTable.GetFile(path, out FileNode file).IsSuccess())
             {
                 return file.File.GetSize(out fileSize);
             }
 
-            fileSize = default;
             return ResultFs.PathNotFound.Log();
         }
 
@@ -346,7 +349,7 @@ namespace LibHac.Fs
                 {
                     if (offset > BaseStream.Length)
                     {
-                        bytesRead = default;
+                        bytesRead = 0;
                         return ResultFs.OutOfRange.Log();
                     }
 
@@ -626,7 +629,7 @@ namespace LibHac.Fs
                 Result rc = FindDirectory(parentPath, out DirectoryNode parentNode);
                 if (rc.IsFailure())
                 {
-                    file = default;
+                    UnsafeHelpers.SkipParamInit(out file);
                     return rc;
                 }
 
@@ -654,7 +657,7 @@ namespace LibHac.Fs
 
                     if (!TryFindChildDirectory(currentDir, current, out DirectoryNode child))
                     {
-                        directory = default;
+                        UnsafeHelpers.SkipParamInit(out directory);
                         return ResultFs.PathNotFound.Log();
                     }
 
@@ -680,7 +683,7 @@ namespace LibHac.Fs
                     currentChild = currentChild.Next;
                 }
 
-                child = default;
+                UnsafeHelpers.SkipParamInit(out child);
                 return false;
             }
 
@@ -699,7 +702,7 @@ namespace LibHac.Fs
                     currentChild = currentChild.Next;
                 }
 
-                child = default;
+                UnsafeHelpers.SkipParamInit(out child);
                 return false;
             }
 

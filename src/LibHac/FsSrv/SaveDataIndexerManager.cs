@@ -57,14 +57,14 @@ namespace LibHac.FsSrv
         public Result OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, out bool neededInit,
             SaveDataSpaceId spaceId)
         {
-            neededInit = false;
-            UniqueLock indexerLock = default;
+            UnsafeHelpers.SkipParamInit(out neededInit);
 
             if (IsBisUserRedirectionEnabled && spaceId == SaveDataSpaceId.User)
             {
                 spaceId = SaveDataSpaceId.ProperSystem;
             }
 
+            UniqueLock indexerLock = default;
             try
             {
                 ISaveDataIndexer indexer;

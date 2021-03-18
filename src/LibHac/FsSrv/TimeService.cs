@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSrv.Impl;
 using LibHac.Os;
@@ -66,8 +67,7 @@ namespace LibHac.FsSrv
 
         public Result GetCurrentPosixTimeWithTimeDifference(out long currentTime, out int timeDifference)
         {
-            Unsafe.SkipInit(out currentTime);
-            Unsafe.SkipInit(out timeDifference);
+            UnsafeHelpers.SkipParamInit(out currentTime, out timeDifference);
 
             using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
 

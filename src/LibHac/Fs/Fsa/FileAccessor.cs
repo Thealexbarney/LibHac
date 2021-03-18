@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs.Fsa;
@@ -84,7 +83,7 @@ namespace LibHac.Fs.Impl
 
         public Result Read(out long bytesRead, long offset, Span<byte> destination, in ReadOption option)
         {
-            Unsafe.SkipInit(out bytesRead);
+            UnsafeHelpers.SkipParamInit(out bytesRead);
 
             Result rc;
             Span<byte> logBuffer = stackalloc byte[0x50];
@@ -208,7 +207,7 @@ namespace LibHac.Fs.Impl
 
         public Result GetSize(out long size)
         {
-            Unsafe.SkipInit(out size);
+            UnsafeHelpers.SkipParamInit(out size);
 
             if (_lastResult.IsFailure())
                 return _lastResult;

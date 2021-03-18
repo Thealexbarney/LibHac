@@ -124,7 +124,7 @@ namespace LibHac.FsSrv.Impl
         public static Result CreateSubDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystem> subDirFileSystem,
             ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span subPath, bool preserveUnc = false)
         {
-            subDirFileSystem = default;
+            UnsafeHelpers.SkipParamInit(out subDirFileSystem);
 
             // Check if the directory exists
             Result rc = baseFileSystem.Target.OpenDirectory(out IDirectory dir, subPath, OpenDirectoryMode.Directory);
@@ -146,7 +146,7 @@ namespace LibHac.FsSrv.Impl
         public static Result WrapSubDirectory(out ReferenceCountedDisposable<IFileSystem> fileSystem,
             ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span path, bool createIfMissing)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             // The path must already exist if we're not automatically creating it
             if (!createIfMissing)

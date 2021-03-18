@@ -157,7 +157,7 @@ namespace LibHac.Kvdb
         /// The specified key was not found in the <see cref="FlatMapKeyValueStore{T}"/>.</remarks>
         public Result Get(out int valueSize, in TKey key, Span<byte> valueBuffer)
         {
-            Unsafe.SkipInit(out valueSize);
+            UnsafeHelpers.SkipParamInit(out valueSize);
 
             // Find entry.
             ConstIterator iterator = _index.GetLowerBoundConstIterator(in key);
@@ -292,7 +292,7 @@ namespace LibHac.Kvdb
                 try
                 {
                     // Read key and value.
-                    TKey key = default;
+                    Unsafe.SkipInit(out TKey key);
 
                     rc = reader.ReadKeyValue(SpanHelpers.AsByteSpan(ref key), newValue.Get());
                     if (rc.IsFailure()) return rc;

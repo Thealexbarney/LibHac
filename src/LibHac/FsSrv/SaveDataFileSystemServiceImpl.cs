@@ -59,7 +59,7 @@ namespace LibHac.FsSrv
 
         public Result DoesSaveDataEntityExist(out bool exists, SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            Unsafe.SkipInit(out exists);
+            UnsafeHelpers.SkipParamInit(out exists);
 
             ReferenceCountedDisposable<IFileSystem> fileSystem = null;
             try
@@ -99,7 +99,7 @@ namespace LibHac.FsSrv
             SaveDataSpaceId spaceId, ulong saveDataId, U8Span saveDataRootPath, bool openReadOnly, SaveDataType type,
             bool cacheExtraData)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             ReferenceCountedDisposable<IFileSystem> saveDirectoryFs = null;
             ReferenceCountedDisposable<SaveDataFileSystem> cachedSaveDataFs = null;
@@ -279,7 +279,7 @@ namespace LibHac.FsSrv
         public Result OpenSaveDataMeta(out IFile metaFile, ulong saveDataId, SaveDataSpaceId spaceId,
             SaveDataMetaType metaType)
         {
-            metaFile = default;
+            UnsafeHelpers.SkipParamInit(out metaFile);
 
             ReferenceCountedDisposable<IFileSystem> metaDirFs = null;
             try
@@ -386,7 +386,7 @@ namespace LibHac.FsSrv
             ulong saveDataId, SaveDataType type, U8Span saveDataRootPath)
         {
             // Todo: Find a way to store extra data for directory save data
-            extraData = default;
+            extraData = new SaveDataExtraData();
             return Result.Success;
         }
 
@@ -412,7 +412,7 @@ namespace LibHac.FsSrv
         {
             if (allowEmulatedSave && IsAllowedDirectorySaveData(spaceId, saveDataRootPath))
             {
-                fileSystem = default;
+                UnsafeHelpers.SkipParamInit(out fileSystem);
                 ReferenceCountedDisposable<IFileSystem> tmFs = null;
 
                 try
@@ -469,7 +469,7 @@ namespace LibHac.FsSrv
         public Result OpenSaveDataDirectoryFileSystemImpl(out ReferenceCountedDisposable<IFileSystem> fileSystem,
             SaveDataSpaceId spaceId, U8Span basePath, bool createIfMissing)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             ReferenceCountedDisposable<IFileSystem> tempFs = null;
             ReferenceCountedDisposable<IFileSystem> tempSubFs = null;
@@ -614,7 +614,7 @@ namespace LibHac.FsSrv
 
         public Result GetSaveDataIndexCount(out int count)
         {
-            Unsafe.SkipInit(out count);
+            UnsafeHelpers.SkipParamInit(out count);
 
             SaveDataIndexerAccessor accessor = null;
             try

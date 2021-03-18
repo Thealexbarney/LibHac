@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSrv.Creators;
 using LibHac.FsSrv.Impl;
@@ -23,7 +23,7 @@ namespace LibHac.FsSrv
 
         public Result OpenBisStorage(out ReferenceCountedDisposable<IStorageSf> storage, BisPartitionId id)
         {
-            storage = default;
+            UnsafeHelpers.SkipParamInit(out storage);
 
             var storageFlag = StorageType.Bis;
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
@@ -73,7 +73,7 @@ namespace LibHac.FsSrv
         public Result OpenGameCardStorage(out ReferenceCountedDisposable<IStorageSf> storage, GameCardHandle handle,
             GameCardPartitionRaw partitionId)
         {
-            storage = default;
+            UnsafeHelpers.SkipParamInit(out storage);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -111,7 +111,7 @@ namespace LibHac.FsSrv
 
         public Result OpenSdCardDetectionEventNotifier(out ReferenceCountedDisposable<IEventNotifier> eventNotifier)
         {
-            eventNotifier = default;
+            UnsafeHelpers.SkipParamInit(out eventNotifier);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -124,7 +124,7 @@ namespace LibHac.FsSrv
 
         public Result OpenGameCardDetectionEventNotifier(out ReferenceCountedDisposable<IEventNotifier> eventNotifier)
         {
-            eventNotifier = default;
+            UnsafeHelpers.SkipParamInit(out eventNotifier);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -155,7 +155,7 @@ namespace LibHac.FsSrv
         private static Result GetAccessibilityForOpenBisPartition(out Accessibility accessibility, ProgramInfo programInfo,
             BisPartitionId partitionId)
         {
-            Unsafe.SkipInit(out accessibility);
+            UnsafeHelpers.SkipParamInit(out accessibility);
 
             AccessibilityType type = partitionId switch
             {
@@ -228,7 +228,7 @@ namespace LibHac.FsSrv
                 case GameCardPartitionRaw.RootWriteOnly:
                     return Config.GameCardStorageCreator.CreateWriteOnly(handle, out storage);
                 default:
-                    storage = default;
+                    UnsafeHelpers.SkipParamInit(out storage);
                     return ResultFs.InvalidArgument.Log();
             }
         }

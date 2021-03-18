@@ -33,7 +33,7 @@ namespace LibHac.Fs.Impl
 
         public Result Find(out FileSystemAccessor accessor, U8Span name)
         {
-            accessor = default;
+            UnsafeHelpers.SkipParamInit(out accessor);
             using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
 
             for (LinkedListNode<FileSystemAccessor> currentNode = _fileSystemList.First;

@@ -23,7 +23,7 @@ namespace LibHac.FsSrv
 
         public Result Read(out long readCount, OutBuffer saveDataInfoBuffer)
         {
-            readCount = default;
+            UnsafeHelpers.SkipParamInit(out readCount);
 
             Span<SaveDataInfo> outInfo = MemoryMarshal.Cast<byte, SaveDataInfo>(saveDataInfoBuffer.Buffer);
 

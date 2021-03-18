@@ -18,7 +18,7 @@ namespace LibHac.Fs.Shim
 
         public static Result GetRightsId(this FileSystemClient fs, out FsRightsId rightsId, U8Span path)
         {
-            rightsId = default;
+            UnsafeHelpers.SkipParamInit(out rightsId);
 
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
@@ -30,8 +30,7 @@ namespace LibHac.Fs.Shim
 
         public static Result GetRightsId(this FileSystemClient fs, out FsRightsId rightsId, out byte keyGeneration, U8Span path)
         {
-            rightsId = default;
-            keyGeneration = default;
+            UnsafeHelpers.SkipParamInit(out rightsId, out keyGeneration);
 
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 

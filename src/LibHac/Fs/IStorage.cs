@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using LibHac.Common;
 
 namespace LibHac.Fs
 {
@@ -84,11 +85,10 @@ namespace LibHac.Fs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Result GetSize(out long size)
         {
+            UnsafeHelpers.SkipParamInit(out size);
+
             if (IsDisposed)
-            {
-                size = default;
                 return ResultFs.PreconditionViolation.Log();
-            }
 
             return DoGetSize(out size);
         }

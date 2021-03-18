@@ -137,7 +137,7 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
-            directory = default;
+            UnsafeHelpers.SkipParamInit(out directory);
 
             Unsafe.SkipInit(out FsPath normalizedPath);
 
@@ -156,7 +156,7 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
-            file = default;
+            UnsafeHelpers.SkipParamInit(out file);
 
             Unsafe.SkipInit(out FsPath normalizedPath);
 
@@ -207,7 +207,7 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
-            entryType = default;
+            UnsafeHelpers.SkipParamInit(out entryType);
 
             Unsafe.SkipInit(out FsPath normalizedPath);
 
@@ -226,7 +226,6 @@ namespace LibHac.FsSystem.Save
                 return Result.Success;
             }
 
-            entryType = default;
             return ResultFs.PathNotFound.Log();
         }
 

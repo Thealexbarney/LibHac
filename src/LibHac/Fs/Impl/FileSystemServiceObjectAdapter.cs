@@ -95,7 +95,7 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
-            Unsafe.SkipInit(out entryType);
+            UnsafeHelpers.SkipParamInit(out entryType);
 
             Result rc = GetPathForServiceObject(out Path sfPath, path);
             if (rc.IsFailure()) return rc;
@@ -107,7 +107,7 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
         {
-            Unsafe.SkipInit(out freeSpace);
+            UnsafeHelpers.SkipParamInit(out freeSpace);
 
             Result rc = GetPathForServiceObject(out Path sfPath, path);
             if (rc.IsFailure()) return rc;
@@ -117,7 +117,7 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
         {
-            Unsafe.SkipInit(out totalSpace);
+            UnsafeHelpers.SkipParamInit(out totalSpace);
 
             Result rc = GetPathForServiceObject(out Path sfPath, path);
             if (rc.IsFailure()) return rc;
@@ -127,7 +127,7 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoOpenFile(out Fsa.IFile file, U8Span path, OpenMode mode)
         {
-            file = default;
+            UnsafeHelpers.SkipParamInit(out file);
 
             Result rc = GetPathForServiceObject(out Path sfPath, path);
             if (rc.IsFailure()) return rc;
@@ -149,7 +149,7 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoOpenDirectory(out Fsa.IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
-            directory = default;
+            UnsafeHelpers.SkipParamInit(out directory);
 
             Result rc = GetPathForServiceObject(out Path sfPath, path);
             if (rc.IsFailure()) return rc;
@@ -176,7 +176,7 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
         {
-            Unsafe.SkipInit(out timeStamp);
+            UnsafeHelpers.SkipParamInit(out timeStamp);
 
             Result rc = GetPathForServiceObject(out Path sfPath, path);
             if (rc.IsFailure()) return rc;
@@ -211,7 +211,7 @@ namespace LibHac.Fs.Impl
         private Result GetPathForServiceObject(out Path sfPath, U8Span path)
         {
             // This is the function used to create Sf.Path structs. Get an unsafe byte span for init only.
-            Unsafe.SkipInit(out sfPath);
+            UnsafeHelpers.SkipParamInit(out sfPath);
             Span<byte> outPath = SpanHelpers.AsByteSpan(ref sfPath);
 
             // Copy and null terminate

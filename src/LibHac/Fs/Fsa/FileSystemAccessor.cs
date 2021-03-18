@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs.Fsa;
@@ -234,7 +233,7 @@ namespace LibHac.Fs.Impl
 
         public Result GetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
-            Unsafe.SkipInit(out entryType);
+            UnsafeHelpers.SkipParamInit(out entryType);
 
             Result rc = CheckPath(new U8Span(_mountName.Name), path);
             if (rc.IsFailure()) return rc;
@@ -244,7 +243,7 @@ namespace LibHac.Fs.Impl
 
         public Result GetFreeSpaceSize(out long freeSpace, U8Span path)
         {
-            Unsafe.SkipInit(out freeSpace);
+            UnsafeHelpers.SkipParamInit(out freeSpace);
 
             Result rc = CheckPath(new U8Span(_mountName.Name), path);
             if (rc.IsFailure()) return rc;
@@ -254,7 +253,7 @@ namespace LibHac.Fs.Impl
 
         public Result GetTotalSpaceSize(out long totalSpace, U8Span path)
         {
-            Unsafe.SkipInit(out totalSpace);
+            UnsafeHelpers.SkipParamInit(out totalSpace);
 
             Result rc = CheckPath(new U8Span(_mountName.Name), path);
             if (rc.IsFailure()) return rc;
@@ -264,7 +263,7 @@ namespace LibHac.Fs.Impl
 
         public Result OpenFile(out FileAccessor file, U8Span path, OpenMode mode)
         {
-            file = default;
+            UnsafeHelpers.SkipParamInit(out file);
 
             Result rc = CheckPath(new U8Span(_mountName.Name), path);
             if (rc.IsFailure()) return rc;
@@ -305,7 +304,7 @@ namespace LibHac.Fs.Impl
 
         public Result OpenDirectory(out DirectoryAccessor directory, U8Span path, OpenDirectoryMode mode)
         {
-            directory = default;
+            UnsafeHelpers.SkipParamInit(out directory);
 
             Result rc = CheckPath(new U8Span(_mountName.Name), path);
             if (rc.IsFailure()) return rc;
@@ -370,7 +369,7 @@ namespace LibHac.Fs.Impl
 
         public Result GetSaveDataAttribute(out SaveDataAttribute attribute)
         {
-            Unsafe.SkipInit(out attribute);
+            UnsafeHelpers.SkipParamInit(out attribute);
 
             if (_saveDataAttributeGetter is null)
                 return ResultFs.PreconditionViolation.Log();

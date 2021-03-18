@@ -120,7 +120,7 @@ namespace LibHac.Fs
         public static Result Normalize(Span<byte> outputBuffer, out long normalizedLength, U8Span path,
             bool preserveUnc, bool hasMountName)
         {
-            normalizedLength = default;
+            UnsafeHelpers.SkipParamInit(out normalizedLength);
 
             U8Span path2 = path;
             int prefixLength = 0;
@@ -318,7 +318,7 @@ namespace LibHac.Fs
 
         public static Result IsNormalized(out bool isNormalized, U8Span path, bool preserveUnc, bool hasMountName)
         {
-            isNormalized = default;
+            UnsafeHelpers.SkipParamInit(out isNormalized);
             U8Span path2 = path;
             bool isUncPath = false;
 
@@ -478,7 +478,7 @@ namespace LibHac.Fs
             out long mountNameLength, U8Span path)
         {
             pathAfterMount = default;
-            mountNameLength = default;
+            UnsafeHelpers.SkipParamInit(out mountNameLength);
 
             int mountStart = IsSeparator(path.GetOrNull(0)) ? 1 : 0;
             int mountEnd;

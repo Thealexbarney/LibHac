@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
+using LibHac.Common;
 using LibHac.Diag;
 
 namespace LibHac.Fs.Fsa
@@ -32,6 +34,11 @@ namespace LibHac.Fs.Fsa
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
         public Result Read(out long bytesRead, long offset, Span<byte> destination, in ReadOption option)
         {
+            UnsafeHelpers.SkipParamInit(out bytesRead);
+
+            if (Unsafe.IsNullRef(ref bytesRead))
+                return ResultFs.NullptrArgument.Log();
+
             if (destination.IsEmpty)
             {
                 bytesRead = 0;
@@ -39,16 +46,10 @@ namespace LibHac.Fs.Fsa
             }
 
             if (offset < 0)
-            {
-                bytesRead = 0;
                 return ResultFs.OutOfRange.Log();
-            }
 
             if (long.MaxValue - offset < destination.Length)
-            {
-                bytesRead = 0;
                 return ResultFs.OutOfRange.Log();
-            }
 
             return DoRead(out bytesRead, offset, destination, in option);
         }
@@ -157,26 +158,18 @@ namespace LibHac.Fs.Fsa
         protected Result DryRead(out long readableBytes, long offset, long size, in ReadOption option,
             OpenMode openMode)
         {
+            UnsafeHelpers.SkipParamInit(out readableBytes);
+
             // Check that we can read.
             if (!openMode.HasFlag(OpenMode.Read))
-            {
-                readableBytes = default;
                 return ResultFs.ReadUnpermitted.Log();
-            }
 
             // Get the file size, and validate our offset.
             Result rc = GetSize(out long fileSize);
-            if (rc.IsFailure())
-            {
-                readableBytes = default;
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
             if (offset > fileSize)
-            {
-                readableBytes = default;
                 return ResultFs.OutOfRange.Log();
-            }
 
             readableBytes = Math.Min(fileSize - offset, size);
             return Result.Success;
@@ -196,28 +189,20 @@ namespace LibHac.Fs.Fsa
         protected Result DryWrite(out bool needsAppend, long offset, long size, in WriteOption option,
             OpenMode openMode)
         {
+            UnsafeHelpers.SkipParamInit(out needsAppend);
+
             // Check that we can write.
             if (!openMode.HasFlag(OpenMode.Write))
-            {
-                needsAppend = default;
                 return ResultFs.WriteUnpermitted.Log();
-            }
 
             // Get the file size.
             Result rc = GetSize(out long fileSize);
-            if (rc.IsFailure())
-            {
-                needsAppend = default;
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
             if (fileSize < offset + size)
             {
                 if (!openMode.HasFlag(OpenMode.AllowAppend))
-                {
-                    needsAppend = default;
                     return ResultFs.FileExtensionWithoutOpenModeAllowAppend.Log();
-                }
 
                 needsAppend = true;
             }

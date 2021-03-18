@@ -27,8 +27,7 @@ namespace LibHac.FsSrv.Creators
             ulong saveDataId, bool allowDirectorySaveData, bool useDeviceUniqueMac, SaveDataType type,
             ITimeStampGenerator timeStampGenerator)
         {
-            fileSystem = default;
-            extraDataAccessor = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem, out extraDataAccessor);
 
             var saveDataPath = $"/{saveDataId:x16}".ToU8String();
 

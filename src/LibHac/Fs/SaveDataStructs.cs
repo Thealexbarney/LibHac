@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.FsSrv.Impl;
@@ -52,7 +51,7 @@ namespace LibHac.Fs
         public static Result Make(out SaveDataAttribute attribute, ProgramId programId, SaveDataType type,
             UserId userId, ulong staticSaveDataId, ushort index, SaveDataRank rank)
         {
-            Unsafe.SkipInit(out attribute);
+            UnsafeHelpers.SkipParamInit(out attribute);
             SaveDataAttribute tempAttribute = default;
 
             tempAttribute.ProgramId = programId;
@@ -124,7 +123,7 @@ namespace LibHac.Fs
         public static Result Make(out SaveDataCreationInfo creationInfo, long size, long journalSize, ulong ownerId,
             SaveDataFlags flags, SaveDataSpaceId spaceId)
         {
-            Unsafe.SkipInit(out creationInfo);
+            UnsafeHelpers.SkipParamInit(out creationInfo);
             SaveDataCreationInfo tempCreationInfo = default;
 
             tempCreationInfo.Size = size;
@@ -194,7 +193,7 @@ namespace LibHac.Fs
         public static Result Make(out SaveDataFilter filter, Optional<ulong> programId, Optional<SaveDataType> saveType,
             Optional<UserId> userId, Optional<ulong> saveDataId, Optional<ushort> index, SaveDataRank rank)
         {
-            Unsafe.SkipInit(out filter);
+            UnsafeHelpers.SkipParamInit(out filter);
 
             SaveDataFilter tempFilter = Make(programId, saveType, userId, saveDataId, index, rank);
 

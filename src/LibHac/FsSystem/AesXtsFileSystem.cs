@@ -104,7 +104,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
-            directory = default;
+            UnsafeHelpers.SkipParamInit(out directory);
 
             Result rc = BaseFileSystem.OpenDirectory(out IDirectory baseDir, path, mode);
             if (rc.IsFailure()) return rc;
@@ -115,7 +115,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
-            file = default;
+            UnsafeHelpers.SkipParamInit(out file);
 
             Result rc = BaseFileSystem.OpenFile(out IFile baseFile, path, mode | OpenMode.Read);
             if (rc.IsFailure()) return rc;

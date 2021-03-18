@@ -18,7 +18,7 @@ namespace LibHac
             DoDeallocate(buffer, alignment);
 
             // Clear the references to the deallocated buffer.
-            buffer = default;
+            buffer = new Buffer();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

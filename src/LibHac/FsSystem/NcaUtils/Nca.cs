@@ -500,7 +500,7 @@ namespace LibHac.FsSystem.NcaUtils
                     type = NcaSectionType.Data;
                     return true;
                 default:
-                    type = default;
+                    UnsafeHelpers.SkipParamInit(out type);
                     return false;
             }
         }

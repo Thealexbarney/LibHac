@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Util;
@@ -127,7 +128,7 @@ namespace LibHac.FsSystem
 
             public bool Register(out CacheHandle handle, Buffer buffer, BufferAttribute attr)
             {
-                Unsafe.SkipInit(out handle);
+                UnsafeHelpers.SkipParamInit(out handle);
 
                 // Validate pre-conditions.
                 Assert.True(Entries != null);
@@ -162,11 +163,12 @@ namespace LibHac.FsSystem
 
             public bool Unregister(out Buffer buffer, CacheHandle handle)
             {
-                Unsafe.SkipInit(out buffer);
-
                 // Validate pre-conditions.
+                Unsafe.SkipInit(out buffer);
                 Assert.True(Entries != null);
                 Assert.True(!Unsafe.IsNullRef(ref buffer));
+
+                UnsafeHelpers.SkipParamInit(out buffer);
 
                 // Find the lower bound for the entry.
                 for (int i = 0; i < EntryCount; i++)
@@ -185,11 +187,12 @@ namespace LibHac.FsSystem
             public bool UnregisterOldest(out Buffer buffer, BufferAttribute attr, int requiredSize = 0)
             // ReSharper restore UnusedParameter.Local
             {
-                Unsafe.SkipInit(out buffer);
-
                 // Validate pre-conditions.
+                Unsafe.SkipInit(out buffer);
                 Assert.True(Entries != null);
                 Assert.True(!Unsafe.IsNullRef(ref buffer));
+
+                UnsafeHelpers.SkipParamInit(out buffer);
 
                 // If we have no entries, we can't unregister any.
                 if (EntryCount == 0)
@@ -231,9 +234,9 @@ namespace LibHac.FsSystem
 
             private void UnregisterCore(out Buffer buffer, ref Entry entry)
             {
-                Unsafe.SkipInit(out buffer);
 
                 // Validate pre-conditions.
+                Unsafe.SkipInit(out buffer);
                 Assert.True(Entries != null);
                 Assert.True(!Unsafe.IsNullRef(ref buffer));
                 Assert.True(!Unsafe.IsNullRef(ref entry));

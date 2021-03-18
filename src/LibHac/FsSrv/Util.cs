@@ -10,7 +10,7 @@ namespace LibHac.FsSrv
         public static Result CreateSubFileSystem(out IFileSystem subFileSystem, IFileSystem baseFileSystem, string path,
             bool createPathIfMissing)
         {
-            subFileSystem = default;
+            UnsafeHelpers.SkipParamInit(out subFileSystem);
             Result rc;
 
             if (!createPathIfMissing)
@@ -33,7 +33,7 @@ namespace LibHac.FsSrv
 
         public static Result CreateSubFileSystemImpl(out IFileSystem subFileSystem, IFileSystem baseFileSystem, string path)
         {
-            subFileSystem = default;
+            UnsafeHelpers.SkipParamInit(out subFileSystem);
 
             if (path == null) return ResultFs.NullptrArgument.Log();
 

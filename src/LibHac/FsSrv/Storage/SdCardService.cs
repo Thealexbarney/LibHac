@@ -25,7 +25,7 @@ namespace LibHac.FsSrv.Storage
         private static Result GetSdCardManagerOperator(this StorageService service,
             out ReferenceCountedDisposable<IStorageDeviceOperator> deviceOperator)
         {
-            deviceOperator = null;
+            UnsafeHelpers.SkipParamInit(out deviceOperator);
 
             ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
             try
@@ -44,7 +44,7 @@ namespace LibHac.FsSrv.Storage
         private static Result GetSdCardOperator(this StorageService service,
             out ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator)
         {
-            sdCardOperator = null;
+            UnsafeHelpers.SkipParamInit(out sdCardOperator);
 
             ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
             try
@@ -84,7 +84,7 @@ namespace LibHac.FsSrv.Storage
         public static Result OpenSdStorage(this StorageService service,
             out ReferenceCountedDisposable<IStorage> storage)
         {
-            storage = default;
+            UnsafeHelpers.SkipParamInit(out storage);
 
             ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
             try
@@ -123,7 +123,7 @@ namespace LibHac.FsSrv.Storage
 
         public static Result GetCurrentSdCardHandle(this StorageService service, out StorageDeviceHandle handle)
         {
-            Unsafe.SkipInit(out handle);
+            UnsafeHelpers.SkipParamInit(out handle);
 
             ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
             try
@@ -157,7 +157,7 @@ namespace LibHac.FsSrv.Storage
         public static Result IsSdCardHandleValid(this StorageService service, out bool isValid,
             in StorageDeviceHandle handle)
         {
-            Unsafe.SkipInit(out isValid);
+            UnsafeHelpers.SkipParamInit(out isValid);
 
             ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
             try
@@ -192,7 +192,7 @@ namespace LibHac.FsSrv.Storage
 
         public static Result IsSdCardInserted(this StorageService service, out bool isInserted)
         {
-            Unsafe.SkipInit(out isInserted);
+            UnsafeHelpers.SkipParamInit(out isInserted);
 
             ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
             try
@@ -210,7 +210,7 @@ namespace LibHac.FsSrv.Storage
 
         public static Result GetSdCardSpeedMode(this StorageService service, out SdCardSpeedMode speedMode)
         {
-            Unsafe.SkipInit(out speedMode);
+            UnsafeHelpers.SkipParamInit(out speedMode);
 
             ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator = null;
             try
@@ -270,7 +270,7 @@ namespace LibHac.FsSrv.Storage
 
         public static Result GetSdCardUserAreaNumSectors(this StorageService service, out uint count)
         {
-            Unsafe.SkipInit(out count);
+            UnsafeHelpers.SkipParamInit(out count);
 
             ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator = null;
             try
@@ -294,7 +294,7 @@ namespace LibHac.FsSrv.Storage
 
         public static Result GetSdCardUserAreaSize(this StorageService service, out long size)
         {
-            Unsafe.SkipInit(out size);
+            UnsafeHelpers.SkipParamInit(out size);
 
             ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator = null;
             try
@@ -318,7 +318,7 @@ namespace LibHac.FsSrv.Storage
 
         public static Result GetSdCardProtectedAreaNumSectors(this StorageService service, out uint count)
         {
-            Unsafe.SkipInit(out count);
+            UnsafeHelpers.SkipParamInit(out count);
 
             ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator = null;
             try
@@ -342,7 +342,7 @@ namespace LibHac.FsSrv.Storage
 
         public static Result GetSdCardProtectedAreaSize(this StorageService service, out long size)
         {
-            Unsafe.SkipInit(out size);
+            UnsafeHelpers.SkipParamInit(out size);
 
             ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator = null;
             try
@@ -367,8 +367,7 @@ namespace LibHac.FsSrv.Storage
         public static Result GetAndClearSdCardErrorInfo(this StorageService service, out StorageErrorInfo errorInfo,
             out long logSize, Span<byte> logBuffer)
         {
-            Unsafe.SkipInit(out errorInfo);
-            Unsafe.SkipInit(out logSize);
+            UnsafeHelpers.SkipParamInit(out errorInfo, out logSize);
 
             ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator = null;
             try
@@ -395,7 +394,7 @@ namespace LibHac.FsSrv.Storage
         public static Result OpenSdCardDetectionEvent(this StorageService service,
             out ReferenceCountedDisposable<IEventNotifier> eventNotifier)
         {
-            eventNotifier = default;
+            UnsafeHelpers.SkipParamInit(out eventNotifier);
 
             ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
             try

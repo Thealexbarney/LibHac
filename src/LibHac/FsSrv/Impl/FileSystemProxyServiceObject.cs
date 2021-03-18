@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+﻿using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
@@ -44,7 +44,7 @@ namespace LibHac.FsSrv.Impl
 
             public Result IsArchivedProgram(out bool isArchived, ulong processId)
             {
-                Unsafe.SkipInit(out isArchived);
+                UnsafeHelpers.SkipParamInit(out isArchived);
 
                 return ResultFs.PortAcceptableCountLimited.Log();
             }
@@ -52,8 +52,7 @@ namespace LibHac.FsSrv.Impl
             public Result OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
                 out CodeVerificationData verificationData, in FspPath path, ProgramId programId)
             {
-                fileSystem = default;
-                Unsafe.SkipInit(out verificationData);
+                UnsafeHelpers.SkipParamInit(out fileSystem, out verificationData);
 
                 return ResultFs.PortAcceptableCountLimited.Log();
             }

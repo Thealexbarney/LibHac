@@ -22,7 +22,7 @@ namespace LibHac.FsSystem.Save
         {
             if (!FindPathRecursive(path, out SaveEntryKey key))
             {
-                fileInfo = default;
+                UnsafeHelpers.SkipParamInit(out fileInfo);
                 return false;
             }
 
@@ -40,8 +40,7 @@ namespace LibHac.FsSystem.Save
         {
             if (position.NextFile == 0)
             {
-                info = default;
-                name = default;
+                UnsafeHelpers.SkipParamInit(out info, out name);
                 return false;
             }
 
@@ -52,8 +51,7 @@ namespace LibHac.FsSystem.Save
             // todo error message
             if (!success)
             {
-                info = default;
-                name = default;
+                UnsafeHelpers.SkipParamInit(out info, out name);
                 return false;
             }
 
@@ -69,7 +67,7 @@ namespace LibHac.FsSystem.Save
         {
             if (position.NextDirectory == 0)
             {
-                name = default;
+                UnsafeHelpers.SkipParamInit(out name);
                 return false;
             }
 
@@ -80,7 +78,7 @@ namespace LibHac.FsSystem.Save
             // todo error message
             if (!success)
             {
-                name = default;
+                UnsafeHelpers.SkipParamInit(out name);
                 return false;
             }
 
@@ -113,7 +111,7 @@ namespace LibHac.FsSystem.Save
             int parentIndex = CreateParentDirectoryRecursive(ref parser, ref key);
 
             int index = FileTable.GetIndexFromKey(ref key).Index;
-            TableEntry<SaveFileInfo> fileEntry = default;
+            var fileEntry = new TableEntry<SaveFileInfo>();
 
             // File already exists. Update file info.
             if (index >= 0)
@@ -138,7 +136,7 @@ namespace LibHac.FsSystem.Save
             int parentIndex = CreateParentDirectoryRecursive(ref parser, ref key);
 
             int index = DirectoryTable.GetIndexFromKey(ref key).Index;
-            TableEntry<SaveFindPosition> dirEntry = default;
+            var dirEntry = new TableEntry<SaveFindPosition>();
 
             // Directory already exists. Do nothing.
             if (index >= 0) return;
@@ -363,9 +361,10 @@ namespace LibHac.FsSystem.Save
 
         public bool TryOpenDirectory(U8Span path, out SaveFindPosition position)
         {
+            UnsafeHelpers.SkipParamInit(out position);
+
             if (!FindPathRecursive(path, out SaveEntryKey key))
             {
-                position = default;
                 return false;
             }
 
@@ -375,7 +374,6 @@ namespace LibHac.FsSystem.Save
                 return true;
             }
 
-            position = default;
             return false;
         }
 

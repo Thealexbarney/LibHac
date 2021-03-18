@@ -35,7 +35,7 @@ namespace LibHac.FsSystem
 
         private Result ResolveFullPath(out string fullPath, U8Span path)
         {
-            fullPath = default;
+            UnsafeHelpers.SkipParamInit(out fullPath);
 
             Unsafe.SkipInit(out FsPath normalizedPath);
 
@@ -67,7 +67,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetFileAttributes(out NxFileAttributes attributes, U8Span path)
         {
-            attributes = default;
+            UnsafeHelpers.SkipParamInit(out attributes);
 
             Result rc = ResolveFullPath(out string fullPath, path);
             if (rc.IsFailure()) return rc;
@@ -77,7 +77,6 @@ namespace LibHac.FsSystem
 
             if (info.Attributes == (FileAttributes)(-1))
             {
-                attributes = default;
                 return ResultFs.PathNotFound.Log();
             }
 
@@ -115,7 +114,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetFileSize(out long fileSize, U8Span path)
         {
-            fileSize = default;
+            UnsafeHelpers.SkipParamInit(out fileSize);
 
             Result rc = ResolveFullPath(out string fullPath, path);
             if (rc.IsFailure()) return rc;
@@ -241,7 +240,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
-            directory = default;
+            UnsafeHelpers.SkipParamInit(out directory);
             Result rc = ResolveFullPath(out string fullPath, path);
             if (rc.IsFailure()) return rc;
 
@@ -268,7 +267,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
-            file = default;
+            UnsafeHelpers.SkipParamInit(out file);
 
             Result rc = ResolveFullPath(out string fullPath, path);
             if (rc.IsFailure()) return rc;
@@ -333,7 +332,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
-            entryType = default;
+            UnsafeHelpers.SkipParamInit(out entryType);
 
             Result rc = ResolveFullPath(out string fullPath, path);
             if (rc.IsFailure()) return rc;
@@ -356,13 +355,12 @@ namespace LibHac.FsSystem
                 return Result.Success;
             }
 
-            entryType = default;
             return ResultFs.PathNotFound.Log();
         }
 
         protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
         {
-            timeStamp = default;
+            UnsafeHelpers.SkipParamInit(out timeStamp);
 
             Result rc = ResolveFullPath(out string fullPath, path);
             if (rc.IsFailure()) return rc;
@@ -422,13 +420,15 @@ namespace LibHac.FsSystem
             }
             catch (Exception ex) when (ex.HResult < 0)
             {
-                stream = default;
+                UnsafeHelpers.SkipParamInit(out stream);
                 return HResult.HResultToHorizonResult(ex.HResult).Log();
             }
         }
 
         private static Result GetSizeInternal(out long fileSize, FileInfo file)
         {
+            UnsafeHelpers.SkipParamInit(out fileSize);
+
             try
             {
                 fileSize = file.Length;
@@ -436,14 +436,13 @@ namespace LibHac.FsSystem
             }
             catch (Exception ex) when (ex.HResult < 0)
             {
-                fileSize = default;
                 return HResult.HResultToHorizonResult(ex.HResult).Log();
             }
         }
 
         private static Result CreateFileInternal(out FileStream file, FileInfo fileInfo)
         {
-            file = default;
+            UnsafeHelpers.SkipParamInit(out file);
 
             try
             {
@@ -564,6 +563,8 @@ namespace LibHac.FsSystem
         // GetFileInfo and GetDirInfo detect invalid paths
         private static Result GetFileInfo(out FileInfo fileInfo, string path)
         {
+            UnsafeHelpers.SkipParamInit(out fileInfo);
+
             try
             {
                 fileInfo = new FileInfo(path);
@@ -571,13 +572,14 @@ namespace LibHac.FsSystem
             }
             catch (Exception ex) when (ex.HResult < 0)
             {
-                fileInfo = default;
                 return HResult.HResultToHorizonResult(ex.HResult).Log();
             }
         }
 
         private static Result GetDirInfo(out DirectoryInfo directoryInfo, string path)
         {
+            UnsafeHelpers.SkipParamInit(out directoryInfo);
+
             try
             {
                 directoryInfo = new DirectoryInfo(path);
@@ -585,7 +587,6 @@ namespace LibHac.FsSystem
             }
             catch (Exception ex) when (ex.HResult < 0)
             {
-                directoryInfo = default;
                 return HResult.HResultToHorizonResult(ex.HResult).Log();
             }
         }

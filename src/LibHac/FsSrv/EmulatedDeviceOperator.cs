@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 using LibHac.FsSrv.Sf;
 
 namespace LibHac.FsSrv
@@ -30,11 +31,10 @@ namespace LibHac.FsSrv
 
         public Result GetGameCardHandle(out GameCardHandle handle)
         {
+            UnsafeHelpers.SkipParamInit(out handle);
+
             if (!GameCard.IsGameCardInserted())
-            {
-                handle = default;
                 return ResultFs.GameCardNotInsertedOnGetHandle.Log();
-            }
 
             handle = GameCard.GetGameCardHandle();
             return Result.Success;

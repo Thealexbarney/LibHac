@@ -53,7 +53,7 @@ namespace LibHac.Boot
         /// <returns>The <see cref="Result"/> of the operation.</returns>
         public Result OpenPayload(out IStorage payloadStorage, int index)
         {
-            payloadStorage = default;
+            UnsafeHelpers.SkipParamInit(out payloadStorage);
 
             if ((uint)index >= Package2Header.PayloadCount)
                 return ResultLibHac.ArgumentOutOfRange.Log();
@@ -100,7 +100,7 @@ namespace LibHac.Boot
             }
 
             // Ini is embedded in the kernel
-            iniStorage = default;
+            UnsafeHelpers.SkipParamInit(out iniStorage);
 
             Result rc = OpenKernel(out IStorage kernelStorage);
             if (rc.IsFailure()) return rc;
@@ -242,7 +242,7 @@ namespace LibHac.Boot
                 Result rc = OpenPayload(out IStorage payloadStorage, i);
                 if (rc.IsFailure())
                 {
-                    packageStorage = default;
+                    UnsafeHelpers.SkipParamInit(out packageStorage);
                     return rc;
                 }
 
