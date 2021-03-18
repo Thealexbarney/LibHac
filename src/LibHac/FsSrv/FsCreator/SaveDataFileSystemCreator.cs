@@ -6,7 +6,7 @@ using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 using LibHac.FsSystem.Save;
 
-namespace LibHac.FsSrv.Creators
+namespace LibHac.FsSrv.FsCreator
 {
     public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
     {

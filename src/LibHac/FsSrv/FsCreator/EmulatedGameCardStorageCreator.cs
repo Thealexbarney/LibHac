@@ -2,7 +2,7 @@
 using LibHac.Common;
 using LibHac.Fs;
 
-namespace LibHac.FsSrv.Creators
+namespace LibHac.FsSrv.FsCreator
 {
     public class EmulatedGameCardStorageCreator : IGameCardStorageCreator
     {

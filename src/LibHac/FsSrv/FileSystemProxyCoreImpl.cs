@@ -3,7 +3,7 @@ using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
-using LibHac.FsSrv.Creators;
+using LibHac.FsSrv.FsCreator;
 using LibHac.FsSrv.Impl;
 
 namespace LibHac.FsSrv

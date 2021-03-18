@@ -7,7 +7,7 @@ using LibHac.FsSystem;
 using LibHac.FsSystem.Detail;
 using LibHac.FsSystem.NcaUtils;
 
-namespace LibHac.FsSrv.Creators
+namespace LibHac.FsSrv.FsCreator
 {
     public class StorageOnNcaCreator : IStorageOnNcaCreator
     {

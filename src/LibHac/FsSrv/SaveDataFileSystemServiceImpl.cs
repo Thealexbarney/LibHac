@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
-using LibHac.FsSrv.Creators;
+using LibHac.FsSrv.FsCreator;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSystem;
 using LibHac.FsSystem.Save;

@@ -4,7 +4,7 @@ using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 using LibHac.FsSystem.Detail;
 
-namespace LibHac.FsSrv.Creators
+namespace LibHac.FsSrv.FsCreator
 {
     public class PartitionFileSystemCreator : IPartitionFileSystemCreator
     {

@@ -2,7 +2,7 @@
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
-namespace LibHac.FsSrv.Creators
+namespace LibHac.FsSrv.FsCreator
 {
     public interface IFatFileSystemCreator
     {

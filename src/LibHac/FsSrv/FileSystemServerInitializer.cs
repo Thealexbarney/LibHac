@@ -1,7 +1,7 @@
 ﻿using System;
 using LibHac.Fs.Impl;
 using LibHac.Fs.Shim;
-using LibHac.FsSrv.Creators;
+using LibHac.FsSrv.FsCreator;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.FsSrv.Storage;

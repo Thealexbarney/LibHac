@@ -4,7 +4,7 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 
-namespace LibHac.FsSrv.Creators
+namespace LibHac.FsSrv.FsCreator
 {
     public class EncryptedFileSystemCreator : IEncryptedFileSystemCreator
     {
