@@ -1,5 +1,5 @@
 ﻿using System;
-using LibHac.Crypto.Detail;
+using LibHac.Crypto.Impl;
 
 namespace LibHac.Crypto
 {

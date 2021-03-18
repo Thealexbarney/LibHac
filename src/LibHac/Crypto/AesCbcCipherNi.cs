@@ -2,7 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using LibHac.Common;
-using LibHac.Crypto.Detail;
+using LibHac.Crypto.Impl;
 
 namespace LibHac.Crypto
 {

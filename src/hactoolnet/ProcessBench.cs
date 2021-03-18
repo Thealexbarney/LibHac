@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using LibHac;
 using LibHac.Crypto;
+using LibHac.Crypto.Impl;
 using LibHac.Fs;
 using LibHac.FsSystem;
 
@@ -253,7 +254,7 @@ namespace hactoolnet
                 while (Unsafe.IsAddressLessThan(ref inBlock, ref end))
                 {
                     var inputVec = Unsafe.ReadUnaligned<Vector128<byte>>(ref inBlock);
-                    Vector128<byte> outputVec = LibHac.Crypto.Detail.AesCoreNi.EncryptBlock(inputVec, keyVec);
+                    Vector128<byte> outputVec = AesCoreNi.EncryptBlock(inputVec, keyVec);
                     Unsafe.WriteUnaligned(ref outBlock, outputVec);
 
                     inBlock = ref Unsafe.Add(ref inBlock, Aes.BlockSize);
@@ -273,7 +274,7 @@ namespace hactoolnet
                 while (Unsafe.IsAddressLessThan(ref inBlock, ref end))
                 {
                     var inputVec = Unsafe.ReadUnaligned<Vector128<byte>>(ref inBlock);
-                    Vector128<byte> outputVec = LibHac.Crypto.Detail.AesCoreNi.DecryptBlock(inputVec, keyVec);
+                    Vector128<byte> outputVec = AesCoreNi.DecryptBlock(inputVec, keyVec);
                     Unsafe.WriteUnaligned(ref outBlock, outputVec);
 
                     inBlock = ref Unsafe.Add(ref inBlock, Aes.BlockSize);

@@ -2,7 +2,7 @@
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
-using LibHac.FsSystem.Detail;
+using LibHac.FsSystem.Impl;
 
 namespace LibHac.FsSrv.FsCreator
 {

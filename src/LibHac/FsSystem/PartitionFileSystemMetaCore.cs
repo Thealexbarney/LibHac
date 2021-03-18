@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
-using LibHac.FsSystem.Detail;
+using LibHac.FsSystem.Impl;
 using LibHac.Util;
 
 namespace LibHac.FsSystem

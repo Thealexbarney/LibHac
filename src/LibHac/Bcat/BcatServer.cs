@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
-using LibHac.Bcat.Detail.Ipc;
-using LibHac.Bcat.Detail.Service;
-using LibHac.Bcat.Detail.Service.Core;
+using LibHac.Bcat.Impl.Ipc;
+using LibHac.Bcat.Impl.Service;
+using LibHac.Bcat.Impl.Service.Core;
 using LibHac.Fs;
 
 namespace LibHac.Bcat
