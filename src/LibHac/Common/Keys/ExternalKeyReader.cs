@@ -571,6 +571,8 @@ namespace LibHac.Common.Keys
 
         private static bool TryGetKeyInfo(out SpecificKeyInfo info, List<KeyInfo> keyList, ReadOnlySpan<char> keyName)
         {
+            UnsafeHelpers.SkipParamInit(out info);
+
             for (int i = 0; i < keyList.Count; i++)
             {
                 if (keyList[i].Matches(keyName, out int keyIndex, out bool isDev))
@@ -580,7 +582,6 @@ namespace LibHac.Common.Keys
                 }
             }
 
-            info = default;
             return false;
         }
     }

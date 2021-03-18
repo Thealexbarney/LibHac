@@ -218,7 +218,7 @@ namespace LibHac.FsSrv
 
         public Result Publish(out ulong saveDataId, in SaveDataAttribute key)
         {
-            saveDataId = default;
+            UnsafeHelpers.SkipParamInit(out saveDataId);
 
             lock (Locker)
             {
@@ -261,7 +261,7 @@ namespace LibHac.FsSrv
 
         public Result Get(out SaveDataIndexerValue value, in SaveDataAttribute key)
         {
-            Unsafe.SkipInit(out value);
+            UnsafeHelpers.SkipParamInit(out value);
 
             lock (Locker)
             {
@@ -429,7 +429,7 @@ namespace LibHac.FsSrv
 
         public Result GetKey(out SaveDataAttribute key, ulong saveDataId)
         {
-            Unsafe.SkipInit(out key);
+            UnsafeHelpers.SkipParamInit(out key);
 
             Result rc = TryInitializeDatabase();
             if (rc.IsFailure()) return rc;
@@ -455,7 +455,7 @@ namespace LibHac.FsSrv
 
         public Result GetValue(out SaveDataIndexerValue value, ulong saveDataId)
         {
-            Unsafe.SkipInit(out value);
+            UnsafeHelpers.SkipParamInit(out value);
 
             Result rc = TryInitializeDatabase();
             if (rc.IsFailure()) return rc;
@@ -509,7 +509,7 @@ namespace LibHac.FsSrv
 
         public Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<SaveDataInfoReaderImpl> infoReader)
         {
-            infoReader = default;
+            UnsafeHelpers.SkipParamInit(out infoReader);
 
             lock (Locker)
             {
@@ -821,7 +821,7 @@ namespace LibHac.FsSrv
 
             public Result Read(out long readCount, OutBuffer saveDataInfoBuffer)
             {
-                Unsafe.SkipInit(out readCount);
+                UnsafeHelpers.SkipParamInit(out readCount);
 
                 lock (_indexer.Locker)
                 {

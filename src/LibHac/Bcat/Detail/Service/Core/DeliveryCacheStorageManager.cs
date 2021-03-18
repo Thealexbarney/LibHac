@@ -288,6 +288,8 @@ namespace LibHac.Bcat.Detail.Service.Core
 
         private Result FindOrGetUnusedEntry(out int entryIndex, ulong applicationId)
         {
+            UnsafeHelpers.SkipParamInit(out entryIndex);
+
             // Try to find an existing entry
             for (int i = 0; i < Entries.Length; i++)
             {
@@ -308,7 +310,6 @@ namespace LibHac.Bcat.Detail.Service.Core
                 }
             }
 
-            entryIndex = default;
             return ResultBcat.StorageOpenLimitReached.Log();
         }
 

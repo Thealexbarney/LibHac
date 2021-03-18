@@ -27,7 +27,7 @@ namespace LibHac.FsSystem
             }
 
             obj.Dispose();
-            created = default;
+            UnsafeHelpers.SkipParamInit(out created);
             return rc;
         }
 
@@ -149,7 +149,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
-            directory = default;
+            UnsafeHelpers.SkipParamInit(out directory);
 
             Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
             Result rc = ResolveFullPath(fullPath, path);
@@ -160,7 +160,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
-            file = default;
+            UnsafeHelpers.SkipParamInit(out file);
 
             Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
             Result rc = ResolveFullPath(fullPath, path);
@@ -199,7 +199,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
-            entryType = default;
+            UnsafeHelpers.SkipParamInit(out entryType);
 
             Unsafe.SkipInit(out FsPath fullPath);
 
@@ -226,7 +226,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
         {
-            freeSpace = default;
+            UnsafeHelpers.SkipParamInit(out freeSpace);
 
             Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
             Result rc = ResolveFullPath(fullPath, path);
@@ -237,7 +237,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
         {
-            totalSpace = default;
+            UnsafeHelpers.SkipParamInit(out totalSpace);
 
             Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
             Result rc = ResolveFullPath(fullPath, path);
@@ -248,7 +248,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
         {
-            timeStamp = default;
+            UnsafeHelpers.SkipParamInit(out timeStamp);
 
             Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
             Result rc = ResolveFullPath(fullPath, path);

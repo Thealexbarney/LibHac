@@ -70,7 +70,7 @@ namespace LibHac.Fs.Shim
 
         public static Result GetGameCardHandle(this FileSystemClient fs, out GameCardHandle handle)
         {
-            Unsafe.SkipInit(out handle);
+            UnsafeHelpers.SkipParamInit(out handle);
 
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
@@ -175,7 +175,7 @@ namespace LibHac.Fs.Shim
         public static Result OpenGameCardPartition(this FileSystemClient fs, out IStorage storage,
             GameCardHandle handle, GameCardPartitionRaw partitionType)
         {
-            storage = default;
+            UnsafeHelpers.SkipParamInit(out storage);
 
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 

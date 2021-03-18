@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
@@ -43,7 +44,8 @@ namespace LibHac.FsSystem
                 Result rc = sourceFs.OpenFile(out srcFile, new U8Span(sourcePath), OpenMode.Read);
                 if (rc.IsFailure()) return rc;
 
-                FsPath dstPath = default;
+                Unsafe.SkipInit(out FsPath dstPath);
+                dstPath.Str[0] = 0;
                 int dstPathLen = StringUtils.Concat(dstPath.Str, destParentPath);
                 dstPathLen = StringUtils.Concat(dstPath.Str, dirEntry.Name, dstPathLen);
 

@@ -1,6 +1,7 @@
 ﻿using LibHac.Crypto;
 using LibHac.Fs;
 using System;
+using LibHac.Common;
 
 namespace LibHac.FsSystem
 {
@@ -64,8 +65,8 @@ namespace LibHac.FsSystem
                 decryptor = Aes.CreateCbcDecryptor(_key, _iv);
                 return Result.Success;
             }
-
-            decryptor = default;
+            
+            UnsafeHelpers.SkipParamInit(out decryptor);
 
             // Need to get the output of the previous block
             Span<byte> prevBlock = stackalloc byte[BlockSize];

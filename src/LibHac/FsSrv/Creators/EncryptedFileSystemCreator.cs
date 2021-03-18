@@ -1,4 +1,5 @@
-﻿using LibHac.Common.Keys;
+﻿using LibHac.Common;
+using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
@@ -17,7 +18,7 @@ namespace LibHac.FsSrv.Creators
         public Result Create(out ReferenceCountedDisposable<IFileSystem> encryptedFileSystem, ReferenceCountedDisposable<IFileSystem> baseFileSystem,
             EncryptedFsKeyId keyId, in EncryptionSeed encryptionSeed)
         {
-            encryptedFileSystem = default;
+            UnsafeHelpers.SkipParamInit(out encryptedFileSystem);
 
             if (keyId < EncryptedFsKeyId.Save || keyId > EncryptedFsKeyId.CustomStorage)
             {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Ncm;
 
@@ -119,7 +120,7 @@ namespace LibHac.FsSrv.Impl
                     }
                 }
 
-                programInfo = default;
+                UnsafeHelpers.SkipParamInit(out programInfo);
                 return ResultFs.TargetProgramNotFound.Log();
             }
         }
@@ -145,7 +146,7 @@ namespace LibHac.FsSrv.Impl
                     }
                 }
 
-                programInfo = default;
+                UnsafeHelpers.SkipParamInit(out programInfo);
                 return ResultFs.TargetProgramNotFound.Log();
             }
         }

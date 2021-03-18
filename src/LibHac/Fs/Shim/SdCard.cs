@@ -24,7 +24,7 @@ namespace LibHac.Fs.Shim
             static Result OpenFileSystem(FileSystemClient fs, ReferenceCountedDisposable<IFileSystemProxy> fsProxy,
                 out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
             {
-                fileSystem = default;
+                UnsafeHelpers.SkipParamInit(out fileSystem);
 
                 // Retry a few times if the storage device isn't ready yet
                 const int maxRetries = 10;
@@ -153,7 +153,7 @@ namespace LibHac.Fs.Shim
             static Result CheckIfInserted(FileSystemClient fs,
                 ReferenceCountedDisposable<IDeviceOperator> deviceOperator, out bool isInserted)
             {
-                Unsafe.SkipInit(out isInserted);
+                UnsafeHelpers.SkipParamInit(out isInserted);
 
                 // Retry a few times if the storage device isn't ready yet
                 const int maxRetries = 10;

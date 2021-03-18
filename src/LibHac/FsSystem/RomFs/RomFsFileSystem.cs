@@ -27,7 +27,7 @@ namespace LibHac.FsSystem.RomFs
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
-            entryType = default;
+            UnsafeHelpers.SkipParamInit(out entryType);
 
             if (FileTable.TryOpenFile(path.ToString(), out RomFileInfo _))
             {
@@ -51,7 +51,7 @@ namespace LibHac.FsSystem.RomFs
 
         protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
-            directory = default;
+            UnsafeHelpers.SkipParamInit(out directory);
 
             if (!FileTable.TryOpenDirectory(path.ToString(), out FindPosition position))
             {
@@ -64,7 +64,7 @@ namespace LibHac.FsSystem.RomFs
 
         protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
-            file = default;
+            UnsafeHelpers.SkipParamInit(out file);
 
             if (!FileTable.TryOpenFile(path.ToString(), out RomFileInfo info))
             {
@@ -104,7 +104,7 @@ namespace LibHac.FsSystem.RomFs
 
         protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
         {
-            totalSpace = default;
+            UnsafeHelpers.SkipParamInit(out totalSpace);
             return ResultFs.UnsupportedGetTotalSpaceSizeForRomFsFileSystem.Log();
         }
     }

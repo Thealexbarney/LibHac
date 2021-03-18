@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
@@ -86,7 +87,7 @@ namespace LibHac.FsSystem
 
             while (true)
             {
-                DirectoryEntry dirEntry = default;
+                Unsafe.SkipInit(out DirectoryEntry dirEntry);
 
                 directory.Read(out long entriesRead, SpanHelpers.AsSpan(ref dirEntry)).ThrowIfFailure();
                 if (entriesRead == 0) break;

@@ -64,7 +64,7 @@ namespace LibHac.Kernel
         /// <returns>The <see cref="Result"/> of the operation.</returns>
         public Result GetRawData(out IStorage kipData)
         {
-            kipData = default;
+            UnsafeHelpers.SkipParamInit(out kipData);
 
             int kipFileSize = GetFileSize();
 
@@ -81,6 +81,8 @@ namespace LibHac.Kernel
 
         public Result GetSegmentSize(SegmentType segment, out int size)
         {
+            UnsafeHelpers.SkipParamInit(out size);
+
             switch (segment)
             {
                 case SegmentType.Text:
@@ -92,7 +94,6 @@ namespace LibHac.Kernel
                     size = _header.Segments[(int)segment].Size;
                     return Result.Success;
                 default:
-                    size = default;
                     return ResultLibHac.ArgumentOutOfRange.Log();
             }
         }

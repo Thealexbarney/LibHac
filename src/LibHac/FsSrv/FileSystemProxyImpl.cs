@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using LibHac.Common;
+﻿using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
@@ -85,7 +84,7 @@ namespace LibHac.FsSrv
         {
             if (NcaFsService is null)
             {
-                ncaFsService = null;
+                UnsafeHelpers.SkipParamInit(out ncaFsService);
                 return ResultFs.PreconditionViolation.Log();
             }
 
@@ -97,7 +96,7 @@ namespace LibHac.FsSrv
         {
             if (SaveFsService is null)
             {
-                saveFsService = null;
+                UnsafeHelpers.SkipParamInit(out saveFsService);
                 return ResultFs.PreconditionViolation.Log();
             }
 
@@ -146,7 +145,7 @@ namespace LibHac.FsSrv
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
             {
-                fileSystem = default;
+                UnsafeHelpers.SkipParamInit(out fileSystem);
                 return rc;
             }
 
@@ -159,7 +158,7 @@ namespace LibHac.FsSrv
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
             {
-                fileSystem = default;
+                UnsafeHelpers.SkipParamInit(out fileSystem);
                 return rc;
             }
 
@@ -169,12 +168,12 @@ namespace LibHac.FsSrv
         public Result OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             out CodeVerificationData verificationData, in FspPath path, ProgramId programId)
         {
-            Unsafe.SkipInit(out verificationData);
+            UnsafeHelpers.SkipParamInit(out verificationData);
 
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
             {
-                fileSystem = default;
+                UnsafeHelpers.SkipParamInit(out fileSystem);
                 return rc;
             }
 
@@ -194,7 +193,7 @@ namespace LibHac.FsSrv
 
         public Result GetFreeSpaceSizeForSaveData(out long freeSpaceSize, SaveDataSpaceId spaceId)
         {
-            Unsafe.SkipInit(out freeSpaceSize);
+            UnsafeHelpers.SkipParamInit(out freeSpaceSize);
 
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
@@ -207,7 +206,7 @@ namespace LibHac.FsSrv
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
             {
-                fileSystem = default;
+                UnsafeHelpers.SkipParamInit(out fileSystem);
                 return rc;
             }
 
@@ -220,7 +219,7 @@ namespace LibHac.FsSrv
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
             {
-                fileSystem = default;
+                UnsafeHelpers.SkipParamInit(out fileSystem);
                 return rc;
             }
 
@@ -232,7 +231,7 @@ namespace LibHac.FsSrv
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
             {
-                storage = default;
+                UnsafeHelpers.SkipParamInit(out storage);
                 return rc;
             }
 
@@ -245,7 +244,7 @@ namespace LibHac.FsSrv
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
             {
-                storage = default;
+                UnsafeHelpers.SkipParamInit(out storage);
                 return rc;
             }
 
@@ -258,7 +257,7 @@ namespace LibHac.FsSrv
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
             {
-                storage = default;
+                UnsafeHelpers.SkipParamInit(out storage);
                 return rc;
             }
 
@@ -267,7 +266,7 @@ namespace LibHac.FsSrv
 
         public Result OpenPatchDataStorageByCurrentProcess(out ReferenceCountedDisposable<IStorageSf> storage)
         {
-            storage = default;
+            UnsafeHelpers.SkipParamInit(out storage);
             return ResultFs.TargetNotFound.Log();
         }
 
@@ -277,7 +276,7 @@ namespace LibHac.FsSrv
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
             {
-                fileSystem = default;
+                UnsafeHelpers.SkipParamInit(out fileSystem);
                 return rc;
             }
 
@@ -290,7 +289,7 @@ namespace LibHac.FsSrv
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
             {
-                storage = default;
+                UnsafeHelpers.SkipParamInit(out storage);
                 return rc;
             }
 
@@ -381,7 +380,7 @@ namespace LibHac.FsSrv
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure())
             {
-                fileSystem = default;
+                UnsafeHelpers.SkipParamInit(out fileSystem);
                 return rc;
             }
 
@@ -394,7 +393,7 @@ namespace LibHac.FsSrv
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure())
             {
-                fileSystem = default;
+                UnsafeHelpers.SkipParamInit(out fileSystem);
                 return rc;
             }
 
@@ -407,7 +406,7 @@ namespace LibHac.FsSrv
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure())
             {
-                fileSystem = default;
+                UnsafeHelpers.SkipParamInit(out fileSystem);
                 return rc;
             }
 
@@ -516,7 +515,7 @@ namespace LibHac.FsSrv
         public Result OpenHostFileSystemWithOption(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             in FspPath path, MountHostOption option)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -599,7 +598,7 @@ namespace LibHac.FsSrv
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
             {
-                eventNotifier = null;
+                UnsafeHelpers.SkipParamInit(out eventNotifier);
                 return rc;
             }
 
@@ -619,7 +618,7 @@ namespace LibHac.FsSrv
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure())
             {
-                infoReader = default;
+                UnsafeHelpers.SkipParamInit(out infoReader);
                 return rc;
             }
 
@@ -632,7 +631,7 @@ namespace LibHac.FsSrv
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure())
             {
-                infoReader = default;
+                UnsafeHelpers.SkipParamInit(out infoReader);
                 return rc;
             }
 
@@ -645,7 +644,7 @@ namespace LibHac.FsSrv
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure())
             {
-                infoReader = default;
+                UnsafeHelpers.SkipParamInit(out infoReader);
                 return rc;
             }
 
@@ -655,7 +654,7 @@ namespace LibHac.FsSrv
         public Result FindSaveDataWithFilter(out long count, OutBuffer saveDataInfoBuffer, SaveDataSpaceId spaceId,
             in SaveDataFilter filter)
         {
-            Unsafe.SkipInit(out count);
+            UnsafeHelpers.SkipParamInit(out count);
 
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
@@ -669,7 +668,7 @@ namespace LibHac.FsSrv
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure())
             {
-                fileSystem = default;
+                UnsafeHelpers.SkipParamInit(out fileSystem);
                 return rc;
             }
 
@@ -678,7 +677,7 @@ namespace LibHac.FsSrv
 
         public Result QuerySaveDataInternalStorageTotalSize(out long size, SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            Unsafe.SkipInit(out size);
+            UnsafeHelpers.SkipParamInit(out size);
 
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
@@ -688,7 +687,7 @@ namespace LibHac.FsSrv
 
         public Result GetSaveDataCommitId(out long commitId, SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            Unsafe.SkipInit(out commitId);
+            UnsafeHelpers.SkipParamInit(out commitId);
 
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
@@ -702,7 +701,7 @@ namespace LibHac.FsSrv
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure())
             {
-                infoReader = default;
+                UnsafeHelpers.SkipParamInit(out infoReader);
                 return rc;
             }
 
@@ -715,7 +714,7 @@ namespace LibHac.FsSrv
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure())
             {
-                file = default;
+                UnsafeHelpers.SkipParamInit(out file);
                 return rc;
             }
 
@@ -732,8 +731,7 @@ namespace LibHac.FsSrv
 
         public Result GetCacheStorageSize(out long dataSize, out long journalSize, ushort index)
         {
-            Unsafe.SkipInit(out dataSize);
-            Unsafe.SkipInit(out journalSize);
+            UnsafeHelpers.SkipParamInit(out dataSize, out journalSize);
 
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
@@ -743,7 +741,7 @@ namespace LibHac.FsSrv
 
         public Result OpenSaveDataTransferManager(out ReferenceCountedDisposable<ISaveDataTransferManager> manager)
         {
-            manager = default;
+            UnsafeHelpers.SkipParamInit(out manager);
 
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
@@ -754,7 +752,7 @@ namespace LibHac.FsSrv
         public Result OpenSaveDataTransferManagerVersion2(
             out ReferenceCountedDisposable<ISaveDataTransferManagerWithDivision> manager)
         {
-            manager = default;
+            UnsafeHelpers.SkipParamInit(out manager);
 
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
@@ -765,7 +763,7 @@ namespace LibHac.FsSrv
         public Result OpenSaveDataTransferManagerForSaveDataRepair(
             out ReferenceCountedDisposable<ISaveDataTransferManagerForSaveDataRepair> manager)
         {
-            manager = default;
+            UnsafeHelpers.SkipParamInit(out manager);
 
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
@@ -776,7 +774,7 @@ namespace LibHac.FsSrv
         public Result OpenSaveDataTransferManagerForRepair(
             out ReferenceCountedDisposable<ISaveDataTransferManagerForRepair> manager)
         {
-            manager = default;
+            UnsafeHelpers.SkipParamInit(out manager);
 
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
@@ -787,7 +785,7 @@ namespace LibHac.FsSrv
         public Result OpenSaveDataTransferProhibiter(
             out ReferenceCountedDisposable<ISaveDataTransferProhibiter> prohibiter, Ncm.ApplicationId applicationId)
         {
-            prohibiter = default;
+            UnsafeHelpers.SkipParamInit(out prohibiter);
 
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
@@ -798,7 +796,7 @@ namespace LibHac.FsSrv
         public Result ListAccessibleSaveDataOwnerId(out int readCount, OutBuffer idBuffer, ProgramId programId,
             int startIndex, int bufferIdCount)
         {
-            Unsafe.SkipInit(out readCount);
+            UnsafeHelpers.SkipParamInit(out readCount);
 
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
@@ -814,7 +812,7 @@ namespace LibHac.FsSrv
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure())
             {
-                saveMover = default;
+                UnsafeHelpers.SkipParamInit(out saveMover);
                 return rc;
             }
 
@@ -849,7 +847,7 @@ namespace LibHac.FsSrv
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
             {
-                fileSystem = null;
+                UnsafeHelpers.SkipParamInit(out fileSystem);
                 return rc;
             }
 
@@ -859,7 +857,7 @@ namespace LibHac.FsSrv
         public Result OpenCloudBackupWorkStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             CloudBackupWorkStorageId storageId)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
             var storageFlag = StorageType.NonGameCard;
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
 
@@ -893,7 +891,7 @@ namespace LibHac.FsSrv
         public Result OpenCustomStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             CustomStorageId storageId)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
             var storageFlag = StorageType.NonGameCard;
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
 
@@ -935,7 +933,7 @@ namespace LibHac.FsSrv
 
         public Result IsArchivedProgram(out bool isArchived, ulong processId)
         {
-            Unsafe.SkipInit(out isArchived);
+            UnsafeHelpers.SkipParamInit(out isArchived);
 
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure()) return rc;
@@ -945,7 +943,7 @@ namespace LibHac.FsSrv
 
         public Result QuerySaveDataTotalSize(out long totalSize, long dataSize, long journalSize)
         {
-            Unsafe.SkipInit(out totalSize);
+            UnsafeHelpers.SkipParamInit(out totalSize);
 
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
@@ -960,7 +958,7 @@ namespace LibHac.FsSrv
 
         public Result GetRightsId(out RightsId rightsId, ProgramId programId, StorageId storageId)
         {
-            Unsafe.SkipInit(out rightsId);
+            UnsafeHelpers.SkipParamInit(out rightsId);
 
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure()) return rc;
@@ -975,8 +973,7 @@ namespace LibHac.FsSrv
 
         public Result GetRightsIdAndKeyGenerationByPath(out RightsId rightsId, out byte keyGeneration, in FspPath path)
         {
-            Unsafe.SkipInit(out rightsId);
-            Unsafe.SkipInit(out keyGeneration);
+            UnsafeHelpers.SkipParamInit(out rightsId, out keyGeneration);
 
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure()) return rc;
@@ -1146,7 +1143,7 @@ namespace LibHac.FsSrv
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
             if (rc.IsFailure())
             {
-                fileSystem = default;
+                UnsafeHelpers.SkipParamInit(out fileSystem);
                 return rc;
             }
 
@@ -1181,7 +1178,7 @@ namespace LibHac.FsSrv
 
         public Result IsSdCardAccessible(out bool isAccessible)
         {
-            Unsafe.SkipInit(out isAccessible);
+            UnsafeHelpers.SkipParamInit(out isAccessible);
 
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
@@ -1218,7 +1215,7 @@ namespace LibHac.FsSrv
 
         public Result OpenMultiCommitManager(out ReferenceCountedDisposable<IMultiCommitManager> commitManager)
         {
-            commitManager = null;
+            UnsafeHelpers.SkipParamInit(out commitManager);
 
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;

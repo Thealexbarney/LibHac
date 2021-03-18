@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-
+using LibHac.Common;
 using BaseType = System.UInt32;
 
 namespace LibHac
@@ -116,7 +116,7 @@ namespace LibHac
 
             if (resolver == null)
             {
-                name = default;
+                UnsafeHelpers.SkipParamInit(out name);
                 return false;
             }
 

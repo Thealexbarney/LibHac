@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using LibHac.Account;
+using LibHac.Common;
 using LibHac.Fs.Shim;
 using LibHac.Ncm;
 using LibHac.Ns;
@@ -13,7 +14,7 @@ namespace LibHac.Fs
         public static Result EnsureApplicationSaveData(FileSystemClient fs, out long requiredSize, Ncm.ApplicationId applicationId,
             ref ApplicationControlProperty nacp, ref Uid uid)
         {
-            requiredSize = default;
+            UnsafeHelpers.SkipParamInit(out requiredSize);
             long requiredSizeSum = 0;
 
             // Create local variable for use in closures
@@ -214,7 +215,7 @@ namespace LibHac.Fs
                 return Result.Success;
             }
 
-            requiredSize = default;
+            UnsafeHelpers.SkipParamInit(out requiredSize);
             long requiredSizeBcat = 0;
 
             var filter = new SaveDataFilter();
@@ -236,7 +237,7 @@ namespace LibHac.Fs
             out CacheStorageTargetMedia target, Ncm.ApplicationId applicationId, ulong saveDataOwnerId, ushort index,
             long dataSize, long journalSize, bool allowExisting)
         {
-            requiredSize = default;
+            UnsafeHelpers.SkipParamInit(out requiredSize);
             target = CacheStorageTargetMedia.SdCard;
 
             Result rc = fs.GetCacheStorageTargetMediaImpl(out CacheStorageTargetMedia targetMedia, applicationId);
@@ -317,12 +318,10 @@ namespace LibHac.Fs
         public static Result EnsureApplicationCacheStorage(this FileSystemClient fs, out long requiredSize,
             out CacheStorageTargetMedia target, Ncm.ApplicationId applicationId, ref ApplicationControlProperty nacp)
         {
+            UnsafeHelpers.SkipParamInit(out requiredSize, out target);
+
             if (nacp.CacheStorageSize <= 0)
-            {
-                requiredSize = default;
-                target = default;
                 return Result.Success;
-            }
 
             return EnsureApplicationCacheStorageImpl(fs, out requiredSize, out target, applicationId,
                 nacp.SaveDataOwnerId.Value, 0, nacp.CacheStorageSize, nacp.CacheStorageJournalSize, true);
@@ -338,7 +337,7 @@ namespace LibHac.Fs
             SaveDataSpaceId spaceId, Ncm.ApplicationId applicationId, ulong saveDataOwnerId, ushort index,
             long dataSize, long journalSize, bool allowExisting)
         {
-            requiredSize = default;
+                UnsafeHelpers.SkipParamInit(out requiredSize);
             long requiredSizeLocal = 0;
 
             var filter = new SaveDataFilter();

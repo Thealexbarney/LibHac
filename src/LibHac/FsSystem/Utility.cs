@@ -45,7 +45,7 @@ namespace LibHac.FsSystem
         public static Result IterateDirectoryRecursively(IFileSystem fs, U8Span rootPath, FsIterationTask onEnterDir,
             FsIterationTask onExitDir, FsIterationTask onFile)
         {
-            DirectoryEntry entry = default;
+            var entry = new DirectoryEntry();
             Span<byte> workPath = stackalloc byte[PathTools.MaxPathLength + 1];
 
             return IterateDirectoryRecursively(fs, rootPath, workPath, ref entry, onEnterDir, onExitDir,
@@ -234,7 +234,7 @@ namespace LibHac.FsSystem
 
                 if (!tempUniqueLock.TryLock())
                 {
-                    uniqueLock = default;
+                    UnsafeHelpers.SkipParamInit(out uniqueLock);
                     return ResultFs.OpenCountLimit.Log();
                 }
 
@@ -250,7 +250,7 @@ namespace LibHac.FsSystem
         public static Result MakeUniqueLockWithPin<T>(out IUniqueLock uniqueLock, SemaphoreAdaptor semaphore,
             ref ReferenceCountedDisposable<T> objectToPin) where T : class, IDisposable
         {
-            uniqueLock = default;
+            UnsafeHelpers.SkipParamInit(out uniqueLock);
 
             UniqueLockSemaphore tempUniqueLock = default;
             try

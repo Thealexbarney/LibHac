@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 
 namespace LibHac.Sm
 {
@@ -16,7 +17,7 @@ namespace LibHac.Sm
             Result rc = Server.GetService(out object service, ServiceName.Encode(name));
             if (rc.IsFailure())
             {
-                serviceObject = default;
+                UnsafeHelpers.SkipParamInit(out serviceObject);
                 return rc;
             }
 

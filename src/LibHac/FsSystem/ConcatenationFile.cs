@@ -40,7 +40,7 @@ namespace LibHac.FsSystem
         protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
             in ReadOption option)
         {
-            bytesRead = default;
+            UnsafeHelpers.SkipParamInit(out bytesRead);
 
             long inPos = offset;
             int outPos = 0;
@@ -124,7 +124,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetSize(out long size)
         {
-            size = default;
+            UnsafeHelpers.SkipParamInit(out size);
 
             foreach (IFile file in Sources)
             {

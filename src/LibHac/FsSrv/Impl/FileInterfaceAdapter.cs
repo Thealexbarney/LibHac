@@ -23,7 +23,7 @@ namespace LibHac.FsSrv.Impl
         public Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption option)
         {
             const int maxTryCount = 2;
-            bytesRead = default;
+            UnsafeHelpers.SkipParamInit(out bytesRead);
 
             if (offset < 0)
                 return ResultFs.InvalidOffset.Log();
@@ -78,7 +78,7 @@ namespace LibHac.FsSrv.Impl
         public Result GetSize(out long size)
         {
             const int maxTryCount = 2;
-            size = default;
+            UnsafeHelpers.SkipParamInit(out size);
 
             Result rc = Result.Success;
             long tmpSize = 0;
@@ -100,7 +100,8 @@ namespace LibHac.FsSrv.Impl
 
         public Result OperateRange(out QueryRangeInfo rangeInfo, int operationId, long offset, long size)
         {
-            rangeInfo = new QueryRangeInfo();
+            UnsafeHelpers.SkipParamInit(out rangeInfo);
+            rangeInfo.Clear();
 
             if (operationId == (int)OperationId.InvalidateCache)
             {

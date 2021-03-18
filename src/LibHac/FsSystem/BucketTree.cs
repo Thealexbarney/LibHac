@@ -594,7 +594,7 @@ namespace LibHac.FsSystem
             private Result FindEntrySetWithBuffer(out int outIndex, long virtualAddress, int nodeIndex,
                 Span<byte> buffer)
             {
-                outIndex = default;
+                UnsafeHelpers.SkipParamInit(out outIndex);
 
                 // Calculate node extents.
                 long nodeSize = Tree.NodeSize;

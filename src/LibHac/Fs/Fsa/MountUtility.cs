@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs.Impl;
@@ -14,7 +13,7 @@ namespace LibHac.Fs.Fsa
     {
         internal static Result GetMountNameAndSubPath(out MountName mountName, out U8Span subPath, U8Span path)
         {
-            Unsafe.SkipInit(out mountName);
+            UnsafeHelpers.SkipParamInit(out mountName);
             subPath = default;
 
             int mountLen = 0;
@@ -94,7 +93,7 @@ namespace LibHac.Fs.Fsa
         internal static Result FindFileSystem(this FileSystemClientImpl fs, out FileSystemAccessor fileSystem,
             out U8Span subPath, U8Span path)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
             subPath = default;
 
             if (path.IsNull())
@@ -153,7 +152,7 @@ namespace LibHac.Fs.Fsa
 
         public static Result IsMounted(this FileSystemClientImpl fs, out bool isMounted, U8Span mountName)
         {
-            Unsafe.SkipInit(out isMounted);
+            UnsafeHelpers.SkipParamInit(out isMounted);
 
             Result rc = fs.Find(out _, mountName);
             if (rc.IsFailure())

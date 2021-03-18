@@ -56,7 +56,7 @@ namespace LibHac.FsSrv.Creators
 
         public Result Create(out IFileSystem fileSystem, string rootPath, BisPartitionId partitionId)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             if (!IsValidPartitionId(partitionId)) return ResultFs.InvalidArgument.Log();
             if (rootPath == null) return ResultFs.NullptrArgument.Log();
@@ -91,7 +91,7 @@ namespace LibHac.FsSrv.Creators
         public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, U8Span rootPath,
             BisPartitionId partitionId, bool caseSensitive)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             if (!IsValidPartitionId(partitionId)) return ResultFs.InvalidArgument.Log();
             if (rootPath.IsNull()) return ResultFs.NullptrArgument.Log();
@@ -136,7 +136,7 @@ namespace LibHac.FsSrv.Creators
 
         public Result CreateFatFileSystem(out IFileSystem fileSystem, BisPartitionId partitionId)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
             return ResultFs.NotImplemented.Log();
         }
 

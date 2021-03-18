@@ -321,7 +321,7 @@ namespace LibHac.FsSrv
             private static Result GetAccessibilityForSaveData(out Accessibility accessibility, ProgramInfo programInfo,
                 ExtraDataGetter extraDataGetter)
             {
-                Unsafe.SkipInit(out accessibility);
+                UnsafeHelpers.SkipParamInit(out accessibility);
 
                 Result rc = extraDataGetter(out SaveDataExtraData extraData);
                 if (rc.IsFailure())
@@ -797,7 +797,7 @@ namespace LibHac.FsSrv
 
         public Result GetSaveDataInfo(out SaveDataInfo info, SaveDataSpaceId spaceId, in SaveDataAttribute attribute)
         {
-            Unsafe.SkipInit(out info);
+            UnsafeHelpers.SkipParamInit(out info);
 
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
@@ -816,7 +816,7 @@ namespace LibHac.FsSrv
 
         public Result QuerySaveDataTotalSize(out long totalSize, long dataSize, long journalSize)
         {
-            Unsafe.SkipInit(out totalSize);
+            UnsafeHelpers.SkipParamInit(out totalSize);
 
             if (dataSize < 0 || journalSize < 0)
                 return ResultFs.InvalidSize.Log();
@@ -827,7 +827,7 @@ namespace LibHac.FsSrv
         public Result CreateSaveDataFileSystem(in SaveDataAttribute attribute, in SaveDataCreationInfo creationInfo,
             in SaveDataMetaInfo metaInfo)
         {
-            Optional<HashSalt> hashSalt = default;
+            var hashSalt = new Optional<HashSalt>();
 
             return CreateSaveDataFileSystemWithHashSaltImpl(in attribute, in creationInfo, in metaInfo, in hashSalt);
         }
@@ -930,8 +930,7 @@ namespace LibHac.FsSrv
             out ulong saveDataId, SaveDataSpaceId spaceId, in SaveDataAttribute attribute, bool openReadOnly,
             bool cacheExtraData)
         {
-            Unsafe.SkipInit(out saveDataId);
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem, out saveDataId);
 
             SaveDataIndexerAccessor accessor = null;
 
@@ -1028,7 +1027,7 @@ namespace LibHac.FsSrv
         private Result OpenUserSaveDataFileSystemCore(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             SaveDataSpaceId spaceId, in SaveDataAttribute attribute, ProgramInfo programInfo, bool openReadOnly)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
             IUniqueLock mountCountSemaphore = null;
             ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
             ReferenceCountedDisposable<SaveDataFileSystemService> saveService = null;
@@ -1089,7 +1088,7 @@ namespace LibHac.FsSrv
         private Result OpenUserSaveDataFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             SaveDataSpaceId spaceId, in SaveDataAttribute attribute, bool openReadOnly)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -1132,7 +1131,7 @@ namespace LibHac.FsSrv
         public Result OpenSaveDataFileSystemBySystemSaveDataId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             SaveDataSpaceId spaceId, in SaveDataAttribute attribute)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             if (!IsStaticSaveDataIdValueRange(attribute.StaticSaveDataId))
                 return ResultFs.InvalidArgument.Log();
@@ -1262,7 +1261,7 @@ namespace LibHac.FsSrv
 
         public Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader)
         {
-            infoReader = default;
+            UnsafeHelpers.SkipParamInit(out infoReader);
 
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
 
@@ -1299,7 +1298,7 @@ namespace LibHac.FsSrv
         public Result OpenSaveDataInfoReaderBySaveDataSpaceId(
             out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader, SaveDataSpaceId spaceId)
         {
-            infoReader = default;
+            UnsafeHelpers.SkipParamInit(out infoReader);
 
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
@@ -1338,7 +1337,7 @@ namespace LibHac.FsSrv
         public Result OpenSaveDataInfoReaderWithFilter(out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader,
             SaveDataSpaceId spaceId, in SaveDataFilter filter)
         {
-            infoReader = default;
+            UnsafeHelpers.SkipParamInit(out infoReader);
 
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
@@ -1379,8 +1378,7 @@ namespace LibHac.FsSrv
         private Result FindSaveDataWithFilterImpl(out long count, out SaveDataInfo info, SaveDataSpaceId spaceId,
             in SaveDataInfoFilter infoFilter)
         {
-            Unsafe.SkipInit(out count);
-            Unsafe.SkipInit(out info);
+            UnsafeHelpers.SkipParamInit(out count, out info);
 
             SaveDataIndexerAccessor accessor = null;
             ReferenceCountedDisposable<SaveDataInfoReaderImpl> reader = null;
@@ -1409,7 +1407,7 @@ namespace LibHac.FsSrv
         public Result FindSaveDataWithFilter(out long count, OutBuffer saveDataInfoBuffer, SaveDataSpaceId spaceId,
             in SaveDataFilter filter)
         {
-            Unsafe.SkipInit(out count);
+            UnsafeHelpers.SkipParamInit(out count);
 
             if (saveDataInfoBuffer.Size != Unsafe.SizeOf<SaveDataInfo>())
                 return ResultFs.InvalidArgument.Log();
@@ -1467,7 +1465,7 @@ namespace LibHac.FsSrv
         public Result OpenSaveDataInfoReaderOnlyCacheStorage(
             out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader)
         {
-            infoReader = null;
+            UnsafeHelpers.SkipParamInit(out infoReader);
 
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
@@ -1505,7 +1503,7 @@ namespace LibHac.FsSrv
 
         private Result GetCacheStorageSpaceId(out SaveDataSpaceId spaceId)
         {
-            Unsafe.SkipInit(out spaceId);
+            UnsafeHelpers.SkipParamInit(out spaceId);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -1516,7 +1514,7 @@ namespace LibHac.FsSrv
 
         private Result GetCacheStorageSpaceId(out SaveDataSpaceId spaceId, ulong programId)
         {
-            Unsafe.SkipInit(out spaceId);
+            UnsafeHelpers.SkipParamInit(out spaceId);
             Result rc;
 
             // Cache storage on the SD card will always take priority over case storage in NAND
@@ -1545,7 +1543,7 @@ namespace LibHac.FsSrv
 
             Result SaveExists(out bool exists, SaveDataSpaceId saveSpaceId)
             {
-                Unsafe.SkipInit(out exists);
+                UnsafeHelpers.SkipParamInit(out exists);
 
                 var infoFilter = new SaveDataInfoFilter(saveSpaceId, new ProgramId(programId), SaveDataType.Cache,
                     default, default, default, 0);
@@ -1716,7 +1714,7 @@ namespace LibHac.FsSrv
 
         public Result OpenMultiCommitManager(out ReferenceCountedDisposable<IMultiCommitManager> commitManager)
         {
-            commitManager = default;
+            UnsafeHelpers.SkipParamInit(out commitManager);
 
             ReferenceCountedDisposable<SaveDataFileSystemService> saveService = null;
             ReferenceCountedDisposable<ISaveDataMultiCommitCoreInterface> commitInterface = null;
@@ -1797,7 +1795,7 @@ namespace LibHac.FsSrv
 
         private Result TryAcquireSaveDataEntryOpenCountSemaphore(out IUniqueLock semaphoreLock)
         {
-            semaphoreLock = null;
+            UnsafeHelpers.SkipParamInit(out semaphoreLock);
 
             ReferenceCountedDisposable<SaveDataFileSystemService> saveService = null;
             IUniqueLock uniqueLock = null;
@@ -1821,7 +1819,7 @@ namespace LibHac.FsSrv
 
         private Result TryAcquireSaveDataMountCountSemaphore(out IUniqueLock semaphoreLock)
         {
-            semaphoreLock = null;
+            UnsafeHelpers.SkipParamInit(out semaphoreLock);
 
             ReferenceCountedDisposable<SaveDataFileSystemService> saveService = null;
             IUniqueLock uniqueLock = null;
@@ -1868,9 +1866,9 @@ namespace LibHac.FsSrv
 
         private Result OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, SaveDataSpaceId spaceId)
         {
-            accessor = default;
-            SaveDataIndexerAccessor accessorTemp = null;
+            UnsafeHelpers.SkipParamInit(out accessor);
 
+            SaveDataIndexerAccessor accessorTemp = null;
             try
             {
                 Result rc = ServiceImpl.OpenSaveDataIndexerAccessor(out accessorTemp, out bool neededInit, spaceId);

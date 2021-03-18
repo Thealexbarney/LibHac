@@ -55,7 +55,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
-            directory = default;
+            UnsafeHelpers.SkipParamInit(out directory);
 
             if (!IsInitialized)
                 return ResultFs.PreconditionViolation.Log();
@@ -72,7 +72,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
-            file = default;
+            UnsafeHelpers.SkipParamInit(out file);
 
             if (!IsInitialized)
                 return ResultFs.PreconditionViolation.Log();
@@ -92,7 +92,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
-            entryType = default;
+            UnsafeHelpers.SkipParamInit(out entryType);
 
             if (!IsInitialized)
                 return ResultFs.PreconditionViolation.Log();
@@ -148,7 +148,7 @@ namespace LibHac.FsSystem
             protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
                 in ReadOption option)
             {
-                bytesRead = default;
+                UnsafeHelpers.SkipParamInit(out bytesRead);
 
                 Result rc = DryRead(out long bytesToRead, offset, destination.Length, in option, Mode);
                 if (rc.IsFailure()) return rc;

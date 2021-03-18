@@ -84,7 +84,8 @@ namespace LibHac.FsSrv.Impl
 
         public Result OperateRange(out QueryRangeInfo rangeInfo, int operationId, long offset, long size)
         {
-            rangeInfo = new QueryRangeInfo();
+            UnsafeHelpers.SkipParamInit(out rangeInfo);
+            rangeInfo.Clear();
 
             if (operationId == (int)OperationId.InvalidateCache)
             {

@@ -48,7 +48,7 @@ namespace LibHac.Fs.Shim
             static Result Mount(FileSystemClient fs, out CodeVerificationData verificationData,
                 U8Span mountName, U8Span path, ProgramId programId)
             {
-                Unsafe.SkipInit(out verificationData);
+                UnsafeHelpers.SkipParamInit(out verificationData);
 
                 Result rc = fs.Impl.CheckMountName(mountName);
                 if (rc.IsFailure()) return rc;

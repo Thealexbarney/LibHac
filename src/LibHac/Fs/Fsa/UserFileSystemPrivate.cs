@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs.Impl;
 using LibHac.Os;
@@ -57,7 +56,7 @@ namespace LibHac.Fs.Fsa
 
         public static Result GetTotalSpaceSize(this FileSystemClient fs, out long totalSpace, U8Span path)
         {
-            Unsafe.SkipInit(out totalSpace);
+            UnsafeHelpers.SkipParamInit(out totalSpace);
 
             Result rc = fs.Impl.FindFileSystem(out FileSystemAccessor fileSystem, out U8Span subPath, path);
             fs.Impl.AbortIfNeeded(rc);

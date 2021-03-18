@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Diag;
 
 namespace LibHac.Fs
@@ -194,7 +195,7 @@ namespace LibHac.Fs
 
         protected override Result DoGetSize(out long size)
         {
-            size = default;
+            UnsafeHelpers.SkipParamInit(out size);
 
             if (!IsValid()) return ResultFs.NotInitialized.Log();
 

@@ -38,7 +38,7 @@ namespace LibHac.Fs.Shim
         private static Result OpenHostFileSystemImpl(FileSystemClient fs, out IFileSystem fileSystem, in FspPath path,
             MountHostOption option)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
@@ -130,7 +130,7 @@ namespace LibHac.Fs.Shim
         private static Result OpenHostFileSystem(FileSystemClient fs, out IFileSystem fileSystem, U8Span mountName,
             U8Span path, MountHostOption option)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             if (mountName.IsNull())
                 return ResultFs.NullptrArgument.Log();
@@ -196,7 +196,7 @@ namespace LibHac.Fs.Shim
         private static Result PreMountHost(FileSystemClient fs, out HostCommonMountNameGenerator nameGenerator,
             U8Span mountName, U8Span path)
         {
-            nameGenerator = default;
+            UnsafeHelpers.SkipParamInit(out nameGenerator);
 
             Result rc = fs.Impl.CheckMountName(mountName);
             if (rc.IsFailure()) return rc;

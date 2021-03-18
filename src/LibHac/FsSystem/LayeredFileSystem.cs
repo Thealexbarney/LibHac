@@ -39,7 +39,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
-            directory = default;
+            UnsafeHelpers.SkipParamInit(out directory);
 
             // Open directories from all layers so they can be merged
             // Only allocate the list for multiple sources if needed
@@ -110,7 +110,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
-            file = default;
+            UnsafeHelpers.SkipParamInit(out file);
 
             foreach (IFileSystem fs in Sources)
             {
@@ -139,6 +139,8 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
+            UnsafeHelpers.SkipParamInit(out entryType);
+
             foreach (IFileSystem fs in Sources)
             {
                 Result getEntryResult = fs.GetEntryType(out DirectoryEntryType type, path);
@@ -150,12 +152,13 @@ namespace LibHac.FsSystem
                 }
             }
 
-            entryType = default;
             return ResultFs.PathNotFound.Log();
         }
 
         protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
         {
+            UnsafeHelpers.SkipParamInit(out timeStamp);
+
             foreach (IFileSystem fs in Sources)
             {
                 Result getEntryResult = fs.GetEntryType(out _, path);
@@ -166,7 +169,6 @@ namespace LibHac.FsSystem
                 }
             }
 
-            timeStamp = default;
             return ResultFs.PathNotFound.Log();
         }
 

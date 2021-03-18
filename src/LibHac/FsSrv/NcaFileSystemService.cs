@@ -60,7 +60,7 @@ namespace LibHac.FsSrv
         public Result OpenFileSystemWithPatch(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             ProgramId programId, FileSystemProxyType fsType)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             const StorageType storageFlag = StorageType.All;
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
@@ -202,7 +202,7 @@ namespace LibHac.FsSrv
         public Result OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath path,
             ulong id, FileSystemProxyType fsType)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -287,7 +287,7 @@ namespace LibHac.FsSrv
         public Result OpenDataFileSystemWithProgramIndex(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             byte programIndex)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -335,7 +335,7 @@ namespace LibHac.FsSrv
 
         public Result GetRightsId(out RightsId rightsId, ProgramId programId, StorageId storageId)
         {
-            Unsafe.SkipInit(out rightsId);
+            UnsafeHelpers.SkipParamInit(out rightsId);
 
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.All);
 
@@ -360,8 +360,7 @@ namespace LibHac.FsSrv
 
         public Result GetRightsIdAndKeyGenerationByPath(out RightsId rightsId, out byte keyGeneration, in FspPath path)
         {
-            Unsafe.SkipInit(out rightsId);
-            Unsafe.SkipInit(out keyGeneration);
+            UnsafeHelpers.SkipParamInit(out rightsId, out keyGeneration);
 
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.All);
 
@@ -386,8 +385,7 @@ namespace LibHac.FsSrv
         private Result OpenDataFileSystemCore(out ReferenceCountedDisposable<IFileSystem> fileSystem, out bool isHostFs,
             ulong programId, StorageId storageId)
         {
-            fileSystem = default;
-            Unsafe.SkipInit(out isHostFs);
+            UnsafeHelpers.SkipParamInit(out fileSystem, out isHostFs);
 
             if (Unsafe.IsNullRef(ref isHostFs))
                 return ResultFs.NullptrArgument.Log();
@@ -424,7 +422,7 @@ namespace LibHac.FsSrv
         public Result OpenContentStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             ContentStorageId contentStorageId)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             StorageType storageFlag = contentStorageId == ContentStorageId.System ? StorageType.Bis : StorageType.All;
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
@@ -511,7 +509,7 @@ namespace LibHac.FsSrv
 
         public Result OpenRegisteredUpdatePartition(out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             var storageFlag = StorageType.All;
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);

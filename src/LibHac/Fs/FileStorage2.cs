@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using LibHac.Common;
 using LibHac.Fs.Fsa;
 
 namespace LibHac.Fs
@@ -75,12 +76,10 @@ namespace LibHac.Fs
 
         protected override Result DoGetSize(out long size)
         {
+            UnsafeHelpers.SkipParamInit(out size);
+
             Result rc = UpdateSize();
-            if (rc.IsFailure())
-            {
-                size = default;
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
             size = FileSize;
             return Result.Success;

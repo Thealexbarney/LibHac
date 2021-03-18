@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.FsSystem;
 
@@ -214,11 +213,10 @@ namespace LibHac.Fs.Fsa
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
         public Result GetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
+            UnsafeHelpers.SkipParamInit(out entryType);
+
             if (path.IsNull())
-            {
-                entryType = default;
                 return ResultFs.NullptrArgument.Log();
-            }
 
             return DoGetEntryType(out entryType, path);
         }
@@ -231,11 +229,10 @@ namespace LibHac.Fs.Fsa
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
         public Result GetFreeSpaceSize(out long freeSpace, U8Span path)
         {
+            UnsafeHelpers.SkipParamInit(out freeSpace);
+
             if (path.IsNull())
-            {
-                freeSpace = default;
                 return ResultFs.NullptrArgument.Log();
-            }
 
             return DoGetFreeSpaceSize(out freeSpace, path);
         }
@@ -248,11 +245,10 @@ namespace LibHac.Fs.Fsa
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
         public Result GetTotalSpaceSize(out long totalSpace, U8Span path)
         {
+            UnsafeHelpers.SkipParamInit(out totalSpace);
+
             if (path.IsNull())
-            {
-                totalSpace = default;
                 return ResultFs.NullptrArgument.Log();
-            }
 
             return DoGetTotalSpaceSize(out totalSpace, path);
         }
@@ -274,19 +270,19 @@ namespace LibHac.Fs.Fsa
         {
             if (path.IsNull())
             {
-                file = default;
+                UnsafeHelpers.SkipParamInit(out file);
                 return ResultFs.NullptrArgument.Log();
             }
 
             if ((mode & OpenMode.ReadWrite) == 0)
             {
-                file = default;
+                UnsafeHelpers.SkipParamInit(out file);
                 return ResultFs.InvalidOpenMode.Log();
             }
 
             if ((mode & ~OpenMode.All) != 0)
             {
-                file = default;
+                UnsafeHelpers.SkipParamInit(out file);
                 return ResultFs.InvalidOpenMode.Log();
             }
 
@@ -310,19 +306,19 @@ namespace LibHac.Fs.Fsa
         {
             if (path.IsNull())
             {
-                directory = default;
+                UnsafeHelpers.SkipParamInit(out directory);
                 return ResultFs.NullptrArgument.Log();
             }
 
             if ((mode & OpenDirectoryMode.All) == 0)
             {
-                directory = default;
+                UnsafeHelpers.SkipParamInit(out directory);
                 return ResultFs.InvalidOpenMode.Log();
             }
 
             if ((mode & ~(OpenDirectoryMode.All | OpenDirectoryMode.NoFileSize)) != 0)
             {
-                directory = default;
+                UnsafeHelpers.SkipParamInit(out directory);
                 return ResultFs.InvalidOpenMode.Log();
             }
 
@@ -358,7 +354,7 @@ namespace LibHac.Fs.Fsa
         {
             if (path.IsNull())
             {
-                timeStamp = default;
+                UnsafeHelpers.SkipParamInit(out timeStamp);
                 return ResultFs.NullptrArgument.Log();
             }
 
@@ -397,13 +393,13 @@ namespace LibHac.Fs.Fsa
 
         protected virtual Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
         {
-            freeSpace = default;
+            UnsafeHelpers.SkipParamInit(out freeSpace);
             return ResultFs.NotImplemented.Log();
         }
 
         protected virtual Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
         {
-            totalSpace = default;
+            UnsafeHelpers.SkipParamInit(out totalSpace);
             return ResultFs.NotImplemented.Log();
         }
 
@@ -417,7 +413,7 @@ namespace LibHac.Fs.Fsa
 
         protected virtual Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
         {
-            Unsafe.SkipInit(out timeStamp);
+            UnsafeHelpers.SkipParamInit(out timeStamp);
             return ResultFs.NotImplemented.Log();
         }
 

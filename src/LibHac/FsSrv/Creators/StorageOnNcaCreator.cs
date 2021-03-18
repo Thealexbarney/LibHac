@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
@@ -23,8 +24,7 @@ namespace LibHac.FsSrv.Creators
         public Result Create(out ReferenceCountedDisposable<IStorage> storage, out NcaFsHeader fsHeader, Nca nca,
             int fsIndex, bool isCodeFs)
         {
-            storage = default;
-            fsHeader = default;
+            UnsafeHelpers.SkipParamInit(out storage, out fsHeader);
 
             Result rc = OpenStorage(out IStorage storageTemp, nca, fsIndex);
             if (rc.IsFailure()) return rc;
@@ -67,7 +67,7 @@ namespace LibHac.FsSrv.Creators
 
         private Result OpenStorage(out IStorage storage, Nca nca, int fsIndex)
         {
-            storage = default;
+            UnsafeHelpers.SkipParamInit(out storage);
 
             if (!nca.SectionExists(fsIndex))
                 return ResultFs.PartitionNotFound.Log();

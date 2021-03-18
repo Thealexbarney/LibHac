@@ -34,11 +34,12 @@ namespace LibHac.Bcat.Detail.Service.Core
 
         public Result GetEntry(out DeliveryCacheFileMetaEntry entry, int index)
         {
+            UnsafeHelpers.SkipParamInit(out entry);
+
             lock (Locker)
             {
                 if (index >= Count)
                 {
-                    entry = default;
                     return ResultBcat.NotFound.Log();
                 }
 
@@ -49,6 +50,8 @@ namespace LibHac.Bcat.Detail.Service.Core
 
         public Result FindEntry(out DeliveryCacheFileMetaEntry entry, ref FileName fileName)
         {
+            UnsafeHelpers.SkipParamInit(out entry);
+
             lock (Locker)
             {
                 for (int i = 0; i < Count; i++)
@@ -60,7 +63,6 @@ namespace LibHac.Bcat.Detail.Service.Core
                     }
                 }
 
-                entry = default;
                 return ResultBcat.NotFound.Log();
             }
         }

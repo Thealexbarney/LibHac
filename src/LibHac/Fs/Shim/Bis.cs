@@ -49,7 +49,8 @@ namespace LibHac.Fs.Shim
             }
         }
 
-        private static Result MountBis(this FileSystemClientImpl fs, U8Span mountName, BisPartitionId partitionId, U8Span rootPath)
+        private static Result MountBis(this FileSystemClientImpl fs, U8Span mountName, BisPartitionId partitionId,
+            U8Span rootPath)
         {
             Result rc;
 
@@ -73,6 +74,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = Mount(fs, mountName, partitionId);
             }
+
             fs.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
@@ -192,7 +194,7 @@ namespace LibHac.Fs.Shim
         public static Result OpenBisPartition(this FileSystemClient fs, out IStorage partitionStorage,
             BisPartitionId partitionId)
         {
-            partitionStorage = default;
+            UnsafeHelpers.SkipParamInit(out partitionStorage);
 
             ReferenceCountedDisposable<IStorageSf> storage = null;
             try

@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
@@ -41,7 +42,7 @@ namespace LibHac.FsSrv.Creators
         {
             if (!IsValidPartitionId(partitionId))
             {
-                fileSystem = default;
+                UnsafeHelpers.SkipParamInit(out fileSystem);
                 return false;
             }
 
@@ -54,7 +55,7 @@ namespace LibHac.FsSrv.Creators
         {
             if (!IsValidPartitionId(partitionId))
             {
-                path = default;
+                UnsafeHelpers.SkipParamInit(out path);
                 return false;
             }
 

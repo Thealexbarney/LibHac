@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Util;
 
@@ -137,27 +138,24 @@ namespace LibHac.FsSystem.Save
 
         public bool TryGetValue(ref SaveEntryKey key, out T value)
         {
+            UnsafeHelpers.SkipParamInit(out value);
+
             int index = GetIndexFromKey(ref key).Index;
 
             if (index < 0)
-            {
-                value = default;
                 return false;
-            }
 
             return TryGetValue(index, out value);
         }
 
         public bool TryGetValue(int index, out T value)
         {
+            UnsafeHelpers.SkipParamInit(out value);
+
             if (index < 0 || index >= GetListCapacity())
-            {
-                value = default;
                 return false;
-            }
 
             GetValue(index, out value);
-
             return true;
         }
 
@@ -178,16 +176,13 @@ namespace LibHac.FsSystem.Save
         /// the specified key; otherwise, <see langword="false"/>.</returns>
         public bool TryGetValue(int index, out T value, ref Span<byte> name)
         {
+            UnsafeHelpers.SkipParamInit(out value);
             Debug.Assert(name.Length >= MaxNameLength);
 
             if (index < 0 || index >= GetListCapacity())
-            {
-                value = default;
                 return false;
-            }
 
             GetValue(index, out value, ref name);
-
             return true;
         }
 
@@ -272,7 +267,7 @@ namespace LibHac.FsSystem.Save
                 ReadEntry(index, out entry);
 
                 entry.Parent = 0;
-                entry.Value = default;
+                entry.Value = new T();
                 name.Fill(SaveDataFileSystem.TrimFillValue);
 
                 WriteEntry(index, ref entry);

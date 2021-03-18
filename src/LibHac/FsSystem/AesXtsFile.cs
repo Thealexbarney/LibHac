@@ -61,7 +61,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, in ReadOption option)
         {
-            bytesRead = default;
+            UnsafeHelpers.SkipParamInit(out bytesRead);
 
             Result rc = DryRead(out long toRead, offset, destination.Length, in option, Mode);
             if (rc.IsFailure()) return rc;

@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
@@ -57,7 +58,7 @@ namespace LibHac.FsSrv
         public Result OpenBaseFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             BaseFileSystemId fileSystemId)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             Result rc = CheckCapabilityById(fileSystemId, _processId);
             if (rc.IsFailure()) return rc;
@@ -84,7 +85,7 @@ namespace LibHac.FsSrv
         public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath rootPath,
             BisPartitionId partitionId)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -170,7 +171,7 @@ namespace LibHac.FsSrv
         public Result OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, GameCardHandle handle,
             GameCardPartition partitionId)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -198,7 +199,7 @@ namespace LibHac.FsSrv
 
         public Result OpenSdCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -256,7 +257,7 @@ namespace LibHac.FsSrv
         public Result OpenImageDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
             ImageDirectoryId directoryId)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             // Caller must have the MountImageAndVideoStorage permission
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
@@ -301,7 +302,7 @@ namespace LibHac.FsSrv
 
         public Result OpenBisWiper(out ReferenceCountedDisposable<IWiper> bisWiper, NativeHandle transferMemoryHandle, ulong transferMemorySize)
         {
-            bisWiper = default;
+            UnsafeHelpers.SkipParamInit(out bisWiper);
 
             // Caller must have the OpenBisWiper permission
             Result rc = GetProgramInfo(out ProgramInfo programInfo);

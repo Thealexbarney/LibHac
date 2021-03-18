@@ -32,11 +32,12 @@ namespace LibHac.Bcat.Detail.Service.Core
 
         public Result GetEntry(out DeliveryCacheDirectoryMetaEntry entry, int index)
         {
+            UnsafeHelpers.SkipParamInit(out entry);
+
             lock (Locker)
             {
                 if (index >= Count)
                 {
-                    entry = default;
                     return ResultBcat.NotFound.Log();
                 }
 

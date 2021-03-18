@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using LibHac.Bcat.Detail.Ipc;
 using LibHac.Bcat.Detail.Service.Core;
+using LibHac.Common;
 using LibHac.Util;
 
 namespace LibHac.Bcat.Detail.Service
@@ -28,7 +29,7 @@ namespace LibHac.Bcat.Detail.Service
         {
             lock (Locker)
             {
-                service = default;
+                UnsafeHelpers.SkipParamInit(out service);
 
                 if (FileServiceOpenCount >= MaxOpenCount)
                     return ResultBcat.ServiceOpenLimitReached.Log();
@@ -44,7 +45,7 @@ namespace LibHac.Bcat.Detail.Service
         {
             lock (Locker)
             {
-                service = default;
+                UnsafeHelpers.SkipParamInit(out service);
 
                 if (DirectoryServiceOpenCount >= MaxOpenCount)
                     return ResultBcat.ServiceOpenLimitReached.Log();
@@ -58,10 +59,10 @@ namespace LibHac.Bcat.Detail.Service
 
         public Result EnumerateDeliveryCacheDirectory(out int namesRead, Span<DirectoryName> nameBuffer)
         {
+            UnsafeHelpers.SkipParamInit(out namesRead);
+
             lock (Locker)
             {
-                namesRead = default;
-
                 var metaReader = new DeliveryCacheDirectoryMetaAccessor(Server);
                 Result rc = metaReader.ReadApplicationDirectoryMeta(ApplicationId, true);
                 if (rc.IsFailure()) return rc;

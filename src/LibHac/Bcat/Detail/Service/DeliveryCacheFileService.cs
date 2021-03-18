@@ -81,11 +81,12 @@ namespace LibHac.Bcat.Detail.Service
 
         public Result GetSize(out long size)
         {
+            UnsafeHelpers.SkipParamInit(out size);
+
             lock (Locker)
             {
                 if (!IsFileOpen)
                 {
-                    size = default;
                     return ResultBcat.NotOpen.Log();
                 }
 
@@ -95,11 +96,12 @@ namespace LibHac.Bcat.Detail.Service
 
         public Result GetDigest(out Digest digest)
         {
+            UnsafeHelpers.SkipParamInit(out digest);
+
             lock (Locker)
             {
                 if (!IsFileOpen)
                 {
-                    digest = default;
                     return ResultBcat.NotOpen.Log();
                 }
 

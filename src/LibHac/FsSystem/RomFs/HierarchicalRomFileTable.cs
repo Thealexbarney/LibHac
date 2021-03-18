@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Util;
 
@@ -92,7 +93,7 @@ namespace LibHac.FsSystem.RomFs
                 return true;
             }
 
-            fileInfo = default;
+            UnsafeHelpers.SkipParamInit(out fileInfo);
             return false;
         }
 
@@ -104,7 +105,7 @@ namespace LibHac.FsSystem.RomFs
                 return true;
             }
 
-            fileInfo = default;
+            UnsafeHelpers.SkipParamInit(out fileInfo);
             return false;
         }
 
@@ -125,7 +126,7 @@ namespace LibHac.FsSystem.RomFs
                 return true;
             }
 
-            position = default;
+            UnsafeHelpers.SkipParamInit(out position);
             return false;
         }
 
@@ -144,7 +145,7 @@ namespace LibHac.FsSystem.RomFs
                 return true;
             }
 
-            position = default;
+            UnsafeHelpers.SkipParamInit(out position);
             return false;
         }
 
@@ -161,8 +162,7 @@ namespace LibHac.FsSystem.RomFs
         {
             if (position.NextFile == -1)
             {
-                info = default;
-                name = default;
+                UnsafeHelpers.SkipParamInit(out info, out name);
                 return false;
             }
 
@@ -187,7 +187,7 @@ namespace LibHac.FsSystem.RomFs
         {
             if (position.NextDirectory == -1)
             {
-                name = default;
+                UnsafeHelpers.SkipParamInit(out name);
                 return false;
             }
 

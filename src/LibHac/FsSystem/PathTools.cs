@@ -461,7 +461,7 @@ namespace LibHac.FsSystem
 
             if (rc.IsFailure())
             {
-                mountName = default;
+                UnsafeHelpers.SkipParamInit(out mountName);
                 return rc;
             }
 
@@ -471,6 +471,8 @@ namespace LibHac.FsSystem
 
         public static Result GetMountNameLength(string path, out int length)
         {
+            UnsafeHelpers.SkipParamInit(out length);
+
             int maxLen = Math.Min(path.Length, MountNameLengthMax);
 
             for (int i = 0; i < maxLen; i++)
@@ -482,7 +484,6 @@ namespace LibHac.FsSystem
                 }
             }
 
-            length = default;
             return ResultFs.InvalidMountName.Log();
         }
 

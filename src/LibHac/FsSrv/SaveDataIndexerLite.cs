@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSrv.Sf;
 using LibHac.Sf;
@@ -19,6 +20,8 @@ namespace LibHac.FsSrv
     {
         private object Locker { get; } = new object();
         private ulong CurrentSaveDataId { get; set; } = 0x4000000000000000;
+
+        // Todo: Use Optional<T>
         private bool IsKeyValueSet { get; set; }
 
         private SaveDataAttribute _key;
@@ -45,13 +48,12 @@ namespace LibHac.FsSrv
 
         public Result Publish(out ulong saveDataId, in SaveDataAttribute key)
         {
+            UnsafeHelpers.SkipParamInit(out saveDataId);
+
             lock (Locker)
             {
                 if (IsKeyValueSet && _key == key)
-                {
-                    saveDataId = default;
                     return ResultFs.SaveDataPathAlreadyExists.Log();
-                }
 
                 _key = key;
                 IsKeyValueSet = true;
@@ -66,6 +68,8 @@ namespace LibHac.FsSrv
 
         public Result Get(out SaveDataIndexerValue value, in SaveDataAttribute key)
         {
+            UnsafeHelpers.SkipParamInit(out value);
+
             lock (Locker)
             {
                 if (IsKeyValueSet && _key == key)
@@ -74,7 +78,6 @@ namespace LibHac.FsSrv
                     return Result.Success;
                 }
 
-                value = default;
                 return ResultFs.TargetNotFound.Log();
             }
         }
@@ -84,15 +87,12 @@ namespace LibHac.FsSrv
             lock (Locker)
             {
                 if (IsKeyValueSet && _key == key)
-                {
                     return ResultFs.SaveDataPathAlreadyExists.Log();
-                }
 
                 _key = key;
                 IsKeyValueSet = true;
 
                 _value = new SaveDataIndexerValue();
-
                 return Result.Success;
             }
         }
@@ -162,6 +162,8 @@ namespace LibHac.FsSrv
 
         public Result GetKey(out SaveDataAttribute key, ulong saveDataId)
         {
+            UnsafeHelpers.SkipParamInit(out key);
+
             lock (Locker)
             {
                 if (IsKeyValueSet && _value.SaveDataId == saveDataId)
@@ -170,13 +172,14 @@ namespace LibHac.FsSrv
                     return Result.Success;
                 }
 
-                key = default;
                 return ResultFs.TargetNotFound.Log();
             }
         }
 
         public Result GetValue(out SaveDataIndexerValue value, ulong saveDataId)
         {
+            UnsafeHelpers.SkipParamInit(out value);
+
             lock (Locker)
             {
                 if (IsKeyValueSet && _value.SaveDataId == saveDataId)
@@ -185,7 +188,6 @@ namespace LibHac.FsSrv
                     return Result.Success;
                 }
 
-                value = default;
                 return ResultFs.TargetNotFound.Log();
             }
         }
@@ -215,7 +217,7 @@ namespace LibHac.FsSrv
 
             if (IsKeyValueSet)
             {
-                reader = new SaveDataIndexerLiteInfoReader(ref _key, ref _value);
+                reader = new SaveDataIndexerLiteInfoReader(in _key, in _value);
             }
             else
             {
@@ -237,7 +239,7 @@ namespace LibHac.FsSrv
                 _finishedIterating = true;
             }
 
-            public SaveDataIndexerLiteInfoReader(ref SaveDataAttribute key, ref SaveDataIndexerValue value)
+            public SaveDataIndexerLiteInfoReader(in SaveDataAttribute key, in SaveDataIndexerValue value)
             {
                 SaveDataIndexer.GenerateSaveDataInfo(out _info, in key, in value);
             }

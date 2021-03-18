@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Sf;
 using IDirectory = LibHac.Fs.Fsa.IDirectory;
@@ -23,7 +24,7 @@ namespace LibHac.FsSrv.Impl
         public Result Read(out long entriesRead, OutBuffer entryBuffer)
         {
             const int maxTryCount = 2;
-            entriesRead = default;
+            UnsafeHelpers.SkipParamInit(out entriesRead);
 
             Span<DirectoryEntry> entries = MemoryMarshal.Cast<byte, DirectoryEntry>(entryBuffer.Buffer);
 
@@ -47,7 +48,7 @@ namespace LibHac.FsSrv.Impl
 
         public Result GetEntryCount(out long entryCount)
         {
-            entryCount = default;
+            UnsafeHelpers.SkipParamInit(out entryCount);
 
             Result rc = BaseDirectory.GetEntryCount(out long tmpEntryCount);
             if (rc.IsFailure()) return rc;

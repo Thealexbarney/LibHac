@@ -61,13 +61,14 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetSize(out long size)
         {
+            UnsafeHelpers.SkipParamInit(out size);
+
             try
             {
                 return File.GetSize(out size);
             }
             catch (Exception ex) when (ex.HResult < 0)
             {
-                size = default;
                 return ResultFs.UnexpectedErrorInHostFileGetSize.Log();
             }
         }

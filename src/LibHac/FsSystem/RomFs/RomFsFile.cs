@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
@@ -20,7 +21,7 @@ namespace LibHac.FsSystem.RomFs
         protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
             in ReadOption option)
         {
-            bytesRead = default;
+            UnsafeHelpers.SkipParamInit(out bytesRead);
 
             Result rc = DryRead(out long toRead, offset, destination.Length, in option, OpenMode.Read);
             if (rc.IsFailure()) return rc;

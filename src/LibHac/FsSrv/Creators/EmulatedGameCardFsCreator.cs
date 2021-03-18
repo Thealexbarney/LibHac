@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSrv.Creators
@@ -19,7 +20,7 @@ namespace LibHac.FsSrv.Creators
         {
             // Use the old xci code temporarily
 
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             Result rc = GameCard.GetXci(out Xci xci, handle);
             if (rc.IsFailure()) return rc;
@@ -37,7 +38,7 @@ namespace LibHac.FsSrv.Creators
         {
             // Use the old xci code temporarily
 
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             Result rc = GameCard.GetXci(out Xci xci, handle);
             if (rc.IsFailure()) return rc;

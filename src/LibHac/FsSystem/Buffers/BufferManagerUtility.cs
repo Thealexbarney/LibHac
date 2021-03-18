@@ -98,8 +98,8 @@ namespace LibHac.FsSystem.Buffers
             Assert.NotNull(callerName);
 
             // Clear the output.
-            outBuffer = default;
-            Buffer tempBuffer = default;
+            outBuffer = new Buffer();
+            var tempBuffer = new Buffer();
 
             // Get the context.
             ref BufferManagerContext context = ref GetBufferManagerContext();

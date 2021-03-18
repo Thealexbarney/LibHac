@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
@@ -29,7 +30,7 @@ namespace LibHac.FsSrv.Creators
 
         public Result Create(out IFileSystem fileSystem, bool isCaseSensitive)
         {
-            fileSystem = default;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             if (!SdCard.IsSdCardInserted())
             {

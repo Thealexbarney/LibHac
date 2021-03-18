@@ -163,7 +163,7 @@ namespace LibHac.FsSrv.Impl
 
         public Result GetEntryType(out uint entryType, in Path path)
         {
-            entryType = default;
+            UnsafeHelpers.SkipParamInit(out entryType);
 
             var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
@@ -176,7 +176,7 @@ namespace LibHac.FsSrv.Impl
         public Result OpenFile(out ReferenceCountedDisposable<IFileSf> file, in Path path, uint mode)
         {
             const int maxTryCount = 2;
-            file = default;
+            UnsafeHelpers.SkipParamInit(out file);
 
             var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
@@ -205,7 +205,7 @@ namespace LibHac.FsSrv.Impl
         public Result OpenDirectory(out ReferenceCountedDisposable<IDirectorySf> directory, in Path path, uint mode)
         {
             const int maxTryCount = 2;
-            directory = default;
+            UnsafeHelpers.SkipParamInit(out directory);
 
             var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
@@ -238,7 +238,7 @@ namespace LibHac.FsSrv.Impl
 
         public Result GetFreeSpaceSize(out long freeSpace, in Path path)
         {
-            freeSpace = default;
+            UnsafeHelpers.SkipParamInit(out freeSpace);
 
             var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
@@ -248,7 +248,7 @@ namespace LibHac.FsSrv.Impl
 
         public Result GetTotalSpaceSize(out long totalSpace, in Path path)
         {
-            totalSpace = default;
+            UnsafeHelpers.SkipParamInit(out totalSpace);
 
             var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
@@ -266,7 +266,7 @@ namespace LibHac.FsSrv.Impl
 
         public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
         {
-            timeStamp = default;
+            UnsafeHelpers.SkipParamInit(out timeStamp);
 
             var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;

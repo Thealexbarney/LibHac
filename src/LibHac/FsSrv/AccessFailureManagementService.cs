@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+﻿using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
@@ -25,7 +25,7 @@ namespace LibHac.FsSrv
         public Result OpenAccessFailureDetectionEventNotifier(out ReferenceCountedDisposable<IEventNotifier> notifier,
             ulong processId, bool notifyOnDeepRetry)
         {
-            notifier = default;
+            UnsafeHelpers.SkipParamInit(out notifier);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -42,7 +42,7 @@ namespace LibHac.FsSrv
 
         public Result GetAccessFailureDetectionEvent(out NativeHandle eventHandle)
         {
-            eventHandle = default;
+            UnsafeHelpers.SkipParamInit(out eventHandle);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -58,7 +58,7 @@ namespace LibHac.FsSrv
 
         public Result IsAccessFailureDetected(out bool isDetected, ulong processId)
         {
-            Unsafe.SkipInit(out isDetected);
+            UnsafeHelpers.SkipParamInit(out isDetected);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;

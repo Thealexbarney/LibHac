@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 using LibHac.FsSystem.Detail;
@@ -14,7 +15,7 @@ namespace LibHac.FsSrv.Creators
             Result rc = partitionFs.Initialize(pFsStorage);
             if (rc.IsFailure())
             {
-                fileSystem = default;
+                UnsafeHelpers.SkipParamInit(out fileSystem);
                 return rc;
             }
 
@@ -29,7 +30,7 @@ namespace LibHac.FsSrv.Creators
             Result rc = partitionFs.Initialize(pFsStorage);
             if (rc.IsFailure())
             {
-                fileSystem = default;
+                UnsafeHelpers.SkipParamInit(out fileSystem);
                 return rc;
             }
 

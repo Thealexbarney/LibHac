@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Common.Keys;
 using LibHac.Fs;
 
@@ -51,10 +52,10 @@ namespace LibHac.FsSrv
                 Handle++;
             }
         }
-        
+
         internal Result GetXci(out Xci xci, GameCardHandle handle)
         {
-            xci = default;
+            UnsafeHelpers.SkipParamInit(out xci);
 
             if (IsGameCardHandleInvalid(handle)) return ResultFs.InvalidGameCardHandleOnRead.Log();
             if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
@@ -93,7 +94,7 @@ namespace LibHac.FsSrv
 
         internal Result GetCardInfo(out GameCardInfo cardInfo, GameCardHandle handle)
         {
-            cardInfo = default;
+            UnsafeHelpers.SkipParamInit(out cardInfo);
 
             if (IsGameCardHandleInvalid(handle)) return ResultFs.InvalidGameCardHandleOnGetCardInfo.Log();
             if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();

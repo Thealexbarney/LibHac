@@ -206,7 +206,7 @@ namespace LibHac.Fs.Fsa
         public static Result QueryRange(this FileSystemClient fs, out QueryRangeInfo rangeInfo, FileHandle handle,
             long offset, long size)
         {
-            Unsafe.SkipInit(out rangeInfo);
+            UnsafeHelpers.SkipParamInit(out rangeInfo);
 
             Result rc = Get(handle).OperateRange(SpanHelpers.AsByteSpan(ref rangeInfo), OperationId.QueryRange, offset,
                 size, ReadOnlySpan<byte>.Empty);
