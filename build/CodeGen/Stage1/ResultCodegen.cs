@@ -50,7 +50,7 @@ namespace LibHacBuild.CodeGen.Stage1
             ModuleInfo[] modules = ReadCsv<ModuleInfo>("result_modules.csv");
             NamespaceInfo[] nsInfos = ReadCsv<NamespaceInfo>("result_namespaces.csv");
             ResultInfo[] results = ReadCsv<ResultInfo>("results.csv");
-            
+
             Dictionary<int, ModuleInfo> moduleDict = modules.ToDictionary(m => m.Id);
 
             // Make sure modules have a default namespace
@@ -413,14 +413,17 @@ namespace LibHacBuild.CodeGen.Stage1
 
         private static T[] ReadCsv<T>(string name)
         {
-            using (var csv = new CsvReader(new StreamReader(GetResource(name)), CultureInfo.InvariantCulture))
+            var configuration = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
-                csv.Configuration.AllowComments = true;
-                csv.Configuration.DetectColumnCountChanges = true;
+                AllowComments = true,
+                DetectColumnCountChanges = true
+            };
 
-                csv.Configuration.RegisterClassMap<ModuleMap>();
-                csv.Configuration.RegisterClassMap<NamespaceMap>();
-                csv.Configuration.RegisterClassMap<ResultMap>();
+            using (var csv = new CsvReader(new StreamReader(GetResource(name)), configuration))
+            {
+                csv.Context.RegisterClassMap<ModuleMap>();
+                csv.Context.RegisterClassMap<NamespaceMap>();
+                csv.Context.RegisterClassMap<ResultMap>();
 
                 return csv.GetRecords<T>().ToArray();
             }
@@ -640,11 +643,11 @@ namespace LibHacBuild.CodeGen.Stage1
         {
             Map(m => m.Id);
             Map(m => m.Name);
-            Map(m => m.Namespace).ConvertUsing(row =>
+            Map(m => m.Namespace).Convert(row =>
             {
-                string field = row.GetField("Default Namespace");
+                string field = row.Row.GetField("Default Namespace");
                 if (string.IsNullOrWhiteSpace(field))
-                    field = row.GetField("Name");
+                    field = row.Row.GetField("Name");
 
                 return field;
             });
@@ -657,11 +660,11 @@ namespace LibHacBuild.CodeGen.Stage1
         {
             Map(m => m.Name).Name("Namespace");
             Map(m => m.Path);
-            Map(m => m.ClassName).ConvertUsing(row =>
+            Map(m => m.ClassName).Convert(row =>
             {
-                string field = row.GetField("Class Name");
+                string field = row.Row.GetField("Class Name");
                 if (string.IsNullOrWhiteSpace(field))
-                    field = row.GetField("Namespace");
+                    field = row.Row.GetField("Namespace");
 
                 return field;
             });
@@ -678,18 +681,18 @@ namespace LibHacBuild.CodeGen.Stage1
             Map(m => m.Summary);
 
             Map(m => m.DescriptionStart);
-            Map(m => m.DescriptionEnd).ConvertUsing(row =>
+            Map(m => m.DescriptionEnd).Convert(row =>
             {
-                string field = row.GetField("DescriptionEnd");
+                string field = row.Row.GetField("DescriptionEnd");
                 if (string.IsNullOrWhiteSpace(field))
-                    field = row.GetField("DescriptionStart");
+                    field = row.Row.GetField("DescriptionStart");
 
                 return int.Parse(field);
             });
 
-            Map(m => m.Flags).ConvertUsing(row =>
+            Map(m => m.Flags).Convert(row =>
             {
-                string field = row.GetField("Flags");
+                string field = row.Row.GetField("Flags");
                 var flags = ResultInfoFlags.None;
 
                 foreach (char c in field)
