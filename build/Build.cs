@@ -100,7 +100,7 @@ namespace LibHacBuild
                     gitRepository = (GitRepository)new GitRepositoryAttribute().GetValue(null, null);
 
                     gitVersion = GitVersionTasks.GitVersion(s => s
-                            .SetFramework("netcoreapp3.1")
+                            .SetFramework("net5.0")
                             .DisableProcessLogOutput())
                         .Result;
                 }
