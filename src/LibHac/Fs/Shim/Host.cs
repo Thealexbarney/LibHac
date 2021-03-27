@@ -93,7 +93,7 @@ namespace LibHac.Fs.Shim
                 var sb = new U8StringBuilder(nameBuffer);
                 sb.Append(HostRootFileSystemPath).Append(_path.Str);
 
-                Assert.True(sb.Length == requiredNameBufferSize - 1);
+                Assert.SdkEqual(sb.Length, requiredNameBufferSize - 1);
 
                 return Result.Success;
             }
@@ -107,12 +107,12 @@ namespace LibHac.Fs.Shim
             {
                 const int requiredNameBufferSize = HostRootFileSystemPathLength;
 
-                Assert.True(nameBuffer.Length >= requiredNameBufferSize);
+                Assert.SdkRequiresGreaterEqual(nameBuffer.Length, requiredNameBufferSize);
 
                 var sb = new U8StringBuilder(nameBuffer);
                 sb.Append(HostRootFileSystemPath);
 
-                Assert.True(sb.Length == requiredNameBufferSize - 1);
+                Assert.SdkEqual(sb.Length, requiredNameBufferSize - 1);
 
                 return Result.Success;
             }

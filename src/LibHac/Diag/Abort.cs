@@ -3,8 +3,32 @@ using System.Runtime.CompilerServices;
 
 namespace LibHac.Diag
 {
+    public ref struct AbortInfo
+    {
+        public AbortReason AbortReason;
+        public string Message;
+        public string Condition;
+        public string FunctionName;
+        public string FileName;
+        public int LineNumber;
+    }
+
+    public enum AbortReason
+    {
+        SdkAssert,
+        SdkRequires,
+        UserAssert,
+        Abort,
+        UnexpectedDefault
+    }
+
     public static class Abort
     {
+        internal static void InvokeAbortObserver(in AbortInfo abortInfo)
+        {
+            // Todo
+        }
+
         [DoesNotReturn]
         public static void DoAbort(Result result, string message = null)
         {

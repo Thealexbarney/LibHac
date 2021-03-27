@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
-using LibHac.Diag;
 
 namespace LibHac.Fs.Fsa
 {
@@ -180,8 +179,6 @@ namespace LibHac.Fs.Fsa
             // Check that we can write.
             if (!openMode.HasFlag(OpenMode.Write))
                 return ResultFs.WriteUnpermitted.Log();
-
-            Assert.True(size >= 0);
 
             return Result.Success;
         }

@@ -25,7 +25,7 @@ namespace LibHac.FsSystem
 
         public static Result FromSpan(out FsPath fsPath, ReadOnlySpan<byte> path)
         {
-            Unsafe.SkipInit(out fsPath);
+            UnsafeHelpers.SkipParamInit(out fsPath);
 
             // Ensure null terminator even if the creation fails for safety
             fsPath.Str[MaxLength] = 0;

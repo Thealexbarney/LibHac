@@ -121,7 +121,7 @@ namespace LibHac.FsSrv
                     if (originalResult.IsFailure())
                         return originalResult;
 
-                    Assert.True(originalPathNormalizerHasValue);
+                    Assert.SdkAssert(originalPathNormalizerHasValue);
 
                     // There is an original version and no patch version. Open the original directly
                     rc = ServiceImpl.OpenFileSystem(out tempFileSystem, originalPathNormalizer.Path, fsType, programId.Value);

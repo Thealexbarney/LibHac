@@ -12,7 +12,7 @@ namespace LibHac.Os.Impl
 
         public void Signal()
         {
-            Assert.False(Monitor.IsEntered(_obj));
+            Assert.SdkRequires(!Monitor.IsEntered(_obj));
 
             Monitor.Enter(_obj);
             Monitor.Pulse(_obj);
@@ -21,7 +21,7 @@ namespace LibHac.Os.Impl
 
         public void Broadcast()
         {
-            Assert.False(Monitor.IsEntered(_obj));
+            Assert.SdkRequires(!Monitor.IsEntered(_obj));
 
             Monitor.Enter(_obj);
             Monitor.PulseAll(_obj);
@@ -30,7 +30,7 @@ namespace LibHac.Os.Impl
 
         public void Wait(ref InternalCriticalSection cs)
         {
-            Assert.False(Monitor.IsEntered(_obj));
+            Assert.SdkRequires(!Monitor.IsEntered(_obj));
             Abort.DoAbortUnless(cs.IsLockedByCurrentThread());
 
             // Monitor.Wait doesn't allow specifying a separate mutex object. Workaround this by manually 
@@ -45,7 +45,7 @@ namespace LibHac.Os.Impl
 
         public ConditionVariableStatus TimedWait(ref InternalCriticalSection cs, in TimeoutHelper timeoutHelper)
         {
-            Assert.False(Monitor.IsEntered(_obj));
+            Assert.SdkRequires(!Monitor.IsEntered(_obj));
             Abort.DoAbortUnless(cs.IsLockedByCurrentThread());
 
             TimeSpan remainingTime = timeoutHelper.GetTimeLeftOnTarget();

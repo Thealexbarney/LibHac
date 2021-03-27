@@ -55,7 +55,7 @@ namespace LibHac.Fs.Impl
 
         public int GetCacheFetchedRegionCount()
         {
-            Assert.True(_isFileDataCacheUsed);
+            Assert.SdkRequires(_isFileDataCacheUsed);
             return _regionCount;
         }
 
@@ -63,9 +63,9 @@ namespace LibHac.Fs.Impl
 
         public FileRegion GetCacheFetchedRegion(int index)
         {
-            Assert.True(IsFileDataCacheUsed());
-            Assert.True(index >= 0);
-            Assert.True(index < _regionCount);
+            Assert.SdkRequires(IsFileDataCacheUsed());
+            Assert.SdkRequiresLessEqual(0, index);
+            Assert.SdkRequiresLess(index, _regionCount);
 
             return _regions[index];
         }

@@ -13,7 +13,7 @@ namespace LibHac.Os.Impl
             // If we already own the lock, no additional action is needed
             if (rwLock.OwnerThread == Environment.CurrentManagedThreadId)
             {
-                Assert.True(GetWriteLocked(in GetLockCount(ref rwLock)) == 1);
+                Assert.SdkEqual(GetWriteLocked(in GetLockCount(ref rwLock)), 1u);
             }
             // Otherwise we might need to block until we can acquire the read lock
             else
@@ -27,8 +27,8 @@ namespace LibHac.Os.Impl
                     DecReadLockWaiterCount(ref GetLockCount(ref rwLock));
                 }
 
-                Assert.True(GetWriteLockCount(in rwLock) == 0);
-                Assert.True(rwLock.OwnerThread == 0);
+                Assert.SdkEqual(GetWriteLockCount(in rwLock), 0u);
+                Assert.SdkEqual(rwLock.OwnerThread, 0);
             }
 
             IncReadLockCount(ref GetLockCount(ref rwLock));
@@ -41,7 +41,7 @@ namespace LibHac.Os.Impl
             // Acquire the lock if we already have write access
             if (rwLock.OwnerThread == Environment.CurrentManagedThreadId)
             {
-                Assert.True(GetWriteLocked(in GetLockCount(ref rwLock)) == 1);
+                Assert.SdkEqual(GetWriteLocked(in GetLockCount(ref rwLock)), 1u);
 
                 IncReadLockCount(ref GetLockCount(ref rwLock));
                 return true;
@@ -55,8 +55,8 @@ namespace LibHac.Os.Impl
             }
 
             // Otherwise acquire the lock
-            Assert.True(GetWriteLockCount(in rwLock) == 0);
-            Assert.True(rwLock.OwnerThread == 0);
+            Assert.SdkEqual(GetWriteLockCount(in rwLock), 0u);
+            Assert.SdkEqual(rwLock.OwnerThread, 0);
 
             IncReadLockCount(ref GetLockCount(ref rwLock));
             return true;
@@ -66,13 +66,13 @@ namespace LibHac.Os.Impl
         {
             using ScopedLock<InternalCriticalSection> lk = ScopedLock.Lock(ref GetLockCount(ref rwLock).Cs);
 
-            Assert.True(GetReadLockCount(in GetLockCount(ref rwLock)) > 0);
-            DecReadLockWaiterCount(ref GetLockCount(ref rwLock));
+            Assert.SdkLess(0u, GetReadLockCount(in GetLockCount(ref rwLock)));
+            DecReadLockCount(ref GetLockCount(ref rwLock));
 
             // If we own the lock, check if we need to release ownership and signal any waiting threads
             if (rwLock.OwnerThread == Environment.CurrentManagedThreadId)
             {
-                Assert.True(GetWriteLocked(in GetLockCount(ref rwLock)) == 1);
+                Assert.SdkEqual(GetWriteLocked(in GetLockCount(ref rwLock)), 1u);
 
                 // Return if we still hold any locks
                 if (GetWriteLockCount(in rwLock) != 0 || GetReadLockCount(in GetLockCount(ref rwLock)) != 0)
@@ -98,9 +98,9 @@ namespace LibHac.Os.Impl
             // Otherwise we need to signal the next writer if we were the only reader
             else
             {
-                Assert.True(GetWriteLockCount(in rwLock) == 0);
-                Assert.True(GetWriteLocked(in GetLockCount(ref rwLock)) == 0);
-                Assert.True(rwLock.OwnerThread == 0);
+                Assert.SdkEqual(GetWriteLockCount(in rwLock), 0u);
+                Assert.SdkEqual(GetWriteLocked(in GetLockCount(ref rwLock)), 0u);
+                Assert.SdkEqual(rwLock.OwnerThread, 0);
 
                 // Signal the next writer if no readers are left
                 if (GetReadLockCount(in GetLockCount(ref rwLock)) == 0 &&
@@ -121,7 +121,7 @@ namespace LibHac.Os.Impl
             // Increase the write lock count if we already own the lock
             if (rwLock.OwnerThread == currentThread)
             {
-                Assert.True(GetWriteLocked(in GetLockCount(ref rwLock)) == 1);
+                Assert.SdkEqual(GetWriteLocked(in GetLockCount(ref rwLock)), 1u);
 
                 IncWriteLockCount(ref rwLock);
                 return;
@@ -136,8 +136,8 @@ namespace LibHac.Os.Impl
                 DecWriteLockWaiterCount(ref GetLockCount(ref rwLock));
             }
 
-            Assert.True(GetWriteLockCount(in rwLock) == 0);
-            Assert.True(rwLock.OwnerThread == 0);
+            Assert.SdkEqual(GetWriteLockCount(in rwLock), 0u);
+            Assert.SdkEqual(rwLock.OwnerThread, 0);
 
             // Acquire the lock
             IncWriteLockCount(ref rwLock);
@@ -154,7 +154,7 @@ namespace LibHac.Os.Impl
             // Acquire the lock if we already have write access
             if (rwLock.OwnerThread == currentThread)
             {
-                Assert.True(GetWriteLocked(in GetLockCount(ref rwLock)) == 1);
+                Assert.SdkEqual(GetWriteLocked(in GetLockCount(ref rwLock)), 1u);
 
                 IncWriteLockCount(ref rwLock);
                 return true;
@@ -168,8 +168,8 @@ namespace LibHac.Os.Impl
             }
 
             // Otherwise acquire the lock
-            Assert.True(GetWriteLockCount(in rwLock) == 0);
-            Assert.True(rwLock.OwnerThread == 0);
+            Assert.SdkEqual(GetWriteLockCount(in rwLock), 0u);
+            Assert.SdkEqual(rwLock.OwnerThread, 0);
 
             IncWriteLockCount(ref rwLock);
             SetWriteLocked(ref GetLockCount(ref rwLock));
@@ -181,9 +181,9 @@ namespace LibHac.Os.Impl
         {
             using ScopedLock<InternalCriticalSection> lk = ScopedLock.Lock(ref GetLockCount(ref rwLock).Cs);
 
-            Assert.True(GetWriteLockCount(in rwLock) > 0);
-            Assert.True(GetWriteLocked(in GetLockCount(ref rwLock)) != 0);
-            Assert.True(rwLock.OwnerThread == Environment.CurrentManagedThreadId);
+            Assert.SdkEqual(GetWriteLockCount(in rwLock), 0u);
+            Assert.SdkNotEqual(GetWriteLocked(in GetLockCount(ref rwLock)), 0u);
+            Assert.SdkEqual(rwLock.OwnerThread, Environment.CurrentManagedThreadId);
 
             DecWriteLockCount(ref rwLock);
 

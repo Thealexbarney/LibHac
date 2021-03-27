@@ -14,17 +14,17 @@ namespace LibHac.Util
         {
             get
             {
-                Assert.True(_hasValue);
-                // It's beautiful
-                return ref MemoryMarshal.CreateSpan(ref _value, 1)[0];
+                Assert.SdkRequires(_hasValue);
+                // It's beautiful, working around C# rules
+                return ref MemoryMarshal.GetReference(SpanHelpers.CreateSpan(ref _value, 1));
             }
         }
         public readonly ref readonly T ValueRo
         {
             get
             {
-                Assert.True(_hasValue);
-                return ref SpanHelpers.CreateReadOnlySpan(in _value, 1)[0];
+                Assert.SdkRequires(_hasValue);
+                return ref MemoryMarshal.GetReference(SpanHelpers.CreateReadOnlySpan(in _value, 1));
             }
         }
 

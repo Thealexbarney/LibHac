@@ -11,7 +11,7 @@ namespace LibHac.Util
 
         public static ulong AlignUpPow2(ulong value, uint alignment)
         {
-            Assert.True(BitUtil.IsPowerOfTwo(alignment));
+            Assert.SdkRequires(BitUtil.IsPowerOfTwo(alignment));
 
             ulong invMask = alignment - 1;
             return ((value + invMask) & ~invMask);
@@ -19,7 +19,7 @@ namespace LibHac.Util
 
         public static ulong AlignDownPow2(ulong value, uint alignment)
         {
-            Assert.True(BitUtil.IsPowerOfTwo(alignment));
+            Assert.SdkRequires(BitUtil.IsPowerOfTwo(alignment));
 
             ulong invMask = alignment - 1;
             return (value & ~invMask);
@@ -27,7 +27,7 @@ namespace LibHac.Util
 
         public static bool IsAlignedPow2(ulong value, uint alignment)
         {
-            Assert.True(BitUtil.IsPowerOfTwo(alignment));
+            Assert.SdkRequires(BitUtil.IsPowerOfTwo(alignment));
 
             ulong invMask = alignment - 1;
             return (value & invMask) == 0;

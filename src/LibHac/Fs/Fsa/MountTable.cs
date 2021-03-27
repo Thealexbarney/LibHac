@@ -68,7 +68,7 @@ namespace LibHac.Fs.Impl
 
         public bool CanAcceptMountName(U8Span name)
         {
-            Assert.True(_mutex.IsLockedByCurrentThread());
+            Assert.SdkAssert(_mutex.IsLockedByCurrentThread());
 
             for (LinkedListNode<FileSystemAccessor> currentNode = _fileSystemList.First;
                 currentNode is not null;

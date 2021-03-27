@@ -1,8 +1,11 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
+
+#if DEBUG
+using System.Diagnostics;
+#endif
 
 namespace LibHac.FsSrv.Sf
 {

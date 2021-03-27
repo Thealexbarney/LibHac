@@ -67,56 +67,56 @@ namespace LibHac.Os.Impl
         public static void IncReadLockCount(ref ReaderWriterLockType.LockCountType lc)
         {
             uint readLockCount = lc.Counter.ReadLockCount;
-            Assert.True(readLockCount < ReaderWriterLock.ReaderWriterLockCountMax);
+            Assert.SdkLess(readLockCount, (uint)ReaderWriterLock.ReaderWriterLockCountMax);
             lc.Counter.ReadLockCount = readLockCount + 1;
         }
 
         public static void DecReadLockCount(ref ReaderWriterLockType.LockCountType lc)
         {
             uint readLockCount = lc.Counter.ReadLockCount;
-            Assert.True(readLockCount > 0);
+            Assert.SdkGreater(readLockCount, 0u);
             lc.Counter.ReadLockCount = readLockCount - 1;
         }
 
         public static void IncReadLockWaiterCount(ref ReaderWriterLockType.LockCountType lc)
         {
             uint readLockWaiterCount = lc.Counter.ReadLockWaiterCount;
-            Assert.True(readLockWaiterCount < ReaderWriterLock.ReadWriteLockWaiterCountMax);
+            Assert.SdkLess(readLockWaiterCount, (uint)ReaderWriterLock.ReaderWriterLockCountMax);
             lc.Counter.ReadLockWaiterCount = readLockWaiterCount + 1;
         }
 
         public static void DecReadLockWaiterCount(ref ReaderWriterLockType.LockCountType lc)
         {
             uint readLockWaiterCount = lc.Counter.ReadLockWaiterCount;
-            Assert.True(readLockWaiterCount > 0);
+            Assert.SdkGreater(readLockWaiterCount, 0u);
             lc.Counter.ReadLockWaiterCount = readLockWaiterCount - 1;
         }
 
         public static void IncWriteLockWaiterCount(ref ReaderWriterLockType.LockCountType lc)
         {
             uint writeLockWaiterCount = lc.Counter.WriteLockWaiterCount;
-            Assert.True(writeLockWaiterCount < ReaderWriterLock.ReadWriteLockWaiterCountMax);
+            Assert.SdkLess(writeLockWaiterCount, (uint)ReaderWriterLock.ReaderWriterLockCountMax);
             lc.Counter.WriteLockWaiterCount = writeLockWaiterCount + 1;
         }
 
         public static void DecWriteLockWaiterCount(ref ReaderWriterLockType.LockCountType lc)
         {
             uint writeLockWaiterCount = lc.Counter.WriteLockWaiterCount;
-            Assert.True(writeLockWaiterCount > 0);
+            Assert.SdkGreater(writeLockWaiterCount, 0u);
             lc.Counter.WriteLockWaiterCount = writeLockWaiterCount - 1;
         }
 
         public static void IncWriteLockCount(ref ReaderWriterLockType rwLock)
         {
             uint writeLockCount = rwLock.LockCount.WriteLockCount;
-            Assert.True(writeLockCount < ReaderWriterLock.ReaderWriterLockCountMax);
+            Assert.SdkLess(writeLockCount, (uint)ReaderWriterLock.ReaderWriterLockCountMax);
             rwLock.LockCount.WriteLockCount = writeLockCount + 1;
         }
 
         public static void DecWriteLockCount(ref ReaderWriterLockType rwLock)
         {
             uint writeLockCount = rwLock.LockCount.WriteLockCount;
-            Assert.True(writeLockCount > 0);
+            Assert.SdkGreater(writeLockCount, 0u);
             rwLock.LockCount.WriteLockCount = writeLockCount - 1;
         }
 

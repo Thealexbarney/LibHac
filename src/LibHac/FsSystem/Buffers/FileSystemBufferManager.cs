@@ -56,7 +56,7 @@ namespace LibHac.FsSystem
                 public void AddCacheSize(int diff) => _cacheSize += diff;
                 public void SubtractCacheSize(int diff)
                 {
-                    Assert.True(_cacheSize >= diff);
+                    Assert.SdkRequiresGreaterEqual(_cacheSize, diff);
                     _cacheSize -= diff;
                 }
             }
@@ -75,7 +75,7 @@ namespace LibHac.FsSystem
             // This function is left here anyway for completion's sake.
             public static int QueryWorkBufferSize(int maxCacheCount)
             {
-                Assert.True(maxCacheCount > 0);
+                Assert.SdkRequiresGreater(maxCacheCount, 0);
 
                 int entryAlignment = sizeof(CacheHandle);
                 int attrInfoAlignment = Unsafe.SizeOf<nuint>();
@@ -89,7 +89,7 @@ namespace LibHac.FsSystem
             public Result Initialize(int maxCacheCount)
             {
                 // Validate pre-conditions.
-                Assert.True(Entries == null);
+                Assert.SdkRequiresNull(Entries);
 
                 // Note: We don't have the option of using an external Entry buffer like the original C++ code
                 // because Entry includes managed references so we can't cast a byte* to Entry* without pinning.
@@ -106,7 +106,7 @@ namespace LibHac.FsSystem
                 EntryCount = 0;
                 EntryCountMax = maxCacheCount;
 
-                Assert.True(Entries != null);
+                Assert.SdkNotNull(Entries);
 
                 CacheCountMin = maxCacheCount / 16;
                 CacheSizeMin = CacheCountMin * 0x100;
@@ -131,8 +131,8 @@ namespace LibHac.FsSystem
                 UnsafeHelpers.SkipParamInit(out handle);
 
                 // Validate pre-conditions.
-                Assert.True(Entries != null);
-                Assert.True(!Unsafe.IsNullRef(ref handle));
+                Assert.SdkRequiresNotNull(Entries);
+                Assert.SdkRequiresNotNull(ref handle);
 
                 // Get the entry.
                 ref Entry entry = ref AcquireEntry(buffer, attr);
@@ -165,8 +165,8 @@ namespace LibHac.FsSystem
             {
                 // Validate pre-conditions.
                 Unsafe.SkipInit(out buffer);
-                Assert.True(Entries != null);
-                Assert.True(!Unsafe.IsNullRef(ref buffer));
+                Assert.SdkRequiresNotNull(Entries);
+                Assert.SdkRequiresNotNull(ref buffer);
 
                 UnsafeHelpers.SkipParamInit(out buffer);
 
@@ -189,8 +189,8 @@ namespace LibHac.FsSystem
             {
                 // Validate pre-conditions.
                 Unsafe.SkipInit(out buffer);
-                Assert.True(Entries != null);
-                Assert.True(!Unsafe.IsNullRef(ref buffer));
+                Assert.SdkRequiresNotNull(Entries);
+                Assert.SdkRequiresNotNull(ref buffer);
 
                 UnsafeHelpers.SkipParamInit(out buffer);
 
@@ -203,7 +203,7 @@ namespace LibHac.FsSystem
                 static bool CanUnregister(CacheHandleTable table, ref Entry entry)
                 {
                     ref AttrInfo attrInfo = ref table.FindAttrInfo(entry.GetBufferAttribute());
-                    Assert.True(!Unsafe.IsNullRef(ref attrInfo));
+                    Assert.SdkNotNull(ref attrInfo);
 
                     int ccm = table.GetCacheCountMin(entry.GetBufferAttribute());
                     int csm = table.GetCacheSizeMin(entry.GetBufferAttribute());
@@ -227,32 +227,33 @@ namespace LibHac.FsSystem
                     entry = ref Entries[0];
                 }
 
-                Assert.True(!Unsafe.IsNullRef(ref entry));
+                Assert.SdkNotNull(ref entry);
                 UnregisterCore(out buffer, ref entry);
                 return true;
             }
 
             private void UnregisterCore(out Buffer buffer, ref Entry entry)
             {
-
                 // Validate pre-conditions.
                 Unsafe.SkipInit(out buffer);
-                Assert.True(Entries != null);
-                Assert.True(!Unsafe.IsNullRef(ref buffer));
-                Assert.True(!Unsafe.IsNullRef(ref entry));
+                Assert.SdkRequiresNotNull(Entries);
+                Assert.SdkRequiresNotNull(ref buffer);
+                Assert.SdkRequiresNotNull(ref entry);
+
+                UnsafeHelpers.SkipParamInit(out buffer);
 
                 // Get the attribute info.
                 ref AttrInfo attrInfo = ref FindAttrInfo(entry.GetBufferAttribute());
-                Assert.True(!Unsafe.IsNullRef(ref attrInfo));
-                Assert.True(attrInfo.GetCacheCount() > 0);
-                Assert.True(attrInfo.GetCacheSize() >= entry.GetSize());
+                Assert.SdkNotNull(ref attrInfo);
+                Assert.SdkGreater(attrInfo.GetCacheCount(), 0);
+                Assert.SdkGreaterEqual(attrInfo.GetCacheSize(), entry.GetSize());
 
                 // Release from the attr info.
                 attrInfo.DecrementCacheCount();
                 attrInfo.SubtractCacheSize(entry.GetSize());
 
                 // Release from cached size.
-                Assert.True(TotalCacheSize >= entry.GetSize());
+                Assert.SdkGreaterEqual(TotalCacheSize, entry.GetSize());
                 TotalCacheSize -= entry.GetSize();
 
                 // Release the entry.
@@ -262,7 +263,7 @@ namespace LibHac.FsSystem
 
             public CacheHandle PublishCacheHandle()
             {
-                Assert.True(Entries != null);
+                Assert.SdkRequires(Entries != null);
                 return ++CurrentHandle;
             }
 
@@ -274,7 +275,7 @@ namespace LibHac.FsSystem
             private ref Entry AcquireEntry(Buffer buffer, BufferAttribute attr)
             {
                 // Validate pre-conditions.
-                Assert.True(Entries != null);
+                Assert.SdkRequiresNotNull(Entries);
 
                 ref Entry entry = ref Unsafe.NullRef<Entry>();
                 if (EntryCount < EntryCountMax)
@@ -282,7 +283,7 @@ namespace LibHac.FsSystem
                     entry = ref Entries[EntryCount];
                     entry.Initialize(PublishCacheHandle(), buffer, attr);
                     EntryCount++;
-                    Assert.True(EntryCount == 1 || Entries[EntryCount - 2].GetHandle() < entry.GetHandle());
+                    Assert.SdkAssert(EntryCount == 1 || Entries[EntryCount - 2].GetHandle() < entry.GetHandle());
                 }
 
                 return ref entry;
@@ -291,13 +292,13 @@ namespace LibHac.FsSystem
             private void ReleaseEntry(ref Entry entry)
             {
                 // Validate pre-conditions.
-                Assert.True(Entries != null);
-                Assert.True(!Unsafe.IsNullRef(ref entry));
+                Assert.SdkRequiresNotNull(Entries);
+                Assert.SdkRequiresNotNull(ref entry);
 
                 // Ensure the entry is valid.
                 Span<Entry> entryBuffer = Entries;
-                Assert.True(!Unsafe.IsAddressLessThan(ref entry, ref MemoryMarshal.GetReference(entryBuffer)));
-                Assert.True(Unsafe.IsAddressLessThan(ref entry,
+                Assert.SdkAssert(!Unsafe.IsAddressLessThan(ref entry, ref MemoryMarshal.GetReference(entryBuffer)));
+                Assert.SdkAssert(Unsafe.IsAddressLessThan(ref entry,
                     ref Unsafe.Add(ref MemoryMarshal.GetReference(entryBuffer), entryBuffer.Length)));
 
                 // Get the index of the entry.
@@ -378,7 +379,7 @@ namespace LibHac.FsSystem
         private Buffer AllocateBufferImpl(int size, BufferAttribute attribute)
         {
             int order = BuddyHeap.GetOrderFromBytes((nuint)size);
-            Assert.True(order >= 0);
+            Assert.SdkAssert(order >= 0);
 
             // Allocate space on the heap
             Buffer buffer;
@@ -397,7 +398,7 @@ namespace LibHac.FsSystem
 
             // Successfully allocated a buffer.
             int allocatedSize = (int)BuddyHeap.GetBytesFromOrder(order);
-            Assert.True(size <= allocatedSize);
+            Assert.SdkAssert(size <= allocatedSize);
 
             // Update heap stats
             int freeSize = (int)BuddyHeap.GetTotalFreeSize();
@@ -419,7 +420,7 @@ namespace LibHac.FsSystem
 
         private void DeallocateBufferImpl(Buffer buffer)
         {
-            Assert.True(BitUtil.IsPowerOfTwo(buffer.Length));
+            Assert.SdkRequires(BitUtil.IsPowerOfTwo(buffer.Length));
 
             BuddyHeap.Free(buffer);
         }

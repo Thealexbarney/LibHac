@@ -36,7 +36,7 @@ namespace LibHac.FsSrv.Impl
         private static Result EnsureDirectoryImpl(IFileSystem fileSystem, Span<byte> path)
         {
             // Double check the trailing separators have been trimmed
-            Assert.True(path.Length <= 1 || path[path.Length - 1] != StringTraits.DirectorySeparator);
+            Assert.SdkRequires(path.Length <= 1 || path[path.Length - 1] != StringTraits.DirectorySeparator);
 
             // Use the root path if the input path is empty
             var pathToCheck = new U8Span(path.IsEmpty ? FileSystemRootPath : path);
@@ -91,8 +91,8 @@ namespace LibHac.FsSrv.Impl
         private static Result EnsureParentDirectoryImpl(IFileSystem fileSystem, Span<byte> path)
         {
             // The path should not be empty or have a trailing directory separator
-            Assert.True(path.Length > 0);
-            Assert.NotEqual(StringTraits.DirectorySeparator, path[path.Length - 1]);
+            Assert.SdkRequiresLess(0, path.Length);
+            Assert.SdkRequiresNotEqual(path[path.Length - 1], StringTraits.DirectorySeparator);
 
             // Make sure the path's not too long
             if (path.Length > PathTool.EntryNameLengthMax)

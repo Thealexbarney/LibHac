@@ -410,8 +410,8 @@ namespace LibHac.Kvdb
             public Result Initialize(int capacity, MemoryResource memoryResource)
             {
                 // Initialize must only be called once.
-                Assert.Null(_entries);
-                Assert.NotNull(memoryResource);
+                Assert.SdkRequiresNull(_entries);
+                Assert.SdkRequiresNotNull(memoryResource);
 
                 // FS uses the provided MemoryResource to allocate the KeyValue array.
                 // We can't do that here because the array will contain managed references.
@@ -487,7 +487,7 @@ namespace LibHac.Kvdb
                 if (_count > 0)
                 {
                     // The key being added must be greater than the last key in the list.
-                    Assert.True(key.CompareTo(_entries[_count - 1].Key) > 0);
+                    Assert.SdkGreater(key, _entries[_count - 1].Key);
                 }
 
                 _entries[_count] = new KeyValue(in key, value);
@@ -671,7 +671,7 @@ namespace LibHac.Kvdb
                     // An entry was added. entryIndex is the index of the new entry.
 
                     // Only one entry can be added at a time.
-                    Assert.Equal(newLength, _length + 1);
+                    Assert.SdkEqual(newLength, _length + 1);
 
                     if (entryIndex <= _index)
                     {
@@ -687,7 +687,7 @@ namespace LibHac.Kvdb
                     // An entry was removed. entryIndex is the index where the removed entry used to be.
 
                     // Only one entry can be removed at a time.
-                    Assert.Equal(newLength, _length - 1);
+                    Assert.SdkEqual(newLength, _length - 1);
 
                     if (entryIndex < _index)
                     {

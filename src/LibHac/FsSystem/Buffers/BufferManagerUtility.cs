@@ -94,8 +94,9 @@ namespace LibHac.FsSystem.Buffers
             int size, IBufferManager.BufferAttribute attribute, IsValidBufferFunction isValidBuffer,
             [CallerMemberName] string callerName = "")
         {
-            Assert.NotNull(bufferManager);
-            Assert.NotNull(callerName);
+            Assert.SdkNotNullOut(out outBuffer);
+            Assert.SdkNotNull(bufferManager);
+            Assert.SdkNotNull(callerName);
 
             // Clear the output.
             outBuffer = new Buffer();
@@ -135,7 +136,7 @@ namespace LibHac.FsSystem.Buffers
                 if (rc.IsFailure()) return rc;
             }
 
-            Assert.True(!tempBuffer.IsNull);
+            Assert.SdkAssert(!tempBuffer.IsNull);
             outBuffer = tempBuffer;
             return Result.Success;
         }

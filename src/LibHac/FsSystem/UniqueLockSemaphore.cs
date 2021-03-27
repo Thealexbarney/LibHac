@@ -80,7 +80,7 @@ namespace LibHac.FsSystem
             Shared.Move(out _semaphore, ref semaphore);
             Shared.Move(out _pinnedObject, ref pinnedObject);
 
-            Assert.True(_semaphore.IsLocked);
+            Assert.SdkAssert(_semaphore.IsLocked);
         }
 
         public void Dispose()

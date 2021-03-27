@@ -124,15 +124,15 @@ namespace LibHac.FsSrv
             switch (threadType)
             {
                 case FsStackUsageThreadType.MainThread:
-                    Assert.NotNull(_config.MainThreadStackUsageReporter);
+                    Assert.SdkRequiresNotNull(_config.MainThreadStackUsageReporter);
                     return _config.MainThreadStackUsageReporter.GetStackUsage();
 
                 case FsStackUsageThreadType.IpcWorker:
-                    Assert.NotNull(_config.IpcWorkerThreadStackUsageReporter);
+                    Assert.SdkRequiresNotNull(_config.IpcWorkerThreadStackUsageReporter);
                     return _config.IpcWorkerThreadStackUsageReporter.GetStackUsage();
 
                 case FsStackUsageThreadType.PipelineWorker:
-                    Assert.NotNull(_config.PipeLineWorkerThreadStackUsageReporter);
+                    Assert.SdkRequiresNotNull(_config.PipeLineWorkerThreadStackUsageReporter);
                     return _config.PipeLineWorkerThreadStackUsageReporter.GetStackUsage();
 
                 default:

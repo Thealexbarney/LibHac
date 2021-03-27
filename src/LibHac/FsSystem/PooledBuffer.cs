@@ -33,13 +33,13 @@ namespace LibHac.FsSystem
 
         public Span<byte> GetBuffer()
         {
-            Assert.NotNull(Array);
+            Assert.SdkRequiresNotNull(Array);
             return Array.AsSpan(0, Length);
         }
 
         public int GetSize()
         {
-            Assert.NotNull(Array);
+            Assert.SdkRequiresNotNull(Array);
             return Length;
         }
 
@@ -56,10 +56,10 @@ namespace LibHac.FsSystem
 
         private void AllocateCore(int idealSize, int requiredSize, bool enableLargeCapacity)
         {
-            Assert.Null(Array);
+            Assert.SdkRequiresNull(Array);
 
             // Check that we can allocate this size.
-            Assert.True(requiredSize <= GetAllocatableSizeMaxCore(enableLargeCapacity));
+            Assert.SdkRequiresLessEqual(requiredSize, GetAllocatableSizeMaxCore(enableLargeCapacity));
 
             int targetSize = Math.Min(Math.Max(idealSize, requiredSize),
                 GetAllocatableSizeMaxCore(enableLargeCapacity));
@@ -80,17 +80,17 @@ namespace LibHac.FsSystem
         {
             // Shrink the buffer to empty.
             Shrink(0);
-            Assert.Null(Array);
+            Assert.SdkNull(Array);
         }
 
         public void Shrink(int idealSize)
         {
-            Assert.True(idealSize <= GetAllocatableSizeMaxCore(true));
+            Assert.SdkRequiresLessEqual(idealSize, GetAllocatableSizeMaxCore(true));
 
             // Check if we actually need to shrink.
             if (Length > idealSize)
             {
-                Assert.NotNull(Array);
+                Assert.SdkRequiresNotNull(Array);
 
                 // Pretend we shrank the buffer.
                 Length = idealSize;

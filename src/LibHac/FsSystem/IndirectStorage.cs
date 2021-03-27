@@ -71,22 +71,22 @@ namespace LibHac.FsSystem
 
         public void SetStorage(int index, SubStorage storage)
         {
-            Assert.InRange(index, 0, StorageCount);
+            Assert.SdkRequiresInRange(index, 0, StorageCount);
             DataStorage[index] = storage;
         }
 
         public void SetStorage(int index, IStorage storage, long offset, long size)
         {
-            Assert.InRange(index, 0, StorageCount);
+            Assert.SdkRequiresInRange(index, 0, StorageCount);
             DataStorage[index] = new SubStorage(storage, offset, size);
         }
 
         public Result GetEntryList(Span<Entry> entryBuffer, out int outputEntryCount, long offset, long size)
         {
             // Validate pre-conditions
-            Assert.True(offset >= 0);
-            Assert.True(size >= 0);
-            Assert.True(IsInitialized());
+            Assert.SdkRequiresLessEqual(0, offset);
+            Assert.SdkRequiresLessEqual(0, size);
+            Assert.SdkRequires(IsInitialized());
 
             // Clear the out count
             outputEntryCount = 0;
@@ -153,8 +153,8 @@ namespace LibHac.FsSystem
         protected override unsafe Result DoRead(long offset, Span<byte> destination)
         {
             // Validate pre-conditions
-            Assert.True(offset >= 0);
-            Assert.True(IsInitialized());
+            Assert.SdkRequiresLessEqual(0, offset);
+            Assert.SdkRequires(IsInitialized());
 
             // Succeed if there's nothing to read
             if (destination.Length == 0)
@@ -206,9 +206,9 @@ namespace LibHac.FsSystem
         private Result OperatePerEntry(long offset, long size, OperateFunc func)
         {
             // Validate preconditions
-            Assert.True(offset >= 0);
-            Assert.True(size >= 0);
-            Assert.True(IsInitialized());
+            Assert.SdkRequiresLessEqual(0, offset);
+            Assert.SdkRequiresLessEqual(0, size);
+            Assert.SdkRequires(IsInitialized());
 
             // Succeed if there's nothing to operate on
             if (size == 0)
@@ -272,12 +272,12 @@ namespace LibHac.FsSystem
                     // Get the offset of the entry in the data we read
                     long dataOffset = currentOffset - currentEntryOffset;
                     long dataSize = nextEntryOffset - currentEntryOffset - dataOffset;
-                    Assert.True(dataSize > 0);
+                    Assert.SdkLess(0, dataSize);
 
                     // Determine how much is left
                     long remainingSize = endOffset - currentOffset;
                     long currentSize = Math.Min(remainingSize, dataSize);
-                    Assert.True(currentSize <= size);
+                    Assert.SdkLessEqual(currentSize, size);
 
                     {
                         SubStorage currentStorage = DataStorage[currentEntry.StorageIndex];

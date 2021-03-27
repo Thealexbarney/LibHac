@@ -659,7 +659,7 @@ namespace LibHac.FsSystem.NcaUtils
         {
             // NCA0 encrypts the entire NCA body using AES-XTS instead of
             // using different encryption types and IVs for each section.
-            Assert.Equal(0, Header.Version);
+            Assert.SdkEqual(0, Header.Version);
 
             if (openEncrypted == IsEncrypted)
             {

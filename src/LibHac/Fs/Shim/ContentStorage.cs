@@ -32,14 +32,14 @@ namespace LibHac.Fs.Shim
                 int neededSize =
                     StringUtils.GetLength(GetContentStorageMountName(StorageId), PathTool.MountNameLengthMax) + 2;
 
-                Assert.True(nameBuffer.Length >= neededSize);
+                Assert.SdkRequiresGreaterEqual(nameBuffer.Length, neededSize);
 
                 // Generate the name.
                 var sb = new U8StringBuilder(nameBuffer);
                 sb.Append(GetContentStorageMountName(StorageId))
                     .Append(StringTraits.DriveSeparator);
 
-                Assert.True(sb.Length == neededSize - 1);
+                Assert.SdkEqual(sb.Length, neededSize - 1);
 
                 return Result.Success;
             }

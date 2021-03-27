@@ -493,8 +493,8 @@ namespace LibHac.Common.Keys
             // of the file which will be treated as the end of a line.
             if (state == ReaderState.Value || state == ReaderState.WhiteSpace2)
             {
-                Assert.True(i == buffer.Length);
-                Assert.True(reader.HasReadEndOfFile);
+                Assert.SdkEqual(i, buffer.Length);
+                Assert.SdkAssert(reader.HasReadEndOfFile);
 
                 // WhiteSpace2 will have already set this value
                 if (state == ReaderState.Value)
@@ -506,8 +506,8 @@ namespace LibHac.Common.Keys
             // Same situation as the two above states
             if (state == ReaderState.Comment)
             {
-                Assert.True(i == buffer.Length);
-                Assert.True(reader.HasReadEndOfFile);
+                Assert.SdkEqual(i, buffer.Length);
+                Assert.SdkAssert(reader.HasReadEndOfFile);
 
                 keyLength = i - keyOffset;
                 state = ReaderState.CommentSuccess;
@@ -516,8 +516,8 @@ namespace LibHac.Common.Keys
             // Same as the above states except the final line was empty or whitespace.
             if (state == ReaderState.Initial)
             {
-                Assert.True(i == buffer.Length);
-                Assert.True(reader.HasReadEndOfFile);
+                Assert.SdkEqual(i, buffer.Length);
+                Assert.SdkAssert(reader.HasReadEndOfFile);
 
                 reader.BufferPos = i;
                 return ReaderStatus.NoKeyRead;
