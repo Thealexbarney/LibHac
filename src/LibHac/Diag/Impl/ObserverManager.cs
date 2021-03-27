@@ -23,7 +23,7 @@ namespace LibHac.Diag.Impl
 
         public void RegisterObserver(TObserver observerHolder)
         {
-            Assert.False(observerHolder.IsRegistered);
+            Assert.SdkRequires(!observerHolder.IsRegistered);
 
             using ScopedLock<ReaderWriterLock> lk = ScopedLock.Lock(ref _rwLock);
 
@@ -33,7 +33,7 @@ namespace LibHac.Diag.Impl
 
         public void UnregisterObserver(TObserver observerHolder)
         {
-            Assert.True(observerHolder.IsRegistered);
+            Assert.SdkRequires(observerHolder.IsRegistered);
 
             using ScopedLock<ReaderWriterLock> lk = ScopedLock.Lock(ref _rwLock);
 
@@ -91,7 +91,7 @@ namespace LibHac.Diag.Impl
 
         public void RegisterObserver(LogObserverHolder observerHolder)
         {
-            Assert.False(observerHolder.IsRegistered);
+            Assert.SdkRequires(!observerHolder.IsRegistered);
 
             using ScopedLock<ReaderWriterLock> lk = ScopedLock.Lock(ref _rwLock);
 
@@ -101,7 +101,7 @@ namespace LibHac.Diag.Impl
 
         public void UnregisterObserver(LogObserverHolder observerHolder)
         {
-            Assert.True(observerHolder.IsRegistered);
+            Assert.SdkRequires(observerHolder.IsRegistered);
 
             using ScopedLock<ReaderWriterLock> lk = ScopedLock.Lock(ref _rwLock);
 

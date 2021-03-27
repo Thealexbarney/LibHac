@@ -29,6 +29,10 @@
     <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DefineConstants>$(DefineConstants);ENABLE_ASSERTS</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Condition="Exists('ResultNameResolver.Generated.cs')" Remove="ResultNameResolver.Archive.cs" />
     <Compile Condition="Exists('Common\Keys\DefaultKeySet.Generated.cs')" Remove="Common\Keys\DefaultKeySet.Empty.cs" />

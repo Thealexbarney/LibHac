@@ -168,7 +168,7 @@ namespace LibHac.FsSrv
 
             // ReSharper disable once RedundantAssignment
             Result rc = _tempIndexer.Indexer.Reset();
-            Assert.True(rc.IsSuccess());
+            Assert.SdkAssert(rc.IsSuccess());
         }
 
         public void InvalidateIndexer(SaveDataSpaceId spaceId)

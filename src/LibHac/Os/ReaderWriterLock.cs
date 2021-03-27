@@ -27,11 +27,11 @@ namespace LibHac.Os
 
         public static void FinalizeReaderWriterLock(this OsState os, ref ReaderWriterLockType rwLock)
         {
-            Assert.True(rwLock.LockState == ReaderWriterLockType.State.Initialized);
+            Assert.SdkRequires(rwLock.LockState == ReaderWriterLockType.State.Initialized);
 
             // Don't allow finalizing a locked lock.
-            Assert.True(ReaderWriterLockImpl.GetReadLockCount(in ReaderWriterLockImpl.GetLockCount(ref rwLock)) == 0);
-            Assert.True(ReaderWriterLockImpl.GetWriteLocked(in ReaderWriterLockImpl.GetLockCount(ref rwLock)) == 0);
+            Assert.SdkRequires(ReaderWriterLockImpl.GetReadLockCount(in ReaderWriterLockImpl.GetLockCount(ref rwLock)) == 0);
+            Assert.SdkRequires(ReaderWriterLockImpl.GetWriteLocked(in ReaderWriterLockImpl.GetLockCount(ref rwLock)) == 0);
 
             // Mark not initialized.
             rwLock.LockState = ReaderWriterLockType.State.NotInitialized;
@@ -42,43 +42,43 @@ namespace LibHac.Os
 
         public static void AcquireReadLock(this OsState os, ref ReaderWriterLockType rwLock)
         {
-            Assert.True(rwLock.LockState == ReaderWriterLockType.State.Initialized);
+            Assert.SdkRequires(rwLock.LockState == ReaderWriterLockType.State.Initialized);
             os.Impl.AcquireReadLockImpl(ref rwLock);
         }
 
         public static bool TryAcquireReadLock(this OsState os, ref ReaderWriterLockType rwLock)
         {
-            Assert.True(rwLock.LockState == ReaderWriterLockType.State.Initialized);
+            Assert.SdkRequires(rwLock.LockState == ReaderWriterLockType.State.Initialized);
             return os.Impl.TryAcquireReadLockImpl(ref rwLock);
         }
 
         public static void ReleaseReadLock(this OsState os, ref ReaderWriterLockType rwLock)
         {
-            Assert.True(rwLock.LockState == ReaderWriterLockType.State.Initialized);
+            Assert.SdkRequires(rwLock.LockState == ReaderWriterLockType.State.Initialized);
             os.Impl.ReleaseReadLockImpl(ref rwLock);
         }
 
         public static void AcquireWriteLock(this OsState os, ref ReaderWriterLockType rwLock)
         {
-            Assert.True(rwLock.LockState == ReaderWriterLockType.State.Initialized);
+            Assert.SdkRequires(rwLock.LockState == ReaderWriterLockType.State.Initialized);
             os.Impl.AcquireWriteLockImpl(ref rwLock);
         }
 
         public static bool TryAcquireWriteLock(this OsState os, ref ReaderWriterLockType rwLock)
         {
-            Assert.True(rwLock.LockState == ReaderWriterLockType.State.Initialized);
+            Assert.SdkRequires(rwLock.LockState == ReaderWriterLockType.State.Initialized);
             return os.Impl.TryAcquireWriteLockImpl(ref rwLock);
         }
 
         public static void ReleaseWriteLock(this OsState os, ref ReaderWriterLockType rwLock)
         {
-            Assert.True(rwLock.LockState == ReaderWriterLockType.State.Initialized);
+            Assert.SdkRequires(rwLock.LockState == ReaderWriterLockType.State.Initialized);
             os.Impl.ReleaseWriteLockImpl(ref rwLock);
         }
 
         public static bool IsReadLockHeld(this OsState os, in ReaderWriterLockType rwLock)
         {
-            Assert.True(rwLock.LockState == ReaderWriterLockType.State.Initialized);
+            Assert.SdkRequires(rwLock.LockState == ReaderWriterLockType.State.Initialized);
             return ReaderWriterLockImpl.GetReadLockCount(in ReaderWriterLockImpl.GetLockCountRo(in rwLock)) != 0;
 
         }
@@ -86,14 +86,14 @@ namespace LibHac.Os
         // Todo: Use Horizon thread APIs
         public static bool IsWriteLockHeldByCurrentThread(this OsState os, in ReaderWriterLockType rwLock)
         {
-            Assert.True(rwLock.LockState == ReaderWriterLockType.State.Initialized);
+            Assert.SdkRequires(rwLock.LockState == ReaderWriterLockType.State.Initialized);
             return rwLock.OwnerThread == Environment.CurrentManagedThreadId &&
                    ReaderWriterLockImpl.GetWriteLockCount(in rwLock) != 0;
         }
 
         public static bool IsReaderWriterLockOwnerThread(this OsState os, in ReaderWriterLockType rwLock)
         {
-            Assert.True(rwLock.LockState == ReaderWriterLockType.State.Initialized);
+            Assert.SdkRequires(rwLock.LockState == ReaderWriterLockType.State.Initialized);
             return rwLock.OwnerThread == Environment.CurrentManagedThreadId;
         }
     }

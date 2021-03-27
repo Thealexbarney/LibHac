@@ -42,10 +42,10 @@ namespace LibHac.FsSystem
             public Result Initialize(SubStorage headerStorage, SubStorage nodeStorage, SubStorage entryStorage,
                 int nodeSize, int entrySize, int entryCount)
             {
-                Assert.True(entrySize >= sizeof(long));
-                Assert.True(nodeSize >= entrySize + Unsafe.SizeOf<NodeHeader>());
-                Assert.True(NodeSizeMin <= nodeSize && nodeSize <= NodeSizeMax);
-                Assert.True(BitUtil.IsPowerOfTwo(nodeSize));
+                Assert.SdkRequiresLessEqual(sizeof(long), entrySize);
+                Assert.SdkRequiresLessEqual(entrySize + Unsafe.SizeOf<NodeHeader>(), nodeSize);
+                Assert.SdkRequiresWithinMinMax(nodeSize, NodeSizeMin, NodeSizeMax);
+                Assert.SdkRequires(BitUtil.IsPowerOfTwo(nodeSize));
 
                 if (headerStorage is null || nodeStorage is null || entryStorage is null)
                     return ResultFs.NullptrArgument.Log();
@@ -99,7 +99,7 @@ namespace LibHac.FsSystem
             /// <returns>The <see cref="Result"/> of the operation.</returns>
             public Result Add<T>(ref T entry) where T : unmanaged
             {
-                Assert.True(Unsafe.SizeOf<T>() == EntrySize);
+                Assert.SdkRequiresEqual(Unsafe.SizeOf<T>(), EntrySize);
 
                 if (CurrentEntryIndex >= EntryCount)
                     return ResultFs.OutOfRange.Log();

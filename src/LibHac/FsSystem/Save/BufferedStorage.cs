@@ -61,8 +61,8 @@ namespace LibHac.FsSystem.Save
                 PrevIndex = InvalidIndex;
                 // End default constructor code
 
-                Assert.NotNull(bufferedStorage);
-                Assert.True(BufferedStorage == null);
+                Assert.SdkRequiresNotNull(bufferedStorage);
+                Assert.SdkRequires(BufferedStorage == null);
 
                 BufferedStorage = bufferedStorage;
                 Link();
@@ -70,9 +70,9 @@ namespace LibHac.FsSystem.Save
 
             public void FinalizeObject()
             {
-                Assert.NotNull(BufferedStorage);
-                Assert.NotNull(BufferedStorage.BufferManager);
-                Assert.Equal(0, ReferenceCount);
+                Assert.SdkRequiresNotNull(BufferedStorage);
+                Assert.SdkRequiresNotNull(BufferedStorage.BufferManager);
+                Assert.SdkRequiresEqual(0, ReferenceCount);
 
                 // If we're valid, acquire our cache handle and free our buffer.
                 if (IsValid())
@@ -80,7 +80,7 @@ namespace LibHac.FsSystem.Save
                     IBufferManager bufferManager = BufferedStorage.BufferManager;
                     if (!_isDirty)
                     {
-                        Assert.True(MemoryRange.IsNull);
+                        Assert.SdkAssert(MemoryRange.IsNull);
                         MemoryRange = bufferManager.AcquireCache(CacheHandle);
                     }
 
@@ -107,15 +107,15 @@ namespace LibHac.FsSystem.Save
             /// </summary>
             public void Link()
             {
-                Assert.NotNull(BufferedStorage);
-                Assert.NotNull(BufferedStorage.BufferManager);
-                Assert.True(ReferenceCount > 0);
+                Assert.SdkRequiresNotNull(BufferedStorage);
+                Assert.SdkRequiresNotNull(BufferedStorage.BufferManager);
+                Assert.SdkRequiresLess(0, ReferenceCount);
 
                 ReferenceCount--;
                 if (ReferenceCount == 0)
                 {
-                    Assert.True(NextIndex == InvalidIndex);
-                    Assert.True(PrevIndex == InvalidIndex);
+                    Assert.SdkAssert(NextIndex == InvalidIndex);
+                    Assert.SdkAssert(PrevIndex == InvalidIndex);
 
                     // If the fetch list is empty we can simply add it as the only cache in the list.
                     if (BufferedStorage.NextFetchCacheIndex == InvalidIndex)
@@ -140,8 +140,8 @@ namespace LibHac.FsSystem.Save
                         } while (cache.Index != BufferedStorage.NextFetchCacheIndex);
 
                         // Verify the end of the fetch list loops back to the start.
-                        Assert.True(BufferedStorage.NextFetchCache.PrevIndex != InvalidIndex);
-                        Assert.Equal(BufferedStorage.NextFetchCache.Prev.NextIndex,
+                        Assert.SdkAssert(BufferedStorage.NextFetchCache.PrevIndex != InvalidIndex);
+                        Assert.SdkEqual(BufferedStorage.NextFetchCache.Prev.NextIndex,
                             BufferedStorage.NextFetchCacheIndex);
 
                         // Link into the fetch list.
@@ -190,17 +190,17 @@ namespace LibHac.FsSystem.Save
             /// </summary>
             public void Unlink()
             {
-                Assert.NotNull(BufferedStorage);
-                Assert.True(ReferenceCount >= 0);
+                Assert.SdkRequiresNotNull(BufferedStorage);
+                Assert.SdkRequiresGreaterEqual(ReferenceCount, 0);
 
                 ReferenceCount++;
                 if (ReferenceCount == 1)
                 {
                     // If we're the first to grab this Cache, the Cache should be in the BufferedStorage's fetch list.
-                    Assert.True(NextIndex != InvalidIndex);
-                    Assert.True(PrevIndex != InvalidIndex);
-                    Assert.True(Next.PrevIndex == Index);
-                    Assert.True(Prev.NextIndex == Index);
+                    Assert.SdkNotEqual(NextIndex, InvalidIndex);
+                    Assert.SdkNotEqual(PrevIndex, InvalidIndex);
+                    Assert.SdkEqual(Next.PrevIndex, Index);
+                    Assert.SdkEqual(Prev.NextIndex, Index);
 
                     // Set the new fetch list head if this Cache is the current head
                     if (BufferedStorage.NextFetchCacheIndex == Index)
@@ -224,8 +224,8 @@ namespace LibHac.FsSystem.Save
                 }
                 else
                 {
-                    Assert.True(NextIndex == InvalidIndex);
-                    Assert.True(PrevIndex == InvalidIndex);
+                    Assert.SdkEqual(NextIndex, InvalidIndex);
+                    Assert.SdkEqual(PrevIndex, InvalidIndex);
                 }
             }
 
@@ -238,18 +238,18 @@ namespace LibHac.FsSystem.Save
             /// <param name="buffer">The buffer in which to place the read data.</param>
             public void Read(long offset, Span<byte> buffer)
             {
-                Assert.NotNull(BufferedStorage);
-                Assert.True(NextIndex == InvalidIndex);
-                Assert.True(PrevIndex == InvalidIndex);
-                Assert.True(IsValid());
-                Assert.True(Hits(offset, 1));
-                Assert.True(!MemoryRange.IsNull);
+                Assert.SdkRequiresNotNull(BufferedStorage);
+                Assert.SdkRequiresEqual(NextIndex, InvalidIndex);
+                Assert.SdkRequiresEqual(PrevIndex, InvalidIndex);
+                Assert.SdkRequires(IsValid());
+                Assert.SdkRequires(Hits(offset, 1));
+                Assert.SdkRequires(!MemoryRange.IsNull);
 
                 long readOffset = offset - Offset;
                 long readableOffsetMax = BufferedStorage.BlockSize - buffer.Length;
 
-                Assert.True(readOffset >= 0);
-                Assert.True(readOffset <= readableOffsetMax);
+                Assert.SdkLessEqual(0, readOffset);
+                Assert.SdkLessEqual(readOffset, readableOffsetMax);
 
                 Span<byte> cacheBuffer = MemoryRange.Span.Slice((int)readOffset, buffer.Length);
                 cacheBuffer.CopyTo(buffer);
@@ -264,18 +264,18 @@ namespace LibHac.FsSystem.Save
             /// <param name="buffer">The buffer containing the data to be written.</param>
             public void Write(long offset, ReadOnlySpan<byte> buffer)
             {
-                Assert.NotNull(BufferedStorage);
-                Assert.True(NextIndex == InvalidIndex);
-                Assert.True(PrevIndex == InvalidIndex);
-                Assert.True(IsValid());
-                Assert.True(Hits(offset, 1));
-                Assert.True(!MemoryRange.IsNull);
+                Assert.SdkRequiresNotNull(BufferedStorage);
+                Assert.SdkRequiresEqual(NextIndex, InvalidIndex);
+                Assert.SdkRequiresEqual(PrevIndex, InvalidIndex);
+                Assert.SdkRequires(IsValid());
+                Assert.SdkRequires(Hits(offset, 1));
+                Assert.SdkRequires(!MemoryRange.IsNull);
 
                 long writeOffset = offset - Offset;
                 long writableOffsetMax = BufferedStorage.BlockSize - buffer.Length;
 
-                Assert.True(writeOffset >= 0);
-                Assert.True(writeOffset <= writableOffsetMax);
+                Assert.SdkLessEqual(0, writeOffset);
+                Assert.SdkLessEqual(writeOffset, writableOffsetMax);
 
                 Span<byte> cacheBuffer = MemoryRange.Span.Slice((int)writeOffset, buffer.Length);
                 buffer.CopyTo(cacheBuffer);
@@ -289,14 +289,14 @@ namespace LibHac.FsSystem.Save
             /// <returns>The <see cref="Result"/> of the operation.</returns>
             public Result Flush()
             {
-                Assert.NotNull(BufferedStorage);
-                Assert.True(NextIndex == InvalidIndex);
-                Assert.True(PrevIndex == InvalidIndex);
-                Assert.True(IsValid());
+                Assert.SdkRequiresNotNull(BufferedStorage);
+                Assert.SdkRequiresEqual(NextIndex, InvalidIndex);
+                Assert.SdkRequiresEqual(PrevIndex, InvalidIndex);
+                Assert.SdkRequires(IsValid());
 
                 if (_isDirty)
                 {
-                    Assert.True(!MemoryRange.IsNull);
+                    Assert.SdkRequires(!MemoryRange.IsNull);
 
                     long baseSize = BufferedStorage.BaseStorageSize;
                     long blockSize = BufferedStorage.BlockSize;
@@ -304,7 +304,7 @@ namespace LibHac.FsSystem.Save
 
                     SubStorage baseStorage = BufferedStorage.BaseStorage;
                     Span<byte> cacheBuffer = MemoryRange.Span;
-                    Assert.True(flushSize == cacheBuffer.Length);
+                    Assert.SdkEqual(flushSize, cacheBuffer.Length);
 
                     Result rc = baseStorage.Write(Offset, cacheBuffer);
                     if (rc.IsFailure()) return rc;
@@ -327,12 +327,12 @@ namespace LibHac.FsSystem.Save
             /// <see cref="Cache"/> is prepared to fetch; <see langword="false"/> if not.</returns>
             public (Result Result, bool IsPrepared) PrepareFetch()
             {
-                Assert.NotNull(BufferedStorage);
-                Assert.NotNull(BufferedStorage.BufferManager);
-                Assert.True(NextIndex == InvalidIndex);
-                Assert.True(PrevIndex == InvalidIndex);
-                Assert.True(IsValid());
-                Assert.True(Monitor.IsEntered(BufferedStorage.Locker));
+                Assert.SdkRequiresNotNull(BufferedStorage);
+                Assert.SdkRequiresNotNull(BufferedStorage.BufferManager);
+                Assert.SdkRequiresEqual(NextIndex, InvalidIndex);
+                Assert.SdkRequiresEqual(PrevIndex, InvalidIndex);
+                Assert.SdkRequires(IsValid());
+                Assert.SdkRequires(Monitor.IsEntered(BufferedStorage.Locker));
 
                 (Result Result, bool IsPrepared) result = (Result.Success, false);
 
@@ -357,13 +357,13 @@ namespace LibHac.FsSystem.Save
             /// </summary>
             public void UnprepareFetch()
             {
-                Assert.NotNull(BufferedStorage);
-                Assert.NotNull(BufferedStorage.BufferManager);
-                Assert.True(NextIndex == InvalidIndex);
-                Assert.True(PrevIndex == InvalidIndex);
-                Assert.True(!IsValid());
-                Assert.True(!_isDirty);
-                Assert.True(Monitor.IsEntered(BufferedStorage.Locker));
+                Assert.SdkRequiresNotNull(BufferedStorage);
+                Assert.SdkRequiresNotNull(BufferedStorage.BufferManager);
+                Assert.SdkRequiresEqual(NextIndex, InvalidIndex);
+                Assert.SdkRequiresEqual(PrevIndex, InvalidIndex);
+                Assert.SdkRequires(!IsValid());
+                Assert.SdkRequires(!_isDirty);
+                Assert.SdkRequires(Monitor.IsEntered(BufferedStorage.Locker));
 
                 _isValid = true;
                 ReferenceCount = 1;
@@ -377,12 +377,12 @@ namespace LibHac.FsSystem.Save
             /// <see cref="ResultFs.BufferAllocationFailed"/>: A buffer could not be allocated.</returns>
             public Result Fetch(long offset)
             {
-                Assert.NotNull(BufferedStorage);
-                Assert.NotNull(BufferedStorage.BufferManager);
-                Assert.True(NextIndex == InvalidIndex);
-                Assert.True(PrevIndex == InvalidIndex);
-                Assert.True(!IsValid());
-                Assert.True(!_isDirty);
+                Assert.SdkRequiresNotNull(BufferedStorage);
+                Assert.SdkRequiresNotNull(BufferedStorage.BufferManager);
+                Assert.SdkRequiresEqual(NextIndex, InvalidIndex);
+                Assert.SdkRequiresEqual(PrevIndex, InvalidIndex);
+                Assert.SdkRequires(!IsValid());
+                Assert.SdkRequires(!_isDirty);
 
                 Result rc;
 
@@ -399,7 +399,7 @@ namespace LibHac.FsSystem.Save
                 if (rc.IsFailure()) return rc;
 
                 Offset = fetchParam.Offset;
-                Assert.True(Hits(offset, 1));
+                Assert.SdkAssert(Hits(offset, 1));
 
                 return Result.Success;
             }
@@ -415,13 +415,13 @@ namespace LibHac.FsSystem.Save
             /// <see cref="ResultFs.BufferAllocationFailed"/>: A buffer could not be allocated.</returns>
             public Result FetchFromBuffer(long offset, ReadOnlySpan<byte> buffer)
             {
-                Assert.NotNull(BufferedStorage);
-                Assert.NotNull(BufferedStorage.BufferManager);
-                Assert.True(NextIndex == InvalidIndex);
-                Assert.True(PrevIndex == InvalidIndex);
-                Assert.True(!IsValid());
-                Assert.True(!_isDirty);
-                Assert.True(Alignment.IsAlignedPow2(offset, (uint)BufferedStorage.BlockSize));
+                Assert.SdkRequiresNotNull(BufferedStorage);
+                Assert.SdkRequiresNotNull(BufferedStorage.BufferManager);
+                Assert.SdkRequiresEqual(NextIndex, InvalidIndex);
+                Assert.SdkRequiresEqual(PrevIndex, InvalidIndex);
+                Assert.SdkRequires(!IsValid());
+                Assert.SdkRequires(!_isDirty);
+                Assert.SdkRequiresAligned((ulong)offset, (int)BufferedStorage.BlockSize);
 
                 // Make sure this Cache has an allocated buffer
                 if (MemoryRange.IsNull)
@@ -431,12 +431,12 @@ namespace LibHac.FsSystem.Save
                 }
 
                 CalcFetchParameter(out FetchParameter fetchParam, offset);
-                Assert.Equal(fetchParam.Offset, offset);
-                Assert.True(fetchParam.Buffer.Length <= buffer.Length);
+                Assert.SdkEqual(fetchParam.Offset, offset);
+                Assert.SdkLessEqual(fetchParam.Buffer.Length, buffer.Length);
 
                 buffer.Slice(0, fetchParam.Buffer.Length).CopyTo(fetchParam.Buffer);
                 Offset = fetchParam.Offset;
-                Assert.True(Hits(offset, 1));
+                Assert.SdkAssert(Hits(offset, 1));
 
                 return Result.Success;
             }
@@ -448,9 +448,9 @@ namespace LibHac.FsSystem.Save
             /// <see langword="false"/> if the buffer has been evicted from the <see cref="IBufferManager"/> cache.</returns>
             public bool TryAcquireCache()
             {
-                Assert.NotNull(BufferedStorage);
-                Assert.NotNull(BufferedStorage.BufferManager);
-                Assert.True(IsValid());
+                Assert.SdkRequiresNotNull(BufferedStorage);
+                Assert.SdkRequiresNotNull(BufferedStorage.BufferManager);
+                Assert.SdkRequires(IsValid());
 
                 if (!MemoryRange.IsNull)
                     return true;
@@ -465,7 +465,7 @@ namespace LibHac.FsSystem.Save
             /// </summary>
             public void Invalidate()
             {
-                Assert.NotNull(BufferedStorage);
+                Assert.SdkRequiresNotNull(BufferedStorage);
                 _isValid = false;
             }
 
@@ -476,7 +476,7 @@ namespace LibHac.FsSystem.Save
             /// or if anybody currently has a reference to this Cache. Otherwise, <see langword="false"/>.</returns>
             public bool IsValid()
             {
-                Assert.NotNull(BufferedStorage);
+                Assert.SdkRequiresNotNull(BufferedStorage);
 
                 return _isValid || ReferenceCount > 0;
             }
@@ -489,7 +489,7 @@ namespace LibHac.FsSystem.Save
             /// Otherwise, <see langword="false"/>.</returns>
             public bool IsDirty()
             {
-                Assert.NotNull(BufferedStorage);
+                Assert.SdkRequiresNotNull(BufferedStorage);
 
                 return _isDirty;
             }
@@ -503,7 +503,7 @@ namespace LibHac.FsSystem.Save
             /// Otherwise, <see langword="false"/>.</returns>
             public bool Hits(long offset, long size)
             {
-                Assert.NotNull(BufferedStorage);
+                Assert.SdkRequiresNotNull(BufferedStorage);
 
                 long blockSize = BufferedStorage.BlockSize;
                 return (offset < Offset + blockSize) && (Offset < offset + size);
@@ -518,7 +518,7 @@ namespace LibHac.FsSystem.Save
             private Result AllocateFetchBuffer()
             {
                 IBufferManager bufferManager = BufferedStorage.BufferManager;
-                Assert.True(bufferManager.AcquireCache(CacheHandle).IsNull);
+                Assert.SdkAssert(bufferManager.AcquireCache(CacheHandle).IsNull);
 
                 Result rc = BufferManagerUtility.AllocateBufferUsingBufferManagerContext(out Buffer bufferTemp,
                     bufferManager, (int)BufferedStorage.BlockSize, new IBufferManager.BufferAttribute(),
@@ -545,8 +545,8 @@ namespace LibHac.FsSystem.Save
                 long cacheSize = Math.Min(blockSize, remainingSize);
                 Span<byte> cacheBuffer = MemoryRange.Span.Slice(0, (int)cacheSize);
 
-                Assert.True(offset >= 0);
-                Assert.True(offset < baseSize);
+                Assert.SdkLessEqual(0, offset);
+                Assert.SdkLess(offset, baseSize);
 
                 fetchParam = new FetchParameter
                 {
@@ -569,7 +569,7 @@ namespace LibHac.FsSystem.Save
 
             public SharedCache(BufferedStorage bufferedStorage)
             {
-                Assert.NotNull(bufferedStorage);
+                Assert.SdkRequiresNotNull(bufferedStorage);
                 Cache = default;
                 StartCache = new Ref<Cache>(ref bufferedStorage.NextAcquireCache);
                 BufferedStorage = bufferedStorage;
@@ -593,23 +593,23 @@ namespace LibHac.FsSystem.Save
             /// or if all matching Caches have already been iterated.</returns>
             public bool AcquireNextOverlappedCache(long offset, long size)
             {
-                Assert.NotNull(BufferedStorage);
+                Assert.SdkRequiresNotNull(BufferedStorage);
 
                 bool isFirst = Cache.IsNull;
                 ref Cache start = ref isFirst ? ref StartCache.Value : ref Unsafe.Add(ref Cache.Value, 1);
 
                 // Make sure the Cache instance is in-range.
-                Assert.False(Unsafe.IsAddressLessThan(ref start,
+                Assert.SdkAssert(!Unsafe.IsAddressLessThan(ref start,
                     ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches)));
 
-                Assert.False(Unsafe.IsAddressGreaterThan(ref start,
+                Assert.SdkAssert(!Unsafe.IsAddressGreaterThan(ref start,
                     ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches),
                         BufferedStorage.CacheCount)));
 
                 lock (BufferedStorage.Locker)
                 {
                     Release();
-                    Assert.True(Cache.IsNull);
+                    Assert.SdkAssert(Cache.IsNull);
 
                     for (ref Cache cache = ref start; ; cache = ref Unsafe.Add(ref cache, 1))
                     {
@@ -650,7 +650,7 @@ namespace LibHac.FsSystem.Save
             /// or if all dirty Caches have already been iterated.</returns>
             public bool AcquireNextDirtyCache()
             {
-                Assert.NotNull(BufferedStorage);
+                Assert.SdkRequiresNotNull(BufferedStorage);
 
                 ref Cache start = ref Cache.IsNull
                     ? ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches)
@@ -660,13 +660,13 @@ namespace LibHac.FsSystem.Save
                     BufferedStorage.CacheCount);
 
                 // Validate the range.
-                Assert.False(Unsafe.IsAddressLessThan(ref start,
+                Assert.SdkAssert(!Unsafe.IsAddressLessThan(ref start,
                     ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches)));
 
-                Assert.False(Unsafe.IsAddressGreaterThan(ref start, ref end));
+                Assert.SdkAssert(!Unsafe.IsAddressGreaterThan(ref start, ref end));
 
                 Release();
-                Assert.True(Cache.IsNull);
+                Assert.SdkAssert(Cache.IsNull);
 
                 // Find the next dirty Cache
                 for (ref Cache cache = ref start;
@@ -693,7 +693,7 @@ namespace LibHac.FsSystem.Save
             /// or if all valid Caches have already been iterated.</returns>
             public bool AcquireNextValidCache()
             {
-                Assert.NotNull(BufferedStorage);
+                Assert.SdkRequiresNotNull(BufferedStorage);
 
                 ref Cache start = ref Cache.IsNull
                     ? ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches)
@@ -703,13 +703,13 @@ namespace LibHac.FsSystem.Save
                     BufferedStorage.CacheCount);
 
                 // Validate the range.
-                Assert.False(Unsafe.IsAddressLessThan(ref start,
+                Assert.SdkAssert(!Unsafe.IsAddressLessThan(ref start,
                     ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches)));
 
-                Assert.False(Unsafe.IsAddressGreaterThan(ref start, ref end));
+                Assert.SdkAssert(!Unsafe.IsAddressGreaterThan(ref start, ref end));
 
                 Release();
-                Assert.True(Cache.IsNull);
+                Assert.SdkAssert(Cache.IsNull);
 
                 // Find the next valid Cache
                 for (ref Cache cache = ref start;
@@ -736,12 +736,12 @@ namespace LibHac.FsSystem.Save
             /// Otherwise, <see langword="false"/>.</returns>
             public bool AcquireFetchableCache()
             {
-                Assert.NotNull(BufferedStorage);
+                Assert.SdkRequiresNotNull(BufferedStorage);
 
                 lock (BufferedStorage.Locker)
                 {
                     Release();
-                    Assert.True(Cache.IsNull);
+                    Assert.SdkAssert(Cache.IsNull);
 
                     Cache = new Ref<Cache>(ref BufferedStorage.NextFetchCache);
 
@@ -766,7 +766,7 @@ namespace LibHac.FsSystem.Save
             /// <param name="buffer">The buffer in which to place the read data.</param>
             public void Read(long offset, Span<byte> buffer)
             {
-                Assert.True(!Cache.IsNull);
+                Assert.SdkRequires(!Cache.IsNull);
                 Cache.Value.Read(offset, buffer);
             }
 
@@ -779,7 +779,7 @@ namespace LibHac.FsSystem.Save
             /// <param name="buffer">The buffer containing the data to be written.</param>
             public void Write(long offset, ReadOnlySpan<byte> buffer)
             {
-                Assert.True(!Cache.IsNull);
+                Assert.SdkRequires(!Cache.IsNull);
                 Cache.Value.Write(offset, buffer);
             }
 
@@ -790,7 +790,7 @@ namespace LibHac.FsSystem.Save
             /// <returns>The <see cref="Result"/> of the operation.</returns>
             public Result Flush()
             {
-                Assert.True(!Cache.IsNull);
+                Assert.SdkRequires(!Cache.IsNull);
                 return Cache.Value.Flush();
             }
 
@@ -800,7 +800,7 @@ namespace LibHac.FsSystem.Save
             /// </summary>
             public void Invalidate()
             {
-                Assert.True(!Cache.IsNull);
+                Assert.SdkRequires(!Cache.IsNull);
                 Cache.Value.Invalidate();
             }
 
@@ -813,7 +813,7 @@ namespace LibHac.FsSystem.Save
             /// covers any of the input range. Otherwise, <see langword="false"/>.</returns>
             public bool Hits(long offset, long size)
             {
-                Assert.True(!Cache.IsNull);
+                Assert.SdkRequires(!Cache.IsNull);
                 return Cache.Value.Hits(offset, size);
             }
 
@@ -825,10 +825,10 @@ namespace LibHac.FsSystem.Save
                 if (!Cache.IsNull)
                 {
                     // Make sure the Cache instance is in-range.
-                    Assert.False(Unsafe.IsAddressLessThan(ref Cache.Value,
+                    Assert.SdkAssert(!Unsafe.IsAddressLessThan(ref Cache.Value,
                         ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches)));
 
-                    Assert.False(Unsafe.IsAddressGreaterThan(ref Cache.Value,
+                    Assert.SdkAssert(!Unsafe.IsAddressGreaterThan(ref Cache.Value,
                         ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches),
                             BufferedStorage.CacheCount)));
 
@@ -850,7 +850,7 @@ namespace LibHac.FsSystem.Save
 
             public UniqueCache(BufferedStorage bufferedStorage)
             {
-                Assert.NotNull(bufferedStorage);
+                Assert.SdkRequiresNotNull(bufferedStorage);
                 Cache = default;
                 BufferedStorage = bufferedStorage;
             }
@@ -878,8 +878,8 @@ namespace LibHac.FsSystem.Save
             /// access to the <see cref="Cache"/> was gained; <see langword="false"/> if not.</returns>
             public (Result Result, bool wasUpgradeSuccessful) Upgrade(in SharedCache sharedCache)
             {
-                Assert.True(BufferedStorage == sharedCache.BufferedStorage);
-                Assert.True(!sharedCache.Cache.IsNull);
+                Assert.SdkRequires(BufferedStorage == sharedCache.BufferedStorage);
+                Assert.SdkRequires(!sharedCache.Cache.IsNull);
 
                 lock (BufferedStorage.Locker)
                 {
@@ -901,7 +901,7 @@ namespace LibHac.FsSystem.Save
             /// <see cref="ResultFs.BufferAllocationFailed"/>: A buffer could not be allocated.</returns>
             public Result Fetch(long offset)
             {
-                Assert.True(!Cache.IsNull);
+                Assert.SdkRequires(!Cache.IsNull);
 
                 return Cache.Value.Fetch(offset);
             }
@@ -917,7 +917,7 @@ namespace LibHac.FsSystem.Save
             /// <see cref="ResultFs.BufferAllocationFailed"/>: A buffer could not be allocated.</returns>
             public Result FetchFromBuffer(long offset, ReadOnlySpan<byte> buffer)
             {
-                Assert.True(!Cache.IsNull);
+                Assert.SdkRequires(!Cache.IsNull);
 
                 return Cache.Value.FetchFromBuffer(offset, buffer);
             }
@@ -987,11 +987,11 @@ namespace LibHac.FsSystem.Save
         /// <returns></returns>
         public Result Initialize(SubStorage baseStorage, IBufferManager bufferManager, int blockSize, int cacheCount)
         {
-            Assert.NotNull(baseStorage);
-            Assert.NotNull(bufferManager);
-            Assert.True(blockSize > 0);
-            Assert.True(BitUtil.IsPowerOfTwo(blockSize));
-            Assert.True(cacheCount > 0);
+            Assert.SdkRequiresNotNull(baseStorage);
+            Assert.SdkRequiresNotNull(bufferManager);
+            Assert.SdkRequiresLess(0, blockSize);
+            Assert.SdkRequires(BitUtil.IsPowerOfTwo(blockSize));
+            Assert.SdkRequiresLess(0, cacheCount);
 
             // Get the base storage size.
             Result rc = baseStorage.GetSize(out _baseStorageSize);
@@ -1055,7 +1055,7 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoRead(long offset, Span<byte> destination)
         {
-            Assert.True(IsInitialized());
+            Assert.SdkRequires(IsInitialized());
 
             // Succeed if zero size.
             if (destination.Length == 0)
@@ -1067,7 +1067,7 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
-            Assert.True(IsInitialized());
+            Assert.SdkRequires(IsInitialized());
 
             // Succeed if zero size.
             if (source.Length == 0)
@@ -1079,7 +1079,7 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoGetSize(out long size)
         {
-            Assert.True(IsInitialized());
+            Assert.SdkRequires(IsInitialized());
 
             size = BaseStorageSize;
             return Result.Success;
@@ -1087,7 +1087,7 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoSetSize(long size)
         {
-            Assert.True(IsInitialized());
+            Assert.SdkRequires(IsInitialized());
 
             Result rc;
             long prevSize = BaseStorageSize;
@@ -1108,7 +1108,7 @@ namespace LibHac.FsSystem.Save
                         cache.Invalidate();
                     }
 
-                    Assert.True(!cache.AcquireNextOverlappedCache(invalidateOffset, invalidateSize));
+                    Assert.SdkAssert(!cache.AcquireNextOverlappedCache(invalidateOffset, invalidateSize));
                 }
             }
             else if (size < prevSize)
@@ -1146,7 +1146,7 @@ namespace LibHac.FsSystem.Save
         protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
             ReadOnlySpan<byte> inBuffer)
         {
-            Assert.True(IsInitialized());
+            Assert.SdkRequires(IsInitialized());
 
             // Invalidate caches if needed.
             if (operationId == OperationId.InvalidateCache)
@@ -1162,7 +1162,7 @@ namespace LibHac.FsSystem.Save
 
         protected override Result DoFlush()
         {
-            Assert.True(IsInitialized());
+            Assert.SdkRequires(IsInitialized());
 
             // Flush caches.
             using var cache = new SharedCache(this);
@@ -1181,7 +1181,7 @@ namespace LibHac.FsSystem.Save
         /// </summary>
         public void InvalidateCaches()
         {
-            Assert.True(IsInitialized());
+            Assert.SdkRequires(IsInitialized());
 
             using var cache = new SharedCache(this);
             while (cache.AcquireNextValidCache())
@@ -1252,7 +1252,8 @@ namespace LibHac.FsSystem.Save
         /// <returns>The <see cref="Result"/> of the operation.</returns>
         private Result ReadCore(long offset, Span<byte> destination)
         {
-            Assert.NotNull(Caches);
+            Assert.SdkRequiresNotNull(Caches);
+            Assert.SdkRequiresNotNull(destination);
 
             // Validate the offset.
             long baseStorageSize = BaseStorageSize;
@@ -1469,7 +1470,7 @@ namespace LibHac.FsSystem.Save
                 }
 
                 long currentOffset = currentOffsetEnd - currentSize;
-                Assert.True(currentOffset >= 0);
+                Assert.SdkGreaterEqual(currentOffset, 0);
 
                 using var cache = new SharedCache(this);
 
@@ -1617,7 +1618,8 @@ namespace LibHac.FsSystem.Save
 
         private Result WriteCore(long offset, ReadOnlySpan<byte> source)
         {
-            Assert.NotNull(Caches);
+            Assert.SdkRequiresNotNull(Caches);
+            Assert.SdkRequiresNotNull(source);
 
             // Validate the offset.
             long baseStorageSize = BaseStorageSize;

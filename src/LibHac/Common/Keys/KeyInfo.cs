@@ -48,7 +48,7 @@ namespace LibHac.Common.Keys
 
         public KeyInfo(int group, KeyType type, string name, KeyGetter retrieveFunc)
         {
-            Assert.True(IsKeyTypeValid(type));
+            Assert.SdkRequires(IsKeyTypeValid(type));
 
             Name = name;
             RangeType = KeyRangeType.Single;
@@ -61,7 +61,7 @@ namespace LibHac.Common.Keys
 
         public KeyInfo(int group, KeyType type, string name, byte rangeStart, byte rangeEnd, KeyGetter retrieveFunc)
         {
-            Assert.True(IsKeyTypeValid(type));
+            Assert.SdkRequires(IsKeyTypeValid(type));
 
             Name = name;
             RangeType = KeyRangeType.Range;
@@ -87,7 +87,7 @@ namespace LibHac.Common.Keys
 
         private bool MatchesSingle(ReadOnlySpan<char> keyName, out bool isDev)
         {
-            Assert.Equal((int)KeyRangeType.Single, (int)RangeType);
+            Assert.SdkRequiresEqual((int)KeyRangeType.Single, (int)RangeType);
 
             isDev = false;
 
@@ -113,7 +113,7 @@ namespace LibHac.Common.Keys
 
         private bool MatchesRangedKey(ReadOnlySpan<char> keyName, ref int keyIndex, out bool isDev)
         {
-            Assert.Equal((int)KeyRangeType.Range, (int)RangeType);
+            Assert.SdkRequiresEqual((int)KeyRangeType.Range, (int)RangeType);
 
             isDev = false;
 

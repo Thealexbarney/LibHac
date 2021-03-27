@@ -197,7 +197,7 @@ namespace LibHac.FsSrv.Impl
 
         private static int GetResolverIndexFromStorageId(StorageId id)
         {
-            Assert.True(IsValidStorageId(id));
+            Assert.SdkRequires(IsValidStorageId(id));
 
             return id switch
             {

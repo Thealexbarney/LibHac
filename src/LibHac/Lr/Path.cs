@@ -24,7 +24,7 @@ namespace LibHac.Lr
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InitEmpty(out Path path)
         {
-            Unsafe.SkipInit(out path);
+            UnsafeHelpers.SkipParamInit(out path);
             SpanHelpers.AsByteSpan(ref path)[0] = 0;
         }
 

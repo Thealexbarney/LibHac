@@ -53,7 +53,7 @@ namespace LibHac.Fs.Shim
                     StringUtils.GetLength(GetGameCardMountNameSuffix(PartitionId), PathTool.MountNameLengthMax) +
                     handleDigitCount + 2;
 
-                Assert.True(nameBuffer.Length >= neededSize);
+                Assert.SdkRequiresGreaterEqual(nameBuffer.Length, neededSize);
 
                 // Generate the name.
                 var sb = new U8StringBuilder(nameBuffer);
@@ -62,7 +62,7 @@ namespace LibHac.Fs.Shim
                     .AppendFormat(Handle.Value, 'x', (byte)handleDigitCount)
                     .Append(StringTraits.DriveSeparator);
 
-                Assert.True(sb.Length == neededSize - 1);
+                Assert.SdkEqual(sb.Length, neededSize - 1);
 
                 return Result.Success;
             }

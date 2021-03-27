@@ -82,9 +82,9 @@ namespace LibHac.Fs
             Size = size;
             IsResizable = false;
 
-            Assert.True(IsValid());
-            Assert.True(Offset >= 0);
-            Assert.True(Size >= 0);
+            Assert.SdkRequiresNotNull(baseStorage);
+            Assert.SdkRequiresLessEqual(0, Offset);
+            Assert.SdkRequiresLessEqual(0, Size);
         }
 
         /// <summary>
@@ -102,9 +102,9 @@ namespace LibHac.Fs
             Size = size;
             IsResizable = false;
 
-            Assert.True(IsValid());
-            Assert.True(Offset >= 0);
-            Assert.True(Size >= 0);
+            Assert.SdkRequiresNotNull(sharedBaseStorage);
+            Assert.SdkRequiresLessEqual(0, Offset);
+            Assert.SdkRequiresLessEqual(0, Size);
         }
 
         /// <summary>
@@ -126,10 +126,10 @@ namespace LibHac.Fs
             Size = size;
             IsResizable = false;
 
-            Assert.True(IsValid());
-            Assert.True(Offset >= 0);
-            Assert.True(Size >= 0);
-            Assert.True(other.Size >= offset + size);
+            Assert.SdkRequires(other.IsValid());
+            Assert.SdkRequiresLessEqual(0, Offset);
+            Assert.SdkRequiresLessEqual(0, Size);
+            Assert.SdkRequiresGreaterEqual(other.Size, offset + size);
         }
 
         private bool IsValid() => BaseStorage != null;

@@ -40,7 +40,7 @@ namespace LibHac.FsSystem
 
             public PageEntry* PopFront()
             {
-                Assert.True(EntryCount > 0);
+                Assert.SdkRequires(EntryCount > 0);
 
                 // Get the first entry.
                 PageEntry* pageEntry = FirstPageEntry;
@@ -51,7 +51,7 @@ namespace LibHac.FsSystem
 
                 // Decrement our count.
                 EntryCount--;
-                Assert.True(EntryCount >= 0);
+                Assert.SdkGreaterEqual(EntryCount, 0);
 
                 // If this was our last page, clear our last entry.
                 if (EntryCount == 0)
@@ -64,7 +64,7 @@ namespace LibHac.FsSystem
 
             public void PushBack(PageEntry* pageEntry)
             {
-                Assert.True(pageEntry != null);
+                Assert.SdkRequires(pageEntry != null);
 
                 // If we're empty, we want to set the first page entry.
                 if (IsEmpty())
@@ -74,7 +74,7 @@ namespace LibHac.FsSystem
                 else
                 {
                     // We're not empty, so push the page to the back.
-                    Assert.True(LastPageEntry != pageEntry);
+                    Assert.SdkAssert(LastPageEntry != pageEntry);
                     LastPageEntry->Next = pageEntry;
                 }
 
@@ -84,12 +84,12 @@ namespace LibHac.FsSystem
 
                 // Increment our entry count.
                 EntryCount++;
-                Assert.True(EntryCount > 0);
+                Assert.SdkGreater(EntryCount, 0);
             }
 
             public bool Remove(PageEntry* pageEntry)
             {
-                Assert.True(pageEntry != null);
+                Assert.SdkRequires(pageEntry != null);
 
                 // If we're empty, we can't remove the page list.
                 if (IsEmpty())
@@ -128,7 +128,7 @@ namespace LibHac.FsSystem
 
                         // Update our entry count.
                         EntryCount--;
-                        Assert.True(EntryCount >= 0);
+                        Assert.SdkGreaterEqual(EntryCount, 0);
 
                         return true;
                     }
@@ -162,14 +162,14 @@ namespace LibHac.FsSystem
 
         public static int GetBlockCountFromOrder(int order)
         {
-            Assert.True(0 <= order);
-            Assert.True(order < OrderUpperLimit);
+            Assert.SdkRequiresGreaterEqual(order, 0);
+            Assert.SdkRequiresLess(order, OrderUpperLimit);
             return 1 << order;
         }
 
         public static nuint QueryWorkBufferSize(int orderMax)
         {
-            Assert.InRange(orderMax, 1, OrderUpperLimit);
+            Assert.SdkRequiresInRange(orderMax, 1, OrderUpperLimit);
 
             var pageListSize = (nint)Unsafe.SizeOf<PageList>();
             uint pageListAlignment = (uint)Unsafe.SizeOf<nint>();
@@ -180,9 +180,9 @@ namespace LibHac.FsSystem
 
         public static int QueryOrderMax(nuint size, nuint blockSize)
         {
-            Assert.True(size >= blockSize);
-            Assert.True(blockSize >= BlockSizeMin);
-            Assert.True(BitUtil.IsPowerOfTwo(blockSize));
+            Assert.SdkRequiresGreaterEqual(size, blockSize);
+            Assert.SdkRequiresGreaterEqual(blockSize, BlockSizeMin);
+            Assert.SdkRequires(BitUtil.IsPowerOfTwo(blockSize));
 
             int blockCount = (int)(Alignment.AlignUpPow2(size, (uint)blockSize) / blockSize);
             for (int order = 1; ; order++)
@@ -200,14 +200,15 @@ namespace LibHac.FsSystem
         public Result Initialize(UIntPtr address, nuint size, nuint blockSize, int orderMax, void* workBuffer,
             nuint workBufferSize)
         {
-            Assert.True(workBufferSize >= QueryWorkBufferSize(orderMax));
+            Assert.SdkRequiresGreaterEqual(workBufferSize, QueryWorkBufferSize(orderMax));
 
             uint pageListAlignment = (uint)Unsafe.SizeOf<nint>();
             var alignedWork = (void*)Alignment.AlignUpPow2((ulong)workBuffer, pageListAlignment);
             ExternalFreeLists = (PageList*)alignedWork;
 
             // Note: The original code does not have a buffer size assert after adjusting for alignment.
-            Assert.True(workBufferSize - ((nuint)alignedWork - (nuint)workBuffer) >= QueryWorkBufferSize(orderMax));
+            Assert.SdkRequiresGreaterEqual(workBufferSize - ((nuint)alignedWork - (nuint)workBuffer),
+                QueryWorkBufferSize(orderMax));
 
             return Initialize(address, size, blockSize, orderMax);
         }
@@ -219,14 +220,14 @@ namespace LibHac.FsSystem
 
         public Result Initialize(UIntPtr address, nuint size, nuint blockSize, int orderMax)
         {
-            Assert.True(FreeLists == null);
-            Assert.True(address != UIntPtr.Zero);
-            Assert.True(Alignment.IsAlignedPow2(address.ToUInt64(), (uint)BufferAlignment));
-            Assert.True(blockSize >= BlockSizeMin);
-            Assert.True(BitUtil.IsPowerOfTwo(blockSize));
-            Assert.True(size >= blockSize);
-            Assert.True(orderMax > 0);
-            Assert.True(orderMax < OrderUpperLimit);
+            Assert.SdkRequires(FreeLists == null);
+            Assert.SdkRequiresNotEqual(address, UIntPtr.Zero);
+            Assert.SdkRequiresAligned(address.ToUInt64(), (int)BufferAlignment);
+            Assert.SdkRequiresGreaterEqual(blockSize, BlockSizeMin);
+            Assert.SdkRequires(BitUtil.IsPowerOfTwo(blockSize));
+            Assert.SdkRequiresGreaterEqual(size, blockSize);
+            Assert.SdkRequiresGreater(orderMax, 0);
+            Assert.SdkRequiresLess(orderMax, OrderUpperLimit);
 
             // Set up our basic member variables
             BlockSize = blockSize;
@@ -239,12 +240,12 @@ namespace LibHac.FsSystem
             // Determine page sizes
             nuint maxPageSize = BlockSize << OrderMax;
             nuint maxPageCount = (nuint)Alignment.AlignUp(HeapSize, (uint)maxPageSize) / maxPageSize;
-            Assert.True(maxPageCount > 0);
+            Assert.SdkGreater((int)maxPageCount, 0);
 
             // Setup the free lists
             if (ExternalFreeLists != null)
             {
-                Assert.Null(InternalFreeLists);
+                Assert.SdkAssert(InternalFreeLists == null);
                 FreeLists = ExternalFreeLists;
             }
             else
@@ -268,7 +269,7 @@ namespace LibHac.FsSystem
             {
                 nuint remaining = HeapSize - (maxPageCount - 1) * maxPageSize;
                 nuint curAddress = HeapStart - (maxPageCount - 1) * maxPageSize;
-                Assert.True(Alignment.IsAlignedPow2(remaining, (uint)BlockSize));
+                Assert.SdkAligned(remaining, (int)BlockSize);
 
                 do
                 {
@@ -276,12 +277,12 @@ namespace LibHac.FsSystem
                     int order = GetOrderFromBytes(remaining + 1);
                     if (order < 0)
                     {
-                        Assert.True(GetOrderFromBytes(remaining) == orderMax);
+                        Assert.SdkEqual(OrderMax, GetOrderFromBytes(remaining));
                         order = OrderMax + 1;
                     }
 
-                    Assert.True(0 < order);
-                    Assert.True(order <= OrderMax + 1);
+                    Assert.SdkGreater(order, 0);
+                    Assert.SdkLessEqual(order, OrderMax + 1);
 
                     // Add to the correct free list.
                     FreeLists[order - 1].PushBack(GetPageEntryFromAddress(curAddress));
@@ -299,9 +300,9 @@ namespace LibHac.FsSystem
 
         public void* AllocateByOrder(int order)
         {
-            Assert.True(FreeLists != null);
-            Assert.True(order >= 0);
-            Assert.True(order <= GetOrderMax());
+            Assert.SdkRequires(FreeLists != null);
+            Assert.SdkRequiresGreaterEqual(order, 0);
+            Assert.SdkRequiresLessEqual(order, GetOrderMax());
 
             // Get the page entry.
             PageEntry* pageEntry = GetFreePageEntry(order);
@@ -309,7 +310,7 @@ namespace LibHac.FsSystem
             if (pageEntry != null)
             {
                 // Ensure we're allocating an unlinked page.
-                Assert.True(pageEntry->Next == null);
+                Assert.SdkAssert(pageEntry->Next == null);
 
                 // Return the address for this entry.
                 return (void*)GetAddressFromPageEntry(pageEntry);
@@ -322,20 +323,20 @@ namespace LibHac.FsSystem
 
         public void Free(void* pointer, int order)
         {
-            Assert.True(FreeLists != null);
-            Assert.True(order >= 0);
-            Assert.True(order <= GetOrderMax());
+            Assert.SdkRequires(FreeLists != null);
+            Assert.SdkRequiresGreaterEqual(order, 0);
+            Assert.SdkRequiresLessEqual(order, GetOrderMax());
 
             // Allow Free(null)
             if (pointer == null)
                 return;
 
             // Ensure the pointer is block aligned.
-            Assert.True(Alignment.IsAlignedPow2((nuint)pointer - HeapStart, (uint)GetBlockSize()));
+            Assert.SdkAligned((nuint)pointer - HeapStart, (int)GetBlockSize());
 
             // Get the page entry.
             PageEntry* pageEntry = GetPageEntryFromAddress((UIntPtr)pointer);
-            Assert.True(IsAlignedToOrder(pageEntry, order));
+            Assert.SdkAssert(IsAlignedToOrder(pageEntry, order));
 
             /* Reinsert into the free lists. */
             JoinBuddies(pageEntry, order);
@@ -343,13 +344,13 @@ namespace LibHac.FsSystem
 
         public nuint GetTotalFreeSize()
         {
-            Assert.True(FreeLists != null);
+            Assert.SdkRequires(FreeLists != null);
             return TotalFreeSize;
         }
 
         public nuint GetAllocatableSizeMax()
         {
-            Assert.True(FreeLists != null);
+            Assert.SdkRequires(FreeLists != null);
 
             // The maximum allocatable size is a chunk from the biggest non-empty order.
             for (int order = GetOrderMax(); order >= 0; order--)
@@ -366,43 +367,43 @@ namespace LibHac.FsSystem
 
         public void Dump()
         {
-            Assert.True(FreeLists != null);
+            Assert.SdkRequires(FreeLists != null);
             throw new NotImplementedException();
         }
 
         public int GetOrderFromBytes(nuint size)
         {
-            Assert.True(FreeLists != null);
+            Assert.SdkRequires(FreeLists != null);
             return GetOrderFromBlockCount(GetBlockCountFromSize(size));
         }
 
         public nuint GetBytesFromOrder(int order)
         {
-            Assert.True(FreeLists != null);
-            Assert.True(order >= 0);
-            Assert.True(order <= GetOrderMax());
+            Assert.SdkRequires(FreeLists != null);
+            Assert.SdkRequiresGreaterEqual(order, 0);
+            Assert.SdkRequiresLessEqual(order, GetOrderMax());
 
             return GetBlockSize() << order;
         }
 
         public int GetOrderMax()
         {
-            Assert.True(FreeLists != null);
+            Assert.SdkRequires(FreeLists != null);
             return OrderMax;
         }
 
         public nuint GetBlockSize()
         {
-            Assert.True(FreeLists != null);
+            Assert.SdkRequires(FreeLists != null);
             return BlockSize;
         }
 
         private void DivideBuddies(PageEntry* pageEntry, int requiredOrder, int chosenOrder)
         {
-            Assert.True(FreeLists != null);
-            Assert.True(requiredOrder >= 0);
-            Assert.True(chosenOrder >= requiredOrder);
-            Assert.True(chosenOrder <= GetOrderMax());
+            Assert.SdkRequires(FreeLists != null);
+            Assert.SdkRequiresGreaterEqual(requiredOrder, 0);
+            Assert.SdkRequiresGreaterEqual(chosenOrder, requiredOrder);
+            Assert.SdkRequiresLessEqual(chosenOrder, GetOrderMax());
 
             // Start at the end of the entry.
             nuint address = GetAddressFromPageEntry(pageEntry) + GetBytesFromOrder(chosenOrder);
@@ -421,9 +422,9 @@ namespace LibHac.FsSystem
 
         private void JoinBuddies(PageEntry* pageEntry, int order)
         {
-            Assert.True(pageEntry != null);
-            Assert.True(order >= 0);
-            Assert.True(order <= GetOrderMax());
+            Assert.SdkRequires(FreeLists != null);
+            Assert.SdkRequiresGreaterEqual(order, 0);
+            Assert.SdkRequiresLessEqual(order, GetOrderMax());
 
             PageEntry* curEntry = pageEntry;
             int curOrder = order;
@@ -460,9 +461,9 @@ namespace LibHac.FsSystem
 
         private PageEntry* GetBuddy(PageEntry* pageEntry, int order)
         {
-            Assert.True(pageEntry != null);
-            Assert.True(order >= 0);
-            Assert.True(order <= GetOrderMax());
+            Assert.SdkRequires(FreeLists != null);
+            Assert.SdkRequiresGreaterEqual(order, 0);
+            Assert.SdkRequiresLessEqual(order, GetOrderMax());
 
             nuint address = GetAddressFromPageEntry(pageEntry);
             nuint offset = (nuint)GetBlockCountFromOrder(order) * GetBlockSize();
@@ -482,8 +483,8 @@ namespace LibHac.FsSystem
 
         private PageEntry* GetFreePageEntry(int order)
         {
-            Assert.True(order >= 0);
-            Assert.True(order <= GetOrderMax());
+            Assert.SdkRequiresGreaterEqual(order, 0);
+            Assert.SdkRequiresLessEqual(order, GetOrderMax());
 
             // Try orders from low to high until we find a free page entry.
             for (int curOrder = order; curOrder <= GetOrderMax(); curOrder++)
@@ -493,14 +494,14 @@ namespace LibHac.FsSystem
                 {
                     // The current list isn't empty, so grab an entry from it.
                     PageEntry* pageEntry = freeList.PopFront();
-                    Assert.True(pageEntry != null);
+                    Assert.SdkAssert(pageEntry != null);
 
                     // Update size bookkeeping.
                     TotalFreeSize -= GetBytesFromOrder(curOrder);
 
                     // If we allocated more memory than needed, free the unneeded portion.
                     DivideBuddies(pageEntry, order, curOrder);
-                    Assert.True(pageEntry->Next == null);
+                    Assert.SdkAssert(pageEntry->Next == null);
 
                     // Return the newly-divided entry.
                     return pageEntry;
@@ -513,7 +514,7 @@ namespace LibHac.FsSystem
 
         private int GetOrderFromBlockCount(int blockCount)
         {
-            Assert.True(blockCount >= 0);
+            Assert.SdkRequiresGreaterEqual(blockCount, 0);
 
             // Return the first order with a big enough block count.
             for (int order = 0; order <= GetOrderMax(); ++order)
@@ -537,17 +538,17 @@ namespace LibHac.FsSystem
         {
             var address = new UIntPtr(pageEntry);
 
-            Assert.True((nuint)HeapStart <= address);
-            Assert.True(address < HeapStart + HeapSize);
-            Assert.True(Alignment.IsAlignedPow2((nuint)address - HeapStart, (uint)GetBlockSize()));
+            Assert.SdkRequiresGreaterEqual(address, HeapStart);
+            Assert.SdkRequiresLess((nuint)address, HeapStart + HeapSize);
+            Assert.SdkRequiresAligned((nuint)address - HeapStart, (int)GetBlockSize());
 
             return address;
         }
 
         private PageEntry* GetPageEntryFromAddress(UIntPtr address)
         {
-            Assert.True((nuint)HeapStart <= address);
-            Assert.True(address < HeapStart + HeapSize);
+            Assert.SdkRequiresGreaterEqual(address, HeapStart);
+            Assert.SdkRequiresLess((nuint)address, HeapStart + HeapSize);
 
             ulong blockStart = (ulong)HeapStart +
                                Alignment.AlignDownPow2((nuint)address - HeapStart, (uint)GetBlockSize());
@@ -558,9 +559,9 @@ namespace LibHac.FsSystem
         {
             var address = (nuint)pageEntry;
 
-            Assert.True(HeapStart <= address);
-            Assert.True(address < HeapStart + HeapSize);
-            Assert.True(Alignment.IsAlignedPow2(address - HeapStart, (uint)GetBlockSize()));
+            Assert.SdkRequiresGreaterEqual(address, (nuint)HeapStart);
+            Assert.SdkRequiresLess(address, HeapStart + HeapSize);
+            Assert.SdkRequiresAligned(address - HeapStart, (int)GetBlockSize());
 
             return (int)((address - HeapStart) / GetBlockSize());
         }
@@ -616,7 +617,7 @@ namespace LibHac.FsSystem
 
         public Buffer AllocateBufferByOrder(int order)
         {
-            Assert.True(!HeapBuffer.IsEmpty);
+            Assert.SdkRequires(!HeapBuffer.IsEmpty);
 
             void* address = AllocateByOrder(order);
 
@@ -624,11 +625,11 @@ namespace LibHac.FsSystem
                 return Buffer.Empty;
 
             nuint size = GetBytesFromOrder(order);
-            Assert.True(size <= int.MaxValue);
+            Assert.SdkLessEqual(size, (nuint)int.MaxValue);
 
             // Get the offset relative to the heap start
             nuint offset = (nuint)address - (nuint)PinnedHeapMemoryHandle.Pointer;
-            Assert.True(offset <= (nuint)HeapBuffer.Length);
+            Assert.SdkLessEqual(offset, (nuint)HeapBuffer.Length);
 
             // Get a slice of the Memory<byte> containing the entire heap
             return new Buffer(HeapBuffer.Slice((int)offset, (int)size));
@@ -636,8 +637,8 @@ namespace LibHac.FsSystem
 
         public void Free(Buffer buffer)
         {
-            Assert.True(!HeapBuffer.IsEmpty);
-            Assert.True(!buffer.IsNull);
+            Assert.SdkRequires(!HeapBuffer.IsEmpty);
+            Assert.SdkRequires(!buffer.IsNull);
 
             int order = GetOrderFromBytes((nuint)buffer.Length);
             void* pointer = Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer.Span));

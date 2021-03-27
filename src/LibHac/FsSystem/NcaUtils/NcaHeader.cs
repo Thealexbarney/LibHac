@@ -254,7 +254,7 @@ namespace LibHac.FsSystem.NcaUtils
 
         private static bool CheckIfDecrypted(ReadOnlySpan<byte> header)
         {
-            Assert.True(header.Length >= 0x400);
+            Assert.SdkRequiresGreaterEqual(header.Length, 0x400);
 
             // Check the magic value
             if (header[0x200] != 'N' || header[0x201] != 'C' || header[0x202] != 'A')

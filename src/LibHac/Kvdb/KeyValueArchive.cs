@@ -75,7 +75,7 @@ namespace LibHac.Kvdb
             UnsafeHelpers.SkipParamInit(out count);
 
             // This should only be called at the start of reading stream.
-            Assert.True(_offset == 0);
+            Assert.SdkRequiresEqual(_offset, 0);
 
             // Read and validate header.
             var header = new KeyValueArchiveHeader();
@@ -95,7 +95,7 @@ namespace LibHac.Kvdb
             UnsafeHelpers.SkipParamInit(out keySize, out valueSize);
 
             // This should only be called after ReadEntryCount.
-            Assert.NotEqual(_offset, 0);
+            Assert.SdkNotEqual(_offset, 0);
 
             // Peek the next entry header.
             Unsafe.SkipInit(out KeyValueArchiveEntryHeader header);
@@ -115,7 +115,7 @@ namespace LibHac.Kvdb
         public Result ReadKeyValue(Span<byte> keyBuffer, Span<byte> valueBuffer)
         {
             // This should only be called after ReadEntryCount.
-            Assert.NotEqual(_offset, 0);
+            Assert.SdkNotEqual(_offset, 0);
 
             // Read the next entry header.
             Unsafe.SkipInit(out KeyValueArchiveEntryHeader header);
@@ -127,8 +127,8 @@ namespace LibHac.Kvdb
                 return ResultKvdb.InvalidKeyValue.Log();
 
             // Key size and Value size must be correct.
-            Assert.Equal(keyBuffer.Length, header.KeySize);
-            Assert.Equal(valueBuffer.Length, header.ValueSize);
+            Assert.SdkEqual(keyBuffer.Length, header.KeySize);
+            Assert.SdkEqual(valueBuffer.Length, header.ValueSize);
 
             rc = Read(keyBuffer);
             if (rc.IsFailure()) return rc;
@@ -176,8 +176,8 @@ namespace LibHac.Kvdb
         private void Write(ReadOnlySpan<byte> source)
         {
             // Bounds check.
-            Assert.True(_offset + source.Length <= _buffer.Length &&
-                              _offset + source.Length > _offset);
+            Abort.DoAbortUnless(_offset + source.Length <= _buffer.Length &&
+                        _offset + source.Length > _offset);
 
             source.CopyTo(_buffer.Slice(_offset));
             _offset += source.Length;
@@ -186,7 +186,7 @@ namespace LibHac.Kvdb
         public void WriteHeader(int entryCount)
         {
             // This should only be called at start of write.
-            Assert.Equal(_offset, 0);
+            Assert.SdkEqual(_offset, 0);
 
             var header = new KeyValueArchiveHeader(entryCount);
             Write(SpanHelpers.AsByteSpan(ref header));
@@ -195,7 +195,7 @@ namespace LibHac.Kvdb
         public void WriteEntry(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
         {
             // This should only be called after writing header.
-            Assert.NotEqual(_offset, 0);
+            Assert.SdkNotEqual(_offset, 0);
 
             var header = new KeyValueArchiveEntryHeader(key.Length, value.Length);
             Write(SpanHelpers.AsByteSpan(ref header));

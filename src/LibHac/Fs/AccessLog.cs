@@ -139,7 +139,8 @@ namespace LibHac.Fs.Impl
         private ReadOnlySpan<byte> ToValueString(int value)
         {
             bool success = Utf8Formatter.TryFormat(value, _buffer.Bytes, out int length);
-            Assert.True(success && length < _buffer.Bytes.Length);
+            Assert.SdkAssert(success);
+            Assert.SdkLess(length, _buffer.Bytes.Length);
             _buffer[length] = 0;
 
             return _buffer.Bytes;
@@ -480,13 +481,13 @@ namespace LibHac.Fs.Impl
 
             public void RegisterCallback(AccessLogPrinterCallback callback)
             {
-                Assert.Null(_callback);
+                Assert.SdkNull(_callback);
                 _callback = callback;
             }
 
             public int InvokeCallback(Span<byte> textBuffer)
             {
-                Assert.True(IsRegisteredCallback());
+                Assert.SdkAssert(IsRegisteredCallback());
                 return _callback(textBuffer);
             }
         }
@@ -658,7 +659,8 @@ namespace LibHac.Fs.Impl
 
             // We should never receive non-null here.
             // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-            Assert.True(handle is null);
+            Assert.SdkAssert(handle is null,
+                "Handle type must be FileHandle or DirectoryHandle. Please cast to handle type.");
             return false;
         }
 
@@ -683,7 +685,7 @@ namespace LibHac.Fs.Impl
 
         internal static void FlushAccessLog(this FileSystemClientImpl fs)
         {
-            Assert.True(false, $"Unsupported {nameof(FlushAccessLog)}");
+            Assert.SdkAssert(false, $"Unsupported {nameof(FlushAccessLog)}");
         }
 
         internal static void FlushAccessLogOnSdCard(this FileSystemClientImpl fs)

@@ -173,7 +173,7 @@ namespace LibHac.Common
                 // Grow the buffer and try again. The buffer size will at least double each time it grows,
                 // so asking for 0x10 additional bytes actually gets us more than that.
                 Grow(availableBuffer.Length + 0x10);
-                Assert.True(Length + availableBuffer.Length < Capacity);
+                Assert.SdkGreater(Capacity, Length + availableBuffer.Length);
             }
 
             PadOutput(bytesWritten);
@@ -212,7 +212,7 @@ namespace LibHac.Common
                 }
 
                 Grow(availableBuffer.Length + 0x10);
-                Assert.True(Length + availableBuffer.Length < Capacity);
+                Assert.SdkGreater(Capacity, Length + availableBuffer.Length);
             }
 
             PadOutput(bytesWritten);
@@ -251,7 +251,7 @@ namespace LibHac.Common
                 }
 
                 Grow(availableBuffer.Length + 0x10);
-                Assert.True(Length + availableBuffer.Length < Capacity);
+                Assert.SdkGreater(Capacity, Length + availableBuffer.Length);
             }
 
             PadOutput(bytesWritten);
@@ -290,7 +290,7 @@ namespace LibHac.Common
                 }
 
                 Grow(availableBuffer.Length + 0x10);
-                Assert.True(Length + availableBuffer.Length < Capacity);
+                Assert.SdkGreater(Capacity, Length + availableBuffer.Length);
             }
 
             PadOutput(bytesWritten);
@@ -368,7 +368,7 @@ namespace LibHac.Common
             if (!hasCapacity && AutoExpand)
             {
                 Grow(requiredAfterPadding);
-                Assert.True(HasCapacity(Length + requiredAfterPadding));
+                Assert.SdkAssert(HasCapacity(Length + requiredAfterPadding));
                 hasCapacity = true;
             }
 

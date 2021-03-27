@@ -31,7 +31,7 @@ namespace LibHac.FsSrv.Storage
             out ReferenceCountedDisposable<IStorageDeviceManager> deviceManager, StorageDevicePortId portId)
         {
             IStorageDeviceManagerFactory factory = storage.GetStorageDeviceManagerFactory(null);
-            Assert.NotNull(factory);
+            Assert.SdkNotNull(factory);
 
             return factory.Create(out deviceManager, portId);
         }

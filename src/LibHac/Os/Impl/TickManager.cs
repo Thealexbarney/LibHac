@@ -42,7 +42,7 @@ namespace LibHac.Os.Impl
 
             // Get the tick frequency.
             long tickFreq = GetTickFrequency();
-            Assert.True(tickFreq < MaxTickFrequency);
+            Assert.SdkLess(tickFreq, MaxTickFrequency);
 
             // Clamp tick to range.
             if (ticks > GetMaxTick())
@@ -63,7 +63,7 @@ namespace LibHac.Os.Impl
                 TimeSpan ts = TimeSpan.FromSeconds(seconds) +
                               TimeSpan.FromNanoSeconds(frac * nanoSecondsPerSecond / tickFreq);
 
-                Assert.True(!(ticks > 0 && ts < default(TimeSpan) || ticks < 0 && ts > default(TimeSpan)));
+                Assert.SdkAssert(!(ticks > 0 && ts < default(TimeSpan) || ticks < 0 && ts > default(TimeSpan)));
 
                 return ts;
             }
@@ -87,7 +87,7 @@ namespace LibHac.Os.Impl
             {
                 // Get the tick frequency.
                 long tickFreq = GetTickFrequency();
-                Assert.True(tickFreq < MaxTickFrequency);
+                Assert.SdkLess(tickFreq, MaxTickFrequency);
 
                 // Convert to tick.
                 long nanoSecondsPerSecond = TimeSpan.FromSeconds(1).GetNanoSeconds();
