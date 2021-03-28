@@ -1,7 +1,7 @@
 ﻿using LibHac.Common;
 using LibHac.Fs;
-using LibHac.FsSrv;
 using Xunit;
+using PathNormalizer = LibHac.FsSrv.Impl.PathNormalizer;
 
 namespace LibHac.Tests.FsSrv
 {
@@ -10,7 +10,7 @@ namespace LibHac.Tests.FsSrv
         [Fact]
         public static void Ctor_EmptyPathWithAcceptEmptyOption_ReturnsEmptyPathWithSuccess()
         {
-            var normalizer = new PathNormalizer("".ToU8Span(), PathNormalizer.Option.AcceptEmpty);
+            using var normalizer = new PathNormalizer("".ToU8Span(), PathNormalizer.Option.AcceptEmpty);
 
             Assert.Equal(Result.Success, normalizer.Result);
             Assert.True(normalizer.Path.IsEmpty());
@@ -19,7 +19,7 @@ namespace LibHac.Tests.FsSrv
         [Fact]
         public static void Normalize_PreserveTailSeparatorOption_KeepsExistingTailSeparator()
         {
-            var normalizer = new PathNormalizer("/a/./b/".ToU8Span(), PathNormalizer.Option.PreserveTailSeparator);
+            using var normalizer = new PathNormalizer("/a/./b/".ToU8Span(), PathNormalizer.Option.PreserveTrailingSeparator);
 
             Assert.Equal(Result.Success, normalizer.Result);
             Assert.Equal("/a/b/", normalizer.Path.ToString());
@@ -28,7 +28,7 @@ namespace LibHac.Tests.FsSrv
         [Fact]
         public static void Normalize_PreserveTailSeparatorOption_IgnoresMissingTailSeparator()
         {
-            var normalizer = new PathNormalizer("/a/./b".ToU8Span(), PathNormalizer.Option.PreserveTailSeparator);
+            using var normalizer = new PathNormalizer("/a/./b".ToU8Span(), PathNormalizer.Option.PreserveTrailingSeparator);
 
             Assert.Equal(Result.Success, normalizer.Result);
             Assert.Equal("/a/b", normalizer.Path.ToString());
@@ -38,7 +38,7 @@ namespace LibHac.Tests.FsSrv
         public static void Normalize_PathAlreadyNormalized_ReturnsSameBuffer()
         {
             var originalPath = "/a/b".ToU8Span();
-            var normalizer = new PathNormalizer(originalPath, PathNormalizer.Option.PreserveTailSeparator);
+            using var normalizer = new PathNormalizer(originalPath, PathNormalizer.Option.PreserveTrailingSeparator);
 
             Assert.Equal(Result.Success, normalizer.Result);
 
@@ -49,7 +49,7 @@ namespace LibHac.Tests.FsSrv
         [Fact]
         public static void Normalize_PreserveUncOptionOn_PreservesUncPath()
         {
-            var normalizer = new PathNormalizer("//aa/bb/..".ToU8Span(), PathNormalizer.Option.PreserveUnc);
+            using var normalizer = new PathNormalizer("//aa/bb/..".ToU8Span(), PathNormalizer.Option.PreserveUnc);
 
             Assert.Equal(Result.Success, normalizer.Result);
             Assert.Equal(@"\\aa/bb", normalizer.Path.ToString());
@@ -58,7 +58,7 @@ namespace LibHac.Tests.FsSrv
         [Fact]
         public static void Normalize_PreserveUncOptionOff_DoesNotPreserveUncPath()
         {
-            var normalizer = new PathNormalizer("//aa/bb/..".ToU8Span(), PathNormalizer.Option.None);
+            using var normalizer = new PathNormalizer("//aa/bb/..".ToU8Span(), PathNormalizer.Option.None);
 
             Assert.Equal(Result.Success, normalizer.Result);
             Assert.Equal(@"/aa", normalizer.Path.ToString());
@@ -67,7 +67,7 @@ namespace LibHac.Tests.FsSrv
         [Fact]
         public static void Normalize_MountNameOptionOn_ParsesMountName()
         {
-            var normalizer = new PathNormalizer("mount:/a/./b".ToU8Span(), PathNormalizer.Option.HasMountName);
+            using var normalizer = new PathNormalizer("mount:/a/./b".ToU8Span(), PathNormalizer.Option.HasMountName);
 
             Assert.Equal(Result.Success, normalizer.Result);
             Assert.Equal("mount:/a/b", normalizer.Path.ToString());
@@ -76,7 +76,7 @@ namespace LibHac.Tests.FsSrv
         [Fact]
         public static void Normalize_MountNameOptionOff_DoesNotParseMountName()
         {
-            var normalizer = new PathNormalizer("mount:/a/./b".ToU8Span(), PathNormalizer.Option.None);
+            using var normalizer = new PathNormalizer("mount:/a/./b".ToU8Span(), PathNormalizer.Option.None);
 
             Assert.Equal(ResultFs.InvalidPathFormat.Value, normalizer.Result);
         }

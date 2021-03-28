@@ -2,6 +2,7 @@
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
+using PathNormalizer = LibHac.FsSrv.Impl.PathNormalizer;
 
 namespace LibHac.FsSrv
 {
@@ -58,13 +59,13 @@ namespace LibHac.FsSrv
             if (path2.IsEmpty())
                 return Result.Success;
 
-            int skipLength = PathUtility.GetWindowsPathSkipLength(path2);
+            int skipLength = WindowsPath.GetWindowsPathSkipLength(path2);
             int remainingLength = PathTools.MaxPathLength - skipLength;
 
-            Result rc = PathUtility.VerifyPath(path2.Slice(skipLength), remainingLength, remainingLength);
+            Result rc = PathUtility.VerifyPath(null, path2.Slice(skipLength), remainingLength, remainingLength);
             if (rc.IsFailure()) return rc;
 
-            var normalizer = new PathNormalizer(path, PathNormalizer.Option.PreserveUnc);
+            using var normalizer = new PathNormalizer(path, PathNormalizer.Option.PreserveUnc);
             return normalizer.Result;
         }
 

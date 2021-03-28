@@ -5,6 +5,7 @@ using LibHac.Fs.Impl;
 using LibHac.FsSystem;
 using LibHac.Os;
 using LibHac.Util;
+using static LibHac.Fs.StringTraits;
 using static LibHac.Fs.Impl.AccessLogStrings;
 
 namespace LibHac.Fs.Fsa
@@ -19,7 +20,7 @@ namespace LibHac.Fs.Fsa
             int mountLen = 0;
             int maxMountLen = Math.Min(path.Length, PathTools.MountNameLengthMax);
 
-            if (PathUtility.IsWindowsDrive(path) || PathUtility.IsUnc(path))
+            if (WindowsPath.IsWindowsDrive(path) || WindowsPath.IsUnc(path))
             {
                 StringUtils.Copy(mountName.Name, CommonPaths.HostRootFileSystemMountName);
                 mountName.Name[PathTools.MountNameLengthMax] = StringTraits.NullTerminator;
@@ -48,7 +49,8 @@ namespace LibHac.Fs.Fsa
 
             U8Span subPathTemp = path.Slice(mountLen + 1);
 
-            if (subPathTemp.Length == 0 || !PathTool.IsAnySeparator(subPathTemp[0]))
+            if (subPathTemp.Length == 0 ||
+                (subPathTemp[0] != DirectorySeparator && subPathTemp[0] != AltDirectorySeparator))
                 return ResultFs.InvalidPathFormat.Log();
 
             path.Value.Slice(0, mountLen).CopyTo(mountName.Name);
@@ -74,7 +76,7 @@ namespace LibHac.Fs.Fsa
             int length = 0;
             for (int i = 0; i < name.Length && name[i] != 0; i++)
             {
-                if (PathTool.IsDriveSeparator(name[i]) || PathTool.IsSeparator(name[i]))
+                if (name[i] == DriveSeparator || name[i] == DirectorySeparator)
                     return false;
 
                 if (++length > PathTools.MountNameLengthMax)

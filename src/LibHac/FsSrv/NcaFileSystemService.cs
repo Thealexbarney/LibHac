@@ -15,6 +15,7 @@ using IStorage = LibHac.Fs.IStorage;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 using Path = LibHac.Lr.Path;
+using PathNormalizer = LibHac.FsSrv.Impl.PathNormalizer;
 
 namespace LibHac.FsSrv
 {
@@ -141,7 +142,7 @@ namespace LibHac.FsSrv
                     }
 
                     // Normalize the path to the patch file system
-                    var patchPathNormalizer = new PathNormalizer(patchPath, GetPathNormalizerOptions(patchPath));
+                    using var patchPathNormalizer = new PathNormalizer(patchPath, GetPathNormalizerOptions(patchPath));
                     if (patchPathNormalizer.Result.IsFailure()) return patchPathNormalizer.Result;
 
                     if (patchResult.IsFailure())
@@ -250,7 +251,7 @@ namespace LibHac.FsSrv
 
             bool canMountSystemDataPrivate = ac.GetAccessibilityFor(AccessibilityType.MountSystemDataPrivate).CanRead;
 
-            var normalizer = new PathNormalizer(path, GetPathNormalizerOptions(path));
+            using var normalizer = new PathNormalizer(path, GetPathNormalizerOptions(path));
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             ReferenceCountedDisposable<IFileSystem> fs = null;
@@ -348,7 +349,7 @@ namespace LibHac.FsSrv
             rc = ServiceImpl.ResolveProgramPath(out Path programPath, programId, storageId);
             if (rc.IsFailure()) return rc;
 
-            var normalizer = new PathNormalizer(programPath, GetPathNormalizerOptions(programPath));
+            using var normalizer = new PathNormalizer(programPath, GetPathNormalizerOptions(programPath));
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             rc = ServiceImpl.GetRightsId(out RightsId tempRightsId, out _, normalizer.Path, programId);
@@ -370,7 +371,7 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.CanCall(OperationType.GetRightsId))
                 return ResultFs.PermissionDenied.Log();
 
-            var normalizer = new PathNormalizer(path, GetPathNormalizerOptions(path));
+            using var normalizer = new PathNormalizer(path, GetPathNormalizerOptions(path));
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             rc = ServiceImpl.GetRightsId(out RightsId tempRightsId, out byte tempKeyGeneration, normalizer.Path,
@@ -396,7 +397,7 @@ namespace LibHac.FsSrv
             Result rc = ServiceImpl.ResolveRomPath(out Path romPath, programId, storageId);
             if (rc.IsFailure()) return rc;
 
-            var normalizer = new PathNormalizer(romPath, GetPathNormalizerOptions(romPath));
+            using var normalizer = new PathNormalizer(romPath, GetPathNormalizerOptions(romPath));
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             isHostFs = IsHostFs(romPath);
@@ -501,7 +502,7 @@ namespace LibHac.FsSrv
             rc = ServiceImpl.ResolveRomPath(out Path romPath, programInfo.ProgramIdValue, programInfo.StorageId);
             if (rc.IsFailure()) return rc;
 
-            var normalizer = new PathNormalizer(romPath, GetPathNormalizerOptions(romPath));
+            using var normalizer = new PathNormalizer(romPath, GetPathNormalizerOptions(romPath));
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             return ServiceImpl.RegisterUpdatePartition(programInfo.ProgramIdValue, normalizer.Path);
@@ -623,7 +624,7 @@ namespace LibHac.FsSrv
         {
             // Set the PreserveUnc flag if the path is on the host file system
             PathNormalizer.Option hostOption = IsHostFs(path) ? PathNormalizer.Option.PreserveUnc : PathNormalizer.Option.None;
-            return PathNormalizer.Option.HasMountName | PathNormalizer.Option.PreserveTailSeparator | hostOption;
+            return PathNormalizer.Option.HasMountName | PathNormalizer.Option.PreserveTrailingSeparator | hostOption;
         }
 
         private bool IsHostFs(U8Span path)

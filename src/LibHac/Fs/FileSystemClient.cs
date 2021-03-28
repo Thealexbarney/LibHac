@@ -25,6 +25,7 @@ namespace LibHac.Fs
         public FileSystemProxyServiceObjectGlobals FileSystemProxyServiceObject;
         public FsContextHandlerGlobals FsContextHandler;
         public ResultHandlingUtilityGlobals ResultHandlingUtility;
+        public PathUtilityGlobals PathUtility;
 
         public void Initialize(FileSystemClient fsClient, HorizonClient horizonClient)
         {
@@ -33,6 +34,7 @@ namespace LibHac.Fs
             AccessLog.Initialize(fsClient);
             UserMountTable.Initialize(fsClient);
             FsContextHandler.Initialize(fsClient);
+            PathUtility.Initialize(fsClient);
         }
     }
 

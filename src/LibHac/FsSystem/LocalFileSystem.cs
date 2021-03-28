@@ -39,7 +39,7 @@ namespace LibHac.FsSystem
 
             Unsafe.SkipInit(out FsPath normalizedPath);
 
-            Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
 
             fullPath = PathTools.Combine(BasePath, normalizedPath.ToString());
@@ -51,13 +51,13 @@ namespace LibHac.FsSystem
             Unsafe.SkipInit(out FsPath normalizedPath1);
             Unsafe.SkipInit(out FsPath normalizedPath2);
 
-            Result rc = PathTool.Normalize(normalizedPath1.Str, out _, path1, false, false);
+            Result rc = PathNormalizer.Normalize(normalizedPath1.Str, out _, path1, false, false);
             if (rc.IsFailure()) return rc;
 
-            rc = PathTool.Normalize(normalizedPath2.Str, out _, path2, false, false);
+            rc = PathNormalizer.Normalize(normalizedPath2.Str, out _, path2, false, false);
             if (rc.IsFailure()) return rc;
 
-            if (PathTool.IsSubpath(normalizedPath1, normalizedPath2))
+            if (PathUtility.IsSubPath(normalizedPath1, normalizedPath2))
             {
                 return ResultFs.DirectoryNotRenamable.Log();
             }

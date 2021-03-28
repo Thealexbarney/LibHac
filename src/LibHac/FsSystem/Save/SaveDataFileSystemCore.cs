@@ -35,7 +35,7 @@ namespace LibHac.FsSystem.Save
         {
             Unsafe.SkipInit(out FsPath normalizedPath);
 
-            Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
 
             FileTable.AddDirectory(normalizedPath);
@@ -47,7 +47,7 @@ namespace LibHac.FsSystem.Save
         {
             Unsafe.SkipInit(out FsPath normalizedPath);
 
-            Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
 
             if (size == 0)
@@ -77,7 +77,7 @@ namespace LibHac.FsSystem.Save
         {
             Unsafe.SkipInit(out FsPath normalizedPath);
 
-            Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
 
             FileTable.DeleteDirectory(normalizedPath);
@@ -89,7 +89,7 @@ namespace LibHac.FsSystem.Save
         {
             Unsafe.SkipInit(out FsPath normalizedPath);
 
-            Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
 
             rc = CleanDirectoryRecursively(normalizedPath);
@@ -105,7 +105,7 @@ namespace LibHac.FsSystem.Save
         {
             Unsafe.SkipInit(out FsPath normalizedPath);
 
-            Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
 
             FileSystemExtensions.CleanDirectoryRecursivelyGeneric(this, normalizedPath.ToString());
@@ -117,7 +117,7 @@ namespace LibHac.FsSystem.Save
         {
             Unsafe.SkipInit(out FsPath normalizedPath);
 
-            Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
 
             if (!FileTable.TryOpenFile(normalizedPath, out SaveFileInfo fileInfo))
@@ -141,7 +141,7 @@ namespace LibHac.FsSystem.Save
 
             Unsafe.SkipInit(out FsPath normalizedPath);
 
-            Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
 
             if (!FileTable.TryOpenDirectory(normalizedPath, out SaveFindPosition position))
@@ -160,7 +160,7 @@ namespace LibHac.FsSystem.Save
 
             Unsafe.SkipInit(out FsPath normalizedPath);
 
-            Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
 
             if (!FileTable.TryOpenFile(normalizedPath, out SaveFileInfo fileInfo))
@@ -180,10 +180,10 @@ namespace LibHac.FsSystem.Save
             Unsafe.SkipInit(out FsPath normalizedCurrentPath);
             Unsafe.SkipInit(out FsPath normalizedNewPath);
 
-            Result rc = PathTool.Normalize(normalizedCurrentPath.Str, out _, oldPath, false, false);
+            Result rc = PathNormalizer.Normalize(normalizedCurrentPath.Str, out _, oldPath, false, false);
             if (rc.IsFailure()) return rc;
 
-            rc = PathTool.Normalize(normalizedNewPath.Str, out _, newPath, false, false);
+            rc = PathNormalizer.Normalize(normalizedNewPath.Str, out _, newPath, false, false);
             if (rc.IsFailure()) return rc;
 
             return FileTable.RenameDirectory(normalizedCurrentPath, normalizedNewPath);
@@ -194,10 +194,10 @@ namespace LibHac.FsSystem.Save
             Unsafe.SkipInit(out FsPath normalizedCurrentPath);
             Unsafe.SkipInit(out FsPath normalizedNewPath);
 
-            Result rc = PathTool.Normalize(normalizedCurrentPath.Str, out _, oldPath, false, false);
+            Result rc = PathNormalizer.Normalize(normalizedCurrentPath.Str, out _, oldPath, false, false);
             if (rc.IsFailure()) return rc;
 
-            rc = PathTool.Normalize(normalizedNewPath.Str, out _, newPath, false, false);
+            rc = PathNormalizer.Normalize(normalizedNewPath.Str, out _, newPath, false, false);
             if (rc.IsFailure()) return rc;
 
             FileTable.RenameFile(normalizedCurrentPath, normalizedNewPath);
@@ -211,7 +211,7 @@ namespace LibHac.FsSystem.Save
 
             Unsafe.SkipInit(out FsPath normalizedPath);
 
-            Result rc = PathTool.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
             if (rc.IsFailure()) return rc;
 
             if (FileTable.TryOpenFile(normalizedPath, out SaveFileInfo _))

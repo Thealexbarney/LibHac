@@ -222,10 +222,10 @@ namespace LibHac.Fs.Impl
             PathUtility.Replace(outPath, StringTraits.AltDirectorySeparator, StringTraits.DirectorySeparator);
 
             // Get lengths
-            int windowsSkipLength = PathUtility.GetWindowsPathSkipLength(path);
+            int windowsSkipLength = WindowsPath.GetWindowsPathSkipLength(path);
             var nonWindowsPath = new U8Span(sfPath.Str.Slice(windowsSkipLength));
             int maxLength = PathTool.EntryNameLengthMax - windowsSkipLength;
-            return PathUtility.VerifyPath(nonWindowsPath, maxLength, maxLength);
+            return PathUtility.VerifyPath(null, nonWindowsPath, maxLength, maxLength);
         }
     }
 }

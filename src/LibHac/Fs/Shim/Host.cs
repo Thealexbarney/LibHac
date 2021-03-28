@@ -8,6 +8,7 @@ using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
 using LibHac.Os;
 using LibHac.Util;
+using static LibHac.Fs.StringTraits;
 using static LibHac.Fs.Impl.AccessLogStrings;
 using static LibHac.Fs.Impl.CommonMountNames;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
@@ -74,9 +75,9 @@ namespace LibHac.Fs.Shim
                 StringUtils.Copy(_path.Str, path);
 
                 int pathLength = StringUtils.GetLength(_path.Str);
-                if (pathLength != 0 && _path.Str[pathLength - 1] == StringTraits.DirectorySeparator)
+                if (pathLength != 0 && _path.Str[pathLength - 1] == DirectorySeparator)
                 {
-                    _path.Str[pathLength - 1] = StringTraits.NullTerminator;
+                    _path.Str[pathLength - 1] = NullTerminator;
                 }
             }
 
@@ -138,7 +139,7 @@ namespace LibHac.Fs.Shim
             if (path.IsNull())
                 return ResultFs.NullptrArgument.Log();
 
-            if (PathUtility.IsWindowsDrive(mountName))
+            if (WindowsPath.IsWindowsDrive(mountName))
                 return ResultFs.InvalidMountName.Log();
 
             if (fs.Impl.IsUsedReservedMountName(mountName))
@@ -147,7 +148,7 @@ namespace LibHac.Fs.Shim
             bool needsTrailingSeparator = false;
             int pathLength = StringUtils.GetLength(path, PathTools.MaxPathLength + 1);
 
-            if (pathLength != 0 && PathTool.IsSeparator(path[pathLength - 1]))
+            if (pathLength != 0 && path[pathLength - 1] == DirectorySeparator)
             {
                 needsTrailingSeparator = true;
                 pathLength++;
@@ -159,22 +160,22 @@ namespace LibHac.Fs.Shim
             Unsafe.SkipInit(out FsPath fullPath);
 
             var sb = new U8StringBuilder(fullPath.Str);
-            sb.Append(StringTraits.DirectorySeparator).Append(path);
+            sb.Append(DirectorySeparator).Append(path);
 
             if (needsTrailingSeparator)
             {
-                sb.Append(StringTraits.DirectorySeparator);
+                sb.Append(DirectorySeparator);
             }
 
             if (sb.Overflowed)
                 return ResultFs.TooLongPath.Log();
 
             // If the input path begins with "//", change any leading '/' characters to '\'
-            if (PathTool.IsSeparator(fullPath.Str[1]) && PathTool.IsSeparator(fullPath.Str[2]))
+            if (fullPath.Str[1] == DirectorySeparator && fullPath.Str[2] == DirectorySeparator)
             {
-                for (int i = 1; PathTool.IsSeparator(fullPath.Str[i]); i++)
+                for (int i = 1; fullPath.Str[i] == DirectorySeparator; i++)
                 {
-                    fullPath.Str[i] = StringTraits.AltDirectorySeparator;
+                    fullPath.Str[i] = AltDirectorySeparator;
                 }
             }
 

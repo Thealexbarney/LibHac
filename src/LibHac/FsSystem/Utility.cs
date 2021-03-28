@@ -28,7 +28,7 @@ namespace LibHac.FsSystem
 
             // Copy root path in, add a / if necessary.
             rootPath.Value.Slice(0, rootPathLen).CopyTo(workPath);
-            if (!PathTool.IsSeparator(workPath[rootPathLen - 1]))
+            if (workPath[rootPathLen - 1] != StringTraits.DirectorySeparator)
             {
                 workPath[rootPathLen++] = StringTraits.DirectorySeparator;
             }
@@ -158,7 +158,7 @@ namespace LibHac.FsSystem
 
                     // Find previous separator, add null terminator
                     int cur = len - 2;
-                    while (!PathTool.IsSeparator(SpanHelpers.AsByteSpan(ref destPathBuf)[cur]) && cur > 0)
+                    while (SpanHelpers.AsByteSpan(ref destPathBuf)[cur] != StringTraits.DirectorySeparator && cur > 0)
                     {
                         cur--;
                     }

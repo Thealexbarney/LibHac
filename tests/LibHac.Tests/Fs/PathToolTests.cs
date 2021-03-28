@@ -14,7 +14,7 @@ namespace LibHac.Tests.Fs
         {
             byte[] buffer = new byte[0x301];
 
-            Result result = PathTool.Normalize(buffer, out long normalizedLength, path.ToU8Span(), preserveUnc,
+            Result result = PathNormalizer.Normalize(buffer, out long normalizedLength, path.ToU8Span(), preserveUnc,
                 hasMountName);
 
             Assert.Equal(expectedResult, result);
@@ -27,7 +27,7 @@ namespace LibHac.Tests.Fs
         public static void IsNormalized(string path, bool preserveUnc, bool hasMountName, bool expectedIsNormalized,
             Result expectedResult)
         {
-            Result result = PathTool.IsNormalized(out bool isNormalized, path.ToU8Span(), preserveUnc, hasMountName);
+            Result result = PathNormalizer.IsNormalized(out bool isNormalized, path.ToU8Span(), preserveUnc, hasMountName);
 
             Assert.Equal(expectedResult, result);
 
@@ -39,9 +39,9 @@ namespace LibHac.Tests.Fs
 
         [Theory]
         [MemberData(nameof(SubpathTestItems))]
-        public static void IsSubpath(string path1, string path2, bool expectedResult)
+        public static void IsSubPath(string path1, string path2, bool expectedResult)
         {
-            bool result = PathTool.IsSubpath(path1.ToU8Span(), path2.ToU8Span());
+            bool result = PathUtility.IsSubPath(path1.ToU8Span(), path2.ToU8Span());
 
             Assert.Equal(expectedResult, result);
         }

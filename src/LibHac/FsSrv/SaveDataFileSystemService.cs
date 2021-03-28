@@ -14,6 +14,7 @@ using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using IFile = LibHac.Fs.Fsa.IFile;
 using IFileSf = LibHac.FsSrv.Sf.IFile;
+using PathNormalizer = LibHac.FsSrv.Impl.PathNormalizer;
 using Utility = LibHac.FsSystem.Utility;
 
 namespace LibHac.FsSrv
@@ -567,7 +568,7 @@ namespace LibHac.FsSrv
                 }
             }
 
-            var normalizer = new PathNormalizer(SaveDataRootPath, PathNormalizer.Option.PreserveUnc);
+            using var normalizer = new PathNormalizer(SaveDataRootPath, PathNormalizer.Option.PreserveUnc);
             if (normalizer.Result.IsFailure())
                 return normalizer.Result;
 

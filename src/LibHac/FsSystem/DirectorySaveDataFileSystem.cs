@@ -360,7 +360,7 @@ namespace LibHac.FsSystem
             StringUtils.Copy(outPath, WorkingDirectoryBytes);
             outPath[outPath.Length - 1] = StringTraits.NullTerminator;
 
-            return PathTool.Normalize(outPath.Slice(2), out _, relativePath, false, false);
+            return PathNormalizer.Normalize(outPath.Slice(2), out _, relativePath, false, false);
         }
 
         /// <summary>

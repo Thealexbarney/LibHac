@@ -169,7 +169,7 @@ namespace LibHac.Fs.Shim
 
             if (pathLen > 0)
             {
-                byte endingSeparator = PathTool.IsSeparator(rootPath[pathLen - 1])
+                byte endingSeparator = rootPath[pathLen - 1] == StringTraits.DirectorySeparator
                     ? StringTraits.NullTerminator
                     : StringTraits.DirectorySeparator;
 
