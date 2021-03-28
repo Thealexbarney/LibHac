@@ -30,7 +30,7 @@ $env:DOTNET_MULTILEVEL_LOOKUP = 0
 ###########################################################################
 
 function ExecSafe([scriptblock] $cmd) {
-    $LASTEXITCODE = 0
+    $global:LASTEXITCODE = 0
     & $cmd
     if ($LASTEXITCODE) { exit $LASTEXITCODE }
 }
