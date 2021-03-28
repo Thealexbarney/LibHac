@@ -61,11 +61,11 @@ namespace LibHac.FsSystem
 
             Span<byte> normalizedPath = stackalloc byte[PathTools.MaxPathLength + 2];
 
-            Result rc = PathTool.Normalize(normalizedPath, out long normalizedPathLen, rootPath, PreserveUnc, false);
+            Result rc = PathNormalizer.Normalize(normalizedPath, out long normalizedPathLen, rootPath, PreserveUnc, false);
             if (rc.IsFailure()) return rc;
 
             // Ensure a trailing separator
-            if (!PathTool.IsSeparator(normalizedPath[(int)normalizedPathLen - 1]))
+            if (!PathNormalizer.IsSeparator(normalizedPath[(int)normalizedPathLen - 1]))
             {
                 Debug.Assert(normalizedPathLen + 2 <= normalizedPath.Length);
 
@@ -90,7 +90,7 @@ namespace LibHac.FsSystem
             RootPath.Value.CopyTo(outPath);
 
             // Copy the normalized relative path to the output
-            return PathTool.Normalize(outPath.Slice(RootPath.Length - 2), out _, relativePath, PreserveUnc, false);
+            return PathNormalizer.Normalize(outPath.Slice(RootPath.Length - 2), out _, relativePath, PreserveUnc, false);
         }
 
         protected override Result DoCreateDirectory(U8Span path)

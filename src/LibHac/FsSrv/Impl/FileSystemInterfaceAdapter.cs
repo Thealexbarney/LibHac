@@ -88,7 +88,7 @@ namespace LibHac.FsSrv.Impl
             if (size < 0)
                 return ResultFs.InvalidSize.Log();
 
-            var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
+            using var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             return BaseFileSystem.Target.CreateFile(normalizer.Path, size, (CreateFileOptions)option);
@@ -96,7 +96,7 @@ namespace LibHac.FsSrv.Impl
 
         public Result DeleteFile(in Path path)
         {
-            var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
+            using var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             return BaseFileSystem.Target.DeleteFile(normalizer.Path);
@@ -104,7 +104,7 @@ namespace LibHac.FsSrv.Impl
 
         public Result CreateDirectory(in Path path)
         {
-            var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
+            using var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             if (StringUtils.Compare(RootDir, normalizer.Path) == 0)
@@ -115,7 +115,7 @@ namespace LibHac.FsSrv.Impl
 
         public Result DeleteDirectory(in Path path)
         {
-            var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
+            using var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             if (StringUtils.Compare(RootDir, normalizer.Path) == 0)
@@ -126,7 +126,7 @@ namespace LibHac.FsSrv.Impl
 
         public Result DeleteDirectoryRecursively(in Path path)
         {
-            var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
+            using var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             if (StringUtils.Compare(RootDir, normalizer.Path) == 0)
@@ -137,10 +137,10 @@ namespace LibHac.FsSrv.Impl
 
         public Result RenameFile(in Path oldPath, in Path newPath)
         {
-            var normalizerOldPath = new PathNormalizer(new U8Span(oldPath.Str), GetPathNormalizerOption());
+            using var normalizerOldPath = new PathNormalizer(new U8Span(oldPath.Str), GetPathNormalizerOption());
             if (normalizerOldPath.Result.IsFailure()) return normalizerOldPath.Result;
 
-            var normalizerNewPath = new PathNormalizer(new U8Span(newPath.Str), GetPathNormalizerOption());
+            using var normalizerNewPath = new PathNormalizer(new U8Span(newPath.Str), GetPathNormalizerOption());
             if (normalizerNewPath.Result.IsFailure()) return normalizerNewPath.Result;
 
             return BaseFileSystem.Target.RenameFile(new U8Span(normalizerOldPath.Path),
@@ -149,13 +149,13 @@ namespace LibHac.FsSrv.Impl
 
         public Result RenameDirectory(in Path oldPath, in Path newPath)
         {
-            var normalizerOldPath = new PathNormalizer(new U8Span(oldPath.Str), GetPathNormalizerOption());
+            using var normalizerOldPath = new PathNormalizer(new U8Span(oldPath.Str), GetPathNormalizerOption());
             if (normalizerOldPath.Result.IsFailure()) return normalizerOldPath.Result;
 
-            var normalizerNewPath = new PathNormalizer(new U8Span(newPath.Str), GetPathNormalizerOption());
+            using var normalizerNewPath = new PathNormalizer(new U8Span(newPath.Str), GetPathNormalizerOption());
             if (normalizerNewPath.Result.IsFailure()) return normalizerNewPath.Result;
 
-            if (PathTool.IsSubpath(normalizerOldPath.Path, normalizerNewPath.Path))
+            if (PathUtility.IsSubPath(normalizerOldPath.Path, normalizerNewPath.Path))
                 return ResultFs.DirectoryNotRenamable.Log();
 
             return BaseFileSystem.Target.RenameDirectory(normalizerOldPath.Path, normalizerNewPath.Path);
@@ -165,7 +165,7 @@ namespace LibHac.FsSrv.Impl
         {
             UnsafeHelpers.SkipParamInit(out entryType);
 
-            var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
+            using var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             ref DirectoryEntryType type = ref Unsafe.As<uint, DirectoryEntryType>(ref entryType);
@@ -178,7 +178,7 @@ namespace LibHac.FsSrv.Impl
             const int maxTryCount = 2;
             UnsafeHelpers.SkipParamInit(out file);
 
-            var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
+            using var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             Result rc = Result.Success;
@@ -207,7 +207,7 @@ namespace LibHac.FsSrv.Impl
             const int maxTryCount = 2;
             UnsafeHelpers.SkipParamInit(out directory);
 
-            var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
+            using var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             Result rc = Result.Success;
@@ -240,7 +240,7 @@ namespace LibHac.FsSrv.Impl
         {
             UnsafeHelpers.SkipParamInit(out freeSpace);
 
-            var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
+            using var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             return BaseFileSystem.Target.GetFreeSpaceSize(out freeSpace, normalizer.Path);
@@ -250,7 +250,7 @@ namespace LibHac.FsSrv.Impl
         {
             UnsafeHelpers.SkipParamInit(out totalSpace);
 
-            var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
+            using var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             return BaseFileSystem.Target.GetTotalSpaceSize(out totalSpace, normalizer.Path);
@@ -258,7 +258,7 @@ namespace LibHac.FsSrv.Impl
 
         public Result CleanDirectoryRecursively(in Path path)
         {
-            var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
+            using var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             return BaseFileSystem.Target.CleanDirectoryRecursively(normalizer.Path);
@@ -268,7 +268,7 @@ namespace LibHac.FsSrv.Impl
         {
             UnsafeHelpers.SkipParamInit(out timeStamp);
 
-            var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
+            using var normalizer = new PathNormalizer(new U8Span(path.Str), GetPathNormalizerOption());
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             return BaseFileSystem.Target.GetFileTimeStampRaw(out timeStamp, normalizer.Path);

@@ -6,6 +6,7 @@ using LibHac.FsSrv.Sf;
 using LibHac.Sf;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
+using PathNormalizer = LibHac.FsSrv.Impl.PathNormalizer;
 
 namespace LibHac.FsSrv
 {
@@ -112,7 +113,7 @@ namespace LibHac.FsSrv
                 return ResultFs.PermissionDenied.Log();
 
             // Normalize the path
-            var normalizer = new PathNormalizer(rootPath, PathNormalizer.Option.AcceptEmpty);
+            using var normalizer = new PathNormalizer(rootPath, PathNormalizer.Option.AcceptEmpty);
             if (normalizer.Result.IsFailure()) return normalizer.Result;
 
             ReferenceCountedDisposable<IFileSystem> fs = null;

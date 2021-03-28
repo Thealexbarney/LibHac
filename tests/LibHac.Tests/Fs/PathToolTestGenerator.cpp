@@ -15,11 +15,22 @@ namespace nn::fs::PathTool {
 	nn::Result Normalize(char* buffer, uint64_t* outNormalizedPathLength, const char* path, uint64_t bufferLength, bool preserveUnc);
 	nn::Result IsNormalized(bool* outIsNormalized, const char* path);
 
-	// SDK >= 7
+	// SDK >= 7 < 11
 	nn::Result Normalize(char* buffer, uint64_t* outNormalizedPathLength, const char* path, uint64_t bufferLength, bool preserveUnc, bool hasMountName);
 	nn::Result IsNormalized(bool* outIsNormalized, const char* path, bool preserveUnc, bool hasMountName);
 
 	bool IsSubpath(const char* path1, const char* path2);
+}
+
+namespace nn::fs {
+	// SDK >= 11
+	bool IsSubPath(const char* path1, const char* path2);
+}
+
+namespace nn::fs::PathNormalizer {
+	// SDK >= 11
+	nn::Result Normalize(char* buffer, uint64_t* outNormalizedPathLength, const char* path, uint64_t bufferLength, bool preserveUnc, bool hasMountName);
+	nn::Result IsNormalized(bool* outIsNormalized, const char* path, bool preserveUnc, bool hasMountName);
 }
 
 void* allocate(size_t size)
@@ -67,7 +78,7 @@ void CreateNormalizeTestItem(char const* path, bool preserveUnc, bool hasMountNa
 
 	//svcOutputDebugString(path, strnlen(path, 0x200));
 
-	nn::Result result = nn::fs::PathTool::Normalize(normalized, &normalizedLen, path, 0x200, preserveUnc, hasMountName);
+	nn::Result result = nn::fs::PathNormalizer::Normalize(normalized, &normalizedLen, path, 0x200, preserveUnc, hasMountName);
 
 	const char* preserveUncStr = preserveUnc ? "true" : "false";
 	const char* hasMountNameStr = hasMountName ? "true" : "false";
@@ -78,7 +89,7 @@ void CreateNormalizeTestItem(char const* path, bool preserveUnc, bool hasMountNa
 void CreateIsNormalizedTestItem(char const* path, bool preserveUnc, bool hasMountName) {
 	bool isNormalized = false;
 
-	nn::Result result = nn::fs::PathTool::IsNormalized(&isNormalized, path, preserveUnc, hasMountName);
+	nn::Result result = nn::fs::PathNormalizer::IsNormalized(&isNormalized, path, preserveUnc, hasMountName);
 
 	const char* preserveUncStr = preserveUnc ? "true" : "false";
 	const char* hasMountNameStr = hasMountName ? "true" : "false";
@@ -88,7 +99,7 @@ void CreateIsNormalizedTestItem(char const* path, bool preserveUnc, bool hasMoun
 }
 
 void CreateIsSubpathTestItem(const char* path1, const char* path2) {
-	bool result = nn::fs::PathTool::IsSubpath(path1, path2);
+	bool result = nn::fs::IsSubPath(path1, path2);
 
 	const char* resultStr = result ? "true" : "false";
 	BufPos += sprintf(&Buf[BufPos], "new object[] {@\"%s\", @\"%s\", %s},\n",

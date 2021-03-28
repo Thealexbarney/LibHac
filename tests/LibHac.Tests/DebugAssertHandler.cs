@@ -6,7 +6,7 @@ namespace LibHac.Tests
     {
         public override void Fail(string message, string detailMessage)
         {
-            // throw new System.NotImplementedException(message + detailMessage);
+            throw new LibHacException(message + detailMessage);
         }
     }
 }
