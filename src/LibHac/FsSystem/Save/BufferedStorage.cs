@@ -1295,7 +1295,7 @@ namespace LibHac.FsSystem.Save
 
                     // If the read fails due to insufficient pooled buffer size,
                     // then we want to fall back to the normal read path.
-                    if (!ResultFs.AllocationMemoryFailedPooledBufferNotEnoughSize.Includes(rc))
+                    if (!ResultFs.AllocationPooledBufferNotEnoughSize.Includes(rc))
                         return rc;
                 }
             }
@@ -1519,7 +1519,7 @@ namespace LibHac.FsSystem.Save
             {
                 pooledBuffer.AllocateParticularlyLarge((int)alignedSize, 1);
                 if (pooledBuffer.GetSize() < alignedSize)
-                    return ResultFs.AllocationMemoryFailedPooledBufferNotEnoughSize.Log();
+                    return ResultFs.AllocationPooledBufferNotEnoughSize.Log();
 
                 workBuffer = pooledBuffer.GetBuffer();
             }

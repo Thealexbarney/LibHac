@@ -27,27 +27,27 @@ namespace LibHac.FsSystem.Save
             {
                 if (ResultFs.IncorrectIntegrityVerificationMagic.Includes(result))
                 {
-                    return ResultFs.InvalidSaveDataIvfcMagic.Value;
+                    return ResultFs.IncorrectSaveDataIntegrityVerificationMagic.Value;
                 }
 
                 if (ResultFs.InvalidZeroHash.Includes(result))
                 {
-                    return ResultFs.InvalidSaveDataIvfcHashValidationBit.Value;
+                    return ResultFs.InvalidSaveDataZeroHash.Value;
                 }
 
                 if (ResultFs.NonRealDataVerificationFailed.Includes(result))
                 {
-                    return ResultFs.InvalidSaveDataIvfcHash.Value;
+                    return ResultFs.SaveDataNonRealDataVerificationFailed.Value;
                 }
 
                 if (ResultFs.ClearedRealDataVerificationFailed.Includes(result))
                 {
-                    return ResultFs.EmptySaveDataIvfcHash.Value;
+                    return ResultFs.ClearedSaveDataRealDataVerificationFailed.Value;
                 }
 
                 if (ResultFs.UnclearedRealDataVerificationFailed.Includes(result))
                 {
-                    return ResultFs.InvalidSaveDataHashInIvfcTopLayer.Value;
+                    return ResultFs.UnclearedSaveDataRealDataVerificationFailed.Value;
                 }
 
                 return result;

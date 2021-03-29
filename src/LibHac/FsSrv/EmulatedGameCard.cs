@@ -74,7 +74,7 @@ namespace LibHac.FsSrv
 
         public Result GetGameCardImageHash(Span<byte> outBuffer)
         {
-            if (outBuffer.Length < 0x20) return ResultFs.InvalidBufferForGameCard.Log();
+            if (outBuffer.Length < 0x20) return ResultFs.GameCardPreconditionViolation.Log();
             if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
 
             CardHeader.ImageHash.CopyTo(outBuffer.Slice(0, 0x20));
@@ -83,7 +83,7 @@ namespace LibHac.FsSrv
 
         public Result GetGameCardDeviceId(Span<byte> outBuffer)
         {
-            if (outBuffer.Length < 0x10) return ResultFs.InvalidBufferForGameCard.Log();
+            if (outBuffer.Length < 0x10) return ResultFs.GameCardPreconditionViolation.Log();
             if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
 
             // Skip the security mode check

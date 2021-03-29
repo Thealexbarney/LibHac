@@ -314,11 +314,11 @@ namespace LibHac.FsSrv
 
                 tempFileSystem = AsynchronousAccessFileSystem.CreateShared(ref tempFileSystem);
                 if (tempFileSystem is null)
-                    return ResultFs.AllocationMemoryFailedInAllocateShared.Log();
+                    return ResultFs.AllocationMemoryFailedAllocateShared.Log();
 
                 fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem);
                 if (fileSystem is null)
-                    return ResultFs.AllocationMemoryFailedInCreateShared.Log();
+                    return ResultFs.AllocationMemoryFailedCreateShared.Log();
 
                 return Result.Success;
             }
@@ -531,15 +531,15 @@ namespace LibHac.FsSrv
 
                 tempFileSystem = StorageLayoutTypeSetFileSystem.CreateShared(ref tempFileSystem, storageFlag);
                 if (tempFileSystem is null)
-                    return ResultFs.AllocationMemoryFailedInAllocateShared.Log();
+                    return ResultFs.AllocationMemoryFailedAllocateShared.Log();
 
                 tempFileSystem = AsynchronousAccessFileSystem.CreateShared(ref tempFileSystem);
                 if (tempFileSystem is null)
-                    return ResultFs.AllocationMemoryFailedInAllocateShared.Log();
+                    return ResultFs.AllocationMemoryFailedAllocateShared.Log();
 
                 fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem);
                 if (fileSystem is null)
-                    return ResultFs.AllocationMemoryFailedInCreateShared.Log();
+                    return ResultFs.AllocationMemoryFailedCreateShared.Log();
 
                 return Result.Success;
             }
