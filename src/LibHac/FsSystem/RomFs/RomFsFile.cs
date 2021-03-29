@@ -28,7 +28,7 @@ namespace LibHac.FsSystem.RomFs
 
             long storageOffset = Offset + offset;
 
-            rc = BaseStorage.Read(storageOffset, destination.Slice(0, (int)toRead));
+            rc = ConvertToApplicationResult(BaseStorage.Read(storageOffset, destination.Slice(0, (int)toRead)));
             if (rc.IsFailure()) return rc;
 
             bytesRead = toRead;
@@ -61,6 +61,11 @@ namespace LibHac.FsSystem.RomFs
             ReadOnlySpan<byte> inBuffer)
         {
             return ResultFs.NotImplemented.Log();
+        }
+
+        public Result ConvertToApplicationResult(Result result)
+        {
+            return RomFsFileSystem.ConvertRomFsDriverPrivateResult(result);
         }
     }
 }

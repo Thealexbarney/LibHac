@@ -55,7 +55,7 @@ namespace LibHac.FsSystem
             }
             catch (Exception ex) when (ex.HResult < 0)
             {
-                return ResultFs.UnexpectedErrorInHostFileFlush.Log();
+                return ResultFs.UnexpectedInLocalFileSystemC.Log();
             }
         }
 
@@ -69,7 +69,7 @@ namespace LibHac.FsSystem
             }
             catch (Exception ex) when (ex.HResult < 0)
             {
-                return ResultFs.UnexpectedErrorInHostFileGetSize.Log();
+                return ResultFs.UnexpectedInLocalFileSystemD.Log();
             }
         }
 

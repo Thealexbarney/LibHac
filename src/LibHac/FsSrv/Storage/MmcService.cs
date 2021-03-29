@@ -133,7 +133,7 @@ namespace LibHac.FsSrv.Storage
                     {
                         tempStorage = SpeedEmulationStorage.CreateShared(ref tempStorage);
                         if (tempStorage is null)
-                            return ResultFs.AllocationMemoryFailedInCreateShared.Log();
+                            return ResultFs.AllocationMemoryFailedCreateShared.Log();
                     }
 
                     storage = Shared.Move(ref tempStorage);

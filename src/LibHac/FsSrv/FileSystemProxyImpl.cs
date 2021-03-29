@@ -537,7 +537,7 @@ namespace LibHac.FsSrv
                 fileSystem = FileSystemInterfaceAdapter.CreateShared(ref hostFs, isRootPath);
 
                 if (fileSystem is null)
-                    return ResultFs.AllocationMemoryFailedInCreateShared.Log();
+                    return ResultFs.AllocationMemoryFailedCreateShared.Log();
 
                 return Result.Success;
             }

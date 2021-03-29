@@ -35,7 +35,7 @@ namespace LibHac.Common
             ERROR_ALREADY_EXISTS => ResultFs.PathAlreadyExists.Value,
             ERROR_DIRECTORY => ResultFs.PathNotFound.Value,
             ERROR_SPACES_NOT_ENOUGH_DRIVES => ResultFs.UsableSpaceNotEnough.Value,
-            _ => ResultFs.UnknownHostFileSystemError.Value
+            _ => ResultFs.UnexpectedInLocalFileSystemE.Value
         };
     }
 }
