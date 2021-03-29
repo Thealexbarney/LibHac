@@ -2,6 +2,7 @@ Namespace,Class Name,Path
 Svc,,Svc/ResultSvc.cs
 Fs,,Fs/ResultFs.cs
 Os,,
+Htcs,,
 Ncm,,Ncm/ResultNcm.cs
 Dd,,
 Lr,,Lr/ResultLr.cs
@@ -10,15 +11,20 @@ Sf,,Sf/ResultSf.cs
 Sf.Cmif,Cmif,Sf/Cmif/ResultCmif.cs
 Sf.Impl,SfImpl,Sf/Impl/ResultSfImpl.cs
 Hipc,,
+Tma,,
 Dnmt,,
 Pm,,
 Ns,,
+Htc,,
 Kvdb,,Kvdb/ResultKvdb.cs
 Sm,,Sm/ResultSm.cs
 Ro,,
 Sdmmc,,Sdmmc/ResultSdmmc.cs
 Spl,,Spl/ResultSpl.cs
+Socket,,
+HtcLow,,
 Ddsf,,
+HtcFs,,
 I2C,,
 Gpio,,
 Settings,,
@@ -30,6 +36,7 @@ Account,,
 Pcv,,
 Nim,,
 Psc,,
+Usb,,
 Erpt,,
 Updater,,
 Err,,
@@ -39,6 +46,7 @@ Debug,,
 Pwm,,
 Powctl,,
 Hid,,
+Cs,,
 IrSensor,,
 Capture,,
 Pgl,,
