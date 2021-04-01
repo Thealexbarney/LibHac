@@ -39,6 +39,13 @@ namespace LibHac.Fs
                     path.GetUnsafe(0) == AltDirectorySeparator && path.GetUnsafe(1) == AltDirectorySeparator);
         }
 
+        public static bool IsUnc(string path)
+        {
+            return (uint)path.Length >= UncPathPrefixLength &&
+                   (path[0] == DirectorySeparator && path[1] == DirectorySeparator ||
+                    path[0] == AltDirectorySeparator && path[1] == AltDirectorySeparator);
+        }
+
         public static int GetWindowsPathSkipLength(U8Span path)
         {
             if (IsWindowsDrive(path))
