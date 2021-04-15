@@ -30,7 +30,8 @@ namespace LibHac.Tests.Fs
 
             public IFileSystem Create()
             {
-                DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, BaseFileSystem, true, true)
+                DirectorySaveDataFileSystem
+                    .CreateNew(out DirectorySaveDataFileSystem saveFs, BaseFileSystem, true, true, true)
                     .ThrowIfFailure();
 
                 return saveFs;
@@ -41,7 +42,7 @@ namespace LibHac.Tests.Fs
         {
             var baseFs = new InMemoryFileSystem();
 
-            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true)
+            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true)
                 .ThrowIfFailure();
 
             return (baseFs, saveFs);
@@ -127,7 +128,7 @@ namespace LibHac.Tests.Fs
             baseFs.CreateFile("/0/file1".ToU8Span(), 0, CreateFileOptions.None).ThrowIfFailure();
             baseFs.CreateFile("/1/file2".ToU8Span(), 0, CreateFileOptions.None).ThrowIfFailure();
 
-            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true)
+            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true)
                 .ThrowIfFailure();
 
             Assert.Success(saveFs.GetEntryType(out _, "/file1".ToU8Span()));
@@ -146,7 +147,7 @@ namespace LibHac.Tests.Fs
             baseFs.CreateFile("/_/file1".ToU8Span(), 0, CreateFileOptions.None).ThrowIfFailure();
             baseFs.CreateFile("/1/file2".ToU8Span(), 0, CreateFileOptions.None).ThrowIfFailure();
 
-            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true)
+            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true)
                 .ThrowIfFailure();
 
             Assert.Result(ResultFs.PathNotFound, saveFs.GetEntryType(out _, "/file1".ToU8Span()));
@@ -163,7 +164,7 @@ namespace LibHac.Tests.Fs
             // Set the existing files before initializing the save FS
             baseFs.CreateFile("/1/file2".ToU8Span(), 0, CreateFileOptions.None).ThrowIfFailure();
 
-            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true)
+            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true)
                 .ThrowIfFailure();
 
             Assert.Result(ResultFs.PathNotFound, saveFs.GetEntryType(out _, "/file1".ToU8Span()));
