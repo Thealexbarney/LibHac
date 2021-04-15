@@ -3,17 +3,28 @@ using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.Os;
 using LibHac.Util;
 
 namespace LibHac.FsSystem
 {
+    internal struct DirectorySaveDataFileSystemGlobals
+    {
+        public SdkMutexType SynchronizeDirectoryMutex;
+
+        public void Initialize(FileSystemClient fsClient)
+        {
+            SynchronizeDirectoryMutex.Initialize();
+        }
+    }
+
     /// <summary>
     /// An <see cref="IFileSystem"/> that provides transactional commits for savedata on top of another base IFileSystem.
     /// </summary>
     /// <remarks>
     /// Transactional commits should be atomic as long as the <see cref="IFileSystem.RenameDirectory"/> function of the
     /// underlying <see cref="IFileSystem"/> is atomic.
-    /// <br/>Based on FS 10.0.0 (nnSdk 10.4.0)
+    /// <br/>Based on FS 11.0.0 (nnSdk 11.4.0)
     /// </remarks>
     public class DirectorySaveDataFileSystem : IFileSystem
     {
@@ -27,17 +38,82 @@ namespace LibHac.FsSystem
         private U8Span WorkingDirectoryPath => new U8Span(WorkingDirectoryBytes);
         private U8Span SynchronizingDirectoryPath => new U8Span(SynchronizingDirectoryBytes);
 
-        private IFileSystem BaseFs { get; }
-        private object Locker { get; } = new object();
-        private int OpenWritableFileCount { get; set; }
-        private bool IsPersistentSaveData { get; set; }
-        private bool CanCommitProvisionally { get; set; }
+        private FileSystemClient _fsClient;
+        private IFileSystem _baseFs;
+        private SdkMutexType _mutex;
+        // Todo: Unique file system for disposal
+        private int _openWritableFileCount;
+        private bool _isPersistentSaveData;
+        private bool _canCommitProvisionally;
+        private bool _useTransactions;
+
+        private class DirectorySaveDataFile : IFile
+        {
+            private IFile _baseFile;
+            private DirectorySaveDataFileSystem _parentFs;
+            private OpenMode _mode;
+
+            public DirectorySaveDataFile(DirectorySaveDataFileSystem parentFs, IFile baseFile, OpenMode mode)
+            {
+                _parentFs = parentFs;
+                _baseFile = baseFile;
+                _mode = mode;
+            }
+
+            protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
+                in ReadOption option)
+            {
+                return _baseFile.Read(out bytesRead, offset, destination, in option);
+            }
+
+            protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
+            {
+                return _baseFile.Write(offset, source, in option);
+            }
+
+            protected override Result DoFlush()
+            {
+                return _baseFile.Flush();
+            }
+
+            protected override Result DoGetSize(out long size)
+            {
+                return _baseFile.GetSize(out size);
+            }
+
+            protected override Result DoSetSize(long size)
+            {
+                return _baseFile.SetSize(size);
+            }
+
+            protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+            {
+                return _baseFile.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    _baseFile?.Dispose();
+
+                    if (_mode.HasFlag(OpenMode.Write))
+                    {
+                        _parentFs.DecrementWriteOpenFileCount();
+                        _mode = default;
+                    }
+                }
+
+                base.Dispose(disposing);
+            }
+        }
 
         public static Result CreateNew(out DirectorySaveDataFileSystem created, IFileSystem baseFileSystem,
-            bool isPersistentSaveData, bool canCommitProvisionally)
+            bool isPersistentSaveData, bool canCommitProvisionally, bool useTransactions,
+            FileSystemClient fsClient = null)
         {
-            var obj = new DirectorySaveDataFileSystem(baseFileSystem);
-            Result rc = obj.Initialize(isPersistentSaveData, canCommitProvisionally);
+            var obj = new DirectorySaveDataFileSystem(baseFileSystem, fsClient);
+            Result rc = obj.Initialize(isPersistentSaveData, canCommitProvisionally, useTransactions);
 
             if (rc.IsSuccess())
             {
@@ -50,29 +126,58 @@ namespace LibHac.FsSystem
             return rc;
         }
 
-        private DirectorySaveDataFileSystem(IFileSystem baseFileSystem)
+        /// <summary>
+        /// Create an uninitialized <see cref="DirectorySaveDataFileSystem"/>.
+        /// </summary>
+        /// <param name="baseFileSystem">The base <see cref="IFileSystem"/> to use.</param>
+        public DirectorySaveDataFileSystem(IFileSystem baseFileSystem)
         {
-            BaseFs = baseFileSystem;
+            _baseFs = baseFileSystem;
+            _mutex.Initialize();
         }
 
-        private Result Initialize(bool isPersistentSaveData, bool canCommitProvisionally)
+        /// <summary>
+        /// Create an uninitialized <see cref="DirectorySaveDataFileSystem"/>.
+        /// If a <see cref="FileSystemClient"/> is provided a global mutex will be used when synchronizing directories.
+        /// Running outside of a Horizon context doesn't require this mutex,
+        /// and null can be passed to <paramref name="fsClient"/>.
+        /// </summary>
+        /// <param name="baseFileSystem">The base <see cref="IFileSystem"/> to use.</param>
+        /// <param name="fsClient">The <see cref="FileSystemClient"/> to use. May be null.</param>
+        public DirectorySaveDataFileSystem(IFileSystem baseFileSystem, FileSystemClient fsClient)
         {
-            IsPersistentSaveData = isPersistentSaveData;
-            CanCommitProvisionally = canCommitProvisionally;
+            _baseFs = baseFileSystem;
+            _mutex.Initialize();
+            _fsClient = fsClient;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            _baseFs?.Dispose();
+            base.Dispose(disposing);
+        }
+
+        private Result Initialize(bool isPersistentSaveData, bool canCommitProvisionally, bool useTransactions)
+        {
+            _isPersistentSaveData = isPersistentSaveData;
+            _canCommitProvisionally = canCommitProvisionally;
+            _useTransactions = useTransactions;
 
             // Ensure the working directory exists
-            Result rc = BaseFs.GetEntryType(out _, WorkingDirectoryPath);
+            Result rc = _baseFs.GetEntryType(out _, WorkingDirectoryPath);
 
             if (rc.IsFailure())
             {
                 if (!ResultFs.PathNotFound.Includes(rc)) return rc;
 
-                rc = BaseFs.CreateDirectory(WorkingDirectoryPath);
+                rc = _baseFs.CreateDirectory(WorkingDirectoryPath);
                 if (rc.IsFailure()) return rc;
 
-                if (!IsPersistentSaveData) return Result.Success;
-
-                rc = BaseFs.CreateDirectory(CommittedDirectoryPath);
+                if (_isPersistentSaveData)
+                {
+                    rc = _baseFs.CreateDirectory(CommittedDirectoryPath);
+                    if (rc.IsFailure()) return rc;
+                }
 
                 // Nintendo returns on all failures, but we'll keep going if committed already exists
                 // to avoid confusing people manually creating savedata in emulators
@@ -80,12 +185,16 @@ namespace LibHac.FsSystem
             }
 
             // Only the working directory is needed for temporary savedata
-            if (!IsPersistentSaveData) return Result.Success;
+            if (!_isPersistentSaveData)
+                return Result.Success;
 
-            rc = BaseFs.GetEntryType(out _, CommittedDirectoryPath);
+            rc = _baseFs.GetEntryType(out _, CommittedDirectoryPath);
 
             if (rc.IsSuccess())
             {
+                if (!_useTransactions)
+                    return Result.Success;
+
                 return SynchronizeDirectory(WorkingDirectoryPath, CommittedDirectoryPath);
             }
 
@@ -97,20 +206,22 @@ namespace LibHac.FsSystem
             rc = SynchronizeDirectory(SynchronizingDirectoryPath, WorkingDirectoryPath);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath);
+            return _baseFs.RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath);
         }
 
-        protected override Result DoCreateDirectory(U8Span path)
+        private Result ResolveFullPath(Span<byte> outPath, U8Span relativePath)
         {
-            Unsafe.SkipInit(out FsPath fullPath);
+            if (StringUtils.GetLength(relativePath, PathTools.MaxPathLength + 1) > PathTools.MaxPathLength)
+                return ResultFs.TooLongPath.Log();
 
-            Result rc = ResolveFullPath(fullPath.Str, path);
-            if (rc.IsFailure()) return rc;
+            U8Span workingPath = !_useTransactions && _isPersistentSaveData
+                ? CommittedDirectoryPath
+                : WorkingDirectoryPath;
 
-            lock (Locker)
-            {
-                return BaseFs.CreateDirectory(fullPath);
-            }
+            StringUtils.Copy(outPath, workingPath);
+            outPath[outPath.Length - 1] = StringTraits.NullTerminator;
+
+            return PathNormalizer.Normalize(outPath.Slice(2), out _, relativePath, false, false);
         }
 
         protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
@@ -120,49 +231,9 @@ namespace LibHac.FsSystem
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure()) return rc;
 
-            lock (Locker)
-            {
-                return BaseFs.CreateFile(fullPath, size, options);
-            }
-        }
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
 
-        protected override Result DoDeleteDirectory(U8Span path)
-        {
-            Unsafe.SkipInit(out FsPath fullPath);
-
-            Result rc = ResolveFullPath(fullPath.Str, path);
-            if (rc.IsFailure()) return rc;
-
-            lock (Locker)
-            {
-                return BaseFs.DeleteDirectory(fullPath);
-            }
-        }
-
-        protected override Result DoDeleteDirectoryRecursively(U8Span path)
-        {
-            Unsafe.SkipInit(out FsPath fullPath);
-
-            Result rc = ResolveFullPath(fullPath.Str, path);
-            if (rc.IsFailure()) return rc;
-
-            lock (Locker)
-            {
-                return BaseFs.DeleteDirectoryRecursively(fullPath);
-            }
-        }
-
-        protected override Result DoCleanDirectoryRecursively(U8Span path)
-        {
-            Unsafe.SkipInit(out FsPath fullPath);
-
-            Result rc = ResolveFullPath(fullPath.Str, path);
-            if (rc.IsFailure()) return rc;
-
-            lock (Locker)
-            {
-                return BaseFs.CleanDirectoryRecursively(fullPath);
-            }
+            return _baseFs.CreateFile(fullPath, size, options);
         }
 
         protected override Result DoDeleteFile(U8Span path)
@@ -172,69 +243,57 @@ namespace LibHac.FsSystem
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure()) return rc;
 
-            lock (Locker)
-            {
-                return BaseFs.DeleteFile(fullPath);
-            }
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+
+            return _baseFs.DeleteFile(fullPath);
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoCreateDirectory(U8Span path)
         {
             Unsafe.SkipInit(out FsPath fullPath);
 
             Result rc = ResolveFullPath(fullPath.Str, path);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out directory);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            lock (Locker)
-            {
-                return BaseFs.OpenDirectory(out directory, fullPath, mode);
-            }
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+
+            return _baseFs.CreateDirectory(fullPath);
         }
 
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoDeleteDirectory(U8Span path)
         {
-            UnsafeHelpers.SkipParamInit(out file);
-
             Unsafe.SkipInit(out FsPath fullPath);
 
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure()) return rc;
 
-            lock (Locker)
-            {
-                rc = BaseFs.OpenFile(out IFile baseFile, fullPath, mode);
-                if (rc.IsFailure()) return rc;
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
 
-                file = new DirectorySaveDataFile(this, baseFile, mode);
-
-                if (mode.HasFlag(OpenMode.Write))
-                {
-                    OpenWritableFileCount++;
-                }
-
-                return Result.Success;
-            }
+            return _baseFs.DeleteDirectory(fullPath);
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoDeleteDirectoryRecursively(U8Span path)
         {
-            Unsafe.SkipInit(out FsPath fullCurrentPath);
-            Unsafe.SkipInit(out FsPath fullNewPath);
+            Unsafe.SkipInit(out FsPath fullPath);
 
-            Result rc = ResolveFullPath(fullCurrentPath.Str, oldPath);
+            Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure()) return rc;
 
-            rc = ResolveFullPath(fullNewPath.Str, newPath);
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+
+            return _baseFs.DeleteDirectoryRecursively(fullPath);
+        }
+
+        protected override Result DoCleanDirectoryRecursively(U8Span path)
+        {
+            Unsafe.SkipInit(out FsPath fullPath);
+
+            Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure()) return rc;
 
-            lock (Locker)
-            {
-                return BaseFs.RenameDirectory(fullCurrentPath, fullNewPath);
-            }
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+
+            return _baseFs.CleanDirectoryRecursively(fullPath);
         }
 
         protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
@@ -248,10 +307,25 @@ namespace LibHac.FsSystem
             rc = ResolveFullPath(fullNewPath.Str, newPath);
             if (rc.IsFailure()) return rc;
 
-            lock (Locker)
-            {
-                return BaseFs.RenameFile(fullCurrentPath, fullNewPath);
-            }
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+
+            return _baseFs.RenameFile(fullCurrentPath, fullNewPath);
+        }
+
+        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        {
+            Unsafe.SkipInit(out FsPath fullCurrentPath);
+            Unsafe.SkipInit(out FsPath fullNewPath);
+
+            Result rc = ResolveFullPath(fullCurrentPath.Str, oldPath);
+            if (rc.IsFailure()) return rc;
+
+            rc = ResolveFullPath(fullNewPath.Str, newPath);
+            if (rc.IsFailure()) return rc;
+
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+
+            return _baseFs.RenameDirectory(fullCurrentPath, fullNewPath);
         }
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
@@ -265,102 +339,47 @@ namespace LibHac.FsSystem
                 return rc;
             }
 
-            lock (Locker)
-            {
-                return BaseFs.GetEntryType(out entryType, fullPath);
-            }
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+
+            return _baseFs.GetEntryType(out entryType, fullPath);
         }
 
-        protected override Result DoCommit()
+        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
-            lock (Locker)
+            UnsafeHelpers.SkipParamInit(out file);
+
+            Unsafe.SkipInit(out FsPath fullPath);
+
+            Result rc = ResolveFullPath(fullPath.Str, path);
+            if (rc.IsFailure()) return rc;
+
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+
+            rc = _baseFs.OpenFile(out IFile baseFile, fullPath, mode);
+            if (rc.IsFailure()) return rc;
+
+            file = new DirectorySaveDataFile(this, baseFile, mode);
+
+            if (mode.HasFlag(OpenMode.Write))
             {
-                if (!IsPersistentSaveData)
-                    return Result.Success;
-
-                if (OpenWritableFileCount > 0)
-                {
-                    // All files must be closed before commiting save data.
-                    return ResultFs.WriteModeFileNotClosed.Log();
-                }
-
-                Result RenameCommittedDir() => BaseFs.RenameDirectory(CommittedDirectoryPath, SynchronizingDirectoryPath);
-                Result SynchronizeWorkingDir() => SynchronizeDirectory(SynchronizingDirectoryPath, WorkingDirectoryPath);
-                Result RenameSynchronizingDir() => BaseFs.RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath);
-
-                // Get rid of the previous commit by renaming the folder
-                Result rc = Utility.RetryFinitelyForTargetLocked(RenameCommittedDir);
-                if (rc.IsFailure()) return rc;
-
-                // If something goes wrong beyond this point, the commit will be
-                // completed the next time the savedata is opened
-
-                rc = Utility.RetryFinitelyForTargetLocked(SynchronizeWorkingDir);
-                if (rc.IsFailure()) return rc;
-
-                rc = Utility.RetryFinitelyForTargetLocked(RenameSynchronizingDir);
-                if (rc.IsFailure()) return rc;
-
-                return Result.Success;
+                _openWritableFileCount++;
             }
-        }
-
-        protected override Result DoCommitProvisionally(long counter)
-        {
-            if (!CanCommitProvisionally)
-                return ResultFs.UnsupportedCommitProvisionallyForDirectorySaveDataFileSystem.Log();
 
             return Result.Success;
         }
 
-        protected override Result DoRollback()
+        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
-            // No old data is kept for temporary save data, so there's nothing to rollback to
-            if (!IsPersistentSaveData)
-                return Result.Success;
-
-            return Initialize(IsPersistentSaveData, CanCommitProvisionally);
-        }
-
-        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
-        {
-            UnsafeHelpers.SkipParamInit(out freeSpace);
+            UnsafeHelpers.SkipParamInit(out directory);
 
             Unsafe.SkipInit(out FsPath fullPath);
 
             Result rc = ResolveFullPath(fullPath.Str, path);
             if (rc.IsFailure()) return rc;
 
-            lock (Locker)
-            {
-                return BaseFs.GetFreeSpaceSize(out freeSpace, fullPath);
-            }
-        }
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
 
-        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
-        {
-            UnsafeHelpers.SkipParamInit(out totalSpace);
-
-            Unsafe.SkipInit(out FsPath fullPath);
-
-            Result rc = ResolveFullPath(fullPath.Str, path);
-            if (rc.IsFailure()) return rc;
-
-            lock (Locker)
-            {
-                return BaseFs.GetTotalSpaceSize(out totalSpace, fullPath);
-            }
-        }
-
-        private Result ResolveFullPath(Span<byte> outPath, U8Span relativePath)
-        {
-            if (StringUtils.GetLength(relativePath, PathTools.MaxPathLength + 1) > PathTools.MaxPathLength)
-                return ResultFs.TooLongPath.Log();
-
-            StringUtils.Copy(outPath, WorkingDirectoryBytes);
-            outPath[outPath.Length - 1] = StringTraits.NullTerminator;
-
-            return PathNormalizer.Normalize(outPath.Slice(2), out _, relativePath, false, false);
+            return _baseFs.OpenDirectory(out directory, fullPath, mode);
         }
 
         /// <summary>
@@ -372,7 +391,7 @@ namespace LibHac.FsSystem
         private Result SynchronizeDirectory(U8Span destPath, U8Span sourcePath)
         {
             // Delete destination dir and recreate it.
-            Result rc = BaseFs.DeleteDirectoryRecursively(destPath);
+            Result rc = _baseFs.DeleteDirectoryRecursively(destPath);
 
             // Nintendo returns error unconditionally because SynchronizeDirectory is always called in situations
             // where a PathNotFound error would mean the save directory was in an invalid state.
@@ -380,22 +399,112 @@ namespace LibHac.FsSystem
             // put the save directory in an invalid state.
             if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc)) return rc;
 
-            rc = BaseFs.CreateDirectory(destPath);
+            rc = _baseFs.CreateDirectory(destPath);
             if (rc.IsFailure()) return rc;
 
-            // Get a work buffer to work with.
-            using (var buffer = new RentedArray<byte>(IdealWorkBufferSize))
+            // Lock only if initialized with a client
+            if(_fsClient is not null)
             {
-                return Utility.CopyDirectoryRecursively(BaseFs, destPath, sourcePath, buffer.Span);
+                using ScopedLock<SdkMutexType> lk =
+                    ScopedLock.Lock(ref _fsClient.Globals.DirectorySaveDataFileSystem.SynchronizeDirectoryMutex);
+
+                using (var buffer = new RentedArray<byte>(IdealWorkBufferSize))
+                {
+                    return Utility.CopyDirectoryRecursively(_baseFs, destPath, sourcePath, buffer.Span);
+                }
+            }
+            else
+            {
+                using (var buffer = new RentedArray<byte>(IdealWorkBufferSize))
+                {
+                    return Utility.CopyDirectoryRecursively(_baseFs, destPath, sourcePath, buffer.Span);
+                }
             }
         }
 
-        internal void NotifyCloseWritableFile()
+        protected override Result DoCommit()
         {
-            lock (Locker)
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+
+            if (!_useTransactions || !_isPersistentSaveData)
+                return Result.Success;
+
+            if (_openWritableFileCount > 0)
             {
-                OpenWritableFileCount--;
+                // All files must be closed before commiting save data.
+                return ResultFs.WriteModeFileNotClosed.Log();
             }
+
+            Result RenameCommittedDir() => _baseFs.RenameDirectory(CommittedDirectoryPath, SynchronizingDirectoryPath);
+            Result SynchronizeWorkingDir() => SynchronizeDirectory(SynchronizingDirectoryPath, WorkingDirectoryPath);
+            Result RenameSynchronizingDir() => _baseFs.RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath);
+
+            // Get rid of the previous commit by renaming the folder
+            Result rc = Utility.RetryFinitelyForTargetLocked(RenameCommittedDir);
+            if (rc.IsFailure()) return rc;
+
+            // If something goes wrong beyond this point, the commit will be
+            // completed the next time the savedata is opened
+
+            rc = Utility.RetryFinitelyForTargetLocked(SynchronizeWorkingDir);
+            if (rc.IsFailure()) return rc;
+
+            rc = Utility.RetryFinitelyForTargetLocked(RenameSynchronizingDir);
+            if (rc.IsFailure()) return rc;
+
+            return Result.Success;
+        }
+
+        protected override Result DoCommitProvisionally(long counter)
+        {
+            if (!_canCommitProvisionally)
+                return ResultFs.UnsupportedCommitProvisionallyForDirectorySaveDataFileSystem.Log();
+
+            return Result.Success;
+        }
+
+        protected override Result DoRollback()
+        {
+            // No old data is kept for temporary save data, so there's nothing to rollback to
+            if (!_isPersistentSaveData)
+                return Result.Success;
+
+            return Initialize(_isPersistentSaveData, _canCommitProvisionally, _useTransactions);
+        }
+
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
+        {
+            UnsafeHelpers.SkipParamInit(out freeSpace);
+
+            Unsafe.SkipInit(out FsPath fullPath);
+
+            Result rc = ResolveFullPath(fullPath.Str, path);
+            if (rc.IsFailure()) return rc;
+
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+
+            return _baseFs.GetFreeSpaceSize(out freeSpace, fullPath);
+        }
+
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
+        {
+            UnsafeHelpers.SkipParamInit(out totalSpace);
+
+            Unsafe.SkipInit(out FsPath fullPath);
+
+            Result rc = ResolveFullPath(fullPath.Str, path);
+            if (rc.IsFailure()) return rc;
+
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+
+            return _baseFs.GetTotalSpaceSize(out totalSpace, fullPath);
+        }
+
+        internal void DecrementWriteOpenFileCount()
+        {
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+
+            _openWritableFileCount--;
         }
     }
 }

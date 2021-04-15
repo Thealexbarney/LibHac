@@ -1,5 +1,6 @@
 ﻿using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
+using LibHac.FsSystem;
 
 namespace LibHac.Fs
 {
@@ -26,6 +27,7 @@ namespace LibHac.Fs
         public FsContextHandlerGlobals FsContextHandler;
         public ResultHandlingUtilityGlobals ResultHandlingUtility;
         public PathUtilityGlobals PathUtility;
+        public DirectorySaveDataFileSystemGlobals DirectorySaveDataFileSystem;
 
         public void Initialize(FileSystemClient fsClient, HorizonClient horizonClient)
         {
@@ -35,6 +37,7 @@ namespace LibHac.Fs
             UserMountTable.Initialize(fsClient);
             FsContextHandler.Initialize(fsClient);
             PathUtility.Initialize(fsClient);
+            DirectorySaveDataFileSystem.Initialize(fsClient);
         }
     }
 

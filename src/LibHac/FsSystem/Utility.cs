@@ -194,9 +194,9 @@ namespace LibHac.FsSystem
                 var sb = new U8StringBuilder(destPath.Str);
                 sb.Append(destParentPath).Append(entry.Name);
 
-                Abort.DoAbortUnless(sb.Length < Unsafe.SizeOf<FsPath>());
+                Assert.SdkLess(sb.Length, Unsafe.SizeOf<FsPath>());
 
-                rc = destFileSystem.CreateFile(new U8Span(destPath.Str), entry.Size, CreateFileOptions.None);
+                rc = destFileSystem.CreateFile(new U8Span(destPath.Str), entry.Size);
                 if (rc.IsFailure()) return rc;
 
                 rc = destFileSystem.OpenFile(out IFile destFile, new U8Span(destPath.Str), OpenMode.Write);

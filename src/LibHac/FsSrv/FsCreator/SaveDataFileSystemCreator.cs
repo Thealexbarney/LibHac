@@ -50,7 +50,7 @@ namespace LibHac.FsSrv.FsCreator
                     bool isUserSaveData = type == SaveDataType.Account || type == SaveDataType.Device;
 
                     rc = DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, subDirFs,
-                        isPersistentSaveData, isUserSaveData);
+                        isPersistentSaveData, isUserSaveData, true);
                     if (rc.IsFailure()) return rc;
 
                     fileSystem = saveFs;
