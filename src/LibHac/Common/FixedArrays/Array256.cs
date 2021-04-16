@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 namespace LibHac.Common.FixedArrays
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct Array32<T>
+    public struct Array256<T>
     {
-        public const int Length = 32;
+        public const int Length = 256;
 
-        private Array16<T> _0;
-        private Array16<T> _16;
+        private Array128<T> _0;
+        private Array128<T> _128;
 
         public ref T this[int i] => ref Items[i];
 
@@ -27,6 +27,6 @@ namespace LibHac.Common.FixedArrays
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static implicit operator ReadOnlySpan<T>(in Array32<T> value) => value.ItemsRo;
+        public static implicit operator ReadOnlySpan<T>(in Array256<T> value) => value.ItemsRo;
     }
 }
