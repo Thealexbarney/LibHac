@@ -2,14 +2,14 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <VersionPrefix>0.12.0</VersionPrefix>
+    <VersionPrefix>0.13.0</VersionPrefix>
     <TargetFramework>net5.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup>
     <Authors>Alex Barney</Authors>
-    <Copyright>Copyright © 2018-2020 Alex Barney</Copyright>
+    <Copyright>Copyright © 2018-2021 Alex Barney</Copyright>
     <Description>A library for reading content formats used by the Nintendo Switch.</Description>
     <PackageTags>Nintendo;Switch;nca;xci;savefile</PackageTags>
     <PackageProjectUrl>https://github.com/Thealexbarney/LibHac</PackageProjectUrl>
