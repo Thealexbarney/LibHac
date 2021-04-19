@@ -1,4 +1,6 @@
-﻿namespace LibHac.Fs
+﻿using LibHac.Fs.Fsa;
+
+namespace LibHac.Fs
 {
     public readonly struct DirectoryHandle
     {
@@ -9,6 +11,14 @@
         internal DirectoryHandle(Impl.DirectoryAccessor directory)
         {
             Directory = directory;
+        }
+
+        public void Dispose()
+        {
+            if (IsValid)
+            {
+                Directory.GetParent().FsClient.CloseDirectory(this);
+            }
         }
     }
 }

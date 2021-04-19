@@ -25,13 +25,13 @@ namespace LibHac.Fs.Impl
         private bool _isPathCacheAttached;
         private IMultiCommitTarget _multiCommitTarget;
 
-        private FileSystemClient _fsClient;
+        internal FileSystemClient FsClient { get; }
 
         public FileSystemAccessor(FileSystemClient fsClient, U8Span name, IMultiCommitTarget multiCommitTarget,
             IFileSystem fileSystem, ICommonMountNameGenerator mountNameGenerator,
             ISaveDataAttributeGetter saveAttributeGetter)
         {
-            _fsClient = fsClient;
+            FsClient = fsClient;
 
             _fileSystem = fileSystem;
             _openFiles = new LinkedList<FileAccessor>();
@@ -274,7 +274,7 @@ namespace LibHac.Fs.Impl
                 rc = _fileSystem.OpenFile(out iFile, path, mode);
                 if (rc.IsFailure()) return rc;
 
-                var fileAccessor = new FileAccessor(_fsClient, ref iFile, this, mode);
+                var fileAccessor = new FileAccessor(FsClient, ref iFile, this, mode);
 
                 using (ScopedLock.Lock(ref _openListLock))
                 {
