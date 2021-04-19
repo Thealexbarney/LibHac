@@ -8,7 +8,7 @@ using IFileSf = LibHac.FsSrv.Sf.IFile;
 
 namespace LibHac.FsSrv.Impl
 {
-    internal class FileInterfaceAdapter : IFileSf
+    public class FileInterfaceAdapter : IFileSf
     {
         private ReferenceCountedDisposable<FileSystemInterfaceAdapter> ParentFs { get; }
         private IFile BaseFile { get; }

@@ -12,7 +12,7 @@ using IDirectorySf = LibHac.FsSrv.Sf.IDirectory;
 
 namespace LibHac.FsSrv.Impl
 {
-    internal class FileSystemInterfaceAdapter : IFileSystemSf
+    public class FileSystemInterfaceAdapter : IFileSystemSf
     {
         private ReferenceCountedDisposable<IFileSystem> BaseFileSystem { get; }
         private bool IsHostFsRoot { get; }

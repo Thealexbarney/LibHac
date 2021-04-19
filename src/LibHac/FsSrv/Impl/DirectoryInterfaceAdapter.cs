@@ -8,7 +8,7 @@ using IDirectorySf = LibHac.FsSrv.Sf.IDirectory;
 
 namespace LibHac.FsSrv.Impl
 {
-    internal class DirectoryInterfaceAdapter : IDirectorySf
+    public class DirectoryInterfaceAdapter : IDirectorySf
     {
         private ReferenceCountedDisposable<FileSystemInterfaceAdapter> ParentFs { get; }
         private IDirectory BaseDirectory { get; }

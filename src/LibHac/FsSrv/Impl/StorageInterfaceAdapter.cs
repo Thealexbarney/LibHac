@@ -7,7 +7,7 @@ using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.FsSrv.Impl
 {
-    internal class StorageInterfaceAdapter : IStorageSf
+    public class StorageInterfaceAdapter : IStorageSf
     {
         private ReferenceCountedDisposable<IStorage> BaseStorage { get; }
 
