@@ -1,8 +1,9 @@
-﻿using LibHac.Fs.Fsa;
+﻿using System;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.Fs
 {
-    public readonly struct DirectoryHandle
+    public readonly struct DirectoryHandle : IDisposable
     {
         internal readonly Impl.DirectoryAccessor Directory;
 
