@@ -26,12 +26,12 @@ namespace LibHac.Fs.Impl
         // ReSharper disable once NotAccessedField.Local
         private int _pathHashIndex;
 
-        private FileSystemClient _fsClient;
+        internal FileSystemClient FsClient { get; }
 
         public FileAccessor(FileSystemClient fsClient, ref IFile file, FileSystemAccessor parentFileSystem,
             OpenMode mode)
         {
-            _fsClient = fsClient;
+            FsClient = fsClient;
 
             _file = Shared.Move(ref file);
             _parentFileSystem = parentFileSystem;
@@ -91,18 +91,18 @@ namespace LibHac.Fs.Impl
 
             if (_lastResult.IsFailure())
             {
-                if (_fsClient.Impl.IsEnabledAccessLog() && _fsClient.Impl.IsEnabledHandleAccessLog(handle))
+                if (FsClient.Impl.IsEnabledAccessLog() && FsClient.Impl.IsEnabledHandleAccessLog(handle))
                 {
-                    Tick start = _fsClient.Hos.Os.GetSystemTick();
+                    Tick start = FsClient.Hos.Os.GetSystemTick();
                     rc = _lastResult;
-                    Tick end = _fsClient.Hos.Os.GetSystemTick();
+                    Tick end = FsClient.Hos.Os.GetSystemTick();
 
                     var sb = new U8StringBuilder(logBuffer, true);
                     sb.Append(LogOffset).AppendFormat(offset)
                         .Append(LogSize).AppendFormat(destination.Length)
                         .Append(LogReadSize).AppendFormat(AccessLogImpl.DereferenceOutValue(in bytesRead, rc));
 
-                    _fsClient.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(logBuffer),
+                    FsClient.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(logBuffer),
                         nameof(UserFile.ReadFile));
                 }
 
@@ -123,18 +123,18 @@ namespace LibHac.Fs.Impl
             }
             else
             {
-                if (_fsClient.Impl.IsEnabledAccessLog() && _fsClient.Impl.IsEnabledHandleAccessLog(handle))
+                if (FsClient.Impl.IsEnabledAccessLog() && FsClient.Impl.IsEnabledHandleAccessLog(handle))
                 {
-                    Tick start = _fsClient.Hos.Os.GetSystemTick();
+                    Tick start = FsClient.Hos.Os.GetSystemTick();
                     rc = ReadWithoutCacheAccessLog(out bytesRead, offset, destination, in option);
-                    Tick end = _fsClient.Hos.Os.GetSystemTick();
+                    Tick end = FsClient.Hos.Os.GetSystemTick();
 
                     var sb = new U8StringBuilder(logBuffer, true);
                     sb.Append(LogOffset).AppendFormat(offset)
                         .Append(LogSize).AppendFormat(destination.Length)
                         .Append(LogReadSize).AppendFormat(AccessLogImpl.DereferenceOutValue(in bytesRead, rc));
 
-                    _fsClient.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(logBuffer),
+                    FsClient.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(logBuffer),
                         nameof(UserFile.ReadFile));
                 }
                 else
