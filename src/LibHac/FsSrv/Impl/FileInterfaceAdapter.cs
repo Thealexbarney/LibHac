@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Sf;
 using IFile = LibHac.Fs.Fsa.IFile;
 using IFileSf = LibHac.FsSrv.Sf.IFile;
 
@@ -20,7 +21,7 @@ namespace LibHac.FsSrv.Impl
             parentFileSystem = null;
         }
 
-        public Result Read(out long bytesRead, long offset, Span<byte> destination, ReadOption option)
+        public Result Read(out long bytesRead, long offset, OutBuffer destination, long size, ReadOption option)
         {
             const int maxTryCount = 2;
             UnsafeHelpers.SkipParamInit(out bytesRead);
@@ -28,7 +29,7 @@ namespace LibHac.FsSrv.Impl
             if (offset < 0)
                 return ResultFs.InvalidOffset.Log();
 
-            if (destination.Length < 0)
+            if (destination.Size < 0)
                 return ResultFs.InvalidSize.Log();
 
             Result rc = Result.Success;
@@ -36,7 +37,7 @@ namespace LibHac.FsSrv.Impl
 
             for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
             {
-                rc = BaseFile.Read(out tmpBytesRead, offset, destination, option);
+                rc = BaseFile.Read(out tmpBytesRead, offset, destination.Buffer.Slice(0, (int)size), option);
 
                 // Retry on ResultDataCorrupted
                 if (!ResultFs.DataCorrupted.Includes(rc))
@@ -49,17 +50,17 @@ namespace LibHac.FsSrv.Impl
             return Result.Success;
         }
 
-        public Result Write(long offset, ReadOnlySpan<byte> source, WriteOption option)
+        public Result Write(long offset, InBuffer source, long size, WriteOption option)
         {
             if (offset < 0)
                 return ResultFs.InvalidOffset.Log();
 
-            if (source.Length < 0)
+            if (source.Size < 0)
                 return ResultFs.InvalidSize.Log();
 
-            // Note: Thread priority is temporarily when writing in FS
+            // Note: Thread priority is temporarily increased when writing in FS
 
-            return BaseFile.Write(offset, source, option);
+            return BaseFile.Write(offset, source.Buffer.Slice(0, (int)size), option);
         }
 
         public Result Flush()
@@ -113,8 +114,8 @@ namespace LibHac.FsSrv.Impl
             {
                 Unsafe.SkipInit(out QueryRangeInfo info);
 
-                Result rc = BaseFile.OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.QueryRange, offset, size,
-                    ReadOnlySpan<byte>.Empty);
+                Result rc = BaseFile.OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.QueryRange, offset,
+                    size, ReadOnlySpan<byte>.Empty);
                 if (rc.IsFailure()) return rc;
 
                 rangeInfo.Merge(in info);

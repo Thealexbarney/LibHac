@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Sf;
 using IFile = LibHac.Fs.Fsa.IFile;
 using IFileSf = LibHac.FsSrv.Sf.IFile;
 
@@ -21,12 +22,12 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, in ReadOption option)
         {
-            return BaseFile.Target.Read(out bytesRead, offset, destination, option);
+            return BaseFile.Target.Read(out bytesRead, offset, new OutBuffer(destination), destination.Length, option);
         }
 
         protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
-            return BaseFile.Target.Write(offset, source, option);
+            return BaseFile.Target.Write(offset, new InBuffer(source), source.Length, option);
         }
 
         protected override Result DoFlush()
@@ -44,7 +45,8 @@ namespace LibHac.Fs.Impl
             return BaseFile.Target.GetSize(out size);
         }
 
-        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+            ReadOnlySpan<byte> inBuffer)
         {
             switch (operationId)
             {

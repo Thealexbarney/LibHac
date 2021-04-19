@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Sf;
 using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.FsSrv.Impl
@@ -27,21 +28,21 @@ namespace LibHac.FsSrv.Impl
             BaseStorage?.Dispose();
         }
 
-        public Result Read(long offset, Span<byte> destination)
+        public Result Read(long offset, OutBuffer destination, long size)
         {
             const int maxTryCount = 2;
 
             if (offset < 0)
                 return ResultFs.InvalidOffset.Log();
 
-            if (destination.Length < 0)
+            if (destination.Size < 0)
                 return ResultFs.InvalidSize.Log();
 
             Result rc = Result.Success;
 
             for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
             {
-                rc = BaseStorage.Target.Read(offset, destination);
+                rc = BaseStorage.Target.Read(offset, destination.Buffer.Slice(0, (int)size));
 
                 // Retry on ResultDataCorrupted
                 if (!ResultFs.DataCorrupted.Includes(rc))
@@ -51,17 +52,17 @@ namespace LibHac.FsSrv.Impl
             return rc;
         }
 
-        public Result Write(long offset, ReadOnlySpan<byte> source)
+        public Result Write(long offset, InBuffer source, long size)
         {
             if (offset < 0)
                 return ResultFs.InvalidOffset.Log();
 
-            if (source.Length < 0)
+            if (source.Size < 0)
                 return ResultFs.InvalidSize.Log();
 
             // Note: Thread priority is temporarily increased when writing in FS
 
-            return BaseStorage.Target.Write(offset, source);
+            return BaseStorage.Target.Write(offset, source.Buffer.Slice(0, (int)size));
         }
 
         public Result Flush()
