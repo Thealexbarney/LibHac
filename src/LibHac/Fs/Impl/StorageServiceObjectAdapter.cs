@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Sf;
 using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.Fs.Impl
@@ -31,12 +32,12 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoRead(long offset, Span<byte> destination)
         {
-            return BaseStorage.Target.Read(offset, destination);
+            return BaseStorage.Target.Read(offset, new OutBuffer(destination), destination.Length);
         }
 
         protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
-            return BaseStorage.Target.Write(offset, source);
+            return BaseStorage.Target.Write(offset, new InBuffer(source), source.Length);
         }
 
         protected override Result DoFlush()
@@ -54,7 +55,8 @@ namespace LibHac.Fs.Impl
             return BaseStorage.Target.GetSize(out size);
         }
 
-        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+            ReadOnlySpan<byte> inBuffer)
         {
             switch (operationId)
             {

@@ -1,12 +1,13 @@
 ﻿using System;
 using LibHac.Fs;
+using LibHac.Sf;
 
 namespace LibHac.FsSrv.Sf
 {
     public interface IStorage : IDisposable
     {
-        Result Read(long offset, Span<byte> destination);
-        Result Write(long offset, ReadOnlySpan<byte> source);
+        Result Read(long offset, OutBuffer destination, long size);
+        Result Write(long offset, InBuffer source, long size);
         Result Flush();
         Result SetSize(long size);
         Result GetSize(out long size);
