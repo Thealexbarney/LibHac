@@ -128,11 +128,11 @@ namespace LibHac.Loader
 
             npdm.FsAccessControlDescriptor = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.As<AcidHeaderData, byte>(ref acid), acid.FsAccessControlOffset), acid.FsAccessControlSize);
             npdm.ServiceAccessControlDescriptor = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.As<AcidHeaderData, byte>(ref acid), acid.ServiceAccessControlOffset), acid.ServiceAccessControlSize);
-            npdm.KernelCapabilityDescriptor = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.As<AcidHeaderData, byte>(ref acid), acid.KernelCapabilitySize), acid.KernelCapabilitySize);
+            npdm.KernelCapabilityDescriptor = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.As<AcidHeaderData, byte>(ref acid), acid.KernelCapabilityOffset), acid.KernelCapabilitySize);
 
             npdm.FsAccessControlData = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.As<AciHeader, byte>(ref aci), aci.FsAccessControlOffset), aci.FsAccessControlSize);
             npdm.ServiceAccessControlData = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.As<AciHeader, byte>(ref aci), aci.ServiceAccessControlOffset), aci.ServiceAccessControlSize);
-            npdm.KernelCapabilityData = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.As<AciHeader, byte>(ref aci), aci.KernelCapabilitySize), aci.KernelCapabilitySize);
+            npdm.KernelCapabilityData = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.As<AciHeader, byte>(ref aci), aci.KernelCapabilityOffset), aci.KernelCapabilitySize);
 
             return npdm;
         }
