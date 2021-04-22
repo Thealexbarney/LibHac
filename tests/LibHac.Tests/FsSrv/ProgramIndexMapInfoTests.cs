@@ -20,11 +20,14 @@ namespace LibHac.Tests.FsSrv
 
             var programs = new HorizonClient[count];
 
-            programs[0] = hos.CreateHorizonClient(new ProgramId(1), AccessControlBits.Bits.RegisterProgramIndexMapInfo);
+            programs[0] = hos.CreateHorizonClient(new ProgramLocation(new ProgramId(1), StorageId.BuiltInSystem),
+                AccessControlBits.Bits.RegisterProgramIndexMapInfo);
 
             for (int i = 1; i < programs.Length; i++)
             {
-                programs[i] = hos.CreateHorizonClient(new ProgramId((ulong)(i + 1)), AccessControlBits.Bits.None);
+                programs[i] =
+                    hos.CreateHorizonClient(new ProgramLocation(new ProgramId((ulong)(i + 1)), StorageId.BuiltInSystem),
+                        AccessControlBits.Bits.None);
             }
 
             var map = new ProgramIndexMapInfo[count];
