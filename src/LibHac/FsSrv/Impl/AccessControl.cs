@@ -179,7 +179,7 @@ namespace LibHac.FsSrv.Impl
 
         private static ulong GetAccessBitsMask(bool isDebugMode)
         {
-            return isDebugMode ? 1 : 0x3FFFFFFFFFFFFFFFUL;
+            return isDebugMode ? 0xFFFFFFFFFFFFFFFF : 0x3FFFFFFFFFFFFFFF;
         }
 
         public bool HasContentOwnerId(ulong ownerId)
