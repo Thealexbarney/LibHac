@@ -5,6 +5,7 @@ using LibHac.FsSrv.FsCreator;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.FsSrv.Storage;
+using LibHac.FsSystem;
 using LibHac.Sm;
 
 namespace LibHac.FsSrv
@@ -13,6 +14,10 @@ namespace LibHac.FsSrv
     {
         private const ulong SpeedEmulationProgramIdMinimum = 0x100000000000000;
         private const ulong SpeedEmulationProgramIdMaximum = 0x100000000001FFF;
+
+        private const int BufferManagerHeapSize = 1024 * 1024 * 14;
+        private const int BufferManagerCacheSize = 1024;
+        private const int BufferManagerBlockSize = 0x4000;
 
         /// <summary>
         /// Initializes a <see cref="FileSystemServer"/> with the provided <see cref="FileSystemServerConfig"/>.
@@ -57,6 +62,17 @@ namespace LibHac.FsSrv
         private static FileSystemProxyConfiguration InitializeFileSystemProxy(FileSystemServer server,
             FileSystemServerConfig config)
         {
+            var random = new Random();
+            RandomDataGenerator randomGenerator = buffer =>
+            {
+                random.NextBytes(buffer);
+                return Result.Success;
+            }; 
+            
+            var bufferManager = new FileSystemBufferManager();
+            Memory<byte> heapBuffer = GC.AllocateArray<byte>(BufferManagerHeapSize, true);
+            bufferManager.Initialize(BufferManagerCacheSize, heapBuffer, BufferManagerBlockSize);
+            
             var saveDataIndexerManager = new SaveDataIndexerManager(server.Hos.Fs, Fs.SaveData.SaveIndexerId,
                 new ArrayPoolMemoryResource(), new SdHandleManager(), false);
 
@@ -93,7 +109,7 @@ namespace LibHac.FsSrv
 
             var ncaFsServiceConfig = new NcaFileSystemServiceImpl.Configuration();
             ncaFsServiceConfig.BaseFsService = baseFsService;
-            ncaFsServiceConfig.HostFsCreator = config.FsCreators.HostFileSystemCreator;
+            ncaFsServiceConfig.LocalFsCreator = config.FsCreators.LocalFileSystemCreator;
             ncaFsServiceConfig.TargetManagerFsCreator = config.FsCreators.TargetManagerFileSystemCreator;
             ncaFsServiceConfig.PartitionFsCreator = config.FsCreators.PartitionFileSystemCreator;
             ncaFsServiceConfig.RomFsCreator = config.FsCreators.RomFileSystemCreator;
@@ -109,12 +125,16 @@ namespace LibHac.FsSrv
 
             var saveFsServiceConfig = new SaveDataFileSystemServiceImpl.Configuration();
             saveFsServiceConfig.BaseFsService = baseFsService;
-            saveFsServiceConfig.HostFsCreator = config.FsCreators.HostFileSystemCreator;
+            saveFsServiceConfig.TimeService = timeService;
+            saveFsServiceConfig.LocalFsCreator = config.FsCreators.LocalFileSystemCreator;
             saveFsServiceConfig.TargetManagerFsCreator = config.FsCreators.TargetManagerFileSystemCreator;
             saveFsServiceConfig.SaveFsCreator = config.FsCreators.SaveDataFileSystemCreator;
             saveFsServiceConfig.EncryptedFsCreator = config.FsCreators.EncryptedFileSystemCreator;
             saveFsServiceConfig.ProgramRegistryService = programRegistryService;
-            saveFsServiceConfig.ShouldCreateDirectorySaveData = () => true;
+            saveFsServiceConfig.BufferManager = bufferManager;
+            saveFsServiceConfig.GenerateRandomData = randomGenerator;
+            saveFsServiceConfig.IsPseudoSaveData = () => true;
+            saveFsServiceConfig.MaxSaveFsCacheCount = 1;
             saveFsServiceConfig.SaveIndexerManager = saveDataIndexerManager;
             saveFsServiceConfig.FsServer = server;
 

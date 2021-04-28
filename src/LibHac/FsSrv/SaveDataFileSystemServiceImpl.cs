@@ -34,17 +34,17 @@ namespace LibHac.FsSrv
         public struct Configuration
         {
             public BaseFileSystemServiceImpl BaseFsService;
-            // Time service
-            public IHostFileSystemCreator HostFsCreator;
+            public TimeServiceImpl TimeService;
+            public ILocalFileSystemCreator LocalFsCreator;
             public ITargetManagerFileSystemCreator TargetManagerFsCreator;
             public ISaveDataFileSystemCreator SaveFsCreator;
             public IEncryptedFileSystemCreator EncryptedFsCreator;
             public ProgramRegistryServiceImpl ProgramRegistryService;
-            // Buffer manager
+            public IBufferManager BufferManager;
             public RandomDataGenerator GenerateRandomData;
             public SaveDataTransferCryptoConfiguration SaveTransferCryptoConfig;
-            // Max save FS cache size
-            public Func<bool> ShouldCreateDirectorySaveData;
+            public int MaxSaveFsCacheCount;
+            public Func<bool> IsPseudoSaveData;
             public ISaveDataIndexerManager SaveIndexerManager;
 
             // LibHac additions
@@ -316,7 +316,7 @@ namespace LibHac.FsSrv
                 var sb = new U8StringBuilder(saveDataPathBuffer);
                 sb.Append((byte)'/').AppendFormat(saveDataId, 'x', 16);
 
-                if (_config.ShouldCreateDirectorySaveData())
+                if (_config.IsPseudoSaveData())
                 {
                     return Utility.EnsureDirectory(fileSystem.Target, new U8Span(saveDataPathBuffer));
                 }
