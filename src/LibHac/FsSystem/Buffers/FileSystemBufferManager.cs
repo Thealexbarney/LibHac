@@ -54,6 +54,7 @@ namespace LibHac.FsSystem
                 public void DecrementCacheCount() => _cacheCount--;
                 public int GetCacheSize() => _cacheSize;
                 public void AddCacheSize(int diff) => _cacheSize += diff;
+
                 public void SubtractCacheSize(int diff)
                 {
                     Assert.SdkRequiresGreaterEqual(_cacheSize, diff);
@@ -350,6 +351,36 @@ namespace LibHac.FsSystem
             base.Dispose(disposing);
         }
 
+        public Result Initialize(int maxCacheCount, Memory<byte> heapBuffer, int blockSize)
+        {
+            Result rc = CacheTable.Initialize(maxCacheCount);
+            if (rc.IsFailure()) return rc;
+
+            rc = BuddyHeap.Initialize(heapBuffer, blockSize);
+            if (rc.IsFailure()) return rc;
+
+            TotalSize = (int)BuddyHeap.GetTotalFreeSize();
+            PeakFreeSize = TotalSize;
+            PeakTotalAllocatableSize = TotalSize;
+
+            return Result.Success;
+        }
+
+        public Result Initialize(int maxCacheCount, Memory<byte> heapBuffer, int blockSize, int maxOrder)
+        {
+            Result rc = CacheTable.Initialize(maxCacheCount);
+            if (rc.IsFailure()) return rc;
+
+            rc = BuddyHeap.Initialize(heapBuffer, blockSize, maxOrder);
+            if (rc.IsFailure()) return rc;
+
+            TotalSize = (int)BuddyHeap.GetTotalFreeSize();
+            PeakFreeSize = TotalSize;
+            PeakTotalAllocatableSize = TotalSize;
+
+            return Result.Success;
+        }
+
         public Result Initialize(int maxCacheCount, Memory<byte> heapBuffer, int blockSize, Memory<byte> workBuffer)
         {
             // Note: We can't use an external buffer for the cache handle table since it contains managed pointers,
@@ -359,6 +390,25 @@ namespace LibHac.FsSystem
             if (rc.IsFailure()) return rc;
 
             rc = BuddyHeap.Initialize(heapBuffer, blockSize, workBuffer);
+            if (rc.IsFailure()) return rc;
+
+            TotalSize = (int)BuddyHeap.GetTotalFreeSize();
+            PeakFreeSize = TotalSize;
+            PeakTotalAllocatableSize = TotalSize;
+
+            return Result.Success;
+        }
+
+        public Result Initialize(int maxCacheCount, Memory<byte> heapBuffer, int blockSize, int maxOrder,
+            Memory<byte> workBuffer)
+        {
+            // Note: We can't use an external buffer for the cache handle table since it contains managed pointers,
+            // so pass the work buffer directly to the buddy heap.
+
+            Result rc = CacheTable.Initialize(maxCacheCount);
+            if (rc.IsFailure()) return rc;
+
+            rc = BuddyHeap.Initialize(heapBuffer, blockSize, maxOrder, workBuffer);
             if (rc.IsFailure()) return rc;
 
             TotalSize = (int)BuddyHeap.GetTotalFreeSize();
@@ -393,6 +443,7 @@ namespace LibHac.FsSystem
                     // No cached buffers left to deallocate.
                     return Buffer.Empty;
                 }
+
                 DeallocateBufferImpl(deallocateBuffer);
             }
 

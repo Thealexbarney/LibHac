@@ -42,7 +42,7 @@ namespace LibHac.FsSrv
         public struct Configuration
         {
             public BaseFileSystemServiceImpl BaseFsService;
-            public IHostFileSystemCreator HostFsCreator;
+            public ILocalFileSystemCreator LocalFsCreator;
             public ITargetManagerFileSystemCreator TargetManagerFsCreator;
             public IPartitionFileSystemCreator PartitionFsCreator;
             public IRomFileSystemCreator RomFsCreator;

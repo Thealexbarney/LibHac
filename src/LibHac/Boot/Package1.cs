@@ -315,7 +315,7 @@ namespace LibHac.Boot
 
             int start = IsModern ? 6 : 0;
             int end = IsModern ? 0x20 : 6;
-            Decryptor decryptor = IsModern ? Crypto.Aes.DecryptCbc128 : (Decryptor)Crypto.Aes.DecryptCtr128;
+            Decryptor decryptor = IsModern ? Crypto.Aes.DecryptCbc128 : Crypto.Aes.DecryptCtr128;
 
             for (int i = start; i < end; i++)
             {

@@ -336,6 +336,7 @@ namespace LibHac.FsSrv
                     return rc;
                 }
 
+                // Allow access when opening a directory save FS on a dev console
                 if (extraData.OwnerId == 0 && extraData.DataSize == 0 && extraData.JournalSize == 0 &&
                     programInfo.AccessControl.CanCall(OperationType.DebugSaveData))
                 {
