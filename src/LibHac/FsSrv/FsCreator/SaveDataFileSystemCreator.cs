@@ -28,16 +28,16 @@ namespace LibHac.FsSrv.FsCreator
             throw new NotImplementedException();
         }
 
-        public Result Create(out IFileSystem fileSystem,
-            out ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor, IFileSystem sourceFileSystem,
-            ulong saveDataId, bool allowDirectorySaveData, bool useDeviceUniqueMac, SaveDataType type,
-            ISaveDataCommitTimeStampGetter timeStampGetter)
+        public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+            out ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor,
+            ReferenceCountedDisposable<IFileSystem> sourceFileSystem, ulong saveDataId, bool allowDirectorySaveData,
+            bool useDeviceUniqueMac, SaveDataType type, ISaveDataCommitTimeStampGetter timeStampGetter)
         {
             UnsafeHelpers.SkipParamInit(out fileSystem, out extraDataAccessor);
 
             var saveDataPath = $"/{saveDataId:x16}".ToU8String();
 
-            Result rc = sourceFileSystem.GetEntryType(out DirectoryEntryType entryType, saveDataPath);
+            Result rc = sourceFileSystem.Target.GetEntryType(out DirectoryEntryType entryType, saveDataPath);
             if (rc.IsFailure())
             {
                 return ResultFs.PathNotFound.Includes(rc) ? ResultFs.TargetNotFound.LogConverted(rc) : rc;
@@ -48,30 +48,43 @@ namespace LibHac.FsSrv.FsCreator
                 case DirectoryEntryType.Directory:
                     if (!allowDirectorySaveData) return ResultFs.InvalidSaveDataEntryType.Log();
 
-                    rc = SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem subDirFs, sourceFileSystem,
-                        saveDataPath);
-                    if (rc.IsFailure()) return rc;
+                    var subDirFs = new SubdirectoryFileSystem(ref sourceFileSystem);
+
+                    rc = subDirFs.Initialize(saveDataPath);
+                    if (rc.IsFailure())
+                    {
+                        subDirFs.Dispose();
+                        return rc;
+                    }
 
                     bool isPersistentSaveData = type != SaveDataType.Temporary;
                     bool isUserSaveData = type == SaveDataType.Account || type == SaveDataType.Device;
 
                     rc = DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, subDirFs,
-                        isPersistentSaveData, isUserSaveData, true);
+                        timeStampGetter, _randomGenerator, isPersistentSaveData, isUserSaveData, true, null);
                     if (rc.IsFailure()) return rc;
 
-                    fileSystem = saveFs;
+                    ReferenceCountedDisposable<DirectorySaveDataFileSystem> sharedSaveFs = null;
+                    try
+                    {
+                        sharedSaveFs = new ReferenceCountedDisposable<DirectorySaveDataFileSystem>(saveFs);
+                        fileSystem = sharedSaveFs.AddReference<IFileSystem>();
+                        extraDataAccessor = sharedSaveFs.AddReference<ISaveDataExtraDataAccessor>();
 
-                    // Todo: Dummy ISaveDataExtraDataAccessor
-
-                    return Result.Success;
+                        return Result.Success;
+                    }
+                    finally
+                    {
+                        sharedSaveFs?.Dispose();
+                    }
 
                 case DirectoryEntryType.File:
-                    rc = sourceFileSystem.OpenFile(out IFile saveDataFile, saveDataPath, OpenMode.ReadWrite);
+                    rc = sourceFileSystem.Target.OpenFile(out IFile saveDataFile, saveDataPath, OpenMode.ReadWrite);
                     if (rc.IsFailure()) return rc;
 
                     var saveDataStorage = new DisposingFileStorage(saveDataFile);
-                    fileSystem = new SaveDataFileSystem(_keySet, saveDataStorage, IntegrityCheckLevel.ErrorOnInvalid,
-                        false);
+                    fileSystem = new ReferenceCountedDisposable<IFileSystem>(new SaveDataFileSystem(_keySet,
+                        saveDataStorage, IntegrityCheckLevel.ErrorOnInvalid, false));
 
                     // Todo: ISaveDataExtraDataAccessor
 

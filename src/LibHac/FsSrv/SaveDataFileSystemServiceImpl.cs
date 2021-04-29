@@ -146,18 +146,18 @@ namespace LibHac.FsSrv
                 // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                 if (saveDataFs is null)
                 {
+                    ReferenceCountedDisposable<IFileSystem> saveFs = null;
                     ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor = null;
                     try
                     {
                         // Todo: Update ISaveDataFileSystemCreator
                         bool useDeviceUniqueMac = IsDeviceUniqueMac(spaceId);
 
-                        rc = _config.SaveFsCreator.Create(out IFileSystem saveFs,
-                            out extraDataAccessor, saveDirectoryFs.Target, saveDataId,
-                            allowDirectorySaveData, useDeviceUniqueMac, type, _timeStampGetter);
+                        rc = _config.SaveFsCreator.Create(out saveFs, out extraDataAccessor, saveDirectoryFs,
+                            saveDataId, allowDirectorySaveData, useDeviceUniqueMac, type, _timeStampGetter);
                         if (rc.IsFailure()) return rc;
 
-                        saveDataFs = new ReferenceCountedDisposable<IFileSystem>(saveFs);
+                        saveDataFs = Shared.Move(ref saveFs);
 
                         if (cacheExtraData)
                         {
@@ -166,6 +166,7 @@ namespace LibHac.FsSrv
                     }
                     finally
                     {
+                        saveFs?.Dispose();
                         extraDataAccessor?.Dispose();
                     }
                 }
