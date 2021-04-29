@@ -1,5 +1,4 @@
 ﻿using System;
-using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
@@ -13,7 +12,7 @@ namespace LibHac.FsSrv.FsCreator
         Result Create(out IFileSystem fileSystem,
             out ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor, IFileSystem sourceFileSystem,
             ulong saveDataId, bool allowDirectorySaveData, bool useDeviceUniqueMac, SaveDataType type,
-            ITimeStampGenerator timeStampGenerator);
+            ISaveDataCommitTimeStampGetter timeStampGetter);
 
         void SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed);
     }

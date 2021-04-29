@@ -10,13 +10,15 @@ namespace LibHac.Tests
         public static Horizon CreateBasicHorizon()
         {
             IFileSystem rootFs = new InMemoryFileSystem();
+            var keySet = new KeySet();
 
-            var defaultObjects = DefaultFsServerObjects.GetDefaultEmulatedCreators(rootFs, new KeySet());
+            var defaultObjects = DefaultFsServerObjects.GetDefaultEmulatedCreators(rootFs, keySet);
 
             var config = new FileSystemServerConfig();
             config.FsCreators = defaultObjects.FsCreators;
             config.DeviceOperator = defaultObjects.DeviceOperator;
             config.ExternalKeySet = new ExternalKeySet();
+            config.KeySet = keySet;
 
             Horizon horizon = LibHac.HorizonFactory.CreateWithFsConfig(new HorizonConfiguration(), config);
 

@@ -25,7 +25,7 @@ namespace LibHac.FsSrv
             creators.StorageOnNcaCreator = new StorageOnNcaCreator(keySet);
             creators.TargetManagerFileSystemCreator = new TargetManagerFileSystemCreator();
             creators.SubDirectoryFileSystemCreator = new SubDirectoryFileSystemCreator();
-            creators.SaveDataFileSystemCreator = new SaveDataFileSystemCreator(keySet);
+            creators.SaveDataFileSystemCreator = new SaveDataFileSystemCreator(keySet, null, null);
             creators.GameCardStorageCreator = gcStorageCreator;
             creators.GameCardFileSystemCreator = new EmulatedGameCardFsCreator(gcStorageCreator, gameCard);
             creators.EncryptedFileSystemCreator = new EncryptedFileSystemCreator(keySet);

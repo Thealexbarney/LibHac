@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common.Keys;
 using LibHac.Fs.Impl;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.FsCreator;
@@ -72,6 +73,10 @@ namespace LibHac.FsSrv
             var bufferManager = new FileSystemBufferManager();
             Memory<byte> heapBuffer = GC.AllocateArray<byte>(BufferManagerHeapSize, true);
             bufferManager.Initialize(BufferManagerCacheSize, heapBuffer, BufferManagerBlockSize);
+            
+            // Todo: A non-hacky way of initializing the save data creator
+            config.FsCreators.SaveDataFileSystemCreator =
+                new SaveDataFileSystemCreator(config.KeySet, bufferManager, randomGenerator);
             
             var saveDataIndexerManager = new SaveDataIndexerManager(server.Hos.Fs, Fs.SaveData.SaveIndexerId,
                 new ArrayPoolMemoryResource(), new SdHandleManager(), false);
@@ -259,5 +264,10 @@ namespace LibHac.FsSrv
         /// If null, an empty set will be created.
         /// </summary>
         public ExternalKeySet ExternalKeySet { get; set; }
+
+        /// <summary>
+        /// A keyset used for decrypting content.
+        /// </summary>
+        public KeySet KeySet { get; set; }
     }
 }

@@ -22,13 +22,30 @@ namespace LibHac.FsSrv
         // Save data extra data cache
         // Save data porter manager
         private bool _isSdCardAccessible;
-        // Timestamp getter
+        private TimeStampGetter _timeStampGetter;
 
         internal HorizonClient Hos => _config.FsServer.Hos;
+
+        private class TimeStampGetter : ISaveDataCommitTimeStampGetter
+        {
+            private SaveDataFileSystemServiceImpl _saveService;
+            
+            public TimeStampGetter(SaveDataFileSystemServiceImpl saveService)
+            {
+                _saveService = saveService;
+            }
+            
+            public Result Get(out long timeStamp)
+            {
+                return _saveService.GetSaveDataCommitTimeStamp(out timeStamp);
+            }
+        }
 
         public SaveDataFileSystemServiceImpl(in Configuration configuration)
         {
             _config = configuration;
+
+            _timeStampGetter = new TimeStampGetter(this);
         }
 
         public struct Configuration
@@ -137,7 +154,7 @@ namespace LibHac.FsSrv
 
                         rc = _config.SaveFsCreator.Create(out IFileSystem saveFs,
                             out extraDataAccessor, saveDirectoryFs.Target, saveDataId,
-                            allowDirectorySaveData, useDeviceUniqueMac, type, null);
+                            allowDirectorySaveData, useDeviceUniqueMac, type, _timeStampGetter);
                         if (rc.IsFailure()) return rc;
 
                         saveDataFs = new ReferenceCountedDisposable<IFileSystem>(saveFs);
@@ -400,6 +417,11 @@ namespace LibHac.FsSrv
             U8Span saveDataRootPath)
         {
             throw new NotImplementedException();
+        }
+
+        private Result GetSaveDataCommitTimeStamp(out long timeStamp)
+        {
+            return _config.TimeService.GetCurrentPosixTime(out timeStamp);
         }
 
         private bool IsSaveEmulated(U8Span saveDataRootPath)
