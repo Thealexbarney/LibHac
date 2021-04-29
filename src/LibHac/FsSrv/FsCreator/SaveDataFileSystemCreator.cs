@@ -10,11 +10,17 @@ namespace LibHac.FsSrv.FsCreator
 {
     public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
     {
-        private KeySet KeySet { get; }
+        private IBufferManager _bufferManager;
+        private RandomDataGenerator _randomGenerator;
 
-        public SaveDataFileSystemCreator(KeySet keySet)
+        private KeySet _keySet;
+
+        public SaveDataFileSystemCreator(KeySet keySet, IBufferManager bufferManager,
+            RandomDataGenerator randomGenerator)
         {
-            KeySet = keySet;
+            _bufferManager = bufferManager;
+            _randomGenerator = randomGenerator;
+            _keySet = keySet;
         }
 
         public Result CreateFile(out IFile file, IFileSystem sourceFileSystem, ulong saveDataId, OpenMode openMode)
@@ -25,7 +31,7 @@ namespace LibHac.FsSrv.FsCreator
         public Result Create(out IFileSystem fileSystem,
             out ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor, IFileSystem sourceFileSystem,
             ulong saveDataId, bool allowDirectorySaveData, bool useDeviceUniqueMac, SaveDataType type,
-            ITimeStampGenerator timeStampGenerator)
+            ISaveDataCommitTimeStampGetter timeStampGetter)
         {
             UnsafeHelpers.SkipParamInit(out fileSystem, out extraDataAccessor);
 
@@ -64,7 +70,7 @@ namespace LibHac.FsSrv.FsCreator
                     if (rc.IsFailure()) return rc;
 
                     var saveDataStorage = new DisposingFileStorage(saveDataFile);
-                    fileSystem = new SaveDataFileSystem(KeySet, saveDataStorage, IntegrityCheckLevel.ErrorOnInvalid,
+                    fileSystem = new SaveDataFileSystem(_keySet, saveDataStorage, IntegrityCheckLevel.ErrorOnInvalid,
                         false);
 
                     // Todo: ISaveDataExtraDataAccessor

@@ -35,7 +35,8 @@ namespace LibHac
             {
                 DeviceOperator = defaultObjects.DeviceOperator,
                 ExternalKeySet = keySet.ExternalKeySet,
-                FsCreators = defaultObjects.FsCreators
+                FsCreators = defaultObjects.FsCreators,
+                KeySet = keySet
             };
 
             FileSystemServerInitializer.InitializeWithConfig(fsServerClient, fsServer, fsServerConfig);

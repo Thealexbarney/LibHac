@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.FsSrv;
 using LibHac.Os;
 using LibHac.Util;
 
@@ -26,7 +28,7 @@ namespace LibHac.FsSystem
     /// underlying <see cref="IFileSystem"/> is atomic.
     /// <br/>Based on FS 11.0.0 (nnSdk 11.4.0)
     /// </remarks>
-    public class DirectorySaveDataFileSystem : IFileSystem
+    public class DirectorySaveDataFileSystem : IFileSystem, ISaveDataExtraDataAccessor
     {
         private const int IdealWorkBufferSize = 0x100000; // 1 MiB
 
@@ -40,12 +42,18 @@ namespace LibHac.FsSystem
 
         private FileSystemClient _fsClient;
         private IFileSystem _baseFs;
+
         private SdkMutexType _mutex;
+
         // Todo: Unique file system for disposal
         private int _openWritableFileCount;
         private bool _isPersistentSaveData;
         private bool _canCommitProvisionally;
         private bool _useTransactions;
+
+        // Additions to support extra data
+        private ISaveDataCommitTimeStampGetter _timeStampGetter;
+        private RandomDataGenerator _randomGenerator;
 
         private class DirectorySaveDataFile : IFile
         {
@@ -86,7 +94,8 @@ namespace LibHac.FsSystem
                 return _baseFile.SetSize(size);
             }
 
-            protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+            protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset,
+                long size, ReadOnlySpan<byte> inBuffer)
             {
                 return _baseFile.OperateRange(outBuffer, operationId, offset, size, inBuffer);
             }
@@ -109,11 +118,13 @@ namespace LibHac.FsSystem
         }
 
         public static Result CreateNew(out DirectorySaveDataFileSystem created, IFileSystem baseFileSystem,
+            ISaveDataCommitTimeStampGetter timeStampGetter, RandomDataGenerator randomGenerator,
             bool isPersistentSaveData, bool canCommitProvisionally, bool useTransactions,
-            FileSystemClient fsClient = null)
+            FileSystemClient fsClient)
         {
             var obj = new DirectorySaveDataFileSystem(baseFileSystem, fsClient);
-            Result rc = obj.Initialize(isPersistentSaveData, canCommitProvisionally, useTransactions);
+            Result rc = obj.Initialize(timeStampGetter, randomGenerator, isPersistentSaveData, canCommitProvisionally,
+                useTransactions);
 
             if (rc.IsSuccess())
             {
@@ -124,6 +135,13 @@ namespace LibHac.FsSystem
             obj.Dispose();
             UnsafeHelpers.SkipParamInit(out created);
             return rc;
+        }
+
+        public static Result CreateNew(out DirectorySaveDataFileSystem created, IFileSystem baseFileSystem,
+            bool isPersistentSaveData, bool canCommitProvisionally, bool useTransactions)
+        {
+            return CreateNew(out created, baseFileSystem, null, null, isPersistentSaveData, canCommitProvisionally,
+                useTransactions, null);
         }
 
         /// <summary>
@@ -159,9 +177,17 @@ namespace LibHac.FsSystem
 
         private Result Initialize(bool isPersistentSaveData, bool canCommitProvisionally, bool useTransactions)
         {
+            return Initialize(null, null, isPersistentSaveData, canCommitProvisionally, useTransactions);
+        }
+
+        private Result Initialize(ISaveDataCommitTimeStampGetter timeStampGetter, RandomDataGenerator randomGenerator,
+            bool isPersistentSaveData, bool canCommitProvisionally, bool useTransactions)
+        {
             _isPersistentSaveData = isPersistentSaveData;
             _canCommitProvisionally = canCommitProvisionally;
             _useTransactions = useTransactions;
+            _timeStampGetter = timeStampGetter ?? _timeStampGetter;
+            _randomGenerator = randomGenerator ?? _randomGenerator;
 
             // Ensure the working directory exists
             Result rc = _baseFs.GetEntryType(out _, WorkingDirectoryPath);
@@ -176,12 +202,11 @@ namespace LibHac.FsSystem
                 if (_isPersistentSaveData)
                 {
                     rc = _baseFs.CreateDirectory(CommittedDirectoryPath);
-                    if (rc.IsFailure()) return rc;
-                }
 
-                // Nintendo returns on all failures, but we'll keep going if committed already exists
-                // to avoid confusing people manually creating savedata in emulators
-                if (rc.IsFailure() && !ResultFs.PathAlreadyExists.Includes(rc)) return rc;
+                    // Nintendo returns on all failures, but we'll keep going if committed already exists
+                    // to avoid confusing people manually creating savedata in emulators
+                    if (rc.IsFailure() && !ResultFs.PathAlreadyExists.Includes(rc)) return rc;
+                }
             }
 
             // Only the working directory is needed for temporary savedata
@@ -195,7 +220,10 @@ namespace LibHac.FsSystem
                 if (!_useTransactions)
                     return Result.Success;
 
-                return SynchronizeDirectory(WorkingDirectoryPath, CommittedDirectoryPath);
+                rc = SynchronizeDirectory(WorkingDirectoryPath, CommittedDirectoryPath);
+                if (rc.IsFailure()) return rc;
+
+                return InitializeExtraData();
             }
 
             if (!ResultFs.PathNotFound.Includes(rc)) return rc;
@@ -206,7 +234,13 @@ namespace LibHac.FsSystem
             rc = SynchronizeDirectory(SynchronizingDirectoryPath, WorkingDirectoryPath);
             if (rc.IsFailure()) return rc;
 
-            return _baseFs.RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath);
+            rc = _baseFs.RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath);
+            if (rc.IsFailure()) return rc;
+
+            rc = InitializeExtraData();
+            if (rc.IsFailure()) return rc;
+
+            return Result.Success;
         }
 
         private Result ResolveFullPath(Span<byte> outPath, U8Span relativePath)
@@ -403,7 +437,7 @@ namespace LibHac.FsSystem
             if (rc.IsFailure()) return rc;
 
             // Lock only if initialized with a client
-            if(_fsClient is not null)
+            if (_fsClient is not null)
             {
                 using ScopedLock<SdkMutexType> lk =
                     ScopedLock.Lock(ref _fsClient.Globals.DirectorySaveDataFileSystem.SynchronizeDirectoryMutex);
@@ -437,7 +471,9 @@ namespace LibHac.FsSystem
 
             Result RenameCommittedDir() => _baseFs.RenameDirectory(CommittedDirectoryPath, SynchronizingDirectoryPath);
             Result SynchronizeWorkingDir() => SynchronizeDirectory(SynchronizingDirectoryPath, WorkingDirectoryPath);
-            Result RenameSynchronizingDir() => _baseFs.RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath);
+
+            Result RenameSynchronizingDir() =>
+                _baseFs.RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath);
 
             // Get rid of the previous commit by renaming the folder
             Result rc = Utility.RetryFinitelyForTargetLocked(RenameCommittedDir);
@@ -505,6 +541,263 @@ namespace LibHac.FsSystem
             using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
 
             _openWritableFileCount--;
+        }
+
+        // The original class doesn't support extra data.
+        // Everything below this point is a LibHac extension.
+
+        private static ReadOnlySpan<byte> CommittedExtraDataBytes => // "/ExtraData0"
+            new[]
+            {
+                (byte)'/', (byte)'E', (byte)'x', (byte)'t', (byte)'r', (byte)'a', (byte)'D', (byte)'a',
+                (byte)'t', (byte)'a', (byte)'0'
+            };
+
+        private static ReadOnlySpan<byte> WorkingExtraDataBytes => // "/ExtraData1"
+            new[]
+            {
+                (byte)'/', (byte)'E', (byte)'x', (byte)'t', (byte)'r', (byte)'a', (byte)'D', (byte)'a',
+                (byte)'t', (byte)'a', (byte)'1'
+            };
+
+        private static ReadOnlySpan<byte> SynchronizingExtraDataBytes => // "/ExtraData_"
+            new[]
+            {
+                (byte)'/', (byte)'E', (byte)'x', (byte)'t', (byte)'r', (byte)'a', (byte)'D', (byte)'a',
+                (byte)'t', (byte)'a', (byte)'_'
+            };
+
+        private U8Span CommittedExtraDataPath => new U8Span(CommittedExtraDataBytes);
+        private U8Span WorkingExtraDataPath => new U8Span(WorkingExtraDataBytes);
+        private U8Span SynchronizingExtraDataPath => new U8Span(SynchronizingExtraDataBytes);
+
+        private Result InitializeExtraData()
+        {
+            // Ensure the extra data files exist
+            Result rc = _baseFs.GetEntryType(out _, WorkingExtraDataPath);
+
+            if (rc.IsFailure())
+            {
+                if (!ResultFs.PathNotFound.Includes(rc)) return rc;
+
+                rc = _baseFs.CreateFile(WorkingExtraDataPath, Unsafe.SizeOf<SaveDataExtraData>());
+                if (rc.IsFailure()) return rc;
+
+                if (_isPersistentSaveData)
+                {
+                    rc = _baseFs.CreateFile(CommittedExtraDataPath, Unsafe.SizeOf<SaveDataExtraData>());
+                    if (rc.IsFailure() && !ResultFs.PathAlreadyExists.Includes(rc)) return rc;
+                }
+            }
+            else
+            {
+                // If the working file exists make sure it's the right size
+                rc = EnsureExtraDataSize(WorkingExtraDataPath);
+                if (rc.IsFailure()) return rc;
+            }
+
+            // Only the working extra data is needed for temporary savedata
+            if (!_isPersistentSaveData)
+                return Result.Success;
+
+            rc = _baseFs.GetEntryType(out _, CommittedExtraDataPath);
+
+            if (rc.IsSuccess())
+            {
+                rc = EnsureExtraDataSize(CommittedExtraDataPath);
+                if (rc.IsFailure()) return rc;
+
+                if (!_useTransactions)
+                    return Result.Success;
+
+                return SynchronizeExtraData(WorkingExtraDataPath, CommittedExtraDataPath);
+            }
+
+            if (!ResultFs.PathNotFound.Includes(rc)) return rc;
+
+            // If a previous commit failed, the committed extra data may be missing.
+            // Finish that commit by copying the working extra data to the committed extra data
+
+            rc = SynchronizeExtraData(SynchronizingExtraDataPath, WorkingExtraDataPath);
+            if (rc.IsFailure()) return rc;
+
+            rc = _baseFs.RenameFile(SynchronizingExtraDataPath, CommittedExtraDataPath);
+            if (rc.IsFailure()) return rc;
+
+            return Result.Success;
+        }
+
+        private Result EnsureExtraDataSize(U8Span path)
+        {
+            IFile file = null;
+            try
+            {
+                Result rc = _baseFs.OpenFile(out file, path, OpenMode.ReadWrite);
+                if (rc.IsFailure()) return rc;
+
+                rc = file.GetSize(out long fileSize);
+                if (rc.IsFailure()) return rc;
+
+                if (fileSize == Unsafe.SizeOf<SaveDataExtraData>())
+                    return Result.Success;
+
+                return file.SetSize(Unsafe.SizeOf<SaveDataExtraData>());
+            }
+            finally
+            {
+                file?.Dispose();
+            }
+        }
+
+        private Result SynchronizeExtraData(U8Span destPath, U8Span sourcePath)
+        {
+            Span<byte> workBuffer = stackalloc byte[Unsafe.SizeOf<SaveDataExtraData>()];
+
+            Result rc = _baseFs.OpenFile(out IFile sourceFile, sourcePath, OpenMode.Read);
+            if (rc.IsFailure()) return rc;
+
+            using (sourceFile)
+            {
+                rc = sourceFile.Read(out long bytesRead, 0, workBuffer);
+                if (rc.IsFailure()) return rc;
+
+                Assert.SdkEqual(bytesRead, Unsafe.SizeOf<SaveDataExtraData>());
+            }
+
+            rc = _baseFs.OpenFile(out IFile destFile, destPath, OpenMode.Write);
+            if (rc.IsFailure()) return rc;
+
+            using (destFile)
+            {
+                rc = destFile.Write(0, workBuffer, WriteOption.Flush);
+                if (rc.IsFailure()) return rc;
+            }
+
+            return Result.Success;
+        }
+
+        private U8Span GetExtraDataPath()
+        {
+            return !_useTransactions && _isPersistentSaveData
+                ? CommittedExtraDataPath
+                : WorkingExtraDataPath;
+        }
+
+        public Result WriteExtraData(in SaveDataExtraData extraData)
+        {
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+
+            return WriteExtraDataImpl(in extraData);
+        }
+
+        public Result CommitExtraData(bool updateTimeStamp)
+        {
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+
+            if (updateTimeStamp && _timeStampGetter is not null && _randomGenerator is not null)
+            {
+                Result rc = UpdateExtraDataTimeStamp();
+                if (rc.IsFailure()) return rc;
+            }
+
+            return CommitExtraDataImpl();
+        }
+
+        public Result ReadExtraData(out SaveDataExtraData extraData)
+        {
+            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+
+            return ReadExtraDataImpl(out extraData);
+        }
+
+        private Result UpdateExtraDataTimeStamp()
+        {
+            Assert.SdkRequires(_mutex.IsLockedByCurrentThread());
+            
+            Result rc = ReadExtraDataImpl(out SaveDataExtraData extraData);
+            if (rc.IsFailure()) return rc;
+
+            if (_timeStampGetter.Get(out long timeStamp).IsSuccess())
+            {
+                extraData.TimeStamp = (ulong)timeStamp;
+            }
+
+            long commitId = 0;
+
+            do
+            {
+                _randomGenerator(SpanHelpers.AsByteSpan(ref commitId));
+            } while (commitId == 0 || commitId == extraData.CommitId);
+
+            extraData.CommitId = commitId;
+
+            return WriteExtraDataImpl(in extraData);
+        }
+
+        private Result WriteExtraDataImpl(in SaveDataExtraData extraData)
+        {
+            Assert.SdkRequires(_mutex.IsLockedByCurrentThread());
+
+            Result rc = _baseFs.OpenFile(out IFile file, GetExtraDataPath(), OpenMode.Write);
+            if (rc.IsFailure()) return rc;
+
+            using (file)
+            {
+                return file.Write(0, SpanHelpers.AsReadOnlyByteSpan(in extraData), WriteOption.Flush);
+            }
+        }
+
+        private Result CommitExtraDataImpl()
+        {
+            Assert.SdkRequires(_mutex.IsLockedByCurrentThread());
+
+            if (!_useTransactions || !_isPersistentSaveData)
+                return Result.Success;
+
+            Result RenameCommittedFile() => _baseFs.RenameFile(CommittedExtraDataPath, SynchronizingExtraDataPath);
+            Result SynchronizeWorkingFile() => SynchronizeExtraData(SynchronizingExtraDataPath, WorkingExtraDataPath);
+            Result RenameSynchronizingFile() => _baseFs.RenameFile(SynchronizingExtraDataPath, CommittedExtraDataPath);
+
+            // Get rid of the previous commit by renaming the folder
+            Result rc = Utility.RetryFinitelyForTargetLocked(RenameCommittedFile);
+            if (rc.IsFailure()) return rc;
+
+            // If something goes wrong beyond this point, the commit will be
+            // completed the next time the savedata is opened
+
+            rc = Utility.RetryFinitelyForTargetLocked(SynchronizeWorkingFile);
+            if (rc.IsFailure()) return rc;
+
+            rc = Utility.RetryFinitelyForTargetLocked(RenameSynchronizingFile);
+            if (rc.IsFailure()) return rc;
+
+            return Result.Success;
+        }
+
+        private Result ReadExtraDataImpl(out SaveDataExtraData extraData)
+        {
+            Assert.SdkRequires(_mutex.IsLockedByCurrentThread());
+
+            UnsafeHelpers.SkipParamInit(out extraData);
+
+            Result rc = _baseFs.OpenFile(out IFile file, GetExtraDataPath(), OpenMode.Read);
+            if (rc.IsFailure()) return rc;
+
+            using (file)
+            {
+                rc = file.Read(out long bytesRead, 0, SpanHelpers.AsByteSpan(ref extraData));
+                if (rc.IsFailure()) return rc;
+
+                Assert.SdkEqual(bytesRead, Unsafe.SizeOf<SaveDataExtraData>());
+
+                return Result.Success;
+            }
+        }
+
+        public void RegisterCacheObserver(ISaveDataExtraDataAccessorCacheObserver observer, SaveDataSpaceId spaceId,
+            ulong saveDataId)
+        {
+            throw new NotImplementedException();
         }
     }
 }

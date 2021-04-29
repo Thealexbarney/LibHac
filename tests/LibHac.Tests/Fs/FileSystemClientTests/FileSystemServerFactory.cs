@@ -10,8 +10,9 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
         private static FileSystemClient CreateClientImpl(bool sdCardInserted, out IFileSystem rootFs)
         {
             rootFs = new InMemoryFileSystem();
-
-            var defaultObjects = DefaultFsServerObjects.GetDefaultEmulatedCreators(rootFs, new KeySet());
+            var keySet = new KeySet();
+            
+            var defaultObjects = DefaultFsServerObjects.GetDefaultEmulatedCreators(rootFs, keySet);
 
             defaultObjects.SdCard.SetSdCardInsertionStatus(sdCardInserted);
 
@@ -19,6 +20,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
             config.FsCreators = defaultObjects.FsCreators;
             config.DeviceOperator = defaultObjects.DeviceOperator;
             config.ExternalKeySet = new ExternalKeySet();
+            config.KeySet = keySet;
 
             Horizon horizon = LibHac.HorizonFactory.CreateWithFsConfig(new HorizonConfiguration(), config);
 
