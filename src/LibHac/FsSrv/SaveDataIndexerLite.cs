@@ -53,7 +53,7 @@ namespace LibHac.FsSrv
             lock (Locker)
             {
                 if (IsKeyValueSet && _key == key)
-                    return ResultFs.SaveDataPathAlreadyExists.Log();
+                    return ResultFs.AlreadyExists.Log();
 
                 _key = key;
                 IsKeyValueSet = true;
@@ -87,7 +87,7 @@ namespace LibHac.FsSrv
             lock (Locker)
             {
                 if (IsKeyValueSet && _key == key)
-                    return ResultFs.SaveDataPathAlreadyExists.Log();
+                    return ResultFs.AlreadyExists.Log();
 
                 _key = key;
                 IsKeyValueSet = true;

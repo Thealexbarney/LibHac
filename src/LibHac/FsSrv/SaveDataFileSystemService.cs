@@ -679,7 +679,7 @@ namespace LibHac.FsSrv
 
                     if (rc.IsFailure())
                     {
-                        if (ResultFs.SaveDataPathAlreadyExists.Includes(rc))
+                        if (ResultFs.AlreadyExists.Includes(rc))
                         {
                             return ResultFs.PathAlreadyExists.LogConverted(rc);
                         }
@@ -958,7 +958,7 @@ namespace LibHac.FsSrv
                         return ResultFs.TargetNotFound.Log();
 
                     if (indexerValue.State == SaveDataState.Extending)
-                        return ResultFs.SaveDataIsExtending.Log();
+                        return ResultFs.SaveDataExtending.Log();
 
                     tempSaveDataId = indexerValue.SaveDataId;
                 }

@@ -20,7 +20,7 @@ namespace LibHac.FsSystem.Save
 
             if (ResultFs.UnsupportedVersion.Includes(result))
             {
-                return ResultFs.UnsupportedSaveVersion.Value;
+                return ResultFs.UnsupportedSaveDataVersion.Value;
             }
 
             if (ResultFs.IntegrityVerificationStorageCorrupted.Includes(result))
@@ -57,7 +57,7 @@ namespace LibHac.FsSystem.Save
             {
                 if (ResultFs.InvalidGptPartitionSignature.Includes(result))
                 {
-                    return ResultFs.SaveDataInvalidGptPartitionSignature.Value;
+                    return ResultFs.SaveDataGptHeaderSignatureVerificationFailed.Value;
                 }
 
                 return result;
@@ -103,7 +103,7 @@ namespace LibHac.FsSystem.Save
                 return ResultFs.PathNotFound.Value;
             }
 
-            if (ResultFs.SaveDataPathAlreadyExists.Includes(result))
+            if (ResultFs.AlreadyExists.Includes(result))
             {
                 return ResultFs.PathAlreadyExists.Value;
             }
@@ -118,7 +118,7 @@ namespace LibHac.FsSystem.Save
                 return ResultFs.OutOfRange.Value;
             }
 
-            if (ResultFs.AllocationTableInsufficientFreeBlocks.Includes(result))
+            if (ResultFs.AllocationTableFull.Includes(result))
             {
                 return ResultFs.UsableSpaceNotEnough.Value;
             }

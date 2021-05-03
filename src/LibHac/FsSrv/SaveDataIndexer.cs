@@ -235,7 +235,7 @@ namespace LibHac.FsSrv
 
                 if (rc.IsSuccess())
                 {
-                    return ResultFs.SaveDataPathAlreadyExists.Log();
+                    return ResultFs.AlreadyExists.Log();
                 }
 
                 _lastPublishedId++;
@@ -298,7 +298,7 @@ namespace LibHac.FsSrv
                 {
                     if (iterator.GetValue<SaveDataIndexerValue>().SaveDataId == key.StaticSaveDataId)
                     {
-                        return ResultFs.SaveDataPathAlreadyExists.Log();
+                        return ResultFs.AlreadyExists.Log();
                     }
 
                     iterator.Next();

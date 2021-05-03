@@ -465,7 +465,7 @@ namespace LibHac.Fs
             /// <summary>Error code: 2002-3002; Inner value: 0x177402</summary>
             public static Result.Base UnsupportedVersion => new Result.Base(ModuleFs, 3002);
             /// <summary>Error code: 2002-3003; Inner value: 0x177602</summary>
-            public static Result.Base SaveDataPathAlreadyExists => new Result.Base(ModuleFs, 3003);
+            public static Result.Base AlreadyExists => new Result.Base(ModuleFs, 3003);
             /// <summary>Error code: 2002-3005; Inner value: 0x177a02</summary>
             public static Result.Base OutOfRange => new Result.Base(ModuleFs, 3005);
             /// <summary>Error code: 2002-3099; Inner value: 0x183602</summary>
@@ -1072,7 +1072,7 @@ namespace LibHac.Fs
                         /// <summary>Error code: 2002-4142; Inner value: 0x205c02</summary>
                         public static Result.Base IncorrectRomIntegrityVerificationMagic => new Result.Base(ModuleFs, 4142);
                         /// <summary>Error code: 2002-4143; Inner value: 0x205e02</summary>
-                        public static Result.Base InvalidRomZeroHash => new Result.Base(ModuleFs, 4143);
+                        public static Result.Base InvalidRomZeroSignature => new Result.Base(ModuleFs, 4143);
                         /// <summary>Error code: 2002-4144; Inner value: 0x206002</summary>
                         public static Result.Base RomNonRealDataVerificationFailed => new Result.Base(ModuleFs, 4144);
 
@@ -1101,7 +1101,7 @@ namespace LibHac.Fs
                     /// <summary>Error code: 2002-4201; Range: 4201-4219; Inner value: 0x20d202</summary>
                     public static Result.Base RomBuiltInStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4201, 4219); }
                         /// <summary>Error code: 2002-4202; Inner value: 0x20d402</summary>
-                        public static Result.Base RomGptHeaderVerificationFailed => new Result.Base(ModuleFs, 4202);
+                        public static Result.Base RomGptHeaderSignatureVerificationFailed => new Result.Base(ModuleFs, 4202);
 
                     /// <summary>Error code: 2002-4241; Range: 4241-4259; Inner value: 0x212202</summary>
                     public static Result.Base RomHostFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4241, 4259); }
@@ -1129,64 +1129,64 @@ namespace LibHac.Fs
                 /// <summary>Error code: 2002-4301; Range: 4301-4499; Inner value: 0x219a02</summary>
                 public static Result.Base SaveDataCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4301, 4499); }
                     /// <summary>Error code: 2002-4302; Inner value: 0x219c02</summary>
-                    public static Result.Base UnsupportedSaveVersion => new Result.Base(ModuleFs, 4302);
+                    public static Result.Base UnsupportedSaveDataVersion => new Result.Base(ModuleFs, 4302);
                     /// <summary>Error code: 2002-4303; Inner value: 0x219e02</summary>
                     public static Result.Base InvalidSaveDataEntryType => new Result.Base(ModuleFs, 4303);
 
                     /// <summary>Error code: 2002-4311; Range: 4311-4319; Inner value: 0x21ae02</summary>
-                    public static Result.Base JournalIntegritySaveDataCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4311, 4319); }
+                    public static Result.Base SaveDataFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4311, 4319); }
                         /// <summary>Error code: 2002-4312; Inner value: 0x21b002</summary>
-                        public static Result.Base InvalidJournalIntegritySaveDataMasterDataSize => new Result.Base(ModuleFs, 4312);
+                        public static Result.Base InvalidJournalIntegritySaveDataHashSize => new Result.Base(ModuleFs, 4312);
                         /// <summary>Error code: 2002-4313; Inner value: 0x21b202</summary>
-                        public static Result.Base InconsistentJournalIntegritySaveDataCommitState => new Result.Base(ModuleFs, 4313);
+                        public static Result.Base InvalidJournalIntegritySaveDataCommitState => new Result.Base(ModuleFs, 4313);
                         /// <summary>Error code: 2002-4314; Inner value: 0x21b402</summary>
-                        public static Result.Base InvalidJournalIntegritySaveDataStorageSize => new Result.Base(ModuleFs, 4314);
+                        public static Result.Base InvalidJournalIntegritySaveDataControlAreaSize => new Result.Base(ModuleFs, 4314);
                         /// <summary>Error code: 2002-4315; Inner value: 0x21b602</summary>
-                        public static Result.Base InvalidJournalIntegritySaveDataMasterHeader => new Result.Base(ModuleFs, 4315);
+                        public static Result.Base JournalIntegritySaveDataControlAreaVerificationFailed => new Result.Base(ModuleFs, 4315);
                         /// <summary>Error code: 2002-4316; Inner value: 0x21b802</summary>
-                        public static Result.Base InvalidJournalIntegritySaveDataSignature => new Result.Base(ModuleFs, 4316);
+                        public static Result.Base JournalIntegritySaveDataMasterSignatureVerificationFailed => new Result.Base(ModuleFs, 4316);
                         /// <summary>Error code: 2002-4317; Inner value: 0x21ba02</summary>
-                        public static Result.Base IncorrectJournalIntegritySaveDataLayoutHeaderMagic => new Result.Base(ModuleFs, 4317);
+                        public static Result.Base IncorrectJournalIntegritySaveDataMagicCode => new Result.Base(ModuleFs, 4317);
 
                     /// <summary>Error code: 2002-4321; Range: 4321-4329; Inner value: 0x21c202</summary>
-                    public static Result.Base DuplexStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4321, 4329); }
+                    public static Result.Base SaveDataDuplexStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4321, 4329); }
                         /// <summary>Error code: 2002-4322; Inner value: 0x21c402</summary>
-                        public static Result.Base IncorrectHierarchicalDuplexStorageControlAreaMagic => new Result.Base(ModuleFs, 4322);
+                        public static Result.Base IncorrectDuplexMagicCode => new Result.Base(ModuleFs, 4322);
                         /// <summary>Error code: 2002-4323; Inner value: 0x21c602</summary>
                         public static Result.Base DuplexStorageAccessOutOfRange => new Result.Base(ModuleFs, 4323);
 
                     /// <summary>Error code: 2002-4331; Range: 4331-4339; Inner value: 0x21d602</summary>
-                    public static Result.Base RemapStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4331, 4339); }
+                    public static Result.Base SaveDataMapCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4331, 4339); }
                         /// <summary>Error code: 2002-4332; Inner value: 0x21d802</summary>
-                        public static Result.Base InvalidRemapStorageMapEntryCount => new Result.Base(ModuleFs, 4332);
+                        public static Result.Base InvalidMapEntryCount => new Result.Base(ModuleFs, 4332);
                         /// <summary>Error code: 2002-4333; Inner value: 0x21da02</summary>
-                        public static Result.Base InvalidRemapStorageOffset => new Result.Base(ModuleFs, 4333);
+                        public static Result.Base InvalidMapOffset => new Result.Base(ModuleFs, 4333);
                         /// <summary>Error code: 2002-4334; Inner value: 0x21dc02</summary>
-                        public static Result.Base InvalidRemapStorageSize => new Result.Base(ModuleFs, 4334);
+                        public static Result.Base InvalidMapSize => new Result.Base(ModuleFs, 4334);
                         /// <summary>Error code: 2002-4335; Inner value: 0x21de02</summary>
-                        public static Result.Base InvalidRemapStorageAlignment => new Result.Base(ModuleFs, 4335);
+                        public static Result.Base InvalidMapAlignment => new Result.Base(ModuleFs, 4335);
                         /// <summary>Error code: 2002-4336; Inner value: 0x21e002</summary>
-                        public static Result.Base InvalidRemapStorageStorageType => new Result.Base(ModuleFs, 4336);
+                        public static Result.Base InvalidMapStorageType => new Result.Base(ModuleFs, 4336);
                         /// <summary>The range of the new map entry overlaps with the range of an existing map entry.<br/>Error code: 2002-4337; Inner value: 0x21e202</summary>
-                        public static Result.Base InvalidRemapStorageNewMapEntryOffset => new Result.Base(ModuleFs, 4337);
+                        public static Result.Base MapAddressAlreadyRegistered => new Result.Base(ModuleFs, 4337);
                         /// <summary>The storage for the map entry's storage type hasn't been registered.<br/>Error code: 2002-4338; Inner value: 0x21e402</summary>
-                        public static Result.Base RemapStorageStorageNotRegistered => new Result.Base(ModuleFs, 4338);
+                        public static Result.Base MapStorageNotFound => new Result.Base(ModuleFs, 4338);
                         /// <summary>The storage registered for the map entry's storage type is too short to contain the physical range specified in the map entry.<br/>Error code: 2002-4339; Inner value: 0x21e602</summary>
-                        public static Result.Base RemapStorageInvalidRegisteredStorageSize => new Result.Base(ModuleFs, 4339);
+                        public static Result.Base InvalidMapStorageSize => new Result.Base(ModuleFs, 4339);
 
                     /// <summary>Error code: 2002-4341; Range: 4341-4349; Inner value: 0x21ea02</summary>
-                    public static Result.Base UnionStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4341, 4349); }
+                    public static Result.Base SaveDataLogCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4341, 4349); }
                         /// <summary>Error code: 2002-4342; Inner value: 0x21ec02</summary>
-                        public static Result.Base InvalidUnionStorageBlockSize => new Result.Base(ModuleFs, 4342);
+                        public static Result.Base InvalidLogBlockSize => new Result.Base(ModuleFs, 4342);
                         /// <summary>Error code: 2002-4343; Inner value: 0x21ee02</summary>
-                        public static Result.Base InvalidUnionStorageLogOffsetAlignment => new Result.Base(ModuleFs, 4343);
+                        public static Result.Base InvalidLogOffset => new Result.Base(ModuleFs, 4343);
                         /// <summary>Error code: 2002-4344; Inner value: 0x21f002</summary>
-                        public static Result.Base InvalidUnionStorageLogOffsetForCommit => new Result.Base(ModuleFs, 4344);
+                        public static Result.Base UnexpectedEndOfLog => new Result.Base(ModuleFs, 4344);
                         /// <summary>Error code: 2002-4345; Inner value: 0x21f202</summary>
-                        public static Result.Base InvalidUnionStorageLogOffset => new Result.Base(ModuleFs, 4345);
+                        public static Result.Base LogNotFound => new Result.Base(ModuleFs, 4345);
 
                     /// <summary>Error code: 2002-4352; Inner value: 0x220002</summary>
-                    public static Result.Base InvalidSaveDataThumbnailHash => new Result.Base(ModuleFs, 4352);
+                    public static Result.Base ThumbnailHashVerificationFailed => new Result.Base(ModuleFs, 4352);
                     /// <summary>Error code: 2002-4357; Inner value: 0x220a02</summary>
                     public static Result.Base InvalidSaveDataInternalStorageIntegritySeedSize => new Result.Base(ModuleFs, 4357);
                     /// <summary>Error code: 2002-4358; Inner value: 0x220c02</summary>
@@ -1208,7 +1208,7 @@ namespace LibHac.Fs
                         public static Result.Base UnclearedSaveDataRealDataVerificationFailed => new Result.Base(ModuleFs, 4373);
 
                     /// <summary>Error code: 2002-4402; Inner value: 0x226402</summary>
-                    public static Result.Base SaveDataInvalidGptPartitionSignature => new Result.Base(ModuleFs, 4402);
+                    public static Result.Base SaveDataGptHeaderSignatureVerificationFailed => new Result.Base(ModuleFs, 4402);
 
                     /// <summary>Error code: 2002-4411; Range: 4411-4419; Inner value: 0x227602</summary>
                     public static Result.Base SaveDataCoreFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4411, 4419); }
@@ -1252,7 +1252,7 @@ namespace LibHac.Fs
                     /// <summary>Error code: 2002-4461; Range: 4461-4479; Inner value: 0x22da02</summary>
                     public static Result.Base SaveDataDatabaseCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4461, 4479); }
                         /// <summary>Error code: 2002-4462; Inner value: 0x22dc02</summary>
-                        public static Result.Base SaveDataAllocationTableCorrupted => new Result.Base(ModuleFs, 4462);
+                        public static Result.Base InvalidSaveDataAllocationTableBlock => new Result.Base(ModuleFs, 4462);
                         /// <summary>Error code: 2002-4463; Inner value: 0x22de02</summary>
                         public static Result.Base InvalidSaveDataKeyValueListElementIndex => new Result.Base(ModuleFs, 4463);
                         /// <summary>Error code: 2002-4464; Inner value: 0x22e002</summary>
@@ -1267,28 +1267,28 @@ namespace LibHac.Fs
                         public static Result.Base InvalidSaveDataBitmapIndex => new Result.Base(ModuleFs, 4468);
 
                     /// <summary>Error code: 2002-4481; Range: 4481-4489; Inner value: 0x230202</summary>
-                    public static Result.Base SaveDataExtenderCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4481, 4489); }
+                    public static Result.Base SaveDataExtensionContextCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4481, 4489); }
                         /// <summary>Error code: 2002-4482; Inner value: 0x230402</summary>
-                        public static Result.Base IncorrectSaveDataExtensionContextMagic => new Result.Base(ModuleFs, 4482);
+                        public static Result.Base IncorrectSaveDataExtensionContextMagicCode => new Result.Base(ModuleFs, 4482);
                         /// <summary>Error code: 2002-4483; Inner value: 0x230602</summary>
                         public static Result.Base InvalidSaveDataExtensionContextState => new Result.Base(ModuleFs, 4483);
                         /// <summary>The extension context doesn't match the current save data.<br/>Error code: 2002-4484; Inner value: 0x230802</summary>
-                        public static Result.Base SaveDataExtensionContextMismatch => new Result.Base(ModuleFs, 4484);
+                        public static Result.Base DifferentSaveDataExtensionContextParameter => new Result.Base(ModuleFs, 4484);
                         /// <summary>Error code: 2002-4485; Inner value: 0x230a02</summary>
-                        public static Result.Base InvalidSaveDataExtenderSize => new Result.Base(ModuleFs, 4485);
+                        public static Result.Base InvalidSaveDataExtensionContextParameter => new Result.Base(ModuleFs, 4485);
 
                     /// <summary>Error code: 2002-4491; Range: 4491-4499; Inner value: 0x231602</summary>
                     public static Result.Base IntegritySaveDataCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4491, 4499); }
                         /// <summary>Error code: 2002-4492; Inner value: 0x231802</summary>
-                        public static Result.Base InvalidIntegritySaveDataMasterDataSize => new Result.Base(ModuleFs, 4492);
+                        public static Result.Base InvalidIntegritySaveDataHashSize => new Result.Base(ModuleFs, 4492);
                         /// <summary>Error code: 2002-4494; Inner value: 0x231c02</summary>
-                        public static Result.Base InvalidIntegritySaveDataStorageSize => new Result.Base(ModuleFs, 4494);
+                        public static Result.Base InvalidIntegritySaveDataControlAreaSize => new Result.Base(ModuleFs, 4494);
                         /// <summary>Error code: 2002-4495; Inner value: 0x231e02</summary>
-                        public static Result.Base InvalidIntegritySaveDataMasterHeader => new Result.Base(ModuleFs, 4495);
+                        public static Result.Base IntegritySaveDataControlAreaVerificationFailed => new Result.Base(ModuleFs, 4495);
                         /// <summary>Error code: 2002-4496; Inner value: 0x232002</summary>
-                        public static Result.Base InvalidIntegritySaveDataSignature => new Result.Base(ModuleFs, 4496);
+                        public static Result.Base IntegritySaveDataMasterSignatureVerificationFailed => new Result.Base(ModuleFs, 4496);
                         /// <summary>Error code: 2002-4497; Inner value: 0x232202</summary>
-                        public static Result.Base IncorrectIntegritySaveDataLayoutHeaderMagic => new Result.Base(ModuleFs, 4497);
+                        public static Result.Base IncorrectIntegritySaveDataMagicCode => new Result.Base(ModuleFs, 4497);
 
                 /// <summary>Error code: 2002-4501; Range: 4501-4599; Inner value: 0x232a02</summary>
                 public static Result.Base NcaCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4501, 4599); }
@@ -1871,15 +1871,15 @@ namespace LibHac.Fs
             /// <summary>Error code: 2002-6600; Range: 6600-6699; Inner value: 0x339002</summary>
             public static Result.Base NotFound { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6600, 6699); }
                 /// <summary>Error code: 2002-6602; Inner value: 0x339402</summary>
-                public static Result.Base SaveDataFileNotFound => new Result.Base(ModuleFs, 6602);
+                public static Result.Base FileNotFound => new Result.Base(ModuleFs, 6602);
                 /// <summary>Error code: 2002-6603; Inner value: 0x339602</summary>
-                public static Result.Base SaveDataDirectoryNotFound => new Result.Base(ModuleFs, 6603);
+                public static Result.Base DirectoryNotFound => new Result.Base(ModuleFs, 6603);
                 /// <summary>Error code: 2002-6604; Inner value: 0x339802</summary>
-                public static Result.Base SaveDataFileTableEntryNotFound => new Result.Base(ModuleFs, 6604);
+                public static Result.Base DatabaseKeyNotFound => new Result.Base(ModuleFs, 6604);
                 /// <summary>Specified program is not found in the program registry.<br/>Error code: 2002-6605; Inner value: 0x339a02</summary>
-                public static Result.Base TargetProgramNotFound => new Result.Base(ModuleFs, 6605);
+                public static Result.Base ProgramInfoNotFound => new Result.Base(ModuleFs, 6605);
                 /// <summary>Specified program index is not found<br/>Error code: 2002-6606; Inner value: 0x339c02</summary>
-                public static Result.Base TargetProgramIndexNotFound => new Result.Base(ModuleFs, 6606);
+                public static Result.Base ProgramIndexNotFound => new Result.Base(ModuleFs, 6606);
 
             /// <summary>Error code: 2002-6700; Range: 6700-6799; Inner value: 0x345802</summary>
             public static Result.Base OutOfResource { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6700, 6799); }
@@ -1888,7 +1888,7 @@ namespace LibHac.Fs
                 /// <summary>Error code: 2002-6706; Inner value: 0x346402</summary>
                 public static Result.Base MappingTableFull => new Result.Base(ModuleFs, 6706);
                 /// <summary>Error code: 2002-6707; Inner value: 0x346602</summary>
-                public static Result.Base AllocationTableInsufficientFreeBlocks => new Result.Base(ModuleFs, 6707);
+                public static Result.Base AllocationTableFull => new Result.Base(ModuleFs, 6707);
                 /// <summary>Error code: 2002-6709; Inner value: 0x346a02</summary>
                 public static Result.Base OpenCountLimit => new Result.Base(ModuleFs, 6709);
                 /// <summary>The maximum number of file systems have been added to the multi-commit manager.<br/>Error code: 2002-6710; Inner value: 0x346c02</summary>
@@ -1910,7 +1910,7 @@ namespace LibHac.Fs
                 /// <summary>Error code: 2002-6905; Inner value: 0x35f202</summary>
                 public static Result.Base NotMounted => new Result.Base(ModuleFs, 6905);
                 /// <summary>Error code: 2002-6906; Inner value: 0x35f402</summary>
-                public static Result.Base SaveDataIsExtending => new Result.Base(ModuleFs, 6906);
+                public static Result.Base SaveDataExtending => new Result.Base(ModuleFs, 6906);
                 /// <summary>Error code: 2002-6907; Inner value: 0x35f602</summary>
                 public static Result.Base SaveDataToExpandIsProvisionallyCommitted => new Result.Base(ModuleFs, 6907);
 

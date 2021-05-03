@@ -288,7 +288,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,3000,7999,,,Internal,
 2,3001,,,,NotImplemented,
 2,3002,,,,UnsupportedVersion,
-2,3003,,,,SaveDataPathAlreadyExists,
+2,3003,,,,AlreadyExists,
 2,3005,,,,OutOfRange,
 
 2,3099,,,,,
@@ -605,7 +605,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 
 2,4141,4179,,,RomIntegrityVerificationStorageCorrupted,
 2,4142,,,,IncorrectRomIntegrityVerificationMagic,
-2,4143,,,,InvalidRomZeroHash,
+2,4143,,,,InvalidRomZeroSignature,
 2,4144,,,,RomNonRealDataVerificationFailed,
 
 2,4151,4159,,,RomRealDataVerificationFailed,
@@ -621,7 +621,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,4187,,,,InvalidRomSha256PartitionMetaDataSize,
 
 2,4201,4219,,,RomBuiltInStorageCorrupted,
-2,4202,,,,RomGptHeaderVerificationFailed,
+2,4202,,,,RomGptHeaderSignatureVerificationFailed,
 
 2,4241,4259,,,RomHostFileSystemCorrupted,
 2,4242,,,,RomHostEntryCorrupted,
@@ -637,38 +637,38 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,4281,,,,InvalidRomStorageSize,The RomFs metadata is located beyond the end of the provided storage.
 
 2,4301,4499,,,SaveDataCorrupted,
-2,4302,,,,UnsupportedSaveVersion,
+2,4302,,,,UnsupportedSaveDataVersion,
 2,4303,,,,InvalidSaveDataEntryType,
 
-2,4311,4319,,,JournalIntegritySaveDataCorrupted,
-2,4312,,,,InvalidJournalIntegritySaveDataMasterDataSize,
-2,4313,,,,InconsistentJournalIntegritySaveDataCommitState,
-2,4314,,,,InvalidJournalIntegritySaveDataStorageSize,
-2,4315,,,,InvalidJournalIntegritySaveDataMasterHeader,
-2,4316,,,,InvalidJournalIntegritySaveDataSignature,
-2,4317,,,,IncorrectJournalIntegritySaveDataLayoutHeaderMagic,
+2,4311,4319,,,SaveDataFileSystemCorrupted,
+2,4312,,,,InvalidJournalIntegritySaveDataHashSize,
+2,4313,,,,InvalidJournalIntegritySaveDataCommitState,
+2,4314,,,,InvalidJournalIntegritySaveDataControlAreaSize,
+2,4315,,,,JournalIntegritySaveDataControlAreaVerificationFailed,
+2,4316,,,,JournalIntegritySaveDataMasterSignatureVerificationFailed,
+2,4317,,,,IncorrectJournalIntegritySaveDataMagicCode,
 
-2,4321,4329,,,DuplexStorageCorrupted,
-2,4322,,,,IncorrectHierarchicalDuplexStorageControlAreaMagic,
+2,4321,4329,,,SaveDataDuplexStorageCorrupted,
+2,4322,,,,IncorrectDuplexMagicCode,
 2,4323,,,,DuplexStorageAccessOutOfRange,
 
-2,4331,4339,,,RemapStorageCorrupted,
-2,4332,,,,InvalidRemapStorageMapEntryCount,
-2,4333,,,,InvalidRemapStorageOffset,
-2,4334,,,,InvalidRemapStorageSize,
-2,4335,,,,InvalidRemapStorageAlignment,
-2,4336,,,,InvalidRemapStorageStorageType,
-2,4337,,,,InvalidRemapStorageNewMapEntryOffset,The range of the new map entry overlaps with the range of an existing map entry.
-2,4338,,,,RemapStorageStorageNotRegistered,The storage for the map entry's storage type hasn't been registered.
-2,4339,,,,RemapStorageInvalidRegisteredStorageSize,The storage registered for the map entry's storage type is too short to contain the physical range specified in the map entry.
+2,4331,4339,,,SaveDataMapCorrupted,
+2,4332,,,,InvalidMapEntryCount,
+2,4333,,,,InvalidMapOffset,
+2,4334,,,,InvalidMapSize,
+2,4335,,,,InvalidMapAlignment,
+2,4336,,,,InvalidMapStorageType,
+2,4337,,,,MapAddressAlreadyRegistered,The range of the new map entry overlaps with the range of an existing map entry.
+2,4338,,,,MapStorageNotFound,The storage for the map entry's storage type hasn't been registered.
+2,4339,,,,InvalidMapStorageSize,The storage registered for the map entry's storage type is too short to contain the physical range specified in the map entry.
 
-2,4341,4349,,,UnionStorageCorrupted,
-2,4342,,,,InvalidUnionStorageBlockSize,
-2,4343,,,,InvalidUnionStorageLogOffsetAlignment,
-2,4344,,,,InvalidUnionStorageLogOffsetForCommit,
-2,4345,,,,InvalidUnionStorageLogOffset,
+2,4341,4349,,,SaveDataLogCorrupted,
+2,4342,,,,InvalidLogBlockSize,
+2,4343,,,,InvalidLogOffset,
+2,4344,,,,UnexpectedEndOfLog,
+2,4345,,,,LogNotFound,
 
-2,4352,,,,InvalidSaveDataThumbnailHash,
+2,4352,,,,ThumbnailHashVerificationFailed,
 2,4357,,,,InvalidSaveDataInternalStorageIntegritySeedSize,
 2,4358,,,,,
 2,4359,,,,,
@@ -681,7 +681,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,4372,,,,ClearedSaveDataRealDataVerificationFailed,
 2,4373,,,,UnclearedSaveDataRealDataVerificationFailed,
 
-2,4402,,,,SaveDataInvalidGptPartitionSignature,
+2,4402,,,,SaveDataGptHeaderSignatureVerificationFailed,
 
 2,4411,4419,,,SaveDataCoreFileSystemCorrupted,
 2,4412,,,,IncorrectSaveDataControlAreaMagic,
@@ -706,7 +706,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,4454,,,,InvalidMappingTableVirtualIndex,
 
 2,4461,4479,,,SaveDataDatabaseCorrupted,
-2,4462,,,,SaveDataAllocationTableCorrupted,
+2,4462,,,,InvalidSaveDataAllocationTableBlock,
 2,4463,,,,InvalidSaveDataKeyValueListElementIndex,
 2,4464,,,,SaveDataAllocationTableIteratedRangeEntry,
 2,4465,,,,InvalidSaveDataAllocationTableOffset,
@@ -714,18 +714,18 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,4467,,,,InvalidSaveDataKeyValueListEntryIndex,
 2,4468,,,,InvalidSaveDataBitmapIndex,
 
-2,4481,4489,,,SaveDataExtenderCorrupted,
-2,4482,,,,IncorrectSaveDataExtensionContextMagic,
+2,4481,4489,,,SaveDataExtensionContextCorrupted,
+2,4482,,,,IncorrectSaveDataExtensionContextMagicCode,
 2,4483,,,,InvalidSaveDataExtensionContextState,
-2,4484,,,,SaveDataExtensionContextMismatch,The extension context doesn't match the current save data.
-2,4485,,,,InvalidSaveDataExtenderSize,
+2,4484,,,,DifferentSaveDataExtensionContextParameter,The extension context doesn't match the current save data.
+2,4485,,,,InvalidSaveDataExtensionContextParameter,
 
 2,4491,4499,,,IntegritySaveDataCorrupted,
-2,4492,,,,InvalidIntegritySaveDataMasterDataSize,
-2,4494,,,,InvalidIntegritySaveDataStorageSize,
-2,4495,,,,InvalidIntegritySaveDataMasterHeader,
-2,4496,,,,InvalidIntegritySaveDataSignature,
-2,4497,,,,IncorrectIntegritySaveDataLayoutHeaderMagic,
+2,4492,,,,InvalidIntegritySaveDataHashSize,
+2,4494,,,,InvalidIntegritySaveDataControlAreaSize,
+2,4495,,,,IntegritySaveDataControlAreaVerificationFailed,
+2,4496,,,,IntegritySaveDataMasterSignatureVerificationFailed,
+2,4497,,,,IncorrectIntegritySaveDataMagicCode,
 
 2,4501,4599,,,NcaCorrupted,
 2,4508,,,,NcaBaseStorageOutOfRangeA,
@@ -1033,16 +1033,16 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,6467,,,,SaveDataRootPathUnavailable,
 
 2,6600,6699,,,NotFound,
-2,6602,,,,SaveDataFileNotFound,
-2,6603,,,,SaveDataDirectoryNotFound,
-2,6604,,,,SaveDataFileTableEntryNotFound,
-2,6605,,,,TargetProgramNotFound,Specified program is not found in the program registry.
-2,6606,,,,TargetProgramIndexNotFound,Specified program index is not found
+2,6602,,,,FileNotFound,
+2,6603,,,,DirectoryNotFound,
+2,6604,,,,DatabaseKeyNotFound,
+2,6605,,,,ProgramInfoNotFound,Specified program is not found in the program registry.
+2,6606,,,,ProgramIndexNotFound,Specified program index is not found
 
 2,6700,6799,,,OutOfResource,
 2,6705,,,,BufferAllocationFailed,
 2,6706,,,,MappingTableFull,
-2,6707,,,,AllocationTableInsufficientFreeBlocks,
+2,6707,,,,AllocationTableFull,
 2,6709,,,,OpenCountLimit,
 2,6710,,,,MultiCommitFileSystemLimit,The maximum number of file systems have been added to the multi-commit manager.
 
@@ -1054,7 +1054,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,6903,,,,BisProxyInvalidated,
 2,6904,,,,NcaDigestInconsistent,
 2,6905,,,,NotMounted,
-2,6906,,,,SaveDataIsExtending,
+2,6906,,,,SaveDataExtending,
 2,6907,,,,SaveDataToExpandIsProvisionallyCommitted,
 
 2,7002,,,,,

@@ -364,7 +364,7 @@ namespace LibHac.Fs
 
             if (!allowExisting)
             {
-                return ResultFs.SaveDataPathAlreadyExists.Log();
+                return ResultFs.AlreadyExists.Log();
             }
 
             rc = ExtendSaveDataIfNeeded(fs, out requiredSizeLocal, spaceId, info.SaveDataId, dataSize, journalSize);
@@ -375,7 +375,7 @@ namespace LibHac.Fs
                 return Result.Success;
             }
 
-            if (ResultFs.SaveDataIsExtending.Includes(rc))
+            if (ResultFs.SaveDataExtending.Includes(rc))
             {
                 return ResultFs.SaveDataCorrupted.LogConverted(rc);
             }
