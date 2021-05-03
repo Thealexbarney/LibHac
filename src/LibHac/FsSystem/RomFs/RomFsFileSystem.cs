@@ -134,7 +134,7 @@ namespace LibHac.FsSystem.RomFs
             if (ResultFs.InvalidOffset.Includes(result))
                 return ResultFs.OutOfRange.LogConverted(result);
 
-            if (ResultFs.SaveDataFileNotFound.Includes(result) ||
+            if (ResultFs.FileNotFound.Includes(result) ||
                 ResultFs.IncompatiblePath.Includes(result))
             {
                 return ResultFs.PathNotFound.LogConverted(result);
@@ -214,7 +214,7 @@ namespace LibHac.FsSystem.RomFs
                     return ResultFs.IncorrectRomIntegrityVerificationMagic.LogConverted(result);
 
                 if (ResultFs.InvalidZeroHash.Includes(result))
-                    return ResultFs.InvalidRomZeroHash.LogConverted(result);
+                    return ResultFs.InvalidRomZeroSignature.LogConverted(result);
 
                 if (ResultFs.NonRealDataVerificationFailed.Includes(result))
                     return ResultFs.RomNonRealDataVerificationFailed.LogConverted(result);

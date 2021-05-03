@@ -100,7 +100,7 @@ namespace LibHac.FsSrv.Impl
         /// associated with the specified process ID.</param>
         /// <param name="processId">The process ID of the <see cref="ProgramInfo"/> to get.</param>
         /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
-        /// <see cref="ResultFs.TargetProgramNotFound"/>: The <see cref="ProgramInfo"/> was not found.</returns>
+        /// <see cref="ResultFs.ProgramInfoNotFound"/>: The <see cref="ProgramInfo"/> was not found.</returns>
         public Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
         {
             lock (ProgramInfoList)
@@ -121,7 +121,7 @@ namespace LibHac.FsSrv.Impl
                 }
 
                 UnsafeHelpers.SkipParamInit(out programInfo);
-                return ResultFs.TargetProgramNotFound.Log();
+                return ResultFs.ProgramInfoNotFound.Log();
             }
         }
 
@@ -132,7 +132,7 @@ namespace LibHac.FsSrv.Impl
         /// associated with the specified program ID.</param>
         /// <param name="programId">The program ID of the <see cref="ProgramInfo"/> to get.</param>
         /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
-        /// <see cref="ResultFs.TargetProgramNotFound"/>: The <see cref="ProgramInfo"/> was not found.</returns>
+        /// <see cref="ResultFs.ProgramInfoNotFound"/>: The <see cref="ProgramInfo"/> was not found.</returns>
         public Result GetProgramInfoByProgramId(out ProgramInfo programInfo, ulong programId)
         {
             lock (ProgramInfoList)
@@ -147,7 +147,7 @@ namespace LibHac.FsSrv.Impl
                 }
 
                 UnsafeHelpers.SkipParamInit(out programInfo);
-                return ResultFs.TargetProgramNotFound.Log();
+                return ResultFs.ProgramInfoNotFound.Log();
             }
         }
     }

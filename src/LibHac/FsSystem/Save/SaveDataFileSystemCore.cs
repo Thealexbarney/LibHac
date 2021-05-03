@@ -63,7 +63,7 @@ namespace LibHac.FsSystem.Save
 
             if (startBlock == -1)
             {
-                return ResultFs.AllocationTableInsufficientFreeBlocks.Log();
+                return ResultFs.AllocationTableFull.Log();
             }
 
             var fileEntry = new SaveFileInfo { StartBlock = startBlock, Length = size };

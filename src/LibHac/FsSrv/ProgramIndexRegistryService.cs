@@ -69,7 +69,7 @@ namespace LibHac.FsSrv
         /// <param name="programCount">When this method returns successfully, contains the
         /// number of programs in the current application.</param>
         /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
-        /// <see cref="ResultFs.TargetProgramNotFound"/>: The calling program was not found
+        /// <see cref="ResultFs.ProgramInfoNotFound"/>: The calling program was not found
         /// in the program registry. Something's wrong with Loader if this happens.</returns>
         public Result GetProgramIndex(out int programIndex, out int programCount)
         {

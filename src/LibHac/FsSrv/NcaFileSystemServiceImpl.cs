@@ -822,7 +822,7 @@ namespace LibHac.FsSrv
 
             ProgramId mainProgramId = _config.ProgramRegistryService.GetProgramIdByIndex(programId, programIndex);
             if (mainProgramId == ProgramId.InvalidId)
-                return ResultFs.TargetProgramIndexNotFound.Log();
+                return ResultFs.ProgramIndexNotFound.Log();
 
             targetProgramId = mainProgramId;
             return Result.Success;
