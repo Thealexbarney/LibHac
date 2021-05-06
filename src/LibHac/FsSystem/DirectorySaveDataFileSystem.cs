@@ -55,6 +55,11 @@ namespace LibHac.FsSystem
         private ISaveDataCommitTimeStampGetter _timeStampGetter;
         private RandomDataGenerator _randomGenerator;
 
+        // Additions to support caching
+        private ISaveDataExtraDataAccessorCacheObserver _cacheObserver;
+        private SaveDataSpaceId _spaceId;
+        private ulong _saveDataId;
+
         private class DirectorySaveDataFile : IFile
         {
             private IFile _baseFile;
@@ -171,6 +176,7 @@ namespace LibHac.FsSystem
 
         protected override void Dispose(bool disposing)
         {
+            _cacheObserver?.Unregister(_spaceId, _saveDataId);
             _baseFs?.Dispose();
             base.Dispose(disposing);
         }
@@ -713,7 +719,7 @@ namespace LibHac.FsSystem
         private Result UpdateExtraDataTimeStamp()
         {
             Assert.SdkRequires(_mutex.IsLockedByCurrentThread());
-            
+
             Result rc = ReadExtraDataImpl(out SaveDataExtraData extraData);
             if (rc.IsFailure()) return rc;
 
@@ -797,7 +803,12 @@ namespace LibHac.FsSystem
         public void RegisterCacheObserver(ISaveDataExtraDataAccessorCacheObserver observer, SaveDataSpaceId spaceId,
             ulong saveDataId)
         {
-            throw new NotImplementedException();
+            _cacheObserver = observer;
+            _spaceId = spaceId;
+            _saveDataId = saveDataId;
         }
+
+        public SaveDataSpaceId GetSaveDataSpaceId() => _spaceId;
+        public ulong GetSaveDataId() => _saveDataId;
     }
 }
