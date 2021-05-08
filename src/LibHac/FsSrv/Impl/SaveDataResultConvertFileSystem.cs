@@ -1,6 +1,7 @@
 ﻿using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 
 namespace LibHac.FsSrv.Impl
@@ -122,6 +123,84 @@ namespace LibHac.FsSrv.Impl
             }
 
             return result;
+        }
+    }
+
+    /// <summary>
+    /// Wraps an <see cref="IFile"/>, converting its returned <see cref="Result"/>s
+    /// to save-data-specific <see cref="Result"/>s.
+    /// </summary>
+    public class SaveDataResultConvertFile : IResultConvertFile
+    {
+        public SaveDataResultConvertFile(IFile baseFile) : base(baseFile)
+        {
+        }
+
+        protected override Result ConvertResult(Result result)
+        {
+            return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(result);
+        }
+    }
+
+    /// <summary>
+    /// Wraps an <see cref="IDirectory"/>, converting its returned <see cref="Result"/>s
+    /// to save-data-specific <see cref="Result"/>s.
+    /// </summary>
+    public class SaveDataResultConvertDirectory : IResultConvertDirectory
+    {
+        public SaveDataResultConvertDirectory(IDirectory baseDirectory) : base(baseDirectory)
+        {
+        }
+
+        protected override Result ConvertResult(Result result)
+        {
+            return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(result);
+        }
+    }
+
+    /// <summary>
+    /// Wraps an <see cref="IFileSystem"/>, converting its returned <see cref="Result"/>s
+    /// to save-data-specific <see cref="Result"/>s.
+    /// </summary>
+    public class SaveDataResultConvertFileSystem : IResultConvertFileSystem
+    {
+        public SaveDataResultConvertFileSystem(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem)
+            : base(ref baseFileSystem)
+        {
+        }
+
+        public static ReferenceCountedDisposable<IFileSystem> CreateShared(
+            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem)
+        {
+            var resultConvertFileSystem = new SaveDataResultConvertFileSystem(ref baseFileSystem);
+            return new ReferenceCountedDisposable<IFileSystem>(resultConvertFileSystem);
+        }
+
+        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        {
+            UnsafeHelpers.SkipParamInit(out file);
+
+            Result rc = ConvertResult(BaseFileSystem.Target.OpenFile(out IFile tempFile, path, mode));
+            if (rc.IsFailure()) return rc;
+
+            file = new SaveDataResultConvertFile(tempFile);
+            return Result.Success;
+        }
+
+        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        {
+            UnsafeHelpers.SkipParamInit(out directory);
+
+            Result rc = ConvertResult(BaseFileSystem.Target.OpenDirectory(out IDirectory tempDirectory, path, mode));
+            if (rc.IsFailure()) return rc;
+
+            directory = new SaveDataResultConvertDirectory(tempDirectory);
+            return Result.Success;
+        }
+
+        protected override Result ConvertResult(Result result)
+        {
+            return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(result);
         }
     }
 
