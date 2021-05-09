@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv.FsCreator;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSystem;
-using LibHac.FsSystem.Save;
 using LibHac.Ncm;
+using LibHac.Os;
 using LibHac.Util;
 using Utility = LibHac.FsSrv.Impl.Utility;
 
@@ -18,8 +19,8 @@ namespace LibHac.FsSrv
         private Configuration _config;
         private EncryptionSeed _encryptionSeed;
 
-        private ISaveDataFileSystemCacheManager _saveCacheManager;
-        // Save data extra data cache
+        private SaveDataFileSystemCacheManager _saveDataFsCacheManager;
+        private SaveDataExtraDataAccessorCacheManager _extraDataCacheManager;
         // Save data porter manager
         private bool _isSdCardAccessible;
         private TimeStampGetter _timeStampGetter;
@@ -44,8 +45,13 @@ namespace LibHac.FsSrv
         public SaveDataFileSystemServiceImpl(in Configuration configuration)
         {
             _config = configuration;
+            _saveDataFsCacheManager = new SaveDataFileSystemCacheManager();
+            _extraDataCacheManager = new SaveDataExtraDataAccessorCacheManager();
 
             _timeStampGetter = new TimeStampGetter(this);
+
+            Result rc = _saveDataFsCacheManager.Initialize(_config.MaxSaveFsCacheCount);
+            Abort.DoAbortUnless(rc.IsSuccess());
         }
 
         public struct Configuration
@@ -119,7 +125,7 @@ namespace LibHac.FsSrv
             UnsafeHelpers.SkipParamInit(out fileSystem);
 
             ReferenceCountedDisposable<IFileSystem> saveDirectoryFs = null;
-            ReferenceCountedDisposable<SaveDataFileSystem> cachedSaveDataFs = null;
+            ReferenceCountedDisposable<IFileSystem> cachedSaveDataFs = null;
             ReferenceCountedDisposable<IFileSystem> saveDataFs = null;
             try
             {
@@ -138,18 +144,29 @@ namespace LibHac.FsSrv
                     if (rc.IsFailure()) return rc;
                 }
 
-                if (!allowDirectorySaveData)
+                // Note: Nintendo doesn't cache directory save data
+                // if (!allowDirectorySaveData)
                 {
-                    // Todo: Missing save FS cache lookup
+                    // Check if we have the requested file system cached
+                    if (_saveDataFsCacheManager.GetCache(out cachedSaveDataFs, spaceId, saveDataId))
+                    {
+                        saveDataFs =
+                            SaveDataFileSystemCacheRegisterBase<IFileSystem>.CreateShared(cachedSaveDataFs,
+                                _saveDataFsCacheManager);
+
+                        saveDataFs = SaveDataResultConvertFileSystem.CreateShared(ref saveDataFs);
+                    }
                 }
 
-                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+                // Create a new file system if it's not in the cache
                 if (saveDataFs is null)
                 {
                     ReferenceCountedDisposable<IFileSystem> saveFs = null;
                     ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor = null;
                     try
                     {
+                        using ScopedLock<SdkRecursiveMutex> scopedLock = _extraDataCacheManager.GetScopedLock();
+                        
                         // Todo: Update ISaveDataFileSystemCreator
                         bool useDeviceUniqueMac = IsDeviceUniqueMac(spaceId);
 
@@ -159,14 +176,19 @@ namespace LibHac.FsSrv
 
                         saveDataFs = Shared.Move(ref saveFs);
 
-                        if (cacheExtraData)
+                        // Cache the extra data accessor if needed
+                        if (cacheExtraData && extraDataAccessor is not null)
                         {
-                            // Todo: Missing extra data caching
+                            extraDataAccessor.Target.RegisterCacheObserver(_extraDataCacheManager, spaceId, saveDataId);
+
+                            rc = _extraDataCacheManager.Register(extraDataAccessor, spaceId, saveDataId);
+                            if (rc.IsFailure()) return rc;
                         }
                     }
                     finally
                     {
                         saveFs?.Dispose();
+                        cachedSaveDataFs?.Dispose();
                         extraDataAccessor?.Dispose();
                     }
                 }
@@ -360,6 +382,8 @@ namespace LibHac.FsSrv
             ReferenceCountedDisposable<IFileSystem> fileSystem = null;
             try
             {
+                _saveDataFsCacheManager.Unregister(spaceId, saveDataId);
+                
                 // Open the directory containing the save data
                 Result rc = OpenSaveDataDirectoryFileSystem(out fileSystem, spaceId, saveDataRootPath, false);
                 if (rc.IsFailure()) return rc;
