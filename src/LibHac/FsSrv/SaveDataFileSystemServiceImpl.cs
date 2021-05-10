@@ -30,12 +30,12 @@ namespace LibHac.FsSrv
         private class TimeStampGetter : ISaveDataCommitTimeStampGetter
         {
             private SaveDataFileSystemServiceImpl _saveService;
-            
+
             public TimeStampGetter(SaveDataFileSystemServiceImpl saveService)
             {
                 _saveService = saveService;
             }
-            
+
             public Result Get(out long timeStamp)
             {
                 return _saveService.GetSaveDataCommitTimeStamp(out timeStamp);
@@ -165,8 +165,8 @@ namespace LibHac.FsSrv
                     ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor = null;
                     try
                     {
-                        using ScopedLock<SdkRecursiveMutex> scopedLock = _extraDataCacheManager.GetScopedLock();
-                        
+                        using ScopedLock<SdkRecursiveMutexType> scopedLock = _extraDataCacheManager.GetScopedLock();
+
                         // Todo: Update ISaveDataFileSystemCreator
                         bool useDeviceUniqueMac = IsDeviceUniqueMac(spaceId);
 
@@ -217,8 +217,8 @@ namespace LibHac.FsSrv
             var metaDirPath = // /saveMeta/
                 new U8Span(new[]
                 {
-                    (byte) '/', (byte) 's', (byte) 'a', (byte) 'v', (byte) 'e', (byte) 'M', (byte) 'e', (byte) 't',
-                    (byte) 'a', (byte) '/'
+                    (byte)'/', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'M', (byte)'e', (byte)'t',
+                    (byte)'a', (byte)'/'
                 });
 
             Span<byte> directoryName = stackalloc byte[0x1B];
@@ -287,8 +287,8 @@ namespace LibHac.FsSrv
             var metaDirPath = // /saveMeta
                 new U8Span(new[]
                 {
-                    (byte) '/', (byte) 's', (byte) 'a', (byte) 'v', (byte) 'e', (byte) 'M', (byte) 'e', (byte) 't',
-                    (byte) 'a'
+                    (byte)'/', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'M', (byte)'e', (byte)'t',
+                    (byte)'a'
                 });
 
             ReferenceCountedDisposable<IFileSystem> fileSystem = null;
@@ -383,7 +383,7 @@ namespace LibHac.FsSrv
             try
             {
                 _saveDataFsCacheManager.Unregister(spaceId, saveDataId);
-                
+
                 // Open the directory containing the save data
                 Result rc = OpenSaveDataDirectoryFileSystem(out fileSystem, spaceId, saveDataRootPath, false);
                 if (rc.IsFailure()) return rc;
@@ -427,15 +427,115 @@ namespace LibHac.FsSrv
         public Result ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, SaveDataSpaceId spaceId,
             ulong saveDataId, SaveDataType type, U8Span saveDataRootPath)
         {
-            // Todo: Find a way to store extra data for directory save data
-            extraData = new SaveDataExtraData();
-            return Result.Success;
+            UnsafeHelpers.SkipParamInit(out extraData);
+
+            // Nintendo returns blank extra data for directory save data.
+            // We've extended directory save data to store extra data so we don't need to do that.
+
+            using ScopedLock<SdkRecursiveMutexType> scopedLockFsCache = _saveDataFsCacheManager.GetScopedLock();
+            using ScopedLock<SdkRecursiveMutexType> scopedLockExtraDataCache = _extraDataCacheManager.GetScopedLock();
+
+            ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor = null;
+            try
+            {
+                // Try to grab an extra data accessor for the requested save from the cache.
+                Result rc = _extraDataCacheManager.GetCache(out extraDataAccessor, spaceId, saveDataId);
+
+                if (rc.IsSuccess())
+                {
+                    // An extra data accessor was found in the cache. Read the extra data from it.
+                    return extraDataAccessor.Target.ReadExtraData(out extraData);
+                }
+
+                ReferenceCountedDisposable<IFileSystem> unusedSaveDataFs = null;
+                try
+                {
+                    // We won't actually use the returned save data FS.
+                    // Opening the FS should cache an extra data accessor for it.
+                    rc = OpenSaveDataFileSystem(out unusedSaveDataFs, spaceId, saveDataId, saveDataRootPath,
+                        openReadOnly: true, type, cacheExtraData: true);
+                    if (rc.IsFailure()) return rc;
+
+                    // Try to grab an accessor from the cache again.
+                    rc = _extraDataCacheManager.GetCache(out extraDataAccessor, spaceId, saveDataId);
+
+                    if (rc.IsFailure())
+                    {
+                        // No extra data accessor was registered for the requested save data.
+                        // Return a blank extra data struct.
+                        extraData = new SaveDataExtraData();
+                        return rc;
+                    }
+
+                    return extraDataAccessor.Target.ReadExtraData(out extraData);
+                }
+                finally
+                {
+                    unusedSaveDataFs?.Dispose();
+                }
+            }
+            finally
+            {
+                extraDataAccessor?.Dispose();
+            }
         }
 
         public Result WriteSaveDataFileSystemExtraData(SaveDataSpaceId spaceId, ulong saveDataId,
             in SaveDataExtraData extraData, U8Span saveDataRootPath, SaveDataType type, bool updateTimeStamp)
         {
-            throw new NotImplementedException();
+            // Nintendo does nothing when writing directory save data extra data.
+            // We've extended directory save data to store extra data so we don't return early.
+
+            using ScopedLock<SdkRecursiveMutexType> scopedLockFsCache = _saveDataFsCacheManager.GetScopedLock();
+            using ScopedLock<SdkRecursiveMutexType> scopedLockExtraDataCache = _extraDataCacheManager.GetScopedLock();
+
+            ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor = null;
+            try
+            {
+                // Try to grab an extra data accessor for the requested save from the cache.
+                Result rc = _extraDataCacheManager.GetCache(out extraDataAccessor, spaceId, saveDataId);
+
+                if (rc.IsFailure())
+                {
+                    // No accessor was found in the cache. Try to open one.
+                    ReferenceCountedDisposable<IFileSystem> unusedSaveDataFs = null;
+                    try
+                    {
+                        // We won't actually use the returned save data FS.
+                        // Opening the FS should cache an extra data accessor for it.
+                        rc = OpenSaveDataFileSystem(out unusedSaveDataFs, spaceId, saveDataId, saveDataRootPath,
+                            openReadOnly: false, type, cacheExtraData: true);
+                        if (rc.IsFailure()) return rc;
+
+                        // Try to grab an accessor from the cache again.
+                        rc = _extraDataCacheManager.GetCache(out extraDataAccessor, spaceId, saveDataId);
+
+                        if (rc.IsFailure())
+                        {
+                            // No extra data accessor was registered for the requested save data, so don't do anything.
+                            return rc;
+                        }
+                    }
+                    finally
+                    {
+                        unusedSaveDataFs?.Dispose();
+                    }
+                }
+
+                // We should have a valid accessor if we've reached this point.
+                // Write and commit the extra data.
+                rc = extraDataAccessor.Target.WriteExtraData(in extraData);
+                if (rc.IsFailure()) return rc;
+
+                rc = extraDataAccessor.Target.CommitExtraData(updateTimeStamp);
+                if (rc.IsFailure()) return rc;
+
+                return Result.Success;
+            }
+            finally
+            {
+                extraDataAccessor?.Dispose();
+            }
         }
 
         public Result CorruptSaveDataFileSystem(SaveDataSpaceId spaceId, ulong saveDataId, long offset,
@@ -527,14 +627,16 @@ namespace LibHac.FsSrv
                 switch (spaceId)
                 {
                     case SaveDataSpaceId.System:
-                        rc = _config.BaseFsService.OpenBisFileSystem(out tempFs, U8Span.Empty, BisPartitionId.System, true);
+                        rc = _config.BaseFsService.OpenBisFileSystem(out tempFs, U8Span.Empty, BisPartitionId.System,
+                            true);
                         if (rc.IsFailure()) return rc;
 
                         return Utility.WrapSubDirectory(out fileSystem, ref tempFs, basePath, createIfMissing);
 
                     case SaveDataSpaceId.User:
                     case SaveDataSpaceId.Temporary:
-                        rc = _config.BaseFsService.OpenBisFileSystem(out tempFs, U8Span.Empty, BisPartitionId.User, true);
+                        rc = _config.BaseFsService.OpenBisFileSystem(out tempFs, U8Span.Empty, BisPartitionId.User,
+                            true);
                         if (rc.IsFailure()) return rc;
 
                         return Utility.WrapSubDirectory(out fileSystem, ref tempFs, basePath, createIfMissing);
@@ -558,13 +660,15 @@ namespace LibHac.FsSrv
                             in _encryptionSeed);
 
                     case SaveDataSpaceId.ProperSystem:
-                        rc = _config.BaseFsService.OpenBisFileSystem(out tempFs, U8Span.Empty, BisPartitionId.SystemProperPartition, true);
+                        rc = _config.BaseFsService.OpenBisFileSystem(out tempFs, U8Span.Empty,
+                            BisPartitionId.SystemProperPartition, true);
                         if (rc.IsFailure()) return rc;
 
                         return Utility.WrapSubDirectory(out fileSystem, ref tempFs, basePath, createIfMissing);
 
                     case SaveDataSpaceId.SafeMode:
-                        rc = _config.BaseFsService.OpenBisFileSystem(out tempFs, U8Span.Empty, BisPartitionId.SafeMode, true);
+                        rc = _config.BaseFsService.OpenBisFileSystem(out tempFs, U8Span.Empty, BisPartitionId.SafeMode,
+                            true);
                         if (rc.IsFailure()) return rc;
 
                         return Utility.WrapSubDirectory(out fileSystem, ref tempFs, basePath, createIfMissing);
