@@ -59,7 +59,6 @@ namespace LibHac.FsSrv
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = 0x60)]
     internal struct SaveDataInfoFilter
     {
         public Optional<SaveDataSpaceId> SpaceId;
