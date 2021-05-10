@@ -155,5 +155,10 @@ namespace LibHac.FsSystem
                 }
             }
         }
+
+        public ScopedLock<SdkRecursiveMutexType> GetScopedLock()
+        {
+            return new ScopedLock<SdkRecursiveMutexType>(ref _mutex);
+        }
     }
 }

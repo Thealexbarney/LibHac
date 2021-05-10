@@ -37,12 +37,12 @@ namespace LibHac.FsSrv.Impl
         }
 
         private readonly LinkedList<Cache> _accessorList;
-        private SdkRecursiveMutex _mutex;
+        private SdkRecursiveMutexType _mutex;
 
         public SaveDataExtraDataAccessorCacheManager()
         {
             _accessorList = new LinkedList<Cache>();
-            _mutex = new SdkRecursiveMutex();
+            _mutex.Initialize();
         }
 
         public void Dispose()
@@ -55,7 +55,7 @@ namespace LibHac.FsSrv.Impl
         {
             var cache = new Cache(accessor, spaceId, saveDataId);
 
-            using ScopedLock<SdkRecursiveMutex> scopedLock = ScopedLock.Lock(ref _mutex);
+            using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
             _accessorList.AddLast(cache);
             return Result.Success;
@@ -63,7 +63,7 @@ namespace LibHac.FsSrv.Impl
 
         public void Unregister(SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            using ScopedLock<SdkRecursiveMutex> scopedLock = ScopedLock.Lock(ref _mutex);
+            using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
             UnregisterImpl(spaceId, saveDataId);
         }
@@ -89,7 +89,7 @@ namespace LibHac.FsSrv.Impl
         {
             UnsafeHelpers.SkipParamInit(out accessor);
 
-            using ScopedLock<SdkRecursiveMutex> scopedLock = ScopedLock.Lock(ref _mutex);
+            using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
             LinkedListNode<Cache> currentNode = _accessorList.First;
 
@@ -126,9 +126,9 @@ namespace LibHac.FsSrv.Impl
             }
         }
 
-        public ScopedLock<SdkRecursiveMutex> GetScopedLock()
+        public ScopedLock<SdkRecursiveMutexType> GetScopedLock()
         {
-            return new ScopedLock<SdkRecursiveMutex>(ref _mutex);
+            return new ScopedLock<SdkRecursiveMutexType>(ref _mutex);
         }
     }
 }
