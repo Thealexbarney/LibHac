@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
+using LibHac.Fs.Shim;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
@@ -15,6 +16,7 @@ using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using IFile = LibHac.Fs.Fsa.IFile;
 using IFileSf = LibHac.FsSrv.Sf.IFile;
 using PathNormalizer = LibHac.FsSrv.Impl.PathNormalizer;
+using SaveData = LibHac.Fs.SaveData;
 using Utility = LibHac.FsSystem.Utility;
 
 namespace LibHac.FsSrv
@@ -1397,7 +1399,6 @@ namespace LibHac.FsSrv
                 {
                     return filterReader.Read(out count, new OutBuffer(SpanHelpers.AsByteSpan(ref info)));
                 }
-
             }
             finally
             {
@@ -1488,7 +1489,44 @@ namespace LibHac.FsSrv
         private Result OpenSaveDataInfoReaderOnlyCacheStorage(
             out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader, SaveDataSpaceId spaceId)
         {
-            throw new NotImplementedException();
+            UnsafeHelpers.SkipParamInit(out infoReader);
+
+            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            if (spaceId != SaveDataSpaceId.SdCache && spaceId != SaveDataSpaceId.User)
+                return ResultFs.InvalidSaveDataSpaceId.Log();
+
+            SaveDataIndexerAccessor accessor = null;
+            ReferenceCountedDisposable<SaveDataInfoReaderImpl> reader = null;
+            SaveDataInfoFilterReader filterReader = null;
+            try
+            {
+                rc = OpenSaveDataIndexerAccessor(out accessor, spaceId);
+                if (rc.IsFailure()) return rc;
+
+                rc = accessor.Indexer.OpenSaveDataInfoReader(out reader);
+                if (rc.IsFailure()) return rc;
+
+                ProgramId resolvedProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
+
+                var filter = new SaveDataInfoFilter(ConvertToRealSpaceId(spaceId), resolvedProgramId,
+                    SaveDataType.Cache, userId: default, saveDataId: default, index: default,
+                    (int)SaveDataRank.Primary);
+
+                filterReader = new SaveDataInfoFilterReader(reader, in filter);
+
+                infoReader = new ReferenceCountedDisposable<ISaveDataInfoReader>(filterReader);
+                return Result.Success;
+            }
+            finally
+            {
+                accessor?.Dispose();
+                reader?.Dispose();
+                filterReader?.Dispose();
+            }
         }
 
         private Result OpenSaveDataMetaFileRaw(out ReferenceCountedDisposable<IFile> file, SaveDataSpaceId spaceId,
@@ -1560,17 +1598,59 @@ namespace LibHac.FsSrv
 
         private Result FindCacheStorage(out SaveDataInfo saveInfo, out SaveDataSpaceId spaceId, ushort index)
         {
-            throw new NotImplementedException();
+            UnsafeHelpers.SkipParamInit(out saveInfo, out spaceId);
+
+            Result rc = GetCacheStorageSpaceId(out spaceId);
+            if (rc.IsFailure()) return rc;
+
+            rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            ProgramId resolvedProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
+
+            var filter = new SaveDataInfoFilter(ConvertToRealSpaceId(spaceId), resolvedProgramId, SaveDataType.Cache,
+                userId: default, saveDataId: default, index, (int)SaveDataRank.Primary);
+
+            rc = FindSaveDataWithFilterImpl(out long count, out SaveDataInfo info, spaceId, in filter);
+            if (rc.IsFailure()) return rc;
+
+            if (count == 0)
+                return ResultFs.TargetNotFound.Log();
+
+            saveInfo = info;
+            return Result.Success;
         }
 
         public Result DeleteCacheStorage(ushort index)
         {
-            throw new NotImplementedException();
+            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+
+            Result rc = FindCacheStorage(out SaveDataInfo saveInfo, out SaveDataSpaceId spaceId, index);
+            if (rc.IsFailure()) return rc;
+
+            rc = Hos.Fs.DeleteSaveData(spaceId, saveInfo.SaveDataId);
+            if (rc.IsFailure()) return rc;
+
+            return Result.Success;
         }
 
         public Result GetCacheStorageSize(out long usableDataSize, out long journalSize, ushort index)
         {
-            throw new NotImplementedException();
+            UnsafeHelpers.SkipParamInit(out usableDataSize, out journalSize);
+
+            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+
+            Result rc = FindCacheStorage(out SaveDataInfo saveInfo, out SaveDataSpaceId spaceId, index);
+            if (rc.IsFailure()) return rc;
+
+            rc = ServiceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, spaceId,
+                saveInfo.SaveDataId, saveInfo.Type, new U8Span(SaveDataRootPath.Str));
+            if (rc.IsFailure()) return rc;
+
+            usableDataSize = extraData.DataSize;
+            journalSize = extraData.JournalSize;
+
+            return Result.Success;
         }
 
         public Result OpenSaveDataTransferManager(out ReferenceCountedDisposable<ISaveDataTransferManager> manager)
