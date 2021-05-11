@@ -9,6 +9,7 @@ using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 using LibHac.Os;
 using LibHac.Sf;
+using LibHac.Time;
 using static LibHac.Fs.Impl.AccessLogStrings;
 
 namespace LibHac.Fs.Shim
@@ -68,44 +69,90 @@ namespace LibHac.Fs.Shim
         internal static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
             out SaveDataExtraData extraData, ulong saveDataId)
         {
-            throw new NotImplementedException();
+            UnsafeHelpers.SkipParamInit(out extraData);
+
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+
+            Result rc = fsProxy.Target.ReadSaveDataFileSystemExtraData(OutBuffer.FromStruct(ref extraData), saveDataId);
+            if (rc.IsFailure()) return rc;
+
+            return Result.Success;
         }
 
         internal static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
             out SaveDataExtraData extraData, SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            throw new NotImplementedException();
+            UnsafeHelpers.SkipParamInit(out extraData);
+
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+
+            Result rc = fsProxy.Target.ReadSaveDataFileSystemExtraDataBySaveDataSpaceId(
+                OutBuffer.FromStruct(ref extraData), spaceId, saveDataId);
+            if (rc.IsFailure()) return rc;
+
+            return Result.Success;
         }
 
         internal static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
             out SaveDataExtraData extraData, SaveDataSpaceId spaceId, in SaveDataAttribute attribute)
         {
-            throw new NotImplementedException();
+            UnsafeHelpers.SkipParamInit(out extraData);
+
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+
+            Result rc = fsProxy.Target.ReadSaveDataFileSystemExtraDataBySaveDataAttribute(
+                OutBuffer.FromStruct(ref extraData), spaceId, in attribute);
+            if (rc.IsFailure()) return rc;
+
+            return Result.Success;
         }
 
         internal static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
             out SaveDataExtraData extraData, SaveDataSpaceId spaceId, in SaveDataAttribute attribute,
             in SaveDataExtraData extraDataMask)
         {
-            throw new NotImplementedException();
+            UnsafeHelpers.SkipParamInit(out extraData);
+
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+
+            Result rc = fsProxy.Target.ReadSaveDataFileSystemExtraDataWithMaskBySaveDataAttribute(
+                OutBuffer.FromStruct(ref extraData), spaceId, in attribute, InBuffer.FromStruct(in extraDataMask));
+            if (rc.IsFailure()) return rc;
+
+            return Result.Success;
         }
 
         internal static Result WriteSaveDataFileSystemExtraData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId,
             ulong saveDataId, in SaveDataExtraData extraData)
         {
-            throw new NotImplementedException();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+
+            Result rc = fsProxy.Target.WriteSaveDataFileSystemExtraData(saveDataId, spaceId,
+                InBuffer.FromStruct(in extraData));
+            fs.AbortIfNeeded(rc);
+            return rc;
         }
 
         internal static Result WriteSaveDataFileSystemExtraData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId,
             ulong saveDataId, in SaveDataExtraData extraData, in SaveDataExtraData extraDataMask)
         {
-            throw new NotImplementedException();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+
+            Result rc = fsProxy.Target.WriteSaveDataFileSystemExtraDataWithMask(saveDataId, spaceId,
+                InBuffer.FromStruct(in extraData), InBuffer.FromStruct(in extraDataMask));
+            fs.AbortIfNeeded(rc);
+            return rc;
         }
 
         internal static Result WriteSaveDataFileSystemExtraData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId,
             in SaveDataAttribute attribute, in SaveDataExtraData extraData, in SaveDataExtraData extraDataMask)
         {
-            throw new NotImplementedException();
+            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+
+            Result rc = fsProxy.Target.WriteSaveDataFileSystemExtraDataWithMaskBySaveDataAttribute(in attribute,
+                spaceId, InBuffer.FromStruct(in extraData), InBuffer.FromStruct(in extraDataMask));
+            fs.AbortIfNeeded(rc);
+            return rc;
         }
 
         internal static Result FindSaveDataWithFilter(this FileSystemClientImpl fs, out SaveDataInfo saveInfo,
@@ -281,6 +328,23 @@ namespace LibHac.Fs.Shim
             return rc;
         }
 
+        public static Result DeleteSystemSaveData(this FileSystemClient fs, SaveDataSpaceId spaceId, ulong saveDataId,
+            UserId userId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result DeleteDeviceSaveData(this FileSystemClient fs, ApplicationId applicationId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result RegisterSaveDataAtomicDeletion(this FileSystemClient fs,
+            ReadOnlySpan<ulong> saveDataIdList)
+        {
+            throw new NotImplementedException();
+        }
+
         public static Result OpenSaveDataIterator(this FileSystemClientImpl fs, out SaveDataIterator iterator,
             SaveDataSpaceId spaceId)
         {
@@ -325,6 +389,12 @@ namespace LibHac.Fs.Shim
             }
 
             return Result.Success;
+        }
+
+        public static Result ReadSaveDataInfoImpl(out long readCount, Span<SaveDataInfo> buffer,
+            in SaveDataIterator iterator)
+        {
+            throw new NotImplementedException();
         }
 
         public static Result OpenSaveDataIterator(this FileSystemClient fs, out SaveDataIterator iterator,
@@ -721,6 +791,24 @@ namespace LibHac.Fs.Shim
                 flags);
         }
 
+        public static Result ExtendSaveData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId, ulong saveDataId,
+            long saveDataSize, long journalSize)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result ExtendSaveData(this FileSystemClient fs, ulong saveDataId, long saveDataSize,
+            long journalSize)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result ExtendSaveData(this FileSystemClient fs, SaveDataSpaceId spaceId, ulong saveDataId,
+            long saveDataSize, long journalSize)
+        {
+            throw new NotImplementedException();
+        }
+
         public static Result QuerySaveDataTotalSize(this FileSystemClientImpl fs, out long totalSize, long size,
             long journalSize)
         {
@@ -762,6 +850,230 @@ namespace LibHac.Fs.Shim
             return rc;
         }
 
+        public static Result GetSaveDataOwnerId(this FileSystemClient fs, out ulong ownerId, ulong saveDataId)
+        {
+            Result rc;
+            Span<byte> logBuffer = stackalloc byte[0x40];
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System) && fs.Impl.IsEnabledHandleAccessLog(null))
+            {
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = GetOwnerId(fs, out ownerId, saveDataId);
+                Tick end = fs.Hos.Os.GetSystemTick();
+
+                // Note: Nintendo accidentally uses ", save_data_size: %ld" instead of ", savedataid: 0x%lX"
+                // for the format string.
+                var sb = new U8StringBuilder(logBuffer, true);
+                sb.Append(LogSaveDataId).AppendFormat(saveDataId, 'X');
+
+                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            }
+            else
+            {
+                rc = GetOwnerId(fs, out ownerId, saveDataId);
+            }
+            fs.Impl.AbortIfNeeded(rc);
+            return rc;
+
+            static Result GetOwnerId(FileSystemClient fs, out ulong ownerId, ulong saveDataId)
+            {
+                UnsafeHelpers.SkipParamInit(out ownerId);
+
+                Result rc = fs.Impl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, saveDataId);
+                if (rc.IsFailure()) return rc;
+
+                ownerId = extraData.OwnerId;
+                return Result.Success;
+            }
+        }
+
+        public static Result GetSaveDataOwnerId(this FileSystemClient fs, out ulong ownerId, SaveDataSpaceId spaceId,
+            ulong saveDataId)
+        {
+            Result rc;
+            Span<byte> logBuffer = stackalloc byte[0x40];
+            
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System) && fs.Impl.IsEnabledHandleAccessLog(null))
+            {
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = GetOwnerId(fs, out ownerId, spaceId, saveDataId);
+                Tick end = fs.Hos.Os.GetSystemTick();
+
+                var idString = new IdString();
+                var sb = new U8StringBuilder(logBuffer, true);
+
+                sb.Append(LogSaveDataSpaceId).Append(idString.ToString(spaceId))
+                    .Append(LogSaveDataId).AppendFormat(saveDataId, 'X');
+
+                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            }
+            else
+            {
+                rc = GetOwnerId(fs, out ownerId, spaceId, saveDataId);
+            }
+            fs.Impl.AbortIfNeeded(rc);
+            return rc;
+
+            static Result GetOwnerId(FileSystemClient fs, out ulong ownerId, SaveDataSpaceId spaceId, ulong saveDataId)
+            {
+                UnsafeHelpers.SkipParamInit(out ownerId);
+
+                Result rc = fs.Impl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, spaceId,
+                    saveDataId);
+                if (rc.IsFailure()) return rc;
+
+                ownerId = extraData.OwnerId;
+                return Result.Success;
+            }
+        }
+
+        public static Result GetSaveDataFlags(this FileSystemClient fs, out SaveDataFlags flags, ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result GetSaveDataFlags(this FileSystemClient fs, out SaveDataFlags flags,
+            SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result GetSystemSaveDataFlags(this FileSystemClient fs, out SaveDataFlags flags,
+            SaveDataSpaceId spaceId, ulong saveDataId, UserId userId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result SetSaveDataFlags(this FileSystemClient fs, ulong saveDataId, SaveDataFlags flags)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result SetSaveDataFlags(this FileSystemClient fs, ulong saveDataId, SaveDataSpaceId spaceId,
+            SaveDataFlags flags)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result SetSystemSaveDataFlags(this FileSystemClient fs, SaveDataSpaceId spaceId, ulong saveDataId,
+            UserId userId, SaveDataFlags flags)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result SetSaveDataTimeStamp(this FileSystemClient fs, SaveDataSpaceId spaceId, ulong saveDataId,
+            PosixTime timeStamp)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result GetSaveDataTimeStamp(this FileSystemClient fs, out PosixTime timeStamp,
+            SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result GetSaveDataAvailableSize(this FileSystemClientImpl fs, out long availableSize,
+            ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result GetSaveDataAvailableSize(this FileSystemClientImpl fs, out long availableSize,
+            SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result GetSaveDataAvailableSize(this FileSystemClient fs, out long availableSize,
+            ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result GetSaveDataAvailableSize(this FileSystemClient fs, out long availableSize,
+            SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result GetSaveDataJournalSize(this FileSystemClientImpl fs, out long journalSize,
+            ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result GetSaveDataJournalSize(this FileSystemClientImpl fs, out long journalSize,
+            SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result GetSaveDataJournalSize(this FileSystemClient fs, out long journalSize,
+            ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result GetSaveDataJournalSize(this FileSystemClient fs, out long journalSize,
+            SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result GetSaveDataCommitId(this FileSystemClient fs, out long commitId, SaveDataSpaceId spaceId,
+            ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result SetSaveDataCommitId(this FileSystemClient fs, SaveDataSpaceId spaceId, ulong saveDataId,
+            long commitId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result QuerySaveDataInternalStorageTotalSize(this FileSystemClientImpl fs, out long size,
+            SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result QuerySaveDataInternalStorageTotalSize(this FileSystemClient fs, out long size,
+            SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result VerifySaveData(this FileSystemClient fs, out bool isValid, ulong saveDataId,
+            Span<byte> workBuffer)
+        {
+            return VerifySaveData(fs, out isValid, SaveDataSpaceId.System, saveDataId, workBuffer);
+        }
+
+        public static Result VerifySaveData(this FileSystemClient fs, out bool isValid, SaveDataSpaceId spaceId,
+            ulong saveDataId, Span<byte> workBuffer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result CorruptSaveDataForDebug(this FileSystemClient fs, ulong saveDataId)
+        {
+            return CorruptSaveDataForDebug(fs, SaveDataSpaceId.System, saveDataId);
+        }
+
+        public static Result CorruptSaveDataForDebug(this FileSystemClient fs, SaveDataSpaceId spaceId,
+            ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result CorruptSaveDataForDebug(this FileSystemClient fs, SaveDataSpaceId spaceId,
+            ulong saveDataId, long offset)
+        {
+            throw new NotImplementedException();
+        }
+
         public static void DisableAutoSaveDataCreation(this FileSystemClient fs)
         {
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
@@ -770,6 +1082,41 @@ namespace LibHac.Fs.Shim
 
             fs.Impl.LogErrorMessage(rc);
             Abort.DoAbortUnless(rc.IsSuccess());
+        }
+
+        public static Result DeleteCacheStorage(this FileSystemClient fs, int index)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result GetCacheStorageSize(this FileSystemClient fs, out long saveSize, out long journalSize,
+            int index)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result UpdateSaveDataMacForDebug(this FileSystemClient fs, SaveDataSpaceId spaceId,
+            ulong saveDataId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result ListApplicationAccessibleSaveDataOwnerId(this FileSystemClient fs, int readCount,
+            Span<Ncm.ApplicationId> idBuffer, Ncm.ApplicationId applicationId, int programIndex, int startIndex)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result GetSaveDataRestoreFlag(this FileSystemClient fs, out bool isRestoreFlagSet,
+            U8Span mountName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Result GetDeviceSaveDataSize(this FileSystemClientImpl fs, out long saveSize,
+            out long journalSize, ApplicationId applicationId)
+        {
+            throw new NotImplementedException();
         }
     }
 }

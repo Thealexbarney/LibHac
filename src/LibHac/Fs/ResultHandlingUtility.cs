@@ -48,7 +48,8 @@ namespace LibHac.Fs
             // Todo
         }
 
-        public static void LogResultErrorMessage(this FileSystemClientImpl fs, Result result)
+        public static void LogResultErrorMessage(this FileSystemClientImpl fs, Result result,
+            [CallerMemberName] string functionName = "")
         {
             // Todo
         }
@@ -59,7 +60,7 @@ namespace LibHac.Fs
             if (!IsAbortNeeded(fs, result))
                 return;
 
-            fs.LogErrorMessage(result, functionName);
+            fs.LogResultErrorMessage(result, functionName);
 
             if (!result.IsSuccess())
                 Abort.DoAbort(result);
