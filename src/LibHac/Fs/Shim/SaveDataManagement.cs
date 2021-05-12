@@ -176,8 +176,8 @@ namespace LibHac.Fs.Shim
             return Result.Success;
         }
 
-        public static Result CreateSaveData(this FileSystemClientImpl fs, Ncm.ApplicationId applicationId, UserId userId,
-            ulong ownerId, long size, long journalSize, SaveDataFlags flags)
+        public static Result CreateSaveData(this FileSystemClientImpl fs, Ncm.ApplicationId applicationId,
+            UserId userId, ulong ownerId, long size, long journalSize, SaveDataFlags flags)
         {
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
@@ -195,7 +195,8 @@ namespace LibHac.Fs.Shim
             return fsProxy.Target.CreateSaveDataFileSystem(in attribute, in creationInfo, in metaInfo);
         }
 
-        public static Result CreateBcatSaveData(this FileSystemClientImpl fs, Ncm.ApplicationId applicationId, long size)
+        public static Result CreateBcatSaveData(this FileSystemClientImpl fs, Ncm.ApplicationId applicationId,
+            long size)
         {
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
@@ -298,6 +299,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = fs.Impl.DeleteSaveData(saveDataId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
         }
@@ -325,6 +327,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = fs.Impl.DeleteSaveData(spaceId, saveDataId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
         }
@@ -354,6 +357,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = Delete(fs, spaceId, saveDataId, userId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
@@ -389,6 +393,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = Delete(fs, applicationId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
@@ -410,7 +415,7 @@ namespace LibHac.Fs.Shim
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             var listBytes = new InBuffer(MemoryMarshal.Cast<ulong, byte>(saveDataIdList));
-            
+
             Result rc = fsProxy.Target.RegisterSaveDataFileSystemAtomicDeletion(listBytes);
             fs.Impl.AbortIfNeeded(rc);
             return rc;
@@ -606,6 +611,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = CreateSave(fs, applicationId, userId, ownerId, size, journalSize, in hashSalt, flags);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
@@ -886,7 +892,7 @@ namespace LibHac.Fs.Shim
 
                 var idString = new IdString();
                 var sb = new U8StringBuilder(logBuffer, true);
-                
+
                 sb.Append(LogSaveDataSpaceId).Append(idString.ToString(spaceId))
                     .Append(LogSaveDataId).AppendFormat(saveDataId, 'X')
                     .Append(LogSaveDataSize).AppendFormat(saveDataSize, 'd')
@@ -898,6 +904,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = fs.Impl.ExtendSaveData(spaceId, saveDataId, saveDataSize, journalSize);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
         }
@@ -916,7 +923,7 @@ namespace LibHac.Fs.Shim
 
                 var idString = new IdString();
                 var sb = new U8StringBuilder(logBuffer, true);
-                
+
                 sb.Append(LogSaveDataSpaceId).Append(idString.ToString(spaceId))
                     .Append(LogSaveDataId).AppendFormat(saveDataId, 'X')
                     .Append(LogSaveDataSize).AppendFormat(saveDataSize, 'd')
@@ -928,6 +935,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = fs.Impl.ExtendSaveData(spaceId, saveDataId, saveDataSize, journalSize);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
         }
@@ -995,6 +1003,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = GetOwnerId(fs, out ownerId, saveDataId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
@@ -1015,7 +1024,7 @@ namespace LibHac.Fs.Shim
         {
             Result rc;
             Span<byte> logBuffer = stackalloc byte[0x50];
-            
+
             if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System) && fs.Impl.IsEnabledHandleAccessLog(null))
             {
                 Tick start = fs.Hos.Os.GetSystemTick();
@@ -1034,6 +1043,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = GetOwnerId(fs, out ownerId, spaceId, saveDataId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
@@ -1070,6 +1080,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = GetFlags(fs, out flags, saveDataId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
@@ -1109,6 +1120,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = GetFlags(fs, out flags, spaceId, saveDataId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
@@ -1151,6 +1163,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = GetFlags(fs, out flags, spaceId, saveDataId, userId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
@@ -1190,7 +1203,7 @@ namespace LibHac.Fs.Shim
 
                 var idString = new IdString();
                 var sb = new U8StringBuilder(logBuffer, true);
-                
+
                 sb.Append(LogSaveDataId).AppendFormat(saveDataId, 'X')
                     .Append(LogSaveDataSpaceId).Append(idString.ToString(spaceId))
                     .Append(LogSaveDataFlags).AppendFormat((int)flags, 'X', 8);
@@ -1201,6 +1214,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = SetFlags(fs, saveDataId, spaceId, flags);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
@@ -1242,6 +1256,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = SetFlags(fs, spaceId, saveDataId, userId, flags);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
@@ -1250,10 +1265,10 @@ namespace LibHac.Fs.Shim
             {
                 var extraDataMask = new SaveDataExtraData();
                 extraDataMask.Flags = unchecked((SaveDataFlags)0xFFFFFFFF);
-                
+
                 var extraData = new SaveDataExtraData();
                 extraData.Flags = flags;
-                
+
                 Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, Fs.SaveData.InvalidProgramId,
                     SaveDataType.System, userId, saveDataId);
                 if (rc.IsFailure()) return rc;
@@ -1282,6 +1297,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = GetTimeStamp(fs, out timeStamp, saveDataId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
@@ -1322,6 +1338,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = SetTimeStamp(fs, spaceId, saveDataId, timeStamp);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
@@ -1362,6 +1379,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = GetTimeStamp(fs, out timeStamp, spaceId, saveDataId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
@@ -1453,6 +1471,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = fs.Impl.GetSaveDataAvailableSize(out availableSize, spaceId, saveDataId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
         }
@@ -1501,6 +1520,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = fs.Impl.GetSaveDataJournalSize(out journalSize, saveDataId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
         }
@@ -1529,6 +1549,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = fs.Impl.GetSaveDataJournalSize(out journalSize, spaceId, saveDataId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
         }
@@ -1557,13 +1578,14 @@ namespace LibHac.Fs.Shim
             {
                 rc = GetCommitId(fs, out commitId, spaceId, saveDataId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
             static Result GetCommitId(FileSystemClient fs, out long commitId, SaveDataSpaceId spaceId, ulong saveDataId)
             {
                 UnsafeHelpers.SkipParamInit(out commitId);
-                
+
                 using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                 return fsProxy.Target.GetSaveDataCommitId(out commitId, spaceId, saveDataId);
@@ -1595,6 +1617,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = SetCommitId(fs, spaceId, saveDataId, commitId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
@@ -1614,7 +1637,7 @@ namespace LibHac.Fs.Shim
             SaveDataSpaceId spaceId, ulong saveDataId)
         {
             UnsafeHelpers.SkipParamInit(out size);
-                
+
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
 
             return fsProxy.Target.QuerySaveDataInternalStorageTotalSize(out size, spaceId, saveDataId);
@@ -1644,6 +1667,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = fs.Impl.QuerySaveDataInternalStorageTotalSize(out size, spaceId, saveDataId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
         }
@@ -1658,7 +1682,7 @@ namespace LibHac.Fs.Shim
             ulong saveDataId, Span<byte> workBuffer)
         {
             UnsafeHelpers.SkipParamInit(out isValid);
-                
+
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             Result rc = fsProxy.Target.VerifySaveDataFileSystemBySaveDataSpaceId(spaceId, saveDataId,
@@ -1669,7 +1693,7 @@ namespace LibHac.Fs.Shim
                 isValid = false;
                 return Result.Success;
             }
-            
+
             fs.Impl.AbortIfNeeded(rc);
 
             if (rc.IsSuccess())
@@ -1738,6 +1762,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = Delete(fs, index);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
@@ -1745,7 +1770,7 @@ namespace LibHac.Fs.Shim
             {
                 if (index < 0)
                     return ResultFs.InvalidArgument.Log();
-                
+
                 using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                 return fsProxy.Target.DeleteCacheStorage((ushort)index);
@@ -1776,13 +1801,14 @@ namespace LibHac.Fs.Shim
             {
                 rc = GetSize(fs, out saveSize, out journalSize, index);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
             static Result GetSize(FileSystemClient fs, out long saveSize, out long journalSize, int index)
             {
                 UnsafeHelpers.SkipParamInit(out saveSize, out journalSize);
-                
+
                 if (index < 0)
                     return ResultFs.InvalidArgument.Log();
 
@@ -1809,7 +1835,7 @@ namespace LibHac.Fs.Shim
                 readCount = 0;
                 return Result.Success;
             }
-            
+
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             var programId = new ProgramId(applicationId.Value + (uint)programIndex);
@@ -1825,11 +1851,11 @@ namespace LibHac.Fs.Shim
             U8Span mountName)
         {
             UnsafeHelpers.SkipParamInit(out isRestoreFlagSet);
-            
+
             Result rc;
             FileSystemAccessor fileSystem;
             Span<byte> logBuffer = stackalloc byte[0x40];
-            
+
             if (fs.Impl.IsEnabledAccessLog())
             {
                 Tick start = fs.Hos.Os.GetSystemTick();
@@ -1845,6 +1871,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = fs.Impl.Find(out fileSystem, mountName);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
@@ -1857,7 +1884,7 @@ namespace LibHac.Fs.Shim
                 ReadOnlySpan<byte> isSetString =
                     AccessLogImpl.ConvertFromBoolToAccessLogBooleanValue(
                         AccessLogImpl.DereferenceOutValue(in isRestoreFlagSet, rc));
-                
+
                 var sb = new U8StringBuilder(logBuffer, true);
                 sb.Append(LogName).Append(mountName).Append((byte)'"')
                     .Append(LogRestoreFlag).Append(isSetString);
@@ -1868,6 +1895,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = GetRestoreFlagValue(fs, out isRestoreFlagSet, fileSystem);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             return rc;
 
@@ -1875,7 +1903,7 @@ namespace LibHac.Fs.Shim
                 FileSystemAccessor fileSystem)
             {
                 Unsafe.SkipInit(out isRestoreFlagSet);
-                
+
                 if (fileSystem is null)
                     return ResultFs.NullptrArgument.Log();
 
@@ -1921,6 +1949,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = GetSize(fs, out saveSize, out journalSize, applicationId);
             }
+
             fs.AbortIfNeeded(rc);
             return rc;
 
