@@ -725,7 +725,7 @@ namespace LibHac.FsSystem
 
             if (_timeStampGetter.Get(out long timeStamp).IsSuccess())
             {
-                extraData.TimeStamp = (ulong)timeStamp;
+                extraData.TimeStamp = timeStamp;
             }
 
             long commitId = 0;
