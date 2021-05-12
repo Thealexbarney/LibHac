@@ -952,6 +952,30 @@ namespace LibHac.Fs.Impl
                 (byte)'d', (byte)':', (byte)' '
             };
 
+        public static ReadOnlySpan<byte> LogSaveDataTimeStamp => // ", save_data_time_stamp: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'_', (byte)'d',
+                (byte)'a', (byte)'t', (byte)'a', (byte)'_', (byte)'t', (byte)'i', (byte)'m', (byte)'e',
+                (byte)'_', (byte)'s', (byte)'t', (byte)'a', (byte)'m', (byte)'p', (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogSaveDataCommitId => // ", save_data_commit_id: 0x"
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'_', (byte)'d',
+                (byte)'a', (byte)'t', (byte)'a', (byte)'_', (byte)'c', (byte)'o', (byte)'m', (byte)'m',
+                (byte)'i', (byte)'t', (byte)'_', (byte)'i', (byte)'d', (byte)':', (byte)' ', (byte)'0',
+                (byte)'x'
+            };
+
+        public static ReadOnlySpan<byte> LogRestoreFlag => // ", restore_flag: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'r', (byte)'e', (byte)'s', (byte)'t', (byte)'o', (byte)'r',
+                (byte)'e', (byte)'_', (byte)'f', (byte)'l', (byte)'a', (byte)'g', (byte)':', (byte)' '
+            };
+
         public static ReadOnlySpan<byte> LogSdkVersion => // "sdk_version: "
             new[]
             {

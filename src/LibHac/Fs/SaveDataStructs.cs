@@ -283,7 +283,7 @@ namespace LibHac.Fs
     {
         [FieldOffset(0x00)] public SaveDataAttribute Attribute;
         [FieldOffset(0x40)] public ulong OwnerId;
-        [FieldOffset(0x48)] public ulong TimeStamp;
+        [FieldOffset(0x48)] public long TimeStamp;
         [FieldOffset(0x50)] public SaveDataFlags Flags;
         [FieldOffset(0x58)] public long DataSize;
         [FieldOffset(0x60)] public long JournalSize;
