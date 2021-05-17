@@ -1,10 +1,14 @@
 ﻿using System;
 using LibHac.Common;
 using LibHac.Common.Keys;
+using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 using LibHac.FsSystem.Save;
+using LibHac.Util;
+
+using OpenType = LibHac.FsSrv.SaveDataOpenTypeSetFileStorage.OpenType;
 
 namespace LibHac.FsSrv.FsCreator
 {
@@ -13,13 +17,16 @@ namespace LibHac.FsSrv.FsCreator
         private IBufferManager _bufferManager;
         private RandomDataGenerator _randomGenerator;
 
+        // LibHac Additions
         private KeySet _keySet;
+        private FileSystemServer _fsServer;
 
-        public SaveDataFileSystemCreator(KeySet keySet, IBufferManager bufferManager,
+        public SaveDataFileSystemCreator(FileSystemServer fsServer, KeySet keySet, IBufferManager bufferManager,
             RandomDataGenerator randomGenerator)
         {
             _bufferManager = bufferManager;
             _randomGenerator = randomGenerator;
+            _fsServer = fsServer;
             _keySet = keySet;
         }
 
@@ -30,68 +37,92 @@ namespace LibHac.FsSrv.FsCreator
 
         public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem,
             out ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor,
-            ReferenceCountedDisposable<IFileSystem> sourceFileSystem, ulong saveDataId, bool allowDirectorySaveData,
-            bool useDeviceUniqueMac, SaveDataType type, ISaveDataCommitTimeStampGetter timeStampGetter)
+            ISaveDataFileSystemCacheManager cacheManager, ref ReferenceCountedDisposable<IFileSystem> baseFileSystem,
+            SaveDataSpaceId spaceId, ulong saveDataId, bool allowDirectorySaveData, bool useDeviceUniqueMac,
+            bool isJournalingSupported, bool isMultiCommitSupported, bool openReadOnly, bool openShared,
+            ISaveDataCommitTimeStampGetter timeStampGetter)
         {
+            Span<byte> saveImageName = stackalloc byte[0x12];
             UnsafeHelpers.SkipParamInit(out fileSystem, out extraDataAccessor);
 
-            var saveDataPath = $"/{saveDataId:x16}".ToU8String();
+            Assert.SdkRequiresNotNull(cacheManager);
 
-            Result rc = sourceFileSystem.Target.GetEntryType(out DirectoryEntryType entryType, saveDataPath);
+            var sb = new U8StringBuilder(saveImageName);
+            sb.Append((byte)'/').AppendFormat(saveDataId, 'x', 16);
+
+            Result rc = baseFileSystem.Target.GetEntryType(out DirectoryEntryType type, new U8Span(saveImageName));
+
             if (rc.IsFailure())
             {
                 return ResultFs.PathNotFound.Includes(rc) ? ResultFs.TargetNotFound.LogConverted(rc) : rc;
             }
 
-            switch (entryType)
+            if (type == DirectoryEntryType.Directory)
             {
-                case DirectoryEntryType.Directory:
-                    if (!allowDirectorySaveData) return ResultFs.InvalidSaveDataEntryType.Log();
+                if (!allowDirectorySaveData)
+                    return ResultFs.InvalidSaveDataEntryType.Log();
 
-                    var subDirFs = new SubdirectoryFileSystem(ref sourceFileSystem);
+                SubdirectoryFileSystem subDirFs = null;
+                ReferenceCountedDisposable<DirectorySaveDataFileSystem> saveFs = null;
+                try
+                {
+                    subDirFs = new SubdirectoryFileSystem(ref baseFileSystem);
 
-                    rc = subDirFs.Initialize(saveDataPath);
-                    if (rc.IsFailure())
-                    {
-                        subDirFs.Dispose();
-                        return rc;
-                    }
-
-                    bool isPersistentSaveData = type != SaveDataType.Temporary;
-                    bool isUserSaveData = type == SaveDataType.Account || type == SaveDataType.Device;
-
-                    rc = DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, subDirFs,
-                        timeStampGetter, _randomGenerator, isPersistentSaveData, isUserSaveData, true, null);
+                    rc = subDirFs.Initialize(new U8Span(saveImageName));
                     if (rc.IsFailure()) return rc;
 
-                    ReferenceCountedDisposable<DirectorySaveDataFileSystem> sharedSaveFs = null;
-                    try
-                    {
-                        sharedSaveFs = new ReferenceCountedDisposable<DirectorySaveDataFileSystem>(saveFs);
-                        fileSystem = sharedSaveFs.AddReference<IFileSystem>();
-                        extraDataAccessor = sharedSaveFs.AddReference<ISaveDataExtraDataAccessor>();
+                    saveFs = DirectorySaveDataFileSystem.CreateShared(Shared.Move(ref subDirFs), _fsServer.Hos.Fs);
 
-                        return Result.Success;
-                    }
-                    finally
-                    {
-                        sharedSaveFs?.Dispose();
-                    }
-
-                case DirectoryEntryType.File:
-                    rc = sourceFileSystem.Target.OpenFile(out IFile saveDataFile, saveDataPath, OpenMode.ReadWrite);
+                    rc = saveFs.Target.Initialize(timeStampGetter, _randomGenerator, isJournalingSupported,
+                        isMultiCommitSupported, !openReadOnly);
                     if (rc.IsFailure()) return rc;
 
-                    var saveDataStorage = new DisposingFileStorage(saveDataFile);
-                    fileSystem = new ReferenceCountedDisposable<IFileSystem>(new SaveDataFileSystem(_keySet,
-                        saveDataStorage, IntegrityCheckLevel.ErrorOnInvalid, false));
-
-                    // Todo: ISaveDataExtraDataAccessor
+                    fileSystem = saveFs.AddReference<IFileSystem>();
+                    extraDataAccessor = saveFs.AddReference<ISaveDataExtraDataAccessor>();
 
                     return Result.Success;
-                default:
-                    throw new ArgumentOutOfRangeException();
+                }
+                finally
+                {
+                    subDirFs?.Dispose();
+                    saveFs?.Dispose();
+                }
             }
+
+            ReferenceCountedDisposable<IStorage> fileStorage = null;
+            try
+            {
+                Optional<OpenType> openType =
+                    openShared ? new Optional<OpenType>(OpenType.Normal) : new Optional<OpenType>();
+
+                rc = _fsServer.OpenSaveDataStorage(out fileStorage, ref baseFileSystem, spaceId, saveDataId,
+                    OpenMode.ReadWrite, openType);
+                if (rc.IsFailure()) return rc;
+
+                if (!isJournalingSupported)
+                {
+                    throw new NotImplementedException();
+                }
+
+                // Todo: Properly handle shared storage
+                fileSystem = new ReferenceCountedDisposable<IFileSystem>(new SaveDataFileSystem(_keySet,
+                    fileStorage.Target, IntegrityCheckLevel.ErrorOnInvalid, false));
+
+                // Todo: ISaveDataExtraDataAccessor
+
+                return Result.Success;
+            }
+            finally
+            {
+                fileStorage?.Dispose();
+            }
+        }
+
+        public Result CreateExtraDataAccessor(
+            out ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor,
+            ReferenceCountedDisposable<IFileSystem> sourceFileSystem)
+        {
+            throw new NotImplementedException();
         }
 
         public void SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed)

@@ -11,8 +11,13 @@ namespace LibHac.FsSrv.FsCreator
 
         Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem,
             out ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor,
-            ReferenceCountedDisposable<IFileSystem> sourceFileSystem, ulong saveDataId, bool allowDirectorySaveData,
-            bool useDeviceUniqueMac, SaveDataType type, ISaveDataCommitTimeStampGetter timeStampGetter);
+            ISaveDataFileSystemCacheManager cacheManager, ref ReferenceCountedDisposable<IFileSystem> baseFileSystem,
+            SaveDataSpaceId spaceId, ulong saveDataId, bool allowDirectorySaveData, bool useDeviceUniqueMac,
+            bool isJournalingSupported, bool isMultiCommitSupported, bool openReadOnly, bool openShared,
+            ISaveDataCommitTimeStampGetter timeStampGetter);
+
+        Result CreateExtraDataAccessor(out ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor,
+            ReferenceCountedDisposable<IFileSystem> sourceFileSystem);
 
         void SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed);
     }
