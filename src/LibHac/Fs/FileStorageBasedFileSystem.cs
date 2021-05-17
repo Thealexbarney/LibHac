@@ -5,7 +5,6 @@ namespace LibHac.Fs
 {
     public class FileStorageBasedFileSystem : FileStorage2
     {
-        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         private ReferenceCountedDisposable<IFileSystem> BaseFileSystem { get; set; }
         private IFile BaseFile { get; set; }
 
@@ -14,14 +13,14 @@ namespace LibHac.Fs
             FileSize = SizeNotInitialized;
         }
 
-        public Result Initialize(ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span path, OpenMode mode)
+        public Result Initialize(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span path, OpenMode mode)
         {
             Result rc = baseFileSystem.Target.OpenFile(out IFile file, path, mode);
             if (rc.IsFailure()) return rc;
 
             SetFile(file);
             BaseFile = file;
-            BaseFileSystem = baseFileSystem;
+            BaseFileSystem = Shared.Move(ref baseFileSystem);
 
             return Result.Success;
         }

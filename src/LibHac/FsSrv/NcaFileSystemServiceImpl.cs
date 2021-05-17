@@ -635,7 +635,7 @@ namespace LibHac.FsSrv
             var storage = new FileStorageBasedFileSystem();
             using var nspFileStorage = new ReferenceCountedDisposable<FileStorageBasedFileSystem>(storage);
 
-            rc = nspFileStorage.Target.Initialize(baseFileSystem, new U8Span(nspPath.Str), OpenMode.Read);
+            rc = nspFileStorage.Target.Initialize(ref baseFileSystem, new U8Span(nspPath.Str), OpenMode.Read);
             if (rc.IsFailure()) return rc;
 
             rc = _config.PartitionFsCreator.Create(out fileSystem, nspFileStorage.AddReference<IStorage>());
@@ -656,7 +656,7 @@ namespace LibHac.FsSrv
             // Todo: Create ref-counted storage
             var ncaFileStorage = new FileStorageBasedFileSystem();
 
-            Result rc = ncaFileStorage.Initialize(baseFileSystem, path, OpenMode.Read);
+            Result rc = ncaFileStorage.Initialize(ref baseFileSystem, path, OpenMode.Read);
             if (rc.IsFailure()) return rc;
 
             rc = _config.StorageOnNcaCreator.OpenNca(out Nca ncaTemp, ncaFileStorage);
