@@ -17,7 +17,7 @@ namespace LibHac.FsSrv
         /// <param name="horizonClient">The <see cref="HorizonClient"/> that will be used by this server.</param>
         public FileSystemServer(HorizonClient horizonClient)
         {
-            Globals.Initialize(horizonClient);
+            Globals.Initialize(horizonClient, this);
         }
     }
 
@@ -30,11 +30,14 @@ namespace LibHac.FsSrv
         public DeviceEventSimulatorGlobals DeviceEventSimulator;
         public AccessControlGlobals AccessControl;
         public StorageDeviceManagerFactoryGlobals StorageDeviceManagerFactory;
+        public SaveDataSharedFileStorageGlobals SaveDataSharedFileStorage;
 
-        public void Initialize(HorizonClient horizonClient)
+        public void Initialize(HorizonClient horizonClient, FileSystemServer fsServer)
         {
             Hos = horizonClient;
             InitMutex = new object();
+
+            SaveDataSharedFileStorage.Initialize(fsServer);
         }
     }
 
