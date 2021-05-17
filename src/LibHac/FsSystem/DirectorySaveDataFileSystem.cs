@@ -47,9 +47,9 @@ namespace LibHac.FsSystem
 
         // Todo: Unique file system for disposal
         private int _openWritableFileCount;
-        private bool _isPersistentSaveData;
-        private bool _canCommitProvisionally;
-        private bool _useTransactions;
+        private bool _isJournalingSupported;
+        private bool _isMultiCommitSupported;
+        private bool _isJournalingEnabled;
 
         // Additions to support extra data
         private ISaveDataCommitTimeStampGetter _timeStampGetter;
@@ -124,12 +124,12 @@ namespace LibHac.FsSystem
 
         public static Result CreateNew(out DirectorySaveDataFileSystem created, IFileSystem baseFileSystem,
             ISaveDataCommitTimeStampGetter timeStampGetter, RandomDataGenerator randomGenerator,
-            bool isPersistentSaveData, bool canCommitProvisionally, bool useTransactions,
+            bool isJournalingSupported, bool isMultiCommitSupported, bool isJournalingEnabled,
             FileSystemClient fsClient)
         {
             var obj = new DirectorySaveDataFileSystem(baseFileSystem, fsClient);
-            Result rc = obj.Initialize(timeStampGetter, randomGenerator, isPersistentSaveData, canCommitProvisionally,
-                useTransactions);
+            Result rc = obj.Initialize(timeStampGetter, randomGenerator, isJournalingSupported, isMultiCommitSupported,
+                isJournalingEnabled);
 
             if (rc.IsSuccess())
             {
@@ -143,10 +143,17 @@ namespace LibHac.FsSystem
         }
 
         public static Result CreateNew(out DirectorySaveDataFileSystem created, IFileSystem baseFileSystem,
-            bool isPersistentSaveData, bool canCommitProvisionally, bool useTransactions)
+            bool isJournalingSupported, bool isMultiCommitSupported, bool isJournalingEnabled)
         {
-            return CreateNew(out created, baseFileSystem, null, null, isPersistentSaveData, canCommitProvisionally,
-                useTransactions, null);
+            return CreateNew(out created, baseFileSystem, null, null, isJournalingSupported, isMultiCommitSupported,
+                isJournalingEnabled, null);
+        }
+
+        public static ReferenceCountedDisposable<DirectorySaveDataFileSystem> CreateShared(IFileSystem baseFileSystem,
+            FileSystemClient fsClient)
+        {
+            var fileSystem = new DirectorySaveDataFileSystem(baseFileSystem, fsClient);
+            return new ReferenceCountedDisposable<DirectorySaveDataFileSystem>(fileSystem);
         }
 
         /// <summary>
@@ -181,17 +188,17 @@ namespace LibHac.FsSystem
             base.Dispose(disposing);
         }
 
-        private Result Initialize(bool isPersistentSaveData, bool canCommitProvisionally, bool useTransactions)
+        public Result Initialize(bool isJournalingSupported, bool isMultiCommitSupported, bool isJournalingEnabled)
         {
-            return Initialize(null, null, isPersistentSaveData, canCommitProvisionally, useTransactions);
+            return Initialize(null, null, isJournalingSupported, isMultiCommitSupported, isJournalingEnabled);
         }
 
-        private Result Initialize(ISaveDataCommitTimeStampGetter timeStampGetter, RandomDataGenerator randomGenerator,
-            bool isPersistentSaveData, bool canCommitProvisionally, bool useTransactions)
+        public Result Initialize(ISaveDataCommitTimeStampGetter timeStampGetter, RandomDataGenerator randomGenerator,
+            bool isJournalingSupported, bool isMultiCommitSupported, bool isJournalingEnabled)
         {
-            _isPersistentSaveData = isPersistentSaveData;
-            _canCommitProvisionally = canCommitProvisionally;
-            _useTransactions = useTransactions;
+            _isJournalingSupported = isJournalingSupported;
+            _isMultiCommitSupported = isMultiCommitSupported;
+            _isJournalingEnabled = isJournalingEnabled;
             _timeStampGetter = timeStampGetter ?? _timeStampGetter;
             _randomGenerator = randomGenerator ?? _randomGenerator;
 
@@ -205,7 +212,7 @@ namespace LibHac.FsSystem
                 rc = _baseFs.CreateDirectory(WorkingDirectoryPath);
                 if (rc.IsFailure()) return rc;
 
-                if (_isPersistentSaveData)
+                if (_isJournalingSupported)
                 {
                     rc = _baseFs.CreateDirectory(CommittedDirectoryPath);
 
@@ -215,15 +222,15 @@ namespace LibHac.FsSystem
                 }
             }
 
-            // Only the working directory is needed for temporary savedata
-            if (!_isPersistentSaveData)
+            // Only the working directory is needed for non-journaling savedata
+            if (!_isJournalingSupported)
                 return Result.Success;
 
             rc = _baseFs.GetEntryType(out _, CommittedDirectoryPath);
 
             if (rc.IsSuccess())
             {
-                if (!_useTransactions)
+                if (!_isJournalingEnabled)
                     return Result.Success;
 
                 rc = SynchronizeDirectory(WorkingDirectoryPath, CommittedDirectoryPath);
@@ -254,7 +261,8 @@ namespace LibHac.FsSystem
             if (StringUtils.GetLength(relativePath, PathTools.MaxPathLength + 1) > PathTools.MaxPathLength)
                 return ResultFs.TooLongPath.Log();
 
-            U8Span workingPath = !_useTransactions && _isPersistentSaveData
+            // Use the committed directory directly if journaling is supported but not enabled
+            U8Span workingPath = _isJournalingSupported && !_isJournalingEnabled
                 ? CommittedDirectoryPath
                 : WorkingDirectoryPath;
 
@@ -466,7 +474,7 @@ namespace LibHac.FsSystem
         {
             using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
 
-            if (!_useTransactions || !_isPersistentSaveData)
+            if (!_isJournalingEnabled || !_isJournalingSupported)
                 return Result.Success;
 
             if (_openWritableFileCount > 0)
@@ -499,7 +507,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoCommitProvisionally(long counter)
         {
-            if (!_canCommitProvisionally)
+            if (!_isMultiCommitSupported)
                 return ResultFs.UnsupportedCommitProvisionallyForDirectorySaveDataFileSystem.Log();
 
             return Result.Success;
@@ -507,11 +515,11 @@ namespace LibHac.FsSystem
 
         protected override Result DoRollback()
         {
-            // No old data is kept for temporary save data, so there's nothing to rollback to
-            if (!_isPersistentSaveData)
+            // No old data is kept for non-journaling save data, so there's nothing to rollback to
+            if (!_isJournalingSupported)
                 return Result.Success;
 
-            return Initialize(_isPersistentSaveData, _canCommitProvisionally, _useTransactions);
+            return Initialize(_isJournalingSupported, _isMultiCommitSupported, _isJournalingEnabled);
         }
 
         protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
@@ -589,7 +597,7 @@ namespace LibHac.FsSystem
                 rc = _baseFs.CreateFile(WorkingExtraDataPath, Unsafe.SizeOf<SaveDataExtraData>());
                 if (rc.IsFailure()) return rc;
 
-                if (_isPersistentSaveData)
+                if (_isJournalingSupported)
                 {
                     rc = _baseFs.CreateFile(CommittedExtraDataPath, Unsafe.SizeOf<SaveDataExtraData>());
                     if (rc.IsFailure() && !ResultFs.PathAlreadyExists.Includes(rc)) return rc;
@@ -602,8 +610,8 @@ namespace LibHac.FsSystem
                 if (rc.IsFailure()) return rc;
             }
 
-            // Only the working extra data is needed for temporary savedata
-            if (!_isPersistentSaveData)
+            // Only the working extra data is needed for non-journaling savedata
+            if (!_isJournalingSupported)
                 return Result.Success;
 
             rc = _baseFs.GetEntryType(out _, CommittedExtraDataPath);
@@ -613,7 +621,7 @@ namespace LibHac.FsSystem
                 rc = EnsureExtraDataSize(CommittedExtraDataPath);
                 if (rc.IsFailure()) return rc;
 
-                if (!_useTransactions)
+                if (!_isJournalingEnabled)
                     return Result.Success;
 
                 return SynchronizeExtraData(WorkingExtraDataPath, CommittedExtraDataPath);
@@ -684,7 +692,7 @@ namespace LibHac.FsSystem
 
         private U8Span GetExtraDataPath()
         {
-            return !_useTransactions && _isPersistentSaveData
+            return _isJournalingSupported && !_isJournalingEnabled
                 ? CommittedExtraDataPath
                 : WorkingExtraDataPath;
         }
@@ -757,7 +765,7 @@ namespace LibHac.FsSystem
         {
             Assert.SdkRequires(_mutex.IsLockedByCurrentThread());
 
-            if (!_useTransactions || !_isPersistentSaveData)
+            if (!_isJournalingSupported || !_isJournalingEnabled)
                 return Result.Success;
 
             Result RenameCommittedFile() => _baseFs.RenameFile(CommittedExtraDataPath, SynchronizingExtraDataPath);

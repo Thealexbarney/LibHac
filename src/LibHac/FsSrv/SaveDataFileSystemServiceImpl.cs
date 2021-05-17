@@ -167,11 +167,14 @@ namespace LibHac.FsSrv
                     {
                         using ScopedLock<SdkRecursiveMutexType> scopedLock = _extraDataCacheManager.GetScopedLock();
 
-                        // Todo: Update ISaveDataFileSystemCreator
+                        bool openShared = SaveDataProperties.IsSharedOpenNeeded(type);
+                        bool isMultiCommitSupported = SaveDataProperties.IsMultiCommitSupported(type);
+                        bool isJournalingSupported = SaveDataProperties.IsJournalingSupported(type);
                         bool useDeviceUniqueMac = IsDeviceUniqueMac(spaceId);
 
-                        rc = _config.SaveFsCreator.Create(out saveFs, out extraDataAccessor, saveDirectoryFs,
-                            saveDataId, allowDirectorySaveData, useDeviceUniqueMac, type, _timeStampGetter);
+                        rc = _config.SaveFsCreator.Create(out saveFs, out extraDataAccessor, _saveDataFsCacheManager,
+                            ref saveDirectoryFs, spaceId, saveDataId, allowDirectorySaveData, useDeviceUniqueMac,
+                            isJournalingSupported, isMultiCommitSupported, openReadOnly, openShared, _timeStampGetter);
                         if (rc.IsFailure()) return rc;
 
                         saveDataFs = Shared.Move(ref saveFs);
@@ -188,7 +191,6 @@ namespace LibHac.FsSrv
                     finally
                     {
                         saveFs?.Dispose();
-                        cachedSaveDataFs?.Dispose();
                         extraDataAccessor?.Dispose();
                     }
                 }
@@ -204,8 +206,6 @@ namespace LibHac.FsSrv
             finally
             {
                 saveDirectoryFs?.Dispose();
-                // ReSharper disable once ExpressionIsAlwaysNull
-                // ReSharper disable once ConstantConditionalAccessQualifier
                 cachedSaveDataFs?.Dispose();
                 saveDataFs?.Dispose();
             }
