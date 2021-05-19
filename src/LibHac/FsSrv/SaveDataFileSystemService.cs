@@ -984,7 +984,7 @@ namespace LibHac.FsSrv
                     Result rc = RemoveSaveIndexerEntry();
                     if (rc.IsFailure()) return rc;
 
-                    return Result.Success;
+                    return ResultFs.TargetNotFound.LogConverted(saveFsResult);
                 }
 
                 if (ResultFs.TargetNotFound.Includes(saveFsResult))
