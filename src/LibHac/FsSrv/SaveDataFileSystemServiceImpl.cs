@@ -134,15 +134,9 @@ namespace LibHac.FsSrv
 
                 bool allowDirectorySaveData = IsAllowedDirectorySaveData2(spaceId, saveDataRootPath);
 
-                if (allowDirectorySaveData)
-                {
-                    Span<byte> saveDirectoryPath = stackalloc byte[0x12];
-                    var sb = new U8StringBuilder(saveDirectoryPath);
-                    sb.Append((byte)'/').AppendFormat(saveDataId, 'x', 16);
-
-                    rc = Utility.EnsureDirectory(saveDirectoryFs.Target, new U8Span(saveDirectoryPath));
-                    if (rc.IsFailure()) return rc;
-                }
+                // Note: When directory save data is allowed, Nintendo creates the save directory if it doesn't exist.
+                // This bypasses normal save data// creation, leaving the save with empty extra data.
+                // Instead, we return that the save doesn't exist if the directory is missing.
 
                 // Note: Nintendo doesn't cache directory save data
                 // if (!allowDirectorySaveData)
@@ -345,10 +339,10 @@ namespace LibHac.FsSrv
         {
             // Use directory save data for now
 
-            ReferenceCountedDisposable<IFileSystem> fileSystem = null;
+            ReferenceCountedDisposable<IFileSystem> saveDirectoryFs = null;
             try
             {
-                Result rc = OpenSaveDataDirectoryFileSystem(out fileSystem, creationInfo.SpaceId, saveDataRootPath,
+                Result rc = OpenSaveDataDirectoryFileSystem(out saveDirectoryFs, creationInfo.SpaceId, saveDataRootPath,
                     false);
                 if (rc.IsFailure()) return rc;
 
@@ -358,7 +352,46 @@ namespace LibHac.FsSrv
 
                 if (_config.IsPseudoSaveData())
                 {
-                    return Utility.EnsureDirectory(fileSystem.Target, new U8Span(saveDataPathBuffer));
+                    rc = Utility.EnsureDirectory(saveDirectoryFs.Target, new U8Span(saveDataPathBuffer));
+                    if (rc.IsFailure()) return rc;
+
+                    ReferenceCountedDisposable<IFileSystem> saveFs = null;
+                    ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor = null;
+                    try
+                    {
+                        bool isJournalingSupported = SaveDataProperties.IsJournalingSupported(attribute.Type);
+
+                        rc = _config.SaveFsCreator.Create(out saveFs, out extraDataAccessor, _saveDataFsCacheManager,
+                            ref saveDirectoryFs, creationInfo.SpaceId, saveDataId, allowDirectorySaveData: true,
+                            useDeviceUniqueMac: false, isJournalingSupported, isMultiCommitSupported: false,
+                            openReadOnly: false, openShared: false, _timeStampGetter);
+                        if (rc.IsFailure()) return rc;
+
+                        var extraData = new SaveDataExtraData();
+                        extraData.Attribute = attribute;
+                        extraData.OwnerId = creationInfo.OwnerId;
+
+                        rc = GetSaveDataCommitTimeStamp(out extraData.TimeStamp);
+                        if (rc.IsFailure())
+                            extraData.TimeStamp = 0;
+
+                        extraData.CommitId = 0;
+                        _config.GenerateRandomData(SpanHelpers.AsByteSpan(ref extraData.CommitId)).IgnoreResult();
+
+                        extraData.Flags = creationInfo.Flags;
+                        extraData.DataSize = creationInfo.Size;
+                        extraData.JournalSize = creationInfo.JournalSize;
+
+                        rc = extraDataAccessor.Target.WriteExtraData(in extraData);
+                        if (rc.IsFailure()) return rc;
+
+                        return extraDataAccessor.Target.CommitExtraData(true);
+                    }
+                    finally
+                    {
+                        saveFs?.Dispose();
+                        extraDataAccessor?.Dispose();
+                    }
                 }
                 else
                 {
@@ -367,7 +400,7 @@ namespace LibHac.FsSrv
             }
             finally
             {
-                fileSystem?.Dispose();
+                saveDirectoryFs?.Dispose();
             }
         }
 
