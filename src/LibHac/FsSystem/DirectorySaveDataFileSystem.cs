@@ -251,14 +251,14 @@ namespace LibHac.FsSystem
 
             // Only the working directory is needed for non-journaling savedata
             if (!_isJournalingSupported)
-                return Result.Success;
+                return InitializeExtraData();
 
             rc = _baseFs.GetEntryType(out _, CommittedDirectoryPath);
 
             if (rc.IsSuccess())
             {
                 if (!_isJournalingEnabled)
-                    return Result.Success;
+                    return InitializeExtraData();
 
                 rc = SynchronizeDirectory(WorkingDirectoryPath, CommittedDirectoryPath);
                 if (rc.IsFailure()) return rc;
