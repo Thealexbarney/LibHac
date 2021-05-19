@@ -32,13 +32,15 @@ namespace LibHac.FsSystem
     {
         private const int IdealWorkBufferSize = 0x100000; // 1 MiB
 
-        private ReadOnlySpan<byte> CommittedDirectoryBytes => new[] { (byte)'/', (byte)'0', (byte)'/' };
-        private ReadOnlySpan<byte> WorkingDirectoryBytes => new[] { (byte)'/', (byte)'1', (byte)'/' };
-        private ReadOnlySpan<byte> SynchronizingDirectoryBytes => new[] { (byte)'/', (byte)'_', (byte)'/' };
+        private static ReadOnlySpan<byte> CommittedDirectoryBytes => new[] { (byte)'/', (byte)'0', (byte)'/' };
+        private static ReadOnlySpan<byte> WorkingDirectoryBytes => new[] { (byte)'/', (byte)'1', (byte)'/' };
+        private static ReadOnlySpan<byte> SynchronizingDirectoryBytes => new[] { (byte)'/', (byte)'_', (byte)'/' };
+        private static ReadOnlySpan<byte> LockFileBytes => new[] { (byte)'/', (byte)'.', (byte)'l', (byte)'o', (byte)'c', (byte)'k' };
 
-        private U8Span CommittedDirectoryPath => new U8Span(CommittedDirectoryBytes);
-        private U8Span WorkingDirectoryPath => new U8Span(WorkingDirectoryBytes);
-        private U8Span SynchronizingDirectoryPath => new U8Span(SynchronizingDirectoryBytes);
+        private static U8Span CommittedDirectoryPath => new U8Span(CommittedDirectoryBytes);
+        private static U8Span WorkingDirectoryPath => new U8Span(WorkingDirectoryBytes);
+        private static U8Span SynchronizingDirectoryPath => new U8Span(SynchronizingDirectoryBytes);
+        private static U8Span LockFilePath => new U8Span(LockFileBytes);
 
         private FileSystemClient _fsClient;
         private IFileSystem _baseFs;
@@ -59,6 +61,9 @@ namespace LibHac.FsSystem
         private ISaveDataExtraDataAccessorCacheObserver _cacheObserver;
         private SaveDataSpaceId _spaceId;
         private ulong _saveDataId;
+
+        // Additions to ensure only one directory save data fs is opened at a time
+        private IFile _lockFile;
 
         private class DirectorySaveDataFile : IFile
         {
@@ -183,6 +188,9 @@ namespace LibHac.FsSystem
 
         protected override void Dispose(bool disposing)
         {
+            _lockFile?.Dispose();
+            _lockFile = null;
+
             _cacheObserver?.Unregister(_spaceId, _saveDataId);
             _baseFs?.Dispose();
             base.Dispose(disposing);
@@ -196,14 +204,33 @@ namespace LibHac.FsSystem
         public Result Initialize(ISaveDataCommitTimeStampGetter timeStampGetter, RandomDataGenerator randomGenerator,
             bool isJournalingSupported, bool isMultiCommitSupported, bool isJournalingEnabled)
         {
+            Result rc;
+
             _isJournalingSupported = isJournalingSupported;
             _isMultiCommitSupported = isMultiCommitSupported;
             _isJournalingEnabled = isJournalingEnabled;
             _timeStampGetter = timeStampGetter ?? _timeStampGetter;
             _randomGenerator = randomGenerator ?? _randomGenerator;
 
+            // Open the lock file
+            if (_lockFile is null)
+            {
+                rc = _baseFs.OpenFile(out _lockFile, LockFilePath, OpenMode.ReadWrite);
+
+                if (rc.IsFailure())
+                {
+                    if (!ResultFs.PathNotFound.Includes(rc)) return rc;
+
+                    rc = _baseFs.CreateFile(LockFilePath, 0);
+                    if (rc.IsFailure()) return rc;
+
+                    rc = _baseFs.OpenFile(out _lockFile, LockFilePath, OpenMode.ReadWrite);
+                    if (rc.IsFailure()) return rc;
+                }
+            }
+
             // Ensure the working directory exists
-            Result rc = _baseFs.GetEntryType(out _, WorkingDirectoryPath);
+            rc = _baseFs.GetEntryType(out _, WorkingDirectoryPath);
 
             if (rc.IsFailure())
             {

@@ -135,7 +135,7 @@ namespace LibHac.FsSrv
                 bool allowDirectorySaveData = IsAllowedDirectorySaveData2(spaceId, saveDataRootPath);
 
                 // Note: When directory save data is allowed, Nintendo creates the save directory if it doesn't exist.
-                // This bypasses normal save data// creation, leaving the save with empty extra data.
+                // This bypasses normal save data creation, leaving the save with empty extra data.
                 // Instead, we return that the save doesn't exist if the directory is missing.
 
                 // Note: Nintendo doesn't cache directory save data
