@@ -22,6 +22,7 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
             Assert.Success(rootFs.GetEntryType(out DirectoryEntryType type, "/bis/cal/file".ToU8Span()));
             Assert.Equal(DirectoryEntryType.File, type);
         }
+
         [Fact]
         public void MountBis_MountSafePartition_OpensCorrectDirectory()
         {

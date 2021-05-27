@@ -162,6 +162,17 @@ namespace LibHac.FsSrv.Impl
             return CreateSubDirectoryFileSystem(out fileSystem, ref baseFileSystem, path);
         }
 
+        public static long ConvertZeroCommitId(in SaveDataExtraData extraData)
+        {
+            if (extraData.CommitId != 0)
+                return extraData.CommitId;
+
+            Span<byte> hash = stackalloc byte[Crypto.Sha256.DigestSize];
+
+            Crypto.Sha256.GenerateSha256Hash(SpanHelpers.AsReadOnlyByteSpan(in extraData), hash);
+            return BitConverter.ToInt64(hash);
+        }
+
         private static ReadOnlySpan<byte> FileSystemRootPath => // /
             new[]
             {
