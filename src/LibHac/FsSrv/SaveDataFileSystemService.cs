@@ -301,6 +301,75 @@ namespace LibHac.FsSrv
                 return Result.Success;
             }
 
+            public static Result CheckWriteExtraData(in SaveDataAttribute attribute, in SaveDataExtraData mask,
+                ProgramInfo programInfo, ExtraDataGetter extraDataGetter)
+            {
+                AccessControl accessControl = programInfo.AccessControl;
+
+                if (mask.Flags != SaveDataFlags.None)
+                {
+                    bool canAccess = accessControl.CanCall(OperationType.WriteSaveDataFileSystemExtraDataAll) ||
+                                     accessControl.CanCall(OperationType.WriteSaveDataFileSystemExtraDataFlags);
+
+                    if (SaveDataProperties.IsSystemSaveData(attribute.Type))
+                    {
+                        Result rc = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo,
+                            extraDataGetter);
+                        if (rc.IsFailure()) return rc;
+
+                        canAccess |= accessibility.CanWrite;
+                    }
+
+                    if ((mask.Flags & ~SaveDataFlags.Restore) == 0)
+                    {
+                        Result rc = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo,
+                            extraDataGetter);
+                        if (rc.IsFailure()) return rc;
+
+                        canAccess |= accessibility.CanWrite;
+                    }
+
+                    if (!canAccess)
+                        return ResultFs.PermissionDenied.Log();
+                }
+
+                if (mask.TimeStamp != 0)
+                {
+                    bool canAccess = accessControl.CanCall(OperationType.WriteSaveDataFileSystemExtraDataAll) ||
+                                     accessControl.CanCall(OperationType.WriteSaveDataFileSystemExtraDataTimeStamp);
+
+                    if (!canAccess)
+                        return ResultFs.PermissionDenied.Log();
+                }
+
+                if (mask.CommitId != 0)
+                {
+                    bool canAccess = accessControl.CanCall(OperationType.WriteSaveDataFileSystemExtraDataAll) ||
+                                     accessControl.CanCall(OperationType.WriteSaveDataFileSystemExtraDataCommitId);
+
+                    if (!canAccess)
+                        return ResultFs.PermissionDenied.Log();
+                }
+
+                SaveDataExtraData emptyMask = default;
+                SaveDataExtraData maskWithoutFlags = mask;
+                maskWithoutFlags.Flags = SaveDataFlags.None;
+                maskWithoutFlags.TimeStamp = 0;
+                maskWithoutFlags.CommitId = 0;
+
+                // Full write access is needed for writing anything other than flags, timestamp or commit ID
+                if (SpanHelpers.AsReadOnlyByteSpan(in emptyMask)
+                    .SequenceEqual(SpanHelpers.AsReadOnlyByteSpan(in maskWithoutFlags)))
+                {
+                    bool canAccess = accessControl.CanCall(OperationType.WriteSaveDataFileSystemExtraDataAll);
+
+                    if (!canAccess)
+                        return ResultFs.PermissionDenied.Log();
+                }
+
+                return Result.Success;
+            }
+
             public static Result CheckFind(in SaveDataFilter filter, ProgramInfo programInfo)
             {
                 bool canAccess;
@@ -1199,68 +1268,297 @@ namespace LibHac.FsSrv
             }
         }
 
+        // ReSharper disable once UnusedParameter.Local
+        // Nintendo used this parameter in older FS versions, but never removed it.
         private Result ReadSaveDataFileSystemExtraDataCore(out SaveDataExtraData extraData, SaveDataSpaceId spaceId,
             ulong saveDataId, bool isTemporarySaveData)
         {
-            throw new NotImplementedException();
+            UnsafeHelpers.SkipParamInit(out extraData);
+
+            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+
+            SaveDataIndexerAccessor accessor = null;
+            try
+            {
+                Result rc = OpenSaveDataIndexerAccessor(out accessor, spaceId);
+                if (rc.IsFailure()) return rc;
+
+                rc = accessor.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
+                if (rc.IsFailure()) return rc;
+
+                return ServiceImpl.ReadSaveDataFileSystemExtraData(out extraData, spaceId, saveDataId, key.Type,
+                    SaveDataRootPath);
+            }
+            finally
+            {
+                accessor?.Dispose();
+            }
         }
 
         private Result ReadSaveDataFileSystemExtraDataCore(out SaveDataExtraData extraData, SaveDataSpaceId spaceId,
             ulong saveDataId, in SaveDataExtraData extraDataMask)
         {
-            throw new NotImplementedException();
+            UnsafeHelpers.SkipParamInit(out extraData);
+
+            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            SaveDataSpaceId resolvedSpaceId;
+            SaveDataAttribute key;
+
+            if (spaceId == SaveDataSpaceId.BisAuto)
+            {
+                SaveDataIndexerAccessor accessor = null;
+                try
+                {
+                    if (IsStaticSaveDataIdValueRange(saveDataId))
+                    {
+                        rc = OpenSaveDataIndexerAccessor(out accessor, SaveDataSpaceId.System);
+                        if (rc.IsFailure()) return rc;
+                    }
+                    else
+                    {
+                        rc = OpenSaveDataIndexerAccessor(out accessor, SaveDataSpaceId.User);
+                        if (rc.IsFailure()) return rc;
+                    }
+
+                    rc = accessor.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
+                    if (rc.IsFailure()) return rc;
+
+                    resolvedSpaceId = value.SpaceId;
+
+                    rc = accessor.Indexer.GetKey(out key, saveDataId);
+                    if (rc.IsFailure()) return rc;
+                }
+                finally
+                {
+                    accessor?.Dispose();
+                }
+            }
+            else
+            {
+                SaveDataIndexerAccessor accessor = null;
+                try
+                {
+                    rc = OpenSaveDataIndexerAccessor(out accessor, spaceId);
+                    if (rc.IsFailure()) return rc;
+
+                    rc = accessor.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
+                    if (rc.IsFailure()) return rc;
+
+                    resolvedSpaceId = value.SpaceId;
+
+                    rc = accessor.Indexer.GetKey(out key, saveDataId);
+                    if (rc.IsFailure()) return rc;
+                }
+                finally
+                {
+                    accessor?.Dispose();
+                }
+            }
+
+            Result ReadExtraData(out SaveDataExtraData data) => ServiceImpl.ReadSaveDataFileSystemExtraData(out data,
+                resolvedSpaceId, saveDataId, key.Type, new U8Span(SaveDataRootPath.Str));
+
+            rc = SaveDataAccessibilityChecker.CheckReadExtraData(in key, in extraDataMask, programInfo,
+                ReadExtraData);
+            if (rc.IsFailure()) return rc;
+
+            rc = ServiceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData tempExtraData, resolvedSpaceId,
+                saveDataId, key.Type, new U8Span(SaveDataRootPath.Str));
+            if (rc.IsFailure()) return rc;
+
+            MaskExtraData(ref tempExtraData, in extraDataMask);
+            extraData = tempExtraData;
+
+            return Result.Success;
         }
 
         public Result ReadSaveDataFileSystemExtraData(OutBuffer extraData, ulong saveDataId)
         {
-            throw new NotImplementedException();
+            if (extraData.Size != Unsafe.SizeOf<SaveDataExtraData>())
+                return ResultFs.InvalidArgument.Log();
+
+            // Make a mask for reading the entire extra data
+            Unsafe.SkipInit(out SaveDataExtraData extraDataMask);
+            SpanHelpers.AsByteSpan(ref extraDataMask).Fill(0xFF);
+
+            return ReadSaveDataFileSystemExtraDataCore(out SpanHelpers.AsStruct<SaveDataExtraData>(extraData.Buffer),
+                SaveDataSpaceId.BisAuto, saveDataId, in extraDataMask);
         }
 
         public Result ReadSaveDataFileSystemExtraDataBySaveDataAttribute(OutBuffer extraData,
             SaveDataSpaceId spaceId, in SaveDataAttribute attribute)
         {
-            throw new NotImplementedException();
+            if (extraData.Size != Unsafe.SizeOf<SaveDataExtraData>())
+                return ResultFs.InvalidArgument.Log();
+
+            ref SaveDataExtraData extraDataRef = ref SpanHelpers.AsStruct<SaveDataExtraData>(extraData.Buffer);
+
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            SaveDataAttribute tempAttribute = attribute;
+
+            if (tempAttribute.ProgramId == SaveData.AutoResolveCallerProgramId)
+            {
+                tempAttribute.ProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
+            }
+
+            rc = GetSaveDataInfo(out SaveDataInfo info, spaceId, in tempAttribute);
+            if (rc.IsFailure()) return rc;
+
+            // Make a mask for reading the entire extra data
+            Unsafe.SkipInit(out SaveDataExtraData extraDataMask);
+            SpanHelpers.AsByteSpan(ref extraDataMask).Fill(0xFF);
+
+            return ReadSaveDataFileSystemExtraDataCore(out extraDataRef, spaceId, info.SaveDataId, in extraDataMask);
         }
 
         public Result ReadSaveDataFileSystemExtraDataBySaveDataSpaceId(OutBuffer extraData,
             SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            throw new NotImplementedException();
+            if (extraData.Size != Unsafe.SizeOf<SaveDataExtraData>())
+                return ResultFs.InvalidArgument.Log();
+
+            ref SaveDataExtraData extraDataRef = ref SpanHelpers.AsStruct<SaveDataExtraData>(extraData.Buffer);
+
+            // Make a mask for reading the entire extra data
+            Unsafe.SkipInit(out SaveDataExtraData extraDataMask);
+            SpanHelpers.AsByteSpan(ref extraDataMask).Fill(0xFF);
+
+            return ReadSaveDataFileSystemExtraDataCore(out extraDataRef, spaceId, saveDataId, in extraDataMask);
         }
 
         public Result ReadSaveDataFileSystemExtraDataWithMaskBySaveDataAttribute(OutBuffer extraData,
             SaveDataSpaceId spaceId, in SaveDataAttribute attribute, InBuffer extraDataMask)
         {
-            throw new NotImplementedException();
-        }
+            if (extraDataMask.Size != Unsafe.SizeOf<SaveDataExtraData>())
+                return ResultFs.InvalidArgument.Log();
 
-        public Result WriteSaveDataFileSystemExtraDataWithMaskBySaveDataAttribute(in SaveDataAttribute attribute,
-            SaveDataSpaceId spaceId, InBuffer extraData, InBuffer extraDataMask)
-        {
-            throw new NotImplementedException();
+            if (extraData.Size != Unsafe.SizeOf<SaveDataExtraData>())
+                return ResultFs.InvalidArgument.Log();
+
+            ref readonly SaveDataExtraData maskRef =
+                ref SpanHelpers.AsReadOnlyStruct<SaveDataExtraData>(extraDataMask.Buffer);
+
+            ref SaveDataExtraData extraDataRef = ref SpanHelpers.AsStruct<SaveDataExtraData>(extraData.Buffer);
+
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            SaveDataAttribute tempAttribute = attribute;
+
+            if (tempAttribute.ProgramId == SaveData.AutoResolveCallerProgramId)
+            {
+                tempAttribute.ProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
+            }
+
+            rc = GetSaveDataInfo(out SaveDataInfo info, spaceId, in tempAttribute);
+            if (rc.IsFailure()) return rc;
+
+            return ReadSaveDataFileSystemExtraDataCore(out extraDataRef, spaceId, info.SaveDataId, in maskRef);
         }
 
         private Result WriteSaveDataFileSystemExtraDataCore(SaveDataSpaceId spaceId, ulong saveDataId,
             in SaveDataExtraData extraData, SaveDataType saveType, bool updateTimeStamp)
         {
-            throw new NotImplementedException();
+            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+
+            return ServiceImpl.WriteSaveDataFileSystemExtraData(spaceId, saveDataId, in extraData, SaveDataRootPath,
+                saveType, updateTimeStamp);
         }
 
         private Result WriteSaveDataFileSystemExtraDataWithMaskCore(ulong saveDataId, SaveDataSpaceId spaceId,
             in SaveDataExtraData extraData, in SaveDataExtraData extraDataMask)
         {
-            throw new NotImplementedException();
+            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            SaveDataIndexerAccessor accessor = null;
+            try
+            {
+                rc = OpenSaveDataIndexerAccessor(out accessor, spaceId);
+                if (rc.IsFailure()) return rc;
+
+                rc = accessor.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
+                if (rc.IsFailure()) return rc;
+
+                Result ReadExtraData(out SaveDataExtraData data) => ServiceImpl.ReadSaveDataFileSystemExtraData(out data,
+                    spaceId, saveDataId, key.Type, new U8Span(SaveDataRootPath.Str));
+
+                rc = SaveDataAccessibilityChecker.CheckWriteExtraData(in key, in extraDataMask, programInfo,
+                    ReadExtraData);
+                if (rc.IsFailure()) return rc;
+
+                rc = ServiceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraDataModify, spaceId,
+                    saveDataId, key.Type, SaveDataRootPath);
+                if (rc.IsFailure()) return rc;
+
+                ModifySaveDataExtraData(ref extraDataModify, in extraData, in extraDataMask);
+
+                return ServiceImpl.WriteSaveDataFileSystemExtraData(spaceId, saveDataId, in extraDataModify,
+                    SaveDataRootPath, key.Type, false);
+            }
+            finally
+            {
+                accessor?.Dispose();
+            }
         }
 
         public Result WriteSaveDataFileSystemExtraData(ulong saveDataId, SaveDataSpaceId spaceId, InBuffer extraData)
         {
-            throw new NotImplementedException();
+            if (extraData.Size != Unsafe.SizeOf<SaveDataExtraData>())
+                return ResultFs.InvalidArgument.Log();
+
+            ref readonly SaveDataExtraData extraDataRef =
+                ref SpanHelpers.AsReadOnlyStruct<SaveDataExtraData>(extraData.Buffer);
+
+            var extraDataMask = new SaveDataExtraData();
+            extraDataMask.Flags = unchecked((SaveDataFlags)0xFFFFFFFF);
+
+            return WriteSaveDataFileSystemExtraDataWithMaskCore(saveDataId, spaceId, in extraDataRef, in extraDataMask);
+        }
+
+        public Result WriteSaveDataFileSystemExtraDataWithMaskBySaveDataAttribute(in SaveDataAttribute attribute,
+            SaveDataSpaceId spaceId, InBuffer extraData, InBuffer extraDataMask)
+        {
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            SaveDataAttribute tempAttribute = attribute;
+
+            if (tempAttribute.ProgramId == SaveData.AutoResolveCallerProgramId)
+            {
+                tempAttribute.ProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
+            }
+
+            rc = GetSaveDataInfo(out SaveDataInfo info, spaceId, in tempAttribute);
+            if (rc.IsFailure()) return rc;
+
+            return WriteSaveDataFileSystemExtraDataWithMask(info.SaveDataId, spaceId, extraData, extraDataMask);
         }
 
         public Result WriteSaveDataFileSystemExtraDataWithMask(ulong saveDataId, SaveDataSpaceId spaceId,
             InBuffer extraData, InBuffer extraDataMask)
         {
-            throw new NotImplementedException();
+            if (extraDataMask.Size != Unsafe.SizeOf<SaveDataExtraData>())
+                return ResultFs.InvalidArgument.Log();
+
+            if (extraData.Size != Unsafe.SizeOf<SaveDataExtraData>())
+                return ResultFs.InvalidArgument.Log();
+
+            ref readonly SaveDataExtraData maskRef =
+                ref SpanHelpers.AsReadOnlyStruct<SaveDataExtraData>(extraDataMask.Buffer);
+
+            ref readonly SaveDataExtraData extraDataRef =
+                ref SpanHelpers.AsReadOnlyStruct<SaveDataExtraData>(extraData.Buffer);
+
+            return WriteSaveDataFileSystemExtraDataWithMaskCore(saveDataId, spaceId, in extraDataRef, in maskRef);
         }
 
         public Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader)
@@ -1462,7 +1760,21 @@ namespace LibHac.FsSrv
 
         public Result GetSaveDataCommitId(out long commitId, SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            throw new NotImplementedException();
+            UnsafeHelpers.SkipParamInit(out commitId);
+
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            if (!programInfo.AccessControl.CanCall(OperationType.GetSaveDataCommitId))
+                return ResultFs.PermissionDenied.Log();
+
+            Unsafe.SkipInit(out SaveDataExtraData extraData);
+            rc = ReadSaveDataFileSystemExtraDataBySaveDataSpaceId(OutBuffer.FromStruct(ref extraData), spaceId,
+                saveDataId);
+            if (rc.IsFailure()) return rc;
+
+            commitId = Impl.Utility.ConvertZeroCommitId(in extraData);
+            return Result.Success;
         }
 
         public Result OpenSaveDataInfoReaderOnlyCacheStorage(
@@ -1700,9 +2012,9 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        private ProgramId ResolveDefaultSaveDataReferenceProgramId(in ProgramId programId)
+        private ProgramId ResolveDefaultSaveDataReferenceProgramId(ProgramId programId)
         {
-            return ServiceImpl.ResolveDefaultSaveDataReferenceProgramId(in programId);
+            return ServiceImpl.ResolveDefaultSaveDataReferenceProgramId(programId);
         }
 
         public Result VerifySaveDataFileSystemBySaveDataSpaceId(SaveDataSpaceId spaceId, ulong saveDataId,
@@ -1993,6 +2305,31 @@ namespace LibHac.FsSrv
         private bool IsStaticSaveDataIdValueRange(ulong id)
         {
             return (long)id < 0;
+        }
+
+        private void ModifySaveDataExtraData(ref SaveDataExtraData currentExtraData, in SaveDataExtraData extraData,
+            in SaveDataExtraData extraDataMask)
+        {
+            Span<byte> currentExtraDataBytes = SpanHelpers.AsByteSpan(ref currentExtraData);
+            ReadOnlySpan<byte> extraDataBytes = SpanHelpers.AsReadOnlyByteSpan(in extraData);
+            ReadOnlySpan<byte> extraDataMaskBytes = SpanHelpers.AsReadOnlyByteSpan(in extraDataMask);
+
+            for (int i = 0; i < Unsafe.SizeOf<SaveDataExtraData>(); i++)
+            {
+                currentExtraDataBytes[i] = (byte)(extraDataBytes[i] & extraDataMaskBytes[i] |
+                                              currentExtraDataBytes[i] & ~extraDataMaskBytes[i]);
+            }
+        }
+
+        private void MaskExtraData(ref SaveDataExtraData extraData, in SaveDataExtraData extraDataMask)
+        {
+            Span<byte> extraDataBytes = SpanHelpers.AsByteSpan(ref extraData);
+            ReadOnlySpan<byte> extraDataMaskBytes = SpanHelpers.AsReadOnlyByteSpan(in extraDataMask);
+
+            for (int i = 0; i < Unsafe.SizeOf<SaveDataExtraData>(); i++)
+            {
+                extraDataBytes[i] &= extraDataMaskBytes[i];
+            }
         }
 
         private StorageType DecidePossibleStorageFlag(SaveDataType type, SaveDataSpaceId spaceId)

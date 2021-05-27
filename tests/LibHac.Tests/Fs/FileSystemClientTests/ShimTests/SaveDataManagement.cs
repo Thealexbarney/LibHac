@@ -3,6 +3,7 @@ using System.Linq;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Shim;
+using LibHac.Time;
 using Xunit;
 
 namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
@@ -160,6 +161,90 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
         }
 
         [Fact]
+        public void CreateSaveData_DoesNotExist_HasCorrectOwnerId()
+        {
+            uint ownerId = 1;
+
+            var applicationId = new Ncm.ApplicationId(ownerId);
+            var userId = new UserId(5, 4);
+
+            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+
+            // Create the save
+            Assert.Success(fs.CreateSaveData(applicationId, userId, ownerId, 0x1000, 0x1000, SaveDataFlags.None));
+
+            // Get the created save data's ID
+            Assert.Success(fs.OpenSaveDataIterator(out SaveDataIterator iterator, SaveDataSpaceId.User));
+
+            var info = new SaveDataInfo[2];
+            iterator.ReadSaveDataInfo(out long entriesRead, info);
+
+            Assert.Equal(1, entriesRead);
+
+            // Get the created save data's owner ID
+            Assert.Success(fs.GetSaveDataOwnerId(out ulong actualOwnerId, info[0].SaveDataId));
+
+            Assert.Equal(ownerId, actualOwnerId);
+        }
+
+        [Fact]
+        public void CreateSaveData_DoesNotExist_HasCorrectFlags()
+        {
+            SaveDataFlags flags = SaveDataFlags.KeepAfterRefurbishment | SaveDataFlags.NeedsSecureDelete;
+
+            var applicationId = new Ncm.ApplicationId(1);
+            var userId = new UserId(5, 4);
+
+            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+
+            // Create the save
+            Assert.Success(fs.CreateSaveData(applicationId, userId, 0, 0x1000, 0x1000, flags));
+
+            // Get the created save data's ID
+            Assert.Success(fs.OpenSaveDataIterator(out SaveDataIterator iterator, SaveDataSpaceId.User));
+
+            var info = new SaveDataInfo[2];
+            iterator.ReadSaveDataInfo(out long entriesRead, info);
+
+            Assert.Equal(1, entriesRead);
+
+            // Get the created save data's flags
+            Assert.Success(fs.GetSaveDataFlags(out SaveDataFlags actualFlags, info[0].SaveDataId));
+
+            Assert.Equal(flags, actualFlags);
+        }
+
+        [Fact]
+        public void CreateSaveData_DoesNotExist_HasCorrectSizes()
+        {
+            long availableSize = 0x220000;
+            long journalSize = 0x120000;
+
+            var applicationId = new Ncm.ApplicationId(1);
+            var userId = new UserId(5, 4);
+
+            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+
+            // Create the save
+            Assert.Success(fs.CreateSaveData(applicationId, userId, 0, availableSize, journalSize, SaveDataFlags.None));
+
+            // Get the created save data's ID
+            Assert.Success(fs.OpenSaveDataIterator(out SaveDataIterator iterator, SaveDataSpaceId.User));
+
+            var info = new SaveDataInfo[2];
+            iterator.ReadSaveDataInfo(out long entriesRead, info);
+
+            Assert.Equal(1, entriesRead);
+
+            // Get the created save data's sizes
+            Assert.Success(fs.GetSaveDataAvailableSize(out long actualAvailableSize, info[0].SaveDataId));
+            Assert.Success(fs.GetSaveDataJournalSize(out long actualJournalSize, info[0].SaveDataId));
+
+            Assert.Equal(availableSize, actualAvailableSize);
+            Assert.Equal(journalSize, actualJournalSize);
+        }
+
+        [Fact]
         public void DeleteSaveData_DoesNotExist_ReturnsTargetNotFound()
         {
             FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
@@ -285,6 +370,64 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
                 Assert.Equal(1, readCount);
                 Assert.Equal((ulong)i, info.ProgramId.Value);
             }
+        }
+
+        [Fact]
+        public void GetSaveDataCommitId_AfterSetSaveDataCommitIdIsCalled_ReturnsSetCommitId()
+        {
+            long commitId = 46506854;
+
+            var applicationId = new Ncm.ApplicationId(1);
+            var userId = new UserId(5, 4);
+
+            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+
+            // Create the save
+            Assert.Success(fs.CreateSaveData(applicationId, userId, 0, 0x1000, 0x1000, SaveDataFlags.None));
+
+            // Get the created save data's ID
+            Assert.Success(fs.OpenSaveDataIterator(out SaveDataIterator iterator, SaveDataSpaceId.User));
+
+            var info = new SaveDataInfo[2];
+            iterator.ReadSaveDataInfo(out long entriesRead, info);
+
+            Assert.Equal(1, entriesRead);
+
+            // Set the new commit ID
+            Assert.Success(fs.SetSaveDataCommitId(info[0].SpaceId, info[0].SaveDataId, commitId));
+
+            Assert.Success(fs.GetSaveDataCommitId(out long actualCommitId, info[0].SpaceId, info[0].SaveDataId));
+
+            Assert.Equal(commitId, actualCommitId);
+        }
+
+        [Fact]
+        public void GetSaveDataTimeStamp_AfterSetSaveDataTimeStampIsCalled_ReturnsSetTimeStamp()
+        {
+            var timeStamp = new PosixTime(12345678);
+
+            var applicationId = new Ncm.ApplicationId(1);
+            var userId = new UserId(5, 4);
+
+            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+
+            // Create the save
+            Assert.Success(fs.CreateSaveData(applicationId, userId, 0, 0x1000, 0x1000, SaveDataFlags.None));
+
+            // Get the created save data's ID
+            Assert.Success(fs.OpenSaveDataIterator(out SaveDataIterator iterator, SaveDataSpaceId.User));
+
+            var info = new SaveDataInfo[2];
+            iterator.ReadSaveDataInfo(out long entriesRead, info);
+
+            Assert.Equal(1, entriesRead);
+
+            // Set the new timestamp
+            Assert.Success(fs.SetSaveDataTimeStamp(info[0].SpaceId, info[0].SaveDataId, timeStamp));
+
+            Assert.Success(fs.GetSaveDataTimeStamp(out PosixTime actualTimeStamp, info[0].SpaceId, info[0].SaveDataId));
+
+            Assert.Equal(timeStamp, actualTimeStamp);
         }
 
         private static Result PopulateSaveData(FileSystemClient fs, int count, int seed = -1)

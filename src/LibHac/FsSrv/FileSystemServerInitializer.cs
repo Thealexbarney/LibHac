@@ -1,5 +1,4 @@
 ﻿using System;
-using LibHac.Common.Keys;
 using LibHac.Fs.Impl;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.FsCreator;

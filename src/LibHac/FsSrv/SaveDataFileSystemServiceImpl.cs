@@ -774,7 +774,7 @@ namespace LibHac.FsSrv
         /// for their save data. The main program always has a program index of 0.</remarks>
         /// <param name="programId">The program ID to get the save data program ID for.</param>
         /// <returns>The program ID of the save data.</returns>
-        public ProgramId ResolveDefaultSaveDataReferenceProgramId(in ProgramId programId)
+        public ProgramId ResolveDefaultSaveDataReferenceProgramId(ProgramId programId)
         {
             // First check if there's an entry in the program index map with the program ID and program index 0
             ProgramId mainProgramId = _config.ProgramRegistryService.GetProgramIdByIndex(programId, 0);
