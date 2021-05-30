@@ -67,7 +67,7 @@ namespace LibHac.Fs.Shim
     [SkipLocalsInit]
     public static class SaveDataManagement
     {
-        internal static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
+        public static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
             out SaveDataExtraData extraData, ulong saveDataId)
         {
             UnsafeHelpers.SkipParamInit(out extraData);
@@ -80,7 +80,7 @@ namespace LibHac.Fs.Shim
             return Result.Success;
         }
 
-        internal static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
+        public static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
             out SaveDataExtraData extraData, SaveDataSpaceId spaceId, ulong saveDataId)
         {
             UnsafeHelpers.SkipParamInit(out extraData);
@@ -94,7 +94,7 @@ namespace LibHac.Fs.Shim
             return Result.Success;
         }
 
-        internal static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
+        public static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
             out SaveDataExtraData extraData, SaveDataSpaceId spaceId, in SaveDataAttribute attribute)
         {
             UnsafeHelpers.SkipParamInit(out extraData);
@@ -108,7 +108,7 @@ namespace LibHac.Fs.Shim
             return Result.Success;
         }
 
-        internal static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
+        public static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
             out SaveDataExtraData extraData, SaveDataSpaceId spaceId, in SaveDataAttribute attribute,
             in SaveDataExtraData extraDataMask)
         {
@@ -123,7 +123,7 @@ namespace LibHac.Fs.Shim
             return Result.Success;
         }
 
-        internal static Result WriteSaveDataFileSystemExtraData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId,
+        public static Result WriteSaveDataFileSystemExtraData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId,
             ulong saveDataId, in SaveDataExtraData extraData)
         {
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
@@ -134,7 +134,7 @@ namespace LibHac.Fs.Shim
             return rc;
         }
 
-        internal static Result WriteSaveDataFileSystemExtraData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId,
+        public static Result WriteSaveDataFileSystemExtraData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId,
             ulong saveDataId, in SaveDataExtraData extraData, in SaveDataExtraData extraDataMask)
         {
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
@@ -145,7 +145,7 @@ namespace LibHac.Fs.Shim
             return rc;
         }
 
-        internal static Result WriteSaveDataFileSystemExtraData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId,
+        public static Result WriteSaveDataFileSystemExtraData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId,
             in SaveDataAttribute attribute, in SaveDataExtraData extraData, in SaveDataExtraData extraDataMask)
         {
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
@@ -156,7 +156,7 @@ namespace LibHac.Fs.Shim
             return rc;
         }
 
-        internal static Result FindSaveDataWithFilter(this FileSystemClientImpl fs, out SaveDataInfo saveInfo,
+        public static Result FindSaveDataWithFilter(this FileSystemClientImpl fs, out SaveDataInfo saveInfo,
             SaveDataSpaceId spaceId, in SaveDataFilter filter)
         {
             UnsafeHelpers.SkipParamInit(out saveInfo);
