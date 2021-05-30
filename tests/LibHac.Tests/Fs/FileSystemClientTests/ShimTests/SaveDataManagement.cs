@@ -3,6 +3,8 @@ using System.Linq;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Shim;
+using LibHac.FsSrv.Impl;
+using LibHac.Ncm;
 using LibHac.Time;
 using Xunit;
 
@@ -242,6 +244,44 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
 
             Assert.Equal(availableSize, actualAvailableSize);
             Assert.Equal(journalSize, actualJournalSize);
+        }
+
+        [Fact]
+        public void CreateSaveData_FromSubProgram_CreatesSaveDataForMainProgram()
+        {
+            Horizon hos = FileSystemServerFactory.CreateHorizonServer();
+
+            Span<ProgramIndexMapInfo> mapInfo = stackalloc ProgramIndexMapInfo[5];
+
+            var mainProgramId = new ProgramId(0x123456);
+            var programId = new ProgramId(mainProgramId.Value + 2);
+
+            for (int i = 0; i < mapInfo.Length; i++)
+            {
+                mapInfo[i].MainProgramId = mainProgramId;
+                mapInfo[i].ProgramId = new ProgramId(mainProgramId.Value + (uint)i);
+                mapInfo[i].ProgramIndex = (byte)i;
+            }
+
+            HorizonClient client = hos.CreatePrivilegedHorizonClient();
+            HorizonClient subProgramClient =
+                hos.CreateHorizonClient(new ProgramLocation(programId, StorageId.BuiltInUser),
+                    AccessControlBits.Bits.CreateSaveData);
+
+            Assert.Success(client.Fs.RegisterProgramIndexMapInfo(mapInfo));
+
+            Assert.Success(subProgramClient.Fs.CreateSaveData(Ncm.ApplicationId.InvalidId, UserId.InvalidId, 0, 0x4000,
+                0x4000, SaveDataFlags.None));
+
+            // Get the created save data's ID
+            Assert.Success(client.Fs.OpenSaveDataIterator(out SaveDataIterator iterator, SaveDataSpaceId.User));
+
+            var info = new SaveDataInfo[2];
+            iterator.ReadSaveDataInfo(out long entriesRead, info);
+
+            Assert.Equal(1, entriesRead);
+
+            Assert.Equal(mainProgramId, info[0].ProgramId);
         }
 
         [Fact]
