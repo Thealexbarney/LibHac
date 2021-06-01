@@ -410,6 +410,52 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
                 Assert.Equal(1, readCount);
                 Assert.Equal((ulong)i, info.ProgramId.Value);
             }
+
+            Assert.Success(iterator.ReadSaveDataInfo(out long readCountFinal, SpanHelpers.AsSpan(ref info)));
+
+            Assert.Equal(0, readCountFinal);
+        }
+
+        [Fact]
+        public void ReadSaveDataInfo_WhenFilteringSavesByUserId_IteratorReturnsAllMatchingSaves()
+        {
+            const int count = 10;
+            const int countUser1 = 5;
+
+            var user1Id = new UserId(0x1234, 0x5678);
+            var user2Id = new UserId(0x1122, 0x3344);
+
+            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+
+            for (int i = 1; i <= countUser1; i++)
+            {
+                var applicationId = new Ncm.ApplicationId((uint)i);
+                Assert.Success(fs.CreateSaveData(applicationId, user1Id, 0, 0x4000, 0x4000, SaveDataFlags.None));
+            }
+
+            for (int i = countUser1 + 1; i <= count; i++)
+            {
+                var applicationId = new Ncm.ApplicationId((uint)i);
+                Assert.Success(fs.CreateSaveData(applicationId, user2Id, 0, 0x4000, 0x4000, SaveDataFlags.None));
+            }
+
+            Assert.Success(SaveDataFilter.Make(out SaveDataFilter filter, default, default, user2Id, default, default));
+
+            Assert.Success(fs.OpenSaveDataIterator(out SaveDataIterator iterator, SaveDataSpaceId.User, in filter));
+
+            var info = new SaveDataInfo();
+            for (int i = countUser1 + 1; i <= count; i++)
+            {
+                Assert.Success(iterator.ReadSaveDataInfo(out long readCount, SpanHelpers.AsSpan(ref info)));
+
+                Assert.Equal(1, readCount);
+                Assert.Equal((ulong)i, info.ProgramId.Value);
+                Assert.Equal(user2Id, info.UserId);
+            }
+
+            Assert.Success(iterator.ReadSaveDataInfo(out long readCountFinal, SpanHelpers.AsSpan(ref info)));
+
+            Assert.Equal(0, readCountFinal);
         }
 
         [Fact]
