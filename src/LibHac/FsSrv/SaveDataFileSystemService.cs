@@ -1832,7 +1832,7 @@ namespace LibHac.FsSrv
 
                 filterReader = new SaveDataInfoFilterReader(reader, in filter);
 
-                infoReader = new ReferenceCountedDisposable<ISaveDataInfoReader>(filterReader);
+                infoReader = new ReferenceCountedDisposable<ISaveDataInfoReader>(Shared.Move(ref filterReader));
                 return Result.Success;
             }
             finally
