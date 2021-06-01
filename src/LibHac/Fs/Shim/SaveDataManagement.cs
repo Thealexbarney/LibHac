@@ -123,6 +123,17 @@ namespace LibHac.Fs.Shim
             return Result.Success;
         }
 
+        /// <summary>
+        /// Writes the <see cref="SaveDataExtraData.Flags"/> of the provided <see cref="SaveDataExtraData"/>
+        /// to the save data in the specified <see cref="SaveDataSpaceId"/> with the provided save data ID.
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        /// <param name="spaceId">The <see cref="SaveDataSpaceId"/> containing the save data to be written to.</param>
+        /// <param name="saveDataId">The save data ID of the save data to be written to.</param>
+        /// <param name="extraData">The <see cref="SaveDataExtraData"/> containing the data to write.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.TargetNotFound"/>: The save data was not found.<br/>
+        /// <see cref="ResultFs.PermissionDenied"/>: Insufficient permissions.</returns>
         public static Result WriteSaveDataFileSystemExtraData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId,
             ulong saveDataId, in SaveDataExtraData extraData)
         {
@@ -134,6 +145,24 @@ namespace LibHac.Fs.Shim
             return rc;
         }
 
+        /// <summary>
+        /// Writes the provided <paramref name="extraData"/> to the save data in the specified
+        /// <see cref="SaveDataSpaceId"/> with the provided save data ID.
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        /// <param name="spaceId">The <see cref="SaveDataSpaceId"/> containing the save data to be written to.</param>
+        /// <param name="saveDataId">The save data ID of the save data to be written to.</param>
+        /// <param name="extraData">The <see cref="SaveDataExtraData"/> to write to the save data.</param>
+        /// <param name="extraDataMask">A mask specifying which bits of <paramref name="extraData"/>
+        /// to write to the save's extra data. 0 = don't write, 1 = write.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.TargetNotFound"/>: The save data was not found.<br/>
+        /// <see cref="ResultFs.PermissionDenied"/>: Insufficient permissions.</returns>
+        /// <remarks>
+        /// Calling programs may have permission to write to all, some or none of the save data's extra data.
+        /// If any bits are set in <paramref name="extraDataMask"/> that the caller does not have the permissions
+        /// to write to, nothing will be written and <see cref="ResultFs.PermissionDenied"/> will be returned.
+        /// </remarks>
         public static Result WriteSaveDataFileSystemExtraData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId,
             ulong saveDataId, in SaveDataExtraData extraData, in SaveDataExtraData extraDataMask)
         {
@@ -145,6 +174,27 @@ namespace LibHac.Fs.Shim
             return rc;
         }
 
+        /// <summary>
+        /// Writes the provided <paramref name="extraData"/> to the save data in the specified
+        /// <see cref="SaveDataSpaceId"/> that matches the provided <see cref="SaveDataAttribute"/> key.
+        /// The mask specifies which parts of the extra data will be written to the save data.
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        /// <param name="spaceId">The <see cref="SaveDataSpaceId"/> containing the save data to be written to.</param>
+        /// <param name="attribute">The key for the save data.</param>
+        /// <param name="extraData">The <see cref="SaveDataExtraData"/> to write to the save data.</param>
+        /// <param name="extraDataMask">A mask specifying which bits of <paramref name="extraData"/>
+        /// to write to the save's extra data. 0 = don't write, 1 = write.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.TargetNotFound"/>: The save data was not found.<br/>
+        /// <see cref="ResultFs.PermissionDenied"/>: Insufficient permissions.</returns>
+        /// <remarks>
+        /// If <see cref="SaveDataAttribute.ProgramId"/> is set to <see cref="Fs.SaveData.AutoResolveCallerProgramId"/>,
+        /// the program ID of <paramref name="attribute"/> will be resolved to the default save data program ID of the calling program.<br/>
+        /// Calling programs may have permission to write to all, some or none of the save data's extra data.
+        /// If any bits are set in <paramref name="extraDataMask"/> that the caller does not have the permissions
+        /// to write to, nothing will be written and <see cref="ResultFs.PermissionDenied"/> will be returned.
+        /// </remarks>
         public static Result WriteSaveDataFileSystemExtraData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId,
             in SaveDataAttribute attribute, in SaveDataExtraData extraData, in SaveDataExtraData extraDataMask)
         {

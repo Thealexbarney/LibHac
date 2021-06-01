@@ -214,7 +214,9 @@ namespace LibHac.FsSrv
                 Result rc = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo, extraDataGetter);
                 if (rc.IsFailure()) return rc;
 
-                if (accessibility.CanRead && accessibility.CanWrite)
+                // Note: This is correct. Even if a program only has read accessibility to another program's save data,
+                // Nintendo gives it full read/write accessibility as of FS 12.0.0
+                if (accessibility.CanRead || accessibility.CanWrite)
                     return Result.Success;
 
                 // The program doesn't have permissions for this specific save data. Check if it has overall
