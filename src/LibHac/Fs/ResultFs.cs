@@ -1622,11 +1622,11 @@ namespace LibHac.Fs
                     /// <summary>Error code: 2002-6067; Inner value: 0x2f6602</summary>
                     public static Result.Base ExtensionSizeInvalid => new Result.Base(ModuleFs, 6067);
                     /// <summary>Error code: 2002-6068; Inner value: 0x2f6802</summary>
-                    public static Result.Base InvalidSaveDataInfoReader => new Result.Base(ModuleFs, 6068);
+                    public static Result.Base InvalidHandle => new Result.Base(ModuleFs, 6068);
                     /// <summary>Error code: 2002-6069; Inner value: 0x2f6a02</summary>
-                    public static Result.Base InvalidCacheStorageSize => new Result.Base(ModuleFs, 6069);
+                    public static Result.Base CacheStorageSizeTooLarge => new Result.Base(ModuleFs, 6069);
                     /// <summary>Error code: 2002-6070; Inner value: 0x2f6c02</summary>
-                    public static Result.Base InvalidCacheStorageIndex => new Result.Base(ModuleFs, 6070);
+                    public static Result.Base CacheStorageIndexTooLarge => new Result.Base(ModuleFs, 6070);
                     /// <summary>Up to 10 file systems can be committed at the same time.<br/>Error code: 2002-6071; Inner value: 0x2f6e02</summary>
                     public static Result.Base InvalidCommitNameCount => new Result.Base(ModuleFs, 6071);
                     /// <summary>Error code: 2002-6072; Inner value: 0x2f7002</summary>

@@ -828,7 +828,7 @@ namespace LibHac.FsSrv
                     // Indexer has been reloaded since this info reader was created
                     if (_handle != _indexer.Handle)
                     {
-                        return ResultFs.InvalidSaveDataInfoReader.Log();
+                        return ResultFs.InvalidHandle.Log();
                     }
 
                     Span<SaveDataInfo> outInfo = MemoryMarshal.Cast<byte, SaveDataInfo>(saveDataInfoBuffer.Buffer);
