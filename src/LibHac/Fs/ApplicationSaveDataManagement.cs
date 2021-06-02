@@ -325,6 +325,26 @@ namespace LibHac.Fs
 
             return EnsureApplicationCacheStorageImpl(fs, out requiredSize, out target, applicationId,
                 nacp.SaveDataOwnerId.Value, 0, nacp.CacheStorageSize, nacp.CacheStorageJournalSize, true);
+
+        }
+
+        public static Result CreateApplicationCacheStorage(this FileSystemClient fs, out long requiredSize,
+            out CacheStorageTargetMedia target, Ncm.ApplicationId applicationId, ref ApplicationControlProperty nacp,
+            ushort index, long dataSize, long journalSize)
+        {
+            UnsafeHelpers.SkipParamInit(out requiredSize, out target);
+
+            if (index > nacp.CacheStorageMaxIndex)
+                return ResultFs.CacheStorageIndexTooLarge.Log();
+
+            if (dataSize + journalSize > nacp.CacheStorageMaxSizeAndMaxJournalSize)
+                return ResultFs.CacheStorageSizeTooLarge.Log();
+
+            Result rc = fs.EnsureApplicationCacheStorage(out requiredSize, out target, applicationId,
+                nacp.SaveDataOwnerId.Value, index, dataSize, journalSize, false);
+
+            fs.Impl.AbortIfNeeded(rc);
+            return rc;
         }
 
         public static Result EnsureApplicationBcatDeliveryCacheStorage(this FileSystemClient fs, out long requiredSize,

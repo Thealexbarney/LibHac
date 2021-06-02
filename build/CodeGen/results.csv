@@ -905,9 +905,9 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,6065,,,,InvalidMountName,
 2,6066,,,,ExtensionSizeTooLarge,
 2,6067,,,,ExtensionSizeInvalid,
-2,6068,,,,InvalidSaveDataInfoReader,
-2,6069,,,,InvalidCacheStorageSize,
-2,6070,,,,InvalidCacheStorageIndex,
+2,6068,,,,InvalidHandle,
+2,6069,,,,CacheStorageSizeTooLarge,
+2,6070,,,,CacheStorageIndexTooLarge,
 2,6071,,,,InvalidCommitNameCount,Up to 10 file systems can be committed at the same time.
 2,6072,,,,InvalidOpenMode,
 2,6073,,,,InvalidFileSize,
