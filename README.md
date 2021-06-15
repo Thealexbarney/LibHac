@@ -4,7 +4,9 @@
 [![MyGet](https://img.shields.io/myget/libhac/vpre/libhac.svg?label=myget&style=flat-square)](https://www.myget.org/feed/libhac/package/nuget/LibHac)
 [![AppVeyor Build Status](https://img.shields.io/appveyor/ci/thealexbarney/LibHac/master.svg?style=flat-square)](https://ci.appveyor.com/project/Thealexbarney/libhac/history)
 
-LibHac is a .NET and .NET Core library for opening, decrypting and extracting common content file formats used by the Nintendo Switch.
+LibHac is a .NET library that reimplements some parts of the Nintendo Switch operating system, also known as Horizon OS.
+
+One of the other main functions of the library is opening, decrypting and extracting common content file formats used by Horizon.
 
 Most content is imported and exported using a standard `IStorage` interface. This means that reading nested file types and encryptions can easily be done by linking different file readers together.  
 For example, the files from a title stored on the external SD card can be read or extracted in this way.  
@@ -12,7 +14,9 @@ For example, the files from a title stored on the external SD card can be read o
 
 ## Getting Started
 
-[Library Overview and Samples](docs/getting-started.md)
+[Handling Content Files](docs/getting-started.md)
+
+Todo: Document usage of the `Horizon` and `HorizonClient` objects.
 
 # hactoolnet
 

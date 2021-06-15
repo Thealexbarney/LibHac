@@ -83,9 +83,9 @@ Erista (original Switch hardware version) and Mariko (second hardware version) h
 Both these root keys are used to derive the same master key which will then derive other keys.
 
 The current root key for Erista is `tsec_root_key_02`, and the key for Mariko is `mariko_kek`.
-The main purpose of these keys is to generate the master key, so they're not really necessary for decrypting content.
+The main purpose of these keys is to generate the master key, so they're not strictly necessary for decrypting content if you have the latest master key.
 
-These root keys, with proper security, are supposed to be hardware secrets, unable to be accessed by software.
+These root keys, with proper security, are supposed to be hardware secrets unable to be accessed by software.
 
 Package1 is the only content that is not encrypted with these root keys or their derivatives.
 Each Erista package1 is encrypted with its own unique key, and every Mariko package1 is encrypted with `mariko_bek`.

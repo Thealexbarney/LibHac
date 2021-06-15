@@ -10,8 +10,7 @@
   <PropertyGroup>
     <Authors>Alex Barney</Authors>
     <Copyright>Copyright © 2018-2021 Alex Barney</Copyright>
-    <Description>A library for reading content formats used by the Nintendo Switch.</Description>
-    <PackageTags>Nintendo;Switch;nca;xci;savefile</PackageTags>
+    <Description>A library that reimplements select portions of the Nintendo Switch operating system and allows reading content formats used by the OS.</Description>
     <PackageProjectUrl>https://github.com/Thealexbarney/LibHac</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
