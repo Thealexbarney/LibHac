@@ -70,10 +70,7 @@ namespace hactoolnet
                 {
                     ctx.Logger = logger;
                     OpenKeySet(ctx);
-
-                    Horizon horizon = HorizonFactory.CreateWithDefaultFsConfig(new HorizonConfiguration(),
-                        new InMemoryFileSystem(), ctx.KeySet);
-                    ctx.Horizon = horizon.CreatePrivilegedHorizonClient();
+                    InitializeHorizon(ctx);
 
                     if (ctx.Options.AccessLog != null)
                     {
@@ -245,6 +242,13 @@ namespace hactoolnet
             }
 
             ctx.KeySet = keySet;
+        }
+
+        private static void InitializeHorizon(Context ctx)
+        {
+            var horizon = new Horizon(new HorizonConfiguration());
+            ctx.Horizon = horizon.CreatePrivilegedHorizonClient();
+            ctx.Horizon.Fs.SetServerlessAccessLog(true);
         }
 
         private static void ProcessKeygen(Context ctx)

@@ -22,6 +22,7 @@ namespace LibHac.Fs
         public GlobalAccessLogMode GlobalAccessLogMode;
         public AccessLogTarget LocalAccessLogTarget;
 
+        public bool IsServerless;
         public bool IsAccessLogInitialized;
         public SdkMutexType MutexForAccessLogInitialization;
 
@@ -55,6 +56,13 @@ namespace LibHac.Fs
     {
         public static Result GetGlobalAccessLogMode(this FileSystemClient fs, out GlobalAccessLogMode mode)
         {
+            // Allow the access log to be used without an FS server by storing the mode locally in that situation.
+            if (fs.Globals.AccessLog.IsServerless)
+            {
+                mode = fs.Globals.AccessLog.GlobalAccessLogMode;
+                return Result.Success;
+            }
+
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             Result rc = fsProxy.Target.GetGlobalAccessLogMode(out mode);
@@ -64,6 +72,13 @@ namespace LibHac.Fs
 
         public static Result SetGlobalAccessLogMode(this FileSystemClient fs, GlobalAccessLogMode mode)
         {
+            // Allow the access log to be used without an FS server by storing the mode locally in that situation.
+            if (fs.Globals.AccessLog.IsServerless)
+            {
+                fs.Globals.AccessLog.GlobalAccessLogMode = mode;
+                return Result.Success;
+            }
+
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             Result rc = fsProxy.Target.SetGlobalAccessLogMode(mode);
@@ -91,6 +106,17 @@ namespace LibHac.Fs
             {
                 fs.Globals.AccessLog.LocalAccessLogTarget &= ~AccessLogTarget.All;
             }
+        }
+
+        /// <summary>
+        /// Sets whether the FS access log should call the FS service when getting or setting the
+        /// global access log mode. This allows the access log to be used when using an FS client without a server.
+        /// </summary>
+        /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
+        /// <param name="isServerless">Does this client lack an FS server?</param>
+        public static void SetServerlessAccessLog(this FileSystemClient fs, bool isServerless)
+        {
+            fs.Globals.AccessLog.IsServerless = isServerless;
         }
 
         private static void SetLocalAccessLogImpl(FileSystemClient fs, bool enabled)

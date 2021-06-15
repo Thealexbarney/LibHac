@@ -53,6 +53,9 @@ namespace hactoolnet
                         fs.Register(mountName.ToU8Span(), OpenFileSystem(i));
                         fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.SectionOutDir[i]));
 
+                        fs.Impl.EnableFileSystemAccessorAccessLog(mountName.ToU8Span());
+                        fs.Impl.EnableFileSystemAccessorAccessLog("output".ToU8Span());
+
                         FsUtils.CopyDirectoryWithProgress(fs, (mountName + ":/").ToU8Span(), "output:/".ToU8Span(), logger: ctx.Logger).ThrowIfFailure();
 
                         fs.Unmount(mountName.ToU8Span());
@@ -161,6 +164,9 @@ namespace hactoolnet
 
                         fs.Register("code".ToU8Span(), OpenFileSystemByType(NcaSectionType.Code));
                         fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.ExefsOutDir));
+
+                        fs.Impl.EnableFileSystemAccessorAccessLog("code".ToU8Span());
+                        fs.Impl.EnableFileSystemAccessorAccessLog("output".ToU8Span());
 
                         FsUtils.CopyDirectoryWithProgress(fs, "code:/".ToU8Span(), "output:/".ToU8Span(), logger: ctx.Logger).ThrowIfFailure();
 

@@ -181,7 +181,7 @@ namespace LibHac.Os.Impl
         {
             using ScopedLock<InternalCriticalSection> lk = ScopedLock.Lock(ref GetLockCount(ref rwLock).Cs);
 
-            Assert.SdkEqual(GetWriteLockCount(in rwLock), 0u);
+            Assert.SdkRequiresGreater(GetWriteLockCount(in rwLock), 0u);
             Assert.SdkNotEqual(GetWriteLocked(in GetLockCount(ref rwLock)), 0u);
             Assert.SdkEqual(rwLock.OwnerThread, Environment.CurrentManagedThreadId);
 
