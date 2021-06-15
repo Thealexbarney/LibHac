@@ -8,6 +8,7 @@ using LibHac.Common;
 using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.Fs.Impl;
 using LibHac.FsSystem;
 using LibHac.FsSystem.Save;
 using static hactoolnet.Print;
@@ -34,6 +35,7 @@ namespace hactoolnet
                 FileSystemClient fs = ctx.Horizon.Fs;
 
                 fs.Register("save".ToU8Span(), save);
+                fs.Impl.EnableFileSystemAccessorAccessLog("save".ToU8Span());
 
                 if (ctx.Options.Validate)
                 {
@@ -43,6 +45,7 @@ namespace hactoolnet
                 if (ctx.Options.OutDir != null)
                 {
                     fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.OutDir));
+                    fs.Impl.EnableFileSystemAccessorAccessLog("output".ToU8Span());
 
                     FsUtils.CopyDirectoryWithProgress(fs, "save:/".ToU8Span(), "output:/".ToU8Span(), logger: ctx.Logger).ThrowIfFailure();
 
@@ -89,6 +92,7 @@ namespace hactoolnet
                     if (ctx.Options.RepackSource != null)
                     {
                         fs.Register("input".ToU8Span(), new LocalFileSystem(ctx.Options.RepackSource));
+                        fs.Impl.EnableFileSystemAccessorAccessLog("input".ToU8Span());
 
                         fs.CleanDirectoryRecursively("save:/".ToU8Span());
                         fs.Commit("save".ToU8Span());

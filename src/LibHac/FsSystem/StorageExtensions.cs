@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
@@ -181,7 +182,7 @@ namespace LibHac.FsSystem
 
             storage.GetSize(out long storageSize).ThrowIfFailure();
 
-            var arr = new T[storageSize / Marshal.SizeOf<T>()];
+            var arr = new T[storageSize / Unsafe.SizeOf<T>()];
             Span<byte> dest = MemoryMarshal.Cast<T, byte>(arr.AsSpan());
 
             storage.Read(0, dest);
