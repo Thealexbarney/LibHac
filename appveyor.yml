@@ -4,6 +4,6 @@ environment:
   myget_api_key:
     secure: 0xJoYAtR6psXCRvk1qm5czDObkeRjHKPjfe5gIExXVFPwA0VVODYv/hBZYUtz2F3
 build_script:
-  - cmd: .\build.cmd appveyorbuild
-  - sh: ./build.cmd appveyorbuild
+  - cmd: .\build.cmd appveyorbuild --noreflection
+  - sh: ./build.cmd appveyorbuild --noreflection
 test: off
