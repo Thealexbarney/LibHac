@@ -276,7 +276,7 @@ namespace LibHac.FsSystem
 
             public bool Allocate(int nodeSize)
             {
-                Assert.SdkRequiresNotNull(_header);
+                Assert.SdkRequiresNull(_header);
 
                 _header = new long[nodeSize / sizeof(long)];
 
