@@ -162,7 +162,7 @@ namespace LibHac.FsSrv
 
             if (!mountNameInfo.CanMountNca)
             {
-                return ResultFs.InvalidNcaMountPoint.Log();
+                return ResultFs.UnexpectedInNcaFileSystemServiceImplA.Log();
             }
 
             ulong openProgramId = mountNameInfo.IsHostFs ? ulong.MaxValue : id;

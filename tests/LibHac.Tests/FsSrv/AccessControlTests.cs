@@ -56,9 +56,9 @@ namespace LibHac.Tests.FsSrv
                 StorageId.BuiltInUser, SpanHelpers.AsReadOnlyByteSpan(in dataHeader),
                 SpanHelpers.AsReadOnlyByteSpan(in descriptor)));
 
-            // We should get InvalidNcaMountPoint because mounting NCAs from @System isn't allowed
+            // We should get UnexpectedInNcaFileSystemServiceImplA because mounting NCAs from @System isn't allowed
             Result rc = client.Fs.MountContent("test".ToU8Span(), "@System:/fake.nca".ToU8Span(), ContentType.Control);
-            Assert.Result(ResultFs.InvalidNcaMountPoint, rc);
+            Assert.Result(ResultFs.UnexpectedInNcaFileSystemServiceImplA, rc);
         }
     }
 }

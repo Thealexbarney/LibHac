@@ -1546,6 +1546,12 @@ namespace LibHac.Fs
                 public static Result.Base InvalidFatFormatParamsD => new Result.Base(ModuleFs, 5127);
                 /// <summary>Error code: 2002-5131; Inner value: 0x281602</summary>
                 public static Result.Base FatSectorWriteVerificationFailed => new Result.Base(ModuleFs, 5131);
+                /// <summary>Error code: 2002-5301; Inner value: 0x296a02</summary>
+                public static Result.Base UnexpectedInMountTableA => new Result.Base(ModuleFs, 5301);
+                /// <summary>Error code: 2002-5302; Inner value: 0x296c02</summary>
+                public static Result.Base UnexpectedInJournalIntegritySaveDataFileSystemA => new Result.Base(ModuleFs, 5302);
+                /// <summary>Error code: 2002-5303; Inner value: 0x296e02</summary>
+                public static Result.Base UnexpectedInJournalIntegritySaveDataFileSystemB => new Result.Base(ModuleFs, 5303);
                 /// <summary>Tried to write to an IntegrityFilteredFile that is provisionally committed.<br/>Error code: 2002-5304; Inner value: 0x297002</summary>
                 public static Result.Base UnexpectedInJournalIntegritySaveDataFileSystemC => new Result.Base(ModuleFs, 5304);
                 /// <summary>Error code: 2002-5305; Inner value: 0x297202</summary>
@@ -1560,24 +1566,42 @@ namespace LibHac.Fs
                 public static Result.Base UnexpectedInLocalFileSystemE => new Result.Base(ModuleFs, 5309);
                 /// <summary>Error code: 2002-5310; Inner value: 0x297c02</summary>
                 public static Result.Base UnexpectedInLocalFileSystemF => new Result.Base(ModuleFs, 5310);
+                /// <summary>Error code: 2002-5311; Inner value: 0x297e02</summary>
+                public static Result.Base UnexpectedInPathToolA => new Result.Base(ModuleFs, 5311);
+                /// <summary>Error code: 2002-5312; Inner value: 0x298002</summary>
+                public static Result.Base UnexpectedInPathOnExecutionDirectoryA => new Result.Base(ModuleFs, 5312);
+                /// <summary>Error code: 2002-5313; Inner value: 0x298202</summary>
+                public static Result.Base UnexpectedInPathOnExecutionDirectoryB => new Result.Base(ModuleFs, 5313);
+                /// <summary>Error code: 2002-5314; Inner value: 0x298402</summary>
+                public static Result.Base UnexpectedInPathOnExecutionDirectoryC => new Result.Base(ModuleFs, 5314);
                 /// <summary>Error code: 2002-5315; Inner value: 0x298602</summary>
                 public static Result.Base UnexpectedInAesCtrStorageA => new Result.Base(ModuleFs, 5315);
                 /// <summary>Error code: 2002-5316; Inner value: 0x298802</summary>
                 public static Result.Base UnexpectedInAesXtsStorageA => new Result.Base(ModuleFs, 5316);
                 /// <summary>Error code: 2002-5317; Inner value: 0x298a02</summary>
-                public static Result.Base Result5317 => new Result.Base(ModuleFs, 5317);
+                public static Result.Base UnexpectedInSaveDataInternalStorageFileSystemA => new Result.Base(ModuleFs, 5317);
                 /// <summary>Error code: 2002-5318; Inner value: 0x298c02</summary>
-                public static Result.Base Result5318 => new Result.Base(ModuleFs, 5318);
+                public static Result.Base UnexpectedInSaveDataInternalStorageFileSystemB => new Result.Base(ModuleFs, 5318);
                 /// <summary>Error code: 2002-5319; Inner value: 0x298e02</summary>
                 public static Result.Base UnexpectedInMountUtilityA => new Result.Base(ModuleFs, 5319);
-                /// <summary>Error code: 2002-5320; Inner value: 0x299002</summary>
-                public static Result.Base InvalidNcaMountPoint => new Result.Base(ModuleFs, 5320);
+                /// <summary>Ncas cannot be mounted from the given mount point.<br/>Error code: 2002-5320; Inner value: 0x299002</summary>
+                public static Result.Base UnexpectedInNcaFileSystemServiceImplA => new Result.Base(ModuleFs, 5320);
                 /// <summary>Error code: 2002-5321; Inner value: 0x299202</summary>
                 public static Result.Base UnexpectedInRamDiskFileSystemA => new Result.Base(ModuleFs, 5321);
                 /// <summary>Error code: 2002-5322; Inner value: 0x299402</summary>
                 public static Result.Base UnexpectedInBisWiperA => new Result.Base(ModuleFs, 5322);
                 /// <summary>Error code: 2002-5323; Inner value: 0x299602</summary>
                 public static Result.Base UnexpectedInBisWiperB => new Result.Base(ModuleFs, 5323);
+                /// <summary>Error code: 2002-5324; Inner value: 0x299802</summary>
+                public static Result.Base UnexpectedInCompressedStorageA => new Result.Base(ModuleFs, 5324);
+                /// <summary>Error code: 2002-5325; Inner value: 0x299a02</summary>
+                public static Result.Base UnexpectedInCompressedStorageB => new Result.Base(ModuleFs, 5325);
+                /// <summary>Error code: 2002-5326; Inner value: 0x299c02</summary>
+                public static Result.Base UnexpectedInCompressedStorageC => new Result.Base(ModuleFs, 5326);
+                /// <summary>Error code: 2002-5327; Inner value: 0x299e02</summary>
+                public static Result.Base UnexpectedInCompressedStorageD => new Result.Base(ModuleFs, 5327);
+                /// <summary>Error code: 2002-5328; Inner value: 0x29a002</summary>
+                public static Result.Base UnexpectedInPathA => new Result.Base(ModuleFs, 5328);
 
             /// <summary>Error code: 2002-6000; Range: 6000-6499; Inner value: 0x2ee002</summary>
             public static Result.Base PreconditionViolation { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6000, 6499); }
