@@ -864,6 +864,9 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,5127,,,,InvalidFatFormatParamsD,
 2,5131,,,,FatSectorWriteVerificationFailed,
 
+2,5301,,,,UnexpectedInMountTableA,
+2,5302,,,,UnexpectedInJournalIntegritySaveDataFileSystemA,
+2,5303,,,,UnexpectedInJournalIntegritySaveDataFileSystemB,
 2,5304,,,,UnexpectedInJournalIntegritySaveDataFileSystemC,Tried to write to an IntegrityFilteredFile that is provisionally committed.
 2,5305,,,,UnexpectedInLocalFileSystemA,
 2,5306,,,,UnexpectedInLocalFileSystemB,
@@ -871,17 +874,24 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,5308,,,,UnexpectedInLocalFileSystemD,
 2,5309,,,,UnexpectedInLocalFileSystemE,
 2,5310,,,,UnexpectedInLocalFileSystemF,
-
+2,5311,,,,UnexpectedInPathToolA,
+2,5312,,,,UnexpectedInPathOnExecutionDirectoryA,
+2,5313,,,,UnexpectedInPathOnExecutionDirectoryB,
+2,5314,,,,UnexpectedInPathOnExecutionDirectoryC,
 2,5315,,,,UnexpectedInAesCtrStorageA,
 2,5316,,,,UnexpectedInAesXtsStorageA,
-2,5317,,,,,
-2,5318,,,,,
+2,5317,,,,UnexpectedInSaveDataInternalStorageFileSystemA,
+2,5318,,,,UnexpectedInSaveDataInternalStorageFileSystemB,
 2,5319,,,,UnexpectedInMountUtilityA,
-
-2,5320,,,,InvalidNcaMountPoint,
+2,5320,,,,UnexpectedInNcaFileSystemServiceImplA,Ncas cannot be mounted from the given mount point.
 2,5321,,,,UnexpectedInRamDiskFileSystemA,
 2,5322,,,,UnexpectedInBisWiperA,
 2,5323,,,,UnexpectedInBisWiperB,
+2,5324,,,,UnexpectedInCompressedStorageA,
+2,5325,,,,UnexpectedInCompressedStorageB,
+2,5326,,,,UnexpectedInCompressedStorageC,
+2,5327,,,,UnexpectedInCompressedStorageD,
+2,5328,,,,UnexpectedInPathA,
 
 2,6000,6499,,,PreconditionViolation,
 2,6001,6199,,,InvalidArgument,
