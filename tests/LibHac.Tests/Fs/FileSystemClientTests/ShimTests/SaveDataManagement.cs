@@ -141,6 +141,48 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
             Assert.Equal(SaveDataState.Normal, info[0].State);
         }
 
+        [Theory]
+        [InlineData(AccessControlBits.Bits.SystemSaveData)]
+        [InlineData(AccessControlBits.Bits.None)]
+        public void CreateSystemSaveData_HasBuiltInSystemPermission_SaveIsCreatedInSystem(AccessControlBits.Bits permissions)
+        {
+            ulong saveId = 0x8000000001234000;
+
+            Horizon hos = FileSystemServerFactory.CreateHorizonServer();
+            
+            var mainProgramId = new ProgramId(0x123456);
+
+            HorizonClient client = hos.CreateHorizonClient(new ProgramLocation(mainProgramId, StorageId.BuiltInSystem),
+                permissions);
+
+            HorizonClient privilegedClient = hos.CreatePrivilegedHorizonClient();
+
+            // Create the save
+            if (permissions.HasFlag(AccessControlBits.Bits.SystemSaveData))
+            {
+                Assert.Success(client.Fs.CreateSystemSaveData(saveId, 0x1000, 0x1000, SaveDataFlags.None));
+            }
+            else
+            {
+                // Creation should fail if we don't have the right permissions.
+                Assert.Failure(client.Fs.CreateSystemSaveData(saveId, 0x1000, 0x1000, SaveDataFlags.None));
+                return;
+            }
+
+            // Make sure it was placed in the System save space with the right info.
+            Assert.Success(privilegedClient.Fs.OpenSaveDataIterator(out SaveDataIterator iterator, SaveDataSpaceId.System));
+
+            var info = new SaveDataInfo[2];
+            Assert.Success(iterator.ReadSaveDataInfo(out long entriesRead, info));
+
+            Assert.Equal(1, entriesRead);
+            Assert.Equal(SaveDataType.System, info[0].Type);
+            Assert.Equal(SaveDataSpaceId.System, info[0].SpaceId);
+            Assert.Equal(saveId, info[0].StaticSaveDataId);
+            Assert.Equal(saveId, info[0].SaveDataId);
+            Assert.Equal(SaveDataState.Normal, info[0].State);
+        }
+
         [Fact]
         public void CreateSaveData_DoesNotExist_SaveIsCreated()
         {
