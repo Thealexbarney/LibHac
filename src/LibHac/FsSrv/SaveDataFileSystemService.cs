@@ -965,22 +965,22 @@ namespace LibHac.FsSrv
             if (!IsStaticSaveDataIdValueRange(attribute.StaticSaveDataId))
                 return ResultFs.InvalidArgument.Log();
 
-            SaveDataCreationInfo newCreationInfo = creationInfo;
+            SaveDataCreationInfo tempCreationInfo = creationInfo;
 
-            if (newCreationInfo.OwnerId == 0)
+            if (tempCreationInfo.OwnerId == 0)
             {
-                newCreationInfo.OwnerId = programInfo.ProgramIdValue;
+                tempCreationInfo.OwnerId = programInfo.ProgramIdValue;
             }
 
-            rc = SaveDataAccessibilityChecker.CheckCreate(in attribute, in creationInfo, programInfo,
+            rc = SaveDataAccessibilityChecker.CheckCreate(in attribute, in tempCreationInfo, programInfo,
                 programInfo.ProgramId);
             if (rc.IsFailure()) return rc;
 
             // Static system saves don't usually have meta files
-            SaveDataMetaInfo dataMetaInfo = default;
+            SaveDataMetaInfo metaInfo = default;
             Optional<HashSalt> hashSalt = default;
 
-            return CreateSaveDataFileSystemCore(in attribute, in creationInfo, in dataMetaInfo, in hashSalt);
+            return CreateSaveDataFileSystemCore(in attribute, in tempCreationInfo, in metaInfo, in hashSalt);
         }
 
         public Result ExtendSaveDataFileSystem(SaveDataSpaceId spaceId, ulong saveDataId, long dataSize,
