@@ -42,7 +42,13 @@ namespace LibHac
                 TableOffset = reader.ReadUInt16();
                 ContentEntryCount = reader.ReadUInt16();
                 MetaEntryCount = reader.ReadUInt16();
-                file.Position += 12;
+
+                // Old, pre-release cnmt files don't have the "required system version" field.
+                // Try to detect this by reading the padding after that field.
+                // The old format usually contains hashes there.
+                file.Position += 8;
+                int padding = reader.ReadInt32();
+                bool isOldCnmtFormat = padding != 0;
 
                 switch (Type)
                 {
@@ -61,7 +67,8 @@ namespace LibHac
                         break;
                 }
 
-                file.Position = 0x20 + TableOffset;
+                int baseOffset = isOldCnmtFormat ? 0x18 : 0x20;
+                file.Position = baseOffset + TableOffset;
 
                 ContentEntries = new CnmtContentEntry[ContentEntryCount];
                 MetaEntries = new CnmtContentMetaEntry[MetaEntryCount];
