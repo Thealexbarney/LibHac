@@ -22,6 +22,22 @@ namespace LibHac.Util
             return i;
         }
 
+        public static int Copy(Span<byte> dest, ReadOnlySpan<byte> source, int maxLen)
+        {
+            int maxLenLocal = Math.Min(Math.Min(dest.Length, source.Length), maxLen);
+
+            int i;
+            for (i = 0; i < maxLenLocal && source[i] != 0; i++)
+                dest[i] = source[i];
+
+            if (i < dest.Length)
+            {
+                dest[i] = 0;
+            }
+
+            return i;
+        }
+
         public static int GetLength(ReadOnlySpan<byte> s)
         {
             int i = 0;
@@ -158,6 +174,23 @@ namespace LibHac.Util
             }
 
             return iDest;
+        }
+
+        public static int Find(ReadOnlySpan<byte> haystack, ReadOnlySpan<byte> needle)
+        {
+            if (needle.Length == 0)
+                return 0;
+
+            for (int i = 0; i <= haystack.Length - needle.Length; i++)
+            {
+                int j;
+                for (j = 0; j < needle.Length && haystack[i + j] == needle[j]; j++) { }
+
+                if (j == needle.Length)
+                    return i;
+            }
+
+            return -1;
         }
 
         public static ReadOnlySpan<byte> StringToUtf8(string value)

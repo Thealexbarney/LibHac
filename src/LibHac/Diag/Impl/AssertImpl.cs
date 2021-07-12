@@ -10,14 +10,14 @@ namespace LibHac.Diag.Impl
         internal static void InvokeAssertionNotNull(AssertionType assertionType, string valueText, string functionName,
             string fileName, int lineNumber)
         {
-            Assert.OnAssertionFailure(assertionType, valueText, functionName, fileName, lineNumber,
+            Assert.OnAssertionFailure(assertionType, "NotNull", functionName, fileName, lineNumber,
                 $"{valueText} must not be nullptr.");
         }
 
         internal static void InvokeAssertionNull(AssertionType assertionType, string valueText, string functionName,
             string fileName, int lineNumber)
         {
-            Assert.OnAssertionFailure(assertionType, valueText, functionName, fileName, lineNumber,
+            Assert.OnAssertionFailure(assertionType, "Null", functionName, fileName, lineNumber,
                 $"{valueText} must be nullptr.");
         }
 
@@ -137,12 +137,12 @@ namespace LibHac.Diag.Impl
 
         public static bool NotNull<T>(Span<T> span)
         {
-            return !Unsafe.IsNullRef(ref MemoryMarshal.GetReference(span));
+            return !Unsafe.IsNullRef(ref MemoryMarshal.GetReference(span)) || span.Length == 0;
         }
 
         public static bool NotNull<T>(ReadOnlySpan<T> span)
         {
-            return !Unsafe.IsNullRef(ref MemoryMarshal.GetReference(span));
+            return !Unsafe.IsNullRef(ref MemoryMarshal.GetReference(span)) || span.Length == 0;
         }
 
         public static bool WithinRange(int value, int lowerInclusive, int upperExclusive)
