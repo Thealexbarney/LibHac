@@ -4,6 +4,33 @@ using System.Runtime.InteropServices;
 
 namespace LibHac.Common
 {
+    public static class SpanExtensions
+    {
+        /// <summary>
+        /// Gets the element at the specified zero-based index or gets 0 if the index is out-of-bounds.
+        /// </summary>
+        /// <param name="span">The <see cref="ReadOnlySpan{T}"/> containing the element to get.</param>
+        /// <param name="i">The zero-based index of the element.</param>
+        /// <returns>The element at the specified index or 0 if out-of-bounds.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static byte At(in this ReadOnlySpan<byte> span, int i)
+        {
+            return (uint)i >= (uint)span.Length ? (byte)0 : span[i];
+        }
+
+        /// <summary>
+        /// Gets the element at the specified zero-based index or gets 0 if the index is out-of-bounds.
+        /// </summary>
+        /// <param name="span">The <see cref="Span{T}"/> containing the element to get.</param>
+        /// <param name="i">The zero-based index of the element.</param>
+        /// <returns>The element at the specified index or 0 if out-of-bounds.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static byte At(in this Span<byte> span, int i)
+        {
+            return (uint)i >= (uint)span.Length ? (byte)0 : span[i];
+        }
+    }
+
     public static class SpanHelpers
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
