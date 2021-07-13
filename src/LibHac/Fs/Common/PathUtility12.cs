@@ -1,12 +1,12 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.FsSrv.Sf;
 using LibHac.Util;
 using static LibHac.Fs.StringTraits;
 
-namespace LibHac.Fs.Common
+// ReSharper disable once CheckNamespace
+namespace LibHac.Fs
 {
     public static class PathUtility12
     {

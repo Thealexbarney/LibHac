@@ -8,13 +8,13 @@ using LibHac.FsSrv.FsCreator;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSystem;
 using LibHac.FsSystem.NcaUtils;
-using LibHac.Lr;
 using LibHac.Ncm;
 using LibHac.Os;
 using LibHac.Spl;
 using LibHac.Util;
 using RightsId = LibHac.Fs.RightsId;
 using Utility = LibHac.FsSrv.Impl.Utility;
+using PathLr = LibHac.Lr.Path;
 
 namespace LibHac.FsSrv
 {
@@ -828,7 +828,7 @@ namespace LibHac.FsSrv
             return Result.Success;
         }
 
-        public Result ResolveProgramPath(out Path path, ProgramId programId, StorageId storageId)
+        public Result ResolveProgramPath(out PathLr path, ProgramId programId, StorageId storageId)
         {
             Result rc = _locationResolverSet.ResolveProgramPath(out path, programId.Value, storageId);
             if (rc.IsSuccess())
@@ -843,18 +843,18 @@ namespace LibHac.FsSrv
             return ResultFs.TargetNotFound.Log();
         }
 
-        public Result ResolveRomPath(out Path path, ulong id, StorageId storageId)
+        public Result ResolveRomPath(out PathLr path, ulong id, StorageId storageId)
         {
             return _locationResolverSet.ResolveRomPath(out path, id, storageId);
         }
 
-        public Result ResolveApplicationHtmlDocumentPath(out Path path, Ncm.ApplicationId applicationId,
+        public Result ResolveApplicationHtmlDocumentPath(out PathLr path, Ncm.ApplicationId applicationId,
             StorageId storageId)
         {
             return _locationResolverSet.ResolveApplicationHtmlDocumentPath(out path, applicationId, storageId);
         }
 
-        public Result ResolveRegisteredHtmlDocumentPath(out Path path, ulong id)
+        public Result ResolveRegisteredHtmlDocumentPath(out PathLr path, ulong id)
         {
             return _locationResolverSet.ResolveRegisteredHtmlDocumentPath(out path, id);
         }

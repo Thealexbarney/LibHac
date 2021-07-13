@@ -2,10 +2,11 @@
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.FsSystem;
-using static LibHac.Fs.Common.PathUtility12;
+using static LibHac.Fs.PathUtility12;
 using static LibHac.Fs.StringTraits;
 
-namespace LibHac.Fs.Common
+// ReSharper disable once CheckNamespace
+namespace LibHac.Fs
 {
     public static class PathNormalizer12
     {

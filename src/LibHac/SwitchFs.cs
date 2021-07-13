@@ -126,7 +126,7 @@ namespace LibHac
             foreach (DirectoryEntryEx fileEntry in SaveFs.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File))
             {
                 SaveDataFileSystem save = null;
-                string saveName = Path.GetFileNameWithoutExtension(fileEntry.Name);
+                string saveName = System.IO.Path.GetFileNameWithoutExtension(fileEntry.Name);
 
                 try
                 {
@@ -251,7 +251,7 @@ namespace LibHac
         {
             if (nca.Nca.Header.ContentType != NcaContentType.Meta || !name.EndsWith(".cnmt.nca"))
             {
-                return Path.GetFileNameWithoutExtension(name);
+                return System.IO.Path.GetFileNameWithoutExtension(name);
             }
 
             return name.Substring(0, name.Length - ".cnmt.nca".Length);

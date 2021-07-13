@@ -52,7 +52,7 @@ namespace hactoolnet
 
                 kipReader.Initialize(kipStorage).ThrowIfFailure();
 
-                kipStorage.WriteAllBytes(Path.Combine(outDir, $"{kipReader.Name.ToString()}.kip1"));
+                kipStorage.WriteAllBytes(System.IO.Path.Combine(outDir, $"{kipReader.Name.ToString()}.kip1"));
             }
         }
     }

@@ -56,7 +56,7 @@ namespace hactoolnet
                     foreach (PartitionFileEntry sub in root.Files)
                     {
                         var subPfs = new PartitionFileSystem(root.OpenFile(sub, OpenMode.Read).AsStorage());
-                        string subDir = Path.Combine(ctx.Options.OutDir, sub.Name);
+                        string subDir = System.IO.Path.Combine(ctx.Options.OutDir, sub.Name);
 
                         subPfs.Extract(subDir, ctx.Logger);
                     }
