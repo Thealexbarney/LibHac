@@ -6,6 +6,7 @@ using LibHac.Common.Keys;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Util;
+using Path = System.IO.Path;
 
 namespace hactoolnet
 {

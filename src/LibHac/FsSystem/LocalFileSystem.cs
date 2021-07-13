@@ -56,7 +56,7 @@ namespace LibHac.FsSystem
         /// <param name="rootPath">The path that will be the root of the <see cref="LocalFileSystem"/>.</param>
         public LocalFileSystem(string rootPath)
         {
-            _rootPath = Path.GetFullPath(rootPath);
+            _rootPath = System.IO.Path.GetFullPath(rootPath);
 
             if (!Directory.Exists(_rootPath))
             {
@@ -98,7 +98,7 @@ namespace LibHac.FsSystem
 
             try
             {
-                _rootPath = Path.GetFullPath(rootPath);
+                _rootPath = System.IO.Path.GetFullPath(rootPath);
             }
             catch (PathTooLongException)
             {

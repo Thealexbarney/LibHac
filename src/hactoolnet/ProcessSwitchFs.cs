@@ -11,6 +11,7 @@ using LibHac.FsSystem;
 using LibHac.FsSystem.NcaUtils;
 using LibHac.FsSystem.Save;
 using LibHac.Ns;
+using Path = System.IO.Path;
 
 namespace hactoolnet
 {

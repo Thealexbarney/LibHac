@@ -4,7 +4,8 @@ using LibHac.Diag;
 using LibHac.Util;
 using static LibHac.Util.CharacterEncoding;
 
-namespace LibHac.Fs.Common
+// ReSharper disable once CheckNamespace
+namespace LibHac.Fs
 {
     public static class WindowsPath12
     {

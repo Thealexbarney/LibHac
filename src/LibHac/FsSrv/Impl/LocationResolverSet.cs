@@ -5,6 +5,7 @@ using LibHac.Fs;
 using LibHac.Lr;
 using LibHac.Ncm;
 using LibHac.Os;
+using Path = LibHac.Lr.Path;
 
 namespace LibHac.FsSrv.Impl
 {

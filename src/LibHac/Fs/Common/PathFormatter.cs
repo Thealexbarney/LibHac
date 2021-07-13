@@ -8,7 +8,8 @@ using LibHac.FsSystem;
 using LibHac.Util;
 using static LibHac.Fs.StringTraits;
 
-namespace LibHac.Fs.Common
+// ReSharper disable once CheckNamespace
+namespace LibHac.Fs
 {
     public static class PathFormatter
     {

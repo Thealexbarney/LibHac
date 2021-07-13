@@ -1,5 +1,7 @@
-﻿using LibHac.Common;
-using LibHac.Fs.Common;
+﻿// ReSharper disable InconsistentNaming
+
+using LibHac.Common;
+using LibHac.Fs;
 using Xunit;
 
 namespace LibHac.Tests.Fs

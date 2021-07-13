@@ -2,11 +2,11 @@
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs.Fsa;
-using LibHac.FsSrv.Sf;
 using LibHac.Util;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using IFileSf = LibHac.FsSrv.Sf.IFile;
 using IDirectorySf = LibHac.FsSrv.Sf.IDirectory;
+using PathSf = LibHac.FsSrv.Sf.Path;
 
 namespace LibHac.Fs.Impl
 {
@@ -14,7 +14,7 @@ namespace LibHac.Fs.Impl
     /// An adapter for using an <see cref="IFileSystemSf"/> service object as an <see cref="Fsa.IFileSystem"/>. Used
     /// when receiving a Horizon IPC file system object so it can be used as an <see cref="Fsa.IFileSystem"/> locally.
     /// </summary>
-    internal class FileSystemServiceObjectAdapter : Fsa.IFileSystem, IMultiCommitTarget
+    internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
     {
         private ReferenceCountedDisposable<IFileSystemSf> BaseFs { get; }
 
@@ -25,7 +25,7 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option)
         {
-            Result rc = GetPathForServiceObject(out Path sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.CreateFile(in sfPath, size, (int)option);
@@ -33,7 +33,7 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoDeleteFile(U8Span path)
         {
-            Result rc = GetPathForServiceObject(out Path sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.DeleteFile(in sfPath);
@@ -41,7 +41,7 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoCreateDirectory(U8Span path)
         {
-            Result rc = GetPathForServiceObject(out Path sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.DeleteFile(in sfPath);
@@ -49,7 +49,7 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoDeleteDirectory(U8Span path)
         {
-            Result rc = GetPathForServiceObject(out Path sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.DeleteDirectory(in sfPath);
@@ -57,7 +57,7 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoDeleteDirectoryRecursively(U8Span path)
         {
-            Result rc = GetPathForServiceObject(out Path sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.DeleteDirectoryRecursively(in sfPath);
@@ -65,7 +65,7 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoCleanDirectoryRecursively(U8Span path)
         {
-            Result rc = GetPathForServiceObject(out Path sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.CleanDirectoryRecursively(in sfPath);
@@ -73,10 +73,10 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
         {
-            Result rc = GetPathForServiceObject(out Path oldSfPath, oldPath);
+            Result rc = GetPathForServiceObject(out PathSf oldSfPath, oldPath);
             if (rc.IsFailure()) return rc;
 
-            rc = GetPathForServiceObject(out Path newSfPath, newPath);
+            rc = GetPathForServiceObject(out PathSf newSfPath, newPath);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.RenameFile(in oldSfPath, in newSfPath);
@@ -84,10 +84,10 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
         {
-            Result rc = GetPathForServiceObject(out Path oldSfPath, oldPath);
+            Result rc = GetPathForServiceObject(out PathSf oldSfPath, oldPath);
             if (rc.IsFailure()) return rc;
 
-            rc = GetPathForServiceObject(out Path newSfPath, newPath);
+            rc = GetPathForServiceObject(out PathSf newSfPath, newPath);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.RenameDirectory(in oldSfPath, in newSfPath);
@@ -97,7 +97,7 @@ namespace LibHac.Fs.Impl
         {
             UnsafeHelpers.SkipParamInit(out entryType);
 
-            Result rc = GetPathForServiceObject(out Path sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
 
             ref uint sfEntryType = ref Unsafe.As<DirectoryEntryType, uint>(ref entryType);
@@ -109,7 +109,7 @@ namespace LibHac.Fs.Impl
         {
             UnsafeHelpers.SkipParamInit(out freeSpace);
 
-            Result rc = GetPathForServiceObject(out Path sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.GetFreeSpaceSize(out freeSpace, in sfPath);
@@ -119,17 +119,17 @@ namespace LibHac.Fs.Impl
         {
             UnsafeHelpers.SkipParamInit(out totalSpace);
 
-            Result rc = GetPathForServiceObject(out Path sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.GetTotalSpaceSize(out totalSpace, in sfPath);
         }
 
-        protected override Result DoOpenFile(out Fsa.IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
         {
             UnsafeHelpers.SkipParamInit(out file);
 
-            Result rc = GetPathForServiceObject(out Path sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
 
             ReferenceCountedDisposable<IFileSf> sfFile = null;
@@ -147,11 +147,11 @@ namespace LibHac.Fs.Impl
             }
         }
 
-        protected override Result DoOpenDirectory(out Fsa.IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
         {
             UnsafeHelpers.SkipParamInit(out directory);
 
-            Result rc = GetPathForServiceObject(out Path sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
 
             ReferenceCountedDisposable<IDirectorySf> sfDir = null;
@@ -178,7 +178,7 @@ namespace LibHac.Fs.Impl
         {
             UnsafeHelpers.SkipParamInit(out timeStamp);
 
-            Result rc = GetPathForServiceObject(out Path sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.GetFileTimeStampRaw(out timeStamp, in sfPath);
@@ -187,7 +187,7 @@ namespace LibHac.Fs.Impl
         protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
             U8Span path)
         {
-            Result rc = GetPathForServiceObject(out Path sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.QueryEntry(outBuffer, inBuffer, (int)queryId, in sfPath);
@@ -208,7 +208,7 @@ namespace LibHac.Fs.Impl
             base.Dispose(disposing);
         }
 
-        private Result GetPathForServiceObject(out Path sfPath, U8Span path)
+        private Result GetPathForServiceObject(out PathSf sfPath, U8Span path)
         {
             // This is the function used to create Sf.Path structs. Get an unsafe byte span for init only.
             UnsafeHelpers.SkipParamInit(out sfPath);
@@ -216,7 +216,7 @@ namespace LibHac.Fs.Impl
 
             // Copy and null terminate
             StringUtils.Copy(outPath, path);
-            outPath[Unsafe.SizeOf<Path>() - 1] = StringTraits.NullTerminator;
+            outPath[Unsafe.SizeOf<PathSf>() - 1] = StringTraits.NullTerminator;
 
             // Replace directory separators
             PathUtility.Replace(outPath, StringTraits.AltDirectorySeparator, StringTraits.DirectorySeparator);
