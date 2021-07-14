@@ -13,4 +13,15 @@ namespace LibHac.Tests.CryptoTests
             }
         }
     }
+
+    public sealed class AesIntrinsicsRequiredFactAttribute : FactAttribute
+    {
+        public AesIntrinsicsRequiredFactAttribute()
+        {
+            if (!Aes.IsAesNiSupported())
+            {
+                Skip = "AES intrinsics required";
+            }
+        }
+    }
 }
