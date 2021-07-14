@@ -86,8 +86,21 @@ namespace LibHac.Tests.CryptoTests
 
         public static TheoryData<EncryptionTestVector> ReadEncryptionTestVectors(bool getEncryptTests, params string[] filenames)
         {
-            IEnumerable<string> resourcePaths = filenames.Select(x => $"LibHac.Tests.CryptoTests.TestVectors.{x}");
+            EncryptionTestVector[] vectorArray = ReadEncryptionTestVectorsArray(getEncryptTests, filenames);
             var testVectors = new TheoryData<EncryptionTestVector>();
+
+            foreach (EncryptionTestVector test in vectorArray)
+            {
+                testVectors.Add(test);
+            }
+
+            return testVectors;
+        }
+
+        public static EncryptionTestVector[] ReadEncryptionTestVectorsArray(bool getEncryptTests, params string[] filenames)
+        {
+            IEnumerable<string> resourcePaths = filenames.Select(x => $"LibHac.Tests.CryptoTests.TestVectors.{x}");
+            var testVectors = new List<EncryptionTestVector>();
 
             foreach (string path in resourcePaths)
             {
@@ -102,7 +115,7 @@ namespace LibHac.Tests.CryptoTests
                 }
             }
 
-            return testVectors;
+            return testVectors.ToArray();
         }
 
         public IEnumerable<HashTestVector> GetHashTestVectors()
@@ -153,8 +166,21 @@ namespace LibHac.Tests.CryptoTests
 
         public static TheoryData<HashTestVector> ReadHashTestVectors(params string[] filenames)
         {
-            IEnumerable<string> resourcePaths = filenames.Select(x => $"LibHac.Tests.CryptoTests.TestVectors.{x}");
+            HashTestVector[] vectorArray = ReadHashTestVectorsArray(filenames);
             var testVectors = new TheoryData<HashTestVector>();
+
+            foreach (HashTestVector test in vectorArray)
+            {
+                testVectors.Add(test);
+            }
+
+            return testVectors;
+        }
+
+        public static HashTestVector[] ReadHashTestVectorsArray(params string[] filenames)
+        {
+            IEnumerable<string> resourcePaths = filenames.Select(x => $"LibHac.Tests.CryptoTests.TestVectors.{x}");
+            var testVectors = new List<HashTestVector>();
 
             foreach (string path in resourcePaths)
             {
@@ -169,7 +195,7 @@ namespace LibHac.Tests.CryptoTests
                 }
             }
 
-            return testVectors;
+            return testVectors.ToArray();
         }
     }
 
