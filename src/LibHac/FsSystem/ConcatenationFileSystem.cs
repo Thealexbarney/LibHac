@@ -112,11 +112,11 @@ namespace LibHac.FsSystem
             return BaseFileSystem.CreateDirectory(path);
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option)
         {
-            CreateFileOptions newOptions = options & ~CreateFileOptions.CreateConcatenationFile;
+            CreateFileOptions newOptions = option & ~CreateFileOptions.CreateConcatenationFile;
 
-            if (!options.HasFlag(CreateFileOptions.CreateConcatenationFile))
+            if (!option.HasFlag(CreateFileOptions.CreateConcatenationFile))
             {
                 return BaseFileSystem.CreateFile(path, size, newOptions);
             }
@@ -253,25 +253,25 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath)
         {
-            if (IsConcatenationFile(oldPath))
+            if (IsConcatenationFile(currentPath))
             {
                 return ResultFs.PathNotFound.Log();
             }
 
-            return BaseFileSystem.RenameDirectory(oldPath, newPath);
+            return BaseFileSystem.RenameDirectory(currentPath, newPath);
         }
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath)
         {
-            if (IsConcatenationFile(oldPath))
+            if (IsConcatenationFile(currentPath))
             {
-                return BaseFileSystem.RenameDirectory(oldPath, newPath);
+                return BaseFileSystem.RenameDirectory(currentPath, newPath);
             }
             else
             {
-                return BaseFileSystem.RenameFile(oldPath, newPath);
+                return BaseFileSystem.RenameFile(currentPath, newPath);
             }
         }
 

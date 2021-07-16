@@ -153,9 +153,9 @@ namespace LibHac.FsSystem.Save
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option)
         {
-            Result result = SaveDataFileSystemCore.CreateFile(path, size, options);
+            Result result = SaveDataFileSystemCore.CreateFile(path, size, option);
 
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
@@ -202,16 +202,16 @@ namespace LibHac.FsSystem.Save
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath)
         {
-            Result result = SaveDataFileSystemCore.RenameDirectory(oldPath, newPath);
+            Result result = SaveDataFileSystemCore.RenameDirectory(currentPath, newPath);
 
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath)
         {
-            Result result = SaveDataFileSystemCore.RenameFile(oldPath, newPath);
+            Result result = SaveDataFileSystemCore.RenameFile(currentPath, newPath);
 
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }

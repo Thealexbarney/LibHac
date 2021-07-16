@@ -43,7 +43,7 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option)
         {
             Unsafe.SkipInit(out FsPath normalizedPath);
 
@@ -175,12 +175,12 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath)
         {
             Unsafe.SkipInit(out FsPath normalizedCurrentPath);
             Unsafe.SkipInit(out FsPath normalizedNewPath);
 
-            Result rc = PathNormalizer.Normalize(normalizedCurrentPath.Str, out _, oldPath, false, false);
+            Result rc = PathNormalizer.Normalize(normalizedCurrentPath.Str, out _, currentPath, false, false);
             if (rc.IsFailure()) return rc;
 
             rc = PathNormalizer.Normalize(normalizedNewPath.Str, out _, newPath, false, false);
@@ -189,12 +189,12 @@ namespace LibHac.FsSystem.Save
             return FileTable.RenameDirectory(normalizedCurrentPath, normalizedNewPath);
         }
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath)
         {
             Unsafe.SkipInit(out FsPath normalizedCurrentPath);
             Unsafe.SkipInit(out FsPath normalizedNewPath);
 
-            Result rc = PathNormalizer.Normalize(normalizedCurrentPath.Str, out _, oldPath, false, false);
+            Result rc = PathNormalizer.Normalize(normalizedCurrentPath.Str, out _, currentPath, false, false);
             if (rc.IsFailure()) return rc;
 
             rc = PathNormalizer.Normalize(normalizedNewPath.Str, out _, newPath, false, false);

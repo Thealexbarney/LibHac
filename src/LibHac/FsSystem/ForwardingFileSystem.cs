@@ -44,11 +44,11 @@ namespace LibHac.FsSystem
         protected override Result DoCleanDirectoryRecursively(U8Span path) =>
             BaseFileSystem.Target.CleanDirectoryRecursively(path);
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath) =>
-            BaseFileSystem.Target.RenameFile(oldPath, newPath);
+        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath) =>
+            BaseFileSystem.Target.RenameFile(currentPath, newPath);
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath) =>
-            BaseFileSystem.Target.RenameDirectory(oldPath, newPath);
+        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath) =>
+            BaseFileSystem.Target.RenameDirectory(currentPath, newPath);
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path) =>
             BaseFileSystem.Target.GetEntryType(out entryType, path);

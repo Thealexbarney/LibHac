@@ -145,14 +145,14 @@ namespace LibHac.FsSrv.Impl
             return ConvertResult(BaseFileSystem.Target.CleanDirectoryRecursively(path));
         }
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath)
         {
-            return ConvertResult(BaseFileSystem.Target.RenameFile(oldPath, newPath));
+            return ConvertResult(BaseFileSystem.Target.RenameFile(currentPath, newPath));
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath)
         {
-            return ConvertResult(BaseFileSystem.Target.RenameDirectory(oldPath, newPath));
+            return ConvertResult(BaseFileSystem.Target.RenameDirectory(currentPath, newPath));
         }
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)

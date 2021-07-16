@@ -157,52 +157,52 @@ namespace LibHac.Fs.Fsa
         /// <summary>
         /// Renames or moves a file to a new location.
         /// </summary>
-        /// <param name="oldPath">The full path of the file to rename.</param>
+        /// <param name="currentPath">The full path of the file to rename.</param>
         /// <param name="newPath">The new full path of the file.</param>
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
         /// <remarks>
-        /// If <paramref name="oldPath"/> and <paramref name="newPath"/> are the same, this function does nothing and returns successfully.
+        /// If <paramref name="currentPath"/> and <paramref name="newPath"/> are the same, this function does nothing and returns successfully.
         /// The following <see cref="Result"/> codes may be returned under certain conditions:
         /// 
-        /// <paramref name="oldPath"/> does not exist or is a directory: <see cref="ResultFs.PathNotFound"/>
+        /// <paramref name="currentPath"/> does not exist or is a directory: <see cref="ResultFs.PathNotFound"/>
         /// <paramref name="newPath"/>'s parent directory does not exist: <see cref="ResultFs.PathNotFound"/>
         /// <paramref name="newPath"/> already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
         /// </remarks>
-        public Result RenameFile(U8Span oldPath, U8Span newPath)
+        public Result RenameFile(U8Span currentPath, U8Span newPath)
         {
-            if (oldPath.IsNull())
+            if (currentPath.IsNull())
                 return ResultFs.NullptrArgument.Log();
 
             if (newPath.IsNull())
                 return ResultFs.NullptrArgument.Log();
 
-            return DoRenameFile(oldPath, newPath);
+            return DoRenameFile(currentPath, newPath);
         }
 
         /// <summary>
         /// Renames or moves a directory to a new location.
         /// </summary>
-        /// <param name="oldPath">The full path of the directory to rename.</param>
+        /// <param name="currentPath">The full path of the directory to rename.</param>
         /// <param name="newPath">The new full path of the directory.</param>
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
         /// <remarks>
-        /// If <paramref name="oldPath"/> and <paramref name="newPath"/> are the same, this function does nothing and returns <see cref="Result.Success"/>.
+        /// If <paramref name="currentPath"/> and <paramref name="newPath"/> are the same, this function does nothing and returns <see cref="Result.Success"/>.
         /// The following <see cref="Result"/> codes may be returned under certain conditions:
         /// 
-        /// <paramref name="oldPath"/> does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
+        /// <paramref name="currentPath"/> does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
         /// <paramref name="newPath"/>'s parent directory does not exist: <see cref="ResultFs.PathNotFound"/>
         /// <paramref name="newPath"/> already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
-        /// Either <paramref name="oldPath"/> or <paramref name="newPath"/> is a subpath of the other: <see cref="ResultFs.DirectoryNotRenamable"/>
+        /// Either <paramref name="currentPath"/> or <paramref name="newPath"/> is a subpath of the other: <see cref="ResultFs.DirectoryNotRenamable"/>
         /// </remarks>
-        public Result RenameDirectory(U8Span oldPath, U8Span newPath)
+        public Result RenameDirectory(U8Span currentPath, U8Span newPath)
         {
-            if (oldPath.IsNull())
+            if (currentPath.IsNull())
                 return ResultFs.NullptrArgument.Log();
 
             if (newPath.IsNull())
                 return ResultFs.NullptrArgument.Log();
 
-            return DoRenameDirectory(oldPath, newPath);
+            return DoRenameDirectory(currentPath, newPath);
         }
 
         /// <summary>
@@ -387,8 +387,8 @@ namespace LibHac.Fs.Fsa
         protected abstract Result DoDeleteDirectory(U8Span path);
         protected abstract Result DoDeleteDirectoryRecursively(U8Span path);
         protected abstract Result DoCleanDirectoryRecursively(U8Span path);
-        protected abstract Result DoRenameFile(U8Span oldPath, U8Span newPath);
-        protected abstract Result DoRenameDirectory(U8Span oldPath, U8Span newPath);
+        protected abstract Result DoRenameFile(U8Span currentPath, U8Span newPath);
+        protected abstract Result DoRenameDirectory(U8Span currentPath, U8Span newPath);
         protected abstract Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path);
 
         protected virtual Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)

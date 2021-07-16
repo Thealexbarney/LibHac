@@ -48,9 +48,9 @@ namespace LibHac.FsSystem
             return BaseFileSystem.CreateDirectory(path);
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option)
         {
-            return CreateFile(path, size, options, new byte[0x20]);
+            return CreateFile(path, size, option, new byte[0x20]);
         }
 
         /// <summary>
@@ -126,7 +126,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath)
         {
             // todo: Return proper result codes
 
@@ -138,17 +138,17 @@ namespace LibHac.FsSystem
             // Reencrypt any modified file headers with the old path
             // Rename directory to the old path
 
-            Result rc = BaseFileSystem.RenameDirectory(oldPath, newPath);
+            Result rc = BaseFileSystem.RenameDirectory(currentPath, newPath);
             if (rc.IsFailure()) return rc;
 
             try
             {
-                RenameDirectoryImpl(oldPath.ToString(), newPath.ToString(), false);
+                RenameDirectoryImpl(currentPath.ToString(), newPath.ToString(), false);
             }
             catch (Exception)
             {
-                RenameDirectoryImpl(oldPath.ToString(), newPath.ToString(), true);
-                BaseFileSystem.RenameDirectory(oldPath, newPath);
+                RenameDirectoryImpl(currentPath.ToString(), newPath.ToString(), true);
+                BaseFileSystem.RenameDirectory(currentPath, newPath);
 
                 throw;
             }
@@ -186,13 +186,13 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath)
         {
             // todo: Return proper result codes
 
-            AesXtsFileHeader header = ReadXtsHeader(oldPath.ToString(), oldPath.ToString());
+            AesXtsFileHeader header = ReadXtsHeader(currentPath.ToString(), currentPath.ToString());
 
-            Result rc = BaseFileSystem.RenameFile(oldPath, newPath);
+            Result rc = BaseFileSystem.RenameFile(currentPath, newPath);
             if (rc.IsFailure()) return rc;
 
             try
@@ -201,8 +201,8 @@ namespace LibHac.FsSystem
             }
             catch (Exception)
             {
-                BaseFileSystem.RenameFile(newPath, oldPath);
-                WriteXtsHeader(header, oldPath.ToString(), oldPath.ToString());
+                BaseFileSystem.RenameFile(newPath, currentPath);
+                WriteXtsHeader(header, currentPath.ToString(), currentPath.ToString());
 
                 throw;
             }

@@ -77,7 +77,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoCreateDirectory(U8Span path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
         protected override Result DoDeleteDirectory(U8Span path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
@@ -87,9 +87,9 @@ namespace LibHac.FsSystem
 
         protected override Result DoDeleteFile(U8Span path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
+        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
+        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
         protected override void Dispose(bool disposing)
         {

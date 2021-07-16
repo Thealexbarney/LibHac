@@ -102,13 +102,13 @@ namespace LibHac.FsSystem
             return BaseFileSystem.CreateDirectory(new U8Span(fullPath));
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option)
         {
             Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
             Result rc = ResolveFullPath(fullPath, path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFileSystem.CreateFile(new U8Span(fullPath), size, options);
+            return BaseFileSystem.CreateFile(new U8Span(fullPath), size, option);
         }
 
         protected override Result DoDeleteDirectory(U8Span path)
@@ -169,12 +169,12 @@ namespace LibHac.FsSystem
             return BaseFileSystem.OpenFile(out file, new U8Span(fullPath), mode);
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath)
         {
             Span<byte> fullOldPath = stackalloc byte[PathTools.MaxPathLength + 1];
             Span<byte> fullNewPath = stackalloc byte[PathTools.MaxPathLength + 1];
 
-            Result rc = ResolveFullPath(fullOldPath, oldPath);
+            Result rc = ResolveFullPath(fullOldPath, currentPath);
             if (rc.IsFailure()) return rc;
 
             rc = ResolveFullPath(fullNewPath, newPath);
@@ -183,12 +183,12 @@ namespace LibHac.FsSystem
             return BaseFileSystem.RenameDirectory(new U8Span(fullOldPath), new U8Span(fullNewPath));
         }
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath)
         {
             Span<byte> fullOldPath = stackalloc byte[PathTools.MaxPathLength + 1];
             Span<byte> fullNewPath = stackalloc byte[PathTools.MaxPathLength + 1];
 
-            Result rc = ResolveFullPath(fullOldPath, oldPath);
+            Result rc = ResolveFullPath(fullOldPath, currentPath);
             if (rc.IsFailure()) return rc;
 
             rc = ResolveFullPath(fullNewPath, newPath);

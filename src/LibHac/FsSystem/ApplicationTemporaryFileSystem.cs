@@ -37,12 +37,12 @@ namespace LibHac.FsSystem
             throw new NotImplementedException();
         }
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath)
         {
             throw new NotImplementedException();
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath)
         {
             throw new NotImplementedException();
         }

@@ -46,7 +46,7 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option)
         {
             Unsafe.SkipInit(out FsPath normalizedPath);
             Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);

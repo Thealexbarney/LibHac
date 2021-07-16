@@ -299,7 +299,7 @@ namespace LibHac.FsSystem
             return PathNormalizer.Normalize(outPath.Slice(2), out _, relativePath, false, false);
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option)
         {
             Unsafe.SkipInit(out FsPath fullPath);
 
@@ -308,7 +308,7 @@ namespace LibHac.FsSystem
 
             using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
 
-            return _baseFs.CreateFile(fullPath, size, options);
+            return _baseFs.CreateFile(fullPath, size, option);
         }
 
         protected override Result DoDeleteFile(U8Span path)
@@ -371,12 +371,12 @@ namespace LibHac.FsSystem
             return _baseFs.CleanDirectoryRecursively(fullPath);
         }
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath)
         {
             Unsafe.SkipInit(out FsPath fullCurrentPath);
             Unsafe.SkipInit(out FsPath fullNewPath);
 
-            Result rc = ResolveFullPath(fullCurrentPath.Str, oldPath);
+            Result rc = ResolveFullPath(fullCurrentPath.Str, currentPath);
             if (rc.IsFailure()) return rc;
 
             rc = ResolveFullPath(fullNewPath.Str, newPath);
@@ -387,12 +387,12 @@ namespace LibHac.FsSystem
             return _baseFs.RenameFile(fullCurrentPath, fullNewPath);
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath)
         {
             Unsafe.SkipInit(out FsPath fullCurrentPath);
             Unsafe.SkipInit(out FsPath fullNewPath);
 
-            Result rc = ResolveFullPath(fullCurrentPath.Str, oldPath);
+            Result rc = ResolveFullPath(fullCurrentPath.Str, currentPath);
             if (rc.IsFailure()) return rc;
 
             rc = ResolveFullPath(fullNewPath.Str, newPath);

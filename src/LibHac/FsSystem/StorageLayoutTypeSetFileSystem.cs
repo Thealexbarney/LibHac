@@ -85,16 +85,16 @@ namespace LibHac.FsSystem
             return BaseFileSystem.Target.CleanDirectoryRecursively(path);
         }
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
-            return BaseFileSystem.Target.RenameFile(oldPath, newPath);
+            return BaseFileSystem.Target.RenameFile(currentPath, newPath);
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
-            return BaseFileSystem.Target.RenameDirectory(oldPath, newPath);
+            return BaseFileSystem.Target.RenameDirectory(currentPath, newPath);
         }
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)

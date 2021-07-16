@@ -71,9 +71,9 @@ namespace LibHac.Fs.Impl
             return BaseFs.Target.CleanDirectoryRecursively(in sfPath);
         }
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath)
         {
-            Result rc = GetPathForServiceObject(out PathSf oldSfPath, oldPath);
+            Result rc = GetPathForServiceObject(out PathSf oldSfPath, currentPath);
             if (rc.IsFailure()) return rc;
 
             rc = GetPathForServiceObject(out PathSf newSfPath, newPath);
@@ -82,9 +82,9 @@ namespace LibHac.Fs.Impl
             return BaseFs.Target.RenameFile(in oldSfPath, in newSfPath);
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath)
         {
-            Result rc = GetPathForServiceObject(out PathSf oldSfPath, oldPath);
+            Result rc = GetPathForServiceObject(out PathSf oldSfPath, currentPath);
             if (rc.IsFailure()) return rc;
 
             rc = GetPathForServiceObject(out PathSf newSfPath, newPath);

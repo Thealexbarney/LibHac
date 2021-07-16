@@ -252,7 +252,7 @@ namespace LibHac.FsSystem
             return CreateDirInternal(dir, archiveAttribute);
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
+        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option)
         {
             Result rc = ResolveFullPath(out string fullPath, path, false);
             if (rc.IsFailure()) return rc;
@@ -400,12 +400,12 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath)
         {
-            Result rc = CheckSubPath(oldPath, newPath);
+            Result rc = CheckSubPath(currentPath, newPath);
             if (rc.IsFailure()) return rc;
 
-            rc = ResolveFullPath(out string fullCurrentPath, oldPath, true);
+            rc = ResolveFullPath(out string fullCurrentPath, currentPath, true);
             if (rc.IsFailure()) return rc;
 
             rc = ResolveFullPath(out string fullNewPath, newPath, false);
@@ -424,9 +424,9 @@ namespace LibHac.FsSystem
                 () => RenameDirInternal(currentDirInfo, newDirInfo), _fsClient);
         }
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath)
         {
-            Result rc = ResolveFullPath(out string fullCurrentPath, oldPath, true);
+            Result rc = ResolveFullPath(out string fullCurrentPath, currentPath, true);
             if (rc.IsFailure()) return rc;
 
             rc = ResolveFullPath(out string fullNewPath, newPath, false);

@@ -143,14 +143,14 @@ namespace LibHac.FsSystem
             return _baseFileSystem.Target.CleanDirectoryRecursively(path);
         }
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath)
         {
-            return _baseFileSystem.Target.RenameFile(oldPath, newPath);
+            return _baseFileSystem.Target.RenameFile(currentPath, newPath);
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath)
         {
-            return _baseFileSystem.Target.RenameDirectory(oldPath, newPath);
+            return _baseFileSystem.Target.RenameDirectory(currentPath, newPath);
         }
 
         protected override Result DoCommit()
