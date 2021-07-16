@@ -186,14 +186,14 @@ namespace LibHac.FsSystem
             _fsClient = fsClient;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
             _lockFile?.Dispose();
             _lockFile = null;
 
             _cacheObserver?.Unregister(_spaceId, _saveDataId);
             _baseFs?.Dispose();
-            base.Dispose(disposing);
+            base.Dispose();
         }
 
         public Result Initialize(bool isJournalingSupported, bool isMultiCommitSupported, bool isJournalingEnabled)
@@ -299,7 +299,7 @@ namespace LibHac.FsSystem
             return PathNormalizer.Normalize(outPath.Slice(2), out _, relativePath, false, false);
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option)
+        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
         {
             Unsafe.SkipInit(out FsPath fullPath);
 
@@ -311,7 +311,7 @@ namespace LibHac.FsSystem
             return _baseFs.CreateFile(fullPath, size, option);
         }
 
-        protected override Result DoDeleteFile(U8Span path)
+        protected override Result DoDeleteFile(in Path path)
         {
             Unsafe.SkipInit(out FsPath fullPath);
 
@@ -323,7 +323,7 @@ namespace LibHac.FsSystem
             return _baseFs.DeleteFile(fullPath);
         }
 
-        protected override Result DoCreateDirectory(U8Span path)
+        protected override Result DoCreateDirectory(in Path path)
         {
             Unsafe.SkipInit(out FsPath fullPath);
 
@@ -335,7 +335,7 @@ namespace LibHac.FsSystem
             return _baseFs.CreateDirectory(fullPath);
         }
 
-        protected override Result DoDeleteDirectory(U8Span path)
+        protected override Result DoDeleteDirectory(in Path path)
         {
             Unsafe.SkipInit(out FsPath fullPath);
 
@@ -347,7 +347,7 @@ namespace LibHac.FsSystem
             return _baseFs.DeleteDirectory(fullPath);
         }
 
-        protected override Result DoDeleteDirectoryRecursively(U8Span path)
+        protected override Result DoDeleteDirectoryRecursively(in Path path)
         {
             Unsafe.SkipInit(out FsPath fullPath);
 
@@ -359,7 +359,7 @@ namespace LibHac.FsSystem
             return _baseFs.DeleteDirectoryRecursively(fullPath);
         }
 
-        protected override Result DoCleanDirectoryRecursively(U8Span path)
+        protected override Result DoCleanDirectoryRecursively(in Path path)
         {
             Unsafe.SkipInit(out FsPath fullPath);
 
@@ -371,7 +371,7 @@ namespace LibHac.FsSystem
             return _baseFs.CleanDirectoryRecursively(fullPath);
         }
 
-        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath)
+        protected override Result DoRenameFile(in Path currentPath, in Path newPath)
         {
             Unsafe.SkipInit(out FsPath fullCurrentPath);
             Unsafe.SkipInit(out FsPath fullNewPath);
@@ -387,7 +387,7 @@ namespace LibHac.FsSystem
             return _baseFs.RenameFile(fullCurrentPath, fullNewPath);
         }
 
-        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath)
+        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
         {
             Unsafe.SkipInit(out FsPath fullCurrentPath);
             Unsafe.SkipInit(out FsPath fullNewPath);
@@ -403,7 +403,7 @@ namespace LibHac.FsSystem
             return _baseFs.RenameDirectory(fullCurrentPath, fullNewPath);
         }
 
-        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
             Unsafe.SkipInit(out FsPath fullPath);
 
@@ -419,7 +419,7 @@ namespace LibHac.FsSystem
             return _baseFs.GetEntryType(out entryType, fullPath);
         }
 
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
         {
             UnsafeHelpers.SkipParamInit(out file);
 
@@ -443,7 +443,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
         {
             UnsafeHelpers.SkipParamInit(out directory);
 
@@ -549,7 +549,7 @@ namespace LibHac.FsSystem
             return Initialize(_isJournalingSupported, _isMultiCommitSupported, _isJournalingEnabled);
         }
 
-        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out freeSpace);
 
@@ -563,7 +563,7 @@ namespace LibHac.FsSystem
             return _baseFs.GetFreeSpaceSize(out freeSpace, fullPath);
         }
 
-        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out totalSpace);
 

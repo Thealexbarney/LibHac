@@ -202,7 +202,7 @@ namespace LibHac.FsSystem
 
         public static void SetConcatenationFileAttribute(this IFileSystem fs, string path)
         {
-            fs.QueryEntry(Span<byte>.Empty, Span<byte>.Empty, QueryId.MakeConcatFile, path.ToU8Span());
+            fs.QueryEntry(Span<byte>.Empty, Span<byte>.Empty, QueryId.SetConcatenationFileAttribute, path.ToU8Span());
         }
 
         public static void CleanDirectoryRecursivelyGeneric(IFileSystem fileSystem, string path)

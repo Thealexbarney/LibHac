@@ -23,7 +23,7 @@ namespace LibHac.Fs.Impl
             BaseFs = baseFileSystem.AddReference();
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option)
+        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
         {
             Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
@@ -31,7 +31,7 @@ namespace LibHac.Fs.Impl
             return BaseFs.Target.CreateFile(in sfPath, size, (int)option);
         }
 
-        protected override Result DoDeleteFile(U8Span path)
+        protected override Result DoDeleteFile(in Path path)
         {
             Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
@@ -39,7 +39,7 @@ namespace LibHac.Fs.Impl
             return BaseFs.Target.DeleteFile(in sfPath);
         }
 
-        protected override Result DoCreateDirectory(U8Span path)
+        protected override Result DoCreateDirectory(in Path path)
         {
             Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
@@ -47,7 +47,7 @@ namespace LibHac.Fs.Impl
             return BaseFs.Target.DeleteFile(in sfPath);
         }
 
-        protected override Result DoDeleteDirectory(U8Span path)
+        protected override Result DoDeleteDirectory(in Path path)
         {
             Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
@@ -55,7 +55,7 @@ namespace LibHac.Fs.Impl
             return BaseFs.Target.DeleteDirectory(in sfPath);
         }
 
-        protected override Result DoDeleteDirectoryRecursively(U8Span path)
+        protected override Result DoDeleteDirectoryRecursively(in Path path)
         {
             Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
@@ -63,7 +63,7 @@ namespace LibHac.Fs.Impl
             return BaseFs.Target.DeleteDirectoryRecursively(in sfPath);
         }
 
-        protected override Result DoCleanDirectoryRecursively(U8Span path)
+        protected override Result DoCleanDirectoryRecursively(in Path path)
         {
             Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
@@ -71,7 +71,7 @@ namespace LibHac.Fs.Impl
             return BaseFs.Target.CleanDirectoryRecursively(in sfPath);
         }
 
-        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath)
+        protected override Result DoRenameFile(in Path currentPath, in Path newPath)
         {
             Result rc = GetPathForServiceObject(out PathSf oldSfPath, currentPath);
             if (rc.IsFailure()) return rc;
@@ -82,7 +82,7 @@ namespace LibHac.Fs.Impl
             return BaseFs.Target.RenameFile(in oldSfPath, in newSfPath);
         }
 
-        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath)
+        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
         {
             Result rc = GetPathForServiceObject(out PathSf oldSfPath, currentPath);
             if (rc.IsFailure()) return rc;
@@ -93,7 +93,7 @@ namespace LibHac.Fs.Impl
             return BaseFs.Target.RenameDirectory(in oldSfPath, in newSfPath);
         }
 
-        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out entryType);
 
@@ -105,7 +105,7 @@ namespace LibHac.Fs.Impl
             return BaseFs.Target.GetEntryType(out sfEntryType, in sfPath);
         }
 
-        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out freeSpace);
 
@@ -115,7 +115,7 @@ namespace LibHac.Fs.Impl
             return BaseFs.Target.GetFreeSpaceSize(out freeSpace, in sfPath);
         }
 
-        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out totalSpace);
 
@@ -125,7 +125,7 @@ namespace LibHac.Fs.Impl
             return BaseFs.Target.GetTotalSpaceSize(out totalSpace, in sfPath);
         }
 
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
         {
             UnsafeHelpers.SkipParamInit(out file);
 
@@ -147,7 +147,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
         {
             UnsafeHelpers.SkipParamInit(out directory);
 
@@ -174,7 +174,7 @@ namespace LibHac.Fs.Impl
             return BaseFs.Target.Commit();
         }
 
-        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
+        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out timeStamp);
 
@@ -185,7 +185,7 @@ namespace LibHac.Fs.Impl
         }
 
         protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
-            U8Span path)
+            in Path path)
         {
             Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
@@ -198,14 +198,10 @@ namespace LibHac.Fs.Impl
             return BaseFs.AddReference();
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                BaseFs?.Dispose();
-            }
-
-            base.Dispose(disposing);
+            BaseFs?.Dispose();
+            base.Dispose();
         }
 
         private Result GetPathForServiceObject(out PathSf sfPath, U8Span path)

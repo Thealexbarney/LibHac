@@ -73,7 +73,7 @@ namespace LibHac.Fs.Fsa
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
-            rc = fileSystem.QueryEntry(Span<byte>.Empty, ReadOnlySpan<byte>.Empty, QueryId.MakeConcatFile, subPath);
+            rc = fileSystem.QueryEntry(Span<byte>.Empty, ReadOnlySpan<byte>.Empty, QueryId.SetConcatenationFileAttribute, subPath);
             fs.Impl.AbortIfNeeded(rc);
             return rc;
         }

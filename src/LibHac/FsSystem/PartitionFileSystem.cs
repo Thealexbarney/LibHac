@@ -7,6 +7,7 @@ using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using Path = LibHac.Fs.Path;
 
 namespace LibHac.FsSystem
 {
@@ -33,13 +34,13 @@ namespace LibHac.FsSystem
             BaseStorage = storage;
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
         {
             directory = new PartitionDirectory(this, path.ToString(), mode);
             return Result.Success;
         }
 
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
         {
             path = PathTools.Normalize(path.ToString()).TrimStart('/').ToU8Span();
 
@@ -57,7 +58,7 @@ namespace LibHac.FsSystem
             return new PartitionFile(BaseStorage, HeaderSize + entry.Offset, entry.Size, mode);
         }
 
-        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out entryType);
 
@@ -76,14 +77,14 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result DoCreateDirectory(U8Span path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
-        protected override Result DoDeleteDirectory(U8Span path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
-        protected override Result DoDeleteDirectoryRecursively(U8Span path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
-        protected override Result DoCleanDirectoryRecursively(U8Span path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
-        protected override Result DoDeleteFile(U8Span path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
-        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
-        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoCreateDirectory(in Path path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoDeleteDirectory(in Path path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoDeleteDirectoryRecursively(in Path path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoCleanDirectoryRecursively(in Path path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoDeleteFile(in Path path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+        protected override Result DoRenameFile(in Path currentPath, in Path newPath) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
 
         protected override Result DoCommit()
         {

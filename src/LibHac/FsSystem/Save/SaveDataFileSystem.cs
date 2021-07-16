@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using LibHac.Common;
 using LibHac.Common.Keys;
 using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using Path = LibHac.Fs.Path;
 
 namespace LibHac.FsSystem.Save
 {
@@ -146,91 +146,91 @@ namespace LibHac.FsSystem.Save
                 IntegrityStorageType.Save, integrityCheckLevel, LeaveOpen);
         }
 
-        protected override Result DoCreateDirectory(U8Span path)
+        protected override Result DoCreateDirectory(in Path path)
         {
             Result result = SaveDataFileSystemCore.CreateDirectory(path);
 
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option)
+        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
         {
             Result result = SaveDataFileSystemCore.CreateFile(path, size, option);
 
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
-        protected override Result DoDeleteDirectory(U8Span path)
+        protected override Result DoDeleteDirectory(in Path path)
         {
             Result result = SaveDataFileSystemCore.DeleteDirectory(path);
 
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
-        protected override Result DoDeleteDirectoryRecursively(U8Span path)
+        protected override Result DoDeleteDirectoryRecursively(in Path path)
         {
             Result result = SaveDataFileSystemCore.DeleteDirectoryRecursively(path);
 
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
-        protected override Result DoCleanDirectoryRecursively(U8Span path)
+        protected override Result DoCleanDirectoryRecursively(in Path path)
         {
             Result result = SaveDataFileSystemCore.CleanDirectoryRecursively(path);
 
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
-        protected override Result DoDeleteFile(U8Span path)
+        protected override Result DoDeleteFile(in Path path)
         {
             Result result = SaveDataFileSystemCore.DeleteFile(path);
 
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
         {
             Result result = SaveDataFileSystemCore.OpenDirectory(out directory, path, mode);
 
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
         {
             Result result = SaveDataFileSystemCore.OpenFile(out file, path, mode);
 
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
-        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath)
+        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
         {
             Result result = SaveDataFileSystemCore.RenameDirectory(currentPath, newPath);
 
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
-        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath)
+        protected override Result DoRenameFile(in Path currentPath, in Path newPath)
         {
             Result result = SaveDataFileSystemCore.RenameFile(currentPath, newPath);
 
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
-        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
             Result result = SaveDataFileSystemCore.GetEntryType(out entryType, path);
 
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
-        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
             Result result = SaveDataFileSystemCore.GetFreeSpaceSize(out freeSpace, path);
 
             return SaveResults.ConvertToExternalResult(result).LogConverted(result);
         }
 
-        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
             Result result = SaveDataFileSystemCore.GetTotalSpaceSize(out totalSpace, path);
 
@@ -309,15 +309,14 @@ namespace LibHac.FsSystem.Save
             return journalValidity;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
+            if (!LeaveOpen)
             {
-                if (!LeaveOpen)
-                {
-                    BaseStorage?.Dispose();
-                }
+                BaseStorage?.Dispose();
             }
+
+            base.Dispose();
         }
     }
 }

@@ -33,22 +33,18 @@ namespace LibHac.FsSystem
             BlockSize = blockSize;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                SharedBaseFileSystem?.Dispose();
-            }
-
-            base.Dispose(disposing);
+            SharedBaseFileSystem?.Dispose();
+            base.Dispose();
         }
 
-        protected override Result DoCreateDirectory(U8Span path)
+        protected override Result DoCreateDirectory(in Path path)
         {
             return BaseFileSystem.CreateDirectory(path);
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option)
+        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
         {
             return CreateFile(path, size, option, new byte[0x20]);
         }
@@ -82,27 +78,27 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoDeleteDirectory(U8Span path)
+        protected override Result DoDeleteDirectory(in Path path)
         {
             return BaseFileSystem.DeleteDirectory(path);
         }
 
-        protected override Result DoDeleteDirectoryRecursively(U8Span path)
+        protected override Result DoDeleteDirectoryRecursively(in Path path)
         {
             return BaseFileSystem.DeleteDirectoryRecursively(path);
         }
 
-        protected override Result DoCleanDirectoryRecursively(U8Span path)
+        protected override Result DoCleanDirectoryRecursively(in Path path)
         {
             return BaseFileSystem.CleanDirectoryRecursively(path);
         }
 
-        protected override Result DoDeleteFile(U8Span path)
+        protected override Result DoDeleteFile(in Path path)
         {
             return BaseFileSystem.DeleteFile(path);
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
         {
             UnsafeHelpers.SkipParamInit(out directory);
 
@@ -113,7 +109,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
         {
             UnsafeHelpers.SkipParamInit(out file);
 
@@ -126,7 +122,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath)
+        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
         {
             // todo: Return proper result codes
 
@@ -186,7 +182,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath)
+        protected override Result DoRenameFile(in Path currentPath, in Path newPath)
         {
             // todo: Return proper result codes
 
@@ -210,22 +206,22 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
             return BaseFileSystem.GetEntryType(out entryType, path);
         }
 
-        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
+        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
         {
             return BaseFileSystem.GetFileTimeStampRaw(out timeStamp, path);
         }
 
-        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
             return BaseFileSystem.GetFreeSpaceSize(out freeSpace, path);
         }
 
-        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
             return BaseFileSystem.GetTotalSpaceSize(out totalSpace, path);
         }
@@ -246,7 +242,7 @@ namespace LibHac.FsSystem
         }
 
         protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
-            U8Span path)
+            in Path path)
         {
             return BaseFileSystem.QueryEntry(outBuffer, inBuffer, queryId, path);
         }

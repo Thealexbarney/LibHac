@@ -143,10 +143,14 @@ namespace LibHac.Fs
 
     public enum OperationId
     {
-        Clear = 0,
-        ClearSignature = 1,
+        FillZero = 0,
+        DestroySignature = 1,
         InvalidateCache = 2,
-        QueryRange = 3
+        QueryRange = 3,
+        QueryUnpreparedRange = 4,
+        QueryLazyLoadCompletionRate = 5,
+        SetLazyLoadPriority = 6,
+        ReadyLazyLoadFile = 10001
     }
 
     public enum SaveDataType : byte

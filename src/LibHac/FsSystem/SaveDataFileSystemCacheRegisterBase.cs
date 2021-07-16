@@ -68,12 +68,9 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (_baseFileSystem is null)
-                return;
-
-            if (disposing)
+            if (_baseFileSystem is not null)
             {
                 if (typeof(T) == typeof(SaveDataFileSystem))
                 {
@@ -95,60 +92,60 @@ namespace LibHac.FsSystem
                 _baseFileSystem = null;
             }
 
-            base.Dispose(disposing);
+            base.Dispose();
         }
 
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
         {
             return _baseFileSystem.Target.OpenFile(out file, path, mode);
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
         {
             return _baseFileSystem.Target.OpenDirectory(out directory, path, mode);
         }
 
-        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
             return _baseFileSystem.Target.GetEntryType(out entryType, path);
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option)
+        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
         {
             return _baseFileSystem.Target.CreateFile(path, size, option);
         }
 
-        protected override Result DoDeleteFile(U8Span path)
+        protected override Result DoDeleteFile(in Path path)
         {
             return _baseFileSystem.Target.DeleteFile(path);
         }
 
-        protected override Result DoCreateDirectory(U8Span path)
+        protected override Result DoCreateDirectory(in Path path)
         {
             return _baseFileSystem.Target.CreateDirectory(path);
         }
 
-        protected override Result DoDeleteDirectory(U8Span path)
+        protected override Result DoDeleteDirectory(in Path path)
         {
             return _baseFileSystem.Target.DeleteDirectory(path);
         }
 
-        protected override Result DoDeleteDirectoryRecursively(U8Span path)
+        protected override Result DoDeleteDirectoryRecursively(in Path path)
         {
             return _baseFileSystem.Target.DeleteDirectoryRecursively(path);
         }
 
-        protected override Result DoCleanDirectoryRecursively(U8Span path)
+        protected override Result DoCleanDirectoryRecursively(in Path path)
         {
             return _baseFileSystem.Target.CleanDirectoryRecursively(path);
         }
 
-        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath)
+        protected override Result DoRenameFile(in Path currentPath, in Path newPath)
         {
             return _baseFileSystem.Target.RenameFile(currentPath, newPath);
         }
 
-        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath)
+        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
         {
             return _baseFileSystem.Target.RenameDirectory(currentPath, newPath);
         }
@@ -168,12 +165,12 @@ namespace LibHac.FsSystem
             return _baseFileSystem.Target.Rollback();
         }
 
-        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
             return _baseFileSystem.Target.GetFreeSpaceSize(out freeSpace, path);
         }
 
-        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
             return _baseFileSystem.Target.GetTotalSpaceSize(out totalSpace, path);
         }

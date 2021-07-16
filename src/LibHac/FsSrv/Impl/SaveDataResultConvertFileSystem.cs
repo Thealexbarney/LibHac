@@ -176,7 +176,7 @@ namespace LibHac.FsSrv.Impl
             return new ReferenceCountedDisposable<IFileSystem>(resultConvertFileSystem);
         }
 
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
         {
             UnsafeHelpers.SkipParamInit(out file);
 
@@ -187,7 +187,7 @@ namespace LibHac.FsSrv.Impl
             return Result.Success;
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
         {
             UnsafeHelpers.SkipParamInit(out directory);
 

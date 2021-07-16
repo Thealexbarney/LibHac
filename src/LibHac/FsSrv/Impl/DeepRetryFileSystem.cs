@@ -39,18 +39,14 @@ namespace LibHac.FsSrv.Impl
             }
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                AccessFailureManager?.Dispose();
-            }
-
-            base.Dispose(disposing);
+            AccessFailureManager?.Dispose();
+            base.Dispose();
         }
 
         // ReSharper disable once RedundantOverriddenMember
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
         {
             // Todo: Implement
             return base.DoOpenFile(out file, path, mode);

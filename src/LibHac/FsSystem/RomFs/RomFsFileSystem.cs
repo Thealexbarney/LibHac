@@ -25,7 +25,7 @@ namespace LibHac.FsSystem.RomFs
             FileTable = new HierarchicalRomFileTable<RomFileInfo>(dirHashTable, dirEntryTable, fileHashTable, fileEntryTable);
         }
 
-        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out entryType);
 
@@ -49,7 +49,7 @@ namespace LibHac.FsSystem.RomFs
             return Result.Success;
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
         {
             UnsafeHelpers.SkipParamInit(out directory);
 
@@ -62,7 +62,7 @@ namespace LibHac.FsSystem.RomFs
             return Result.Success;
         }
 
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
         {
             UnsafeHelpers.SkipParamInit(out file);
 
@@ -86,23 +86,23 @@ namespace LibHac.FsSystem.RomFs
             return BaseStorage;
         }
 
-        protected override Result DoCreateDirectory(U8Span path) => ResultFs.UnsupportedWriteForRomFsFileSystem.Log();
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option) => ResultFs.UnsupportedWriteForRomFsFileSystem.Log();
-        protected override Result DoDeleteDirectory(U8Span path) => ResultFs.UnsupportedWriteForRomFsFileSystem.Log();
-        protected override Result DoDeleteDirectoryRecursively(U8Span path) => ResultFs.UnsupportedWriteForRomFsFileSystem.Log();
-        protected override Result DoCleanDirectoryRecursively(U8Span path) => ResultFs.UnsupportedWriteForRomFsFileSystem.Log();
-        protected override Result DoDeleteFile(U8Span path) => ResultFs.UnsupportedWriteForRomFsFileSystem.Log();
-        protected override Result DoRenameDirectory(U8Span currentPath, U8Span newPath) => ResultFs.UnsupportedWriteForRomFsFileSystem.Log();
-        protected override Result DoRenameFile(U8Span currentPath, U8Span newPath) => ResultFs.UnsupportedWriteForRomFsFileSystem.Log();
+        protected override Result DoCreateDirectory(in Path path) => ResultFs.UnsupportedWriteForRomFsFileSystem.Log();
+        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option) => ResultFs.UnsupportedWriteForRomFsFileSystem.Log();
+        protected override Result DoDeleteDirectory(in Path path) => ResultFs.UnsupportedWriteForRomFsFileSystem.Log();
+        protected override Result DoDeleteDirectoryRecursively(in Path path) => ResultFs.UnsupportedWriteForRomFsFileSystem.Log();
+        protected override Result DoCleanDirectoryRecursively(in Path path) => ResultFs.UnsupportedWriteForRomFsFileSystem.Log();
+        protected override Result DoDeleteFile(in Path path) => ResultFs.UnsupportedWriteForRomFsFileSystem.Log();
+        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath) => ResultFs.UnsupportedWriteForRomFsFileSystem.Log();
+        protected override Result DoRenameFile(in Path currentPath, in Path newPath) => ResultFs.UnsupportedWriteForRomFsFileSystem.Log();
         protected override Result DoCommitProvisionally(long counter) => ResultFs.UnsupportedCommitProvisionallyForRomFsFileSystem.Log();
 
-        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
             freeSpace = 0;
             return Result.Success;
         }
 
-        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out totalSpace);
             return ResultFs.UnsupportedGetTotalSpaceSizeForRomFsFileSystem.Log();
