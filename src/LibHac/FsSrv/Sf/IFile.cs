@@ -12,5 +12,6 @@ namespace LibHac.FsSrv.Sf
         Result SetSize(long size);
         Result GetSize(out long size);
         Result OperateRange(out QueryRangeInfo rangeInfo, int operationId, long offset, long size);
+        Result OperateRangeWithBuffer(OutBuffer outBuffer, InBuffer inBuffer, int operationId, long offset, long size);
     }
 }
