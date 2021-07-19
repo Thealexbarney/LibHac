@@ -31,6 +31,7 @@ namespace LibHac.FsSrv
         public AccessControlGlobals AccessControl;
         public StorageDeviceManagerFactoryGlobals StorageDeviceManagerFactory;
         public SaveDataSharedFileStorageGlobals SaveDataSharedFileStorage;
+        public MultiCommitManagerGlobals MultiCommitManager;
 
         public void Initialize(HorizonClient horizonClient, FileSystemServer fsServer)
         {
@@ -38,6 +39,7 @@ namespace LibHac.FsSrv
             InitMutex = new object();
 
             SaveDataSharedFileStorage.Initialize(fsServer);
+            MultiCommitManager.Initialize();
         }
     }
 

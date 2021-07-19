@@ -2119,7 +2119,7 @@ namespace LibHac.FsSrv
                 saveService = SelfReference.AddReference();
                 commitInterface = saveService.AddReference<ISaveDataMultiCommitCoreInterface>();
 
-                commitManager = MultiCommitManager.CreateShared(ref commitInterface, Hos);
+                commitManager = MultiCommitManager.CreateShared(ServiceImpl.FsServer, ref commitInterface);
                 return Result.Success;
             }
             finally
@@ -2146,7 +2146,7 @@ namespace LibHac.FsSrv
 
         public Result RecoverMultiCommit()
         {
-            return MultiCommitManager.Recover(this, ServiceImpl);
+            return MultiCommitManager.Recover(ServiceImpl.FsServer, this, ServiceImpl);
         }
 
         public Result IsProvisionallyCommittedSaveData(out bool isProvisionallyCommitted, in SaveDataInfo saveInfo)

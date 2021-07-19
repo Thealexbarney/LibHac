@@ -26,6 +26,7 @@ namespace LibHac.FsSrv
         private TimeStampGetter _timeStampGetter;
 
         internal HorizonClient Hos => _config.FsServer.Hos;
+        internal FileSystemServer FsServer => _config.FsServer;
 
         private class TimeStampGetter : ISaveDataCommitTimeStampGetter
         {
