@@ -39,6 +39,7 @@ namespace LibHac.Fs
         private int _writeBufferLength;
         private bool _isNormalized;
 
+        // Todo: Hack around "using" variables being read only
         public void Dispose()
         {
             byte[] writeBuffer = Shared.Move(ref _writeBuffer);
