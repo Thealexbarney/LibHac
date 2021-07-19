@@ -57,9 +57,9 @@ namespace LibHac.Tests.Fs
         {
             (IFileSystem baseFs, IFileSystem saveFs) = CreateFileSystemInternal();
 
-            saveFs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
+            saveFs.CreateFile("/file", 0, CreateFileOptions.None);
 
-            Assert.Success(baseFs.GetEntryType(out DirectoryEntryType type, "/1/file".ToU8Span()));
+            Assert.Success(baseFs.GetEntryType(out DirectoryEntryType type, "/1/file"));
             Assert.Equal(DirectoryEntryType.File, type);
         }
 
@@ -68,9 +68,9 @@ namespace LibHac.Tests.Fs
         {
             (IFileSystem baseFs, IFileSystem saveFs) = CreateFileSystemInternal();
 
-            saveFs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
+            saveFs.CreateFile("/file", 0, CreateFileOptions.None);
 
-            Assert.Result(ResultFs.PathNotFound, baseFs.GetEntryType(out _, "/0/file".ToU8Span()));
+            Assert.Result(ResultFs.PathNotFound, baseFs.GetEntryType(out _, "/0/file"));
         }
 
         [Fact]
@@ -78,11 +78,11 @@ namespace LibHac.Tests.Fs
         {
             (IFileSystem baseFs, IFileSystem saveFs) = CreateFileSystemInternal();
 
-            saveFs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
+            saveFs.CreateFile("/file", 0, CreateFileOptions.None);
 
             Assert.Success(saveFs.Commit());
 
-            Assert.Success(baseFs.GetEntryType(out DirectoryEntryType type, "/0/file".ToU8Span()));
+            Assert.Success(baseFs.GetEntryType(out DirectoryEntryType type, "/0/file"));
             Assert.Equal(DirectoryEntryType.File, type);
         }
 
@@ -91,15 +91,15 @@ namespace LibHac.Tests.Fs
         {
             (IFileSystem baseFs, IFileSystem saveFs) = CreateFileSystemInternal();
 
-            saveFs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
+            saveFs.CreateFile("/file", 0, CreateFileOptions.None);
 
             // Rollback should succeed
             Assert.Success(saveFs.Rollback());
 
             // Make sure all the files are gone
-            Assert.Result(ResultFs.PathNotFound, saveFs.GetEntryType(out _, "/file".ToU8Span()));
-            Assert.Result(ResultFs.PathNotFound, baseFs.GetEntryType(out _, "/0/file".ToU8Span()));
-            Assert.Result(ResultFs.PathNotFound, baseFs.GetEntryType(out _, "/1/file".ToU8Span()));
+            Assert.Result(ResultFs.PathNotFound, saveFs.GetEntryType(out _, "/file"));
+            Assert.Result(ResultFs.PathNotFound, baseFs.GetEntryType(out _, "/0/file"));
+            Assert.Result(ResultFs.PathNotFound, baseFs.GetEntryType(out _, "/1/file"));
         }
 
         [Fact]
@@ -107,17 +107,17 @@ namespace LibHac.Tests.Fs
         {
             (IFileSystem baseFs, IFileSystem saveFs) = CreateFileSystemInternal();
 
-            saveFs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
+            saveFs.CreateFile("/file", 0, CreateFileOptions.None);
             saveFs.Commit();
-            saveFs.DeleteFile("/file".ToU8Span());
+            saveFs.DeleteFile("/file");
 
             // Rollback should succeed
             Assert.Success(saveFs.Rollback());
 
             // Make sure all the files are restored
-            Assert.Success(saveFs.GetEntryType(out _, "/file".ToU8Span()));
-            Assert.Success(baseFs.GetEntryType(out _, "/0/file".ToU8Span()));
-            Assert.Success(baseFs.GetEntryType(out _, "/1/file".ToU8Span()));
+            Assert.Success(saveFs.GetEntryType(out _, "/file"));
+            Assert.Success(baseFs.GetEntryType(out _, "/0/file"));
+            Assert.Success(baseFs.GetEntryType(out _, "/1/file"));
         }
 
         [Fact]
@@ -125,18 +125,18 @@ namespace LibHac.Tests.Fs
         {
             var baseFs = new InMemoryFileSystem();
 
-            baseFs.CreateDirectory("/0".ToU8Span()).ThrowIfFailure();
-            baseFs.CreateDirectory("/1".ToU8Span()).ThrowIfFailure();
+            baseFs.CreateDirectory("/0").ThrowIfFailure();
+            baseFs.CreateDirectory("/1").ThrowIfFailure();
 
             // Set the existing files before initializing the save FS
-            baseFs.CreateFile("/0/file1".ToU8Span(), 0, CreateFileOptions.None).ThrowIfFailure();
-            baseFs.CreateFile("/1/file2".ToU8Span(), 0, CreateFileOptions.None).ThrowIfFailure();
+            baseFs.CreateFile("/0/file1", 0, CreateFileOptions.None).ThrowIfFailure();
+            baseFs.CreateFile("/1/file2", 0, CreateFileOptions.None).ThrowIfFailure();
 
             DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true)
                 .ThrowIfFailure();
 
-            Assert.Success(saveFs.GetEntryType(out _, "/file1".ToU8Span()));
-            Assert.Result(ResultFs.PathNotFound, saveFs.GetEntryType(out _, "/file2".ToU8Span()));
+            Assert.Success(saveFs.GetEntryType(out _, "/file1"));
+            Assert.Result(ResultFs.PathNotFound, saveFs.GetEntryType(out _, "/file2"));
         }
 
         [Fact]
@@ -144,18 +144,18 @@ namespace LibHac.Tests.Fs
         {
             var baseFs = new InMemoryFileSystem();
 
-            baseFs.CreateDirectory("/_".ToU8Span()).ThrowIfFailure();
-            baseFs.CreateDirectory("/1".ToU8Span()).ThrowIfFailure();
+            baseFs.CreateDirectory("/_").ThrowIfFailure();
+            baseFs.CreateDirectory("/1").ThrowIfFailure();
 
             // Set the existing files before initializing the save FS
-            baseFs.CreateFile("/_/file1".ToU8Span(), 0, CreateFileOptions.None).ThrowIfFailure();
-            baseFs.CreateFile("/1/file2".ToU8Span(), 0, CreateFileOptions.None).ThrowIfFailure();
+            baseFs.CreateFile("/_/file1", 0, CreateFileOptions.None).ThrowIfFailure();
+            baseFs.CreateFile("/1/file2", 0, CreateFileOptions.None).ThrowIfFailure();
 
             DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true)
                 .ThrowIfFailure();
 
-            Assert.Result(ResultFs.PathNotFound, saveFs.GetEntryType(out _, "/file1".ToU8Span()));
-            Assert.Success(saveFs.GetEntryType(out _, "/file2".ToU8Span()));
+            Assert.Result(ResultFs.PathNotFound, saveFs.GetEntryType(out _, "/file1"));
+            Assert.Success(saveFs.GetEntryType(out _, "/file2"));
         }
 
         [Fact]
@@ -163,16 +163,16 @@ namespace LibHac.Tests.Fs
         {
             var baseFs = new InMemoryFileSystem();
 
-            baseFs.CreateDirectory("/1".ToU8Span()).ThrowIfFailure();
+            baseFs.CreateDirectory("/1").ThrowIfFailure();
 
             // Set the existing files before initializing the save FS
-            baseFs.CreateFile("/1/file2".ToU8Span(), 0, CreateFileOptions.None).ThrowIfFailure();
+            baseFs.CreateFile("/1/file2", 0, CreateFileOptions.None).ThrowIfFailure();
 
             DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true)
                 .ThrowIfFailure();
 
-            Assert.Result(ResultFs.PathNotFound, saveFs.GetEntryType(out _, "/file1".ToU8Span()));
-            Assert.Success(saveFs.GetEntryType(out _, "/file2".ToU8Span()));
+            Assert.Result(ResultFs.PathNotFound, saveFs.GetEntryType(out _, "/file1"));
+            Assert.Success(saveFs.GetEntryType(out _, "/file2"));
         }
 
         [Fact]
@@ -283,14 +283,14 @@ namespace LibHac.Tests.Fs
         {
             var baseFs = new InMemoryFileSystem();
 
-            CreateExtraDataForTest(baseFs, "/ExtraData_".ToU8Span(), 0x12345).ThrowIfFailure();
-            CreateExtraDataForTest(baseFs, "/ExtraData1".ToU8Span(), 0x67890).ThrowIfFailure();
+            CreateExtraDataForTest(baseFs, "/ExtraData_", 0x12345).ThrowIfFailure();
+            CreateExtraDataForTest(baseFs, "/ExtraData1", 0x67890).ThrowIfFailure();
 
             DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true)
                 .ThrowIfFailure();
-            
+
             saveFs.ReadExtraData(out SaveDataExtraData extraData).ThrowIfFailure();
-            
+
             Assert.Equal(0x67890, extraData.DataSize);
         }
 
@@ -300,7 +300,7 @@ namespace LibHac.Tests.Fs
             var random = new RandomGenerator();
             RandomDataGenerator randomGeneratorFunc = buffer => random.GenerateRandom(buffer);
             var timeStampGetter = new TimeStampGetter();
-            
+
             var baseFs = new InMemoryFileSystem();
             DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, timeStampGetter,
                 randomGeneratorFunc, true, true, true, null).ThrowIfFailure();
@@ -328,7 +328,7 @@ namespace LibHac.Tests.Fs
             var random = new RandomGenerator();
             RandomDataGenerator randomGeneratorFunc = buffer => random.GenerateRandom(buffer);
             var timeStampGetter = new TimeStampGetter();
-            
+
             var baseFs = new InMemoryFileSystem();
             DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, timeStampGetter,
                 randomGeneratorFunc, true, true, true, null).ThrowIfFailure();
@@ -356,7 +356,7 @@ namespace LibHac.Tests.Fs
             var random = new RandomGenerator();
             RandomDataGenerator randomGeneratorFunc = buffer => random.GenerateRandom(buffer);
             var timeStampGetter = new TimeStampGetter();
-            
+
             var baseFs = new InMemoryFileSystem();
             DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, timeStampGetter,
                 randomGeneratorFunc, true, true, true, null).ThrowIfFailure();
@@ -385,7 +385,7 @@ namespace LibHac.Tests.Fs
         private class TimeStampGetter : ISaveDataCommitTimeStampGetter
         {
             private long _currentTimeStamp = 1;
-            
+
             public Result Get(out long timeStamp)
             {
                 timeStamp = _currentTimeStamp++;
@@ -411,7 +411,7 @@ namespace LibHac.Tests.Fs
             }
         }
 
-        private Result CreateExtraDataForTest(IFileSystem fileSystem, U8Span path, int saveDataSize)
+        private Result CreateExtraDataForTest(IFileSystem fileSystem, string path, int saveDataSize)
         {
             fileSystem.DeleteFile(path).IgnoreResult();
 

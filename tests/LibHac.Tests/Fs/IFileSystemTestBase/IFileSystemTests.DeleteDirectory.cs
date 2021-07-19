@@ -1,5 +1,4 @@
-﻿using LibHac.Common;
-using LibHac.Fs;
+﻿using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using Xunit;
 
@@ -12,7 +11,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            Result rc = fs.DeleteDirectory("/dir".ToU8Span());
+            Result rc = fs.DeleteDirectory("/dir");
 
             Assert.Result(ResultFs.PathNotFound, rc);
         }
@@ -22,10 +21,10 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateDirectory("/dir".ToU8Span());
+            fs.CreateDirectory("/dir");
 
-            Result rcDelete = fs.DeleteDirectory("/dir".ToU8Span());
-            Result rcEntry = fs.GetEntryType(out _, "/dir".ToU8Span());
+            Result rcDelete = fs.DeleteDirectory("/dir");
+            Result rcEntry = fs.GetEntryType(out _, "/dir");
 
             Assert.Success(rcDelete);
             Assert.Result(ResultFs.PathNotFound, rcEntry);
@@ -36,9 +35,9 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
+            fs.CreateFile("/file", 0, CreateFileOptions.None);
 
-            Result rc = fs.DeleteDirectory("/file".ToU8Span());
+            Result rc = fs.DeleteDirectory("/file");
 
             Assert.Result(ResultFs.PathNotFound, rc);
         }
@@ -48,12 +47,12 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateDirectory("/dir1".ToU8Span());
-            fs.CreateDirectory("/dir2".ToU8Span());
+            fs.CreateDirectory("/dir1");
+            fs.CreateDirectory("/dir2");
 
-            Result rcDelete = fs.DeleteDirectory("/dir2".ToU8Span());
-            Result rcEntry1 = fs.GetEntryType(out DirectoryEntryType dir1Type, "/dir1".ToU8Span());
-            Result rcEntry2 = fs.GetEntryType(out _, "/dir2".ToU8Span());
+            Result rcDelete = fs.DeleteDirectory("/dir2");
+            Result rcEntry1 = fs.GetEntryType(out DirectoryEntryType dir1Type, "/dir1");
+            Result rcEntry2 = fs.GetEntryType(out _, "/dir2");
 
             Assert.Success(rcDelete);
             Assert.Success(rcEntry1);
@@ -67,12 +66,12 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateDirectory("/dir2".ToU8Span());
-            fs.CreateDirectory("/dir1".ToU8Span());
+            fs.CreateDirectory("/dir2");
+            fs.CreateDirectory("/dir1");
 
-            Result rcDelete = fs.DeleteDirectory("/dir2".ToU8Span());
-            Result rcEntry1 = fs.GetEntryType(out DirectoryEntryType dir1Type, "/dir1".ToU8Span());
-            Result rcEntry2 = fs.GetEntryType(out _, "/dir2".ToU8Span());
+            Result rcDelete = fs.DeleteDirectory("/dir2");
+            Result rcEntry1 = fs.GetEntryType(out DirectoryEntryType dir1Type, "/dir1");
+            Result rcEntry2 = fs.GetEntryType(out _, "/dir2");
 
             Assert.Success(rcDelete);
             Assert.Success(rcEntry1);
@@ -86,10 +85,10 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateDirectory("/dir".ToU8Span());
-            fs.CreateFile("/dir/file".ToU8Span(), 0, CreateFileOptions.None);
+            fs.CreateDirectory("/dir");
+            fs.CreateFile("/dir/file", 0, CreateFileOptions.None);
 
-            Result rc = fs.DeleteDirectory("/dir".ToU8Span());
+            Result rc = fs.DeleteDirectory("/dir");
 
             Assert.Result(ResultFs.DirectoryNotEmpty, rc);
         }
