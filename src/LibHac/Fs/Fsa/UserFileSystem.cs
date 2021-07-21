@@ -530,7 +530,7 @@ namespace LibHac.Fs.Fsa
 
         public static Result OpenFile(this FileSystemClient fs, out FileHandle handle, IFile file, OpenMode mode)
         {
-            var accessor = new FileAccessor(fs, ref file, null, mode);
+            var accessor = new FileAccessor(fs.Hos, ref file, null, mode);
             handle = new FileHandle(accessor);
 
             return Result.Success;

@@ -42,8 +42,18 @@ namespace LibHac.Fs
             }
         }
 
-        public static void LogErrorMessage(this FileSystemClientImpl fs, Result result,
-            [CallerMemberName] string functionName = "")
+        public static void LogErrorMessage(this FileSystemClientImpl fs, Result result, string message)
+        {
+            // Todo
+        }
+
+        public static void LogErrorMessage(this FileSystemClientImpl fs, Result result, string format, object arg0)
+        {
+            // Todo
+        }
+
+        public static void LogErrorMessage(this FileSystemClientImpl fs, Result result, string format,
+            params object[] args)
         {
             // Todo
         }

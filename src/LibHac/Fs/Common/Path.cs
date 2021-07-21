@@ -60,7 +60,7 @@ namespace LibHac.Fs
             return _writeBufferLength;
         }
 
-        private readonly int GetLength()
+        public readonly int GetLength()
         {
             return StringUtils.GetLength(GetString());
         }

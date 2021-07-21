@@ -192,7 +192,7 @@ namespace LibHac.Fs.Fsa
             {
                 rc = fs.Impl.Unmount(mountName);
             }
-            fs.Impl.LogErrorMessage(rc);
+            fs.Impl.LogResultErrorMessage(rc);
             Abort.DoAbortUnless(rc.IsSuccess());
         }
 
@@ -218,7 +218,7 @@ namespace LibHac.Fs.Fsa
             {
                 rc = fs.Impl.IsMounted(out isMounted, mountName);
             }
-            fs.Impl.LogErrorMessage(rc);
+            fs.Impl.LogResultErrorMessage(rc);
             Abort.DoAbortUnless(rc.IsSuccess());
 
             return isMounted;

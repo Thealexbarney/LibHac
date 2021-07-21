@@ -157,11 +157,11 @@ namespace LibHac.Fs.Shim
             try
             {
                 Result rc = fsProxy.Target.OpenDeviceOperator(out deviceOperator);
-                fs.Impl.LogErrorMessage(rc);
+                fs.Impl.LogResultErrorMessage(rc);
                 Abort.DoAbortUnless(rc.IsSuccess());
 
                 rc = deviceOperator.Target.IsGameCardInserted(out bool isInserted);
-                fs.Impl.LogErrorMessage(rc);
+                fs.Impl.LogResultErrorMessage(rc);
                 Abort.DoAbortUnless(rc.IsSuccess());
 
                 return isInserted;

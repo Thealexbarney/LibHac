@@ -1788,7 +1788,7 @@ namespace LibHac.Fs.Shim
 
             Result rc = fsProxy.Target.DisableAutoSaveDataCreation();
 
-            fs.Impl.LogErrorMessage(rc);
+            fs.Impl.LogResultErrorMessage(rc);
             Abort.DoAbortUnless(rc.IsSuccess());
         }
 

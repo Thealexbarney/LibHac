@@ -18,7 +18,7 @@ namespace LibHac.Fs.Fsa
     {
         public static Result Register(this FileSystemClient fs, U8Span name, IFileSystem fileSystem)
         {
-            var accessor = new FileSystemAccessor(fs, name, null, fileSystem, null, null);
+            var accessor = new FileSystemAccessor(fs.Hos, name, null, fileSystem, null, null);
             fs.Impl.Register(accessor);
 
             return Result.Success;
@@ -27,7 +27,7 @@ namespace LibHac.Fs.Fsa
         public static Result Register(this FileSystemClient fs, U8Span name, IFileSystem fileSystem,
             ICommonMountNameGenerator mountNameGenerator)
         {
-            var accessor = new FileSystemAccessor(fs, name, null, fileSystem, mountNameGenerator, null);
+            var accessor = new FileSystemAccessor(fs.Hos, name, null, fileSystem, mountNameGenerator, null);
             fs.Impl.Register(accessor);
 
             return Result.Success;
@@ -44,7 +44,7 @@ namespace LibHac.Fs.Fsa
             IFileSystem fileSystem, ICommonMountNameGenerator mountNameGenerator,
             ISaveDataAttributeGetter saveAttributeGetter, bool useDataCache, bool usePathCache)
         {
-            var accessor = new FileSystemAccessor(fs, name, multiCommitTarget, fileSystem, mountNameGenerator,
+            var accessor = new FileSystemAccessor(fs.Hos, name, multiCommitTarget, fileSystem, mountNameGenerator,
                 saveAttributeGetter);
 
             accessor.SetFileDataCacheAttachable(useDataCache);

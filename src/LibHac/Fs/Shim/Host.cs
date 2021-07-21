@@ -508,7 +508,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = fs.Impl.Unmount(mountName);
             }
-            fs.Impl.LogErrorMessage(rc);
+            fs.Impl.LogResultErrorMessage(rc);
             Abort.DoAbortUnless(rc.IsSuccess());
         }
     }

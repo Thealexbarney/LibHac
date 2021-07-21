@@ -14,6 +14,10 @@ namespace LibHac.Common
         private const int NullTerminatorLength = 1;
 
         public Span<byte> Buffer { get; private set; }
+
+        /// <summary>
+        /// The current length of the string not including the null terminator.
+        /// </summary>
         public int Length { get; private set; }
         public bool Overflowed { get; private set; }
         public bool AutoExpand { get; }

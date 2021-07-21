@@ -18,7 +18,7 @@ namespace LibHac.Fs
         {
             if (IsValid)
             {
-                Directory.GetParent().FsClient.CloseDirectory(this);
+                Directory.GetParent().Hos.Fs.CloseDirectory(this);
             }
         }
     }

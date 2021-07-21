@@ -136,11 +136,11 @@ namespace LibHac.Fs.Shim
             try
             {
                 Result rc = fsProxy.Target.OpenDeviceOperator(out deviceOperator);
-                fs.Impl.LogErrorMessage(rc);
+                fs.Impl.LogResultErrorMessage(rc);
                 Abort.DoAbortUnless(rc.IsSuccess());
 
                 rc = CheckIfInserted(fs, deviceOperator, out bool isInserted);
-                fs.Impl.LogErrorMessage(rc);
+                fs.Impl.LogResultErrorMessage(rc);
                 Abort.DoAbortUnless(rc.IsSuccess());
 
                 return isInserted;
@@ -191,7 +191,7 @@ namespace LibHac.Fs.Shim
         public static void SetSdCardAccessibility(this FileSystemClient fs, bool isAccessible)
         {
             Result rc = fs.Impl.SetSdCardAccessibility(isAccessible);
-            fs.Impl.LogErrorMessage(rc);
+            fs.Impl.LogResultErrorMessage(rc);
             Abort.DoAbortUnless(rc.IsSuccess());
         }
 
@@ -200,7 +200,7 @@ namespace LibHac.Fs.Shim
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             Result rc = fsProxy.Target.IsSdCardAccessible(out bool isAccessible);
-            fs.Impl.LogErrorMessage(rc);
+            fs.Impl.LogResultErrorMessage(rc);
             Abort.DoAbortUnless(rc.IsSuccess());
 
             return isAccessible;

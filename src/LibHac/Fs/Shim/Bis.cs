@@ -163,7 +163,7 @@ namespace LibHac.Fs.Shim
             int pathLen = StringUtils.GetLength(rootPath, PathTools.MaxPathLength + 1);
             if (pathLen > PathTools.MaxPathLength)
             {
-                fs.Impl.LogErrorMessage(ResultFs.TooLongPath.Value);
+                fs.Impl.LogResultErrorMessage(ResultFs.TooLongPath.Value);
                 return ResultFs.TooLongPath.Log();
             }
 
@@ -187,7 +187,7 @@ namespace LibHac.Fs.Shim
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             rc = fsProxy.Target.SetBisRootForHost(partitionId, in sfPath);
-            fs.Impl.LogErrorMessage(rc);
+            fs.Impl.LogResultErrorMessage(rc);
             return rc;
         }
 
