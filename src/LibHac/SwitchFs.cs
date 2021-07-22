@@ -65,13 +65,22 @@ namespace LibHac
         {
             var concatFs = new ConcatenationFileSystem(fileSystem);
             SubdirectoryFileSystem saveDirFs = null;
+            SubdirectoryFileSystem contentDirFs = null;
 
             if (concatFs.DirectoryExists("/save"))
             {
-                SubdirectoryFileSystem.CreateNew(out saveDirFs, concatFs, "/save".ToU8String()).ThrowIfFailure();
+                var savePath = new Fs.Path();
+                PathFunctions.SetUpFixedPath(ref savePath, "/save".ToU8String());
+
+                saveDirFs = new SubdirectoryFileSystem(concatFs);
+                saveDirFs.Initialize(in savePath).ThrowIfFailure();
             }
 
-            SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem contentDirFs, concatFs, "/Contents".ToU8String()).ThrowIfFailure();
+            var contentsPath = new Fs.Path();
+            PathFunctions.SetUpFixedPath(ref contentsPath, "/Contents".ToU8String());
+
+            contentDirFs = new SubdirectoryFileSystem(concatFs);
+            contentDirFs.Initialize(in contentsPath).ThrowIfFailure();
 
             return new SwitchFs(keySet, contentDirFs, saveDirFs);
         }

@@ -29,6 +29,76 @@ namespace LibHac.Fs
     [DebuggerDisplay("{" + nameof(ToString) + "(),nq}")]
     public ref struct Path
     {
+        [DebuggerDisplay("{" + nameof(ToString) + "(),nq}")]
+        public struct Stored : IDisposable
+        {
+            private byte[] _buffer;
+            private int _length;
+
+            public void Dispose()
+            {
+                byte[] buffer = Shared.Move(ref _buffer);
+                if (buffer is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
+            }
+
+            public Result Initialize(in Path path)
+            {
+                if (!path._isNormalized)
+                    return ResultFs.NotNormalized.Log();
+
+                _length = path.GetLength();
+
+                Result rc = Preallocate(_length + NullTerminatorLength);
+                if (rc.IsFailure()) return rc;
+
+                int bytesCopied = StringUtils.Copy(_buffer, path._string, _length + NullTerminatorLength);
+
+                if (bytesCopied != _length)
+                    return ResultFs.UnexpectedInPathA.Log();
+
+                return Result.Success;
+            }
+
+            public readonly int GetLength() => _length;
+            public readonly ReadOnlySpan<byte> GetString() => _buffer;
+
+            /// <summary>
+            /// Creates a <see cref="Path"/> from this <see cref="Path.Stored"/>. This <see cref="Stored"/>
+            /// must not be reinitialized or disposed for the lifetime of the created <see cref="Path"/>.
+            /// </summary>
+            /// <returns>The created <see cref="Path"/>.</returns>
+            public readonly Path GetPath()
+            {
+                return new Path
+                {
+                    _string = _buffer,
+                    _isNormalized = true
+                };
+            }
+
+            private Result Preallocate(int length)
+            {
+                if (_buffer is not null && _buffer.Length > length)
+                    return Result.Success;
+
+                int alignedLength = Alignment.AlignUpPow2(length, WriteBufferAlignmentLength);
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(alignedLength);
+
+                byte[] oldBuffer = _buffer;
+                _buffer = buffer;
+
+                if (oldBuffer is not null)
+                    ArrayPool<byte>.Shared.Return(oldBuffer);
+
+                return Result.Success;
+            }
+
+            public override string ToString() => StringUtils.Utf8ZToString(_buffer);
+        }
+
         private const int SeparatorLength = 1;
         private const int NullTerminatorLength = 1;
         private const int WriteBufferAlignmentLength = 8;
@@ -49,7 +119,7 @@ namespace LibHac.Fs
             }
         }
 
-        private Span<byte> GetWriteBuffer()
+        internal Span<byte> GetWriteBuffer()
         {
             Assert.SdkRequires(_writeBuffer is not null);
             return _writeBuffer.AsSpan();
@@ -188,6 +258,22 @@ namespace LibHac.Fs
                 return ResultFs.UnexpectedInPathA.Log();
 
             _isNormalized = other._isNormalized;
+            return Result.Success;
+        }
+
+        public Result Initialize(in Stored other)
+        {
+            int otherLength = other.GetLength();
+
+            Result rc = Preallocate(otherLength + NullTerminatorLength);
+            if (rc.IsFailure()) return rc;
+
+            int bytesCopied = StringUtils.Copy(_writeBuffer, other.GetString(), otherLength + NullTerminatorLength);
+
+            if (bytesCopied != otherLength)
+                return ResultFs.UnexpectedInPathA.Log();
+
+            _isNormalized = true;
             return Result.Success;
         }
 

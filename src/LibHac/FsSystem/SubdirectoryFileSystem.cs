@@ -1,266 +1,280 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
-using LibHac.Util;
 
 namespace LibHac.FsSystem
 {
+    /// <summary>
+    /// An <see cref="IFileSystem"/> that uses a directory of another <see cref="IFileSystem"/> as its root directory.
+    /// </summary>
+    /// <remarks>Based on FS 12.0.3 (nnSdk 12.3.1)</remarks>
     public class SubdirectoryFileSystem : IFileSystem
     {
-        private IFileSystem BaseFileSystem { get; }
-        private ReferenceCountedDisposable<IFileSystem> BaseFileSystemShared { get; }
-        private U8String RootPath { get; set; }
-        private bool PreserveUnc { get; }
+        private IFileSystem _baseFileSystem;
+        private ReferenceCountedDisposable<IFileSystem> _baseFileSystemShared;
+        private Path.Stored _rootPath;
 
-        public static Result CreateNew(out SubdirectoryFileSystem created, IFileSystem baseFileSystem, U8Span rootPath, bool preserveUnc = false)
+        public SubdirectoryFileSystem(IFileSystem baseFileSystem)
         {
-            var obj = new SubdirectoryFileSystem(baseFileSystem, preserveUnc);
-            Result rc = obj.Initialize(rootPath);
-
-            if (rc.IsSuccess())
-            {
-                created = obj;
-                return Result.Success;
-            }
-
-            obj.Dispose();
-            UnsafeHelpers.SkipParamInit(out created);
-            return rc;
+            _baseFileSystem = baseFileSystem;
         }
 
-        public SubdirectoryFileSystem(IFileSystem baseFileSystem, bool preserveUnc = false)
+        public SubdirectoryFileSystem(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem)
         {
-            BaseFileSystem = baseFileSystem;
-            PreserveUnc = preserveUnc;
-        }
-
-        public SubdirectoryFileSystem(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, bool preserveUnc = false)
-        {
-            BaseFileSystemShared = Shared.Move(ref baseFileSystem);
-            BaseFileSystem = BaseFileSystemShared.Target;
-            PreserveUnc = preserveUnc;
+            _baseFileSystemShared = Shared.Move(ref baseFileSystem);
+            _baseFileSystem = _baseFileSystemShared.Target;
         }
 
         public override void Dispose()
         {
-            BaseFileSystemShared?.Dispose();
+            ReferenceCountedDisposable<IFileSystem> sharedFs = Shared.Move(ref _baseFileSystemShared);
+            sharedFs?.Dispose();
             base.Dispose();
         }
 
-        public Result Initialize(U8Span rootPath)
+        public Result Initialize(in Path rootPath)
         {
-            if (StringUtils.GetLength(rootPath, PathTools.MaxPathLength + 1) > PathTools.MaxPathLength)
-                return ResultFs.TooLongPath.Log();
-
-            Span<byte> normalizedPath = stackalloc byte[PathTools.MaxPathLength + 2];
-
-            Result rc = PathNormalizer.Normalize(normalizedPath, out long normalizedPathLen, rootPath, PreserveUnc, false);
-            if (rc.IsFailure()) return rc;
-
-            // Ensure a trailing separator
-            if (!PathNormalizer.IsSeparator(normalizedPath[(int)normalizedPathLen - 1]))
-            {
-                Debug.Assert(normalizedPathLen + 2 <= normalizedPath.Length);
-
-                normalizedPath[(int)normalizedPathLen] = StringTraits.DirectorySeparator;
-                normalizedPath[(int)normalizedPathLen + 1] = StringTraits.NullTerminator;
-                normalizedPathLen++;
-            }
-
-            byte[] buffer = new byte[normalizedPathLen + 1];
-            normalizedPath.Slice(0, (int)normalizedPathLen).CopyTo(buffer);
-            RootPath = new U8String(buffer);
-
-            return Result.Success;
+            return _rootPath.Initialize(in rootPath);
         }
 
-        private Result ResolveFullPath(Span<byte> outPath, U8Span relativePath)
+        private Result ResolveFullPath(ref Path outPath, in Path relativePath)
         {
-            if (RootPath.Length + StringUtils.GetLength(relativePath, PathTools.MaxPathLength + 1) > outPath.Length)
-                return ResultFs.TooLongPath.Log();
-
-            // Copy root path to the output
-            RootPath.Value.CopyTo(outPath);
-
-            // Copy the normalized relative path to the output
-            return PathNormalizer.Normalize(outPath.Slice(RootPath.Length - 2), out _, relativePath, PreserveUnc, false);
-        }
-
-        protected override Result DoCreateDirectory(in Path path)
-        {
-            Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
-            Result rc = ResolveFullPath(fullPath, path);
-            if (rc.IsFailure()) return rc;
-
-            return BaseFileSystem.CreateDirectory(new U8Span(fullPath));
-        }
-
-        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
-        {
-            Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
-            Result rc = ResolveFullPath(fullPath, path);
-            if (rc.IsFailure()) return rc;
-
-            return BaseFileSystem.CreateFile(new U8Span(fullPath), size, option);
-        }
-
-        protected override Result DoDeleteDirectory(in Path path)
-        {
-            Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
-            Result rc = ResolveFullPath(fullPath, path);
-            if (rc.IsFailure()) return rc;
-
-            return BaseFileSystem.DeleteDirectory(new U8Span(fullPath));
-        }
-
-        protected override Result DoDeleteDirectoryRecursively(in Path path)
-        {
-            Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
-            Result rc = ResolveFullPath(fullPath, path);
-            if (rc.IsFailure()) return rc;
-
-            return BaseFileSystem.DeleteDirectoryRecursively(new U8Span(fullPath));
-        }
-
-        protected override Result DoCleanDirectoryRecursively(in Path path)
-        {
-            Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
-            Result rc = ResolveFullPath(fullPath, path);
-            if (rc.IsFailure()) return rc;
-
-            return BaseFileSystem.CleanDirectoryRecursively(new U8Span(fullPath));
-        }
-
-        protected override Result DoDeleteFile(in Path path)
-        {
-            Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
-            Result rc = ResolveFullPath(fullPath, path);
-            if (rc.IsFailure()) return rc;
-
-            return BaseFileSystem.DeleteFile(new U8Span(fullPath));
-        }
-
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
-        {
-            UnsafeHelpers.SkipParamInit(out directory);
-
-            Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
-            Result rc = ResolveFullPath(fullPath, path);
-            if (rc.IsFailure()) return rc;
-
-            return BaseFileSystem.OpenDirectory(out directory, new U8Span(fullPath), mode);
-        }
-
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
-        {
-            UnsafeHelpers.SkipParamInit(out file);
-
-            Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
-            Result rc = ResolveFullPath(fullPath, path);
-            if (rc.IsFailure()) return rc;
-
-            return BaseFileSystem.OpenFile(out file, new U8Span(fullPath), mode);
-        }
-
-        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
-        {
-            Span<byte> fullOldPath = stackalloc byte[PathTools.MaxPathLength + 1];
-            Span<byte> fullNewPath = stackalloc byte[PathTools.MaxPathLength + 1];
-
-            Result rc = ResolveFullPath(fullOldPath, currentPath);
-            if (rc.IsFailure()) return rc;
-
-            rc = ResolveFullPath(fullNewPath, newPath);
-            if (rc.IsFailure()) return rc;
-
-            return BaseFileSystem.RenameDirectory(new U8Span(fullOldPath), new U8Span(fullNewPath));
-        }
-
-        protected override Result DoRenameFile(in Path currentPath, in Path newPath)
-        {
-            Span<byte> fullOldPath = stackalloc byte[PathTools.MaxPathLength + 1];
-            Span<byte> fullNewPath = stackalloc byte[PathTools.MaxPathLength + 1];
-
-            Result rc = ResolveFullPath(fullOldPath, currentPath);
-            if (rc.IsFailure()) return rc;
-
-            rc = ResolveFullPath(fullNewPath, newPath);
-            if (rc.IsFailure()) return rc;
-
-            return BaseFileSystem.RenameFile(new U8Span(fullOldPath), new U8Span(fullNewPath));
+            Path rootPath = _rootPath.GetPath();
+            return outPath.Combine(in rootPath, in relativePath);
         }
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out entryType);
 
-            Unsafe.SkipInit(out FsPath fullPath);
-
-            Result rc = ResolveFullPath(fullPath.Str, path);
+            var fullPath = new Path();
+            Result rc = ResolveFullPath(ref fullPath, in path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFileSystem.GetEntryType(out entryType, fullPath);
-        }
+            rc = _baseFileSystem.GetEntryType(out entryType, in fullPath);
+            if (rc.IsFailure()) return rc;
 
-        protected override Result DoCommit()
-        {
-            return BaseFileSystem.Commit();
-        }
-
-        protected override Result DoCommitProvisionally(long counter)
-        {
-            return BaseFileSystem.CommitProvisionally(counter);
-        }
-
-        protected override Result DoRollback()
-        {
-            return BaseFileSystem.Rollback();
+            fullPath.Dispose();
+            return Result.Success;
         }
 
         protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out freeSpace);
 
-            Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
-            Result rc = ResolveFullPath(fullPath, path);
+            var fullPath = new Path();
+            Result rc = ResolveFullPath(ref fullPath, in path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFileSystem.GetFreeSpaceSize(out freeSpace, new U8Span(fullPath));
+            rc = _baseFileSystem.GetFreeSpaceSize(out freeSpace, in fullPath);
+            if (rc.IsFailure()) return rc;
+
+            fullPath.Dispose();
+            return Result.Success;
         }
 
         protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out totalSpace);
 
-            Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
-            Result rc = ResolveFullPath(fullPath, path);
+            var fullPath = new Path();
+            Result rc = ResolveFullPath(ref fullPath, in path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFileSystem.GetTotalSpaceSize(out totalSpace, new U8Span(fullPath));
+            rc = _baseFileSystem.GetTotalSpaceSize(out totalSpace, in fullPath);
+            if (rc.IsFailure()) return rc;
+
+            fullPath.Dispose();
+            return Result.Success;
         }
 
         protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out timeStamp);
 
-            Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
-            Result rc = ResolveFullPath(fullPath, path);
+            var fullPath = new Path();
+            Result rc = ResolveFullPath(ref fullPath, in path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFileSystem.GetFileTimeStampRaw(out timeStamp, new U8Span(fullPath));
+            rc = _baseFileSystem.GetFileTimeStampRaw(out timeStamp, in fullPath);
+            if (rc.IsFailure()) return rc;
+
+            fullPath.Dispose();
+            return Result.Success;
+        }
+
+        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        {
+            UnsafeHelpers.SkipParamInit(out file);
+
+            var fullPath = new Path();
+            Result rc = ResolveFullPath(ref fullPath, in path);
+            if (rc.IsFailure()) return rc;
+
+            rc = _baseFileSystem.OpenFile(out file, in fullPath, mode);
+            if (rc.IsFailure()) return rc;
+
+            fullPath.Dispose();
+            return Result.Success;
+        }
+
+        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        {
+            UnsafeHelpers.SkipParamInit(out directory);
+
+            var fullPath = new Path();
+            Result rc = ResolveFullPath(ref fullPath, in path);
+            if (rc.IsFailure()) return rc;
+
+            rc = _baseFileSystem.OpenDirectory(out directory, in fullPath, mode);
+            if (rc.IsFailure()) return rc;
+
+            fullPath.Dispose();
+            return Result.Success;
+        }
+
+        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
+        {
+            var fullPath = new Path();
+            Result rc = ResolveFullPath(ref fullPath, in path);
+            if (rc.IsFailure()) return rc;
+
+            rc = _baseFileSystem.CreateFile(in fullPath, size, option);
+            if (rc.IsFailure()) return rc;
+
+            fullPath.Dispose();
+            return Result.Success;
+        }
+
+        protected override Result DoDeleteFile(in Path path)
+        {
+            var fullPath = new Path();
+            Result rc = ResolveFullPath(ref fullPath, in path);
+            if (rc.IsFailure()) return rc;
+
+            rc = _baseFileSystem.DeleteFile(in fullPath);
+            if (rc.IsFailure()) return rc;
+
+            fullPath.Dispose();
+            return Result.Success;
+        }
+
+        protected override Result DoCreateDirectory(in Path path)
+        {
+            var fullPath = new Path();
+            Result rc = ResolveFullPath(ref fullPath, in path);
+            if (rc.IsFailure()) return rc;
+
+            rc = _baseFileSystem.CreateDirectory(in fullPath);
+            if (rc.IsFailure()) return rc;
+
+            fullPath.Dispose();
+            return Result.Success;
+        }
+
+        protected override Result DoDeleteDirectory(in Path path)
+        {
+            var fullPath = new Path();
+            Result rc = ResolveFullPath(ref fullPath, in path);
+            if (rc.IsFailure()) return rc;
+
+            rc = _baseFileSystem.DeleteDirectory(in fullPath);
+            if (rc.IsFailure()) return rc;
+
+            fullPath.Dispose();
+            return Result.Success;
+        }
+
+        protected override Result DoDeleteDirectoryRecursively(in Path path)
+        {
+            var fullPath = new Path();
+            Result rc = ResolveFullPath(ref fullPath, in path);
+            if (rc.IsFailure()) return rc;
+
+            rc = _baseFileSystem.DeleteDirectoryRecursively(in fullPath);
+            if (rc.IsFailure()) return rc;
+
+            fullPath.Dispose();
+            return Result.Success;
+        }
+
+        protected override Result DoCleanDirectoryRecursively(in Path path)
+        {
+            var fullPath = new Path();
+            Result rc = ResolveFullPath(ref fullPath, in path);
+            if (rc.IsFailure()) return rc;
+
+            rc = _baseFileSystem.CleanDirectoryRecursively(in fullPath);
+            if (rc.IsFailure()) return rc;
+
+            fullPath.Dispose();
+            return Result.Success;
+        }
+
+        protected override Result DoRenameFile(in Path currentPath, in Path newPath)
+        {
+            var currentFullPath = new Path();
+            Result rc = ResolveFullPath(ref currentFullPath, in currentPath);
+            if (rc.IsFailure()) return rc;
+
+            var newFullPath = new Path();
+            rc = ResolveFullPath(ref newFullPath, in newPath);
+            if (rc.IsFailure()) return rc;
+
+            rc = _baseFileSystem.RenameFile(in currentFullPath, in newFullPath);
+            if (rc.IsFailure()) return rc;
+
+            currentFullPath.Dispose();
+            newFullPath.Dispose();
+            return Result.Success;
+        }
+
+        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
+        {
+            var currentFullPath = new Path();
+            Result rc = ResolveFullPath(ref currentFullPath, in currentPath);
+            if (rc.IsFailure()) return rc;
+
+            var newFullPath = new Path();
+            rc = ResolveFullPath(ref newFullPath, in newPath);
+            if (rc.IsFailure()) return rc;
+
+            rc = _baseFileSystem.RenameDirectory(in currentFullPath, in newFullPath);
+            if (rc.IsFailure()) return rc;
+
+            currentFullPath.Dispose();
+            newFullPath.Dispose();
+            return Result.Success;
         }
 
         protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
             in Path path)
         {
-            Span<byte> fullPath = stackalloc byte[PathTools.MaxPathLength + 1];
-            Result rc = ResolveFullPath(fullPath, path);
+            var fullPath = new Path();
+            Result rc = ResolveFullPath(ref fullPath, in path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFileSystem.QueryEntry(outBuffer, inBuffer, queryId, new U8Span(fullPath));
+            rc = _baseFileSystem.QueryEntry(outBuffer, inBuffer, queryId, in fullPath);
+            if (rc.IsFailure()) return rc;
+
+            fullPath.Dispose();
+            return Result.Success;
+        }
+
+        protected override Result DoCommit()
+        {
+            return _baseFileSystem.Commit();
+        }
+
+        protected override Result DoCommitProvisionally(long counter)
+        {
+            return _baseFileSystem.CommitProvisionally(counter);
+        }
+
+        protected override Result DoRollback()
+        {
+            return _baseFileSystem.Rollback();
         }
     }
 }
