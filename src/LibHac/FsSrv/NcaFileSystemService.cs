@@ -27,15 +27,15 @@ namespace LibHac.FsSrv
         private ReferenceCountedDisposable<NcaFileSystemService>.WeakReference SelfReference { get; set; }
         private NcaFileSystemServiceImpl ServiceImpl { get; }
         private ulong ProcessId { get; }
-        private SemaphoreAdaptor AocMountCountSemaphore { get; }
-        private SemaphoreAdaptor RomMountCountSemaphore { get; }
+        private SemaphoreAdapter AocMountCountSemaphore { get; }
+        private SemaphoreAdapter RomMountCountSemaphore { get; }
 
         private NcaFileSystemService(NcaFileSystemServiceImpl serviceImpl, ulong processId)
         {
             ServiceImpl = serviceImpl;
             ProcessId = processId;
-            AocMountCountSemaphore = new SemaphoreAdaptor(AocSemaphoreCount, AocSemaphoreCount);
-            RomMountCountSemaphore = new SemaphoreAdaptor(RomSemaphoreCount, RomSemaphoreCount);
+            AocMountCountSemaphore = new SemaphoreAdapter(AocSemaphoreCount, AocSemaphoreCount);
+            RomMountCountSemaphore = new SemaphoreAdapter(RomSemaphoreCount, RomSemaphoreCount);
         }
 
         public static ReferenceCountedDisposable<NcaFileSystemService> CreateShared(

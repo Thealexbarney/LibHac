@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
+using LibHac.Fs.Common;
 using LibHac.Fs.Fsa;
 using LibHac.Util;
 
@@ -225,7 +225,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public static Result TryAcquireCountSemaphore(out UniqueLockSemaphore uniqueLock, SemaphoreAdaptor semaphore)
+        public static Result TryAcquireCountSemaphore(out UniqueLockSemaphore uniqueLock, SemaphoreAdapter semaphore)
         {
             UniqueLockSemaphore tempUniqueLock = default;
             try
@@ -247,7 +247,7 @@ namespace LibHac.FsSystem
             }
         }
 
-        public static Result MakeUniqueLockWithPin<T>(out IUniqueLock uniqueLock, SemaphoreAdaptor semaphore,
+        public static Result MakeUniqueLockWithPin<T>(out IUniqueLock uniqueLock, SemaphoreAdapter semaphore,
             ref ReferenceCountedDisposable<T> objectToPin) where T : class, IDisposable
         {
             UnsafeHelpers.SkipParamInit(out uniqueLock);
@@ -264,31 +264,6 @@ namespace LibHac.FsSystem
             finally
             {
                 tempUniqueLock.Dispose();
-            }
-        }
-
-        public static Result RetryFinitelyForTargetLocked(Func<Result> function)
-        {
-            const int maxRetryCount = 10;
-            const int retryWaitTimeMs = 100;
-
-            int remainingRetries = maxRetryCount;
-
-            while (true)
-            {
-                Result rc = function();
-
-                if (rc.IsSuccess())
-                    return rc;
-
-                if (!ResultFs.TargetLocked.Includes(rc))
-                    return rc;
-
-                if (remainingRetries <= 0)
-                    return rc;
-
-                remainingRetries--;
-                Thread.Sleep(retryWaitTimeMs);
             }
         }
     }

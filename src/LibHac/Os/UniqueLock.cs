@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using LibHac.Common;
 
@@ -7,32 +8,38 @@ namespace LibHac.Os
     public static class UniqueLock
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static UniqueLock<TMutex> Lock<TMutex>(ref TMutex lockable) where TMutex : ILockable
+        public static UniqueLockRef<TMutex> Lock<TMutex>(ref TMutex lockable) where TMutex : struct, ILockable
         {
-            return new UniqueLock<TMutex>(ref lockable);
+            return new UniqueLockRef<TMutex>(ref lockable);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static UniqueLock<TMutex> Lock<TMutex>(TMutex lockable) where TMutex : class, ILockable
+        {
+            return new UniqueLock<TMutex>(lockable);
         }
     }
 
-    public ref struct UniqueLock<TMutex> where TMutex : ILockable
+    public ref struct UniqueLockRef<TMutex> where TMutex : struct, ILockable
     {
         private Ref<TMutex> _mutex;
         private bool _ownsLock;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public UniqueLock(ref TMutex mutex)
+        public UniqueLockRef(ref TMutex mutex)
         {
             _mutex = new Ref<TMutex>(ref mutex);
             mutex.Lock();
             _ownsLock = true;
         }
 
-        public UniqueLock(ref UniqueLock<TMutex> other)
+        public UniqueLockRef(ref UniqueLockRef<TMutex> other)
         {
             this = other;
             other = default;
         }
 
-        public void Set(ref UniqueLock<TMutex> other)
+        public void Set(ref UniqueLockRef<TMutex> other)
         {
             if (_ownsLock)
                 _mutex.Value.Unlock();
@@ -79,6 +86,77 @@ namespace LibHac.Os
         {
             if (_ownsLock)
                 _mutex.Value.Unlock();
+
+            this = default;
+        }
+    }
+
+    public struct UniqueLock<TMutex> : IDisposable where TMutex : class, ILockable
+    {
+        private TMutex _mutex;
+        private bool _ownsLock;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public UniqueLock(TMutex mutex)
+        {
+            _mutex = new Ref<TMutex>(ref mutex);
+            mutex.Lock();
+            _ownsLock = true;
+        }
+
+        public UniqueLock(ref UniqueLock<TMutex> other)
+        {
+            this = other;
+            other = default;
+        }
+
+        public void Set(ref UniqueLock<TMutex> other)
+        {
+            if (_ownsLock)
+                _mutex.Unlock();
+
+            this = other;
+            other = default;
+        }
+
+        public void Lock()
+        {
+            if (_mutex is null)
+                throw new SynchronizationLockException("UniqueLock.Lock: References null mutex");
+
+            if (_ownsLock)
+                throw new SynchronizationLockException("UniqueLock.Lock: Already locked");
+
+            _mutex.Lock();
+            _ownsLock = true;
+        }
+
+        public bool TryLock()
+        {
+            if (_mutex is null)
+                throw new SynchronizationLockException("UniqueLock.TryLock: References null mutex");
+
+            if (_ownsLock)
+                throw new SynchronizationLockException("UniqueLock.TryLock: Already locked");
+
+            _ownsLock = _mutex.TryLock();
+            return _ownsLock;
+        }
+
+        public void Unlock()
+        {
+            if (_ownsLock)
+                throw new SynchronizationLockException("UniqueLock.Unlock: Not locked");
+
+            _mutex.Unlock();
+            _ownsLock = false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Dispose()
+        {
+            if (_ownsLock)
+                _mutex.Unlock();
 
             this = default;
         }

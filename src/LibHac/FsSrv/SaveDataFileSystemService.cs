@@ -38,8 +38,8 @@ namespace LibHac.FsSrv
         private SaveDataFileSystemServiceImpl ServiceImpl { get; }
         private ulong ProcessId { get; }
         private FsPath SaveDataRootPath { get; set; }
-        private SemaphoreAdaptor OpenEntryCountSemaphore { get; }
-        private SemaphoreAdaptor SaveDataMountCountSemaphore { get; }
+        private SemaphoreAdapter OpenEntryCountSemaphore { get; }
+        private SemaphoreAdapter SaveDataMountCountSemaphore { get; }
 
         private HorizonClient Hos => ServiceImpl.Hos;
 
@@ -47,8 +47,8 @@ namespace LibHac.FsSrv
         {
             ServiceImpl = serviceImpl;
             ProcessId = processId;
-            OpenEntryCountSemaphore = new SemaphoreAdaptor(OpenEntrySemaphoreCount, OpenEntrySemaphoreCount);
-            SaveDataMountCountSemaphore = new SemaphoreAdaptor(SaveMountSemaphoreCount, SaveMountSemaphoreCount);
+            OpenEntryCountSemaphore = new SemaphoreAdapter(OpenEntrySemaphoreCount, OpenEntrySemaphoreCount);
+            SaveDataMountCountSemaphore = new SemaphoreAdapter(SaveMountSemaphoreCount, SaveMountSemaphoreCount);
         }
 
         public static ReferenceCountedDisposable<SaveDataFileSystemService> CreateShared(

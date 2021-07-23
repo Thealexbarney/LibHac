@@ -122,9 +122,15 @@ namespace LibHac.FsSrv.Impl
         }
 
         public static Result CreateSubDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystem> subDirFileSystem,
-            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span subPath, bool preserveUnc = false)
+            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, in Path subPath)
         {
             UnsafeHelpers.SkipParamInit(out subDirFileSystem);
+
+            if (subPath.IsEmpty())
+            {
+                subDirFileSystem = Shared.Move(ref baseFileSystem);
+                return Result.Success;
+            }
 
             // Check if the directory exists
             Result rc = baseFileSystem.Target.OpenDirectory(out IDirectory dir, subPath, OpenDirectoryMode.Directory);
@@ -132,10 +138,10 @@ namespace LibHac.FsSrv.Impl
 
             dir.Dispose();
 
-            var fs = new SubdirectoryFileSystem(ref baseFileSystem, preserveUnc);
+            var fs = new SubdirectoryFileSystem(ref baseFileSystem);
             using (var subDirFs = new ReferenceCountedDisposable<SubdirectoryFileSystem>(fs))
             {
-                rc = subDirFs.Target.Initialize(subPath);
+                rc = subDirFs.Target.Initialize(in subPath);
                 if (rc.IsFailure()) return rc;
 
                 subDirFileSystem = subDirFs.AddReference<IFileSystem>();

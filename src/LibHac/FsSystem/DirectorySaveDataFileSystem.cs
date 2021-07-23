@@ -196,6 +196,39 @@ namespace LibHac.FsSystem
             base.Dispose();
         }
 
+        private Result RetryFinitelyForTargetLocked(Func<Result> function)
+        {
+            const int maxRetryCount = 10;
+            const int retryWaitTimeMs = 100;
+
+            int remainingRetries = maxRetryCount;
+
+            while (true)
+            {
+                Result rc = function();
+
+                if (rc.IsSuccess())
+                    return rc;
+
+                if (!ResultFs.TargetLocked.Includes(rc))
+                    return rc;
+
+                if (remainingRetries <= 0)
+                    return rc;
+
+                remainingRetries--;
+
+                if (_fsClient is not null)
+                {
+                    _fsClient.Hos.Os.SleepThread(TimeSpan.FromMilliSeconds(retryWaitTimeMs));
+                }
+                else
+                {
+                    System.Threading.Thread.Sleep(retryWaitTimeMs);
+                }
+            }
+        }
+
         public Result Initialize(bool isJournalingSupported, bool isMultiCommitSupported, bool isJournalingEnabled)
         {
             return Initialize(null, null, isJournalingSupported, isMultiCommitSupported, isJournalingEnabled);
@@ -517,16 +550,16 @@ namespace LibHac.FsSystem
                 _baseFs.RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath);
 
             // Get rid of the previous commit by renaming the folder
-            Result rc = Utility.RetryFinitelyForTargetLocked(RenameCommittedDir);
+            Result rc = RetryFinitelyForTargetLocked(RenameCommittedDir);
             if (rc.IsFailure()) return rc;
 
             // If something goes wrong beyond this point, the commit will be
             // completed the next time the savedata is opened
 
-            rc = Utility.RetryFinitelyForTargetLocked(SynchronizeWorkingDir);
+            rc = RetryFinitelyForTargetLocked(SynchronizeWorkingDir);
             if (rc.IsFailure()) return rc;
 
-            rc = Utility.RetryFinitelyForTargetLocked(RenameSynchronizingDir);
+            rc = RetryFinitelyForTargetLocked(RenameSynchronizingDir);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -800,16 +833,16 @@ namespace LibHac.FsSystem
             Result RenameSynchronizingFile() => _baseFs.RenameFile(SynchronizingExtraDataPath, CommittedExtraDataPath);
 
             // Get rid of the previous commit by renaming the folder
-            Result rc = Utility.RetryFinitelyForTargetLocked(RenameCommittedFile);
+            Result rc = RetryFinitelyForTargetLocked(RenameCommittedFile);
             if (rc.IsFailure()) return rc;
 
             // If something goes wrong beyond this point, the commit will be
             // completed the next time the savedata is opened
 
-            rc = Utility.RetryFinitelyForTargetLocked(SynchronizeWorkingFile);
+            rc = RetryFinitelyForTargetLocked(SynchronizeWorkingFile);
             if (rc.IsFailure()) return rc;
 
-            rc = Utility.RetryFinitelyForTargetLocked(RenameSynchronizingFile);
+            rc = RetryFinitelyForTargetLocked(RenameSynchronizingFile);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;

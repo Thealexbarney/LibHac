@@ -2,6 +2,7 @@
 using System.Threading;
 using LibHac.Common;
 using LibHac.Diag;
+using LibHac.Os;
 
 namespace LibHac.FsSystem
 {
@@ -16,10 +17,10 @@ namespace LibHac.FsSystem
     /// reference or moved via the move constructor.</remarks>
     public struct UniqueLockSemaphore : IDisposable
     {
-        private SemaphoreAdaptor _semaphore;
+        private SemaphoreAdapter _semaphore;
         private bool _isLocked;
 
-        public UniqueLockSemaphore(SemaphoreAdaptor semaphore)
+        public UniqueLockSemaphore(SemaphoreAdapter semaphore)
         {
             _semaphore = semaphore;
             _isLocked = false;
@@ -72,15 +73,13 @@ namespace LibHac.FsSystem
 
     public class UniqueLockWithPin<T> : IUniqueLock where T : class, IDisposable
     {
-        private UniqueLockSemaphore _semaphore;
+        private UniqueLock<SemaphoreAdapter> _semaphore;
         private ReferenceCountedDisposable<T> _pinnedObject;
 
-        public UniqueLockWithPin(ref UniqueLockSemaphore semaphore, ref ReferenceCountedDisposable<T> pinnedObject)
+        public UniqueLockWithPin(ref UniqueLock<SemaphoreAdapter> semaphore, ref ReferenceCountedDisposable<T> pinnedObject)
         {
             Shared.Move(out _semaphore, ref semaphore);
             Shared.Move(out _pinnedObject, ref pinnedObject);
-
-            Assert.SdkAssert(_semaphore.IsLocked);
         }
 
         public void Dispose()
