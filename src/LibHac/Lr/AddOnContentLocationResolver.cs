@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Ncm;
 using LibHac.Sf;
 
@@ -8,9 +9,14 @@ namespace LibHac.Lr
     {
         private ReferenceCountedDisposable<IAddOnContentLocationResolver> _interface;
 
-        public AddOnContentLocationResolver(ReferenceCountedDisposable<IAddOnContentLocationResolver> baseInterface)
+        public AddOnContentLocationResolver(ref ReferenceCountedDisposable<IAddOnContentLocationResolver> baseInterface)
         {
-            _interface = baseInterface.AddReference();
+            _interface = Shared.Move(ref baseInterface);
+        }
+
+        public void Dispose()
+        {
+            _interface?.Dispose();
         }
 
         public Result ResolveAddOnContentPath(out Path path, DataId id) =>
@@ -27,10 +33,5 @@ namespace LibHac.Lr
 
         public Result UnregisterApplicationAddOnContent(Ncm.ApplicationId id) =>
             _interface.Target.UnregisterApplicationAddOnContent(id);
-
-        public void Dispose()
-        {
-            _interface?.Dispose();
-        }
     }
 }

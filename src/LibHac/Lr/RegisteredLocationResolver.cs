@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Ncm;
 
 namespace LibHac.Lr
@@ -7,9 +8,14 @@ namespace LibHac.Lr
     {
         private ReferenceCountedDisposable<IRegisteredLocationResolver> _interface;
 
-        public RegisteredLocationResolver(ReferenceCountedDisposable<IRegisteredLocationResolver> baseInterface)
+        public RegisteredLocationResolver(ref ReferenceCountedDisposable<IRegisteredLocationResolver> baseInterface)
         {
-            _interface = baseInterface.AddReference();
+            _interface = Shared.Move(ref baseInterface);
+        }
+
+        public void Dispose()
+        {
+            _interface?.Dispose();
         }
 
         public Result ResolveProgramPath(out Path path, ProgramId id) =>
@@ -41,10 +47,5 @@ namespace LibHac.Lr
 
         public Result RefreshExcluding(ReadOnlySpan<ProgramId> ids) =>
             _interface.Target.RefreshExcluding(ids);
-
-        public void Dispose()
-        {
-            _interface?.Dispose();
-        }
     }
 }
