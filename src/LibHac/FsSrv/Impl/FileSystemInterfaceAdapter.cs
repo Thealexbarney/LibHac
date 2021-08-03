@@ -283,8 +283,8 @@ namespace LibHac.FsSrv.Impl
             }
         }
 
-        public static ReferenceCountedDisposable<IFileSystemSf> CreateShared(PathFlags flags,
-            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, bool allowAllOperations)
+        public static ReferenceCountedDisposable<IFileSystemSf> CreateShared(
+            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, PathFlags flags, bool allowAllOperations)
         {
             ReferenceCountedDisposable<FileSystemInterfaceAdapter> sharedAdapter = null;
             try

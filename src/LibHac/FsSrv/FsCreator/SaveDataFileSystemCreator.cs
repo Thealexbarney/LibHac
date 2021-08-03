@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Common.Keys;
 using LibHac.Diag;
@@ -42,15 +43,20 @@ namespace LibHac.FsSrv.FsCreator
             bool isJournalingSupported, bool isMultiCommitSupported, bool openReadOnly, bool openShared,
             ISaveDataCommitTimeStampGetter timeStampGetter)
         {
-            Span<byte> saveImageName = stackalloc byte[0x12];
+            // Hack around error CS8350.
+            Span<byte> buffer = stackalloc byte[0x12];
+            ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+            Span<byte> saveImageNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, 0x12);
+
             UnsafeHelpers.SkipParamInit(out fileSystem, out extraDataAccessor);
 
             Assert.SdkRequiresNotNull(cacheManager);
 
-            var sb = new U8StringBuilder(saveImageName);
-            sb.Append((byte)'/').AppendFormat(saveDataId, 'x', 16);
+            var saveImageName = new Path();
+            Result rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName, saveImageNameBuffer, saveDataId);
+            if (rc.IsFailure()) return rc;
 
-            Result rc = baseFileSystem.Target.GetEntryType(out DirectoryEntryType type, new U8Span(saveImageName));
+            rc = baseFileSystem.Target.GetEntryType(out DirectoryEntryType type, in saveImageName);
 
             if (rc.IsFailure())
             {
@@ -68,7 +74,7 @@ namespace LibHac.FsSrv.FsCreator
                 {
                     subDirFs = new SubdirectoryFileSystem(ref baseFileSystem);
 
-                    rc = subDirFs.Initialize(new U8Span(saveImageName));
+                    rc = subDirFs.Initialize(in saveImageName);
                     if (rc.IsFailure()) return rc;
 
                     saveFs = DirectorySaveDataFileSystem.CreateShared(Shared.Move(ref subDirFs), _fsServer.Hos.Fs);
@@ -80,6 +86,7 @@ namespace LibHac.FsSrv.FsCreator
                     fileSystem = saveFs.AddReference<IFileSystem>();
                     extraDataAccessor = saveFs.AddReference<ISaveDataExtraDataAccessor>();
 
+                    saveImageName.Dispose();
                     return Result.Success;
                 }
                 finally

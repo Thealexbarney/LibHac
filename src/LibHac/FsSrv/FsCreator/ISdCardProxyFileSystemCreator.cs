@@ -4,7 +4,7 @@ namespace LibHac.FsSrv.FsCreator
 {
     public interface ISdCardProxyFileSystemCreator
     {
-        Result Create(out IFileSystem fileSystem, bool isCaseSensitive);
+        Result Create(out ReferenceCountedDisposable<IFileSystem> outFileSystem, bool isCaseSensitive);
 
         /// <summary>
         /// Formats the SD card.

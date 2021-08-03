@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
-using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
@@ -14,8 +13,9 @@ using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IStorage = LibHac.Fs.IStorage;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using IStorageSf = LibHac.FsSrv.Sf.IStorage;
-using Path = LibHac.Lr.Path;
+using Path = LibHac.Fs.Path;
 using PathNormalizer = LibHac.FsSrv.Impl.PathNormalizer;
+using Utility = LibHac.FsSrv.Impl.Utility;
 
 namespace LibHac.FsSrv
 {
@@ -72,10 +72,17 @@ namespace LibHac.FsSrv
 
             if (fsType != FileSystemProxyType.Manual)
             {
-                if (fsType == FileSystemProxyType.Logo || fsType == FileSystemProxyType.Control)
-                    return ResultFs.NotImplemented.Log();
-                else
-                    return ResultFs.InvalidArgument.Log();
+                switch (fsType)
+                {
+                    case FileSystemProxyType.Logo:
+                    case FileSystemProxyType.Control:
+                    case FileSystemProxyType.Meta:
+                    case FileSystemProxyType.Data:
+                    case FileSystemProxyType.Package:
+                        return ResultFs.NotImplemented.Log();
+                    default:
+                        return ResultFs.InvalidArgument.Log();
+                }
             }
 
             Accessibility accessibility =
@@ -89,28 +96,17 @@ namespace LibHac.FsSrv
             if (rc.IsFailure()) return rc;
 
             // Try to find the path to the original version of the file system
-            Result originalResult = ServiceImpl.ResolveApplicationHtmlDocumentPath(out Path originalPath,
-                new Ncm.ApplicationId(programId.Value), ownerProgramInfo.StorageId);
+            var originalPath = new Fs.Path();
+            Result originalResult = ServiceImpl.ResolveApplicationHtmlDocumentPath(out bool isDirectory,
+                ref originalPath, new Ncm.ApplicationId(programId.Value), ownerProgramInfo.StorageId);
 
             // The file system might have a patch version with no original version, so continue if not found
             if (originalResult.IsFailure() && !ResultLr.HtmlDocumentNotFound.Includes(originalResult))
                 return originalResult;
 
-            // Use a separate bool because ref structs can't be used as type parameters
-            bool originalPathNormalizerHasValue = false;
-            PathNormalizer originalPathNormalizer = default;
-
-            // Normalize the original version path if found
-            if (originalResult.IsSuccess())
-            {
-                originalPathNormalizer = new PathNormalizer(originalPath, GetPathNormalizerOptions(originalPath));
-                if (originalPathNormalizer.Result.IsFailure()) return originalPathNormalizer.Result;
-
-                originalPathNormalizerHasValue = true;
-            }
-
             // Try to find the path to the patch file system
-            Result patchResult = ServiceImpl.ResolveRegisteredHtmlDocumentPath(out Path patchPath, programId.Value);
+            var patchPath = new Fs.Path();
+            Result patchResult = ServiceImpl.ResolveRegisteredHtmlDocumentPath(ref patchPath, programId.Value);
 
             ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
             ReferenceCountedDisposable<IRomFileSystemAccessFailureManager> accessFailureManager = null;
@@ -122,37 +118,25 @@ namespace LibHac.FsSrv
                     if (originalResult.IsFailure())
                         return originalResult;
 
-                    Assert.SdkAssert(originalPathNormalizerHasValue);
-
                     // There is an original version and no patch version. Open the original directly
-                    rc = ServiceImpl.OpenFileSystem(out tempFileSystem, originalPathNormalizer.Path, fsType, programId.Value);
+                    rc = ServiceImpl.OpenFileSystem(out tempFileSystem, in originalPath, fsType, programId.Value,
+                        isDirectory);
                     if (rc.IsFailure()) return rc;
                 }
                 else
                 {
-                    // Get the normalized path to the original file system
-                    U8Span normalizedOriginalPath;
-                    if (originalPathNormalizerHasValue)
-                    {
-                        normalizedOriginalPath = originalPathNormalizer.Path;
-                    }
-                    else
-                    {
-                        normalizedOriginalPath = U8Span.Empty;
-                    }
-
-                    // Normalize the path to the patch file system
-                    using var patchPathNormalizer = new PathNormalizer(patchPath, GetPathNormalizerOptions(patchPath));
-                    if (patchPathNormalizer.Result.IsFailure()) return patchPathNormalizer.Result;
-
                     if (patchResult.IsFailure())
                         return patchResult;
 
-                    U8Span normalizedPatchPath = patchPathNormalizer.Path;
+                    var emptyPath = new Fs.Path();
+                    rc = emptyPath.InitializeAsEmpty();
+                    if (rc.IsFailure()) return rc;
+
+                    ref Fs.Path originalNcaPath = ref originalResult.IsSuccess() ? ref originalPath : ref emptyPath;
 
                     // Open the file system using both the original and patch versions
-                    rc = ServiceImpl.OpenFileSystemWithPatch(out tempFileSystem, normalizedOriginalPath,
-                        normalizedPatchPath, fsType, programId.Value);
+                    rc = ServiceImpl.OpenFileSystemWithPatch(out tempFileSystem, in originalNcaPath, in patchPath,
+                        fsType, programId.Value);
                     if (rc.IsFailure()) return rc;
                 }
 
@@ -163,7 +147,7 @@ namespace LibHac.FsSrv
                 accessFailureManager = SelfReference.AddReference<IRomFileSystemAccessFailureManager>();
                 tempFileSystem = DeepRetryFileSystem.CreateShared(ref tempFileSystem, ref accessFailureManager);
 
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem, false);
                 return Result.Success;
             }
             finally
@@ -200,10 +184,10 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath path,
+        public Result OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystemSf> outFileSystem, in FspPath path,
             ulong id, FileSystemProxyType fsType)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
+            UnsafeHelpers.SkipParamInit(out outFileSystem);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -251,25 +235,34 @@ namespace LibHac.FsSrv
 
             bool canMountSystemDataPrivate = ac.GetAccessibilityFor(AccessibilityType.MountSystemDataPrivate).CanRead;
 
-            using var normalizer = new PathNormalizer(path, GetPathNormalizerOptions(path));
-            if (normalizer.Result.IsFailure()) return normalizer.Result;
+            var pathNormalized = new Fs.Path();
+            rc = pathNormalized.InitializeWithReplaceUnc(path.Str);
+            if (rc.IsFailure()) return rc;
 
-            ReferenceCountedDisposable<IFileSystem> fs = null;
+            var pathFlags = new PathFlags();
+            pathFlags.AllowWindowsPath();
+            pathFlags.AllowMountName();
+            rc = pathNormalized.Normalize(pathFlags);
+            if (rc.IsFailure()) return rc;
+
+            bool isDirectory = PathUtility12.IsDirectoryPath(in path);
+
+            ReferenceCountedDisposable<IFileSystem> fileSystem = null;
 
             try
             {
-                rc = ServiceImpl.OpenFileSystem(out fs, out _, path, fsType,
-                    canMountSystemDataPrivate, id);
+                rc = ServiceImpl.OpenFileSystem(out fileSystem, in pathNormalized, fsType, canMountSystemDataPrivate,
+                    id, isDirectory);
                 if (rc.IsFailure()) return rc;
 
                 // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs);
+                outFileSystem = FileSystemInterfaceAdapter.CreateShared(ref fileSystem, false);
 
                 return Result.Success;
             }
             finally
             {
-                fs?.Dispose();
+                fileSystem?.Dispose();
             }
         }
 
@@ -316,7 +309,7 @@ namespace LibHac.FsSrv
                 if (tempFileSystem is null)
                     return ResultFs.AllocationMemoryFailedAllocateShared.Log();
 
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem, false);
                 if (fileSystem is null)
                     return ResultFs.AllocationMemoryFailedCreateShared.Log();
 
@@ -334,11 +327,11 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result GetRightsId(out RightsId rightsId, ProgramId programId, StorageId storageId)
+        public Result GetRightsId(out RightsId outRightsId, ProgramId programId, StorageId storageId)
         {
-            UnsafeHelpers.SkipParamInit(out rightsId);
+            UnsafeHelpers.SkipParamInit(out outRightsId);
 
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.All);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.All);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -346,24 +339,27 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.CanCall(OperationType.GetRightsId))
                 return ResultFs.PermissionDenied.Log();
 
-            rc = ServiceImpl.ResolveProgramPath(out Path programPath, programId, storageId);
+            var programPath = new Path();
+            rc = ServiceImpl.ResolveProgramPath(out bool isDirectory, ref programPath, programId, storageId);
             if (rc.IsFailure()) return rc;
 
-            using var normalizer = new PathNormalizer(programPath, GetPathNormalizerOptions(programPath));
-            if (normalizer.Result.IsFailure()) return normalizer.Result;
+            if (isDirectory)
+                return ResultFs.TargetNotFound.Log();
 
-            rc = ServiceImpl.GetRightsId(out RightsId tempRightsId, out _, normalizer.Path, programId);
+            rc = ServiceImpl.GetRightsId(out RightsId rightsId, out _, in programPath, programId);
             if (rc.IsFailure()) return rc;
 
-            rightsId = tempRightsId;
+            outRightsId = rightsId;
+
+            programPath.Dispose();
             return Result.Success;
         }
 
-        public Result GetRightsIdAndKeyGenerationByPath(out RightsId rightsId, out byte keyGeneration, in FspPath path)
+        public Result GetRightsIdAndKeyGenerationByPath(out RightsId outRightsId, out byte outKeyGeneration, in FspPath path)
         {
-            UnsafeHelpers.SkipParamInit(out rightsId, out keyGeneration);
+            UnsafeHelpers.SkipParamInit(out outRightsId, out outKeyGeneration);
 
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.All);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.All);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -371,52 +367,61 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.CanCall(OperationType.GetRightsId))
                 return ResultFs.PermissionDenied.Log();
 
-            using var normalizer = new PathNormalizer(path, GetPathNormalizerOptions(path));
-            if (normalizer.Result.IsFailure()) return normalizer.Result;
+            var pathNormalized = new Path();
+            rc = pathNormalized.Initialize(path.Str);
+            if (rc.IsFailure()) return rc;
 
-            rc = ServiceImpl.GetRightsId(out RightsId tempRightsId, out byte tempKeyGeneration, normalizer.Path,
+            var pathFlags = new PathFlags();
+            pathFlags.AllowWindowsPath();
+            pathFlags.AllowMountName();
+            rc = pathNormalized.Normalize(pathFlags);
+            if (rc.IsFailure()) return rc;
+
+            if (PathUtility12.IsDirectoryPath(in path))
+                return ResultFs.TargetNotFound.Log();
+
+            rc = ServiceImpl.GetRightsId(out RightsId rightsId, out byte keyGeneration, in pathNormalized,
                 new ProgramId(ulong.MaxValue));
             if (rc.IsFailure()) return rc;
 
-            rightsId = tempRightsId;
-            keyGeneration = tempKeyGeneration;
+            outRightsId = rightsId;
+            outKeyGeneration = keyGeneration;
+
+            pathNormalized.Dispose();
             return Result.Success;
         }
 
-        private Result OpenDataFileSystemCore(out ReferenceCountedDisposable<IFileSystem> fileSystem, out bool isHostFs,
+        private Result OpenDataFileSystemCore(out ReferenceCountedDisposable<IFileSystem> outFileSystem, out bool isHostFs,
             ulong programId, StorageId storageId)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem, out isHostFs);
+            UnsafeHelpers.SkipParamInit(out outFileSystem, out isHostFs);
 
             if (Unsafe.IsNullRef(ref isHostFs))
                 return ResultFs.NullptrArgument.Log();
 
             StorageType storageFlag = ServiceImpl.GetStorageFlag(programId);
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
-            Result rc = ServiceImpl.ResolveRomPath(out Path romPath, programId, storageId);
+            var programPath = new Path();
+            Result rc = ServiceImpl.ResolveRomPath(out bool isDirectory, ref programPath, programId, storageId);
             if (rc.IsFailure()) return rc;
 
-            using var normalizer = new PathNormalizer(romPath, GetPathNormalizerOptions(romPath));
-            if (normalizer.Result.IsFailure()) return normalizer.Result;
+            isHostFs = Utility.IsHostFsMountName(programPath.GetString());
 
-            isHostFs = IsHostFs(romPath);
-
-            ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
+            ReferenceCountedDisposable<IFileSystem> fileSystem = null;
             try
             {
-                rc = ServiceImpl.OpenDataFileSystem(out tempFileSystem, normalizer.Path, FileSystemProxyType.Rom,
-                    programId);
+                rc = ServiceImpl.OpenDataFileSystem(out fileSystem, in programPath, FileSystemProxyType.Rom, programId, isDirectory);
                 if (rc.IsFailure()) return rc;
 
-                tempFileSystem = StorageLayoutTypeSetFileSystem.CreateShared(ref tempFileSystem, storageFlag);
+                fileSystem = StorageLayoutTypeSetFileSystem.CreateShared(ref fileSystem, storageFlag);
 
-                Shared.Move(out fileSystem, ref tempFileSystem);
+                outFileSystem = Shared.Move(ref fileSystem);
                 return Result.Success;
             }
             finally
             {
-                tempFileSystem?.Dispose();
+                fileSystem?.Dispose();
             }
         }
 
@@ -448,7 +453,7 @@ namespace LibHac.FsSrv
                 tempFileSystem = AsynchronousAccessFileSystem.CreateShared(ref tempFileSystem);
 
                 // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem, false);
 
                 return Result.Success;
             }
@@ -499,13 +504,11 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.CanCall(OperationType.RegisterUpdatePartition))
                 return ResultFs.PermissionDenied.Log();
 
-            rc = ServiceImpl.ResolveRomPath(out Path romPath, programInfo.ProgramIdValue, programInfo.StorageId);
+            var programPath = new Path();
+            rc = ServiceImpl.ResolveRomPath(out _, ref programPath, programInfo.ProgramIdValue, programInfo.StorageId);
             if (rc.IsFailure()) return rc;
 
-            using var normalizer = new PathNormalizer(romPath, GetPathNormalizerOptions(romPath));
-            if (normalizer.Result.IsFailure()) return normalizer.Result;
-
-            return ServiceImpl.RegisterUpdatePartition(programInfo.ProgramIdValue, normalizer.Path);
+            return ServiceImpl.RegisterUpdatePartition(programInfo.ProgramIdValue, in programPath);
         }
 
         public Result OpenRegisteredUpdatePartition(out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
@@ -537,7 +540,7 @@ namespace LibHac.FsSrv
                 if (tempFileSystem is null)
                     return ResultFs.AllocationMemoryFailedAllocateShared.Log();
 
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem, false);
                 if (fileSystem is null)
                     return ResultFs.AllocationMemoryFailedCreateShared.Log();
 
@@ -618,21 +621,6 @@ namespace LibHac.FsSrv
         private Result GetProgramInfoByProgramId(out ProgramInfo programInfo, ulong programId)
         {
             return ServiceImpl.GetProgramInfoByProgramId(out programInfo, programId);
-        }
-
-        private PathNormalizer.Option GetPathNormalizerOptions(U8Span path)
-        {
-            // Set the PreserveUnc flag if the path is on the host file system
-            PathNormalizer.Option hostOption = IsHostFs(path) ? PathNormalizer.Option.PreserveUnc : PathNormalizer.Option.None;
-            return PathNormalizer.Option.HasMountName | PathNormalizer.Option.PreserveTrailingSeparator | hostOption;
-        }
-
-        private bool IsHostFs(U8Span path)
-        {
-            int hostMountLength = StringUtils.GetLength(CommonPaths.HostRootFileSystemMountName,
-                PathTools.MountNameLengthMax);
-
-            return StringUtils.Compare(path, CommonPaths.HostRootFileSystemMountName, hostMountLength) == 0;
         }
 
         Result IRomFileSystemAccessFailureManager.OpenDataStorageCore(out ReferenceCountedDisposable<IStorage> storage,

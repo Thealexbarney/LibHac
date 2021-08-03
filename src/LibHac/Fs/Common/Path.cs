@@ -807,5 +807,64 @@ namespace LibHac.Fs
 
             return Result.Success;
         }
+
+        // Only a small number of format strings are used with these functions, so we can hard code them all easily.
+        
+        // /%s
+        internal static Result SetUpFixedPathSingleEntry(ref Path path, Span<byte> pathBuffer,
+            ReadOnlySpan<byte> entryName)
+        {
+            var sb = new U8StringBuilder(pathBuffer);
+            sb.Append((byte)'/').Append(entryName);
+
+            if (sb.Overflowed)
+                return ResultFs.InvalidArgument.Log();
+
+            return SetUpFixedPath(ref path, pathBuffer);
+        }
+
+        // /%016llx
+        internal static Result SetUpFixedPathSaveId(ref Path path, Span<byte> pathBuffer, ulong saveDataId)
+        {
+            var sb = new U8StringBuilder(pathBuffer);
+            sb.Append((byte)'/').AppendFormat(saveDataId, 'x', 16);
+
+            if (sb.Overflowed)
+                return ResultFs.InvalidArgument.Log();
+
+            return SetUpFixedPath(ref path, pathBuffer);
+        }
+
+        // /%08x.meta
+        internal static Result SetUpFixedPathSaveMetaName(ref Path path, Span<byte> pathBuffer, uint metaType)
+        {
+            ReadOnlySpan<byte> metaExtension = new[] { (byte)'.', (byte)'m', (byte)'e', (byte)'t', (byte)'a' };  // ".meta"
+
+            var sb = new U8StringBuilder(pathBuffer);
+            sb.Append((byte)'/').AppendFormat(metaType, 'x', 8).Append(metaExtension);
+
+            if (sb.Overflowed)
+                return ResultFs.InvalidArgument.Log();
+
+            return SetUpFixedPath(ref path, pathBuffer);
+        }
+
+        // /saveMeta/%016llx
+        internal static Result SetUpFixedPathSaveMetaDir(ref Path path, Span<byte> pathBuffer, ulong saveDataId)
+        {
+            ReadOnlySpan<byte> metaDirectoryName = new[]
+            {
+                (byte)'/', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'M', (byte)'e', (byte)'t',
+                (byte)'a', (byte)'/'
+            };
+
+            var sb = new U8StringBuilder(pathBuffer);
+            sb.Append(metaDirectoryName).AppendFormat(saveDataId, 'x', 16);
+
+            if (sb.Overflowed)
+                return ResultFs.InvalidArgument.Log();
+
+            return SetUpFixedPath(ref path, pathBuffer);
+        }
     }
 }

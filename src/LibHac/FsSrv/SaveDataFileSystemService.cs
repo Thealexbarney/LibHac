@@ -15,9 +15,10 @@ using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using IFile = LibHac.Fs.Fsa.IFile;
 using IFileSf = LibHac.FsSrv.Sf.IFile;
-using PathNormalizer = LibHac.FsSrv.Impl.PathNormalizer;
+using Path = LibHac.Fs.Path;
 using SaveData = LibHac.Fs.SaveData;
 using Utility = LibHac.FsSystem.Utility;
+using static LibHac.Fs.StringTraits;
 
 namespace LibHac.FsSrv
 {
@@ -34,21 +35,21 @@ namespace LibHac.FsSrv
 
         private const int SaveDataBlockSize = 0x4000;
 
-        private ReferenceCountedDisposable<SaveDataFileSystemService>.WeakReference SelfReference { get; set; }
-        private SaveDataFileSystemServiceImpl ServiceImpl { get; }
-        private ulong ProcessId { get; }
-        private FsPath SaveDataRootPath { get; set; }
-        private SemaphoreAdapter OpenEntryCountSemaphore { get; }
-        private SemaphoreAdapter SaveDataMountCountSemaphore { get; }
+        private ReferenceCountedDisposable<SaveDataFileSystemService>.WeakReference _selfReference;
+        private SaveDataFileSystemServiceImpl _serviceImpl;
+        private ulong _processId;
+        private Path.Stored _saveDataRootPath;
+        private SemaphoreAdapter _openEntryCountSemaphore;
+        private SemaphoreAdapter _saveDataMountCountSemaphore;
 
-        private HorizonClient Hos => ServiceImpl.Hos;
+        private HorizonClient Hos => _serviceImpl.Hos;
 
         public SaveDataFileSystemService(SaveDataFileSystemServiceImpl serviceImpl, ulong processId)
         {
-            ServiceImpl = serviceImpl;
-            ProcessId = processId;
-            OpenEntryCountSemaphore = new SemaphoreAdapter(OpenEntrySemaphoreCount, OpenEntrySemaphoreCount);
-            SaveDataMountCountSemaphore = new SemaphoreAdapter(SaveMountSemaphoreCount, SaveMountSemaphoreCount);
+            _serviceImpl = serviceImpl;
+            _processId = processId;
+            _openEntryCountSemaphore = new SemaphoreAdapter(OpenEntrySemaphoreCount, OpenEntrySemaphoreCount);
+            _saveDataMountCountSemaphore = new SemaphoreAdapter(SaveMountSemaphoreCount, SaveMountSemaphoreCount);
         }
 
         public static ReferenceCountedDisposable<SaveDataFileSystemService> CreateShared(
@@ -59,7 +60,7 @@ namespace LibHac.FsSrv
 
             // Wrap the service in a ref-counter and give the service a weak self-reference
             var sharedService = new ReferenceCountedDisposable<SaveDataFileSystemService>(saveService);
-            saveService.SelfReference =
+            saveService._selfReference =
                 new ReferenceCountedDisposable<SaveDataFileSystemService>.WeakReference(sharedService);
 
             return sharedService;
@@ -457,12 +458,13 @@ namespace LibHac.FsSrv
         private Result DeleteSaveDataFileSystemCore(SaveDataSpaceId spaceId, ulong saveDataId, bool wipeSaveFile)
         {
             // Delete the save data's meta files
-            Result rc = ServiceImpl.DeleteAllSaveDataMetas(saveDataId, spaceId);
+            Result rc = _serviceImpl.DeleteAllSaveDataMetas(saveDataId, spaceId);
             if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc))
                 return rc;
 
             // Delete the actual save data.
-            rc = ServiceImpl.DeleteSaveDataFileSystem(spaceId, saveDataId, wipeSaveFile, SaveDataRootPath);
+            Path saveDataRootPath = _saveDataRootPath.GetPath();
+            rc = _serviceImpl.DeleteSaveDataFileSystem(spaceId, saveDataId, wipeSaveFile, in saveDataRootPath);
             if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc))
                 return rc;
 
@@ -526,7 +528,7 @@ namespace LibHac.FsSrv
                 // Only the FS process may delete the save indexer's save data.
                 if (saveDataId == SaveData.SaveIndexerId)
                 {
-                    if (!IsCurrentProcess(ProcessId))
+                    if (!IsCurrentProcess(_processId))
                         return ResultFs.PermissionDenied.Log();
 
                     actualSpaceId = spaceId;
@@ -554,8 +556,8 @@ namespace LibHac.FsSrv
                     if (rc.IsFailure()) return rc;
 
                     Result GetExtraData(out SaveDataExtraData data) =>
-                        ServiceImpl.ReadSaveDataFileSystemExtraData(out data, actualSpaceId, saveDataId, key.Type,
-                            SaveDataRootPath);
+                        _serviceImpl.ReadSaveDataFileSystemExtraData(out data, actualSpaceId, saveDataId, key.Type,
+                            _saveDataRootPath.GetPath());
 
                     rc = SaveDataAccessibilityChecker.CheckDelete(in key, programInfo, GetExtraData);
                     if (rc.IsFailure()) return rc;
@@ -625,28 +627,30 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.CanCall(OperationType.DebugSaveData))
                 return ResultFs.PermissionDenied.Log();
 
-            if (StringUtils.GetLength(path.Str, PathTool.EntryNameLengthMax + 1) > PathTool.EntryNameLengthMax)
-                return ResultFs.TooLongPath.Log();
+            var saveDataRootPath = new Path();
 
-            if (path.Str[0] == 0)
-                SaveDataRootPath.Str[0] = 0;
-
-            var sb = new U8StringBuilder(SaveDataRootPath.Str);
-            sb.Append((byte)'/').Append(path.Str);
-
-            if (StringUtils.Compare(SaveDataRootPath.Str.Slice(1), new[] { (byte)'/', (byte)'/' }, 2) == 0)
+            if (path.Str[0] == NullTerminator)
             {
-                for (int i = 0; SaveDataRootPath.Str[i] == '/'; i++)
-                {
-                    SaveDataRootPath.Str[i] = (byte)'\\';
-                }
+                rc = saveDataRootPath.Initialize(new[] { (byte)'/' });
+                if (rc.IsFailure()) return rc;
+            }
+            else
+            {
+                rc = saveDataRootPath.InitializeWithReplaceUnc(path.Str);
+                if (rc.IsFailure()) return rc;
             }
 
-            using var normalizer = new PathNormalizer(SaveDataRootPath, PathNormalizer.Option.PreserveUnc);
-            if (normalizer.Result.IsFailure())
-                return normalizer.Result;
+            var pathFlags = new PathFlags();
+            pathFlags.AllowWindowsPath();
+            pathFlags.AllowRelativePath();
+            pathFlags.AllowEmptyPath();
 
-            StringUtils.Copy(SaveDataRootPath.Str, normalizer.Path);
+            rc = saveDataRootPath.Normalize(pathFlags);
+            if (rc.IsFailure()) return rc;
+
+            _saveDataRootPath.Initialize(in saveDataRootPath);
+            saveDataRootPath.Dispose();
+
             return Result.Success;
         }
 
@@ -658,7 +662,13 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.CanCall(OperationType.DebugSaveData))
                 return ResultFs.PermissionDenied.Log();
 
-            SaveDataRootPath.Str.Clear();
+            var saveDataRootPath = new Path();
+            rc = saveDataRootPath.InitializeAsEmpty();
+            if (rc.IsFailure()) return rc;
+
+            _saveDataRootPath.Initialize(in saveDataRootPath);
+            saveDataRootPath.Dispose();
+
             return Result.Success;
         }
 
@@ -709,7 +719,7 @@ namespace LibHac.FsSrv
                 {
                     // The save indexer doesn't index itself
                     saveDataId = SaveData.SaveIndexerId;
-                    rc = ServiceImpl.DoesSaveDataEntityExist(out bool saveExists, creationInfo.SpaceId, saveDataId);
+                    rc = _serviceImpl.DoesSaveDataEntityExist(out bool saveExists, creationInfo.SpaceId, saveDataId);
 
                     if (rc.IsSuccess() && saveExists)
                     {
@@ -780,8 +790,9 @@ namespace LibHac.FsSrv
                 }
 
                 // After the new save was added to the save indexer, create the save data file or directory.
-                rc = ServiceImpl.CreateSaveDataFileSystem(saveDataId, in attribute, in creationInfo, SaveDataRootPath,
-                    in hashSalt, false);
+                Path saveDataRootPath = _saveDataRootPath.GetPath();
+                rc = _serviceImpl.CreateSaveDataFileSystem(saveDataId, in attribute, in creationInfo,
+                    in saveDataRootPath, in hashSalt, false);
 
                 if (rc.IsFailure())
                 {
@@ -792,21 +803,21 @@ namespace LibHac.FsSrv
                     rc = DeleteSaveDataFileSystemCore(creationInfo.SpaceId, saveDataId, false);
                     if (rc.IsFailure()) return rc;
 
-                    rc = ServiceImpl.CreateSaveDataFileSystem(saveDataId, in attribute, in creationInfo,
-                        SaveDataRootPath, in hashSalt, false);
+                    rc = _serviceImpl.CreateSaveDataFileSystem(saveDataId, in attribute, in creationInfo,
+                        in saveDataRootPath, in hashSalt, false);
                     if (rc.IsFailure()) return rc;
                 }
 
                 if (metaInfo.Type != SaveDataMetaType.None)
                 {
                     // Create the requested save data meta file.
-                    rc = ServiceImpl.CreateSaveDataMeta(saveDataId, creationInfo.SpaceId, metaInfo.Type,
+                    rc = _serviceImpl.CreateSaveDataMeta(saveDataId, creationInfo.SpaceId, metaInfo.Type,
                         metaInfo.Size);
                     if (rc.IsFailure()) return rc;
 
                     if (metaInfo.Type == SaveDataMetaType.Thumbnail)
                     {
-                        rc = ServiceImpl.OpenSaveDataMeta(out IFile metaFile, saveDataId, creationInfo.SpaceId,
+                        rc = _serviceImpl.OpenSaveDataMeta(out IFile metaFile, saveDataId, creationInfo.SpaceId,
                             metaInfo.Type);
 
                         using (metaFile)
@@ -866,7 +877,6 @@ namespace LibHac.FsSrv
                 }
 
                 accessor?.Dispose();
-
             }
         }
 
@@ -896,7 +906,7 @@ namespace LibHac.FsSrv
             if (dataSize < 0 || journalSize < 0)
                 return ResultFs.InvalidSize.Log();
 
-            return ServiceImpl.QuerySaveDataTotalSize(out totalSize, SaveDataBlockSize, dataSize, journalSize);
+            return _serviceImpl.QuerySaveDataTotalSize(out totalSize, SaveDataBlockSize, dataSize, journalSize);
         }
 
         public Result CreateSaveDataFileSystem(in SaveDataAttribute attribute, in SaveDataCreationInfo creationInfo,
@@ -1037,8 +1047,9 @@ namespace LibHac.FsSrv
                 }
 
                 // Open the save data using its ID
-                Result saveFsResult = ServiceImpl.OpenSaveDataFileSystem(out fileSystem, spaceId, tempSaveDataId,
-                    SaveDataRootPath, openReadOnly, attribute.Type, cacheExtraData);
+                Path saveDataRootPath = _saveDataRootPath.GetPath();
+                Result saveFsResult = _serviceImpl.OpenSaveDataFileSystem(out fileSystem, spaceId, tempSaveDataId,
+                    in saveDataRootPath, openReadOnly, attribute.Type, cacheExtraData);
 
                 if (saveFsResult.IsSuccess())
                 {
@@ -1117,7 +1128,8 @@ namespace LibHac.FsSrv
                 Result rc = TryAcquireSaveDataMountCountSemaphore(out mountCountSemaphore);
                 if (rc.IsFailure()) return rc;
 
-                bool useAsyncFileSystem = !ServiceImpl.IsAllowedDirectorySaveData(spaceId, SaveDataRootPath);
+                Path saveDataRootPath = _saveDataRootPath.GetPath();
+                bool useAsyncFileSystem = !_serviceImpl.IsAllowedDirectorySaveData(spaceId, in saveDataRootPath);
 
                 // Open the file system
                 rc = OpenSaveDataFileSystemCore(out tempFileSystem, out ulong saveDataId, spaceId, in attribute,
@@ -1127,8 +1139,12 @@ namespace LibHac.FsSrv
                 // Can't use attribute in a closure, so copy the needed field
                 SaveDataType type = attribute.Type;
 
-                Result ReadExtraData(out SaveDataExtraData data) =>
-                    ServiceImpl.ReadSaveDataFileSystemExtraData(out data, spaceId, saveDataId, type, SaveDataRootPath);
+                Result ReadExtraData(out SaveDataExtraData data)
+                {
+                    Path savePath = _saveDataRootPath.GetPath();
+                    return _serviceImpl.ReadSaveDataFileSystemExtraData(out data, spaceId, saveDataId, type,
+                        in savePath);
+                }
 
                 // Check if we have permissions to open this save data
                 rc = SaveDataAccessibilityChecker.CheckOpen(in attribute, programInfo, ReadExtraData);
@@ -1142,13 +1158,15 @@ namespace LibHac.FsSrv
                     tempFileSystem = AsynchronousAccessFileSystem.CreateShared(ref tempFileSystem);
                 }
 
-                saveService = SelfReference.AddReference();
+                saveService = _selfReference.AddReference();
                 openEntryCountAdapter = SaveDataOpenCountAdapter.CreateShared(ref saveService);
 
                 tempFileSystem = OpenCountFileSystem.CreateShared(ref tempFileSystem, ref openEntryCountAdapter,
                     ref mountCountSemaphore);
 
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem);
+                var pathFlags = new PathFlags();
+                pathFlags.AllowBackslash();
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem, pathFlags, false);
                 return Result.Success;
             }
             finally
@@ -1223,7 +1241,8 @@ namespace LibHac.FsSrv
             if (!accessibility.CanRead || !accessibility.CanWrite)
                 return ResultFs.PermissionDenied.Log();
 
-            bool useAsyncFileSystem = !ServiceImpl.IsAllowedDirectorySaveData(spaceId, SaveDataRootPath);
+            Path saveDataRootPath = _saveDataRootPath.GetPath();
+            bool useAsyncFileSystem = !_serviceImpl.IsAllowedDirectorySaveData(spaceId, in saveDataRootPath);
 
             ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
             ReferenceCountedDisposable<SaveDataFileSystemService> saveService = null;
@@ -1240,7 +1259,8 @@ namespace LibHac.FsSrv
                 SaveDataType type = attribute.Type;
 
                 Result ReadExtraData(out SaveDataExtraData data) =>
-                    ServiceImpl.ReadSaveDataFileSystemExtraData(out data, spaceId, saveDataId, type, SaveDataRootPath);
+                    _serviceImpl.ReadSaveDataFileSystemExtraData(out data, spaceId, saveDataId, type,
+                        _saveDataRootPath.GetPath());
 
                 // Check if we have permissions to open this save data
                 rc = SaveDataAccessibilityChecker.CheckOpen(in attribute, programInfo, ReadExtraData);
@@ -1254,12 +1274,14 @@ namespace LibHac.FsSrv
                     tempFileSystem = AsynchronousAccessFileSystem.CreateShared(ref tempFileSystem);
                 }
 
-                saveService = SelfReference.AddReference();
+                saveService = _selfReference.AddReference();
                 openEntryCountAdapter = SaveDataOpenCountAdapter.CreateShared(ref saveService);
 
                 tempFileSystem = OpenCountFileSystem.CreateShared(ref tempFileSystem, ref openEntryCountAdapter);
 
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem);
+                var pathFlags = new PathFlags();
+                pathFlags.AllowBackslash();
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem, pathFlags, false);
                 return Result.Success;
             }
             finally
@@ -1288,8 +1310,9 @@ namespace LibHac.FsSrv
                 rc = accessor.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
                 if (rc.IsFailure()) return rc;
 
-                return ServiceImpl.ReadSaveDataFileSystemExtraData(out extraData, spaceId, saveDataId, key.Type,
-                    SaveDataRootPath);
+                Path saveDataRootPath = _saveDataRootPath.GetPath();
+                return _serviceImpl.ReadSaveDataFileSystemExtraData(out extraData, spaceId, saveDataId, key.Type,
+                    in saveDataRootPath);
             }
             finally
             {
@@ -1361,15 +1384,16 @@ namespace LibHac.FsSrv
                 }
             }
 
-            Result ReadExtraData(out SaveDataExtraData data) => ServiceImpl.ReadSaveDataFileSystemExtraData(out data,
-                resolvedSpaceId, saveDataId, key.Type, new U8Span(SaveDataRootPath.Str));
+            Result ReadExtraData(out SaveDataExtraData data) => _serviceImpl.ReadSaveDataFileSystemExtraData(out data,
+                resolvedSpaceId, saveDataId, key.Type, _saveDataRootPath.GetPath());
 
             rc = SaveDataAccessibilityChecker.CheckReadExtraData(in key, in extraDataMask, programInfo,
                 ReadExtraData);
             if (rc.IsFailure()) return rc;
 
-            rc = ServiceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData tempExtraData, resolvedSpaceId,
-                saveDataId, key.Type, new U8Span(SaveDataRootPath.Str));
+            Path saveDataRootPath = _saveDataRootPath.GetPath();
+            rc = _serviceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData tempExtraData, resolvedSpaceId,
+                saveDataId, key.Type, in saveDataRootPath);
             if (rc.IsFailure()) return rc;
 
             MaskExtraData(ref tempExtraData, in extraDataMask);
@@ -1469,7 +1493,8 @@ namespace LibHac.FsSrv
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
-            return ServiceImpl.WriteSaveDataFileSystemExtraData(spaceId, saveDataId, in extraData, SaveDataRootPath,
+            Path saveDataRootPath = _saveDataRootPath.GetPath();
+            return _serviceImpl.WriteSaveDataFileSystemExtraData(spaceId, saveDataId, in extraData, in saveDataRootPath,
                 saveType, updateTimeStamp);
         }
 
@@ -1490,21 +1515,22 @@ namespace LibHac.FsSrv
                 rc = accessor.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
                 if (rc.IsFailure()) return rc;
 
-                Result ReadExtraData(out SaveDataExtraData data) => ServiceImpl.ReadSaveDataFileSystemExtraData(out data,
-                    spaceId, saveDataId, key.Type, new U8Span(SaveDataRootPath.Str));
+                Result ReadExtraData(out SaveDataExtraData data) => _serviceImpl.ReadSaveDataFileSystemExtraData(out data,
+                    spaceId, saveDataId, key.Type, _saveDataRootPath.GetPath());
 
                 rc = SaveDataAccessibilityChecker.CheckWriteExtraData(in key, in extraDataMask, programInfo,
                     ReadExtraData);
                 if (rc.IsFailure()) return rc;
 
-                rc = ServiceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraDataModify, spaceId,
-                    saveDataId, key.Type, SaveDataRootPath);
+                Path saveDataRootPath = _saveDataRootPath.GetPath();
+                rc = _serviceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraDataModify, spaceId,
+                    saveDataId, key.Type, in saveDataRootPath);
                 if (rc.IsFailure()) return rc;
 
                 ModifySaveDataExtraData(ref extraDataModify, in extraData, in extraDataMask);
 
-                return ServiceImpl.WriteSaveDataFileSystemExtraData(spaceId, saveDataId, in extraDataModify,
-                    SaveDataRootPath, key.Type, false);
+                return _serviceImpl.WriteSaveDataFileSystemExtraData(spaceId, saveDataId, in extraDataModify,
+                    in saveDataRootPath, key.Type, false);
             }
             finally
             {
@@ -1872,7 +1898,7 @@ namespace LibHac.FsSrv
             Result rc;
 
             // Cache storage on the SD card will always take priority over case storage in NAND
-            if (ServiceImpl.IsSdCardAccessible())
+            if (_serviceImpl.IsSdCardAccessible())
             {
                 rc = SaveExists(out bool existsOnSdCard, SaveDataSpaceId.SdCache);
                 if (rc.IsFailure()) return rc;
@@ -1957,8 +1983,9 @@ namespace LibHac.FsSrv
             Result rc = FindCacheStorage(out SaveDataInfo saveInfo, out SaveDataSpaceId spaceId, index);
             if (rc.IsFailure()) return rc;
 
-            rc = ServiceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, spaceId,
-                saveInfo.SaveDataId, saveInfo.Type, new U8Span(SaveDataRootPath.Str));
+            Path saveDataRootPath = _saveDataRootPath.GetPath();
+            rc = _serviceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, spaceId,
+                saveInfo.SaveDataId, saveInfo.Type, in saveDataRootPath);
             if (rc.IsFailure()) return rc;
 
             usableDataSize = extraData.DataSize;
@@ -2005,7 +2032,7 @@ namespace LibHac.FsSrv
 
         public Result SetSdCardEncryptionSeed(in EncryptionSeed seed)
         {
-            return ServiceImpl.SetSdCardEncryptionSeed(in seed);
+            return _serviceImpl.SetSdCardEncryptionSeed(in seed);
         }
 
         public Result ListAccessibleSaveDataOwnerId(out int readCount, OutBuffer idBuffer, ProgramId programId,
@@ -2016,7 +2043,7 @@ namespace LibHac.FsSrv
 
         private ProgramId ResolveDefaultSaveDataReferenceProgramId(ProgramId programId)
         {
-            return ServiceImpl.ResolveDefaultSaveDataReferenceProgramId(programId);
+            return _serviceImpl.ResolveDefaultSaveDataReferenceProgramId(programId);
         }
 
         public Result VerifySaveDataFileSystemBySaveDataSpaceId(SaveDataSpaceId spaceId, ulong saveDataId,
@@ -2085,15 +2112,17 @@ namespace LibHac.FsSrv
             ReferenceCountedDisposable<IFileSystem> fileSystem = null;
             try
             {
-                Result rc = ServiceImpl.OpenSaveDataDirectoryFileSystem(out fileSystem, SaveDataSpaceId.Temporary,
-                    U8Span.Empty, false);
+                Result rc = _serviceImpl.OpenSaveDataDirectoryFileSystem(out fileSystem, SaveDataSpaceId.Temporary);
                 if (rc.IsFailure()) return rc;
 
-                var rootPath = new U8Span(new[] { (byte)'/' });
-                rc = fileSystem.Target.CleanDirectoryRecursively(rootPath);
+                var pathRoot = new Path();
+                rc = PathFunctions.SetUpFixedPath(ref pathRoot, new[] { (byte)'/' });
                 if (rc.IsFailure()) return rc;
 
-                ServiceImpl.ResetTemporaryStorageIndexer();
+                rc = fileSystem.Target.CleanDirectoryRecursively(in pathRoot);
+                if (rc.IsFailure()) return rc;
+
+                _serviceImpl.ResetTemporaryStorageIndexer();
                 return Result.Success;
             }
             finally
@@ -2116,10 +2145,10 @@ namespace LibHac.FsSrv
             ReferenceCountedDisposable<ISaveDataMultiCommitCoreInterface> commitInterface = null;
             try
             {
-                saveService = SelfReference.AddReference();
+                saveService = _selfReference.AddReference();
                 commitInterface = saveService.AddReference<ISaveDataMultiCommitCoreInterface>();
 
-                commitManager = MultiCommitManager.CreateShared(ServiceImpl.FsServer, ref commitInterface);
+                commitManager = MultiCommitManager.CreateShared(_serviceImpl.FsServer, ref commitInterface);
                 return Result.Success;
             }
             finally
@@ -2146,12 +2175,12 @@ namespace LibHac.FsSrv
 
         public Result RecoverMultiCommit()
         {
-            return MultiCommitManager.Recover(ServiceImpl.FsServer, this, ServiceImpl);
+            return MultiCommitManager.Recover(_serviceImpl.FsServer, this, _serviceImpl);
         }
 
         public Result IsProvisionallyCommittedSaveData(out bool isProvisionallyCommitted, in SaveDataInfo saveInfo)
         {
-            return ServiceImpl.IsProvisionallyCommittedSaveData(out isProvisionallyCommitted, in saveInfo);
+            return _serviceImpl.IsProvisionallyCommittedSaveData(out isProvisionallyCommitted, in saveInfo);
         }
 
         public Result RecoverProvisionallyCommittedSaveData(in SaveDataInfo saveInfo, bool doRollback)
@@ -2197,9 +2226,9 @@ namespace LibHac.FsSrv
             IUniqueLock uniqueLock = null;
             try
             {
-                saveService = SelfReference.AddReference();
+                saveService = _selfReference.AddReference();
 
-                Result rc = Utility.MakeUniqueLockWithPin(out uniqueLock, OpenEntryCountSemaphore,
+                Result rc = Utility.MakeUniqueLockWithPin(out uniqueLock, _openEntryCountSemaphore,
                     ref saveService);
                 if (rc.IsFailure()) return rc;
 
@@ -2221,9 +2250,9 @@ namespace LibHac.FsSrv
             IUniqueLock uniqueLock = null;
             try
             {
-                saveService = SelfReference.AddReference();
+                saveService = _selfReference.AddReference();
 
-                Result rc = Utility.MakeUniqueLockWithPin(out uniqueLock, SaveDataMountCountSemaphore,
+                Result rc = Utility.MakeUniqueLockWithPin(out uniqueLock, _saveDataMountCountSemaphore,
                     ref saveService);
                 if (rc.IsFailure()) return rc;
 
@@ -2250,13 +2279,13 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.CanCall(OperationType.SetSdCardAccessibility))
                 return ResultFs.PermissionDenied.Log();
 
-            ServiceImpl.SetSdCardAccessibility(isAccessible);
+            _serviceImpl.SetSdCardAccessibility(isAccessible);
             return Result.Success;
         }
 
         public Result IsSdCardAccessible(out bool isAccessible)
         {
-            isAccessible = ServiceImpl.IsSdCardAccessible();
+            isAccessible = _serviceImpl.IsSdCardAccessible();
             return Result.Success;
         }
 
@@ -2267,7 +2296,7 @@ namespace LibHac.FsSrv
             SaveDataIndexerAccessor accessorTemp = null;
             try
             {
-                Result rc = ServiceImpl.OpenSaveDataIndexerAccessor(out accessorTemp, out bool neededInit, spaceId);
+                Result rc = _serviceImpl.OpenSaveDataIndexerAccessor(out accessorTemp, out bool neededInit, spaceId);
                 if (rc.IsFailure()) return rc;
 
                 if (neededInit)
@@ -2287,7 +2316,7 @@ namespace LibHac.FsSrv
 
         private Result GetProgramInfo(out ProgramInfo programInfo)
         {
-            return ServiceImpl.GetProgramInfo(out programInfo, ProcessId);
+            return _serviceImpl.GetProgramInfo(out programInfo, _processId);
         }
 
         private bool IsCurrentProcess(ulong processId)
@@ -2387,8 +2416,8 @@ namespace LibHac.FsSrv
 
         public void Dispose()
         {
-            OpenEntryCountSemaphore.Dispose();
-            SaveDataMountCountSemaphore.Dispose();
+            _openEntryCountSemaphore.Dispose();
+            _saveDataMountCountSemaphore.Dispose();
         }
     }
 }

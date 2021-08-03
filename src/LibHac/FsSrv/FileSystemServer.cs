@@ -32,6 +32,7 @@ namespace LibHac.FsSrv
         public StorageDeviceManagerFactoryGlobals StorageDeviceManagerFactory;
         public SaveDataSharedFileStorageGlobals SaveDataSharedFileStorage;
         public MultiCommitManagerGlobals MultiCommitManager;
+        public LocationResolverSetGlobals LocationResolverSet;
 
         public void Initialize(HorizonClient horizonClient, FileSystemServer fsServer)
         {
@@ -40,6 +41,7 @@ namespace LibHac.FsSrv
 
             SaveDataSharedFileStorage.Initialize(fsServer);
             MultiCommitManager.Initialize();
+            LocationResolverSet.Initialize();
         }
     }
 
