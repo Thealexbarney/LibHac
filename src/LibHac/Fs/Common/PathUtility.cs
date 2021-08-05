@@ -1,58 +1,13 @@
 ﻿using System;
-using System.Diagnostics;
 using LibHac.Common;
 using LibHac.Diag;
+using LibHac.FsSrv.Sf;
+using LibHac.Util;
 using static LibHac.Fs.StringTraits;
 
 // ReSharper disable once CheckNamespace
 namespace LibHac.Fs
 {
-    internal struct PathUtilityGlobals
-    {
-        public PathVerifier PathVerifier;
-
-        public void Initialize(FileSystemClient _)
-        {
-            PathVerifier.Initialize();
-        }
-    }
-
-    internal struct PathVerifier
-    {
-        public void Initialize()
-        {
-            // Todo
-        }
-
-        public static Result Verify(U8Span path, int maxPathLength, int maxNameLength)
-        {
-            Debug.Assert(!path.IsNull());
-
-            int nameLength = 0;
-
-            for (int i = 0; i < path.Length && i <= maxPathLength && nameLength <= maxNameLength; i++)
-            {
-                byte c = path[i];
-
-                if (c == 0)
-                    return Result.Success;
-
-                // todo: Compare path based on their Unicode code points
-
-                if (c == ':' || c == '*' || c == '?' || c == '<' || c == '>' || c == '|')
-                    return ResultFs.InvalidCharacter.Log();
-
-                nameLength++;
-                if (c == '\\' || c == '/')
-                {
-                    nameLength = 0;
-                }
-            }
-
-            return ResultFs.TooLongPath.Log();
-        }
-    }
-
     public static class PathUtility
     {
         public static void Replace(Span<byte> buffer, byte currentChar, byte newChar)
@@ -68,62 +23,223 @@ namespace LibHac.Fs
             }
         }
 
-        /// <summary>
-        /// Performs the extra functions that nn::fs::FspPathPrintf does on the string buffer.
-        /// </summary>
-        /// <param name="builder">The string builder to process.</param>
-        /// <returns>The <see cref="Result"/> of the operation.</returns>
-        public static Result ToSfPath(in this U8StringBuilder builder)
+        public static bool IsCurrentDirectory(ReadOnlySpan<byte> path)
         {
-            if (builder.Overflowed)
+            if (path.Length < 1)
+                return false;
+
+            return path[0] == Dot &&
+                   (path.Length < 2 || path[1] == NullTerminator || path[1] == DirectorySeparator);
+        }
+
+        public static bool IsParentDirectory(ReadOnlySpan<byte> path)
+        {
+            if (path.Length < 2)
+                return false;
+
+            return path[0] == Dot &&
+                   path[1] == Dot &&
+                   (path.Length < 3 || path[2] == NullTerminator || path[2] == DirectorySeparator);
+        }
+
+        public static bool IsSeparator(byte c)
+        {
+            return c == DirectorySeparator;
+        }
+
+        public static bool IsNul(byte c)
+        {
+            return c == NullTerminator;
+        }
+
+        public static Result ConvertToFspPath(out FspPath fspPath, ReadOnlySpan<byte> path)
+        {
+            UnsafeHelpers.SkipParamInit(out fspPath);
+
+            int length = StringUtils.Copy(SpanHelpers.AsByteSpan(ref fspPath), path, PathTool.EntryNameLengthMax + 1);
+
+            if (length >= PathTool.EntryNameLengthMax + 1)
                 return ResultFs.TooLongPath.Log();
 
-            Replace(builder.Buffer.Slice(builder.Capacity),
-                AltDirectorySeparator,
-                DirectorySeparator);
+            Result rc = PathFormatter.SkipMountName(out ReadOnlySpan<byte> pathWithoutMountName, out _,
+                new U8Span(path));
+            if (rc.IsFailure()) return rc;
+
+            if (!WindowsPath.IsWindowsPath(pathWithoutMountName, true))
+            {
+                Replace(SpanHelpers.AsByteSpan(ref fspPath).Slice(0, 0x300), AltDirectorySeparator, DirectorySeparator);
+            }
+            else if (fspPath.Str[0] == DirectorySeparator && fspPath.Str[1] == DirectorySeparator)
+            {
+                SpanHelpers.AsByteSpan(ref fspPath)[0] = AltDirectorySeparator;
+                SpanHelpers.AsByteSpan(ref fspPath)[1] = AltDirectorySeparator;
+            }
 
             return Result.Success;
         }
 
-        public static Result VerifyPath(this FileSystemClient fs, U8Span path, int maxPathLength, int maxNameLength)
+        public static bool IsDirectoryPath(ReadOnlySpan<byte> path)
         {
-            return PathVerifier.Verify(path, maxPathLength, maxNameLength);
-        }
-
-        public static bool IsSubPath(U8Span lhs, U8Span rhs)
-        {
-            Assert.SdkRequires(!lhs.IsNull());
-            Assert.SdkRequires(!rhs.IsNull());
-
-            bool isUncLhs = WindowsPath.IsUnc(lhs);
-            bool isUncRhs = WindowsPath.IsUnc(rhs);
-
-            if (isUncLhs && !isUncRhs || !isUncLhs && isUncRhs)
+            if (path.Length < 1 || path[0] == NullTerminator)
                 return false;
 
-            if (lhs.GetOrNull(0) == DirectorySeparator && lhs.GetOrNull(1) == NullTerminator &&
-               rhs.GetOrNull(0) == DirectorySeparator && rhs.GetOrNull(1) != NullTerminator)
+            int length = StringUtils.GetLength(path);
+            return path[length - 1] == DirectorySeparator || path[length - 1] == AltDirectorySeparator;
+        }
+
+        public static bool IsDirectoryPath(in FspPath path)
+        {
+            return IsDirectoryPath(SpanHelpers.AsReadOnlyByteSpan(in path));
+        }
+
+        public static Result CheckUtf8(ReadOnlySpan<byte> path)
+        {
+            Assert.SdkRequiresNotNull(path);
+
+            uint utf8Buffer = 0;
+            Span<byte> utf8BufferSpan = SpanHelpers.AsByteSpan(ref utf8Buffer);
+
+            ReadOnlySpan<byte> currentChar = path;
+
+            while (currentChar.Length > 0 && currentChar[0] != NullTerminator)
+            {
+                utf8BufferSpan.Clear();
+
+                CharacterEncodingResult result =
+                    CharacterEncoding.PickOutCharacterFromUtf8String(utf8BufferSpan, ref currentChar);
+
+                if (result != CharacterEncodingResult.Success)
+                    return ResultFs.InvalidPathFormat.Log();
+
+                result = CharacterEncoding.ConvertCharacterUtf8ToUtf32(out _, utf8BufferSpan);
+
+                if (result != CharacterEncodingResult.Success)
+                    return ResultFs.InvalidPathFormat.Log();
+            }
+
+            return Result.Success;
+        }
+
+        public static Result CheckInvalidCharacter(byte c)
+        {
+            /*
+            The optimized code is equivalent to this:
+
+            ReadOnlySpan<byte> invalidChars = new[]
+                {(byte) ':', (byte) '*', (byte) '?', (byte) '<', (byte) '>', (byte) '|'};
+
+            for (int i = 0; i < invalidChars.Length; i++)
+            {
+                if (c == invalidChars[i])
+                    return ResultFs.InvalidCharacter.Log();
+            }
+
+            return Result.Success;
+            */
+
+            const ulong mask = (1ul << (byte)':') |
+                               (1ul << (byte)'*') |
+                               (1ul << (byte)'?') |
+                               (1ul << (byte)'<') |
+                               (1ul << (byte)'>');
+
+            if (c <= 0x3Fu && ((1ul << c) & mask) != 0 || c == (byte)'|')
+                return ResultFs.InvalidCharacter.Log();
+
+            return Result.Success;
+        }
+
+        public static Result CheckInvalidBackslash(out bool containsBackslash, ReadOnlySpan<byte> path, bool allowBackslash)
+        {
+            containsBackslash = false;
+
+            for (int i = 0; i < path.Length && path[i] != NullTerminator; i++)
+            {
+                if (path[i] == '\\')
+                {
+                    containsBackslash = true;
+
+                    if (!allowBackslash)
+                        return ResultFs.InvalidCharacter.Log();
+                }
+            }
+
+            return Result.Success;
+        }
+
+        public static Result CheckEntryNameBytes(ReadOnlySpan<byte> path, int maxEntryLength)
+        {
+            Assert.SdkRequiresNotNull(path);
+
+            int currentEntryLength = 0;
+
+            for (int i = 0; i < path.Length && path[i] != NullTerminator; i++)
+            {
+                currentEntryLength++;
+
+                if (path[i] == DirectorySeparator || path[i] == AltDirectorySeparator)
+                    currentEntryLength = 0;
+
+                // Note: The original does use >= instead of >
+                if (currentEntryLength >= maxEntryLength)
+                    return ResultFs.TooLongPath.Log();
+            }
+
+            return Result.Success;
+        }
+
+        public static bool IsSubPath(ReadOnlySpan<byte> lhs, ReadOnlySpan<byte> rhs)
+        {
+            Assert.SdkRequiresNotNull(lhs);
+            Assert.SdkRequiresNotNull(rhs);
+
+            if (WindowsPath.IsUncPath(lhs) && !WindowsPath.IsUncPath(rhs))
+                return false;
+
+            if (!WindowsPath.IsUncPath(lhs) && WindowsPath.IsUncPath(rhs))
+                return false;
+
+            if (lhs.At(0) == DirectorySeparator && lhs.At(1) == NullTerminator &&
+                rhs.At(0) == DirectorySeparator && rhs.At(1) != NullTerminator)
                 return true;
 
-            if (rhs.GetOrNull(0) == DirectorySeparator && rhs.GetOrNull(1) == NullTerminator &&
-                lhs.GetOrNull(0) == DirectorySeparator && lhs.GetOrNull(1) != NullTerminator)
+            if (rhs.At(0) == DirectorySeparator && rhs.At(1) == NullTerminator &&
+                lhs.At(0) == DirectorySeparator && lhs.At(1) != NullTerminator)
                 return true;
 
             for (int i = 0; ; i++)
             {
-                if (lhs.GetOrNull(i) == NullTerminator)
+                if (lhs.At(i) == NullTerminator)
                 {
-                    return rhs.GetOrNull(i) == DirectorySeparator;
+                    return rhs.At(i) == DirectorySeparator;
                 }
-                else if (rhs.GetOrNull(i) == NullTerminator)
+                else if (rhs.At(i) == NullTerminator)
                 {
-                    return lhs.GetOrNull(i) == DirectorySeparator;
+                    return lhs.At(i) == DirectorySeparator;
                 }
-                else if (lhs.GetOrNull(i) != rhs.GetOrNull(i))
+                else if (lhs.At(i) != rhs.At(i))
                 {
                     return false;
                 }
             }
+        }
+
+        public static bool IsPathAbsolute(ReadOnlySpan<byte> path)
+        {
+            if (WindowsPath.IsWindowsPath(path, false))
+                return true;
+
+            return path.At(0) == DirectorySeparator;
+        }
+
+        public static bool IsPathRelative(ReadOnlySpan<byte> path)
+        {
+            return path.At(0) != NullTerminator && !IsPathAbsolute(path);
+        }
+
+        public static bool IsPathStartWithCurrentDirectory(ReadOnlySpan<byte> path)
+        {
+            return IsCurrentDirectory(path) || IsParentDirectory(path);
         }
     }
 }

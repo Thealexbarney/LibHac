@@ -33,7 +33,7 @@ namespace LibHac.FsSystem.Save
 
         private Result CheckIfNormalized(in Path path)
         {
-            Result rc = PathNormalizer12.IsNormalized(out bool isNormalized, out _, path.GetString());
+            Result rc = PathNormalizer.IsNormalized(out bool isNormalized, out _, path.GetString());
             if (rc.IsFailure()) return rc;
 
             if (!isNormalized)

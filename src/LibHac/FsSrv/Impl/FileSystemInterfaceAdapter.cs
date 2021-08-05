@@ -450,7 +450,7 @@ namespace LibHac.FsSrv.Impl
             rc = SetUpPath(ref newPathNormalized, in newPath);
             if (rc.IsFailure()) return rc;
 
-            if (PathUtility12.IsSubPath(currentPathNormalized.GetString(), newPathNormalized.GetString()))
+            if (PathUtility.IsSubPath(currentPathNormalized.GetString(), newPathNormalized.GetString()))
                 return ResultFs.DirectoryNotRenamable.Log();
 
             rc = _baseFileSystem.Target.RenameDirectory(in currentPathNormalized, in newPathNormalized);

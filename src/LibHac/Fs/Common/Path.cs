@@ -310,7 +310,7 @@ namespace LibHac.Fs
             Result rc = Initialize(path);
             if (rc.IsFailure()) return rc;
 
-            if (_string.At(0) != NullTerminator && !WindowsPath12.IsWindowsPath(_string, false) &&
+            if (_string.At(0) != NullTerminator && !WindowsPath.IsWindowsPath(_string, false) &&
                 _string.At(0) != DirectorySeparator)
             {
                 var flags = new PathFlags();
@@ -319,7 +319,7 @@ namespace LibHac.Fs
                 rc = Normalize(flags);
                 if (rc.IsFailure()) return rc;
             }
-            else if (WindowsPath12.IsWindowsPath(_string, true))
+            else if (WindowsPath.IsWindowsPath(_string, true))
             {
                 var flags = new PathFlags();
                 flags.AllowWindowsPath();
@@ -329,7 +329,7 @@ namespace LibHac.Fs
             }
             else
             {
-                rc = PathNormalizer12.IsNormalized(out _isNormalized, out _, _string);
+                rc = PathNormalizer.IsNormalized(out _isNormalized, out _, _string);
                 if (rc.IsFailure()) return rc;
             }
 
@@ -354,7 +354,7 @@ namespace LibHac.Fs
             Result rc = Initialize(path, length);
             if (rc.IsFailure()) return rc;
 
-            if (_string.At(0) != NullTerminator && !WindowsPath12.IsWindowsPath(_string, false) &&
+            if (_string.At(0) != NullTerminator && !WindowsPath.IsWindowsPath(_string, false) &&
                 _string.At(0) != DirectorySeparator)
             {
                 var flags = new PathFlags();
@@ -363,7 +363,7 @@ namespace LibHac.Fs
                 rc = Normalize(flags);
                 if (rc.IsFailure()) return rc;
             }
-            else if (WindowsPath12.IsWindowsPath(_string, true))
+            else if (WindowsPath.IsWindowsPath(_string, true))
             {
                 var flags = new PathFlags();
                 flags.AllowWindowsPath();
@@ -373,7 +373,7 @@ namespace LibHac.Fs
             }
             else
             {
-                rc = PathNormalizer12.IsNormalized(out _isNormalized, out _, _string);
+                rc = PathNormalizer.IsNormalized(out _isNormalized, out _, _string);
                 if (rc.IsFailure()) return rc;
             }
 
@@ -391,7 +391,7 @@ namespace LibHac.Fs
 
             if (_writeBufferLength > 1)
             {
-                PathUtility12.Replace(GetWriteBuffer().Slice(0, _writeBufferLength - 1), AltDirectorySeparator,
+                PathUtility.Replace(GetWriteBuffer().Slice(0, _writeBufferLength - 1), AltDirectorySeparator,
                     DirectorySeparator);
             }
 
@@ -468,7 +468,7 @@ namespace LibHac.Fs
             if (parent.Length == 0 || parent[0] == NullTerminator)
                 return Result.Success;
 
-            if (WindowsPath12.IsWindowsPath(_string, false))
+            if (WindowsPath.IsWindowsPath(_string, false))
                 return ResultFs.NotImplemented.Log();
 
             // Remove a trailing separator from the parent and a leading one from the child so we can
@@ -631,6 +631,9 @@ namespace LibHac.Fs
                 if (childBytesCopied != childLength)
                     return ResultFs.UnexpectedInPathA.Log();
 
+                // Note: Nintendo does not reset the "_isNormalized" field on the Path.
+                // This can result in the field and the actual normalization state being out of sync.
+
                 return Result.Success;
             }
             finally
@@ -755,10 +758,10 @@ namespace LibHac.Fs
 
             int bufferLength = _writeBufferLength;
 
-            if (flags.IsRelativePathAllowed() && PathUtility12.IsPathRelative(_string))
+            if (flags.IsRelativePathAllowed() && PathUtility.IsPathRelative(_string))
                 bufferLength += 2;
 
-            if (flags.IsWindowsPathAllowed() && WindowsPath12.IsWindowsPath(_string, true))
+            if (flags.IsWindowsPathAllowed() && WindowsPath.IsWindowsPath(_string, true))
                 bufferLength += 1;
 
             int alignedBufferLength = Alignment.AlignUpPow2(bufferLength, WriteBufferAlignmentLength);
@@ -794,7 +797,7 @@ namespace LibHac.Fs
     {
         public static Result SetUpFixedPath(ref Path path, ReadOnlySpan<byte> pathBuffer)
         {
-            Result rc = PathNormalizer12.IsNormalized(out bool isNormalized, out _, pathBuffer);
+            Result rc = PathNormalizer.IsNormalized(out bool isNormalized, out _, pathBuffer);
             if (rc.IsFailure()) return rc;
 
             if (!isNormalized)

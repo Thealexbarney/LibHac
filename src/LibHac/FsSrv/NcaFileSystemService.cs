@@ -243,7 +243,7 @@ namespace LibHac.FsSrv
             rc = pathNormalized.Normalize(pathFlags);
             if (rc.IsFailure()) return rc;
 
-            bool isDirectory = PathUtility12.IsDirectoryPath(in path);
+            bool isDirectory = PathUtility.IsDirectoryPath(in path);
 
             ReferenceCountedDisposable<IFileSystem> fileSystem = null;
 
@@ -375,7 +375,7 @@ namespace LibHac.FsSrv
             rc = pathNormalized.Normalize(pathFlags);
             if (rc.IsFailure()) return rc;
 
-            if (PathUtility12.IsDirectoryPath(in path))
+            if (PathUtility.IsDirectoryPath(in path))
                 return ResultFs.TargetNotFound.Log();
 
             rc = ServiceImpl.GetRightsId(out RightsId rightsId, out byte keyGeneration, in pathNormalized,

@@ -168,7 +168,7 @@ namespace LibHac.FsSrv.Impl
             rc = resolver.ResolveApplicationHtmlDocumentPath(out Lr.Path path, applicationId);
             if (rc.IsFailure()) return rc;
 
-            isDirectory = PathUtility12.IsDirectoryPath(path.Str);
+            isDirectory = PathUtility.IsDirectoryPath(path.Str);
 
             return SetUpFsPath(ref outPath, in path);
         }
@@ -183,7 +183,7 @@ namespace LibHac.FsSrv.Impl
             rc = resolver.ResolveProgramPath(out Lr.Path path, programId);
             if (rc.IsFailure()) return rc;
 
-            isDirectory = PathUtility12.IsDirectoryPath(path.Str);
+            isDirectory = PathUtility.IsDirectoryPath(path.Str);
 
             return SetUpFsPath(ref outPath, in path);
         }
@@ -198,7 +198,7 @@ namespace LibHac.FsSrv.Impl
             rc = resolver.ResolveProgramPathForDebug(out Lr.Path path, programId);
             if (rc.IsFailure()) return rc;
 
-            isDirectory = PathUtility12.IsDirectoryPath(path.Str);
+            isDirectory = PathUtility.IsDirectoryPath(path.Str);
 
             return SetUpFsPath(ref outPath, in path);
         }

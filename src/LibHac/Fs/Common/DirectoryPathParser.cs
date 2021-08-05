@@ -23,7 +23,7 @@ namespace LibHac.Fs.Common
         {
             Span<byte> pathBuffer = path.GetWriteBufferLength() != 0 ? path.GetWriteBuffer() : Span<byte>.Empty;
 
-            int windowsSkipLength = WindowsPath12.GetWindowsSkipLength(pathBuffer);
+            int windowsSkipLength = WindowsPath.GetWindowsSkipLength(pathBuffer);
             _buffer = pathBuffer.Slice(windowsSkipLength);
 
             if (windowsSkipLength != 0)

@@ -834,8 +834,8 @@ namespace LibHac.FsSystem
 
             for (int i = 0; i < path.Length; i++)
             {
-                if (!(path[i] == caseSensitivePath[i] || WindowsPath.IsDosDelimiter(path[i]) &&
-                    WindowsPath.IsDosDelimiter(caseSensitivePath[i])))
+                if (!(path[i] == caseSensitivePath[i] || WindowsPath.IsDosDelimiterW(path[i]) &&
+                    WindowsPath.IsDosDelimiterW(caseSensitivePath[i])))
                 {
                     return ResultFs.PathNotFound.Log();
                 }
@@ -853,7 +853,7 @@ namespace LibHac.FsSystem
             string fullPath;
             int workingDirectoryPathLength;
 
-            if (WindowsPath.IsPathRooted(path))
+            if (WindowsPath.IsWindowsPathW(path))
             {
                 fullPath = path;
                 workingDirectoryPathLength = 0;
@@ -862,7 +862,7 @@ namespace LibHac.FsSystem
             {
                 // We only want to send back the relative part of the path starting with a '/', so
                 // track where the root path ends.
-                if (WindowsPath.IsDosDelimiter(workingDirectoryPath[^1]))
+                if (WindowsPath.IsDosDelimiterW(workingDirectoryPath[^1]))
                 {
                     workingDirectoryPathLength = workingDirectoryPath.Length - 1;
                 }
@@ -888,8 +888,8 @@ namespace LibHac.FsSystem
             if (string.IsNullOrEmpty(path1)) return path2;
             if (string.IsNullOrEmpty(path2)) return path1;
 
-            bool path1HasSeparator = WindowsPath.IsDosDelimiter(path1[path1.Length - 1]);
-            bool path2HasSeparator = WindowsPath.IsDosDelimiter(path2[0]);
+            bool path1HasSeparator = WindowsPath.IsDosDelimiterW(path1[path1.Length - 1]);
+            bool path2HasSeparator = WindowsPath.IsDosDelimiterW(path2[0]);
 
             if (!path1HasSeparator && !path2HasSeparator)
             {
@@ -914,7 +914,7 @@ namespace LibHac.FsSystem
 
             string exactPath = string.Empty;
             int itemsToSkip = 0;
-            if (WindowsPath.IsUnc(path))
+            if (WindowsPath.IsUncPathW(path))
             {
                 // With the Split method, a UNC path like \\server\share, we need to skip
                 // trying to enumerate the server and share, so skip the first two empty

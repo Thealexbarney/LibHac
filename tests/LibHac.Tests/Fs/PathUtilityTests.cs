@@ -32,7 +32,7 @@ namespace LibHac.Tests.Fs
         [Theory, MemberData(nameof(TestData_IsSubPath))]
         public static void IsSubPath(string path1, string path2, bool expectedResult)
         {
-            bool result = PathUtility12.IsSubPath(path1.ToU8Span(), path2.ToU8Span());
+            bool result = PathUtility.IsSubPath(path1.ToU8Span(), path2.ToU8Span());
 
             Assert.Equal(expectedResult, result);
         }
