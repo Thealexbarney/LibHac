@@ -57,16 +57,16 @@ namespace LibHac.FsSystem
         /// <param name="options">Flags to control how the file is created.
         /// Should usually be <see cref="CreateFileOptions.None"/></param>
         /// <param name="key">The 256-bit key containing a 128-bit data key followed by a 128-bit tweak key.</param>
-        public Result CreateFile(U8Span path, long size, CreateFileOptions options, byte[] key)
+        public Result CreateFile(in Path path, long size, CreateFileOptions options, byte[] key)
         {
             long containerSize = AesXtsFile.HeaderLength + Alignment.AlignUp(size, 0x10);
 
-            Result rc = BaseFileSystem.CreateFile(path, containerSize, options);
+            Result rc = BaseFileSystem.CreateFile(in path, containerSize, options);
             if (rc.IsFailure()) return rc;
 
             var header = new AesXtsFileHeader(key, size, path.ToString(), KekSource, ValidationKey);
 
-            rc = BaseFileSystem.OpenFile(out IFile baseFile, path, OpenMode.Write);
+            rc = BaseFileSystem.OpenFile(out IFile baseFile, in path, OpenMode.Write);
             if (rc.IsFailure()) return rc;
 
             using (baseFile)
@@ -105,7 +105,7 @@ namespace LibHac.FsSystem
             Result rc = BaseFileSystem.OpenDirectory(out IDirectory baseDir, path, mode);
             if (rc.IsFailure()) return rc;
 
-            directory = new AesXtsDirectory(BaseFileSystem, baseDir, path.ToU8String(), mode);
+            directory = new AesXtsDirectory(BaseFileSystem, baseDir, new U8String(path.GetString().ToArray()), mode);
             return Result.Success;
         }
 
@@ -116,7 +116,8 @@ namespace LibHac.FsSystem
             Result rc = BaseFileSystem.OpenFile(out IFile baseFile, path, mode | OpenMode.Read);
             if (rc.IsFailure()) return rc;
 
-            var xtsFile = new AesXtsFile(mode, baseFile, path.ToU8String(), KekSource, ValidationKey, BlockSize);
+            var xtsFile = new AesXtsFile(mode, baseFile, new U8String(path.GetString().ToArray()), KekSource,
+                ValidationKey, BlockSize);
 
             file = xtsFile;
             return Result.Success;

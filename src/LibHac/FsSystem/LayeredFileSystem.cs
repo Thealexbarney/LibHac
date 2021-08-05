@@ -48,7 +48,7 @@ namespace LibHac.FsSystem
 
             foreach (IFileSystem fs in Sources)
             {
-                Result rc = fs.GetEntryType(out DirectoryEntryType entryType, path);
+                Result rc = fs.GetEntryType(out DirectoryEntryType entryType, in path);
 
                 if (rc.IsSuccess())
                 {
@@ -82,8 +82,8 @@ namespace LibHac.FsSystem
 
             if (!(multipleSources is null))
             {
-                var dir = new MergedDirectory(multipleSources, path, mode);
-                Result rc = dir.Initialize();
+                var dir = new MergedDirectory(multipleSources, mode);
+                Result rc = dir.Initialize(in path);
 
                 if (rc.IsSuccess())
                 {
@@ -207,25 +207,27 @@ namespace LibHac.FsSystem
             // Needed to open new directories for GetEntryCount
             private List<IFileSystem> SourceFileSystems { get; }
             private List<IDirectory> SourceDirs { get; }
-            private U8String Path { get; }
+            private Path.Stored _path;
             private OpenDirectoryMode Mode { get; }
 
             // todo: Efficient way to remove duplicates
             private HashSet<string> Names { get; } = new HashSet<string>();
 
-            public MergedDirectory(List<IFileSystem> sourceFileSystems, U8Span path, OpenDirectoryMode mode)
+            public MergedDirectory(List<IFileSystem> sourceFileSystems, OpenDirectoryMode mode)
             {
                 SourceFileSystems = sourceFileSystems;
                 SourceDirs = new List<IDirectory>(sourceFileSystems.Count);
-                Path = path.ToU8String();
                 Mode = mode;
             }
 
-            public Result Initialize()
+            public Result Initialize(in Path path)
             {
+                Result rc = _path.Initialize(in path);
+                if (rc.IsFailure()) return rc;
+
                 foreach (IFileSystem fs in SourceFileSystems)
                 {
-                    Result rc = fs.OpenDirectory(out IDirectory dir, Path, Mode);
+                    rc = fs.OpenDirectory(out IDirectory dir, in path, Mode);
                     if (rc.IsFailure()) return rc;
 
                     SourceDirs.Add(dir);
@@ -268,10 +270,12 @@ namespace LibHac.FsSystem
                 // todo: Efficient way to remove duplicates
                 var names = new HashSet<string>();
 
+                Path path = _path.GetPath();
+
                 // Open new directories for each source because we need to remove duplicate entries
                 foreach (IFileSystem fs in SourceFileSystems)
                 {
-                    Result rc = fs.OpenDirectory(out IDirectory dir, Path, Mode);
+                    Result rc = fs.OpenDirectory(out IDirectory dir, in path, Mode);
                     if (rc.IsFailure()) return rc;
 
                     long entriesRead;

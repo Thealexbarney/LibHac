@@ -5,6 +5,12 @@ using LibHac.Common;
 
 namespace LibHac.Os
 {
+    /// <summary>
+    /// Specifies that a constructed <see cref="UniqueLock{TMutex}"/> should not be automatically locked upon construction.<br/>
+    /// Used only to differentiate between <see cref="UniqueLock{TMutex}"/> constructor signatures.
+    /// </summary>
+    public struct DeferLock { }
+
     public static class UniqueLock
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -31,6 +37,13 @@ namespace LibHac.Os
             _mutex = new Ref<TMutex>(ref mutex);
             mutex.Lock();
             _ownsLock = true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public UniqueLockRef(ref TMutex mutex, DeferLock tag)
+        {
+            _mutex = new Ref<TMutex>(ref mutex);
+            _ownsLock = false;
         }
 
         public UniqueLockRef(ref UniqueLockRef<TMutex> other)
@@ -99,9 +112,16 @@ namespace LibHac.Os
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public UniqueLock(TMutex mutex)
         {
-            _mutex = new Ref<TMutex>(ref mutex);
+            _mutex = mutex;
             mutex.Lock();
             _ownsLock = true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public UniqueLock(TMutex mutex, DeferLock tag)
+        {
+            _mutex = mutex;
+            _ownsLock = false;
         }
 
         public UniqueLock(ref UniqueLock<TMutex> other)

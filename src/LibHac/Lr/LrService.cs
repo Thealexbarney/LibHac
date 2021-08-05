@@ -8,7 +8,7 @@ namespace LibHac.Lr
     internal struct LrServiceGlobals
     {
         public ILocationResolverManager LocationResolver;
-        public SdkMutex InitializationMutex;
+        public SdkMutexType InitializationMutex;
 
         public void Initialize()
         {
@@ -34,7 +34,7 @@ namespace LibHac.Lr
             Assert.SdkRequiresNotNull(globals.LocationResolver);
 
             // The lock over getting the service object is a LibHac addition.
-            using ScopedLock<SdkMutex> scopedLock = ScopedLock.Lock(ref lr.Globals.LrService.InitializationMutex);
+            using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref lr.Globals.LrService.InitializationMutex);
 
             if (globals.LocationResolver is not null)
                 return;

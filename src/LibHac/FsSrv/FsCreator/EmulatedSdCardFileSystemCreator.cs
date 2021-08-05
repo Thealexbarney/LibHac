@@ -83,7 +83,7 @@ namespace LibHac.FsSrv.FsCreator
             try
             {
                 tempFs = _rootFileSystem.AddReference();
-                rc = Utility.CreateSubDirectoryFileSystem(out _sdCardFileSystem, ref tempFs, in sdCardPath);
+                rc = Utility.WrapSubDirectory(out _sdCardFileSystem, ref tempFs, in sdCardPath, true);
                 if (rc.IsFailure()) return rc;
 
                 outFileSystem = _sdCardFileSystem.AddReference();

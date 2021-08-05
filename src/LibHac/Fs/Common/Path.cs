@@ -538,12 +538,12 @@ namespace LibHac.Fs
                 int parentBytesCopied = StringUtils.Copy(destBuffer, parent, parentLength + SeparatorLength);
 
                 // Make sure we copied the expected number of parent bytes.
-                if (parentHasTrailingSlash)
+                if (!parentHasTrailingSlash)
                 {
-                    if (parentBytesCopied != parentLength + SeparatorLength)
+                    if (parentBytesCopied != parentLength)
                         return ResultFs.UnexpectedInPathA.Log();
                 }
-                else if (parentBytesCopied != parentLength)
+                else if (parentBytesCopied != parentLength + SeparatorLength)
                 {
                     return ResultFs.UnexpectedInPathA.Log();
                 }
@@ -602,7 +602,7 @@ namespace LibHac.Fs
             if (_string[parentLength - 1] == DirectorySeparator || _string[parentLength - 1] == AltDirectorySeparator)
                 parentLength--;
 
-            int childLength = StringUtils.GetLength(child);
+            int childLength = StringUtils.GetLength(trimmedChild);
 
             byte[] parentBuffer = null;
             try
@@ -630,15 +630,14 @@ namespace LibHac.Fs
 
                 if (childBytesCopied != childLength)
                     return ResultFs.UnexpectedInPathA.Log();
+
+                return Result.Success;
             }
             finally
             {
                 if (parentBuffer is not null)
                     ArrayPool<byte>.Shared.Return(parentBuffer);
             }
-
-            _isNormalized = false;
-            return Result.Success;
         }
 
         public Result AppendChild(in Path child)
@@ -737,7 +736,6 @@ namespace LibHac.Fs
             if (currentPos <= 0)
                 return ResultFs.NotImplemented.Log();
 
-            _isNormalized = false;
             return Result.Success;
         }
 
@@ -809,7 +807,7 @@ namespace LibHac.Fs
         }
 
         // Only a small number of format strings are used with these functions, so we can hard code them all easily.
-        
+
         // /%s
         internal static Result SetUpFixedPathSingleEntry(ref Path path, Span<byte> pathBuffer,
             ReadOnlySpan<byte> entryName)

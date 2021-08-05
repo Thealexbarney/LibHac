@@ -31,14 +31,11 @@ namespace LibHac.Fs.Impl
             BaseFile = baseFile.AddReference();
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                BaseFile?.Dispose();
-            }
+            BaseFile?.Dispose();
 
-            base.Dispose(disposing);
+            base.Dispose();
         }
 
         protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, in ReadOption option)
@@ -101,14 +98,11 @@ namespace LibHac.Fs.Impl
             BaseDirectory = baseDirectory.AddReference();
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                BaseDirectory?.Dispose();
-            }
+            BaseDirectory?.Dispose();
 
-            base.Dispose(disposing);
+            base.Dispose();
         }
 
         protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)

@@ -122,14 +122,13 @@ namespace LibHac.FsSystem
             return BaseStorage.SetSize(Alignment.AlignUp(size, 0x10));
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                BaseStorage.Flush();
-                BaseStorage.Dispose();
-                BaseFile?.Dispose();
-            }
+            BaseStorage.Flush();
+            BaseStorage.Dispose();
+            BaseFile?.Dispose();
+
+            base.Dispose();
         }
     }
 }

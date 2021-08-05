@@ -6,11 +6,6 @@ namespace LibHac.FsSrv.FsCreator
 {
     public class TargetManagerFileSystemCreator : ITargetManagerFileSystemCreator
     {
-        public Result Create(out IFileSystem fileSystem, bool openCaseSensitive)
-        {
-            throw new NotImplementedException();
-        }
-
         public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, in Path rootPath, bool openCaseSensitive, bool ensureRootPathExists, Result pathNotFoundResult)
         {
             throw new NotImplementedException();

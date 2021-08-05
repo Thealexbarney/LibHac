@@ -15,15 +15,12 @@ namespace LibHac.FsSrv.Impl
             BaseFile = baseFile;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                BaseFile?.Dispose();
-                BaseFile = null;
-            }
+            BaseFile?.Dispose();
+            BaseFile = null;
 
-            base.Dispose(disposing);
+            base.Dispose();
         }
 
         protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, in ReadOption option)
@@ -70,15 +67,12 @@ namespace LibHac.FsSrv.Impl
             BaseDirectory = baseDirectory;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                BaseDirectory?.Dispose();
-                BaseDirectory = null;
-            }
+            BaseDirectory?.Dispose();
+            BaseDirectory = null;
 
-            base.Dispose(disposing);
+            base.Dispose();
         }
 
         protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)

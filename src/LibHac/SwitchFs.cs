@@ -44,14 +44,20 @@ namespace LibHac
         {
             var concatFs = new ConcatenationFileSystem(fileSystem);
 
+            var contentDirPath = new Fs.Path();
+            PathFunctions.SetUpFixedPath(ref contentDirPath, "/Nintendo/Contents".ToU8String()).ThrowIfFailure();
+
+            var saveDirPath = new Fs.Path();
+            PathFunctions.SetUpFixedPath(ref saveDirPath, "/Nintendo/save".ToU8String()).ThrowIfFailure();
+
             var contentDirFs = new SubdirectoryFileSystem(concatFs);
-            contentDirFs.Initialize("/Nintendo/Contents".ToU8String()).ThrowIfFailure();
+            contentDirFs.Initialize(in contentDirPath).ThrowIfFailure();
 
             AesXtsFileSystem encSaveFs = null;
             if (fileSystem.DirectoryExists("/Nintendo/save"))
             {
                 var saveDirFs = new SubdirectoryFileSystem(concatFs);
-                saveDirFs.Initialize("/Nintendo/save".ToU8String()).ThrowIfFailure();
+                saveDirFs.Initialize(in saveDirPath).ThrowIfFailure();
 
                 encSaveFs = new AesXtsFileSystem(saveDirFs, keySet.SdCardEncryptionKeys[0].DataRo.ToArray(), 0x4000);
             }
@@ -65,7 +71,7 @@ namespace LibHac
         {
             var concatFs = new ConcatenationFileSystem(fileSystem);
             SubdirectoryFileSystem saveDirFs = null;
-            SubdirectoryFileSystem contentDirFs = null;
+            SubdirectoryFileSystem contentDirFs;
 
             if (concatFs.DirectoryExists("/save"))
             {

@@ -7,7 +7,7 @@ using LibHac.FsSystem;
 using LibHac.Sf;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
-using PathNormalizer = LibHac.FsSrv.Impl.PathNormalizer;
+using Path = LibHac.Fs.Path;
 
 namespace LibHac.FsSrv
 {
@@ -117,7 +117,7 @@ namespace LibHac.FsSrv
             using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
             // Normalize the path
-            var pathNormalized = new Fs.Path();
+            var pathNormalized = new Path();
             rc = pathNormalized.Initialize(rootPath.Str);
             if (rc.IsFailure()) return rc;
 
@@ -135,7 +135,7 @@ namespace LibHac.FsSrv
                 rc = _serviceImpl.OpenBisFileSystem(out baseFileSystem, partitionId, false);
                 if (rc.IsFailure()) return rc;
 
-                rc = Impl.Utility.CreateSubDirectoryFileSystem(out fileSystem, ref baseFileSystem, in pathNormalized);
+                rc = Utility.CreateSubDirectoryFileSystem(out fileSystem, ref baseFileSystem, in pathNormalized);
                 if (rc.IsFailure()) return rc;
 
                 // Add all the file system wrappers

@@ -77,6 +77,11 @@ namespace LibHac.FsSrv.FsCreator
             Result rc = bisRootPath.Initialize(GetPartitionPath(partitionId).ToU8String());
             if (rc.IsFailure()) return rc;
 
+            var pathFlags = new PathFlags();
+            pathFlags.AllowEmptyPath();
+            rc = bisRootPath.Normalize(pathFlags);
+            if (rc.IsFailure()) return rc;
+
             ReferenceCountedDisposable<IFileSystem> partitionFileSystem = null;
             ReferenceCountedDisposable<IFileSystem> sharedRootFs = null;
             try

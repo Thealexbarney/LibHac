@@ -58,7 +58,7 @@ namespace LibHac.FsSystem
 
             ReadOnlySpan<byte> rootPath = new[] { (byte)'/' };
 
-            if (StringUtils.Compare(rootPath, path, 2) != 0)
+            if (path == rootPath)
                 return ResultFs.PathNotFound.Log();
 
             directory = new PartitionDirectory(this, mode);
@@ -76,7 +76,7 @@ namespace LibHac.FsSystem
             if (!mode.HasFlag(OpenMode.Read) && !mode.HasFlag(OpenMode.Write))
                 return ResultFs.InvalidArgument.Log();
 
-            int entryIndex = MetaData.FindEntry(path.Slice(1));
+            int entryIndex = MetaData.FindEntry(new U8Span(path.GetString().Slice(1)));
             if (entryIndex < 0) return ResultFs.PathNotFound.Log();
 
             ref T entry = ref MetaData.GetEntry(entryIndex);
@@ -93,18 +93,20 @@ namespace LibHac.FsSystem
             if (!IsInitialized)
                 return ResultFs.PreconditionViolation.Log();
 
-            if (path.IsEmpty() || path[0] != '/')
+            ReadOnlySpan<byte> pathStr = path.GetString();
+
+            if (path.IsEmpty() || pathStr[0] != '/')
                 return ResultFs.InvalidPathFormat.Log();
 
             ReadOnlySpan<byte> rootPath = new[] { (byte)'/' };
 
-            if (StringUtils.Compare(rootPath, path, 2) == 0)
+            if (StringUtils.Compare(rootPath, pathStr, 2) == 0)
             {
                 entryType = DirectoryEntryType.Directory;
                 return Result.Success;
             }
 
-            if (MetaData.FindEntry(path.Slice(1)) >= 0)
+            if (MetaData.FindEntry(new U8Span(pathStr.Slice(1))) >= 0)
             {
                 entryType = DirectoryEntryType.File;
                 return Result.Success;

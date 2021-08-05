@@ -8,13 +8,11 @@ using LibHac.FsSystem;
 using LibHac.Lr;
 using LibHac.Ncm;
 using LibHac.Spl;
-using LibHac.Util;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IStorage = LibHac.Fs.IStorage;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 using Path = LibHac.Fs.Path;
-using PathNormalizer = LibHac.FsSrv.Impl.PathNormalizer;
 using Utility = LibHac.FsSrv.Impl.Utility;
 
 namespace LibHac.FsSrv
@@ -96,7 +94,7 @@ namespace LibHac.FsSrv
             if (rc.IsFailure()) return rc;
 
             // Try to find the path to the original version of the file system
-            var originalPath = new Fs.Path();
+            var originalPath = new Path();
             Result originalResult = ServiceImpl.ResolveApplicationHtmlDocumentPath(out bool isDirectory,
                 ref originalPath, new Ncm.ApplicationId(programId.Value), ownerProgramInfo.StorageId);
 
@@ -105,7 +103,7 @@ namespace LibHac.FsSrv
                 return originalResult;
 
             // Try to find the path to the patch file system
-            var patchPath = new Fs.Path();
+            var patchPath = new Path();
             Result patchResult = ServiceImpl.ResolveRegisteredHtmlDocumentPath(ref patchPath, programId.Value);
 
             ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
@@ -128,11 +126,11 @@ namespace LibHac.FsSrv
                     if (patchResult.IsFailure())
                         return patchResult;
 
-                    var emptyPath = new Fs.Path();
+                    var emptyPath = new Path();
                     rc = emptyPath.InitializeAsEmpty();
                     if (rc.IsFailure()) return rc;
 
-                    ref Fs.Path originalNcaPath = ref originalResult.IsSuccess() ? ref originalPath : ref emptyPath;
+                    ref Path originalNcaPath = ref originalResult.IsSuccess() ? ref originalPath : ref emptyPath;
 
                     // Open the file system using both the original and patch versions
                     rc = ServiceImpl.OpenFileSystemWithPatch(out tempFileSystem, in originalNcaPath, in patchPath,
@@ -235,7 +233,7 @@ namespace LibHac.FsSrv
 
             bool canMountSystemDataPrivate = ac.GetAccessibilityFor(AccessibilityType.MountSystemDataPrivate).CanRead;
 
-            var pathNormalized = new Fs.Path();
+            var pathNormalized = new Path();
             rc = pathNormalized.InitializeWithReplaceUnc(path.Str);
             if (rc.IsFailure()) return rc;
 

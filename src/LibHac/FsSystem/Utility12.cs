@@ -433,7 +433,7 @@ namespace LibHac.FsSystem
             UniqueLock<SemaphoreAdapter> tempUniqueLock = default;
             try
             {
-                tempUniqueLock = new UniqueLock<SemaphoreAdapter>(semaphore);
+                tempUniqueLock = new UniqueLock<SemaphoreAdapter>(semaphore, new DeferLock());
 
                 if (!tempUniqueLock.TryLock())
                 {

@@ -17,7 +17,6 @@ using IFile = LibHac.Fs.Fsa.IFile;
 using IFileSf = LibHac.FsSrv.Sf.IFile;
 using Path = LibHac.Fs.Path;
 using SaveData = LibHac.Fs.SaveData;
-using Utility = LibHac.FsSystem.Utility;
 using static LibHac.Fs.StringTraits;
 
 namespace LibHac.FsSrv
@@ -1801,7 +1800,7 @@ namespace LibHac.FsSrv
                 saveDataId);
             if (rc.IsFailure()) return rc;
 
-            commitId = Impl.Utility.ConvertZeroCommitId(in extraData);
+            commitId = Utility.ConvertZeroCommitId(in extraData);
             return Result.Success;
         }
 
@@ -2228,7 +2227,7 @@ namespace LibHac.FsSrv
             {
                 saveService = _selfReference.AddReference();
 
-                Result rc = Utility.MakeUniqueLockWithPin(out uniqueLock, _openEntryCountSemaphore,
+                Result rc = Utility12.MakeUniqueLockWithPin(out uniqueLock, _openEntryCountSemaphore,
                     ref saveService);
                 if (rc.IsFailure()) return rc;
 
@@ -2252,7 +2251,7 @@ namespace LibHac.FsSrv
             {
                 saveService = _selfReference.AddReference();
 
-                Result rc = Utility.MakeUniqueLockWithPin(out uniqueLock, _saveDataMountCountSemaphore,
+                Result rc = Utility12.MakeUniqueLockWithPin(out uniqueLock, _saveDataMountCountSemaphore,
                     ref saveService);
                 if (rc.IsFailure()) return rc;
 

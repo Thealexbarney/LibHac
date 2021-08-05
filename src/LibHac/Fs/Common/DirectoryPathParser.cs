@@ -88,6 +88,7 @@ namespace LibHac.Fs.Common
             {
                 _replacedChar = _buffer[1];
                 _buffer[1] = 0;
+                _position = 1;
                 return _buffer;
             }
 

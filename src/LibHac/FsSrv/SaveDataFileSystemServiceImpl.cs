@@ -218,7 +218,7 @@ namespace LibHac.FsSrv
             UnsafeHelpers.SkipParamInit(out fileSystem);
 
             // Hack around error CS8350.
-            const int bufferLength = 0xF;
+            const int bufferLength = 0x1B;
             Span<byte> buffer = stackalloc byte[bufferLength];
             ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
             Span<byte> saveDataMetaIdDirectoryNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);

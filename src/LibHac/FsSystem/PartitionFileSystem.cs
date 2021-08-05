@@ -42,9 +42,9 @@ namespace LibHac.FsSystem
 
         protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
         {
-            path = PathTools.Normalize(path.ToString()).TrimStart('/').ToU8Span();
+            string pathNormalized = PathTools.Normalize(path.ToString()).TrimStart('/');
 
-            if (!FileDict.TryGetValue(path.ToString(), out PartitionFileEntry entry))
+            if (!FileDict.TryGetValue(pathNormalized, out PartitionFileEntry entry))
             {
                 ThrowHelper.ThrowResult(ResultFs.PathNotFound.Value);
             }

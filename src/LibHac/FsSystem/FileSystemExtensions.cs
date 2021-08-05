@@ -7,6 +7,7 @@ using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Util;
+using Path = LibHac.Fs.Path;
 
 namespace LibHac.FsSystem
 {
@@ -15,38 +16,119 @@ namespace LibHac.FsSystem
         public static Result CopyDirectory(this IFileSystem sourceFs, IFileSystem destFs, string sourcePath, string destPath,
             IProgressReport logger = null, CreateFileOptions options = CreateFileOptions.None)
         {
-            Result rc;
+            const int bufferSize = 0x100000;
 
-            foreach (DirectoryEntryEx entry in sourceFs.EnumerateEntries(sourcePath, "*", SearchOptions.Default))
+            var directoryEntryBuffer = new DirectoryEntry();
+
+            var sourcePathNormalized = new Path();
+            Result rc = InitializeFromString(ref sourcePathNormalized, sourcePath);
+            if (rc.IsFailure()) return rc;
+
+            var destPathNormalized = new Path();
+            rc = InitializeFromString(ref destPathNormalized, destPath);
+            if (rc.IsFailure()) return rc;
+
+            byte[] workBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+            try
             {
-                string subSrcPath = PathTools.Normalize(PathTools.Combine(sourcePath, entry.Name));
-                string subDstPath = PathTools.Normalize(PathTools.Combine(destPath, entry.Name));
+                return CopyDirectoryRecursively(destFs, sourceFs, in destPathNormalized, in sourcePathNormalized,
+                    ref directoryEntryBuffer, workBuffer, logger, options);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(workBuffer);
+                logger?.SetTotal(0);
+            }
+        }
 
-                if (entry.Type == DirectoryEntryType.Directory)
+        public static Result CopyDirectoryRecursively(IFileSystem destinationFileSystem, IFileSystem sourceFileSystem,
+            in Path destinationPath, in Path sourcePath, ref DirectoryEntry dirEntry, Span<byte> workBuffer,
+            IProgressReport logger = null, CreateFileOptions option = CreateFileOptions.None)
+        {
+            static Result OnEnterDir(in Path path, in DirectoryEntry entry,
+                ref Utility12.FsIterationTaskClosure closure)
+            {
+                Result rc = closure.DestinationPathBuffer.AppendChild(entry.Name);
+                if (rc.IsFailure()) return rc;
+
+                return closure.SourceFileSystem.CreateDirectory(in closure.DestinationPathBuffer);
+            }
+
+            static Result OnExitDir(in Path path, in DirectoryEntry entry, ref Utility12.FsIterationTaskClosure closure)
+            {
+                return closure.DestinationPathBuffer.RemoveChild();
+            }
+
+            Result OnFile(in Path path, in DirectoryEntry entry, ref Utility12.FsIterationTaskClosure closure)
+            {
+                logger?.LogMessage(path.ToString());
+
+                Result result = closure.DestinationPathBuffer.AppendChild(entry.Name);
+                if (result.IsFailure()) return result;
+
+                result = CopyFile(closure.DestFileSystem, closure.SourceFileSystem, in closure.DestinationPathBuffer,
+                    in path, closure.Buffer, logger, option);
+                if (result.IsFailure()) return result;
+
+                return closure.DestinationPathBuffer.RemoveChild();
+            }
+
+            var taskClosure = new Utility12.FsIterationTaskClosure();
+            taskClosure.Buffer = workBuffer;
+            taskClosure.SourceFileSystem = sourceFileSystem;
+            taskClosure.DestFileSystem = destinationFileSystem;
+
+            Result rc = taskClosure.DestinationPathBuffer.Initialize(destinationPath);
+            if (rc.IsFailure()) return rc;
+
+            rc = Utility12.IterateDirectoryRecursively(sourceFileSystem, in sourcePath, ref dirEntry, OnEnterDir,
+                OnExitDir, OnFile, ref taskClosure);
+
+            taskClosure.DestinationPathBuffer.Dispose();
+            return rc;
+        }
+
+        public static Result CopyFile(IFileSystem destFileSystem, IFileSystem sourceFileSystem, in Path destPath,
+            in Path sourcePath, Span<byte> workBuffer, IProgressReport logger = null,
+            CreateFileOptions option = CreateFileOptions.None)
+        {
+            logger?.LogMessage(sourcePath.ToString());
+
+            // Open source file.
+            Result rc = sourceFileSystem.OpenFile(out IFile sourceFile, sourcePath, OpenMode.Read);
+            if (rc.IsFailure()) return rc;
+
+            using (sourceFile)
+            {
+                rc = sourceFile.GetSize(out long fileSize);
+                if (rc.IsFailure()) return rc;
+
+                rc = CreateOrOverwriteFile(destFileSystem, in destPath, fileSize, option);
+                if (rc.IsFailure()) return rc;
+
+                rc = destFileSystem.OpenFile(out IFile destFile, in destPath, OpenMode.Write);
+                if (rc.IsFailure()) return rc;
+
+                using (destFile)
                 {
-                    destFs.EnsureDirectoryExists(subDstPath);
+                    // Read/Write file in work buffer sized chunks.
+                    long remaining = fileSize;
+                    long offset = 0;
 
-                    rc = sourceFs.CopyDirectory(destFs, subSrcPath, subDstPath, logger, options);
-                    if (rc.IsFailure()) return rc;
-                }
+                    logger?.SetTotal(fileSize);
 
-                if (entry.Type == DirectoryEntryType.File)
-                {
-                    destFs.CreateOrOverwriteFile(subDstPath, entry.Size, options);
-
-                    rc = sourceFs.OpenFile(out IFile srcFile, subSrcPath.ToU8Span(), OpenMode.Read);
-                    if (rc.IsFailure()) return rc;
-
-                    using (srcFile)
+                    while (remaining > 0)
                     {
-                        rc = destFs.OpenFile(out IFile dstFile, subDstPath.ToU8Span(), OpenMode.Write | OpenMode.AllowAppend);
+                        rc = sourceFile.Read(out long bytesRead, offset, workBuffer, ReadOption.None);
                         if (rc.IsFailure()) return rc;
 
-                        using (dstFile)
-                        {
-                            logger?.LogMessage(subSrcPath);
-                            srcFile.CopyTo(dstFile, logger);
-                        }
+                        rc = destFile.Write(offset, workBuffer.Slice(0, (int)bytesRead), WriteOption.None);
+                        if (rc.IsFailure()) return rc;
+
+                        remaining -= bytesRead;
+                        offset += bytesRead;
+
+                        logger?.ReportAdd(bytesRead);
                     }
                 }
             }
@@ -81,9 +163,10 @@ namespace LibHac.FsSystem
             bool ignoreCase = searchOptions.HasFlag(SearchOptions.CaseInsensitive);
             bool recurse = searchOptions.HasFlag(SearchOptions.RecurseSubdirectories);
 
-            IFileSystem fs = fileSystem;
+            var pathNormalized = new Path();
+            InitializeFromString(ref pathNormalized, path).ThrowIfFailure();
 
-            fileSystem.OpenDirectory(out IDirectory directory, path.ToU8Span(), OpenDirectoryMode.All).ThrowIfFailure();
+            fileSystem.OpenDirectory(out IDirectory directory, in pathNormalized, OpenDirectoryMode.All).ThrowIfFailure();
 
             while (true)
             {
@@ -102,7 +185,7 @@ namespace LibHac.FsSystem
                 if (entry.Type != DirectoryEntryType.Directory || !recurse) continue;
 
                 IEnumerable<DirectoryEntryEx> subEntries =
-                    fs.EnumerateEntries(PathTools.Combine(path, entry.Name), searchPattern,
+                    fileSystem.EnumerateEntries(PathTools.Combine(path, entry.Name), searchPattern,
                         searchOptions);
 
                 foreach (DirectoryEntryEx subEntry in subEntries)
@@ -202,7 +285,10 @@ namespace LibHac.FsSystem
 
         public static void SetConcatenationFileAttribute(this IFileSystem fs, string path)
         {
-            fs.QueryEntry(Span<byte>.Empty, Span<byte>.Empty, QueryId.SetConcatenationFileAttribute, path.ToU8Span());
+            var pathNormalized = new Path();
+            InitializeFromString(ref pathNormalized, path).ThrowIfFailure();
+
+            fs.QueryEntry(Span<byte>.Empty, Span<byte>.Empty, QueryId.SetConcatenationFileAttribute, in pathNormalized);
         }
 
         public static void CleanDirectoryRecursivelyGeneric(IFileSystem fileSystem, string path)
@@ -213,14 +299,17 @@ namespace LibHac.FsSystem
             {
                 string subPath = PathTools.Combine(path, entry.Name);
 
+                var subPathNormalized = new Path();
+                InitializeFromString(ref subPathNormalized, subPath).ThrowIfFailure();
+
                 if (entry.Type == DirectoryEntryType.Directory)
                 {
                     CleanDirectoryRecursivelyGeneric(fileSystem, subPath);
-                    fs.DeleteDirectory(subPath.ToU8Span());
+                    fs.DeleteDirectory(in subPathNormalized);
                 }
                 else if (entry.Type == DirectoryEntryType.File)
                 {
-                    fs.DeleteFile(subPath.ToU8Span());
+                    fs.DeleteFile(in subPathNormalized);
                 }
             }
         }
@@ -251,55 +340,46 @@ namespace LibHac.FsSystem
 
         public static Result EnsureDirectoryExists(this IFileSystem fs, string path)
         {
-            path = PathTools.Normalize(path);
-            if (fs.DirectoryExists(path)) return Result.Success;
+            var pathNormalized = new Path();
+            Result rc = InitializeFromString(ref pathNormalized, path);
+            if (rc.IsFailure()) return rc;
 
-            // Find the first subdirectory in the chain that doesn't exist
-            int i;
-            for (i = path.Length - 1; i > 0; i--)
-            {
-                if (path[i] == '/')
-                {
-                    string subPath = path.Substring(0, i);
-
-                    if (fs.DirectoryExists(subPath))
-                    {
-                        break;
-                    }
-                }
-            }
-
-            // path[i] will be a '/', so skip that character
-            i++;
-
-            // loop until `path.Length - 1` so CreateDirectory won't be called multiple
-            // times on path if the last character in the path is a '/'
-            for (; i < path.Length - 1; i++)
-            {
-                if (path[i] == '/')
-                {
-                    string subPath = path.Substring(0, i);
-
-                    Result rc = fs.CreateDirectory(subPath.ToU8Span());
-                    if (rc.IsFailure()) return rc;
-                }
-            }
-
-            return fs.CreateDirectory(path.ToU8Span());
+            return Utility12.EnsureDirectory(fs, in pathNormalized);
         }
 
-        public static void CreateOrOverwriteFile(this IFileSystem fs, string path, long size)
+        public static Result CreateOrOverwriteFile(IFileSystem fileSystem, in Path path, long size,
+            CreateFileOptions option = CreateFileOptions.None)
         {
-            fs.CreateOrOverwriteFile(path, size, CreateFileOptions.None);
+            Result rc = fileSystem.CreateFile(in path, size, option);
+
+            if (rc.IsFailure())
+            {
+                if (!ResultFs.PathAlreadyExists.Includes(rc))
+                    return rc;
+
+                rc = fileSystem.DeleteFile(in path);
+                if (rc.IsFailure()) return rc;
+
+                rc = fileSystem.CreateFile(in path, size, option);
+                if (rc.IsFailure()) return rc;
+            }
+
+            return Result.Success;
         }
 
-        public static void CreateOrOverwriteFile(this IFileSystem fs, string path, long size, CreateFileOptions options)
+        private static Result InitializeFromString(ref Path outPath, string path)
         {
-            path = PathTools.Normalize(path);
+            ReadOnlySpan<byte> utf8Path = StringUtils.StringToUtf8(path);
 
-            if (fs.FileExists(path)) fs.DeleteFile(path.ToU8Span());
+            Result rc = outPath.Initialize(utf8Path);
+            if (rc.IsFailure()) return rc;
 
-            fs.CreateFile(path.ToU8Span(), size, CreateFileOptions.None);
+            var pathFlags = new PathFlags();
+            pathFlags.AllowEmptyPath();
+            outPath.Normalize(pathFlags);
+            if (rc.IsFailure()) return rc;
+
+            return Result.Success;
         }
     }
 

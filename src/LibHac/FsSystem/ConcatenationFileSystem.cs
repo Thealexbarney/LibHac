@@ -46,19 +46,18 @@ namespace LibHac.FsSystem
                 _path = new Path.Stored();
             }
 
-            protected override void Dispose(bool disposing)
+            public override void Dispose()
             {
                 _path.Dispose();
 
-                if (disposing)
+                foreach (IFile file in _files)
                 {
-                    foreach (IFile file in _files)
-                    {
-                        file?.Dispose();
-                    }
-
-                    _files.Clear();
+                    file?.Dispose();
                 }
+
+                _files.Clear();
+
+                base.Dispose();
             }
 
             public Result Initialize(in Path path)
@@ -391,15 +390,12 @@ namespace LibHac.FsSystem
                 _concatenationFileSystem = concatFileSystem;
             }
 
-            protected override void Dispose(bool disposing)
+            public override void Dispose()
             {
-                if (disposing)
-                {
-                    _path.Dispose();
-                    _baseDirectory.Dispose();
-                }
+                _path.Dispose();
+                _baseDirectory.Dispose();
 
-                base.Dispose(disposing);
+                base.Dispose();
             }
 
             public Result Initialize(in Path path)
