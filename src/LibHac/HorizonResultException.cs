@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Runtime.Serialization;
 
 namespace LibHac
 {
-    [Serializable]
-    public class HorizonResultException : LibHacException, ISerializable
+    public class HorizonResultException : LibHacException
     {
         /// <summary>
         /// The result code of the error.
         /// </summary>
-        public Result ResultValue { get; set; }
+        public Result ResultValue { get; }
 
         /// <summary>
         /// The original, internal result code if it was converted to a more general external result code.
@@ -53,27 +51,6 @@ namespace LibHac
             InternalResultValue = result;
             ResultValue = result;
             InnerMessage = message;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="MissingKeyException"/> class with serialized data.
-        /// </summary>
-        /// <param name="info">The <see cref="SerializationInfo"/> that holds the serialized object data about the exception being thrown.</param>
-        /// <param name="context">The <see cref="StreamingContext"/>  that contains contextual information about the source or destination.</param>
-        protected HorizonResultException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            InternalResultValue = (Result)(info.GetValue(nameof(InternalResultValue), InternalResultValue.GetType()) ?? default(Result));
-            ResultValue = (Result)(info.GetValue(nameof(ResultValue), ResultValue.GetType()) ?? default(Result));
-            InnerMessage = (string)info.GetValue(nameof(InnerMessage), InnerMessage.GetType());
-        }
-
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            base.GetObjectData(info, context);
-            info.AddValue(nameof(InternalResultValue), InternalResultValue);
-            info.AddValue(nameof(ResultValue), ResultValue);
-            info.AddValue(nameof(InnerMessage), InnerMessage);
         }
 
         public override string Message

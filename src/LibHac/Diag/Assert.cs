@@ -313,7 +313,7 @@ namespace LibHac.Diag
         // Not null span
         // ---------------------------------------------------------------------
 
-        private static void NotNullImpl<T>(AssertionType assertionType, [NotNull] Span<T> value,
+        private static void NotNullImpl<T>(AssertionType assertionType, Span<T> value,
             string valueText, string functionName, string fileName, int lineNumber)
         {
             if (AssertImpl.NotNull(value))
@@ -323,7 +323,7 @@ namespace LibHac.Diag
         }
 
         [Conditional(AssertCondition)]
-        public static void NotNull<T>([NotNull] Span<T> value,
+        public static void NotNull<T>(Span<T> value,
             [CallerArgumentExpression("value")] string valueText = "",
             [CallerMemberName] string functionName = "",
             [CallerFilePath] string fileName = "",
@@ -333,7 +333,7 @@ namespace LibHac.Diag
         }
 
         [Conditional(AssertCondition)]
-        internal static void SdkNotNull<T>([NotNull] Span<T> value,
+        internal static void SdkNotNull<T>(Span<T> value,
             [CallerArgumentExpression("value")] string valueText = "",
             [CallerMemberName] string functionName = "",
             [CallerFilePath] string fileName = "",
@@ -343,7 +343,7 @@ namespace LibHac.Diag
         }
 
         [Conditional(AssertCondition)]
-        internal static void SdkRequiresNotNull<T>([NotNull] Span<T> value,
+        internal static void SdkRequiresNotNull<T>(Span<T> value,
             [CallerArgumentExpression("value")] string valueText = "",
             [CallerMemberName] string functionName = "",
             [CallerFilePath] string fileName = "",
@@ -356,7 +356,7 @@ namespace LibHac.Diag
         // Not null read-only span
         // ---------------------------------------------------------------------
 
-        private static void NotNullImpl<T>(AssertionType assertionType, [NotNull] ReadOnlySpan<T> value,
+        private static void NotNullImpl<T>(AssertionType assertionType, ReadOnlySpan<T> value,
             string valueText, string functionName, string fileName, int lineNumber)
         {
             if (AssertImpl.NotNull(value))
@@ -366,7 +366,7 @@ namespace LibHac.Diag
         }
 
         [Conditional(AssertCondition)]
-        public static void NotNull<T>([NotNull] ReadOnlySpan<T> value,
+        public static void NotNull<T>(ReadOnlySpan<T> value,
             [CallerArgumentExpression("value")] string valueText = "",
             [CallerMemberName] string functionName = "",
             [CallerFilePath] string fileName = "",
@@ -376,7 +376,7 @@ namespace LibHac.Diag
         }
 
         [Conditional(AssertCondition)]
-        internal static void SdkNotNull<T>([NotNull] ReadOnlySpan<T> value,
+        internal static void SdkNotNull<T>(ReadOnlySpan<T> value,
             [CallerArgumentExpression("value")] string valueText = "",
             [CallerMemberName] string functionName = "",
             [CallerFilePath] string fileName = "",
@@ -386,7 +386,7 @@ namespace LibHac.Diag
         }
 
         [Conditional(AssertCondition)]
-        internal static void SdkRequiresNotNull<T>([NotNull] ReadOnlySpan<T> value,
+        internal static void SdkRequiresNotNull<T>(ReadOnlySpan<T> value,
             [CallerArgumentExpression("value")] string valueText = "",
             [CallerMemberName] string functionName = "",
             [CallerFilePath] string fileName = "",
