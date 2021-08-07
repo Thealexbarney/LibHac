@@ -13,7 +13,7 @@ namespace LibHac
         private const string HeaderMagic = "HEAD";
         private const int EncryptedHeaderSize = 0x70;
 
-        private readonly byte[] _xciHeaderPubk =
+        private static readonly byte[] XciHeaderPubk =
         {
             0x98, 0xC7, 0x26, 0xB6, 0x0D, 0x0A, 0x50, 0xA7, 0x39, 0x21, 0x0A, 0xE3, 0x2F, 0xE4, 0x3E, 0x2E,
             0x5B, 0xA2, 0x86, 0x75, 0xAA, 0x5C, 0xEE, 0x34, 0xF1, 0xA3, 0x3A, 0x7E, 0xBD, 0x90, 0x4E, 0xF7,
@@ -85,7 +85,7 @@ namespace LibHac
                 byte[] sigData = reader.ReadBytes(SignatureSize);
                 reader.BaseStream.Position = SignatureSize + 4;
 
-                SignatureValidity = CryptoOld.Rsa2048Pkcs1Verify(sigData, Signature, _xciHeaderPubk);
+                SignatureValidity = CryptoOld.Rsa2048Pkcs1Verify(sigData, Signature, XciHeaderPubk);
 
                 RomAreaStartPage = reader.ReadInt32();
                 BackupAreaStartPage = reader.ReadInt32();

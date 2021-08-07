@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Runtime.Serialization;
 
 namespace LibHac
 {
     /// <summary>
     /// This is the exception that is thrown when an action requires a key that is not found in the provided keyset.
     /// </summary>
-    [Serializable]
-    public class MissingKeyException : LibHacException, ISerializable
+    public class MissingKeyException : LibHacException
     {
         /// <summary>
         /// The name of the key that is missing.
@@ -58,25 +56,6 @@ namespace LibHac
         public MissingKeyException(string message, Exception innerException)
             : base(message, innerException)
         {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="MissingKeyException"/> class with serialized data.
-        /// </summary>
-        /// <param name="info">The <see cref="SerializationInfo"/> that holds the serialized object data about the exception being thrown.</param>
-        /// <param name="context">The <see cref="StreamingContext"/>  that contains contextual information about the source or destination.</param>
-        protected MissingKeyException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            Name = info.GetString(nameof(Name));
-            Type = (KeyType)(info.GetValue(nameof(Type), Type.GetType()) ?? default(KeyType));
-        }
-
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            base.GetObjectData(info, context);
-            info.AddValue(nameof(Name), Name);
-            info.AddValue(nameof(Type), Type);
         }
 
         public override string Message
