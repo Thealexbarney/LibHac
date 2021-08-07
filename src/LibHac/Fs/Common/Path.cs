@@ -26,9 +26,25 @@ namespace LibHac.Fs
         public bool IsBackslashAllowed() => (_value & (1 << 4)) != 0;
     }
 
+    /// <summary>
+    /// Represents a file path stored as a UTF-8 string.
+    /// </summary>
+    /// <remarks>
+    /// <para>A <see cref="Path"/> has three parts to it:<br/>
+    /// 1. A <see cref="byte"/> <see cref="ReadOnlySpan{T}"/> that points to the current path string.<br/>
+    /// 2. A write buffer that can be allocated if operations need to be done on the path.<br/>
+    /// 3. An <c>IsNormalized</c> flag that tracks the path normalization status of the current path.</para>
+    /// <para>There are two different ways to initialize a <see cref="Path"/>. The "Initialize*" methods will
+    /// ensure a write buffer is allocated and copy the input path to it. <see cref="SetShallowBuffer"/> will
+    /// directly use the input buffer without copying. If this method is used, the caller must ensure the path
+    /// is normalized before passing it to <see cref="SetShallowBuffer"/>.</para>
+    /// <br/>Based on FS 12.0.3 (nnSdk 12.3.1)</remarks>
     [DebuggerDisplay("{" + nameof(ToString) + "(),nq}")]
     public ref struct Path
     {
+        /// <summary>
+        /// Used to store a path in a non-ref struct.
+        /// </summary>
         [DebuggerDisplay("{" + nameof(ToString) + "(),nq}")]
         public struct Stored : IDisposable
         {
@@ -44,6 +60,14 @@ namespace LibHac.Fs
                 }
             }
 
+            /// <summary>
+            /// Initializes this <see cref="Stored"/> path with the data from a standard <see cref="Path"/>.
+            /// <paramref name="path"/> must be normalized.
+            /// </summary>
+            /// <param name="path">The <see cref="Path"/> used to initialize this one.</param>
+            /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+            /// <see cref="ResultFs.NotNormalized"/>: The <c>IsNormalized</c> flag of
+            /// <paramref name="path"/> is not <see langword="true"/>.</returns>
             public Result Initialize(in Path path)
             {
                 if (!path._isNormalized)
@@ -119,27 +143,50 @@ namespace LibHac.Fs
             }
         }
 
+        /// <summary>
+        /// Gets the current write buffer.
+        /// </summary>
+        /// <returns>The write buffer.</returns>
         internal Span<byte> GetWriteBuffer()
         {
             Assert.SdkRequires(_writeBuffer is not null);
             return _writeBuffer.AsSpan();
         }
 
+        /// <summary>
+        /// Gets the current length of the write buffer.
+        /// </summary>
+        /// <returns>The write buffer length.</returns>
         internal readonly long GetWriteBufferLength()
         {
             return _writeBufferLength;
         }
 
+        /// <summary>
+        /// Calculates the length of the current string.
+        /// </summary>
+        /// <returns>The length of the current string></returns>
         public readonly int GetLength()
         {
             return StringUtils.GetLength(GetString());
         }
 
+        /// <summary>
+        /// Returns <see langword="true"/> if 
+        /// </summary>
+        /// <returns></returns>
         public readonly bool IsEmpty()
         {
             return _string.At(0) == 0;
         }
 
+        /// <summary>
+        /// Calculates if the first "<paramref name="length"/>" characters of the
+        /// current path and <paramref name="value"/> are the same.
+        /// </summary>
+        /// <param name="value">The string to compare to this <see cref="Path"/>.</param>
+        /// <param name="length">The maximum number of characters to compare.</param>
+        /// <returns><see langword="true"/> if the strings are the same; otherwise <see langword="false"/>.</returns>
         public readonly bool IsMatchHead(ReadOnlySpan<byte> value, int length)
         {
             return StringUtils.Compare(GetString(), value, length) == 0;
@@ -165,6 +212,10 @@ namespace LibHac.Fs
             return StringUtils.Compare(left.GetString(), right) == 0;
         }
 
+        /// <summary>
+        /// Releases this <see cref="Path"/>'s write buffer and returns it to the caller.
+        /// </summary>
+        /// <returns>The write buffer if the <see cref="Path"/> had one; otherwise <see langword="null"/>.</returns>
         public byte[] ReleaseBuffer()
         {
             Assert.SdkRequires(_writeBuffer is not null);
@@ -175,6 +226,9 @@ namespace LibHac.Fs
             return Shared.Move(ref _writeBuffer);
         }
 
+        /// <summary>
+        /// Releases any current write buffer and sets this <see cref="Path"/> to an empty string.
+        /// </summary>
         private void ClearBuffer()
         {
             byte[] oldBuffer = Shared.Move(ref _writeBuffer);
@@ -186,6 +240,12 @@ namespace LibHac.Fs
             _string = EmptyPath;
         }
 
+        /// <summary>
+        /// Releases any current write buffer and sets the provided buffer as the new write buffer.
+        /// </summary>
+        /// <param name="buffer">The new write buffer.</param>
+        /// <param name="length">The length of the write buffer.
+        /// Must be a multiple of <see cref="WriteBufferAlignmentLength"/>.</param>
         private void SetModifiableBuffer(byte[] buffer, int length)
         {
             Assert.SdkRequiresNotNull(buffer);
@@ -202,6 +262,10 @@ namespace LibHac.Fs
             _string = buffer;
         }
 
+        /// <summary>
+        /// Releases any current write buffer and sets <paramref name="buffer"/> as this <see cref="Path"/>'s string.
+        /// </summary>
+        /// <param name="buffer">The buffer containing the new path.</param>
         private void SetReadOnlyBuffer(ReadOnlySpan<byte> buffer)
         {
             _string = buffer;
@@ -214,6 +278,11 @@ namespace LibHac.Fs
             _writeBufferLength = 0;
         }
 
+        /// <summary>
+        /// Ensures the write buffer is the specified <paramref name="length"/> or larger.
+        /// </summary>
+        /// <param name="length">The minimum desired length.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
         private Result Preallocate(int length)
         {
             if (_writeBufferLength > length)
@@ -226,6 +295,14 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
+        /// <summary>
+        /// Releases any current write buffer and sets <paramref name="buffer"/> as this <see cref="Path"/>'s string.<br/>
+        /// The path contained by <paramref name="buffer"/> must be normalized.
+        /// </summary>
+        /// <remarks>It is up to the caller to ensure the path contained by <paramref name="buffer"/> is normalized.
+        /// This function will always set the <c>IsNormalized</c> flag to <see langword="true"/>.</remarks>
+        /// <param name="buffer">The buffer containing the new path.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
         public Result SetShallowBuffer(ReadOnlySpan<byte> buffer)
         {
             Assert.SdkRequires(_writeBufferLength == 0);
@@ -235,6 +312,12 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
+        /// <summary>
+        /// Gets the buffer containing the current path. 
+        /// </summary>
+        /// <remarks>This <see cref="Path"/>'s <c>IsNormalized</c> flag should be
+        /// <see langword="true"/> before calling this function.</remarks>
+        /// <returns>The buffer containing the current path.</returns>
         public readonly ReadOnlySpan<byte> GetString()
         {
             Assert.SdkAssert(_isNormalized);
@@ -242,6 +325,16 @@ namespace LibHac.Fs
             return _string;
         }
 
+        /// <summary>
+        /// Initializes this <see cref="Path"/> with the data from another Path.<br/>
+        /// <paramref name="other"/> must be normalized.
+        /// </summary>
+        /// <remarks>This <see cref="Path"/>'s <c>IsNormalized</c> flag will be set to
+        /// the value of <paramref name="other"/>'s flag.</remarks>
+        /// <param name="other">The <see cref="Path"/> used to initialize this one.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.NotNormalized"/>: The <c>IsNormalized</c> flag of
+        /// <paramref name="other"/> is not <see langword="true"/>.</returns>
         public Result Initialize(in Path other)
         {
             if (!other._isNormalized)
@@ -261,6 +354,14 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
+        /// <summary>
+        /// Initializes this <see cref="Path"/> with the data from a <see cref="Stored"/> path.
+        /// </summary>
+        /// <remarks>Ensures we have a large enough write buffer and copies the path to it.
+        /// This function always sets the <c>IsNormalized</c> flag to <see langword="true"/>
+        /// because <see cref="Stored"/> paths are always normalized upon initialization.</remarks>
+        /// <param name="other">The <see cref="Stored"/> path used to initialize this <see cref="Path"/>.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
         public Result Initialize(in Stored other)
         {
             int otherLength = other.GetLength();
@@ -277,6 +378,15 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
+        /// <summary>
+        /// Initializes this <see cref="Path"/> using the path in the provided buffer.
+        /// </summary>
+        /// <remarks>Ensures the write buffer is large enough to hold <paramref name="path"/>
+        /// and copies <paramref name="path"/> to the write buffer.<br/>
+        /// This function does not modify the <c>IsNormalized</c> flag.</remarks>
+        /// <param name="path">The buffer containing the path to use.</param>
+        /// <param name="length">The length of the provided path.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
         private Result InitializeImpl(ReadOnlySpan<byte> path, int length)
         {
             if (length == 0 || path.At(0) == NullTerminator)
@@ -296,6 +406,14 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
+        /// <summary>
+        /// Initializes this <see cref="Path"/> using the path in the provided buffer.
+        /// </summary>
+        /// <remarks>Ensures the write buffer is large enough to hold <paramref name="path"/>
+        /// and copies <paramref name="path"/> to the write buffer.<br/>
+        /// This function will always set the <c>IsNormalized</c> flag to <see langword="false"/>.</remarks>
+        /// <param name="path">The buffer containing the path to use.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
         public Result Initialize(ReadOnlySpan<byte> path)
         {
             Result rc = InitializeImpl(path, StringUtils.GetLength(path));
@@ -305,6 +423,19 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
+        /// <summary>
+        /// Initializes this <see cref="Path"/> using the path in the provided buffer and
+        /// normalizes it if the path is a relative path or a Windows path.
+        /// </summary>
+        /// <remarks>This function normalizes relative paths and Windows paths but does not normalize any other paths,
+        /// although all paths are checked for invalid characters and if the path is in a valid format.<br/>
+        /// The <c>IsNormalized</c> flag will always be set to <see langword="true"/> even if the incoming path
+        /// is not normalized. This can lead to a situation where the path is not normalized yet the
+        /// <c>IsNormalized</c> flag is still <see langword="true"/>.</remarks>
+        /// <param name="path">The buffer containing the path to use.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.InvalidCharacter"/>: The path contains an invalid character.<br/>
+        /// <see cref="ResultFs.InvalidPathFormat"/>: The path is not in a valid format.</returns>
         public Result InitializeWithNormalization(ReadOnlySpan<byte> path)
         {
             Result rc = Initialize(path);
@@ -340,6 +471,15 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
+        /// <summary>
+        /// Initializes this <see cref="Path"/> using the path in the provided buffer.
+        /// </summary>
+        /// <remarks>Ensures the write buffer is large enough to hold <paramref name="path"/>
+        /// and copies <paramref name="path"/> to the write buffer.<br/>
+        /// This function will always set the <c>IsNormalized</c> flag to <see langword="false"/>.</remarks>
+        /// <param name="path">The buffer containing the path to use.</param>
+        /// <param name="length">The length of the provided path.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
         public Result Initialize(ReadOnlySpan<byte> path, int length)
         {
             Result rc = InitializeImpl(path, length);
@@ -349,6 +489,20 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
+        /// <summary>
+        /// Initializes this <see cref="Path"/> using the path in the provided buffer and
+        /// normalizes it if the path is a relative path or a Windows path.
+        /// </summary>
+        /// <remarks>This function normalizes relative paths and Windows paths but does not normalize any other paths,
+        /// although all paths are checked for invalid characters and if the path is in a valid format.<br/>
+        /// The <c>IsNormalized</c> flag will always be set to <see langword="true"/> even if the incoming path
+        /// is not normalized. This can lead to a situation where the path is not normalized yet the
+        /// <c>IsNormalized</c> flag is still <see langword="true"/>.</remarks>
+        /// <param name="path">The buffer containing the path to use.</param>
+        /// <param name="length">The length of the provided path.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.InvalidCharacter"/>: The path contains an invalid character.<br/>
+        /// <see cref="ResultFs.InvalidPathFormat"/>: The path is not in a valid format.</returns>
         public Result InitializeWithNormalization(ReadOnlySpan<byte> path, int length)
         {
             Result rc = Initialize(path, length);
@@ -384,6 +538,14 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
+
+        /// <summary>
+        /// Initializes this <see cref="Path"/> using the path in the provided buffer and
+        /// replaces any backslashes in the path with forward slashes.
+        /// </summary>
+        /// <remarks>This function will always set the <c>IsNormalized</c> flag to <see langword="false"/>.</remarks>
+        /// <param name="path">The buffer containing the path to use.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
         public Result InitializeWithReplaceBackslash(ReadOnlySpan<byte> path)
         {
             Result rc = InitializeImpl(path, StringUtils.GetLength(path));
@@ -399,6 +561,13 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
+        /// <summary>
+        /// Initializes this <see cref="Path"/> using the path in the provided buffer. If the path begins with two
+        /// forward slashes (<c>//</c>), those two forward slashes will be replaced with two backslashes (<c>\\</c>).
+        /// </summary>
+        /// <remarks>This function will always set the <c>IsNormalized</c> flag to <see langword="false"/>.</remarks>
+        /// <param name="path">The buffer containing the path to use.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
         public Result InitializeWithReplaceForwardSlashes(ReadOnlySpan<byte> path)
         {
             Result rc = InitializeImpl(path, StringUtils.GetLength(path));
@@ -418,6 +587,18 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
+        /// <summary>
+        /// Initializes this <see cref="Path"/> using the path in the provided buffer
+        /// and makes various UNC path-related replacements.
+        /// </summary>
+        /// <remarks>The following replacements are made:<br/>
+        /// <c>:///</c> located anywhere in the path is replaced with <c>:/\\</c><br/>
+        /// <c>@Host://</c> located at the beginning of the path is replaced with <c>@Host:\\</c><br/>
+        /// <c>//</c> located at the beginning of the path is replaced with <c>\\</c>
+        /// <para>This function does not modify the <c>IsNormalized</c> flag.</para>
+        /// </remarks>
+        /// <param name="path">The buffer containing the path to use.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
         public Result InitializeWithReplaceUnc(ReadOnlySpan<byte> path)
         {
             Result rc = InitializeImpl(path, StringUtils.GetLength(path));
@@ -455,6 +636,11 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
+        /// <summary>
+        /// Initializes the <see cref="Path"/> as an empty string.
+        /// </summary>
+        /// <remarks>This function will always set the <c>IsNormalized</c> flag to <see langword="true"/>.</remarks>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
         public Result InitializeAsEmpty()
         {
             ClearBuffer();
@@ -463,6 +649,15 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
+        /// <summary>
+        /// Updates this <see cref="Path"/> by prepending <paramref name="parent"/> to the current path.
+        /// </summary>
+        /// <remarks>This function does not modify the <c>IsNormalized</c> flag.
+        /// If <paramref name="parent"/> is not normalized, this can lead to a situation where the resulting
+        /// path is not normalized yet the <c>IsNormalized</c> flag is still <see langword="true"/>.</remarks>
+        /// <param name="parent">The buffer containing the path to insert.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.NotImplemented"/>: The path provided in <paramref name="parent"/> is a Windows path.</returns>
         public Result InsertParent(ReadOnlySpan<byte> parent)
         {
             if (parent.Length == 0 || parent[0] == NullTerminator)
@@ -566,11 +761,28 @@ namespace LibHac.Fs
             }
         }
 
+        /// <summary>
+        /// Updates this <see cref="Path"/> by prepending <paramref name="parent"/> to the current path.
+        /// </summary>
+        /// <remarks>This function does not modify the <c>IsNormalized</c> flag.
+        /// If <paramref name="parent"/> is not normalized, this can lead to a situation where the resulting
+        /// path is not normalized yet the <c>IsNormalized</c> flag is still <see langword="true"/>.</remarks>
+        /// <param name="parent">The <see cref="Path"/> to insert.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.NotImplemented"/>: The path provided in <paramref name="parent"/> is a Windows path.</returns>
         public Result InsertParent(in Path parent)
         {
             return InsertParent(parent.GetString());
         }
 
+        /// <summary>
+        /// Updates this <see cref="Path"/> by appending <paramref name="child"/> to the current path.
+        /// </summary>
+        /// <remarks>This function does not modify the <c>IsNormalized</c> flag.
+        /// If <paramref name="child"/> is not normalized, this can lead to a situation where the resulting
+        /// path is not normalized yet the <c>IsNormalized</c> flag is still <see langword="true"/>.</remarks>
+        /// <param name="child">The buffer containing the child path to append to the current path.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
         public Result AppendChild(ReadOnlySpan<byte> child)
         {
             ReadOnlySpan<byte> trimmedChild = child;
@@ -643,11 +855,30 @@ namespace LibHac.Fs
             }
         }
 
+        /// <summary>
+        /// Updates this <see cref="Path"/> by appending <paramref name="child"/> to the current path.
+        /// </summary>
+        /// <remarks>This function does not modify the <c>IsNormalized</c> flag.
+        /// If <paramref name="child"/> is not normalized, this can lead to a situation where the resulting
+        /// path is not normalized yet the <c>IsNormalized</c> flag is still <see langword="true"/>.</remarks>
+        /// <param name="child">The child <see cref="Path"/> to append to the current path.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
         public Result AppendChild(in Path child)
         {
             return AppendChild(child.GetString());
         }
 
+        /// <summary>
+        /// Combines 2 <see cref="Path"/>s into a single path.
+        /// </summary>
+        /// <remarks>If <paramref name="path1"/> is empty, this <see cref="Path"/>'s <c>IsNormalized</c> flag will
+        /// be set to the value of <paramref name="path2"/>'s flag.
+        /// Otherwise the flag will be set to the value of <paramref name="path1"/>'s flag.</remarks>
+        /// <param name="path1">The first path to combine.</param>
+        /// <param name="path2">The second path to combine.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.NotNormalized"/>: The <c>IsNormalized</c> flag of either
+        /// <paramref name="path1"/> or <paramref name="path2"/> is not <see langword="true"/>.</returns>
         public Result Combine(in Path path1, in Path path2)
         {
             int path1Length = path1.GetLength();
@@ -656,23 +887,30 @@ namespace LibHac.Fs
             Result rc = Preallocate(path1Length + SeparatorLength + path2Length + NullTerminatorLength);
             if (rc.IsFailure()) return rc;
 
-            rc = Initialize(path1);
+            rc = Initialize(in path1);
             if (rc.IsFailure()) return rc;
 
             if (IsEmpty())
             {
-                rc = Initialize(path2);
+                rc = Initialize(in path2);
                 if (rc.IsFailure()) return rc;
             }
             else
             {
-                rc = AppendChild(path2);
+                rc = AppendChild(in path2);
                 if (rc.IsFailure()) return rc;
             }
 
             return Result.Success;
         }
 
+        /// <summary>
+        /// Removes the last entry from this <see cref="Path"/>.
+        /// </summary>
+        /// <remarks>This function does not modify the <c>IsNormalized</c> flag.</remarks>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.NotImplemented"/>: The path before calling this function was
+        /// one of "<c>.</c>", "<c>..</c>", "<c>/</c>" or "<c>\</c>".</returns>
         public Result RemoveChild()
         {
             // Make sure the Path has a buffer that we can write to.
@@ -742,6 +980,15 @@ namespace LibHac.Fs
             return Result.Success;
         }
 
+        /// <summary>
+        /// Normalizes the current path according to the provided <paramref name="flags"/>.
+        /// </summary>
+        /// <remarks>If this <see cref="Path"/>'s <c>IsNormalized</c> flag is set, this function does nothing.
+        /// The <c>IsNormalized</c> flag will be set if this function returns successfully.</remarks>
+        /// <param name="flags">Flags that specify what types of paths are allowed.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.InvalidCharacter"/>: The path contains an invalid character.<br/>
+        /// <see cref="ResultFs.InvalidPathFormat"/>: The path is in an invalid format for the specified <paramref name="flags"/>.</returns>
         public Result Normalize(PathFlags flags)
         {
             if (_isNormalized)
