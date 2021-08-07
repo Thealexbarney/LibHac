@@ -20,7 +20,7 @@ namespace LibHac.Fs.Fsa
             int mountLen = 0;
             int maxMountLen = Math.Min(path.Length, PathTools.MountNameLengthMax);
 
-            if (WindowsPath.IsWindowsDrive(path) || WindowsPath.IsUnc(path))
+            if (WindowsPath.IsWindowsDrive(path) || WindowsPath.IsUncPath(path))
             {
                 StringUtils.Copy(mountName.Name, CommonPaths.HostRootFileSystemMountName);
                 mountName.Name[PathTools.MountNameLengthMax] = StringTraits.NullTerminator;
@@ -192,7 +192,7 @@ namespace LibHac.Fs.Fsa
             {
                 rc = fs.Impl.Unmount(mountName);
             }
-            fs.Impl.LogErrorMessage(rc);
+            fs.Impl.LogResultErrorMessage(rc);
             Abort.DoAbortUnless(rc.IsSuccess());
         }
 
@@ -218,7 +218,7 @@ namespace LibHac.Fs.Fsa
             {
                 rc = fs.Impl.IsMounted(out isMounted, mountName);
             }
-            fs.Impl.LogErrorMessage(rc);
+            fs.Impl.LogResultErrorMessage(rc);
             Abort.DoAbortUnless(rc.IsSuccess());
 
             return isMounted;

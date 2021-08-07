@@ -330,7 +330,9 @@ namespace hactoolnet
             var sb = new StringBuilder();
             sb.AppendLine();
 
-            save.GetFreeSpaceSize(out long freeSpace, "".ToU8String()).ThrowIfFailure();
+            var emptyPath = new LibHac.Fs.Path();
+            emptyPath.InitializeAsEmpty().ThrowIfFailure();
+            save.GetFreeSpaceSize(out long freeSpace, in emptyPath).ThrowIfFailure();
 
             sb.AppendLine("Savefile:");
             PrintItem(sb, colLen, "CMAC Key Used:", keySet.DeviceUniqueSaveMacKeys[0].DataRo.ToArray());

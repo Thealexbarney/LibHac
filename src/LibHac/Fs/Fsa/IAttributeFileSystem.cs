@@ -1,49 +1,31 @@
-﻿using LibHac.Common;
-
-namespace LibHac.Fs.Fsa
+﻿namespace LibHac.Fs.Fsa
 {
     // ReSharper disable once InconsistentNaming
     public abstract class IAttributeFileSystem : IFileSystem
     {
-        public Result CreateDirectory(U8Span path, NxFileAttributes archiveAttribute)
+        public Result CreateDirectory(in Path path, NxFileAttributes archiveAttribute)
         {
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            return DoCreateDirectory(path, archiveAttribute);
+            return DoCreateDirectory(in path, archiveAttribute);
         }
 
-        public Result GetFileAttributes(out NxFileAttributes attributes, U8Span path)
+        public Result GetFileAttributes(out NxFileAttributes attributes, in Path path)
         {
-            UnsafeHelpers.SkipParamInit(out attributes);
-
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            return DoGetFileAttributes(out attributes, path);
+            return DoGetFileAttributes(out attributes, in path);
         }
 
-        public Result SetFileAttributes(U8Span path, NxFileAttributes attributes)
+        public Result SetFileAttributes(in Path path, NxFileAttributes attributes)
         {
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            return DoSetFileAttributes(path, attributes);
+            return DoSetFileAttributes(in path, attributes);
         }
 
-        public Result GetFileSize(out long fileSize, U8Span path)
+        public Result GetFileSize(out long fileSize, in Path path)
         {
-            UnsafeHelpers.SkipParamInit(out fileSize);
-
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            return DoGetFileSize(out fileSize, path);
+            return DoGetFileSize(out fileSize, in path);
         }
 
-        protected abstract Result DoCreateDirectory(U8Span path, NxFileAttributes archiveAttribute);
-        protected abstract Result DoGetFileAttributes(out NxFileAttributes attributes, U8Span path);
-        protected abstract Result DoSetFileAttributes(U8Span path, NxFileAttributes attributes);
-        protected abstract Result DoGetFileSize(out long fileSize, U8Span path);
+        protected abstract Result DoCreateDirectory(in Path path, NxFileAttributes archiveAttribute);
+        protected abstract Result DoGetFileAttributes(out NxFileAttributes attributes, in Path path);
+        protected abstract Result DoSetFileAttributes(in Path path, NxFileAttributes attributes);
+        protected abstract Result DoGetFileSize(out long fileSize, in Path path);
     }
 }

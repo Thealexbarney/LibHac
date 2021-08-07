@@ -3,10 +3,11 @@ using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
+using LibHac.FsSystem;
 using LibHac.Sf;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
-using PathNormalizer = LibHac.FsSrv.Impl.PathNormalizer;
+using Path = LibHac.Fs.Path;
 
 namespace LibHac.FsSrv
 {
@@ -73,7 +74,7 @@ namespace LibHac.FsSrv
                 if (rc.IsFailure()) return rc;
 
                 // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs, false);
 
                 return Result.Success;
             }
@@ -83,10 +84,10 @@ namespace LibHac.FsSrv
             }
         }
 
-        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath rootPath,
+        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystemSf> outFileSystem, in FspPath rootPath,
             BisPartitionId partitionId)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
+            UnsafeHelpers.SkipParamInit(out outFileSystem);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -112,27 +113,44 @@ namespace LibHac.FsSrv
             if (!accessibility.CanRead || !accessibility.CanWrite)
                 return ResultFs.PermissionDenied.Log();
 
-            // Normalize the path
-            using var normalizer = new PathNormalizer(rootPath, PathNormalizer.Option.AcceptEmpty);
-            if (normalizer.Result.IsFailure()) return normalizer.Result;
+            const StorageType storageFlag = StorageType.Bis;
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
-            ReferenceCountedDisposable<IFileSystem> fs = null;
+            // Normalize the path
+            var pathNormalized = new Path();
+            rc = pathNormalized.Initialize(rootPath.Str);
+            if (rc.IsFailure()) return rc;
+
+            var pathFlags = new PathFlags();
+            pathFlags.AllowEmptyPath();
+            rc = pathNormalized.Normalize(pathFlags);
+            if (rc.IsFailure()) return rc;
+
+            ReferenceCountedDisposable<IFileSystem> baseFileSystem = null;
+            ReferenceCountedDisposable<IFileSystem> fileSystem = null;
 
             try
             {
                 // Open the file system
-                rc = _serviceImpl.OpenBisFileSystem(out fs, normalizer.Path,
-                    partitionId);
+                rc = _serviceImpl.OpenBisFileSystem(out baseFileSystem, partitionId, false);
                 if (rc.IsFailure()) return rc;
 
+                rc = Utility.CreateSubDirectoryFileSystem(out fileSystem, ref baseFileSystem, in pathNormalized);
+                if (rc.IsFailure()) return rc;
+
+                // Add all the file system wrappers
+                fileSystem = StorageLayoutTypeSetFileSystem.CreateShared(ref fileSystem, storageFlag);
+                fileSystem = AsynchronousAccessFileSystem.CreateShared(ref fileSystem);
+
                 // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs);
+                outFileSystem = FileSystemInterfaceAdapter.CreateShared(ref fileSystem, false);
 
                 return Result.Success;
             }
             finally
             {
-                fs?.Dispose();
+                baseFileSystem?.Dispose();
+                fileSystem?.Dispose();
             }
         }
 
@@ -188,7 +206,7 @@ namespace LibHac.FsSrv
                 if (rc.IsFailure()) return rc;
 
                 // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs, false);
 
                 return Result.Success;
             }
@@ -218,7 +236,7 @@ namespace LibHac.FsSrv
                 if (rc.IsFailure()) return rc;
 
                 // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs, false);
 
                 return Result.Success;
             }
@@ -291,7 +309,7 @@ namespace LibHac.FsSrv
                 if (rc.IsFailure()) return rc;
 
                 // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs, false);
 
                 return Result.Success;
             }

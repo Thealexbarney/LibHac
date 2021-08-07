@@ -11,6 +11,8 @@ using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using IFileSf = LibHac.FsSrv.Sf.IFile;
 using IStorageSf = LibHac.FsSrv.Sf.IStorage;
+using Path = LibHac.Fs.Path;
+using static LibHac.Fs.StringTraits;
 
 namespace LibHac.FsSrv
 {
@@ -525,25 +527,47 @@ namespace LibHac.FsSrv
             if (!accessibility.CanRead || !accessibility.CanWrite)
                 return ResultFs.PermissionDenied.Log();
 
-            ReferenceCountedDisposable<IFileSystem> hostFs = null;
+            ReferenceCountedDisposable<IFileSystem> hostFileSystem = null;
             try
             {
-                rc = FsProxyCore.OpenHostFileSystem(out hostFs, new U8Span(path.Str),
-                    option.Flags.HasFlag(MountHostOptionFlag.PseudoCaseSensitive));
+                var pathNormalized = new Path();
+
+                if (path.Str.At(0) == DirectorySeparator && path.Str.At(1) != DirectorySeparator)
+                {
+                    rc = pathNormalized.Initialize(path.Str.Slice(1));
+                    if (rc.IsFailure()) return rc;
+                }
+                else
+                {
+                    rc = pathNormalized.InitializeWithReplaceUnc(path.Str);
+                    if (rc.IsFailure()) return rc;
+                }
+
+                var flags = new PathFlags();
+                flags.AllowWindowsPath();
+                flags.AllowRelativePath();
+                flags.AllowEmptyPath();
+
+                rc = pathNormalized.Normalize(flags);
                 if (rc.IsFailure()) return rc;
 
-                bool isRootPath = path.Str[0] == 0;
+                bool isCaseSensitive = option.Flags.HasFlag(MountHostOptionFlag.PseudoCaseSensitive);
 
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref hostFs, isRootPath);
+                rc = FsProxyCore.OpenHostFileSystem(out hostFileSystem, in pathNormalized, isCaseSensitive);
+                if (rc.IsFailure()) return rc;
 
-                if (fileSystem is null)
-                    return ResultFs.AllocationMemoryFailedCreateShared.Log();
+                var adapterFlags = new PathFlags();
+                if (path.Str.At(0) == NullTerminator)
+                    adapterFlags.AllowWindowsPath();
 
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref hostFileSystem, adapterFlags, false);
+
+                pathNormalized.Dispose();
                 return Result.Success;
             }
             finally
             {
-                hostFs?.Dispose();
+                hostFileSystem?.Dispose();
             }
         }
 
@@ -878,7 +902,7 @@ namespace LibHac.FsSrv
 
                 tempFs = StorageLayoutTypeSetFileSystem.CreateShared(ref tempFs, storageFlag);
                 tempFs = AsynchronousAccessFileSystem.CreateShared(ref tempFs);
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFs);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFs, false);
 
                 return Result.Success;
             }
@@ -915,7 +939,7 @@ namespace LibHac.FsSrv
 
                 customFs = StorageLayoutTypeSetFileSystem.CreateShared(ref customFs, storageFlag);
                 customFs = AsynchronousAccessFileSystem.CreateShared(ref customFs);
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref customFs);
+                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref customFs, false);
 
                 return Result.Success;
             }

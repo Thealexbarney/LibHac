@@ -18,7 +18,7 @@ namespace LibHac.Fs
         {
             if (IsValid)
             {
-                File.FsClient.CloseFile(this);
+                File.Hos.Fs.CloseFile(this);
             }
         }
     }

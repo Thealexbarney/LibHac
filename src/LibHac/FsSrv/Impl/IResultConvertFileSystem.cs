@@ -15,15 +15,12 @@ namespace LibHac.FsSrv.Impl
             BaseFile = baseFile;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                BaseFile?.Dispose();
-                BaseFile = null;
-            }
+            BaseFile?.Dispose();
+            BaseFile = null;
 
-            base.Dispose(disposing);
+            base.Dispose();
         }
 
         protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, in ReadOption option)
@@ -70,15 +67,12 @@ namespace LibHac.FsSrv.Impl
             BaseDirectory = baseDirectory;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                BaseDirectory?.Dispose();
-                BaseDirectory = null;
-            }
+            BaseDirectory?.Dispose();
+            BaseDirectory = null;
 
-            base.Dispose(disposing);
+            base.Dispose();
         }
 
         protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)
@@ -104,65 +98,61 @@ namespace LibHac.FsSrv.Impl
             BaseFileSystem = Shared.Move(ref baseFileSystem);
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                BaseFileSystem?.Dispose();
-                BaseFileSystem = null;
-            }
-
-            base.Dispose(disposing);
+            BaseFileSystem?.Dispose();
+            BaseFileSystem = null;
+            base.Dispose();
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option)
+        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
         {
             return ConvertResult(BaseFileSystem.Target.CreateFile(path, size, option));
         }
 
-        protected override Result DoDeleteFile(U8Span path)
+        protected override Result DoDeleteFile(in Path path)
         {
             return ConvertResult(BaseFileSystem.Target.DeleteFile(path));
         }
 
-        protected override Result DoCreateDirectory(U8Span path)
+        protected override Result DoCreateDirectory(in Path path)
         {
             return ConvertResult(BaseFileSystem.Target.CreateDirectory(path));
         }
 
-        protected override Result DoDeleteDirectory(U8Span path)
+        protected override Result DoDeleteDirectory(in Path path)
         {
             return ConvertResult(BaseFileSystem.Target.DeleteDirectory(path));
         }
 
-        protected override Result DoDeleteDirectoryRecursively(U8Span path)
+        protected override Result DoDeleteDirectoryRecursively(in Path path)
         {
             return ConvertResult(BaseFileSystem.Target.DeleteDirectoryRecursively(path));
         }
 
-        protected override Result DoCleanDirectoryRecursively(U8Span path)
+        protected override Result DoCleanDirectoryRecursively(in Path path)
         {
             return ConvertResult(BaseFileSystem.Target.CleanDirectoryRecursively(path));
         }
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(in Path currentPath, in Path newPath)
         {
-            return ConvertResult(BaseFileSystem.Target.RenameFile(oldPath, newPath));
+            return ConvertResult(BaseFileSystem.Target.RenameFile(currentPath, newPath));
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
         {
-            return ConvertResult(BaseFileSystem.Target.RenameDirectory(oldPath, newPath));
+            return ConvertResult(BaseFileSystem.Target.RenameDirectory(currentPath, newPath));
         }
 
-        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
             return ConvertResult(BaseFileSystem.Target.GetEntryType(out entryType, path));
         }
 
-        protected abstract override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode);
+        protected abstract override Result DoOpenFile(out IFile file, in Path path, OpenMode mode);
 
-        protected abstract override Result DoOpenDirectory(out IDirectory directory, U8Span path,
+        protected abstract override Result DoOpenDirectory(out IDirectory directory, in Path path,
             OpenDirectoryMode mode);
 
         protected override Result DoCommit()
@@ -185,23 +175,23 @@ namespace LibHac.FsSrv.Impl
             return ConvertResult(BaseFileSystem.Target.Flush());
         }
 
-        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
+        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
         {
             return ConvertResult(BaseFileSystem.Target.GetFileTimeStampRaw(out timeStamp, path));
         }
 
         protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
-            U8Span path)
+            in Path path)
         {
             return ConvertResult(BaseFileSystem.Target.QueryEntry(outBuffer, inBuffer, queryId, path));
         }
 
-        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
             return ConvertResult(BaseFileSystem.Target.GetFreeSpaceSize(out freeSpace, path));
         }
 
-        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
             return ConvertResult(BaseFileSystem.Target.GetTotalSpaceSize(out totalSpace, path));
         }

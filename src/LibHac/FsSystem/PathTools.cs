@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO.Enumeration;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Util;
 
@@ -235,7 +236,7 @@ namespace LibHac.FsSystem
 
         public static ReadOnlySpan<byte> GetParentDirectory(ReadOnlySpan<byte> path)
         {
-            Debug.Assert(IsNormalized(path));
+            Assert.SdkAssert(IsNormalized(path));
 
             int i = StringUtils.GetLength(path) - 1;
 
@@ -288,6 +289,9 @@ namespace LibHac.FsSystem
 
             foreach (char c in path)
             {
+                if (c == 0)
+                    break;
+
                 switch (state)
                 {
                     case NormalizeState.Initial when c == '/': state = NormalizeState.Delimiter; break;
@@ -325,6 +329,9 @@ namespace LibHac.FsSystem
 
             foreach (byte c in path)
             {
+                if (c == 0)
+                    break;
+
                 switch (state)
                 {
                     case NormalizeState.Initial when c == '/': state = NormalizeState.Delimiter; break;

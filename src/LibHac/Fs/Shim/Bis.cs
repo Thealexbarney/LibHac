@@ -157,13 +157,13 @@ namespace LibHac.Fs.Shim
 
         public static Result SetBisRootForHost(this FileSystemClient fs, BisPartitionId partitionId, U8Span rootPath)
         {
-            Unsafe.SkipInit(out FsPath path);
+            Unsafe.SkipInit(out FsPath pathBuffer);
             Result rc;
 
             int pathLen = StringUtils.GetLength(rootPath, PathTools.MaxPathLength + 1);
             if (pathLen > PathTools.MaxPathLength)
             {
-                fs.Impl.LogErrorMessage(ResultFs.TooLongPath.Value);
+                fs.Impl.LogResultErrorMessage(ResultFs.TooLongPath.Value);
                 return ResultFs.TooLongPath.Log();
             }
 
@@ -173,21 +173,24 @@ namespace LibHac.Fs.Shim
                     ? StringTraits.NullTerminator
                     : StringTraits.DirectorySeparator;
 
-                var sb = new U8StringBuilder(path.Str);
-                rc = sb.Append(rootPath).Append(endingSeparator).ToSfPath();
-                if (rc.IsFailure()) return rc;
+                var sb = new U8StringBuilder(pathBuffer.Str);
+                sb.Append(rootPath).Append(endingSeparator);
+
+                if (sb.Overflowed)
+                    return ResultFs.TooLongPath.Log();
             }
             else
             {
-                path.Str[0] = StringTraits.NullTerminator;
+                pathBuffer.Str[0] = StringTraits.NullTerminator;
             }
 
-            FspPath.FromSpan(out FspPath sfPath, path.Str);
+            rc = PathUtility.ConvertToFspPath(out FspPath sfPath, pathBuffer.Str);
+            if (rc.IsFailure()) return rc;
 
             using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             rc = fsProxy.Target.SetBisRootForHost(partitionId, in sfPath);
-            fs.Impl.LogErrorMessage(rc);
+            fs.Impl.LogResultErrorMessage(rc);
             return rc;
         }
 

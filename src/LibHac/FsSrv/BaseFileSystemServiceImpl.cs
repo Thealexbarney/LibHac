@@ -1,5 +1,4 @@
 ﻿using System;
-using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSrv.FsCreator;
 using LibHac.FsSrv.Impl;
@@ -41,21 +40,18 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, U8Span rootPath,
+        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
             BisPartitionId partitionId)
         {
-            return OpenBisFileSystem(out fileSystem, rootPath, partitionId, false);
+            return OpenBisFileSystem(out fileSystem, partitionId, false);
         }
 
-        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, U8Span rootPath,
+        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
             BisPartitionId partitionId, bool caseSensitive)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
-            Result rc = _config.BisFileSystemCreator.Create(out IFileSystem fs, rootPath.ToString(), partitionId);
+            Result rc = _config.BisFileSystemCreator.Create(out fileSystem, partitionId, caseSensitive);
             if (rc.IsFailure()) return rc;
 
-            fileSystem = new ReferenceCountedDisposable<IFileSystem>(fs);
             return Result.Success;
         }
 
@@ -95,14 +91,7 @@ namespace LibHac.FsSrv
 
         public Result OpenSdCardProxyFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, bool openCaseSensitive)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
-            // Todo: Shared
-            Result rc = _config.SdCardFileSystemCreator.Create(out IFileSystem fs, openCaseSensitive);
-            if (rc.IsFailure()) return rc;
-
-            fileSystem = new ReferenceCountedDisposable<IFileSystem>(fs);
-            return Result.Success;
+            return _config.SdCardFileSystemCreator.Create(out fileSystem, openCaseSensitive);
         }
 
         public Result FormatSdCardProxyFileSystem()

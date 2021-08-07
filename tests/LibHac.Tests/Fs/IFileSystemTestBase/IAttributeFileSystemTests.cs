@@ -1,5 +1,4 @@
-﻿using LibHac.Common;
-using LibHac.Fs;
+﻿using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using Xunit;
 
@@ -14,9 +13,9 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IAttributeFileSystem fs = CreateAttributeFileSystem();
 
-            Assert.Success(fs.CreateDirectory("/dir".ToU8Span(), NxFileAttributes.None));
+            Assert.Success(fs.CreateDirectory("/dir", NxFileAttributes.None));
 
-            Assert.Success(fs.GetFileAttributes(out NxFileAttributes attributes, "/dir".ToU8Span()));
+            Assert.Success(fs.GetFileAttributes(out NxFileAttributes attributes, "/dir"));
             Assert.Equal(NxFileAttributes.Directory, attributes);
         }
 
@@ -25,9 +24,9 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IAttributeFileSystem fs = CreateAttributeFileSystem();
 
-            Assert.Success(fs.CreateDirectory("/dir".ToU8Span(), NxFileAttributes.Archive));
+            Assert.Success(fs.CreateDirectory("/dir", NxFileAttributes.Archive));
 
-            Assert.Success(fs.GetFileAttributes(out NxFileAttributes attributes, "/dir".ToU8Span()));
+            Assert.Success(fs.GetFileAttributes(out NxFileAttributes attributes, "/dir"));
             Assert.Equal(NxFileAttributes.Directory | NxFileAttributes.Archive, attributes);
         }
 
@@ -35,9 +34,9 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         public void GetFileAttributes_AttributesOnNewFileAreEmpty()
         {
             IAttributeFileSystem fs = CreateAttributeFileSystem();
-            fs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
+            fs.CreateFile("/file", 0, CreateFileOptions.None);
 
-            Assert.Success(fs.GetFileAttributes(out NxFileAttributes attributes, "/file".ToU8Span()));
+            Assert.Success(fs.GetFileAttributes(out NxFileAttributes attributes, "/file"));
             Assert.Equal(NxFileAttributes.None, attributes);
         }
 
@@ -45,9 +44,9 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         public void GetFileAttributes_AttributesOnNewDirHaveOnlyDirFlagSet()
         {
             IAttributeFileSystem fs = CreateAttributeFileSystem();
-            fs.CreateDirectory("/dir".ToU8Span());
+            fs.CreateDirectory("/dir");
 
-            Assert.Success(fs.GetFileAttributes(out NxFileAttributes attributes, "/dir".ToU8Span()));
+            Assert.Success(fs.GetFileAttributes(out NxFileAttributes attributes, "/dir"));
             Assert.Equal(NxFileAttributes.Directory, attributes);
         }
 
@@ -56,7 +55,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IAttributeFileSystem fs = CreateAttributeFileSystem();
 
-            Result rc = fs.GetFileAttributes(out _, "/path".ToU8Span());
+            Result rc = fs.GetFileAttributes(out _, "/path");
 
             Assert.Result(ResultFs.PathNotFound, rc);
         }
@@ -66,7 +65,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IAttributeFileSystem fs = CreateAttributeFileSystem();
 
-            Result rc = fs.SetFileAttributes("/path".ToU8Span(), NxFileAttributes.None);
+            Result rc = fs.SetFileAttributes("/path", NxFileAttributes.None);
 
             Assert.Result(ResultFs.PathNotFound, rc);
         }
@@ -75,10 +74,10 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         public void SetFileAttributes_SetAttributeOnFile()
         {
             IAttributeFileSystem fs = CreateAttributeFileSystem();
-            fs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
+            fs.CreateFile("/file", 0, CreateFileOptions.None);
 
-            Result rcSet = fs.SetFileAttributes("/file".ToU8Span(), NxFileAttributes.Archive);
-            Result rcGet = fs.GetFileAttributes(out NxFileAttributes attributes, "/file".ToU8Span());
+            Result rcSet = fs.SetFileAttributes("/file", NxFileAttributes.Archive);
+            Result rcGet = fs.GetFileAttributes(out NxFileAttributes attributes, "/file");
 
             Assert.Success(rcSet);
             Assert.Success(rcGet);
@@ -89,10 +88,10 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         public void SetFileAttributes_SetAttributeOnDirectory()
         {
             IAttributeFileSystem fs = CreateAttributeFileSystem();
-            fs.CreateDirectory("/dir".ToU8Span());
+            fs.CreateDirectory("/dir");
 
-            Result rcSet = fs.SetFileAttributes("/dir".ToU8Span(), NxFileAttributes.Archive);
-            Result rcGet = fs.GetFileAttributes(out NxFileAttributes attributes, "/dir".ToU8Span());
+            Result rcSet = fs.SetFileAttributes("/dir", NxFileAttributes.Archive);
+            Result rcGet = fs.GetFileAttributes(out NxFileAttributes attributes, "/dir");
 
             Assert.Success(rcSet);
             Assert.Success(rcGet);
@@ -104,9 +103,9 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IAttributeFileSystem fs = CreateAttributeFileSystem();
 
-            fs.CreateFile("/file".ToU8Span(), 845, CreateFileOptions.None);
+            fs.CreateFile("/file", 845, CreateFileOptions.None);
 
-            Assert.Success(fs.GetFileSize(out long fileSize, "/file".ToU8Span()));
+            Assert.Success(fs.GetFileSize(out long fileSize, "/file"));
             Assert.Equal(845, fileSize);
         }
 
@@ -115,7 +114,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IAttributeFileSystem fs = CreateAttributeFileSystem();
 
-            Result rc = fs.GetFileSize(out _, "/path".ToU8Span());
+            Result rc = fs.GetFileSize(out _, "/path");
 
             Assert.Result(ResultFs.PathNotFound, rc);
         }
@@ -124,9 +123,9 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         public void GetFileSize_PathIsDirectory_ReturnsPathNotFound()
         {
             IAttributeFileSystem fs = CreateAttributeFileSystem();
-            fs.CreateDirectory("/dir".ToU8Span());
+            fs.CreateDirectory("/dir");
 
-            Result rc = fs.GetFileSize(out _, "/dir".ToU8Span());
+            Result rc = fs.GetFileSize(out _, "/dir");
 
             Assert.Result(ResultFs.PathNotFound, rc);
         }

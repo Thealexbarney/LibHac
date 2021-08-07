@@ -15,7 +15,7 @@ namespace hactoolnet
                 return;
             }
 
-            var localFs = new LocalFileSystem(ctx.Options.InFile);
+            LocalFileSystem.Create(out LocalFileSystem localFs, ctx.Options.InFile).ThrowIfFailure();
 
             var builder = new RomFsBuilder(localFs);
             IStorage romFs = builder.Build();

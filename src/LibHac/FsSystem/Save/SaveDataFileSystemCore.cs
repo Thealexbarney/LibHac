@@ -1,9 +1,9 @@
 ﻿using System.IO;
-using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Util;
+using Path = LibHac.Fs.Path;
 
 namespace LibHac.FsSystem.Save
 {
@@ -31,29 +31,36 @@ namespace LibHac.FsSystem.Save
             FileTable = new HierarchicalSaveFileTable(dirTableStorage, fileTableStorage);
         }
 
-        protected override Result DoCreateDirectory(U8Span path)
+        private Result CheckIfNormalized(in Path path)
         {
-            Unsafe.SkipInit(out FsPath normalizedPath);
-
-            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = PathNormalizer.IsNormalized(out bool isNormalized, out _, path.GetString());
             if (rc.IsFailure()) return rc;
 
-            FileTable.AddDirectory(normalizedPath);
+            if (!isNormalized)
+                return ResultFs.NotNormalized.Log();
 
             return Result.Success;
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
+        protected override Result DoCreateDirectory(in Path path)
         {
-            Unsafe.SkipInit(out FsPath normalizedPath);
+            Result rc = CheckIfNormalized(in path);
+            if (rc.IsFailure()) return rc;
 
-            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
+            FileTable.AddDirectory(new U8Span(path.GetString()));
+
+            return Result.Success;
+        }
+
+        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
+        {
+            Result rc = CheckIfNormalized(in path);
             if (rc.IsFailure()) return rc;
 
             if (size == 0)
             {
                 var emptyFileEntry = new SaveFileInfo { StartBlock = int.MinValue, Length = size };
-                FileTable.AddFile(normalizedPath, ref emptyFileEntry);
+                FileTable.AddFile(new U8Span(path.GetString()), ref emptyFileEntry);
 
                 return Result.Success;
             }
@@ -68,59 +75,51 @@ namespace LibHac.FsSystem.Save
 
             var fileEntry = new SaveFileInfo { StartBlock = startBlock, Length = size };
 
-            FileTable.AddFile(normalizedPath, ref fileEntry);
+            FileTable.AddFile(new U8Span(path.GetString()), ref fileEntry);
 
             return Result.Success;
         }
 
-        protected override Result DoDeleteDirectory(U8Span path)
+        protected override Result DoDeleteDirectory(in Path path)
         {
-            Unsafe.SkipInit(out FsPath normalizedPath);
-
-            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = CheckIfNormalized(in path);
             if (rc.IsFailure()) return rc;
 
-            FileTable.DeleteDirectory(normalizedPath);
+            FileTable.DeleteDirectory(new U8Span(path.GetString()));
 
             return Result.Success;
         }
 
-        protected override Result DoDeleteDirectoryRecursively(U8Span path)
+        protected override Result DoDeleteDirectoryRecursively(in Path path)
         {
-            Unsafe.SkipInit(out FsPath normalizedPath);
-
-            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = CheckIfNormalized(in path);
             if (rc.IsFailure()) return rc;
 
-            rc = CleanDirectoryRecursively(normalizedPath);
+            rc = CleanDirectoryRecursively(in path);
             if (rc.IsFailure()) return rc;
 
-            rc = DeleteDirectory(normalizedPath);
+            rc = DeleteDirectory(in path);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
         }
 
-        protected override Result DoCleanDirectoryRecursively(U8Span path)
+        protected override Result DoCleanDirectoryRecursively(in Path path)
         {
-            Unsafe.SkipInit(out FsPath normalizedPath);
-
-            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = CheckIfNormalized(in path);
             if (rc.IsFailure()) return rc;
 
-            FileSystemExtensions.CleanDirectoryRecursivelyGeneric(this, normalizedPath.ToString());
+            FileSystemExtensions.CleanDirectoryRecursivelyGeneric(this, new U8Span(path.GetString()).ToString());
 
             return Result.Success;
         }
 
-        protected override Result DoDeleteFile(U8Span path)
+        protected override Result DoDeleteFile(in Path path)
         {
-            Unsafe.SkipInit(out FsPath normalizedPath);
-
-            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = CheckIfNormalized(in path);
             if (rc.IsFailure()) return rc;
 
-            if (!FileTable.TryOpenFile(normalizedPath, out SaveFileInfo fileInfo))
+            if (!FileTable.TryOpenFile(new U8Span(path.GetString()), out SaveFileInfo fileInfo))
             {
                 return ResultFs.PathNotFound.Log();
             }
@@ -130,21 +129,19 @@ namespace LibHac.FsSystem.Save
                 AllocationTable.Free(fileInfo.StartBlock);
             }
 
-            FileTable.DeleteFile(normalizedPath);
+            FileTable.DeleteFile(new U8Span(path.GetString()));
 
             return Result.Success;
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
         {
             UnsafeHelpers.SkipParamInit(out directory);
 
-            Unsafe.SkipInit(out FsPath normalizedPath);
-
-            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = CheckIfNormalized(in path);
             if (rc.IsFailure()) return rc;
 
-            if (!FileTable.TryOpenDirectory(normalizedPath, out SaveFindPosition position))
+            if (!FileTable.TryOpenDirectory(new U8Span(path.GetString()), out SaveFindPosition position))
             {
                 return ResultFs.PathNotFound.Log();
             }
@@ -154,73 +151,63 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
         {
             UnsafeHelpers.SkipParamInit(out file);
 
-            Unsafe.SkipInit(out FsPath normalizedPath);
-
-            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = CheckIfNormalized(in path);
             if (rc.IsFailure()) return rc;
 
-            if (!FileTable.TryOpenFile(normalizedPath, out SaveFileInfo fileInfo))
+            if (!FileTable.TryOpenFile(new U8Span(path.GetString()), out SaveFileInfo fileInfo))
             {
                 return ResultFs.PathNotFound.Log();
             }
 
             AllocationTableStorage storage = OpenFatStorage(fileInfo.StartBlock);
 
-            file = new SaveDataFile(storage, normalizedPath, FileTable, fileInfo.Length, mode);
+            file = new SaveDataFile(storage, new U8Span(path.GetString()), FileTable, fileInfo.Length, mode);
 
             return Result.Success;
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
         {
-            Unsafe.SkipInit(out FsPath normalizedCurrentPath);
-            Unsafe.SkipInit(out FsPath normalizedNewPath);
-
-            Result rc = PathNormalizer.Normalize(normalizedCurrentPath.Str, out _, oldPath, false, false);
+            Result rc = CheckIfNormalized(in currentPath);
             if (rc.IsFailure()) return rc;
 
-            rc = PathNormalizer.Normalize(normalizedNewPath.Str, out _, newPath, false, false);
+            rc = CheckIfNormalized(in newPath);
             if (rc.IsFailure()) return rc;
 
-            return FileTable.RenameDirectory(normalizedCurrentPath, normalizedNewPath);
+            return FileTable.RenameDirectory(new U8Span(currentPath.GetString()), new U8Span(newPath.GetString()));
         }
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(in Path currentPath, in Path newPath)
         {
-            Unsafe.SkipInit(out FsPath normalizedCurrentPath);
-            Unsafe.SkipInit(out FsPath normalizedNewPath);
-
-            Result rc = PathNormalizer.Normalize(normalizedCurrentPath.Str, out _, oldPath, false, false);
+            Result rc = CheckIfNormalized(in currentPath);
             if (rc.IsFailure()) return rc;
 
-            rc = PathNormalizer.Normalize(normalizedNewPath.Str, out _, newPath, false, false);
+            rc = CheckIfNormalized(in newPath);
             if (rc.IsFailure()) return rc;
 
-            FileTable.RenameFile(normalizedCurrentPath, normalizedNewPath);
+            FileTable.RenameFile(new U8Span(currentPath.GetString()), new U8Span(newPath.GetString()));
 
             return Result.Success;
         }
 
-        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out entryType);
 
-            Unsafe.SkipInit(out FsPath normalizedPath);
-
-            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
+            Result rc = CheckIfNormalized(in path);
             if (rc.IsFailure()) return rc;
 
-            if (FileTable.TryOpenFile(normalizedPath, out SaveFileInfo _))
+            if (FileTable.TryOpenFile(new U8Span(path.GetString()), out SaveFileInfo _))
             {
                 entryType = DirectoryEntryType.File;
                 return Result.Success;
             }
 
-            if (FileTable.TryOpenDirectory(normalizedPath, out SaveFindPosition _))
+            if (FileTable.TryOpenDirectory(new U8Span(path.GetString()), out SaveFindPosition _))
             {
                 entryType = DirectoryEntryType.Directory;
                 return Result.Success;
@@ -229,7 +216,7 @@ namespace LibHac.FsSystem.Save
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
             int freeBlockCount = AllocationTable.GetFreeListLength();
             freeSpace = Header.BlockSize * freeBlockCount;
@@ -237,7 +224,7 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
             totalSpace = Header.BlockSize * Header.BlockCount;
 

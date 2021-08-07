@@ -18,8 +18,8 @@ namespace LibHac.Fs.Impl
 
         public void Dispose()
         {
-            _directory?.Dispose();
-            _directory = null;
+            IDirectory directory = Shared.Move(ref _directory);
+            directory?.Dispose();
 
             _parentFileSystem.NotifyCloseDirectory(this);
         }

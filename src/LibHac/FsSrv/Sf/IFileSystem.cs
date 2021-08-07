@@ -1,5 +1,6 @@
 ﻿using System;
 using LibHac.Fs;
+using LibHac.Sf;
 using IFileSf = LibHac.FsSrv.Sf.IFile;
 using IDirectorySf = LibHac.FsSrv.Sf.IDirectory;
 
@@ -13,8 +14,8 @@ namespace LibHac.FsSrv.Sf
         Result CreateDirectory(in Path path);
         Result DeleteDirectory(in Path path);
         Result DeleteDirectoryRecursively(in Path path);
-        Result RenameFile(in Path oldPath, in Path newPath);
-        Result RenameDirectory(in Path oldPath, in Path newPath);
+        Result RenameFile(in Path currentPath, in Path newPath);
+        Result RenameDirectory(in Path currentPath, in Path newPath);
         Result GetEntryType(out uint entryType, in Path path);
         Result OpenFile(out ReferenceCountedDisposable<IFileSf> file, in Path path, uint mode);
         Result OpenDirectory(out ReferenceCountedDisposable<IDirectorySf> directory, in Path path, uint mode);
@@ -23,6 +24,6 @@ namespace LibHac.FsSrv.Sf
         Result GetTotalSpaceSize(out long totalSpace, in Path path);
         Result CleanDirectoryRecursively(in Path path);
         Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path);
-        Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, int queryId, in Path path);
+        Result QueryEntry(OutBuffer outBuffer, InBuffer inBuffer, int queryId, in Path path);
     }
 }

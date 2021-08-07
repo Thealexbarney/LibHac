@@ -635,7 +635,7 @@ namespace LibHac.Fs.Impl
                 else
                 {
                     Result rc = fs.Fs.GetGlobalAccessLogMode(out g.GlobalAccessLogMode);
-                    fs.LogErrorMessage(rc);
+                    fs.LogResultErrorMessage(rc);
                     if (rc.IsFailure()) Abort.DoAbort(rc);
 
                     if (g.GlobalAccessLogMode != GlobalAccessLogMode.None)
@@ -703,7 +703,7 @@ namespace LibHac.Fs.Impl
         public static void EnableFileSystemAccessorAccessLog(this FileSystemClientImpl fs, U8Span mountName)
         {
             Result rc = fs.Find(out FileSystemAccessor fileSystem, mountName);
-            fs.LogErrorMessage(rc);
+            fs.LogResultErrorMessage(rc);
             Abort.DoAbortUnless(rc.IsSuccess());
 
             fileSystem.SetAccessLog(true);

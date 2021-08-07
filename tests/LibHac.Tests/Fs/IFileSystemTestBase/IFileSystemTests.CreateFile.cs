@@ -1,5 +1,4 @@
-﻿using LibHac.Common;
-using LibHac.Fs;
+﻿using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using Xunit;
 
@@ -12,8 +11,8 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
-            Result rc = fs.GetEntryType(out DirectoryEntryType type, "/file".ToU8Span());
+            fs.CreateFile("/file", 0, CreateFileOptions.None);
+            Result rc = fs.GetEntryType(out DirectoryEntryType type, "/file");
 
             Assert.Success(rc);
             Assert.Equal(DirectoryEntryType.File, type);
@@ -24,9 +23,9 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateDirectory("/dir".ToU8Span());
+            fs.CreateDirectory("/dir");
 
-            Result rc = fs.CreateFile("/dir".ToU8Span(), 0, CreateFileOptions.None);
+            Result rc = fs.CreateFile("/dir", 0, CreateFileOptions.None);
 
             Assert.Result(ResultFs.PathAlreadyExists, rc);
         }
@@ -36,9 +35,9 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
+            fs.CreateFile("/file", 0, CreateFileOptions.None);
 
-            Result rc = fs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
+            Result rc = fs.CreateFile("/file", 0, CreateFileOptions.None);
 
             Assert.Result(ResultFs.PathAlreadyExists, rc);
         }
@@ -48,7 +47,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            Result rc = fs.CreateFile("/dir/file".ToU8Span(), 0, CreateFileOptions.None);
+            Result rc = fs.CreateFile("/dir/file", 0, CreateFileOptions.None);
 
             Assert.Result(ResultFs.PathNotFound, rc);
         }
@@ -58,9 +57,9 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateFile("/file/".ToU8Span(), 0, CreateFileOptions.None);
+            fs.CreateFile("/file/", 0, CreateFileOptions.None);
 
-            Assert.Success(fs.GetEntryType(out DirectoryEntryType type, "/file/".ToU8Span()));
+            Assert.Success(fs.GetEntryType(out DirectoryEntryType type, "/file/"));
             Assert.Equal(DirectoryEntryType.File, type);
         }
 
@@ -71,9 +70,9 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateFile("/file".ToU8Span(), expectedSize, CreateFileOptions.None);
+            fs.CreateFile("/file", expectedSize, CreateFileOptions.None);
 
-            fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.Read);
+            fs.OpenFile(out IFile file, "/file", OpenMode.Read);
 
             Assert.Success(file.GetSize(out long fileSize));
             Assert.Equal(expectedSize, fileSize);
@@ -84,11 +83,11 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateFile("/file1".ToU8Span(), 0, CreateFileOptions.None);
-            fs.CreateFile("/file2".ToU8Span(), 0, CreateFileOptions.None);
+            fs.CreateFile("/file1", 0, CreateFileOptions.None);
+            fs.CreateFile("/file2", 0, CreateFileOptions.None);
 
-            Result rc1 = fs.GetEntryType(out DirectoryEntryType type1, "/file1".ToU8Span());
-            Result rc2 = fs.GetEntryType(out DirectoryEntryType type2, "/file2".ToU8Span());
+            Result rc1 = fs.GetEntryType(out DirectoryEntryType type1, "/file1");
+            Result rc2 = fs.GetEntryType(out DirectoryEntryType type2, "/file2");
 
             Assert.Success(rc1);
             Assert.Success(rc2);
@@ -101,14 +100,14 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            fs.CreateDirectory("/dir1".ToU8Span());
-            fs.CreateDirectory("/dir2".ToU8Span());
+            fs.CreateDirectory("/dir1");
+            fs.CreateDirectory("/dir2");
 
-            fs.CreateFile("/dir1/file1".ToU8Span(), 0, CreateFileOptions.None);
-            fs.CreateFile("/dir2/file2".ToU8Span(), 0, CreateFileOptions.None);
+            fs.CreateFile("/dir1/file1", 0, CreateFileOptions.None);
+            fs.CreateFile("/dir2/file2", 0, CreateFileOptions.None);
 
-            Result rc1 = fs.GetEntryType(out DirectoryEntryType type1, "/dir1/file1".ToU8Span());
-            Result rc2 = fs.GetEntryType(out DirectoryEntryType type2, "/dir2/file2".ToU8Span());
+            Result rc1 = fs.GetEntryType(out DirectoryEntryType type1, "/dir1/file1");
+            Result rc2 = fs.GetEntryType(out DirectoryEntryType type2, "/dir2/file2");
 
             Assert.Success(rc1);
             Assert.Success(rc2);

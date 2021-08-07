@@ -12,6 +12,12 @@ namespace LibHac.Fs.Impl
 {
     internal class FileSystemAccessor : IDisposable
     {
+        private const string EmptyMountNameMessage = "Error: Mount failed because the mount name was empty.\n";
+        private const string TooLongMountNameMessage = "Error: Mount failed because the mount name was too long. The mount name was \"{0}\".\n";
+        private const string FileNotClosedMessage = "Error: Unmount failed because not all files were closed.\n";
+        private const string DirectoryNotClosedMessage = "Error: Unmount failed because not all directories were closed.\n";
+        private const string InvalidFsEntryObjectMessage = "Invalid file or directory object.";
+
         private MountName _mountName;
         private IFileSystem _fileSystem;
         private LinkedList<FileAccessor> _openFiles;
@@ -24,14 +30,16 @@ namespace LibHac.Fs.Impl
         private bool _isPathCacheAttachable;
         private bool _isPathCacheAttached;
         private IMultiCommitTarget _multiCommitTarget;
+        private PathFlags _pathFlags;
+        private Optional<Ncm.DataId> _dataId;
 
-        internal FileSystemClient FsClient { get; }
+        internal HorizonClient Hos { get; }
 
-        public FileSystemAccessor(FileSystemClient fsClient, U8Span name, IMultiCommitTarget multiCommitTarget,
+        public FileSystemAccessor(HorizonClient hosClient, U8Span name, IMultiCommitTarget multiCommitTarget,
             IFileSystem fileSystem, ICommonMountNameGenerator mountNameGenerator,
             ISaveDataAttributeGetter saveAttributeGetter)
         {
-            FsClient = fsClient;
+            Hos = hosClient;
 
             _fileSystem = fileSystem;
             _openFiles = new LinkedList<FileAccessor>();
@@ -42,32 +50,43 @@ namespace LibHac.Fs.Impl
             _multiCommitTarget = multiCommitTarget;
 
             if (name.IsEmpty())
-                Abort.DoAbort(ResultFs.InvalidMountName.Log());
+            {
+                Hos.Fs.Impl.LogErrorMessage(ResultFs.InvalidMountName.Value, EmptyMountNameMessage);
+                Abort.DoAbort(ResultFs.InvalidMountName.Value);
+            }
 
-            if (StringUtils.GetLength(name, PathTool.MountNameLengthMax + 1) > PathTool.MountNameLengthMax)
-                Abort.DoAbort(ResultFs.InvalidMountName.Log());
+            int mountLength = StringUtils.Copy(_mountName.Name, name, PathTool.MountNameLengthMax + 1);
 
-            StringUtils.Copy(_mountName.Name.Slice(0, PathTool.MountNameLengthMax), name);
-            _mountName.Name[PathTool.MountNameLengthMax] = 0;
+            if (mountLength > PathTool.MountNameLengthMax)
+            {
+                Hos.Fs.Impl.LogErrorMessage(ResultFs.InvalidMountName.Value, TooLongMountNameMessage,
+                    name.ToString());
+                Abort.DoAbort(ResultFs.InvalidMountName.Value);
+            }
+
+            if (StringUtils.Compare(_mountName.Name, CommonMountNames.HostRootFileSystemMountName) == 0)
+            {
+                _pathFlags.AllowWindowsPath();
+            }
         }
 
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposing) return;
-
             using (ScopedLock.Lock(ref _openListLock))
             {
-                Abort.DoAbortUnless(_openFiles.Count == 0, ResultFs.FileNotClosed.Value,
-                    "All files must be closed before unmounting.");
+                DumpUnclosedAccessorList(OpenMode.All, OpenDirectoryMode.All);
 
-                Abort.DoAbortUnless(_openDirectories.Count == 0, ResultFs.DirectoryNotClosed.Value,
-                    "All directories must be closed before unmounting.");
+                if (_openFiles.Count != 0)
+                {
+                    Hos.Fs.Impl.LogErrorMessage(ResultFs.FileNotClosed.Value, FileNotClosedMessage);
+                    Abort.DoAbort(ResultFs.FileNotClosed.Value);
+                }
+
+                if (_openDirectories.Count != 0)
+                {
+                    Hos.Fs.Impl.LogErrorMessage(ResultFs.DirectoryNotClosed.Value, DirectoryNotClosedMessage);
+                    Abort.DoAbort(ResultFs.DirectoryNotClosed.Value);
+                }
 
                 if (_isPathCacheAttached)
                 {
@@ -75,46 +94,27 @@ namespace LibHac.Fs.Impl
                 }
             }
 
-            _saveDataAttributeGetter?.Dispose();
-            _saveDataAttributeGetter = null;
+            ISaveDataAttributeGetter saveDataAttributeGetter = Shared.Move(ref _saveDataAttributeGetter);
+            saveDataAttributeGetter?.Dispose();
 
-            _mountNameGenerator?.Dispose();
-            _mountNameGenerator = null;
+            ICommonMountNameGenerator mountNameGenerator = Shared.Move(ref _mountNameGenerator);
+            mountNameGenerator?.Dispose();
 
-            _fileSystem?.Dispose();
-            _fileSystem = null;
+            IFileSystem fileSystem = Shared.Move(ref _fileSystem);
+            fileSystem?.Dispose();
         }
 
         private static void Remove<T>(LinkedList<T> list, T item)
         {
             LinkedListNode<T> node = list.Find(item);
-            Abort.DoAbortUnless(node is not null, "Invalid file or directory object.");
 
-            list.Remove(node);
-        }
-
-        private static Result CheckPath(U8Span mountName, U8Span path)
-        {
-            int mountNameLength = StringUtils.GetLength(mountName, PathTool.MountNameLengthMax);
-            int pathLength = StringUtils.GetLength(path, PathTool.EntryNameLengthMax);
-
-            if (mountNameLength + 1 + pathLength > PathTool.EntryNameLengthMax)
-                return ResultFs.TooLongPath.Log();
-
-            return Result.Success;
-        }
-
-        private static bool HasOpenWriteModeFiles(LinkedList<FileAccessor> list)
-        {
-            for (LinkedListNode<FileAccessor> file = list.First; file is not null; file = file.Next)
+            if (node is not null)
             {
-                if (file.Value.GetOpenMode().HasFlag(OpenMode.Write))
-                {
-                    return true;
-                }
+                list.Remove(node);
+                return;
             }
 
-            return false;
+            Assert.SdkAssert(false, InvalidFsEntryObjectMessage);
         }
 
         public void SetAccessLog(bool isEnabled) => _isAccessLogEnabled = isEnabled;
@@ -131,9 +131,44 @@ namespace LibHac.Fs.Impl
                 _isPathCacheAttached = true;
         }
 
+        public Optional<Ncm.DataId> GetDataId() => _dataId;
+        public void SetDataId(Ncm.DataId dataId) => _dataId.Set(dataId);
+
+        public Result SetUpPath(ref Path path, U8Span pathBuffer)
+        {
+            Result rc = PathFormatter.IsNormalized(out bool isNormalized, out _, pathBuffer, _pathFlags);
+
+            if (rc.IsSuccess() && isNormalized)
+            {
+                path.SetShallowBuffer(pathBuffer);
+            }
+            else
+            {
+                if (_pathFlags.IsWindowsPathAllowed())
+                {
+                    rc = path.InitializeWithReplaceForwardSlashes(pathBuffer);
+                    if (rc.IsFailure()) return rc;
+                }
+                else
+                {
+                    rc = path.InitializeWithReplaceBackslash(pathBuffer);
+                    if (rc.IsFailure()) return rc;
+                }
+
+                rc = path.Normalize(_pathFlags);
+                if (rc.IsFailure()) return rc;
+            }
+
+            if (path.GetLength() > PathTool.EntryNameLengthMax)
+                return ResultFs.TooLongPath.Log();
+
+            return Result.Success;
+        }
+
         public Result CreateFile(U8Span path, long size, CreateFileOptions option)
         {
-            Result rc = CheckPath(new U8Span(_mountName.Name), path);
+            var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized, path);
             if (rc.IsFailure()) return rc;
 
             if (_isPathCacheAttached)
@@ -142,80 +177,87 @@ namespace LibHac.Fs.Impl
             }
             else
             {
-                rc = _fileSystem.CreateFile(path, size, option);
+                rc = _fileSystem.CreateFile(in pathNormalized, size, option);
                 if (rc.IsFailure()) return rc;
             }
 
+            pathNormalized.Dispose();
             return Result.Success;
         }
 
         public Result DeleteFile(U8Span path)
         {
-            Result rc = CheckPath(new U8Span(_mountName.Name), path);
+            var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized, path);
             if (rc.IsFailure()) return rc;
 
-            return _fileSystem.DeleteFile(path);
+            rc = _fileSystem.DeleteFile(in pathNormalized);
+            if (rc.IsFailure()) return rc;
+
+            pathNormalized.Dispose();
+            return Result.Success;
         }
 
         public Result CreateDirectory(U8Span path)
         {
-            Result rc = CheckPath(new U8Span(_mountName.Name), path);
+            var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized, path);
             if (rc.IsFailure()) return rc;
 
-            return _fileSystem.CreateDirectory(path);
+            rc = _fileSystem.CreateDirectory(in pathNormalized);
+            if (rc.IsFailure()) return rc;
+
+            pathNormalized.Dispose();
+            return Result.Success;
         }
 
         public Result DeleteDirectory(U8Span path)
         {
-            Result rc = CheckPath(new U8Span(_mountName.Name), path);
+            var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized, path);
             if (rc.IsFailure()) return rc;
 
-            return _fileSystem.DeleteDirectory(path);
+            rc = _fileSystem.CreateDirectory(in pathNormalized);
+            if (rc.IsFailure()) return rc;
+
+            pathNormalized.Dispose();
+            return Result.Success;
         }
 
         public Result DeleteDirectoryRecursively(U8Span path)
         {
-            Result rc = CheckPath(new U8Span(_mountName.Name), path);
+            var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized, path);
             if (rc.IsFailure()) return rc;
 
-            return _fileSystem.DeleteDirectoryRecursively(path);
+            rc = _fileSystem.DeleteDirectoryRecursively(in pathNormalized);
+            if (rc.IsFailure()) return rc;
+
+            pathNormalized.Dispose();
+            return Result.Success;
         }
 
         public Result CleanDirectoryRecursively(U8Span path)
         {
-            Result rc = CheckPath(new U8Span(_mountName.Name), path);
+            var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized, path);
             if (rc.IsFailure()) return rc;
 
-            return _fileSystem.CleanDirectoryRecursively(path);
-        }
-
-        public Result RenameFile(U8Span oldPath, U8Span newPath)
-        {
-            Result rc = CheckPath(new U8Span(_mountName.Name), oldPath);
+            rc = _fileSystem.CleanDirectoryRecursively(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
-            rc = CheckPath(new U8Span(_mountName.Name), newPath);
-            if (rc.IsFailure()) return rc;
-
-            if (_isPathCacheAttached)
-            {
-                throw new NotImplementedException();
-            }
-            else
-            {
-                rc = _fileSystem.RenameFile(oldPath, newPath);
-                if (rc.IsFailure()) return rc;
-            }
-
+            pathNormalized.Dispose();
             return Result.Success;
         }
 
-        public Result RenameDirectory(U8Span oldPath, U8Span newPath)
+        public Result RenameFile(U8Span currentPath, U8Span newPath)
         {
-            Result rc = CheckPath(new U8Span(_mountName.Name), oldPath);
+            var currentPathNormalized = new Path();
+            Result rc = SetUpPath(ref currentPathNormalized, currentPath);
             if (rc.IsFailure()) return rc;
 
-            rc = CheckPath(new U8Span(_mountName.Name), newPath);
+            var newPathNormalized = new Path();
+            rc = SetUpPath(ref newPathNormalized, newPath);
             if (rc.IsFailure()) return rc;
 
             if (_isPathCacheAttached)
@@ -224,10 +266,37 @@ namespace LibHac.Fs.Impl
             }
             else
             {
-                rc = _fileSystem.RenameDirectory(oldPath, newPath);
+                rc = _fileSystem.RenameFile(in currentPathNormalized, in newPathNormalized);
                 if (rc.IsFailure()) return rc;
             }
 
+            currentPathNormalized.Dispose();
+            newPathNormalized.Dispose();
+            return Result.Success;
+        }
+
+        public Result RenameDirectory(U8Span currentPath, U8Span newPath)
+        {
+            var currentPathNormalized = new Path();
+            Result rc = SetUpPath(ref currentPathNormalized, currentPath);
+            if (rc.IsFailure()) return rc;
+
+            var newPathNormalized = new Path();
+            rc = SetUpPath(ref newPathNormalized, newPath);
+            if (rc.IsFailure()) return rc;
+
+            if (_isPathCacheAttached)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                rc = _fileSystem.RenameDirectory(in currentPathNormalized, in newPathNormalized);
+                if (rc.IsFailure()) return rc;
+            }
+
+            currentPathNormalized.Dispose();
+            newPathNormalized.Dispose();
             return Result.Success;
         }
 
@@ -235,46 +304,62 @@ namespace LibHac.Fs.Impl
         {
             UnsafeHelpers.SkipParamInit(out entryType);
 
-            Result rc = CheckPath(new U8Span(_mountName.Name), path);
+            var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized, path);
             if (rc.IsFailure()) return rc;
 
-            return _fileSystem.GetEntryType(out entryType, path);
+            rc = _fileSystem.GetEntryType(out entryType, in pathNormalized);
+            if (rc.IsFailure()) return rc;
+
+            pathNormalized.Dispose();
+            return Result.Success;
         }
 
         public Result GetFreeSpaceSize(out long freeSpace, U8Span path)
         {
             UnsafeHelpers.SkipParamInit(out freeSpace);
 
-            Result rc = CheckPath(new U8Span(_mountName.Name), path);
+            var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized, path);
             if (rc.IsFailure()) return rc;
 
-            return _fileSystem.GetFreeSpaceSize(out freeSpace, path);
+            rc = _fileSystem.GetFreeSpaceSize(out freeSpace, in pathNormalized);
+            if (rc.IsFailure()) return rc;
+
+            pathNormalized.Dispose();
+            return Result.Success;
         }
 
         public Result GetTotalSpaceSize(out long totalSpace, U8Span path)
         {
             UnsafeHelpers.SkipParamInit(out totalSpace);
 
-            Result rc = CheckPath(new U8Span(_mountName.Name), path);
+            var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized, path);
             if (rc.IsFailure()) return rc;
 
-            return _fileSystem.GetTotalSpaceSize(out totalSpace, path);
+            rc = _fileSystem.GetTotalSpaceSize(out totalSpace, in pathNormalized);
+            if (rc.IsFailure()) return rc;
+
+            pathNormalized.Dispose();
+            return Result.Success;
         }
 
         public Result OpenFile(out FileAccessor file, U8Span path, OpenMode mode)
         {
             UnsafeHelpers.SkipParamInit(out file);
 
-            Result rc = CheckPath(new U8Span(_mountName.Name), path);
+            var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized, path);
             if (rc.IsFailure()) return rc;
 
             IFile iFile = null;
             try
             {
-                rc = _fileSystem.OpenFile(out iFile, path, mode);
+                rc = _fileSystem.OpenFile(out iFile, in pathNormalized, mode);
                 if (rc.IsFailure()) return rc;
 
-                var fileAccessor = new FileAccessor(FsClient, ref iFile, this, mode);
+                var fileAccessor = new FileAccessor(Hos, ref iFile, this, mode);
 
                 using (ScopedLock.Lock(ref _openListLock))
                 {
@@ -299,6 +384,7 @@ namespace LibHac.Fs.Impl
             finally
             {
                 iFile?.Dispose();
+                pathNormalized.Dispose();
             }
         }
 
@@ -306,13 +392,14 @@ namespace LibHac.Fs.Impl
         {
             UnsafeHelpers.SkipParamInit(out directory);
 
-            Result rc = CheckPath(new U8Span(_mountName.Name), path);
+            var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized, path);
             if (rc.IsFailure()) return rc;
 
             IDirectory iDirectory = null;
             try
             {
-                rc = _fileSystem.OpenDirectory(out iDirectory, path, mode);
+                rc = _fileSystem.OpenDirectory(out iDirectory, in pathNormalized, mode);
                 if (rc.IsFailure()) return rc;
 
                 var directoryAccessor = new DirectoryAccessor(ref iDirectory, this);
@@ -328,11 +415,25 @@ namespace LibHac.Fs.Impl
             finally
             {
                 iDirectory?.Dispose();
+                pathNormalized.Dispose();
             }
         }
 
         public Result Commit()
         {
+            static bool HasOpenWriteModeFiles(LinkedList<FileAccessor> list)
+            {
+                for (LinkedListNode<FileAccessor> file = list.First; file is not null; file = file.Next)
+                {
+                    if (file.Value.GetOpenMode().HasFlag(OpenMode.Write))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
             using (ScopedLock.Lock(ref _openListLock))
             {
                 DumpUnclosedAccessorList(OpenMode.Write, 0);
@@ -346,12 +447,30 @@ namespace LibHac.Fs.Impl
 
         public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
         {
-            return _fileSystem.GetFileTimeStampRaw(out timeStamp, path);
+            UnsafeHelpers.SkipParamInit(out timeStamp);
+
+            var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized, path);
+            if (rc.IsFailure()) return rc;
+
+            rc = _fileSystem.GetFileTimeStampRaw(out timeStamp, in pathNormalized);
+            if (rc.IsFailure()) return rc;
+
+            pathNormalized.Dispose();
+            return Result.Success;
         }
 
         public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, U8Span path)
         {
-            return _fileSystem.QueryEntry(outBuffer, inBuffer, queryId, path);
+            var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized, path);
+            if (rc.IsFailure()) return rc;
+
+            rc = _fileSystem.QueryEntry(outBuffer, inBuffer, queryId, in pathNormalized);
+            if (rc.IsFailure()) return rc;
+
+            pathNormalized.Dispose();
+            return Result.Success;
         }
 
         public U8Span GetName()
@@ -374,7 +493,10 @@ namespace LibHac.Fs.Impl
             if (_saveDataAttributeGetter is null)
                 return ResultFs.PreconditionViolation.Log();
 
-            return _saveDataAttributeGetter.GetSaveDataAttribute(out attribute);
+            Result rc = _saveDataAttributeGetter.GetSaveDataAttribute(out attribute);
+            if (rc.IsFailure()) return rc;
+
+            return Result.Success;
         }
 
         public ReferenceCountedDisposable<IFileSystemSf> GetMultiCommitTarget()
@@ -387,21 +509,203 @@ namespace LibHac.Fs.Impl
             cacheAccessor.Purge(_fileSystem);
         }
 
-        public void NotifyCloseFile(FileAccessor file)
+        internal void NotifyCloseFile(FileAccessor file)
         {
             using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _openListLock);
             Remove(_openFiles, file);
         }
 
-        public void NotifyCloseDirectory(DirectoryAccessor directory)
+        internal void NotifyCloseDirectory(DirectoryAccessor directory)
         {
             using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _openListLock);
             Remove(_openDirectories, directory);
         }
 
+        private static ReadOnlySpan<byte> LogFsModuleName => new[] { (byte)'$', (byte)'f', (byte)'s' }; // "$fs"
+
+        private static ReadOnlySpan<byte> LogFsErrorInfo => // "------ FS ERROR INFORMATION ------\n"
+            new[]
+            {
+                (byte)'-', (byte)'-', (byte)'-', (byte)'-', (byte)'-', (byte)'-', (byte)' ', (byte)'F',
+                (byte)'S', (byte)' ', (byte)'E', (byte)'R', (byte)'R', (byte)'O', (byte)'R', (byte)' ',
+                (byte)'I', (byte)'N', (byte)'F', (byte)'O', (byte)'R', (byte)'M', (byte)'A', (byte)'T',
+                (byte)'I', (byte)'O', (byte)'N', (byte)' ', (byte)'-', (byte)'-', (byte)'-', (byte)'-',
+                (byte)'-', (byte)'-', (byte)'\\', (byte)'n'
+            };
+
+        private static ReadOnlySpan<byte> LogFileNotClosed => // "Error: File not closed"
+            new[]
+            {
+                (byte)'E', (byte)'r', (byte)'r', (byte)'o', (byte)'r', (byte)':', (byte)' ', (byte)'F',
+                (byte)'i', (byte)'l', (byte)'e', (byte)' ', (byte)'n', (byte)'o', (byte)'t', (byte)' ',
+                (byte)'c', (byte)'l', (byte)'o', (byte)'s', (byte)'e', (byte)'d'
+            };
+
+        private static ReadOnlySpan<byte> LogDirectoryNotClosed => // "Error: Directory not closed"
+            new[]
+            {
+                (byte)'E', (byte)'r', (byte)'r', (byte)'o', (byte)'r', (byte)':', (byte)' ', (byte)'D',
+                (byte)'i', (byte)'r', (byte)'e', (byte)'c', (byte)'t', (byte)'o', (byte)'r', (byte)'y',
+                (byte)' ', (byte)'n', (byte)'o', (byte)'t', (byte)' ', (byte)'c', (byte)'l', (byte)'o',
+                (byte)'s', (byte)'e', (byte)'d'
+            };
+
+        private static ReadOnlySpan<byte> LogMountName => // " (mount_name: ""
+            new[]
+            {
+                (byte)' ', (byte)'(', (byte)'m', (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)'_',
+                (byte)'n', (byte)'a', (byte)'m', (byte)'e', (byte)':', (byte)' ', (byte)'"'
+            };
+
+        private static ReadOnlySpan<byte> LogCount => // "", count: "
+            new[]
+            {
+                (byte)'"', (byte)',', (byte)' ', (byte)'c', (byte)'o', (byte)'u', (byte)'n', (byte)'t',
+                (byte)':', (byte)' '
+            };
+
+        public static ReadOnlySpan<byte> LogLineEnd => new[] { (byte)')', (byte)'\\', (byte)'n' }; // ")\n"
+
+        public static ReadOnlySpan<byte> LogOrOperator => new[] { (byte)' ', (byte)'|', (byte)' ' };  // " | "
+
+        private static ReadOnlySpan<byte> LogOpenModeRead => // "OpenMode_Read"
+            new[]
+            {
+                (byte)'O', (byte)'p', (byte)'e', (byte)'n', (byte)'M', (byte)'o', (byte)'d', (byte)'e',
+                (byte)'_', (byte)'R', (byte)'e', (byte)'a', (byte)'d'
+            };
+
+        private static ReadOnlySpan<byte> LogOpenModeWrite => // "OpenMode_Write"
+            new[]
+            {
+                (byte)'O', (byte)'p', (byte)'e', (byte)'n', (byte)'M', (byte)'o', (byte)'d', (byte)'e',
+                (byte)'_', (byte)'W', (byte)'r', (byte)'i', (byte)'t', (byte)'e'
+            };
+
+        private static ReadOnlySpan<byte> LogOpenModeAppend => // "OpenMode_AllowAppend"
+            new[]
+            {
+                (byte)'O', (byte)'p', (byte)'e', (byte)'n', (byte)'M', (byte)'o', (byte)'d', (byte)'e',
+                (byte)'_', (byte)'A', (byte)'l', (byte)'l', (byte)'o', (byte)'w', (byte)'A', (byte)'p',
+                (byte)'p', (byte)'e', (byte)'n', (byte)'d'
+            };
+
+        private static ReadOnlySpan<byte> LogHandle => // "     handle: 0x"
+            new[]
+            {
+                (byte)' ', (byte)' ', (byte)' ', (byte)' ', (byte)' ', (byte)'h', (byte)'a', (byte)'n',
+                (byte)'d', (byte)'l', (byte)'e', (byte)':', (byte)' ', (byte)'0', (byte)'x'
+            };
+
+        private static ReadOnlySpan<byte> LogOpenMode => // ", open_mode: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'o', (byte)'p', (byte)'e', (byte)'n', (byte)'_', (byte)'m',
+                (byte)'o', (byte)'d', (byte)'e', (byte)':', (byte)' '
+            };
+
+        private static ReadOnlySpan<byte> LogSize => // ", size: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'s', (byte)'i', (byte)'z', (byte)'e', (byte)':', (byte)' '
+            };
+
         private void DumpUnclosedAccessorList(OpenMode fileOpenModeMask, OpenDirectoryMode directoryOpenModeMask)
         {
-            // Todo: Implement
+            static int GetOpenFileCount(LinkedList<FileAccessor> list, OpenMode mask)
+            {
+                int count = 0;
+
+                for (LinkedListNode<FileAccessor> file = list.First; file is not null; file = file.Next)
+                {
+                    if ((file.Value.GetOpenMode() & mask) != 0)
+                        count++;
+                }
+
+                return count;
+            }
+
+            Span<byte> stringBuffer = stackalloc byte[0xA0];
+            Span<byte> openModeStringBuffer = stackalloc byte[0x40];
+
+            int openFileCount = GetOpenFileCount(_openFiles, fileOpenModeMask);
+
+            if (openFileCount > 0 || directoryOpenModeMask != 0 && _openDirectories.Count != 0)
+            {
+                Hos.Diag.Impl.LogImpl(LogFsModuleName, LogSeverity.Error, LogFsErrorInfo);
+            }
+
+            if (openFileCount > 0)
+            {
+                var sb = new U8StringBuilder(stringBuffer, true);
+                sb.Append(LogFileNotClosed).Append(LogMountName).Append(GetName()).Append(LogCount)
+                    .AppendFormat(openFileCount).Append(LogLineEnd);
+
+                Hos.Diag.Impl.LogImpl(LogFsModuleName, LogSeverity.Error, sb.Buffer);
+                sb.Dispose();
+
+                for (LinkedListNode<FileAccessor> file = _openFiles.First; file is not null; file = file.Next)
+                {
+                    OpenMode openMode = file.Value.GetOpenMode();
+
+                    if ((openMode & fileOpenModeMask) == 0)
+                        continue;
+
+                    Result rc = file.Value.GetSize(out long fileSize);
+                    if (rc.IsFailure())
+                        fileSize = -1;
+
+                    var openModeString = new U8StringBuilder(openModeStringBuffer);
+
+                    ReadOnlySpan<byte> readModeString = openMode.HasFlag(OpenMode.Read) ? LogOpenModeRead : default;
+                    openModeString.Append(readModeString);
+                    Assert.SdkAssert(!openModeString.Overflowed);
+
+                    if (openMode.HasFlag(OpenMode.Write))
+                    {
+                        if (openModeString.Length > 0)
+                            sb.Append(LogOrOperator);
+
+                        openModeString.Append(LogOpenModeWrite);
+                        Assert.SdkAssert(!openModeString.Overflowed);
+                    }
+
+                    if (openMode.HasFlag(OpenMode.AllowAppend))
+                    {
+                        if (openModeString.Length > 0)
+                            sb.Append(LogOrOperator);
+
+                        openModeString.Append(LogOpenModeAppend);
+                        Assert.SdkAssert(!openModeString.Overflowed);
+                    }
+
+                    var fileInfoString = new U8StringBuilder(stringBuffer, true);
+                    fileInfoString.Append(LogHandle).AppendFormat(file.Value.GetHashCode(), 'x', 16).Append(LogOpenMode)
+                        .Append(openModeString.Buffer).Append(LogSize).AppendFormat(fileSize).Append((byte) '\n');
+
+                    Hos.Diag.Impl.LogImpl(LogFsModuleName, LogSeverity.Error, fileInfoString.Buffer);
+                    fileInfoString.Dispose();
+                }
+            }
+
+            if (directoryOpenModeMask != 0 && _openDirectories.Count != 0)
+            {
+                var sb = new U8StringBuilder(stringBuffer, true);
+                sb.Append(LogDirectoryNotClosed).Append(LogMountName).Append(GetName()).Append(LogCount)
+                    .AppendFormat(_openDirectories.Count).Append(LogLineEnd);
+
+                Hos.Diag.Impl.LogImpl(LogFsModuleName, LogSeverity.Error, sb.Buffer);
+                sb.Dispose();
+
+                for (LinkedListNode<DirectoryAccessor> dir = _openDirectories.First; dir is not null; dir = dir.Next)
+                {
+                    var dirInfoString = new U8StringBuilder(stringBuffer, true);
+                    dirInfoString.Append(LogHandle).AppendFormat(dir.Value.GetHashCode(), 'x', 16).Append((byte)'\n');
+
+                    Hos.Diag.Impl.LogImpl(LogFsModuleName, LogSeverity.Error, dirInfoString.Buffer);
+                    dirInfoString.Dispose();
+                }
+            }
         }
     }
 }

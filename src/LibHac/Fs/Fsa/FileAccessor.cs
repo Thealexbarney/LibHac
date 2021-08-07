@@ -17,6 +17,8 @@ namespace LibHac.Fs.Impl
 
     internal class FileAccessor : IDisposable
     {
+        private const string NeedFlushMessage = "Error: nn::fs::CloseFile() failed because the file was not flushed.\n";
+
         private IFile _file;
         private FileSystemAccessor _parentFileSystem;
         private WriteState _writeState;
@@ -26,15 +28,17 @@ namespace LibHac.Fs.Impl
         // ReSharper disable once NotAccessedField.Local
         private int _pathHashIndex;
 
-        internal FileSystemClient FsClient { get; }
+        internal HorizonClient Hos { get; }
 
-        public FileAccessor(FileSystemClient fsClient, ref IFile file, FileSystemAccessor parentFileSystem,
+        public FileAccessor(HorizonClient hosClient, ref IFile file, FileSystemAccessor parentFileSystem,
             OpenMode mode)
         {
-            FsClient = fsClient;
+            Hos = hosClient;
 
             _file = Shared.Move(ref file);
             _parentFileSystem = parentFileSystem;
+            _writeState = WriteState.None;
+            _lastResult = Result.Success;
             _openMode = mode;
         }
 
@@ -42,13 +46,14 @@ namespace LibHac.Fs.Impl
         {
             if (_lastResult.IsSuccess() && _writeState == WriteState.NeedsFlush)
             {
-                Abort.DoAbort(ResultFs.NeedFlush.Log(), "File needs flush before closing.");
+                Hos.Fs.Impl.LogErrorMessage(ResultFs.NeedFlush.Value, NeedFlushMessage);
+                Abort.DoAbort(ResultFs.NeedFlush.Value);
             }
 
             _parentFileSystem?.NotifyCloseFile(this);
-            _file?.Dispose();
 
-            _file = null;
+            IFile file = Shared.Move(ref _file);
+            file?.Dispose();
         }
 
         public OpenMode GetOpenMode() => _openMode;
@@ -91,18 +96,18 @@ namespace LibHac.Fs.Impl
 
             if (_lastResult.IsFailure())
             {
-                if (FsClient.Impl.IsEnabledAccessLog() && FsClient.Impl.IsEnabledHandleAccessLog(handle))
+                if (Hos.Fs.Impl.IsEnabledAccessLog() && Hos.Fs.Impl.IsEnabledHandleAccessLog(handle))
                 {
-                    Tick start = FsClient.Hos.Os.GetSystemTick();
+                    Tick start = Hos.Os.GetSystemTick();
                     rc = _lastResult;
-                    Tick end = FsClient.Hos.Os.GetSystemTick();
+                    Tick end = Hos.Os.GetSystemTick();
 
                     var sb = new U8StringBuilder(logBuffer, true);
                     sb.Append(LogOffset).AppendFormat(offset)
                         .Append(LogSize).AppendFormat(destination.Length)
                         .Append(LogReadSize).AppendFormat(AccessLogImpl.DereferenceOutValue(in bytesRead, rc));
 
-                    FsClient.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(logBuffer),
+                    Hos.Fs.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(logBuffer),
                         nameof(UserFile.ReadFile));
                 }
 
@@ -123,18 +128,18 @@ namespace LibHac.Fs.Impl
             }
             else
             {
-                if (FsClient.Impl.IsEnabledAccessLog() && FsClient.Impl.IsEnabledHandleAccessLog(handle))
+                if (Hos.Fs.Impl.IsEnabledAccessLog() && Hos.Fs.Impl.IsEnabledHandleAccessLog(handle))
                 {
-                    Tick start = FsClient.Hos.Os.GetSystemTick();
+                    Tick start = Hos.Os.GetSystemTick();
                     rc = ReadWithoutCacheAccessLog(out bytesRead, offset, destination, in option);
-                    Tick end = FsClient.Hos.Os.GetSystemTick();
+                    Tick end = Hos.Os.GetSystemTick();
 
                     var sb = new U8StringBuilder(logBuffer, true);
                     sb.Append(LogOffset).AppendFormat(offset)
                         .Append(LogSize).AppendFormat(destination.Length)
                         .Append(LogReadSize).AppendFormat(AccessLogImpl.DereferenceOutValue(in bytesRead, rc));
 
-                    FsClient.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(logBuffer),
+                    Hos.Fs.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(logBuffer),
                         nameof(UserFile.ReadFile));
                 }
                 else

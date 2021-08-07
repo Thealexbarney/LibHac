@@ -54,47 +54,13 @@ namespace LibHac.FsSrv.FsCreator
             Config = config;
         }
 
-        public Result Create(out IFileSystem fileSystem, string rootPath, BisPartitionId partitionId)
-        {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
-            if (!IsValidPartitionId(partitionId)) return ResultFs.InvalidArgument.Log();
-            if (rootPath == null) return ResultFs.NullptrArgument.Log();
-
-            if (Config.TryGetFileSystem(out fileSystem, partitionId))
-            {
-                return Result.Success;
-            }
-
-            if (Config.RootFileSystem == null)
-            {
-                return ResultFs.PreconditionViolation.Log();
-            }
-
-            string partitionPath = GetPartitionPath(partitionId);
-
-            Result rc =
-                Util.CreateSubFileSystem(out IFileSystem subFileSystem, Config.RootFileSystem, partitionPath, true);
-
-            if (rc.IsFailure()) return rc;
-
-            if (rootPath == string.Empty)
-            {
-                fileSystem = subFileSystem;
-                return Result.Success;
-            }
-
-            return Util.CreateSubFileSystemImpl(out fileSystem, subFileSystem, rootPath);
-        }
-
         // Todo: Make case sensitive
-        public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, U8Span rootPath,
-            BisPartitionId partitionId, bool caseSensitive)
+        public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, BisPartitionId partitionId,
+            bool caseSensitive)
         {
             UnsafeHelpers.SkipParamInit(out fileSystem);
 
             if (!IsValidPartitionId(partitionId)) return ResultFs.InvalidArgument.Log();
-            if (rootPath.IsNull()) return ResultFs.NullptrArgument.Log();
 
             if (Config.TryGetFileSystem(out IFileSystem fs, partitionId))
             {
@@ -107,7 +73,14 @@ namespace LibHac.FsSrv.FsCreator
                 return ResultFs.PreconditionViolation.Log();
             }
 
-            var partitionPath = GetPartitionPath(partitionId).ToU8String();
+            var bisRootPath = new Path();
+            Result rc = bisRootPath.Initialize(GetPartitionPath(partitionId).ToU8String());
+            if (rc.IsFailure()) return rc;
+
+            var pathFlags = new PathFlags();
+            pathFlags.AllowEmptyPath();
+            rc = bisRootPath.Normalize(pathFlags);
+            if (rc.IsFailure()) return rc;
 
             ReferenceCountedDisposable<IFileSystem> partitionFileSystem = null;
             ReferenceCountedDisposable<IFileSystem> sharedRootFs = null;
@@ -115,17 +88,11 @@ namespace LibHac.FsSrv.FsCreator
             {
                 sharedRootFs = new ReferenceCountedDisposable<IFileSystem>(Config.RootFileSystem);
 
-                Result rc = Utility.WrapSubDirectory(out partitionFileSystem, ref sharedRootFs, partitionPath, true);
-
+                rc = Utility.WrapSubDirectory(out partitionFileSystem, ref sharedRootFs, in bisRootPath, true);
                 if (rc.IsFailure()) return rc;
 
-                if (rootPath.IsEmpty())
-                {
-                    Shared.Move(out fileSystem, ref partitionFileSystem);
-                    return Result.Success;
-                }
-
-                return Utility.CreateSubDirectoryFileSystem(out fileSystem, ref partitionFileSystem, rootPath);
+                Shared.Move(out fileSystem, ref partitionFileSystem);
+                return Result.Success;
             }
             finally
             {
@@ -134,13 +101,7 @@ namespace LibHac.FsSrv.FsCreator
             }
         }
 
-        public Result CreateFatFileSystem(out IFileSystem fileSystem, BisPartitionId partitionId)
-        {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-            return ResultFs.NotImplemented.Log();
-        }
-
-        public Result SetBisRootForHost(BisPartitionId partitionId, string rootPath)
+        public Result SetBisRoot(BisPartitionId partitionId, string rootPath)
         {
             return Config.SetPath(rootPath, partitionId);
         }

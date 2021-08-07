@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
@@ -26,6 +26,7 @@ namespace LibHac.FsSrv
         private TimeStampGetter _timeStampGetter;
 
         internal HorizonClient Hos => _config.FsServer.Hos;
+        internal FileSystemServer FsServer => _config.FsServer;
 
         private class TimeStampGetter : ISaveDataCommitTimeStampGetter
         {
@@ -87,15 +88,21 @@ namespace LibHac.FsSrv
             ReferenceCountedDisposable<IFileSystem> fileSystem = null;
             try
             {
-                Result rc = OpenSaveDataDirectoryFileSystem(out fileSystem, spaceId, U8Span.Empty, true);
+                Result rc = OpenSaveDataDirectoryFileSystem(out fileSystem, spaceId);
                 if (rc.IsFailure()) return rc;
 
                 // Get the path of the save data
-                Span<byte> saveDataPath = stackalloc byte[0x12];
-                var sb = new U8StringBuilder(saveDataPath);
-                sb.Append((byte)'/').AppendFormat(saveDataId, 'x', 16);
+                // Hack around error CS8350.
+                const int bufferLength = 0x12;
+                Span<byte> buffer = stackalloc byte[bufferLength];
+                ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+                Span<byte> saveImageNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-                rc = fileSystem.Target.GetEntryType(out _, new U8Span(saveDataPath));
+                var saveImageName = new Path();
+                rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName, saveImageNameBuffer, saveDataId);
+                if (rc.IsFailure()) return rc;
+
+                rc = fileSystem.Target.GetEntryType(out _, in saveImageName);
 
                 if (rc.IsSuccess())
                 {
@@ -119,7 +126,7 @@ namespace LibHac.FsSrv
         }
 
         public Result OpenSaveDataFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
-            SaveDataSpaceId spaceId, ulong saveDataId, U8Span saveDataRootPath, bool openReadOnly, SaveDataType type,
+            SaveDataSpaceId spaceId, ulong saveDataId, in Path saveDataRootPath, bool openReadOnly, SaveDataType type,
             bool cacheExtraData)
         {
             UnsafeHelpers.SkipParamInit(out fileSystem);
@@ -129,10 +136,10 @@ namespace LibHac.FsSrv
             ReferenceCountedDisposable<IFileSystem> saveDataFs = null;
             try
             {
-                Result rc = OpenSaveDataDirectoryFileSystem(out saveDirectoryFs, spaceId, saveDataRootPath, true);
+                Result rc = OpenSaveDataDirectoryFileSystem(out saveDirectoryFs, spaceId, in saveDataRootPath, true);
                 if (rc.IsFailure()) return rc;
 
-                bool allowDirectorySaveData = IsAllowedDirectorySaveData2(spaceId, saveDataRootPath);
+                bool allowDirectorySaveData = IsAllowedDirectorySaveData2(spaceId, in saveDataRootPath);
 
                 // Note: When directory save data is allowed, Nintendo creates the save directory if it doesn't exist.
                 // This bypasses normal save data creation, leaving the save with empty extra data.
@@ -208,22 +215,24 @@ namespace LibHac.FsSrv
         public Result OpenSaveDataMetaDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
             SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            var metaDirPath = // /saveMeta/
-                new U8Span(new[]
-                {
-                    (byte)'/', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'M', (byte)'e', (byte)'t',
-                    (byte)'a', (byte)'/'
-                });
+            UnsafeHelpers.SkipParamInit(out fileSystem);
 
-            Span<byte> directoryName = stackalloc byte[0x1B];
-            var sb = new U8StringBuilder(directoryName);
-            sb.Append(metaDirPath).AppendFormat(saveDataId, 'x', 16);
+            // Hack around error CS8350.
+            const int bufferLength = 0x1B;
+            Span<byte> buffer = stackalloc byte[bufferLength];
+            ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+            Span<byte> saveDataMetaIdDirectoryNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-            return OpenSaveDataDirectoryFileSystemImpl(out fileSystem, spaceId, new U8Span(directoryName));
+            var saveDataMetaIdDirectoryName = new Path();
+            Result rc = PathFunctions.SetUpFixedPathSaveMetaDir(ref saveDataMetaIdDirectoryName,
+                saveDataMetaIdDirectoryNameBuffer, saveDataId);
+            if (rc.IsFailure()) return rc;
+
+            return OpenSaveDataDirectoryFileSystemImpl(out fileSystem, spaceId, in saveDataMetaIdDirectoryName);
         }
 
         public Result OpenSaveDataInternalStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
-            SaveDataSpaceId spaceId, ulong saveDataId, U8Span saveDataRootPath, bool useSecondMacKey)
+            SaveDataSpaceId spaceId, ulong saveDataId, in Path saveDataRootPath, bool useSecondMacKey)
         {
             throw new NotImplementedException();
         }
@@ -244,11 +253,18 @@ namespace LibHac.FsSrv
                 Result rc = OpenSaveDataMetaDirectoryFileSystem(out metaDirFs, spaceId, saveDataId);
                 if (rc.IsFailure()) return rc;
 
-                Span<byte> saveMetaPathBuffer = stackalloc byte[0xF];
-                var sb = new U8StringBuilder(saveMetaPathBuffer);
-                sb.Append((byte)'/').AppendFormat((int)metaType, 'x', 8);
+                // Hack around error CS8350.
+                const int bufferLength = 0xF;
+                Span<byte> buffer = stackalloc byte[bufferLength];
+                ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+                Span<byte> saveDataMetaNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-                return metaDirFs.Target.CreateFile(new U8Span(saveMetaPathBuffer), metaSize);
+                var saveDataMetaName = new Path();
+                rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName, saveDataMetaNameBuffer,
+                    (uint)metaType);
+                if (rc.IsFailure()) return rc;
+
+                return metaDirFs.Target.CreateFile(in saveDataMetaName, metaSize);
             }
             finally
             {
@@ -264,11 +280,18 @@ namespace LibHac.FsSrv
                 Result rc = OpenSaveDataMetaDirectoryFileSystem(out metaDirFs, spaceId, saveDataId);
                 if (rc.IsFailure()) return rc;
 
-                Span<byte> saveMetaPathBuffer = stackalloc byte[0xF];
-                var sb = new U8StringBuilder(saveMetaPathBuffer);
-                sb.Append((byte)'/').AppendFormat((int)metaType, 'x', 8);
+                // Hack around error CS8350.
+                const int bufferLength = 0xF;
+                Span<byte> buffer = stackalloc byte[bufferLength];
+                ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+                Span<byte> saveDataMetaNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-                return metaDirFs.Target.DeleteFile(new U8Span(saveMetaPathBuffer));
+                var saveDataMetaName = new Path();
+                rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName, saveDataMetaNameBuffer,
+                    (uint)metaType);
+                if (rc.IsFailure()) return rc;
+
+                return metaDirFs.Target.DeleteFile(in saveDataMetaName);
             }
             finally
             {
@@ -278,29 +301,42 @@ namespace LibHac.FsSrv
 
         public Result DeleteAllSaveDataMetas(ulong saveDataId, SaveDataSpaceId spaceId)
         {
-            var metaDirPath = // /saveMeta
-                new U8Span(new[]
+            ReadOnlySpan<byte> metaDirName = // /saveMeta
+                new[]
                 {
-                    (byte)'/', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'M', (byte)'e', (byte)'t',
-                    (byte)'a'
-                });
+                    (byte) '/', (byte) 's', (byte) 'a', (byte) 'v', (byte) 'e', (byte) 'M', (byte) 'e', (byte) 't',
+                    (byte) 'a'
+                };
+
+            // Hack around error CS8350.
+            const int bufferLength = 0x12;
+            Span<byte> buffer = stackalloc byte[bufferLength];
+            ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+            Span<byte> saveDataIdDirectoryNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
             ReferenceCountedDisposable<IFileSystem> fileSystem = null;
             try
             {
-                Result rc = OpenSaveDataDirectoryFileSystemImpl(out fileSystem, spaceId, metaDirPath, false);
+                var saveDataMetaDirectoryName = new Path();
+                Result rc = PathFunctions.SetUpFixedPath(ref saveDataMetaDirectoryName, metaDirName);
                 if (rc.IsFailure()) return rc;
 
-                // Get the path of the save data meta
-                Span<byte> saveDataPathBuffer = stackalloc byte[0x12];
-                var sb = new U8StringBuilder(saveDataPathBuffer);
-                sb.Append((byte)'/').AppendFormat(saveDataId, 'x', 16);
+                rc = OpenSaveDataDirectoryFileSystemImpl(out fileSystem, spaceId, in saveDataMetaDirectoryName, false);
+                if (rc.IsFailure()) return rc;
+
+                var saveDataIdDirectoryName = new Path();
+                PathFunctions.SetUpFixedPathSaveId(ref saveDataIdDirectoryName, saveDataIdDirectoryNameBuffer,
+                    saveDataId);
+                if (rc.IsFailure()) return rc;
 
                 // Delete the save data's meta directory, ignoring the error if the directory is already gone
-                rc = fileSystem.Target.DeleteDirectoryRecursively(new U8Span(saveDataPathBuffer));
+                rc = fileSystem.Target.DeleteDirectoryRecursively(in saveDataIdDirectoryName);
 
                 if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc))
                     return rc;
+
+                saveDataMetaDirectoryName.Dispose();
+                saveDataIdDirectoryName.Dispose();
 
                 return Result.Success;
             }
@@ -321,11 +357,18 @@ namespace LibHac.FsSrv
                 Result rc = OpenSaveDataMetaDirectoryFileSystem(out metaDirFs, spaceId, saveDataId);
                 if (rc.IsFailure()) return rc;
 
-                Span<byte> saveMetaPathBuffer = stackalloc byte[0xF];
-                var sb = new U8StringBuilder(saveMetaPathBuffer);
-                sb.Append((byte)'/').AppendFormat((int)metaType, 'x', 8);
+                // Hack around error CS8350.
+                const int bufferLength = 0xF;
+                Span<byte> buffer = stackalloc byte[bufferLength];
+                ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+                Span<byte> saveDataMetaNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-                return metaDirFs.Target.OpenFile(out metaFile, new U8Span(saveMetaPathBuffer), OpenMode.ReadWrite);
+                var saveDataMetaName = new Path();
+                rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName, saveDataMetaNameBuffer,
+                    (uint)metaType);
+                if (rc.IsFailure()) return rc;
+
+                return metaDirFs.Target.OpenFile(out metaFile, in saveDataMetaName, OpenMode.ReadWrite);
             }
             finally
             {
@@ -334,25 +377,31 @@ namespace LibHac.FsSrv
         }
 
         public Result CreateSaveDataFileSystem(ulong saveDataId, in SaveDataAttribute attribute,
-            in SaveDataCreationInfo creationInfo, U8Span saveDataRootPath, in Optional<HashSalt> hashSalt,
+            in SaveDataCreationInfo creationInfo, in Path saveDataRootPath, in Optional<HashSalt> hashSalt,
             bool skipFormat)
         {
             // Use directory save data for now
 
+            // Hack around error CS8350.
+            const int bufferLength = 0x12;
+            Span<byte> buffer = stackalloc byte[bufferLength];
+            ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+            Span<byte> saveImageNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+
             ReferenceCountedDisposable<IFileSystem> saveDirectoryFs = null;
             try
             {
-                Result rc = OpenSaveDataDirectoryFileSystem(out saveDirectoryFs, creationInfo.SpaceId, saveDataRootPath,
-                    false);
+                Result rc = OpenSaveDataDirectoryFileSystem(out saveDirectoryFs, creationInfo.SpaceId,
+                    in saveDataRootPath, false);
                 if (rc.IsFailure()) return rc;
 
-                Span<byte> saveDataPathBuffer = stackalloc byte[0x12];
-                var sb = new U8StringBuilder(saveDataPathBuffer);
-                sb.Append((byte)'/').AppendFormat(saveDataId, 'x', 16);
+                var saveImageName = new Path();
+                rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName, saveImageNameBuffer, saveDataId);
+                if (rc.IsFailure()) return rc;
 
                 if (_config.IsPseudoSaveData())
                 {
-                    rc = Utility.EnsureDirectory(saveDirectoryFs.Target, new U8Span(saveDataPathBuffer));
+                    rc = Utility12.EnsureDirectory(saveDirectoryFs.Target, in saveImageName);
                     if (rc.IsFailure()) return rc;
 
                     ReferenceCountedDisposable<IFileSystem> saveFs = null;
@@ -404,51 +453,55 @@ namespace LibHac.FsSrv
             }
         }
 
-        private Result WipeData(IFileSystem fileSystem, U8Span filePath, RandomDataGenerator random)
+        private Result WipeData(IFileSystem fileSystem, in Path filePath, RandomDataGenerator random)
         {
             throw new NotImplementedException();
         }
 
         public Result DeleteSaveDataFileSystem(SaveDataSpaceId spaceId, ulong saveDataId, bool wipeSaveFile,
-            U8Span saveDataRootPath)
+            in Path saveDataRootPath)
         {
+            // Hack around error CS8350.
+            const int bufferLength = 0x12;
+            Span<byte> buffer = stackalloc byte[bufferLength];
+            ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+            Span<byte> saveImageNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+
             ReferenceCountedDisposable<IFileSystem> fileSystem = null;
             try
             {
                 _saveDataFsCacheManager.Unregister(spaceId, saveDataId);
 
                 // Open the directory containing the save data
-                Result rc = OpenSaveDataDirectoryFileSystem(out fileSystem, spaceId, saveDataRootPath, false);
+                Result rc = OpenSaveDataDirectoryFileSystem(out fileSystem, spaceId, in saveDataRootPath, false);
                 if (rc.IsFailure()) return rc;
 
-                // Get the path of the save data
-                Span<byte> saveDataPathBuffer = stackalloc byte[0x12];
-                var saveDataPath = new U8Span(saveDataPathBuffer);
-
-                var sb = new U8StringBuilder(saveDataPathBuffer);
-                sb.Append((byte)'/').AppendFormat(saveDataId, 'x', 16);
+                var saveImageName = new Path();
+                rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName, saveImageNameBuffer, saveDataId);
+                if (rc.IsFailure()) return rc;
 
                 // Check if the save data is a file or a directory
-                rc = fileSystem.Target.GetEntryType(out DirectoryEntryType entryType, saveDataPath);
+                rc = fileSystem.Target.GetEntryType(out DirectoryEntryType entryType, in saveImageName);
                 if (rc.IsFailure()) return rc;
 
                 // Delete the save data, wiping the file if needed
                 if (entryType == DirectoryEntryType.Directory)
                 {
-                    rc = fileSystem.Target.DeleteDirectoryRecursively(saveDataPath);
+                    rc = fileSystem.Target.DeleteDirectoryRecursively(in saveImageName);
                     if (rc.IsFailure()) return rc;
                 }
                 else
                 {
                     if (wipeSaveFile)
                     {
-                        WipeData(fileSystem.Target, saveDataPath, _config.GenerateRandomData).IgnoreResult();
+                        WipeData(fileSystem.Target, in saveImageName, _config.GenerateRandomData).IgnoreResult();
                     }
 
-                    rc = fileSystem.Target.DeleteDirectoryRecursively(saveDataPath);
+                    rc = fileSystem.Target.DeleteFile(in saveImageName);
                     if (rc.IsFailure()) return rc;
                 }
 
+                saveImageName.Dispose();
                 return Result.Success;
             }
             finally
@@ -458,7 +511,7 @@ namespace LibHac.FsSrv
         }
 
         public Result ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, SaveDataSpaceId spaceId,
-            ulong saveDataId, SaveDataType type, U8Span saveDataRootPath)
+            ulong saveDataId, SaveDataType type, in Path saveDataRootPath)
         {
             UnsafeHelpers.SkipParamInit(out extraData);
 
@@ -514,7 +567,7 @@ namespace LibHac.FsSrv
         }
 
         public Result WriteSaveDataFileSystemExtraData(SaveDataSpaceId spaceId, ulong saveDataId,
-            in SaveDataExtraData extraData, U8Span saveDataRootPath, SaveDataType type, bool updateTimeStamp)
+            in SaveDataExtraData extraData, in Path saveDataRootPath, SaveDataType type, bool updateTimeStamp)
         {
             // Nintendo does nothing when writing directory save data extra data.
             // We've extended directory save data to store extra data so we don't return early.
@@ -572,7 +625,7 @@ namespace LibHac.FsSrv
         }
 
         public Result CorruptSaveDataFileSystem(SaveDataSpaceId spaceId, ulong saveDataId, long offset,
-            U8Span saveDataRootPath)
+            in Path saveDataRootPath)
         {
             throw new NotImplementedException();
         }
@@ -582,43 +635,51 @@ namespace LibHac.FsSrv
             return _config.TimeService.GetCurrentPosixTime(out timeStamp);
         }
 
-        private bool IsSaveEmulated(U8Span saveDataRootPath)
+        private bool IsSaveEmulated(in Path saveDataRootPath)
         {
             return !saveDataRootPath.IsEmpty();
         }
 
         public Result OpenSaveDataDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
-            SaveDataSpaceId spaceId, U8Span saveDataRootPath, bool allowEmulatedSave)
+            SaveDataSpaceId spaceId)
         {
-            if (allowEmulatedSave && IsAllowedDirectorySaveData(spaceId, saveDataRootPath))
+            var rootPath = new Path();
+
+            return OpenSaveDataDirectoryFileSystem(out fileSystem, spaceId, in rootPath, true);
+        }
+
+        public Result OpenSaveDataDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+            SaveDataSpaceId spaceId, in Path saveDataRootPath, bool allowEmulatedSave)
+        {
+            Result rc;
+            UnsafeHelpers.SkipParamInit(out fileSystem);
+
+            if (allowEmulatedSave && IsAllowedDirectorySaveData(spaceId, in saveDataRootPath))
             {
-                UnsafeHelpers.SkipParamInit(out fileSystem);
                 ReferenceCountedDisposable<IFileSystem> tmFs = null;
 
                 try
                 {
                     // Ensure the target save data directory exists
-                    Result rc = _config.TargetManagerFsCreator.Create(out tmFs, false);
+                    rc = _config.TargetManagerFsCreator.Create(out tmFs, in saveDataRootPath, false, true,
+                        ResultFs.SaveDataRootPathUnavailable.Value);
                     if (rc.IsFailure()) return rc;
-
-                    rc = Utility.EnsureDirectory(tmFs.Target, saveDataRootPath);
-                    if (rc.IsFailure())
-                        return ResultFs.SaveDataRootPathUnavailable.LogConverted(rc);
 
                     tmFs.Dispose();
 
-                    // Nintendo does a straight copy here without checking the input path length,
-                    // stopping before the null terminator.
-                    // FsPath used instead of stackalloc for convenience 
-                    FsPath.FromSpan(out FsPath path, saveDataRootPath).IgnoreResult();
-
-                    rc = _config.TargetManagerFsCreator.NormalizeCaseOfPath(out bool isTargetFsCaseSensitive, path.Str);
+                    var path = new Path();
+                    rc = path.Initialize(in saveDataRootPath);
                     if (rc.IsFailure()) return rc;
 
-                    rc = _config.TargetManagerFsCreator.Create(out tmFs, isTargetFsCaseSensitive);
+                    rc = _config.TargetManagerFsCreator.NormalizeCaseOfPath(out bool isTargetFsCaseSensitive, ref path);
                     if (rc.IsFailure()) return rc;
 
-                    return Utility.CreateSubDirectoryFileSystem(out fileSystem, ref tmFs, new U8Span(path.Str), true);
+                    rc = _config.TargetManagerFsCreator.Create(out tmFs, in path, isTargetFsCaseSensitive, false,
+                        ResultFs.SaveDataRootPathUnavailable.Value);
+                    if (rc.IsFailure()) return rc;
+
+                    path.Dispose();
+                    return Result.Success;
                 }
                 finally
                 {
@@ -626,6 +687,7 @@ namespace LibHac.FsSrv
                 }
             }
 
+            var saveDataDirPath = new Path();
             ReadOnlySpan<byte> saveDirName;
 
             if (spaceId == SaveDataSpaceId.Temporary)
@@ -637,22 +699,29 @@ namespace LibHac.FsSrv
                 saveDirName = new[] { (byte)'/', (byte)'s', (byte)'a', (byte)'v', (byte)'e' }; // /save
             }
 
-            return OpenSaveDataDirectoryFileSystemImpl(out fileSystem, spaceId, new U8Span(saveDirName), true);
+            rc = PathFunctions.SetUpFixedPath(ref saveDataDirPath, saveDirName);
+            if (rc.IsFailure()) return rc;
+
+            rc = OpenSaveDataDirectoryFileSystemImpl(out fileSystem, spaceId, in saveDataDirPath, true);
+            if (rc.IsFailure()) return rc;
+
+            saveDataDirPath.Dispose();
+            return Result.Success;
         }
 
         public Result OpenSaveDataDirectoryFileSystemImpl(out ReferenceCountedDisposable<IFileSystem> fileSystem,
-            SaveDataSpaceId spaceId, U8Span basePath)
+            SaveDataSpaceId spaceId, in Path basePath)
         {
-            return OpenSaveDataDirectoryFileSystemImpl(out fileSystem, spaceId, basePath, true);
+            return OpenSaveDataDirectoryFileSystemImpl(out fileSystem, spaceId, in basePath, true);
         }
 
         public Result OpenSaveDataDirectoryFileSystemImpl(out ReferenceCountedDisposable<IFileSystem> fileSystem,
-            SaveDataSpaceId spaceId, U8Span basePath, bool createIfMissing)
+            SaveDataSpaceId spaceId, in Path basePath, bool createIfMissing)
         {
             UnsafeHelpers.SkipParamInit(out fileSystem);
 
-            ReferenceCountedDisposable<IFileSystem> tempFs = null;
-            ReferenceCountedDisposable<IFileSystem> tempSubFs = null;
+            ReferenceCountedDisposable<IFileSystem> baseFileSystem = null;
+            ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
             try
             {
                 Result rc;
@@ -660,51 +729,63 @@ namespace LibHac.FsSrv
                 switch (spaceId)
                 {
                     case SaveDataSpaceId.System:
-                        rc = _config.BaseFsService.OpenBisFileSystem(out tempFs, U8Span.Empty, BisPartitionId.System,
-                            true);
+                        rc = _config.BaseFsService.OpenBisFileSystem(out baseFileSystem, BisPartitionId.System, true);
                         if (rc.IsFailure()) return rc;
 
-                        return Utility.WrapSubDirectory(out fileSystem, ref tempFs, basePath, createIfMissing);
+                        return Utility.WrapSubDirectory(out fileSystem, ref baseFileSystem, in basePath, createIfMissing);
 
                     case SaveDataSpaceId.User:
                     case SaveDataSpaceId.Temporary:
-                        rc = _config.BaseFsService.OpenBisFileSystem(out tempFs, U8Span.Empty, BisPartitionId.User,
-                            true);
+                        rc = _config.BaseFsService.OpenBisFileSystem(out baseFileSystem, BisPartitionId.User, true);
                         if (rc.IsFailure()) return rc;
 
-                        return Utility.WrapSubDirectory(out fileSystem, ref tempFs, basePath, createIfMissing);
+                        return Utility.WrapSubDirectory(out fileSystem, ref baseFileSystem, in basePath, createIfMissing);
 
                     case SaveDataSpaceId.SdSystem:
                     case SaveDataSpaceId.SdCache:
-                        rc = _config.BaseFsService.OpenSdCardProxyFileSystem(out tempFs, true);
+                        rc = _config.BaseFsService.OpenSdCardProxyFileSystem(out baseFileSystem, true);
                         if (rc.IsFailure()) return rc;
 
-                        Unsafe.SkipInit(out FsPath path);
-                        var sb = new U8StringBuilder(path.Str);
-                        sb.Append((byte)'/')
-                            .Append(basePath.Value)
-                            .Append((byte)'/')
-                            .Append(CommonPaths.SdCardNintendoRootDirectoryName);
+                        // Hack around error CS8350.
+                        const int bufferLength = 0x40;
+                        Span<byte> buffer = stackalloc byte[bufferLength];
+                        ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+                        Span<byte> pathParentBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-                        rc = Utility.WrapSubDirectory(out tempSubFs, ref tempFs, path, createIfMissing);
+                        var parentPath = new Path();
+                        rc = PathFunctions.SetUpFixedPathSingleEntry(ref parentPath, pathParentBuffer,
+                            CommonPaths.SdCardNintendoRootDirectoryName);
                         if (rc.IsFailure()) return rc;
 
-                        return _config.EncryptedFsCreator.Create(out fileSystem, tempSubFs, EncryptedFsKeyId.Save,
-                            in _encryptionSeed);
+                        var pathSdRoot = new Path();
+                        rc = pathSdRoot.Combine(in parentPath, in basePath);
+                        if (rc.IsFailure()) return rc;
+
+                        tempFileSystem = Shared.Move(ref baseFileSystem);
+                        rc = Utility.WrapSubDirectory(out baseFileSystem, ref tempFileSystem, in pathSdRoot,
+                            createIfMissing);
+                        if (rc.IsFailure()) return rc;
+
+                        rc = _config.EncryptedFsCreator.Create(out fileSystem, ref baseFileSystem,
+                            IEncryptedFileSystemCreator.KeyId.Save, in _encryptionSeed);
+                        if (rc.IsFailure()) return rc;
+
+                        parentPath.Dispose();
+                        pathSdRoot.Dispose();
+                        return Result.Success;
 
                     case SaveDataSpaceId.ProperSystem:
-                        rc = _config.BaseFsService.OpenBisFileSystem(out tempFs, U8Span.Empty,
+                        rc = _config.BaseFsService.OpenBisFileSystem(out baseFileSystem,
                             BisPartitionId.SystemProperPartition, true);
                         if (rc.IsFailure()) return rc;
 
-                        return Utility.WrapSubDirectory(out fileSystem, ref tempFs, basePath, createIfMissing);
+                        return Utility.WrapSubDirectory(out fileSystem, ref baseFileSystem, in basePath, createIfMissing);
 
                     case SaveDataSpaceId.SafeMode:
-                        rc = _config.BaseFsService.OpenBisFileSystem(out tempFs, U8Span.Empty, BisPartitionId.SafeMode,
-                            true);
+                        rc = _config.BaseFsService.OpenBisFileSystem(out baseFileSystem, BisPartitionId.SafeMode, true);
                         if (rc.IsFailure()) return rc;
 
-                        return Utility.WrapSubDirectory(out fileSystem, ref tempFs, basePath, createIfMissing);
+                        return Utility.WrapSubDirectory(out fileSystem, ref baseFileSystem, in basePath, createIfMissing);
 
                     default:
                         return ResultFs.InvalidArgument.Log();
@@ -712,8 +793,8 @@ namespace LibHac.FsSrv
             }
             finally
             {
-                tempFs?.Dispose();
-                tempSubFs?.Dispose();
+                baseFileSystem?.Dispose();
+                tempFileSystem?.Dispose();
             }
         }
 
@@ -733,18 +814,18 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public bool IsAllowedDirectorySaveData(SaveDataSpaceId spaceId, U8Span saveDataRootPath)
+        public bool IsAllowedDirectorySaveData(SaveDataSpaceId spaceId, in Path saveDataRootPath)
         {
-            return spaceId == SaveDataSpaceId.User && IsSaveEmulated(saveDataRootPath);
+            return spaceId == SaveDataSpaceId.User && IsSaveEmulated(in saveDataRootPath);
         }
 
         // Todo: remove once file save data is supported
         // Used to always allow directory save data in OpenSaveDataFileSystem
-        public bool IsAllowedDirectorySaveData2(SaveDataSpaceId spaceId, U8Span saveDataRootPath)
+        public bool IsAllowedDirectorySaveData2(SaveDataSpaceId spaceId, in Path saveDataRootPath)
         {
             // Todo: remove "|| true" once file save data is supported
             // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-            return spaceId == SaveDataSpaceId.User && IsSaveEmulated(saveDataRootPath) || true;
+            return spaceId == SaveDataSpaceId.User && IsSaveEmulated(in saveDataRootPath) || true;
         }
 
         public bool IsDeviceUniqueMac(SaveDataSpaceId spaceId)

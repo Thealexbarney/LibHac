@@ -28,12 +28,12 @@ namespace LibHac.FsSystem
             return new ReferenceCountedDisposable<IFileSystem>(fs);
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
         {
             return BaseFs.OpenDirectory(out directory, path, mode);
         }
 
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
         {
             UnsafeHelpers.SkipParamInit(out file);
 
@@ -44,17 +44,17 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
             return BaseFs.GetEntryType(out entryType, path);
         }
 
-        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
             return BaseFs.GetFreeSpaceSize(out freeSpace, path);
         }
 
-        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
             return BaseFs.GetTotalSpaceSize(out totalSpace, path);
 
@@ -62,7 +62,7 @@ namespace LibHac.FsSystem
             // return ResultFs.UnsupportedOperationReadOnlyFileSystemGetSpace.Log();
         }
 
-        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
+        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
         {
             return BaseFs.GetFileTimeStampRaw(out timeStamp, path);
 
@@ -75,30 +75,26 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoCreateDirectory(U8Span path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
+        protected override Result DoCreateDirectory(in Path path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
+        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override Result DoDeleteDirectory(U8Span path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
+        protected override Result DoDeleteDirectory(in Path path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override Result DoDeleteDirectoryRecursively(U8Span path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
+        protected override Result DoDeleteDirectoryRecursively(in Path path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override Result DoCleanDirectoryRecursively(U8Span path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
+        protected override Result DoCleanDirectoryRecursively(in Path path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override Result DoDeleteFile(U8Span path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
+        protected override Result DoDeleteFile(in Path path) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
+        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
+        protected override Result DoRenameFile(in Path currentPath, in Path newPath) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                BaseFsShared?.Dispose();
-            }
-
-            base.Dispose(disposing);
+            BaseFsShared?.Dispose();
+            base.Dispose();
         }
     }
 }

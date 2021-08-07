@@ -17,23 +17,16 @@ namespace LibHac.Fs.Fsa
         /// <param name="size">The initial size of the created file.</param>
         /// <param name="option">Flags to control how the file is created.
         /// Should usually be <see cref="CreateFileOptions.None"/></param>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        /// <remarks>
-        /// The following <see cref="Result"/> codes may be returned under certain conditions:
-        /// 
-        /// The parent directory of the specified path does not exist: <see cref="ResultFs.PathNotFound"/>
-        /// Specified path already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
-        /// Insufficient free space to create the file: <see cref="ResultFs.UsableSpaceNotEnough"/>
-        /// </remarks>
-        public Result CreateFile(U8Span path, long size, CreateFileOptions option)
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.PathNotFound"/>: The parent directory of the specified path does not exist.<br/>
+        /// <see cref="ResultFs.PathAlreadyExists"/>: Specified path already exists as either a file or directory.<br/>
+        /// <see cref="ResultFs.UsableSpaceNotEnough"/>: Insufficient free space to create the file.</returns>
+        public Result CreateFile(in Path path, long size, CreateFileOptions option)
         {
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
             if (size < 0)
                 return ResultFs.OutOfRange.Log();
 
-            return DoCreateFile(path, size, option);
+            return DoCreateFile(in path, size, option);
         }
 
         /// <summary>
@@ -42,175 +35,127 @@ namespace LibHac.Fs.Fsa
         /// <param name="path">The full path of the file to create.</param>
         /// <param name="size">The initial size of the created file.
         /// Should usually be <see cref="CreateFileOptions.None"/></param>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        /// <remarks>
-        /// The following <see cref="Result"/> codes may be returned under certain conditions:
-        /// 
-        /// The parent directory of the specified path does not exist: <see cref="ResultFs.PathNotFound"/>
-        /// Specified path already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
-        /// Insufficient free space to create the file: <see cref="ResultFs.UsableSpaceNotEnough"/>
-        /// </remarks>
-        public Result CreateFile(U8Span path, long size)
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.PathNotFound"/>: The parent directory of the specified path does not exist.<br/>
+        /// <see cref="ResultFs.PathAlreadyExists"/>: Specified path already exists as either a file or directory.<br/>
+        /// <see cref="ResultFs.UsableSpaceNotEnough"/>: Insufficient free space to create the file.</returns>
+        public Result CreateFile(in Path path, long size)
         {
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            if (size < 0)
-                return ResultFs.OutOfRange.Log();
-
-            return DoCreateFile(path, size, CreateFileOptions.None);
+            return CreateFile(in path, size, CreateFileOptions.None);
         }
 
         /// <summary>
         /// Deletes the specified file.
         /// </summary>
         /// <param name="path">The full path of the file to delete.</param>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        /// <remarks>
-        /// The following <see cref="Result"/> codes may be returned under certain conditions:
-        /// 
-        /// The specified path does not exist or is a directory: <see cref="ResultFs.PathNotFound"/>
-        /// </remarks>
-        public Result DeleteFile(U8Span path)
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a directory.</returns>
+        public Result DeleteFile(in Path path)
         {
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            return DoDeleteFile(path);
+            return DoDeleteFile(in path);
         }
 
         /// <summary>
         /// Creates all directories and subdirectories in the specified path unless they already exist.
         /// </summary>
         /// <param name="path">The full path of the directory to create.</param>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        /// <remarks>
-        /// The following <see cref="Result"/> codes may be returned under certain conditions:
-        /// 
-        /// The parent directory of the specified path does not exist: <see cref="ResultFs.PathNotFound"/>
-        /// Specified path already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
-        /// Insufficient free space to create the directory: <see cref="ResultFs.UsableSpaceNotEnough"/>
-        /// </remarks>
-        public Result CreateDirectory(U8Span path)
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.PathNotFound"/>: The parent directory of the specified path does not exist.<br/>
+        /// <see cref="ResultFs.PathAlreadyExists"/>: Specified path already exists as either a file or directory.<br/>
+        /// <see cref="ResultFs.UsableSpaceNotEnough"/>: Insufficient free space to create the directory.</returns>
+        public Result CreateDirectory(in Path path)
         {
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            return DoCreateDirectory(path);
+            return DoCreateDirectory(in path);
         }
 
         /// <summary>
         /// Deletes the specified directory.
         /// </summary>
         /// <param name="path">The full path of the directory to delete.</param>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        /// <remarks>
-        /// The following <see cref="Result"/> codes may be returned under certain conditions:
-        /// 
-        /// The specified path does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
-        /// The specified directory is not empty: <see cref="ResultFs.DirectoryNotEmpty"/>
-        /// </remarks>
-        public Result DeleteDirectory(U8Span path)
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a file.<br/>
+        /// <see cref="ResultFs.DirectoryNotEmpty"/>: The specified directory is not empty.</returns>
+        public Result DeleteDirectory(in Path path)
         {
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            return DoDeleteDirectory(path);
+            return DoDeleteDirectory(in path);
         }
 
         /// <summary>
         /// Deletes the specified directory and any subdirectories and files in the directory.
         /// </summary>
         /// <param name="path">The full path of the directory to delete.</param>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        /// <remarks>
-        /// The following <see cref="Result"/> codes may be returned under certain conditions:
-        /// 
-        /// The specified path does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
-        /// </remarks>
-        public Result DeleteDirectoryRecursively(U8Span path)
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a file.</returns>
+        public Result DeleteDirectoryRecursively(in Path path)
         {
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            return DoDeleteDirectoryRecursively(path);
+            return DoDeleteDirectoryRecursively(in path);
         }
 
         /// <summary>
         /// Deletes any subdirectories and files in the specified directory.
         /// </summary>
         /// <param name="path">The full path of the directory to clean.</param>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        /// <remarks>
-        /// The following <see cref="Result"/> codes may be returned under certain conditions:
-        /// 
-        /// The specified path does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
-        /// </remarks>
-        public Result CleanDirectoryRecursively(U8Span path)
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a file.</returns>
+        public Result CleanDirectoryRecursively(in Path path)
         {
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            return DoCleanDirectoryRecursively(path);
+            return DoCleanDirectoryRecursively(in path);
         }
 
         /// <summary>
         /// Renames or moves a file to a new location.
         /// </summary>
-        /// <param name="oldPath">The full path of the file to rename.</param>
+        /// <param name="currentPath">The current full path of the file to rename.</param>
         /// <param name="newPath">The new full path of the file.</param>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.PathNotFound"/>: <paramref name="currentPath"/> does not exist or is a directory.<br/>
+        /// <see cref="ResultFs.PathNotFound"/>: <paramref name="newPath"/>'s parent directory does not exist.<br/>
+        /// <see cref="ResultFs.PathAlreadyExists"/>: <paramref name="newPath"/> already exists as either a file or directory.</returns>
         /// <remarks>
-        /// If <paramref name="oldPath"/> and <paramref name="newPath"/> are the same, this function does nothing and returns successfully.
-        /// The following <see cref="Result"/> codes may be returned under certain conditions:
-        /// 
-        /// <paramref name="oldPath"/> does not exist or is a directory: <see cref="ResultFs.PathNotFound"/>
-        /// <paramref name="newPath"/>'s parent directory does not exist: <see cref="ResultFs.PathNotFound"/>
-        /// <paramref name="newPath"/> already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
+        /// If <paramref name="currentPath"/> and <paramref name="newPath"/> are the same, this function does nothing and returns successfully.
         /// </remarks>
-        public Result RenameFile(U8Span oldPath, U8Span newPath)
+        public Result RenameFile(in Path currentPath, in Path newPath)
         {
-            if (oldPath.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            if (newPath.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            return DoRenameFile(oldPath, newPath);
+            return DoRenameFile(in currentPath, in newPath);
         }
 
         /// <summary>
         /// Renames or moves a directory to a new location.
         /// </summary>
-        /// <param name="oldPath">The full path of the directory to rename.</param>
+        /// <param name="currentPath">The full path of the directory to rename.</param>
         /// <param name="newPath">The new full path of the directory.</param>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.PathNotFound"/>: <paramref name="currentPath"/> does not exist or is a file.<br/>
+        /// <see cref="ResultFs.PathNotFound"/>: <paramref name="newPath"/>'s parent directory does not exist.<br/>
+        /// <see cref="ResultFs.PathAlreadyExists"/>: <paramref name="newPath"/> already exists as either a file or directory.<br/>
+        /// <see cref="ResultFs.DirectoryNotRenamable"/>: Either <paramref name="currentPath"/> or <paramref name="newPath"/> is a subpath of the other.</returns>
         /// <remarks>
-        /// If <paramref name="oldPath"/> and <paramref name="newPath"/> are the same, this function does nothing and returns <see cref="Result.Success"/>.
-        /// The following <see cref="Result"/> codes may be returned under certain conditions:
-        /// 
-        /// <paramref name="oldPath"/> does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
-        /// <paramref name="newPath"/>'s parent directory does not exist: <see cref="ResultFs.PathNotFound"/>
-        /// <paramref name="newPath"/> already exists as either a file or directory: <see cref="ResultFs.PathAlreadyExists"/>
-        /// Either <paramref name="oldPath"/> or <paramref name="newPath"/> is a subpath of the other: <see cref="ResultFs.DirectoryNotRenamable"/>
+        /// If <paramref name="currentPath"/> and <paramref name="newPath"/> are the same, this function does nothing and returns <see cref="Result.Success"/>.
         /// </remarks>
-        public Result RenameDirectory(U8Span oldPath, U8Span newPath)
+        public Result RenameDirectory(in Path currentPath, in Path newPath)
         {
-            if (oldPath.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            if (newPath.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            return DoRenameDirectory(oldPath, newPath);
+            return DoRenameDirectory(in currentPath, in newPath);
         }
 
         /// <summary>
         /// Determines whether the specified path is a file or directory, or does not exist.
         /// </summary>
-        /// <param name="entryType">If the operation returns successfully, the <see cref="DirectoryEntryType"/> of the file.</param>
+        /// <param name="entryType">If the operation returns successfully, contains the <see cref="DirectoryEntryType"/> of the file.</param>
         /// <param name="path">The full path to check.</param>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist.</returns>
+        public Result GetEntryType(out DirectoryEntryType entryType, in Path path)
+        {
+            return DoGetEntryType(out entryType, in path);
+        }
+
+        /// <summary>
+        /// Determines whether the specified path is a file or directory, or does not exist.
+        /// </summary>
+        /// <param name="entryType">If the operation returns successfully, contains the <see cref="DirectoryEntryType"/> of the file.</param>
+        /// <param name="path">The full path to check.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist.</returns>
         public Result GetEntryType(out DirectoryEntryType entryType, U8Span path)
         {
             UnsafeHelpers.SkipParamInit(out entryType);
@@ -218,7 +163,11 @@ namespace LibHac.Fs.Fsa
             if (path.IsNull())
                 return ResultFs.NullptrArgument.Log();
 
-            return DoGetEntryType(out entryType, path);
+            var pathNormalized = new Path();
+            Result rs = pathNormalized.InitializeWithNormalization(path);
+            if (rs.IsFailure()) return rs;
+
+            return DoGetEntryType(out entryType, in pathNormalized);
         }
 
         /// <summary>
@@ -227,14 +176,9 @@ namespace LibHac.Fs.Fsa
         /// <param name="freeSpace">If the operation returns successfully, the amount of free space available on the drive, in bytes.</param>
         /// <param name="path">The path of the drive to query. Unused in almost all cases.</param>
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        public Result GetFreeSpaceSize(out long freeSpace, U8Span path)
+        public Result GetFreeSpaceSize(out long freeSpace, in Path path)
         {
-            UnsafeHelpers.SkipParamInit(out freeSpace);
-
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            return DoGetFreeSpaceSize(out freeSpace, path);
+            return DoGetFreeSpaceSize(out freeSpace, in path);
         }
 
         /// <summary>
@@ -243,14 +187,9 @@ namespace LibHac.Fs.Fsa
         /// <param name="totalSpace">If the operation returns successfully, the total size of the drive, in bytes.</param>
         /// <param name="path">The path of the drive to query. Unused in almost all cases.</param>
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        public Result GetTotalSpaceSize(out long totalSpace, U8Span path)
+        public Result GetTotalSpaceSize(out long totalSpace, in Path path)
         {
-            UnsafeHelpers.SkipParamInit(out totalSpace);
-
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            return DoGetTotalSpaceSize(out totalSpace, path);
+            return DoGetTotalSpaceSize(out totalSpace, in path);
         }
 
         /// <summary>
@@ -260,33 +199,44 @@ namespace LibHac.Fs.Fsa
         /// An <see cref="IFile"/> instance for the specified path.</param>
         /// <param name="path">The full path of the file to open.</param>
         /// <param name="mode">Specifies the access permissions of the created <see cref="IFile"/>.</param>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        /// <remarks>
-        /// The following <see cref="Result"/> codes may be returned under certain conditions:
-        /// 
-        /// The specified path does not exist or is a directory: <see cref="ResultFs.PathNotFound"/>
-        /// </remarks>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a directory.<br/>
+        /// <see cref="ResultFs.TargetLocked"/>: When opening as <see cref="OpenMode.Write"/>,
+        /// the file is already opened as <see cref="OpenMode.Write"/>.</returns>
         public Result OpenFile(out IFile file, U8Span path, OpenMode mode)
         {
+            UnsafeHelpers.SkipParamInit(out file);
+
             if (path.IsNull())
-            {
-                UnsafeHelpers.SkipParamInit(out file);
                 return ResultFs.NullptrArgument.Log();
-            }
 
-            if ((mode & OpenMode.ReadWrite) == 0)
+            var pathNormalized = new Path();
+            Result rs = pathNormalized.InitializeWithNormalization(path);
+            if (rs.IsFailure()) return rs;
+
+            return DoOpenFile(out file, in pathNormalized, mode);
+        }
+
+        /// <summary>
+        /// Opens an <see cref="IFile"/> instance for the specified path.
+        /// </summary>
+        /// <param name="file">If the operation returns successfully,
+        /// An <see cref="IFile"/> instance for the specified path.</param>
+        /// <param name="path">The full path of the file to open.</param>
+        /// <param name="mode">Specifies the access permissions of the created <see cref="IFile"/>.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a directory.<br/>
+        /// <see cref="ResultFs.TargetLocked"/>: When opening as <see cref="OpenMode.Write"/>,
+        /// the file is already opened as <see cref="OpenMode.Write"/>.</returns>
+        public Result OpenFile(out IFile file, in Path path, OpenMode mode)
+        {
+            if ((mode & OpenMode.ReadWrite) == 0 || (mode & ~OpenMode.All) != 0)
             {
                 UnsafeHelpers.SkipParamInit(out file);
                 return ResultFs.InvalidOpenMode.Log();
             }
 
-            if ((mode & ~OpenMode.All) != 0)
-            {
-                UnsafeHelpers.SkipParamInit(out file);
-                return ResultFs.InvalidOpenMode.Log();
-            }
-
-            return DoOpenFile(out file, path, mode);
+            return DoOpenFile(out file, in path, mode);
         }
 
         /// <summary>
@@ -296,33 +246,18 @@ namespace LibHac.Fs.Fsa
         /// An <see cref="IDirectory"/> instance for the specified directory.</param>
         /// <param name="path">The directory's full path.</param>
         /// <param name="mode">Specifies which sub-entries should be enumerated.</param>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        /// <remarks>
-        /// The following <see cref="Result"/> codes may be returned under certain conditions:
-        /// 
-        /// The specified path does not exist or is a file: <see cref="ResultFs.PathNotFound"/>
-        /// </remarks>
-        public Result OpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a file.</returns>
+        public Result OpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
         {
-            if (path.IsNull())
-            {
-                UnsafeHelpers.SkipParamInit(out directory);
-                return ResultFs.NullptrArgument.Log();
-            }
-
-            if ((mode & OpenDirectoryMode.All) == 0)
+            if ((mode & OpenDirectoryMode.All) == 0 ||
+                (mode & ~(OpenDirectoryMode.All | OpenDirectoryMode.NoFileSize)) != 0)
             {
                 UnsafeHelpers.SkipParamInit(out directory);
                 return ResultFs.InvalidOpenMode.Log();
             }
 
-            if ((mode & ~(OpenDirectoryMode.All | OpenDirectoryMode.NoFileSize)) != 0)
-            {
-                UnsafeHelpers.SkipParamInit(out directory);
-                return ResultFs.InvalidOpenMode.Log();
-            }
-
-            return DoOpenDirectory(out directory, path, mode);
+            return DoOpenDirectory(out directory, in path, mode);
         }
 
         /// <summary>
@@ -344,21 +279,11 @@ namespace LibHac.Fs.Fsa
         /// <param name="timeStamp">If the operation returns successfully, the timestamps for the specified file or directory.
         /// These value are expressed as Unix timestamps.</param>
         /// <param name="path">The path of the file or directory.</param>
-        /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        /// <remarks>
-        /// The following <see cref="Result"/> codes may be returned under certain conditions:
-        /// 
-        /// The specified path does not exist: <see cref="ResultFs.PathNotFound"/>
-        /// </remarks>
-        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist.</returns>
+        public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
         {
-            if (path.IsNull())
-            {
-                UnsafeHelpers.SkipParamInit(out timeStamp);
-                return ResultFs.NullptrArgument.Log();
-            }
-
-            return DoGetFileTimeStampRaw(out timeStamp, path);
+            return DoGetFileTimeStampRaw(out timeStamp, in path);
         }
 
         /// <summary>
@@ -373,60 +298,51 @@ namespace LibHac.Fs.Fsa
         /// <param name="queryId">The type of query to perform.</param>
         /// <param name="path">The full path of the file to query.</param>
         /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, U8Span path)
+        public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, in Path path)
         {
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
             return DoQueryEntry(outBuffer, inBuffer, queryId, path);
         }
 
-        protected abstract Result DoCreateFile(U8Span path, long size, CreateFileOptions option);
-        protected abstract Result DoDeleteFile(U8Span path);
-        protected abstract Result DoCreateDirectory(U8Span path);
-        protected abstract Result DoDeleteDirectory(U8Span path);
-        protected abstract Result DoDeleteDirectoryRecursively(U8Span path);
-        protected abstract Result DoCleanDirectoryRecursively(U8Span path);
-        protected abstract Result DoRenameFile(U8Span oldPath, U8Span newPath);
-        protected abstract Result DoRenameDirectory(U8Span oldPath, U8Span newPath);
-        protected abstract Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path);
+        protected abstract Result DoCreateFile(in Path path, long size, CreateFileOptions option);
+        protected abstract Result DoDeleteFile(in Path path);
+        protected abstract Result DoCreateDirectory(in Path path);
+        protected abstract Result DoDeleteDirectory(in Path path);
+        protected abstract Result DoDeleteDirectoryRecursively(in Path path);
+        protected abstract Result DoCleanDirectoryRecursively(in Path path);
+        protected abstract Result DoRenameFile(in Path currentPath, in Path newPath);
+        protected abstract Result DoRenameDirectory(in Path currentPath, in Path newPath);
+        protected abstract Result DoGetEntryType(out DirectoryEntryType entryType, in Path path);
 
-        protected virtual Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
+        protected virtual Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out freeSpace);
             return ResultFs.NotImplemented.Log();
         }
 
-        protected virtual Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
+        protected virtual Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out totalSpace);
             return ResultFs.NotImplemented.Log();
         }
 
-        protected abstract Result DoOpenFile(out IFile file, U8Span path, OpenMode mode);
-        protected abstract Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode);
+        protected abstract Result DoOpenFile(out IFile file, in Path path, OpenMode mode);
+        protected abstract Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode);
         protected abstract Result DoCommit();
 
         protected virtual Result DoCommitProvisionally(long counter) => ResultFs.NotImplemented.Log();
         protected virtual Result DoRollback() => ResultFs.NotImplemented.Log();
         protected virtual Result DoFlush() => ResultFs.NotImplemented.Log();
 
-        protected virtual Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
+        protected virtual Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out timeStamp);
             return ResultFs.NotImplemented.Log();
         }
 
         protected virtual Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
-            U8Span path) => ResultFs.NotImplemented.Log();
+            in Path path) => ResultFs.NotImplemented.Log();
 
-        protected virtual void Dispose(bool disposing) { }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
+        public virtual void Dispose() { }
     }
 
     /// <summary>
@@ -460,6 +376,9 @@ namespace LibHac.Fs.Fsa
         /// Turns a folder in a <see cref="ConcatenationFileSystem"/> into a concatenation file by
         /// setting the directory's archive flag.
         /// </summary>
-        MakeConcatFile = 0
+        SetConcatenationFileAttribute = 0,
+        UpdateMac = 1,
+        IsSignedSystemPartitionOnSdCardValid = 2,
+        QueryUnpreparedFileInformation = 3
     }
 }

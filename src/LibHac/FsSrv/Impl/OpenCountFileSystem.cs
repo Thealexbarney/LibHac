@@ -47,28 +47,24 @@ namespace LibHac.FsSrv.Impl
         }
 
         // ReSharper disable once RedundantOverriddenMember
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
         {
             // Todo: Implement
             return base.DoOpenFile(out file, path, mode);
         }
 
         // ReSharper disable once RedundantOverriddenMember
-        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
         {
             // Todo: Implement
             return base.DoOpenDirectory(out directory, path, mode);
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                _entryCountSemaphore?.Dispose();
-                _mountCountSemaphore?.Dispose();
-            }
-
-            base.Dispose(disposing);
+            _entryCountSemaphore?.Dispose();
+            _mountCountSemaphore?.Dispose();
+            base.Dispose();
         }
     }
 }

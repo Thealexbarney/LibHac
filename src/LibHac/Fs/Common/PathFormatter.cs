@@ -11,6 +11,10 @@ using static LibHac.Fs.StringTraits;
 // ReSharper disable once CheckNamespace
 namespace LibHac.Fs
 {
+    /// <summary>
+    /// Contains functions for working with path formatting and normalization.
+    /// </summary>
+    /// <remarks>Based on FS 12.0.3 (nnSdk 12.3.1)</remarks>
     public static class PathFormatter
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -133,7 +137,7 @@ namespace LibHac.Fs
 
                     currentPath = path.Slice(1);
                 }
-                else if (path.Length != 0 && WindowsPath12.IsWindowsDrive(path.Slice(1)))
+                else if (path.Length != 0 && WindowsPath.IsWindowsDrive(path.Slice(1)))
                 {
                     if (normalizeBuffer.Length == 0)
                         return ResultFs.NotNormalized.Log();
@@ -142,7 +146,7 @@ namespace LibHac.Fs
                 }
             }
 
-            if (WindowsPath12.IsWindowsDrive(currentPath))
+            if (WindowsPath.IsWindowsDrive(currentPath))
             {
                 int winPathLength;
                 for (winPathLength = 2; currentPath.At(winPathLength) != NullTerminator; winPathLength++)
@@ -170,7 +174,7 @@ namespace LibHac.Fs
 
                     currentPath.Slice(0, winPathLength).CopyTo(normalizeBuffer);
                     normalizeBuffer[winPathLength] = NullTerminator;
-                    PathUtility12.Replace(normalizeBuffer.Slice(0, winPathLength), AltDirectorySeparator,
+                    PathUtility.Replace(normalizeBuffer.Slice(0, winPathLength), AltDirectorySeparator,
                         DirectorySeparator);
                 }
 
@@ -179,11 +183,11 @@ namespace LibHac.Fs
                 return Result.Success;
             }
 
-            if (WindowsPath12.IsDosDevicePath(currentPath))
+            if (WindowsPath.IsDosDevicePath(currentPath))
             {
-                int dosPathLength = WindowsPath12.GetDosDevicePathPrefixLength();
+                int dosPathLength = WindowsPath.GetDosDevicePathPrefixLength();
 
-                if (WindowsPath12.IsWindowsDrive(currentPath.Slice(dosPathLength)))
+                if (WindowsPath.IsWindowsDrive(currentPath.Slice(dosPathLength)))
                 {
                     dosPathLength += 2;
                 }
@@ -199,7 +203,7 @@ namespace LibHac.Fs
 
                     currentPath.Slice(0, dosPathLength).CopyTo(normalizeBuffer);
                     normalizeBuffer[dosPathLength] = NullTerminator;
-                    PathUtility12.Replace(normalizeBuffer.Slice(0, dosPathLength), DirectorySeparator,
+                    PathUtility.Replace(normalizeBuffer.Slice(0, dosPathLength), DirectorySeparator,
                         AltDirectorySeparator);
                 }
 
@@ -208,7 +212,7 @@ namespace LibHac.Fs
                 return Result.Success;
             }
 
-            if (WindowsPath12.IsUncPath(currentPath, false, true))
+            if (WindowsPath.IsUncPath(currentPath, false, true))
             {
                 Result rc;
 
@@ -274,7 +278,7 @@ namespace LibHac.Fs
 
                     currentPath.Slice(0, uncPrefixLength).CopyTo(normalizeBuffer);
                     normalizeBuffer[uncPrefixLength] = NullTerminator;
-                    PathUtility12.Replace(normalizeBuffer.Slice(0, uncPrefixLength), DirectorySeparator, AltDirectorySeparator);
+                    PathUtility.Replace(normalizeBuffer.Slice(0, uncPrefixLength), DirectorySeparator, AltDirectorySeparator);
                 }
 
                 newPath = finalPath;
@@ -364,7 +368,7 @@ namespace LibHac.Fs
         {
             UnsafeHelpers.SkipParamInit(out isNormalized, out normalizedLength);
 
-            Result rc = PathUtility12.CheckUtf8(path);
+            Result rc = PathUtility.CheckUtf8(path);
             if (rc.IsFailure()) return rc;
 
             ReadOnlySpan<byte> buffer = path;
@@ -388,7 +392,7 @@ namespace LibHac.Fs
                 return ResultFs.InvalidPathFormat.Log();
             }
 
-            if (WindowsPath12.IsWindowsPath(path, false) && !flags.IsWindowsPathAllowed())
+            if (WindowsPath.IsWindowsPath(path, false) && !flags.IsWindowsPathAllowed())
                 return ResultFs.InvalidPathFormat.Log();
 
             bool hasMountName = false;
@@ -405,10 +409,10 @@ namespace LibHac.Fs
                 hasMountName = true;
             }
 
-            if (buffer.At(0) != DirectorySeparator && !PathUtility12.IsPathStartWithCurrentDirectory(buffer) &&
-                !WindowsPath12.IsWindowsPath(buffer, false))
+            if (buffer.At(0) != DirectorySeparator && !PathUtility.IsPathStartWithCurrentDirectory(buffer) &&
+                !WindowsPath.IsWindowsPath(buffer, false))
             {
-                if (!flags.IsRelativePathAllowed() || !PathUtility12.CheckInvalidCharacter(buffer.At(0)).IsSuccess())
+                if (!flags.IsRelativePathAllowed() || !PathUtility.CheckInvalidCharacter(buffer.At(0)).IsSuccess())
                     return ResultFs.InvalidPathFormat.Log();
 
                 isNormalized = false;
@@ -475,10 +479,10 @@ namespace LibHac.Fs
                 }
             }
 
-            if (PathNormalizer12.IsParentDirectoryPathReplacementNeeded(buffer))
+            if (PathNormalizer.IsParentDirectoryPathReplacementNeeded(buffer))
                 return ResultFs.DirectoryUnobtainable.Log();
 
-            rc = PathUtility12.CheckInvalidBackslash(out bool isBackslashContained, buffer,
+            rc = PathUtility.CheckInvalidBackslash(out bool isBackslashContained, buffer,
                 flags.IsWindowsPathAllowed() || flags.IsBackslashAllowed());
             if (rc.IsFailure()) return rc;
 
@@ -488,7 +492,7 @@ namespace LibHac.Fs
                 return Result.Success;
             }
 
-            rc = PathNormalizer12.IsNormalized(out isNormalized, out int length, buffer);
+            rc = PathNormalizer.IsNormalized(out isNormalized, out int length, buffer);
             if (rc.IsFailure()) return rc;
 
             totalLength += length;
@@ -528,10 +532,10 @@ namespace LibHac.Fs
 
             bool isDriveRelative = false;
 
-            if (src.At(0) != DirectorySeparator && !PathUtility12.IsPathStartWithCurrentDirectory(src) &&
-                !WindowsPath12.IsWindowsPath(src, false))
+            if (src.At(0) != DirectorySeparator && !PathUtility.IsPathStartWithCurrentDirectory(src) &&
+                !WindowsPath.IsWindowsPath(src, false))
             {
-                if (!flags.IsRelativePathAllowed() || !PathUtility12.CheckInvalidCharacter(src.At(0)).IsSuccess())
+                if (!flags.IsRelativePathAllowed() || !PathUtility.CheckInvalidCharacter(src.At(0)).IsSuccess())
                     return ResultFs.InvalidPathFormat.Log();
 
                 outputBuffer[currentPos++] = Dot;
@@ -589,7 +593,7 @@ namespace LibHac.Fs
                     isWindowsPath = true;
             }
 
-            rc = PathUtility12.CheckInvalidBackslash(out bool isBackslashContained, src,
+            rc = PathUtility.CheckInvalidBackslash(out bool isBackslashContained, src,
                 flags.IsWindowsPathAllowed() || flags.IsBackslashAllowed());
             if (rc.IsFailure()) return rc;
 
@@ -601,7 +605,7 @@ namespace LibHac.Fs
                     srcBufferSlashReplaced = ArrayPool<byte>.Shared.Rent(path.Length);
 
                     StringUtils.Copy(srcBufferSlashReplaced, path);
-                    PathUtility12.Replace(srcBufferSlashReplaced, AltDirectorySeparator, DirectorySeparator);
+                    PathUtility.Replace(srcBufferSlashReplaced, AltDirectorySeparator, DirectorySeparator);
 
                     int srcOffset = (int)Unsafe.ByteOffset(ref MemoryMarshal.GetReference(path),
                         ref MemoryMarshal.GetReference(src));
@@ -609,7 +613,7 @@ namespace LibHac.Fs
                     src = srcBufferSlashReplaced.AsSpan(srcOffset);
                 }
 
-                rc = PathNormalizer12.Normalize(outputBuffer.Slice(currentPos), out _, src, isWindowsPath, isDriveRelative);
+                rc = PathNormalizer.Normalize(outputBuffer.Slice(currentPos), out _, src, isWindowsPath, isDriveRelative);
                 if (rc.IsFailure()) return rc;
 
                 return Result.Success;

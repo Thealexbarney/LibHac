@@ -33,24 +33,20 @@ namespace LibHac.FsSystem
             BlockSize = blockSize;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                SharedBaseFileSystem?.Dispose();
-            }
-
-            base.Dispose(disposing);
+            SharedBaseFileSystem?.Dispose();
+            base.Dispose();
         }
 
-        protected override Result DoCreateDirectory(U8Span path)
+        protected override Result DoCreateDirectory(in Path path)
         {
             return BaseFileSystem.CreateDirectory(path);
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
+        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
         {
-            return CreateFile(path, size, options, new byte[0x20]);
+            return CreateFile(path, size, option, new byte[0x20]);
         }
 
         /// <summary>
@@ -61,16 +57,16 @@ namespace LibHac.FsSystem
         /// <param name="options">Flags to control how the file is created.
         /// Should usually be <see cref="CreateFileOptions.None"/></param>
         /// <param name="key">The 256-bit key containing a 128-bit data key followed by a 128-bit tweak key.</param>
-        public Result CreateFile(U8Span path, long size, CreateFileOptions options, byte[] key)
+        public Result CreateFile(in Path path, long size, CreateFileOptions options, byte[] key)
         {
             long containerSize = AesXtsFile.HeaderLength + Alignment.AlignUp(size, 0x10);
 
-            Result rc = BaseFileSystem.CreateFile(path, containerSize, options);
+            Result rc = BaseFileSystem.CreateFile(in path, containerSize, options);
             if (rc.IsFailure()) return rc;
 
             var header = new AesXtsFileHeader(key, size, path.ToString(), KekSource, ValidationKey);
 
-            rc = BaseFileSystem.OpenFile(out IFile baseFile, path, OpenMode.Write);
+            rc = BaseFileSystem.OpenFile(out IFile baseFile, in path, OpenMode.Write);
             if (rc.IsFailure()) return rc;
 
             using (baseFile)
@@ -82,51 +78,52 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoDeleteDirectory(U8Span path)
+        protected override Result DoDeleteDirectory(in Path path)
         {
             return BaseFileSystem.DeleteDirectory(path);
         }
 
-        protected override Result DoDeleteDirectoryRecursively(U8Span path)
+        protected override Result DoDeleteDirectoryRecursively(in Path path)
         {
             return BaseFileSystem.DeleteDirectoryRecursively(path);
         }
 
-        protected override Result DoCleanDirectoryRecursively(U8Span path)
+        protected override Result DoCleanDirectoryRecursively(in Path path)
         {
             return BaseFileSystem.CleanDirectoryRecursively(path);
         }
 
-        protected override Result DoDeleteFile(U8Span path)
+        protected override Result DoDeleteFile(in Path path)
         {
             return BaseFileSystem.DeleteFile(path);
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
         {
             UnsafeHelpers.SkipParamInit(out directory);
 
             Result rc = BaseFileSystem.OpenDirectory(out IDirectory baseDir, path, mode);
             if (rc.IsFailure()) return rc;
 
-            directory = new AesXtsDirectory(BaseFileSystem, baseDir, path.ToU8String(), mode);
+            directory = new AesXtsDirectory(BaseFileSystem, baseDir, new U8String(path.GetString().ToArray()), mode);
             return Result.Success;
         }
 
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
         {
             UnsafeHelpers.SkipParamInit(out file);
 
             Result rc = BaseFileSystem.OpenFile(out IFile baseFile, path, mode | OpenMode.Read);
             if (rc.IsFailure()) return rc;
 
-            var xtsFile = new AesXtsFile(mode, baseFile, path.ToU8String(), KekSource, ValidationKey, BlockSize);
+            var xtsFile = new AesXtsFile(mode, baseFile, new U8String(path.GetString().ToArray()), KekSource,
+                ValidationKey, BlockSize);
 
             file = xtsFile;
             return Result.Success;
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
         {
             // todo: Return proper result codes
 
@@ -138,17 +135,17 @@ namespace LibHac.FsSystem
             // Reencrypt any modified file headers with the old path
             // Rename directory to the old path
 
-            Result rc = BaseFileSystem.RenameDirectory(oldPath, newPath);
+            Result rc = BaseFileSystem.RenameDirectory(currentPath, newPath);
             if (rc.IsFailure()) return rc;
 
             try
             {
-                RenameDirectoryImpl(oldPath.ToString(), newPath.ToString(), false);
+                RenameDirectoryImpl(currentPath.ToString(), newPath.ToString(), false);
             }
             catch (Exception)
             {
-                RenameDirectoryImpl(oldPath.ToString(), newPath.ToString(), true);
-                BaseFileSystem.RenameDirectory(oldPath, newPath);
+                RenameDirectoryImpl(currentPath.ToString(), newPath.ToString(), true);
+                BaseFileSystem.RenameDirectory(currentPath, newPath);
 
                 throw;
             }
@@ -186,13 +183,13 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(in Path currentPath, in Path newPath)
         {
             // todo: Return proper result codes
 
-            AesXtsFileHeader header = ReadXtsHeader(oldPath.ToString(), oldPath.ToString());
+            AesXtsFileHeader header = ReadXtsHeader(currentPath.ToString(), currentPath.ToString());
 
-            Result rc = BaseFileSystem.RenameFile(oldPath, newPath);
+            Result rc = BaseFileSystem.RenameFile(currentPath, newPath);
             if (rc.IsFailure()) return rc;
 
             try
@@ -201,8 +198,8 @@ namespace LibHac.FsSystem
             }
             catch (Exception)
             {
-                BaseFileSystem.RenameFile(newPath, oldPath);
-                WriteXtsHeader(header, oldPath.ToString(), oldPath.ToString());
+                BaseFileSystem.RenameFile(newPath, currentPath);
+                WriteXtsHeader(header, currentPath.ToString(), currentPath.ToString());
 
                 throw;
             }
@@ -210,22 +207,22 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
             return BaseFileSystem.GetEntryType(out entryType, path);
         }
 
-        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
+        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
         {
             return BaseFileSystem.GetFileTimeStampRaw(out timeStamp, path);
         }
 
-        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
             return BaseFileSystem.GetFreeSpaceSize(out freeSpace, path);
         }
 
-        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
             return BaseFileSystem.GetTotalSpaceSize(out totalSpace, path);
         }
@@ -246,7 +243,7 @@ namespace LibHac.FsSystem
         }
 
         protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
-            U8Span path)
+            in Path path)
         {
             return BaseFileSystem.QueryEntry(outBuffer, inBuffer, queryId, path);
         }

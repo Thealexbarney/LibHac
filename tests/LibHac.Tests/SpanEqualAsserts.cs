@@ -1,6 +1,7 @@
 ﻿using System;
 using Xunit.Sdk;
 
+// ReSharper disable once CheckNamespace
 namespace Xunit
 {
     public partial class Assert

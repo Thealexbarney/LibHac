@@ -139,9 +139,9 @@ namespace LibHac.FsSrv
             return _isNormalStorageOpened || _isInternalStorageOpened;
         }
 
-        public UniqueLock<SdkMutexType> GetLock()
+        public UniqueLockRef<SdkMutexType> GetLock()
         {
-            return new UniqueLock<SdkMutexType>(ref _mutex);
+            return new UniqueLockRef<SdkMutexType>(ref _mutex);
         }
     }
 
@@ -199,7 +199,7 @@ namespace LibHac.FsSrv
 
         protected override Result DoRead(long offset, Span<byte> destination)
         {
-            using UniqueLock<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
+            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
 
             Result rc = AccessCheck(isWriteAccess: false);
             if (rc.IsFailure()) return rc;
@@ -209,7 +209,7 @@ namespace LibHac.FsSrv
 
         protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
-            using UniqueLock<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
+            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
 
             Result rc = AccessCheck(isWriteAccess: true);
             if (rc.IsFailure()) return rc;
@@ -219,7 +219,7 @@ namespace LibHac.FsSrv
 
         protected override Result DoFlush()
         {
-            using UniqueLock<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
+            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
 
             Result rc = AccessCheck(isWriteAccess: true);
             if (rc.IsFailure()) return rc;
@@ -229,7 +229,7 @@ namespace LibHac.FsSrv
 
         protected override Result DoSetSize(long size)
         {
-            using UniqueLock<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
+            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
 
             Result rc = AccessCheck(isWriteAccess: true);
             if (rc.IsFailure()) return rc;
@@ -241,7 +241,7 @@ namespace LibHac.FsSrv
         {
             Unsafe.SkipInit(out size);
 
-            using UniqueLock<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
+            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
 
             Result rc = AccessCheck(isWriteAccess: false);
             if (rc.IsFailure()) return rc;
@@ -252,7 +252,7 @@ namespace LibHac.FsSrv
         protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
             ReadOnlySpan<byte> inBuffer)
         {
-            using UniqueLock<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
+            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
 
             Result rc = AccessCheck(isWriteAccess: true);
             if (rc.IsFailure()) return rc;

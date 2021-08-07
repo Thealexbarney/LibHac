@@ -1,4 +1,5 @@
 ﻿using LibHac.Common;
+using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 
@@ -7,29 +8,31 @@ namespace LibHac.FsSrv.FsCreator
     public class SubDirectoryFileSystemCreator : ISubDirectoryFileSystemCreator
     {
         public Result Create(out ReferenceCountedDisposable<IFileSystem> subDirFileSystem,
-            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span path)
-        {
-            return Create(out subDirFileSystem, ref baseFileSystem, path, false);
-        }
-
-        public Result Create(out ReferenceCountedDisposable<IFileSystem> subDirFileSystem,
-           ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span path, bool preserveUnc)
+            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out subDirFileSystem);
 
-            // Verify the sub-path exists
-            Result rc = baseFileSystem.Target.OpenDirectory(out IDirectory _, path, OpenDirectoryMode.Directory);
+            Result rc = baseFileSystem.Target.OpenDirectory(out IDirectory dir, in path, OpenDirectoryMode.Directory);
             if (rc.IsFailure()) return rc;
 
-            // Initialize the SubdirectoryFileSystem
-            var subDir = new SubdirectoryFileSystem(ref baseFileSystem, preserveUnc);
-            using var subDirShared = new ReferenceCountedDisposable<SubdirectoryFileSystem>(subDir);
+            dir.Dispose();
 
-            rc = subDirShared.Target.Initialize(path);
-            if (rc.IsFailure()) return rc;
+            ReferenceCountedDisposable<SubdirectoryFileSystem> subFs = null;
+            try
+            {
+                subFs = new ReferenceCountedDisposable<SubdirectoryFileSystem>(
+                    new SubdirectoryFileSystem(ref baseFileSystem));
 
-            subDirFileSystem = subDirShared.AddReference<IFileSystem>();
-            return Result.Success;
+                rc = subFs.Target.Initialize(in path);
+                if (rc.IsFailure()) return rc;
+
+                subDirFileSystem = subFs.AddReference<IFileSystem>();
+                return Result.Success;
+            }
+            finally
+            {
+                subFs?.Dispose();
+            }
         }
     }
 }

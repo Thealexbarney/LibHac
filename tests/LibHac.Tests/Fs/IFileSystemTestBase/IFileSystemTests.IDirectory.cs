@@ -15,7 +15,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             IFileSystem fs = CreateFileSystem();
             Span<DirectoryEntry> entries = stackalloc DirectoryEntry[1];
 
-            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/".ToU8Span(), OpenDirectoryMode.All));
+            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/", OpenDirectoryMode.All));
 
             Assert.Success(directory.Read(out long entriesRead, entries));
             Assert.Equal(0, entriesRead);
@@ -26,7 +26,7 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/".ToU8Span(), OpenDirectoryMode.All));
+            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/", OpenDirectoryMode.All));
 
             Assert.Success(directory.GetEntryCount(out long entryCount));
             Assert.Equal(0, entryCount);
@@ -36,13 +36,13 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         public void IDirectoryRead_AllEntriesAreReturned()
         {
             IFileSystem fs = CreateFileSystem();
-            fs.CreateDirectory("/dir".ToU8Span());
-            fs.CreateDirectory("/dir/dir1".ToU8Span());
-            fs.CreateFile("/dir/dir1/file1".ToU8Span(), 0, CreateFileOptions.None);
-            fs.CreateFile("/dir/file1".ToU8Span(), 0, CreateFileOptions.None);
-            fs.CreateFile("/dir/file2".ToU8Span(), 0, CreateFileOptions.None);
+            fs.CreateDirectory("/dir");
+            fs.CreateDirectory("/dir/dir1");
+            fs.CreateFile("/dir/dir1/file1", 0, CreateFileOptions.None);
+            fs.CreateFile("/dir/file1", 0, CreateFileOptions.None);
+            fs.CreateFile("/dir/file2", 0, CreateFileOptions.None);
 
-            Assert.Success(fs.OpenDirectory(out IDirectory dir, "/dir".ToU8Span(), OpenDirectoryMode.All));
+            Assert.Success(fs.OpenDirectory(out IDirectory dir, "/dir", OpenDirectoryMode.All));
 
             var entry1 = new DirectoryEntry();
             var entry2 = new DirectoryEntry();

@@ -2,7 +2,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Text.Unicode;
 using System.Threading;
 using LibHac.Common;
@@ -11,6 +10,7 @@ using LibHac.Fs.Fsa;
 using LibHac.FsSystem.Impl;
 using LibHac.Util;
 using static LibHac.Fs.StringTraits;
+using Path = LibHac.Fs.Path;
 
 namespace LibHac.FsSystem
 {
@@ -32,7 +32,8 @@ namespace LibHac.FsSystem
             CaseSensitive
         }
 
-        private string _rootPath;
+        private Path.Stored _rootPath;
+        private string _rootPathUtf16;
         private readonly FileSystemClient _fsClient;
         private PathMode _mode;
         private readonly bool _useUnixTime;
@@ -56,17 +57,9 @@ namespace LibHac.FsSystem
         /// <param name="rootPath">The path that will be the root of the <see cref="LocalFileSystem"/>.</param>
         public LocalFileSystem(string rootPath)
         {
-            _rootPath = System.IO.Path.GetFullPath(rootPath);
-
-            if (!Directory.Exists(_rootPath))
-            {
-                if (File.Exists(_rootPath))
-                {
-                    throw new DirectoryNotFoundException($"The specified path is a file. ({rootPath})");
-                }
-
-                Directory.CreateDirectory(_rootPath);
-            }
+            Result rc = Initialize(rootPath, PathMode.DefaultCaseSensitivity, true);
+            if (rc.IsFailure())
+                throw new HorizonResultException(rc, "Error creating LocalFileSystem.");
         }
 
         public static Result Create(out LocalFileSystem fileSystem, string rootPath,
@@ -84,6 +77,8 @@ namespace LibHac.FsSystem
 
         public Result Initialize(string rootPath, PathMode pathMode, bool ensurePathExists)
         {
+            Result rc;
+
             if (rootPath == null)
                 return ResultFs.NullptrArgument.Log();
 
@@ -92,13 +87,21 @@ namespace LibHac.FsSystem
             // If the root path is empty, we interpret any incoming paths as rooted paths.
             if (rootPath == string.Empty)
             {
-                _rootPath = rootPath;
+                var path = new Path();
+                rc = path.InitializeAsEmpty();
+                if (rc.IsFailure()) return rc;
+
+                rc = _rootPath.Initialize(in path);
+                if (rc.IsFailure()) return rc;
+
                 return Result.Success;
             }
 
+            string rootPathNormalized;
+
             try
             {
-                _rootPath = System.IO.Path.GetFullPath(rootPath);
+                rootPathNormalized = System.IO.Path.GetFullPath(rootPath);
             }
             catch (PathTooLongException)
             {
@@ -109,14 +112,14 @@ namespace LibHac.FsSystem
                 return ResultFs.InvalidCharacter.Log();
             }
 
-            if (!Directory.Exists(_rootPath))
+            if (!Directory.Exists(rootPathNormalized))
             {
-                if (!ensurePathExists || File.Exists(_rootPath))
+                if (!ensurePathExists || File.Exists(rootPathNormalized))
                     return ResultFs.PathNotFound.Log();
 
                 try
                 {
-                    Directory.CreateDirectory(_rootPath);
+                    Directory.CreateDirectory(rootPathNormalized);
                 }
                 catch (Exception ex) when (ex.HResult < 0)
                 {
@@ -124,53 +127,78 @@ namespace LibHac.FsSystem
                 }
             }
 
-            return Result.Success;
-        }
+            ReadOnlySpan<byte> utf8Path = StringUtils.StringToUtf8(rootPathNormalized);
+            var pathNormalized = new Path();
 
-        private Result ResolveFullPath(out string fullPath, U8Span path, bool checkCaseSensitivity)
-        {
-            UnsafeHelpers.SkipParamInit(out fullPath);
-
-            Unsafe.SkipInit(out FsPath normalizedPath);
-
-            Result rc = PathNormalizer.Normalize(normalizedPath.Str, out _, path, false, false);
-            if (rc.IsFailure()) return rc;
-
-            fullPath = PathTools.Combine(_rootPath, normalizedPath.ToString());
-
-            if (_mode == PathMode.CaseSensitive && checkCaseSensitivity)
+            if (utf8Path.At(0) == DirectorySeparator && utf8Path.At(1) != DirectorySeparator)
             {
-                rc = CheckPathCaseSensitively(fullPath);
+                rc = pathNormalized.Initialize(utf8Path.Slice(1));
+                if (rc.IsFailure()) return rc;
+            }
+            else
+            {
+                rc = pathNormalized.InitializeWithReplaceUnc(utf8Path);
                 if (rc.IsFailure()) return rc;
             }
 
+            var flags = new PathFlags();
+            flags.AllowWindowsPath();
+            flags.AllowRelativePath();
+            flags.AllowEmptyPath();
+
+            rc = pathNormalized.Normalize(flags);
+            if (rc.IsFailure()) return rc;
+
+            rc = _rootPath.Initialize(in pathNormalized);
+            if (rc.IsFailure()) return rc;
+
+            _rootPathUtf16 = _rootPath.ToString();
+
+            pathNormalized.Dispose();
             return Result.Success;
         }
 
-        private Result CheckSubPath(U8Span path1, U8Span path2)
+        private Result ResolveFullPath(out string outFullPath, in Path path, bool checkCaseSensitivity)
         {
-            Unsafe.SkipInit(out FsPath normalizedPath1);
-            Unsafe.SkipInit(out FsPath normalizedPath2);
+            UnsafeHelpers.SkipParamInit(out outFullPath);
 
-            Result rc = PathNormalizer.Normalize(normalizedPath1.Str, out _, path1, false, false);
+            // Always normalize the incoming path even if it claims to already be normalized
+            // because we don't want to allow access to anything outside the root path.
+
+            var pathNormalized = new Path();
+            Result rc = pathNormalized.Initialize(path.GetString());
             if (rc.IsFailure()) return rc;
 
-            rc = PathNormalizer.Normalize(normalizedPath2.Str, out _, path2, false, false);
+            var pathFlags = new PathFlags();
+            pathFlags.AllowWindowsPath();
+            pathFlags.AllowRelativePath();
+            pathFlags.AllowEmptyPath();
+            rc = pathNormalized.Normalize(pathFlags);
             if (rc.IsFailure()) return rc;
 
-            if (PathUtility.IsSubPath(normalizedPath1, normalizedPath2))
+            Path rootPath = _rootPath.GetPath();
+
+            var fullPath = new Path();
+            rc = fullPath.Combine(in rootPath, in pathNormalized);
+            if (rc.IsFailure()) return rc;
+
+            string utf16FullPath = fullPath.ToString();
+
+            if (_mode == PathMode.CaseSensitive && checkCaseSensitivity)
             {
-                return ResultFs.DirectoryNotRenamable.Log();
+                rc = CheckPathCaseSensitively(utf16FullPath);
+                if (rc.IsFailure()) return rc;
             }
 
+            outFullPath = utf16FullPath;
             return Result.Success;
         }
 
-        protected override Result DoGetFileAttributes(out NxFileAttributes attributes, U8Span path)
+        protected override Result DoGetFileAttributes(out NxFileAttributes attributes, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out attributes);
 
-            Result rc = ResolveFullPath(out string fullPath, path, true);
+            Result rc = ResolveFullPath(out string fullPath, in path, true);
             if (rc.IsFailure()) return rc;
 
             rc = GetFileInfo(out FileInfo info, fullPath);
@@ -185,9 +213,9 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoSetFileAttributes(U8Span path, NxFileAttributes attributes)
+        protected override Result DoSetFileAttributes(in Path path, NxFileAttributes attributes)
         {
-            Result rc = ResolveFullPath(out string fullPath, path, true);
+            Result rc = ResolveFullPath(out string fullPath, in path, true);
             if (rc.IsFailure()) return rc;
 
             rc = GetFileInfo(out FileInfo info, fullPath);
@@ -213,11 +241,11 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoGetFileSize(out long fileSize, U8Span path)
+        protected override Result DoGetFileSize(out long fileSize, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out fileSize);
 
-            Result rc = ResolveFullPath(out string fullPath, path, true);
+            Result rc = ResolveFullPath(out string fullPath, in path, true);
             if (rc.IsFailure()) return rc;
 
             rc = GetFileInfo(out FileInfo info, fullPath);
@@ -226,14 +254,14 @@ namespace LibHac.FsSystem
             return GetSizeInternal(out fileSize, info);
         }
 
-        protected override Result DoCreateDirectory(U8Span path)
+        protected override Result DoCreateDirectory(in Path path)
         {
             return DoCreateDirectory(path, NxFileAttributes.None);
         }
 
-        protected override Result DoCreateDirectory(U8Span path, NxFileAttributes archiveAttribute)
+        protected override Result DoCreateDirectory(in Path path, NxFileAttributes archiveAttribute)
         {
-            Result rc = ResolveFullPath(out string fullPath, path, false);
+            Result rc = ResolveFullPath(out string fullPath, in path, false);
             if (rc.IsFailure()) return rc;
 
             rc = GetDirInfo(out DirectoryInfo dir, fullPath);
@@ -252,9 +280,9 @@ namespace LibHac.FsSystem
             return CreateDirInternal(dir, archiveAttribute);
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options)
+        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
         {
-            Result rc = ResolveFullPath(out string fullPath, path, false);
+            Result rc = ResolveFullPath(out string fullPath, in path, false);
             if (rc.IsFailure()) return rc;
 
             rc = GetFileInfo(out FileInfo file, fullPath);
@@ -280,9 +308,9 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result DoDeleteDirectory(U8Span path)
+        protected override Result DoDeleteDirectory(in Path path)
         {
-            Result rc = ResolveFullPath(out string fullPath, path, true);
+            Result rc = ResolveFullPath(out string fullPath, in path, true);
             if (rc.IsFailure()) return rc;
 
             rc = GetDirInfo(out DirectoryInfo dir, fullPath);
@@ -292,9 +320,9 @@ namespace LibHac.FsSystem
                 () => DeleteDirectoryInternal(dir, false), _fsClient);
         }
 
-        protected override Result DoDeleteDirectoryRecursively(U8Span path)
+        protected override Result DoDeleteDirectoryRecursively(in Path path)
         {
-            Result rc = ResolveFullPath(out string fullPath, path, true);
+            Result rc = ResolveFullPath(out string fullPath, in path, true);
             if (rc.IsFailure()) return rc;
 
             rc = GetDirInfo(out DirectoryInfo dir, fullPath);
@@ -304,9 +332,9 @@ namespace LibHac.FsSystem
                 () => DeleteDirectoryInternal(dir, true), _fsClient);
         }
 
-        protected override Result DoCleanDirectoryRecursively(U8Span path)
+        protected override Result DoCleanDirectoryRecursively(in Path path)
         {
-            Result rc = ResolveFullPath(out string fullPath, path, true);
+            Result rc = ResolveFullPath(out string fullPath, in path, true);
             if (rc.IsFailure()) return rc;
 
             foreach (string file in Directory.EnumerateFiles(fullPath))
@@ -340,9 +368,9 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoDeleteFile(U8Span path)
+        protected override Result DoDeleteFile(in Path path)
         {
-            Result rc = ResolveFullPath(out string fullPath, path, true);
+            Result rc = ResolveFullPath(out string fullPath, in path, true);
             if (rc.IsFailure()) return rc;
 
             rc = GetFileInfo(out FileInfo file, fullPath);
@@ -352,10 +380,10 @@ namespace LibHac.FsSystem
                 () => DeleteFileInternal(file), _fsClient);
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
         {
             UnsafeHelpers.SkipParamInit(out directory);
-            Result rc = ResolveFullPath(out string fullPath, path, true);
+            Result rc = ResolveFullPath(out string fullPath, in path, true);
             if (rc.IsFailure()) return rc;
 
             rc = GetDirInfo(out DirectoryInfo dirInfo, fullPath);
@@ -375,11 +403,11 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
         {
             UnsafeHelpers.SkipParamInit(out file);
 
-            Result rc = ResolveFullPath(out string fullPath, path, true);
+            Result rc = ResolveFullPath(out string fullPath, in path, true);
             if (rc.IsFailure()) return rc;
 
             rc = GetEntryType(out DirectoryEntryType entryType, path);
@@ -400,15 +428,12 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
         {
-            Result rc = CheckSubPath(oldPath, newPath);
+            Result rc = ResolveFullPath(out string fullCurrentPath, in currentPath, true);
             if (rc.IsFailure()) return rc;
 
-            rc = ResolveFullPath(out string fullCurrentPath, oldPath, true);
-            if (rc.IsFailure()) return rc;
-
-            rc = ResolveFullPath(out string fullNewPath, newPath, false);
+            rc = ResolveFullPath(out string fullNewPath, in newPath, false);
             if (rc.IsFailure()) return rc;
 
             // Official FS behavior is to do nothing in this case
@@ -424,12 +449,12 @@ namespace LibHac.FsSystem
                 () => RenameDirInternal(currentDirInfo, newDirInfo), _fsClient);
         }
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(in Path currentPath, in Path newPath)
         {
-            Result rc = ResolveFullPath(out string fullCurrentPath, oldPath, true);
+            Result rc = ResolveFullPath(out string fullCurrentPath, in currentPath, true);
             if (rc.IsFailure()) return rc;
 
-            rc = ResolveFullPath(out string fullNewPath, newPath, false);
+            rc = ResolveFullPath(out string fullNewPath, in newPath, false);
             if (rc.IsFailure()) return rc;
 
             // Official FS behavior is to do nothing in this case
@@ -445,11 +470,11 @@ namespace LibHac.FsSystem
                 () => RenameFileInternal(currentFileInfo, newFileInfo), _fsClient);
         }
 
-        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out entryType);
 
-            Result rc = ResolveFullPath(out string fullPath, path, true);
+            Result rc = ResolveFullPath(out string fullPath, in path, true);
             if (rc.IsFailure()) return rc;
 
             rc = GetDirInfo(out DirectoryInfo dir, fullPath);
@@ -473,11 +498,11 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
+        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out timeStamp);
 
-            Result rc = ResolveFullPath(out string fullPath, path, true);
+            Result rc = ResolveFullPath(out string fullPath, in path, true);
             if (rc.IsFailure()) return rc;
 
             rc = GetFileInfo(out FileInfo file, fullPath);
@@ -503,22 +528,22 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out freeSpace);
 
-            Result rc = ResolveFullPath(out string fullPath, path, true);
+            Result rc = ResolveFullPath(out string fullPath, in path, true);
             if (rc.IsFailure()) return rc;
 
             freeSpace = new DriveInfo(fullPath).AvailableFreeSpace;
             return Result.Success;
         }
 
-        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out totalSpace);
 
-            Result rc = ResolveFullPath(out string fullPath, path, true);
+            Result rc = ResolveFullPath(out string fullPath, in path, true);
             if (rc.IsFailure()) return rc;
 
             totalSpace = new DriveInfo(fullPath).TotalSize;
@@ -531,7 +556,7 @@ namespace LibHac.FsSystem
         }
 
         protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
-            U8Span path)
+            in Path path)
         {
             return ResultFs.UnsupportedOperation.Log();
         }
@@ -801,7 +826,7 @@ namespace LibHac.FsSystem
 
         private Result CheckPathCaseSensitively(string path)
         {
-            Result rc = GetCaseSensitivePathFull(out string caseSensitivePath, out _, path, _rootPath);
+            Result rc = GetCaseSensitivePathFull(out string caseSensitivePath, out _, path, _rootPathUtf16);
             if (rc.IsFailure()) return rc;
 
             if (path.Length != caseSensitivePath.Length)
@@ -809,8 +834,8 @@ namespace LibHac.FsSystem
 
             for (int i = 0; i < path.Length; i++)
             {
-                if (!(path[i] == caseSensitivePath[i] || WindowsPath.IsDosDelimiter(path[i]) &&
-                    WindowsPath.IsDosDelimiter(caseSensitivePath[i])))
+                if (!(path[i] == caseSensitivePath[i] || WindowsPath.IsDosDelimiterW(path[i]) &&
+                    WindowsPath.IsDosDelimiterW(caseSensitivePath[i])))
                 {
                     return ResultFs.PathNotFound.Log();
                 }
@@ -828,7 +853,7 @@ namespace LibHac.FsSystem
             string fullPath;
             int workingDirectoryPathLength;
 
-            if (WindowsPath.IsPathRooted(path))
+            if (WindowsPath.IsWindowsPathW(path))
             {
                 fullPath = path;
                 workingDirectoryPathLength = 0;
@@ -837,7 +862,7 @@ namespace LibHac.FsSystem
             {
                 // We only want to send back the relative part of the path starting with a '/', so
                 // track where the root path ends.
-                if (WindowsPath.IsDosDelimiter(workingDirectoryPath[^1]))
+                if (WindowsPath.IsDosDelimiterW(workingDirectoryPath[^1]))
                 {
                     workingDirectoryPathLength = workingDirectoryPath.Length - 1;
                 }
@@ -863,8 +888,8 @@ namespace LibHac.FsSystem
             if (string.IsNullOrEmpty(path1)) return path2;
             if (string.IsNullOrEmpty(path2)) return path1;
 
-            bool path1HasSeparator = WindowsPath.IsDosDelimiter(path1[path1.Length - 1]);
-            bool path2HasSeparator = WindowsPath.IsDosDelimiter(path2[0]);
+            bool path1HasSeparator = WindowsPath.IsDosDelimiterW(path1[path1.Length - 1]);
+            bool path2HasSeparator = WindowsPath.IsDosDelimiterW(path2[0]);
 
             if (!path1HasSeparator && !path2HasSeparator)
             {
@@ -889,7 +914,7 @@ namespace LibHac.FsSystem
 
             string exactPath = string.Empty;
             int itemsToSkip = 0;
-            if (WindowsPath.IsUnc(path))
+            if (WindowsPath.IsUncPathW(path))
             {
                 // With the Split method, a UNC path like \\server\share, we need to skip
                 // trying to enumerate the server and share, so skip the first two empty

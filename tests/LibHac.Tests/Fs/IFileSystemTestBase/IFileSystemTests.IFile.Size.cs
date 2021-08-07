@@ -1,5 +1,4 @@
-﻿using LibHac.Common;
-using LibHac.Fs;
+﻿using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using Xunit;
 
@@ -11,13 +10,13 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         public void SetSize_FileSizeModified()
         {
             IFileSystem fs = CreateFileSystem();
-            fs.CreateFile("/file".ToU8Span(), 0, CreateFileOptions.None);
+            fs.CreateFile("/file", 0, CreateFileOptions.None);
 
-            fs.OpenFile(out IFile file, "/file".ToU8Span(), OpenMode.All);
+            fs.OpenFile(out IFile file, "/file", OpenMode.All);
             Result rc = file.SetSize(54321);
             file.Dispose();
 
-            fs.OpenFile(out file, "/file".ToU8Span(), OpenMode.All);
+            fs.OpenFile(out file, "/file", OpenMode.All);
             file.GetSize(out long fileSize);
             file.Dispose();
 

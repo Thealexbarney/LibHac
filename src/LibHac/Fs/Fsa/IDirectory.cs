@@ -44,12 +44,6 @@ namespace LibHac.Fs.Fsa
         protected abstract Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer);
         protected abstract Result DoGetEntryCount(out long entryCount);
 
-        protected virtual void Dispose(bool disposing) { }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
+        public virtual void Dispose() { }
     }
 }

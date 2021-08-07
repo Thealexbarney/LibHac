@@ -52,7 +52,7 @@ namespace LibHac.Tests.Fs
         {
             byte[] buffer = new byte[0x301];
 
-            Result result = PathNormalizer12.Normalize(buffer, out int normalizedLength, path.ToU8Span(), isWindowsPath,
+            Result result = PathNormalizer.Normalize(buffer, out int normalizedLength, path.ToU8Span(), isWindowsPath,
                 isDriveRelativePath);
 
             Assert.Equal(expectedResult, result);
@@ -86,7 +86,7 @@ namespace LibHac.Tests.Fs
         {
             byte[] buffer = new byte[bufferLength];
 
-            Result result = PathNormalizer12.Normalize(buffer, out int normalizedLength, path.ToU8Span(), false, false);
+            Result result = PathNormalizer.Normalize(buffer, out int normalizedLength, path.ToU8Span(), false, false);
 
             Assert.Equal(expectedResult, result);
             Assert.Equal(expectedNormalized, StringUtils.Utf8ZToString(buffer));
@@ -133,7 +133,7 @@ namespace LibHac.Tests.Fs
         [Theory, MemberData(nameof(TestData_IsNormalized))]
         public static void IsNormalized(string path, bool expectedIsNormalized, long expectedLength, Result expectedResult)
         {
-            Result result = PathNormalizer12.IsNormalized(out bool isNormalized, out int length, path.ToU8Span());
+            Result result = PathNormalizer.IsNormalized(out bool isNormalized, out int length, path.ToU8Span());
 
             Assert.Equal(expectedResult, result);
             Assert.Equal(expectedLength, length);

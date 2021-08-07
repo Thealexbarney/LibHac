@@ -43,8 +43,8 @@ namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
             var applicationId = new Ncm.ApplicationId(1);
             FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-            fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdCache, applicationId.Value, 0, 0, SaveDataFlags.None);
-            fs.MountCacheStorage("cache".ToU8Span(), applicationId);
+            Assert.Success(fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdCache, applicationId.Value, 0, 0, SaveDataFlags.None));
+            Assert.Success(fs.MountCacheStorage("cache".ToU8Span(), applicationId));
             fs.CreateFile("cache:/sd".ToU8Span(), 0);
             fs.Commit("cache".ToU8Span());
             fs.Unmount("cache".ToU8Span());

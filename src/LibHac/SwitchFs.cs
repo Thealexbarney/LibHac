@@ -44,14 +44,20 @@ namespace LibHac
         {
             var concatFs = new ConcatenationFileSystem(fileSystem);
 
+            var contentDirPath = new Fs.Path();
+            PathFunctions.SetUpFixedPath(ref contentDirPath, "/Nintendo/Contents".ToU8String()).ThrowIfFailure();
+
+            var saveDirPath = new Fs.Path();
+            PathFunctions.SetUpFixedPath(ref saveDirPath, "/Nintendo/save".ToU8String()).ThrowIfFailure();
+
             var contentDirFs = new SubdirectoryFileSystem(concatFs);
-            contentDirFs.Initialize("/Nintendo/Contents".ToU8String()).ThrowIfFailure();
+            contentDirFs.Initialize(in contentDirPath).ThrowIfFailure();
 
             AesXtsFileSystem encSaveFs = null;
             if (fileSystem.DirectoryExists("/Nintendo/save"))
             {
                 var saveDirFs = new SubdirectoryFileSystem(concatFs);
-                saveDirFs.Initialize("/Nintendo/save".ToU8String()).ThrowIfFailure();
+                saveDirFs.Initialize(in saveDirPath).ThrowIfFailure();
 
                 encSaveFs = new AesXtsFileSystem(saveDirFs, keySet.SdCardEncryptionKeys[0].DataRo.ToArray(), 0x4000);
             }
@@ -65,13 +71,22 @@ namespace LibHac
         {
             var concatFs = new ConcatenationFileSystem(fileSystem);
             SubdirectoryFileSystem saveDirFs = null;
+            SubdirectoryFileSystem contentDirFs;
 
             if (concatFs.DirectoryExists("/save"))
             {
-                SubdirectoryFileSystem.CreateNew(out saveDirFs, concatFs, "/save".ToU8String()).ThrowIfFailure();
+                var savePath = new Fs.Path();
+                PathFunctions.SetUpFixedPath(ref savePath, "/save".ToU8String());
+
+                saveDirFs = new SubdirectoryFileSystem(concatFs);
+                saveDirFs.Initialize(in savePath).ThrowIfFailure();
             }
 
-            SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem contentDirFs, concatFs, "/Contents".ToU8String()).ThrowIfFailure();
+            var contentsPath = new Fs.Path();
+            PathFunctions.SetUpFixedPath(ref contentsPath, "/Contents".ToU8String());
+
+            contentDirFs = new SubdirectoryFileSystem(concatFs);
+            contentDirFs.Initialize(in contentsPath).ThrowIfFailure();
 
             return new SwitchFs(keySet, contentDirFs, saveDirFs);
         }

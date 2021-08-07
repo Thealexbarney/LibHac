@@ -219,12 +219,6 @@ namespace LibHac.Fs.Fsa
         protected abstract Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
             ReadOnlySpan<byte> inBuffer);
 
-        protected virtual void Dispose(bool disposing) { }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
+        public virtual void Dispose() { }
     }
 }

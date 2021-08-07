@@ -38,90 +38,86 @@ namespace LibHac.FsSystem
                 new StorageLayoutTypeSetFileSystem(ref baseFileSystem, storageFlag));
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
-                BaseFileSystem?.Dispose();
-            }
-
-            base.Dispose(disposing);
+            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
+            BaseFileSystem?.Dispose();
+            base.Dispose();
         }
 
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions option)
+        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
             return BaseFileSystem.Target.CreateFile(path, size, option);
         }
 
-        protected override Result DoDeleteFile(U8Span path)
+        protected override Result DoDeleteFile(in Path path)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
             return BaseFileSystem.Target.DeleteFile(path);
         }
 
-        protected override Result DoCreateDirectory(U8Span path)
+        protected override Result DoCreateDirectory(in Path path)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
             return BaseFileSystem.Target.CreateDirectory(path);
         }
 
-        protected override Result DoDeleteDirectory(U8Span path)
+        protected override Result DoDeleteDirectory(in Path path)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
             return BaseFileSystem.Target.DeleteDirectory(path);
         }
 
-        protected override Result DoDeleteDirectoryRecursively(U8Span path)
+        protected override Result DoDeleteDirectoryRecursively(in Path path)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
             return BaseFileSystem.Target.DeleteDirectoryRecursively(path);
         }
 
-        protected override Result DoCleanDirectoryRecursively(U8Span path)
+        protected override Result DoCleanDirectoryRecursively(in Path path)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
             return BaseFileSystem.Target.CleanDirectoryRecursively(path);
         }
 
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameFile(in Path currentPath, in Path newPath)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
-            return BaseFileSystem.Target.RenameFile(oldPath, newPath);
+            return BaseFileSystem.Target.RenameFile(currentPath, newPath);
         }
 
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath)
+        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
-            return BaseFileSystem.Target.RenameDirectory(oldPath, newPath);
+            return BaseFileSystem.Target.RenameDirectory(currentPath, newPath);
         }
 
-        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
             return BaseFileSystem.Target.GetEntryType(out entryType, path);
         }
 
-        protected override Result DoGetFreeSpaceSize(out long freeSpace, U8Span path)
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
             return BaseFileSystem.Target.GetFreeSpaceSize(out freeSpace, path);
         }
 
-        protected override Result DoGetTotalSpaceSize(out long totalSpace, U8Span path)
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
             return BaseFileSystem.Target.GetTotalSpaceSize(out totalSpace, path);
         }
 
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
             return BaseFileSystem.Target.OpenFile(out file, path, mode);
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
             return BaseFileSystem.Target.OpenDirectory(out directory, path, mode);
@@ -151,13 +147,14 @@ namespace LibHac.FsSystem
             return BaseFileSystem.Target.Flush();
         }
 
-        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
+        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
             return BaseFileSystem.Target.GetFileTimeStampRaw(out timeStamp, path);
         }
 
-        protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, U8Span path)
+        protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
+            in Path path)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
             return BaseFileSystem.Target.QueryEntry(outBuffer, inBuffer, queryId, path);

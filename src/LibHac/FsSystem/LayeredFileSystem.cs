@@ -37,7 +37,7 @@ namespace LibHac.FsSystem
             Sources.AddRange(sourceFileSystems);
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, U8Span path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
         {
             UnsafeHelpers.SkipParamInit(out directory);
 
@@ -48,7 +48,7 @@ namespace LibHac.FsSystem
 
             foreach (IFileSystem fs in Sources)
             {
-                Result rc = fs.GetEntryType(out DirectoryEntryType entryType, path);
+                Result rc = fs.GetEntryType(out DirectoryEntryType entryType, in path);
 
                 if (rc.IsSuccess())
                 {
@@ -82,8 +82,8 @@ namespace LibHac.FsSystem
 
             if (!(multipleSources is null))
             {
-                var dir = new MergedDirectory(multipleSources, path, mode);
-                Result rc = dir.Initialize();
+                var dir = new MergedDirectory(multipleSources, mode);
+                Result rc = dir.Initialize(in path);
 
                 if (rc.IsSuccess())
                 {
@@ -108,7 +108,7 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result DoOpenFile(out IFile file, U8Span path, OpenMode mode)
+        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
         {
             UnsafeHelpers.SkipParamInit(out file);
 
@@ -137,7 +137,7 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result DoGetEntryType(out DirectoryEntryType entryType, U8Span path)
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out entryType);
 
@@ -155,7 +155,7 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
+        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
         {
             UnsafeHelpers.SkipParamInit(out timeStamp);
 
@@ -173,7 +173,7 @@ namespace LibHac.FsSystem
         }
 
         protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
-            U8Span path)
+            in Path path)
         {
             foreach (IFileSystem fs in Sources)
             {
@@ -193,39 +193,41 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoCreateDirectory(U8Span path) => ResultFs.UnsupportedOperation.Log();
-        protected override Result DoCreateFile(U8Span path, long size, CreateFileOptions options) => ResultFs.UnsupportedOperation.Log();
-        protected override Result DoDeleteDirectory(U8Span path) => ResultFs.UnsupportedOperation.Log();
-        protected override Result DoDeleteDirectoryRecursively(U8Span path) => ResultFs.UnsupportedOperation.Log();
-        protected override Result DoCleanDirectoryRecursively(U8Span path) => ResultFs.UnsupportedOperation.Log();
-        protected override Result DoDeleteFile(U8Span path) => ResultFs.UnsupportedOperation.Log();
-        protected override Result DoRenameDirectory(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperation.Log();
-        protected override Result DoRenameFile(U8Span oldPath, U8Span newPath) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DoCreateDirectory(in Path path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DoDeleteDirectory(in Path path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DoDeleteDirectoryRecursively(in Path path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DoCleanDirectoryRecursively(in Path path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DoDeleteFile(in Path path) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath) => ResultFs.UnsupportedOperation.Log();
+        protected override Result DoRenameFile(in Path currentPath, in Path newPath) => ResultFs.UnsupportedOperation.Log();
 
         private class MergedDirectory : IDirectory
         {
             // Needed to open new directories for GetEntryCount
             private List<IFileSystem> SourceFileSystems { get; }
             private List<IDirectory> SourceDirs { get; }
-            private U8String Path { get; }
+            private Path.Stored _path;
             private OpenDirectoryMode Mode { get; }
 
             // todo: Efficient way to remove duplicates
             private HashSet<string> Names { get; } = new HashSet<string>();
 
-            public MergedDirectory(List<IFileSystem> sourceFileSystems, U8Span path, OpenDirectoryMode mode)
+            public MergedDirectory(List<IFileSystem> sourceFileSystems, OpenDirectoryMode mode)
             {
                 SourceFileSystems = sourceFileSystems;
                 SourceDirs = new List<IDirectory>(sourceFileSystems.Count);
-                Path = path.ToU8String();
                 Mode = mode;
             }
 
-            public Result Initialize()
+            public Result Initialize(in Path path)
             {
+                Result rc = _path.Initialize(in path);
+                if (rc.IsFailure()) return rc;
+
                 foreach (IFileSystem fs in SourceFileSystems)
                 {
-                    Result rc = fs.OpenDirectory(out IDirectory dir, Path, Mode);
+                    rc = fs.OpenDirectory(out IDirectory dir, in path, Mode);
                     if (rc.IsFailure()) return rc;
 
                     SourceDirs.Add(dir);
@@ -268,10 +270,12 @@ namespace LibHac.FsSystem
                 // todo: Efficient way to remove duplicates
                 var names = new HashSet<string>();
 
+                Path path = _path.GetPath();
+
                 // Open new directories for each source because we need to remove duplicate entries
                 foreach (IFileSystem fs in SourceFileSystems)
                 {
-                    Result rc = fs.OpenDirectory(out IDirectory dir, Path, Mode);
+                    Result rc = fs.OpenDirectory(out IDirectory dir, in path, Mode);
                     if (rc.IsFailure()) return rc;
 
                     long entriesRead;

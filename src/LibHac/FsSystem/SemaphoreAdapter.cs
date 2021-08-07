@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Threading;
+using LibHac.Os;
 
 namespace LibHac.FsSystem
 {
-    public class SemaphoreAdaptor : IDisposable
+    public class SemaphoreAdapter : IDisposable, ILockable
     {
         private SemaphoreSlim _semaphore;
 
-        public SemaphoreAdaptor(int initialCount, int maxCount)
+        public SemaphoreAdapter(int initialCount, int maxCount)
         {
             _semaphore = new SemaphoreSlim(initialCount, maxCount);
         }
@@ -15,6 +16,11 @@ namespace LibHac.FsSystem
         public bool TryLock()
         {
             return _semaphore.Wait(System.TimeSpan.Zero);
+        }
+
+        public void Lock()
+        {
+            _semaphore.Wait();
         }
 
         public void Unlock()

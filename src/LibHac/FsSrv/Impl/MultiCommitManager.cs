@@ -1,19 +1,49 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs;
-using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Sf;
+using LibHac.Os;
 using LibHac.Sf;
-using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
+
 using IFile = LibHac.Fs.Fsa.IFile;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.FsSrv.Impl
 {
+    internal struct MultiCommitManagerGlobals
+    {
+        public SdkMutexType MultiCommitMutex;
+
+        public void Initialize()
+        {
+            MultiCommitMutex.Initialize();
+        }
+    }
+
+    /// <summary>
+    /// Manages atomically committing a group of file systems.
+    /// </summary>
+    /// <remarks>
+    /// The commit process is as follows:<br/>
+    /// 1. Create a commit context file that tracks the progress of the commit in case it is interrupted.<br/>
+    /// 2. Provisionally commit each file system individually. If any fail, rollback the file systems that were provisionally committed.<br/>
+    /// 3. Update the commit context file to note that the file systems have been provisionally committed.
+    /// If the multi-commit is interrupted past this point, the file systems will be fully committed during recovery.<br/>
+    /// 4. Fully commit each file system individually.<br/>
+    /// 5. Delete the commit context file.<br/>
+    ///<br/>
+    /// Even though multi-commits are supposed to be atomic, issues can arise from errors during the process of fully committing the save data.
+    /// Save data image files are designed so that minimal changes are made when fully committing a provisionally committed save.
+    /// However if any commit fails for any reason, all other saves in the multi-commit will still be committed.
+    /// This can especially cause issues with directory save data where finishing a commit is much more involved.<br/>
+    /// <br/>
+    /// Based on FS 12.0.3 (nnSdk 12.3.1)
+    /// </remarks>
     internal class MultiCommitManager : IMultiCommitManager
     {
         private const int MaxFileSystemCount = 10;
@@ -27,42 +57,43 @@ namespace LibHac.FsSrv.Impl
         private const long CommitContextFileSize = 0x200;
 
         // /commitinfo
-        private static U8Span CommitContextFileName =>
-            new U8Span(new[] { (byte)'/', (byte)'c', (byte)'o', (byte)'m', (byte)'m', (byte)'i', (byte)'t', (byte)'i', (byte)'n', (byte)'f', (byte)'o' });
+        private static ReadOnlySpan<byte> CommitContextFileName =>
+            new[] { (byte)'/', (byte)'c', (byte)'o', (byte)'m', (byte)'m', (byte)'i', (byte)'t', (byte)'i', (byte)'n', (byte)'f', (byte)'o' };
 
-        // Todo: Don't use global lock object
-        private static readonly object Locker = new object();
+        private ReferenceCountedDisposable<ISaveDataMultiCommitCoreInterface> _multiCommitInterface;
+        private readonly ReferenceCountedDisposable<IFileSystem>[] _fileSystems;
+        private int _fileSystemCount;
+        private long _counter;
 
-        private ReferenceCountedDisposable<ISaveDataMultiCommitCoreInterface> MultiCommitInterface { get; }
+        // Extra field used in LibHac
+        private readonly FileSystemServer _fsServer;
+        private ref MultiCommitManagerGlobals Globals => ref _fsServer.Globals.MultiCommitManager;
 
-        private List<ReferenceCountedDisposable<IFileSystem>> FileSystems { get; } =
-            new List<ReferenceCountedDisposable<IFileSystem>>(MaxFileSystemCount);
-
-        private long Counter { get; set; }
-        private HorizonClient Hos { get; }
-
-        public MultiCommitManager(
-            ref ReferenceCountedDisposable<ISaveDataMultiCommitCoreInterface> multiCommitInterface,
-            HorizonClient client)
+        public MultiCommitManager(FileSystemServer fsServer, ref ReferenceCountedDisposable<ISaveDataMultiCommitCoreInterface> multiCommitInterface)
         {
-            Hos = client;
-            MultiCommitInterface = Shared.Move(ref multiCommitInterface);
+            _fsServer = fsServer;
+
+            _multiCommitInterface = Shared.Move(ref multiCommitInterface);
+            _fileSystems = new ReferenceCountedDisposable<IFileSystem>[MaxFileSystemCount];
+            _fileSystemCount = 0;
+            _counter = 0;
         }
 
-        public static ReferenceCountedDisposable<IMultiCommitManager> CreateShared(
-            ref ReferenceCountedDisposable<ISaveDataMultiCommitCoreInterface> multiCommitInterface,
-            HorizonClient client)
+        public static ReferenceCountedDisposable<IMultiCommitManager> CreateShared(FileSystemServer fsServer,
+            ref ReferenceCountedDisposable<ISaveDataMultiCommitCoreInterface> multiCommitInterface)
         {
-            var manager = new MultiCommitManager(ref multiCommitInterface, client);
+            var manager = new MultiCommitManager(fsServer, ref multiCommitInterface);
             return new ReferenceCountedDisposable<IMultiCommitManager>(manager);
         }
 
         public void Dispose()
         {
-            foreach (ReferenceCountedDisposable<IFileSystem> fs in FileSystems)
+            foreach (ReferenceCountedDisposable<IFileSystem> fs in _fileSystems)
             {
-                fs.Dispose();
+                fs?.Dispose();
             }
+
+            _multiCommitInterface?.Dispose();
         }
 
         /// <summary>
@@ -71,20 +102,26 @@ namespace LibHac.FsSrv.Impl
         /// <returns>The <see cref="Result"/> of the operation.</returns>
         private Result EnsureSaveDataForContext()
         {
-            Result rc = MultiCommitInterface.Target.OpenMultiCommitContext(
-                out ReferenceCountedDisposable<IFileSystem> contextFs);
-
-            if (rc.IsFailure())
+            ReferenceCountedDisposable<IFileSystem> contextFs = null;
+            try
             {
-                if (!ResultFs.TargetNotFound.Includes(rc))
-                    return rc;
+                Result rc = _multiCommitInterface.Target.OpenMultiCommitContext(out contextFs);
 
-                rc = Hos.Fs.CreateSystemSaveData(SaveDataId, SaveDataSize, SaveJournalSize, SaveDataFlags.None);
-                if (rc.IsFailure()) return rc;
+                if (rc.IsFailure())
+                {
+                    if (!ResultFs.TargetNotFound.Includes(rc))
+                        return rc;
+
+                    rc = _fsServer.Hos.Fs.CreateSystemSaveData(SaveDataId, SaveDataSize, SaveJournalSize, SaveDataFlags.None);
+                    if (rc.IsFailure()) return rc;
+                }
+
+                return Result.Success;
             }
-
-            contextFs?.Dispose();
-            return Result.Success;
+            finally
+            {
+                contextFs?.Dispose();
+            }
         }
 
         /// <summary>
@@ -97,7 +134,7 @@ namespace LibHac.FsSrv.Impl
         /// <see cref="ResultFs.MultiCommitFileSystemAlreadyAdded"/>: The provided file system has already been added.</returns>
         public Result Add(ReferenceCountedDisposable<IFileSystemSf> fileSystem)
         {
-            if (FileSystems.Count >= MaxFileSystemCount)
+            if (_fileSystemCount >= MaxFileSystemCount)
                 return ResultFs.MultiCommitFileSystemLimit.Log();
 
             ReferenceCountedDisposable<IFileSystem> fsaFileSystem = null;
@@ -107,14 +144,14 @@ namespace LibHac.FsSrv.Impl
                 if (rc.IsFailure()) return rc;
 
                 // Check that the file system hasn't already been added
-                foreach (ReferenceCountedDisposable<IFileSystem> fs in FileSystems)
+                for (int i = 0; i < _fileSystemCount; i++)
                 {
-                    if (ReferenceEquals(fs.Target, fsaFileSystem.Target))
+                    if (ReferenceEquals(fsaFileSystem.Target, _fileSystems[i].Target))
                         return ResultFs.MultiCommitFileSystemAlreadyAdded.Log();
                 }
 
-                FileSystems.Add(fsaFileSystem);
-                fsaFileSystem = null;
+                _fileSystems[_fileSystemCount] = Shared.Move(ref fsaFileSystem);
+                _fileSystemCount++;
 
                 return Result.Success;
             }
@@ -132,32 +169,23 @@ namespace LibHac.FsSrv.Impl
         /// <returns>The <see cref="Result"/> of the operation.</returns>
         private Result Commit(IFileSystem contextFileSystem)
         {
-            ContextUpdater context = default;
+            _counter = 1;
 
-            try
-            {
-                Counter = 1;
+            using var contextUpdater = new ContextUpdater(contextFileSystem);
+            Result rc = contextUpdater.Create(_counter, _fileSystemCount);
+            if (rc.IsFailure()) return rc;
 
-                context = new ContextUpdater(contextFileSystem);
-                Result rc = context.Create(Counter, FileSystems.Count);
-                if (rc.IsFailure()) return rc;
+            rc = CommitProvisionallyFileSystem(_counter);
+            if (rc.IsFailure()) return rc;
 
-                rc = CommitProvisionallyFileSystem(Counter);
-                if (rc.IsFailure()) return rc;
+            rc = contextUpdater.CommitProvisionallyDone();
+            if (rc.IsFailure()) return rc;
 
-                rc = context.CommitProvisionallyDone();
-                if (rc.IsFailure()) return rc;
+            rc = CommitFileSystem();
+            if (rc.IsFailure()) return rc;
 
-                rc = CommitFileSystem();
-                if (rc.IsFailure()) return rc;
-
-                rc = context.CommitDone();
-                if (rc.IsFailure()) return rc;
-            }
-            finally
-            {
-                context.Dispose();
-            }
+            rc = contextUpdater.CommitDone();
+            if (rc.IsFailure()) return rc;
 
             return Result.Success;
         }
@@ -168,23 +196,22 @@ namespace LibHac.FsSrv.Impl
         /// <returns>The <see cref="Result"/> of the operation.</returns>
         public Result Commit()
         {
-            lock (Locker)
+            using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref Globals.MultiCommitMutex);
+
+            ReferenceCountedDisposable<IFileSystem> contextFs = null;
+            try
             {
                 Result rc = EnsureSaveDataForContext();
                 if (rc.IsFailure()) return rc;
 
-                ReferenceCountedDisposable<IFileSystem> contextFs = null;
-                try
-                {
-                    rc = MultiCommitInterface.Target.OpenMultiCommitContext(out contextFs);
-                    if (rc.IsFailure()) return rc;
+                rc = _multiCommitInterface.Target.OpenMultiCommitContext(out contextFs);
+                if (rc.IsFailure()) return rc;
 
-                    return Commit(contextFs.Target);
-                }
-                finally
-                {
-                    contextFs?.Dispose();
-                }
+                return Commit(contextFs.Target);
+            }
+            finally
+            {
+                contextFs?.Dispose();
             }
         }
 
@@ -198,9 +225,11 @@ namespace LibHac.FsSrv.Impl
             Result rc = Result.Success;
             int i;
 
-            for (i = 0; i < FileSystems.Count; i++)
+            for (i = 0; i < _fileSystemCount; i++)
             {
-                rc = FileSystems[i].Target.CommitProvisionally(counter);
+                Assert.SdkNotNull(_fileSystems[i]);
+
+                rc = _fileSystems[i].Target.CommitProvisionally(counter);
 
                 if (rc.IsFailure())
                     break;
@@ -211,7 +240,9 @@ namespace LibHac.FsSrv.Impl
                 // Rollback all provisional commits including the failed commit
                 for (int j = 0; j <= i; j++)
                 {
-                    FileSystems[j].Target.Rollback().IgnoreResult();
+                    Assert.SdkNotNull(_fileSystems[j]);
+
+                    _fileSystems[j].Target.Rollback().IgnoreResult();
                 }
             }
 
@@ -224,14 +255,17 @@ namespace LibHac.FsSrv.Impl
         /// <returns>The <see cref="Result"/> of the operation.</returns>
         private Result CommitFileSystem()
         {
-            // All file systems will try to be recovered committed, even if one fails.
+            // Try to commit all file systems even if one fails.
             // If any commits fail, the result from the first failed recovery will be returned.
             Result result = Result.Success;
 
-            foreach (ReferenceCountedDisposable<IFileSystem> fs in FileSystems)
+            for (int i = 0; i < _fileSystemCount; i++)
             {
-                Result rc = fs.Target.Commit();
+                Assert.SdkNotNull(_fileSystems[i]);
 
+                Result rc = _fileSystems[i].Target.Commit();
+
+                // If the commit failed, set the overall result if it hasn't been set yet.
                 if (result.IsSuccess() && rc.IsFailure())
                 {
                     result = rc;
@@ -256,11 +290,15 @@ namespace LibHac.FsSrv.Impl
         private static Result RecoverCommit(ISaveDataMultiCommitCoreInterface multiCommitInterface,
             IFileSystem contextFs, SaveDataFileSystemServiceImpl saveService)
         {
+            var contextFilePath = new Fs.Path();
+            Result rc = PathFunctions.SetUpFixedPath(ref contextFilePath, CommitContextFileName);
+            if (rc.IsFailure()) return rc;
+
             IFile contextFile = null;
             try
             {
                 // Read the multi-commit context
-                Result rc = contextFs.OpenFile(out contextFile, CommitContextFileName, OpenMode.ReadWrite);
+                rc = contextFs.OpenFile(out contextFile, in contextFilePath, OpenMode.ReadWrite);
                 if (rc.IsFailure()) return rc;
 
                 Unsafe.SkipInit(out Context context);
@@ -330,12 +368,13 @@ namespace LibHac.FsSrv.Impl
                 {
                     rc = multiCommitInterface.RecoverProvisionallyCommittedSaveData(in savesToRecover[i], false);
 
-                    if (recoveryResult.IsSuccess() && rc.IsFailure())
+                    if (rc.IsFailure() && !recoveryResult.IsFailure())
                     {
                         recoveryResult = rc;
                     }
                 }
 
+                contextFilePath.Dispose();
                 return recoveryResult;
             }
             finally
@@ -426,13 +465,18 @@ namespace LibHac.FsSrv.Impl
                 }
             }
 
+            var contextFilePath = new Fs.Path();
+            rc = PathFunctions.SetUpFixedPath(ref contextFilePath, CommitContextFileName);
+            if (rc.IsFailure()) return rc;
+
             // Delete the commit context file
-            rc = contextFs.DeleteFile(CommitContextFileName);
+            rc = contextFs.DeleteFile(in contextFilePath);
             if (rc.IsFailure()) return rc;
 
             rc = contextFs.Commit();
             if (rc.IsFailure()) return rc;
 
+            contextFilePath.Dispose();
             return recoveryResult;
         }
 
@@ -440,55 +484,62 @@ namespace LibHac.FsSrv.Impl
         /// Recovers an interrupted multi-commit. The commit will either be completed or rolled back depending on
         /// where in the commit process it was interrupted. Does nothing if there is no commit to recover.
         /// </summary>
+        /// <param name="fsServer">The <see cref="FileSystemServer"/> that contains the save data to recover.</param>
         /// <param name="multiCommitInterface">The core interface used for multi-commits.</param>
         /// <param name="saveService">The save data service.</param>
         /// <returns>The <see cref="Result"/> of the operation.<br/>
         /// <see cref="Result.Success"/>: The recovery was successful or there was no multi-commit to recover.</returns>
-        public static Result Recover(ISaveDataMultiCommitCoreInterface multiCommitInterface,
+        public static Result Recover(FileSystemServer fsServer, ISaveDataMultiCommitCoreInterface multiCommitInterface,
             SaveDataFileSystemServiceImpl saveService)
         {
-            lock (Locker)
-            {
-                bool needsRecover = true;
-                ReferenceCountedDisposable<IFileSystem> fileSystem = null;
+            ref MultiCommitManagerGlobals globals = ref fsServer.Globals.MultiCommitManager;
+            using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref globals.MultiCommitMutex);
 
-                try
+            bool needsRecovery = true;
+            ReferenceCountedDisposable<IFileSystem> fileSystem = null;
+
+            try
+            {
+                // Check if a multi-commit was interrupted by checking if there's a commit context file.
+                Result rc = multiCommitInterface.OpenMultiCommitContext(out fileSystem);
+
+                if (rc.IsFailure())
                 {
-                    // Check if a multi-commit was interrupted by checking if there's a commit context file.
-                    Result rc = multiCommitInterface.OpenMultiCommitContext(out fileSystem);
+                    if (!ResultFs.PathNotFound.Includes(rc) && !ResultFs.TargetNotFound.Includes(rc))
+                        return rc;
+
+                    // Unable to open the multi-commit context file system, so there's nothing to recover
+                    needsRecovery = false;
+                }
+
+                if (needsRecovery)
+                {
+                    var contextFilePath = new Fs.Path();
+                    rc = PathFunctions.SetUpFixedPath(ref contextFilePath, CommitContextFileName);
+                    if (rc.IsFailure()) return rc;
+
+                    rc = fileSystem.Target.OpenFile(out IFile file, in contextFilePath, OpenMode.Read);
+                    file?.Dispose();
 
                     if (rc.IsFailure())
                     {
-                        if (!ResultFs.PathNotFound.Includes(rc) && !ResultFs.TargetNotFound.Includes(rc))
-                            return rc;
-
-                        // Unable to open the multi-commit context file system, so there's nothing to recover
-                        needsRecover = false;
+                        // Unable to open the context file. No multi-commit to recover.
+                        if (ResultFs.PathNotFound.Includes(rc))
+                            needsRecovery = false;
                     }
 
-                    if (needsRecover)
-                    {
-                        rc = fileSystem.Target.OpenFile(out IFile file, CommitContextFileName, OpenMode.Read);
-                        file?.Dispose();
-
-                        if (rc.IsFailure())
-                        {
-                            // Unable to open the context file. No multi-commit to recover.
-                            if (ResultFs.PathNotFound.Includes(rc))
-                                needsRecover = false;
-                        }
-                    }
-
-                    if (!needsRecover)
-                        return Result.Success;
-
-                    // There was a context file. Recover the unfinished commit.
-                    return Recover(multiCommitInterface, fileSystem.Target, saveService);
+                    contextFilePath.Dispose();
                 }
-                finally
-                {
-                    fileSystem?.Dispose();
-                }
+
+                if (!needsRecovery)
+                    return Result.Success;
+
+                // There was a context file. Recover the unfinished commit.
+                return Recover(multiCommitInterface, fileSystem.Target, saveService);
+            }
+            finally
+            {
+                fileSystem?.Dispose();
             }
         }
 
@@ -509,41 +560,58 @@ namespace LibHac.FsSrv.Impl
             ProvisionallyCommitted = 2
         }
 
-        private struct ContextUpdater
+        private struct ContextUpdater : IDisposable
         {
-            private IFileSystem _fileSystem;
             private Context _context;
+            private IFileSystem _fileSystem;
 
             public ContextUpdater(IFileSystem contextFileSystem)
             {
-                _fileSystem = contextFileSystem;
                 _context = default;
+                _fileSystem = contextFileSystem;
+            }
+
+            public void Dispose()
+            {
+                if (_fileSystem is null) return;
+
+                var contextFilePath = new Fs.Path();
+                PathFunctions.SetUpFixedPath(ref contextFilePath, CommitContextFileName).IgnoreResult();
+                _fileSystem.DeleteFile(in contextFilePath).IgnoreResult();
+                _fileSystem.Commit().IgnoreResult();
+
+                _fileSystem = null;
+                contextFilePath.Dispose();
             }
 
             /// <summary>
             /// Creates and writes the initial commit context to a file.
             /// </summary>
-            /// <param name="commitCount">The counter.</param>
+            /// <param name="counter">The counter.</param>
             /// <param name="fileSystemCount">The number of file systems being committed.</param>
             /// <returns>The <see cref="Result"/> of the operation.</returns>
-            public Result Create(long commitCount, int fileSystemCount)
+            public Result Create(long counter, int fileSystemCount)
             {
+                var contextFilePath = new Fs.Path();
+                Result rc = PathFunctions.SetUpFixedPath(ref contextFilePath, CommitContextFileName);
+                if (rc.IsFailure()) return rc;
+
                 IFile contextFile = null;
 
                 try
                 {
                     // Open context file and create if it doesn't exist
-                    Result rc = _fileSystem.OpenFile(out contextFile, CommitContextFileName, OpenMode.Read);
+                    rc = _fileSystem.OpenFile(out contextFile, in contextFilePath, OpenMode.Read);
 
                     if (rc.IsFailure())
                     {
                         if (!ResultFs.PathNotFound.Includes(rc))
                             return rc;
 
-                        rc = _fileSystem.CreateFile(CommitContextFileName, CommitContextFileSize, CreateFileOptions.None);
+                        rc = _fileSystem.CreateFile(in contextFilePath, CommitContextFileSize);
                         if (rc.IsFailure()) return rc;
 
-                        rc = _fileSystem.OpenFile(out contextFile, CommitContextFileName, OpenMode.Read);
+                        rc = _fileSystem.OpenFile(out contextFile, in contextFilePath, OpenMode.Read);
                         if (rc.IsFailure()) return rc;
                     }
                 }
@@ -554,13 +622,13 @@ namespace LibHac.FsSrv.Impl
 
                 try
                 {
-                    Result rc = _fileSystem.OpenFile(out contextFile, CommitContextFileName, OpenMode.ReadWrite);
+                    rc = _fileSystem.OpenFile(out contextFile, in contextFilePath, OpenMode.ReadWrite);
                     if (rc.IsFailure()) return rc;
 
                     _context.Version = CurrentCommitContextVersion;
                     _context.State = CommitState.NotCommitted;
                     _context.FileSystemCount = fileSystemCount;
-                    _context.Counter = commitCount;
+                    _context.Counter = counter;
 
                     // Write the initial context to the file
                     rc = contextFile.Write(0, SpanHelpers.AsByteSpan(ref _context), WriteOption.None);
@@ -574,7 +642,11 @@ namespace LibHac.FsSrv.Impl
                     contextFile?.Dispose();
                 }
 
-                return _fileSystem.Commit();
+                rc = _fileSystem.Commit();
+                if (rc.IsFailure()) return rc;
+
+                contextFilePath.Dispose();
+                return Result.Success;
             }
 
             /// <summary>
@@ -584,11 +656,15 @@ namespace LibHac.FsSrv.Impl
             /// <returns>The <see cref="Result"/> of the operation.</returns>
             public Result CommitProvisionallyDone()
             {
+                var contextFilePath = new Fs.Path();
+                Result rc = PathFunctions.SetUpFixedPath(ref contextFilePath, CommitContextFileName);
+                if (rc.IsFailure()) return rc;
+
                 IFile contextFile = null;
 
                 try
                 {
-                    Result rc = _fileSystem.OpenFile(out contextFile, CommitContextFileName, OpenMode.ReadWrite);
+                    rc = _fileSystem.OpenFile(out contextFile, in contextFilePath, OpenMode.ReadWrite);
                     if (rc.IsFailure()) return rc;
 
                     _context.State = CommitState.ProvisionallyCommitted;
@@ -604,6 +680,7 @@ namespace LibHac.FsSrv.Impl
                     contextFile?.Dispose();
                 }
 
+                contextFilePath.Dispose();
                 return _fileSystem.Commit();
             }
 
@@ -613,24 +690,19 @@ namespace LibHac.FsSrv.Impl
             /// <returns>The <see cref="Result"/> of the operation.</returns>
             public Result CommitDone()
             {
-                Result rc = _fileSystem.DeleteFile(CommitContextFileName);
+                var contextFilePath = new Fs.Path();
+                Result rc = PathFunctions.SetUpFixedPath(ref contextFilePath, CommitContextFileName);
+                if (rc.IsFailure()) return rc;
+
+                rc = _fileSystem.DeleteFile(in contextFilePath);
                 if (rc.IsFailure()) return rc;
 
                 rc = _fileSystem.Commit();
                 if (rc.IsFailure()) return rc;
 
                 _fileSystem = null;
+                contextFilePath.Dispose();
                 return Result.Success;
-            }
-
-            public void Dispose()
-            {
-                if (_fileSystem is null) return;
-
-                _fileSystem.DeleteFile(CommitContextFileName).IgnoreResult();
-                _fileSystem.Commit().IgnoreResult();
-
-                _fileSystem = null;
             }
         }
     }
