@@ -200,7 +200,7 @@ namespace LibHac.FsSystem
                 int currentTailIndex = GetInternalFileCount(currentSize) - 1;
                 int newTailIndex = GetInternalFileCount(size) - 1;
 
-                var internalFilePath = new Path();
+                using var internalFilePath = new Path();
                 rc = internalFilePath.Initialize(in _path);
                 if (rc.IsFailure()) return rc;
 
@@ -211,7 +211,7 @@ namespace LibHac.FsSystem
 
                     for (int i = currentTailIndex + 1; i < newTailIndex; i++)
                     {
-                        rc = AppendInternalFilePath(ref internalFilePath, i);
+                        rc = AppendInternalFilePath(ref internalFilePath.Ref(), i);
                         if (rc.IsFailure()) return rc;
 
                         rc = _baseFileSystem.CreateFile(in internalFilePath, GetInternalFileSize(size, i),
@@ -234,7 +234,7 @@ namespace LibHac.FsSystem
                         _files[i].Dispose();
                         _files.RemoveAt(i);
 
-                        rc = AppendInternalFilePath(ref internalFilePath, i);
+                        rc = AppendInternalFilePath(ref internalFilePath.Ref(), i);
                         if (rc.IsFailure()) return rc;
 
                         rc = _baseFileSystem.DeleteFile(in internalFilePath);
@@ -248,7 +248,6 @@ namespace LibHac.FsSystem
                     if (rc.IsFailure()) return rc;
                 }
 
-                internalFilePath.Dispose();
                 return Result.Success;
             }
 
@@ -430,7 +429,7 @@ namespace LibHac.FsSystem
 
                         if (!_mode.HasFlag(OpenDirectoryMode.NoFileSize))
                         {
-                            var internalFilePath = new Path();
+                            using var internalFilePath = new Path();
                             rc = internalFilePath.Initialize(in _path);
                             if (rc.IsFailure()) return rc;
 
@@ -439,8 +438,6 @@ namespace LibHac.FsSystem
 
                             rc = _concatenationFileSystem.GetFileSize(out entry.Size, in internalFilePath);
                             if (rc.IsFailure()) return rc;
-
-                            internalFilePath.Dispose();
                         }
                     }
 
@@ -586,13 +583,13 @@ namespace LibHac.FsSystem
         {
             UnsafeHelpers.SkipParamInit(out count);
 
-            var internalFilePath = new Path();
+            using var internalFilePath = new Path();
             Result rc = internalFilePath.Initialize(in path);
             if (rc.IsFailure()) return rc;
 
             for (int i = 0; ; i++)
             {
-                rc = AppendInternalFilePath(ref internalFilePath, i);
+                rc = AppendInternalFilePath(ref internalFilePath.Ref(), i);
                 if (rc.IsFailure()) return rc;
 
                 rc = _baseFileSystem.GetEntryType(out _, in internalFilePath);
@@ -603,7 +600,6 @@ namespace LibHac.FsSystem
                     if (ResultFs.PathNotFound.Includes(rc))
                     {
                         count = i;
-                        internalFilePath.Dispose();
                         return Result.Success;
                     }
 
@@ -661,7 +657,7 @@ namespace LibHac.FsSystem
             ConcatenationFile concatFile = null;
             var internalFiles = new List<IFile>(fileCount);
 
-            var filePath = new Path();
+            using var filePath = new Path();
             filePath.Initialize(in path);
             if (rc.IsFailure()) return rc;
 
@@ -669,7 +665,7 @@ namespace LibHac.FsSystem
             {
                 for (int i = 0; i < fileCount; i++)
                 {
-                    rc = AppendInternalFilePath(ref filePath, i);
+                    rc = AppendInternalFilePath(ref filePath.Ref(), i);
                     if (rc.IsFailure()) return rc;
 
                     rc = _baseFileSystem.OpenFile(out IFile internalFile, in filePath, mode);
@@ -691,7 +687,6 @@ namespace LibHac.FsSystem
             }
             finally
             {
-                filePath.Dispose();
                 concatFile?.Dispose();
 
                 if (internalFiles is not null)
@@ -734,8 +729,8 @@ namespace LibHac.FsSystem
                 return _baseFileSystem.CreateFile(path, size, newOption);
             }
 
-            var parentPath = new Path();
-            Result rc = GenerateParentPath(ref parentPath, in path);
+            using var parentPath = new Path();
+            Result rc = GenerateParentPath(ref parentPath.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             if (IsConcatenationFile(in parentPath))
@@ -750,25 +745,24 @@ namespace LibHac.FsSystem
             // Handle the empty file case by manually creating a single empty internal file
             if (size == 0)
             {
-                var emptyFilePath = new Path();
-                rc = GenerateInternalFilePath(ref emptyFilePath, 0, in path);
+                using var emptyFilePath = new Path();
+                rc = GenerateInternalFilePath(ref emptyFilePath.Ref(), 0, in path);
                 if (rc.IsFailure()) return rc;
 
                 rc = _baseFileSystem.CreateFile(in emptyFilePath, 0, newOption);
                 if (rc.IsFailure()) return rc;
 
-                emptyFilePath.Dispose();
                 return Result.Success;
             }
 
             long remaining = size;
-            var filePath = new Path();
+            using var filePath = new Path();
             filePath.Initialize(in path);
             if (rc.IsFailure()) return rc;
 
             for (int i = 0; remaining > 0; i++)
             {
-                rc = AppendInternalFilePath(ref filePath, i);
+                rc = AppendInternalFilePath(ref filePath.Ref(), i);
                 if (rc.IsFailure()) return rc;
 
                 long fileSize = Math.Min(remaining, _InternalFileSize);
@@ -781,7 +775,7 @@ namespace LibHac.FsSystem
                 {
                     for (int index = i - 1; index >= 0; index--)
                     {
-                        rc = GenerateInternalFilePath(ref filePath, index, in path);
+                        rc = GenerateInternalFilePath(ref filePath.Ref(), index, in path);
                         if (rc.IsFailure()) return rc;
 
                         rc = _baseFileSystem.DeleteFile(in filePath);
@@ -800,7 +794,6 @@ namespace LibHac.FsSystem
                 remaining -= fileSize;
             }
 
-            filePath.Dispose();
             return Result.Success;
         }
 
@@ -814,13 +807,13 @@ namespace LibHac.FsSystem
             Result rc = GetInternalFileCount(out int count, path);
             if (rc.IsFailure()) return rc;
 
-            var filePath = new Path();
+            using var filePath = new Path();
             rc = filePath.Initialize(in path);
             if (rc.IsFailure()) return rc;
 
             for (int i = count - 1; i >= 0; i--)
             {
-                rc = AppendInternalFilePath(ref filePath, i);
+                rc = AppendInternalFilePath(ref filePath.Ref(), i);
                 if (rc.IsFailure()) return rc;
 
                 rc = _baseFileSystem.DeleteFile(in filePath);
@@ -833,15 +826,14 @@ namespace LibHac.FsSystem
             rc = _baseFileSystem.DeleteDirectoryRecursively(in path);
             if (rc.IsFailure()) return rc;
 
-            filePath.Dispose();
             return Result.Success;
         }
 
         protected override Result DoCreateDirectory(in Path path)
         {
             // Check if the parent path is a concatenation file because we can't create a directory inside one.
-            var parentPath = new Path();
-            Result rc = GenerateParentPath(ref parentPath, in path);
+            using var parentPath = new Path();
+            Result rc = GenerateParentPath(ref parentPath.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             if (IsConcatenationFile(in parentPath))
@@ -928,7 +920,7 @@ namespace LibHac.FsSystem
         {
             UnsafeHelpers.SkipParamInit(out size);
 
-            var internalFilePath = new Path();
+            using var internalFilePath = new Path();
             Result rc = internalFilePath.Initialize(in path);
             if (rc.IsFailure()) return rc;
 
@@ -936,7 +928,7 @@ namespace LibHac.FsSystem
 
             for (int i = 0; ; i++)
             {
-                rc = AppendInternalFilePath(ref internalFilePath, i);
+                rc = AppendInternalFilePath(ref internalFilePath.Ref(), i);
                 if (rc.IsFailure()) return rc;
 
                 rc = _baseFileSystem.GetFileSize(out long internalFileSize, in internalFilePath);
@@ -947,7 +939,6 @@ namespace LibHac.FsSystem
                     if (ResultFs.PathNotFound.Includes(rc))
                     {
                         size = sizeTotal;
-                        internalFilePath.Dispose();
                         return Result.Success;
                     }
 

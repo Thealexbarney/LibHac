@@ -68,7 +68,7 @@ namespace LibHac.FsSrv.FsCreator
 
             string path = Path ?? DefaultPath;
 
-            var sdCardPath = new Path();
+            using var sdCardPath = new Path();
             Result rc = sdCardPath.Initialize(StringUtils.StringToUtf8(path));
             if (rc.IsFailure()) return rc;
 

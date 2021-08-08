@@ -94,17 +94,17 @@ namespace LibHac.FsSrv
             if (rc.IsFailure()) return rc;
 
             // Try to find the path to the original version of the file system
-            var originalPath = new Path();
+            using var originalPath = new Path();
             Result originalResult = ServiceImpl.ResolveApplicationHtmlDocumentPath(out bool isDirectory,
-                ref originalPath, new Ncm.ApplicationId(programId.Value), ownerProgramInfo.StorageId);
+                ref originalPath.Ref(), new Ncm.ApplicationId(programId.Value), ownerProgramInfo.StorageId);
 
             // The file system might have a patch version with no original version, so continue if not found
             if (originalResult.IsFailure() && !ResultLr.HtmlDocumentNotFound.Includes(originalResult))
                 return originalResult;
 
             // Try to find the path to the patch file system
-            var patchPath = new Path();
-            Result patchResult = ServiceImpl.ResolveRegisteredHtmlDocumentPath(ref patchPath, programId.Value);
+            using var patchPath = new Path();
+            Result patchResult = ServiceImpl.ResolveRegisteredHtmlDocumentPath(ref patchPath.Ref(), programId.Value);
 
             ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
             ReferenceCountedDisposable<IRomFileSystemAccessFailureManager> accessFailureManager = null;
@@ -126,11 +126,9 @@ namespace LibHac.FsSrv
                     if (patchResult.IsFailure())
                         return patchResult;
 
-                    var emptyPath = new Path();
-                    rc = emptyPath.InitializeAsEmpty();
-                    if (rc.IsFailure()) return rc;
-
-                    ref Path originalNcaPath = ref originalResult.IsSuccess() ? ref originalPath : ref emptyPath;
+                    ref readonly Path originalNcaPath = ref originalResult.IsSuccess()
+                        ? ref originalPath
+                        : ref PathExtensions.GetNullRef();
 
                     // Open the file system using both the original and patch versions
                     rc = ServiceImpl.OpenFileSystemWithPatch(out tempFileSystem, in originalNcaPath, in patchPath,
@@ -233,7 +231,7 @@ namespace LibHac.FsSrv
 
             bool canMountSystemDataPrivate = ac.GetAccessibilityFor(AccessibilityType.MountSystemDataPrivate).CanRead;
 
-            var pathNormalized = new Path();
+            using var pathNormalized = new Path();
             rc = pathNormalized.InitializeWithReplaceUnc(path.Str);
             if (rc.IsFailure()) return rc;
 
@@ -337,8 +335,8 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.CanCall(OperationType.GetRightsId))
                 return ResultFs.PermissionDenied.Log();
 
-            var programPath = new Path();
-            rc = ServiceImpl.ResolveProgramPath(out bool isDirectory, ref programPath, programId, storageId);
+            using var programPath = new Path();
+            rc = ServiceImpl.ResolveProgramPath(out bool isDirectory, ref programPath.Ref(), programId, storageId);
             if (rc.IsFailure()) return rc;
 
             if (isDirectory)
@@ -349,7 +347,6 @@ namespace LibHac.FsSrv
 
             outRightsId = rightsId;
 
-            programPath.Dispose();
             return Result.Success;
         }
 
@@ -365,7 +362,7 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.CanCall(OperationType.GetRightsId))
                 return ResultFs.PermissionDenied.Log();
 
-            var pathNormalized = new Path();
+            using var pathNormalized = new Path();
             rc = pathNormalized.Initialize(path.Str);
             if (rc.IsFailure()) return rc;
 
@@ -385,7 +382,6 @@ namespace LibHac.FsSrv
             outRightsId = rightsId;
             outKeyGeneration = keyGeneration;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
@@ -400,8 +396,8 @@ namespace LibHac.FsSrv
             StorageType storageFlag = ServiceImpl.GetStorageFlag(programId);
             using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
-            var programPath = new Path();
-            Result rc = ServiceImpl.ResolveRomPath(out bool isDirectory, ref programPath, programId, storageId);
+            using var programPath = new Path();
+            Result rc = ServiceImpl.ResolveRomPath(out bool isDirectory, ref programPath.Ref(), programId, storageId);
             if (rc.IsFailure()) return rc;
 
             isHostFs = Utility.IsHostFsMountName(programPath.GetString());
@@ -502,8 +498,9 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.CanCall(OperationType.RegisterUpdatePartition))
                 return ResultFs.PermissionDenied.Log();
 
-            var programPath = new Path();
-            rc = ServiceImpl.ResolveRomPath(out _, ref programPath, programInfo.ProgramIdValue, programInfo.StorageId);
+            using var programPath = new Path();
+            rc = ServiceImpl.ResolveRomPath(out _, ref programPath.Ref(), programInfo.ProgramIdValue,
+                programInfo.StorageId);
             if (rc.IsFailure()) return rc;
 
             return ServiceImpl.RegisterUpdatePartition(programInfo.ProgramIdValue, in programPath);

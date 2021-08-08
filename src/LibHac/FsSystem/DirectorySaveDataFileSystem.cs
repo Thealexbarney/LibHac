@@ -255,16 +255,16 @@ namespace LibHac.FsSystem
             Result rc = GetFileSystemLock();
             if (rc.IsFailure()) return rc;
 
-            var pathModifiedDirectory = new Path();
-            rc = PathFunctions.SetUpFixedPath(ref pathModifiedDirectory, ModifiedDirectoryName);
+            using var pathModifiedDirectory = new Path();
+            rc = PathFunctions.SetUpFixedPath(ref pathModifiedDirectory.Ref(), ModifiedDirectoryName);
             if (rc.IsFailure()) return rc;
 
-            var pathCommittedDirectory = new Path();
-            rc = PathFunctions.SetUpFixedPath(ref pathCommittedDirectory, CommittedDirectoryName);
+            using var pathCommittedDirectory = new Path();
+            rc = PathFunctions.SetUpFixedPath(ref pathCommittedDirectory.Ref(), CommittedDirectoryName);
             if (rc.IsFailure()) return rc;
 
-            var pathSynchronizingDirectory = new Path();
-            rc = PathFunctions.SetUpFixedPath(ref pathSynchronizingDirectory, SynchronizingDirectoryName);
+            using var pathSynchronizingDirectory = new Path();
+            rc = PathFunctions.SetUpFixedPath(ref pathSynchronizingDirectory.Ref(), SynchronizingDirectoryName);
             if (rc.IsFailure()) return rc;
 
             // Ensure the working directory exists
@@ -322,10 +322,6 @@ namespace LibHac.FsSystem
             rc = InitializeExtraData();
             if (rc.IsFailure()) return rc;
 
-            pathModifiedDirectory.Dispose();
-            pathCommittedDirectory.Dispose();
-            pathSynchronizingDirectory.Dispose();
-
             return Result.Success;
         }
 
@@ -335,8 +331,8 @@ namespace LibHac.FsSystem
             if (_lockFile is not null)
                 return Result.Success;
 
-            var pathLockFile = new Path();
-            Result rc = PathFunctions.SetUpFixedPath(ref pathLockFile, LockFileName);
+            using var pathLockFile = new Path();
+            Result rc = PathFunctions.SetUpFixedPath(ref pathLockFile.Ref(), LockFileName);
             if (rc.IsFailure()) return rc;
 
             rc = _baseFs.OpenFile(out _lockFile, in pathLockFile, OpenMode.ReadWrite);
@@ -357,33 +353,31 @@ namespace LibHac.FsSystem
                 }
             }
 
-            pathLockFile.Dispose();
             return Result.Success;
         }
 
         private Result ResolvePath(ref Path outFullPath, in Path path)
         {
-            var pathDirectoryName = new Path();
+            using var pathDirectoryName = new Path();
 
             // Use the committed directory directly if journaling is supported but not enabled
             ReadOnlySpan<byte> directoryName = _isJournalingSupported && !_isJournalingEnabled
                 ? CommittedDirectoryName
                 : ModifiedDirectoryName;
 
-            Result rc = PathFunctions.SetUpFixedPath(ref pathDirectoryName, directoryName);
+            Result rc = PathFunctions.SetUpFixedPath(ref pathDirectoryName.Ref(), directoryName);
             if (rc.IsFailure()) return rc;
 
             rc = outFullPath.Combine(in pathDirectoryName, in path);
             if (rc.IsFailure()) return rc;
 
-            pathDirectoryName.Dispose();
             return Result.Success;
         }
 
         protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
         {
-            var fullPath = new Path();
-            Result rc = ResolvePath(ref fullPath, in path);
+            using var fullPath = new Path();
+            Result rc = ResolvePath(ref fullPath.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
@@ -391,14 +385,13 @@ namespace LibHac.FsSystem
             rc = _baseFs.CreateFile(in fullPath, size, option);
             if (rc.IsFailure()) return rc;
 
-            fullPath.Dispose();
             return Result.Success;
         }
 
         protected override Result DoDeleteFile(in Path path)
         {
-            var fullPath = new Path();
-            Result rc = ResolvePath(ref fullPath, in path);
+            using var fullPath = new Path();
+            Result rc = ResolvePath(ref fullPath.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
@@ -406,14 +399,13 @@ namespace LibHac.FsSystem
             rc = _baseFs.DeleteFile(in fullPath);
             if (rc.IsFailure()) return rc;
 
-            fullPath.Dispose();
             return Result.Success;
         }
 
         protected override Result DoCreateDirectory(in Path path)
         {
-            var fullPath = new Path();
-            Result rc = ResolvePath(ref fullPath, in path);
+            using var fullPath = new Path();
+            Result rc = ResolvePath(ref fullPath.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
@@ -421,14 +413,13 @@ namespace LibHac.FsSystem
             rc = _baseFs.CreateDirectory(in fullPath);
             if (rc.IsFailure()) return rc;
 
-            fullPath.Dispose();
             return Result.Success;
         }
 
         protected override Result DoDeleteDirectory(in Path path)
         {
-            var fullPath = new Path();
-            Result rc = ResolvePath(ref fullPath, in path);
+            using var fullPath = new Path();
+            Result rc = ResolvePath(ref fullPath.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
@@ -436,14 +427,13 @@ namespace LibHac.FsSystem
             rc = _baseFs.DeleteDirectory(in fullPath);
             if (rc.IsFailure()) return rc;
 
-            fullPath.Dispose();
             return Result.Success;
         }
 
         protected override Result DoDeleteDirectoryRecursively(in Path path)
         {
-            var fullPath = new Path();
-            Result rc = ResolvePath(ref fullPath, in path);
+            using var fullPath = new Path();
+            Result rc = ResolvePath(ref fullPath.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
@@ -451,14 +441,13 @@ namespace LibHac.FsSystem
             rc = _baseFs.DeleteDirectoryRecursively(in fullPath);
             if (rc.IsFailure()) return rc;
 
-            fullPath.Dispose();
             return Result.Success;
         }
 
         protected override Result DoCleanDirectoryRecursively(in Path path)
         {
-            var fullPath = new Path();
-            Result rc = ResolvePath(ref fullPath, in path);
+            using var fullPath = new Path();
+            Result rc = ResolvePath(ref fullPath.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
@@ -466,19 +455,18 @@ namespace LibHac.FsSystem
             rc = _baseFs.CleanDirectoryRecursively(in fullPath);
             if (rc.IsFailure()) return rc;
 
-            fullPath.Dispose();
             return Result.Success;
         }
 
         protected override Result DoRenameFile(in Path currentPath, in Path newPath)
         {
-            var currentFullPath = new Path();
-            var newFullPath = new Path();
+            using var currentFullPath = new Path();
+            using var newFullPath = new Path();
 
-            Result rc = ResolvePath(ref currentFullPath, in currentPath);
+            Result rc = ResolvePath(ref currentFullPath.Ref(), in currentPath);
             if (rc.IsFailure()) return rc;
 
-            rc = ResolvePath(ref newFullPath, in newPath);
+            rc = ResolvePath(ref newFullPath.Ref(), in newPath);
             if (rc.IsFailure()) return rc;
 
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
@@ -486,20 +474,18 @@ namespace LibHac.FsSystem
             rc = _baseFs.RenameFile(in currentFullPath, in newFullPath);
             if (rc.IsFailure()) return rc;
 
-            currentFullPath.Dispose();
-            newFullPath.Dispose();
             return Result.Success;
         }
 
         protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
         {
-            var currentFullPath = new Path();
-            var newFullPath = new Path();
+            using var currentFullPath = new Path();
+            using var newFullPath = new Path();
 
-            Result rc = ResolvePath(ref currentFullPath, in currentPath);
+            Result rc = ResolvePath(ref currentFullPath.Ref(), in currentPath);
             if (rc.IsFailure()) return rc;
 
-            rc = ResolvePath(ref newFullPath, in newPath);
+            rc = ResolvePath(ref newFullPath.Ref(), in newPath);
             if (rc.IsFailure()) return rc;
 
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
@@ -507,8 +493,6 @@ namespace LibHac.FsSystem
             rc = _baseFs.RenameDirectory(in currentFullPath, in newFullPath);
             if (rc.IsFailure()) return rc;
 
-            currentFullPath.Dispose();
-            newFullPath.Dispose();
             return Result.Success;
         }
 
@@ -516,8 +500,8 @@ namespace LibHac.FsSystem
         {
             UnsafeHelpers.SkipParamInit(out entryType);
 
-            var fullPath = new Path();
-            Result rc = ResolvePath(ref fullPath, in path);
+            using var fullPath = new Path();
+            Result rc = ResolvePath(ref fullPath.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
@@ -525,7 +509,6 @@ namespace LibHac.FsSystem
             rc = _baseFs.GetEntryType(out entryType, in fullPath);
             if (rc.IsFailure()) return rc;
 
-            fullPath.Dispose();
             return Result.Success;
         }
 
@@ -533,8 +516,8 @@ namespace LibHac.FsSystem
         {
             UnsafeHelpers.SkipParamInit(out file);
 
-            var fullPath = new Path();
-            Result rc = ResolvePath(ref fullPath, in path);
+            using var fullPath = new Path();
+            Result rc = ResolvePath(ref fullPath.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
@@ -549,7 +532,6 @@ namespace LibHac.FsSystem
                 _openWritableFileCount++;
             }
 
-            fullPath.Dispose();
             return Result.Success;
         }
 
@@ -557,8 +539,8 @@ namespace LibHac.FsSystem
         {
             UnsafeHelpers.SkipParamInit(out directory);
 
-            var fullPath = new Path();
-            Result rc = ResolvePath(ref fullPath, in path);
+            using var fullPath = new Path();
+            Result rc = ResolvePath(ref fullPath.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
@@ -566,7 +548,6 @@ namespace LibHac.FsSystem
             rc = _baseFs.OpenDirectory(out directory, in fullPath, mode);
             if (rc.IsFailure()) return rc;
 
-            fullPath.Dispose();
             return Result.Success;
         }
 
@@ -697,14 +678,13 @@ namespace LibHac.FsSystem
 
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            var pathModifiedDirectory = new Path();
-            Result rc = PathFunctions.SetUpFixedPath(ref pathModifiedDirectory, ModifiedDirectoryName);
+            using var pathModifiedDirectory = new Path();
+            Result rc = PathFunctions.SetUpFixedPath(ref pathModifiedDirectory.Ref(), ModifiedDirectoryName);
             if (rc.IsFailure()) return rc;
 
             rc = _baseFs.GetFreeSpaceSize(out freeSpace, in pathModifiedDirectory);
             if (rc.IsFailure()) return rc;
 
-            pathModifiedDirectory.Dispose();
             return Result.Success;
         }
 
@@ -714,14 +694,13 @@ namespace LibHac.FsSystem
 
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            var pathModifiedDirectory = new Path();
-            Result rc = PathFunctions.SetUpFixedPath(ref pathModifiedDirectory, ModifiedDirectoryName);
+            using var pathModifiedDirectory = new Path();
+            Result rc = PathFunctions.SetUpFixedPath(ref pathModifiedDirectory.Ref(), ModifiedDirectoryName);
             if (rc.IsFailure()) return rc;
 
             rc = _baseFs.GetTotalSpaceSize(out totalSpace, in pathModifiedDirectory);
             if (rc.IsFailure()) return rc;
 
-            pathModifiedDirectory.Dispose();
             return Result.Success;
         }
 
@@ -758,16 +737,16 @@ namespace LibHac.FsSystem
 
         private Result InitializeExtraData()
         {
-            var pathModifiedExtraData = new Path();
-            Result rc = PathFunctions.SetUpFixedPath(ref pathModifiedExtraData, ModifiedExtraDataName);
+            using var pathModifiedExtraData = new Path();
+            Result rc = PathFunctions.SetUpFixedPath(ref pathModifiedExtraData.Ref(), ModifiedExtraDataName);
             if (rc.IsFailure()) return rc;
 
-            var pathCommittedExtraData = new Path();
-            rc = PathFunctions.SetUpFixedPath(ref pathCommittedExtraData, CommittedExtraDataName);
+            using var pathCommittedExtraData = new Path();
+            rc = PathFunctions.SetUpFixedPath(ref pathCommittedExtraData.Ref(), CommittedExtraDataName);
             if (rc.IsFailure()) return rc;
 
-            var pathSynchronizingExtraData = new Path();
-            rc = PathFunctions.SetUpFixedPath(ref pathSynchronizingExtraData, SynchronizingExtraDataName);
+            using var pathSynchronizingExtraData = new Path();
+            rc = PathFunctions.SetUpFixedPath(ref pathSynchronizingExtraData.Ref(), SynchronizingExtraDataName);
             if (rc.IsFailure()) return rc;
 
             // Ensure the extra data files exist
@@ -826,10 +805,6 @@ namespace LibHac.FsSystem
                     return rc;
                 }
             }
-
-            pathModifiedExtraData.Dispose();
-            pathCommittedExtraData.Dispose();
-            pathSynchronizingExtraData.Dispose();
 
             return Result.Success;
         }
@@ -947,8 +922,8 @@ namespace LibHac.FsSystem
         {
             Assert.SdkRequires(_mutex.IsLockedByCurrentThread());
 
-            var pathExtraData = new Path();
-            Result rc = GetExtraDataPath(ref pathExtraData);
+            using var pathExtraData = new Path();
+            Result rc = GetExtraDataPath(ref pathExtraData.Ref());
             if (rc.IsFailure()) return rc;
 
             rc = _baseFs.OpenFile(out IFile file, in pathExtraData, OpenMode.Write);
@@ -960,7 +935,6 @@ namespace LibHac.FsSystem
                 if (rc.IsFailure()) return rc;
             }
 
-            pathExtraData.Dispose();
             return Result.Success;
         }
 
@@ -1024,8 +998,8 @@ namespace LibHac.FsSystem
 
             Assert.SdkRequires(_mutex.IsLockedByCurrentThread());
 
-            var pathExtraData = new Path();
-            Result rc = GetExtraDataPath(ref pathExtraData);
+            using var pathExtraData = new Path();
+            Result rc = GetExtraDataPath(ref pathExtraData.Ref());
             if (rc.IsFailure()) return rc;
 
             rc = _baseFs.OpenFile(out IFile file, in pathExtraData, OpenMode.Read);
@@ -1039,7 +1013,6 @@ namespace LibHac.FsSystem
                 Assert.SdkEqual(bytesRead, Unsafe.SizeOf<SaveDataExtraData>());
             }
 
-            pathExtraData.Dispose();
             return Result.Success;
         }
 

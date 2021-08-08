@@ -163,7 +163,7 @@ namespace LibHac.Fs.Fsa
             if (path.IsNull())
                 return ResultFs.NullptrArgument.Log();
 
-            var pathNormalized = new Path();
+            using var pathNormalized = new Path();
             Result rs = pathNormalized.InitializeWithNormalization(path);
             if (rs.IsFailure()) return rs;
 
@@ -210,7 +210,7 @@ namespace LibHac.Fs.Fsa
             if (path.IsNull())
                 return ResultFs.NullptrArgument.Log();
 
-            var pathNormalized = new Path();
+            using var pathNormalized = new Path();
             Result rs = pathNormalized.InitializeWithNormalization(path);
             if (rs.IsFailure()) return rs;
 

@@ -167,8 +167,8 @@ namespace LibHac.Fs.Impl
 
         public Result CreateFile(U8Span path, long size, CreateFileOptions option)
         {
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
             if (_isPathCacheAttached)
@@ -181,83 +181,77 @@ namespace LibHac.Fs.Impl
                 if (rc.IsFailure()) return rc;
             }
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
         public Result DeleteFile(U8Span path)
         {
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
             rc = _fileSystem.DeleteFile(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
         public Result CreateDirectory(U8Span path)
         {
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
             rc = _fileSystem.CreateDirectory(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
         public Result DeleteDirectory(U8Span path)
         {
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
             rc = _fileSystem.CreateDirectory(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
         public Result DeleteDirectoryRecursively(U8Span path)
         {
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
             rc = _fileSystem.DeleteDirectoryRecursively(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
         public Result CleanDirectoryRecursively(U8Span path)
         {
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
             rc = _fileSystem.CleanDirectoryRecursively(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
         public Result RenameFile(U8Span currentPath, U8Span newPath)
         {
-            var currentPathNormalized = new Path();
-            Result rc = SetUpPath(ref currentPathNormalized, currentPath);
+            using var currentPathNormalized = new Path();
+            Result rc = SetUpPath(ref currentPathNormalized.Ref(), currentPath);
             if (rc.IsFailure()) return rc;
 
-            var newPathNormalized = new Path();
-            rc = SetUpPath(ref newPathNormalized, newPath);
+            using var newPathNormalized = new Path();
+            rc = SetUpPath(ref newPathNormalized.Ref(), newPath);
             if (rc.IsFailure()) return rc;
 
             if (_isPathCacheAttached)
@@ -270,19 +264,17 @@ namespace LibHac.Fs.Impl
                 if (rc.IsFailure()) return rc;
             }
 
-            currentPathNormalized.Dispose();
-            newPathNormalized.Dispose();
             return Result.Success;
         }
 
         public Result RenameDirectory(U8Span currentPath, U8Span newPath)
         {
-            var currentPathNormalized = new Path();
-            Result rc = SetUpPath(ref currentPathNormalized, currentPath);
+            using var currentPathNormalized = new Path();
+            Result rc = SetUpPath(ref currentPathNormalized.Ref(), currentPath);
             if (rc.IsFailure()) return rc;
 
-            var newPathNormalized = new Path();
-            rc = SetUpPath(ref newPathNormalized, newPath);
+            using var newPathNormalized = new Path();
+            rc = SetUpPath(ref newPathNormalized.Ref(), newPath);
             if (rc.IsFailure()) return rc;
 
             if (_isPathCacheAttached)
@@ -294,9 +286,6 @@ namespace LibHac.Fs.Impl
                 rc = _fileSystem.RenameDirectory(in currentPathNormalized, in newPathNormalized);
                 if (rc.IsFailure()) return rc;
             }
-
-            currentPathNormalized.Dispose();
-            newPathNormalized.Dispose();
             return Result.Success;
         }
 
@@ -304,14 +293,13 @@ namespace LibHac.Fs.Impl
         {
             UnsafeHelpers.SkipParamInit(out entryType);
 
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
             rc = _fileSystem.GetEntryType(out entryType, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
@@ -319,14 +307,13 @@ namespace LibHac.Fs.Impl
         {
             UnsafeHelpers.SkipParamInit(out freeSpace);
 
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
             rc = _fileSystem.GetFreeSpaceSize(out freeSpace, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
@@ -334,14 +321,13 @@ namespace LibHac.Fs.Impl
         {
             UnsafeHelpers.SkipParamInit(out totalSpace);
 
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
             rc = _fileSystem.GetTotalSpaceSize(out totalSpace, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
@@ -349,8 +335,8 @@ namespace LibHac.Fs.Impl
         {
             UnsafeHelpers.SkipParamInit(out file);
 
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
             IFile iFile = null;
@@ -384,7 +370,6 @@ namespace LibHac.Fs.Impl
             finally
             {
                 iFile?.Dispose();
-                pathNormalized.Dispose();
             }
         }
 
@@ -392,8 +377,8 @@ namespace LibHac.Fs.Impl
         {
             UnsafeHelpers.SkipParamInit(out directory);
 
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
             IDirectory iDirectory = null;
@@ -415,7 +400,6 @@ namespace LibHac.Fs.Impl
             finally
             {
                 iDirectory?.Dispose();
-                pathNormalized.Dispose();
             }
         }
 
@@ -449,27 +433,25 @@ namespace LibHac.Fs.Impl
         {
             UnsafeHelpers.SkipParamInit(out timeStamp);
 
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
             rc = _fileSystem.GetFileTimeStampRaw(out timeStamp, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
         public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, U8Span path)
         {
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
             rc = _fileSystem.QueryEntry(outBuffer, inBuffer, queryId, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
@@ -681,7 +663,7 @@ namespace LibHac.Fs.Impl
 
                     var fileInfoString = new U8StringBuilder(stringBuffer, true);
                     fileInfoString.Append(LogHandle).AppendFormat(file.Value.GetHashCode(), 'x', 16).Append(LogOpenMode)
-                        .Append(openModeString.Buffer).Append(LogSize).AppendFormat(fileSize).Append((byte) '\n');
+                        .Append(openModeString.Buffer).Append(LogSize).AppendFormat(fileSize).Append((byte)'\n');
 
                     Hos.Diag.Impl.LogImpl(LogFsModuleName, LogSeverity.Error, fileInfoString.Buffer);
                     fileInfoString.Dispose();

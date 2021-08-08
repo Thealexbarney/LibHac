@@ -20,12 +20,12 @@ namespace LibHac.FsSystem
 
             var directoryEntryBuffer = new DirectoryEntry();
 
-            var sourcePathNormalized = new Path();
-            Result rc = InitializeFromString(ref sourcePathNormalized, sourcePath);
+            using var sourcePathNormalized = new Path();
+            Result rc = InitializeFromString(ref sourcePathNormalized.Ref(), sourcePath);
             if (rc.IsFailure()) return rc;
 
-            var destPathNormalized = new Path();
-            rc = InitializeFromString(ref destPathNormalized, destPath);
+            using var destPathNormalized = new Path();
+            rc = InitializeFromString(ref destPathNormalized.Ref(), destPath);
             if (rc.IsFailure()) return rc;
 
             byte[] workBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
@@ -285,8 +285,8 @@ namespace LibHac.FsSystem
 
         public static void SetConcatenationFileAttribute(this IFileSystem fs, string path)
         {
-            var pathNormalized = new Path();
-            InitializeFromString(ref pathNormalized, path).ThrowIfFailure();
+            using var pathNormalized = new Path();
+            InitializeFromString(ref pathNormalized.Ref(), path).ThrowIfFailure();
 
             fs.QueryEntry(Span<byte>.Empty, Span<byte>.Empty, QueryId.SetConcatenationFileAttribute, in pathNormalized);
         }
@@ -299,8 +299,8 @@ namespace LibHac.FsSystem
             {
                 string subPath = PathTools.Combine(path, entry.Name);
 
-                var subPathNormalized = new Path();
-                InitializeFromString(ref subPathNormalized, subPath).ThrowIfFailure();
+                using var subPathNormalized = new Path();
+                InitializeFromString(ref subPathNormalized.Ref(), subPath).ThrowIfFailure();
 
                 if (entry.Type == DirectoryEntryType.Directory)
                 {
@@ -340,8 +340,8 @@ namespace LibHac.FsSystem
 
         public static Result EnsureDirectoryExists(this IFileSystem fs, string path)
         {
-            var pathNormalized = new Path();
-            Result rc = InitializeFromString(ref pathNormalized, path);
+            using var pathNormalized = new Path();
+            Result rc = InitializeFromString(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
             return Utility12.EnsureDirectory(fs, in pathNormalized);

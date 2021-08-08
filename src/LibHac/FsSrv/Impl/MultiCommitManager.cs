@@ -290,8 +290,8 @@ namespace LibHac.FsSrv.Impl
         private static Result RecoverCommit(ISaveDataMultiCommitCoreInterface multiCommitInterface,
             IFileSystem contextFs, SaveDataFileSystemServiceImpl saveService)
         {
-            var contextFilePath = new Fs.Path();
-            Result rc = PathFunctions.SetUpFixedPath(ref contextFilePath, CommitContextFileName);
+            using var contextFilePath = new Fs.Path();
+            Result rc = PathFunctions.SetUpFixedPath(ref contextFilePath.Ref(), CommitContextFileName);
             if (rc.IsFailure()) return rc;
 
             IFile contextFile = null;
@@ -374,7 +374,6 @@ namespace LibHac.FsSrv.Impl
                     }
                 }
 
-                contextFilePath.Dispose();
                 return recoveryResult;
             }
             finally
@@ -465,8 +464,8 @@ namespace LibHac.FsSrv.Impl
                 }
             }
 
-            var contextFilePath = new Fs.Path();
-            rc = PathFunctions.SetUpFixedPath(ref contextFilePath, CommitContextFileName);
+            using var contextFilePath = new Fs.Path();
+            rc = PathFunctions.SetUpFixedPath(ref contextFilePath.Ref(), CommitContextFileName);
             if (rc.IsFailure()) return rc;
 
             // Delete the commit context file
@@ -476,7 +475,6 @@ namespace LibHac.FsSrv.Impl
             rc = contextFs.Commit();
             if (rc.IsFailure()) return rc;
 
-            contextFilePath.Dispose();
             return recoveryResult;
         }
 
@@ -514,8 +512,8 @@ namespace LibHac.FsSrv.Impl
 
                 if (needsRecovery)
                 {
-                    var contextFilePath = new Fs.Path();
-                    rc = PathFunctions.SetUpFixedPath(ref contextFilePath, CommitContextFileName);
+                    using var contextFilePath = new Fs.Path();
+                    rc = PathFunctions.SetUpFixedPath(ref contextFilePath.Ref(), CommitContextFileName);
                     if (rc.IsFailure()) return rc;
 
                     rc = fileSystem.Target.OpenFile(out IFile file, in contextFilePath, OpenMode.Read);
@@ -527,8 +525,6 @@ namespace LibHac.FsSrv.Impl
                         if (ResultFs.PathNotFound.Includes(rc))
                             needsRecovery = false;
                     }
-
-                    contextFilePath.Dispose();
                 }
 
                 if (!needsRecovery)
@@ -575,13 +571,12 @@ namespace LibHac.FsSrv.Impl
             {
                 if (_fileSystem is null) return;
 
-                var contextFilePath = new Fs.Path();
-                PathFunctions.SetUpFixedPath(ref contextFilePath, CommitContextFileName).IgnoreResult();
+                using var contextFilePath = new Fs.Path();
+                PathFunctions.SetUpFixedPath(ref contextFilePath.Ref(), CommitContextFileName).IgnoreResult();
                 _fileSystem.DeleteFile(in contextFilePath).IgnoreResult();
                 _fileSystem.Commit().IgnoreResult();
 
                 _fileSystem = null;
-                contextFilePath.Dispose();
             }
 
             /// <summary>
@@ -592,8 +587,8 @@ namespace LibHac.FsSrv.Impl
             /// <returns>The <see cref="Result"/> of the operation.</returns>
             public Result Create(long counter, int fileSystemCount)
             {
-                var contextFilePath = new Fs.Path();
-                Result rc = PathFunctions.SetUpFixedPath(ref contextFilePath, CommitContextFileName);
+                using var contextFilePath = new Fs.Path();
+                Result rc = PathFunctions.SetUpFixedPath(ref contextFilePath.Ref(), CommitContextFileName);
                 if (rc.IsFailure()) return rc;
 
                 IFile contextFile = null;
@@ -645,7 +640,6 @@ namespace LibHac.FsSrv.Impl
                 rc = _fileSystem.Commit();
                 if (rc.IsFailure()) return rc;
 
-                contextFilePath.Dispose();
                 return Result.Success;
             }
 
@@ -656,8 +650,8 @@ namespace LibHac.FsSrv.Impl
             /// <returns>The <see cref="Result"/> of the operation.</returns>
             public Result CommitProvisionallyDone()
             {
-                var contextFilePath = new Fs.Path();
-                Result rc = PathFunctions.SetUpFixedPath(ref contextFilePath, CommitContextFileName);
+                using var contextFilePath = new Fs.Path();
+                Result rc = PathFunctions.SetUpFixedPath(ref contextFilePath.Ref(), CommitContextFileName);
                 if (rc.IsFailure()) return rc;
 
                 IFile contextFile = null;
@@ -680,7 +674,6 @@ namespace LibHac.FsSrv.Impl
                     contextFile?.Dispose();
                 }
 
-                contextFilePath.Dispose();
                 return _fileSystem.Commit();
             }
 
@@ -690,8 +683,8 @@ namespace LibHac.FsSrv.Impl
             /// <returns>The <see cref="Result"/> of the operation.</returns>
             public Result CommitDone()
             {
-                var contextFilePath = new Fs.Path();
-                Result rc = PathFunctions.SetUpFixedPath(ref contextFilePath, CommitContextFileName);
+                using var contextFilePath = new Fs.Path();
+                Result rc = PathFunctions.SetUpFixedPath(ref contextFilePath.Ref(), CommitContextFileName);
                 if (rc.IsFailure()) return rc;
 
                 rc = _fileSystem.DeleteFile(in contextFilePath);
@@ -701,7 +694,6 @@ namespace LibHac.FsSrv.Impl
                 if (rc.IsFailure()) return rc;
 
                 _fileSystem = null;
-                contextFilePath.Dispose();
                 return Result.Success;
             }
         }

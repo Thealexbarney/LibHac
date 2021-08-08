@@ -330,7 +330,7 @@ namespace hactoolnet
             var sb = new StringBuilder();
             sb.AppendLine();
 
-            var emptyPath = new LibHac.Fs.Path();
+            using var emptyPath = new LibHac.Fs.Path();
             emptyPath.InitializeAsEmpty().ThrowIfFailure();
             save.GetFreeSpaceSize(out long freeSpace, in emptyPath).ThrowIfFailure();
 

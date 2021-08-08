@@ -98,8 +98,8 @@ namespace LibHac.FsSrv
                 ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
                 Span<byte> saveImageNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-                var saveImageName = new Path();
-                rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName, saveImageNameBuffer, saveDataId);
+                using var saveImageName = new Path();
+                rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
                 if (rc.IsFailure()) return rc;
 
                 rc = fileSystem.Target.GetEntryType(out _, in saveImageName);
@@ -223,8 +223,8 @@ namespace LibHac.FsSrv
             ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
             Span<byte> saveDataMetaIdDirectoryNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-            var saveDataMetaIdDirectoryName = new Path();
-            Result rc = PathFunctions.SetUpFixedPathSaveMetaDir(ref saveDataMetaIdDirectoryName,
+            using var saveDataMetaIdDirectoryName = new Path();
+            Result rc = PathFunctions.SetUpFixedPathSaveMetaDir(ref saveDataMetaIdDirectoryName.Ref(),
                 saveDataMetaIdDirectoryNameBuffer, saveDataId);
             if (rc.IsFailure()) return rc;
 
@@ -259,8 +259,8 @@ namespace LibHac.FsSrv
                 ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
                 Span<byte> saveDataMetaNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-                var saveDataMetaName = new Path();
-                rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName, saveDataMetaNameBuffer,
+                using var saveDataMetaName = new Path();
+                rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer,
                     (uint)metaType);
                 if (rc.IsFailure()) return rc;
 
@@ -286,8 +286,8 @@ namespace LibHac.FsSrv
                 ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
                 Span<byte> saveDataMetaNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-                var saveDataMetaName = new Path();
-                rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName, saveDataMetaNameBuffer,
+                using var saveDataMetaName = new Path();
+                rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer,
                     (uint)metaType);
                 if (rc.IsFailure()) return rc;
 
@@ -317,15 +317,15 @@ namespace LibHac.FsSrv
             ReferenceCountedDisposable<IFileSystem> fileSystem = null;
             try
             {
-                var saveDataMetaDirectoryName = new Path();
-                Result rc = PathFunctions.SetUpFixedPath(ref saveDataMetaDirectoryName, metaDirName);
+                using var saveDataMetaDirectoryName = new Path();
+                Result rc = PathFunctions.SetUpFixedPath(ref saveDataMetaDirectoryName.Ref(), metaDirName);
                 if (rc.IsFailure()) return rc;
 
                 rc = OpenSaveDataDirectoryFileSystemImpl(out fileSystem, spaceId, in saveDataMetaDirectoryName, false);
                 if (rc.IsFailure()) return rc;
 
-                var saveDataIdDirectoryName = new Path();
-                PathFunctions.SetUpFixedPathSaveId(ref saveDataIdDirectoryName, saveDataIdDirectoryNameBuffer,
+                using var saveDataIdDirectoryName = new Path();
+                PathFunctions.SetUpFixedPathSaveId(ref saveDataIdDirectoryName.Ref(), saveDataIdDirectoryNameBuffer,
                     saveDataId);
                 if (rc.IsFailure()) return rc;
 
@@ -334,9 +334,6 @@ namespace LibHac.FsSrv
 
                 if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc))
                     return rc;
-
-                saveDataMetaDirectoryName.Dispose();
-                saveDataIdDirectoryName.Dispose();
 
                 return Result.Success;
             }
@@ -363,8 +360,8 @@ namespace LibHac.FsSrv
                 ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
                 Span<byte> saveDataMetaNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-                var saveDataMetaName = new Path();
-                rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName, saveDataMetaNameBuffer,
+                using var saveDataMetaName = new Path();
+                rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer,
                     (uint)metaType);
                 if (rc.IsFailure()) return rc;
 
@@ -395,8 +392,8 @@ namespace LibHac.FsSrv
                     in saveDataRootPath, false);
                 if (rc.IsFailure()) return rc;
 
-                var saveImageName = new Path();
-                rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName, saveImageNameBuffer, saveDataId);
+                using var saveImageName = new Path();
+                rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
                 if (rc.IsFailure()) return rc;
 
                 if (_config.IsPseudoSaveData())
@@ -476,8 +473,8 @@ namespace LibHac.FsSrv
                 Result rc = OpenSaveDataDirectoryFileSystem(out fileSystem, spaceId, in saveDataRootPath, false);
                 if (rc.IsFailure()) return rc;
 
-                var saveImageName = new Path();
-                rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName, saveImageNameBuffer, saveDataId);
+                using var saveImageName = new Path();
+                rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
                 if (rc.IsFailure()) return rc;
 
                 // Check if the save data is a file or a directory
@@ -501,7 +498,6 @@ namespace LibHac.FsSrv
                     if (rc.IsFailure()) return rc;
                 }
 
-                saveImageName.Dispose();
                 return Result.Success;
             }
             finally
@@ -643,7 +639,7 @@ namespace LibHac.FsSrv
         public Result OpenSaveDataDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
             SaveDataSpaceId spaceId)
         {
-            var rootPath = new Path();
+            using var rootPath = new Path();
 
             return OpenSaveDataDirectoryFileSystem(out fileSystem, spaceId, in rootPath, true);
         }
@@ -667,18 +663,17 @@ namespace LibHac.FsSrv
 
                     tmFs.Dispose();
 
-                    var path = new Path();
+                    using var path = new Path();
                     rc = path.Initialize(in saveDataRootPath);
                     if (rc.IsFailure()) return rc;
 
-                    rc = _config.TargetManagerFsCreator.NormalizeCaseOfPath(out bool isTargetFsCaseSensitive, ref path);
+                    rc = _config.TargetManagerFsCreator.NormalizeCaseOfPath(out bool isTargetFsCaseSensitive, ref path.Ref());
                     if (rc.IsFailure()) return rc;
 
                     rc = _config.TargetManagerFsCreator.Create(out tmFs, in path, isTargetFsCaseSensitive, false,
                         ResultFs.SaveDataRootPathUnavailable.Value);
                     if (rc.IsFailure()) return rc;
 
-                    path.Dispose();
                     return Result.Success;
                 }
                 finally
@@ -687,7 +682,7 @@ namespace LibHac.FsSrv
                 }
             }
 
-            var saveDataDirPath = new Path();
+            using var saveDataDirPath = new Path();
             ReadOnlySpan<byte> saveDirName;
 
             if (spaceId == SaveDataSpaceId.Temporary)
@@ -699,13 +694,12 @@ namespace LibHac.FsSrv
                 saveDirName = new[] { (byte)'/', (byte)'s', (byte)'a', (byte)'v', (byte)'e' }; // /save
             }
 
-            rc = PathFunctions.SetUpFixedPath(ref saveDataDirPath, saveDirName);
+            rc = PathFunctions.SetUpFixedPath(ref saveDataDirPath.Ref(), saveDirName);
             if (rc.IsFailure()) return rc;
 
             rc = OpenSaveDataDirectoryFileSystemImpl(out fileSystem, spaceId, in saveDataDirPath, true);
             if (rc.IsFailure()) return rc;
 
-            saveDataDirPath.Dispose();
             return Result.Success;
         }
 
@@ -743,6 +737,7 @@ namespace LibHac.FsSrv
 
                     case SaveDataSpaceId.SdSystem:
                     case SaveDataSpaceId.SdCache:
+                    {
                         rc = _config.BaseFsService.OpenSdCardProxyFileSystem(out baseFileSystem, true);
                         if (rc.IsFailure()) return rc;
 
@@ -752,12 +747,12 @@ namespace LibHac.FsSrv
                         ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
                         Span<byte> pathParentBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-                        var parentPath = new Path();
-                        rc = PathFunctions.SetUpFixedPathSingleEntry(ref parentPath, pathParentBuffer,
+                        using var parentPath = new Path();
+                        rc = PathFunctions.SetUpFixedPathSingleEntry(ref parentPath.Ref(), pathParentBuffer,
                             CommonPaths.SdCardNintendoRootDirectoryName);
                         if (rc.IsFailure()) return rc;
 
-                        var pathSdRoot = new Path();
+                        using var pathSdRoot = new Path();
                         rc = pathSdRoot.Combine(in parentPath, in basePath);
                         if (rc.IsFailure()) return rc;
 
@@ -770,9 +765,8 @@ namespace LibHac.FsSrv
                             IEncryptedFileSystemCreator.KeyId.Save, in _encryptionSeed);
                         if (rc.IsFailure()) return rc;
 
-                        parentPath.Dispose();
-                        pathSdRoot.Dispose();
                         return Result.Success;
+                    }
 
                     case SaveDataSpaceId.ProperSystem:
                         rc = _config.BaseFsService.OpenBisFileSystem(out baseFileSystem,

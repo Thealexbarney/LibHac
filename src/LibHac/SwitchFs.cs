@@ -44,11 +44,11 @@ namespace LibHac
         {
             var concatFs = new ConcatenationFileSystem(fileSystem);
 
-            var contentDirPath = new Fs.Path();
-            PathFunctions.SetUpFixedPath(ref contentDirPath, "/Nintendo/Contents".ToU8String()).ThrowIfFailure();
+            using var contentDirPath = new Fs.Path();
+            PathFunctions.SetUpFixedPath(ref contentDirPath.Ref(), "/Nintendo/Contents".ToU8String()).ThrowIfFailure();
 
-            var saveDirPath = new Fs.Path();
-            PathFunctions.SetUpFixedPath(ref saveDirPath, "/Nintendo/save".ToU8String()).ThrowIfFailure();
+            using var saveDirPath = new Fs.Path();
+            PathFunctions.SetUpFixedPath(ref saveDirPath.Ref(), "/Nintendo/save".ToU8String()).ThrowIfFailure();
 
             var contentDirFs = new SubdirectoryFileSystem(concatFs);
             contentDirFs.Initialize(in contentDirPath).ThrowIfFailure();
@@ -75,15 +75,15 @@ namespace LibHac
 
             if (concatFs.DirectoryExists("/save"))
             {
-                var savePath = new Fs.Path();
-                PathFunctions.SetUpFixedPath(ref savePath, "/save".ToU8String());
+                using var savePath = new Fs.Path();
+                PathFunctions.SetUpFixedPath(ref savePath.Ref(), "/save".ToU8String());
 
                 saveDirFs = new SubdirectoryFileSystem(concatFs);
                 saveDirFs.Initialize(in savePath).ThrowIfFailure();
             }
 
-            var contentsPath = new Fs.Path();
-            PathFunctions.SetUpFixedPath(ref contentsPath, "/Contents".ToU8String());
+            using var contentsPath = new Fs.Path();
+            PathFunctions.SetUpFixedPath(ref contentsPath.Ref(), "/Contents".ToU8String());
 
             contentDirFs = new SubdirectoryFileSystem(concatFs);
             contentDirFs.Initialize(in contentsPath).ThrowIfFailure();

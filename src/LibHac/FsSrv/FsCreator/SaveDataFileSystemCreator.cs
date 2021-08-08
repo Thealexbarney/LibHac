@@ -52,8 +52,8 @@ namespace LibHac.FsSrv.FsCreator
 
             Assert.SdkRequiresNotNull(cacheManager);
 
-            var saveImageName = new Path();
-            Result rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName, saveImageNameBuffer, saveDataId);
+            using var saveImageName = new Path();
+            Result rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
             if (rc.IsFailure()) return rc;
 
             rc = baseFileSystem.Target.GetEntryType(out DirectoryEntryType type, in saveImageName);
@@ -86,7 +86,6 @@ namespace LibHac.FsSrv.FsCreator
                     fileSystem = saveFs.AddReference<IFileSystem>();
                     extraDataAccessor = saveFs.AddReference<ISaveDataExtraDataAccessor>();
 
-                    saveImageName.Dispose();
                     return Result.Success;
                 }
                 finally
