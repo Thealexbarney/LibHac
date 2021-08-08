@@ -73,7 +73,7 @@ namespace LibHac.FsSrv.FsCreator
                 return ResultFs.PreconditionViolation.Log();
             }
 
-            var bisRootPath = new Path();
+            using var bisRootPath = new Path();
             Result rc = bisRootPath.Initialize(GetPartitionPath(partitionId).ToU8String());
             if (rc.IsFailure()) return rc;
 

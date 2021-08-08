@@ -144,12 +144,12 @@ namespace LibHac.FsSystem
             FsIterationTask onEnterDir, FsIterationTask onExitDir, FsIterationTask onFile,
             ref FsIterationTaskClosure closure)
         {
-            var pathBuffer = new Path();
+            using var pathBuffer = new Path();
             Result rc = pathBuffer.Initialize(in rootPath);
             if (rc.IsFailure()) return rc;
 
-            rc = IterateDirectoryRecursivelyInternal(fs, ref pathBuffer, ref dirEntry, onEnterDir, onExitDir, onFile,
-                ref closure);
+            rc = IterateDirectoryRecursivelyInternal(fs, ref pathBuffer.Ref(), ref dirEntry, onEnterDir, onExitDir,
+                onFile, ref closure);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -159,11 +159,11 @@ namespace LibHac.FsSystem
             FsIterationTask onEnterDir, FsIterationTask onExitDir, FsIterationTask onFile,
             ref FsIterationTaskClosure closure)
         {
-            var pathBuffer = new Path();
+            using var pathBuffer = new Path();
             Result rc = pathBuffer.Initialize(in rootPath);
             if (rc.IsFailure()) return rc;
 
-            return CleanupDirectoryRecursivelyInternal(fs, ref pathBuffer, ref dirEntry, onEnterDir, onExitDir, onFile,
+            return CleanupDirectoryRecursivelyInternal(fs, ref pathBuffer.Ref(), ref dirEntry, onEnterDir, onExitDir, onFile,
                 ref closure);
         }
 
@@ -327,8 +327,8 @@ namespace LibHac.FsSystem
                 }
             }
 
-            var rootPath = new Path();
-            Result rc = PathFunctions.SetUpFixedPath(ref rootPath, RootPath);
+            using var rootPath = new Path();
+            Result rc = PathFunctions.SetUpFixedPath(ref rootPath.Ref(), RootPath);
             if (rc.IsFailure()) return rc;
 
             var closure = new FsIterationTaskClosure();
@@ -343,52 +343,44 @@ namespace LibHac.FsSystem
 
         private static Result EnsureDirectoryImpl(IFileSystem fileSystem, in Path path)
         {
-            var pathCopy = new Path();
+            using var pathCopy = new Path();
+            bool isFinished;
 
-            try
+            Result rc = pathCopy.Initialize(in path);
+            if (rc.IsFailure()) return rc;
+
+            using var parser = new DirectoryPathParser();
+            rc = parser.Initialize(ref pathCopy.Ref());
+            if (rc.IsFailure()) return rc;
+
+            do
             {
-                bool isFinished;
-
-                Result rc = pathCopy.Initialize(in path);
-                if (rc.IsFailure()) return rc;
-
-                using var parser = new DirectoryPathParser();
-                rc = parser.Initialize(ref pathCopy);
-                if (rc.IsFailure()) return rc;
-
-                do
+                // Check if the path exists
+                rc = fileSystem.GetEntryType(out DirectoryEntryType type, in parser.CurrentPath);
+                if (!rc.IsSuccess())
                 {
-                    // Check if the path exists
-                    rc = fileSystem.GetEntryType(out DirectoryEntryType type, in parser.CurrentPath);
-                    if (!rc.IsSuccess())
-                    {
-                        // Something went wrong if we get a result other than PathNotFound
-                        if (!ResultFs.PathNotFound.Includes(rc))
-                            return rc;
+                    // Something went wrong if we get a result other than PathNotFound
+                    if (!ResultFs.PathNotFound.Includes(rc))
+                        return rc;
 
-                        // Create the directory
-                        rc = fileSystem.CreateDirectory(in parser.CurrentPath);
-                        if (rc.IsFailure() && !ResultFs.PathAlreadyExists.Includes(rc))
-                            return rc;
+                    // Create the directory
+                    rc = fileSystem.CreateDirectory(in parser.CurrentPath);
+                    if (rc.IsFailure() && !ResultFs.PathAlreadyExists.Includes(rc))
+                        return rc;
 
-                        // Check once more if the path exists
-                        rc = fileSystem.GetEntryType(out type, in parser.CurrentPath);
-                        if (rc.IsFailure()) return rc;
-                    }
-
-                    if (type == DirectoryEntryType.File)
-                        return ResultFs.PathAlreadyExists.Log();
-
-                    rc = parser.ReadNext(out isFinished);
+                    // Check once more if the path exists
+                    rc = fileSystem.GetEntryType(out type, in parser.CurrentPath);
                     if (rc.IsFailure()) return rc;
-                } while (!isFinished);
+                }
 
-                return Result.Success;
-            }
-            finally
-            {
-                pathCopy.Dispose();
-            }
+                if (type == DirectoryEntryType.File)
+                    return ResultFs.PathAlreadyExists.Log();
+
+                rc = parser.ReadNext(out isFinished);
+                if (rc.IsFailure()) return rc;
+            } while (!isFinished);
+
+            return Result.Success;
         }
 
         public static Result EnsureDirectory(IFileSystem fileSystem, in Path path)

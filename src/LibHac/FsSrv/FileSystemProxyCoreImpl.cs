@@ -48,33 +48,31 @@ namespace LibHac.FsSrv
                     Result rc = BaseFileSystemService.OpenBisFileSystem(out fileSystem, BisPartitionId.User);
                     if (rc.IsFailure()) return rc;
 
-                    var path = new Path();
+                    using var path = new Path();
                     var sb = new U8StringBuilder(pathBuffer);
                     sb.Append((byte)'/')
                         .Append(CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System));
 
-                    rc = PathFunctions.SetUpFixedPath(ref path, pathBuffer);
+                    rc = PathFunctions.SetUpFixedPath(ref path.Ref(), pathBuffer);
                     if (rc.IsFailure()) return rc;
 
                     tempFs = Shared.Move(ref fileSystem);
                     rc = Utility.WrapSubDirectory(out fileSystem, ref tempFs, in path, true);
                     if (rc.IsFailure()) return rc;
-
-                    path.Dispose();
                 }
                 else if (storageId == CustomStorageId.SdCard)
                 {
                     Result rc = BaseFileSystemService.OpenSdCardProxyFileSystem(out fileSystem);
                     if (rc.IsFailure()) return rc;
 
-                    var path = new Path();
+                    using var path = new Path();
                     var sb = new U8StringBuilder(pathBuffer);
                     sb.Append((byte)'/')
                         .Append(CommonPaths.SdCardNintendoRootDirectoryName)
                         .Append((byte)'/')
                         .Append(CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.SdCard));
 
-                    rc = PathFunctions.SetUpFixedPath(ref path, pathBuffer);
+                    rc = PathFunctions.SetUpFixedPath(ref path.Ref(), pathBuffer);
                     if (rc.IsFailure()) return rc;
 
                     tempFs = Shared.Move(ref fileSystem);
@@ -85,8 +83,6 @@ namespace LibHac.FsSrv
                     rc = FsCreators.EncryptedFileSystemCreator.Create(out fileSystem, ref tempFs,
                         IEncryptedFileSystemCreator.KeyId.CustomStorage, SdEncryptionSeed);
                     if (rc.IsFailure()) return rc;
-
-                    path.Dispose();
                 }
                 else
                 {
@@ -107,18 +103,17 @@ namespace LibHac.FsSrv
         {
             UnsafeHelpers.SkipParamInit(out fileSystem);
 
-            var pathHost = new Path();
+            using var pathHost = new Path();
             Result rc = pathHost.Initialize(in path);
             if (rc.IsFailure()) return rc;
 
-            rc = FsCreators.TargetManagerFileSystemCreator.NormalizeCaseOfPath(out bool isSupported, ref pathHost);
+            rc = FsCreators.TargetManagerFileSystemCreator.NormalizeCaseOfPath(out bool isSupported, ref pathHost.Ref());
             if (rc.IsFailure()) return rc;
 
             rc = FsCreators.TargetManagerFileSystemCreator.Create(out fileSystem, in pathHost, isSupported, false,
                 Result.Success);
             if (rc.IsFailure()) return rc;
 
-            pathHost.Dispose();
             return Result.Success;
         }
 

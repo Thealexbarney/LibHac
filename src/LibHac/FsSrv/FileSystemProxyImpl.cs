@@ -530,7 +530,7 @@ namespace LibHac.FsSrv
             ReferenceCountedDisposable<IFileSystem> hostFileSystem = null;
             try
             {
-                var pathNormalized = new Path();
+                using var pathNormalized = new Path();
 
                 if (path.Str.At(0) == DirectorySeparator && path.Str.At(1) != DirectorySeparator)
                 {
@@ -562,7 +562,6 @@ namespace LibHac.FsSrv
 
                 fileSystem = FileSystemInterfaceAdapter.CreateShared(ref hostFileSystem, adapterFlags, false);
 
-                pathNormalized.Dispose();
                 return Result.Success;
             }
             finally

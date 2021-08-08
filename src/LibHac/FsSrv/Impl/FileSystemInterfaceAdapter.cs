@@ -337,34 +337,32 @@ namespace LibHac.FsSrv.Impl
             if (size < 0)
                 return ResultFs.InvalidSize.Log();
 
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, in path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             rc = _baseFileSystem.Target.CreateFile(in pathNormalized, size, (CreateFileOptions)option);
             if (rc.IsFailure()) return rc;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
         public Result DeleteFile(in PathSf path)
         {
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, in path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             rc = _baseFileSystem.Target.DeleteFile(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
         public Result CreateDirectory(in PathSf path)
         {
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, in path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             if (pathNormalized == RootDir)
@@ -373,14 +371,13 @@ namespace LibHac.FsSrv.Impl
             rc = _baseFileSystem.Target.CreateDirectory(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
         public Result DeleteDirectory(in PathSf path)
         {
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, in path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             if (pathNormalized == RootDir)
@@ -389,14 +386,13 @@ namespace LibHac.FsSrv.Impl
             rc = _baseFileSystem.Target.DeleteDirectory(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
         public Result DeleteDirectoryRecursively(in PathSf path)
         {
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, in path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             if (pathNormalized == RootDir)
@@ -405,49 +401,45 @@ namespace LibHac.FsSrv.Impl
             rc = _baseFileSystem.Target.DeleteDirectoryRecursively(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
         public Result CleanDirectoryRecursively(in PathSf path)
         {
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, in path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             rc = _baseFileSystem.Target.CleanDirectoryRecursively(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
         public Result RenameFile(in PathSf currentPath, in PathSf newPath)
         {
-            var currentPathNormalized = new Path();
-            Result rc = SetUpPath(ref currentPathNormalized, in currentPath);
+            using var currentPathNormalized = new Path();
+            Result rc = SetUpPath(ref currentPathNormalized.Ref(), in currentPath);
             if (rc.IsFailure()) return rc;
 
-            var newPathNormalized = new Path();
-            rc = SetUpPath(ref newPathNormalized, in newPath);
+            using var newPathNormalized = new Path();
+            rc = SetUpPath(ref newPathNormalized.Ref(), in newPath);
             if (rc.IsFailure()) return rc;
 
             rc = _baseFileSystem.Target.RenameFile(in currentPathNormalized, in newPathNormalized);
             if (rc.IsFailure()) return rc;
 
-            currentPathNormalized.Dispose();
-            newPathNormalized.Dispose();
             return Result.Success;
         }
 
         public Result RenameDirectory(in PathSf currentPath, in PathSf newPath)
         {
-            var currentPathNormalized = new Path();
-            Result rc = SetUpPath(ref currentPathNormalized, in currentPath);
+            using var currentPathNormalized = new Path();
+            Result rc = SetUpPath(ref currentPathNormalized.Ref(), in currentPath);
             if (rc.IsFailure()) return rc;
 
-            var newPathNormalized = new Path();
-            rc = SetUpPath(ref newPathNormalized, in newPath);
+            using var newPathNormalized = new Path();
+            rc = SetUpPath(ref newPathNormalized.Ref(), in newPath);
             if (rc.IsFailure()) return rc;
 
             if (PathUtility.IsSubPath(currentPathNormalized.GetString(), newPathNormalized.GetString()))
@@ -456,8 +448,6 @@ namespace LibHac.FsSrv.Impl
             rc = _baseFileSystem.Target.RenameDirectory(in currentPathNormalized, in newPathNormalized);
             if (rc.IsFailure()) return rc;
 
-            currentPathNormalized.Dispose();
-            newPathNormalized.Dispose();
             return Result.Success;
         }
 
@@ -465,15 +455,14 @@ namespace LibHac.FsSrv.Impl
         {
             UnsafeHelpers.SkipParamInit(out entryType);
 
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, in path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             rc = _baseFileSystem.Target.GetEntryType(out DirectoryEntryType type, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             entryType = (uint)type;
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
@@ -481,15 +470,14 @@ namespace LibHac.FsSrv.Impl
         {
             UnsafeHelpers.SkipParamInit(out freeSpace);
 
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, in path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             rc = _baseFileSystem.Target.GetFreeSpaceSize(out long space, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             freeSpace = space;
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
@@ -497,15 +485,14 @@ namespace LibHac.FsSrv.Impl
         {
             UnsafeHelpers.SkipParamInit(out totalSpace);
 
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, in path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             rc = _baseFileSystem.Target.GetTotalSpaceSize(out long space, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             totalSpace = space;
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
@@ -514,8 +501,8 @@ namespace LibHac.FsSrv.Impl
             const int maxTryCount = 2;
             UnsafeHelpers.SkipParamInit(out file);
 
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, in path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             IFile fileInterface = null;
@@ -536,7 +523,6 @@ namespace LibHac.FsSrv.Impl
                 var adapter = new FileInterfaceAdapter(Shared.Move(ref fileInterface), ref selfReference, _allowAllOperations);
                 file = new ReferenceCountedDisposable<IFileSf>(adapter);
 
-                pathNormalized.Dispose();
                 return Result.Success;
             }
             finally
@@ -550,8 +536,8 @@ namespace LibHac.FsSrv.Impl
             const int maxTryCount = 2;
             UnsafeHelpers.SkipParamInit(out directory);
 
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, in path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             IDirectory dirInterface = null;
@@ -573,7 +559,6 @@ namespace LibHac.FsSrv.Impl
                 var adapter = new DirectoryInterfaceAdapter(dirInterface, ref selfReference);
                 directory = new ReferenceCountedDisposable<IDirectorySf>(adapter);
 
-                pathNormalized.Dispose();
                 return Result.Success;
             }
             finally
@@ -591,15 +576,14 @@ namespace LibHac.FsSrv.Impl
         {
             UnsafeHelpers.SkipParamInit(out timeStamp);
 
-            var pathNormalized = new Path();
-            Result rc = SetUpPath(ref pathNormalized, in path);
+            using var pathNormalized = new Path();
+            Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             rc = _baseFileSystem.Target.GetFileTimeStampRaw(out FileTimeStampRaw tempTimeStamp, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             timeStamp = tempTimeStamp;
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
@@ -623,15 +607,14 @@ namespace LibHac.FsSrv.Impl
             Result rc = PermissionCheck((QueryId)queryId, this);
             if (rc.IsFailure()) return rc;
 
-            var pathNormalized = new Path();
-            rc = SetUpPath(ref pathNormalized, in path);
+            using var pathNormalized = new Path();
+            rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             rc = _baseFileSystem.Target.QueryEntry(outBuffer.Buffer, inBuffer.Buffer, (QueryId)queryId,
                 in pathNormalized);
             if (rc.IsFailure()) return rc;
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 

@@ -87,7 +87,7 @@ namespace LibHac.FsSystem
             // If the root path is empty, we interpret any incoming paths as rooted paths.
             if (rootPath == string.Empty)
             {
-                var path = new Path();
+                using var path = new Path();
                 rc = path.InitializeAsEmpty();
                 if (rc.IsFailure()) return rc;
 
@@ -128,7 +128,7 @@ namespace LibHac.FsSystem
             }
 
             ReadOnlySpan<byte> utf8Path = StringUtils.StringToUtf8(rootPathNormalized);
-            var pathNormalized = new Path();
+            using var pathNormalized = new Path();
 
             if (utf8Path.At(0) == DirectorySeparator && utf8Path.At(1) != DirectorySeparator)
             {
@@ -154,7 +154,6 @@ namespace LibHac.FsSystem
 
             _rootPathUtf16 = _rootPath.ToString();
 
-            pathNormalized.Dispose();
             return Result.Success;
         }
 
@@ -165,7 +164,7 @@ namespace LibHac.FsSystem
             // Always normalize the incoming path even if it claims to already be normalized
             // because we don't want to allow access to anything outside the root path.
 
-            var pathNormalized = new Path();
+            using var pathNormalized = new Path();
             Result rc = pathNormalized.Initialize(path.GetString());
             if (rc.IsFailure()) return rc;
 
@@ -178,7 +177,7 @@ namespace LibHac.FsSystem
 
             Path rootPath = _rootPath.GetPath();
 
-            var fullPath = new Path();
+            using var fullPath = new Path();
             rc = fullPath.Combine(in rootPath, in pathNormalized);
             if (rc.IsFailure()) return rc;
 

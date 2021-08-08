@@ -117,7 +117,7 @@ namespace LibHac.FsSrv
             using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
             // Normalize the path
-            var pathNormalized = new Path();
+            using var pathNormalized = new Path();
             rc = pathNormalized.Initialize(rootPath.Str);
             if (rc.IsFailure()) return rc;
 

@@ -5,6 +5,7 @@ using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Util;
 using static LibHac.Fs.StringTraits;
+using static InlineIL.IL.Emit;
 
 // ReSharper disable once CheckNamespace
 namespace LibHac.Fs
@@ -24,6 +25,48 @@ namespace LibHac.Fs
         public bool IsEmptyPathAllowed() => (_value & (1 << 2)) != 0;
         public bool IsMountNameAllowed() => (_value & (1 << 3)) != 0;
         public bool IsBackslashAllowed() => (_value & (1 << 4)) != 0;
+    }
+
+    /// <summary>
+    /// Contains functions like those in <see cref="System.Runtime.CompilerServices.Unsafe"/> because ref struct
+    /// types can't be used as generics yet.
+    /// </summary>
+    public static class PathExtensions
+    {
+        /// <summary>
+        /// Reinterprets the given read-only reference as a reference.
+        /// </summary>
+        /// <remarks><para>This function allows using a <see langword="using"/> expression with <see cref="Path"/>s
+        /// while still being able to pass it by reference.</para>
+        /// <para>This function is a static method instead of an instance method because
+        /// as a static method we get escape analysis so the lifetime of the returned reference is restricted to that
+        /// of the input <see langword="readonly"/> reference.</para></remarks>
+        /// <param name="path">The read-only reference to reinterpret.</param>
+        /// <returns>A reference to the given <see cref="Path"/>.</returns>
+        // ReSharper disable once EntityNameCapturedOnly.Global
+        public static ref Path Ref(this in Path path)
+        {
+            Ldarg(nameof(path));
+            Ret();
+            throw InlineIL.IL.Unreachable();
+        }
+
+        public static ref Path GetNullRef()
+        {
+            Ldc_I4_0();
+            Conv_U();
+            Ret();
+            throw InlineIL.IL.Unreachable();
+        }
+
+        public static bool IsNullRef(in Path path)
+        {
+            Ldarg_0();
+            Ldc_I4_0();
+            Conv_U();
+            Ceq();
+            return InlineIL.IL.Return<bool>();
+        }
     }
 
     /// <summary>
@@ -133,7 +176,6 @@ namespace LibHac.Fs
         private int _writeBufferLength;
         private bool _isNormalized;
 
-        // Todo: Hack around "using" variables being read only
         public void Dispose()
         {
             byte[] writeBuffer = Shared.Move(ref _writeBuffer);

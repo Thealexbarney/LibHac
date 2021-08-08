@@ -38,7 +38,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Fody" Version="6.5.2" PrivateAssets="All" />
+    <PackageReference Include="InlineIL.Fody" Version="1.7.1" PrivateAssets="All" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>
+
+  <!-- Configuration for Fody -->
+  <PropertyGroup>
+    <WeaverConfiguration>
+      <Weavers>
+        <InlineIL />
+      </Weavers>
+    </WeaverConfiguration>
+  </PropertyGroup>
 
 </Project>

@@ -20,8 +20,8 @@ namespace LibHac.Tests.Fs
             baseFs.CreateDirectory("/sub");
             baseFs.CreateDirectory("/sub/path");
 
-            var rootPath = new Path();
-            PathFunctions.SetUpFixedPath(ref rootPath, "/sub/path".ToU8String());
+            using var rootPath = new Path();
+            PathFunctions.SetUpFixedPath(ref rootPath.Ref(), "/sub/path".ToU8String());
 
             var subFs = new SubdirectoryFileSystem(baseFs);
             subFs.Initialize(in rootPath).ThrowIfFailure();
@@ -58,8 +58,8 @@ namespace LibHac.Tests.Fs
         {
             var baseFs = new InMemoryFileSystem();
 
-            var rootPath = new Path();
-            PathFunctions.SetUpFixedPath(ref rootPath, "/".ToU8String());
+            using var rootPath = new Path();
+            PathFunctions.SetUpFixedPath(ref rootPath.Ref(), "/".ToU8String());
 
             var subFs = new SubdirectoryFileSystem(baseFs);
             subFs.Initialize(in rootPath).ThrowIfFailure();

@@ -121,7 +121,7 @@ namespace LibHac.FsSrv
                 if (!mountNameInfo.IsHostFs)
                     return ResultFs.PermissionDenied.Log();
 
-                var directoryPath = new Path();
+                using var directoryPath = new Path();
                 rc = directoryPath.InitializeWithNormalization(currentPath.Value);
                 if (rc.IsFailure()) return rc;
 
@@ -238,7 +238,7 @@ namespace LibHac.FsSrv
             ReferenceCountedDisposable<IFileSystem> baseFileSystem = null;
             ReferenceCountedDisposable<IFileSystem> subDirFileSystem = null;
             ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
-            Path contentStoragePath = default;
+
             try
             {
                 Result rc;
@@ -280,8 +280,8 @@ namespace LibHac.FsSrv
                     sb.Append(StringTraits.DirectorySeparator).Append(ContentStorageDirectoryName);
                 }
 
-                contentStoragePath = new Path();
-                rc = PathFunctions.SetUpFixedPath(ref contentStoragePath, contentStoragePathBuffer);
+                using var contentStoragePath = new Path();
+                rc = PathFunctions.SetUpFixedPath(ref contentStoragePath.Ref(), contentStoragePathBuffer);
                 if (rc.IsFailure()) return rc;
 
                 // Make sure the content storage path exists
@@ -311,7 +311,6 @@ namespace LibHac.FsSrv
                 baseFileSystem?.Dispose();
                 subDirFileSystem?.Dispose();
                 tempFileSystem?.Dispose();
-                contentStoragePath.Dispose();
             }
         }
 
@@ -481,7 +480,7 @@ namespace LibHac.FsSrv
             {
                 path = path.Slice(CommonPaths.HostRootFileSystemMountName.Length);
 
-                var rootPathEmpty = new Path();
+                using var rootPathEmpty = new Path();
                 Result rc = rootPathEmpty.InitializeAsEmpty();
                 if (rc.IsFailure()) return rc;
 
@@ -579,24 +578,22 @@ namespace LibHac.FsSrv
         {
             UnsafeHelpers.SkipParamInit(out fileSystem);
 
-            var pathRoot = new Path();
-            var pathData = new Path();
+            using var pathRoot = new Path();
+            using var pathData = new Path();
 
-            Result rc = PathFunctions.SetUpFixedPath(ref pathData,
+            Result rc = PathFunctions.SetUpFixedPath(ref pathData.Ref(),
                 new[] { (byte)'/', (byte)'d', (byte)'a', (byte)'t', (byte)'a' });
             if (rc.IsFailure()) return rc;
 
             rc = pathRoot.Combine(in path, in pathData);
             if (rc.IsFailure()) return rc;
 
-            rc = _config.TargetManagerFsCreator.NormalizeCaseOfPath(out bool isSupported, ref pathRoot);
+            rc = _config.TargetManagerFsCreator.NormalizeCaseOfPath(out bool isSupported, ref pathRoot.Ref());
             if (rc.IsFailure()) return rc;
 
             rc = _config.TargetManagerFsCreator.Create(out fileSystem, in pathRoot, isSupported, false, Result.Success);
             if (rc.IsFailure()) return rc;
 
-            pathData.Dispose();
-            pathRoot.Dispose();
             return Result.Success;
         }
 
@@ -721,8 +718,8 @@ namespace LibHac.FsSrv
             ReferenceCountedDisposable<IFileSystem> subDirFs = null;
             try
             {
-                var directoryPath = new Path();
-                Result rc = PathFunctions.SetUpFixedPath(ref directoryPath, dirName);
+                using var directoryPath = new Path();
+                Result rc = PathFunctions.SetUpFixedPath(ref directoryPath.Ref(), dirName);
                 if (rc.IsFailure()) return rc;
 
                 if (directoryPath.IsEmpty())

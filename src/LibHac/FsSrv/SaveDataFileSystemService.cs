@@ -626,7 +626,7 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.CanCall(OperationType.DebugSaveData))
                 return ResultFs.PermissionDenied.Log();
 
-            var saveDataRootPath = new Path();
+            using var saveDataRootPath = new Path();
 
             if (path.Str[0] == NullTerminator)
             {
@@ -648,7 +648,6 @@ namespace LibHac.FsSrv
             if (rc.IsFailure()) return rc;
 
             _saveDataRootPath.Initialize(in saveDataRootPath);
-            saveDataRootPath.Dispose();
 
             return Result.Success;
         }
@@ -661,12 +660,11 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.CanCall(OperationType.DebugSaveData))
                 return ResultFs.PermissionDenied.Log();
 
-            var saveDataRootPath = new Path();
+            using var saveDataRootPath = new Path();
             rc = saveDataRootPath.InitializeAsEmpty();
             if (rc.IsFailure()) return rc;
 
             _saveDataRootPath.Initialize(in saveDataRootPath);
-            saveDataRootPath.Dispose();
 
             return Result.Success;
         }
@@ -2114,8 +2112,8 @@ namespace LibHac.FsSrv
                 Result rc = _serviceImpl.OpenSaveDataDirectoryFileSystem(out fileSystem, SaveDataSpaceId.Temporary);
                 if (rc.IsFailure()) return rc;
 
-                var pathRoot = new Path();
-                rc = PathFunctions.SetUpFixedPath(ref pathRoot, new[] { (byte)'/' });
+                using var pathRoot = new Path();
+                rc = PathFunctions.SetUpFixedPath(ref pathRoot.Ref(), new[] { (byte)'/' });
                 if (rc.IsFailure()) return rc;
 
                 rc = fileSystem.Target.CleanDirectoryRecursively(in pathRoot);
