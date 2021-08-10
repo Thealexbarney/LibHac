@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Threading;
 using LibHac.Common;
+using static InlineIL.IL.Emit;
 
 namespace LibHac.Os
 {
@@ -23,6 +24,22 @@ namespace LibHac.Os
         public static UniqueLock<TMutex> Lock<TMutex>(TMutex lockable) where TMutex : class, ILockable
         {
             return new UniqueLock<TMutex>(lockable);
+        }
+
+        // ReSharper disable once EntityNameCapturedOnly.Global
+        public static ref UniqueLockRef<T> Ref<T>(this in UniqueLockRef<T> value) where T : struct, ILockable
+        {
+            Ldarg(nameof(value));
+            Ret();
+            throw InlineIL.IL.Unreachable();
+        }
+
+        // ReSharper disable once EntityNameCapturedOnly.Global
+        public static ref UniqueLock<T> Ref<T>(this in UniqueLock<T> value) where T : class, ILockable
+        {
+            Ldarg(nameof(value));
+            Ret();
+            throw InlineIL.IL.Unreachable();
         }
     }
 

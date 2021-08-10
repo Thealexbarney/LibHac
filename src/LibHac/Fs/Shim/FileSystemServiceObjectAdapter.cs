@@ -252,10 +252,8 @@ namespace LibHac.Fs.Impl
             return BaseFs.Target.GetTotalSpaceSize(out totalSpace, in sfPath);
         }
 
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out file);
-
             Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
 
@@ -265,7 +263,7 @@ namespace LibHac.Fs.Impl
                 rc = BaseFs.Target.OpenFile(out sfFile, in sfPath, (uint)mode);
                 if (rc.IsFailure()) return rc;
 
-                file = new FileServiceObjectAdapter(sfFile);
+                outFile.Reset(new FileServiceObjectAdapter(sfFile));
                 return Result.Success;
             }
             finally
@@ -274,10 +272,9 @@ namespace LibHac.Fs.Impl
             }
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out directory);
-
             Result rc = GetPathForServiceObject(out PathSf sfPath, path);
             if (rc.IsFailure()) return rc;
 
@@ -287,7 +284,7 @@ namespace LibHac.Fs.Impl
                 rc = BaseFs.Target.OpenDirectory(out sfDir, in sfPath, (uint)mode);
                 if (rc.IsFailure()) return rc;
 
-                directory = new DirectoryServiceObjectAdapter(sfDir);
+                outDirectory.Reset(new DirectoryServiceObjectAdapter(sfDir));
                 return Result.Success;
             }
             finally

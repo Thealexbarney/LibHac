@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.FsSrv.Sf;
 using LibHac.Svc;
 
@@ -6,7 +7,7 @@ namespace LibHac.FsSrv.Impl
 {
     public class AccessFailureDetectionEventManager
     {
-        public Result CreateNotifier(out IEventNotifier notifier, ulong processId, bool notifyOnDeepRetry)
+        public Result CreateNotifier(ref UniqueRef<IEventNotifier> notifier, ulong processId, bool notifyOnDeepRetry)
         {
             throw new NotImplementedException();
         }

@@ -26,12 +26,14 @@ namespace LibHac.FsSystem
         /// </summary>
         public PartitionFileSystemBuilder(IFileSystem input)
         {
+            using var file = new UniqueRef<IFile>();
+
             foreach (DirectoryEntryEx entry in input.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File)
                 .OrderBy(x => x.FullPath, StringComparer.Ordinal))
             {
-                input.OpenFile(out IFile file, entry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
+                input.OpenFile(ref file.Ref(), entry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
-                AddFile(entry.FullPath.TrimStart('/'), file);
+                AddFile(entry.FullPath.TrimStart('/'), file.Release());
             }
         }
 

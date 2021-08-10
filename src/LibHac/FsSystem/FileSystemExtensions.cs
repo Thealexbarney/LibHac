@@ -95,42 +95,38 @@ namespace LibHac.FsSystem
             logger?.LogMessage(sourcePath.ToString());
 
             // Open source file.
-            Result rc = sourceFileSystem.OpenFile(out IFile sourceFile, sourcePath, OpenMode.Read);
+            using var sourceFile = new UniqueRef<IFile>();
+            Result rc = sourceFileSystem.OpenFile(ref sourceFile.Ref(), sourcePath, OpenMode.Read);
             if (rc.IsFailure()) return rc;
 
-            using (sourceFile)
+            rc = sourceFile.Get.GetSize(out long fileSize);
+            if (rc.IsFailure()) return rc;
+
+            rc = CreateOrOverwriteFile(destFileSystem, in destPath, fileSize, option);
+            if (rc.IsFailure()) return rc;
+
+            using var destFile = new UniqueRef<IFile>();
+            rc = destFileSystem.OpenFile(ref destFile.Ref(), in destPath, OpenMode.Write);
+            if (rc.IsFailure()) return rc;
+
+            // Read/Write file in work buffer sized chunks.
+            long remaining = fileSize;
+            long offset = 0;
+
+            logger?.SetTotal(fileSize);
+
+            while (remaining > 0)
             {
-                rc = sourceFile.GetSize(out long fileSize);
+                rc = sourceFile.Get.Read(out long bytesRead, offset, workBuffer, ReadOption.None);
                 if (rc.IsFailure()) return rc;
 
-                rc = CreateOrOverwriteFile(destFileSystem, in destPath, fileSize, option);
+                rc = destFile.Get.Write(offset, workBuffer.Slice(0, (int)bytesRead), WriteOption.None);
                 if (rc.IsFailure()) return rc;
 
-                rc = destFileSystem.OpenFile(out IFile destFile, in destPath, OpenMode.Write);
-                if (rc.IsFailure()) return rc;
+                remaining -= bytesRead;
+                offset += bytesRead;
 
-                using (destFile)
-                {
-                    // Read/Write file in work buffer sized chunks.
-                    long remaining = fileSize;
-                    long offset = 0;
-
-                    logger?.SetTotal(fileSize);
-
-                    while (remaining > 0)
-                    {
-                        rc = sourceFile.Read(out long bytesRead, offset, workBuffer, ReadOption.None);
-                        if (rc.IsFailure()) return rc;
-
-                        rc = destFile.Write(offset, workBuffer.Slice(0, (int)bytesRead), WriteOption.None);
-                        if (rc.IsFailure()) return rc;
-
-                        remaining -= bytesRead;
-                        offset += bytesRead;
-
-                        logger?.ReportAdd(bytesRead);
-                    }
-                }
+                logger?.ReportAdd(bytesRead);
             }
 
             return Result.Success;
@@ -166,13 +162,14 @@ namespace LibHac.FsSystem
             var pathNormalized = new Path();
             InitializeFromString(ref pathNormalized, path).ThrowIfFailure();
 
-            fileSystem.OpenDirectory(out IDirectory directory, in pathNormalized, OpenDirectoryMode.All).ThrowIfFailure();
+            using var directory = new UniqueRef<IDirectory>();
+            fileSystem.OpenDirectory(ref directory.Ref(), in pathNormalized, OpenDirectoryMode.All).ThrowIfFailure();
 
             while (true)
             {
                 Unsafe.SkipInit(out DirectoryEntry dirEntry);
 
-                directory.Read(out long entriesRead, SpanHelpers.AsSpan(ref dirEntry)).ThrowIfFailure();
+                directory.Get.Read(out long entriesRead, SpanHelpers.AsSpan(ref dirEntry)).ThrowIfFailure();
                 if (entriesRead == 0) break;
 
                 DirectoryEntryEx entry = GetDirectoryEntryEx(ref dirEntry, path);

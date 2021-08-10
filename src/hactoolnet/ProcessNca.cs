@@ -227,8 +227,9 @@ namespace hactoolnet
             IFileSystem pfs = nca.OpenFileSystem(NcaSectionType.Code, IntegrityCheckLevel.ErrorOnInvalid);
             if (!pfs.FileExists("main.npdm")) return Validity.Unchecked;
 
-            pfs.OpenFile(out IFile npdmFile, "main.npdm".ToU8String(), OpenMode.Read).ThrowIfFailure();
-            var npdm = new NpdmBinary(npdmFile.AsStream());
+            using var npdmFile = new UniqueRef<IFile>();
+            pfs.OpenFile(ref npdmFile.Ref(), "main.npdm".ToU8String(), OpenMode.Read).ThrowIfFailure();
+            var npdm = new NpdmBinary(npdmFile.Release().AsStream());
 
             return nca.Header.VerifySignature2(npdm.AciD.Rsa2048Modulus);
         }
@@ -258,10 +259,12 @@ namespace hactoolnet
             if (nca.CanOpenSection(NcaSectionType.Code))
             {
                 IFileSystem fs = nca.OpenFileSystem(NcaSectionType.Code, IntegrityCheckLevel.None);
-                Result r = fs.OpenFile(out IFile file, "/main.npdm".ToU8String(), OpenMode.Read);
+
+                using var file = new UniqueRef<IFile>();
+                Result r = fs.OpenFile(ref file.Ref(), "/main.npdm".ToU8String(), OpenMode.Read);
                 if (r.IsSuccess())
                 {
-                    var npdm = new NpdmBinary(file.AsStream(), null);
+                    var npdm = new NpdmBinary(file.Release().AsStream(), null);
                     PrintItem(sb, colLen, "Title Name:", npdm.TitleName);
                 }
             }

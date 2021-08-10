@@ -134,10 +134,9 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out directory);
-
             Result rc = CheckIfNormalized(in path);
             if (rc.IsFailure()) return rc;
 
@@ -146,15 +145,13 @@ namespace LibHac.FsSystem.Save
                 return ResultFs.PathNotFound.Log();
             }
 
-            directory = new SaveDataDirectory(this, position, mode);
+            outDirectory.Reset(new SaveDataDirectory(this, position, mode));
 
             return Result.Success;
         }
 
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out file);
-
             Result rc = CheckIfNormalized(in path);
             if (rc.IsFailure()) return rc;
 
@@ -165,7 +162,7 @@ namespace LibHac.FsSystem.Save
 
             AllocationTableStorage storage = OpenFatStorage(fileInfo.StartBlock);
 
-            file = new SaveDataFile(storage, new U8Span(path.GetString()), FileTable, fileInfo.Length, mode);
+            outFile.Reset(new SaveDataFile(storage, new U8Span(path.GetString()), FileTable, fileInfo.Length, mode));
 
             return Result.Success;
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using Xunit;
@@ -16,18 +17,16 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             fs.CreateFile("/file", data.Length, CreateFileOptions.None);
 
-            fs.OpenFile(out IFile file, "/file", OpenMode.Write);
-            file.Write(0, data, WriteOption.None);
-            file.Dispose();
+            using var file = new UniqueRef<IFile>();
+            fs.OpenFile(ref file.Ref(), "/file", OpenMode.Write);
+            file.Get.Write(0, data, WriteOption.None);
+            file.Reset();
 
             byte[] readData = new byte[data.Length];
+            fs.OpenFile(ref file.Ref(), "/file", OpenMode.Read);
 
-            fs.OpenFile(out file, "/file", OpenMode.Read);
-            using (file)
-            {
-                Assert.Success(file.Read(out long bytesRead, 0, readData, ReadOption.None));
-                Assert.Equal(data.Length, bytesRead);
-            }
+            Assert.Success(file.Get.Read(out long bytesRead, 0, readData, ReadOption.None));
+            Assert.Equal(data.Length, bytesRead);
 
             Assert.Equal(data, readData);
         }
@@ -40,12 +39,11 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.CreateFile("/file", 10, CreateFileOptions.None);
 
             byte[] buffer = new byte[10];
-            fs.OpenFile(out IFile file, "/file", OpenMode.Write);
-            using (file)
-            {
-                Result rc = file.Write(5, buffer, WriteOption.None);
-                Assert.Result(ResultFs.FileExtensionWithoutOpenModeAllowAppend, rc);
-            }
+            using var file = new UniqueRef<IFile>();
+            fs.OpenFile(ref file.Ref(), "/file", OpenMode.Write);
+
+            Result rc = file.Get.Write(5, buffer, WriteOption.None);
+            Assert.Result(ResultFs.FileExtensionWithoutOpenModeAllowAppend, rc);
         }
 
         [Fact]
@@ -56,12 +54,11 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.CreateFile("/file", 10, CreateFileOptions.None);
 
             byte[] buffer = new byte[10];
-            fs.OpenFile(out IFile file, "/file", OpenMode.Read);
-            using (file)
-            {
-                Result rc = file.Write(5, buffer, WriteOption.None);
-                Assert.Result(ResultFs.WriteUnpermitted, rc);
-            }
+            using var file = new UniqueRef<IFile>();
+            fs.OpenFile(ref file.Ref(), "/file", OpenMode.Read);
+
+            Result rc = file.Get.Write(5, buffer, WriteOption.None);
+            Assert.Result(ResultFs.WriteUnpermitted, rc);
         }
 
         [Fact]
@@ -72,12 +69,11 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.CreateFile("/file", 10, CreateFileOptions.None);
 
             byte[] buffer = new byte[10];
-            fs.OpenFile(out IFile file, "/file", OpenMode.Read);
-            using (file)
-            {
-                Result rc = file.Write(-5, buffer, WriteOption.None);
-                Assert.Result(ResultFs.OutOfRange, rc);
-            }
+            using var file = new UniqueRef<IFile>();
+            fs.OpenFile(ref file.Ref(), "/file", OpenMode.Read);
+
+            Result rc = file.Get.Write(-5, buffer, WriteOption.None);
+            Assert.Result(ResultFs.OutOfRange, rc);
         }
 
         [Fact]
@@ -88,12 +84,11 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.CreateFile("/file", 10, CreateFileOptions.None);
 
             byte[] buffer = new byte[10];
-            fs.OpenFile(out IFile file, "/file", OpenMode.Read);
-            using (file)
-            {
-                Result rc = file.Write(long.MaxValue - 5, buffer, WriteOption.None);
-                Assert.Result(ResultFs.OutOfRange, rc);
-            }
+            using var file = new UniqueRef<IFile>();
+            fs.OpenFile(ref file.Ref(), "/file", OpenMode.Read);
+
+            Result rc = file.Get.Write(long.MaxValue - 5, buffer, WriteOption.None);
+            Assert.Result(ResultFs.OutOfRange, rc);
         }
 
         [Fact]
@@ -104,14 +99,13 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.CreateFile("/file", 10, CreateFileOptions.None);
 
             byte[] buffer = new byte[10];
-            fs.OpenFile(out IFile file, "/file", OpenMode.All);
-            using (file)
-            {
-                Assert.Success(file.Write(5, buffer, WriteOption.None));
+            using var file = new UniqueRef<IFile>();
+            fs.OpenFile(ref file.Ref(), "/file", OpenMode.All);
 
-                file.GetSize(out long newSize);
-                Assert.Equal(15, newSize);
-            }
+            Assert.Success(file.Get.Write(5, buffer, WriteOption.None));
+
+            file.Get.GetSize(out long newSize);
+            Assert.Equal(15, newSize);
         }
 
         [Fact]
@@ -122,14 +116,13 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.CreateFile("/file", 10, CreateFileOptions.None);
 
             byte[] buffer = new byte[10];
-            fs.OpenFile(out IFile file, "/file", OpenMode.All);
-            using (file)
-            {
-                Assert.Success(file.Write(15, buffer, WriteOption.None));
+            using var file = new UniqueRef<IFile>();
+            fs.OpenFile(ref file.Ref(), "/file", OpenMode.All);
 
-                file.GetSize(out long newSize);
-                Assert.Equal(25, newSize);
-            }
+            Assert.Success(file.Get.Write(15, buffer, WriteOption.None));
+
+            file.Get.GetSize(out long newSize);
+            Assert.Equal(25, newSize);
         }
 
         [Fact]
@@ -145,23 +138,21 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             byte[] writeBuffer = new byte[10];
             writeBuffer.AsSpan().Fill(0xCC);
 
-            fs.OpenFile(out IFile file, "/file", OpenMode.All);
-            using (file)
-            {
-                Assert.Success(file.Write(15, writeBuffer, WriteOption.None));
+            using var file = new UniqueRef<IFile>();
+            fs.OpenFile(ref file.Ref(), "/file", OpenMode.All);
 
-                // Unwritten portions of new files are undefined, so write to the other portions
-                file.Write(0, new byte[15], WriteOption.None);
-            }
+            Assert.Success(file.Get.Write(15, writeBuffer, WriteOption.None));
+
+            // Unwritten portions of new files are undefined, so write to the other portions
+            file.Get.Write(0, new byte[15], WriteOption.None);
+            file.Reset();
 
             byte[] readBuffer = new byte[25];
 
-            fs.OpenFile(out file, "/file", OpenMode.Read);
-            using (file)
-            {
-                file.Read(out _, 0, readBuffer, ReadOption.None);
-                Assert.Equal(bufferExpected, readBuffer);
-            }
+            fs.OpenFile(ref file.Ref(), "/file", OpenMode.Read);
+
+            file.Get.Read(out _, 0, readBuffer, ReadOption.None);
+            Assert.Equal(bufferExpected, readBuffer);
         }
     }
 }

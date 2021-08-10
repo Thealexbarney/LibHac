@@ -107,9 +107,10 @@ namespace LibHac
                 SwitchFsNca nca = null;
                 try
                 {
-                    ContentFs.OpenFile(out IFile ncaFile, fileEntry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
+                    using var ncaFile = new UniqueRef<IFile>();
+                    ContentFs.OpenFile(ref ncaFile.Ref(), fileEntry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
-                    nca = new SwitchFsNca(new Nca(KeySet, ncaFile.AsStorage()));
+                    nca = new SwitchFsNca(new Nca(KeySet, ncaFile.Release().AsStorage()));
 
                     nca.NcaId = GetNcaFilename(fileEntry.Name, nca);
                     string extension = nca.Nca.Header.ContentType == NcaContentType.Meta ? ".cnmt.nca" : ".nca";
@@ -145,9 +146,10 @@ namespace LibHac
 
                 try
                 {
-                    SaveFs.OpenFile(out IFile file, fileEntry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
+                    using var file = new UniqueRef<IFile>();
+                    SaveFs.OpenFile(ref file.Ref(), fileEntry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
-                    save = new SaveDataFileSystem(KeySet, file.AsStorage(), IntegrityCheckLevel.None, true);
+                    save = new SaveDataFileSystem(KeySet, file.Release().AsStorage(), IntegrityCheckLevel.None, true);
                 }
                 catch (Exception ex)
                 {
@@ -172,9 +174,10 @@ namespace LibHac
                     IFileSystem fs = nca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
                     string cnmtPath = fs.EnumerateEntries("/", "*.cnmt").Single().FullPath;
 
-                    fs.OpenFile(out IFile file, cnmtPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
+                    using var file = new UniqueRef<IFile>();
+                    fs.OpenFile(ref file.Ref(), cnmtPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
-                    var metadata = new Cnmt(file.AsStream());
+                    var metadata = new Cnmt(file.Release().AsStream());
                     title.Id = metadata.TitleId;
                     title.Version = metadata.TitleVersion;
                     title.Metadata = metadata;
@@ -216,11 +219,12 @@ namespace LibHac
             foreach (Title title in Titles.Values.Where(x => x.ControlNca != null))
             {
                 IFileSystem romfs = title.ControlNca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
-                romfs.OpenFile(out IFile control, "/control.nacp".ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
-                using (control)
+                using (var control = new UniqueRef<IFile>())
                 {
-                    control.Read(out _, 0, title.Control.ByteSpan).ThrowIfFailure();
+                    romfs.OpenFile(ref control.Ref(), "/control.nacp".ToU8Span(), OpenMode.Read).ThrowIfFailure();
+
+                    control.Get.Read(out _, 0, title.Control.ByteSpan).ThrowIfFailure();
                 }
 
                 foreach (ref ApplicationControlTitle desc in title.Control.Value.Titles)

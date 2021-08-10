@@ -343,11 +343,9 @@ namespace LibHac.FsSrv
             }
         }
 
-        public Result OpenSaveDataMeta(out IFile metaFile, ulong saveDataId, SaveDataSpaceId spaceId,
+        public Result OpenSaveDataMeta(ref UniqueRef<IFile> outMetaFile, ulong saveDataId, SaveDataSpaceId spaceId,
             SaveDataMetaType metaType)
         {
-            UnsafeHelpers.SkipParamInit(out metaFile);
-
             ReferenceCountedDisposable<IFileSystem> metaDirFs = null;
             try
             {
@@ -365,7 +363,7 @@ namespace LibHac.FsSrv
                     (uint)metaType);
                 if (rc.IsFailure()) return rc;
 
-                return metaDirFs.Target.OpenFile(out metaFile, in saveDataMetaName, OpenMode.ReadWrite);
+                return metaDirFs.Target.OpenFile(ref outMetaFile, in saveDataMetaName, OpenMode.ReadWrite);
             }
             finally
             {
@@ -875,25 +873,19 @@ namespace LibHac.FsSrv
         {
             UnsafeHelpers.SkipParamInit(out count);
 
-            SaveDataIndexerAccessor accessor = null;
-            try
-            {
-                Result rc = OpenSaveDataIndexerAccessor(out accessor, out bool _, SaveDataSpaceId.User);
-                if (rc.IsFailure()) return rc;
+            using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
-                count = accessor.Indexer.GetIndexCount();
-                return Result.Success;
-            }
-            finally
-            {
-                accessor?.Dispose();
-            }
+            Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), out bool _, SaveDataSpaceId.User);
+            if (rc.IsFailure()) return rc;
+
+            count = accessor.Get.Indexer.GetIndexCount();
+            return Result.Success;
         }
 
-        public Result OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, out bool neededInit,
+        public Result OpenSaveDataIndexerAccessor(ref UniqueRef<SaveDataIndexerAccessor> outAccessor, out bool neededInit,
             SaveDataSpaceId spaceId)
         {
-            return _config.SaveIndexerManager.OpenSaveDataIndexerAccessor(out accessor, out neededInit, spaceId);
+            return _config.SaveIndexerManager.OpenSaveDataIndexerAccessor(ref outAccessor, out neededInit, spaceId);
         }
 
         public void ResetTemporaryStorageIndexer()

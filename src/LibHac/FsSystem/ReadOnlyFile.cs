@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
@@ -6,22 +7,22 @@ namespace LibHac.FsSystem
 {
     public class ReadOnlyFile : IFile
     {
-        private IFile BaseFile { get; }
+        private UniqueRef<IFile> _baseFile;
 
-        public ReadOnlyFile(IFile baseFile)
+        public ReadOnlyFile(ref UniqueRef<IFile> baseFile)
         {
-            BaseFile = baseFile;
+            _baseFile = new UniqueRef<IFile>(ref baseFile);
         }
 
         protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
             in ReadOption option)
         {
-            return BaseFile.Read(out bytesRead, offset, destination, option);
+            return _baseFile.Get.Read(out bytesRead, offset, destination, option);
         }
 
         protected override Result DoGetSize(out long size)
         {
-            return BaseFile.GetSize(out size);
+            return _baseFile.Get.GetSize(out size);
         }
 
         protected override Result DoFlush()
@@ -45,7 +46,7 @@ namespace LibHac.FsSystem
             {
                 case OperationId.InvalidateCache:
                 case OperationId.QueryRange:
-                    return BaseFile.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+                    return _baseFile.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer);
                 default:
                     return ResultFs.UnsupportedOperateRangeForReadOnlyFile.Log();
             }

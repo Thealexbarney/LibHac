@@ -58,7 +58,8 @@ namespace LibHac.Tests.Fs
         {
             IFileSystem fs = CreateFileSystem();
 
-            Assert.Result(ResultFs.PathNotFound, fs.OpenFile(out _, "/fakefile", OpenMode.All));
+            using var file = new UniqueRef<IFile>();
+            Assert.Result(ResultFs.PathNotFound, fs.OpenFile(ref file.Ref(), "/fakefile", OpenMode.All));
         }
 
         [Fact]
@@ -66,8 +67,9 @@ namespace LibHac.Tests.Fs
         {
             IFileSystem fs = CreateFileSystem();
 
-            Assert.Success(fs.OpenFile(out IFile file, "/dir/replacedFile", OpenMode.All));
-            Assert.Success(file.GetSize(out long fileSize));
+            using var file = new UniqueRef<IFile>();
+            Assert.Success(fs.OpenFile(ref file.Ref(), "/dir/replacedFile", OpenMode.All));
+            Assert.Success(file.Get.GetSize(out long fileSize));
 
             Assert.Equal(2, fileSize);
         }
@@ -77,8 +79,9 @@ namespace LibHac.Tests.Fs
         {
             IFileSystem fs = CreateFileSystem();
 
-            Assert.Success(fs.OpenFile(out _, "/dir2/lowerFile", OpenMode.All));
-            Assert.Success(fs.OpenFile(out _, "/dir2/upperFile", OpenMode.All));
+            using var file = new UniqueRef<IFile>();
+            Assert.Success(fs.OpenFile(ref file.Ref(), "/dir2/lowerFile", OpenMode.All));
+            Assert.Success(fs.OpenFile(ref file.Ref(), "/dir2/upperFile", OpenMode.All));
         }
 
         [Fact]
@@ -86,7 +89,8 @@ namespace LibHac.Tests.Fs
         {
             IFileSystem fs = CreateFileSystem();
 
-            Assert.Result(ResultFs.PathNotFound, fs.OpenDirectory(out _, "/fakedir", OpenDirectoryMode.All));
+            using var directory = new UniqueRef<IDirectory>();
+            Assert.Result(ResultFs.PathNotFound, fs.OpenDirectory(ref directory.Ref(), "/fakedir", OpenDirectoryMode.All));
         }
 
         [Fact]
@@ -94,8 +98,9 @@ namespace LibHac.Tests.Fs
         {
             IFileSystem fs = CreateFileSystem();
 
-            Assert.Success(fs.OpenDirectory(out IDirectory dir, "/lowerDir", OpenDirectoryMode.All));
-            Assert.Equal(typeof(InMemoryFileSystem), dir.GetType().DeclaringType);
+            using var directory = new UniqueRef<IDirectory>();
+            Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/lowerDir", OpenDirectoryMode.All));
+            Assert.Equal(typeof(InMemoryFileSystem), directory.Get.GetType().DeclaringType);
         }
 
         [Fact]
@@ -103,8 +108,9 @@ namespace LibHac.Tests.Fs
         {
             IFileSystem fs = CreateFileSystem();
 
-            Assert.Success(fs.OpenDirectory(out IDirectory dir, "/dir", OpenDirectoryMode.All));
-            Assert.Equal(typeof(LayeredFileSystem), dir.GetType().DeclaringType);
+            using var directory = new UniqueRef<IDirectory>();
+            Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/dir", OpenDirectoryMode.All));
+            Assert.Equal(typeof(LayeredFileSystem), directory.Get.GetType().DeclaringType);
         }
 
         [Fact]
@@ -122,9 +128,10 @@ namespace LibHac.Tests.Fs
             IFileSystem fs = CreateFileSystem();
             Span<DirectoryEntry> entries = stackalloc DirectoryEntry[4];
 
-            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/dir3", OpenDirectoryMode.All));
+            using var directory = new UniqueRef<IDirectory>();
+            Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/dir3", OpenDirectoryMode.All));
 
-            Assert.Success(directory.Read(out long entriesRead, entries));
+            Assert.Success(directory.Get.Read(out long entriesRead, entries));
             Assert.Equal(3, entriesRead);
         }
 
@@ -134,9 +141,10 @@ namespace LibHac.Tests.Fs
             IFileSystem fs = CreateFileSystem();
             var entry = new DirectoryEntry();
 
-            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/dir", OpenDirectoryMode.All));
+            using var directory = new UniqueRef<IDirectory>();
+            Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/dir", OpenDirectoryMode.All));
 
-            Assert.Success(directory.Read(out _, SpanHelpers.AsSpan(ref entry)));
+            Assert.Success(directory.Get.Read(out _, SpanHelpers.AsSpan(ref entry)));
             Assert.Equal("replacedFile", StringUtils.Utf8ZToString(entry.Name));
             Assert.Equal(2, entry.Size);
         }
@@ -147,9 +155,10 @@ namespace LibHac.Tests.Fs
             IFileSystem fs = CreateEmptyFileSystem();
             var entry = new DirectoryEntry();
 
-            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/", OpenDirectoryMode.All));
+            using var directory = new UniqueRef<IDirectory>();
+            Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/", OpenDirectoryMode.All));
 
-            Assert.Success(directory.Read(out long entriesRead, SpanHelpers.AsSpan(ref entry)));
+            Assert.Success(directory.Get.Read(out long entriesRead, SpanHelpers.AsSpan(ref entry)));
             Assert.Equal(0, entriesRead);
         }
 
@@ -158,9 +167,10 @@ namespace LibHac.Tests.Fs
         {
             IFileSystem fs = CreateFileSystem();
 
-            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/dir3", OpenDirectoryMode.All));
+            using var directory = new UniqueRef<IDirectory>();
+            Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/dir3", OpenDirectoryMode.All));
 
-            Assert.Success(directory.GetEntryCount(out long entryCount));
+            Assert.Success(directory.Get.GetEntryCount(out long entryCount));
             Assert.Equal(3, entryCount);
         }
 
@@ -170,16 +180,17 @@ namespace LibHac.Tests.Fs
             IFileSystem fs = CreateFileSystem();
             var entry = new DirectoryEntry();
 
-            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/dir3", OpenDirectoryMode.All));
+            using var directory = new UniqueRef<IDirectory>();
+            Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/dir3", OpenDirectoryMode.All));
 
             // Read all entries
             long entriesRead;
             do
             {
-                Assert.Success(directory.Read(out entriesRead, SpanHelpers.AsSpan(ref entry)));
+                Assert.Success(directory.Get.Read(out entriesRead, SpanHelpers.AsSpan(ref entry)));
             } while (entriesRead != 0);
 
-            Assert.Success(directory.GetEntryCount(out long entryCount));
+            Assert.Success(directory.Get.GetEntryCount(out long entryCount));
             Assert.Equal(3, entryCount);
         }
 
@@ -188,9 +199,10 @@ namespace LibHac.Tests.Fs
         {
             IFileSystem fs = CreateEmptyFileSystem();
 
-            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/", OpenDirectoryMode.All));
+            using var directory = new UniqueRef<IDirectory>();
+            Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/", OpenDirectoryMode.All));
 
-            Assert.Success(directory.GetEntryCount(out long entryCount));
+            Assert.Success(directory.Get.GetEntryCount(out long entryCount));
             Assert.Equal(0, entryCount);
         }
     }

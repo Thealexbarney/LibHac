@@ -36,9 +36,10 @@ namespace hactoolnet
                             throw new FileNotFoundException("Specified NCA does not contain a delta fragment");
                         }
 
-                        fs.OpenFile(out IFile deltaFragmentFile, FragmentFileName.ToU8String(), OpenMode.Read).ThrowIfFailure();
+                        using var deltaFragmentFile = new UniqueRef<IFile>();
+                        fs.OpenFile(ref deltaFragmentFile.Ref(), FragmentFileName.ToU8String(), OpenMode.Read).ThrowIfFailure();
 
-                        deltaStorage = deltaFragmentFile.AsStorage();
+                        deltaStorage = deltaFragmentFile.Release().AsStorage();
                     }
                     catch (InvalidDataException) { } // Ignore non-NCA3 files
                 }

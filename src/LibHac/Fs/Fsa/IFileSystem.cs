@@ -203,10 +203,8 @@ namespace LibHac.Fs.Fsa
         /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a directory.<br/>
         /// <see cref="ResultFs.TargetLocked"/>: When opening as <see cref="OpenMode.Write"/>,
         /// the file is already opened as <see cref="OpenMode.Write"/>.</returns>
-        public Result OpenFile(out IFile file, U8Span path, OpenMode mode)
+        public Result OpenFile(ref UniqueRef<IFile> file, U8Span path, OpenMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out file);
-
             if (path.IsNull())
                 return ResultFs.NullptrArgument.Log();
 
@@ -214,7 +212,7 @@ namespace LibHac.Fs.Fsa
             Result rs = pathNormalized.InitializeWithNormalization(path);
             if (rs.IsFailure()) return rs;
 
-            return DoOpenFile(out file, in pathNormalized, mode);
+            return DoOpenFile(ref file, in pathNormalized, mode);
         }
 
         /// <summary>
@@ -228,7 +226,7 @@ namespace LibHac.Fs.Fsa
         /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a directory.<br/>
         /// <see cref="ResultFs.TargetLocked"/>: When opening as <see cref="OpenMode.Write"/>,
         /// the file is already opened as <see cref="OpenMode.Write"/>.</returns>
-        public Result OpenFile(out IFile file, in Path path, OpenMode mode)
+        public Result OpenFile(ref UniqueRef<IFile> file, in Path path, OpenMode mode)
         {
             if ((mode & OpenMode.ReadWrite) == 0 || (mode & ~OpenMode.All) != 0)
             {
@@ -236,28 +234,24 @@ namespace LibHac.Fs.Fsa
                 return ResultFs.InvalidOpenMode.Log();
             }
 
-            return DoOpenFile(out file, in path, mode);
+            return DoOpenFile(ref file, in path, mode);
         }
 
         /// <summary>
         /// Creates an <see cref="IDirectory"/> instance for enumerating the specified directory.
         /// </summary>
-        /// <param name="directory">If the operation returns successfully,
-        /// An <see cref="IDirectory"/> instance for the specified directory.</param>
+        /// <param name="outDirectory"></param>
         /// <param name="path">The directory's full path.</param>
         /// <param name="mode">Specifies which sub-entries should be enumerated.</param>
         /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
         /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a file.</returns>
-        public Result OpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        public Result OpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path, OpenDirectoryMode mode)
         {
             if ((mode & OpenDirectoryMode.All) == 0 ||
                 (mode & ~(OpenDirectoryMode.All | OpenDirectoryMode.NoFileSize)) != 0)
-            {
-                UnsafeHelpers.SkipParamInit(out directory);
                 return ResultFs.InvalidOpenMode.Log();
-            }
 
-            return DoOpenDirectory(out directory, in path, mode);
+            return DoOpenDirectory(ref outDirectory, in path, mode);
         }
 
         /// <summary>
@@ -325,8 +319,9 @@ namespace LibHac.Fs.Fsa
             return ResultFs.NotImplemented.Log();
         }
 
-        protected abstract Result DoOpenFile(out IFile file, in Path path, OpenMode mode);
-        protected abstract Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode);
+        protected abstract Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode);
+        protected abstract Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode);
         protected abstract Result DoCommit();
 
         protected virtual Result DoCommitProvisionally(long counter) => ResultFs.NotImplemented.Log();

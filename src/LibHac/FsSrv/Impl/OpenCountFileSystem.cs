@@ -8,27 +8,27 @@ namespace LibHac.FsSrv.Impl
     internal class OpenCountFileSystem : ForwardingFileSystem
     {
         private ReferenceCountedDisposable<IEntryOpenCountSemaphoreManager> _entryCountSemaphore;
-        private IUniqueLock _mountCountSemaphore;
+        private UniqueRef<IUniqueLock> _mountCountSemaphore;
 
-        protected OpenCountFileSystem(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem,
+        public OpenCountFileSystem(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem,
             ref ReferenceCountedDisposable<IEntryOpenCountSemaphoreManager> entryCountSemaphore) : base(
             ref baseFileSystem)
         {
             Shared.Move(out _entryCountSemaphore, ref entryCountSemaphore);
         }
 
-        protected OpenCountFileSystem(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem,
+        public OpenCountFileSystem(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem,
             ref ReferenceCountedDisposable<IEntryOpenCountSemaphoreManager> entryCountSemaphore,
-            ref IUniqueLock mountCountSemaphore) : base(ref baseFileSystem)
+            ref UniqueRef<IUniqueLock> mountCountSemaphore) : base(ref baseFileSystem)
         {
             Shared.Move(out _entryCountSemaphore, ref entryCountSemaphore);
-            Shared.Move(out _mountCountSemaphore, ref mountCountSemaphore);
+            _mountCountSemaphore = new UniqueRef<IUniqueLock>(ref mountCountSemaphore);
         }
 
         public static ReferenceCountedDisposable<IFileSystem> CreateShared(
             ref ReferenceCountedDisposable<IFileSystem> baseFileSystem,
             ref ReferenceCountedDisposable<IEntryOpenCountSemaphoreManager> entryCountSemaphore,
-            ref IUniqueLock mountCountSemaphore)
+            ref UniqueRef<IUniqueLock> mountCountSemaphore)
         {
             var filesystem =
                 new OpenCountFileSystem(ref baseFileSystem, ref entryCountSemaphore, ref mountCountSemaphore);
@@ -47,23 +47,24 @@ namespace LibHac.FsSrv.Impl
         }
 
         // ReSharper disable once RedundantOverriddenMember
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
             // Todo: Implement
-            return base.DoOpenFile(out file, path, mode);
+            return base.DoOpenFile(ref outFile, path, mode);
         }
 
         // ReSharper disable once RedundantOverriddenMember
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode)
         {
             // Todo: Implement
-            return base.DoOpenDirectory(out directory, path, mode);
+            return base.DoOpenDirectory(ref outDirectory, path, mode);
         }
 
         public override void Dispose()
         {
             _entryCountSemaphore?.Dispose();
-            _mountCountSemaphore?.Dispose();
+            _mountCountSemaphore.Dispose();
             base.Dispose();
         }
     }

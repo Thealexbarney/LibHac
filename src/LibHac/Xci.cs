@@ -32,8 +32,9 @@ namespace LibHac
             XciPartition root = GetRootPartition();
             if (type == XciPartitionType.Root) return root;
 
-            root.OpenFile(out IFile partitionFile, type.GetFileName().ToU8Span(), OpenMode.Read).ThrowIfFailure();
-            return new XciPartition(partitionFile.AsStorage());
+            using var partitionFile = new UniqueRef<IFile>();
+            root.OpenFile(ref partitionFile.Ref(), type.GetFileName().ToU8Span(), OpenMode.Read).ThrowIfFailure();
+            return new XciPartition(partitionFile.Release().AsStorage());
         }
 
         private XciPartition GetRootPartition()

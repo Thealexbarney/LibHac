@@ -49,10 +49,9 @@ namespace LibHac.FsSystem
             base.Dispose();
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out directory);
-
             if (!IsInitialized)
                 return ResultFs.PreconditionViolation.Log();
 
@@ -61,15 +60,13 @@ namespace LibHac.FsSystem
             if (path == rootPath)
                 return ResultFs.PathNotFound.Log();
 
-            directory = new PartitionDirectory(this, mode);
+            outDirectory.Reset(new PartitionDirectory(this, mode));
 
             return Result.Success;
         }
 
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out file);
-
             if (!IsInitialized)
                 return ResultFs.PreconditionViolation.Log();
 
@@ -81,7 +78,7 @@ namespace LibHac.FsSystem
 
             ref T entry = ref MetaData.GetEntry(entryIndex);
 
-            file = new PartitionFile(this, ref entry, mode);
+            outFile.Reset(new PartitionFile(this, ref entry, mode));
 
             return Result.Success;
         }

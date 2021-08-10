@@ -15,9 +15,10 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             IFileSystem fs = CreateFileSystem();
             Span<DirectoryEntry> entries = stackalloc DirectoryEntry[1];
 
-            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/", OpenDirectoryMode.All));
+            using var directory = new UniqueRef<IDirectory>();
+            Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/", OpenDirectoryMode.All));
 
-            Assert.Success(directory.Read(out long entriesRead, entries));
+            Assert.Success(directory.Get.Read(out long entriesRead, entries));
             Assert.Equal(0, entriesRead);
         }
 
@@ -26,9 +27,10 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
         {
             IFileSystem fs = CreateFileSystem();
 
-            Assert.Success(fs.OpenDirectory(out IDirectory directory, "/", OpenDirectoryMode.All));
+            using var directory = new UniqueRef<IDirectory>();
+            Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/", OpenDirectoryMode.All));
 
-            Assert.Success(directory.GetEntryCount(out long entryCount));
+            Assert.Success(directory.Get.GetEntryCount(out long entryCount));
             Assert.Equal(0, entryCount);
         }
 
@@ -42,17 +44,18 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.CreateFile("/dir/file1", 0, CreateFileOptions.None);
             fs.CreateFile("/dir/file2", 0, CreateFileOptions.None);
 
-            Assert.Success(fs.OpenDirectory(out IDirectory dir, "/dir", OpenDirectoryMode.All));
+            using var dir = new UniqueRef<IDirectory>();
+            Assert.Success(fs.OpenDirectory(ref dir.Ref(), "/dir", OpenDirectoryMode.All));
 
             var entry1 = new DirectoryEntry();
             var entry2 = new DirectoryEntry();
             var entry3 = new DirectoryEntry();
             var entry4 = new DirectoryEntry();
 
-            Assert.Success(dir.Read(out long entriesRead1, SpanHelpers.AsSpan(ref entry1)));
-            Assert.Success(dir.Read(out long entriesRead2, SpanHelpers.AsSpan(ref entry2)));
-            Assert.Success(dir.Read(out long entriesRead3, SpanHelpers.AsSpan(ref entry3)));
-            Assert.Success(dir.Read(out long entriesRead4, SpanHelpers.AsSpan(ref entry4)));
+            Assert.Success(dir.Get.Read(out long entriesRead1, SpanHelpers.AsSpan(ref entry1)));
+            Assert.Success(dir.Get.Read(out long entriesRead2, SpanHelpers.AsSpan(ref entry2)));
+            Assert.Success(dir.Get.Read(out long entriesRead3, SpanHelpers.AsSpan(ref entry3)));
+            Assert.Success(dir.Get.Read(out long entriesRead4, SpanHelpers.AsSpan(ref entry4)));
 
             Assert.Equal(1, entriesRead1);
             Assert.Equal(1, entriesRead2);

@@ -40,7 +40,7 @@ namespace LibHac.FsSystem
 
         private Result ResolveFullPath(ref Path outPath, in Path relativePath)
         {
-            Path rootPath = _rootPath.GetPath();
+            Path rootPath = _rootPath.DangerousGetPath();
             return outPath.Combine(in rootPath, in relativePath);
         }
 
@@ -100,29 +100,26 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out file);
-
             using var fullPath = new Path();
             Result rc = ResolveFullPath(ref fullPath.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
-            rc = _baseFileSystem.OpenFile(out file, in fullPath, mode);
+            rc = _baseFileSystem.OpenFile(ref outFile, in fullPath, mode);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out directory);
-
             using var fullPath = new Path();
             Result rc = ResolveFullPath(ref fullPath.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
-            rc = _baseFileSystem.OpenDirectory(out directory, in fullPath, mode);
+            rc = _baseFileSystem.OpenDirectory(ref outDirectory, in fullPath, mode);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;

@@ -39,105 +39,92 @@ namespace LibHac.FsSystem
             ref DirectoryEntry dirEntry, FsIterationTask onEnterDir, FsIterationTask onExitDir, FsIterationTask onFile,
             ref FsIterationTaskClosure closure)
         {
-            IDirectory directory = null;
-            try
+            using var directory = new UniqueRef<IDirectory>();
+
+            Result rc = fs.OpenDirectory(ref directory.Ref(), in workPath, OpenDirectoryMode.All);
+            if (rc.IsFailure()) return rc;
+
+            while (true)
             {
-                Result rc = fs.OpenDirectory(out directory, in workPath, OpenDirectoryMode.All);
+                rc = directory.Get.Read(out long entriesRead, SpanHelpers.AsSpan(ref dirEntry));
                 if (rc.IsFailure()) return rc;
 
-                while (true)
+                if (entriesRead == 0)
+                    break;
+
+                workPath.AppendChild(dirEntry.Name);
+                if (rc.IsFailure()) return rc;
+
+                if (dirEntry.Type == DirectoryEntryType.Directory)
                 {
-                    rc = directory.Read(out long entriesRead, SpanHelpers.AsSpan(ref dirEntry));
+                    rc = onEnterDir(in workPath, in dirEntry, ref closure);
                     if (rc.IsFailure()) return rc;
 
-                    if (entriesRead == 0)
-                        break;
-
-                    workPath.AppendChild(dirEntry.Name);
+                    rc = IterateDirectoryRecursivelyInternal(fs, ref workPath, ref dirEntry, onEnterDir, onExitDir,
+                        onFile, ref closure);
                     if (rc.IsFailure()) return rc;
 
-                    if (dirEntry.Type == DirectoryEntryType.Directory)
-                    {
-                        rc = onEnterDir(in workPath, in dirEntry, ref closure);
-                        if (rc.IsFailure()) return rc;
-
-                        rc = IterateDirectoryRecursivelyInternal(fs, ref workPath, ref dirEntry, onEnterDir, onExitDir,
-                            onFile, ref closure);
-                        if (rc.IsFailure()) return rc;
-
-                        rc = onExitDir(in workPath, in dirEntry, ref closure);
-                        if (rc.IsFailure()) return rc;
-                    }
-                    else
-                    {
-                        rc = onFile(in workPath, in dirEntry, ref closure);
-                        if (rc.IsFailure()) return rc;
-                    }
-
-                    rc = workPath.RemoveChild();
+                    rc = onExitDir(in workPath, in dirEntry, ref closure);
+                    if (rc.IsFailure()) return rc;
+                }
+                else
+                {
+                    rc = onFile(in workPath, in dirEntry, ref closure);
                     if (rc.IsFailure()) return rc;
                 }
 
-                return Result.Success;
+                rc = workPath.RemoveChild();
+                if (rc.IsFailure()) return rc;
             }
-            finally
-            {
-                directory?.Dispose();
-            }
+
+            return Result.Success;
         }
 
         private static Result CleanupDirectoryRecursivelyInternal(IFileSystem fs, ref Path workPath,
             ref DirectoryEntry dirEntry, FsIterationTask onEnterDir, FsIterationTask onExitDir, FsIterationTask onFile,
             ref FsIterationTaskClosure closure)
         {
-            IDirectory directory = null;
-            try
+            using var directory = new UniqueRef<IDirectory>();
+
+            while (true)
             {
-                while (true)
+                Result rc = fs.OpenDirectory(ref directory.Ref(), in workPath, OpenDirectoryMode.All);
+                if (rc.IsFailure()) return rc;
+
+                rc = directory.Get.Read(out long entriesRead, SpanHelpers.AsSpan(ref dirEntry));
+                if (rc.IsFailure()) return rc;
+
+                directory.Reset(null);
+
+                if (entriesRead == 0)
+                    break;
+
+                rc = workPath.AppendChild(dirEntry.Name);
+                if (rc.IsFailure()) return rc;
+
+                if (dirEntry.Type == DirectoryEntryType.Directory)
                 {
-                    Result rc = fs.OpenDirectory(out directory, in workPath, OpenDirectoryMode.All);
+                    rc = onEnterDir(in workPath, in dirEntry, ref closure);
                     if (rc.IsFailure()) return rc;
 
-                    rc = directory.Read(out long entriesRead, SpanHelpers.AsSpan(ref dirEntry));
+                    rc = CleanupDirectoryRecursivelyInternal(fs, ref workPath, ref dirEntry, onEnterDir, onExitDir,
+                        onFile, ref closure);
                     if (rc.IsFailure()) return rc;
 
-                    directory.Dispose();
-                    directory = null;
-
-                    if (entriesRead == 0)
-                        break;
-
-                    rc = workPath.AppendChild(dirEntry.Name);
+                    rc = onExitDir(in workPath, in dirEntry, ref closure);
                     if (rc.IsFailure()) return rc;
-
-                    if (dirEntry.Type == DirectoryEntryType.Directory)
-                    {
-                        rc = onEnterDir(in workPath, in dirEntry, ref closure);
-                        if (rc.IsFailure()) return rc;
-
-                        rc = CleanupDirectoryRecursivelyInternal(fs, ref workPath, ref dirEntry, onEnterDir, onExitDir,
-                            onFile, ref closure);
-                        if (rc.IsFailure()) return rc;
-
-                        rc = onExitDir(in workPath, in dirEntry, ref closure);
-                        if (rc.IsFailure()) return rc;
-                    }
-                    else
-                    {
-                        rc = onFile(in workPath, in dirEntry, ref closure);
-                        if (rc.IsFailure()) return rc;
-                    }
-
-                    rc = workPath.RemoveChild();
+                }
+                else
+                {
+                    rc = onFile(in workPath, in dirEntry, ref closure);
                     if (rc.IsFailure()) return rc;
                 }
 
-                return Result.Success;
+                rc = workPath.RemoveChild();
+                if (rc.IsFailure()) return rc;
             }
-            finally
-            {
-                directory?.Dispose();
-            }
+
+            return Result.Success;
         }
 
         public static Result IterateDirectoryRecursively(IFileSystem fs, in Path rootPath, ref DirectoryEntry dirEntry,
@@ -171,38 +158,34 @@ namespace LibHac.FsSystem
             in Path sourcePath, Span<byte> workBuffer)
         {
             // Open source file.
-            Result rc = sourceFileSystem.OpenFile(out IFile sourceFile, sourcePath, OpenMode.Read);
+            using var sourceFile = new UniqueRef<IFile>();
+            Result rc = sourceFileSystem.OpenFile(ref sourceFile.Ref(), sourcePath, OpenMode.Read);
             if (rc.IsFailure()) return rc;
 
-            using (sourceFile)
+            rc = sourceFile.Get.GetSize(out long fileSize);
+            if (rc.IsFailure()) return rc;
+
+            using var destFile = new UniqueRef<IFile>();
+            rc = destFileSystem.CreateFile(in destPath, fileSize);
+            if (rc.IsFailure()) return rc;
+
+            rc = destFileSystem.OpenFile(ref destFile.Ref(), in destPath, OpenMode.Write);
+            if (rc.IsFailure()) return rc;
+
+            // Read/Write file in work buffer sized chunks.
+            long remaining = fileSize;
+            long offset = 0;
+
+            while (remaining > 0)
             {
-                rc = sourceFile.GetSize(out long fileSize);
+                rc = sourceFile.Get.Read(out long bytesRead, offset, workBuffer, ReadOption.None);
                 if (rc.IsFailure()) return rc;
 
-                rc = destFileSystem.CreateFile(in destPath, fileSize);
+                rc = destFile.Get.Write(offset, workBuffer.Slice(0, (int)bytesRead), WriteOption.None);
                 if (rc.IsFailure()) return rc;
 
-                rc = destFileSystem.OpenFile(out IFile destFile, in destPath, OpenMode.Write);
-                if (rc.IsFailure()) return rc;
-
-                using (destFile)
-                {
-                    // Read/Write file in work buffer sized chunks.
-                    long remaining = fileSize;
-                    long offset = 0;
-
-                    while (remaining > 0)
-                    {
-                        rc = sourceFile.Read(out long bytesRead, offset, workBuffer, ReadOption.None);
-                        if (rc.IsFailure()) return rc;
-
-                        rc = destFile.Write(offset, workBuffer.Slice(0, (int)bytesRead), WriteOption.None);
-                        if (rc.IsFailure()) return rc;
-
-                        remaining -= bytesRead;
-                        offset += bytesRead;
-                    }
-                }
+                remaining -= bytesRead;
+                offset += bytesRead;
             }
 
             return Result.Success;
@@ -300,31 +283,25 @@ namespace LibHac.FsSystem
 
             static Result OnFile(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure)
             {
-                IFile file = null;
-                try
+                using var file = new UniqueRef<IFile>();
+
+                Result rc = closure.SourceFileSystem.OpenFile(ref file.Ref(), in path, OpenMode.Read);
+                if (rc.IsFailure()) return rc;
+
+                long offset = 0;
+
+                while (true)
                 {
-                    Result rc = closure.SourceFileSystem.OpenFile(out file, in path, OpenMode.Read);
+                    rc = file.Get.Read(out long bytesRead, offset, closure.Buffer, ReadOption.None);
                     if (rc.IsFailure()) return rc;
 
-                    long offset = 0;
+                    if (bytesRead < closure.Buffer.Length)
+                        break;
 
-                    while (true)
-                    {
-                        rc = file.Read(out long bytesRead, offset, closure.Buffer, ReadOption.None);
-                        if (rc.IsFailure()) return rc;
-
-                        if (bytesRead < closure.Buffer.Length)
-                            break;
-
-                        offset += bytesRead;
-                    }
-
-                    return Result.Success;
+                    offset += bytesRead;
                 }
-                finally
-                {
-                    file?.Dispose();
-                }
+
+                return Result.Success;
             }
 
             using var rootPath = new Path();
@@ -420,46 +397,30 @@ namespace LibHac.FsSystem
             }
         }
 
-        public static Result TryAcquireCountSemaphore(out UniqueLock<SemaphoreAdapter> uniqueLock, SemaphoreAdapter semaphore)
+        public static Result TryAcquireCountSemaphore(ref UniqueLock<SemaphoreAdapter> outUniqueLock,
+            SemaphoreAdapter semaphore)
         {
-            UniqueLock<SemaphoreAdapter> tempUniqueLock = default;
-            try
-            {
-                tempUniqueLock = new UniqueLock<SemaphoreAdapter>(semaphore, new DeferLock());
+            using var uniqueLock = new UniqueLock<SemaphoreAdapter>(semaphore, new DeferLock());
 
-                if (!tempUniqueLock.TryLock())
-                {
-                    uniqueLock = default;
-                    return ResultFs.OpenCountLimit.Log();
-                }
+            if (!uniqueLock.TryLock())
+                return ResultFs.OpenCountLimit.Log();
 
-                uniqueLock = Shared.Move(ref tempUniqueLock);
-                return Result.Success;
-            }
-            finally
-            {
-                tempUniqueLock.Dispose();
-            }
+            outUniqueLock.Set(ref uniqueLock.Ref());
+            return Result.Success;
         }
 
-        public static Result MakeUniqueLockWithPin<T>(out IUniqueLock uniqueLock, SemaphoreAdapter semaphore,
-            ref ReferenceCountedDisposable<T> objectToPin) where T : class, IDisposable
+        public static Result MakeUniqueLockWithPin<T>(ref UniqueRef<IUniqueLock> outUniqueLock,
+            SemaphoreAdapter semaphore, ref ReferenceCountedDisposable<T> objectToPin) where T : class, IDisposable
         {
-            UnsafeHelpers.SkipParamInit(out uniqueLock);
+            using var semaphoreAdapter = new UniqueLock<SemaphoreAdapter>();
+            Result rc = TryAcquireCountSemaphore(ref semaphoreAdapter.Ref(), semaphore);
+            if (rc.IsFailure()) return rc;
 
-            UniqueLock<SemaphoreAdapter> tempUniqueLock = default;
-            try
-            {
-                Result rc = TryAcquireCountSemaphore(out tempUniqueLock, semaphore);
-                if (rc.IsFailure()) return rc;
+            var lockWithPin = new UniqueLockWithPin<T>(ref semaphoreAdapter.Ref(), ref objectToPin);
+            using var uniqueLock = new UniqueRef<IUniqueLock>(lockWithPin);
 
-                uniqueLock = new UniqueLockWithPin<T>(ref tempUniqueLock, ref objectToPin);
-                return Result.Success;
-            }
-            finally
-            {
-                tempUniqueLock.Dispose();
-            }
+            outUniqueLock.Set(ref uniqueLock.Ref());
+            return Result.Success;
         }
     }
 }

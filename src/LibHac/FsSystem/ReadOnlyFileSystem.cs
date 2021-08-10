@@ -9,12 +9,6 @@ namespace LibHac.FsSystem
         private IFileSystem BaseFs { get; }
         private ReferenceCountedDisposable<IFileSystem> BaseFsShared { get; }
 
-        // Todo: Remove non-shared constructor
-        public ReadOnlyFileSystem(IFileSystem baseFileSystem)
-        {
-            BaseFs = baseFileSystem;
-        }
-
         public ReadOnlyFileSystem(ReferenceCountedDisposable<IFileSystem> baseFileSystem)
         {
             BaseFsShared = baseFileSystem;
@@ -28,35 +22,35 @@ namespace LibHac.FsSystem
             return new ReferenceCountedDisposable<IFileSystem>(fs);
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode)
         {
-            return BaseFs.OpenDirectory(out directory, path, mode);
+            return BaseFs.OpenDirectory(ref outDirectory, in path, mode);
         }
 
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out file);
-
-            Result rc = BaseFs.OpenFile(out IFile baseFile, path, mode);
+            using var baseFile = new UniqueRef<IFile>();
+            Result rc = BaseFs.OpenFile(ref baseFile.Ref(), in path, mode);
             if (rc.IsFailure()) return rc;
 
-            file = new ReadOnlyFile(baseFile);
+            outFile.Reset(new ReadOnlyFile(ref baseFile.Ref()));
             return Result.Success;
         }
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
-            return BaseFs.GetEntryType(out entryType, path);
+            return BaseFs.GetEntryType(out entryType, in path);
         }
 
         protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
-            return BaseFs.GetFreeSpaceSize(out freeSpace, path);
+            return BaseFs.GetFreeSpaceSize(out freeSpace, in path);
         }
 
         protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
-            return BaseFs.GetTotalSpaceSize(out totalSpace, path);
+            return BaseFs.GetTotalSpaceSize(out totalSpace, in path);
 
             // FS does:
             // return ResultFs.UnsupportedOperationReadOnlyFileSystemGetSpace.Log();
@@ -64,7 +58,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
         {
-            return BaseFs.GetFileTimeStampRaw(out timeStamp, path);
+            return BaseFs.GetFileTimeStampRaw(out timeStamp, in path);
 
             // FS does:
             // return ResultFs.NotImplemented.Log();

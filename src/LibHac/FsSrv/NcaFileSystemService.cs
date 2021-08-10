@@ -593,12 +593,12 @@ namespace LibHac.FsSrv
             ServiceImpl.IncrementRomFsRecoveredByInvalidateCacheCount();
         }
 
-        private Result TryAcquireAddOnContentOpenCountSemaphore(out IUniqueLock semaphoreLock)
+        private Result TryAcquireAddOnContentOpenCountSemaphore(ref UniqueRef<IUniqueLock> outSemaphoreLock)
         {
             throw new NotImplementedException();
         }
 
-        private Result TryAcquireRomMountCountSemaphore(out IUniqueLock semaphoreLock)
+        private Result TryAcquireRomMountCountSemaphore(ref UniqueRef<IUniqueLock> outSemaphoreLock)
         {
             throw new NotImplementedException();
         }

@@ -38,10 +38,9 @@ namespace LibHac.FsSystem
 
         private FileSystemClient _fsClient;
         private IFileSystem _baseFs;
-
         private SdkMutexType _mutex;
+        private UniqueRef<IFileSystem> _uniqueBaseFs;
 
-        // Todo: Unique file system for disposal
         private int _openWritableFileCount;
         private bool _isJournalingSupported;
         private bool _isMultiCommitSupported;
@@ -57,24 +56,24 @@ namespace LibHac.FsSystem
         private ulong _saveDataId;
 
         // Additions to ensure only one directory save data fs is opened at a time
-        private IFile _lockFile;
+        private UniqueRef<IFile> _lockFile;
 
         private class DirectorySaveDataFile : IFile
         {
-            private IFile _baseFile;
+            private UniqueRef<IFile> _baseFile;
             private DirectorySaveDataFileSystem _parentFs;
             private OpenMode _mode;
 
-            public DirectorySaveDataFile(IFile baseFile, DirectorySaveDataFileSystem parentFs, OpenMode mode)
+            public DirectorySaveDataFile(ref UniqueRef<IFile> baseFile, DirectorySaveDataFileSystem parentFs, OpenMode mode)
             {
-                _baseFile = baseFile;
+                _baseFile = new UniqueRef<IFile>(ref baseFile);
                 _parentFs = parentFs;
                 _mode = mode;
             }
 
             public override void Dispose()
             {
-                _baseFile?.Dispose();
+                _baseFile.Dispose();
 
                 if (_mode.HasFlag(OpenMode.Write))
                 {
@@ -88,61 +87,34 @@ namespace LibHac.FsSystem
             protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
                 in ReadOption option)
             {
-                return _baseFile.Read(out bytesRead, offset, destination, in option);
+                return _baseFile.Get.Read(out bytesRead, offset, destination, in option);
             }
 
             protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
             {
-                return _baseFile.Write(offset, source, in option);
+                return _baseFile.Get.Write(offset, source, in option);
             }
 
             protected override Result DoFlush()
             {
-                return _baseFile.Flush();
+                return _baseFile.Get.Flush();
             }
 
             protected override Result DoGetSize(out long size)
             {
-                return _baseFile.GetSize(out size);
+                return _baseFile.Get.GetSize(out size);
             }
 
             protected override Result DoSetSize(long size)
             {
-                return _baseFile.SetSize(size);
+                return _baseFile.Get.SetSize(size);
             }
 
             protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset,
                 long size, ReadOnlySpan<byte> inBuffer)
             {
-                return _baseFile.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+                return _baseFile.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer);
             }
-        }
-
-        public static Result CreateNew(out DirectorySaveDataFileSystem created, IFileSystem baseFileSystem,
-            ISaveDataCommitTimeStampGetter timeStampGetter, RandomDataGenerator randomGenerator,
-            bool isJournalingSupported, bool isMultiCommitSupported, bool isJournalingEnabled,
-            FileSystemClient fsClient)
-        {
-            var obj = new DirectorySaveDataFileSystem(baseFileSystem, fsClient);
-            Result rc = obj.Initialize(timeStampGetter, randomGenerator, isJournalingSupported, isMultiCommitSupported,
-                isJournalingEnabled);
-
-            if (rc.IsSuccess())
-            {
-                created = obj;
-                return Result.Success;
-            }
-
-            obj.Dispose();
-            UnsafeHelpers.SkipParamInit(out created);
-            return rc;
-        }
-
-        public static Result CreateNew(out DirectorySaveDataFileSystem created, IFileSystem baseFileSystem,
-            bool isJournalingSupported, bool isMultiCommitSupported, bool isJournalingEnabled)
-        {
-            return CreateNew(out created, baseFileSystem, null, null, isJournalingSupported, isMultiCommitSupported,
-                isJournalingEnabled, null);
         }
 
         public static ReferenceCountedDisposable<DirectorySaveDataFileSystem> CreateShared(IFileSystem baseFileSystem,
@@ -164,6 +136,17 @@ namespace LibHac.FsSystem
 
         /// <summary>
         /// Create an uninitialized <see cref="DirectorySaveDataFileSystem"/>.
+        /// </summary>
+        /// <param name="baseFileSystem">The base <see cref="IFileSystem"/> to use.</param>
+        public DirectorySaveDataFileSystem(ref UniqueRef<IFileSystem> baseFileSystem)
+        {
+            _baseFs = baseFileSystem.Get;
+            _mutex.Initialize();
+            _uniqueBaseFs = new UniqueRef<IFileSystem>(ref baseFileSystem);
+        }
+
+        /// <summary>
+        /// Create an uninitialized <see cref="DirectorySaveDataFileSystem"/>.
         /// If a <see cref="FileSystemClient"/> is provided a global mutex will be used when synchronizing directories.
         /// Running outside of a Horizon context doesn't require this mutex,
         /// and null can be passed to <paramref name="fsClient"/>.
@@ -177,13 +160,28 @@ namespace LibHac.FsSystem
             _fsClient = fsClient;
         }
 
+        /// <summary>
+        /// Create an uninitialized <see cref="DirectorySaveDataFileSystem"/>.
+        /// If a <see cref="FileSystemClient"/> is provided a global mutex will be used when synchronizing directories.
+        /// Running outside of a Horizon context doesn't require this mutex,
+        /// and null can be passed to <paramref name="fsClient"/>.
+        /// </summary>
+        /// <param name="baseFileSystem">The base <see cref="IFileSystem"/> to use.</param>
+        /// <param name="fsClient">The <see cref="FileSystemClient"/> to use. May be null.</param>
+        public DirectorySaveDataFileSystem(ref UniqueRef<IFileSystem> baseFileSystem, FileSystemClient fsClient)
+        {
+            _baseFs = baseFileSystem.Get;
+            _mutex.Initialize();
+            _uniqueBaseFs = new UniqueRef<IFileSystem>(ref baseFileSystem);
+            _fsClient = fsClient;
+        }
+
         public override void Dispose()
         {
-            _lockFile?.Dispose();
-            _lockFile = null;
+            _lockFile.Dispose();
 
             _cacheObserver?.Unregister(_spaceId, _saveDataId);
-            _baseFs?.Dispose();
+            _uniqueBaseFs.Dispose();
             base.Dispose();
         }
 
@@ -328,14 +326,14 @@ namespace LibHac.FsSystem
         private Result GetFileSystemLock()
         {
             // Having an open lock file means we already have the lock for the file system.
-            if (_lockFile is not null)
+            if (_lockFile.HasValue)
                 return Result.Success;
 
             using var pathLockFile = new Path();
             Result rc = PathFunctions.SetUpFixedPath(ref pathLockFile.Ref(), LockFileName);
             if (rc.IsFailure()) return rc;
 
-            rc = _baseFs.OpenFile(out _lockFile, in pathLockFile, OpenMode.ReadWrite);
+            rc = _baseFs.OpenFile(ref _lockFile, in pathLockFile, OpenMode.ReadWrite);
 
             if (rc.IsFailure())
             {
@@ -344,7 +342,7 @@ namespace LibHac.FsSystem
                     rc = _baseFs.CreateFile(in pathLockFile, 0);
                     if (rc.IsFailure()) return rc;
 
-                    rc = _baseFs.OpenFile(out _lockFile, in pathLockFile, OpenMode.ReadWrite);
+                    rc = _baseFs.OpenFile(ref _lockFile, in pathLockFile, OpenMode.ReadWrite);
                     if (rc.IsFailure()) return rc;
                 }
                 else
@@ -512,40 +510,39 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out file);
-
             using var fullPath = new Path();
             Result rc = ResolvePath(ref fullPath.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            rc = _baseFs.OpenFile(out IFile baseFile, in fullPath, mode);
+            using var baseFile = new UniqueRef<IFile>();
+            rc = _baseFs.OpenFile(ref baseFile.Ref(), in fullPath, mode);
             if (rc.IsFailure()) return rc;
 
-            file = new DirectorySaveDataFile(baseFile, this, mode);
+            using var file = new UniqueRef<IFile>(new DirectorySaveDataFile(ref baseFile.Ref(), this, mode));
 
             if (mode.HasFlag(OpenMode.Write))
             {
                 _openWritableFileCount++;
             }
 
+            outFile.Set(ref file.Ref());
             return Result.Success;
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out directory);
-
             using var fullPath = new Path();
             Result rc = ResolvePath(ref fullPath.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            rc = _baseFs.OpenDirectory(out directory, in fullPath, mode);
+            rc = _baseFs.OpenDirectory(ref outDirectory, in fullPath, mode);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -704,8 +701,10 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        internal void DecrementWriteOpenFileCount()
+        private void DecrementWriteOpenFileCount()
         {
+            // Todo?: Calling OpenFile when outFile already contains a DirectorySaveDataFile
+            // will try to lock this mutex a second time
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
             _openWritableFileCount--;
@@ -811,47 +810,40 @@ namespace LibHac.FsSystem
 
         private Result EnsureExtraDataSize(in Path path)
         {
-            IFile file = null;
-            try
-            {
-                Result rc = _baseFs.OpenFile(out file, in path, OpenMode.ReadWrite);
-                if (rc.IsFailure()) return rc;
+            using var file = new UniqueRef<IFile>();
+            Result rc = _baseFs.OpenFile(ref file.Ref(), in path, OpenMode.ReadWrite);
+            if (rc.IsFailure()) return rc;
 
-                rc = file.GetSize(out long fileSize);
-                if (rc.IsFailure()) return rc;
+            rc = file.Get.GetSize(out long fileSize);
+            if (rc.IsFailure()) return rc;
 
-                if (fileSize == Unsafe.SizeOf<SaveDataExtraData>())
-                    return Result.Success;
+            if (fileSize == Unsafe.SizeOf<SaveDataExtraData>())
+                return Result.Success;
 
-                return file.SetSize(Unsafe.SizeOf<SaveDataExtraData>());
-            }
-            finally
-            {
-                file?.Dispose();
-            }
+            return file.Get.SetSize(Unsafe.SizeOf<SaveDataExtraData>());
         }
 
         private Result SynchronizeExtraData(in Path destPath, in Path sourcePath)
         {
             Span<byte> workBuffer = stackalloc byte[Unsafe.SizeOf<SaveDataExtraData>()];
 
-            Result rc = _baseFs.OpenFile(out IFile sourceFile, in sourcePath, OpenMode.Read);
-            if (rc.IsFailure()) return rc;
-
-            using (sourceFile)
+            using (var sourceFile = new UniqueRef<IFile>())
             {
-                rc = sourceFile.Read(out long bytesRead, 0, workBuffer);
+                Result rc = _baseFs.OpenFile(ref sourceFile.Ref(), in sourcePath, OpenMode.Read);
+                if (rc.IsFailure()) return rc;
+
+                rc = sourceFile.Get.Read(out long bytesRead, 0, workBuffer);
                 if (rc.IsFailure()) return rc;
 
                 Assert.SdkEqual(bytesRead, Unsafe.SizeOf<SaveDataExtraData>());
             }
 
-            rc = _baseFs.OpenFile(out IFile destFile, in destPath, OpenMode.Write);
-            if (rc.IsFailure()) return rc;
-
-            using (destFile)
+            using (var destFile = new UniqueRef<IFile>())
             {
-                rc = destFile.Write(0, workBuffer, WriteOption.Flush);
+                Result rc = _baseFs.OpenFile(ref destFile.Ref(), in destPath, OpenMode.Write);
+                if (rc.IsFailure()) return rc;
+
+                rc = destFile.Get.Write(0, workBuffer, WriteOption.Flush);
                 if (rc.IsFailure()) return rc;
             }
 
@@ -926,14 +918,12 @@ namespace LibHac.FsSystem
             Result rc = GetExtraDataPath(ref pathExtraData.Ref());
             if (rc.IsFailure()) return rc;
 
-            rc = _baseFs.OpenFile(out IFile file, in pathExtraData, OpenMode.Write);
+            using var file = new UniqueRef<IFile>();
+            rc = _baseFs.OpenFile(ref file.Ref(), in pathExtraData, OpenMode.Write);
             if (rc.IsFailure()) return rc;
 
-            using (file)
-            {
-                rc = file.Write(0, SpanHelpers.AsReadOnlyByteSpan(in extraData), WriteOption.Flush);
-                if (rc.IsFailure()) return rc;
-            }
+            rc = file.Get.Write(0, SpanHelpers.AsReadOnlyByteSpan(in extraData), WriteOption.Flush);
+            if (rc.IsFailure()) return rc;
 
             return Result.Success;
         }
@@ -1002,16 +992,14 @@ namespace LibHac.FsSystem
             Result rc = GetExtraDataPath(ref pathExtraData.Ref());
             if (rc.IsFailure()) return rc;
 
-            rc = _baseFs.OpenFile(out IFile file, in pathExtraData, OpenMode.Read);
+            using var file = new UniqueRef<IFile>();
+            rc = _baseFs.OpenFile(ref file.Ref(), in pathExtraData, OpenMode.Read);
             if (rc.IsFailure()) return rc;
 
-            using (file)
-            {
-                rc = file.Read(out long bytesRead, 0, SpanHelpers.AsByteSpan(ref extraData));
-                if (rc.IsFailure()) return rc;
+            rc = file.Get.Read(out long bytesRead, 0, SpanHelpers.AsByteSpan(ref extraData));
+            if (rc.IsFailure()) return rc;
 
-                Assert.SdkEqual(bytesRead, Unsafe.SizeOf<SaveDataExtraData>());
-            }
+            Assert.SdkEqual(bytesRead, Unsafe.SizeOf<SaveDataExtraData>());
 
             return Result.Success;
         }

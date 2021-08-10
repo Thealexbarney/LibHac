@@ -5,6 +5,7 @@ using LibHac;
 using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 using LibHac.Util;
 using static hactoolnet.Print;
@@ -23,7 +24,7 @@ namespace hactoolnet
 
             Span<AesXtsKey> keys = ctx.KeySet.SdCardEncryptionKeys;
 
-            using var baseFile = new LocalFile(ctx.Options.InFile, OpenMode.Read);
+            using var baseFile = new UniqueRef<IFile>(new LocalFile(ctx.Options.InFile, OpenMode.Read));
 
             AesXtsFile xtsFile = null;
             int contentType = 0;
@@ -35,7 +36,7 @@ namespace hactoolnet
 
                 try
                 {
-                    xtsFile = new AesXtsFile(OpenMode.Read, baseFile, ctx.Options.SdPath.ToU8String(), kekSource, validationKey, 0x4000);
+                    xtsFile = new AesXtsFile(OpenMode.Read, ref baseFile.Ref(), ctx.Options.SdPath.ToU8String(), kekSource, validationKey, 0x4000);
                     contentType = i;
 
                     break;
