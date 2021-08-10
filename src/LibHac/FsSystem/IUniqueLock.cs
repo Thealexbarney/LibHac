@@ -13,7 +13,7 @@ namespace LibHac.FsSystem
 
         public UniqueLockWithPin(ref UniqueLock<SemaphoreAdapter> semaphore, ref ReferenceCountedDisposable<T> pinnedObject)
         {
-            Shared.Move(out _semaphore, ref semaphore);
+            _semaphore = new UniqueLock<SemaphoreAdapter>(ref semaphore);
             Shared.Move(out _pinnedObject, ref pinnedObject);
         }
 

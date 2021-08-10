@@ -331,76 +331,58 @@ namespace LibHac.Fs.Impl
             return Result.Success;
         }
 
-        public Result OpenFile(out FileAccessor file, U8Span path, OpenMode mode)
+        public Result OpenFile(ref UniqueRef<FileAccessor> outFile, U8Span path, OpenMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out file);
-
             using var pathNormalized = new Path();
             Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
-            IFile iFile = null;
-            try
+            using var file = new UniqueRef<IFile>();
+            rc = _fileSystem.OpenFile(ref file.Ref(), in pathNormalized, mode);
+            if (rc.IsFailure()) return rc;
+
+            var accessor = new FileAccessor(Hos, ref file.Ref(), this, mode);
+
+            using (ScopedLock.Lock(ref _openListLock))
             {
-                rc = _fileSystem.OpenFile(out iFile, in pathNormalized, mode);
-                if (rc.IsFailure()) return rc;
-
-                var fileAccessor = new FileAccessor(Hos, ref iFile, this, mode);
-
-                using (ScopedLock.Lock(ref _openListLock))
-                {
-                    _openFiles.AddLast(fileAccessor);
-                }
-
-                if (_isPathCacheAttached)
-                {
-                    if (mode.HasFlag(OpenMode.AllowAppend))
-                    {
-                        throw new NotImplementedException();
-                    }
-                    else
-                    {
-                        throw new NotImplementedException();
-                    }
-                }
-
-                file = Shared.Move(ref fileAccessor);
-                return Result.Success;
+                _openFiles.AddLast(accessor);
             }
-            finally
+
+            if (_isPathCacheAttached)
             {
-                iFile?.Dispose();
+                if (mode.HasFlag(OpenMode.AllowAppend))
+                {
+                    throw new NotImplementedException();
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
             }
+
+            outFile.Reset(accessor);
+            return Result.Success;
         }
 
-        public Result OpenDirectory(out DirectoryAccessor directory, U8Span path, OpenDirectoryMode mode)
+        public Result OpenDirectory(ref UniqueRef<DirectoryAccessor> outDirectory, U8Span path, OpenDirectoryMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out directory);
-
             using var pathNormalized = new Path();
             Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
-            IDirectory iDirectory = null;
-            try
+            using var directory = new UniqueRef<IDirectory>();
+            rc = _fileSystem.OpenDirectory(ref directory.Ref(), in pathNormalized, mode);
+            if (rc.IsFailure()) return rc;
+
+            var accessor = new DirectoryAccessor(ref directory.Ref(), this);
+
+            using (ScopedLock.Lock(ref _openListLock))
             {
-                rc = _fileSystem.OpenDirectory(out iDirectory, in pathNormalized, mode);
-                if (rc.IsFailure()) return rc;
-
-                var directoryAccessor = new DirectoryAccessor(ref iDirectory, this);
-
-                using (ScopedLock.Lock(ref _openListLock))
-                {
-                    _openDirectories.AddLast(directoryAccessor);
-                }
-
-                directory = Shared.Move(ref directoryAccessor);
-                return Result.Success;
+                _openDirectories.AddLast(accessor);
             }
-            finally
-            {
-                iDirectory?.Dispose();
-            }
+
+            outDirectory.Reset(accessor);
+            return Result.Success;
         }
 
         public Result Commit()

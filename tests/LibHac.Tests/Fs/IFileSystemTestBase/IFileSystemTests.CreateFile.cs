@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using Xunit;
 
@@ -72,9 +73,10 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             fs.CreateFile("/file", expectedSize, CreateFileOptions.None);
 
-            fs.OpenFile(out IFile file, "/file", OpenMode.Read);
+            using var file = new UniqueRef<IFile>();
+            fs.OpenFile(ref file.Ref(), "/file", OpenMode.Read);
 
-            Assert.Success(file.GetSize(out long fileSize));
+            Assert.Success(file.Get.GetSize(out long fileSize));
             Assert.Equal(expectedSize, fileSize);
         }
 

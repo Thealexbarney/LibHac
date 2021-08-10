@@ -39,9 +39,10 @@ namespace LibHac.FsSystem.RomFs
             foreach (DirectoryEntryEx entry in input.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File)
                 .OrderBy(x => x.FullPath, StringComparer.Ordinal))
             {
-                input.OpenFile(out IFile file, entry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
+                using var file = new UniqueRef<IFile>();
+                input.OpenFile(ref file.Ref(), entry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
-                AddFile(entry.FullPath, file);
+                AddFile(entry.FullPath, file.Release());
             }
         }
 

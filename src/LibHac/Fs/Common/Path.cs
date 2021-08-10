@@ -137,7 +137,7 @@ namespace LibHac.Fs
             /// must not be reinitialized or disposed for the lifetime of the created <see cref="Path"/>.
             /// </summary>
             /// <returns>The created <see cref="Path"/>.</returns>
-            public readonly Path GetPath()
+            public readonly Path DangerousGetPath()
             {
                 return new Path
                 {
@@ -1106,6 +1106,20 @@ namespace LibHac.Fs
         {
             var sb = new U8StringBuilder(pathBuffer);
             sb.Append((byte)'/').Append(entryName);
+
+            if (sb.Overflowed)
+                return ResultFs.InvalidArgument.Log();
+
+            return SetUpFixedPath(ref path, pathBuffer);
+        }
+
+        // /%s/%s
+        internal static Result SetUpFixedPathDoubleEntry(ref Path path, Span<byte> pathBuffer,
+            ReadOnlySpan<byte> entryName1, ReadOnlySpan<byte> entryName2)
+        {
+            var sb = new U8StringBuilder(pathBuffer);
+            sb.Append((byte)'/').Append(entryName1)
+                .Append((byte)'/').Append(entryName2);
 
             if (sb.Overflowed)
                 return ResultFs.InvalidArgument.Log();

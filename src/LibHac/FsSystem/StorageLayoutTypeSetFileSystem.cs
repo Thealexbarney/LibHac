@@ -111,16 +111,17 @@ namespace LibHac.FsSystem
             return BaseFileSystem.Target.GetTotalSpaceSize(out totalSpace, path);
         }
 
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
-            return BaseFileSystem.Target.OpenFile(out file, path, mode);
+            return BaseFileSystem.Target.OpenFile(ref outFile, path, mode);
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode)
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageFlag);
-            return BaseFileSystem.Target.OpenDirectory(out directory, path, mode);
+            return BaseFileSystem.Target.OpenDirectory(ref outDirectory, path, mode);
         }
 
         protected override Result DoCommit()

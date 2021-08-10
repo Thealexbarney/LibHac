@@ -49,13 +49,13 @@ namespace LibHac.FsSrv
         /// The returned <see cref="SaveDataIndexerAccessor"/> will have exclusive access to the requested indexer.
         /// The accessor must be disposed after use.
         /// </remarks>
-        /// <param name="accessor">If the method returns successfully, contains the created accessor.</param>
+        /// <param name="outAccessor">If the method returns successfully, contains the created accessor.</param>
         /// <param name="neededInit">If the method returns successfully, contains <see langword="true"/>
         /// if the indexer needed to be initialized.</param>
         /// <param name="spaceId">The <see cref="SaveDataSpaceId"/> of the indexer to open.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        public Result OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, out bool neededInit,
-            SaveDataSpaceId spaceId)
+        public Result OpenSaveDataIndexerAccessor(ref UniqueRef<SaveDataIndexerAccessor> outAccessor,
+            out bool neededInit, SaveDataSpaceId spaceId)
         {
             UnsafeHelpers.SkipParamInit(out neededInit);
 
@@ -145,12 +145,12 @@ namespace LibHac.FsSrv
                         break;
 
                     default:
-                        accessor = default;
+                        outAccessor = default;
                         return ResultFs.InvalidArgument.Log();
                 }
 
 
-                accessor = new SaveDataIndexerAccessor(indexer, ref indexerLock);
+                outAccessor.Reset(new SaveDataIndexerAccessor(indexer, ref indexerLock));
                 return Result.Success;
             }
             finally

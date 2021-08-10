@@ -508,27 +508,27 @@ namespace LibHac.Fs.Fsa
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
-            FileAccessor accessor;
+            using var file = new UniqueRef<FileAccessor>();
             if (fs.Impl.IsEnabledAccessLog() && fileSystem.IsEnabledAccessLog())
             {
                 Tick start = fs.Hos.Os.GetSystemTick();
-                rc = fileSystem.OpenFile(out accessor, subPath, mode);
+                rc = fileSystem.OpenFile(ref file.Ref(), subPath, mode);
                 Tick end = fs.Hos.Os.GetSystemTick();
 
-                fs.Impl.OutputAccessLog(rc, start, end, accessor, new U8Span(logBuffer));
+                fs.Impl.OutputAccessLog(rc, start, end, file.Get, new U8Span(logBuffer));
             }
             else
             {
-                rc = fileSystem.OpenFile(out accessor, subPath, mode);
+                rc = fileSystem.OpenFile(ref file.Ref(), subPath, mode);
             }
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
-            handle = new FileHandle(accessor);
+            handle = new FileHandle(file.Release());
             return Result.Success;
         }
 
-        public static Result OpenFile(this FileSystemClient fs, out FileHandle handle, IFile file, OpenMode mode)
+        public static Result OpenFile(this FileSystemClient fs, out FileHandle handle, ref UniqueRef<IFile> file, OpenMode mode)
         {
             var accessor = new FileAccessor(fs.Hos, ref file, null, mode);
             handle = new FileHandle(accessor);
@@ -565,23 +565,24 @@ namespace LibHac.Fs.Fsa
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
-            DirectoryAccessor accessor;
+            using var accessor = new UniqueRef<DirectoryAccessor>();
+
             if (fs.Impl.IsEnabledAccessLog() && fileSystem.IsEnabledAccessLog())
             {
                 Tick start = fs.Hos.Os.GetSystemTick();
-                rc = fileSystem.OpenDirectory(out accessor, subPath, mode);
+                rc = fileSystem.OpenDirectory(ref accessor.Ref(), subPath, mode);
                 Tick end = fs.Hos.Os.GetSystemTick();
 
                 fs.Impl.OutputAccessLog(rc, start, end, accessor, new U8Span(logBuffer));
             }
             else
             {
-                rc = fileSystem.OpenDirectory(out accessor, subPath, mode);
+                rc = fileSystem.OpenDirectory(ref accessor.Ref(), subPath, mode);
             }
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
-            handle = new DirectoryHandle(accessor);
+            handle = new DirectoryHandle(accessor.Release());
             return Result.Success;
         }
 

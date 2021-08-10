@@ -140,26 +140,22 @@ namespace LibHac.Tests.Fs
             return fs.GetTotalSpaceSize(out totalSpace, in pathNormalized);
         }
 
-        public static Result OpenFile(this IFileSystem fs, out IFile file, string path, OpenMode mode)
+        public static Result OpenFile(this IFileSystem fs, ref UniqueRef<IFile> file, string path, OpenMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out file);
-
             using var pathNormalized = new Path();
             Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
-            return fs.OpenFile(out file, in pathNormalized, mode);
+            return fs.OpenFile(ref file, in pathNormalized, mode);
         }
 
-        public static Result OpenDirectory(this IFileSystem fs, out IDirectory directory, string path, OpenDirectoryMode mode)
+        public static Result OpenDirectory(this IFileSystem fs, ref UniqueRef<IDirectory> directory, string path, OpenDirectoryMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out directory);
-
             using var pathNormalized = new Path();
             Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
-            return fs.OpenDirectory(out directory, in pathNormalized, mode);
+            return fs.OpenDirectory(ref directory, in pathNormalized, mode);
         }
 
         public static Result GetFileTimeStampRaw(this IFileSystem fs, out FileTimeStampRaw timeStamp, string path)

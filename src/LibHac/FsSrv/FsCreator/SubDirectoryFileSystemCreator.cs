@@ -12,10 +12,12 @@ namespace LibHac.FsSrv.FsCreator
         {
             UnsafeHelpers.SkipParamInit(out subDirFileSystem);
 
-            Result rc = baseFileSystem.Target.OpenDirectory(out IDirectory dir, in path, OpenDirectoryMode.Directory);
+            using var directory = new UniqueRef<IDirectory>();
+
+            Result rc = baseFileSystem.Target.OpenDirectory(ref directory.Ref(), in path, OpenDirectoryMode.Directory);
             if (rc.IsFailure()) return rc;
 
-            dir.Dispose();
+            directory.Reset();
 
             ReferenceCountedDisposable<SubdirectoryFileSystem> subFs = null;
             try

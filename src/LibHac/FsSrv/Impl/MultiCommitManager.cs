@@ -294,92 +294,84 @@ namespace LibHac.FsSrv.Impl
             Result rc = PathFunctions.SetUpFixedPath(ref contextFilePath.Ref(), CommitContextFileName);
             if (rc.IsFailure()) return rc;
 
-            IFile contextFile = null;
+            // Read the multi-commit context
+            using var contextFile = new UniqueRef<IFile>();
+            rc = contextFs.OpenFile(ref contextFile.Ref(), in contextFilePath, OpenMode.ReadWrite);
+            if (rc.IsFailure()) return rc;
+
+            Unsafe.SkipInit(out Context context);
+            rc = contextFile.Get.Read(out _, 0, SpanHelpers.AsByteSpan(ref context), ReadOption.None);
+            if (rc.IsFailure()) return rc;
+
+            // Note: Nintendo doesn't check if the proper amount of bytes were read, but it
+            // doesn't really matter since the context is validated.
+            if (context.Version > CurrentCommitContextVersion)
+                return ResultFs.InvalidMultiCommitContextVersion.Log();
+
+            // All the file systems in the multi-commit must have been at least provisionally committed
+            // before we can try to recover the commit.
+            if (context.State != CommitState.ProvisionallyCommitted)
+                return ResultFs.InvalidMultiCommitContextState.Log();
+
+            // Keep track of the first error that occurs during the recovery
+            Result recoveryResult = Result.Success;
+
+            int saveCount = 0;
+            Span<SaveDataInfo> savesToRecover = stackalloc SaveDataInfo[MaxFileSystemCount];
+
+            ReferenceCountedDisposable<SaveDataInfoReaderImpl> infoReader = null;
             try
             {
-                // Read the multi-commit context
-                rc = contextFs.OpenFile(out contextFile, in contextFilePath, OpenMode.ReadWrite);
+                using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
+                rc = saveService.OpenSaveDataIndexerAccessor(ref accessor.Ref(), out _, SaveDataSpaceId.User);
                 if (rc.IsFailure()) return rc;
 
-                Unsafe.SkipInit(out Context context);
-                rc = contextFile.Read(out _, 0, SpanHelpers.AsByteSpan(ref context), ReadOption.None);
+                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(out infoReader);
                 if (rc.IsFailure()) return rc;
 
-                // Note: Nintendo doesn't check if the proper amount of bytes were read, but it
-                // doesn't really matter since the context is validated.
-                if (context.Version > CurrentCommitContextVersion)
-                    return ResultFs.InvalidMultiCommitContextVersion.Log();
-
-                // All the file systems in the multi-commit must have been at least provisionally committed
-                // before we can try to recover the commit.
-                if (context.State != CommitState.ProvisionallyCommitted)
-                    return ResultFs.InvalidMultiCommitContextState.Log();
-
-                // Keep track of the first error that occurs during the recovery
-                Result recoveryResult = Result.Success;
-
-                int saveCount = 0;
-                Span<SaveDataInfo> savesToRecover = stackalloc SaveDataInfo[MaxFileSystemCount];
-
-                SaveDataIndexerAccessor accessor = null;
-                ReferenceCountedDisposable<SaveDataInfoReaderImpl> infoReader = null;
-                try
+                // Iterate through all the saves to find any provisionally committed save data
+                while (true)
                 {
-                    rc = saveService.OpenSaveDataIndexerAccessor(out accessor, out _, SaveDataSpaceId.User);
+                    Unsafe.SkipInit(out SaveDataInfo info);
+
+                    rc = infoReader.Target.Read(out long readCount, OutBuffer.FromStruct(ref info));
                     if (rc.IsFailure()) return rc;
 
-                    rc = accessor.Indexer.OpenSaveDataInfoReader(out infoReader);
-                    if (rc.IsFailure()) return rc;
+                    // Break once we're done iterating all save data
+                    if (readCount == 0)
+                        break;
 
-                    // Iterate through all the saves to find any provisionally committed save data
-                    while (true)
+                    rc = multiCommitInterface.IsProvisionallyCommittedSaveData(out bool isProvisionallyCommitted,
+                        in info);
+
+                    // Note: Some saves could be missed if there are more than MaxFileSystemCount
+                    // provisionally committed saves. Not sure why Nintendo doesn't catch this.
+                    if (rc.IsSuccess() && isProvisionallyCommitted && saveCount < MaxFileSystemCount)
                     {
-                        Unsafe.SkipInit(out SaveDataInfo info);
-
-                        rc = infoReader.Target.Read(out long readCount, OutBuffer.FromStruct(ref info));
-                        if (rc.IsFailure()) return rc;
-
-                        // Break once we're done iterating all save data
-                        if (readCount == 0)
-                            break;
-
-                        rc = multiCommitInterface.IsProvisionallyCommittedSaveData(out bool isProvisionallyCommitted,
-                            in info);
-
-                        // Note: Some saves could be missed if there are more than MaxFileSystemCount
-                        // provisionally committed saves. Not sure why Nintendo doesn't catch this.
-                        if (rc.IsSuccess() && isProvisionallyCommitted && saveCount < MaxFileSystemCount)
-                        {
-                            savesToRecover[saveCount] = info;
-                            saveCount++;
-                        }
+                        savesToRecover[saveCount] = info;
+                        saveCount++;
                     }
                 }
-                finally
-                {
-                    accessor?.Dispose();
-                    infoReader?.Dispose();
-                }
-
-                // Recover the saves by finishing their commits.
-                // All file systems will try to be recovered, even if one fails.
-                // If any commits fail, the result from the first failed recovery will be returned.
-                for (int i = 0; i < saveCount; i++)
-                {
-                    rc = multiCommitInterface.RecoverProvisionallyCommittedSaveData(in savesToRecover[i], false);
-
-                    if (rc.IsFailure() && !recoveryResult.IsFailure())
-                    {
-                        recoveryResult = rc;
-                    }
-                }
-
-                return recoveryResult;
             }
             finally
             {
-                contextFile?.Dispose();
+                infoReader?.Dispose();
             }
+
+            // Recover the saves by finishing their commits.
+            // All file systems will try to be recovered, even if one fails.
+            // If any commits fail, the result from the first failed recovery will be returned.
+            for (int i = 0; i < saveCount; i++)
+            {
+                rc = multiCommitInterface.RecoverProvisionallyCommittedSaveData(in savesToRecover[i], false);
+
+                if (rc.IsFailure() && !recoveryResult.IsFailure())
+                {
+                    recoveryResult = rc;
+                }
+            }
+
+            return recoveryResult;
         }
 
         /// <summary>
@@ -410,14 +402,14 @@ namespace LibHac.FsSrv.Impl
                 int saveCount = 0;
                 Span<SaveDataInfo> savesToRecover = stackalloc SaveDataInfo[MaxFileSystemCount];
 
-                SaveDataIndexerAccessor accessor = null;
                 ReferenceCountedDisposable<SaveDataInfoReaderImpl> infoReader = null;
                 try
                 {
-                    rc = saveService.OpenSaveDataIndexerAccessor(out accessor, out _, SaveDataSpaceId.User);
+                    using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
+                    rc = saveService.OpenSaveDataIndexerAccessor(ref accessor.Ref(), out _, SaveDataSpaceId.User);
                     if (rc.IsFailure()) return rc;
 
-                    rc = accessor.Indexer.OpenSaveDataInfoReader(out infoReader);
+                    rc = accessor.Get.Indexer.OpenSaveDataInfoReader(out infoReader);
                     if (rc.IsFailure()) return rc;
 
                     // Iterate through all the saves to find any provisionally committed save data
@@ -446,7 +438,6 @@ namespace LibHac.FsSrv.Impl
                 }
                 finally
                 {
-                    accessor?.Dispose();
                     infoReader?.Dispose();
                 }
 
@@ -516,8 +507,8 @@ namespace LibHac.FsSrv.Impl
                     rc = PathFunctions.SetUpFixedPath(ref contextFilePath.Ref(), CommitContextFileName);
                     if (rc.IsFailure()) return rc;
 
-                    rc = fileSystem.Target.OpenFile(out IFile file, in contextFilePath, OpenMode.Read);
-                    file?.Dispose();
+                    using var file = new UniqueRef<IFile>();
+                    rc = fileSystem.Target.OpenFile(ref file.Ref(), in contextFilePath, OpenMode.Read);
 
                     if (rc.IsFailure())
                     {
@@ -591,12 +582,10 @@ namespace LibHac.FsSrv.Impl
                 Result rc = PathFunctions.SetUpFixedPath(ref contextFilePath.Ref(), CommitContextFileName);
                 if (rc.IsFailure()) return rc;
 
-                IFile contextFile = null;
-
-                try
+                // Open context file and create if it doesn't exist
+                using (var contextFile = new UniqueRef<IFile>())
                 {
-                    // Open context file and create if it doesn't exist
-                    rc = _fileSystem.OpenFile(out contextFile, in contextFilePath, OpenMode.Read);
+                    rc = _fileSystem.OpenFile(ref contextFile.Ref(), in contextFilePath, OpenMode.Read);
 
                     if (rc.IsFailure())
                     {
@@ -606,18 +595,14 @@ namespace LibHac.FsSrv.Impl
                         rc = _fileSystem.CreateFile(in contextFilePath, CommitContextFileSize);
                         if (rc.IsFailure()) return rc;
 
-                        rc = _fileSystem.OpenFile(out contextFile, in contextFilePath, OpenMode.Read);
+                        rc = _fileSystem.OpenFile(ref contextFile.Ref(), in contextFilePath, OpenMode.Read);
                         if (rc.IsFailure()) return rc;
                     }
                 }
-                finally
-                {
-                    contextFile?.Dispose();
-                }
 
-                try
+                using (var contextFile = new UniqueRef<IFile>())
                 {
-                    rc = _fileSystem.OpenFile(out contextFile, in contextFilePath, OpenMode.ReadWrite);
+                    rc = _fileSystem.OpenFile(ref contextFile.Ref(), in contextFilePath, OpenMode.ReadWrite);
                     if (rc.IsFailure()) return rc;
 
                     _context.Version = CurrentCommitContextVersion;
@@ -626,15 +611,11 @@ namespace LibHac.FsSrv.Impl
                     _context.Counter = counter;
 
                     // Write the initial context to the file
-                    rc = contextFile.Write(0, SpanHelpers.AsByteSpan(ref _context), WriteOption.None);
+                    rc = contextFile.Get.Write(0, SpanHelpers.AsByteSpan(ref _context), WriteOption.None);
                     if (rc.IsFailure()) return rc;
 
-                    rc = contextFile.Flush();
+                    rc = contextFile.Get.Flush();
                     if (rc.IsFailure()) return rc;
-                }
-                finally
-                {
-                    contextFile?.Dispose();
                 }
 
                 rc = _fileSystem.Commit();
@@ -650,28 +631,22 @@ namespace LibHac.FsSrv.Impl
             /// <returns>The <see cref="Result"/> of the operation.</returns>
             public Result CommitProvisionallyDone()
             {
-                using var contextFilePath = new Fs.Path();
-                Result rc = PathFunctions.SetUpFixedPath(ref contextFilePath.Ref(), CommitContextFileName);
-                if (rc.IsFailure()) return rc;
-
-                IFile contextFile = null;
-
-                try
+                using (var contextFilePath = new Fs.Path())
                 {
-                    rc = _fileSystem.OpenFile(out contextFile, in contextFilePath, OpenMode.ReadWrite);
+                    Result rc = PathFunctions.SetUpFixedPath(ref contextFilePath.Ref(), CommitContextFileName);
+                    if (rc.IsFailure()) return rc;
+
+                    using var contextFile = new UniqueRef<IFile>();
+                    rc = _fileSystem.OpenFile(ref contextFile.Ref(), in contextFilePath, OpenMode.ReadWrite);
                     if (rc.IsFailure()) return rc;
 
                     _context.State = CommitState.ProvisionallyCommitted;
 
-                    rc = contextFile.Write(0, SpanHelpers.AsByteSpan(ref _context), WriteOption.None);
+                    rc = contextFile.Get.Write(0, SpanHelpers.AsByteSpan(ref _context), WriteOption.None);
                     if (rc.IsFailure()) return rc;
 
-                    rc = contextFile.Flush();
+                    rc = contextFile.Get.Flush();
                     if (rc.IsFailure()) return rc;
-                }
-                finally
-                {
-                    contextFile?.Dispose();
                 }
 
                 return _fileSystem.Commit();

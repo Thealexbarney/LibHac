@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using Xunit;
 
@@ -13,7 +14,8 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             fs.CreateFile("/file", 0, CreateFileOptions.None);
 
-            Result rc = fs.OpenDirectory(out _, "/file", OpenDirectoryMode.All);
+            using var directory = new UniqueRef<IDirectory>();
+            Result rc = fs.OpenDirectory(ref directory.Ref(), "/file", OpenDirectoryMode.All);
 
             Assert.Result(ResultFs.PathNotFound, rc);
         }

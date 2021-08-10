@@ -49,23 +49,20 @@ namespace LibHac.FsSystem.RomFs
             return Result.Success;
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out directory);
-
             if (!FileTable.TryOpenDirectory(path.ToString(), out FindPosition position))
             {
                 return ResultFs.PathNotFound.Log();
             }
 
-            directory = new RomFsDirectory(this, position, mode);
+            outDirectory.Reset(new RomFsDirectory(this, position, mode));
             return Result.Success;
         }
 
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out file);
-
             if (!FileTable.TryOpenFile(path.ToString(), out RomFileInfo info))
             {
                 return ResultFs.PathNotFound.Log();
@@ -77,7 +74,7 @@ namespace LibHac.FsSystem.RomFs
                 return ResultFs.InvalidArgument.Log();
             }
 
-            file = new RomFsFile(BaseStorage, Header.DataOffset + info.Offset, info.Length);
+            outFile.Reset(new RomFsFile(BaseStorage, Header.DataOffset + info.Offset, info.Length));
             return Result.Success;
         }
 

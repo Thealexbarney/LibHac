@@ -634,16 +634,14 @@ namespace LibHac.FsSrv
 
             nspPathLen += 4;
 
-            if (nspPathLen > FsPath.MaxLength + 1)
-                return ResultFs.TooLongPath.Log();
-
-            Result rc = FsPath.FromSpan(out FsPath nspPath, path.Slice(0, nspPathLen));
+            using var pathNsp = new Path();
+            Result rc = pathNsp.InitializeWithNormalization(path, nspPathLen);
             if (rc.IsFailure()) return rc;
 
             var storage = new FileStorageBasedFileSystem();
             using var nspFileStorage = new ReferenceCountedDisposable<FileStorageBasedFileSystem>(storage);
 
-            rc = nspFileStorage.Target.Initialize(ref baseFileSystem, new U8Span(nspPath.Str), OpenMode.Read);
+            rc = nspFileStorage.Target.Initialize(ref baseFileSystem, in pathNsp, OpenMode.Read);
             if (rc.IsFailure()) return rc;
 
             rc = _config.PartitionFsCreator.Create(out fileSystem, nspFileStorage.AddReference<IStorage>());
@@ -664,7 +662,11 @@ namespace LibHac.FsSrv
             // Todo: Create ref-counted storage
             var ncaFileStorage = new FileStorageBasedFileSystem();
 
-            Result rc = ncaFileStorage.Initialize(ref baseFileSystem, path, OpenMode.Read);
+            using var pathNca = new Path();
+            Result rc = pathNca.InitializeWithNormalization(path);
+            if (rc.IsFailure()) return rc;
+
+            rc = ncaFileStorage.Initialize(ref baseFileSystem, in pathNca, OpenMode.Read);
             if (rc.IsFailure()) return rc;
 
             rc = _config.StorageOnNcaCreator.OpenNca(out Nca ncaTemp, ncaFileStorage);

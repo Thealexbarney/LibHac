@@ -33,10 +33,12 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.CanCall(OperationType.OpenAccessFailureDetectionEventNotifier))
                 return ResultFs.PermissionDenied.Log();
 
-            rc = _serviceImpl.CreateNotifier(out IEventNotifier tempNotifier, processId, notifyOnDeepRetry);
+            using var tempNotifier = new UniqueRef<IEventNotifier>();
+
+            rc = _serviceImpl.CreateNotifier(ref tempNotifier.Ref(), processId, notifyOnDeepRetry);
             if (rc.IsFailure()) return rc;
 
-            notifier = new ReferenceCountedDisposable<IEventNotifier>(tempNotifier);
+            notifier = new ReferenceCountedDisposable<IEventNotifier>(tempNotifier.Release());
             return Result.Success;
         }
 

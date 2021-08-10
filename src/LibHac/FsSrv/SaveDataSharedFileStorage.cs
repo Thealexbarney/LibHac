@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
@@ -68,10 +69,10 @@ namespace LibHac.FsSrv
             _mutex.Initialize();
         }
 
-        public Result Initialize(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span path, OpenMode mode,
+        public Result Initialize(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, in Path path, OpenMode mode,
             OpenType type)
         {
-            Result rc = Initialize(ref baseFileSystem, path, mode);
+            Result rc = Initialize(ref baseFileSystem, in path, mode);
             if (rc.IsFailure()) return rc;
 
             return SetOpenType(type);
@@ -328,12 +329,17 @@ namespace LibHac.FsSrv
             ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, SaveDataSpaceId spaceId, ulong saveDataId,
             OpenMode mode, Optional<SaveDataOpenTypeSetFileStorage.OpenType> type)
         {
-            Result rc;
             UnsafeHelpers.SkipParamInit(out saveDataStorage);
 
-            Span<byte> saveImageName = stackalloc byte[0x30];
-            var sb = new U8StringBuilder(saveImageName);
-            sb.Append((byte)'/').AppendFormat(saveDataId, 'x', 16);
+            // Hack around error CS8350.
+            const int bufferLength = 0x12;
+            Span<byte> buffer = stackalloc byte[bufferLength];
+            ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+            Span<byte> saveImageNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+
+            using var saveImageName = new Path();
+            Result rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
+            if (rc.IsFailure()) return rc;
 
             // If an open type isn't specified, open the save without the shared file storage layer
             if (!type.HasValue)
@@ -344,7 +350,7 @@ namespace LibHac.FsSrv
                     fileStorage =
                         new ReferenceCountedDisposable<FileStorageBasedFileSystem>(new FileStorageBasedFileSystem());
 
-                    rc = fileStorage.Target.Initialize(ref baseFileSystem, new U8Span(saveImageName), mode);
+                    rc = fileStorage.Target.Initialize(ref baseFileSystem, in saveImageName, mode);
                     if (rc.IsFailure()) return rc;
 
                     saveDataStorage = fileStorage.AddReference<IStorage>();
@@ -375,7 +381,7 @@ namespace LibHac.FsSrv
                         new ReferenceCountedDisposable<SaveDataOpenTypeSetFileStorage>(
                             new SaveDataOpenTypeSetFileStorage(_fsServer, spaceId, saveDataId));
 
-                    rc = baseFileStorage.Target.Initialize(ref baseFileSystem, new U8Span(saveImageName), mode,
+                    rc = baseFileStorage.Target.Initialize(ref baseFileSystem, in saveImageName, mode,
                         type.ValueRo);
                     if (rc.IsFailure()) return rc;
 

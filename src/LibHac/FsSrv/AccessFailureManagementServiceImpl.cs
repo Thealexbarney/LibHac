@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Svc;
@@ -30,9 +31,9 @@ namespace LibHac.FsSrv
             return registry.GetProgramInfo(out programInfo, processId);
         }
 
-        public Result CreateNotifier(out IEventNotifier notifier, ulong processId, bool notifyOnDeepRetry)
+        public Result CreateNotifier(ref UniqueRef<IEventNotifier> notifier, ulong processId, bool notifyOnDeepRetry)
         {
-            return _eventManager.CreateNotifier(out notifier, processId, notifyOnDeepRetry);
+            return _eventManager.CreateNotifier(ref notifier, processId, notifyOnDeepRetry);
         }
 
         public void ResetAccessFailureDetection(ulong processId)

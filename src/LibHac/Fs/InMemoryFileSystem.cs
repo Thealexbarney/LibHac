@@ -68,25 +68,22 @@ namespace LibHac.Fs
             return FsTable.DeleteFile(new U8Span(path.GetString()));
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out directory);
-
             Result rc = FsTable.GetDirectory(new U8Span(path.GetString()), out DirectoryNode dirNode);
             if (rc.IsFailure()) return rc;
 
-            directory = new MemoryDirectory(dirNode, mode);
+            outDirectory.Reset(new MemoryDirectory(dirNode, mode));
             return Result.Success;
         }
 
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out file);
-
             Result rc = FsTable.GetFile(new U8Span(path.GetString()), out FileNode fileNode);
             if (rc.IsFailure()) return rc;
 
-            file = new MemoryFile(mode, fileNode.File);
+            outFile.Reset(new MemoryFile(mode, fileNode.File));
 
             return Result.Success;
         }

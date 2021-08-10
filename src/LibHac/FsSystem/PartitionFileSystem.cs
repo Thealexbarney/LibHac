@@ -34,13 +34,14 @@ namespace LibHac.FsSystem
             BaseStorage = storage;
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode)
         {
-            directory = new PartitionDirectory(this, path.ToString(), mode);
+            outDirectory.Reset(new PartitionDirectory(this, path.ToString(), mode));
             return Result.Success;
         }
 
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
             string pathNormalized = PathTools.Normalize(path.ToString()).TrimStart('/');
 
@@ -49,7 +50,7 @@ namespace LibHac.FsSystem
                 ThrowHelper.ThrowResult(ResultFs.PathNotFound.Value);
             }
 
-            file = OpenFile(entry, mode);
+            outFile.Reset(OpenFile(entry, mode));
             return Result.Success;
         }
 

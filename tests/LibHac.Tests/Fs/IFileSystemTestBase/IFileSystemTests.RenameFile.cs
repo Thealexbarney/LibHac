@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using Xunit;
 
@@ -74,18 +75,17 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             fs.RenameFile("/file1", "/file2");
 
-            Assert.Success(fs.OpenFile(out IFile file1, "/file1", OpenMode.Read));
-            Assert.Success(fs.OpenFile(out IFile file2, "/file2", OpenMode.Read));
+            using var file1 = new UniqueRef<IFile>();
+            using var file2 = new UniqueRef<IFile>();
 
-            using (file1)
-            using (file2)
-            {
-                Assert.Success(file1.GetSize(out long file1Size));
-                Assert.Success(file2.GetSize(out long file2Size));
+            Assert.Success(fs.OpenFile(ref file1.Ref(), "/file1", OpenMode.Read));
+            Assert.Success(fs.OpenFile(ref file2.Ref(), "/file2", OpenMode.Read));
 
-                Assert.Equal(54321, file1Size);
-                Assert.Equal(12345, file2Size);
-            }
+            Assert.Success(file1.Get.GetSize(out long file1Size));
+            Assert.Success(file2.Get.GetSize(out long file2Size));
+
+            Assert.Equal(54321, file1Size);
+            Assert.Equal(12345, file2Size);
         }
 
         [Fact]
@@ -97,17 +97,17 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
 
             fs.CreateFile("/file", data.Length, CreateFileOptions.None);
 
-            fs.OpenFile(out IFile file, "/file", OpenMode.Write);
-            file.Write(0, data, WriteOption.None);
-            file.Dispose();
+            using var file = new UniqueRef<IFile>();
+            fs.OpenFile(ref file.Ref(), "/file", OpenMode.Write);
+            file.Get.Write(0, data, WriteOption.None);
+            file.Reset();
 
             fs.RenameFile("/file", "/renamed");
 
             byte[] readData = new byte[data.Length];
 
-            fs.OpenFile(out file, "/renamed", OpenMode.Read);
-            Result rc = file.Read(out long bytesRead, 0, readData, ReadOption.None);
-            file.Dispose();
+            fs.OpenFile(ref file.Ref(), "/renamed", OpenMode.Read);
+            Result rc = file.Get.Read(out long bytesRead, 0, readData, ReadOption.None);
 
             Assert.Success(rc);
             Assert.Equal(data.Length, bytesRead);

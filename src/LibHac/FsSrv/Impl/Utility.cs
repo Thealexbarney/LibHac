@@ -27,10 +27,11 @@ namespace LibHac.FsSrv.Impl
             }
 
             // Check if the directory exists
-            Result rc = baseFileSystem.Target.OpenDirectory(out IDirectory dir, rootPath, OpenDirectoryMode.Directory);
+            using var dir = new UniqueRef<IDirectory>();
+            Result rc = baseFileSystem.Target.OpenDirectory(ref dir.Ref(), rootPath, OpenDirectoryMode.Directory);
             if (rc.IsFailure()) return rc;
 
-            dir.Dispose();
+            dir.Reset();
 
             var fs = new SubdirectoryFileSystem(ref baseFileSystem);
             using (var subDirFs = new ReferenceCountedDisposable<SubdirectoryFileSystem>(fs))

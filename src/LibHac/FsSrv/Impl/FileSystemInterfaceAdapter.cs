@@ -24,20 +24,20 @@ namespace LibHac.FsSrv.Impl
     public class FileInterfaceAdapter : IFileSf
     {
         private ReferenceCountedDisposable<FileSystemInterfaceAdapter> _parentFs;
-        private IFile _baseFile;
+        private UniqueRef<IFile> _baseFile;
         private bool _allowAllOperations;
 
-        public FileInterfaceAdapter(IFile baseFile,
+        public FileInterfaceAdapter(ref UniqueRef<IFile> baseFile,
             ref ReferenceCountedDisposable<FileSystemInterfaceAdapter> parentFileSystem, bool allowAllOperations)
         {
-            _baseFile = baseFile;
+            _baseFile = new UniqueRef<IFile>(ref baseFile);
             _parentFs = Shared.Move(ref parentFileSystem);
             _allowAllOperations = allowAllOperations;
         }
 
         public void Dispose()
         {
-            _baseFile?.Dispose();
+            _baseFile.Dispose();
             _parentFs?.Dispose();
         }
 
@@ -57,7 +57,7 @@ namespace LibHac.FsSrv.Impl
 
             for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
             {
-                rc = _baseFile.Read(out tmpBytesRead, offset, destination.Buffer.Slice(0, (int)size), option);
+                rc = _baseFile.Get.Read(out tmpBytesRead, offset, destination.Buffer.Slice(0, (int)size), option);
 
                 // Retry on ResultDataCorrupted
                 if (!ResultFs.DataCorrupted.Includes(rc))
@@ -81,12 +81,12 @@ namespace LibHac.FsSrv.Impl
             using var scopedPriorityChanger =
                 new ScopedThreadPriorityChangerByAccessPriority(ScopedThreadPriorityChangerByAccessPriority.AccessMode.Write);
 
-            return _baseFile.Write(offset, source.Buffer.Slice(0, (int)size), option);
+            return _baseFile.Get.Write(offset, source.Buffer.Slice(0, (int)size), option);
         }
 
         public Result Flush()
         {
-            return _baseFile.Flush();
+            return _baseFile.Get.Flush();
         }
 
         public Result SetSize(long size)
@@ -94,7 +94,7 @@ namespace LibHac.FsSrv.Impl
             if (size < 0)
                 return ResultFs.InvalidSize.Log();
 
-            return _baseFile.SetSize(size);
+            return _baseFile.Get.SetSize(size);
         }
 
         public Result GetSize(out long size)
@@ -107,7 +107,7 @@ namespace LibHac.FsSrv.Impl
 
             for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
             {
-                rc = _baseFile.GetSize(out tmpSize);
+                rc = _baseFile.Get.GetSize(out tmpSize);
 
                 // Retry on ResultDataCorrupted
                 if (!ResultFs.DataCorrupted.Includes(rc))
@@ -129,7 +129,7 @@ namespace LibHac.FsSrv.Impl
             {
                 Unsafe.SkipInit(out QueryRangeInfo info);
 
-                Result rc = _baseFile.OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.QueryRange, offset,
+                Result rc = _baseFile.Get.OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.QueryRange, offset,
                     size, ReadOnlySpan<byte>.Empty);
                 if (rc.IsFailure()) return rc;
 
@@ -137,7 +137,7 @@ namespace LibHac.FsSrv.Impl
             }
             else if (operationId == (int)OperationId.InvalidateCache)
             {
-                Result rc = _baseFile.OperateRange(Span<byte>.Empty, OperationId.InvalidateCache, offset, size,
+                Result rc = _baseFile.Get.OperateRange(Span<byte>.Empty, OperationId.InvalidateCache, offset, size,
                     ReadOnlySpan<byte>.Empty);
                 if (rc.IsFailure()) return rc;
             }
@@ -165,7 +165,7 @@ namespace LibHac.FsSrv.Impl
             Result rc = PermissionCheck((OperationId)operationId, this);
             if (rc.IsFailure()) return rc;
 
-            rc = _baseFile.OperateRange(outBuffer.Buffer, (OperationId)operationId, offset, size, inBuffer.Buffer);
+            rc = _baseFile.Get.OperateRange(outBuffer.Buffer, (OperationId)operationId, offset, size, inBuffer.Buffer);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -179,18 +179,18 @@ namespace LibHac.FsSrv.Impl
     public class DirectoryInterfaceAdapter : IDirectorySf
     {
         private ReferenceCountedDisposable<FileSystemInterfaceAdapter> _parentFs;
-        private IDirectory _baseDirectory;
+        private UniqueRef<IDirectory> _baseDirectory;
 
-        public DirectoryInterfaceAdapter(IDirectory baseDirectory,
+        public DirectoryInterfaceAdapter(ref UniqueRef<IDirectory> baseDirectory,
             ref ReferenceCountedDisposable<FileSystemInterfaceAdapter> parentFileSystem)
         {
-            _baseDirectory = baseDirectory;
+            _baseDirectory = new UniqueRef<IDirectory>(ref baseDirectory);
             _parentFs = Shared.Move(ref parentFileSystem);
         }
 
         public void Dispose()
         {
-            _baseDirectory?.Dispose();
+            _baseDirectory.Dispose();
             _parentFs?.Dispose();
         }
 
@@ -206,7 +206,7 @@ namespace LibHac.FsSrv.Impl
 
             for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
             {
-                rc = _baseDirectory.Read(out numRead, entries);
+                rc = _baseDirectory.Get.Read(out numRead, entries);
 
                 // Retry on ResultDataCorrupted
                 if (!ResultFs.DataCorrupted.Includes(rc))
@@ -223,7 +223,7 @@ namespace LibHac.FsSrv.Impl
         {
             UnsafeHelpers.SkipParamInit(out entryCount);
 
-            Result rc = _baseDirectory.GetEntryCount(out long count);
+            Result rc = _baseDirectory.Get.GetEntryCount(out long count);
             if (rc.IsFailure()) return rc;
 
             entryCount = count;
@@ -496,75 +496,63 @@ namespace LibHac.FsSrv.Impl
             return Result.Success;
         }
 
-        public Result OpenFile(out ReferenceCountedDisposable<IFileSf> file, in PathSf path, uint mode)
+        public Result OpenFile(out ReferenceCountedDisposable<IFileSf> outFile, in PathSf path, uint mode)
         {
             const int maxTryCount = 2;
-            UnsafeHelpers.SkipParamInit(out file);
+            UnsafeHelpers.SkipParamInit(out outFile);
 
             using var pathNormalized = new Path();
             Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
-            IFile fileInterface = null;
-            try
+            using var file = new UniqueRef<IFile>();
+
+            for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
             {
-                for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
-                {
-                    rc = _baseFileSystem.Target.OpenFile(out fileInterface, in pathNormalized, (OpenMode)mode);
+                rc = _baseFileSystem.Target.OpenFile(ref file.Ref(), in pathNormalized, (OpenMode)mode);
 
-                    // Retry on ResultDataCorrupted
-                    if (!ResultFs.DataCorrupted.Includes(rc))
-                        break;
-                }
-
-                if (rc.IsFailure()) return rc;
-
-                ReferenceCountedDisposable<FileSystemInterfaceAdapter> selfReference = _selfReference.AddReference();
-                var adapter = new FileInterfaceAdapter(Shared.Move(ref fileInterface), ref selfReference, _allowAllOperations);
-                file = new ReferenceCountedDisposable<IFileSf>(adapter);
-
-                return Result.Success;
+                // Retry on ResultDataCorrupted
+                if (!ResultFs.DataCorrupted.Includes(rc))
+                    break;
             }
-            finally
-            {
-                fileInterface?.Dispose();
-            }
+
+            if (rc.IsFailure()) return rc;
+
+            ReferenceCountedDisposable<FileSystemInterfaceAdapter> selfReference = _selfReference.AddReference();
+            var adapter = new FileInterfaceAdapter(ref file.Ref(), ref selfReference, _allowAllOperations);
+            outFile = new ReferenceCountedDisposable<IFileSf>(adapter);
+
+            return Result.Success;
         }
 
-        public Result OpenDirectory(out ReferenceCountedDisposable<IDirectorySf> directory, in PathSf path, uint mode)
+        public Result OpenDirectory(out ReferenceCountedDisposable<IDirectorySf> outDirectory, in PathSf path, uint mode)
         {
             const int maxTryCount = 2;
-            UnsafeHelpers.SkipParamInit(out directory);
+            UnsafeHelpers.SkipParamInit(out outDirectory);
 
             using var pathNormalized = new Path();
             Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
-            IDirectory dirInterface = null;
-            try
+            using var directory = new UniqueRef<IDirectory>();
+
+            for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
             {
-                for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
-                {
-                    rc = _baseFileSystem.Target.OpenDirectory(out dirInterface, in pathNormalized,
-                        (OpenDirectoryMode)mode);
+                rc = _baseFileSystem.Target.OpenDirectory(ref directory.Ref(), in pathNormalized,
+                    (OpenDirectoryMode)mode);
 
-                    // Retry on ResultDataCorrupted
-                    if (!ResultFs.DataCorrupted.Includes(rc))
-                        break;
-                }
-
-                if (rc.IsFailure()) return rc;
-
-                ReferenceCountedDisposable<FileSystemInterfaceAdapter> selfReference = _selfReference.AddReference();
-                var adapter = new DirectoryInterfaceAdapter(dirInterface, ref selfReference);
-                directory = new ReferenceCountedDisposable<IDirectorySf>(adapter);
-
-                return Result.Success;
+                // Retry on ResultDataCorrupted
+                if (!ResultFs.DataCorrupted.Includes(rc))
+                    break;
             }
-            finally
-            {
-                dirInterface?.Dispose();
-            }
+
+            if (rc.IsFailure()) return rc;
+
+            ReferenceCountedDisposable<FileSystemInterfaceAdapter> selfReference = _selfReference.AddReference();
+            var adapter = new DirectoryInterfaceAdapter(ref directory.Ref(), ref selfReference);
+            outDirectory = new ReferenceCountedDisposable<IDirectorySf>(adapter);
+
+            return Result.Success;
         }
 
         public Result Commit()

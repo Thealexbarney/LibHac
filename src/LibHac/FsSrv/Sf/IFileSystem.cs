@@ -17,8 +17,8 @@ namespace LibHac.FsSrv.Sf
         Result RenameFile(in Path currentPath, in Path newPath);
         Result RenameDirectory(in Path currentPath, in Path newPath);
         Result GetEntryType(out uint entryType, in Path path);
-        Result OpenFile(out ReferenceCountedDisposable<IFileSf> file, in Path path, uint mode);
-        Result OpenDirectory(out ReferenceCountedDisposable<IDirectorySf> directory, in Path path, uint mode);
+        Result OpenFile(out ReferenceCountedDisposable<IFileSf> outFile, in Path path, uint mode);
+        Result OpenDirectory(out ReferenceCountedDisposable<IDirectorySf> outDirectory, in Path path, uint mode);
         Result Commit();
         Result GetFreeSpaceSize(out long freeSpace, in Path path);
         Result GetTotalSpaceSize(out long totalSpace, in Path path);

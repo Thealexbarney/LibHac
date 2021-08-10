@@ -95,14 +95,15 @@ namespace LibHac.FsSystem
             base.Dispose();
         }
 
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
-            return _baseFileSystem.Target.OpenFile(out file, path, mode);
+            return _baseFileSystem.Target.OpenFile(ref outFile, path, mode);
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode)
         {
-            return _baseFileSystem.Target.OpenDirectory(out directory, path, mode);
+            return _baseFileSystem.Target.OpenDirectory(ref outDirectory, path, mode);
         }
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)

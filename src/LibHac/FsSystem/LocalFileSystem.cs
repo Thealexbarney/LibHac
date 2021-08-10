@@ -175,7 +175,7 @@ namespace LibHac.FsSystem
             rc = pathNormalized.Normalize(pathFlags);
             if (rc.IsFailure()) return rc;
 
-            Path rootPath = _rootPath.GetPath();
+            Path rootPath = _rootPath.DangerousGetPath();
 
             using var fullPath = new Path();
             rc = fullPath.Combine(in rootPath, in pathNormalized);
@@ -379,9 +379,9 @@ namespace LibHac.FsSystem
                 () => DeleteFileInternal(file), _fsClient);
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out directory);
             Result rc = ResolveFullPath(out string fullPath, in path, true);
             if (rc.IsFailure()) return rc;
 
@@ -398,14 +398,12 @@ namespace LibHac.FsSystem
                 OpenDirectoryInternal(out dirTemp, mode, dirInfo), _fsClient);
             if (rc.IsFailure()) return rc;
 
-            directory = dirTemp;
+            outDirectory.Reset(dirTemp);
             return Result.Success;
         }
 
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out file);
-
             Result rc = ResolveFullPath(out string fullPath, in path, true);
             if (rc.IsFailure()) return rc;
 
@@ -423,7 +421,7 @@ namespace LibHac.FsSystem
                 OpenFileInternal(out fileStream, fullPath, mode), _fsClient);
             if (rc.IsFailure()) return rc;
 
-            file = new LocalFile(fileStream, mode);
+            outFile.Reset(new LocalFile(fileStream, mode));
             return Result.Success;
         }
 

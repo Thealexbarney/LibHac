@@ -8,23 +8,29 @@ namespace LibHac.FsSystem
 {
     public class AesXtsDirectory : IDirectory
     {
-        private U8String Path { get; }
-        private OpenDirectoryMode Mode { get; }
+        private U8String _path;
+        private OpenDirectoryMode _mode;
 
-        private IFileSystem BaseFileSystem { get; }
-        private IDirectory BaseDirectory { get; }
+        private IFileSystem _baseFileSystem;
+        private UniqueRef<IDirectory> _baseDirectory;
 
-        public AesXtsDirectory(IFileSystem baseFs, IDirectory baseDir, U8String path, OpenDirectoryMode mode)
+        public AesXtsDirectory(IFileSystem baseFs, ref UniqueRef<IDirectory> baseDir, U8String path, OpenDirectoryMode mode)
         {
-            BaseFileSystem = baseFs;
-            BaseDirectory = baseDir;
-            Mode = mode;
-            Path = path;
+            _baseFileSystem = baseFs;
+            _baseDirectory = new UniqueRef<IDirectory>(ref baseDir);
+            _mode = mode;
+            _path = path;
+        }
+
+        public override void Dispose()
+        {
+            _baseDirectory.Dispose();
+            base.Dispose();
         }
 
         protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)
         {
-            Result rc = BaseDirectory.Read(out entriesRead, entryBuffer);
+            Result rc = _baseDirectory.Get.Read(out entriesRead, entryBuffer);
             if (rc.IsFailure()) return rc;
 
             for (int i = 0; i < entriesRead; i++)
@@ -33,14 +39,14 @@ namespace LibHac.FsSystem
 
                 if (entry.Type == DirectoryEntryType.File)
                 {
-                    if (Mode.HasFlag(OpenDirectoryMode.NoFileSize))
+                    if (_mode.HasFlag(OpenDirectoryMode.NoFileSize))
                     {
                         entry.Size = 0;
                     }
                     else
                     {
                         string entryName = StringUtils.NullTerminatedUtf8ToString(entry.Name);
-                        entry.Size = GetAesXtsFileSize(PathTools.Combine(Path.ToString(), entryName).ToU8Span());
+                        entry.Size = GetAesXtsFileSize(PathTools.Combine(_path.ToString(), entryName).ToU8Span());
                     }
                 }
             }
@@ -50,7 +56,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetEntryCount(out long entryCount)
         {
-            return BaseDirectory.GetEntryCount(out entryCount);
+            return _baseDirectory.Get.GetEntryCount(out entryCount);
         }
 
         /// <summary>
@@ -66,24 +72,21 @@ namespace LibHac.FsSystem
             // Todo: Remove try/catch when more code uses Result
             try
             {
-                Result rc = BaseFileSystem.OpenFile(out IFile file, path, OpenMode.Read);
+                using var file = new UniqueRef<IFile>();
+                Result rc = _baseFileSystem.OpenFile(ref file.Ref(), path, OpenMode.Read);
                 if (rc.IsFailure()) return 0;
 
-                using (file)
-                {
-                    uint magic = 0;
-                    long fileSize = 0;
-                    long bytesRead;
+                uint magic = 0;
+                long fileSize = 0;
+                long bytesRead;
 
-                    file.Read(out bytesRead, magicOffset, SpanHelpers.AsByteSpan(ref magic), ReadOption.None);
-                    if (bytesRead != sizeof(uint) || magic != AesXtsFileHeader.AesXtsFileMagic) return 0;
+                file.Get.Read(out bytesRead, magicOffset, SpanHelpers.AsByteSpan(ref magic), ReadOption.None);
+                if (bytesRead != sizeof(uint) || magic != AesXtsFileHeader.AesXtsFileMagic) return 0;
 
-                    file.Read(out bytesRead, fileSizeOffset, SpanHelpers.AsByteSpan(ref fileSize), ReadOption.None);
-                    if (bytesRead != sizeof(long) || magic != AesXtsFileHeader.AesXtsFileMagic) return 0;
+                file.Get.Read(out bytesRead, fileSizeOffset, SpanHelpers.AsByteSpan(ref fileSize), ReadOption.None);
+                if (bytesRead != sizeof(long) || magic != AesXtsFileHeader.AesXtsFileMagic) return 0;
 
-                    return fileSize;
-                }
-
+                return fileSize;
             }
             catch (Exception)
             {

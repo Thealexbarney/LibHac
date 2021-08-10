@@ -66,14 +66,12 @@ namespace LibHac.FsSystem
 
             var header = new AesXtsFileHeader(key, size, path.ToString(), KekSource, ValidationKey);
 
-            rc = BaseFileSystem.OpenFile(out IFile baseFile, in path, OpenMode.Write);
+            using var baseFile = new UniqueRef<IFile>();
+            rc = BaseFileSystem.OpenFile(ref baseFile.Ref(), in path, OpenMode.Write);
             if (rc.IsFailure()) return rc;
 
-            using (baseFile)
-            {
-                rc = baseFile.Write(0, header.ToBytes(false));
-                if (rc.IsFailure()) return rc;
-            }
+            rc = baseFile.Get.Write(0, header.ToBytes(false));
+            if (rc.IsFailure()) return rc;
 
             return Result.Success;
         }
@@ -98,28 +96,27 @@ namespace LibHac.FsSystem
             return BaseFileSystem.DeleteFile(path);
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out directory);
-
-            Result rc = BaseFileSystem.OpenDirectory(out IDirectory baseDir, path, mode);
+            using var baseDir = new UniqueRef<IDirectory>();
+            Result rc = BaseFileSystem.OpenDirectory(ref baseDir.Ref(), path, mode);
             if (rc.IsFailure()) return rc;
 
-            directory = new AesXtsDirectory(BaseFileSystem, baseDir, new U8String(path.GetString().ToArray()), mode);
+            outDirectory.Reset(new AesXtsDirectory(BaseFileSystem, ref baseDir.Ref(), new U8String(path.GetString().ToArray()), mode));
             return Result.Success;
         }
 
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out file);
-
-            Result rc = BaseFileSystem.OpenFile(out IFile baseFile, path, mode | OpenMode.Read);
+            using var baseFile = new UniqueRef<IFile>();
+            Result rc = BaseFileSystem.OpenFile(ref baseFile.Ref(), path, mode | OpenMode.Read);
             if (rc.IsFailure()) return rc;
 
-            var xtsFile = new AesXtsFile(mode, baseFile, new U8String(path.GetString().ToArray()), KekSource,
+            var xtsFile = new AesXtsFile(mode, ref baseFile.Ref(), new U8String(path.GetString().ToArray()), KekSource,
                 ValidationKey, BlockSize);
 
-            file = xtsFile;
+            outFile.Reset(xtsFile);
             return Result.Success;
         }
 
@@ -265,15 +262,13 @@ namespace LibHac.FsSystem
 
             header = null;
 
-            Result rc = BaseFileSystem.OpenFile(out IFile file, filePath.ToU8Span(), OpenMode.Read);
+            using var file = new UniqueRef<IFile>();
+            Result rc = BaseFileSystem.OpenFile(ref file.Ref(), filePath.ToU8Span(), OpenMode.Read);
             if (rc.IsFailure()) return false;
 
-            using (file)
-            {
-                header = new AesXtsFileHeader(file);
+            header = new AesXtsFileHeader(file.Get);
 
-                return header.TryDecryptHeader(keyPath, KekSource, ValidationKey);
-            }
+            return header.TryDecryptHeader(keyPath, KekSource, ValidationKey);
         }
 
         private void WriteXtsHeader(AesXtsFileHeader header, string filePath, string keyPath)
@@ -283,12 +278,10 @@ namespace LibHac.FsSystem
 
             header.EncryptHeader(keyPath, KekSource, ValidationKey);
 
-            BaseFileSystem.OpenFile(out IFile file, filePath.ToU8Span(), OpenMode.ReadWrite);
+            using var file = new UniqueRef<IFile>();
+            BaseFileSystem.OpenFile(ref file.Ref(), filePath.ToU8Span(), OpenMode.ReadWrite);
 
-            using (file)
-            {
-                file.Write(0, header.ToBytes(false), WriteOption.Flush).ThrowIfFailure();
-            }
+            file.Get.Write(0, header.ToBytes(false), WriteOption.Flush).ThrowIfFailure();
         }
     }
 }

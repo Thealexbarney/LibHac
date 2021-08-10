@@ -19,7 +19,7 @@ namespace LibHac.Fs.Impl
     {
         private const string NeedFlushMessage = "Error: nn::fs::CloseFile() failed because the file was not flushed.\n";
 
-        private IFile _file;
+        private UniqueRef<IFile> _file;
         private FileSystemAccessor _parentFileSystem;
         private WriteState _writeState;
         private Result _lastResult;
@@ -30,12 +30,12 @@ namespace LibHac.Fs.Impl
 
         internal HorizonClient Hos { get; }
 
-        public FileAccessor(HorizonClient hosClient, ref IFile file, FileSystemAccessor parentFileSystem,
+        public FileAccessor(HorizonClient hosClient, ref UniqueRef<IFile> file, FileSystemAccessor parentFileSystem,
             OpenMode mode)
         {
             Hos = hosClient;
 
-            _file = Shared.Move(ref file);
+            _file = new UniqueRef<IFile>(ref file);
             _parentFileSystem = parentFileSystem;
             _writeState = WriteState.None;
             _lastResult = Result.Success;
@@ -52,8 +52,7 @@ namespace LibHac.Fs.Impl
 
             _parentFileSystem?.NotifyCloseFile(this);
 
-            IFile file = Shared.Move(ref _file);
-            file?.Dispose();
+            _file.Dispose();
         }
 
         public OpenMode GetOpenMode() => _openMode;
@@ -77,7 +76,7 @@ namespace LibHac.Fs.Impl
         public Result ReadWithoutCacheAccessLog(out long bytesRead, long offset, Span<byte> destination,
             in ReadOption option)
         {
-            return _file.Read(out bytesRead, offset, destination, in option);
+            return _file.Get.Read(out bytesRead, offset, destination, in option);
         }
 
         private Result ReadWithCacheAccessLog(out long bytesRead, long offset, Span<byte> destination,
@@ -166,7 +165,7 @@ namespace LibHac.Fs.Impl
             }
             else
             {
-                Result rc = UpdateLastResult(_file.Write(offset, source, in option));
+                Result rc = UpdateLastResult(_file.Get.Write(offset, source, in option));
                 if (rc.IsFailure()) return rc;
             }
 
@@ -182,7 +181,7 @@ namespace LibHac.Fs.Impl
             using ScopedSetter<WriteState> setter =
                 ScopedSetter<WriteState>.MakeScopedSetter(ref _writeState, WriteState.Failed);
 
-            Result rc = UpdateLastResult(_file.Flush());
+            Result rc = UpdateLastResult(_file.Get.Flush());
             if (rc.IsFailure()) return rc;
 
             setter.Set(WriteState.None);
@@ -198,7 +197,7 @@ namespace LibHac.Fs.Impl
             using ScopedSetter<WriteState> setter =
                 ScopedSetter<WriteState>.MakeScopedSetter(ref _writeState, WriteState.Failed);
 
-            Result rc = UpdateLastResult(_file.SetSize(size));
+            Result rc = UpdateLastResult(_file.Get.SetSize(size));
             if (rc.IsFailure()) return rc;
 
             if (_filePathHash.Data != 0)
@@ -217,13 +216,13 @@ namespace LibHac.Fs.Impl
             if (_lastResult.IsFailure())
                 return _lastResult;
 
-            return _file.GetSize(out size);
+            return _file.Get.GetSize(out size);
         }
 
         public Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
             ReadOnlySpan<byte> inBuffer)
         {
-            return _file.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+            return _file.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer);
         }
     }
 }

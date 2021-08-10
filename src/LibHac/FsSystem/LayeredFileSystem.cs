@@ -37,10 +37,9 @@ namespace LibHac.FsSystem
             Sources.AddRange(sourceFileSystems);
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out directory);
-
             // Open directories from all layers so they can be merged
             // Only allocate the list for multiple sources if needed
             List<IFileSystem> multipleSources = null;
@@ -82,12 +81,12 @@ namespace LibHac.FsSystem
 
             if (!(multipleSources is null))
             {
-                var dir = new MergedDirectory(multipleSources, mode);
-                Result rc = dir.Initialize(in path);
+                using var dir = new UniqueRef<MergedDirectory>(new MergedDirectory(multipleSources, mode));
+                Result rc = dir.Get.Initialize(in path);
 
                 if (rc.IsSuccess())
                 {
-                    directory = dir;
+                    outDirectory.Set(ref dir.Ref());
                 }
 
                 return rc;
@@ -95,11 +94,12 @@ namespace LibHac.FsSystem
 
             if (!(singleSource is null))
             {
-                Result rc = singleSource.OpenDirectory(out IDirectory dir, path, mode);
+                using var dir = new UniqueRef<IDirectory>();
+                Result rc = singleSource.OpenDirectory(ref dir.Ref(), in path, mode);
 
                 if (rc.IsSuccess())
                 {
-                    directory = dir;
+                    outDirectory.Set(ref dir.Ref());
                 }
 
                 return rc;
@@ -108,10 +108,8 @@ namespace LibHac.FsSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out file);
-
             foreach (IFileSystem fs in Sources)
             {
                 Result rc = fs.GetEntryType(out DirectoryEntryType type, path);
@@ -120,7 +118,7 @@ namespace LibHac.FsSystem
                 {
                     if (type == DirectoryEntryType.File)
                     {
-                        return fs.OpenFile(out file, path, mode);
+                        return fs.OpenFile(ref outFile, path, mode);
                     }
 
                     if (type == DirectoryEntryType.Directory)
@@ -225,12 +223,14 @@ namespace LibHac.FsSystem
                 Result rc = _path.Initialize(in path);
                 if (rc.IsFailure()) return rc;
 
+                using var dir = new UniqueRef<IDirectory>();
+
                 foreach (IFileSystem fs in SourceFileSystems)
                 {
-                    rc = fs.OpenDirectory(out IDirectory dir, in path, Mode);
+                    rc = fs.OpenDirectory(ref dir.Ref(), in path, Mode);
                     if (rc.IsFailure()) return rc;
 
-                    SourceDirs.Add(dir);
+                    SourceDirs.Add(dir.Release());
                 }
 
                 return Result.Success;
@@ -270,18 +270,19 @@ namespace LibHac.FsSystem
                 // todo: Efficient way to remove duplicates
                 var names = new HashSet<string>();
 
-                Path path = _path.GetPath();
+                Path path = _path.DangerousGetPath();
+                using var dir = new UniqueRef<IDirectory>();
 
                 // Open new directories for each source because we need to remove duplicate entries
                 foreach (IFileSystem fs in SourceFileSystems)
                 {
-                    Result rc = fs.OpenDirectory(out IDirectory dir, in path, Mode);
+                    Result rc = fs.OpenDirectory(ref dir.Ref(), in path, Mode);
                     if (rc.IsFailure()) return rc;
 
                     long entriesRead;
                     do
                     {
-                        rc = dir.Read(out entriesRead, SpanHelpers.AsSpan(ref entry));
+                        rc = dir.Get.Read(out entriesRead, SpanHelpers.AsSpan(ref entry));
                         if (rc.IsFailure()) return rc;
 
                         if (entriesRead == 1 && names.Add(StringUtils.Utf8ZToString(entry.Name)))

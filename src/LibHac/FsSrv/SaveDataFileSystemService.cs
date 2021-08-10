@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
-using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Impl;
@@ -78,9 +77,9 @@ namespace LibHac.FsSrv
                 return new ReferenceCountedDisposable<IEntryOpenCountSemaphoreManager>(adapter);
             }
 
-            public Result TryAcquireEntryOpenCountSemaphore(out IUniqueLock semaphore)
+            public Result TryAcquireEntryOpenCountSemaphore(ref UniqueRef<IUniqueLock> outSemaphore)
             {
-                return _saveService.Target.TryAcquireSaveDataEntryOpenCountSemaphore(out semaphore);
+                return _saveService.Target.TryAcquireSaveDataEntryOpenCountSemaphore(ref outSemaphore);
             }
 
             public void Dispose()
@@ -462,7 +461,7 @@ namespace LibHac.FsSrv
                 return rc;
 
             // Delete the actual save data.
-            Path saveDataRootPath = _saveDataRootPath.GetPath();
+            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
             rc = _serviceImpl.DeleteSaveDataFileSystem(spaceId, saveDataId, wipeSaveFile, in saveDataRootPath);
             if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc))
                 return rc;
@@ -481,22 +480,15 @@ namespace LibHac.FsSrv
         {
             if (saveDataId != SaveData.SaveIndexerId)
             {
-                SaveDataIndexerAccessor accessor = null;
-                try
-                {
-                    Result rc = OpenSaveDataIndexerAccessor(out accessor, spaceId);
-                    if (rc.IsFailure()) return rc;
+                using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
+                Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+                if (rc.IsFailure()) return rc;
 
-                    rc = accessor.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
-                    if (rc.IsFailure()) return rc;
+                rc = accessor.Get.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
+                if (rc.IsFailure()) return rc;
 
-                    if (value.SpaceId != ConvertToRealSpaceId(spaceId))
-                        return ResultFs.TargetNotFound.Log();
-                }
-                finally
-                {
-                    accessor?.Dispose();
-                }
+                if (value.SpaceId != ConvertToRealSpaceId(spaceId))
+                    return ResultFs.TargetNotFound.Log();
             }
 
             return DeleteSaveDataFileSystemCommon(spaceId, saveDataId);
@@ -518,79 +510,71 @@ namespace LibHac.FsSrv
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
 
-            SaveDataIndexerAccessor accessor = null;
+            using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
-            try
+            SaveDataSpaceId actualSpaceId;
+
+            // Only the FS process may delete the save indexer's save data.
+            if (saveDataId == SaveData.SaveIndexerId)
             {
-                SaveDataSpaceId actualSpaceId;
+                if (!IsCurrentProcess(_processId))
+                    return ResultFs.PermissionDenied.Log();
 
-                // Only the FS process may delete the save indexer's save data.
-                if (saveDataId == SaveData.SaveIndexerId)
+                actualSpaceId = spaceId;
+            }
+            else
+            {
+                rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+                if (rc.IsFailure()) return rc;
+
+                // Get the actual space ID of this save.
+                if (spaceId == SaveDataSpaceId.ProperSystem && spaceId == SaveDataSpaceId.SafeMode)
                 {
-                    if (!IsCurrentProcess(_processId))
-                        return ResultFs.PermissionDenied.Log();
-
                     actualSpaceId = spaceId;
                 }
                 else
                 {
-                    rc = OpenSaveDataIndexerAccessor(out accessor, spaceId);
+                    rc = accessor.Get.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
                     if (rc.IsFailure()) return rc;
 
-                    // Get the actual space ID of this save.
-                    if (spaceId == SaveDataSpaceId.ProperSystem && spaceId == SaveDataSpaceId.SafeMode)
-                    {
-                        actualSpaceId = spaceId;
-                    }
-                    else
-                    {
-                        rc = accessor.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
-                        if (rc.IsFailure()) return rc;
-
-                        actualSpaceId = value.SpaceId;
-                    }
-
-                    // Check if the caller has permission to delete this save.
-                    rc = accessor.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
-                    if (rc.IsFailure()) return rc;
-
-                    Result GetExtraData(out SaveDataExtraData data) =>
-                        _serviceImpl.ReadSaveDataFileSystemExtraData(out data, actualSpaceId, saveDataId, key.Type,
-                            _saveDataRootPath.GetPath());
-
-                    rc = SaveDataAccessibilityChecker.CheckDelete(in key, programInfo, GetExtraData);
-                    if (rc.IsFailure()) return rc;
-
-                    // Pre-delete checks successful. Put the save in the Processing state until deletion is finished.
-                    rc = accessor.Indexer.SetState(saveDataId, SaveDataState.Processing);
-                    if (rc.IsFailure()) return rc;
-
-                    rc = accessor.Indexer.Commit();
-                    if (rc.IsFailure()) return rc;
+                    actualSpaceId = value.SpaceId;
                 }
 
-                // Do the actual deletion.
-                rc = DeleteSaveDataFileSystemCore(actualSpaceId, saveDataId, false);
+                // Check if the caller has permission to delete this save.
+                rc = accessor.Get.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
                 if (rc.IsFailure()) return rc;
 
-                // Remove the save data from the indexer.
-                // The indexer doesn't track itself, so skip if deleting its save data.
-                if (saveDataId != SaveData.SaveIndexerId)
-                {
-                    // accessor will never be null at this point
-                    rc = accessor!.Indexer.Delete(saveDataId);
-                    if (rc.IsFailure()) return rc;
+                Result GetExtraData(out SaveDataExtraData data) =>
+                    _serviceImpl.ReadSaveDataFileSystemExtraData(out data, actualSpaceId, saveDataId, key.Type,
+                        _saveDataRootPath.DangerousGetPath());
 
-                    rc = accessor.Indexer.Commit();
-                    if (rc.IsFailure()) return rc;
-                }
+                rc = SaveDataAccessibilityChecker.CheckDelete(in key, programInfo, GetExtraData);
+                if (rc.IsFailure()) return rc;
 
-                return Result.Success;
+                // Pre-delete checks successful. Put the save in the Processing state until deletion is finished.
+                rc = accessor.Get.Indexer.SetState(saveDataId, SaveDataState.Processing);
+                if (rc.IsFailure()) return rc;
+
+                rc = accessor.Get.Indexer.Commit();
+                if (rc.IsFailure()) return rc;
             }
-            finally
+
+            // Do the actual deletion.
+            rc = DeleteSaveDataFileSystemCore(actualSpaceId, saveDataId, false);
+            if (rc.IsFailure()) return rc;
+
+            // Remove the save data from the indexer.
+            // The indexer doesn't track itself, so skip if deleting its save data.
+            if (saveDataId != SaveData.SaveIndexerId)
             {
-                accessor?.Dispose();
+                rc = accessor.Get.Indexer.Delete(saveDataId);
+                if (rc.IsFailure()) return rc;
+
+                rc = accessor.Get.Indexer.Commit();
+                if (rc.IsFailure()) return rc;
             }
+
+            return Result.Success;
         }
 
         public Result SwapSaveDataKeyAndState(SaveDataSpaceId spaceId, ulong saveDataId1, ulong saveDataId2)
@@ -702,12 +686,13 @@ namespace LibHac.FsSrv
         {
             ulong saveDataId = 0;
             bool creating = false;
+            bool accessorInitialized = false;
             Result rc;
-
-            SaveDataIndexerAccessor accessor = null;
 
             StorageType storageFlag = DecidePossibleStorageFlag(attribute.Type, creationInfo.SpaceId);
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
+
+            using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
             try
             {
@@ -727,8 +712,10 @@ namespace LibHac.FsSrv
                 }
                 else
                 {
-                    rc = OpenSaveDataIndexerAccessor(out accessor, creationInfo.SpaceId);
+                    rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), creationInfo.SpaceId);
                     if (rc.IsFailure()) return rc;
+
+                    accessorInitialized = true;
 
                     SaveDataAttribute indexerKey = attribute;
 
@@ -738,7 +725,7 @@ namespace LibHac.FsSrv
                         // If a static save data ID is specified that ID is always used
                         saveDataId = attribute.StaticSaveDataId;
 
-                        rc = accessor.Indexer.PutStaticSaveDataIdIndex(in indexerKey);
+                        rc = accessor.Get.Indexer.PutStaticSaveDataIdIndex(in indexerKey);
                     }
                     else
                     {
@@ -747,14 +734,14 @@ namespace LibHac.FsSrv
                         // end up in a situation where it can't create a required system save.
                         if (!SaveDataProperties.CanUseIndexerReservedArea(attribute.Type))
                         {
-                            if (accessor.Indexer.IsRemainedReservedOnly())
+                            if (accessor.Get.Indexer.IsRemainedReservedOnly())
                             {
                                 return ResultKvdb.OutOfKeyResource.Log();
                             }
                         }
 
                         // If a static save data ID is no specified we're assigned a new save ID
-                        rc = accessor.Indexer.Publish(out saveDataId, in indexerKey);
+                        rc = accessor.Get.Indexer.Publish(out saveDataId, in indexerKey);
                     }
 
                     if (rc.IsFailure())
@@ -770,24 +757,24 @@ namespace LibHac.FsSrv
                     creating = true;
 
                     // Set the state, space ID and size on the new save indexer entry.
-                    rc = accessor.Indexer.SetState(saveDataId, SaveDataState.Processing);
+                    rc = accessor.Get.Indexer.SetState(saveDataId, SaveDataState.Processing);
                     if (rc.IsFailure()) return rc;
 
-                    rc = accessor.Indexer.SetSpaceId(saveDataId, ConvertToRealSpaceId(creationInfo.SpaceId));
+                    rc = accessor.Get.Indexer.SetSpaceId(saveDataId, ConvertToRealSpaceId(creationInfo.SpaceId));
                     if (rc.IsFailure()) return rc;
 
                     rc = QuerySaveDataTotalSize(out long saveDataSize, creationInfo.Size, creationInfo.JournalSize);
                     if (rc.IsFailure()) return rc;
 
-                    rc = accessor.Indexer.SetSize(saveDataId, saveDataSize);
+                    rc = accessor.Get.Indexer.SetSize(saveDataId, saveDataSize);
                     if (rc.IsFailure()) return rc;
 
-                    rc = accessor.Indexer.Commit();
+                    rc = accessor.Get.Indexer.Commit();
                     if (rc.IsFailure()) return rc;
                 }
 
                 // After the new save was added to the save indexer, create the save data file or directory.
-                Path saveDataRootPath = _saveDataRootPath.GetPath();
+                Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
                 rc = _serviceImpl.CreateSaveDataFileSystem(saveDataId, in attribute, in creationInfo,
                     in saveDataRootPath, in hashSalt, false);
 
@@ -814,20 +801,18 @@ namespace LibHac.FsSrv
 
                     if (metaInfo.Type == SaveDataMetaType.Thumbnail)
                     {
-                        rc = _serviceImpl.OpenSaveDataMeta(out IFile metaFile, saveDataId, creationInfo.SpaceId,
+                        using var metaFile = new UniqueRef<IFile>();
+                        rc = _serviceImpl.OpenSaveDataMeta(ref metaFile.Ref(), saveDataId, creationInfo.SpaceId,
                             metaInfo.Type);
 
-                        using (metaFile)
-                        {
-                            if (rc.IsFailure()) return rc;
+                        if (rc.IsFailure()) return rc;
 
-                            // The first 0x20 bytes of thumbnail meta files is an SHA-256 hash.
-                            // Zero the hash to indicate that it's currently unused.
-                            ReadOnlySpan<byte> metaFileHash = stackalloc byte[0x20];
+                        // The first 0x20 bytes of thumbnail meta files is an SHA-256 hash.
+                        // Zero the hash to indicate that it's currently unused.
+                        ReadOnlySpan<byte> metaFileHash = stackalloc byte[0x20];
 
-                            rc = metaFile.Write(0, metaFileHash, WriteOption.Flush);
-                            if (rc.IsFailure()) return rc;
-                        }
+                        rc = metaFile.Get.Write(0, metaFileHash, WriteOption.Flush);
+                        if (rc.IsFailure()) return rc;
                     }
                 }
 
@@ -840,14 +825,11 @@ namespace LibHac.FsSrv
                 // The indexer's save data isn't tracked, so we don't need to update its state.
                 if (attribute.StaticSaveDataId != SaveData.SaveIndexerId)
                 {
-                    // accessor shouldn't ever be null, but checking makes the analyzers happy
-                    Abort.DoAbortUnless(accessor != null);
-
                     // Mark the save data as being successfully created
-                    rc = accessor.Indexer.SetState(saveDataId, SaveDataState.Normal);
+                    rc = accessor.Get.Indexer.SetState(saveDataId, SaveDataState.Normal);
                     if (rc.IsFailure()) return rc;
 
-                    rc = accessor.Indexer.Commit();
+                    rc = accessor.Get.Indexer.Commit();
                     if (rc.IsFailure()) return rc;
                 }
 
@@ -861,19 +843,17 @@ namespace LibHac.FsSrv
                 {
                     DeleteSaveDataFileSystemCore(creationInfo.SpaceId, saveDataId, false).IgnoreResult();
 
-                    if (accessor != null && saveDataId != SaveData.SaveIndexerId)
+                    if (accessorInitialized && saveDataId != SaveData.SaveIndexerId)
                     {
-                        rc = accessor.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
+                        rc = accessor.Get.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
 
                         if (rc.IsSuccess() && value.SpaceId == creationInfo.SpaceId)
                         {
-                            accessor.Indexer.Delete(saveDataId).IgnoreResult();
-                            accessor.Indexer.Commit().IgnoreResult();
+                            accessor.Get.Indexer.Delete(saveDataId).IgnoreResult();
+                            accessor.Get.Indexer.Commit().IgnoreResult();
                         }
                     }
                 }
-
-                accessor?.Dispose();
             }
         }
 
@@ -883,17 +863,15 @@ namespace LibHac.FsSrv
 
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
-            Result rc = OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, spaceId);
+            using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
+            Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
             if (rc.IsFailure()) return rc;
 
-            using (accessor)
-            {
-                rc = accessor.Indexer.Get(out SaveDataIndexerValue value, in attribute);
-                if (rc.IsFailure()) return rc;
+            rc = accessor.Get.Indexer.Get(out SaveDataIndexerValue value, in attribute);
+            if (rc.IsFailure()) return rc;
 
-                SaveDataIndexer.GenerateSaveDataInfo(out info, in attribute, in value);
-                return Result.Success;
-            }
+            SaveDataIndexer.GenerateSaveDataInfo(out info, in attribute, in value);
+            return Result.Success;
         }
 
         public Result QuerySaveDataTotalSize(out long totalSize, long dataSize, long journalSize)
@@ -1014,96 +992,88 @@ namespace LibHac.FsSrv
         {
             UnsafeHelpers.SkipParamInit(out fileSystem, out saveDataId);
 
-            SaveDataIndexerAccessor accessor = null;
+            using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
-            try
+            ulong tempSaveDataId;
+            bool isStaticSaveDataId = attribute.StaticSaveDataId != 0 && attribute.UserId == UserId.InvalidId;
+
+            // Get the ID of the save data
+            if (isStaticSaveDataId)
             {
-                ulong tempSaveDataId;
-                bool isStaticSaveDataId = attribute.StaticSaveDataId != 0 && attribute.UserId == UserId.InvalidId;
+                tempSaveDataId = attribute.StaticSaveDataId;
+            }
+            else
+            {
+                Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+                if (rc.IsFailure()) return rc;
 
-                // Get the ID of the save data
+                rc = accessor.Get.Indexer.Get(out SaveDataIndexerValue indexerValue, in attribute);
+                if (rc.IsFailure()) return rc;
+
+                if (indexerValue.SpaceId != ConvertToRealSpaceId(spaceId))
+                    return ResultFs.TargetNotFound.Log();
+
+                if (indexerValue.State == SaveDataState.Extending)
+                    return ResultFs.SaveDataExtending.Log();
+
+                tempSaveDataId = indexerValue.SaveDataId;
+            }
+
+            // Open the save data using its ID
+            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
+            Result saveFsResult = _serviceImpl.OpenSaveDataFileSystem(out fileSystem, spaceId, tempSaveDataId,
+                in saveDataRootPath, openReadOnly, attribute.Type, cacheExtraData);
+
+            if (saveFsResult.IsSuccess())
+            {
+                saveDataId = tempSaveDataId;
+                return Result.Success;
+            }
+
+            // Copy the key so we can use it in a local function
+            SaveDataAttribute key = attribute;
+
+            // Remove the save from the indexer if the save is missing from the disk.
+            if (ResultFs.PathNotFound.Includes(saveFsResult))
+            {
+                Result rc = RemoveSaveIndexerEntry();
+                if (rc.IsFailure()) return rc;
+
+                return ResultFs.TargetNotFound.LogConverted(saveFsResult);
+            }
+
+            if (ResultFs.TargetNotFound.Includes(saveFsResult))
+            {
+                Result rc = RemoveSaveIndexerEntry();
+                if (rc.IsFailure()) return rc;
+            }
+
+            return saveFsResult;
+
+            Result RemoveSaveIndexerEntry()
+            {
+                if (tempSaveDataId == SaveData.SaveIndexerId)
+                    return Result.Success;
+
                 if (isStaticSaveDataId)
                 {
-                    tempSaveDataId = attribute.StaticSaveDataId;
-                }
-                else
-                {
-                    Result rc = OpenSaveDataIndexerAccessor(out accessor, spaceId);
+                    // The accessor won't be open yet if the save has a static ID
+                    Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
                     if (rc.IsFailure()) return rc;
 
-                    rc = accessor.Indexer.Get(out SaveDataIndexerValue indexerValue, in attribute);
+                    // Check the space ID of the save data
+                    rc = accessor.Get.Indexer.Get(out SaveDataIndexerValue value, in key);
                     if (rc.IsFailure()) return rc;
 
-                    if (indexerValue.SpaceId != ConvertToRealSpaceId(spaceId))
+                    if (value.SpaceId != ConvertToRealSpaceId(spaceId))
                         return ResultFs.TargetNotFound.Log();
-
-                    if (indexerValue.State == SaveDataState.Extending)
-                        return ResultFs.SaveDataExtending.Log();
-
-                    tempSaveDataId = indexerValue.SaveDataId;
                 }
 
-                // Open the save data using its ID
-                Path saveDataRootPath = _saveDataRootPath.GetPath();
-                Result saveFsResult = _serviceImpl.OpenSaveDataFileSystem(out fileSystem, spaceId, tempSaveDataId,
-                    in saveDataRootPath, openReadOnly, attribute.Type, cacheExtraData);
+                // Remove the indexer entry. Nintendo ignores these results
+                accessor.Get.Indexer.Delete(tempSaveDataId).IgnoreResult();
+                accessor.Get.Indexer.Commit().IgnoreResult();
 
-                if (saveFsResult.IsSuccess())
-                {
-                    saveDataId = tempSaveDataId;
-                    return Result.Success;
-                }
-
-                // Copy the key so we can use it in a local function
-                SaveDataAttribute key = attribute;
-
-                // Remove the save from the indexer if the save is missing from the disk.
-                if (ResultFs.PathNotFound.Includes(saveFsResult))
-                {
-                    Result rc = RemoveSaveIndexerEntry();
-                    if (rc.IsFailure()) return rc;
-
-                    return ResultFs.TargetNotFound.LogConverted(saveFsResult);
-                }
-
-                if (ResultFs.TargetNotFound.Includes(saveFsResult))
-                {
-                    Result rc = RemoveSaveIndexerEntry();
-                    if (rc.IsFailure()) return rc;
-                }
-
-                return saveFsResult;
-
-                Result RemoveSaveIndexerEntry()
-                {
-                    if (tempSaveDataId == SaveData.SaveIndexerId)
-                        return Result.Success;
-
-                    if (isStaticSaveDataId)
-                    {
-                        // The accessor won't be open yet if the save has a static ID
-                        Result rc = OpenSaveDataIndexerAccessor(out accessor, spaceId);
-                        if (rc.IsFailure()) return rc;
-
-                        // Check the space ID of the save data
-                        rc = accessor.Indexer.Get(out SaveDataIndexerValue value, in key);
-                        if (rc.IsFailure()) return rc;
-
-                        if (value.SpaceId != ConvertToRealSpaceId(spaceId))
-                            return ResultFs.TargetNotFound.Log();
-                    }
-
-                    // Remove the indexer entry. Nintendo ignores these results
-                    // ReSharper disable once PossibleNullReferenceException
-                    accessor.Indexer.Delete(tempSaveDataId).IgnoreResult();
-                    accessor.Indexer.Commit().IgnoreResult();
-
-                    return Result.Success;
-                }
-            }
-            finally
-            {
-                accessor?.Dispose();
+                return Result.Success;
             }
         }
 
@@ -1111,7 +1081,6 @@ namespace LibHac.FsSrv
             SaveDataSpaceId spaceId, in SaveDataAttribute attribute, ProgramInfo programInfo, bool openReadOnly)
         {
             UnsafeHelpers.SkipParamInit(out fileSystem);
-            IUniqueLock mountCountSemaphore = null;
             ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
             ReferenceCountedDisposable<SaveDataFileSystemService> saveService = null;
             ReferenceCountedDisposable<IEntryOpenCountSemaphoreManager> openEntryCountAdapter = null;
@@ -1122,10 +1091,11 @@ namespace LibHac.FsSrv
             try
             {
                 // Try grabbing the mount count semaphore
-                Result rc = TryAcquireSaveDataMountCountSemaphore(out mountCountSemaphore);
+                using var mountCountSemaphore = new UniqueRef<IUniqueLock>();
+                Result rc = TryAcquireSaveDataMountCountSemaphore(ref mountCountSemaphore.Ref());
                 if (rc.IsFailure()) return rc;
 
-                Path saveDataRootPath = _saveDataRootPath.GetPath();
+                Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
                 bool useAsyncFileSystem = !_serviceImpl.IsAllowedDirectorySaveData(spaceId, in saveDataRootPath);
 
                 // Open the file system
@@ -1138,7 +1108,7 @@ namespace LibHac.FsSrv
 
                 Result ReadExtraData(out SaveDataExtraData data)
                 {
-                    Path savePath = _saveDataRootPath.GetPath();
+                    Path savePath = _saveDataRootPath.DangerousGetPath();
                     return _serviceImpl.ReadSaveDataFileSystemExtraData(out data, spaceId, saveDataId, type,
                         in savePath);
                 }
@@ -1159,7 +1129,7 @@ namespace LibHac.FsSrv
                 openEntryCountAdapter = SaveDataOpenCountAdapter.CreateShared(ref saveService);
 
                 tempFileSystem = OpenCountFileSystem.CreateShared(ref tempFileSystem, ref openEntryCountAdapter,
-                    ref mountCountSemaphore);
+                    ref mountCountSemaphore.Ref());
 
                 var pathFlags = new PathFlags();
                 pathFlags.AllowBackslash();
@@ -1168,7 +1138,6 @@ namespace LibHac.FsSrv
             }
             finally
             {
-                mountCountSemaphore?.Dispose();
                 tempFileSystem?.Dispose();
                 saveService?.Dispose();
                 openEntryCountAdapter?.Dispose();
@@ -1238,7 +1207,7 @@ namespace LibHac.FsSrv
             if (!accessibility.CanRead || !accessibility.CanWrite)
                 return ResultFs.PermissionDenied.Log();
 
-            Path saveDataRootPath = _saveDataRootPath.GetPath();
+            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
             bool useAsyncFileSystem = !_serviceImpl.IsAllowedDirectorySaveData(spaceId, in saveDataRootPath);
 
             ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
@@ -1257,7 +1226,7 @@ namespace LibHac.FsSrv
 
                 Result ReadExtraData(out SaveDataExtraData data) =>
                     _serviceImpl.ReadSaveDataFileSystemExtraData(out data, spaceId, saveDataId, type,
-                        _saveDataRootPath.GetPath());
+                        _saveDataRootPath.DangerousGetPath());
 
                 // Check if we have permissions to open this save data
                 rc = SaveDataAccessibilityChecker.CheckOpen(in attribute, programInfo, ReadExtraData);
@@ -1290,31 +1259,24 @@ namespace LibHac.FsSrv
         }
 
         // ReSharper disable once UnusedParameter.Local
-        // Nintendo used this parameter in older FS versions, but never removed it.
+        // Nintendo used isTemporarySaveData in older FS versions, but never removed the parameter.
         private Result ReadSaveDataFileSystemExtraDataCore(out SaveDataExtraData extraData, SaveDataSpaceId spaceId,
             ulong saveDataId, bool isTemporarySaveData)
         {
             UnsafeHelpers.SkipParamInit(out extraData);
 
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+            using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
-            SaveDataIndexerAccessor accessor = null;
-            try
-            {
-                Result rc = OpenSaveDataIndexerAccessor(out accessor, spaceId);
-                if (rc.IsFailure()) return rc;
+            Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+            if (rc.IsFailure()) return rc;
 
-                rc = accessor.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
-                if (rc.IsFailure()) return rc;
+            rc = accessor.Get.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
+            if (rc.IsFailure()) return rc;
 
-                Path saveDataRootPath = _saveDataRootPath.GetPath();
-                return _serviceImpl.ReadSaveDataFileSystemExtraData(out extraData, spaceId, saveDataId, key.Type,
-                    in saveDataRootPath);
-            }
-            finally
-            {
-                accessor?.Dispose();
-            }
+            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
+            return _serviceImpl.ReadSaveDataFileSystemExtraData(out extraData, spaceId, saveDataId, key.Type,
+                in saveDataRootPath);
         }
 
         private Result ReadSaveDataFileSystemExtraDataCore(out SaveDataExtraData extraData, SaveDataSpaceId spaceId,
@@ -1332,63 +1294,51 @@ namespace LibHac.FsSrv
 
             if (spaceId == SaveDataSpaceId.BisAuto)
             {
-                SaveDataIndexerAccessor accessor = null;
-                try
+                using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
+
+                if (IsStaticSaveDataIdValueRange(saveDataId))
                 {
-                    if (IsStaticSaveDataIdValueRange(saveDataId))
-                    {
-                        rc = OpenSaveDataIndexerAccessor(out accessor, SaveDataSpaceId.System);
-                        if (rc.IsFailure()) return rc;
-                    }
-                    else
-                    {
-                        rc = OpenSaveDataIndexerAccessor(out accessor, SaveDataSpaceId.User);
-                        if (rc.IsFailure()) return rc;
-                    }
-
-                    rc = accessor.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
-                    if (rc.IsFailure()) return rc;
-
-                    resolvedSpaceId = value.SpaceId;
-
-                    rc = accessor.Indexer.GetKey(out key, saveDataId);
+                    rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
                     if (rc.IsFailure()) return rc;
                 }
-                finally
+                else
                 {
-                    accessor?.Dispose();
+                    rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.User);
+                    if (rc.IsFailure()) return rc;
                 }
+
+                rc = accessor.Get.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
+                if (rc.IsFailure()) return rc;
+
+                resolvedSpaceId = value.SpaceId;
+
+                rc = accessor.Get.Indexer.GetKey(out key, saveDataId);
+                if (rc.IsFailure()) return rc;
             }
             else
             {
-                SaveDataIndexerAccessor accessor = null;
-                try
-                {
-                    rc = OpenSaveDataIndexerAccessor(out accessor, spaceId);
-                    if (rc.IsFailure()) return rc;
+                using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
-                    rc = accessor.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
-                    if (rc.IsFailure()) return rc;
+                rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+                if (rc.IsFailure()) return rc;
 
-                    resolvedSpaceId = value.SpaceId;
+                rc = accessor.Get.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
+                if (rc.IsFailure()) return rc;
 
-                    rc = accessor.Indexer.GetKey(out key, saveDataId);
-                    if (rc.IsFailure()) return rc;
-                }
-                finally
-                {
-                    accessor?.Dispose();
-                }
+                resolvedSpaceId = value.SpaceId;
+
+                rc = accessor.Get.Indexer.GetKey(out key, saveDataId);
+                if (rc.IsFailure()) return rc;
             }
 
             Result ReadExtraData(out SaveDataExtraData data) => _serviceImpl.ReadSaveDataFileSystemExtraData(out data,
-                resolvedSpaceId, saveDataId, key.Type, _saveDataRootPath.GetPath());
+                resolvedSpaceId, saveDataId, key.Type, _saveDataRootPath.DangerousGetPath());
 
             rc = SaveDataAccessibilityChecker.CheckReadExtraData(in key, in extraDataMask, programInfo,
                 ReadExtraData);
             if (rc.IsFailure()) return rc;
 
-            Path saveDataRootPath = _saveDataRootPath.GetPath();
+            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
             rc = _serviceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData tempExtraData, resolvedSpaceId,
                 saveDataId, key.Type, in saveDataRootPath);
             if (rc.IsFailure()) return rc;
@@ -1490,7 +1440,7 @@ namespace LibHac.FsSrv
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
-            Path saveDataRootPath = _saveDataRootPath.GetPath();
+            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
             return _serviceImpl.WriteSaveDataFileSystemExtraData(spaceId, saveDataId, in extraData, in saveDataRootPath,
                 saveType, updateTimeStamp);
         }
@@ -1503,36 +1453,30 @@ namespace LibHac.FsSrv
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
 
-            SaveDataIndexerAccessor accessor = null;
-            try
-            {
-                rc = OpenSaveDataIndexerAccessor(out accessor, spaceId);
-                if (rc.IsFailure()) return rc;
+            using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
-                rc = accessor.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
-                if (rc.IsFailure()) return rc;
+            rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+            if (rc.IsFailure()) return rc;
 
-                Result ReadExtraData(out SaveDataExtraData data) => _serviceImpl.ReadSaveDataFileSystemExtraData(out data,
-                    spaceId, saveDataId, key.Type, _saveDataRootPath.GetPath());
+            rc = accessor.Get.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
+            if (rc.IsFailure()) return rc;
 
-                rc = SaveDataAccessibilityChecker.CheckWriteExtraData(in key, in extraDataMask, programInfo,
-                    ReadExtraData);
-                if (rc.IsFailure()) return rc;
+            Result ReadExtraData(out SaveDataExtraData data) => _serviceImpl.ReadSaveDataFileSystemExtraData(out data,
+                spaceId, saveDataId, key.Type, _saveDataRootPath.DangerousGetPath());
 
-                Path saveDataRootPath = _saveDataRootPath.GetPath();
-                rc = _serviceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraDataModify, spaceId,
-                    saveDataId, key.Type, in saveDataRootPath);
-                if (rc.IsFailure()) return rc;
+            rc = SaveDataAccessibilityChecker.CheckWriteExtraData(in key, in extraDataMask, programInfo,
+                ReadExtraData);
+            if (rc.IsFailure()) return rc;
 
-                ModifySaveDataExtraData(ref extraDataModify, in extraData, in extraDataMask);
+            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
+            rc = _serviceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraDataModify, spaceId,
+                saveDataId, key.Type, in saveDataRootPath);
+            if (rc.IsFailure()) return rc;
 
-                return _serviceImpl.WriteSaveDataFileSystemExtraData(spaceId, saveDataId, in extraDataModify,
-                    in saveDataRootPath, key.Type, false);
-            }
-            finally
-            {
-                accessor?.Dispose();
-            }
+            ModifySaveDataExtraData(ref extraDataModify, in extraData, in extraDataMask);
+
+            return _serviceImpl.WriteSaveDataFileSystemExtraData(spaceId, saveDataId, in extraDataModify,
+                in saveDataRootPath, key.Type, false);
         }
 
         public Result WriteSaveDataFileSystemExtraData(ulong saveDataId, SaveDataSpaceId spaceId, InBuffer extraData)
@@ -1601,15 +1545,16 @@ namespace LibHac.FsSrv
                 return ResultFs.PermissionDenied.Log();
             }
 
-            SaveDataIndexerAccessor accessor = null;
             ReferenceCountedDisposable<SaveDataInfoReaderImpl> reader = null;
 
             try
             {
-                rc = OpenSaveDataIndexerAccessor(out accessor, SaveDataSpaceId.System);
+                using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
+
+                rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
                 if (rc.IsFailure()) return rc;
 
-                rc = accessor.Indexer.OpenSaveDataInfoReader(out reader);
+                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(out reader);
                 if (rc.IsFailure()) return rc;
 
                 infoReader = reader.AddReference<ISaveDataInfoReader>();
@@ -1617,7 +1562,6 @@ namespace LibHac.FsSrv
             }
             finally
             {
-                accessor?.Dispose();
                 reader?.Dispose();
             }
         }
@@ -1635,15 +1579,16 @@ namespace LibHac.FsSrv
             rc = CheckOpenSaveDataInfoReaderAccessControl(programInfo, spaceId);
             if (rc.IsFailure()) return rc;
 
-            SaveDataIndexerAccessor accessor = null;
             ReferenceCountedDisposable<SaveDataInfoReaderImpl> reader = null;
 
             try
             {
-                rc = OpenSaveDataIndexerAccessor(out accessor, spaceId);
+                using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
+
+                rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
                 if (rc.IsFailure()) return rc;
 
-                rc = accessor.Indexer.OpenSaveDataInfoReader(out reader);
+                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(out reader);
                 if (rc.IsFailure()) return rc;
 
                 var infoFilter = new SaveDataInfoFilter(ConvertToRealSpaceId(spaceId), default, default, default,
@@ -1656,7 +1601,6 @@ namespace LibHac.FsSrv
             }
             finally
             {
-                accessor?.Dispose();
                 reader?.Dispose();
             }
         }
@@ -1677,15 +1621,16 @@ namespace LibHac.FsSrv
             rc = CheckOpenSaveDataInfoReaderAccessControl(programInfo, spaceId);
             if (rc.IsFailure()) return rc;
 
-            SaveDataIndexerAccessor accessor = null;
             ReferenceCountedDisposable<SaveDataInfoReaderImpl> reader = null;
 
             try
             {
-                rc = OpenSaveDataIndexerAccessor(out accessor, SaveDataSpaceId.System);
+                using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
+
+                rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
                 if (rc.IsFailure()) return rc;
 
-                rc = accessor.Indexer.OpenSaveDataInfoReader(out reader);
+                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(out reader);
                 if (rc.IsFailure()) return rc;
 
                 var infoFilter = new SaveDataInfoFilter(spaceId, in filter);
@@ -1697,7 +1642,6 @@ namespace LibHac.FsSrv
             }
             finally
             {
-                accessor?.Dispose();
                 reader?.Dispose();
             }
         }
@@ -1707,15 +1651,16 @@ namespace LibHac.FsSrv
         {
             UnsafeHelpers.SkipParamInit(out count, out info);
 
-            SaveDataIndexerAccessor accessor = null;
             ReferenceCountedDisposable<SaveDataInfoReaderImpl> reader = null;
 
             try
             {
-                Result rc = OpenSaveDataIndexerAccessor(out accessor, spaceId);
+                using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
+
+                Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
                 if (rc.IsFailure()) return rc;
 
-                rc = accessor.Indexer.OpenSaveDataInfoReader(out reader);
+                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(out reader);
                 if (rc.IsFailure()) return rc;
 
                 using (var filterReader = new SaveDataInfoFilterReader(reader, in infoFilter))
@@ -1725,7 +1670,6 @@ namespace LibHac.FsSrv
             }
             finally
             {
-                accessor?.Dispose();
                 reader?.Dispose();
             }
         }
@@ -1836,15 +1780,16 @@ namespace LibHac.FsSrv
             if (spaceId != SaveDataSpaceId.SdCache && spaceId != SaveDataSpaceId.User)
                 return ResultFs.InvalidSaveDataSpaceId.Log();
 
-            SaveDataIndexerAccessor accessor = null;
             ReferenceCountedDisposable<SaveDataInfoReaderImpl> reader = null;
-            SaveDataInfoFilterReader filterReader = null;
             try
             {
-                rc = OpenSaveDataIndexerAccessor(out accessor, spaceId);
+                using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
+                using var filterReader = new UniqueRef<SaveDataInfoFilterReader>();
+
+                rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
                 if (rc.IsFailure()) return rc;
 
-                rc = accessor.Indexer.OpenSaveDataInfoReader(out reader);
+                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(out reader);
                 if (rc.IsFailure()) return rc;
 
                 ProgramId resolvedProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
@@ -1853,16 +1798,14 @@ namespace LibHac.FsSrv
                     SaveDataType.Cache, userId: default, saveDataId: default, index: default,
                     (int)SaveDataRank.Primary);
 
-                filterReader = new SaveDataInfoFilterReader(reader, in filter);
+                filterReader.Reset(new SaveDataInfoFilterReader(reader, in filter));
 
-                infoReader = new ReferenceCountedDisposable<ISaveDataInfoReader>(Shared.Move(ref filterReader));
+                infoReader = new ReferenceCountedDisposable<ISaveDataInfoReader>(filterReader.Release());
                 return Result.Success;
             }
             finally
             {
-                accessor?.Dispose();
                 reader?.Dispose();
-                filterReader?.Dispose();
             }
         }
 
@@ -1980,7 +1923,7 @@ namespace LibHac.FsSrv
             Result rc = FindCacheStorage(out SaveDataInfo saveInfo, out SaveDataSpaceId spaceId, index);
             if (rc.IsFailure()) return rc;
 
-            Path saveDataRootPath = _saveDataRootPath.GetPath();
+            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
             rc = _serviceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, spaceId,
                 saveInfo.SaveDataId, saveInfo.Type, in saveDataRootPath);
             if (rc.IsFailure()) return rc;
@@ -2057,19 +2000,12 @@ namespace LibHac.FsSrv
         public Result CleanUpSaveData()
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
+            using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
-            SaveDataIndexerAccessor accessor = null;
-            try
-            {
-                Result rc = OpenSaveDataIndexerAccessor(out accessor, SaveDataSpaceId.System);
-                if (rc.IsFailure()) return rc;
+            Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
+            if (rc.IsFailure()) return rc;
 
-                return CleanUpSaveData(accessor);
-            }
-            finally
-            {
-                accessor?.Dispose();
-            }
+            return CleanUpSaveData(accessor.Get);
         }
 
         private Result CleanUpSaveData(SaveDataIndexerAccessor accessor)
@@ -2081,19 +2017,12 @@ namespace LibHac.FsSrv
         public Result CompleteSaveDataExtension()
         {
             using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
+            using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
-            SaveDataIndexerAccessor accessor = null;
-            try
-            {
-                Result rc = OpenSaveDataIndexerAccessor(out accessor, SaveDataSpaceId.System);
-                if (rc.IsFailure()) return rc;
+            Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
+            if (rc.IsFailure()) return rc;
 
-                return CompleteSaveDataExtension(accessor);
-            }
-            finally
-            {
-                accessor?.Dispose();
-            }
+            return CompleteSaveDataExtension(accessor.Get);
         }
 
         private Result CompleteSaveDataExtension(SaveDataIndexerAccessor accessor)
@@ -2215,51 +2144,41 @@ namespace LibHac.FsSrv
             }
         }
 
-        private Result TryAcquireSaveDataEntryOpenCountSemaphore(out IUniqueLock semaphoreLock)
+        private Result TryAcquireSaveDataEntryOpenCountSemaphore(ref UniqueRef<IUniqueLock> outSemaphoreLock)
         {
-            UnsafeHelpers.SkipParamInit(out semaphoreLock);
-
             ReferenceCountedDisposable<SaveDataFileSystemService> saveService = null;
-            IUniqueLock uniqueLock = null;
             try
             {
                 saveService = _selfReference.AddReference();
 
-                Result rc = Utility12.MakeUniqueLockWithPin(out uniqueLock, _openEntryCountSemaphore,
+                Result rc = Utility12.MakeUniqueLockWithPin(ref outSemaphoreLock, _openEntryCountSemaphore,
                     ref saveService);
                 if (rc.IsFailure()) return rc;
 
-                Shared.Move(out semaphoreLock, ref uniqueLock);
                 return Result.Success;
             }
             finally
             {
                 saveService?.Dispose();
-                uniqueLock?.Dispose();
             }
         }
 
-        private Result TryAcquireSaveDataMountCountSemaphore(out IUniqueLock semaphoreLock)
+        private Result TryAcquireSaveDataMountCountSemaphore(ref UniqueRef<IUniqueLock> outSemaphoreLock)
         {
-            UnsafeHelpers.SkipParamInit(out semaphoreLock);
-
             ReferenceCountedDisposable<SaveDataFileSystemService> saveService = null;
-            IUniqueLock uniqueLock = null;
             try
             {
                 saveService = _selfReference.AddReference();
 
-                Result rc = Utility12.MakeUniqueLockWithPin(out uniqueLock, _saveDataMountCountSemaphore,
+                Result rc = Utility12.MakeUniqueLockWithPin(ref outSemaphoreLock, _saveDataMountCountSemaphore,
                     ref saveService);
                 if (rc.IsFailure()) return rc;
 
-                Shared.Move(out semaphoreLock, ref uniqueLock);
                 return Result.Success;
             }
             finally
             {
                 saveService?.Dispose();
-                uniqueLock?.Dispose();
             }
         }
 
@@ -2286,29 +2205,21 @@ namespace LibHac.FsSrv
             return Result.Success;
         }
 
-        private Result OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor, SaveDataSpaceId spaceId)
+        private Result OpenSaveDataIndexerAccessor(ref UniqueRef<SaveDataIndexerAccessor> outAccessor,
+            SaveDataSpaceId spaceId)
         {
-            UnsafeHelpers.SkipParamInit(out accessor);
+            using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
+            Result rc = _serviceImpl.OpenSaveDataIndexerAccessor(ref accessor.Ref(), out bool neededInit, spaceId);
+            if (rc.IsFailure()) return rc;
 
-            SaveDataIndexerAccessor accessorTemp = null;
-            try
+            if (neededInit)
             {
-                Result rc = _serviceImpl.OpenSaveDataIndexerAccessor(out accessorTemp, out bool neededInit, spaceId);
-                if (rc.IsFailure()) return rc;
-
-                if (neededInit)
-                {
-                    // todo: nn::fssrv::SaveDataFileSystemService::CleanUpSaveDataCore
-                    // nn::fssrv::SaveDataFileSystemService::CompleteSaveDataExtensionCore
-                }
-
-                Shared.Move(out accessor, ref accessorTemp);
-                return Result.Success;
+                // todo: nn::fssrv::SaveDataFileSystemService::CleanUpSaveDataCore
+                // nn::fssrv::SaveDataFileSystemService::CompleteSaveDataExtensionCore
             }
-            finally
-            {
-                accessorTemp?.Dispose();
-            }
+
+            outAccessor.Set(ref accessor.Ref());
+            return Result.Success;
         }
 
         private Result GetProgramInfo(out ProgramInfo programInfo)
@@ -2405,10 +2316,10 @@ namespace LibHac.FsSrv
             return OpenSaveDataInternalStorageFileSystemCore(out fileSystem, spaceId, saveDataId, useSecondMacKey);
         }
 
-        Result ISaveDataTransferCoreInterface.OpenSaveDataIndexerAccessor(out SaveDataIndexerAccessor accessor,
-            SaveDataSpaceId spaceId)
+        Result ISaveDataTransferCoreInterface.OpenSaveDataIndexerAccessor(
+            ref UniqueRef<SaveDataIndexerAccessor> outAccessor, SaveDataSpaceId spaceId)
         {
-            return OpenSaveDataIndexerAccessor(out accessor, spaceId);
+            return OpenSaveDataIndexerAccessor(ref outAccessor, spaceId);
         }
 
         public void Dispose()

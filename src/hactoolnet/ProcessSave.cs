@@ -67,25 +67,22 @@ namespace hactoolnet
                         string destFilename = ctx.Options.ReplaceFileDest;
                         if (!destFilename.StartsWith("/")) destFilename = '/' + destFilename;
 
-                        using (IFile inFile = new LocalFile(ctx.Options.ReplaceFileSource, OpenMode.Read))
+                        using var inFile = new UniqueRef<IFile>(new LocalFile(ctx.Options.ReplaceFileSource, OpenMode.Read));
+
+                        using var outFile = new UniqueRef<IFile>();
+                        save.OpenFile(ref outFile.Ref(), destFilename.ToU8String(), OpenMode.ReadWrite).ThrowIfFailure();
+
+                        inFile.Get.GetSize(out long inFileSize).ThrowIfFailure();
+                        outFile.Get.GetSize(out long outFileSize).ThrowIfFailure();
+
+                        if (inFileSize != outFileSize)
                         {
-                            save.OpenFile(out IFile outFile, destFilename.ToU8String(), OpenMode.ReadWrite).ThrowIfFailure();
-
-                            using (outFile)
-                            {
-                                inFile.GetSize(out long inFileSize).ThrowIfFailure();
-                                outFile.GetSize(out long outFileSize).ThrowIfFailure();
-
-                                if (inFileSize != outFileSize)
-                                {
-                                    outFile.SetSize(inFileSize).ThrowIfFailure();
-                                }
-
-                                inFile.CopyTo(outFile, ctx.Logger);
-
-                                ctx.Logger.LogMessage($"Replaced file {destFilename}");
-                            }
+                            outFile.Get.SetSize(inFileSize).ThrowIfFailure();
                         }
+
+                        inFile.Get.CopyTo(outFile.Get, ctx.Logger);
+
+                        ctx.Logger.LogMessage($"Replaced file {destFilename}");
 
                         signNeeded = true;
                     }

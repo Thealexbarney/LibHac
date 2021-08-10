@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 
@@ -17,10 +18,10 @@ namespace LibHac.FsSrv.Impl
         }
 
         // ReSharper disable once RedundantOverriddenMember
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
             // Todo: Implement
-            return base.DoOpenFile(out file, path, mode);
+            return base.DoOpenFile(ref outFile, path, mode);
         }
     }
 }

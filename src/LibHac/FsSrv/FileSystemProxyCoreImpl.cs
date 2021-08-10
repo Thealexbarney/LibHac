@@ -36,9 +36,8 @@ namespace LibHac.FsSrv
             ReferenceCountedDisposable<IFileSystem> tempFs = null;
             try
             {
-                const int pathBufferLength = 0x40;
-
                 // Hack around error CS8350.
+                const int pathBufferLength = 0x40;
                 Span<byte> buffer = stackalloc byte[pathBufferLength];
                 ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
                 Span<byte> pathBuffer = MemoryMarshal.CreateSpan(ref bufferRef, pathBufferLength);
@@ -49,11 +48,8 @@ namespace LibHac.FsSrv
                     if (rc.IsFailure()) return rc;
 
                     using var path = new Path();
-                    var sb = new U8StringBuilder(pathBuffer);
-                    sb.Append((byte)'/')
-                        .Append(CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System));
-
-                    rc = PathFunctions.SetUpFixedPath(ref path.Ref(), pathBuffer);
+                    rc = PathFunctions.SetUpFixedPathSingleEntry(ref path.Ref(), pathBuffer,
+                        CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System));
                     if (rc.IsFailure()) return rc;
 
                     tempFs = Shared.Move(ref fileSystem);
@@ -66,13 +62,9 @@ namespace LibHac.FsSrv
                     if (rc.IsFailure()) return rc;
 
                     using var path = new Path();
-                    var sb = new U8StringBuilder(pathBuffer);
-                    sb.Append((byte)'/')
-                        .Append(CommonPaths.SdCardNintendoRootDirectoryName)
-                        .Append((byte)'/')
-                        .Append(CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.SdCard));
-
-                    rc = PathFunctions.SetUpFixedPath(ref path.Ref(), pathBuffer);
+                    rc = PathFunctions.SetUpFixedPathDoubleEntry(ref path.Ref(), pathBuffer,
+                        CommonPaths.SdCardNintendoRootDirectoryName,
+                        CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System));
                     if (rc.IsFailure()) return rc;
 
                     tempFs = Shared.Move(ref fileSystem);

@@ -5,22 +5,24 @@ namespace LibHac.Fs
 {
     public class FileStorageBasedFileSystem : FileStorage2
     {
-        private ReferenceCountedDisposable<IFileSystem> BaseFileSystem { get; set; }
-        private IFile BaseFile { get; set; }
+        private ReferenceCountedDisposable<IFileSystem> _baseFileSystem;
+        private UniqueRef<IFile> _baseFile;
 
         public FileStorageBasedFileSystem()
         {
             FileSize = SizeNotInitialized;
         }
 
-        public Result Initialize(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, U8Span path, OpenMode mode)
+        public Result Initialize(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, in Path path,
+            OpenMode mode)
         {
-            Result rc = baseFileSystem.Target.OpenFile(out IFile file, path, mode);
+            using var baseFile = new UniqueRef<IFile>();
+            Result rc = baseFileSystem.Target.OpenFile(ref baseFile.Ref(), in path, mode);
             if (rc.IsFailure()) return rc;
 
-            SetFile(file);
-            BaseFile = file;
-            BaseFileSystem = Shared.Move(ref baseFileSystem);
+            SetFile(baseFile.Get);
+            _baseFileSystem = Shared.Move(ref baseFileSystem);
+            _baseFile.Set(ref _baseFile.Ref());
 
             return Result.Success;
         }
@@ -29,8 +31,8 @@ namespace LibHac.Fs
         {
             if (disposing)
             {
-                BaseFile?.Dispose();
-                BaseFileSystem?.Dispose();
+                _baseFile.Dispose();
+                _baseFileSystem?.Dispose();
             }
 
             base.Dispose(disposing);

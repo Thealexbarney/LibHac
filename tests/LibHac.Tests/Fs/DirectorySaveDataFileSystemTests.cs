@@ -34,20 +34,45 @@ namespace LibHac.Tests.Fs
 
             public IFileSystem Create()
             {
-                DirectorySaveDataFileSystem
-                    .CreateNew(out DirectorySaveDataFileSystem saveFs, BaseFileSystem, true, true, true)
+                CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, BaseFileSystem, true, true, true)
                     .ThrowIfFailure();
 
                 return saveFs;
             }
         }
 
+        public static Result CreateDirSaveFs(out DirectorySaveDataFileSystem created, IFileSystem baseFileSystem,
+            ISaveDataCommitTimeStampGetter timeStampGetter, RandomDataGenerator randomGenerator,
+            bool isJournalingSupported, bool isMultiCommitSupported, bool isJournalingEnabled,
+            FileSystemClient fsClient)
+        {
+            var obj = new DirectorySaveDataFileSystem(baseFileSystem, fsClient);
+            Result rc = obj.Initialize(timeStampGetter, randomGenerator, isJournalingSupported, isMultiCommitSupported,
+                isJournalingEnabled);
+
+            if (rc.IsSuccess())
+            {
+                created = obj;
+                return Result.Success;
+            }
+
+            obj.Dispose();
+            UnsafeHelpers.SkipParamInit(out created);
+            return rc;
+        }
+
+        public static Result CreateDirSaveFs(out DirectorySaveDataFileSystem created, IFileSystem baseFileSystem,
+            bool isJournalingSupported, bool isMultiCommitSupported, bool isJournalingEnabled)
+        {
+            return CreateDirSaveFs(out created, baseFileSystem, null, null, isJournalingSupported, isMultiCommitSupported,
+                isJournalingEnabled, null);
+        }
+
         private (IFileSystem baseFs, DirectorySaveDataFileSystem saveFs) CreateFileSystemInternal()
         {
             var baseFs = new InMemoryFileSystem();
 
-            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true)
-                .ThrowIfFailure();
+            CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true).ThrowIfFailure();
 
             return (baseFs, saveFs);
         }
@@ -132,8 +157,7 @@ namespace LibHac.Tests.Fs
             baseFs.CreateFile("/0/file1", 0, CreateFileOptions.None).ThrowIfFailure();
             baseFs.CreateFile("/1/file2", 0, CreateFileOptions.None).ThrowIfFailure();
 
-            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true)
-                .ThrowIfFailure();
+            CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true).ThrowIfFailure();
 
             Assert.Success(saveFs.GetEntryType(out _, "/file1"));
             Assert.Result(ResultFs.PathNotFound, saveFs.GetEntryType(out _, "/file2"));
@@ -151,8 +175,7 @@ namespace LibHac.Tests.Fs
             baseFs.CreateFile("/_/file1", 0, CreateFileOptions.None).ThrowIfFailure();
             baseFs.CreateFile("/1/file2", 0, CreateFileOptions.None).ThrowIfFailure();
 
-            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true)
-                .ThrowIfFailure();
+            CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true).ThrowIfFailure();
 
             Assert.Result(ResultFs.PathNotFound, saveFs.GetEntryType(out _, "/file1"));
             Assert.Success(saveFs.GetEntryType(out _, "/file2"));
@@ -168,8 +191,7 @@ namespace LibHac.Tests.Fs
             // Set the existing files before initializing the save FS
             baseFs.CreateFile("/1/file2", 0, CreateFileOptions.None).ThrowIfFailure();
 
-            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true)
-                .ThrowIfFailure();
+            CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true).ThrowIfFailure();
 
             Assert.Result(ResultFs.PathNotFound, saveFs.GetEntryType(out _, "/file1"));
             Assert.Success(saveFs.GetEntryType(out _, "/file2"));
@@ -202,8 +224,7 @@ namespace LibHac.Tests.Fs
         {
             var baseFs = new InMemoryFileSystem();
 
-            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true)
-                .ThrowIfFailure();
+            CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true).ThrowIfFailure();
 
             var originalExtraData = new SaveDataExtraData();
             originalExtraData.DataSize = 0x12345;
@@ -212,7 +233,7 @@ namespace LibHac.Tests.Fs
             Assert.Success(saveFs.CommitExtraData(false));
 
             saveFs.Dispose();
-            DirectorySaveDataFileSystem.CreateNew(out saveFs, baseFs, true, true, true).ThrowIfFailure();
+            CreateDirSaveFs(out saveFs, baseFs, true, true, true).ThrowIfFailure();
 
             Assert.Success(saveFs.ReadExtraData(out SaveDataExtraData extraData));
             Assert.Equal(originalExtraData, extraData);
@@ -223,8 +244,7 @@ namespace LibHac.Tests.Fs
         {
             var baseFs = new InMemoryFileSystem();
 
-            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true)
-                .ThrowIfFailure();
+            CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true).ThrowIfFailure();
 
             var originalExtraData = new SaveDataExtraData();
             originalExtraData.DataSize = 0x12345;
@@ -233,7 +253,7 @@ namespace LibHac.Tests.Fs
             saveFs.CommitExtraData(false).ThrowIfFailure();
 
             saveFs.Dispose();
-            DirectorySaveDataFileSystem.CreateNew(out saveFs, baseFs, true, true, true).ThrowIfFailure();
+            CreateDirSaveFs(out saveFs, baseFs, true, true, true).ThrowIfFailure();
 
             var newExtraData = new SaveDataExtraData();
             newExtraData.DataSize = 0x67890;
@@ -251,8 +271,7 @@ namespace LibHac.Tests.Fs
         {
             var baseFs = new InMemoryFileSystem();
 
-            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true)
-                .ThrowIfFailure();
+            CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true).ThrowIfFailure();
 
             // Write extra data and close with committing
             var originalExtraData = new SaveDataExtraData();
@@ -262,7 +281,7 @@ namespace LibHac.Tests.Fs
             saveFs.CommitExtraData(false).ThrowIfFailure();
 
             saveFs.Dispose();
-            DirectorySaveDataFileSystem.CreateNew(out saveFs, baseFs, true, true, true).ThrowIfFailure();
+            CreateDirSaveFs(out saveFs, baseFs, true, true, true).ThrowIfFailure();
 
             // Write a new extra data and close without committing
             var newExtraData = new SaveDataExtraData();
@@ -272,7 +291,7 @@ namespace LibHac.Tests.Fs
             saveFs.Dispose();
 
             // Read extra data should match the first one
-            DirectorySaveDataFileSystem.CreateNew(out saveFs, baseFs, true, true, true).ThrowIfFailure();
+            CreateDirSaveFs(out saveFs, baseFs, true, true, true).ThrowIfFailure();
             Assert.Success(saveFs.ReadExtraData(out SaveDataExtraData extraData));
 
             Assert.Equal(originalExtraData, extraData);
@@ -286,8 +305,7 @@ namespace LibHac.Tests.Fs
             CreateExtraDataForTest(baseFs, "/ExtraData_", 0x12345).ThrowIfFailure();
             CreateExtraDataForTest(baseFs, "/ExtraData1", 0x67890).ThrowIfFailure();
 
-            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true)
-                .ThrowIfFailure();
+            CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true).ThrowIfFailure();
 
             saveFs.ReadExtraData(out SaveDataExtraData extraData).ThrowIfFailure();
 
@@ -302,8 +320,8 @@ namespace LibHac.Tests.Fs
             var timeStampGetter = new TimeStampGetter();
 
             var baseFs = new InMemoryFileSystem();
-            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, timeStampGetter,
-                randomGeneratorFunc, true, true, true, null).ThrowIfFailure();
+            CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, timeStampGetter,
+                 randomGeneratorFunc, true, true, true, null).ThrowIfFailure();
 
             saveFs.CommitExtraData(true).ThrowIfFailure();
             saveFs.ReadExtraData(out SaveDataExtraData extraData).ThrowIfFailure();
@@ -330,8 +348,8 @@ namespace LibHac.Tests.Fs
             var timeStampGetter = new TimeStampGetter();
 
             var baseFs = new InMemoryFileSystem();
-            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, timeStampGetter,
-                randomGeneratorFunc, true, true, true, null).ThrowIfFailure();
+            CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, timeStampGetter,
+                 randomGeneratorFunc, true, true, true, null).ThrowIfFailure();
 
             saveFs.CommitExtraData(true).ThrowIfFailure();
             saveFs.ReadExtraData(out SaveDataExtraData extraData).ThrowIfFailure();
@@ -358,8 +376,8 @@ namespace LibHac.Tests.Fs
             var timeStampGetter = new TimeStampGetter();
 
             var baseFs = new InMemoryFileSystem();
-            DirectorySaveDataFileSystem.CreateNew(out DirectorySaveDataFileSystem saveFs, baseFs, timeStampGetter,
-                randomGeneratorFunc, true, true, true, null).ThrowIfFailure();
+            CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, timeStampGetter,
+                 randomGeneratorFunc, true, true, true, null).ThrowIfFailure();
 
             saveFs.CommitExtraData(true).ThrowIfFailure();
             saveFs.ReadExtraData(out SaveDataExtraData extraData).ThrowIfFailure();
@@ -421,12 +439,13 @@ namespace LibHac.Tests.Fs
             var extraData = new SaveDataExtraData();
             extraData.DataSize = saveDataSize;
 
-            rc = fileSystem.OpenFile(out IFile file, path, OpenMode.ReadWrite);
+            using var file = new UniqueRef<IFile>();
+            rc = fileSystem.OpenFile(ref file.Ref(), path, OpenMode.ReadWrite);
             if (rc.IsFailure()) return rc;
 
             using (file)
             {
-                rc = file.Write(0, SpanHelpers.AsByteSpan(ref extraData), WriteOption.Flush);
+                rc = file.Get.Write(0, SpanHelpers.AsByteSpan(ref extraData), WriteOption.Flush);
                 if (rc.IsFailure()) return rc;
             }
 

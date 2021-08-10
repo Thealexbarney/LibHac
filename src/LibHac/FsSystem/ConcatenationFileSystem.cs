@@ -218,10 +218,11 @@ namespace LibHac.FsSystem
                             CreateFileOptions.None);
                         if (rc.IsFailure()) return rc;
 
-                        rc = _baseFileSystem.OpenFile(out IFile newInternalFile, in internalFilePath, _mode);
+                        using var newInternalFile = new UniqueRef<IFile>();
+                        rc = _baseFileSystem.OpenFile(ref newInternalFile.Ref(), in internalFilePath, _mode);
                         if (rc.IsFailure()) return rc;
 
-                        _files.Add(newInternalFile);
+                        _files.Add(newInternalFile.Release());
 
                         rc = internalFilePath.RemoveChild();
                         if (rc.IsFailure()) return rc;
@@ -375,16 +376,16 @@ namespace LibHac.FsSystem
         private class ConcatenationDirectory : IDirectory
         {
             private OpenDirectoryMode _mode;
-            private IDirectory _baseDirectory;
+            private UniqueRef<IDirectory> _baseDirectory;
             private Path.Stored _path;
             private IFileSystem _baseFileSystem;
             private ConcatenationFileSystem _concatenationFileSystem;
 
-            public ConcatenationDirectory(OpenDirectoryMode mode, IDirectory baseDirectory,
+            public ConcatenationDirectory(OpenDirectoryMode mode, ref UniqueRef<IDirectory> baseDirectory,
                 ConcatenationFileSystem concatFileSystem, IFileSystem baseFileSystem)
             {
                 _mode = mode;
-                _baseDirectory = baseDirectory;
+                _baseDirectory = new UniqueRef<IDirectory>(ref baseDirectory);
                 _baseFileSystem = baseFileSystem;
                 _concatenationFileSystem = concatFileSystem;
             }
@@ -414,7 +415,7 @@ namespace LibHac.FsSystem
 
                 while (readCountTotal < entryBuffer.Length)
                 {
-                    Result rc = _baseDirectory.Read(out long readCount, SpanHelpers.AsSpan(ref entry));
+                    Result rc = _baseDirectory.Get.Read(out long readCount, SpanHelpers.AsSpan(ref entry));
                     if (rc.IsFailure()) return rc;
 
                     if (readCount == 0)
@@ -454,37 +455,30 @@ namespace LibHac.FsSystem
                 UnsafeHelpers.SkipParamInit(out entryCount);
 
                 Unsafe.SkipInit(out DirectoryEntry entry);
-                IDirectory directory = null;
+                using var directory = new UniqueRef<IDirectory>();
 
-                try
+                Path path = _path.DangerousGetPath();
+
+                Result rc = _baseFileSystem.OpenDirectory(ref directory.Ref(), in path,
+                    OpenDirectoryMode.All | OpenDirectoryMode.NoFileSize);
+                if (rc.IsFailure()) return rc;
+
+                long entryCountTotal = 0;
+
+                while (true)
                 {
-                    Path path = _path.GetPath();
-
-                    Result rc = _baseFileSystem.OpenDirectory(out directory, in path,
-                        OpenDirectoryMode.All | OpenDirectoryMode.NoFileSize);
+                    directory.Get.Read(out long readCount, SpanHelpers.AsSpan(ref entry));
                     if (rc.IsFailure()) return rc;
 
-                    long entryCountTotal = 0;
+                    if (readCount == 0)
+                        break;
 
-                    while (true)
-                    {
-                        directory.Read(out long readCount, SpanHelpers.AsSpan(ref entry));
-                        if (rc.IsFailure()) return rc;
-
-                        if (readCount == 0)
-                            break;
-
-                        if (IsReadTarget(in entry))
-                            entryCountTotal++;
-                    }
-
-                    entryCount = entryCountTotal;
-                    return Result.Success;
+                    if (IsReadTarget(in entry))
+                        entryCountTotal++;
                 }
-                finally
-                {
-                    directory?.Dispose();
-                }
+
+                entryCount = entryCountTotal;
+                return Result.Success;
             }
 
             private bool IsReadTarget(in DirectoryEntry entry)
@@ -642,19 +636,16 @@ namespace LibHac.FsSystem
             return _baseFileSystem.Flush();
         }
 
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out file);
-
             if (!IsConcatenationFile(in path))
             {
-                return _baseFileSystem.OpenFile(out file, in path, mode);
+                return _baseFileSystem.OpenFile(ref outFile, in path, mode);
             }
 
             Result rc = GetInternalFileCount(out int fileCount, in path);
             if (rc.IsFailure()) return rc;
 
-            ConcatenationFile concatFile = null;
             var internalFiles = new List<IFile>(fileCount);
 
             using var filePath = new Path();
@@ -668,27 +659,27 @@ namespace LibHac.FsSystem
                     rc = AppendInternalFilePath(ref filePath.Ref(), i);
                     if (rc.IsFailure()) return rc;
 
-                    rc = _baseFileSystem.OpenFile(out IFile internalFile, in filePath, mode);
+                    using var internalFile = new UniqueRef<IFile>();
+                    rc = _baseFileSystem.OpenFile(ref internalFile.Ref(), in filePath, mode);
                     if (rc.IsFailure()) return rc;
 
-                    internalFiles.Add(internalFile);
+                    internalFiles.Add(internalFile.Release());
 
                     rc = filePath.RemoveChild();
                     if (rc.IsFailure()) return rc;
                 }
 
-                concatFile = new ConcatenationFile(mode, ref internalFiles, _InternalFileSize, _baseFileSystem);
+                using var concatFile = new UniqueRef<ConcatenationFile>(
+                    new ConcatenationFile(mode, ref internalFiles, _InternalFileSize, _baseFileSystem));
 
-                rc = concatFile.Initialize(in path);
+                rc = concatFile.Get.Initialize(in path);
                 if (rc.IsFailure()) return rc;
 
-                file = Shared.Move(ref concatFile);
+                outFile.Set(ref concatFile.Ref());
                 return Result.Success;
             }
             finally
             {
-                concatFile?.Dispose();
-
                 if (internalFiles is not null)
                 {
                     foreach (IFile internalFile in internalFiles)
@@ -699,23 +690,24 @@ namespace LibHac.FsSystem
             }
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out directory);
-
             if (IsConcatenationFile(path))
             {
                 return ResultFs.PathNotFound.Log();
             }
 
-            Result rc = _baseFileSystem.OpenDirectory(out IDirectory baseDirectory, path, OpenDirectoryMode.All);
+            using var baseDirectory = new UniqueRef<IDirectory>();
+            Result rc = _baseFileSystem.OpenDirectory(ref baseDirectory.Ref(), path, OpenDirectoryMode.All);
             if (rc.IsFailure()) return rc;
 
-            var concatDirectory = new ConcatenationDirectory(mode, baseDirectory, this, _baseFileSystem);
-            rc = concatDirectory.Initialize(in path);
+            using var concatDirectory = new UniqueRef<ConcatenationDirectory>(
+                new ConcatenationDirectory(mode, ref baseDirectory.Ref(), this, _baseFileSystem));
+            rc = concatDirectory.Get.Initialize(in path);
             if (rc.IsFailure()) return rc;
 
-            directory = concatDirectory;
+            outDirectory.Set(ref concatDirectory.Ref());
             return Result.Success;
         }
 

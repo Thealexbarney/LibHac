@@ -132,7 +132,7 @@ namespace LibHac.FsSrv.Impl
     /// </summary>
     public class SaveDataResultConvertFile : IResultConvertFile
     {
-        public SaveDataResultConvertFile(IFile baseFile) : base(baseFile)
+        public SaveDataResultConvertFile(ref UniqueRef<IFile> baseFile) : base(ref baseFile)
         {
         }
 
@@ -148,7 +148,7 @@ namespace LibHac.FsSrv.Impl
     /// </summary>
     public class SaveDataResultConvertDirectory : IResultConvertDirectory
     {
-        public SaveDataResultConvertDirectory(IDirectory baseDirectory) : base(baseDirectory)
+        public SaveDataResultConvertDirectory(ref UniqueRef<IDirectory> baseDirectory) : base(ref baseDirectory)
         {
         }
 
@@ -176,25 +176,24 @@ namespace LibHac.FsSrv.Impl
             return new ReferenceCountedDisposable<IFileSystem>(resultConvertFileSystem);
         }
 
-        protected override Result DoOpenFile(out IFile file, in Path path, OpenMode mode)
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out file);
-
-            Result rc = ConvertResult(BaseFileSystem.Target.OpenFile(out IFile tempFile, path, mode));
+            using var file = new UniqueRef<IFile>();
+            Result rc = ConvertResult(BaseFileSystem.Target.OpenFile(ref file.Ref(), path, mode));
             if (rc.IsFailure()) return rc;
 
-            file = new SaveDataResultConvertFile(tempFile);
+            outFile.Reset(new SaveDataResultConvertFile(ref file.Ref()));
             return Result.Success;
         }
 
-        protected override Result DoOpenDirectory(out IDirectory directory, in Path path, OpenDirectoryMode mode)
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+            OpenDirectoryMode mode)
         {
-            UnsafeHelpers.SkipParamInit(out directory);
-
-            Result rc = ConvertResult(BaseFileSystem.Target.OpenDirectory(out IDirectory tempDirectory, path, mode));
+            using var directory = new UniqueRef<IDirectory>();
+            Result rc = ConvertResult(BaseFileSystem.Target.OpenDirectory(ref directory.Ref(), path, mode));
             if (rc.IsFailure()) return rc;
 
-            directory = new SaveDataResultConvertDirectory(tempDirectory);
+            outDirectory.Reset(new SaveDataResultConvertDirectory(ref directory.Ref()));
             return Result.Success;
         }
 

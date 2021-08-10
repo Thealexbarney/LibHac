@@ -1,4 +1,5 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using Xunit;
 
@@ -23,14 +24,17 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.CreateFile("/dir1/file", data1.Length, CreateFileOptions.None).ThrowIfFailure();
             fs.CreateFile("/dir2/file", data2.Length, CreateFileOptions.None).ThrowIfFailure();
 
-            fs.OpenFile(out IFile file1, "/dir1/file", OpenMode.Write).ThrowIfFailure();
-            fs.OpenFile(out IFile file2, "/dir2/file", OpenMode.Write).ThrowIfFailure();
+            using var file1 = new UniqueRef<IFile>();
+            using var file2 = new UniqueRef<IFile>();
 
-            file1.Write(0, data1, WriteOption.Flush).ThrowIfFailure();
-            file2.Write(0, data2, WriteOption.Flush).ThrowIfFailure();
+            fs.OpenFile(ref file1.Ref(), "/dir1/file", OpenMode.Write).ThrowIfFailure();
+            fs.OpenFile(ref file2.Ref(), "/dir2/file", OpenMode.Write).ThrowIfFailure();
 
-            file1.Dispose();
-            file2.Dispose();
+            file1.Get.Write(0, data1, WriteOption.Flush).ThrowIfFailure();
+            file2.Get.Write(0, data2, WriteOption.Flush).ThrowIfFailure();
+
+            file1.Reset();
+            file2.Reset();
 
             fs.Commit().ThrowIfFailure();
             fs.Dispose();
@@ -41,23 +45,18 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             byte[] readData1 = new byte[data1.Length];
             byte[] readData2 = new byte[data2.Length];
 
-            Assert.Success(fs.OpenFile(out file1, "/dir1/file", OpenMode.Read));
+            Assert.Success(fs.OpenFile(ref file1.Ref(), "/dir1/file", OpenMode.Read));
 
-            using (file1)
-            {
-                Assert.Success(file1.Read(out long bytesRead, 0, readData1, ReadOption.None));
-                Assert.Equal(data1.Length, bytesRead);
-            }
+            Assert.Success(file1.Get.Read(out long bytesReadFile1, 0, readData1, ReadOption.None));
+            file1.Reset();
+            Assert.Equal(data1.Length, bytesReadFile1);
 
             Assert.Equal(data1, readData1);
 
-            Assert.Success(fs.OpenFile(out file2, "/dir2/file", OpenMode.Read));
+            Assert.Success(fs.OpenFile(ref file2.Ref(), "/dir2/file", OpenMode.Read));
 
-            using (file2)
-            {
-                Assert.Success(file2.Read(out long bytesRead, 0, readData2, ReadOption.None));
-                Assert.Equal(data2.Length, bytesRead);
-            }
+            Assert.Success(file2.Get.Read(out long bytesReadFile2, 0, readData2, ReadOption.None));
+            Assert.Equal(data2.Length, bytesReadFile2);
 
             Assert.Equal(data2, readData2);
         }
@@ -109,9 +108,10 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs.CreateDirectory("/dir").ThrowIfFailure();
             fs.CreateFile("/dir/file", data1.Length, CreateFileOptions.None).ThrowIfFailure();
 
-            fs.OpenFile(out IFile file, "/dir/file", OpenMode.Write).ThrowIfFailure();
-            file.Write(0, data1, WriteOption.Flush).ThrowIfFailure();
-            file.Dispose();
+            using var file = new UniqueRef<IFile>();
+            fs.OpenFile(ref file.Ref(), "/dir/file", OpenMode.Write).ThrowIfFailure();
+            file.Get.Write(0, data1, WriteOption.Flush).ThrowIfFailure();
+            file.Reset();
 
             // Commit and reopen the file system
             fs.Commit().ThrowIfFailure();
@@ -120,22 +120,19 @@ namespace LibHac.Tests.Fs.IFileSystemTestBase
             fs = fsCreator.Create();
 
             // Make changes to the file
-            fs.OpenFile(out file, "/dir/file", OpenMode.Write).ThrowIfFailure();
-            file.Write(0, data2, WriteOption.Flush).ThrowIfFailure();
-            file.Dispose();
+            fs.OpenFile(ref file.Ref(), "/dir/file", OpenMode.Write).ThrowIfFailure();
+            file.Get.Write(0, data2, WriteOption.Flush).ThrowIfFailure();
+            file.Reset();
 
             Assert.Success(fs.Rollback());
 
             // The file should contain the original data after the rollback
             byte[] readData = new byte[data1.Length];
 
-            Assert.Success(fs.OpenFile(out file, "/dir/file", OpenMode.Read));
+            Assert.Success(fs.OpenFile(ref file.Ref(), "/dir/file", OpenMode.Read));
 
-            using (file)
-            {
-                Assert.Success(file.Read(out long bytesRead, 0, readData, ReadOption.None));
-                Assert.Equal(data1.Length, bytesRead);
-            }
+            Assert.Success(file.Get.Read(out long bytesRead, 0, readData, ReadOption.None));
+            Assert.Equal(data1.Length, bytesRead);
 
             Assert.Equal(data1, readData);
         }
