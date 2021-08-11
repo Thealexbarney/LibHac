@@ -44,7 +44,7 @@ namespace LibHac.Fs.Impl
             Result rc = GetPathForServiceObject(out Path sfPath, path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.Target.DeleteFile(in sfPath);
+            return BaseFs.Target.CreateDirectory(in sfPath);
         }
 
         protected override Result DoDeleteDirectory(U8Span path)
