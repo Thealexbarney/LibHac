@@ -152,7 +152,7 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
         {
-            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.CreateFile(in sfPath, size, (int)option);
@@ -160,7 +160,7 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoDeleteFile(in Path path)
         {
-            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.DeleteFile(in sfPath);
@@ -168,15 +168,15 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoCreateDirectory(in Path path)
         {
-            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.Target.DeleteFile(in sfPath);
+            return BaseFs.Target.CreateDirectory(in sfPath);
         }
 
         protected override Result DoDeleteDirectory(in Path path)
         {
-            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.DeleteDirectory(in sfPath);
@@ -184,7 +184,7 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoDeleteDirectoryRecursively(in Path path)
         {
-            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.DeleteDirectoryRecursively(in sfPath);
@@ -192,7 +192,7 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoCleanDirectoryRecursively(in Path path)
         {
-            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.CleanDirectoryRecursively(in sfPath);
@@ -200,10 +200,10 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoRenameFile(in Path currentPath, in Path newPath)
         {
-            Result rc = GetPathForServiceObject(out PathSf currentSfPath, currentPath);
+            Result rc = GetPathForServiceObject(out PathSf currentSfPath, in currentPath);
             if (rc.IsFailure()) return rc;
 
-            rc = GetPathForServiceObject(out PathSf newSfPath, newPath);
+            rc = GetPathForServiceObject(out PathSf newSfPath, in newPath);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.RenameFile(in currentSfPath, in newSfPath);
@@ -211,10 +211,10 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
         {
-            Result rc = GetPathForServiceObject(out PathSf currentSfPath, currentPath);
+            Result rc = GetPathForServiceObject(out PathSf currentSfPath, in currentPath);
             if (rc.IsFailure()) return rc;
 
-            rc = GetPathForServiceObject(out PathSf newSfPath, newPath);
+            rc = GetPathForServiceObject(out PathSf newSfPath, in newPath);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.RenameDirectory(in currentSfPath, in newSfPath);
@@ -224,7 +224,7 @@ namespace LibHac.Fs.Impl
         {
             UnsafeHelpers.SkipParamInit(out entryType);
 
-            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
             ref uint sfEntryType = ref Unsafe.As<DirectoryEntryType, uint>(ref entryType);
@@ -236,7 +236,7 @@ namespace LibHac.Fs.Impl
         {
             UnsafeHelpers.SkipParamInit(out freeSpace);
 
-            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.GetFreeSpaceSize(out freeSpace, in sfPath);
@@ -246,7 +246,7 @@ namespace LibHac.Fs.Impl
         {
             UnsafeHelpers.SkipParamInit(out totalSpace);
 
-            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.GetTotalSpaceSize(out totalSpace, in sfPath);
@@ -254,7 +254,7 @@ namespace LibHac.Fs.Impl
 
         protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
-            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
             ReferenceCountedDisposable<IFileSf> sfFile = null;
@@ -275,7 +275,7 @@ namespace LibHac.Fs.Impl
         protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
             OpenDirectoryMode mode)
         {
-            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
             ReferenceCountedDisposable<IDirectorySf> sfDir = null;
@@ -302,7 +302,7 @@ namespace LibHac.Fs.Impl
         {
             UnsafeHelpers.SkipParamInit(out timeStamp);
 
-            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.GetFileTimeStampRaw(out timeStamp, in sfPath);
@@ -311,7 +311,7 @@ namespace LibHac.Fs.Impl
         protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
             in Path path)
         {
-            Result rc = GetPathForServiceObject(out PathSf sfPath, path);
+            Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
             return BaseFs.Target.QueryEntry(new OutBuffer(outBuffer), new InBuffer(inBuffer), (int)queryId, in sfPath);
