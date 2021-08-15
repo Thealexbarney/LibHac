@@ -126,7 +126,7 @@ namespace LibHac.FsSystem
         {
             BaseStorage.Flush();
             BaseStorage.Dispose();
-            BaseFile.Dispose();
+            BaseFile.Destroy();
 
             base.Dispose();
         }

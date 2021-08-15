@@ -24,7 +24,7 @@ namespace LibHac.FsSystem
 
         public override void Dispose()
         {
-            _baseDirectory.Dispose();
+            _baseDirectory.Destroy();
             base.Dispose();
         }
 

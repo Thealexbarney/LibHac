@@ -94,7 +94,7 @@ namespace LibHac.FsSystem
                 rc = directory.Get.Read(out long entriesRead, SpanHelpers.AsSpan(ref dirEntry));
                 if (rc.IsFailure()) return rc;
 
-                directory.Reset(null);
+                directory.Reset();
 
                 if (entriesRead == 0)
                     break;

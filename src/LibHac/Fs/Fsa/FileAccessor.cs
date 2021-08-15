@@ -52,7 +52,7 @@ namespace LibHac.Fs.Impl
 
             _parentFileSystem?.NotifyCloseFile(this);
 
-            _file.Dispose();
+            _file.Destroy();
         }
 
         public OpenMode GetOpenMode() => _openMode;

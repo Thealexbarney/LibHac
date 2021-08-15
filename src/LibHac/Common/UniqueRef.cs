@@ -19,10 +19,8 @@ namespace LibHac.Common
     {
         private T _value;
 
-        public void Dispose()
-        {
-            Release()?.Dispose();
-        }
+        public readonly T Get => _value;
+        public readonly bool HasValue => Get is not null;
 
         public UniqueRef(T value)
         {
@@ -34,21 +32,33 @@ namespace LibHac.Common
             _value = other.Release();
         }
 
-        public readonly T Get => _value;
+        [Obsolete("This method should never be manually called. Use the Destroy method instead.", true)]
+        public void Dispose()
+        {
+            _value?.Dispose();
+        }
 
-        public readonly bool HasValue => Get is not null;
+        /// <summary>
+        /// Used to manually dispose the <see cref="UniqueRef{T}"/> from the Dispose methods of other types.
+        /// </summary>
+        public void Destroy()
+        {
+            Reset();
+        }
+
+        public static UniqueRef<T> Create<TFrom>(ref UniqueRef<TFrom> other) where TFrom : class, T
+        {
+            return new UniqueRef<T>(other.Release());
+        }
+
+        public void Swap(ref UniqueRef<T> other)
+        {
+            (other._value, _value) = (_value, other._value);
+        }
 
         public void Reset() => Reset(null);
 
         public void Reset(T value)
-        {
-            T oldValue = _value;
-            _value = value;
-
-            oldValue?.Dispose();
-        }
-
-        public void Reset<TFrom>(TFrom value) where TFrom : class, T
         {
             T oldValue = _value;
             _value = value;

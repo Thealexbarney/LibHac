@@ -73,7 +73,7 @@ namespace LibHac.FsSystem
 
             public override void Dispose()
             {
-                _baseFile.Dispose();
+                _baseFile.Destroy();
 
                 if (_mode.HasFlag(OpenMode.Write))
                 {
@@ -178,10 +178,10 @@ namespace LibHac.FsSystem
 
         public override void Dispose()
         {
-            _lockFile.Dispose();
+            _lockFile.Destroy();
 
             _cacheObserver?.Unregister(_spaceId, _saveDataId);
-            _uniqueBaseFs.Dispose();
+            _uniqueBaseFs.Destroy();
             base.Dispose();
         }
 
