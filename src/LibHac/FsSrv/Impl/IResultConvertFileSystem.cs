@@ -17,7 +17,7 @@ namespace LibHac.FsSrv.Impl
 
         public override void Dispose()
         {
-            BaseFile.Dispose();
+            BaseFile.Destroy();
             base.Dispose();
         }
 
@@ -67,7 +67,7 @@ namespace LibHac.FsSrv.Impl
 
         public override void Dispose()
         {
-            BaseDirectory.Dispose();
+            BaseDirectory.Destroy();
             base.Dispose();
         }
 

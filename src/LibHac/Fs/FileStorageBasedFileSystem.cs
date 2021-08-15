@@ -31,7 +31,7 @@ namespace LibHac.Fs
         {
             if (disposing)
             {
-                _baseFile.Dispose();
+                _baseFile.Destroy();
                 _baseFileSystem?.Dispose();
             }
 

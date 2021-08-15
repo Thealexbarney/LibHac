@@ -64,7 +64,7 @@ namespace LibHac.FsSrv.Impl
         public override void Dispose()
         {
             _entryCountSemaphore?.Dispose();
-            _mountCountSemaphore.Dispose();
+            _mountCountSemaphore.Destroy();
             base.Dispose();
         }
     }

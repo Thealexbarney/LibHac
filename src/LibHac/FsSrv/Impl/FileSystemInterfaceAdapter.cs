@@ -37,7 +37,7 @@ namespace LibHac.FsSrv.Impl
 
         public void Dispose()
         {
-            _baseFile.Dispose();
+            _baseFile.Destroy();
             _parentFs?.Dispose();
         }
 
@@ -190,7 +190,7 @@ namespace LibHac.FsSrv.Impl
 
         public void Dispose()
         {
-            _baseDirectory.Dispose();
+            _baseDirectory.Destroy();
             _parentFs?.Dispose();
         }
 

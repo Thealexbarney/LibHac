@@ -21,7 +21,7 @@ namespace LibHac.Fs.Impl
             _directory.Reset();
             _parentFileSystem.NotifyCloseDirectory(this);
 
-            _directory.Dispose();
+            _directory.Destroy();
         }
 
         public FileSystemAccessor GetParent() => _parentFileSystem;
