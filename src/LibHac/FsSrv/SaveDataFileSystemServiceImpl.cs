@@ -682,9 +682,9 @@ namespace LibHac.FsSrv
                         Unsafe.SkipInit(out FsPath path);
                         var sb = new U8StringBuilder(path.Str);
                         sb.Append((byte)'/')
-                            .Append(basePath.Value)
+                            .Append(CommonPaths.SdCardNintendoRootDirectoryName)
                             .Append((byte)'/')
-                            .Append(CommonPaths.SdCardNintendoRootDirectoryName);
+                            .Append(basePath.Value);
 
                         rc = Utility.WrapSubDirectory(out tempSubFs, ref tempFs, path, createIfMissing);
                         if (rc.IsFailure()) return rc;
