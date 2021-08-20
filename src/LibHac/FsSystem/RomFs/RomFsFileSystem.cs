@@ -11,6 +11,7 @@ namespace LibHac.FsSystem.RomFs
 
         public HierarchicalRomFileTable<RomFileInfo> FileTable { get; }
         private IStorage BaseStorage { get; }
+        private SharedRef<IStorage> _baseStorageShared;
 
         public RomFsFileSystem(IStorage storage)
         {
@@ -23,6 +24,17 @@ namespace LibHac.FsSystem.RomFs
             IStorage fileEntryTable = storage.Slice(Header.FileMetaTableOffset, Header.FileMetaTableSize);
 
             FileTable = new HierarchicalRomFileTable<RomFileInfo>(dirHashTable, dirEntryTable, fileHashTable, fileEntryTable);
+        }
+
+        public RomFsFileSystem(ref SharedRef<IStorage> storage) : this(storage.Get)
+        {
+            _baseStorageShared = SharedRef<IStorage>.CreateMove(ref storage);
+        }
+
+        public override void Dispose()
+        {
+            _baseStorageShared.Destroy();
+            base.Dispose();
         }
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)

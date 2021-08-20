@@ -1,4 +1,5 @@
-﻿using LibHac.Common.Keys;
+﻿using LibHac.Common;
+using LibHac.Common.Keys;
 using LibHac.FsSrv.FsCreator;
 using LibHac.FsSrv.Sf;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
@@ -21,6 +22,10 @@ namespace LibHac.FsSrv
 
             var gcStorageCreator = new EmulatedGameCardStorageCreator(gameCard);
 
+            using var sharedRootFileSystem = new SharedRef<IFileSystem>(rootFileSystem);
+            using SharedRef<IFileSystem> sharedRootFileSystemCopy =
+                SharedRef<IFileSystem>.CreateCopy(ref sharedRootFileSystem.Ref());
+
             creators.RomFileSystemCreator = new RomFileSystemCreator();
             creators.PartitionFileSystemCreator = new PartitionFileSystemCreator();
             creators.StorageOnNcaCreator = new StorageOnNcaCreator(keySet);
@@ -30,8 +35,8 @@ namespace LibHac.FsSrv
             creators.GameCardStorageCreator = gcStorageCreator;
             creators.GameCardFileSystemCreator = new EmulatedGameCardFsCreator(gcStorageCreator, gameCard);
             creators.EncryptedFileSystemCreator = new EncryptedFileSystemCreator(keySet);
-            creators.BuiltInStorageFileSystemCreator = new EmulatedBisFileSystemCreator(rootFileSystem);
-            creators.SdCardFileSystemCreator = new EmulatedSdCardFileSystemCreator(sdCard, rootFileSystem);
+            creators.BuiltInStorageFileSystemCreator = new EmulatedBisFileSystemCreator(ref sharedRootFileSystem.Ref());
+            creators.SdCardFileSystemCreator = new EmulatedSdCardFileSystemCreator(sdCard, ref sharedRootFileSystemCopy.Ref());
 
             var deviceOperator = new EmulatedDeviceOperator(gameCard, sdCard);
 

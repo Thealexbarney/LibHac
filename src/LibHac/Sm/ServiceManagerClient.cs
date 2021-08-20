@@ -12,18 +12,15 @@ namespace LibHac.Sm
             Server = server;
         }
 
-        public Result GetService<T>(out T serviceObject, ReadOnlySpan<char> name)
+        public Result GetService<T>(ref SharedRef<T> serviceObject, ReadOnlySpan<char> name) where T : class, IDisposable
         {
-            Result rc = Server.GetService(out object service, ServiceName.Encode(name));
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out serviceObject);
-                return rc;
-            }
+            using var service = new SharedRef<IDisposable>();
 
-            if (service is T typedService)
+            Result rc = Server.GetService(ref service.Ref(), ServiceName.Encode(name));
+            if (rc.IsFailure()) return rc.Miss();
+
+            if (serviceObject.TryCastSet(ref service.Ref()))
             {
-                serviceObject = typedService;
                 return Result.Success;
             }
 

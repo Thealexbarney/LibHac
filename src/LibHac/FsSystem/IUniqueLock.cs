@@ -9,23 +9,23 @@ namespace LibHac.FsSystem
     public class UniqueLockWithPin<T> : IUniqueLock where T : class, IDisposable
     {
         private UniqueLock<SemaphoreAdapter> _semaphore;
-        private ReferenceCountedDisposable<T> _pinnedObject;
+        private SharedRef<T> _pinnedObject;
 
-        public UniqueLockWithPin(ref UniqueLock<SemaphoreAdapter> semaphore, ref ReferenceCountedDisposable<T> pinnedObject)
+        public UniqueLockWithPin(ref UniqueLock<SemaphoreAdapter> semaphore, ref SharedRef<T> pinnedObject)
         {
             _semaphore = new UniqueLock<SemaphoreAdapter>(ref semaphore);
-            Shared.Move(out _pinnedObject, ref pinnedObject);
+            _pinnedObject = SharedRef<T>.CreateMove(ref pinnedObject);
         }
 
         public void Dispose()
         {
-            if (_pinnedObject != null)
+            using (var emptyLock = new UniqueLock<SemaphoreAdapter>())
             {
-                _semaphore.Dispose();
-                _pinnedObject.Dispose();
-
-                _pinnedObject = null;
+                _semaphore.Set(ref emptyLock.Ref());
             }
+
+            _pinnedObject.Destroy();
+            _semaphore.Dispose();
         }
     }
 }

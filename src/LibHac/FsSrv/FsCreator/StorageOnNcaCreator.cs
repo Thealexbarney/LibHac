@@ -21,10 +21,10 @@ namespace LibHac.FsSrv.FsCreator
         }
 
         // todo: Implement NcaReader and other Nca classes
-        public Result Create(out ReferenceCountedDisposable<IStorage> storage, out NcaFsHeader fsHeader, Nca nca,
+        public Result Create(ref SharedRef<IStorage> outStorage, out NcaFsHeader fsHeader, Nca nca,
             int fsIndex, bool isCodeFs)
         {
-            UnsafeHelpers.SkipParamInit(out storage, out fsHeader);
+            UnsafeHelpers.SkipParamInit(out fsHeader);
 
             Result rc = OpenStorage(out IStorage storageTemp, nca, fsIndex);
             if (rc.IsFailure()) return rc;
@@ -41,13 +41,13 @@ namespace LibHac.FsSrv.FsCreator
                 }
             }
 
-            storage = new ReferenceCountedDisposable<IStorage>(storageTemp);
+            outStorage.Reset(storageTemp);
             fsHeader = nca.GetFsHeader(fsIndex);
 
             return Result.Success;
         }
 
-        public Result CreateWithPatch(out ReferenceCountedDisposable<IStorage> storage, out NcaFsHeader fsHeader,
+        public Result CreateWithPatch(ref SharedRef<IStorage> outStorage, out NcaFsHeader fsHeader,
             Nca baseNca, Nca patchNca, int fsIndex, bool isCodeFs)
         {
             throw new NotImplementedException();

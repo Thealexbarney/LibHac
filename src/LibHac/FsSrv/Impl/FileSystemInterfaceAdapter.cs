@@ -20,25 +20,25 @@ namespace LibHac.FsSrv.Impl
     /// <summary>
     /// Wraps an <see cref="IFile"/> to allow interfacing with it via the <see cref="IFileSf"/> interface over IPC.
     /// </summary>
-    /// <remarks>Based on FS 12.0.3 (nnSdk 12.3.1)</remarks>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     public class FileInterfaceAdapter : IFileSf
     {
-        private ReferenceCountedDisposable<FileSystemInterfaceAdapter> _parentFs;
+        private SharedRef<FileSystemInterfaceAdapter> _parentFs;
         private UniqueRef<IFile> _baseFile;
         private bool _allowAllOperations;
 
         public FileInterfaceAdapter(ref UniqueRef<IFile> baseFile,
-            ref ReferenceCountedDisposable<FileSystemInterfaceAdapter> parentFileSystem, bool allowAllOperations)
+            ref SharedRef<FileSystemInterfaceAdapter> parentFileSystem, bool allowAllOperations)
         {
+            _parentFs = SharedRef<FileSystemInterfaceAdapter>.CreateMove(ref parentFileSystem);
             _baseFile = new UniqueRef<IFile>(ref baseFile);
-            _parentFs = Shared.Move(ref parentFileSystem);
             _allowAllOperations = allowAllOperations;
         }
 
         public void Dispose()
         {
             _baseFile.Destroy();
-            _parentFs?.Dispose();
+            _parentFs.Destroy();
         }
 
         public Result Read(out long bytesRead, long offset, OutBuffer destination, long size, ReadOption option)
@@ -175,23 +175,23 @@ namespace LibHac.FsSrv.Impl
     /// <summary>
     /// Wraps an <see cref="IDirectory"/> to allow interfacing with it via the <see cref="IDirectorySf"/> interface over IPC.
     /// </summary>
-    /// <remarks>Based on FS 12.0.3 (nnSdk 12.3.1)</remarks>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     public class DirectoryInterfaceAdapter : IDirectorySf
     {
-        private ReferenceCountedDisposable<FileSystemInterfaceAdapter> _parentFs;
+        private SharedRef<FileSystemInterfaceAdapter> _parentFs;
         private UniqueRef<IDirectory> _baseDirectory;
 
         public DirectoryInterfaceAdapter(ref UniqueRef<IDirectory> baseDirectory,
-            ref ReferenceCountedDisposable<FileSystemInterfaceAdapter> parentFileSystem)
+            ref SharedRef<FileSystemInterfaceAdapter> parentFileSystem)
         {
+            _parentFs = SharedRef<FileSystemInterfaceAdapter>.CreateMove(ref parentFileSystem);
             _baseDirectory = new UniqueRef<IDirectory>(ref baseDirectory);
-            _parentFs = Shared.Move(ref parentFileSystem);
         }
 
         public void Dispose()
         {
             _baseDirectory.Destroy();
-            _parentFs?.Dispose();
+            _parentFs.Destroy();
         }
 
         public Result Read(out long entriesRead, OutBuffer entryBuffer)
@@ -235,10 +235,10 @@ namespace LibHac.FsSrv.Impl
     /// Wraps an <see cref="IFileSystem"/> to allow interfacing with it via the <see cref="IFileSystemSf"/> interface over IPC.
     /// All incoming paths are normalized before they are passed to the base <see cref="IFileSystem"/>.
     /// </summary>
-    /// <remarks>Based on FS 12.0.3 (nnSdk 12.3.1)</remarks>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     public class FileSystemInterfaceAdapter : IFileSystemSf
     {
-        private ReferenceCountedDisposable<IFileSystem> _baseFileSystem;
+        private SharedRef<IFileSystem> _baseFileSystem;
         private PathFlags _pathFlags;
 
         // This field is always false in FS 12.0.0. Not sure what it's actually used for.
@@ -246,67 +246,47 @@ namespace LibHac.FsSrv.Impl
 
         // In FS, FileSystemInterfaceAdapter is derived from ISharedObject, so that's used for ref-counting when
         // creating files and directories. We don't have an ISharedObject, so a self-reference is used instead.
-        private ReferenceCountedDisposable<FileSystemInterfaceAdapter>.WeakReference _selfReference;
+        private WeakRef<FileSystemInterfaceAdapter> _selfReference;
 
-        private FileSystemInterfaceAdapter(ref ReferenceCountedDisposable<IFileSystem> fileSystem,
+        private FileSystemInterfaceAdapter(ref SharedRef<IFileSystem> fileSystem,
             bool allowAllOperations)
         {
-            _baseFileSystem = Shared.Move(ref fileSystem);
+            _baseFileSystem = SharedRef<IFileSystem>.CreateMove(ref fileSystem);
             _allowAllOperations = allowAllOperations;
         }
 
-        private FileSystemInterfaceAdapter(ref ReferenceCountedDisposable<IFileSystem> fileSystem, PathFlags flags,
+        private FileSystemInterfaceAdapter(ref SharedRef<IFileSystem> fileSystem, PathFlags flags,
             bool allowAllOperations)
         {
-            _baseFileSystem = Shared.Move(ref fileSystem);
+            _baseFileSystem = SharedRef<IFileSystem>.CreateMove(ref fileSystem);
             _pathFlags = flags;
             _allowAllOperations = allowAllOperations;
         }
 
-        public static ReferenceCountedDisposable<IFileSystemSf> CreateShared(
-            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, bool allowAllOperations)
+        public static SharedRef<IFileSystemSf> CreateShared(ref SharedRef<IFileSystem> baseFileSystem, bool allowAllOperations)
         {
-            ReferenceCountedDisposable<FileSystemInterfaceAdapter> sharedAdapter = null;
-            try
-            {
-                var adapter = new FileSystemInterfaceAdapter(ref baseFileSystem, allowAllOperations);
-                sharedAdapter = new ReferenceCountedDisposable<FileSystemInterfaceAdapter>(adapter);
+            var adapter = new FileSystemInterfaceAdapter(ref baseFileSystem, allowAllOperations);
+            using var sharedAdapter = new SharedRef<FileSystemInterfaceAdapter>(adapter);
 
-                adapter._selfReference =
-                    new ReferenceCountedDisposable<FileSystemInterfaceAdapter>.WeakReference(sharedAdapter);
+            adapter._selfReference = new WeakRef<FileSystemInterfaceAdapter>(ref sharedAdapter.Ref());
 
-                return sharedAdapter.AddReference<IFileSystemSf>();
-            }
-            finally
-            {
-                sharedAdapter?.Dispose();
-            }
+            return SharedRef<IFileSystemSf>.CreateMove(ref sharedAdapter.Ref());
         }
 
-        public static ReferenceCountedDisposable<IFileSystemSf> CreateShared(
-            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, PathFlags flags, bool allowAllOperations)
+        public static SharedRef<IFileSystemSf> CreateShared(
+            ref SharedRef<IFileSystem> baseFileSystem, PathFlags flags, bool allowAllOperations)
         {
-            ReferenceCountedDisposable<FileSystemInterfaceAdapter> sharedAdapter = null;
-            try
-            {
-                var adapter = new FileSystemInterfaceAdapter(ref baseFileSystem, flags, allowAllOperations);
-                sharedAdapter = new ReferenceCountedDisposable<FileSystemInterfaceAdapter>(adapter);
+            var adapter = new FileSystemInterfaceAdapter(ref baseFileSystem, flags, allowAllOperations);
+            using var sharedAdapter = new SharedRef<FileSystemInterfaceAdapter>(adapter);
 
-                adapter._selfReference =
-                    new ReferenceCountedDisposable<FileSystemInterfaceAdapter>.WeakReference(sharedAdapter);
+            adapter._selfReference = new WeakRef<FileSystemInterfaceAdapter>(ref sharedAdapter.Ref());
 
-                return sharedAdapter.AddReference<IFileSystemSf>();
-            }
-            finally
-            {
-                sharedAdapter?.Dispose();
-            }
+            return SharedRef<IFileSystemSf>.CreateMove(ref sharedAdapter.Ref());
         }
 
         public void Dispose()
         {
-            ReferenceCountedDisposable<IFileSystem> tempFs = Shared.Move(ref _baseFileSystem);
-            tempFs?.Dispose();
+            _baseFileSystem.Destroy();
         }
 
         private static ReadOnlySpan<byte> RootDir => new[] { (byte)'/' };
@@ -341,7 +321,7 @@ namespace LibHac.FsSrv.Impl
             Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
-            rc = _baseFileSystem.Target.CreateFile(in pathNormalized, size, (CreateFileOptions)option);
+            rc = _baseFileSystem.Get.CreateFile(in pathNormalized, size, (CreateFileOptions)option);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -353,7 +333,7 @@ namespace LibHac.FsSrv.Impl
             Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
-            rc = _baseFileSystem.Target.DeleteFile(in pathNormalized);
+            rc = _baseFileSystem.Get.DeleteFile(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -368,7 +348,7 @@ namespace LibHac.FsSrv.Impl
             if (pathNormalized == RootDir)
                 return ResultFs.PathAlreadyExists.Log();
 
-            rc = _baseFileSystem.Target.CreateDirectory(in pathNormalized);
+            rc = _baseFileSystem.Get.CreateDirectory(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -383,7 +363,7 @@ namespace LibHac.FsSrv.Impl
             if (pathNormalized == RootDir)
                 return ResultFs.DirectoryNotDeletable.Log();
 
-            rc = _baseFileSystem.Target.DeleteDirectory(in pathNormalized);
+            rc = _baseFileSystem.Get.DeleteDirectory(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -398,7 +378,7 @@ namespace LibHac.FsSrv.Impl
             if (pathNormalized == RootDir)
                 return ResultFs.DirectoryNotDeletable.Log();
 
-            rc = _baseFileSystem.Target.DeleteDirectoryRecursively(in pathNormalized);
+            rc = _baseFileSystem.Get.DeleteDirectoryRecursively(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -410,7 +390,7 @@ namespace LibHac.FsSrv.Impl
             Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
-            rc = _baseFileSystem.Target.CleanDirectoryRecursively(in pathNormalized);
+            rc = _baseFileSystem.Get.CleanDirectoryRecursively(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -426,7 +406,7 @@ namespace LibHac.FsSrv.Impl
             rc = SetUpPath(ref newPathNormalized.Ref(), in newPath);
             if (rc.IsFailure()) return rc;
 
-            rc = _baseFileSystem.Target.RenameFile(in currentPathNormalized, in newPathNormalized);
+            rc = _baseFileSystem.Get.RenameFile(in currentPathNormalized, in newPathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -445,7 +425,7 @@ namespace LibHac.FsSrv.Impl
             if (PathUtility.IsSubPath(currentPathNormalized.GetString(), newPathNormalized.GetString()))
                 return ResultFs.DirectoryNotRenamable.Log();
 
-            rc = _baseFileSystem.Target.RenameDirectory(in currentPathNormalized, in newPathNormalized);
+            rc = _baseFileSystem.Get.RenameDirectory(in currentPathNormalized, in newPathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -459,7 +439,7 @@ namespace LibHac.FsSrv.Impl
             Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
-            rc = _baseFileSystem.Target.GetEntryType(out DirectoryEntryType type, in pathNormalized);
+            rc = _baseFileSystem.Get.GetEntryType(out DirectoryEntryType type, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             entryType = (uint)type;
@@ -474,7 +454,7 @@ namespace LibHac.FsSrv.Impl
             Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
-            rc = _baseFileSystem.Target.GetFreeSpaceSize(out long space, in pathNormalized);
+            rc = _baseFileSystem.Get.GetFreeSpaceSize(out long space, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             freeSpace = space;
@@ -489,17 +469,16 @@ namespace LibHac.FsSrv.Impl
             Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
-            rc = _baseFileSystem.Target.GetTotalSpaceSize(out long space, in pathNormalized);
+            rc = _baseFileSystem.Get.GetTotalSpaceSize(out long space, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             totalSpace = space;
             return Result.Success;
         }
 
-        public Result OpenFile(out ReferenceCountedDisposable<IFileSf> outFile, in PathSf path, uint mode)
+        public Result OpenFile(ref SharedRef<IFileSf> outFile, in PathSf path, uint mode)
         {
             const int maxTryCount = 2;
-            UnsafeHelpers.SkipParamInit(out outFile);
 
             using var pathNormalized = new Path();
             Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
@@ -509,7 +488,7 @@ namespace LibHac.FsSrv.Impl
 
             for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
             {
-                rc = _baseFileSystem.Target.OpenFile(ref file.Ref(), in pathNormalized, (OpenMode)mode);
+                rc = _baseFileSystem.Get.OpenFile(ref file.Ref(), in pathNormalized, (OpenMode)mode);
 
                 // Retry on ResultDataCorrupted
                 if (!ResultFs.DataCorrupted.Includes(rc))
@@ -518,17 +497,18 @@ namespace LibHac.FsSrv.Impl
 
             if (rc.IsFailure()) return rc;
 
-            ReferenceCountedDisposable<FileSystemInterfaceAdapter> selfReference = _selfReference.AddReference();
-            var adapter = new FileInterfaceAdapter(ref file.Ref(), ref selfReference, _allowAllOperations);
-            outFile = new ReferenceCountedDisposable<IFileSf>(adapter);
+            using SharedRef<FileSystemInterfaceAdapter> selfReference =
+                SharedRef<FileSystemInterfaceAdapter>.Create(ref _selfReference);
+
+            var adapter = new FileInterfaceAdapter(ref file.Ref(), ref selfReference.Ref(), _allowAllOperations);
+            outFile.Reset(adapter);
 
             return Result.Success;
         }
 
-        public Result OpenDirectory(out ReferenceCountedDisposable<IDirectorySf> outDirectory, in PathSf path, uint mode)
+        public Result OpenDirectory(ref SharedRef<IDirectorySf> outDirectory, in PathSf path, uint mode)
         {
             const int maxTryCount = 2;
-            UnsafeHelpers.SkipParamInit(out outDirectory);
 
             using var pathNormalized = new Path();
             Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
@@ -538,7 +518,7 @@ namespace LibHac.FsSrv.Impl
 
             for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
             {
-                rc = _baseFileSystem.Target.OpenDirectory(ref directory.Ref(), in pathNormalized,
+                rc = _baseFileSystem.Get.OpenDirectory(ref directory.Ref(), in pathNormalized,
                     (OpenDirectoryMode)mode);
 
                 // Retry on ResultDataCorrupted
@@ -548,16 +528,18 @@ namespace LibHac.FsSrv.Impl
 
             if (rc.IsFailure()) return rc;
 
-            ReferenceCountedDisposable<FileSystemInterfaceAdapter> selfReference = _selfReference.AddReference();
-            var adapter = new DirectoryInterfaceAdapter(ref directory.Ref(), ref selfReference);
-            outDirectory = new ReferenceCountedDisposable<IDirectorySf>(adapter);
+            using SharedRef<FileSystemInterfaceAdapter> selfReference =
+                SharedRef<FileSystemInterfaceAdapter>.Create(ref _selfReference);
+
+            var adapter = new DirectoryInterfaceAdapter(ref directory.Ref(), ref selfReference.Ref());
+            outDirectory.Reset(adapter);
 
             return Result.Success;
         }
 
         public Result Commit()
         {
-            return _baseFileSystem.Target.Commit();
+            return _baseFileSystem.Get.Commit();
         }
 
         public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in PathSf path)
@@ -568,7 +550,7 @@ namespace LibHac.FsSrv.Impl
             Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
-            rc = _baseFileSystem.Target.GetFileTimeStampRaw(out FileTimeStampRaw tempTimeStamp, in pathNormalized);
+            rc = _baseFileSystem.Get.GetFileTimeStampRaw(out FileTimeStampRaw tempTimeStamp, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             timeStamp = tempTimeStamp;
@@ -599,16 +581,16 @@ namespace LibHac.FsSrv.Impl
             rc = SetUpPath(ref pathNormalized.Ref(), in path);
             if (rc.IsFailure()) return rc;
 
-            rc = _baseFileSystem.Target.QueryEntry(outBuffer.Buffer, inBuffer.Buffer, (QueryId)queryId,
+            rc = _baseFileSystem.Get.QueryEntry(outBuffer.Buffer, inBuffer.Buffer, (QueryId)queryId,
                 in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
         }
 
-        public Result GetImpl(out ReferenceCountedDisposable<IFileSystem> fileSystem)
+        public Result GetImpl(ref SharedRef<IFileSystem> fileSystem)
         {
-            fileSystem = _baseFileSystem.AddReference();
+            fileSystem.SetByCopy(ref _baseFileSystem);
             return Result.Success;
         }
     }

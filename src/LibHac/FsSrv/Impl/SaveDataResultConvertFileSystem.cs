@@ -164,22 +164,15 @@ namespace LibHac.FsSrv.Impl
     /// </summary>
     public class SaveDataResultConvertFileSystem : IResultConvertFileSystem
     {
-        public SaveDataResultConvertFileSystem(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem)
+        public SaveDataResultConvertFileSystem(ref SharedRef<IFileSystem> baseFileSystem)
             : base(ref baseFileSystem)
         {
-        }
-
-        public static ReferenceCountedDisposable<IFileSystem> CreateShared(
-            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem)
-        {
-            var resultConvertFileSystem = new SaveDataResultConvertFileSystem(ref baseFileSystem);
-            return new ReferenceCountedDisposable<IFileSystem>(resultConvertFileSystem);
         }
 
         protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
             using var file = new UniqueRef<IFile>();
-            Result rc = ConvertResult(BaseFileSystem.Target.OpenFile(ref file.Ref(), path, mode));
+            Result rc = ConvertResult(BaseFileSystem.Get.OpenFile(ref file.Ref(), path, mode));
             if (rc.IsFailure()) return rc;
 
             outFile.Reset(new SaveDataResultConvertFile(ref file.Ref()));
@@ -190,7 +183,7 @@ namespace LibHac.FsSrv.Impl
             OpenDirectoryMode mode)
         {
             using var directory = new UniqueRef<IDirectory>();
-            Result rc = ConvertResult(BaseFileSystem.Target.OpenDirectory(ref directory.Ref(), path, mode));
+            Result rc = ConvertResult(BaseFileSystem.Get.OpenDirectory(ref directory.Ref(), path, mode));
             if (rc.IsFailure()) return rc;
 
             outDirectory.Reset(new SaveDataResultConvertDirectory(ref directory.Ref()));
@@ -209,49 +202,40 @@ namespace LibHac.FsSrv.Impl
     /// </summary>
     public class SaveDataExtraDataResultConvertAccessor : ISaveDataExtraDataAccessor
     {
-        private ReferenceCountedDisposable<ISaveDataExtraDataAccessor> _accessor;
+        private SharedRef<ISaveDataExtraDataAccessor> _accessor;
 
-        public SaveDataExtraDataResultConvertAccessor(
-            ref ReferenceCountedDisposable<ISaveDataExtraDataAccessor> accessor)
+        public SaveDataExtraDataResultConvertAccessor(ref SharedRef<ISaveDataExtraDataAccessor> accessor)
         {
-            _accessor = Shared.Move(ref accessor);
-        }
-
-        public static ReferenceCountedDisposable<ISaveDataExtraDataAccessor> CreateShared(
-            ref ReferenceCountedDisposable<ISaveDataExtraDataAccessor> accessor)
-        {
-            var resultConvertAccessor = new SaveDataExtraDataResultConvertAccessor(ref accessor);
-            return new ReferenceCountedDisposable<ISaveDataExtraDataAccessor>(resultConvertAccessor);
+            _accessor = SharedRef<ISaveDataExtraDataAccessor>.CreateMove(ref accessor);
         }
 
         public void Dispose()
         {
-            _accessor?.Dispose();
-            _accessor = null;
+            _accessor.Destroy();
         }
 
         public Result WriteExtraData(in SaveDataExtraData extraData)
         {
-            Result rc = _accessor.Target.WriteExtraData(in extraData);
+            Result rc = _accessor.Get.WriteExtraData(in extraData);
             return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(rc);
         }
 
         public Result CommitExtraData(bool updateTimeStamp)
         {
-            Result rc = _accessor.Target.CommitExtraData(updateTimeStamp);
+            Result rc = _accessor.Get.CommitExtraData(updateTimeStamp);
             return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(rc);
         }
 
         public Result ReadExtraData(out SaveDataExtraData extraData)
         {
-            Result rc = _accessor.Target.ReadExtraData(out extraData);
+            Result rc = _accessor.Get.ReadExtraData(out extraData);
             return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(rc);
         }
 
         public void RegisterCacheObserver(ISaveDataExtraDataAccessorCacheObserver observer, SaveDataSpaceId spaceId,
             ulong saveDataId)
         {
-            _accessor.Target.RegisterCacheObserver(observer, spaceId, saveDataId);
+            _accessor.Get.RegisterCacheObserver(observer, spaceId, saveDataId);
         }
     }
 }

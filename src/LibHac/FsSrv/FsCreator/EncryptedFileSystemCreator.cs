@@ -16,12 +16,8 @@ namespace LibHac.FsSrv.FsCreator
             KeySet = keySet;
         }
 
-        public Result Create(out ReferenceCountedDisposable<IFileSystem> encryptedFileSystem,
-            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, KeyId idIndex,
-            in EncryptionSeed encryptionSeed)
+        public Result Create(ref SharedRef<IFileSystem> outEncryptedFileSystem, ref SharedRef<IFileSystem> baseFileSystem, KeyId idIndex, in EncryptionSeed encryptionSeed)
         {
-            UnsafeHelpers.SkipParamInit(out encryptedFileSystem);
-
             if (idIndex < KeyId.Save || idIndex > KeyId.CustomStorage)
             {
                 return ResultFs.InvalidArgument.Log();
@@ -30,10 +26,10 @@ namespace LibHac.FsSrv.FsCreator
             // todo: "proper" key generation instead of a lazy hack
             KeySet.SetSdSeed(encryptionSeed.Value);
 
-            // Todo: pass ReferenceCountedDisposable to AesXtsFileSystem
-            var fs = new AesXtsFileSystem(baseFileSystem, KeySet.SdCardEncryptionKeys[(int)idIndex].DataRo.ToArray(),
-                0x4000);
-            encryptedFileSystem = new ReferenceCountedDisposable<IFileSystem>(fs);
+            using var encryptedFileSystem = new SharedRef<AesXtsFileSystem>(new AesXtsFileSystem(ref baseFileSystem,
+                KeySet.SdCardEncryptionKeys[(int)idIndex].DataRo.ToArray(), 0x4000));
+
+            outEncryptedFileSystem.SetByMove(ref encryptedFileSystem.Ref());
 
             return Result.Success;
         }

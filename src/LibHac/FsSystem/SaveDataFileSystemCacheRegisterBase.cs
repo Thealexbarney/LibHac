@@ -1,4 +1,6 @@
-﻿using LibHac.Common;
+﻿using System;
+using InlineIL;
+using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
@@ -14,166 +16,134 @@ namespace LibHac.FsSystem
     /// <see cref="ApplicationTemporaryFileSystem"/> or <see cref="DirectorySaveDataFileSystem"/>.</typeparam>
     public class SaveDataFileSystemCacheRegisterBase<T> : IFileSystem where T : IFileSystem
     {
-        private ReferenceCountedDisposable<T> _baseFileSystem;
+        private SharedRef<T> _baseFileSystem;
         private ISaveDataFileSystemCacheManager _cacheManager;
 
-        public SaveDataFileSystemCacheRegisterBase(ref ReferenceCountedDisposable<T> baseFileSystem,
+        public SaveDataFileSystemCacheRegisterBase(ref SharedRef<T> baseFileSystem,
             ISaveDataFileSystemCacheManager cacheManager)
         {
-            Assert.SdkRequires(typeof(T) == typeof(SaveDataFileSystem) ||
-                               typeof(T) == typeof(ApplicationTemporaryFileSystem) ||
-                               typeof(T) == typeof(DirectorySaveDataFileSystem));
-
-            _baseFileSystem = Shared.Move(ref baseFileSystem);
-            _cacheManager = cacheManager;
-        }
-
-
-        public static ReferenceCountedDisposable<IFileSystem> CreateShared(
-            ReferenceCountedDisposable<IFileSystem> baseFileSystem, ISaveDataFileSystemCacheManager cacheManager)
-        {
-            IFileSystem baseFsTarget = baseFileSystem.Target;
-
-            switch (baseFsTarget)
+            if (typeof(T) != typeof(SaveDataFileSystemHolder) && typeof(T) != typeof(ApplicationTemporaryFileSystem))
             {
-                case SaveDataFileSystem:
-                {
-                    ReferenceCountedDisposable<SaveDataFileSystem> castedFs =
-                        baseFileSystem.AddReference<SaveDataFileSystem>();
-
-                    return new ReferenceCountedDisposable<IFileSystem>(
-                        new SaveDataFileSystemCacheRegisterBase<SaveDataFileSystem>(ref castedFs, cacheManager));
-                }
-                case ApplicationTemporaryFileSystem:
-                {
-                    ReferenceCountedDisposable<ApplicationTemporaryFileSystem> castedFs =
-                        baseFileSystem.AddReference<ApplicationTemporaryFileSystem>();
-
-                    return new ReferenceCountedDisposable<IFileSystem>(
-                        new SaveDataFileSystemCacheRegisterBase<ApplicationTemporaryFileSystem>(ref castedFs,
-                            cacheManager));
-                }
-                case DirectorySaveDataFileSystem:
-                {
-                    ReferenceCountedDisposable<DirectorySaveDataFileSystem> castedFs =
-                        baseFileSystem.AddReference<DirectorySaveDataFileSystem>();
-
-                    return new ReferenceCountedDisposable<IFileSystem>(
-                        new SaveDataFileSystemCacheRegisterBase<DirectorySaveDataFileSystem>(ref castedFs,
-                            cacheManager));
-                }
-                default:
-                    Assert.SdkAssert(false, "Invalid save data file system type.");
-                    return null;
+                throw new NotSupportedException(
+                    $"The file system type of a {nameof(SaveDataFileSystemCacheRegisterBase<T>)} must be {nameof(SaveDataFileSystemHolder)} or {nameof(ApplicationTemporaryFileSystem)}.");
             }
+
+            _baseFileSystem = SharedRef<T>.CreateMove(ref baseFileSystem);
+            _cacheManager = cacheManager;
         }
 
         public override void Dispose()
         {
-            if (_baseFileSystem is not null)
+            if (typeof(T) == typeof(SaveDataFileSystemHolder))
             {
-                if (typeof(T) == typeof(SaveDataFileSystem))
-                {
-                    _cacheManager.Register(
-                        (ReferenceCountedDisposable<SaveDataFileSystem>)(object)_baseFileSystem);
-                }
-                else if (typeof(T) == typeof(ApplicationTemporaryFileSystem))
-                {
-                    _cacheManager.Register(
-                        (ReferenceCountedDisposable<ApplicationTemporaryFileSystem>)(object)_baseFileSystem);
-                }
-                else if (typeof(T) == typeof(DirectorySaveDataFileSystem))
-                {
-                    _cacheManager.Register(
-                        (ReferenceCountedDisposable<DirectorySaveDataFileSystem>)(object)_baseFileSystem);
-                }
-
-                _baseFileSystem.Dispose();
-                _baseFileSystem = null;
+                _cacheManager.Register(ref GetBaseFileSystemNormal());
             }
+            else if (typeof(T) == typeof(ApplicationTemporaryFileSystem))
+            {
+                _cacheManager.Register(ref GetBaseFileSystemTemp());
+            }
+            else
+            {
+                Assert.SdkAssert(false, "Invalid save data file system type.");
+            }
+        }
 
-            base.Dispose();
+        // Hack around not being able to use Unsafe.As on ref structs
+        private ref SharedRef<SaveDataFileSystemHolder> GetBaseFileSystemNormal()
+        {
+            IL.Emit.Ldarg_0();
+            IL.Emit.Ldflda(new FieldRef(typeof(SaveDataFileSystemCacheRegisterBase<T>), nameof(_baseFileSystem)));
+            IL.Emit.Ret();
+            throw IL.Unreachable();
+        }
+
+        private ref SharedRef<ApplicationTemporaryFileSystem> GetBaseFileSystemTemp()
+        {
+            IL.Emit.Ldarg_0();
+            IL.Emit.Ldflda(new FieldRef(typeof(SaveDataFileSystemCacheRegisterBase<T>), nameof(_baseFileSystem)));
+            IL.Emit.Ret();
+            throw IL.Unreachable();
         }
 
         protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
-            return _baseFileSystem.Target.OpenFile(ref outFile, path, mode);
+            return _baseFileSystem.Get.OpenFile(ref outFile, path, mode);
         }
 
         protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
             OpenDirectoryMode mode)
         {
-            return _baseFileSystem.Target.OpenDirectory(ref outDirectory, path, mode);
+            return _baseFileSystem.Get.OpenDirectory(ref outDirectory, path, mode);
         }
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
-            return _baseFileSystem.Target.GetEntryType(out entryType, path);
+            return _baseFileSystem.Get.GetEntryType(out entryType, path);
         }
 
         protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
         {
-            return _baseFileSystem.Target.CreateFile(path, size, option);
+            return _baseFileSystem.Get.CreateFile(path, size, option);
         }
 
         protected override Result DoDeleteFile(in Path path)
         {
-            return _baseFileSystem.Target.DeleteFile(path);
+            return _baseFileSystem.Get.DeleteFile(path);
         }
 
         protected override Result DoCreateDirectory(in Path path)
         {
-            return _baseFileSystem.Target.CreateDirectory(path);
+            return _baseFileSystem.Get.CreateDirectory(path);
         }
 
         protected override Result DoDeleteDirectory(in Path path)
         {
-            return _baseFileSystem.Target.DeleteDirectory(path);
+            return _baseFileSystem.Get.DeleteDirectory(path);
         }
 
         protected override Result DoDeleteDirectoryRecursively(in Path path)
         {
-            return _baseFileSystem.Target.DeleteDirectoryRecursively(path);
+            return _baseFileSystem.Get.DeleteDirectoryRecursively(path);
         }
 
         protected override Result DoCleanDirectoryRecursively(in Path path)
         {
-            return _baseFileSystem.Target.CleanDirectoryRecursively(path);
+            return _baseFileSystem.Get.CleanDirectoryRecursively(path);
         }
 
         protected override Result DoRenameFile(in Path currentPath, in Path newPath)
         {
-            return _baseFileSystem.Target.RenameFile(currentPath, newPath);
+            return _baseFileSystem.Get.RenameFile(currentPath, newPath);
         }
 
         protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
         {
-            return _baseFileSystem.Target.RenameDirectory(currentPath, newPath);
+            return _baseFileSystem.Get.RenameDirectory(currentPath, newPath);
         }
 
         protected override Result DoCommit()
         {
-            return _baseFileSystem.Target.Commit();
+            return _baseFileSystem.Get.Commit();
         }
 
         protected override Result DoCommitProvisionally(long counter)
         {
-            return _baseFileSystem.Target.CommitProvisionally(counter);
+            return _baseFileSystem.Get.CommitProvisionally(counter);
         }
 
         protected override Result DoRollback()
         {
-            return _baseFileSystem.Target.Rollback();
+            return _baseFileSystem.Get.Rollback();
         }
 
         protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
-            return _baseFileSystem.Target.GetFreeSpaceSize(out freeSpace, path);
+            return _baseFileSystem.Get.GetFreeSpaceSize(out freeSpace, path);
         }
 
         protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
-            return _baseFileSystem.Target.GetTotalSpaceSize(out totalSpace, path);
+            return _baseFileSystem.Get.GetTotalSpaceSize(out totalSpace, path);
         }
     }
 }

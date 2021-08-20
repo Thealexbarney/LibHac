@@ -21,7 +21,7 @@
 
   <!-- Options for use with CoreRT -->
   <ItemGroup Condition=" $(BuildType.StartsWith('native')) ">
-    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="6.0.0-*" />
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="7.0.0-*" />
   </ItemGroup>
 
   <PropertyGroup Condition=" $(BuildType.StartsWith('native')) and '$(BuildType)' != 'native-untrimmed' ">

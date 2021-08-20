@@ -2,63 +2,88 @@
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 using LibHac.Spl;
-using FsRightsId = LibHac.Fs.RightsId;
 
 namespace LibHac.Fs.Shim
 {
-    public static class RightsId
+    public static class RightsIdShim
     {
-        public static Result GetRightsId(this FileSystemClient fs, out FsRightsId rightsId, ProgramId programId,
+        public static Result GetRightsId(this FileSystemClient fs, out RightsId rightsId, ProgramId programId,
             StorageId storageId)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            return fsProxy.Target.GetRightsId(out rightsId, programId, storageId);
+            Result rc = fileSystemProxy.Get.GetRightsId(out rightsId, programId, storageId);
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
         }
 
-        public static Result GetRightsId(this FileSystemClient fs, out FsRightsId rightsId, U8Span path)
+        public static Result GetRightsId(this FileSystemClient fs, out RightsId rightsId, U8Span path)
         {
             UnsafeHelpers.SkipParamInit(out rightsId);
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            Result rc = PathUtility.ConvertToFspPath(out FspPath sfPath, path);
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc.Miss();
 
-            Result rc = FspPath.FromSpan(out FspPath sfPath, path);
-            if (rc.IsFailure()) return rc;
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            return fsProxy.Target.GetRightsIdByPath(out rightsId, in sfPath);
+            rc = fileSystemProxy.Get.GetRightsIdByPath(out rightsId, in sfPath);
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
         }
 
-        public static Result GetRightsId(this FileSystemClient fs, out FsRightsId rightsId, out byte keyGeneration, U8Span path)
+        public static Result GetRightsId(this FileSystemClient fs, out RightsId rightsId, out byte keyGeneration, U8Span path)
         {
             UnsafeHelpers.SkipParamInit(out rightsId, out keyGeneration);
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            Result rc = PathUtility.ConvertToFspPath(out FspPath sfPath, path);
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc.Miss();
 
-            Result rc = FspPath.FromSpan(out FspPath sfPath, path);
-            if (rc.IsFailure()) return rc;
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            return fsProxy.Target.GetRightsIdAndKeyGenerationByPath(out rightsId, out keyGeneration, in sfPath);
+            rc = fileSystemProxy.Get.GetRightsIdAndKeyGenerationByPath(out rightsId, out keyGeneration, in sfPath);
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
         }
 
-        public static Result RegisterExternalKey(this FileSystemClient fs, in FsRightsId rightsId, in AccessKey key)
+        public static Result RegisterExternalKey(this FileSystemClient fs, in RightsId rightsId, in AccessKey key)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            return fsProxy.Target.RegisterExternalKey(in rightsId, in key);
+            Result rc = fileSystemProxy.Get.RegisterExternalKey(in rightsId, in key);
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
         }
 
-        public static Result UnregisterExternalKey(this FileSystemClient fs, ref FsRightsId rightsId)
+        public static Result UnregisterExternalKey(this FileSystemClient fs, ref RightsId rightsId)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            return fsProxy.Target.UnregisterExternalKey(in rightsId);
+            Result rc = fileSystemProxy.Get.UnregisterExternalKey(in rightsId);
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
         }
 
         public static Result UnregisterAllExternalKey(this FileSystemClient fs)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            return fsProxy.Target.UnregisterAllExternalKey();
+            Result rc = fileSystemProxy.Get.UnregisterAllExternalKey();
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
         }
     }
 }

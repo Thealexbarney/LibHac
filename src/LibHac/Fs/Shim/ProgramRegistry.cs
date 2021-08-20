@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.FsSrv;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
@@ -12,28 +13,33 @@ namespace LibHac.Fs.Shim
         public static Result RegisterProgram(this FileSystemClient fs, ulong processId, ProgramId programId,
             StorageId storageId, ReadOnlySpan<byte> accessControlData, ReadOnlySpan<byte> accessControlDescriptor)
         {
-            using ReferenceCountedDisposable<IProgramRegistry> registry = fs.Impl.GetProgramRegistryServiceObject();
+            using SharedRef<IProgramRegistry> programRegistry = fs.Impl.GetProgramRegistryServiceObject();
 
-            Result rc = registry.Target.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value);
+            Result rc = programRegistry.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value);
             fs.Impl.AbortIfNeeded(rc);
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
-            rc = registry.Target.RegisterProgram(processId, programId, storageId, new InBuffer(accessControlData),
+            rc = programRegistry.Get.RegisterProgram(processId, programId, storageId, new InBuffer(accessControlData),
                 new InBuffer(accessControlDescriptor));
 
             fs.Impl.AbortIfNeeded(rc);
-            return rc;
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
         }
 
         /// <inheritdoc cref="ProgramRegistryImpl.UnregisterProgram"/>
         public static Result UnregisterProgram(this FileSystemClient fs, ulong processId)
         {
-            using ReferenceCountedDisposable<IProgramRegistry> registry = fs.Impl.GetProgramRegistryServiceObject();
+            using SharedRef<IProgramRegistry> programRegistry = fs.Impl.GetProgramRegistryServiceObject();
 
-            Result rc = registry.Target.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value);
-            if (rc.IsFailure()) return rc;
+            Result rc = programRegistry.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value);
+            if (rc.IsFailure()) return rc.Miss();
 
-            return registry.Target.UnregisterProgram(processId);
+            rc = programRegistry.Get.UnregisterProgram(processId);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
         }
     }
 }

@@ -39,7 +39,7 @@ namespace LibHac.FsSystem.Save
             int outPos = 0;
             int remaining = destination.Length;
 
-            if (!IsRangeValid(offset, destination.Length, Length))
+            if (!CheckAccessRange(offset, destination.Length, Length))
                 return ResultFs.OutOfRange.Log();
 
             while (remaining > 0)
@@ -68,7 +68,7 @@ namespace LibHac.FsSystem.Save
             int outPos = 0;
             int remaining = source.Length;
 
-            if (!IsRangeValid(offset, source.Length, Length))
+            if (!CheckAccessRange(offset, source.Length, Length))
                 return ResultFs.OutOfRange.Log();
 
             while (remaining > 0)
@@ -107,15 +107,14 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
+            if (!LeaveOpen)
             {
-                if (!LeaveOpen)
-                {
-                    BaseStorage?.Dispose();
-                }
+                BaseStorage?.Dispose();
             }
+
+            base.Dispose();
         }
 
         public IStorage GetBaseStorage() => BaseStorage;

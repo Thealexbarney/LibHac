@@ -8,7 +8,7 @@ using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Util;
-using static LibHac.FsSystem.Utility12;
+using static LibHac.FsSystem.Utility;
 
 namespace LibHac.FsSystem
 {
@@ -25,7 +25,7 @@ namespace LibHac.FsSystem
     /// as a single file. These sub-files must follow the naming scheme "00", "01", "02", ...
     /// Each sub-file except the final one must have the size <see cref="_InternalFileSize"/> that was specified
     /// at the creation of the <see cref="ConcatenationFileSystem"/>.
-    /// <br/>Based on FS 12.0.3 (nnSdk 12.3.1)
+    /// <br/>Based on FS 12.1.0 (nnSdk 12.3.1)
     /// </remarks>
     public class ConcatenationFileSystem : IFileSystem
     {

@@ -68,6 +68,14 @@ namespace LibHac.Diag
             DoAbort(result, message);
         }
 
+        public static void DoAbortUnlessSuccess(Result result, string message = null)
+        {
+            if (!result.IsSuccess())
+            {
+                DoAbort(result, message);
+            }
+        }
+
         [DoesNotReturn]
         public static void UnexpectedDefault([CallerMemberName] string caller = "")
         {

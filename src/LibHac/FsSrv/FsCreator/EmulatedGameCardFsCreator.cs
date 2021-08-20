@@ -6,41 +6,22 @@ namespace LibHac.FsSrv.FsCreator
 {
     public class EmulatedGameCardFsCreator : IGameCardFileSystemCreator
     {
-        // ReSharper disable once UnusedAutoPropertyAccessor.Local
-        private EmulatedGameCardStorageCreator StorageCreator { get; }
-        private EmulatedGameCard GameCard { get; }
+        // ReSharper disable once NotAccessedField.Local
+        private EmulatedGameCardStorageCreator _storageCreator;
+        private EmulatedGameCard _gameCard;
 
         public EmulatedGameCardFsCreator(EmulatedGameCardStorageCreator storageCreator, EmulatedGameCard gameCard)
         {
-            StorageCreator = storageCreator;
-            GameCard = gameCard;
+            _storageCreator = storageCreator;
+            _gameCard = gameCard;
         }
 
-        public Result Create(out IFileSystem fileSystem, GameCardHandle handle, GameCardPartition partitionType)
+        public Result Create(ref SharedRef<IFileSystem> outFileSystem, GameCardHandle handle,
+            GameCardPartition partitionType)
         {
             // Use the old xci code temporarily
 
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
-            Result rc = GameCard.GetXci(out Xci xci, handle);
-            if (rc.IsFailure()) return rc;
-
-            if (!xci.HasPartition((XciPartitionType)partitionType))
-            {
-                return ResultFs.PartitionNotFound.Log();
-            }
-
-            fileSystem = xci.OpenPartition((XciPartitionType)partitionType);
-            return Result.Success;
-        }
-
-        public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, GameCardHandle handle, GameCardPartition partitionType)
-        {
-            // Use the old xci code temporarily
-
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
-            Result rc = GameCard.GetXci(out Xci xci, handle);
+            Result rc = _gameCard.GetXci(out Xci xci, handle);
             if (rc.IsFailure()) return rc;
 
             if (!xci.HasPartition((XciPartitionType)partitionType))
@@ -49,7 +30,7 @@ namespace LibHac.FsSrv.FsCreator
             }
 
             XciPartition fs = xci.OpenPartition((XciPartitionType)partitionType);
-            fileSystem = new ReferenceCountedDisposable<IFileSystem>(fs);
+            outFileSystem.Reset(fs);
             return Result.Success;
         }
     }

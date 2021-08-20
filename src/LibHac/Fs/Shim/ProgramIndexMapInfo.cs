@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using LibHac.Common;
 using LibHac.FsSrv.Sf;
 using LibHac.Sf;
 
@@ -20,11 +21,11 @@ namespace LibHac.Fs.Shim
             if (mapInfo.IsEmpty)
                 return Result.Success;
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             var mapInfoBuffer = new InBuffer(MemoryMarshal.Cast<ProgramIndexMapInfo, byte>(mapInfo));
 
-            Result rc = fsProxy.Target.RegisterProgramIndexMapInfo(mapInfoBuffer, mapInfo.Length);
+            Result rc = fileSystemProxy.Get.RegisterProgramIndexMapInfo(mapInfoBuffer, mapInfo.Length);
             fs.Impl.AbortIfNeeded(rc);
             return rc;
         }

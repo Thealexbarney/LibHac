@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.FsSrv.Sf;
 using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
@@ -8,14 +9,10 @@ namespace LibHac.FsSrv.Storage.Sf
     {
         Result IsInserted(out bool isInserted);
         Result IsHandleValid(out bool isValid, uint handle);
-        Result OpenDetectionEvent(out ReferenceCountedDisposable<IEventNotifier> eventNotifier);
-        Result OpenOperator(out ReferenceCountedDisposable<IStorageDeviceOperator> deviceOperator);
-        Result OpenDevice(out ReferenceCountedDisposable<IStorageDevice> storageDevice, ulong attribute);
-        Result OpenStorage(out ReferenceCountedDisposable<IStorageSf> storage, ulong attribute);
-        Result PutToSleep();
-        Result Awaken();
-        Result Initialize();
-        Result Shutdown();
+        Result OpenDetectionEvent(ref SharedRef<IEventNotifier> outEventNotifier);
+        Result OpenOperator(ref SharedRef<IStorageDeviceOperator> outDeviceOperator);
+        Result OpenDevice(ref SharedRef<IStorageDevice> outStorageDevice, ulong attribute);
+        Result OpenStorage(ref SharedRef<IStorageSf> outStorage, ulong attribute);
         Result Invalidate();
     }
 }

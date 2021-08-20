@@ -14,6 +14,7 @@ using LibHac.Os;
 using LibHac.Spl;
 using LibHac.Util;
 using RightsId = LibHac.Fs.RightsId;
+using Utility = LibHac.FsSystem.Utility;
 
 namespace LibHac.FsSrv
 {
@@ -64,25 +65,25 @@ namespace LibHac.FsSrv
             public bool CanMountNca;
         }
 
-        public Result OpenFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, in Path path,
-            FileSystemProxyType type, ulong id, bool isDirectory)
+        public Result OpenFileSystem(ref SharedRef<IFileSystem> outFileSystem, in Path path, FileSystemProxyType type,
+            ulong id, bool isDirectory)
         {
-            return OpenFileSystem(out fileSystem, out Unsafe.NullRef<CodeVerificationData>(), in path, type, false, id,
-                isDirectory);
+            return OpenFileSystem(ref outFileSystem, out Unsafe.NullRef<CodeVerificationData>(), in path, type, false,
+                id, isDirectory);
         }
 
-        public Result OpenFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, in Path path,
-            FileSystemProxyType type, bool canMountSystemDataPrivate, ulong id, bool isDirectory)
+        public Result OpenFileSystem(ref SharedRef<IFileSystem> outFileSystem, in Path path, FileSystemProxyType type,
+            bool canMountSystemDataPrivate, ulong id, bool isDirectory)
         {
-            return OpenFileSystem(out fileSystem, out Unsafe.NullRef<CodeVerificationData>(), in path, type,
+            return OpenFileSystem(ref outFileSystem, out Unsafe.NullRef<CodeVerificationData>(), in path, type,
                 canMountSystemDataPrivate, id, isDirectory);
         }
 
-        public Result OpenFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenFileSystem(ref SharedRef<IFileSystem> outFileSystem,
             out CodeVerificationData verificationData, in Path path, FileSystemProxyType type,
             bool canMountSystemDataPrivate, ulong id, bool isDirectory)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem, out verificationData);
+            UnsafeHelpers.SkipParamInit(out verificationData);
 
             if (!Unsafe.IsNullRef(ref verificationData))
                 verificationData.IsValid = false;
@@ -91,8 +92,8 @@ namespace LibHac.FsSrv
             var currentPath = new U8Span(path.GetString());
 
             // Open the root filesystem based on the path's mount name
-            Result rc = ParseMountName(ref currentPath,
-                out ReferenceCountedDisposable<IFileSystem> baseFileSystem, out bool shouldContinue,
+            using var baseFileSystem = new SharedRef<IFileSystem>();
+            Result rc = ParseMountName(ref currentPath, ref baseFileSystem.Ref(), out bool shouldContinue,
                 out MountInfo mountNameInfo);
             if (rc.IsFailure()) return rc;
 
@@ -102,7 +103,7 @@ namespace LibHac.FsSrv
 
             if (type == FileSystemProxyType.Logo && mountNameInfo.IsGameCard)
             {
-                rc = _config.BaseFsService.OpenGameCardFileSystem(out fileSystem,
+                rc = _config.BaseFsService.OpenGameCardFileSystem(ref outFileSystem,
                     new GameCardHandle(mountNameInfo.GcHandle),
                     GameCardPartition.Logo);
 
@@ -127,32 +128,25 @@ namespace LibHac.FsSrv
 
                 if (type == FileSystemProxyType.Manual)
                 {
-                    ReferenceCountedDisposable<IFileSystem> hostFileSystem = null;
-                    ReferenceCountedDisposable<IFileSystem> readOnlyFileSystem = null;
-                    try
-                    {
-                        rc = ParseDirWithPathCaseNormalizationOnCaseSensitiveHostFs(out hostFileSystem,
-                            in directoryPath);
-                        if (rc.IsFailure()) return rc;
+                    using var hostFileSystem = new SharedRef<IFileSystem>();
+                    using var readOnlyFileSystem = new SharedRef<IFileSystem>();
 
-                        readOnlyFileSystem = ReadOnlyFileSystem.CreateShared(ref hostFileSystem);
-                        if (readOnlyFileSystem?.Target is null)
-                            return ResultFs.AllocationMemoryFailedAllocateShared.Log();
+                    rc = ParseDirWithPathCaseNormalizationOnCaseSensitiveHostFs(ref hostFileSystem.Ref(),
+                        in directoryPath);
+                    if (rc.IsFailure()) return rc;
 
-                        Shared.Move(out fileSystem, ref readOnlyFileSystem);
-                        return Result.Success;
-                    }
-                    finally
-                    {
-                        hostFileSystem?.Dispose();
-                        readOnlyFileSystem?.Dispose();
-                    }
+                    readOnlyFileSystem.Reset(new ReadOnlyFileSystem(ref hostFileSystem.Ref()));
+                    outFileSystem.SetByMove(ref readOnlyFileSystem.Ref());
+
+                    return Result.Success;
                 }
 
-                return ParseDir(in directoryPath, out fileSystem, ref baseFileSystem, type, true);
+                return ParseDir(in directoryPath, ref outFileSystem, ref baseFileSystem.Ref(), type, true);
             }
 
-            rc = ParseNsp(ref currentPath, out ReferenceCountedDisposable<IFileSystem> nspFileSystem, baseFileSystem);
+            using var nspFileSystem = new SharedRef<IFileSystem>();
+            using SharedRef<IFileSystem> tempFileSystem = SharedRef<IFileSystem>.CreateCopy(ref baseFileSystem.Ref());
+            rc = ParseNsp(ref currentPath, ref nspFileSystem.Ref(), ref baseFileSystem.Ref());
 
             if (rc.IsSuccess())
             {
@@ -161,14 +155,14 @@ namespace LibHac.FsSrv
                 {
                     if (type == FileSystemProxyType.Package)
                     {
-                        fileSystem = nspFileSystem;
+                        outFileSystem = nspFileSystem;
                         return Result.Success;
                     }
 
                     return ResultFs.InvalidArgument.Log();
                 }
 
-                baseFileSystem = nspFileSystem;
+                baseFileSystem.SetByMove(ref nspFileSystem.Ref());
             }
 
             if (!mountNameInfo.CanMountNca)
@@ -178,140 +172,116 @@ namespace LibHac.FsSrv
 
             ulong openProgramId = mountNameInfo.IsHostFs ? ulong.MaxValue : id;
 
-            rc = ParseNca(ref currentPath, out Nca nca, baseFileSystem, openProgramId);
+            rc = ParseNca(ref currentPath, out Nca nca, ref baseFileSystem.Ref(), openProgramId);
             if (rc.IsFailure()) return rc;
 
-            rc = OpenStorageByContentType(out ReferenceCountedDisposable<IStorage> ncaSectionStorage, nca,
-                out NcaFormatType fsType, type, mountNameInfo.IsGameCard, canMountSystemDataPrivate);
+            using var ncaSectionStorage = new SharedRef<IStorage>();
+            rc = OpenStorageByContentType(ref ncaSectionStorage.Ref(), nca, out NcaFormatType fsType, type,
+                mountNameInfo.IsGameCard, canMountSystemDataPrivate);
             if (rc.IsFailure()) return rc;
 
             switch (fsType)
             {
                 case NcaFormatType.Romfs:
-                    return _config.RomFsCreator.Create(out fileSystem, ncaSectionStorage);
+                    return _config.RomFsCreator.Create(ref outFileSystem, ref ncaSectionStorage.Ref());
                 case NcaFormatType.Pfs0:
-                    return _config.PartitionFsCreator.Create(out fileSystem, ncaSectionStorage);
+                    return _config.PartitionFsCreator.Create(ref outFileSystem, ref ncaSectionStorage.Ref());
                 default:
                     return ResultFs.InvalidNcaFileSystemType.Log();
             }
         }
 
-        public Result OpenDataFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, in Path path,
+        public Result OpenDataFileSystem(ref SharedRef<IFileSystem> outFileSystem, in Path path,
             FileSystemProxyType fsType, ulong programId, bool isDirectory)
         {
             throw new NotImplementedException();
         }
 
-        public Result OpenStorageWithPatch(out ReferenceCountedDisposable<IStorage> storage, out Hash ncaHeaderDigest,
+        public Result OpenStorageWithPatch(ref SharedRef<IStorage> outStorage, out Hash ncaHeaderDigest,
             in Path originalNcaPath, in Path currentNcaPath, FileSystemProxyType fsType, ulong id)
         {
             throw new NotImplementedException();
         }
 
-        public Result OpenFileSystemWithPatch(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenFileSystemWithPatch(ref SharedRef<IFileSystem> outFileSystem,
             in Path originalNcaPath, in Path currentNcaPath, FileSystemProxyType fsType, ulong id)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
+            using var romFsStorage = new SharedRef<IStorage>();
+            Result rc = OpenStorageWithPatch(ref romFsStorage.Ref(), out Unsafe.NullRef<Hash>(), in originalNcaPath,
+                in currentNcaPath, fsType, id);
+            if (rc.IsFailure()) return rc;
 
-            ReferenceCountedDisposable<IStorage> romFsStorage = null;
-            try
-            {
-                Result rc = OpenStorageWithPatch(out romFsStorage, out Unsafe.NullRef<Hash>(), in originalNcaPath,
-                    in currentNcaPath, fsType, id);
-                if (rc.IsFailure()) return rc;
-
-                return _config.RomFsCreator.Create(out fileSystem, romFsStorage);
-            }
-            finally
-            {
-                romFsStorage?.Dispose();
-            }
+            return _config.RomFsCreator.Create(ref outFileSystem, ref romFsStorage.Ref());
         }
 
-        public Result OpenContentStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenContentStorageFileSystem(ref SharedRef<IFileSystem> outFileSystem,
             ContentStorageId contentStorageId)
         {
             const int pathBufferLength = 0x40;
 
-            UnsafeHelpers.SkipParamInit(out fileSystem);
+            using var fileSystem = new SharedRef<IFileSystem>();
+            Result rc;
 
-            ReferenceCountedDisposable<IFileSystem> baseFileSystem = null;
-            ReferenceCountedDisposable<IFileSystem> subDirFileSystem = null;
-            ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
-
-            try
+            // Open the appropriate base file system for the content storage ID
+            switch (contentStorageId)
             {
-                Result rc;
-
-                // Open the appropriate base file system for the content storage ID
-                switch (contentStorageId)
-                {
-                    case ContentStorageId.System:
-                        rc = _config.BaseFsService.OpenBisFileSystem(out baseFileSystem, BisPartitionId.System);
-                        if (rc.IsFailure()) return rc;
-                        break;
-                    case ContentStorageId.User:
-                        rc = _config.BaseFsService.OpenBisFileSystem(out baseFileSystem, BisPartitionId.User);
-                        if (rc.IsFailure()) return rc;
-                        break;
-                    case ContentStorageId.SdCard:
-                        rc = _config.BaseFsService.OpenSdCardProxyFileSystem(out baseFileSystem);
-                        if (rc.IsFailure()) return rc;
-                        break;
-                    default:
-                        return ResultFs.InvalidArgument.Log();
-                }
-
-                // Hack around error CS8350.
-                Span<byte> buffer = stackalloc byte[pathBufferLength];
-                ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-                Span<byte> contentStoragePathBuffer = MemoryMarshal.CreateSpan(ref bufferRef, pathBufferLength);
-
-                // Build the appropriate path for the content storage ID
-                if (contentStorageId == ContentStorageId.SdCard)
-                {
-                    var sb = new U8StringBuilder(contentStoragePathBuffer);
-                    sb.Append(StringTraits.DirectorySeparator).Append(SdCardNintendoRootDirectoryName);
-                    sb.Append(StringTraits.DirectorySeparator).Append(ContentStorageDirectoryName);
-                }
-                else
-                {
-                    var sb = new U8StringBuilder(contentStoragePathBuffer);
-                    sb.Append(StringTraits.DirectorySeparator).Append(ContentStorageDirectoryName);
-                }
-
-                using var contentStoragePath = new Path();
-                rc = PathFunctions.SetUpFixedPath(ref contentStoragePath.Ref(), contentStoragePathBuffer);
-                if (rc.IsFailure()) return rc;
-
-                // Make sure the content storage path exists
-                rc = Utility12.EnsureDirectory(baseFileSystem.Target, in contentStoragePath);
-                if (rc.IsFailure()) return rc;
-
-                rc = _config.SubDirectoryFsCreator.Create(out subDirFileSystem, ref baseFileSystem,
-                    in contentStoragePath);
-                if (rc.IsFailure()) return rc;
-
-                // Only content on the SD card is encrypted
-                if (contentStorageId == ContentStorageId.SdCard)
-                {
-                    tempFileSystem = Shared.Move(ref subDirFileSystem);
-
-                    rc = _config.EncryptedFsCreator.Create(out subDirFileSystem, ref tempFileSystem,
-                       IEncryptedFileSystemCreator.KeyId.Content, in _encryptionSeed);
+                case ContentStorageId.System:
+                    rc = _config.BaseFsService.OpenBisFileSystem(ref fileSystem.Ref(), BisPartitionId.System);
                     if (rc.IsFailure()) return rc;
-                }
-
-                Shared.Move(out fileSystem, ref subDirFileSystem);
-
-                return Result.Success;
+                    break;
+                case ContentStorageId.User:
+                    rc = _config.BaseFsService.OpenBisFileSystem(ref fileSystem.Ref(), BisPartitionId.User);
+                    if (rc.IsFailure()) return rc;
+                    break;
+                case ContentStorageId.SdCard:
+                    rc = _config.BaseFsService.OpenSdCardProxyFileSystem(ref fileSystem.Ref());
+                    if (rc.IsFailure()) return rc;
+                    break;
+                default:
+                    return ResultFs.InvalidArgument.Log();
             }
-            finally
+
+            // Hack around error CS8350.
+            Span<byte> buffer = stackalloc byte[pathBufferLength];
+            ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+            Span<byte> contentStoragePathBuffer = MemoryMarshal.CreateSpan(ref bufferRef, pathBufferLength);
+
+            // Build the appropriate path for the content storage ID
+            if (contentStorageId == ContentStorageId.SdCard)
             {
-                baseFileSystem?.Dispose();
-                subDirFileSystem?.Dispose();
-                tempFileSystem?.Dispose();
+                var sb = new U8StringBuilder(contentStoragePathBuffer);
+                sb.Append(StringTraits.DirectorySeparator).Append(SdCardNintendoRootDirectoryName);
+                sb.Append(StringTraits.DirectorySeparator).Append(ContentStorageDirectoryName);
             }
+            else
+            {
+                var sb = new U8StringBuilder(contentStoragePathBuffer);
+                sb.Append(StringTraits.DirectorySeparator).Append(ContentStorageDirectoryName);
+            }
+
+            using var contentStoragePath = new Path();
+            rc = PathFunctions.SetUpFixedPath(ref contentStoragePath.Ref(), contentStoragePathBuffer);
+            if (rc.IsFailure()) return rc;
+
+            // Make sure the content storage path exists
+            rc = Utility.EnsureDirectory(fileSystem.Get, in contentStoragePath);
+            if (rc.IsFailure()) return rc;
+
+            using var subDirFs = new SharedRef<IFileSystem>();
+            rc = _config.SubDirectoryFsCreator.Create(ref subDirFs.Ref(), ref fileSystem.Ref(), in contentStoragePath);
+            if (rc.IsFailure()) return rc;
+
+            // Only content on the SD card is encrypted
+            if (contentStorageId == ContentStorageId.SdCard)
+            {
+                using SharedRef<IFileSystem> tempFileSystem = SharedRef<IFileSystem>.CreateMove(ref subDirFs.Ref());
+                rc = _config.EncryptedFsCreator.Create(ref subDirFs.Ref(), ref tempFileSystem.Ref(),
+                   IEncryptedFileSystemCreator.KeyId.Content, in _encryptionSeed);
+                if (rc.IsFailure()) return rc;
+            }
+            outFileSystem.SetByMove(ref subDirFs.Ref());
+
+            return Result.Success;
         }
 
         public Result GetRightsId(out RightsId rightsId, out byte keyGeneration, in Path path, ProgramId programId)
@@ -343,16 +313,14 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result OpenRegisteredUpdatePartition(out ReferenceCountedDisposable<IFileSystem> fileSystem)
+        public Result OpenRegisteredUpdatePartition(ref SharedRef<IFileSystem> outFileSystem)
         {
             throw new NotImplementedException();
         }
 
-        private Result ParseMountName(ref U8Span path,
-            out ReferenceCountedDisposable<IFileSystem> fileSystem, out bool shouldContinue, out MountInfo info)
+        private Result ParseMountName(ref U8Span path, ref SharedRef<IFileSystem> outFileSystem,
+            out bool shouldContinue, out MountInfo info)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
             info = new MountInfo();
             shouldContinue = true;
 
@@ -388,7 +356,7 @@ namespace LibHac.FsSrv
 
                 path = path.Slice(8);
 
-                Result rc = _config.BaseFsService.OpenGameCardFileSystem(out fileSystem, new GameCardHandle(handle),
+                Result rc = _config.BaseFsService.OpenGameCardFileSystem(ref outFileSystem, new GameCardHandle(handle),
                     partition);
                 if (rc.IsFailure()) return rc;
 
@@ -402,7 +370,7 @@ namespace LibHac.FsSrv
             {
                 path = path.Slice(CommonPaths.ContentStorageSystemMountName.Length);
 
-                Result rc = OpenContentStorageFileSystem(out fileSystem, ContentStorageId.System);
+                Result rc = OpenContentStorageFileSystem(ref outFileSystem, ContentStorageId.System);
                 if (rc.IsFailure()) return rc;
 
                 info.CanMountNca = true;
@@ -413,7 +381,7 @@ namespace LibHac.FsSrv
             {
                 path = path.Slice(CommonPaths.ContentStorageUserMountName.Length);
 
-                Result rc = OpenContentStorageFileSystem(out fileSystem, ContentStorageId.User);
+                Result rc = OpenContentStorageFileSystem(ref outFileSystem, ContentStorageId.User);
                 if (rc.IsFailure()) return rc;
 
                 info.CanMountNca = true;
@@ -424,7 +392,7 @@ namespace LibHac.FsSrv
             {
                 path = path.Slice(CommonPaths.ContentStorageSdCardMountName.Length);
 
-                Result rc = OpenContentStorageFileSystem(out fileSystem, ContentStorageId.SdCard);
+                Result rc = OpenContentStorageFileSystem(ref outFileSystem, ContentStorageId.SdCard);
                 if (rc.IsFailure()) return rc;
 
                 info.CanMountNca = true;
@@ -435,7 +403,7 @@ namespace LibHac.FsSrv
             {
                 path = path.Slice(CommonPaths.BisCalibrationFilePartitionMountName.Length);
 
-                Result rc = _config.BaseFsService.OpenBisFileSystem(out fileSystem, BisPartitionId.CalibrationFile);
+                Result rc = _config.BaseFsService.OpenBisFileSystem(ref outFileSystem, BisPartitionId.CalibrationFile);
                 if (rc.IsFailure()) return rc;
             }
 
@@ -444,7 +412,7 @@ namespace LibHac.FsSrv
             {
                 path = path.Slice(CommonPaths.BisSafeModePartitionMountName.Length);
 
-                Result rc = _config.BaseFsService.OpenBisFileSystem(out fileSystem, BisPartitionId.SafeMode);
+                Result rc = _config.BaseFsService.OpenBisFileSystem(ref outFileSystem, BisPartitionId.SafeMode);
                 if (rc.IsFailure()) return rc;
             }
 
@@ -453,7 +421,7 @@ namespace LibHac.FsSrv
             {
                 path = path.Slice(CommonPaths.BisUserPartitionMountName.Length);
 
-                Result rc = _config.BaseFsService.OpenBisFileSystem(out fileSystem, BisPartitionId.User);
+                Result rc = _config.BaseFsService.OpenBisFileSystem(ref outFileSystem, BisPartitionId.User);
                 if (rc.IsFailure()) return rc;
             }
 
@@ -462,7 +430,7 @@ namespace LibHac.FsSrv
             {
                 path = path.Slice(CommonPaths.BisSystemPartitionMountName.Length);
 
-                Result rc = _config.BaseFsService.OpenBisFileSystem(out fileSystem, BisPartitionId.System);
+                Result rc = _config.BaseFsService.OpenBisFileSystem(ref outFileSystem, BisPartitionId.System);
                 if (rc.IsFailure()) return rc;
             }
 
@@ -471,7 +439,7 @@ namespace LibHac.FsSrv
             {
                 path = path.Slice(CommonPaths.SdCardFileSystemMountName.Length);
 
-                Result rc = _config.BaseFsService.OpenSdCardProxyFileSystem(out fileSystem);
+                Result rc = _config.BaseFsService.OpenSdCardProxyFileSystem(ref outFileSystem);
                 if (rc.IsFailure()) return rc;
             }
 
@@ -487,7 +455,7 @@ namespace LibHac.FsSrv
                 info.IsHostFs = true;
                 info.CanMountNca = true;
 
-                rc = OpenHostFileSystem(out fileSystem, in rootPathEmpty, openCaseSensitive: false);
+                rc = OpenHostFileSystem(ref outFileSystem, in rootPathEmpty, openCaseSensitive: false);
                 if (rc.IsFailure()) return rc;
             }
 
@@ -553,31 +521,19 @@ namespace LibHac.FsSrv
             return ResultFs.PathNotFound.Log();
         }
 
-        private Result ParseDir(in Path path,
-            out ReferenceCountedDisposable<IFileSystem> contentFileSystem,
-            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, FileSystemProxyType fsType, bool preserveUnc)
+        private Result ParseDir(in Path path, ref SharedRef<IFileSystem> outContentFileSystem,
+            ref SharedRef<IFileSystem> baseFileSystem, FileSystemProxyType fsType, bool preserveUnc)
         {
-            UnsafeHelpers.SkipParamInit(out contentFileSystem);
+            using var fileSystem = new SharedRef<IFileSystem>();
+            Result rc = _config.SubDirectoryFsCreator.Create(ref fileSystem.Ref(), ref baseFileSystem, in path);
+            if (rc.IsFailure()) return rc;
 
-            ReferenceCountedDisposable<IFileSystem> subDirFs = null;
-            try
-            {
-                Result rc = _config.SubDirectoryFsCreator.Create(out subDirFs, ref baseFileSystem, in path);
-                if (rc.IsFailure()) return rc;
-
-                return ParseContentTypeForDirectory(out contentFileSystem, ref subDirFs, fsType);
-            }
-            finally
-            {
-                subDirFs?.Dispose();
-            }
+            return ParseContentTypeForDirectory(ref outContentFileSystem, ref fileSystem.Ref(), fsType);
         }
 
-        private Result ParseDirWithPathCaseNormalizationOnCaseSensitiveHostFs(
-            out ReferenceCountedDisposable<IFileSystem> fileSystem, in Path path)
+        private Result ParseDirWithPathCaseNormalizationOnCaseSensitiveHostFs(ref SharedRef<IFileSystem> outFileSystem,
+            in Path path)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
             using var pathRoot = new Path();
             using var pathData = new Path();
 
@@ -591,17 +547,16 @@ namespace LibHac.FsSrv
             rc = _config.TargetManagerFsCreator.NormalizeCaseOfPath(out bool isSupported, ref pathRoot.Ref());
             if (rc.IsFailure()) return rc;
 
-            rc = _config.TargetManagerFsCreator.Create(out fileSystem, in pathRoot, isSupported, false, Result.Success);
+            rc = _config.TargetManagerFsCreator.Create(ref outFileSystem, in pathRoot, isSupported, false,
+                Result.Success);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
         }
 
-        private Result ParseNsp(ref U8Span path, out ReferenceCountedDisposable<IFileSystem> fileSystem,
-            ReferenceCountedDisposable<IFileSystem> baseFileSystem)
+        private Result ParseNsp(ref U8Span path, ref SharedRef<IFileSystem> outFileSystem,
+            ref SharedRef<IFileSystem> baseFileSystem)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
             ReadOnlySpan<byte> nspExtension = new[] { (byte)'.', (byte)'n', (byte)'s', (byte)'p' };
 
             // Search for the end of the nsp part of the path
@@ -638,13 +593,13 @@ namespace LibHac.FsSrv
             Result rc = pathNsp.InitializeWithNormalization(path, nspPathLen);
             if (rc.IsFailure()) return rc;
 
-            var storage = new FileStorageBasedFileSystem();
-            using var nspFileStorage = new ReferenceCountedDisposable<FileStorageBasedFileSystem>(storage);
+            using var nspFileStorage = new SharedRef<FileStorageBasedFileSystem>(new FileStorageBasedFileSystem());
 
-            rc = nspFileStorage.Target.Initialize(ref baseFileSystem, in pathNsp, OpenMode.Read);
+            rc = nspFileStorage.Get.Initialize(ref baseFileSystem, in pathNsp, OpenMode.Read);
             if (rc.IsFailure()) return rc;
 
-            rc = _config.PartitionFsCreator.Create(out fileSystem, nspFileStorage.AddReference<IStorage>());
+            using SharedRef<IStorage> tempStorage = SharedRef<IStorage>.CreateMove(ref nspFileStorage.Ref());
+            rc = _config.PartitionFsCreator.Create(ref outFileSystem, ref tempStorage.Ref());
 
             if (rc.IsSuccess())
             {
@@ -654,8 +609,7 @@ namespace LibHac.FsSrv
             return rc;
         }
 
-        private Result ParseNca(ref U8Span path, out Nca nca, ReferenceCountedDisposable<IFileSystem> baseFileSystem,
-            ulong ncaId)
+        private Result ParseNca(ref U8Span path, out Nca nca, ref SharedRef<IFileSystem> baseFileSystem, ulong ncaId)
         {
             UnsafeHelpers.SkipParamInit(out nca);
 
@@ -686,17 +640,16 @@ namespace LibHac.FsSrv
             return Result.Success;
         }
 
-        private Result ParseContentTypeForDirectory(out ReferenceCountedDisposable<IFileSystem> fileSystem,
-            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, FileSystemProxyType fsType)
+        private Result ParseContentTypeForDirectory(ref SharedRef<IFileSystem> outFileSystem,
+            ref SharedRef<IFileSystem> baseFileSystem, FileSystemProxyType fsType)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
             ReadOnlySpan<byte> dirName;
 
             // Get the name of the subdirectory for the filesystem type
             switch (fsType)
             {
                 case FileSystemProxyType.Package:
-                    fileSystem = baseFileSystem;
+                    outFileSystem = baseFileSystem;
                     return Result.Success;
 
                 case FileSystemProxyType.Code:
@@ -717,27 +670,21 @@ namespace LibHac.FsSrv
                     return ResultFs.InvalidArgument.Log();
             }
 
-            ReferenceCountedDisposable<IFileSystem> subDirFs = null;
-            try
-            {
-                using var directoryPath = new Path();
-                Result rc = PathFunctions.SetUpFixedPath(ref directoryPath.Ref(), dirName);
-                if (rc.IsFailure()) return rc;
+            using var subDirFs = new SharedRef<IFileSystem>();
 
-                if (directoryPath.IsEmpty())
-                    return ResultFs.InvalidArgument.Log();
+            using var directoryPath = new Path();
+            Result rc = PathFunctions.SetUpFixedPath(ref directoryPath.Ref(), dirName);
+            if (rc.IsFailure()) return rc;
 
-                // Open the subdirectory filesystem
-                rc = _config.SubDirectoryFsCreator.Create(out subDirFs, ref baseFileSystem, in directoryPath);
-                if (rc.IsFailure()) return rc;
+            if (directoryPath.IsEmpty())
+                return ResultFs.InvalidArgument.Log();
 
-                fileSystem = Shared.Move(ref subDirFs);
-                return Result.Success;
-            }
-            finally
-            {
-                subDirFs?.Dispose();
-            }
+            // Open the subdirectory filesystem
+            rc = _config.SubDirectoryFsCreator.Create(ref subDirFs.Ref(), ref baseFileSystem, in directoryPath);
+            if (rc.IsFailure()) return rc;
+
+            outFileSystem.SetByMove(ref subDirFs.Ref());
+            return Result.Success;
         }
 
         private Result SetExternalKeyForRightsId(Nca nca)
@@ -757,10 +704,10 @@ namespace LibHac.FsSrv
             return Result.Success;
         }
 
-        private Result OpenStorageByContentType(out ReferenceCountedDisposable<IStorage> ncaStorage, Nca nca,
+        private Result OpenStorageByContentType(ref SharedRef<IStorage> outNcaStorage, Nca nca,
             out NcaFormatType fsType, FileSystemProxyType fsProxyType, bool isGameCard, bool canMountSystemDataPrivate)
         {
-            UnsafeHelpers.SkipParamInit(out ncaStorage, out fsType);
+            UnsafeHelpers.SkipParamInit(out fsType);
 
             NcaContentType contentType = nca.Header.ContentType;
 
@@ -811,7 +758,7 @@ namespace LibHac.FsSrv
             rc = GetPartitionIndex(out int sectionIndex, fsProxyType);
             if (rc.IsFailure()) return rc;
 
-            rc = _config.StorageOnNcaCreator.Create(out ncaStorage, out NcaFsHeader fsHeader, nca,
+            rc = _config.StorageOnNcaCreator.Create(ref outNcaStorage, out NcaFsHeader fsHeader, nca,
                 sectionIndex, fsProxyType == FileSystemProxyType.Code);
             if (rc.IsFailure()) return rc;
 
@@ -921,11 +868,9 @@ namespace LibHac.FsSrv
             _romFsRecoveredByInvalidateCacheCount = 0;
         }
 
-        public Result OpenHostFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, in Path rootPath, bool openCaseSensitive)
+        public Result OpenHostFileSystem(ref SharedRef<IFileSystem> outFileSystem, in Path rootPath, bool openCaseSensitive)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
-            return _config.TargetManagerFsCreator.Create(out fileSystem, in rootPath, openCaseSensitive, false,
+            return _config.TargetManagerFsCreator.Create(ref outFileSystem, in rootPath, openCaseSensitive, false,
                 Result.Success);
         }
 

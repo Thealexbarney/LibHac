@@ -1,4 +1,5 @@
 ﻿using LibHac.Account;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Shim;
 using LibHac.Ns;
@@ -26,10 +27,11 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
 
             Assert.Success(EnsureApplicationSaveData(fs, out _, applicationId, ref nacp, ref userId));
 
-            fs.OpenSaveDataIterator(out SaveDataIterator iterator, SaveDataSpaceId.User);
+            using var iterator = new UniqueRef<SaveDataIterator>();
+            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
 
             var info = new SaveDataInfo[2];
-            Assert.Success(iterator.ReadSaveDataInfo(out long entriesRead, info));
+            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
 
             Assert.Equal(1, entriesRead);
             Assert.Equal(applicationId, info[0].ProgramId);
@@ -53,10 +55,11 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
 
             Assert.Success(EnsureApplicationSaveData(fs, out _, applicationId, ref nacp, ref userId));
 
-            fs.OpenSaveDataIterator(out SaveDataIterator iterator, SaveDataSpaceId.User);
+            using var iterator = new UniqueRef<SaveDataIterator>();
+            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
 
             var info = new SaveDataInfo[2];
-            Assert.Success(iterator.ReadSaveDataInfo(out long entriesRead, info));
+            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
 
             Assert.Equal(1, entriesRead);
             Assert.Equal(applicationId, info[0].ProgramId);
@@ -79,10 +82,11 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
 
             Assert.Success(EnsureApplicationSaveData(fs, out _, applicationId, ref nacp, ref userId));
 
-            fs.OpenSaveDataIterator(out SaveDataIterator iterator, SaveDataSpaceId.User);
+            using var iterator = new UniqueRef<SaveDataIterator>();
+            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
 
             var info = new SaveDataInfo[2];
-            Assert.Success(iterator.ReadSaveDataInfo(out long entriesRead, info));
+            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
 
             Assert.Equal(1, entriesRead);
             Assert.Equal(applicationId, info[0].ProgramId);
@@ -105,10 +109,11 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
 
             Assert.Success(EnsureApplicationSaveData(fs, out _, applicationId, ref nacp, ref userId));
 
-            fs.OpenSaveDataIterator(out SaveDataIterator iterator, SaveDataSpaceId.Temporary);
+            using var iterator = new UniqueRef<SaveDataIterator>();
+            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.Temporary);
 
             var info = new SaveDataInfo[2];
-            Assert.Success(iterator.ReadSaveDataInfo(out long entriesRead, info));
+            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
 
             Assert.Equal(1, entriesRead);
             Assert.Equal(applicationId, info[0].ProgramId);
@@ -134,10 +139,11 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
 
             Assert.Equal(CacheStorageTargetMedia.SdCard, target);
 
-            fs.OpenSaveDataIterator(out SaveDataIterator iterator, SaveDataSpaceId.SdCache);
+            using var iterator = new UniqueRef<SaveDataIterator>();
+            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.SdCache);
 
             var info = new SaveDataInfo[2];
-            Assert.Success(iterator.ReadSaveDataInfo(out long entriesRead, info));
+            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
 
             Assert.Equal(1, entriesRead);
             Assert.Equal(applicationId, info[0].ProgramId);
@@ -162,10 +168,11 @@ namespace LibHac.Tests.Fs.FileSystemClientTests
 
             Assert.Equal(CacheStorageTargetMedia.Nand, target);
 
-            fs.OpenSaveDataIterator(out SaveDataIterator iterator, SaveDataSpaceId.User);
+            using var iterator = new UniqueRef<SaveDataIterator>();
+            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
 
             var info = new SaveDataInfo[2];
-            Assert.Success(iterator.ReadSaveDataInfo(out long entriesRead, info));
+            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
 
             Assert.Equal(1, entriesRead);
             Assert.Equal(applicationId, info[0].ProgramId);

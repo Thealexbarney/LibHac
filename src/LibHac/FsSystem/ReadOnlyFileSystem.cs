@@ -1,4 +1,5 @@
 ﻿using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
@@ -6,32 +7,31 @@ namespace LibHac.FsSystem
 {
     public class ReadOnlyFileSystem : IFileSystem
     {
-        private IFileSystem BaseFs { get; }
-        private ReferenceCountedDisposable<IFileSystem> BaseFsShared { get; }
+        private SharedRef<IFileSystem> _baseFileSystem;
 
-        public ReadOnlyFileSystem(ReferenceCountedDisposable<IFileSystem> baseFileSystem)
+        public ReadOnlyFileSystem(ref SharedRef<IFileSystem> baseFileSystem)
         {
-            BaseFsShared = baseFileSystem;
-            BaseFs = BaseFsShared.Target;
+            _baseFileSystem = SharedRef<IFileSystem>.CreateMove(ref baseFileSystem);
+
+            Assert.SdkRequires(_baseFileSystem.HasValue);
         }
 
-        public static ReferenceCountedDisposable<IFileSystem> CreateShared(
-            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem)
+        public override void Dispose()
         {
-            var fs = new ReadOnlyFileSystem(Shared.Move(ref baseFileSystem));
-            return new ReferenceCountedDisposable<IFileSystem>(fs);
+            _baseFileSystem.Destroy();
+            base.Dispose();
         }
 
         protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
             OpenDirectoryMode mode)
         {
-            return BaseFs.OpenDirectory(ref outDirectory, in path, mode);
+            return _baseFileSystem.Get.OpenDirectory(ref outDirectory, in path, mode);
         }
 
         protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
             using var baseFile = new UniqueRef<IFile>();
-            Result rc = BaseFs.OpenFile(ref baseFile.Ref(), in path, mode);
+            Result rc = _baseFileSystem.Get.OpenFile(ref baseFile.Ref(), in path, mode);
             if (rc.IsFailure()) return rc;
 
             outFile.Reset(new ReadOnlyFile(ref baseFile.Ref()));
@@ -40,17 +40,17 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
-            return BaseFs.GetEntryType(out entryType, in path);
+            return _baseFileSystem.Get.GetEntryType(out entryType, in path);
         }
 
         protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
-            return BaseFs.GetFreeSpaceSize(out freeSpace, in path);
+            return _baseFileSystem.Get.GetFreeSpaceSize(out freeSpace, in path);
         }
 
         protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
-            return BaseFs.GetTotalSpaceSize(out totalSpace, in path);
+            return _baseFileSystem.Get.GetTotalSpaceSize(out totalSpace, in path);
 
             // FS does:
             // return ResultFs.UnsupportedOperationReadOnlyFileSystemGetSpace.Log();
@@ -58,7 +58,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
         {
-            return BaseFs.GetFileTimeStampRaw(out timeStamp, in path);
+            return _baseFileSystem.Get.GetFileTimeStampRaw(out timeStamp, in path);
 
             // FS does:
             // return ResultFs.NotImplemented.Log();
@@ -84,11 +84,5 @@ namespace LibHac.FsSystem
         protected override Result DoRenameDirectory(in Path currentPath, in Path newPath) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
         protected override Result DoRenameFile(in Path currentPath, in Path newPath) => ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
-
-        public override void Dispose()
-        {
-            BaseFsShared?.Dispose();
-            base.Dispose();
-        }
     }
 }

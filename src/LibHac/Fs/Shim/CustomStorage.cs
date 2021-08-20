@@ -5,20 +5,25 @@ using LibHac.Diag;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim
 {
+    /// <summary>
+    /// Contains functions for mounting custom storage file systems.
+    /// </summary>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     [SkipLocalsInit]
     public static class CustomStorage
     {
-        public static U8Span GetCustomStorageDirectoryName(CustomStorageId storageId)
+        public static ReadOnlySpan<byte> GetCustomStorageDirectoryName(CustomStorageId storageId)
         {
             switch (storageId)
             {
                 case CustomStorageId.System:
                 case CustomStorageId.SdCard:
-                    return new U8Span(CustomStorageDirectoryName);
+                    return CustomStorageDirectoryName;
                 default:
                     Abort.UnexpectedDefault();
                     return default;
@@ -27,23 +32,31 @@ namespace LibHac.Fs.Shim
 
         public static Result MountCustomStorage(this FileSystemClient fs, U8Span mountName, CustomStorageId storageId)
         {
-            Result rc = fs.Impl.CheckMountName(mountName);
-            if (rc.IsFailure()) return rc;
+            Result rc = Mount(fs, mountName, storageId);
 
-            ReferenceCountedDisposable<IFileSystemSf> fileSystem = null;
-            try
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
+
+            static Result Mount(FileSystemClient fs, U8Span mountName, CustomStorageId storageId)
             {
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+                Result rc = fs.Impl.CheckMountName(mountName);
+                if (rc.IsFailure()) return rc.Miss();
 
-                rc = fsProxy.Target.OpenCustomStorageFileSystem(out fileSystem, storageId);
-                if (rc.IsFailure()) return rc;
+                using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
+                using var fileSystem = new SharedRef<IFileSystemSf>();
 
-                var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
-                return fs.Register(mountName, fileSystemAdapter);
-            }
-            finally
-            {
-                fileSystem?.Dispose();
+                rc = fileSystemProxy.Get.OpenCustomStorageFileSystem(ref fileSystem.Ref(), storageId);
+                if (rc.IsFailure()) return rc.Miss();
+
+                using var fileSystemAdapter =
+                    new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+
+                rc = fs.Register(mountName, ref fileSystemAdapter.Ref());
+                if (rc.IsFailure()) return rc.Miss();
+
+                return Result.Success;
             }
         }
 

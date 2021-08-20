@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSystem;
@@ -11,18 +12,23 @@ namespace LibHac.FsSrv.Impl
     /// </summary>
     public class SaveDataExtraDataAccessorCacheManager : ISaveDataExtraDataAccessorCacheObserver
     {
-        private struct Cache
+        private struct Cache : IDisposable
         {
-            private ReferenceCountedDisposable<ISaveDataExtraDataAccessor>.WeakReference _accessor;
+            private WeakRef<ISaveDataExtraDataAccessor> _accessor;
             private readonly SaveDataSpaceId _spaceId;
             private readonly ulong _saveDataId;
 
-            public Cache(ReferenceCountedDisposable<ISaveDataExtraDataAccessor> accessor, SaveDataSpaceId spaceId,
+            public Cache(ref SharedRef<ISaveDataExtraDataAccessor> accessor, SaveDataSpaceId spaceId,
                 ulong saveDataId)
             {
-                _accessor = new ReferenceCountedDisposable<ISaveDataExtraDataAccessor>.WeakReference(accessor);
+                _accessor = new WeakRef<ISaveDataExtraDataAccessor>(ref accessor);
                 _spaceId = spaceId;
                 _saveDataId = saveDataId;
+            }
+
+            public void Dispose()
+            {
+                _accessor.Destroy();
             }
 
             public bool Contains(SaveDataSpaceId spaceId, ulong saveDataId)
@@ -30,13 +36,13 @@ namespace LibHac.FsSrv.Impl
                 return _spaceId == spaceId && _saveDataId == saveDataId;
             }
 
-            public ReferenceCountedDisposable<ISaveDataExtraDataAccessor> Lock()
+            public SharedRef<ISaveDataExtraDataAccessor> Lock()
             {
-                return _accessor.TryAddReference();
+                return _accessor.Lock();
             }
         }
 
-        private readonly LinkedList<Cache> _accessorList;
+        private LinkedList<Cache> _accessorList;
         private SdkRecursiveMutexType _mutex;
 
         public SaveDataExtraDataAccessorCacheManager()
@@ -47,17 +53,33 @@ namespace LibHac.FsSrv.Impl
 
         public void Dispose()
         {
+            using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
+
+            LinkedListNode<Cache> currentEntry = _accessorList.First;
+
+            while (currentEntry is not null)
+            {
+                ref Cache entry = ref currentEntry.ValueRef;
+                _accessorList.Remove(entry);
+                entry.Dispose();
+
+                currentEntry = _accessorList.First;
+            }
+
             _accessorList.Clear();
         }
 
-        public Result Register(ReferenceCountedDisposable<ISaveDataExtraDataAccessor> accessor,
+        public Result Register(ref SharedRef<ISaveDataExtraDataAccessor> accessor,
             SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            var cache = new Cache(accessor, spaceId, saveDataId);
+            var cache = new Cache(ref accessor, spaceId, saveDataId);
 
-            using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
+            using (ScopedLock.Lock(ref _mutex))
+            {
+                UnregisterImpl(spaceId, saveDataId);
+                _accessorList.AddLast(cache);
+            }
 
-            _accessorList.AddLast(cache);
             return Result.Success;
         }
 
@@ -84,11 +106,9 @@ namespace LibHac.FsSrv.Impl
             }
         }
 
-        public Result GetCache(out ReferenceCountedDisposable<ISaveDataExtraDataAccessor> accessor,
-            SaveDataSpaceId spaceId, ulong saveDataId)
+        public Result GetCache(ref SharedRef<ISaveDataExtraDataAccessor> outAccessor, SaveDataSpaceId spaceId,
+            ulong saveDataId)
         {
-            UnsafeHelpers.SkipParamInit(out accessor);
-
             using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
             LinkedListNode<Cache> currentNode = _accessorList.First;
@@ -104,31 +124,18 @@ namespace LibHac.FsSrv.Impl
                 currentNode = currentNode.Next;
             }
 
-            ReferenceCountedDisposable<ISaveDataExtraDataAccessor> tempAccessor = null;
-            try
-            {
-                tempAccessor = currentNode.ValueRef.Lock();
+            using SharedRef<ISaveDataExtraDataAccessor> accessor = currentNode.ValueRef.Lock();
 
-                // Return early if the accessor was already disposed
-                if (tempAccessor is null)
-                {
-                    // Note: Nintendo doesn't remove the accessor from the list in this case
-                    _accessorList.Remove(currentNode);
-                    return ResultFs.TargetNotFound.Log();
-                }
+            if (!accessor.HasValue)
+                return ResultFs.TargetNotFound.Log();
 
-                accessor = SaveDataExtraDataResultConvertAccessor.CreateShared(ref tempAccessor);
-                return Result.Success;
-            }
-            finally
-            {
-                tempAccessor?.Dispose();
-            }
+            outAccessor.Reset(new SaveDataExtraDataResultConvertAccessor(ref accessor.Ref()));
+            return Result.Success;
         }
 
-        public ScopedLock<SdkRecursiveMutexType> GetScopedLock()
+        public UniqueLockRef<SdkRecursiveMutexType> GetScopedLock()
         {
-            return new ScopedLock<SdkRecursiveMutexType>(ref _mutex);
+            return new UniqueLockRef<SdkRecursiveMutexType>(ref _mutex);
         }
     }
 }

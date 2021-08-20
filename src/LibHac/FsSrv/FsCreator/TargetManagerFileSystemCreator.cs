@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
@@ -6,7 +7,8 @@ namespace LibHac.FsSrv.FsCreator
 {
     public class TargetManagerFileSystemCreator : ITargetManagerFileSystemCreator
     {
-        public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, in Path rootPath, bool openCaseSensitive, bool ensureRootPathExists, Result pathNotFoundResult)
+        public Result Create(ref SharedRef<IFileSystem> outFileSystem, in Path rootPath, bool openCaseSensitive,
+            bool ensureRootPathExists, Result pathNotFoundResult)
         {
             throw new NotImplementedException();
         }

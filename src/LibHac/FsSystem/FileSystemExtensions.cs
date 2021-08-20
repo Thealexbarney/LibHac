@@ -46,7 +46,7 @@ namespace LibHac.FsSystem
             IProgressReport logger = null, CreateFileOptions option = CreateFileOptions.None)
         {
             static Result OnEnterDir(in Path path, in DirectoryEntry entry,
-                ref Utility12.FsIterationTaskClosure closure)
+                ref Utility.FsIterationTaskClosure closure)
             {
                 Result rc = closure.DestinationPathBuffer.AppendChild(entry.Name);
                 if (rc.IsFailure()) return rc;
@@ -54,12 +54,12 @@ namespace LibHac.FsSystem
                 return closure.SourceFileSystem.CreateDirectory(in closure.DestinationPathBuffer);
             }
 
-            static Result OnExitDir(in Path path, in DirectoryEntry entry, ref Utility12.FsIterationTaskClosure closure)
+            static Result OnExitDir(in Path path, in DirectoryEntry entry, ref Utility.FsIterationTaskClosure closure)
             {
                 return closure.DestinationPathBuffer.RemoveChild();
             }
 
-            Result OnFile(in Path path, in DirectoryEntry entry, ref Utility12.FsIterationTaskClosure closure)
+            Result OnFile(in Path path, in DirectoryEntry entry, ref Utility.FsIterationTaskClosure closure)
             {
                 logger?.LogMessage(path.ToString());
 
@@ -73,7 +73,7 @@ namespace LibHac.FsSystem
                 return closure.DestinationPathBuffer.RemoveChild();
             }
 
-            var taskClosure = new Utility12.FsIterationTaskClosure();
+            var taskClosure = new Utility.FsIterationTaskClosure();
             taskClosure.Buffer = workBuffer;
             taskClosure.SourceFileSystem = sourceFileSystem;
             taskClosure.DestFileSystem = destinationFileSystem;
@@ -81,7 +81,7 @@ namespace LibHac.FsSystem
             Result rc = taskClosure.DestinationPathBuffer.Initialize(destinationPath);
             if (rc.IsFailure()) return rc;
 
-            rc = Utility12.IterateDirectoryRecursively(sourceFileSystem, in sourcePath, ref dirEntry, OnEnterDir,
+            rc = Utility.IterateDirectoryRecursively(sourceFileSystem, in sourcePath, ref dirEntry, OnEnterDir,
                 OnExitDir, OnFile, ref taskClosure);
 
             taskClosure.DestinationPathBuffer.Dispose();
@@ -341,7 +341,7 @@ namespace LibHac.FsSystem
             Result rc = InitializeFromString(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
-            return Utility12.EnsureDirectory(fs, in pathNormalized);
+            return Utility.EnsureDirectory(fs, in pathNormalized);
         }
 
         public static Result CreateOrOverwriteFile(IFileSystem fileSystem, in Path path, long size,

@@ -13,17 +13,27 @@ namespace LibHac.FsSrv.FsCreator
     {
         private const int ValidPartitionCount = 4;
 
-        public IFileSystem RootFileSystem { get; set; }
+        private SharedRef<IFileSystem> _rootFileSystem;
 
-        private IFileSystem[] PartitionFileSystems { get; } = new IFileSystem[ValidPartitionCount];
+        private SharedRef<IFileSystem>[] PartitionFileSystems { get; } = new SharedRef<IFileSystem>[ValidPartitionCount];
         private string[] PartitionPaths { get; } = new string[ValidPartitionCount];
 
-        public Result SetFileSystem(IFileSystem fileSystem, BisPartitionId partitionId)
+        public Result SetRootFileSystem(ref SharedRef<IFileSystem> fileSystem)
         {
-            if (fileSystem == null) return ResultFs.NullptrArgument.Log();
+            if (!fileSystem.HasValue) return ResultFs.NullptrArgument.Log();
+            if (_rootFileSystem.HasValue) return ResultFs.PreconditionViolation.Log();
+
+            _rootFileSystem.SetByMove(ref fileSystem);
+
+            return Result.Success;
+        }
+
+        public Result SetFileSystem(ref UniqueRef<IFileSystem> fileSystem, BisPartitionId partitionId)
+        {
+            if (!fileSystem.HasValue) return ResultFs.NullptrArgument.Log();
             if (!IsValidPartitionId(partitionId)) return ResultFs.InvalidArgument.Log();
 
-            PartitionFileSystems[GetArrayIndex(partitionId)] = fileSystem;
+            PartitionFileSystems[GetArrayIndex(partitionId)].Set(ref fileSystem);
 
             return Result.Success;
         }
@@ -38,17 +48,21 @@ namespace LibHac.FsSrv.FsCreator
             return Result.Success;
         }
 
-        public bool TryGetFileSystem(out IFileSystem fileSystem, BisPartitionId partitionId)
+        public bool TryGetRootFileSystem(ref SharedRef<IFileSystem> outFileSystem)
+        {
+            outFileSystem.SetByCopy(ref _rootFileSystem);
+
+            return outFileSystem.HasValue;
+        }
+
+        public bool TryGetFileSystem(ref SharedRef<IFileSystem> outFileSystem, BisPartitionId partitionId)
         {
             if (!IsValidPartitionId(partitionId))
-            {
-                UnsafeHelpers.SkipParamInit(out fileSystem);
                 return false;
-            }
 
-            fileSystem = PartitionFileSystems[GetArrayIndex(partitionId)];
+            outFileSystem.SetByCopy(ref PartitionFileSystems[GetArrayIndex(partitionId)]);
 
-            return fileSystem != null;
+            return outFileSystem.HasValue;
         }
 
         public bool TryGetPartitionPath(out string path, BisPartitionId partitionId)

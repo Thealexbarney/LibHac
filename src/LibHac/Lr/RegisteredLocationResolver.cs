@@ -6,46 +6,46 @@ namespace LibHac.Lr
 {
     public class RegisteredLocationResolver : IDisposable
     {
-        private ReferenceCountedDisposable<IRegisteredLocationResolver> _interface;
+        private SharedRef<IRegisteredLocationResolver> _interface;
 
-        public RegisteredLocationResolver(ref ReferenceCountedDisposable<IRegisteredLocationResolver> baseInterface)
+        public RegisteredLocationResolver(ref SharedRef<IRegisteredLocationResolver> baseInterface)
         {
-            _interface = Shared.Move(ref baseInterface);
+            _interface = SharedRef<IRegisteredLocationResolver>.CreateMove(ref baseInterface);
         }
 
         public void Dispose()
         {
-            _interface?.Dispose();
+            _interface.Destroy();
         }
 
         public Result ResolveProgramPath(out Path path, ProgramId id) =>
-            _interface.Target.ResolveProgramPath(out path, id);
+            _interface.Get.ResolveProgramPath(out path, id);
 
         public Result RegisterProgramPath(in Path path, ProgramId id, ProgramId ownerId) =>
-            _interface.Target.RegisterProgramPath(in path, id, ownerId);
+            _interface.Get.RegisterProgramPath(in path, id, ownerId);
 
         public Result UnregisterProgramPath(ProgramId id) =>
-        _interface.Target.UnregisterProgramPath(id);
+        _interface.Get.UnregisterProgramPath(id);
 
         public Result RedirectProgramPath(in Path path, ProgramId id, ProgramId ownerId) =>
-            _interface.Target.RedirectProgramPath(in path, id, ownerId);
+            _interface.Get.RedirectProgramPath(in path, id, ownerId);
 
         public Result ResolveHtmlDocumentPath(out Path path, ProgramId id) =>
-            _interface.Target.ResolveHtmlDocumentPath(out path, id);
+            _interface.Get.ResolveHtmlDocumentPath(out path, id);
 
         public Result RegisterHtmlDocumentPath(in Path path, ProgramId id, ProgramId ownerId) =>
-            _interface.Target.RegisterHtmlDocumentPath(in path, id, ownerId);
+            _interface.Get.RegisterHtmlDocumentPath(in path, id, ownerId);
 
         public Result UnregisterHtmlDocumentPath(ProgramId id) =>
-            _interface.Target.UnregisterHtmlDocumentPath(id);
+            _interface.Get.UnregisterHtmlDocumentPath(id);
 
         public Result RedirectHtmlDocumentPath(in Path path, ProgramId id) =>
-            _interface.Target.RedirectHtmlDocumentPath(in path, id);
+            _interface.Get.RedirectHtmlDocumentPath(in path, id);
 
         public Result Refresh() =>
-            _interface.Target.Refresh();
+            _interface.Get.Refresh();
 
         public Result RefreshExcluding(ReadOnlySpan<ProgramId> ids) =>
-            _interface.Target.RefreshExcluding(ids);
+            _interface.Get.RefreshExcluding(ids);
     }
 }

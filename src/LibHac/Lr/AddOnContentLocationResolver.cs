@@ -7,31 +7,31 @@ namespace LibHac.Lr
 {
     public class AddOnContentLocationResolver : IDisposable
     {
-        private ReferenceCountedDisposable<IAddOnContentLocationResolver> _interface;
+        private SharedRef<IAddOnContentLocationResolver> _interface;
 
-        public AddOnContentLocationResolver(ref ReferenceCountedDisposable<IAddOnContentLocationResolver> baseInterface)
+        public AddOnContentLocationResolver(ref SharedRef<IAddOnContentLocationResolver> baseInterface)
         {
-            _interface = Shared.Move(ref baseInterface);
+            _interface = SharedRef<IAddOnContentLocationResolver>.CreateMove(ref baseInterface);
         }
 
         public void Dispose()
         {
-            _interface?.Dispose();
+            _interface.Destroy();
         }
 
         public Result ResolveAddOnContentPath(out Path path, DataId id) =>
-            _interface.Target.ResolveAddOnContentPath(out path, id);
+            _interface.Get.ResolveAddOnContentPath(out path, id);
 
         public Result RegisterAddOnContentStorage(DataId id, Ncm.ApplicationId applicationId, StorageId storageId) =>
-            _interface.Target.RegisterAddOnContentStorage(id, applicationId, storageId);
+            _interface.Get.RegisterAddOnContentStorage(id, applicationId, storageId);
 
         public Result UnregisterAllAddOnContentPath() =>
-            _interface.Target.UnregisterAllAddOnContentPath();
+            _interface.Get.UnregisterAllAddOnContentPath();
 
         public Result RefreshApplicationAddOnContent(InArray<Ncm.ApplicationId> ids) =>
-            _interface.Target.RefreshApplicationAddOnContent(ids);
+            _interface.Get.RefreshApplicationAddOnContent(ids);
 
         public Result UnregisterApplicationAddOnContent(Ncm.ApplicationId id) =>
-            _interface.Target.UnregisterApplicationAddOnContent(id);
+            _interface.Get.UnregisterApplicationAddOnContent(id);
     }
 }

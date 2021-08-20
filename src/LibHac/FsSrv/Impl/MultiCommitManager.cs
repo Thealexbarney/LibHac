@@ -40,9 +40,8 @@ namespace LibHac.FsSrv.Impl
     /// Even though multi-commits are supposed to be atomic, issues can arise from errors during the process of fully committing the save data.
     /// Save data image files are designed so that minimal changes are made when fully committing a provisionally committed save.
     /// However if any commit fails for any reason, all other saves in the multi-commit will still be committed.
-    /// This can especially cause issues with directory save data where finishing a commit is much more involved.<br/>
-    /// <br/>
-    /// Based on FS 12.0.3 (nnSdk 12.3.1)
+    /// This can especially cause issues with directory save data where finishing a commit is much more involved.
+    /// <para>Based on FS 12.1.0 (nnSdk 12.3.1)</para>
     /// </remarks>
     internal class MultiCommitManager : IMultiCommitManager
     {
@@ -60,40 +59,39 @@ namespace LibHac.FsSrv.Impl
         private static ReadOnlySpan<byte> CommitContextFileName =>
             new[] { (byte)'/', (byte)'c', (byte)'o', (byte)'m', (byte)'m', (byte)'i', (byte)'t', (byte)'i', (byte)'n', (byte)'f', (byte)'o' };
 
-        private ReferenceCountedDisposable<ISaveDataMultiCommitCoreInterface> _multiCommitInterface;
-        private readonly ReferenceCountedDisposable<IFileSystem>[] _fileSystems;
+        private SharedRef<ISaveDataMultiCommitCoreInterface> _multiCommitInterface;
+        private readonly SharedRef<IFileSystem>[] _fileSystems;
         private int _fileSystemCount;
         private long _counter;
 
-        // Extra field used in LibHac
+        // LibHac additions
         private readonly FileSystemServer _fsServer;
         private ref MultiCommitManagerGlobals Globals => ref _fsServer.Globals.MultiCommitManager;
 
-        public MultiCommitManager(FileSystemServer fsServer, ref ReferenceCountedDisposable<ISaveDataMultiCommitCoreInterface> multiCommitInterface)
+        public MultiCommitManager(FileSystemServer fsServer, ref SharedRef<ISaveDataMultiCommitCoreInterface> multiCommitInterface)
         {
             _fsServer = fsServer;
 
-            _multiCommitInterface = Shared.Move(ref multiCommitInterface);
-            _fileSystems = new ReferenceCountedDisposable<IFileSystem>[MaxFileSystemCount];
+            _multiCommitInterface = SharedRef<ISaveDataMultiCommitCoreInterface>.CreateMove(ref multiCommitInterface);
+            _fileSystems = new SharedRef<IFileSystem>[MaxFileSystemCount];
             _fileSystemCount = 0;
             _counter = 0;
         }
 
-        public static ReferenceCountedDisposable<IMultiCommitManager> CreateShared(FileSystemServer fsServer,
-            ref ReferenceCountedDisposable<ISaveDataMultiCommitCoreInterface> multiCommitInterface)
+        public static SharedRef<IMultiCommitManager> CreateShared(FileSystemServer fsServer,
+            ref SharedRef<ISaveDataMultiCommitCoreInterface> multiCommitInterface)
         {
-            var manager = new MultiCommitManager(fsServer, ref multiCommitInterface);
-            return new ReferenceCountedDisposable<IMultiCommitManager>(manager);
+            return new SharedRef<IMultiCommitManager>(new MultiCommitManager(fsServer, ref multiCommitInterface));
         }
 
         public void Dispose()
         {
-            foreach (ReferenceCountedDisposable<IFileSystem> fs in _fileSystems)
+            for (int i = 0; i < _fileSystems.Length; i++)
             {
-                fs?.Dispose();
+                _fileSystems[i].Destroy();
             }
 
-            _multiCommitInterface?.Dispose();
+            _multiCommitInterface.Destroy();
         }
 
         /// <summary>
@@ -102,26 +100,19 @@ namespace LibHac.FsSrv.Impl
         /// <returns>The <see cref="Result"/> of the operation.</returns>
         private Result EnsureSaveDataForContext()
         {
-            ReferenceCountedDisposable<IFileSystem> contextFs = null;
-            try
+            using var contextFileSystem = new SharedRef<IFileSystem>();
+            Result rc = _multiCommitInterface.Get.OpenMultiCommitContext(ref contextFileSystem.Ref());
+
+            if (rc.IsFailure())
             {
-                Result rc = _multiCommitInterface.Target.OpenMultiCommitContext(out contextFs);
+                if (!ResultFs.TargetNotFound.Includes(rc))
+                    return rc;
 
-                if (rc.IsFailure())
-                {
-                    if (!ResultFs.TargetNotFound.Includes(rc))
-                        return rc;
-
-                    rc = _fsServer.Hos.Fs.CreateSystemSaveData(SaveDataId, SaveDataSize, SaveJournalSize, SaveDataFlags.None);
-                    if (rc.IsFailure()) return rc;
-                }
-
-                return Result.Success;
+                rc = _fsServer.Hos.Fs.CreateSystemSaveData(SaveDataId, SaveDataSize, SaveJournalSize, SaveDataFlags.None);
+                if (rc.IsFailure()) return rc;
             }
-            finally
-            {
-                contextFs?.Dispose();
-            }
+
+            return Result.Success;
         }
 
         /// <summary>
@@ -132,33 +123,26 @@ namespace LibHac.FsSrv.Impl
         /// <see cref="ResultFs.MultiCommitFileSystemLimit"/>: The maximum number of file systems have been added.
         /// <see cref="MaxFileSystemCount"/> file systems may be added to a single multi-commit.<br/>
         /// <see cref="ResultFs.MultiCommitFileSystemAlreadyAdded"/>: The provided file system has already been added.</returns>
-        public Result Add(ReferenceCountedDisposable<IFileSystemSf> fileSystem)
+        public Result Add(ref SharedRef<IFileSystemSf> fileSystem)
         {
             if (_fileSystemCount >= MaxFileSystemCount)
                 return ResultFs.MultiCommitFileSystemLimit.Log();
 
-            ReferenceCountedDisposable<IFileSystem> fsaFileSystem = null;
-            try
+            using var fsaFileSystem = new SharedRef<IFileSystem>();
+            Result rc = fileSystem.Get.GetImpl(ref fsaFileSystem.Ref());
+            if (rc.IsFailure()) return rc;
+
+            // Check that the file system hasn't already been added
+            for (int i = 0; i < _fileSystemCount; i++)
             {
-                Result rc = fileSystem.Target.GetImpl(out fsaFileSystem);
-                if (rc.IsFailure()) return rc;
-
-                // Check that the file system hasn't already been added
-                for (int i = 0; i < _fileSystemCount; i++)
-                {
-                    if (ReferenceEquals(fsaFileSystem.Target, _fileSystems[i].Target))
-                        return ResultFs.MultiCommitFileSystemAlreadyAdded.Log();
-                }
-
-                _fileSystems[_fileSystemCount] = Shared.Move(ref fsaFileSystem);
-                _fileSystemCount++;
-
-                return Result.Success;
+                if (ReferenceEquals(fsaFileSystem.Get, _fileSystems[i].Get))
+                    return ResultFs.MultiCommitFileSystemAlreadyAdded.Log();
             }
-            finally
-            {
-                fsaFileSystem?.Dispose();
-            }
+
+            _fileSystems[_fileSystemCount].SetByMove(ref fsaFileSystem.Ref());
+            _fileSystemCount++;
+
+            return Result.Success;
         }
 
         /// <summary>
@@ -198,21 +182,14 @@ namespace LibHac.FsSrv.Impl
         {
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref Globals.MultiCommitMutex);
 
-            ReferenceCountedDisposable<IFileSystem> contextFs = null;
-            try
-            {
-                Result rc = EnsureSaveDataForContext();
-                if (rc.IsFailure()) return rc;
+            using var contextFileSystem = new SharedRef<IFileSystem>();
+            Result rc = EnsureSaveDataForContext();
+            if (rc.IsFailure()) return rc;
 
-                rc = _multiCommitInterface.Target.OpenMultiCommitContext(out contextFs);
-                if (rc.IsFailure()) return rc;
+            rc = _multiCommitInterface.Get.OpenMultiCommitContext(ref contextFileSystem.Ref());
+            if (rc.IsFailure()) return rc;
 
-                return Commit(contextFs.Target);
-            }
-            finally
-            {
-                contextFs?.Dispose();
-            }
+            return Commit(contextFileSystem.Get);
         }
 
         /// <summary>
@@ -227,9 +204,9 @@ namespace LibHac.FsSrv.Impl
 
             for (i = 0; i < _fileSystemCount; i++)
             {
-                Assert.SdkNotNull(_fileSystems[i]);
+                Assert.SdkNotNull(_fileSystems[i].Get);
 
-                rc = _fileSystems[i].Target.CommitProvisionally(counter);
+                rc = _fileSystems[i].Get.CommitProvisionally(counter);
 
                 if (rc.IsFailure())
                     break;
@@ -240,9 +217,9 @@ namespace LibHac.FsSrv.Impl
                 // Rollback all provisional commits including the failed commit
                 for (int j = 0; j <= i; j++)
                 {
-                    Assert.SdkNotNull(_fileSystems[j]);
+                    Assert.SdkNotNull(_fileSystems[j].Get);
 
-                    _fileSystems[j].Target.Rollback().IgnoreResult();
+                    _fileSystems[j].Get.Rollback().IgnoreResult();
                 }
             }
 
@@ -261,16 +238,18 @@ namespace LibHac.FsSrv.Impl
 
             for (int i = 0; i < _fileSystemCount; i++)
             {
-                Assert.SdkNotNull(_fileSystems[i]);
+                Assert.SdkNotNull(_fileSystems[i].Get);
 
-                Result rc = _fileSystems[i].Target.Commit();
+                Result resultLast = _fileSystems[i].Get.Commit();
 
                 // If the commit failed, set the overall result if it hasn't been set yet.
-                if (result.IsSuccess() && rc.IsFailure())
+                if (result.IsSuccess() && resultLast.IsFailure())
                 {
-                    result = rc;
+                    result = resultLast;
                 }
             }
+
+            if (result.IsFailure()) return result.Miss();
 
             return Result.Success;
         }
@@ -319,14 +298,14 @@ namespace LibHac.FsSrv.Impl
             int saveCount = 0;
             Span<SaveDataInfo> savesToRecover = stackalloc SaveDataInfo[MaxFileSystemCount];
 
-            ReferenceCountedDisposable<SaveDataInfoReaderImpl> infoReader = null;
-            try
             {
+                using var reader = new SharedRef<SaveDataInfoReaderImpl>();
                 using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
+
                 rc = saveService.OpenSaveDataIndexerAccessor(ref accessor.Ref(), out _, SaveDataSpaceId.User);
                 if (rc.IsFailure()) return rc;
 
-                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(out infoReader);
+                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(ref reader.Ref());
                 if (rc.IsFailure()) return rc;
 
                 // Iterate through all the saves to find any provisionally committed save data
@@ -334,7 +313,7 @@ namespace LibHac.FsSrv.Impl
                 {
                     Unsafe.SkipInit(out SaveDataInfo info);
 
-                    rc = infoReader.Target.Read(out long readCount, OutBuffer.FromStruct(ref info));
+                    rc = reader.Get.Read(out long readCount, OutBuffer.FromStruct(ref info));
                     if (rc.IsFailure()) return rc;
 
                     // Break once we're done iterating all save data
@@ -344,18 +323,16 @@ namespace LibHac.FsSrv.Impl
                     rc = multiCommitInterface.IsProvisionallyCommittedSaveData(out bool isProvisionallyCommitted,
                         in info);
 
-                    // Note: Some saves could be missed if there are more than MaxFileSystemCount
-                    // provisionally committed saves. Not sure why Nintendo doesn't catch this.
+                    // Note: Multi-commits are only recovered at boot time, so some saves could be missed if there
+                    // are more than MaxFileSystemCount provisionally committed saves.
+                    // In theory this shouldn't happen because a multi-commit should only be interrupted if the
+                    // entire OS is brought down.
                     if (rc.IsSuccess() && isProvisionallyCommitted && saveCount < MaxFileSystemCount)
                     {
                         savesToRecover[saveCount] = info;
                         saveCount++;
                     }
                 }
-            }
-            finally
-            {
-                infoReader?.Dispose();
             }
 
             // Recover the saves by finishing their commits.
@@ -402,14 +379,14 @@ namespace LibHac.FsSrv.Impl
                 int saveCount = 0;
                 Span<SaveDataInfo> savesToRecover = stackalloc SaveDataInfo[MaxFileSystemCount];
 
-                ReferenceCountedDisposable<SaveDataInfoReaderImpl> infoReader = null;
-                try
                 {
+                    using var reader = new SharedRef<SaveDataInfoReaderImpl>();
                     using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
+
                     rc = saveService.OpenSaveDataIndexerAccessor(ref accessor.Ref(), out _, SaveDataSpaceId.User);
                     if (rc.IsFailure()) return rc;
 
-                    rc = accessor.Get.Indexer.OpenSaveDataInfoReader(out infoReader);
+                    rc = accessor.Get.Indexer.OpenSaveDataInfoReader(ref reader.Ref());
                     if (rc.IsFailure()) return rc;
 
                     // Iterate through all the saves to find any provisionally committed save data
@@ -417,7 +394,7 @@ namespace LibHac.FsSrv.Impl
                     {
                         Unsafe.SkipInit(out SaveDataInfo info);
 
-                        rc = infoReader.Target.Read(out long readCount, OutBuffer.FromStruct(ref info));
+                        rc = reader.Get.Read(out long readCount, OutBuffer.FromStruct(ref info));
                         if (rc.IsFailure()) return rc;
 
                         // Break once we're done iterating all save data
@@ -427,18 +404,16 @@ namespace LibHac.FsSrv.Impl
                         rc = multiCommitInterface.IsProvisionallyCommittedSaveData(out bool isProvisionallyCommitted,
                             in info);
 
-                        // Note: Some saves could be missed if there are more than MaxFileSystemCount
-                        // provisionally committed saves. Not sure why Nintendo doesn't catch this.
+                        // Note: Multi-commits are only recovered at boot time, so some saves could be missed if there
+                        // are more than MaxFileSystemCount provisionally committed saves.
+                        // In theory this shouldn't happen because a multi-commit should only be interrupted if the
+                        // entire OS is brought down.
                         if (rc.IsSuccess() && isProvisionallyCommitted && saveCount < MaxFileSystemCount)
                         {
                             savesToRecover[saveCount] = info;
                             saveCount++;
                         }
                     }
-                }
-                finally
-                {
-                    infoReader?.Dispose();
                 }
 
                 // Recover the saves by rolling them back to the previous commit.
@@ -448,7 +423,7 @@ namespace LibHac.FsSrv.Impl
                 {
                     rc = multiCommitInterface.RecoverProvisionallyCommittedSaveData(in savesToRecover[i], true);
 
-                    if (recoveryResult.IsSuccess() && rc.IsFailure())
+                    if (rc.IsFailure() && !recoveryResult.IsFailure())
                     {
                         recoveryResult = rc;
                     }
@@ -481,53 +456,46 @@ namespace LibHac.FsSrv.Impl
         public static Result Recover(FileSystemServer fsServer, ISaveDataMultiCommitCoreInterface multiCommitInterface,
             SaveDataFileSystemServiceImpl saveService)
         {
-            ref MultiCommitManagerGlobals globals = ref fsServer.Globals.MultiCommitManager;
-            using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref globals.MultiCommitMutex);
+            using ScopedLock<SdkMutexType> scopedLock =
+                ScopedLock.Lock(ref fsServer.Globals.MultiCommitManager.MultiCommitMutex);
 
             bool needsRecovery = true;
-            ReferenceCountedDisposable<IFileSystem> fileSystem = null;
+            using var fileSystem = new SharedRef<IFileSystem>();
 
-            try
+            // Check if a multi-commit was interrupted by checking if there's a commit context file.
+            Result rc = multiCommitInterface.OpenMultiCommitContext(ref fileSystem.Ref());
+
+            if (rc.IsFailure())
             {
-                // Check if a multi-commit was interrupted by checking if there's a commit context file.
-                Result rc = multiCommitInterface.OpenMultiCommitContext(out fileSystem);
+                if (!ResultFs.PathNotFound.Includes(rc) && !ResultFs.TargetNotFound.Includes(rc))
+                    return rc;
+
+                // Unable to open the multi-commit context file system, so there's nothing to recover
+                needsRecovery = false;
+            }
+
+            if (needsRecovery)
+            {
+                using var contextFilePath = new Fs.Path();
+                rc = PathFunctions.SetUpFixedPath(ref contextFilePath.Ref(), CommitContextFileName);
+                if (rc.IsFailure()) return rc;
+
+                using var file = new UniqueRef<IFile>();
+                rc = fileSystem.Get.OpenFile(ref file.Ref(), in contextFilePath, OpenMode.Read);
 
                 if (rc.IsFailure())
                 {
-                    if (!ResultFs.PathNotFound.Includes(rc) && !ResultFs.TargetNotFound.Includes(rc))
-                        return rc;
-
-                    // Unable to open the multi-commit context file system, so there's nothing to recover
-                    needsRecovery = false;
+                    // Unable to open the context file. No multi-commit to recover.
+                    if (ResultFs.PathNotFound.Includes(rc))
+                        needsRecovery = false;
                 }
-
-                if (needsRecovery)
-                {
-                    using var contextFilePath = new Fs.Path();
-                    rc = PathFunctions.SetUpFixedPath(ref contextFilePath.Ref(), CommitContextFileName);
-                    if (rc.IsFailure()) return rc;
-
-                    using var file = new UniqueRef<IFile>();
-                    rc = fileSystem.Target.OpenFile(ref file.Ref(), in contextFilePath, OpenMode.Read);
-
-                    if (rc.IsFailure())
-                    {
-                        // Unable to open the context file. No multi-commit to recover.
-                        if (ResultFs.PathNotFound.Includes(rc))
-                            needsRecovery = false;
-                    }
-                }
-
-                if (!needsRecovery)
-                    return Result.Success;
-
-                // There was a context file. Recover the unfinished commit.
-                return Recover(multiCommitInterface, fileSystem.Target, saveService);
             }
-            finally
-            {
-                fileSystem?.Dispose();
-            }
+
+            if (!needsRecovery)
+                return Result.Success;
+
+            // There was a context file. Recover the unfinished commit.
+            return Recover(multiCommitInterface, fileSystem.Get, saveService);
         }
 
         [StructLayout(LayoutKind.Explicit, Size = 0x18)]

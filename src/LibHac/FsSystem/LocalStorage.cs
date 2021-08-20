@@ -44,13 +44,10 @@ namespace LibHac.FsSystem
             return Storage.GetSize(out size);
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                Storage?.Dispose();
-                Stream?.Dispose();
-            }
+            Storage?.Dispose();
+            Stream?.Dispose();
         }
     }
 }

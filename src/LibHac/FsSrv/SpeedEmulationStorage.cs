@@ -7,58 +7,48 @@ namespace LibHac.FsSrv
     // Todo: Implement
     public class SpeedEmulationStorage : IStorage
     {
-        private ReferenceCountedDisposable<IStorage> BaseStorage { get; }
+        private SharedRef<IStorage> _baseStorage;
 
-        protected SpeedEmulationStorage(ref ReferenceCountedDisposable<IStorage> baseStorage)
+        public SpeedEmulationStorage(ref SharedRef<IStorage> baseStorage, FileSystemServer fsServer)
         {
-            BaseStorage = Shared.Move(ref baseStorage);
+            _baseStorage = SharedRef<IStorage>.CreateMove(ref baseStorage);
         }
 
-        public static ReferenceCountedDisposable<IStorage> CreateShared(
-            ref ReferenceCountedDisposable<IStorage> baseStorage)
+        public override void Dispose()
         {
-            return new ReferenceCountedDisposable<IStorage>(new SpeedEmulationStorage(ref baseStorage));
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                BaseStorage?.Dispose();
-            }
-
-            base.Dispose(disposing);
+            _baseStorage.Destroy();
+            base.Dispose();
         }
 
         protected override Result DoRead(long offset, Span<byte> destination)
         {
-            return BaseStorage.Target.Read(offset, destination);
+            return _baseStorage.Get.Read(offset, destination);
         }
 
         protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
-            return BaseStorage.Target.Write(offset, source);
+            return _baseStorage.Get.Write(offset, source);
         }
 
         protected override Result DoFlush()
         {
-            return BaseStorage.Target.Flush();
+            return _baseStorage.Get.Flush();
         }
 
         protected override Result DoSetSize(long size)
         {
-            return BaseStorage.Target.SetSize(size);
+            return _baseStorage.Get.SetSize(size);
         }
 
         protected override Result DoGetSize(out long size)
         {
-            return BaseStorage.Target.GetSize(out size);
+            return _baseStorage.Get.GetSize(out size);
         }
 
         protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
             ReadOnlySpan<byte> inBuffer)
         {
-            return BaseStorage.Target.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+            return _baseStorage.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer);
         }
     }
 }

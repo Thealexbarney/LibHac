@@ -11,48 +11,48 @@ namespace LibHac.FsSystem
 {
     public class PartitionFileSystemCore<T> : IFileSystem where T : unmanaged, IPartitionFileSystemEntry
     {
-        private IStorage BaseStorage { get; set; }
-        private PartitionFileSystemMetaCore<T> MetaData { get; set; }
-        private bool IsInitialized { get; set; }
-        private int DataOffset { get; set; }
-        private ReferenceCountedDisposable<IStorage> BaseStorageShared { get; set; }
+        private IStorage _baseStorage;
+        private PartitionFileSystemMetaCore<T> _metaData;
+        private bool _isInitialized;
+        private int _dataOffset;
+        private SharedRef<IStorage> _baseStorageShared;
 
-        public Result Initialize(ReferenceCountedDisposable<IStorage> baseStorage)
+        public Result Initialize(ref SharedRef<IStorage> baseStorage)
         {
-            Result rc = Initialize(baseStorage.Target);
+            Result rc = Initialize(baseStorage.Get);
             if (rc.IsFailure()) return rc;
 
-            BaseStorageShared = baseStorage.AddReference();
+            _baseStorageShared = SharedRef<IStorage>.CreateMove(ref baseStorage);
             return Result.Success;
         }
 
         public Result Initialize(IStorage baseStorage)
         {
-            if (IsInitialized)
+            if (_isInitialized)
                 return ResultFs.PreconditionViolation.Log();
 
-            MetaData = new PartitionFileSystemMetaCore<T>();
+            _metaData = new PartitionFileSystemMetaCore<T>();
 
-            Result rc = MetaData.Initialize(baseStorage);
+            Result rc = _metaData.Initialize(baseStorage);
             if (rc.IsFailure()) return rc;
 
-            BaseStorage = baseStorage;
-            DataOffset = MetaData.Size;
-            IsInitialized = true;
+            _baseStorage = baseStorage;
+            _dataOffset = _metaData.Size;
+            _isInitialized = true;
 
             return Result.Success;
         }
 
         public override void Dispose()
         {
-            BaseStorageShared?.Dispose();
+            _baseStorageShared.Destroy();
             base.Dispose();
         }
 
         protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
             OpenDirectoryMode mode)
         {
-            if (!IsInitialized)
+            if (!_isInitialized)
                 return ResultFs.PreconditionViolation.Log();
 
             ReadOnlySpan<byte> rootPath = new[] { (byte)'/' };
@@ -67,16 +67,16 @@ namespace LibHac.FsSystem
 
         protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
         {
-            if (!IsInitialized)
+            if (!_isInitialized)
                 return ResultFs.PreconditionViolation.Log();
 
             if (!mode.HasFlag(OpenMode.Read) && !mode.HasFlag(OpenMode.Write))
                 return ResultFs.InvalidArgument.Log();
 
-            int entryIndex = MetaData.FindEntry(new U8Span(path.GetString().Slice(1)));
+            int entryIndex = _metaData.FindEntry(new U8Span(path.GetString().Slice(1)));
             if (entryIndex < 0) return ResultFs.PathNotFound.Log();
 
-            ref T entry = ref MetaData.GetEntry(entryIndex);
+            ref T entry = ref _metaData.GetEntry(entryIndex);
 
             outFile.Reset(new PartitionFile(this, ref entry, mode));
 
@@ -87,7 +87,7 @@ namespace LibHac.FsSystem
         {
             UnsafeHelpers.SkipParamInit(out entryType);
 
-            if (!IsInitialized)
+            if (!_isInitialized)
                 return ResultFs.PreconditionViolation.Log();
 
             ReadOnlySpan<byte> pathStr = path.GetString();
@@ -103,7 +103,7 @@ namespace LibHac.FsSystem
                 return Result.Success;
             }
 
-            if (MetaData.FindEntry(new U8Span(pathStr.Slice(1))) >= 0)
+            if (_metaData.FindEntry(new U8Span(pathStr.Slice(1))) >= 0)
             {
                 entryType = DirectoryEntryType.File;
                 return Result.Success;
@@ -149,7 +149,7 @@ namespace LibHac.FsSystem
                 if (rc.IsFailure()) return rc;
 
                 bool hashNeeded = false;
-                long fileStorageOffset = ParentFs.DataOffset + _entry.Offset;
+                long fileStorageOffset = ParentFs._dataOffset + _entry.Offset;
 
                 if (typeof(T) == typeof(HashedEntry))
                 {
@@ -164,7 +164,7 @@ namespace LibHac.FsSystem
 
                 if (!hashNeeded)
                 {
-                    rc = ParentFs.BaseStorage.Read(fileStorageOffset + offset, destination.Slice(0, (int)bytesToRead));
+                    rc = ParentFs._baseStorage.Read(fileStorageOffset + offset, destination.Slice(0, (int)bytesToRead));
                 }
                 else
                 {
@@ -192,7 +192,7 @@ namespace LibHac.FsSystem
                     // If the area to read contains the entire hashed area
                     if (entry.HashOffset >= offset && hashEnd <= readEnd)
                     {
-                        rc = ParentFs.BaseStorage.Read(storageOffset, destination.Slice(0, (int)bytesToRead));
+                        rc = ParentFs._baseStorage.Read(storageOffset, destination.Slice(0, (int)bytesToRead));
                         if (rc.IsFailure()) return rc;
 
                         Span<byte> hashedArea = destination.Slice((int)(entry.HashOffset - offset), entry.HashSize);
@@ -219,7 +219,7 @@ namespace LibHac.FsSystem
                             int toRead = Math.Min(hashRemaining, hashBufferSize);
                             Span<byte> hashBufferSliced = hashBuffer.Slice(0, toRead);
 
-                            rc = ParentFs.BaseStorage.Read(readPos, hashBufferSliced);
+                            rc = ParentFs._baseStorage.Read(readPos, hashBufferSliced);
                             if (rc.IsFailure()) return rc;
 
                             sha256.Update(hashBufferSliced);
@@ -272,14 +272,14 @@ namespace LibHac.FsSystem
                 if (_entry.Size < source.Length + offset)
                     return ResultFs.InvalidSize.Log();
 
-                return ParentFs.BaseStorage.Write(ParentFs.DataOffset + _entry.Offset + offset, source);
+                return ParentFs._baseStorage.Write(ParentFs._dataOffset + _entry.Offset + offset, source);
             }
 
             protected override Result DoFlush()
             {
                 if (Mode.HasFlag(OpenMode.Write))
                 {
-                    return ParentFs.BaseStorage.Flush();
+                    return ParentFs._baseStorage.Flush();
                 }
 
                 return Result.Success;
@@ -326,9 +326,9 @@ namespace LibHac.FsSystem
                 if (size < 0 || offset + size > _entry.Size)
                     return ResultFs.InvalidSize.Log();
 
-                long offsetInStorage = ParentFs.DataOffset + _entry.Offset + offset;
+                long offsetInStorage = ParentFs._dataOffset + _entry.Offset + offset;
 
-                return ParentFs.BaseStorage.OperateRange(outBuffer, operationId, offsetInStorage, size, inBuffer);
+                return ParentFs._baseStorage.OperateRange(outBuffer, operationId, offsetInStorage, size, inBuffer);
             }
         }
 
@@ -349,15 +349,15 @@ namespace LibHac.FsSystem
             {
                 if (Mode.HasFlag(OpenDirectoryMode.File))
                 {
-                    int totalEntryCount = ParentFs.MetaData.GetEntryCount();
+                    int totalEntryCount = ParentFs._metaData.GetEntryCount();
                     int toReadCount = Math.Min(totalEntryCount - CurrentIndex, entryBuffer.Length);
 
                     for (int i = 0; i < toReadCount; i++)
                     {
                         entryBuffer[i].Type = DirectoryEntryType.File;
-                        entryBuffer[i].Size = ParentFs.MetaData.GetEntry(CurrentIndex).Size;
+                        entryBuffer[i].Size = ParentFs._metaData.GetEntry(CurrentIndex).Size;
 
-                        U8Span name = ParentFs.MetaData.GetName(CurrentIndex);
+                        U8Span name = ParentFs._metaData.GetName(CurrentIndex);
                         StringUtils.Copy(entryBuffer[i].Name, name);
                         entryBuffer[i].Name[FsPath.MaxLength] = 0;
 
@@ -378,7 +378,7 @@ namespace LibHac.FsSystem
             {
                 if (Mode.HasFlag(OpenDirectoryMode.File))
                 {
-                    entryCount = ParentFs.MetaData.GetEntryCount();
+                    entryCount = ParentFs._metaData.GetEntryCount();
                 }
                 else
                 {

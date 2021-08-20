@@ -22,23 +22,21 @@ namespace LibHac.FsSrv
             return _serviceImpl.GetProgramInfo(out programInfo, _processId);
         }
 
-        public Result OpenAccessFailureDetectionEventNotifier(out ReferenceCountedDisposable<IEventNotifier> notifier,
+        public Result OpenAccessFailureDetectionEventNotifier(ref SharedRef<IEventNotifier> outNotifier,
             ulong processId, bool notifyOnDeepRetry)
         {
-            UnsafeHelpers.SkipParamInit(out notifier);
-
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
 
             if (!programInfo.AccessControl.CanCall(OperationType.OpenAccessFailureDetectionEventNotifier))
                 return ResultFs.PermissionDenied.Log();
 
-            using var tempNotifier = new UniqueRef<IEventNotifier>();
+            using var notifier = new UniqueRef<IEventNotifier>();
 
-            rc = _serviceImpl.CreateNotifier(ref tempNotifier.Ref(), processId, notifyOnDeepRetry);
+            rc = _serviceImpl.CreateNotifier(ref notifier.Ref(), processId, notifyOnDeepRetry);
             if (rc.IsFailure()) return rc;
 
-            notifier = new ReferenceCountedDisposable<IEventNotifier>(tempNotifier.Release());
+            outNotifier.Set(ref notifier.Ref());
             return Result.Success;
         }
 

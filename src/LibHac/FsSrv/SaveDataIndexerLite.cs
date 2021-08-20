@@ -2,7 +2,6 @@
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
-using LibHac.FsSrv.Sf;
 using LibHac.Sf;
 
 namespace LibHac.FsSrv
@@ -211,7 +210,7 @@ namespace LibHac.FsSrv
             return 1;
         }
 
-        public Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<SaveDataInfoReaderImpl> infoReader)
+        public Result OpenSaveDataInfoReader(ref SharedRef<SaveDataInfoReaderImpl> outInfoReader)
         {
             SaveDataIndexerLiteInfoReader reader;
 
@@ -224,12 +223,12 @@ namespace LibHac.FsSrv
                 reader = new SaveDataIndexerLiteInfoReader();
             }
 
-            infoReader = new ReferenceCountedDisposable<SaveDataInfoReaderImpl>(reader);
+            outInfoReader.Reset(reader);
 
             return Result.Success;
         }
 
-        private class SaveDataIndexerLiteInfoReader : SaveDataInfoReaderImpl, ISaveDataInfoReader
+        private class SaveDataIndexerLiteInfoReader : SaveDataInfoReaderImpl
         {
             private bool _finishedIterating;
             private SaveDataInfo _info;

@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Sf;
 
@@ -8,7 +9,7 @@ namespace LibHac.FsSrv.Sf
     {
         public Result GetChallenge(OutBuffer challenge);
         public Result SetToken(InBuffer token);
-        public Result OpenSaveDataExporter(out ReferenceCountedDisposable<ISaveDataExporter> exporter, SaveDataSpaceId spaceId, ulong saveDataId);
-        public Result OpenSaveDataImporter(out ReferenceCountedDisposable<ISaveDataImporter> importer, out long requiredSize, InBuffer initialData, in UserId userId, SaveDataSpaceId spaceId);
+        public Result OpenSaveDataExporter(ref SharedRef<ISaveDataExporter> outExporter, SaveDataSpaceId spaceId, ulong saveDataId);
+        public Result OpenSaveDataImporter(ref SharedRef<ISaveDataImporter> outImporter, out long requiredSize, InBuffer initialData, in UserId userId, SaveDataSpaceId spaceId);
     }
 }

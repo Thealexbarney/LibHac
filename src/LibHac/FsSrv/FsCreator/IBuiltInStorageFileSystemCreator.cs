@@ -1,10 +1,11 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSrv.FsCreator
 {
     public interface IBuiltInStorageFileSystemCreator
     {
-        Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, BisPartitionId partitionId, bool caseSensitive);
+        Result Create(ref SharedRef<IFileSystem> outFileSystem, BisPartitionId partitionId, bool caseSensitive);
     }
 }

@@ -1,13 +1,14 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Ncm;
 
 namespace LibHac.Lr
 {
     public interface ILocationResolverManager : IDisposable
     {
-        Result OpenLocationResolver(out ReferenceCountedDisposable<ILocationResolver> resolver, StorageId storageId);
-        Result OpenRegisteredLocationResolver(out ReferenceCountedDisposable<IRegisteredLocationResolver> resolver);
+        Result OpenLocationResolver(ref SharedRef<ILocationResolver> outResolver, StorageId storageId);
+        Result OpenRegisteredLocationResolver(ref SharedRef<IRegisteredLocationResolver> outResolver);
         Result RefreshLocationResolver(StorageId storageId);
-        Result OpenAddOnContentLocationResolver(out ReferenceCountedDisposable<IAddOnContentLocationResolver> resolver);
+        Result OpenAddOnContentLocationResolver(ref SharedRef<IAddOnContentLocationResolver> outResolver);
     }
 }

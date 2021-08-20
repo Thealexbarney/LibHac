@@ -87,63 +87,62 @@ namespace LibHac.FsSrv.Impl
     // ReSharper disable once InconsistentNaming
     public abstract class IResultConvertFileSystem : IFileSystem
     {
-        protected ReferenceCountedDisposable<IFileSystem> BaseFileSystem;
+        protected SharedRef<IFileSystem> BaseFileSystem;
 
-        protected IResultConvertFileSystem(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem)
+        protected IResultConvertFileSystem(ref SharedRef<IFileSystem> baseFileSystem)
         {
-            BaseFileSystem = Shared.Move(ref baseFileSystem);
+            BaseFileSystem = SharedRef<IFileSystem>.CreateMove(ref baseFileSystem);
         }
 
         public override void Dispose()
         {
-            BaseFileSystem?.Dispose();
-            BaseFileSystem = null;
+            BaseFileSystem.Destroy();
             base.Dispose();
         }
 
         protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
         {
-            return ConvertResult(BaseFileSystem.Target.CreateFile(path, size, option));
+            return ConvertResult(BaseFileSystem.Get.CreateFile(path, size, option));
         }
 
         protected override Result DoDeleteFile(in Path path)
         {
-            return ConvertResult(BaseFileSystem.Target.DeleteFile(path));
+            return ConvertResult(BaseFileSystem.Get.DeleteFile(path));
         }
 
         protected override Result DoCreateDirectory(in Path path)
         {
-            return ConvertResult(BaseFileSystem.Target.CreateDirectory(path));
+            return ConvertResult(BaseFileSystem.Get.CreateDirectory(path));
         }
 
         protected override Result DoDeleteDirectory(in Path path)
         {
-            return ConvertResult(BaseFileSystem.Target.DeleteDirectory(path));
+            return ConvertResult(BaseFileSystem.Get.DeleteDirectory(path));
         }
 
         protected override Result DoDeleteDirectoryRecursively(in Path path)
         {
-            return ConvertResult(BaseFileSystem.Target.DeleteDirectoryRecursively(path));
+            return ConvertResult(BaseFileSystem.Get.DeleteDirectoryRecursively(path));
         }
 
         protected override Result DoCleanDirectoryRecursively(in Path path)
         {
-            return ConvertResult(BaseFileSystem.Target.CleanDirectoryRecursively(path));
+            return ConvertResult(BaseFileSystem.Get.CleanDirectoryRecursively(path));
         }
 
         protected override Result DoRenameFile(in Path currentPath, in Path newPath)
         {
-            return ConvertResult(BaseFileSystem.Target.RenameFile(currentPath, newPath));
+            return ConvertResult(BaseFileSystem.Get.RenameFile(currentPath, newPath));
         }
 
         protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
         {
-            return ConvertResult(BaseFileSystem.Target.RenameDirectory(currentPath, newPath));
+            return ConvertResult(BaseFileSystem.Get.RenameDirectory(currentPath, newPath));
         }
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
         {
-            return ConvertResult(BaseFileSystem.Target.GetEntryType(out entryType, path));
+            return ConvertResult(BaseFileSystem.Get.GetEntryType(out entryType, path));
         }
 
         protected abstract override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode);
@@ -153,43 +152,43 @@ namespace LibHac.FsSrv.Impl
 
         protected override Result DoCommit()
         {
-            return ConvertResult(BaseFileSystem.Target.Commit());
+            return ConvertResult(BaseFileSystem.Get.Commit());
         }
 
         protected override Result DoCommitProvisionally(long counter)
         {
-            return ConvertResult(BaseFileSystem.Target.CommitProvisionally(counter));
+            return ConvertResult(BaseFileSystem.Get.CommitProvisionally(counter));
         }
 
         protected override Result DoRollback()
         {
-            return ConvertResult(BaseFileSystem.Target.Rollback());
+            return ConvertResult(BaseFileSystem.Get.Rollback());
         }
 
         protected override Result DoFlush()
         {
-            return ConvertResult(BaseFileSystem.Target.Flush());
+            return ConvertResult(BaseFileSystem.Get.Flush());
         }
 
         protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
         {
-            return ConvertResult(BaseFileSystem.Target.GetFileTimeStampRaw(out timeStamp, path));
+            return ConvertResult(BaseFileSystem.Get.GetFileTimeStampRaw(out timeStamp, path));
         }
 
         protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
             in Path path)
         {
-            return ConvertResult(BaseFileSystem.Target.QueryEntry(outBuffer, inBuffer, queryId, path));
+            return ConvertResult(BaseFileSystem.Get.QueryEntry(outBuffer, inBuffer, queryId, path));
         }
 
         protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
         {
-            return ConvertResult(BaseFileSystem.Target.GetFreeSpaceSize(out freeSpace, path));
+            return ConvertResult(BaseFileSystem.Get.GetFreeSpaceSize(out freeSpace, path));
         }
 
         protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
         {
-            return ConvertResult(BaseFileSystem.Target.GetTotalSpaceSize(out totalSpace, path));
+            return ConvertResult(BaseFileSystem.Get.GetTotalSpaceSize(out totalSpace, path));
         }
 
         protected abstract Result ConvertResult(Result result);

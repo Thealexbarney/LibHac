@@ -71,14 +71,11 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
+            if (!LeaveOpen)
             {
-                if (!LeaveOpen)
-                {
-                    BaseStream?.Dispose();
-                }
+                BaseStream?.Dispose();
             }
         }
     }

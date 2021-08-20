@@ -7,43 +7,42 @@ namespace LibHac.FsSrv.Impl
 {
     internal class OpenCountFileSystem : ForwardingFileSystem
     {
-        private ReferenceCountedDisposable<IEntryOpenCountSemaphoreManager> _entryCountSemaphore;
+        private SharedRef<IEntryOpenCountSemaphoreManager> _entryCountSemaphore;
         private UniqueRef<IUniqueLock> _mountCountSemaphore;
 
-        public OpenCountFileSystem(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem,
-            ref ReferenceCountedDisposable<IEntryOpenCountSemaphoreManager> entryCountSemaphore) : base(
-            ref baseFileSystem)
+        public OpenCountFileSystem(ref SharedRef<IFileSystem> baseFileSystem,
+            ref SharedRef<IEntryOpenCountSemaphoreManager> entryCountSemaphore) : base(ref baseFileSystem)
         {
-            Shared.Move(out _entryCountSemaphore, ref entryCountSemaphore);
+            _entryCountSemaphore = SharedRef<IEntryOpenCountSemaphoreManager>.CreateMove(ref entryCountSemaphore);
         }
 
-        public OpenCountFileSystem(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem,
-            ref ReferenceCountedDisposable<IEntryOpenCountSemaphoreManager> entryCountSemaphore,
+        public OpenCountFileSystem(ref SharedRef<IFileSystem> baseFileSystem,
+            ref SharedRef<IEntryOpenCountSemaphoreManager> entryCountSemaphore,
             ref UniqueRef<IUniqueLock> mountCountSemaphore) : base(ref baseFileSystem)
         {
-            Shared.Move(out _entryCountSemaphore, ref entryCountSemaphore);
+            _entryCountSemaphore = SharedRef<IEntryOpenCountSemaphoreManager>.CreateMove(ref entryCountSemaphore);
             _mountCountSemaphore = new UniqueRef<IUniqueLock>(ref mountCountSemaphore);
         }
 
-        public static ReferenceCountedDisposable<IFileSystem> CreateShared(
-            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem,
-            ref ReferenceCountedDisposable<IEntryOpenCountSemaphoreManager> entryCountSemaphore,
+        public static SharedRef<IFileSystem> CreateShared(
+            ref SharedRef<IFileSystem> baseFileSystem,
+            ref SharedRef<IEntryOpenCountSemaphoreManager> entryCountSemaphore,
             ref UniqueRef<IUniqueLock> mountCountSemaphore)
         {
             var filesystem =
                 new OpenCountFileSystem(ref baseFileSystem, ref entryCountSemaphore, ref mountCountSemaphore);
 
-            return new ReferenceCountedDisposable<IFileSystem>(filesystem);
+            return new SharedRef<IFileSystem>(filesystem);
         }
 
-        public static ReferenceCountedDisposable<IFileSystem> CreateShared(
-            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem,
-            ref ReferenceCountedDisposable<IEntryOpenCountSemaphoreManager> entryCountSemaphore)
+        public static SharedRef<IFileSystem> CreateShared(
+            ref SharedRef<IFileSystem> baseFileSystem,
+            ref SharedRef<IEntryOpenCountSemaphoreManager> entryCountSemaphore)
         {
             var filesystem =
                 new OpenCountFileSystem(ref baseFileSystem, ref entryCountSemaphore);
 
-            return new ReferenceCountedDisposable<IFileSystem>(filesystem);
+            return new SharedRef<IFileSystem>(filesystem);
         }
 
         // ReSharper disable once RedundantOverriddenMember
@@ -63,7 +62,7 @@ namespace LibHac.FsSrv.Impl
 
         public override void Dispose()
         {
-            _entryCountSemaphore?.Dispose();
+            _entryCountSemaphore.Destroy();
             _mountCountSemaphore.Destroy();
             base.Dispose();
         }

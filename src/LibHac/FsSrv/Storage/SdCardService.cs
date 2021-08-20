@@ -16,142 +16,79 @@ namespace LibHac.FsSrv.Storage
 {
     internal static class SdCardService
     {
+        private static int MakeOperationId(SdCardManagerOperationIdValue operation) => (int)operation;
+        private static int MakeOperationId(SdCardOperationIdValue operation) => (int)operation;
+
         private static Result GetSdCardManager(this StorageService service,
-            out ReferenceCountedDisposable<IStorageDeviceManager> manager)
+            ref SharedRef<IStorageDeviceManager> outManager)
         {
-            return service.CreateStorageDeviceManager(out manager, StorageDevicePortId.SdCard);
+            return service.CreateStorageDeviceManager(ref outManager, StorageDevicePortId.SdCard);
         }
 
         private static Result GetSdCardManagerOperator(this StorageService service,
-            out ReferenceCountedDisposable<IStorageDeviceOperator> deviceOperator)
+            ref SharedRef<IStorageDeviceOperator> outDeviceOperator)
         {
-            UnsafeHelpers.SkipParamInit(out deviceOperator);
+            using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
+            Result rc = service.GetSdCardManager(ref storageDeviceManager.Ref());
+            if (rc.IsFailure()) return rc;
 
-            ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
-            try
-            {
-                Result rc = service.GetSdCardManager(out deviceManager);
-                if (rc.IsFailure()) return rc;
-
-                return deviceManager.Target.OpenOperator(out deviceOperator);
-            }
-            finally
-            {
-                deviceManager?.Dispose();
-            }
+            return storageDeviceManager.Get.OpenOperator(ref outDeviceOperator);
         }
 
         private static Result GetSdCardOperator(this StorageService service,
-            out ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator)
+            ref SharedRef<IStorageDeviceOperator> outSdCardOperator)
         {
-            UnsafeHelpers.SkipParamInit(out sdCardOperator);
+            using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
+            Result rc = service.GetSdCardManager(ref storageDeviceManager.Ref());
+            if (rc.IsFailure()) return rc;
 
-            ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
-            try
-            {
-                Result rc = service.GetSdCardManager(out deviceManager);
-                if (rc.IsFailure()) return rc;
+            using var storageDevice = new SharedRef<IStorageDevice>();
+            rc = storageDeviceManager.Get.OpenDevice(ref storageDevice.Ref(), 0);
+            if (rc.IsFailure()) return rc;
 
-                ReferenceCountedDisposable<IStorageDevice> storageDevice = null;
-                try
-                {
-                    rc = deviceManager.Target.OpenDevice(out storageDevice, 0);
-                    if (rc.IsFailure()) return rc;
-
-                    return storageDevice.Target.OpenOperator(out sdCardOperator);
-                }
-                finally
-                {
-                    storageDevice?.Dispose();
-                }
-            }
-            finally
-            {
-                deviceManager?.Dispose();
-            }
+            return storageDevice.Get.OpenOperator(ref outSdCardOperator);
         }
 
-        private static int MakeOperationId(SdCardManagerOperationIdValue operation)
+        public static Result OpenSdStorage(this StorageService service, ref SharedRef<IStorage> outStorage)
         {
-            return (int)operation;
-        }
+            using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
+            Result rc = service.GetSdCardManager(ref storageDeviceManager.Ref());
+            if (rc.IsFailure()) return rc;
 
-        private static int MakeOperationId(SdCardOperationIdValue operation)
-        {
-            return (int)operation;
-        }
+            using var sdCardStorage = new SharedRef<IStorageSf>();
+            rc = storageDeviceManager.Get.OpenStorage(ref sdCardStorage.Ref(), 0);
+            if (rc.IsFailure()) return rc;
 
-        public static Result OpenSdStorage(this StorageService service,
-            out ReferenceCountedDisposable<IStorage> storage)
-        {
-            UnsafeHelpers.SkipParamInit(out storage);
+            using var storage = new SharedRef<IStorage>(new StorageServiceObjectAdapter(ref sdCardStorage.Ref()));
 
-            ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
-            try
-            {
-                Result rc = service.GetSdCardManager(out deviceManager);
-                if (rc.IsFailure()) return rc;
+            SdCardEventSimulator eventSimulator = service.FsSrv.Impl.GetSdCardEventSimulator();
+            using var deviceEventSimulationStorage =
+                new SharedRef<IStorage>(new DeviceEventSimulationStorage(ref storage.Ref(), eventSimulator));
 
-                ReferenceCountedDisposable<IStorageSf> sdCardStorage = null;
-                ReferenceCountedDisposable<IStorage> tempStorage = null;
-                try
-                {
-                    rc = deviceManager.Target.OpenStorage(out sdCardStorage, 0);
-                    if (rc.IsFailure()) return rc;
+            using var emulationStorage = new SharedRef<IStorage>(
+                new SpeedEmulationStorage(ref deviceEventSimulationStorage.Ref(), service.FsSrv));
 
-                    tempStorage = StorageServiceObjectAdapter.CreateShared(ref sdCardStorage);
-
-                    SdCardEventSimulator eventSimulator = service.FsSrv.Impl.GetSdCardEventSimulator();
-                    tempStorage = DeviceEventSimulationStorage.CreateShared(ref tempStorage, eventSimulator);
-
-                    tempStorage = SpeedEmulationStorage.CreateShared(ref tempStorage);
-
-                    storage = Shared.Move(ref tempStorage);
-                    return Result.Success;
-                }
-                finally
-                {
-                    sdCardStorage?.Dispose();
-                    tempStorage?.Dispose();
-                }
-            }
-            finally
-            {
-                deviceManager?.Dispose();
-            }
+            outStorage.SetByMove(ref emulationStorage.Ref());
+            return Result.Success;
         }
 
         public static Result GetCurrentSdCardHandle(this StorageService service, out StorageDeviceHandle handle)
         {
             UnsafeHelpers.SkipParamInit(out handle);
 
-            ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
-            try
-            {
-                Result rc = service.GetSdCardManager(out deviceManager);
-                if (rc.IsFailure()) return rc;
+            using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
+            Result rc = service.GetSdCardManager(ref storageDeviceManager.Ref());
+            if (rc.IsFailure()) return rc;
 
-                ReferenceCountedDisposable<IStorageDevice> storageDevice = null;
-                try
-                {
-                    rc = deviceManager.Target.OpenDevice(out storageDevice, 0);
-                    if (rc.IsFailure()) return rc;
+            using var sdCardStorageDevice = new SharedRef<IStorageDevice>();
+            rc = storageDeviceManager.Get.OpenDevice(ref sdCardStorageDevice.Ref(), 0);
+            if (rc.IsFailure()) return rc;
 
-                    rc = storageDevice.Target.GetHandle(out uint handleValue);
-                    if (rc.IsFailure()) return rc;
+            rc = sdCardStorageDevice.Get.GetHandle(out uint handleValue);
+            if (rc.IsFailure()) return rc;
 
-                    handle = new StorageDeviceHandle(handleValue, StorageDevicePortId.SdCard);
-                    return Result.Success;
-                }
-                finally
-                {
-                    storageDevice?.Dispose();
-                }
-            }
-            finally
-            {
-                deviceManager?.Dispose();
-            }
+            handle = new StorageDeviceHandle(handleValue, StorageDevicePortId.SdCard);
+            return Result.Success;
         }
 
         public static Result IsSdCardHandleValid(this StorageService service, out bool isValid,
@@ -159,209 +96,135 @@ namespace LibHac.FsSrv.Storage
         {
             UnsafeHelpers.SkipParamInit(out isValid);
 
-            ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
-            try
-            {
-                Result rc = service.GetSdCardManager(out deviceManager);
-                if (rc.IsFailure()) return rc;
+            using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
+            Result rc = service.GetSdCardManager(ref storageDeviceManager.Ref());
+            if (rc.IsFailure()) return rc;
 
-                // Note: I don't know why the official code doesn't check the handle port
-                return deviceManager.Target.IsHandleValid(out isValid, handle.Value);
-            }
-            finally
-            {
-                deviceManager?.Dispose();
-            }
+            // Note: I don't know why the official code doesn't check the handle port
+            return storageDeviceManager.Get.IsHandleValid(out isValid, handle.Value);
         }
 
         public static Result InvalidateSdCard(this StorageService service)
         {
-            ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
-            try
-            {
-                Result rc = service.GetSdCardManager(out deviceManager);
-                if (rc.IsFailure()) return rc;
+            using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
+            Result rc = service.GetSdCardManager(ref storageDeviceManager.Ref());
+            if (rc.IsFailure()) return rc;
 
-                return deviceManager.Target.Invalidate();
-            }
-            finally
-            {
-                deviceManager?.Dispose();
-            }
+            return storageDeviceManager.Get.Invalidate();
         }
 
         public static Result IsSdCardInserted(this StorageService service, out bool isInserted)
         {
             UnsafeHelpers.SkipParamInit(out isInserted);
 
-            ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
-            try
-            {
-                Result rc = service.GetSdCardManager(out deviceManager);
-                if (rc.IsFailure()) return rc;
+            using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
+            Result rc = service.GetSdCardManager(ref storageDeviceManager.Ref());
+            if (rc.IsFailure()) return rc.Miss();
 
-                return deviceManager.Target.Invalidate();
-            }
-            finally
-            {
-                deviceManager?.Dispose();
-            }
+            rc = storageDeviceManager.Get.IsInserted(out bool actualState);
+            if (rc.IsFailure()) return rc.Miss();
+
+            isInserted = service.FsSrv.Impl.GetSdCardEventSimulator().FilterDetectionState(actualState);
+            return Result.Success;
         }
 
         public static Result GetSdCardSpeedMode(this StorageService service, out SdCardSpeedMode speedMode)
         {
             UnsafeHelpers.SkipParamInit(out speedMode);
 
-            ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator = null;
-            try
+            using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
+            Result rc = service.GetSdCardOperator(ref sdCardOperator.Ref());
+            if (rc.IsFailure()) return rc;
+
+            Unsafe.SkipInit(out SpeedMode sdmmcSpeedMode);
+            OutBuffer outBuffer = OutBuffer.FromStruct(ref sdmmcSpeedMode);
+            int operationId = MakeOperationId(SdCardOperationIdValue.GetSpeedMode);
+
+            rc = sdCardOperator.Get.OperateOut(out _, outBuffer, operationId);
+            if (rc.IsFailure()) return rc;
+
+            speedMode = sdmmcSpeedMode switch
             {
-                Result rc = service.GetSdCardOperator(out sdCardOperator);
-                if (rc.IsFailure()) return rc;
+                SpeedMode.SdCardIdentification => SdCardSpeedMode.Identification,
+                SpeedMode.SdCardDefaultSpeed => SdCardSpeedMode.DefaultSpeed,
+                SpeedMode.SdCardHighSpeed => SdCardSpeedMode.HighSpeed,
+                SpeedMode.SdCardSdr12 => SdCardSpeedMode.Sdr12,
+                SpeedMode.SdCardSdr25 => SdCardSpeedMode.Sdr25,
+                SpeedMode.SdCardSdr50 => SdCardSpeedMode.Sdr50,
+                SpeedMode.SdCardSdr104 => SdCardSpeedMode.Sdr104,
+                SpeedMode.SdCardDdr50 => SdCardSpeedMode.Ddr50,
+                _ => SdCardSpeedMode.Unknown
+            };
 
-                Unsafe.SkipInit(out SpeedMode sdmmcSpeedMode);
-                OutBuffer outBuffer = OutBuffer.FromStruct(ref sdmmcSpeedMode);
-                int operationId = MakeOperationId(SdCardOperationIdValue.GetSpeedMode);
-
-                rc = sdCardOperator.Target.OperateOut(out _, outBuffer, operationId);
-                if (rc.IsFailure()) return rc;
-
-                speedMode = sdmmcSpeedMode switch
-                {
-                    SpeedMode.SdCardIdentification => SdCardSpeedMode.Identification,
-                    SpeedMode.SdCardDefaultSpeed => SdCardSpeedMode.DefaultSpeed,
-                    SpeedMode.SdCardHighSpeed => SdCardSpeedMode.HighSpeed,
-                    SpeedMode.SdCardSdr12 => SdCardSpeedMode.Sdr12,
-                    SpeedMode.SdCardSdr25 => SdCardSpeedMode.Sdr25,
-                    SpeedMode.SdCardSdr50 => SdCardSpeedMode.Sdr50,
-                    SpeedMode.SdCardSdr104 => SdCardSpeedMode.Sdr104,
-                    SpeedMode.SdCardDdr50 => SdCardSpeedMode.Ddr50,
-                    _ => SdCardSpeedMode.Unknown
-                };
-
-                return Result.Success;
-            }
-            finally
-            {
-                sdCardOperator?.Dispose();
-            }
+            return Result.Success;
         }
 
         public static Result GetSdCardCid(this StorageService service, Span<byte> cidBuffer)
         {
-            ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator = null;
-            try
-            {
-                Result rc = service.GetSdCardOperator(out sdCardOperator);
-                if (rc.IsFailure()) return rc;
+            using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
+            Result rc = service.GetSdCardOperator(ref sdCardOperator.Ref());
+            if (rc.IsFailure()) return rc;
 
-                var outBuffer = new OutBuffer(cidBuffer);
-                int operationId = MakeOperationId(SdCardOperationIdValue.GetCid);
+            int operationId = MakeOperationId(SdCardOperationIdValue.GetCid);
+            var outBuffer = new OutBuffer(cidBuffer);
 
-                rc = sdCardOperator.Target.OperateOut(out _, outBuffer, operationId);
-                if (rc.IsFailure()) return rc;
-
-                return Result.Success;
-            }
-            finally
-            {
-                sdCardOperator?.Dispose();
-            }
+            return sdCardOperator.Get.OperateOut(out _, outBuffer, operationId);
         }
 
         public static Result GetSdCardUserAreaNumSectors(this StorageService service, out uint count)
         {
             UnsafeHelpers.SkipParamInit(out count);
 
-            ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator = null;
-            try
-            {
-                Result rc = service.GetSdCardOperator(out sdCardOperator);
-                if (rc.IsFailure()) return rc;
+            using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
+            Result rc = service.GetSdCardOperator(ref sdCardOperator.Ref());
+            if (rc.IsFailure()) return rc;
 
-                OutBuffer outBuffer = OutBuffer.FromStruct(ref count);
-                int operationId = MakeOperationId(SdCardOperationIdValue.GetUserAreaNumSectors);
+            int operationId = MakeOperationId(SdCardOperationIdValue.GetUserAreaNumSectors);
+            OutBuffer outBuffer = OutBuffer.FromStruct(ref count);
 
-                rc = sdCardOperator.Target.OperateOut(out _, outBuffer, operationId);
-                if (rc.IsFailure()) return rc;
-
-                return Result.Success;
-            }
-            finally
-            {
-                sdCardOperator?.Dispose();
-            }
+            return sdCardOperator.Get.OperateOut(out _, outBuffer, operationId);
         }
 
         public static Result GetSdCardUserAreaSize(this StorageService service, out long size)
         {
             UnsafeHelpers.SkipParamInit(out size);
 
-            ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator = null;
-            try
-            {
-                Result rc = service.GetSdCardOperator(out sdCardOperator);
-                if (rc.IsFailure()) return rc;
+            using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
+            Result rc = service.GetSdCardOperator(ref sdCardOperator.Ref());
+            if (rc.IsFailure()) return rc;
 
-                OutBuffer outBuffer = OutBuffer.FromStruct(ref size);
-                int operationId = MakeOperationId(SdCardOperationIdValue.GetUserAreaSize);
+            int operationId = MakeOperationId(SdCardOperationIdValue.GetUserAreaSize);
+            OutBuffer outBuffer = OutBuffer.FromStruct(ref size);
 
-                rc = sdCardOperator.Target.OperateOut(out _, outBuffer, operationId);
-                if (rc.IsFailure()) return rc;
-
-                return Result.Success;
-            }
-            finally
-            {
-                sdCardOperator?.Dispose();
-            }
+            return sdCardOperator.Get.OperateOut(out _, outBuffer, operationId);
         }
 
         public static Result GetSdCardProtectedAreaNumSectors(this StorageService service, out uint count)
         {
             UnsafeHelpers.SkipParamInit(out count);
 
-            ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator = null;
-            try
-            {
-                Result rc = service.GetSdCardOperator(out sdCardOperator);
-                if (rc.IsFailure()) return rc;
+            using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
+            Result rc = service.GetSdCardOperator(ref sdCardOperator.Ref());
+            if (rc.IsFailure()) return rc;
 
-                OutBuffer outBuffer = OutBuffer.FromStruct(ref count);
-                int operationId = MakeOperationId(SdCardOperationIdValue.GetProtectedAreaNumSectors);
+            int operationId = MakeOperationId(SdCardOperationIdValue.GetProtectedAreaNumSectors);
+            OutBuffer outBuffer = OutBuffer.FromStruct(ref count);
 
-                rc = sdCardOperator.Target.OperateOut(out _, outBuffer, operationId);
-                if (rc.IsFailure()) return rc;
-
-                return Result.Success;
-            }
-            finally
-            {
-                sdCardOperator?.Dispose();
-            }
+            return sdCardOperator.Get.OperateOut(out _, outBuffer, operationId);
         }
 
         public static Result GetSdCardProtectedAreaSize(this StorageService service, out long size)
         {
             UnsafeHelpers.SkipParamInit(out size);
 
-            ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator = null;
-            try
-            {
-                Result rc = service.GetSdCardOperator(out sdCardOperator);
-                if (rc.IsFailure()) return rc;
+            using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
+            Result rc = service.GetSdCardOperator(ref sdCardOperator.Ref());
+            if (rc.IsFailure()) return rc;
 
-                OutBuffer outBuffer = OutBuffer.FromStruct(ref size);
-                int operationId = MakeOperationId(SdCardOperationIdValue.GetProtectedAreaSize);
+            int operationId = MakeOperationId(SdCardOperationIdValue.GetProtectedAreaSize);
+            OutBuffer outBuffer = OutBuffer.FromStruct(ref size);
 
-                rc = sdCardOperator.Target.OperateOut(out _, outBuffer, operationId);
-                if (rc.IsFailure()) return rc;
-
-                return Result.Success;
-            }
-            finally
-            {
-                sdCardOperator?.Dispose();
-            }
+            return sdCardOperator.Get.OperateOut(out _, outBuffer, operationId);
         }
 
         public static Result GetAndClearSdCardErrorInfo(this StorageService service, out StorageErrorInfo errorInfo,
@@ -369,108 +232,53 @@ namespace LibHac.FsSrv.Storage
         {
             UnsafeHelpers.SkipParamInit(out errorInfo, out logSize);
 
-            ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator = null;
-            try
-            {
-                Result rc = service.GetSdCardManagerOperator(out sdCardOperator);
-                if (rc.IsFailure()) return rc;
+            using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
+            Result rc = service.GetSdCardManagerOperator(ref sdCardOperator.Ref());
+            if (rc.IsFailure()) return rc;
 
-                OutBuffer errorInfoOutBuffer = OutBuffer.FromStruct(ref errorInfo);
-                var logOutBuffer = new OutBuffer(logBuffer);
-                int operationId = MakeOperationId(SdCardManagerOperationIdValue.GetAndClearErrorInfo);
+            OutBuffer errorInfoOutBuffer = OutBuffer.FromStruct(ref errorInfo);
+            var logOutBuffer = new OutBuffer(logBuffer);
+            int operationId = MakeOperationId(SdCardManagerOperationIdValue.GetAndClearErrorInfo);
 
-                rc = sdCardOperator.Target.OperateOut2(out _, errorInfoOutBuffer, out logSize, logOutBuffer,
-                    operationId);
-                if (rc.IsFailure()) return rc;
-
-                return Result.Success;
-            }
-            finally
-            {
-                sdCardOperator?.Dispose();
-            }
+            return sdCardOperator.Get.OperateOut2(out _, errorInfoOutBuffer, out logSize, logOutBuffer, operationId);
         }
 
         public static Result OpenSdCardDetectionEvent(this StorageService service,
-            out ReferenceCountedDisposable<IEventNotifier> eventNotifier)
+            ref SharedRef<IEventNotifier> outEventNotifier)
         {
-            UnsafeHelpers.SkipParamInit(out eventNotifier);
+            using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
+            Result rc = service.GetSdCardManager(ref storageDeviceManager.Ref());
+            if (rc.IsFailure()) return rc.Miss();
 
-            ReferenceCountedDisposable<IStorageDeviceManager> deviceManager = null;
-            try
-            {
-                Result rc = service.GetSdCardManager(out deviceManager);
-                if (rc.IsFailure()) return rc;
-
-                return deviceManager.Target.OpenDetectionEvent(out eventNotifier);
-            }
-            finally
-            {
-                deviceManager?.Dispose();
-            }
+            return storageDeviceManager.Get.OpenDetectionEvent(ref outEventNotifier);
         }
 
         public static Result SimulateSdCardDetectionEventSignaled(this StorageService service)
         {
-            ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator = null;
-            try
-            {
-                Result rc = service.GetSdCardManagerOperator(out sdCardOperator);
-                if (rc.IsFailure()) return rc;
+            using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
+            Result rc = service.GetSdCardManagerOperator(ref sdCardOperator.Ref());
+            if (rc.IsFailure()) return rc;
 
-                int operationId = MakeOperationId(SdCardManagerOperationIdValue.SimulateDetectionEventSignaled);
-
-                rc = sdCardOperator.Target.Operate(operationId);
-                if (rc.IsFailure()) return rc;
-
-                return Result.Success;
-            }
-            finally
-            {
-                sdCardOperator?.Dispose();
-            }
+            return sdCardOperator.Get.Operate(
+                MakeOperationId(SdCardManagerOperationIdValue.SimulateDetectionEventSignaled));
         }
 
         public static Result SuspendSdCardControl(this StorageService service)
         {
-            ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator = null;
-            try
-            {
-                Result rc = service.GetSdCardManagerOperator(out sdCardOperator);
-                if (rc.IsFailure()) return rc;
+            using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
+            Result rc = service.GetSdCardManagerOperator(ref sdCardOperator.Ref());
+            if (rc.IsFailure()) return rc;
 
-                int operationId = MakeOperationId(SdCardManagerOperationIdValue.SuspendControl);
-
-                rc = sdCardOperator.Target.Operate(operationId);
-                if (rc.IsFailure()) return rc;
-
-                return Result.Success;
-            }
-            finally
-            {
-                sdCardOperator?.Dispose();
-            }
+            return sdCardOperator.Get.Operate(MakeOperationId(SdCardManagerOperationIdValue.SuspendControl));
         }
 
         public static Result ResumeSdCardControl(this StorageService service)
         {
-            ReferenceCountedDisposable<IStorageDeviceOperator> sdCardOperator = null;
-            try
-            {
-                Result rc = service.GetSdCardManagerOperator(out sdCardOperator);
-                if (rc.IsFailure()) return rc;
+            using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
+            Result rc = service.GetSdCardManagerOperator(ref sdCardOperator.Ref());
+            if (rc.IsFailure()) return rc;
 
-                int operationId = MakeOperationId(SdCardManagerOperationIdValue.ResumeControl);
-
-                rc = sdCardOperator.Target.Operate(operationId);
-                if (rc.IsFailure()) return rc;
-
-                return Result.Success;
-            }
-            finally
-            {
-                sdCardOperator?.Dispose();
-            }
+            return sdCardOperator.Get.Operate(MakeOperationId(SdCardManagerOperationIdValue.ResumeControl));
         }
     }
 }

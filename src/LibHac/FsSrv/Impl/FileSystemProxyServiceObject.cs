@@ -8,34 +8,32 @@ namespace LibHac.FsSrv.Impl
 {
     public static class FileSystemProxyServiceObject
     {
-        public static ReferenceCountedDisposable<IFileSystemProxy> GetFileSystemProxyServiceObject(
-            this FileSystemServerImpl fsSrv)
+        public static SharedRef<IFileSystemProxy> GetFileSystemProxyServiceObject(this FileSystemServerImpl fsSrv)
         {
-            return new ReferenceCountedDisposable<IFileSystemProxy>(new FileSystemProxyImpl(fsSrv.FsSrv));
+            return new SharedRef<IFileSystemProxy>(new FileSystemProxyImpl(fsSrv.FsSrv));
         }
 
-        public static ReferenceCountedDisposable<IFileSystemProxyForLoader> GetFileSystemProxyForLoaderServiceObject(
+        public static SharedRef<IFileSystemProxyForLoader> GetFileSystemProxyForLoaderServiceObject(
             this FileSystemServerImpl fsSrv)
         {
-            return new ReferenceCountedDisposable<IFileSystemProxyForLoader>(new FileSystemProxyImpl(fsSrv.FsSrv));
+            return new SharedRef<IFileSystemProxyForLoader>(new FileSystemProxyImpl(fsSrv.FsSrv));
         }
 
-        public static ReferenceCountedDisposable<IFileSystemProxyForLoader>
-            GetInvalidFileSystemProxyForLoaderServiceObject(this FileSystemServerImpl fsSrv)
-        {
-            return new ReferenceCountedDisposable<IFileSystemProxyForLoader>(new InvalidFileSystemProxyImplForLoader());
-        }
-
-        public static ReferenceCountedDisposable<IProgramRegistry> GetProgramRegistryServiceObject(
+        public static SharedRef<IFileSystemProxyForLoader> GetInvalidFileSystemProxyForLoaderServiceObject(
             this FileSystemServerImpl fsSrv)
         {
-            return new ReferenceCountedDisposable<IProgramRegistry>(new ProgramRegistryImpl(fsSrv.FsSrv));
+            return new SharedRef<IFileSystemProxyForLoader>(new InvalidFileSystemProxyImplForLoader());
         }
 
-        public static ReferenceCountedDisposable<IProgramRegistry> GetInvalidProgramRegistryServiceObject(
+        public static SharedRef<IProgramRegistry> GetProgramRegistryServiceObject(this FileSystemServerImpl fsSrv)
+        {
+            return new SharedRef<IProgramRegistry>(new ProgramRegistryImpl(fsSrv.FsSrv));
+        }
+
+        public static SharedRef<IProgramRegistry> GetInvalidProgramRegistryServiceObject(
             this FileSystemServerImpl fsSrv)
         {
-            return new ReferenceCountedDisposable<IProgramRegistry>(new InvalidProgramRegistryImpl());
+            return new SharedRef<IProgramRegistry>(new InvalidProgramRegistryImpl());
         }
 
         private class InvalidFileSystemProxyImplForLoader : IFileSystemProxyForLoader
@@ -49,10 +47,10 @@ namespace LibHac.FsSrv.Impl
                 return ResultFs.PortAcceptableCountLimited.Log();
             }
 
-            public Result OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+            public Result OpenCodeFileSystem(ref SharedRef<IFileSystem> fileSystem,
                 out CodeVerificationData verificationData, in FspPath path, ProgramId programId)
             {
-                UnsafeHelpers.SkipParamInit(out fileSystem, out verificationData);
+                UnsafeHelpers.SkipParamInit(out verificationData);
 
                 return ResultFs.PortAcceptableCountLimited.Log();
             }

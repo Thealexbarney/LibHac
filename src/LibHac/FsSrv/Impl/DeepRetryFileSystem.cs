@@ -7,41 +7,30 @@ namespace LibHac.FsSrv.Impl
 {
     public class DeepRetryFileSystem : ForwardingFileSystem
     {
-        // ReSharper disable once UnusedAutoPropertyAccessor.Local
-        private ReferenceCountedDisposable<DeepRetryFileSystem>.WeakReference SelfReference { get; set; }
-        private ReferenceCountedDisposable<IRomFileSystemAccessFailureManager> AccessFailureManager { get; set; }
+        // ReSharper disable once NotAccessedField.Local
+        private WeakRef<DeepRetryFileSystem> _selfReference;
+        private SharedRef<IRomFileSystemAccessFailureManager> _accessFailureManager;
 
-        protected DeepRetryFileSystem(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem,
-            ref ReferenceCountedDisposable<IRomFileSystemAccessFailureManager> accessFailureManager) : base(
-            ref baseFileSystem)
+        protected DeepRetryFileSystem(ref SharedRef<IFileSystem> baseFileSystem,
+            ref SharedRef<IRomFileSystemAccessFailureManager> accessFailureManager) : base(ref baseFileSystem)
         {
-            AccessFailureManager = Shared.Move(ref accessFailureManager);
+            _accessFailureManager = Shared.Move(ref accessFailureManager);
         }
 
-        public static ReferenceCountedDisposable<IFileSystem> CreateShared(
-            ref ReferenceCountedDisposable<IFileSystem> fileSystem,
-            ref ReferenceCountedDisposable<IRomFileSystemAccessFailureManager> accessFailureManager)
+        public static SharedRef<IFileSystem> CreateShared(ref SharedRef<IFileSystem> baseFileSystem,
+            ref SharedRef<IRomFileSystemAccessFailureManager> accessFailureManager)
         {
-            ReferenceCountedDisposable<DeepRetryFileSystem> sharedRetryFileSystem = null;
-            try
-            {
-                var retryFileSystem = new DeepRetryFileSystem(ref fileSystem, ref accessFailureManager);
-                sharedRetryFileSystem = new ReferenceCountedDisposable<DeepRetryFileSystem>(retryFileSystem);
+            using var retryFileSystem = new SharedRef<DeepRetryFileSystem>(
+                new DeepRetryFileSystem(ref baseFileSystem, ref accessFailureManager));
 
-                retryFileSystem.SelfReference =
-                    new ReferenceCountedDisposable<DeepRetryFileSystem>.WeakReference(sharedRetryFileSystem);
+            retryFileSystem.Get._selfReference = new WeakRef<DeepRetryFileSystem>(ref retryFileSystem.Ref());
 
-                return sharedRetryFileSystem.AddReference<IFileSystem>();
-            }
-            finally
-            {
-                sharedRetryFileSystem?.Dispose();
-            }
+            return SharedRef<IFileSystem>.CreateMove(ref retryFileSystem.Ref());
         }
 
         public override void Dispose()
         {
-            AccessFailureManager?.Dispose();
+            _accessFailureManager.Destroy();
             base.Dispose();
         }
 

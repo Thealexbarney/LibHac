@@ -1,8 +1,6 @@
 ﻿using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
-using LibHac.Fs.Fsa;
-using LibHac.FsSystem.Save;
 using LibHac.Os;
 
 namespace LibHac.FsSystem
@@ -11,44 +9,38 @@ namespace LibHac.FsSystem
     {
         private struct Cache
         {
-            private ReferenceCountedDisposable<IFileSystem> _fileSystem;
+            // Note: Nintendo only supports caching SaveDataFileSystem. We support DirectorySaveDataFileSystem too,
+            // so we use a wrapper class to simplify the logic here.
+            private SharedRef<SaveDataFileSystemHolder> _fileSystem;
             private ulong _saveDataId;
             private SaveDataSpaceId _spaceId;
 
             public void Dispose()
             {
-                _fileSystem?.Dispose();
-                _fileSystem = null;
+                _fileSystem.Destroy();
             }
 
             public bool IsCached(SaveDataSpaceId spaceId, ulong saveDataId)
             {
-                return _fileSystem is not null && _spaceId == spaceId && _saveDataId == saveDataId;
+                return _fileSystem.HasValue && _spaceId == spaceId && _saveDataId == saveDataId;
             }
 
-            public ReferenceCountedDisposable<IFileSystem> Move()
+            public void Move(ref SharedRef<SaveDataFileSystemHolder> outFileSystem)
             {
-                return Shared.Move(ref _fileSystem);
+                outFileSystem.SetByMove(ref _fileSystem);
             }
 
-            // Note: Nintendo only supports caching SaveDataFileSystem. We support DirectorySaveDataFileSystem too,
-            // so instead of calling methods on SaveDataFileSystem to get the save data info,
-            // we pass them in as parameters.
-            // Todo: Create a new interface for those methods?
-            public void Register(ReferenceCountedDisposable<IFileSystem> fileSystem, SaveDataSpaceId spaceId,
-                ulong saveDataId)
+            public void Register(ref SharedRef<SaveDataFileSystemHolder> fileSystem)
             {
-                _spaceId = spaceId;
-                _saveDataId = saveDataId;
+                _spaceId = fileSystem.Get.GetSaveDataSpaceId();
+                _saveDataId = fileSystem.Get.GetSaveDataId();
 
-                _fileSystem?.Dispose();
-                _fileSystem = fileSystem;
+                _fileSystem.SetByMove(ref fileSystem);
             }
 
             public void Unregister()
             {
-                _fileSystem?.Dispose();
-                _fileSystem = null;
+                _fileSystem.Reset();
             }
         }
 
@@ -64,11 +56,14 @@ namespace LibHac.FsSystem
 
         public void Dispose()
         {
-            Cache[] caches = _cachedFileSystems;
+            Cache[] caches = Shared.Move(ref _cachedFileSystems);
 
-            for (int i = 0; i < caches.Length; i++)
+            if (caches is not null)
             {
-                caches[i].Dispose();
+                for (int i = 0; i < caches.Length; i++)
+                {
+                    caches[i].Dispose();
+                }
             }
         }
 
@@ -89,7 +84,7 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        public bool GetCache(out ReferenceCountedDisposable<IFileSystem> fileSystem, SaveDataSpaceId spaceId,
+        public bool GetCache(ref SharedRef<SaveDataFileSystemHolder> outFileSystem, SaveDataSpaceId spaceId,
             ulong saveDataId)
         {
             Assert.SdkRequiresGreaterEqual(_maxCachedFileSystemCount, 0);
@@ -100,26 +95,22 @@ namespace LibHac.FsSystem
             {
                 if (_cachedFileSystems[i].IsCached(spaceId, saveDataId))
                 {
-                    fileSystem = _cachedFileSystems[i].Move();
+                    _cachedFileSystems[i].Move(ref outFileSystem);
                     return true;
                 }
             }
 
-            fileSystem = default;
             return false;
         }
 
-        public void Register(ReferenceCountedDisposable<ApplicationTemporaryFileSystem> fileSystem)
+        public void Register(ref SharedRef<ApplicationTemporaryFileSystem> fileSystem)
         {
-            throw new System.NotImplementedException();
+            // Don't cache temporary save data
+            using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
+            fileSystem.Reset();
         }
 
-        public void Register(ReferenceCountedDisposable<SaveDataFileSystem> fileSystem)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void Register(ReferenceCountedDisposable<DirectorySaveDataFileSystem> fileSystem)
+        public void Register(ref SharedRef<SaveDataFileSystemHolder> fileSystem)
         {
             if (_maxCachedFileSystemCount <= 0)
                 return;
@@ -127,18 +118,22 @@ namespace LibHac.FsSystem
             Assert.SdkRequiresGreaterEqual(_nextCacheIndex, 0);
             Assert.SdkRequiresGreater(_maxCachedFileSystemCount, _nextCacheIndex);
 
-            if (fileSystem.Target.GetSaveDataSpaceId() == SaveDataSpaceId.SdSystem)
-                return;
+            if (fileSystem.Get.GetSaveDataSpaceId() == SaveDataSpaceId.SdSystem)
+            {
+                // Don't cache system save data
+                using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
+                fileSystem.Reset();
+            }
+            else
+            {
+                Result rc = fileSystem.Get.RollbackOnlyModified();
+                if (rc.IsFailure()) return;
 
-            Result rc = fileSystem.Target.Rollback();
-            if (rc.IsFailure()) return;
+                using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
-
-            _cachedFileSystems[_nextCacheIndex].Register(fileSystem.AddReference<IFileSystem>(),
-                fileSystem.Target.GetSaveDataSpaceId(), fileSystem.Target.GetSaveDataId());
-
-            _nextCacheIndex = (_nextCacheIndex + 1) % _maxCachedFileSystemCount;
+                _cachedFileSystems[_nextCacheIndex].Register(ref fileSystem);
+                _nextCacheIndex = (_nextCacheIndex + 1) % _maxCachedFileSystemCount;
+            }
         }
 
         public void Unregister(SaveDataSpaceId spaceId, ulong saveDataId)
@@ -156,9 +151,9 @@ namespace LibHac.FsSystem
             }
         }
 
-        public ScopedLock<SdkRecursiveMutexType> GetScopedLock()
+        public UniqueLockRef<SdkRecursiveMutexType> GetScopedLock()
         {
-            return new ScopedLock<SdkRecursiveMutexType>(ref _mutex);
+            return new UniqueLockRef<SdkRecursiveMutexType>(ref _mutex);
         }
     }
 }

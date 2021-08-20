@@ -34,7 +34,7 @@ namespace LibHac.FsSystem
             int outPos = 0;
             int remaining = destination.Length;
 
-            if (!IsRangeValid(offset, destination.Length, Length))
+            if (!CheckAccessRange(offset, destination.Length, Length))
                 return ResultFs.OutOfRange.Log();
 
             int sourceIndex = FindSource(inPos);
@@ -65,7 +65,7 @@ namespace LibHac.FsSystem
             int outPos = 0;
             int remaining = source.Length;
 
-            if (!IsRangeValid(offset, source.Length, Length))
+            if (!CheckAccessRange(offset, source.Length, Length))
                 return ResultFs.OutOfRange.Log();
 
             int sourceIndex = FindSource(inPos);
@@ -112,18 +112,17 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
+            if (!LeaveOpen && Sources != null)
             {
-                if (!LeaveOpen && Sources != null)
+                foreach (ConcatSource source in Sources)
                 {
-                    foreach (ConcatSource source in Sources)
-                    {
-                        source?.Storage?.Dispose();
-                    }
+                    source?.Storage?.Dispose();
                 }
             }
+
+            base.Dispose();
         }
 
         private int FindSource(long offset)

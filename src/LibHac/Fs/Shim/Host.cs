@@ -26,44 +26,41 @@ namespace LibHac.Fs.Shim
         private static ReadOnlySpan<byte> HostRootFileSystemPath => // "@Host:/"
             new[] { (byte)'@', (byte)'H', (byte)'o', (byte)'s', (byte)'t', (byte)':', (byte)'/' };
 
-        private const int HostRootFileSystemPathLength = 8;
+        private const int HostRootFileSystemPathLength = 7;
 
         /// <summary>
         /// Opens a host file system via <see cref="IFileSystemProxy"/>.
         /// </summary>
         /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
-        /// <param name="fileSystem">If successful, the opened host file system.</param>
+        /// <param name="outFileSystem">If successful, the opened host file system.</param>
         /// <param name="path">The path on the host computer to open. e.g. /C:\Windows\System32/</param>
         /// <param name="option">Options for opening the host file system.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        private static Result OpenHostFileSystemImpl(FileSystemClient fs, out IFileSystem fileSystem, in FspPath path,
-            MountHostOption option)
+        private static Result OpenHostFileSystemImpl(FileSystemClient fs, ref UniqueRef<IFileSystem> outFileSystem,
+            in FspPath path, MountHostOption option)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
-
-            ReferenceCountedDisposable<IFileSystemSf> hostFs = null;
-            try
+            if (option.Flags != MountHostOptionFlag.None)
             {
-                if (option.Flags != MountHostOptionFlag.None)
-                {
-                    Result rc = fsProxy.Target.OpenHostFileSystemWithOption(out hostFs, in path, option);
-                    if (rc.IsFailure()) return rc;
-                }
-                else
-                {
-                    Result rc = fsProxy.Target.OpenHostFileSystem(out hostFs, in path);
-                    if (rc.IsFailure()) return rc;
-                }
-
-                fileSystem = new FileSystemServiceObjectAdapter(hostFs);
-                return Result.Success;
+                Result rc = fileSystemProxy.Get.OpenHostFileSystemWithOption(ref fileSystem.Ref(), in path, option);
+                if (rc.IsFailure()) return rc;
             }
-            finally
+            else
             {
-                hostFs?.Dispose();
+                Result rc = fileSystemProxy.Get.OpenHostFileSystem(ref fileSystem.Ref(), in path);
+                if (rc.IsFailure()) return rc;
             }
+
+            using var fileSystemAdapter =
+                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+
+            if (!fileSystemAdapter.HasValue)
+                return ResultFs.AllocationMemoryFailedInHostA.Log();
+
+            outFileSystem.Set(ref fileSystemAdapter.Ref());
+            return Result.Success;
         }
 
         private class HostCommonMountNameGenerator : ICommonMountNameGenerator
@@ -72,13 +69,7 @@ namespace LibHac.Fs.Shim
 
             public HostCommonMountNameGenerator(U8Span path)
             {
-                StringUtils.Copy(_path.Str, path);
-
-                int pathLength = StringUtils.GetLength(_path.Str);
-                if (pathLength != 0 && _path.Str[pathLength - 1] == DirectorySeparator)
-                {
-                    _path.Str[pathLength - 1] = NullTerminator;
-                }
+                StringUtils.Strlcpy(_path.Str, path, FsPath.MaxLength + 1);
             }
 
             public void Dispose() { }
@@ -86,7 +77,7 @@ namespace LibHac.Fs.Shim
             public Result GenerateCommonMountName(Span<byte> nameBuffer)
             {
                 int requiredNameBufferSize =
-                    StringUtils.GetLength(_path.Str, FsPath.MaxLength) + HostRootFileSystemPathLength;
+                    StringUtils.GetLength(_path.Str, FsPath.MaxLength + 1) + HostRootFileSystemPathLength;
 
                 if (nameBuffer.Length < requiredNameBufferSize)
                     return ResultFs.TooLongPath.Log();
@@ -123,16 +114,14 @@ namespace LibHac.Fs.Shim
         /// Verifies parameters and opens a host file system.
         /// </summary>
         /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
-        /// <param name="fileSystem">If successful, the opened host file system.</param>
+        /// <param name="outFileSystem">If successful, the opened host file system.</param>
         /// <param name="mountName">The mount name to be verified.</param>
         /// <param name="path">The path on the host computer to open. e.g. C:\Windows\System32</param>
         /// <param name="option">Options for opening the host file system.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        private static Result OpenHostFileSystem(FileSystemClient fs, out IFileSystem fileSystem, U8Span mountName,
-            U8Span path, MountHostOption option)
+        private static Result OpenHostFileSystem(FileSystemClient fs, ref UniqueRef<IFileSystem> outFileSystem,
+            U8Span mountName, U8Span path, MountHostOption option)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
             if (mountName.IsNull())
                 return ResultFs.NullptrArgument.Log();
 
@@ -145,44 +134,22 @@ namespace LibHac.Fs.Shim
             if (fs.Impl.IsUsedReservedMountName(mountName))
                 return ResultFs.InvalidMountName.Log();
 
-            bool needsTrailingSeparator = false;
-            int pathLength = StringUtils.GetLength(path, PathTools.MaxPathLength + 1);
+            Result rc = PathUtility.ConvertToFspPath(out FspPath sfPath, path);
+            if (rc.IsFailure()) return rc.Miss();
 
-            if (pathLength != 0 && path[pathLength - 1] == DirectorySeparator)
+            if (sfPath.Str[0] == NullTerminator)
             {
-                needsTrailingSeparator = true;
-                pathLength++;
+                SpanHelpers.AsByteSpan(ref sfPath)[0] = Dot;
+                SpanHelpers.AsByteSpan(ref sfPath)[1] = NullTerminator;
             }
 
-            if (pathLength + 1 > PathTools.MaxPathLength)
-                return ResultFs.TooLongPath.Log();
+            using var fileSystem = new UniqueRef<IFileSystem>();
 
-            Unsafe.SkipInit(out FsPath fullPath);
+            rc = OpenHostFileSystemImpl(fs, ref fileSystem.Ref(), in sfPath, option);
+            if (rc.IsFailure()) return rc.Miss();
 
-            var sb = new U8StringBuilder(fullPath.Str);
-            sb.Append(DirectorySeparator).Append(path);
-
-            if (needsTrailingSeparator)
-            {
-                sb.Append(DirectorySeparator);
-            }
-
-            if (sb.Overflowed)
-                return ResultFs.TooLongPath.Log();
-
-            // If the input path begins with "//", change any leading '/' characters to '\'
-            if (fullPath.Str[1] == DirectorySeparator && fullPath.Str[2] == DirectorySeparator)
-            {
-                for (int i = 1; fullPath.Str[i] == DirectorySeparator; i++)
-                {
-                    fullPath.Str[i] = AltDirectorySeparator;
-                }
-            }
-
-            Result rc = FspPath.FromSpan(out FspPath sfPath, fullPath.Str);
-            if (rc.IsFailure()) return rc;
-
-            return OpenHostFileSystemImpl(fs, out fileSystem, in sfPath, option);
+            outFileSystem.Set(ref fileSystem.Ref());
+            return Result.Success;
         }
 
         /// <summary>
@@ -190,22 +157,24 @@ namespace LibHac.Fs.Shim
         /// <paramref name="path"/>, and verifies the <paramref name="mountName"/>.
         /// </summary>
         /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
-        /// <param name="nameGenerator">If successful, the created <see cref="ICommonMountNameGenerator"/>.</param>
+        /// <param name="outMountNameGenerator">If successful, the created <see cref="ICommonMountNameGenerator"/>.</param>
         /// <param name="mountName">The mount name at which the file system will be mounted.</param>
         /// <param name="path">The path that will be opened on the host computer. e.g. C:\Windows\System32</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        private static Result PreMountHost(FileSystemClient fs, out HostCommonMountNameGenerator nameGenerator,
-            U8Span mountName, U8Span path)
+        private static Result PreMountHost(FileSystemClient fs,
+            ref UniqueRef<HostCommonMountNameGenerator> outMountNameGenerator, U8Span mountName, U8Span path)
         {
-            UnsafeHelpers.SkipParamInit(out nameGenerator);
-
             Result rc = fs.Impl.CheckMountName(mountName);
             if (rc.IsFailure()) return rc;
 
             if (path.IsNull())
                 return ResultFs.NullptrArgument.Log();
 
-            nameGenerator = new HostCommonMountNameGenerator(path);
+            outMountNameGenerator.Reset(new HostCommonMountNameGenerator(path));
+
+            if (!outMountNameGenerator.HasValue)
+                return ResultFs.AllocationMemoryFailedInHostB.Log();
+
             return Result.Success;
         }
 
@@ -221,12 +190,12 @@ namespace LibHac.Fs.Shim
             Result rc;
             Span<byte> logBuffer = stackalloc byte[0x300];
 
-            HostCommonMountNameGenerator mountNameGenerator;
+            using var mountNameGenerator = new UniqueRef<HostCommonMountNameGenerator>();
 
             if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             {
                 Tick start = fs.Hos.Os.GetSystemTick();
-                rc = PreMountHost(fs, out mountNameGenerator, mountName, path);
+                rc = PreMountHost(fs, ref mountNameGenerator.Ref(), mountName, path);
                 Tick end = fs.Hos.Os.GetSystemTick();
 
                 var sb = new U8StringBuilder(logBuffer, true);
@@ -239,40 +208,43 @@ namespace LibHac.Fs.Shim
             }
             else
             {
-                rc = PreMountHost(fs, out mountNameGenerator, mountName, path);
+                rc = PreMountHost(fs, ref mountNameGenerator.Ref(), mountName, path);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
-            IFileSystem fileSystem;
+            using var fileSystem = new UniqueRef<IFileSystem>();
 
             if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             {
                 Tick start = fs.Hos.Os.GetSystemTick();
-                rc = OpenHostFileSystem(fs, out fileSystem, mountName, path, MountHostOption.None);
+                rc = OpenHostFileSystem(fs, ref fileSystem.Ref(), mountName, path, MountHostOption.None);
                 Tick end = fs.Hos.Os.GetSystemTick();
 
                 fs.Impl.OutputAccessLogUnlessResultSuccess(rc, start, end, null, new U8Span(logBuffer));
             }
             else
             {
-                rc = OpenHostFileSystem(fs, out fileSystem, mountName, path, MountHostOption.None);
+                rc = OpenHostFileSystem(fs, ref fileSystem.Ref(), mountName, path, MountHostOption.None);
             }
+
             // No AbortIfNeeded here
             if (rc.IsFailure()) return rc;
 
             if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             {
                 Tick start = fs.Hos.Os.GetSystemTick();
-                rc = fs.Register(mountName, fileSystem, mountNameGenerator);
+                rc = PostMount(fs, mountName, ref fileSystem.Ref(), ref mountNameGenerator.Ref());
                 Tick end = fs.Hos.Os.GetSystemTick();
 
                 fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(logBuffer));
             }
             else
             {
-                rc = fs.Register(mountName, fileSystem, mountNameGenerator);
+                rc = PostMount(fs, mountName, ref fileSystem.Ref(), ref mountNameGenerator.Ref());
             }
+
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
@@ -280,6 +252,18 @@ namespace LibHac.Fs.Shim
                 fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
 
             return Result.Success;
+
+            static Result PostMount(FileSystemClient fs, U8Span mountName, ref UniqueRef<IFileSystem> fileSystem,
+                ref UniqueRef<HostCommonMountNameGenerator> mountNameGenerator)
+            {
+                using UniqueRef<ICommonMountNameGenerator> baseMountNameGenerator =
+                    UniqueRef<ICommonMountNameGenerator>.Create(ref mountNameGenerator);
+
+                Result rc = fs.Register(mountName, ref fileSystem, ref baseMountNameGenerator.Ref());
+                if (rc.IsFailure()) return rc.Miss();
+
+                return Result.Success;
+            }
         }
 
         /// <summary>
@@ -295,12 +279,12 @@ namespace LibHac.Fs.Shim
             Result rc;
             Span<byte> logBuffer = stackalloc byte[0x300];
 
-            HostCommonMountNameGenerator mountNameGenerator;
+            using var mountNameGenerator = new UniqueRef<HostCommonMountNameGenerator>();
 
             if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             {
                 Tick start = fs.Hos.Os.GetSystemTick();
-                rc = PreMountHost(fs, out mountNameGenerator, mountName, path);
+                rc = PreMountHost(fs, ref mountNameGenerator.Ref(), mountName, path);
                 Tick end = fs.Hos.Os.GetSystemTick();
 
                 var idString = new IdString();
@@ -316,40 +300,43 @@ namespace LibHac.Fs.Shim
             }
             else
             {
-                rc = PreMountHost(fs, out mountNameGenerator, mountName, path);
+                rc = PreMountHost(fs, ref mountNameGenerator.Ref(), mountName, path);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
-            IFileSystem fileSystem;
+            using var fileSystem = new UniqueRef<IFileSystem>();
 
             if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             {
                 Tick start = fs.Hos.Os.GetSystemTick();
-                rc = OpenHostFileSystem(fs, out fileSystem, mountName, path, option);
+                rc = OpenHostFileSystem(fs, ref fileSystem.Ref(), mountName, path, option);
                 Tick end = fs.Hos.Os.GetSystemTick();
 
                 fs.Impl.OutputAccessLogUnlessResultSuccess(rc, start, end, null, new U8Span(logBuffer));
             }
             else
             {
-                rc = OpenHostFileSystem(fs, out fileSystem, mountName, path, MountHostOption.None);
+                rc = OpenHostFileSystem(fs, ref fileSystem.Ref(), mountName, path, option);
             }
+
             // No AbortIfNeeded here
             if (rc.IsFailure()) return rc;
 
             if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             {
                 Tick start = fs.Hos.Os.GetSystemTick();
-                rc = fs.Register(mountName, fileSystem, mountNameGenerator);
+                rc = PostMount(fs, mountName, ref fileSystem.Ref(), ref mountNameGenerator.Ref());
                 Tick end = fs.Hos.Os.GetSystemTick();
 
                 fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(logBuffer));
             }
             else
             {
-                rc = fs.Register(mountName, fileSystem, mountNameGenerator);
+                rc = PostMount(fs, mountName, ref fileSystem.Ref(), ref mountNameGenerator.Ref());
             }
+
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
@@ -357,6 +344,18 @@ namespace LibHac.Fs.Shim
                 fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
 
             return Result.Success;
+
+            static Result PostMount(FileSystemClient fs, U8Span mountName, ref UniqueRef<IFileSystem> fileSystem,
+                ref UniqueRef<HostCommonMountNameGenerator> mountNameGenerator)
+            {
+                using UniqueRef<ICommonMountNameGenerator> baseMountNameGenerator =
+                    UniqueRef<ICommonMountNameGenerator>.Create(ref mountNameGenerator);
+
+                Result rc = fs.Register(mountName, ref fileSystem, ref baseMountNameGenerator.Ref());
+                if (rc.IsFailure()) return rc.Miss();
+
+                return Result.Success;
+            }
         }
 
         /// <summary>
@@ -369,13 +368,13 @@ namespace LibHac.Fs.Shim
             Result rc;
             Span<byte> logBuffer = stackalloc byte[0x30];
 
-            IFileSystem fileSystem;
+            using var fileSystem = new UniqueRef<IFileSystem>();
             FspPath.CreateEmpty(out FspPath sfPath);
 
             if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             {
                 Tick start = fs.Hos.Os.GetSystemTick();
-                rc = OpenHostFileSystemImpl(fs, out fileSystem, in sfPath, MountHostOption.None);
+                rc = OpenHostFileSystemImpl(fs, ref fileSystem.Ref(), in sfPath, MountHostOption.None);
                 Tick end = fs.Hos.Os.GetSystemTick();
 
                 var sb = new U8StringBuilder(logBuffer, true);
@@ -386,23 +385,25 @@ namespace LibHac.Fs.Shim
             }
             else
             {
-                rc = OpenHostFileSystemImpl(fs, out fileSystem, in sfPath, MountHostOption.None);
+                rc = OpenHostFileSystemImpl(fs, ref fileSystem.Ref(), in sfPath, MountHostOption.None);
             }
+
             // No AbortIfNeeded here
             if (rc.IsFailure()) return rc;
 
             if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             {
                 Tick start = fs.Hos.Os.GetSystemTick();
-                rc = MountHostFs(fs, fileSystem);
+                rc = PostMount(fs, ref fileSystem.Ref());
                 Tick end = fs.Hos.Os.GetSystemTick();
 
                 fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(logBuffer));
             }
             else
             {
-                rc = MountHostFs(fs, fileSystem);
+                rc = PostMount(fs, ref fileSystem.Ref());
             }
+
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
@@ -411,10 +412,19 @@ namespace LibHac.Fs.Shim
 
             return Result.Success;
 
-            static Result MountHostFs(FileSystemClient fs, IFileSystem fileSystem)
+            static Result PostMount(FileSystemClient fs, ref UniqueRef<IFileSystem> fileSystem)
             {
-                return fs.Register(new U8Span(HostRootFileSystemMountName), fileSystem,
-                    new HostRootCommonMountNameGenerator());
+                using var mountNameGenerator =
+                    new UniqueRef<ICommonMountNameGenerator>(new HostRootCommonMountNameGenerator());
+
+                if (!mountNameGenerator.HasValue)
+                    return ResultFs.AllocationMemoryFailedInHostC.Log();
+
+                Result rc = fs.Register(new U8Span(HostRootFileSystemMountName), ref fileSystem,
+                    ref mountNameGenerator.Ref());
+                if (rc.IsFailure()) return rc.Miss();
+
+                return Result.Success;
             }
         }
 
@@ -429,13 +439,13 @@ namespace LibHac.Fs.Shim
             Result rc;
             Span<byte> logBuffer = stackalloc byte[0x60];
 
-            IFileSystem fileSystem;
+            using var fileSystem = new UniqueRef<IFileSystem>();
             FspPath.CreateEmpty(out FspPath sfPath);
 
             if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             {
                 Tick start = fs.Hos.Os.GetSystemTick();
-                rc = OpenHostFileSystemImpl(fs, out fileSystem, in sfPath, option);
+                rc = OpenHostFileSystemImpl(fs, ref fileSystem.Ref(), in sfPath, option);
                 Tick end = fs.Hos.Os.GetSystemTick();
 
                 var idString = new IdString();
@@ -450,23 +460,25 @@ namespace LibHac.Fs.Shim
             }
             else
             {
-                rc = OpenHostFileSystemImpl(fs, out fileSystem, in sfPath, option);
+                rc = OpenHostFileSystemImpl(fs, ref fileSystem.Ref(), in sfPath, option);
             }
+
             // No AbortIfNeeded here
             if (rc.IsFailure()) return rc;
 
             if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             {
                 Tick start = fs.Hos.Os.GetSystemTick();
-                rc = MountHostFs(fs, fileSystem);
+                rc = PostMount(fs, ref fileSystem.Ref());
                 Tick end = fs.Hos.Os.GetSystemTick();
 
                 fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(logBuffer));
             }
             else
             {
-                rc = MountHostFs(fs, fileSystem);
+                rc = PostMount(fs, ref fileSystem.Ref());
             }
+
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
@@ -475,10 +487,19 @@ namespace LibHac.Fs.Shim
 
             return Result.Success;
 
-            static Result MountHostFs(FileSystemClient fs, IFileSystem fileSystem)
+            static Result PostMount(FileSystemClient fs, ref UniqueRef<IFileSystem> fileSystem)
             {
-                return fs.Register(new U8Span(HostRootFileSystemMountName), fileSystem,
-                    new HostRootCommonMountNameGenerator());
+                using var mountNameGenerator =
+                    new UniqueRef<ICommonMountNameGenerator>(new HostRootCommonMountNameGenerator());
+
+                if (!mountNameGenerator.HasValue)
+                    return ResultFs.AllocationMemoryFailedInHostC.Log();
+
+                Result rc = fs.Register(new U8Span(HostRootFileSystemMountName), ref fileSystem,
+                    ref mountNameGenerator.Ref());
+                if (rc.IsFailure()) return rc.Miss();
+
+                return Result.Success;
             }
         }
 
@@ -508,6 +529,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = fs.Impl.Unmount(mountName);
             }
+
             fs.Impl.LogResultErrorMessage(rc);
             Abort.DoAbortUnless(rc.IsSuccess());
         }

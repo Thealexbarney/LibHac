@@ -638,38 +638,29 @@ namespace LibHac.Fs.Fsa
             if (mountNames.Length == 0)
                 return Result.Success;
 
-            ReferenceCountedDisposable<IMultiCommitManager> commitManager = null;
-            ReferenceCountedDisposable<IFileSystemSf> fileSystem = null;
-            try
-            {
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using var commitManager = new SharedRef<IMultiCommitManager>();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-                Result rc = fsProxy.Target.OpenMultiCommitManager(out commitManager);
+            Result rc = fileSystemProxy.Get.OpenMultiCommitManager(ref commitManager.Ref());
+            if (rc.IsFailure()) return rc;
+
+            for (int i = 0; i < mountNames.Length; i++)
+            {
+                rc = fs.Impl.Find(out FileSystemAccessor accessor, mountNames[i]);
                 if (rc.IsFailure()) return rc;
 
-                for (int i = 0; i < mountNames.Length; i++)
-                {
-                    rc = fs.Impl.Find(out FileSystemAccessor accessor, mountNames[i]);
-                    if (rc.IsFailure()) return rc;
+                using SharedRef<IFileSystemSf> fileSystem = accessor.GetMultiCommitTarget();
+                if (!fileSystem.HasValue)
+                    return ResultFs.UnsupportedCommitTarget.Log();
 
-                    fileSystem = accessor.GetMultiCommitTarget();
-                    if (fileSystem is null)
-                        return ResultFs.UnsupportedCommitTarget.Log();
-
-                    rc = commitManager.Target.Add(fileSystem);
-                    if (rc.IsFailure()) return rc;
-                }
-
-                rc = commitManager.Target.Commit();
+                rc = commitManager.Get.Add(ref fileSystem.Ref());
                 if (rc.IsFailure()) return rc;
+            }
 
-                return Result.Success;
-            }
-            finally
-            {
-                commitManager?.Dispose();
-                fileSystem?.Dispose();
-            }
+            rc = commitManager.Get.Commit();
+            if (rc.IsFailure()) return rc;
+
+            return Result.Success;
         }
 
         public static Result Commit(this FileSystemClient fs, U8Span mountName, CommitOption option)

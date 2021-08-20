@@ -13,29 +13,24 @@ namespace LibHac.FsSrv.FsCreator
             GameCard = gameCard;
         }
 
-        public Result CreateReadOnly(GameCardHandle handle, out ReferenceCountedDisposable<IStorage> storage)
+        public Result CreateReadOnly(GameCardHandle handle, ref SharedRef<IStorage> outStorage)
         {
-            UnsafeHelpers.SkipParamInit(out storage);
-
             if (GameCard.IsGameCardHandleInvalid(handle))
             {
                 return ResultFs.InvalidGameCardHandleOnOpenNormalPartition.Log();
             }
 
-            var baseStorage = new ReferenceCountedDisposable<IStorage>(new ReadOnlyGameCardStorage(GameCard, handle));
+            using var baseStorage = new SharedRef<IStorage>(new ReadOnlyGameCardStorage(GameCard, handle));
 
             Result rc = GameCard.GetCardInfo(out GameCardInfo cardInfo, handle);
             if (rc.IsFailure()) return rc;
 
-            storage = new ReferenceCountedDisposable<IStorage>(
-                new SubStorage(baseStorage, 0, cardInfo.SecureAreaOffset));
+            outStorage.Reset(new SubStorage(ref baseStorage.Ref(), 0, cardInfo.SecureAreaOffset));
             return Result.Success;
         }
 
-        public Result CreateSecureReadOnly(GameCardHandle handle, out ReferenceCountedDisposable<IStorage> storage)
+        public Result CreateSecureReadOnly(GameCardHandle handle, ref SharedRef<IStorage> outStorage)
         {
-            UnsafeHelpers.SkipParamInit(out storage);
-
             if (GameCard.IsGameCardHandleInvalid(handle))
             {
                 return ResultFs.InvalidGameCardHandleOnOpenSecurePartition.Log();
@@ -50,19 +45,17 @@ namespace LibHac.FsSrv.FsCreator
             rc = GameCard.GetGameCardImageHash(imageHash);
             if (rc.IsFailure()) return rc;
 
-            var baseStorage =
-                new ReferenceCountedDisposable<IStorage>(new ReadOnlyGameCardStorage(GameCard, handle, deviceId,
-                    imageHash));
+            using var baseStorage =
+                new SharedRef<IStorage>(new ReadOnlyGameCardStorage(GameCard, handle, deviceId, imageHash));
 
             rc = GameCard.GetCardInfo(out GameCardInfo cardInfo, handle);
             if (rc.IsFailure()) return rc;
 
-            storage = new ReferenceCountedDisposable<IStorage>(new SubStorage(baseStorage, cardInfo.SecureAreaOffset,
-                cardInfo.SecureAreaSize));
+            outStorage.Reset(new SubStorage(ref baseStorage.Ref(), cardInfo.SecureAreaOffset, cardInfo.SecureAreaSize));
             return Result.Success;
         }
 
-        public Result CreateWriteOnly(GameCardHandle handle, out ReferenceCountedDisposable<IStorage> storage)
+        public Result CreateWriteOnly(GameCardHandle handle, ref SharedRef<IStorage> outStorage)
         {
             throw new NotImplementedException();
         }

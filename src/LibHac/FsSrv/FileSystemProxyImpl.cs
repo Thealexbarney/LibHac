@@ -52,78 +52,83 @@ namespace LibHac.FsSrv
         public Optional<FileSystemProxyCoreImpl> FileSystemProxyCoreImpl;
     }
 
+    /// <summary>
+    /// Dispatches calls to the main file system service interface.
+    /// </summary>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
     {
-        private FileSystemServer FsServer { get; }
-        private ref FileSystemProxyImplGlobals Globals => ref FsServer.Globals.FileSystemProxyImpl;
+        private FileSystemProxyCoreImpl _fsProxyCore;
+        private SharedRef<NcaFileSystemService> _ncaFsService;
+        private SharedRef<SaveDataFileSystemService> _saveFsService;
+        private ulong _currentProcess;
 
-        private FileSystemProxyCoreImpl FsProxyCore { get; }
-        private ReferenceCountedDisposable<NcaFileSystemService> NcaFsService { get; set; }
-        private ReferenceCountedDisposable<SaveDataFileSystemService> SaveFsService { get; set; }
-        private ulong CurrentProcess { get; set; }
+        // LibHac addition
+        private FileSystemServer _fsServer;
+        private ref FileSystemProxyImplGlobals Globals => ref _fsServer.Globals.FileSystemProxyImpl;
 
         internal FileSystemProxyImpl(FileSystemServer server)
         {
-            FsServer = server;
+            _fsServer = server;
 
-            FsProxyCore = Globals.FileSystemProxyCoreImpl.Value;
-            CurrentProcess = ulong.MaxValue;
+            _fsProxyCore = Globals.FileSystemProxyCoreImpl.Value;
+            _currentProcess = ulong.MaxValue;
         }
 
         public void Dispose()
         {
-            NcaFsService?.Dispose();
-            SaveFsService?.Dispose();
+            _ncaFsService.Destroy();
+            _saveFsService.Destroy();
         }
 
         private Result GetProgramInfo(out ProgramInfo programInfo)
         {
-            var registry = new ProgramRegistryImpl(FsServer);
-            return registry.GetProgramInfo(out programInfo, CurrentProcess);
+            var registry = new ProgramRegistryImpl(_fsServer);
+            return registry.GetProgramInfo(out programInfo, _currentProcess);
         }
 
         private Result GetNcaFileSystemService(out NcaFileSystemService ncaFsService)
         {
-            if (NcaFsService is null)
+            if (!_ncaFsService.HasValue)
             {
                 UnsafeHelpers.SkipParamInit(out ncaFsService);
                 return ResultFs.PreconditionViolation.Log();
             }
 
-            ncaFsService = NcaFsService.Target;
+            ncaFsService = _ncaFsService.Get;
             return Result.Success;
         }
 
         private Result GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService)
         {
-            if (SaveFsService is null)
+            if (!_saveFsService.HasValue)
             {
                 UnsafeHelpers.SkipParamInit(out saveFsService);
                 return ResultFs.PreconditionViolation.Log();
             }
 
-            saveFsService = SaveFsService.Target;
+            saveFsService = _saveFsService.Get;
             return Result.Success;
         }
 
         private BaseStorageService GetBaseStorageService()
         {
-            return new BaseStorageService(Globals.BaseStorageServiceImpl, CurrentProcess);
+            return new BaseStorageService(Globals.BaseStorageServiceImpl, _currentProcess);
         }
 
         private BaseFileSystemService GetBaseFileSystemService()
         {
-            return new BaseFileSystemService(Globals.BaseFileSystemServiceImpl, CurrentProcess);
+            return new BaseFileSystemService(Globals.BaseFileSystemServiceImpl, _currentProcess);
         }
 
         private AccessFailureManagementService GetAccessFailureManagementService()
         {
-            return new AccessFailureManagementService(Globals.AccessFailureManagementServiceImpl, CurrentProcess);
+            return new AccessFailureManagementService(Globals.AccessFailureManagementServiceImpl, _currentProcess);
         }
 
         private TimeService GetTimeService()
         {
-            return new TimeService(Globals.TimeServiceImpl, CurrentProcess);
+            return new TimeService(Globals.TimeServiceImpl, _currentProcess);
         }
 
         private StatusReportService GetStatusReportService()
@@ -133,62 +138,50 @@ namespace LibHac.FsSrv
 
         private ProgramIndexRegistryService GetProgramIndexRegistryService()
         {
-            return new ProgramIndexRegistryService(Globals.ProgramRegistryServiceImpl, CurrentProcess);
+            return new ProgramIndexRegistryService(Globals.ProgramRegistryServiceImpl, _currentProcess);
         }
 
         private AccessLogService GetAccessLogService()
         {
-            return new AccessLogService(Globals.AccessLogServiceImpl, CurrentProcess);
+            return new AccessLogService(Globals.AccessLogServiceImpl, _currentProcess);
         }
 
-        public Result OpenFileSystemWithId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath path,
+        public Result OpenFileSystemWithId(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath path,
             ulong id, FileSystemProxyType fsType)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out fileSystem);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return ncaFsService.OpenFileSystemWithId(out fileSystem, in path, id, fsType);
+            return ncaFsService.OpenFileSystemWithId(ref outFileSystem, in path, id, fsType);
         }
 
-        public Result OpenFileSystemWithPatch(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        public Result OpenFileSystemWithPatch(ref SharedRef<IFileSystemSf> outFileSystem,
             ProgramId programId, FileSystemProxyType fsType)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out fileSystem);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return ncaFsService.OpenFileSystemWithPatch(out fileSystem, programId, fsType);
+            return ncaFsService.OpenFileSystemWithPatch(ref outFileSystem, programId, fsType);
         }
 
-        public Result OpenCodeFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        public Result OpenCodeFileSystem(ref SharedRef<IFileSystemSf> fileSystem,
             out CodeVerificationData verificationData, in FspPath path, ProgramId programId)
         {
             UnsafeHelpers.SkipParamInit(out verificationData);
 
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out fileSystem);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return ncaFsService.OpenCodeFileSystem(out fileSystem, out verificationData, in path, programId);
+            return ncaFsService.OpenCodeFileSystem(ref fileSystem, out verificationData, in path, programId);
         }
 
         public Result SetCurrentProcess(ulong processId)
         {
-            CurrentProcess = processId;
+            _currentProcess = processId;
 
             // Initialize the NCA file system service
-            NcaFsService = NcaFileSystemService.CreateShared(Globals.NcaFileSystemServiceImpl, processId);
-            SaveFsService = SaveDataFileSystemService.CreateShared(Globals.SaveDataFileSystemServiceImpl, processId);
+            _ncaFsService = NcaFileSystemService.CreateShared(Globals.NcaFileSystemServiceImpl, processId);
+            _saveFsService = SaveDataFileSystemService.CreateShared(Globals.SaveDataFileSystemServiceImpl, processId);
 
             return Result.Success;
         }
@@ -203,99 +196,70 @@ namespace LibHac.FsSrv
             return saveFsService.GetFreeSpaceSizeForSaveData(out freeSpaceSize, spaceId);
         }
 
-        public Result OpenDataFileSystemByCurrentProcess(out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
+        public Result OpenDataFileSystemByCurrentProcess(ref SharedRef<IFileSystemSf> outFileSystem)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out fileSystem);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return ncaFsService.OpenDataFileSystemByCurrentProcess(out fileSystem);
+            return ncaFsService.OpenDataFileSystemByCurrentProcess(ref outFileSystem);
         }
 
-        public Result OpenDataFileSystemByProgramId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        public Result OpenDataFileSystemByProgramId(ref SharedRef<IFileSystemSf> outFileSystem,
             ProgramId programId)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out fileSystem);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return ncaFsService.OpenDataFileSystemByProgramId(out fileSystem, programId);
+            return ncaFsService.OpenDataFileSystemByProgramId(ref outFileSystem, programId);
         }
 
-        public Result OpenDataStorageByCurrentProcess(out ReferenceCountedDisposable<IStorageSf> storage)
+        public Result OpenDataStorageByCurrentProcess(ref SharedRef<IStorageSf> outStorage)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out storage);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return ncaFsService.OpenDataStorageByCurrentProcess(out storage);
+            return ncaFsService.OpenDataStorageByCurrentProcess(ref outStorage);
         }
 
-        public Result OpenDataStorageByProgramId(out ReferenceCountedDisposable<IStorageSf> storage,
+        public Result OpenDataStorageByProgramId(ref SharedRef<IStorageSf> outStorage,
             ProgramId programId)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out storage);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return ncaFsService.OpenDataStorageByProgramId(out storage, programId);
+            return ncaFsService.OpenDataStorageByProgramId(ref outStorage, programId);
         }
 
-        public Result OpenDataStorageByDataId(out ReferenceCountedDisposable<IStorageSf> storage, DataId dataId,
+        public Result OpenDataStorageByDataId(ref SharedRef<IStorageSf> outStorage, DataId dataId,
             StorageId storageId)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out storage);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return ncaFsService.OpenDataStorageByDataId(out storage, dataId, storageId);
+            return ncaFsService.OpenDataStorageByDataId(ref outStorage, dataId, storageId);
         }
 
-        public Result OpenPatchDataStorageByCurrentProcess(out ReferenceCountedDisposable<IStorageSf> storage)
+        public Result OpenPatchDataStorageByCurrentProcess(ref SharedRef<IStorageSf> outStorage)
         {
-            UnsafeHelpers.SkipParamInit(out storage);
             return ResultFs.TargetNotFound.Log();
         }
 
-        public Result OpenDataFileSystemWithProgramIndex(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        public Result OpenDataFileSystemWithProgramIndex(ref SharedRef<IFileSystemSf> outFileSystem,
             byte programIndex)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out fileSystem);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return ncaFsService.OpenDataFileSystemWithProgramIndex(out fileSystem, programIndex);
+            return ncaFsService.OpenDataFileSystemWithProgramIndex(ref outFileSystem, programIndex);
         }
 
-        public Result OpenDataStorageWithProgramIndex(out ReferenceCountedDisposable<IStorageSf> storage,
+        public Result OpenDataStorageWithProgramIndex(ref SharedRef<IStorageSf> outStorage,
             byte programIndex)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out storage);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return ncaFsService.OpenDataStorageWithProgramIndex(out storage, programIndex);
+            return ncaFsService.OpenDataStorageWithProgramIndex(ref outStorage, programIndex);
         }
 
         public Result RegisterSaveDataFileSystemAtomicDeletion(InBuffer saveDataIds)
@@ -376,43 +340,31 @@ namespace LibHac.FsSrv
             return saveFsService.ExtendSaveDataFileSystem(spaceId, saveDataId, dataSize, journalSize);
         }
 
-        public Result OpenSaveDataFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
-            SaveDataSpaceId spaceId, in SaveDataAttribute attribute)
+        public Result OpenSaveDataFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, SaveDataSpaceId spaceId,
+            in SaveDataAttribute attribute)
         {
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out fileSystem);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return saveFsService.OpenSaveDataFileSystem(out fileSystem, spaceId, in attribute);
+            return saveFsService.OpenSaveDataFileSystem(ref outFileSystem, spaceId, in attribute);
         }
 
-        public Result OpenReadOnlySaveDataFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        public Result OpenReadOnlySaveDataFileSystem(ref SharedRef<IFileSystemSf> outFileSystem,
             SaveDataSpaceId spaceId, in SaveDataAttribute attribute)
         {
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out fileSystem);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return saveFsService.OpenReadOnlySaveDataFileSystem(out fileSystem, spaceId, in attribute);
+            return saveFsService.OpenReadOnlySaveDataFileSystem(ref outFileSystem, spaceId, in attribute);
         }
 
-        public Result OpenSaveDataFileSystemBySystemSaveDataId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        public Result OpenSaveDataFileSystemBySystemSaveDataId(ref SharedRef<IFileSystemSf> outFileSystem,
             SaveDataSpaceId spaceId, in SaveDataAttribute attribute)
         {
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out fileSystem);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return saveFsService.OpenSaveDataFileSystemBySystemSaveDataId(out fileSystem, spaceId, in attribute);
+            return saveFsService.OpenSaveDataFileSystemBySystemSaveDataId(ref outFileSystem, spaceId, in attribute);
         }
 
         public Result ReadSaveDataFileSystemExtraData(OutBuffer extraDataBuffer, ulong saveDataId)
@@ -481,27 +433,31 @@ namespace LibHac.FsSrv
                 maskBuffer);
         }
 
-        public Result OpenImageDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        public Result OpenImageDirectoryFileSystem(ref SharedRef<IFileSystemSf> outFileSystem,
             ImageDirectoryId directoryId)
         {
-            return GetBaseFileSystemService().OpenImageDirectoryFileSystem(out fileSystem, directoryId);
+            return GetBaseFileSystemService().OpenImageDirectoryFileSystem(ref outFileSystem, directoryId);
         }
 
-        public Result OpenBaseFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
-            BaseFileSystemId fileSystemId)
+        public Result OpenBaseFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, BaseFileSystemId fileSystemId)
         {
-            return GetBaseFileSystemService().OpenBaseFileSystem(out fileSystem, fileSystemId);
+            return GetBaseFileSystemService().OpenBaseFileSystem(ref outFileSystem, fileSystemId);
         }
 
-        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath rootPath,
+        public Result FormatBaseFileSystem(BaseFileSystemId fileSystemId)
+        {
+            return GetBaseFileSystemService().FormatBaseFileSystem(fileSystemId);
+        }
+
+        public Result OpenBisFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath rootPath,
             BisPartitionId partitionId)
         {
-            return GetBaseFileSystemService().OpenBisFileSystem(out fileSystem, in rootPath, partitionId);
+            return GetBaseFileSystemService().OpenBisFileSystem(ref outFileSystem, in rootPath, partitionId);
         }
 
-        public Result OpenBisStorage(out ReferenceCountedDisposable<IStorageSf> storage, BisPartitionId partitionId)
+        public Result OpenBisStorage(ref SharedRef<IStorageSf> outStorage, BisPartitionId partitionId)
         {
-            return GetBaseStorageService().OpenBisStorage(out storage, partitionId);
+            return GetBaseStorageService().OpenBisStorage(ref outStorage, partitionId);
         }
 
         public Result InvalidateBisCache()
@@ -509,16 +465,14 @@ namespace LibHac.FsSrv
             return GetBaseStorageService().InvalidateBisCache();
         }
 
-        public Result OpenHostFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, in FspPath path)
+        public Result OpenHostFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath path)
         {
-            return OpenHostFileSystemWithOption(out fileSystem, in path, MountHostOption.None);
+            return OpenHostFileSystemWithOption(ref outFileSystem, in path, MountHostOption.None);
         }
 
-        public Result OpenHostFileSystemWithOption(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        public Result OpenHostFileSystemWithOption(ref SharedRef<IFileSystemSf> outFileSystem,
             in FspPath path, MountHostOption option)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
 
@@ -527,52 +481,48 @@ namespace LibHac.FsSrv
             if (!accessibility.CanRead || !accessibility.CanWrite)
                 return ResultFs.PermissionDenied.Log();
 
-            ReferenceCountedDisposable<IFileSystem> hostFileSystem = null;
-            try
+            using var hostFileSystem = new SharedRef<IFileSystem>();
+            using var pathNormalized = new Path();
+
+            if (path.Str.At(0) == DirectorySeparator && path.Str.At(1) != DirectorySeparator)
             {
-                using var pathNormalized = new Path();
-
-                if (path.Str.At(0) == DirectorySeparator && path.Str.At(1) != DirectorySeparator)
-                {
-                    rc = pathNormalized.Initialize(path.Str.Slice(1));
-                    if (rc.IsFailure()) return rc;
-                }
-                else
-                {
-                    rc = pathNormalized.InitializeWithReplaceUnc(path.Str);
-                    if (rc.IsFailure()) return rc;
-                }
-
-                var flags = new PathFlags();
-                flags.AllowWindowsPath();
-                flags.AllowRelativePath();
-                flags.AllowEmptyPath();
-
-                rc = pathNormalized.Normalize(flags);
+                rc = pathNormalized.Initialize(path.Str.Slice(1));
                 if (rc.IsFailure()) return rc;
-
-                bool isCaseSensitive = option.Flags.HasFlag(MountHostOptionFlag.PseudoCaseSensitive);
-
-                rc = FsProxyCore.OpenHostFileSystem(out hostFileSystem, in pathNormalized, isCaseSensitive);
-                if (rc.IsFailure()) return rc;
-
-                var adapterFlags = new PathFlags();
-                if (path.Str.At(0) == NullTerminator)
-                    adapterFlags.AllowWindowsPath();
-
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref hostFileSystem, adapterFlags, false);
-
-                return Result.Success;
             }
-            finally
+            else
             {
-                hostFileSystem?.Dispose();
+                rc = pathNormalized.InitializeWithReplaceUnc(path.Str);
+                if (rc.IsFailure()) return rc;
             }
+
+            var flags = new PathFlags();
+            flags.AllowWindowsPath();
+            flags.AllowRelativePath();
+            flags.AllowEmptyPath();
+
+            rc = pathNormalized.Normalize(flags);
+            if (rc.IsFailure()) return rc;
+
+            bool isCaseSensitive = option.Flags.HasFlag(MountHostOptionFlag.PseudoCaseSensitive);
+
+            rc = _fsProxyCore.OpenHostFileSystem(ref hostFileSystem.Ref(), in pathNormalized, isCaseSensitive);
+            if (rc.IsFailure()) return rc;
+
+            var adapterFlags = new PathFlags();
+            if (path.Str.At(0) == NullTerminator)
+                adapterFlags.AllowWindowsPath();
+
+            using SharedRef<IFileSystemSf> fileSystemAdapter =
+                FileSystemInterfaceAdapter.CreateShared(ref hostFileSystem.Ref(), adapterFlags, false);
+
+            outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+
+            return Result.Success;
         }
 
-        public Result OpenSdCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
+        public Result OpenSdCardFileSystem(ref SharedRef<IFileSystemSf> outFileSystem)
         {
-            return GetBaseFileSystemService().OpenSdCardFileSystem(out fileSystem);
+            return GetBaseFileSystemService().OpenSdCardFileSystem(ref outFileSystem);
         }
 
         public Result FormatSdCardFileSystem()
@@ -590,25 +540,25 @@ namespace LibHac.FsSrv
             return GetBaseFileSystemService().IsExFatSupported(out isSupported);
         }
 
-        public Result OpenGameCardStorage(out ReferenceCountedDisposable<IStorageSf> storage, GameCardHandle handle,
+        public Result OpenGameCardStorage(ref SharedRef<IStorageSf> outStorage, GameCardHandle handle,
             GameCardPartitionRaw partitionId)
         {
-            return GetBaseStorageService().OpenGameCardStorage(out storage, handle, partitionId);
+            return GetBaseStorageService().OpenGameCardStorage(ref outStorage, handle, partitionId);
         }
 
-        public Result OpenDeviceOperator(out ReferenceCountedDisposable<IDeviceOperator> deviceOperator)
+        public Result OpenDeviceOperator(ref SharedRef<IDeviceOperator> outDeviceOperator)
         {
-            return GetBaseStorageService().OpenDeviceOperator(out deviceOperator);
+            return GetBaseStorageService().OpenDeviceOperator(ref outDeviceOperator);
         }
 
-        public Result OpenSdCardDetectionEventNotifier(out ReferenceCountedDisposable<IEventNotifier> eventNotifier)
+        public Result OpenSdCardDetectionEventNotifier(ref SharedRef<IEventNotifier> outEventNotifier)
         {
-            return GetBaseStorageService().OpenSdCardDetectionEventNotifier(out eventNotifier);
+            return GetBaseStorageService().OpenSdCardDetectionEventNotifier(ref outEventNotifier);
         }
 
-        public Result OpenGameCardDetectionEventNotifier(out ReferenceCountedDisposable<IEventNotifier> eventNotifier)
+        public Result OpenGameCardDetectionEventNotifier(ref SharedRef<IEventNotifier> outEventNotifier)
         {
-            return GetBaseStorageService().OpenGameCardDetectionEventNotifier(out eventNotifier);
+            return GetBaseStorageService().OpenGameCardDetectionEventNotifier(ref outEventNotifier);
         }
 
         public Result SimulateDeviceDetectionEvent(SdmmcPort port, SimulatingDeviceDetectionMode mode, bool signalEvent)
@@ -616,16 +566,12 @@ namespace LibHac.FsSrv
             return GetBaseStorageService().SimulateDeviceDetectionEvent(port, mode, signalEvent);
         }
 
-        public Result OpenSystemDataUpdateEventNotifier(out ReferenceCountedDisposable<IEventNotifier> eventNotifier)
+        public Result OpenSystemDataUpdateEventNotifier(ref SharedRef<IEventNotifier> outEventNotifier)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out eventNotifier);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return ncaFsService.OpenSystemDataUpdateEventNotifier(out eventNotifier);
+            return ncaFsService.OpenSystemDataUpdateEventNotifier(ref outEventNotifier);
         }
 
         public Result NotifySystemDataUpdateEvent()
@@ -636,42 +582,30 @@ namespace LibHac.FsSrv
             return ncaFsService.NotifySystemDataUpdateEvent();
         }
 
-        public Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader)
+        public Result OpenSaveDataInfoReader(ref SharedRef<ISaveDataInfoReader> outInfoReader)
         {
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out infoReader);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return saveFsService.OpenSaveDataInfoReader(out infoReader);
+            return saveFsService.OpenSaveDataInfoReader(ref outInfoReader);
         }
 
         public Result OpenSaveDataInfoReaderBySaveDataSpaceId(
-            out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader, SaveDataSpaceId spaceId)
+            ref SharedRef<ISaveDataInfoReader> outInfoReader, SaveDataSpaceId spaceId)
         {
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out infoReader);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return saveFsService.OpenSaveDataInfoReaderBySaveDataSpaceId(out infoReader, spaceId);
+            return saveFsService.OpenSaveDataInfoReaderBySaveDataSpaceId(ref outInfoReader, spaceId);
         }
 
-        public Result OpenSaveDataInfoReaderWithFilter(out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader,
+        public Result OpenSaveDataInfoReaderWithFilter(ref SharedRef<ISaveDataInfoReader> outInfoReader,
             SaveDataSpaceId spaceId, in SaveDataFilter filter)
         {
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out infoReader);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return saveFsService.OpenSaveDataInfoReaderWithFilter(out infoReader, spaceId, in filter);
+            return saveFsService.OpenSaveDataInfoReaderWithFilter(ref outInfoReader, spaceId, in filter);
         }
 
         public Result FindSaveDataWithFilter(out long count, OutBuffer saveDataInfoBuffer, SaveDataSpaceId spaceId,
@@ -685,17 +619,13 @@ namespace LibHac.FsSrv
             return saveFsService.FindSaveDataWithFilter(out count, saveDataInfoBuffer, spaceId, in filter);
         }
 
-        public Result OpenSaveDataInternalStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        public Result OpenSaveDataInternalStorageFileSystem(ref SharedRef<IFileSystemSf> outFileSystem,
             SaveDataSpaceId spaceId, ulong saveDataId)
         {
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out fileSystem);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return saveFsService.OpenSaveDataInternalStorageFileSystem(out fileSystem, spaceId, saveDataId);
+            return saveFsService.OpenSaveDataInternalStorageFileSystem(ref outFileSystem, spaceId, saveDataId);
         }
 
         public Result QuerySaveDataInternalStorageTotalSize(out long size, SaveDataSpaceId spaceId, ulong saveDataId)
@@ -718,30 +648,21 @@ namespace LibHac.FsSrv
             return saveFsService.GetSaveDataCommitId(out commitId, spaceId, saveDataId);
         }
 
-        public Result OpenSaveDataInfoReaderOnlyCacheStorage(
-            out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader)
+        public Result OpenSaveDataInfoReaderOnlyCacheStorage(ref SharedRef<ISaveDataInfoReader> outInfoReader)
         {
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out infoReader);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return saveFsService.OpenSaveDataInfoReaderOnlyCacheStorage(out infoReader);
+            return saveFsService.OpenSaveDataInfoReaderOnlyCacheStorage(ref outInfoReader);
         }
 
-        public Result OpenSaveDataMetaFile(out ReferenceCountedDisposable<IFileSf> file, SaveDataSpaceId spaceId,
+        public Result OpenSaveDataMetaFile(ref SharedRef<IFileSf> outFile, SaveDataSpaceId spaceId,
             in SaveDataAttribute attribute, SaveDataMetaType type)
         {
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out file);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return saveFsService.OpenSaveDataMetaFile(out file, spaceId, in attribute, type);
+            return saveFsService.OpenSaveDataMetaFile(ref outFile, spaceId, in attribute, type);
         }
 
         public Result DeleteCacheStorage(ushort index)
@@ -762,58 +683,48 @@ namespace LibHac.FsSrv
             return saveFsService.GetCacheStorageSize(out dataSize, out journalSize, index);
         }
 
-        public Result OpenSaveDataTransferManager(out ReferenceCountedDisposable<ISaveDataTransferManager> manager)
+        public Result OpenSaveDataTransferManager(ref SharedRef<ISaveDataTransferManager> outTransferManager)
         {
-            UnsafeHelpers.SkipParamInit(out manager);
-
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
 
-            return saveFsService.OpenSaveDataTransferManager(out manager);
+            return saveFsService.OpenSaveDataTransferManager(ref outTransferManager);
         }
 
         public Result OpenSaveDataTransferManagerVersion2(
-            out ReferenceCountedDisposable<ISaveDataTransferManagerWithDivision> manager)
+            ref SharedRef<ISaveDataTransferManagerWithDivision> outTransferManager)
         {
-            UnsafeHelpers.SkipParamInit(out manager);
-
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
 
-            return saveFsService.OpenSaveDataTransferManagerVersion2(out manager);
+            return saveFsService.OpenSaveDataTransferManagerVersion2(ref outTransferManager);
         }
 
         public Result OpenSaveDataTransferManagerForSaveDataRepair(
-            out ReferenceCountedDisposable<ISaveDataTransferManagerForSaveDataRepair> manager)
+            ref SharedRef<ISaveDataTransferManagerForSaveDataRepair> outTransferManager)
         {
-            UnsafeHelpers.SkipParamInit(out manager);
-
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
 
-            return saveFsService.OpenSaveDataTransferManagerForSaveDataRepair(out manager);
+            return saveFsService.OpenSaveDataTransferManagerForSaveDataRepair(ref outTransferManager);
         }
 
         public Result OpenSaveDataTransferManagerForRepair(
-            out ReferenceCountedDisposable<ISaveDataTransferManagerForRepair> manager)
+            ref SharedRef<ISaveDataTransferManagerForRepair> outTransferManager)
         {
-            UnsafeHelpers.SkipParamInit(out manager);
-
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
 
-            return saveFsService.OpenSaveDataTransferManagerForRepair(out manager);
+            return saveFsService.OpenSaveDataTransferManagerForRepair(ref outTransferManager);
         }
 
-        public Result OpenSaveDataTransferProhibiter(
-            out ReferenceCountedDisposable<ISaveDataTransferProhibiter> prohibiter, Ncm.ApplicationId applicationId)
+        public Result OpenSaveDataTransferProhibiter(ref SharedRef<ISaveDataTransferProhibiter> outProhibiter,
+            Ncm.ApplicationId applicationId)
         {
-            UnsafeHelpers.SkipParamInit(out prohibiter);
-
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
 
-            return saveFsService.OpenSaveDataTransferProhibiter(out prohibiter, applicationId);
+            return saveFsService.OpenSaveDataTransferProhibiter(ref outProhibiter, applicationId);
         }
 
         public Result ListAccessibleSaveDataOwnerId(out int readCount, OutBuffer idBuffer, ProgramId programId,
@@ -828,19 +739,14 @@ namespace LibHac.FsSrv
                 bufferIdCount);
         }
 
-        public Result OpenSaveDataMover(out ReferenceCountedDisposable<ISaveDataMover> saveMover,
-            SaveDataSpaceId sourceSpaceId, SaveDataSpaceId destinationSpaceId, NativeHandle workBufferHandle,
-            ulong workBufferSize)
+        public Result OpenSaveDataMover(ref SharedRef<ISaveDataMover> outSaveDataMover, SaveDataSpaceId sourceSpaceId,
+            SaveDataSpaceId destinationSpaceId, NativeHandle workBufferHandle, ulong workBufferSize)
         {
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out saveMover);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return saveFsService.OpenSaveDataMover(out saveMover, sourceSpaceId, destinationSpaceId, workBufferHandle,
-                workBufferSize);
+            return saveFsService.OpenSaveDataMover(ref outSaveDataMover, sourceSpaceId, destinationSpaceId,
+                workBufferHandle, workBufferSize);
         }
 
         public Result SetSaveDataSize(long saveDataSize, long saveDataJournalSize)
@@ -864,25 +770,20 @@ namespace LibHac.FsSrv
             return saveFsService.UnsetSaveDataRootPath();
         }
 
-        public Result OpenContentStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        public Result OpenContentStorageFileSystem(ref SharedRef<IFileSystemSf> outFileSystem,
             ContentStorageId storageId)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out fileSystem);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc.Miss();
 
-            return ncaFsService.OpenContentStorageFileSystem(out fileSystem, storageId);
+            return ncaFsService.OpenContentStorageFileSystem(ref outFileSystem, storageId);
         }
 
-        public Result OpenCloudBackupWorkStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        public Result OpenCloudBackupWorkStorageFileSystem(ref SharedRef<IFileSystemSf> outFileSystem,
             CloudBackupWorkStorageId storageId)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
             var storageFlag = StorageType.NonGameCard;
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -893,30 +794,29 @@ namespace LibHac.FsSrv
             if (!accessibility.CanRead || !accessibility.CanWrite)
                 return ResultFs.PermissionDenied.Log();
 
-            ReferenceCountedDisposable<IFileSystem> tempFs = null;
-            try
-            {
-                rc = FsProxyCore.OpenCloudBackupWorkStorageFileSystem(out tempFs, storageId);
-                if (rc.IsFailure()) return rc;
+            using var fileSystem = new SharedRef<IFileSystem>();
+            rc = _fsProxyCore.OpenCloudBackupWorkStorageFileSystem(ref fileSystem.Ref(), storageId);
+            if (rc.IsFailure()) return rc;
 
-                tempFs = StorageLayoutTypeSetFileSystem.CreateShared(ref tempFs, storageFlag);
-                tempFs = AsynchronousAccessFileSystem.CreateShared(ref tempFs);
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFs, false);
+            // Add all the wrappers for the file system
+            using var typeSetFileSystem =
+                new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref(), storageFlag));
 
-                return Result.Success;
-            }
-            finally
-            {
-                tempFs?.Dispose();
-            }
+            using var asyncFileSystem =
+                new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref()));
+
+            using SharedRef<IFileSystemSf> fileSystemAdapter =
+                FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref(), false);
+
+            outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+
+            return Result.Success;
         }
 
-        public Result OpenCustomStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
-            CustomStorageId storageId)
+        public Result OpenCustomStorageFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, CustomStorageId storageId)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
             var storageFlag = StorageType.NonGameCard;
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -930,28 +830,29 @@ namespace LibHac.FsSrv
             if (!accessibility.CanRead || !accessibility.CanWrite)
                 return ResultFs.PermissionDenied.Log();
 
-            ReferenceCountedDisposable<IFileSystem> customFs = null;
-            try
-            {
-                rc = FsProxyCore.OpenCustomStorageFileSystem(out customFs, storageId);
-                if (rc.IsFailure()) return rc;
+            using var fileSystem = new SharedRef<IFileSystem>();
+            rc = _fsProxyCore.OpenCustomStorageFileSystem(ref fileSystem.Ref(), storageId);
+            if (rc.IsFailure()) return rc;
 
-                customFs = StorageLayoutTypeSetFileSystem.CreateShared(ref customFs, storageFlag);
-                customFs = AsynchronousAccessFileSystem.CreateShared(ref customFs);
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref customFs, false);
+            // Add all the file system wrappers
+            using var typeSetFileSystem =
+                new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref(), storageFlag));
 
-                return Result.Success;
-            }
-            finally
-            {
-                customFs?.Dispose();
-            }
+            using var asyncFileSystem =
+                new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref()));
+
+            using SharedRef<IFileSystemSf> fileSystemAdapter =
+                FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref(), false);
+
+            outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+
+            return Result.Success;
         }
 
-        public Result OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
-            GameCardHandle handle, GameCardPartition partitionId)
+        public Result OpenGameCardFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, GameCardHandle handle,
+            GameCardPartition partitionId)
         {
-            return GetBaseFileSystemService().OpenGameCardFileSystem(out fileSystem, handle, partitionId);
+            return GetBaseFileSystemService().OpenGameCardFileSystem(ref outFileSystem, handle, partitionId);
         }
 
         public Result IsArchivedProgram(out bool isArchived, ulong processId)
@@ -1036,7 +937,7 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.CanCall(OperationType.SetEncryptionSeed))
                 return ResultFs.PermissionDenied.Log();
 
-            rc = FsProxyCore.SetSdCardEncryptionSeed(in seed);
+            rc = _fsProxyCore.SetSdCardEncryptionSeed(in seed);
             if (rc.IsFailure()) return rc;
 
             rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
@@ -1161,16 +1062,12 @@ namespace LibHac.FsSrv
             return ncaFsService.RegisterUpdatePartition();
         }
 
-        public Result OpenRegisteredUpdatePartition(out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
+        public Result OpenRegisteredUpdatePartition(ref SharedRef<IFileSystemSf> outFileSystem)
         {
             Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out fileSystem);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc;
 
-            return ncaFsService.OpenRegisteredUpdatePartition(out fileSystem);
+            return ncaFsService.OpenRegisteredUpdatePartition(ref outFileSystem);
         }
 
         public Result GetAndClearMemoryReportInfo(out MemoryReportInfo reportInfo)
@@ -1209,11 +1106,11 @@ namespace LibHac.FsSrv
             return saveFsService.IsSdCardAccessible(out isAccessible);
         }
 
-        public Result OpenAccessFailureDetectionEventNotifier(out ReferenceCountedDisposable<IEventNotifier> notifier,
+        public Result OpenAccessFailureDetectionEventNotifier(ref SharedRef<IEventNotifier> outEventNotifier,
             ulong processId, bool notifyOnDeepRetry)
         {
             return GetAccessFailureManagementService()
-                .OpenAccessFailureDetectionEventNotifier(out notifier, processId, notifyOnDeepRetry);
+                .OpenAccessFailureDetectionEventNotifier(ref outEventNotifier, processId, notifyOnDeepRetry);
         }
 
         public Result GetAccessFailureDetectionEvent(out NativeHandle eventHandle)
@@ -1236,20 +1133,18 @@ namespace LibHac.FsSrv
             return GetAccessFailureManagementService().AbandonAccessFailure(processId);
         }
 
-        public Result OpenMultiCommitManager(out ReferenceCountedDisposable<IMultiCommitManager> commitManager)
+        public Result OpenMultiCommitManager(ref SharedRef<IMultiCommitManager> outCommitManager)
         {
-            UnsafeHelpers.SkipParamInit(out commitManager);
-
             Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
             if (rc.IsFailure()) return rc;
 
-            return saveFsService.OpenMultiCommitManager(out commitManager);
+            return saveFsService.OpenMultiCommitManager(ref outCommitManager);
         }
 
-        public Result OpenBisWiper(out ReferenceCountedDisposable<IWiper> bisWiper, NativeHandle transferMemoryHandle,
+        public Result OpenBisWiper(ref SharedRef<IWiper> outBisWiper, NativeHandle transferMemoryHandle,
             ulong transferMemorySize)
         {
-            return GetBaseFileSystemService().OpenBisWiper(out bisWiper, transferMemoryHandle, transferMemorySize);
+            return GetBaseFileSystemService().OpenBisWiper(ref outBisWiper, transferMemoryHandle, transferMemorySize);
         }
     }
 }

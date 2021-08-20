@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using LibHac.Common;
 
 namespace LibHac.Sf
@@ -14,6 +15,12 @@ namespace LibHac.Sf
         public InBuffer(ReadOnlySpan<byte> buffer)
         {
             _buffer = buffer;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static InBuffer FromSpan<T>(ReadOnlySpan<T> buffer) where T : unmanaged
+        {
+            return new InBuffer(MemoryMarshal.Cast<T, byte>(buffer));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -33,6 +40,12 @@ namespace LibHac.Sf
         public OutBuffer(Span<byte> buffer)
         {
             _buffer = buffer;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static OutBuffer FromSpan<T>(Span<T> buffer) where T : unmanaged
+        {
+            return new OutBuffer(MemoryMarshal.Cast<T, byte>(buffer));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

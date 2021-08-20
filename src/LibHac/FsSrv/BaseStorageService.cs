@@ -21,135 +21,9 @@ namespace LibHac.FsSrv
             _processId = processId;
         }
 
-        public Result OpenBisStorage(out ReferenceCountedDisposable<IStorageSf> storage, BisPartitionId id)
-        {
-            UnsafeHelpers.SkipParamInit(out storage);
-
-            var storageFlag = StorageType.Bis;
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
-
-            Result rc = GetProgramInfo(out ProgramInfo programInfo);
-            if (rc.IsFailure()) return rc;
-
-            rc = GetAccessibilityForOpenBisPartition(out Accessibility accessibility, programInfo, id);
-            if (rc.IsFailure()) return rc;
-
-            bool canAccess = accessibility.CanRead && accessibility.CanWrite;
-
-            if (!canAccess)
-                return ResultFs.PermissionDenied.Log();
-
-            ReferenceCountedDisposable<IStorage> tempStorage = null;
-            try
-            {
-                rc = _serviceImpl.OpenBisStorage(out tempStorage, id);
-                if (rc.IsFailure()) return rc;
-
-                tempStorage = StorageLayoutTypeSetStorage.CreateShared(ref tempStorage, storageFlag);
-
-                // Todo: Async storage
-
-                storage = StorageInterfaceAdapter.CreateShared(ref tempStorage);
-                return Result.Success;
-
-            }
-            finally
-            {
-                tempStorage?.Dispose();
-            }
-        }
-
-        public Result InvalidateBisCache()
-        {
-            Result rc = GetProgramInfo(out ProgramInfo programInfo);
-            if (rc.IsFailure()) return rc;
-
-            if (!programInfo.AccessControl.CanCall(OperationType.InvalidateBisCache))
-                return ResultFs.PermissionDenied.Log();
-
-            return _serviceImpl.InvalidateBisCache();
-        }
-
-        public Result OpenGameCardStorage(out ReferenceCountedDisposable<IStorageSf> storage, GameCardHandle handle,
-            GameCardPartitionRaw partitionId)
-        {
-            UnsafeHelpers.SkipParamInit(out storage);
-
-            Result rc = GetProgramInfo(out ProgramInfo programInfo);
-            if (rc.IsFailure()) return rc;
-
-            Accessibility accessibility =
-                programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.OpenGameCardStorage);
-
-            bool canAccess = accessibility.CanRead && accessibility.CanWrite;
-
-            if (!canAccess)
-                return ResultFs.PermissionDenied.Log();
-
-            ReferenceCountedDisposable<IStorage> tempStorage = null;
-            try
-            {
-                rc = _serviceImpl.OpenGameCardPartition(out tempStorage, handle, partitionId);
-                if (rc.IsFailure()) return rc;
-
-                // Todo: Async storage
-
-                storage = StorageInterfaceAdapter.CreateShared(ref tempStorage);
-                return Result.Success;
-            }
-            finally
-            {
-                tempStorage?.Dispose();
-            }
-        }
-
-        public Result OpenDeviceOperator(out ReferenceCountedDisposable<IDeviceOperator> deviceOperator)
-        {
-            deviceOperator = _serviceImpl.Config.DeviceOperator.AddReference();
-            return Result.Success;
-        }
-
-        public Result OpenSdCardDetectionEventNotifier(out ReferenceCountedDisposable<IEventNotifier> eventNotifier)
-        {
-            UnsafeHelpers.SkipParamInit(out eventNotifier);
-
-            Result rc = GetProgramInfo(out ProgramInfo programInfo);
-            if (rc.IsFailure()) return rc;
-
-            if (!programInfo.AccessControl.CanCall(OperationType.OpenSdCardDetectionEventNotifier))
-                return ResultFs.PermissionDenied.Log();
-
-            throw new NotImplementedException();
-        }
-
-        public Result OpenGameCardDetectionEventNotifier(out ReferenceCountedDisposable<IEventNotifier> eventNotifier)
-        {
-            UnsafeHelpers.SkipParamInit(out eventNotifier);
-
-            Result rc = GetProgramInfo(out ProgramInfo programInfo);
-            if (rc.IsFailure()) return rc;
-
-            if (!programInfo.AccessControl.CanCall(OperationType.OpenGameCardDetectionEventNotifier))
-                return ResultFs.PermissionDenied.Log();
-
-            throw new NotImplementedException();
-        }
-
-        public Result SimulateDeviceDetectionEvent(SdmmcPort port, SimulatingDeviceDetectionMode mode, bool signalEvent)
-        {
-            Result rc = GetProgramInfo(out ProgramInfo programInfo);
-            if (rc.IsFailure()) return rc;
-
-            if (!programInfo.AccessControl.CanCall(OperationType.SimulateDevice))
-                return ResultFs.PermissionDenied.Log();
-
-            throw new NotImplementedException();
-        }
-
         private Result GetProgramInfo(out ProgramInfo programInfo)
         {
-            var registry = new ProgramRegistryImpl(_serviceImpl.Config.FsServer);
-            return registry.GetProgramInfo(out programInfo, _processId);
+            return _serviceImpl.GetProgramInfo(out programInfo, _processId);
         }
 
         private static Result GetAccessibilityForOpenBisPartition(out Accessibility accessibility, ProgramInfo programInfo,
@@ -184,15 +58,131 @@ namespace LibHac.FsSrv
             accessibility = programInfo.AccessControl.GetAccessibilityFor(type);
             return Result.Success;
         }
+
+        public Result OpenBisStorage(ref SharedRef<IStorageSf> outStorage, BisPartitionId id)
+        {
+            var storageFlag = StorageType.Bis;
+            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
+
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            rc = GetAccessibilityForOpenBisPartition(out Accessibility accessibility, programInfo, id);
+            if (rc.IsFailure()) return rc;
+
+            bool canAccess = accessibility.CanRead && accessibility.CanWrite;
+
+            if (!canAccess)
+                return ResultFs.PermissionDenied.Log();
+
+            using var storage = new SharedRef<IStorage>();
+            rc = _serviceImpl.OpenBisStorage(ref storage.Ref(), id);
+            if (rc.IsFailure()) return rc;
+
+            using var typeSetStorage =
+                new SharedRef<IStorage>(new StorageLayoutTypeSetStorage(ref storage.Ref(), storageFlag));
+
+            // Todo: Async storage
+
+            using var storageAdapter =
+                new SharedRef<IStorageSf>(new StorageInterfaceAdapter(ref typeSetStorage.Ref()));
+
+            outStorage.SetByMove(ref storageAdapter.Ref());
+
+            return Result.Success;
+        }
+
+        public Result InvalidateBisCache()
+        {
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            if (!programInfo.AccessControl.CanCall(OperationType.InvalidateBisCache))
+                return ResultFs.PermissionDenied.Log();
+
+            return _serviceImpl.InvalidateBisCache();
+        }
+
+        public Result OpenGameCardStorage(ref SharedRef<IStorageSf> outStorage, GameCardHandle handle,
+            GameCardPartitionRaw partitionId)
+        {
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            Accessibility accessibility =
+                programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.OpenGameCardStorage);
+
+            bool canAccess = accessibility.CanRead && accessibility.CanWrite;
+
+            if (!canAccess)
+                return ResultFs.PermissionDenied.Log();
+
+            using var storage = new SharedRef<IStorage>();
+            rc = _serviceImpl.OpenGameCardPartition(ref storage.Ref(), handle, partitionId);
+            if (rc.IsFailure()) return rc;
+
+            // Todo: Async storage
+
+            using var storageAdapter =
+                new SharedRef<IStorageSf>(new StorageInterfaceAdapter(ref storage.Ref()));
+
+            outStorage.SetByMove(ref storageAdapter.Ref());
+
+            return Result.Success;
+        }
+
+        public Result OpenDeviceOperator(ref SharedRef<IDeviceOperator> outDeviceOperator)
+        {
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc.Miss();
+
+            rc = _serviceImpl.OpenDeviceOperator(ref outDeviceOperator, programInfo.AccessControl);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
+        }
+
+        public Result OpenSdCardDetectionEventNotifier(ref SharedRef<IEventNotifier> outEventNotifier)
+        {
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            if (!programInfo.AccessControl.CanCall(OperationType.OpenSdCardDetectionEventNotifier))
+                return ResultFs.PermissionDenied.Log();
+
+            throw new NotImplementedException();
+        }
+
+        public Result OpenGameCardDetectionEventNotifier(ref SharedRef<IEventNotifier> outEventNotifier)
+        {
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            if (!programInfo.AccessControl.CanCall(OperationType.OpenGameCardDetectionEventNotifier))
+                return ResultFs.PermissionDenied.Log();
+
+            throw new NotImplementedException();
+        }
+
+        public Result SimulateDeviceDetectionEvent(SdmmcPort port, SimulatingDeviceDetectionMode mode, bool signalEvent)
+        {
+            Result rc = GetProgramInfo(out ProgramInfo programInfo);
+            if (rc.IsFailure()) return rc;
+
+            if (!programInfo.AccessControl.CanCall(OperationType.SimulateDevice))
+                return ResultFs.PermissionDenied.Log();
+
+            throw new NotImplementedException();
+        }
     }
 
     public class BaseStorageServiceImpl
     {
-        internal Configuration Config;
+        private Configuration _config;
 
         public BaseStorageServiceImpl(in Configuration configuration)
         {
-            Config = configuration;
+            _config = configuration;
         }
 
         public struct Configuration
@@ -203,34 +193,47 @@ namespace LibHac.FsSrv
             // LibHac additions
             public FileSystemServer FsServer;
             // Todo: The DeviceOperator in FS uses mostly global state. Decide how to handle this.
-            public ReferenceCountedDisposable<IDeviceOperator> DeviceOperator;
+            public SharedRef<IDeviceOperator> DeviceOperator;
         }
 
-        public Result OpenBisStorage(out ReferenceCountedDisposable<IStorage> storage, BisPartitionId partitionId)
+        internal Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
         {
-            return Config.BisStorageCreator.Create(out storage, partitionId);
+            var registry = new ProgramRegistryImpl(_config.FsServer);
+            return registry.GetProgramInfo(out programInfo, processId);
+        }
+
+        public Result OpenBisStorage(ref SharedRef<IStorage> outStorage, BisPartitionId partitionId)
+        {
+            return _config.BisStorageCreator.Create(ref outStorage, partitionId);
         }
 
         public Result InvalidateBisCache()
         {
-            return Config.BisStorageCreator.InvalidateCache();
+            return _config.BisStorageCreator.InvalidateCache();
         }
 
-        public Result OpenGameCardPartition(out ReferenceCountedDisposable<IStorage> storage, GameCardHandle handle,
+        public Result OpenGameCardPartition(ref SharedRef<IStorage> outStorage, GameCardHandle handle,
             GameCardPartitionRaw partitionId)
         {
             switch (partitionId)
             {
                 case GameCardPartitionRaw.NormalReadOnly:
-                    return Config.GameCardStorageCreator.CreateReadOnly(handle, out storage);
+                    return _config.GameCardStorageCreator.CreateReadOnly(handle, ref outStorage);
                 case GameCardPartitionRaw.SecureReadOnly:
-                    return Config.GameCardStorageCreator.CreateSecureReadOnly(handle, out storage);
+                    return _config.GameCardStorageCreator.CreateSecureReadOnly(handle, ref outStorage);
                 case GameCardPartitionRaw.RootWriteOnly:
-                    return Config.GameCardStorageCreator.CreateWriteOnly(handle, out storage);
+                    return _config.GameCardStorageCreator.CreateWriteOnly(handle, ref outStorage);
                 default:
-                    UnsafeHelpers.SkipParamInit(out storage);
                     return ResultFs.InvalidArgument.Log();
             }
+        }
+
+        // LibHac addition
+        internal Result OpenDeviceOperator(ref SharedRef<IDeviceOperator> outDeviceOperator,
+            AccessControl accessControl)
+        {
+            outDeviceOperator.SetByCopy(ref _config.DeviceOperator);
+            return Result.Success;
         }
     }
 }

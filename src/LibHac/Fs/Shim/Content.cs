@@ -8,10 +8,15 @@ using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 using LibHac.Os;
 using static LibHac.Fs.Impl.AccessLogStrings;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim
 {
+    /// <summary>
+    /// Contains functions for mounting content file systems.
+    /// </summary>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     [SkipLocalsInit]
     public static class Content
     {
@@ -40,24 +45,25 @@ namespace LibHac.Fs.Shim
             if (path.IsNull())
                 return ResultFs.NullptrArgument.Log();
 
-            rc = FspPath.FromSpan(out FspPath fsPath, path);
+            rc = PathUtility.ConvertToFspPath(out FspPath fsPath, path);
             if (rc.IsFailure()) return rc;
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            ReferenceCountedDisposable<IFileSystemSf> fileSystem = null;
-            try
-            {
-                rc = fsProxy.Target.OpenFileSystemWithId(out fileSystem, in fsPath, id, fsType);
-                if (rc.IsFailure()) return rc;
+            rc = fileSystemProxy.Get.OpenFileSystemWithId(ref fileSystem.Ref(), in fsPath, id, fsType);
+            if (rc.IsFailure()) return rc;
 
-                var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
-                return fs.Register(mountName, fileSystemAdapter);
-            }
-            finally
-            {
-                fileSystem?.Dispose();
-            }
+            using var fileSystemAdapter =
+                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+
+            if (!fileSystemAdapter.HasValue)
+                return ResultFs.AllocationMemoryFailedInContentA.Log();
+
+            rc = fs.Register(mountName, ref fileSystemAdapter.Ref());
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
         }
 
         public static Result MountContent(this FileSystemClient fs, U8Span mountName, U8Span path,
@@ -85,6 +91,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = PreMount(contentType);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
@@ -108,8 +115,9 @@ namespace LibHac.Fs.Shim
             }
             else
             {
-                rc = MountContentImpl(fs, mountName, path, 0, contentType);
+                rc = MountContentImpl(fs, mountName, path, programId, contentType);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
@@ -155,6 +163,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = MountContentImpl(fs, mountName, path, programId.Value, contentType);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
@@ -190,6 +199,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = MountContentImpl(fs, mountName, path, dataId.Value, contentType);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
@@ -224,6 +234,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = Mount(fs, mountName, programId, contentType);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
@@ -239,21 +250,22 @@ namespace LibHac.Fs.Shim
 
                 FileSystemProxyType fsType = ConvertToFileSystemProxyType(contentType);
 
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+                using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
+                using var fileSystem = new SharedRef<IFileSystemSf>();
 
-                ReferenceCountedDisposable<IFileSystemSf> fileSystem = null;
-                try
-                {
-                    rc = fsProxy.Target.OpenFileSystemWithPatch(out fileSystem, programId, fsType);
-                    if (rc.IsFailure()) return rc;
+                rc = fileSystemProxy.Get.OpenFileSystemWithPatch(ref fileSystem.Ref(), programId, fsType);
+                if (rc.IsFailure()) return rc;
 
-                    var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
-                    return fs.Register(mountName, fileSystemAdapter);
-                }
-                finally
-                {
-                    fileSystem?.Dispose();
-                }
+                using var fileSystemAdapter =
+                    new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+
+                if (!fileSystemAdapter.HasValue)
+                    return ResultFs.AllocationMemoryFailedInContentA.Log();
+
+                rc = fs.Register(mountName, ref fileSystemAdapter.Ref());
+                if (rc.IsFailure()) return rc.Miss();
+
+                return Result.Success;
             }
         }
     }

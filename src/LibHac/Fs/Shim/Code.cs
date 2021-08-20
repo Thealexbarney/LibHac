@@ -7,10 +7,15 @@ using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 using LibHac.Os;
 using static LibHac.Fs.Impl.AccessLogStrings;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim
 {
+    /// <summary>
+    /// Contains functions for mounting code file systems.
+    /// </summary>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     [SkipLocalsInit]
     public static class Code
     {
@@ -37,6 +42,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = Mount(fs, out verificationData, mountName, path, programId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
@@ -56,25 +62,30 @@ namespace LibHac.Fs.Shim
                 if (path.IsNull())
                     return ResultFs.NullptrArgument.Log();
 
-                rc = FspPath.FromSpan(out FspPath fsPath, path);
+                rc = PathUtility.ConvertToFspPath(out FspPath fsPath, path);
                 if (rc.IsFailure()) return rc;
 
-                using ReferenceCountedDisposable<IFileSystemProxyForLoader> fsProxy =
+                using SharedRef<IFileSystemProxyForLoader> fileSystemProxy =
                     fs.Impl.GetFileSystemProxyForLoaderServiceObject();
 
-                ReferenceCountedDisposable<IFileSystemSf> fileSystem = null;
-                try
-                {
-                    rc = fsProxy.Target.OpenCodeFileSystem(out fileSystem, out verificationData, in fsPath, programId);
-                    if (rc.IsFailure()) return rc;
+                // SetCurrentProcess
 
-                    var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
-                    return fs.Register(mountName, fileSystemAdapter);
-                }
-                finally
-                {
-                    fileSystem?.Dispose();
-                }
+                using var fileSystem = new SharedRef<IFileSystemSf>();
+
+                rc = fileSystemProxy.Get.OpenCodeFileSystem(ref fileSystem.Ref(), out verificationData, in fsPath,
+                    programId);
+                if (rc.IsFailure()) return rc;
+
+                var fileSystemAdapter =
+                    new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+
+                if (!fileSystemAdapter.HasValue)
+                    return ResultFs.AllocationMemoryFailedInCodeA.Log();
+
+                rc = fs.Register(mountName, ref fileSystemAdapter.Ref());
+                if (rc.IsFailure()) return rc.Miss();
+
+                return Result.Success;
             }
         }
     }

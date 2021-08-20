@@ -21,51 +21,35 @@ namespace LibHac.Fs
     /// </remarks>
     public class SubStorage : IStorage
     {
-        private ReferenceCountedDisposable<IStorage> SharedBaseStorage { get; set; }
-        protected IStorage BaseStorage { get; private set; }
-        private long Offset { get; set; }
-        private long Size { get; set; }
-        private bool IsResizable { get; set; }
+        private SharedRef<IStorage> _sharedBaseStorage;
+        protected IStorage BaseStorage;
+        private long _offset;
+        private long _size;
+        private bool _isResizable;
 
         /// <summary>
-        /// Creates an uninitialized <see cref="SubStorage"/>. It must be initialized with <see cref="InitializeFrom"/> before using.
+        /// Creates an uninitialized <see cref="SubStorage"/>. It must be initialized with <see cref="Set"/> before using.
         /// </summary>
         public SubStorage()
         {
             BaseStorage = null;
-            Offset = 0;
-            Size = 0;
-            IsResizable = false;
+            _offset = 0;
+            _size = 0;
+            _isResizable = false;
         }
 
         /// <summary>
-        /// Creates a copy of <paramref name="other"/>.
+        /// Initializes a new <see cref="SubStorage"/> as a copy of <paramref name="other"/>.
         /// <paramref name="other"/> will not be disposed when the created <see cref="SubStorage"/> is disposed.
         /// </summary>
-        /// <param name="other">The <see cref="SubStorage"/> to create a copy of. Caller retains ownership.</param>
+        /// <param name="other">The <see cref="SubStorage"/> to create a copy of.</param>
         public SubStorage(SubStorage other)
         {
             BaseStorage = other.BaseStorage;
-            Offset = other.Offset;
-            Size = other.Size;
-            IsResizable = other.IsResizable;
-        }
-
-        /// <summary>
-        /// Initializes or reinitializes this <see cref="SubStorage"/> as a copy of <paramref name="other"/>.
-        /// Any shared references in <paramref name="other"/> will be copied.
-        /// </summary>
-        /// <param name="other">The <see cref="SubStorage"/> used to initialize this one.</param>
-        public void InitializeFrom(SubStorage other)
-        {
-            if (this != other)
-            {
-                SharedBaseStorage = other.SharedBaseStorage.AddReference();
-                BaseStorage = other.BaseStorage;
-                Offset = other.Offset;
-                Size = other.Size;
-                IsResizable = other.IsResizable;
-            }
+            _offset = other._offset;
+            _size = other._size;
+            _isResizable = other._isResizable;
+            _sharedBaseStorage = SharedRef<IStorage>.CreateCopy(ref other._sharedBaseStorage);
         }
 
         /// <summary>
@@ -74,46 +58,27 @@ namespace LibHac.Fs
         /// </summary>
         /// <param name="baseStorage">The base <see cref="IStorage"/>. Caller retains ownership.</param>
         /// <param name="offset">The offset in the base storage at which to begin the created SubStorage.</param>
-        /// <param name="size">The size of the SubStorage.</param>
+        /// <param name="size">The size of the created SubStorage.</param>
         public SubStorage(IStorage baseStorage, long offset, long size)
         {
             BaseStorage = baseStorage;
-            Offset = offset;
-            Size = size;
-            IsResizable = false;
+            _offset = offset;
+            _size = size;
+            _isResizable = false;
 
             Assert.SdkRequiresNotNull(baseStorage);
-            Assert.SdkRequiresLessEqual(0, Offset);
-            Assert.SdkRequiresLessEqual(0, Size);
-        }
-
-        /// <summary>
-        /// Creates a <see cref="SubStorage"/> from a subsection of another <see cref="IStorage"/>.
-        /// Holds a reference to <paramref name="sharedBaseStorage"/> until disposed.
-        /// </summary>
-        /// <param name="sharedBaseStorage">The base IStorage.</param>
-        /// <param name="offset">The offset in the base storage at which to begin the created SubStorage.</param>
-        /// <param name="size">The size of the SubStorage.</param>
-        public SubStorage(ReferenceCountedDisposable<IStorage> sharedBaseStorage, long offset, long size)
-        {
-            SharedBaseStorage = sharedBaseStorage.AddReference();
-            BaseStorage = SharedBaseStorage.Target;
-            Offset = offset;
-            Size = size;
-            IsResizable = false;
-
-            Assert.SdkRequiresNotNull(sharedBaseStorage);
-            Assert.SdkRequiresLessEqual(0, Offset);
-            Assert.SdkRequiresLessEqual(0, Size);
+            Assert.SdkRequiresLessEqual(0, offset);
+            Assert.SdkRequiresLessEqual(0, size);
         }
 
         /// <summary>
         /// Creates a <see cref="SubStorage"/> from a subsection of another <see cref="SubStorage"/>.
         /// <paramref name="other"/> will not be disposed when the created <see cref="SubStorage"/> is disposed.
+        /// Any shared references to the base <see cref="IStorage"/> will be copied over.
         /// </summary>
         /// <remarks>
-        /// The created SubStorage will directly use the base SubStorage of <paramref name="other"/> and will
-        /// adjust the <paramref name="offset"/> and <paramref name="size"/> accordingly.
+        /// The created SubStorage will directly use the base <see cref="IStorage"/> of <paramref name="other"/>
+        /// and will adjust the <paramref name="offset"/> and <paramref name="size"/> accordingly.
         /// This avoids the overhead of going through two SubStorage layers.
         /// </remarks>
         /// <param name="other">The base SubStorage.</param>
@@ -122,14 +87,58 @@ namespace LibHac.Fs
         public SubStorage(SubStorage other, long offset, long size)
         {
             BaseStorage = other.BaseStorage;
-            Offset = other.Offset + offset;
-            Size = size;
-            IsResizable = false;
+            _offset = other._offset + offset;
+            _size = size;
+            _isResizable = false;
+            _sharedBaseStorage = SharedRef<IStorage>.CreateCopy(ref other._sharedBaseStorage);
 
+            Assert.SdkRequiresLessEqual(0, offset);
+            Assert.SdkRequiresLessEqual(0, size);
             Assert.SdkRequires(other.IsValid());
-            Assert.SdkRequiresLessEqual(0, Offset);
-            Assert.SdkRequiresLessEqual(0, Size);
-            Assert.SdkRequiresGreaterEqual(other.Size, offset + size);
+            Assert.SdkRequiresGreaterEqual(other._size, offset + size);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="SubStorage"/> from a subsection of another <see cref="IStorage"/>.
+        /// Holds a reference to <paramref name="baseStorage"/> until disposed.
+        /// </summary>
+        /// <param name="baseStorage">The base <see cref="IStorage"/>.</param>
+        /// <param name="offset">The offset in the base storage at which to begin the created SubStorage.</param>
+        /// <param name="size">The size of the created SubStorage.</param>
+        public SubStorage(ref SharedRef<IStorage> baseStorage, long offset, long size)
+        {
+            BaseStorage = _sharedBaseStorage.Get;
+            _offset = offset;
+            _size = size;
+            _isResizable = false;
+            _sharedBaseStorage = SharedRef<IStorage>.CreateCopy(ref baseStorage);
+
+            Assert.SdkRequiresNotNull(baseStorage.Get);
+            Assert.SdkRequiresLessEqual(0, _offset);
+            Assert.SdkRequiresLessEqual(0, _size);
+        }
+
+        public override void Dispose()
+        {
+            _sharedBaseStorage.Destroy();
+            base.Dispose();
+        }
+
+        /// <summary>
+        /// Sets this <see cref="SubStorage"/> to be a copy of <paramref name="other"/>.
+        /// Any shared references in <paramref name="other"/> will be copied.
+        /// </summary>
+        /// <param name="other">The <see cref="SubStorage"/> used to initialize this one.</param>
+        public void Set(SubStorage other)
+        {
+            if (this != other)
+            {
+                BaseStorage = other.BaseStorage;
+                _offset = other._offset;
+                _size = other._size;
+                _isResizable = other._isResizable;
+                _sharedBaseStorage.SetByCopy(ref other._sharedBaseStorage);
+            }
         }
 
         private bool IsValid() => BaseStorage != null;
@@ -141,7 +150,7 @@ namespace LibHac.Fs
         /// be resizable. <see langword="false"/> if not.</param>
         public void SetResizable(bool isResizable)
         {
-            IsResizable = isResizable;
+            _isResizable = isResizable;
         }
 
         protected override Result DoRead(long offset, Span<byte> destination)
@@ -149,9 +158,10 @@ namespace LibHac.Fs
             if (!IsValid()) return ResultFs.NotInitialized.Log();
             if (destination.Length == 0) return Result.Success;
 
-            if (!IsRangeValid(offset, destination.Length, Size)) return ResultFs.OutOfRange.Log();
+            if (!CheckAccessRange(offset, destination.Length, _size))
+                return ResultFs.OutOfRange.Log();
 
-            return BaseStorage.Read(Offset + offset, destination);
+            return BaseStorage.Read(_offset + offset, destination);
         }
 
         protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
@@ -159,9 +169,10 @@ namespace LibHac.Fs
             if (!IsValid()) return ResultFs.NotInitialized.Log();
             if (source.Length == 0) return Result.Success;
 
-            if (!IsRangeValid(offset, source.Length, Size)) return ResultFs.OutOfRange.Log();
+            if (!CheckAccessRange(offset, source.Length, _size))
+                return ResultFs.OutOfRange.Log();
 
-            return BaseStorage.Write(Offset + offset, source);
+            return BaseStorage.Write(_offset + offset, source);
         }
 
         protected override Result DoFlush()
@@ -174,22 +185,22 @@ namespace LibHac.Fs
         protected override Result DoSetSize(long size)
         {
             if (!IsValid()) return ResultFs.NotInitialized.Log();
-            if (!IsResizable) return ResultFs.UnsupportedSetSizeForNotResizableSubStorage.Log();
-            if (!IsOffsetAndSizeValid(Offset, size)) return ResultFs.InvalidSize.Log();
+            if (!_isResizable) return ResultFs.UnsupportedSetSizeForNotResizableSubStorage.Log();
+            if (!CheckOffsetAndSize(_offset, size)) return ResultFs.InvalidSize.Log();
 
             Result rc = BaseStorage.GetSize(out long currentSize);
             if (rc.IsFailure()) return rc;
 
-            if (currentSize != Offset + Size)
+            if (currentSize != _offset + _size)
             {
                 // SubStorage cannot be resized unless it is located at the end of the base storage.
                 return ResultFs.UnsupportedSetSizeForResizableSubStorage.Log();
             }
 
-            rc = BaseStorage.SetSize(Offset + size);
+            rc = BaseStorage.SetSize(_offset + size);
             if (rc.IsFailure()) return rc;
 
-            Size = size;
+            _size = size;
             return Result.Success;
         }
 
@@ -199,30 +210,17 @@ namespace LibHac.Fs
 
             if (!IsValid()) return ResultFs.NotInitialized.Log();
 
-            size = Size;
+            size = _size;
             return Result.Success;
         }
 
         protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
         {
             if (!IsValid()) return ResultFs.NotInitialized.Log();
-
             if (size == 0) return Result.Success;
+            if (!CheckOffsetAndSize(_offset, size)) return ResultFs.OutOfRange.Log();
 
-            if (!IsOffsetAndSizeValid(Offset, size)) return ResultFs.OutOfRange.Log();
-
-            return base.DoOperateRange(outBuffer, operationId, Offset + offset, size, inBuffer);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                SharedBaseStorage?.Dispose();
-                SharedBaseStorage = null;
-            }
-
-            base.Dispose(disposing);
+            return base.DoOperateRange(outBuffer, operationId, _offset + offset, size, inBuffer);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using LibHac.FsSrv.Sf;
+﻿using LibHac.Common;
+using LibHac.FsSrv.Sf;
 using LibHac.Os;
 
 namespace LibHac.Fs.Shim
@@ -7,10 +8,10 @@ namespace LibHac.Fs.Shim
     {
         public static Result IsArchivedProgram(this FileSystemClient fs, out bool isArchived, ProcessId processId)
         {
-            using ReferenceCountedDisposable<IFileSystemProxyForLoader> fsProxy =
+            using SharedRef<IFileSystemProxyForLoader> fileSystemProxy =
                 fs.Impl.GetFileSystemProxyForLoaderServiceObject();
 
-            Result rc = fsProxy.Target.IsArchivedProgram(out isArchived, processId.Value);
+            Result rc = fileSystemProxy.Get.IsArchivedProgram(out isArchived, processId.Value);
             fs.Impl.AbortIfNeeded(rc);
             return rc;
         }

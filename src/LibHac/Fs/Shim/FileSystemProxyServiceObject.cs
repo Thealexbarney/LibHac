@@ -6,21 +6,20 @@ namespace LibHac.Fs.Shim
     internal struct FileSystemProxyServiceObjectGlobals
     {
         public nint FileSystemProxyServiceObjectInitGuard;
-        public ReferenceCountedDisposable<IFileSystemProxy> FileSystemProxyServiceObject;
+        public SharedRef<IFileSystemProxy> FileSystemProxyServiceObject;
 
         public nint FileSystemProxyForLoaderServiceObjectInitGuard;
-        public ReferenceCountedDisposable<IFileSystemProxyForLoader> FileSystemProxyForLoaderServiceObject;
+        public SharedRef<IFileSystemProxyForLoader> FileSystemProxyForLoaderServiceObject;
 
         public nint ProgramRegistryServiceObjectInitGuard;
-        public ReferenceCountedDisposable<IProgramRegistry> ProgramRegistryServiceObject;
+        public SharedRef<IProgramRegistry> ProgramRegistryServiceObject;
 
-        public ReferenceCountedDisposable<IFileSystemProxy> DfcFileSystemProxyServiceObject;
+        public SharedRef<IFileSystemProxy> DfcFileSystemProxyServiceObject;
     }
 
     public static class FileSystemProxyServiceObject
     {
-        public static ReferenceCountedDisposable<IFileSystemProxy> GetFileSystemProxyServiceObject(
-            this FileSystemClientImpl fs)
+        public static SharedRef<IFileSystemProxy> GetFileSystemProxyServiceObject(this FileSystemClientImpl fs)
         {
             ref FileSystemProxyServiceObjectGlobals g = ref fs.Globals.FileSystemProxyServiceObject;
             using var guard = new InitializationGuard(ref g.FileSystemProxyServiceObjectInitGuard,
@@ -28,33 +27,36 @@ namespace LibHac.Fs.Shim
 
             if (!guard.IsInitialized)
             {
-                g.FileSystemProxyServiceObject = GetFileSystemProxyServiceObjectImpl(fs);
+                using SharedRef<IFileSystemProxy> createdObject = GetFileSystemProxyServiceObjectImpl(fs);
+                g.FileSystemProxyServiceObject.SetByMove(ref createdObject.Ref());
             }
 
-            return g.FileSystemProxyServiceObject.AddReference();
+            return SharedRef<IFileSystemProxy>.CreateCopy(ref g.FileSystemProxyServiceObject);
         }
 
-        private static ReferenceCountedDisposable<IFileSystemProxy> GetFileSystemProxyServiceObjectImpl(
-            FileSystemClientImpl fs)
+        private static SharedRef<IFileSystemProxy> GetFileSystemProxyServiceObjectImpl(FileSystemClientImpl fs)
         {
-            ReferenceCountedDisposable<IFileSystemProxy> dfcServiceObject =
-                fs.Globals.FileSystemProxyServiceObject.DfcFileSystemProxyServiceObject;
+            ref SharedRef<IFileSystemProxy> dfcServiceObject =
+                ref fs.Globals.FileSystemProxyServiceObject.DfcFileSystemProxyServiceObject;
 
-            if (dfcServiceObject is not null)
-                return dfcServiceObject.AddReference();
+            if (dfcServiceObject.HasValue)
+            {
+                return SharedRef<IFileSystemProxy>.CreateCopy(ref dfcServiceObject);
+            }
 
-            Result rc = fs.Hos.Sm.GetService(out ReferenceCountedDisposable<IFileSystemProxy> fsProxy, "fsp-srv");
+            using var fileSystemProxy = new SharedRef<IFileSystemProxy>();
+            Result rc = fs.Hos.Sm.GetService(ref fileSystemProxy.Ref(), "fsp-srv");
 
             if (rc.IsFailure())
             {
                 throw new HorizonResultException(rc, "Failed to get file system proxy service object.");
             }
 
-            fsProxy.Target.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
-            return fsProxy;
+            fileSystemProxy.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
+            return SharedRef<IFileSystemProxy>.CreateMove(ref fileSystemProxy.Ref());
         }
 
-        public static ReferenceCountedDisposable<IFileSystemProxyForLoader> GetFileSystemProxyForLoaderServiceObject(
+        public static SharedRef<IFileSystemProxyForLoader> GetFileSystemProxyForLoaderServiceObject(
             this FileSystemClientImpl fs)
         {
             ref FileSystemProxyServiceObjectGlobals g = ref fs.Globals.FileSystemProxyServiceObject;
@@ -63,29 +65,29 @@ namespace LibHac.Fs.Shim
 
             if (!guard.IsInitialized)
             {
-                g.FileSystemProxyForLoaderServiceObject = GetFileSystemProxyForLoaderServiceObjectImpl(fs);
+                using SharedRef<IFileSystemProxyForLoader> createdObject = GetFileSystemProxyForLoaderServiceObjectImpl(fs);
+                g.FileSystemProxyForLoaderServiceObject.SetByMove(ref createdObject.Ref());
             }
 
-            return g.FileSystemProxyForLoaderServiceObject.AddReference();
+            return SharedRef<IFileSystemProxyForLoader>.CreateCopy(ref g.FileSystemProxyForLoaderServiceObject);
         }
 
-        private static ReferenceCountedDisposable<IFileSystemProxyForLoader>
-            GetFileSystemProxyForLoaderServiceObjectImpl(FileSystemClientImpl fs)
+        private static SharedRef<IFileSystemProxyForLoader> GetFileSystemProxyForLoaderServiceObjectImpl(
+            FileSystemClientImpl fs)
         {
-            Result rc = fs.Hos.Sm.GetService(out ReferenceCountedDisposable<IFileSystemProxyForLoader> fsProxy,
-                "fsp-ldr");
+            using var fileSystemProxy = new SharedRef<IFileSystemProxyForLoader>();
+            Result rc = fs.Hos.Sm.GetService(ref fileSystemProxy.Ref(), "fsp-ldr");
 
             if (rc.IsFailure())
             {
                 throw new HorizonResultException(rc, "Failed to get file system proxy service object.");
             }
 
-            fsProxy.Target.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
-            return fsProxy;
+            fileSystemProxy.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
+            return SharedRef<IFileSystemProxyForLoader>.CreateMove(ref fileSystemProxy.Ref());
         }
 
-        public static ReferenceCountedDisposable<IProgramRegistry> GetProgramRegistryServiceObject(
-            this FileSystemClientImpl fs)
+        public static SharedRef<IProgramRegistry> GetProgramRegistryServiceObject(this FileSystemClientImpl fs)
         {
             ref FileSystemProxyServiceObjectGlobals g = ref fs.Globals.FileSystemProxyServiceObject;
             using var guard = new InitializationGuard(ref g.ProgramRegistryServiceObjectInitGuard,
@@ -93,24 +95,25 @@ namespace LibHac.Fs.Shim
 
             if (!guard.IsInitialized)
             {
-                g.ProgramRegistryServiceObject = GetProgramRegistryServiceObjectImpl(fs);
+                using SharedRef<IProgramRegistry> createdObject = GetProgramRegistryServiceObjectImpl(fs);
+                g.ProgramRegistryServiceObject.SetByMove(ref createdObject.Ref());
             }
 
-            return g.ProgramRegistryServiceObject.AddReference();
+            return SharedRef<IProgramRegistry>.CreateCopy(ref g.ProgramRegistryServiceObject);
         }
 
-        private static ReferenceCountedDisposable<IProgramRegistry> GetProgramRegistryServiceObjectImpl(
-            FileSystemClientImpl fs)
+        private static SharedRef<IProgramRegistry> GetProgramRegistryServiceObjectImpl(FileSystemClientImpl fs)
         {
-            Result rc = fs.Hos.Sm.GetService(out ReferenceCountedDisposable<IProgramRegistry> registry, "fsp-pr");
+            using var registry = new SharedRef<IProgramRegistry>();
+            Result rc = fs.Hos.Sm.GetService(ref registry.Ref(), "fsp-pr");
 
             if (rc.IsFailure())
             {
                 throw new HorizonResultException(rc, "Failed to get registry service object.");
             }
 
-            registry.Target.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
-            return registry;
+            registry.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
+            return SharedRef<IProgramRegistry>.CreateMove(ref registry.Ref());
         }
 
         /// <summary>
@@ -121,9 +124,9 @@ namespace LibHac.Fs.Shim
         /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
         /// <param name="serviceObject">The service object this <see cref="FileSystemClient"/> will use.</param>
         public static void InitializeDfcFileSystemProxyServiceObject(this FileSystemClientImpl fs,
-            ReferenceCountedDisposable<IFileSystemProxy> serviceObject)
+            ref SharedRef<IFileSystemProxy> serviceObject)
         {
-            fs.Globals.FileSystemProxyServiceObject.DfcFileSystemProxyServiceObject = serviceObject.AddReference();
+            fs.Globals.FileSystemProxyServiceObject.DfcFileSystemProxyServiceObject.SetByMove(ref serviceObject);
         }
     }
 }

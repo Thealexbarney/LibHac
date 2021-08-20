@@ -2,6 +2,7 @@
 using LibHac.Bcat.Impl.Ipc;
 using LibHac.Bcat.Impl.Service;
 using LibHac.Bcat.Impl.Service.Core;
+using LibHac.Common;
 using LibHac.Fs;
 
 namespace LibHac.Bcat
@@ -11,7 +12,7 @@ namespace LibHac.Bcat
         private const int ServiceTypeCount = 4;
 
         internal HorizonClient Hos { get; }
-        private ServiceCreator[] ServiceCreators { get; } = new ServiceCreator[ServiceTypeCount];
+        private SharedRef<ServiceCreator>[] _serviceCreators;
 
         private readonly object _bcatServiceInitLocker = new object();
         private readonly object _storageManagerInitLocker = new object();
@@ -21,6 +22,7 @@ namespace LibHac.Bcat
         public BcatServer(HorizonClient horizonClient)
         {
             Hos = horizonClient;
+            _serviceCreators = new SharedRef<ServiceCreator>[ServiceTypeCount];
 
             InitBcatService(BcatServiceType.BcatU, "bcat:u", AccessControl.MountOwnDeliveryCacheStorage);
             InitBcatService(BcatServiceType.BcatS, "bcat:s", AccessControl.MountOthersDeliveryCacheStorage);
@@ -32,9 +34,9 @@ namespace LibHac.Bcat
         {
             InitServiceCreator(type, name, accessControl);
 
-            IServiceCreator service = GetServiceCreator(type);
+            using SharedRef<IServiceCreator> service = GetServiceCreator(type);
 
-            Result rc = Hos.Sm.RegisterService(new BcatServiceObject(service), name);
+            Result rc = Hos.Sm.RegisterService(new BcatServiceObject(ref service.Ref()), name);
             if (rc.IsFailure())
             {
                 throw new HorizonResultException(rc, "Abort");
@@ -47,15 +49,18 @@ namespace LibHac.Bcat
             {
                 Debug.Assert((uint)type < ServiceTypeCount);
 
-                ServiceCreators[(int)type] = new ServiceCreator(this, name, accessControl);
+                _serviceCreators[(int)type].Reset(new ServiceCreator(this, name, accessControl));
             }
         }
 
-        private IServiceCreator GetServiceCreator(BcatServiceType type)
+        private SharedRef<IServiceCreator> GetServiceCreator(BcatServiceType type)
         {
-            Debug.Assert((uint)type < ServiceTypeCount);
+            lock (_bcatServiceInitLocker)
+            {
+                Debug.Assert((uint)type < ServiceTypeCount);
 
-            return ServiceCreators[(int)type];
+                return SharedRef<IServiceCreator>.CreateCopy(ref _serviceCreators[(int)type]);
+            }
         }
 
         internal DeliveryCacheStorageManager GetStorageManager()

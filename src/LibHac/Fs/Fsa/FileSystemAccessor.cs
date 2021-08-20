@@ -19,12 +19,12 @@ namespace LibHac.Fs.Impl
         private const string InvalidFsEntryObjectMessage = "Invalid file or directory object.";
 
         private MountName _mountName;
-        private IFileSystem _fileSystem;
+        private UniqueRef<IFileSystem> _fileSystem;
         private LinkedList<FileAccessor> _openFiles;
         private LinkedList<DirectoryAccessor> _openDirectories;
         private SdkMutexType _openListLock;
-        private ICommonMountNameGenerator _mountNameGenerator;
-        private ISaveDataAttributeGetter _saveDataAttributeGetter;
+        private UniqueRef<ICommonMountNameGenerator> _mountNameGenerator;
+        private UniqueRef<ISaveDataAttributeGetter> _saveDataAttributeGetter;
         private bool _isAccessLogEnabled;
         private bool _isDataCacheAttachable;
         private bool _isPathCacheAttachable;
@@ -36,17 +36,17 @@ namespace LibHac.Fs.Impl
         internal HorizonClient Hos { get; }
 
         public FileSystemAccessor(HorizonClient hosClient, U8Span name, IMultiCommitTarget multiCommitTarget,
-            IFileSystem fileSystem, ICommonMountNameGenerator mountNameGenerator,
-            ISaveDataAttributeGetter saveAttributeGetter)
+            ref UniqueRef<IFileSystem> fileSystem, ref UniqueRef<ICommonMountNameGenerator> mountNameGenerator,
+            ref UniqueRef<ISaveDataAttributeGetter> saveAttributeGetter)
         {
             Hos = hosClient;
 
-            _fileSystem = fileSystem;
+            _fileSystem = new UniqueRef<IFileSystem>(ref fileSystem);
             _openFiles = new LinkedList<FileAccessor>();
             _openDirectories = new LinkedList<DirectoryAccessor>();
             _openListLock.Initialize();
-            _mountNameGenerator = mountNameGenerator;
-            _saveDataAttributeGetter = saveAttributeGetter;
+            _mountNameGenerator = new UniqueRef<ICommonMountNameGenerator>(ref mountNameGenerator);
+            _saveDataAttributeGetter = new UniqueRef<ISaveDataAttributeGetter>(ref saveAttributeGetter);
             _multiCommitTarget = multiCommitTarget;
 
             if (name.IsEmpty())
@@ -94,14 +94,9 @@ namespace LibHac.Fs.Impl
                 }
             }
 
-            ISaveDataAttributeGetter saveDataAttributeGetter = Shared.Move(ref _saveDataAttributeGetter);
-            saveDataAttributeGetter?.Dispose();
-
-            ICommonMountNameGenerator mountNameGenerator = Shared.Move(ref _mountNameGenerator);
-            mountNameGenerator?.Dispose();
-
-            IFileSystem fileSystem = Shared.Move(ref _fileSystem);
-            fileSystem?.Dispose();
+            _saveDataAttributeGetter.Destroy();
+            _mountNameGenerator.Destroy();
+            _fileSystem.Destroy();
         }
 
         private static void Remove<T>(LinkedList<T> list, T item)
@@ -132,7 +127,7 @@ namespace LibHac.Fs.Impl
         }
 
         public Optional<Ncm.DataId> GetDataId() => _dataId;
-        public void SetDataId(Ncm.DataId dataId) => _dataId.Set(dataId);
+        public void SetDataId(Optional<Ncm.DataId> dataId) => _dataId = dataId;
 
         public Result SetUpPath(ref Path path, U8Span pathBuffer)
         {
@@ -177,7 +172,7 @@ namespace LibHac.Fs.Impl
             }
             else
             {
-                rc = _fileSystem.CreateFile(in pathNormalized, size, option);
+                rc = _fileSystem.Get.CreateFile(in pathNormalized, size, option);
                 if (rc.IsFailure()) return rc;
             }
 
@@ -190,7 +185,7 @@ namespace LibHac.Fs.Impl
             Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
-            rc = _fileSystem.DeleteFile(in pathNormalized);
+            rc = _fileSystem.Get.DeleteFile(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -202,7 +197,7 @@ namespace LibHac.Fs.Impl
             Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
-            rc = _fileSystem.CreateDirectory(in pathNormalized);
+            rc = _fileSystem.Get.CreateDirectory(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -214,7 +209,7 @@ namespace LibHac.Fs.Impl
             Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
-            rc = _fileSystem.CreateDirectory(in pathNormalized);
+            rc = _fileSystem.Get.CreateDirectory(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -226,7 +221,7 @@ namespace LibHac.Fs.Impl
             Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
-            rc = _fileSystem.DeleteDirectoryRecursively(in pathNormalized);
+            rc = _fileSystem.Get.DeleteDirectoryRecursively(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -238,7 +233,7 @@ namespace LibHac.Fs.Impl
             Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
-            rc = _fileSystem.CleanDirectoryRecursively(in pathNormalized);
+            rc = _fileSystem.Get.CleanDirectoryRecursively(in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -260,7 +255,7 @@ namespace LibHac.Fs.Impl
             }
             else
             {
-                rc = _fileSystem.RenameFile(in currentPathNormalized, in newPathNormalized);
+                rc = _fileSystem.Get.RenameFile(in currentPathNormalized, in newPathNormalized);
                 if (rc.IsFailure()) return rc;
             }
 
@@ -283,7 +278,7 @@ namespace LibHac.Fs.Impl
             }
             else
             {
-                rc = _fileSystem.RenameDirectory(in currentPathNormalized, in newPathNormalized);
+                rc = _fileSystem.Get.RenameDirectory(in currentPathNormalized, in newPathNormalized);
                 if (rc.IsFailure()) return rc;
             }
             return Result.Success;
@@ -297,7 +292,7 @@ namespace LibHac.Fs.Impl
             Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
-            rc = _fileSystem.GetEntryType(out entryType, in pathNormalized);
+            rc = _fileSystem.Get.GetEntryType(out entryType, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -311,7 +306,7 @@ namespace LibHac.Fs.Impl
             Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
-            rc = _fileSystem.GetFreeSpaceSize(out freeSpace, in pathNormalized);
+            rc = _fileSystem.Get.GetFreeSpaceSize(out freeSpace, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -325,7 +320,7 @@ namespace LibHac.Fs.Impl
             Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
-            rc = _fileSystem.GetTotalSpaceSize(out totalSpace, in pathNormalized);
+            rc = _fileSystem.Get.GetTotalSpaceSize(out totalSpace, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -338,7 +333,7 @@ namespace LibHac.Fs.Impl
             if (rc.IsFailure()) return rc;
 
             using var file = new UniqueRef<IFile>();
-            rc = _fileSystem.OpenFile(ref file.Ref(), in pathNormalized, mode);
+            rc = _fileSystem.Get.OpenFile(ref file.Ref(), in pathNormalized, mode);
             if (rc.IsFailure()) return rc;
 
             var accessor = new FileAccessor(Hos, ref file.Ref(), this, mode);
@@ -371,7 +366,7 @@ namespace LibHac.Fs.Impl
             if (rc.IsFailure()) return rc;
 
             using var directory = new UniqueRef<IDirectory>();
-            rc = _fileSystem.OpenDirectory(ref directory.Ref(), in pathNormalized, mode);
+            rc = _fileSystem.Get.OpenDirectory(ref directory.Ref(), in pathNormalized, mode);
             if (rc.IsFailure()) return rc;
 
             var accessor = new DirectoryAccessor(ref directory.Ref(), this);
@@ -408,7 +403,7 @@ namespace LibHac.Fs.Impl
                     return ResultFs.WriteModeFileNotClosed.Log();
             }
 
-            return _fileSystem.Commit();
+            return _fileSystem.Get.Commit();
         }
 
         public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, U8Span path)
@@ -419,7 +414,7 @@ namespace LibHac.Fs.Impl
             Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
-            rc = _fileSystem.GetFileTimeStampRaw(out timeStamp, in pathNormalized);
+            rc = _fileSystem.Get.GetFileTimeStampRaw(out timeStamp, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -431,7 +426,7 @@ namespace LibHac.Fs.Impl
             Result rc = SetUpPath(ref pathNormalized.Ref(), path);
             if (rc.IsFailure()) return rc;
 
-            rc = _fileSystem.QueryEntry(outBuffer, inBuffer, queryId, in pathNormalized);
+            rc = _fileSystem.Get.QueryEntry(outBuffer, inBuffer, queryId, in pathNormalized);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
@@ -444,44 +439,51 @@ namespace LibHac.Fs.Impl
 
         public Result GetCommonMountName(Span<byte> nameBuffer)
         {
-            if (_mountNameGenerator is null)
+            if (!_mountNameGenerator.HasValue)
                 return ResultFs.PreconditionViolation.Log();
 
-            return _mountNameGenerator.GenerateCommonMountName(nameBuffer);
+            return _mountNameGenerator.Get.GenerateCommonMountName(nameBuffer);
         }
 
         public Result GetSaveDataAttribute(out SaveDataAttribute attribute)
         {
             UnsafeHelpers.SkipParamInit(out attribute);
 
-            if (_saveDataAttributeGetter is null)
+            if (!_saveDataAttributeGetter.HasValue)
                 return ResultFs.PreconditionViolation.Log();
 
-            Result rc = _saveDataAttributeGetter.GetSaveDataAttribute(out attribute);
+            Result rc = _saveDataAttributeGetter.Get.GetSaveDataAttribute(out attribute);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
         }
 
-        public ReferenceCountedDisposable<IFileSystemSf> GetMultiCommitTarget()
+        public SharedRef<IFileSystemSf> GetMultiCommitTarget()
         {
-            return _multiCommitTarget?.GetMultiCommitTarget();
+            if (_multiCommitTarget is not null)
+            {
+                return _multiCommitTarget.GetMultiCommitTarget();
+            }
+            else
+            {
+                return new SharedRef<IFileSystemSf>();
+            }
         }
 
         public void PurgeFileDataCache(FileDataCacheAccessor cacheAccessor)
         {
-            cacheAccessor.Purge(_fileSystem);
+            cacheAccessor.Purge(_fileSystem.Get);
         }
 
         internal void NotifyCloseFile(FileAccessor file)
         {
-            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _openListLock);
+            using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _openListLock);
             Remove(_openFiles, file);
         }
 
         internal void NotifyCloseDirectory(DirectoryAccessor directory)
         {
-            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _openListLock);
+            using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _openListLock);
             Remove(_openDirectories, directory);
         }
 

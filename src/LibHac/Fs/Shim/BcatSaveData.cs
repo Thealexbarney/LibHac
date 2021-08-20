@@ -6,10 +6,15 @@ using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Os;
 using static LibHac.Fs.Impl.AccessLogStrings;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim
 {
+    /// <summary>
+    /// Contains functions for mounting BCAT save data.
+    /// </summary>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     [SkipLocalsInit]
     public static class BcatSaveData
     {
@@ -36,6 +41,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = Mount(fs, mountName, applicationId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
@@ -49,25 +55,27 @@ namespace LibHac.Fs.Shim
                 Result rc = fs.Impl.CheckMountName(mountName);
                 if (rc.IsFailure()) return rc;
 
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+                using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                 rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, applicationId, SaveDataType.Bcat,
                     Fs.SaveData.InvalidUserId, 0);
                 if (rc.IsFailure()) return rc;
 
-                ReferenceCountedDisposable<IFileSystemSf> fileSystem = null;
-                try
-                {
-                    rc = fsProxy.Target.OpenSaveDataFileSystem(out fileSystem, SaveDataSpaceId.User, in attribute);
-                    if (rc.IsFailure()) return rc;
+                using var fileSystem = new SharedRef<IFileSystemSf>();
 
-                    var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
-                    return fs.Register(mountName, fileSystemAdapter);
-                }
-                finally
-                {
-                    fileSystem?.Dispose();
-                }
+                rc = fileSystemProxy.Get.OpenSaveDataFileSystem(ref fileSystem.Ref(), SaveDataSpaceId.User, in attribute);
+                if (rc.IsFailure()) return rc;
+
+                using var fileSystemAdapter =
+                    new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+
+                if (!fileSystemAdapter.HasValue)
+                    return ResultFs.AllocationMemoryFailedInBcatSaveDataA.Log();
+
+                rc = fs.Register(mountName, ref fileSystemAdapter.Ref());
+                if (rc.IsFailure()) return rc.Miss();
+
+                return Result.Success;
             }
         }
     }

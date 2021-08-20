@@ -8,6 +8,10 @@ using static LibHac.Fs.StringTraits;
 // ReSharper disable once CheckNamespace
 namespace LibHac.Fs
 {
+    /// <summary>
+    /// Contains various utility functions for working with paths.
+    /// </summary>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     public static class PathUtility
     {
         public static void Replace(Span<byte> buffer, byte currentChar, byte newChar)

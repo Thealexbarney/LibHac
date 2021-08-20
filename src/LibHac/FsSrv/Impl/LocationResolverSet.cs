@@ -1,10 +1,12 @@
 ﻿using System;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Lr;
 using LibHac.Ncm;
 using LibHac.Os;
+using LibHac.Util;
 
 namespace LibHac.FsSrv.Impl
 {
@@ -37,34 +39,39 @@ namespace LibHac.FsSrv.Impl
     /// <summary>
     /// Manages resolving the location of NCAs via the <c>lr</c> service.
     /// </summary>
-    /// <remarks>Based on FS 12.0.3 (nnSdk 12.3.1)</remarks>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     internal class LocationResolverSet : IDisposable
     {
-        private const int LocationResolverCount = 5;
-
-        // Todo: Use Optional<T>
-        private LocationResolver[] _resolvers;
-        private AddOnContentLocationResolver _aocResolver;
+        private Array5<Optional<LocationResolver>> _resolvers;
+        private Optional<AddOnContentLocationResolver> _aocResolver;
         private SdkMutexType _mutex;
 
+        // LibHac addition
         private FileSystemServer _fsServer;
         private HorizonClient Hos => _fsServer.Hos;
 
         public LocationResolverSet(FileSystemServer fsServer)
         {
-            _resolvers = new LocationResolver[LocationResolverCount];
             _mutex.Initialize();
             _fsServer = fsServer;
         }
 
         public void Dispose()
         {
-            foreach (LocationResolver resolver in _resolvers)
+            for (int i = 0; i < Array5<SharedRef<LocationResolver>>.Length; i++)
             {
-                resolver?.Dispose();
+                if (_resolvers[i].HasValue)
+                {
+                    _resolvers[i].Value.Dispose();
+                    _resolvers[i].Clear();
+                }
             }
 
-            _aocResolver?.Dispose();
+            if (_aocResolver.HasValue)
+            {
+                _aocResolver.Value.Dispose();
+                _aocResolver.Clear();
+            }
         }
 
         private static Result SetUpFsPath(ref Fs.Path outPath, in Lr.Path lrPath)
@@ -90,48 +97,43 @@ namespace LibHac.FsSrv.Impl
 
             _fsServer.InitializeLocationResolverSet();
 
-            if (!IsValidStorageId(storageId))
-                return ResultLr.LocationResolverNotFound.Log();
-
-            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
-
             int index = GetResolverIndexFromStorageId(storageId);
+            if (index == -1)
+                return ResultLr.ApplicationNotFound.Log();
 
-            if (index < 0)
-                return ResultLr.LocationResolverNotFound.Log();
-
-            ref LocationResolver lr = ref _resolvers[index];
+            using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
             // Open the location resolver if it hasn't been already
-            if (lr is null && Hos.Lr.OpenLocationResolver(out lr, storageId).IsFailure())
-                return ResultLr.LocationResolverNotFound.Log();
+            if (!_resolvers[index].HasValue)
+            {
+                _resolvers[index].Set(null);
+                Result rc = Hos.Lr.OpenLocationResolver(out _resolvers[index].Value, storageId);
 
-            resolver = lr;
+                if (rc.IsFailure())
+                {
+                    _resolvers[index].Clear();
+                    return ResultLr.ApplicationNotFound.Log();
+                }
+            }
+
+            resolver = _resolvers[index].Value;
             return Result.Success;
         }
 
         private Result GetRegisteredLocationResolver(out RegisteredLocationResolver resolver)
         {
-            Result rc = Hos.Lr.OpenRegisteredLocationResolver(out RegisteredLocationResolver lr);
+            _fsServer.InitializeLocationResolverSet();
 
-            if (rc.IsFailure())
-            {
-                lr?.Dispose();
-                UnsafeHelpers.SkipParamInit(out resolver);
-                return rc;
-            }
-
-            resolver = lr;
-            return Result.Success;
+            return Hos.Lr.OpenRegisteredLocationResolver(out resolver);
         }
 
         private Result GetAddOnContentLocationResolver(out AddOnContentLocationResolver resolver)
         {
             _fsServer.InitializeLocationResolverSet();
 
-            using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+            using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            if (_aocResolver is null)
+            if (!_aocResolver.HasValue)
             {
                 Result rc = Hos.Lr.OpenAddOnContentLocationResolver(out AddOnContentLocationResolver lr);
                 if (rc.IsFailure())
@@ -143,7 +145,7 @@ namespace LibHac.FsSrv.Impl
                 _aocResolver = lr;
             }
 
-            resolver = _aocResolver;
+            resolver = _aocResolver.Value;
             return Result.Success;
         }
 
@@ -230,8 +232,6 @@ namespace LibHac.FsSrv.Impl
 
         public Result ResolveRegisteredProgramPath(ref Fs.Path outPath, ulong id)
         {
-            _fsServer.InitializeLocationResolverSet();
-
             RegisteredLocationResolver resolver = null;
             try
             {
@@ -251,8 +251,6 @@ namespace LibHac.FsSrv.Impl
 
         public Result ResolveRegisteredHtmlDocumentPath(ref Fs.Path outPath, ulong id)
         {
-            _fsServer.InitializeLocationResolverSet();
-
             RegisteredLocationResolver resolver = null;
             try
             {
