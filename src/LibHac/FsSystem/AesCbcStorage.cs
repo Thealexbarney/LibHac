@@ -28,7 +28,7 @@ namespace LibHac.FsSystem
 
         protected override Result DoRead(long offset, Span<byte> destination)
         {
-            if (!IsRangeValid(offset, destination.Length, _size))
+            if (!CheckAccessRange(offset, destination.Length, _size))
                 return ResultFs.OutOfRange.Log();
 
             Result rc = base.DoRead(offset, destination);

@@ -7,34 +7,26 @@ namespace LibHac.FsSrv.FsCreator
 {
     public class SubDirectoryFileSystemCreator : ISubDirectoryFileSystemCreator
     {
-        public Result Create(out ReferenceCountedDisposable<IFileSystem> subDirFileSystem,
-            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, in Path path)
+        public Result Create(ref SharedRef<IFileSystem> outSubDirFileSystem, ref SharedRef<IFileSystem> baseFileSystem,
+            in Path path)
         {
-            UnsafeHelpers.SkipParamInit(out subDirFileSystem);
-
             using var directory = new UniqueRef<IDirectory>();
 
-            Result rc = baseFileSystem.Target.OpenDirectory(ref directory.Ref(), in path, OpenDirectoryMode.Directory);
+            Result rc = baseFileSystem.Get.OpenDirectory(ref directory.Ref(), in path, OpenDirectoryMode.Directory);
             if (rc.IsFailure()) return rc;
 
             directory.Reset();
 
-            ReferenceCountedDisposable<SubdirectoryFileSystem> subFs = null;
-            try
-            {
-                subFs = new ReferenceCountedDisposable<SubdirectoryFileSystem>(
-                    new SubdirectoryFileSystem(ref baseFileSystem));
+            using var subFs = new SharedRef<SubdirectoryFileSystem>(new SubdirectoryFileSystem(ref baseFileSystem));
 
-                rc = subFs.Target.Initialize(in path);
-                if (rc.IsFailure()) return rc;
+            if (!subFs.HasValue)
+                return ResultFs.AllocationMemoryFailedInSubDirectoryFileSystemCreatorA.Log();
 
-                subDirFileSystem = subFs.AddReference<IFileSystem>();
-                return Result.Success;
-            }
-            finally
-            {
-                subFs?.Dispose();
-            }
+            rc = subFs.Get.Initialize(in path);
+            if (rc.IsFailure()) return rc;
+
+            outSubDirFileSystem.SetByMove(ref subFs.Ref());
+            return Result.Success;
         }
     }
 }

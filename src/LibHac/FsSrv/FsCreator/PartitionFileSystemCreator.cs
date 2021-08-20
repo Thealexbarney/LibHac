@@ -8,33 +8,15 @@ namespace LibHac.FsSrv.FsCreator
 {
     public class PartitionFileSystemCreator : IPartitionFileSystemCreator
     {
-        public Result Create(out IFileSystem fileSystem, IStorage pFsStorage)
+        public Result Create(ref SharedRef<IFileSystem> outFileSystem, ref SharedRef<IStorage> baseStorage)
         {
-            var partitionFs = new PartitionFileSystemCore<StandardEntry>();
+            using var partitionFs =
+                new SharedRef<PartitionFileSystemCore<StandardEntry>>(new PartitionFileSystemCore<StandardEntry>());
 
-            Result rc = partitionFs.Initialize(pFsStorage);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out fileSystem);
-                return rc;
-            }
+            Result rc = partitionFs.Get.Initialize(ref baseStorage);
+            if (rc.IsFailure()) return rc.Miss();
 
-            fileSystem = partitionFs;
-            return Result.Success;
-        }
-
-        public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, ReferenceCountedDisposable<IStorage> pFsStorage)
-        {
-            var partitionFs = new PartitionFileSystemCore<StandardEntry>();
-
-            Result rc = partitionFs.Initialize(pFsStorage);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out fileSystem);
-                return rc;
-            }
-
-            fileSystem = new ReferenceCountedDisposable<IFileSystem>(partitionFs);
+            outFileSystem.SetByMove(ref partitionFs.Ref());
             return Result.Success;
         }
     }

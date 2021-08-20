@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.FsSrv.Sf;
 using LibHac.Sf;
 
@@ -20,9 +21,9 @@ namespace LibHac.FsSrv.Impl
             throw new NotImplementedException();
         }
 
-        public static Result CreateWiper(out IWiper wiper, NativeHandle memoryHandle, ulong memorySize)
+        public static Result CreateWiper(ref UniqueRef<IWiper> outWiper, NativeHandle memoryHandle, ulong memorySize)
         {
-            wiper = new BisWiper(memoryHandle, memorySize);
+            outWiper.Reset(new BisWiper(memoryHandle, memorySize));
             return Result.Success;
         }
 

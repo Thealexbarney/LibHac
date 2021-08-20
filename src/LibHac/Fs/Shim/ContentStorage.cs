@@ -8,38 +8,42 @@ using LibHac.FsSrv.Sf;
 using LibHac.Os;
 using LibHac.Util;
 using static LibHac.Fs.Impl.AccessLogStrings;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim
 {
+    /// <summary>
+    /// Contains functions for mounting the directories where content is stored.
+    /// </summary>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     [SkipLocalsInit]
     public static class ContentStorage
     {
         private class ContentStorageCommonMountNameGenerator : ICommonMountNameGenerator
         {
-            private ContentStorageId StorageId { get; }
+            private ContentStorageId _storageId;
 
             public ContentStorageCommonMountNameGenerator(ContentStorageId storageId)
             {
-                StorageId = storageId;
+                _storageId = storageId;
             }
 
             public void Dispose() { }
 
             public Result GenerateCommonMountName(Span<byte> nameBuffer)
             {
-                // Determine how much space we need.
-                int neededSize =
-                    StringUtils.GetLength(GetContentStorageMountName(StorageId), PathTool.MountNameLengthMax) + 2;
+                ReadOnlySpan<byte> mountName = GetContentStorageMountName(_storageId);
 
-                Assert.SdkRequiresGreaterEqual(nameBuffer.Length, neededSize);
+                // Add 2 for the mount name separator and null terminator
+                int requiredNameBufferSize = StringUtils.GetLength(mountName, PathTool.MountNameLengthMax) + 2;
 
-                // Generate the name.
+                Assert.SdkRequiresGreaterEqual(nameBuffer.Length, requiredNameBufferSize);
+
                 var sb = new U8StringBuilder(nameBuffer);
-                sb.Append(GetContentStorageMountName(StorageId))
-                    .Append(StringTraits.DriveSeparator);
+                sb.Append(mountName).Append(StringTraits.DriveSeparator);
 
-                Assert.SdkEqual(sb.Length, neededSize - 1);
+                Assert.SdkEqual(sb.Length, requiredNameBufferSize - 1);
 
                 return Result.Success;
             }
@@ -73,6 +77,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = Mount(fs, mountName, storageId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
@@ -91,35 +96,41 @@ namespace LibHac.Fs.Shim
                 Result rc = fs.Impl.CheckMountNameAcceptingReservedMountName(mountName);
                 if (rc.IsFailure()) return rc;
 
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+                using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
+                using var fileSystem = new SharedRef<IFileSystemSf>();
 
-                ReferenceCountedDisposable<IFileSystemSf> fileSystem = null;
-                try
+                for (int i = 0; i < maxRetries; i++)
                 {
-                    for (int i = 0; i < maxRetries; i++)
-                    {
-                        rc = fsProxy.Target.OpenContentStorageFileSystem(out fileSystem, storageId);
+                    rc = fileSystemProxy.Get.OpenContentStorageFileSystem(ref fileSystem.Ref(), storageId);
 
-                        if (rc.IsSuccess())
-                            break;
+                    if (rc.IsSuccess())
+                        break;
 
-                        if (!ResultFs.SystemPartitionNotReady.Includes(rc))
-                            return rc;
+                    if (!ResultFs.SystemPartitionNotReady.Includes(rc))
+                        return rc;
 
-                        if (i == maxRetries - 1)
-                            return rc;
+                    if (i == maxRetries - 1)
+                        return rc;
 
-                        fs.Hos.Os.SleepThread(TimeSpan.FromMilliSeconds(retryInterval));
-                    }
-
-                    var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
-                    var mountNameGenerator = new ContentStorageCommonMountNameGenerator(storageId);
-                    return fs.Register(mountName, fileSystemAdapter, mountNameGenerator);
+                    fs.Hos.Os.SleepThread(TimeSpan.FromMilliSeconds(retryInterval));
                 }
-                finally
-                {
-                    fileSystem?.Dispose();
-                }
+
+                using var fileSystemAdapter =
+                    new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+
+                if (!fileSystemAdapter.HasValue)
+                    return ResultFs.AllocationMemoryFailedInContentStorageA.Log();
+
+                using var mountNameGenerator =
+                    new UniqueRef<ICommonMountNameGenerator>(new ContentStorageCommonMountNameGenerator(storageId));
+
+                if (!mountNameGenerator.HasValue)
+                    return ResultFs.AllocationMemoryFailedInContentStorageB.Log();
+
+                rc = fs.Register(mountName, ref fileSystemAdapter.Ref(), ref mountNameGenerator.Ref());
+                if (rc.IsFailure()) return rc.Miss();
+
+                return Result.Success;
             }
         }
 

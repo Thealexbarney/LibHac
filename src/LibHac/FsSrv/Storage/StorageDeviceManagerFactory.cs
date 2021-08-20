@@ -28,12 +28,12 @@ namespace LibHac.FsSrv.Storage
     internal static class StorageDeviceManagerFactory
     {
         public static Result CreateStorageDeviceManager(this StorageService storage,
-            out ReferenceCountedDisposable<IStorageDeviceManager> deviceManager, StorageDevicePortId portId)
+            ref SharedRef<IStorageDeviceManager> outDeviceManager, StorageDevicePortId portId)
         {
             IStorageDeviceManagerFactory factory = storage.GetStorageDeviceManagerFactory(null);
             Assert.SdkNotNull(factory);
 
-            return factory.Create(out deviceManager, portId);
+            return factory.Create(ref outDeviceManager, portId);
         }
 
         public static IStorageDeviceManagerFactory GetStorageDeviceManagerFactory(this StorageService storage,

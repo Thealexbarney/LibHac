@@ -1,9 +1,10 @@
-﻿using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
+﻿using LibHac.Common;
+using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Fsa
 {
     public interface IMultiCommitTarget
     {
-        ReferenceCountedDisposable<IFileSystemSf> GetMultiCommitTarget();
+        SharedRef<IFileSystemSf> GetMultiCommitTarget();
     }
 }

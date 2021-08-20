@@ -7,6 +7,7 @@ using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 using LibHac.Os;
 using static LibHac.Fs.Impl.AccessLogStrings;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim
@@ -20,33 +21,39 @@ namespace LibHac.Fs.Shim
             Result rc = fs.CheckMountName(mountName);
             if (rc.IsFailure()) return rc;
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
 
             rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, programId, type, userId, 0, index);
             if (rc.IsFailure()) return rc;
 
-            ReferenceCountedDisposable<IFileSystemSf> fileSystem = null;
-            try
-            {
-                if (openReadOnly)
-                {
-                    rc = fsProxy.Target.OpenReadOnlySaveDataFileSystem(out fileSystem, spaceId, in attribute);
-                    if (rc.IsFailure()) return rc;
-                }
-                else
-                {
-                    rc = fsProxy.Target.OpenSaveDataFileSystem(out fileSystem, spaceId, in attribute);
-                    if (rc.IsFailure()) return rc;
-                }
+            using var fileSystem = new SharedRef<IFileSystemSf>();
 
-                var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
-
-                return fs.Fs.Register(mountName, fileSystemAdapter, fileSystemAdapter, null, false, true);
-            }
-            finally
+            if (openReadOnly)
             {
-                fileSystem?.Dispose();
+                rc = fileSystemProxy.Get.OpenReadOnlySaveDataFileSystem(ref fileSystem.Ref(), spaceId, in attribute);
+                if (rc.IsFailure()) return rc;
             }
+            else
+            {
+                rc = fileSystemProxy.Get.OpenSaveDataFileSystem(ref fileSystem.Ref(), spaceId, in attribute);
+                if (rc.IsFailure()) return rc;
+            }
+
+            // Note: Nintendo does pass in the same object both as a unique_ptr and as a raw pointer.
+            // Both of these are tied to the lifetime of the created FileSystemServiceObjectAdapter so it shouldn't be an issue.
+            var fileSystemAdapterRaw = new FileSystemServiceObjectAdapter(ref fileSystem.Ref());
+            using var fileSystemAdapter = new UniqueRef<IFileSystem>(fileSystemAdapterRaw);
+
+            if (!fileSystemAdapter.HasValue)
+                return ResultFs.AllocationMemoryFailedNew.Log();
+
+            using var mountNameGenerator = new UniqueRef<ICommonMountNameGenerator>();
+
+            rc = fs.Fs.Register(mountName, fileSystemAdapterRaw, ref fileSystemAdapter.Ref(),
+                ref mountNameGenerator.Ref(), false, true);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
         }
 
         public static Result MountSaveData(this FileSystemClient fs, U8Span mountName, Ncm.ApplicationId applicationId,

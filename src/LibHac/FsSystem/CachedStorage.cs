@@ -39,7 +39,7 @@ namespace LibHac.FsSystem
             long inOffset = offset;
             int outOffset = 0;
 
-            if (!IsRangeValid(offset, destination.Length, Length))
+            if (!CheckAccessRange(offset, destination.Length, Length))
                 return ResultFs.OutOfRange.Log();
 
             lock (Blocks)
@@ -69,7 +69,7 @@ namespace LibHac.FsSystem
             long inOffset = offset;
             int outOffset = 0;
 
-            if (!IsRangeValid(offset, source.Length, Length))
+            if (!CheckAccessRange(offset, source.Length, Length))
                 return ResultFs.OutOfRange.Log();
 
             lock (Blocks)
@@ -127,12 +127,14 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
             if (!LeaveOpen)
             {
                 BaseStorage?.Dispose();
             }
+
+            base.Dispose();
         }
 
         private CacheBlock GetBlock(long blockIndex)
@@ -150,7 +152,7 @@ namespace LibHac.FsSystem
 
             // An inactive node shouldn't be null, but we'll fix it if it is anyway
             node = Blocks.Last ??
-                   new LinkedListNode<CacheBlock>(new CacheBlock {Buffer = new byte[BlockSize], Index = -1});
+                   new LinkedListNode<CacheBlock>(new CacheBlock { Buffer = new byte[BlockSize], Index = -1 });
 
             FlushBlock(node.Value);
 

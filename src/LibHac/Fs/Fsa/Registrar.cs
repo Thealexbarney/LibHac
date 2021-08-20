@@ -1,6 +1,7 @@
 ﻿using System;
 using LibHac.Common;
 using LibHac.Fs.Impl;
+using LibHac.Util;
 
 namespace LibHac.Fs.Fsa
 {
@@ -14,42 +15,94 @@ namespace LibHac.Fs.Fsa
         Result GetSaveDataAttribute(out SaveDataAttribute attribute);
     }
 
+    /// <summary>
+    /// Contains functions for registering and unregistering mounted <see cref="IFileSystem"/>s.
+    /// </summary>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     public static class Registrar
     {
-        public static Result Register(this FileSystemClient fs, U8Span name, IFileSystem fileSystem)
+        public static Result Register(this FileSystemClient fs, U8Span name, ref UniqueRef<IFileSystem> fileSystem)
         {
-            var accessor = new FileSystemAccessor(fs.Hos, name, null, fileSystem, null, null);
-            fs.Impl.Register(accessor);
+            using var attributeGetter = new UniqueRef<ISaveDataAttributeGetter>();
+            using var mountNameGenerator = new UniqueRef<ICommonMountNameGenerator>();
+
+            using var accessor = new UniqueRef<FileSystemAccessor>(new FileSystemAccessor(fs.Hos, name, null,
+                ref fileSystem, ref mountNameGenerator.Ref(), ref attributeGetter.Ref()));
+
+            Result rc = fs.Impl.Register(ref accessor.Ref());
+            if (rc.IsFailure()) return rc.Miss();
 
             return Result.Success;
         }
 
-        public static Result Register(this FileSystemClient fs, U8Span name, IFileSystem fileSystem,
-            ICommonMountNameGenerator mountNameGenerator)
+        public static Result Register(this FileSystemClient fs, U8Span name, ref UniqueRef<IFileSystem> fileSystem,
+            ref UniqueRef<ICommonMountNameGenerator> mountNameGenerator)
         {
-            var accessor = new FileSystemAccessor(fs.Hos, name, null, fileSystem, mountNameGenerator, null);
-            fs.Impl.Register(accessor);
+            using var attributeGetter = new UniqueRef<ISaveDataAttributeGetter>();
+
+            using var accessor = new UniqueRef<FileSystemAccessor>(new FileSystemAccessor(fs.Hos, name, null,
+                ref fileSystem, ref mountNameGenerator, ref attributeGetter.Ref()));
+
+            Result rc = fs.Impl.Register(ref accessor.Ref());
+            if (rc.IsFailure()) return rc.Miss();
 
             return Result.Success;
         }
 
         public static Result Register(this FileSystemClient fs, U8Span name, IMultiCommitTarget multiCommitTarget,
-            IFileSystem fileSystem, ICommonMountNameGenerator mountNameGenerator, bool useDataCache, bool usePathCache)
+            ref UniqueRef<IFileSystem> fileSystem, ref UniqueRef<ICommonMountNameGenerator> mountNameGenerator,
+            bool useDataCache, bool usePathCache)
         {
-            return fs.Register(name, multiCommitTarget, fileSystem, mountNameGenerator, null, useDataCache,
-                usePathCache);
+            using var attributeGetter = new UniqueRef<ISaveDataAttributeGetter>();
+
+            Result rc = Register(fs, name, multiCommitTarget, ref fileSystem, ref mountNameGenerator,
+                ref attributeGetter.Ref(), useDataCache, usePathCache, new Optional<Ncm.DataId>());
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
         }
 
         public static Result Register(this FileSystemClient fs, U8Span name, IMultiCommitTarget multiCommitTarget,
-            IFileSystem fileSystem, ICommonMountNameGenerator mountNameGenerator,
-            ISaveDataAttributeGetter saveAttributeGetter, bool useDataCache, bool usePathCache)
+            ref UniqueRef<IFileSystem> fileSystem, ref UniqueRef<ICommonMountNameGenerator> mountNameGenerator,
+            bool useDataCache, bool usePathCache, Optional<Ncm.DataId> dataId)
         {
-            var accessor = new FileSystemAccessor(fs.Hos, name, multiCommitTarget, fileSystem, mountNameGenerator,
-                saveAttributeGetter);
+            using var attributeGetter = new UniqueRef<ISaveDataAttributeGetter>();
 
-            accessor.SetFileDataCacheAttachable(useDataCache);
-            accessor.SetPathBasedFileDataCacheAttachable(usePathCache);
-            fs.Impl.Register(accessor);
+            Result rc = Register(fs, name, multiCommitTarget, ref fileSystem, ref mountNameGenerator,
+                ref attributeGetter.Ref(), useDataCache, usePathCache, dataId);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
+        }
+
+        public static Result Register(this FileSystemClient fs, U8Span name, IMultiCommitTarget multiCommitTarget,
+            ref UniqueRef<IFileSystem> fileSystem, ref UniqueRef<ICommonMountNameGenerator> mountNameGenerator,
+            ref UniqueRef<ISaveDataAttributeGetter> saveAttributeGetter, bool useDataCache, bool usePathCache)
+        {
+            Result rc = Register(fs, name, multiCommitTarget, ref fileSystem, ref mountNameGenerator,
+                ref saveAttributeGetter, useDataCache, usePathCache, new Optional<Ncm.DataId>());
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
+        }
+
+        public static Result Register(this FileSystemClient fs, U8Span name, IMultiCommitTarget multiCommitTarget,
+            ref UniqueRef<IFileSystem> fileSystem, ref UniqueRef<ICommonMountNameGenerator> mountNameGenerator,
+            ref UniqueRef<ISaveDataAttributeGetter> saveAttributeGetter, bool useDataCache, bool usePathCache,
+            Optional<Ncm.DataId> dataId)
+        {
+            using var accessor = new UniqueRef<FileSystemAccessor>(new FileSystemAccessor(fs.Hos, name,
+                multiCommitTarget, ref fileSystem, ref mountNameGenerator, ref saveAttributeGetter));
+
+            if (!accessor.HasValue)
+                return ResultFs.AllocationMemoryFailedInRegisterB.Log();
+
+            accessor.Get.SetFileDataCacheAttachable(useDataCache);
+            accessor.Get.SetPathBasedFileDataCacheAttachable(usePathCache);
+            accessor.Get.SetDataId(dataId);
+
+            Result rc = fs.Impl.Register(ref accessor.Ref());
+            if (rc.IsFailure()) return rc.Miss();
 
             return Result.Success;
         }
@@ -60,4 +113,3 @@ namespace LibHac.Fs.Fsa
         }
     }
 }
-

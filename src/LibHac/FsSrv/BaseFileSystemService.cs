@@ -8,6 +8,7 @@ using LibHac.Sf;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using Path = LibHac.Fs.Path;
+using Utility = LibHac.FsSrv.Impl.Utility;
 
 namespace LibHac.FsSrv
 {
@@ -57,38 +58,36 @@ namespace LibHac.FsSrv
             return Result.Success;
         }
 
-        public Result OpenBaseFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
-            BaseFileSystemId fileSystemId)
+        public Result OpenBaseFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, BaseFileSystemId fileSystemId)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
             Result rc = CheckCapabilityById(fileSystemId, _processId);
             if (rc.IsFailure()) return rc;
 
-            ReferenceCountedDisposable<IFileSystem> fs = null;
+            // Open the file system
+            using var fileSystem = new SharedRef<IFileSystem>();
+            rc = _serviceImpl.OpenBaseFileSystem(ref fileSystem.Ref(), fileSystemId);
+            if (rc.IsFailure()) return rc;
 
-            try
-            {
-                // Open the file system
-                rc = _serviceImpl.OpenBaseFileSystem(out fs, fileSystemId);
-                if (rc.IsFailure()) return rc;
+            // Create an SF adapter for the file system
+            using SharedRef<IFileSystemSf> fileSystemAdapter =
+                FileSystemInterfaceAdapter.CreateShared(ref fileSystem.Ref(), false);
 
-                // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs, false);
+            outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
 
-                return Result.Success;
-            }
-            finally
-            {
-                fs?.Dispose();
-            }
+            return Result.Success;
         }
 
-        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystemSf> outFileSystem, in FspPath rootPath,
+        public Result FormatBaseFileSystem(BaseFileSystemId fileSystemId)
+        {
+            Result rc = CheckCapabilityById(fileSystemId, _processId);
+            if (rc.IsFailure()) return rc;
+
+            return _serviceImpl.FormatBaseFileSystem(fileSystemId);
+        }
+
+        public Result OpenBisFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath rootPath,
             BisPartitionId partitionId)
         {
-            UnsafeHelpers.SkipParamInit(out outFileSystem);
-
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
 
@@ -126,32 +125,29 @@ namespace LibHac.FsSrv
             rc = pathNormalized.Normalize(pathFlags);
             if (rc.IsFailure()) return rc;
 
-            ReferenceCountedDisposable<IFileSystem> baseFileSystem = null;
-            ReferenceCountedDisposable<IFileSystem> fileSystem = null;
+            // Open the file system
+            using var fileSystem = new SharedRef<IFileSystem>();
+            rc = _serviceImpl.OpenBisFileSystem(ref fileSystem.Ref(), partitionId, false);
+            if (rc.IsFailure()) return rc;
 
-            try
-            {
-                // Open the file system
-                rc = _serviceImpl.OpenBisFileSystem(out baseFileSystem, partitionId, false);
-                if (rc.IsFailure()) return rc;
+            using var subDirFileSystem = new SharedRef<IFileSystem>();
+            rc = Utility.CreateSubDirectoryFileSystem(ref subDirFileSystem.Ref(), ref fileSystem.Ref(),
+                in pathNormalized);
+            if (rc.IsFailure()) return rc;
 
-                rc = Utility.CreateSubDirectoryFileSystem(out fileSystem, ref baseFileSystem, in pathNormalized);
-                if (rc.IsFailure()) return rc;
+            // Add all the file system wrappers
+            using var typeSetFileSystem =
+                new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref subDirFileSystem.Ref(), storageFlag));
 
-                // Add all the file system wrappers
-                fileSystem = StorageLayoutTypeSetFileSystem.CreateShared(ref fileSystem, storageFlag);
-                fileSystem = AsynchronousAccessFileSystem.CreateShared(ref fileSystem);
+            using var asyncFileSystem =
+                new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref()));
 
-                // Create an SF adapter for the file system
-                outFileSystem = FileSystemInterfaceAdapter.CreateShared(ref fileSystem, false);
+            using SharedRef<IFileSystemSf> fileSystemAdapter =
+                FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref(), false);
 
-                return Result.Success;
-            }
-            finally
-            {
-                baseFileSystem?.Dispose();
-                fileSystem?.Dispose();
-            }
+            outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+
+            return Result.Success;
         }
 
         public Result SetBisRootForHost(BisPartitionId partitionId, in FspPath path)
@@ -187,39 +183,33 @@ namespace LibHac.FsSrv
             return _serviceImpl.DeleteAllPaddingFiles();
         }
 
-        public Result OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem, GameCardHandle handle,
+        public Result OpenGameCardFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, GameCardHandle handle,
             GameCardPartition partitionId)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
 
             if (!programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountGameCard).CanRead)
                 return ResultFs.PermissionDenied.Log();
 
-            ReferenceCountedDisposable<IFileSystem> fs = null;
+            using var fileSystem = new SharedRef<IFileSystem>();
 
-            try
-            {
-                rc = _serviceImpl.OpenGameCardFileSystem(out fs, handle, partitionId);
-                if (rc.IsFailure()) return rc;
+            rc = _serviceImpl.OpenGameCardFileSystem(ref fileSystem.Ref(), handle, partitionId);
+            if (rc.IsFailure()) return rc;
 
-                // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs, false);
+            using var asyncFileSystem =
+                new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref fileSystem.Ref()));
 
-                return Result.Success;
-            }
-            finally
-            {
-                fs?.Dispose();
-            }
+            using SharedRef<IFileSystemSf> fileSystemAdapter =
+                FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref(), false);
+
+            outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+
+            return Result.Success;
         }
 
-        public Result OpenSdCardFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
+        public Result OpenSdCardFileSystem(ref SharedRef<IFileSystemSf> outFileSystem)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
 
@@ -228,22 +218,26 @@ namespace LibHac.FsSrv
             if (!accessibility.CanRead || !accessibility.CanWrite)
                 return ResultFs.PermissionDenied.Log();
 
-            ReferenceCountedDisposable<IFileSystem> fs = null;
+            const StorageType storageFlag = StorageType.Bis;
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
-            try
-            {
-                rc = _serviceImpl.OpenSdCardProxyFileSystem(out fs);
-                if (rc.IsFailure()) return rc;
+            using var fileSystem = new SharedRef<IFileSystem>();
+            rc = _serviceImpl.OpenSdCardProxyFileSystem(ref fileSystem.Ref());
+            if (rc.IsFailure()) return rc;
 
-                // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs, false);
+            // Add all the file system wrappers
+            using var typeSetFileSystem =
+                new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref(), storageFlag));
 
-                return Result.Success;
-            }
-            finally
-            {
-                fs?.Dispose();
-            }
+            using var asyncFileSystem =
+                new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref()));
+
+            using SharedRef<IFileSystemSf> fileSystemAdapter =
+                FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref(), false);
+
+            outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+
+            return Result.Success;
         }
 
         public Result FormatSdCardFileSystem()
@@ -273,11 +267,9 @@ namespace LibHac.FsSrv
             return Result.Success;
         }
 
-        public Result OpenImageDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        public Result OpenImageDirectoryFileSystem(ref SharedRef<IFileSystemSf> outFileSystem,
             ImageDirectoryId directoryId)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
             // Caller must have the MountImageAndVideoStorage permission
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -301,28 +293,22 @@ namespace LibHac.FsSrv
                 default:
                     return ResultFs.InvalidArgument.Log();
             }
-            ReferenceCountedDisposable<IFileSystem> fs = null;
 
-            try
-            {
-                rc = _serviceImpl.OpenBaseFileSystem(out fs, fileSystemId);
-                if (rc.IsFailure()) return rc;
+            using var baseFileSystem = new SharedRef<IFileSystem>();
+            rc = _serviceImpl.OpenBaseFileSystem(ref baseFileSystem.Ref(), fileSystemId);
+            if (rc.IsFailure()) return rc;
 
-                // Create an SF adapter for the file system
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref fs, false);
+            using SharedRef<IFileSystemSf> fileSystemAdapter =
+                FileSystemInterfaceAdapter.CreateShared(ref baseFileSystem.Ref(), false);
 
-                return Result.Success;
-            }
-            finally
-            {
-                fs?.Dispose();
-            }
+            outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+
+            return Result.Success;
         }
 
-        public Result OpenBisWiper(out ReferenceCountedDisposable<IWiper> bisWiper, NativeHandle transferMemoryHandle, ulong transferMemorySize)
+        public Result OpenBisWiper(ref SharedRef<IWiper> outBisWiper, NativeHandle transferMemoryHandle,
+            ulong transferMemorySize)
         {
-            UnsafeHelpers.SkipParamInit(out bisWiper);
-
             // Caller must have the OpenBisWiper permission
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -330,10 +316,12 @@ namespace LibHac.FsSrv
             if (!programInfo.AccessControl.CanCall(OperationType.OpenBisWiper))
                 return ResultFs.PermissionDenied.Log();
 
-            rc = _serviceImpl.OpenBisWiper(out IWiper wiper, transferMemoryHandle, transferMemorySize);
+            using var bisWiper = new UniqueRef<IWiper>();
+            rc = _serviceImpl.OpenBisWiper(ref bisWiper.Ref(), transferMemoryHandle, transferMemorySize);
             if (rc.IsFailure()) return rc;
 
-            bisWiper = new ReferenceCountedDisposable<IWiper>(wiper);
+            outBisWiper.Set(ref bisWiper.Ref());
+
             return Result.Success;
         }
     }

@@ -964,15 +964,10 @@ namespace LibHac.FsSystem.Save
         /// <summary>
         /// Disposes the <see cref="BufferedStorage"/>, flushing any cached data.
         /// </summary>
-        /// <param name="disposing"></param>
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                FinalizeObject();
-            }
-
-            base.Dispose(disposing);
+            FinalizeObject();
+            base.Dispose();
         }
 
         /// <summary>

@@ -127,14 +127,11 @@ namespace LibHac.FsSystem.Save
             return Result.Success;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
+            if (!LeaveOpen)
             {
-                if (!LeaveOpen)
-                {
-                    BaseStorage?.Dispose();
-                }
+                BaseStorage?.Dispose();
             }
         }
 

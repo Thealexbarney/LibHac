@@ -36,9 +36,9 @@ namespace LibHac.FsSrv.FsCreator
             throw new NotImplementedException();
         }
 
-        public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem,
-            out ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor,
-            ISaveDataFileSystemCacheManager cacheManager, ref ReferenceCountedDisposable<IFileSystem> baseFileSystem,
+        public Result Create(ref SharedRef<IFileSystem> outFileSystem,
+            ref SharedRef<ISaveDataExtraDataAccessor> outExtraDataAccessor,
+            ISaveDataFileSystemCacheManager cacheManager, ref SharedRef<IFileSystem> baseFileSystem,
             SaveDataSpaceId spaceId, ulong saveDataId, bool allowDirectorySaveData, bool useDeviceUniqueMac,
             bool isJournalingSupported, bool isMultiCommitSupported, bool openReadOnly, bool openShared,
             ISaveDataCommitTimeStampGetter timeStampGetter)
@@ -48,15 +48,13 @@ namespace LibHac.FsSrv.FsCreator
             ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
             Span<byte> saveImageNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, 0x12);
 
-            UnsafeHelpers.SkipParamInit(out fileSystem, out extraDataAccessor);
-
             Assert.SdkRequiresNotNull(cacheManager);
 
             using var saveImageName = new Path();
             Result rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
             if (rc.IsFailure()) return rc;
 
-            rc = baseFileSystem.Target.GetEntryType(out DirectoryEntryType type, in saveImageName);
+            rc = baseFileSystem.Get.GetEntryType(out DirectoryEntryType type, in saveImageName);
 
             if (rc.IsFailure())
             {
@@ -68,40 +66,36 @@ namespace LibHac.FsSrv.FsCreator
                 if (!allowDirectorySaveData)
                     return ResultFs.InvalidSaveDataEntryType.Log();
 
-                SubdirectoryFileSystem subDirFs = null;
-                ReferenceCountedDisposable<DirectorySaveDataFileSystem> saveFs = null;
-                try
-                {
-                    subDirFs = new SubdirectoryFileSystem(ref baseFileSystem);
+                using var baseFs =
+                    new UniqueRef<SubdirectoryFileSystem>(new SubdirectoryFileSystem(ref baseFileSystem));
 
-                    rc = subDirFs.Initialize(in saveImageName);
-                    if (rc.IsFailure()) return rc;
+                if (!baseFs.HasValue)
+                    return ResultFs.AllocationMemoryFailedInSaveDataFileSystemCreatorA.Log();
 
-                    saveFs = DirectorySaveDataFileSystem.CreateShared(Shared.Move(ref subDirFs), _fsServer.Hos.Fs);
+                rc = baseFs.Get.Initialize(in saveImageName);
+                if (rc.IsFailure()) return rc;
 
-                    rc = saveFs.Target.Initialize(timeStampGetter, _randomGenerator, isJournalingSupported,
-                        isMultiCommitSupported, !openReadOnly);
-                    if (rc.IsFailure()) return rc;
+                using UniqueRef<IFileSystem> tempFs = UniqueRef<IFileSystem>.Create(ref baseFs.Ref());
+                using var saveDirFs = new SharedRef<DirectorySaveDataFileSystem>(
+                    new DirectorySaveDataFileSystem(ref tempFs.Ref(), _fsServer.Hos.Fs));
 
-                    fileSystem = saveFs.AddReference<IFileSystem>();
-                    extraDataAccessor = saveFs.AddReference<ISaveDataExtraDataAccessor>();
+                rc = saveDirFs.Get.Initialize(timeStampGetter, _randomGenerator, isJournalingSupported,
+                    isMultiCommitSupported, !openReadOnly);
+                if (rc.IsFailure()) return rc;
 
-                    return Result.Success;
-                }
-                finally
-                {
-                    subDirFs?.Dispose();
-                    saveFs?.Dispose();
-                }
+                outFileSystem.SetByCopy(ref saveDirFs.Ref());
+                outExtraDataAccessor.SetByCopy(ref saveDirFs.Ref());
+
+                return Result.Success;
             }
-
-            ReferenceCountedDisposable<IStorage> fileStorage = null;
-            try
+            else
             {
+                using var fileStorage = new SharedRef<IStorage>();
+
                 Optional<OpenType> openType =
                     openShared ? new Optional<OpenType>(OpenType.Normal) : new Optional<OpenType>();
 
-                rc = _fsServer.OpenSaveDataStorage(out fileStorage, ref baseFileSystem, spaceId, saveDataId,
+                rc = _fsServer.OpenSaveDataStorage(ref fileStorage.Ref(), ref baseFileSystem, spaceId, saveDataId,
                     OpenMode.ReadWrite, openType);
                 if (rc.IsFailure()) return rc;
 
@@ -110,23 +104,17 @@ namespace LibHac.FsSrv.FsCreator
                     throw new NotImplementedException();
                 }
 
-                // Todo: Properly handle shared storage
-                fileSystem = new ReferenceCountedDisposable<IFileSystem>(new SaveDataFileSystem(_keySet,
-                    fileStorage.Target, IntegrityCheckLevel.ErrorOnInvalid, false));
+                using var saveFs = new SharedRef<SaveDataFileSystem>(new SaveDataFileSystem(_keySet, fileStorage.Get,
+                    IntegrityCheckLevel.ErrorOnInvalid, false));
 
                 // Todo: ISaveDataExtraDataAccessor
 
                 return Result.Success;
             }
-            finally
-            {
-                fileStorage?.Dispose();
-            }
         }
 
-        public Result CreateExtraDataAccessor(
-            out ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor,
-            ReferenceCountedDisposable<IFileSystem> sourceFileSystem)
+        public Result CreateExtraDataAccessor(ref SharedRef<ISaveDataExtraDataAccessor> outExtraDataAccessor,
+            ref SharedRef<IFileSystem> baseFileSystem)
         {
             throw new NotImplementedException();
         }

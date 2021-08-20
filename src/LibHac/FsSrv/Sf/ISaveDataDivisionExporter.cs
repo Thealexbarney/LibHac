@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs.Impl;
 using LibHac.Sf;
 
@@ -8,8 +9,8 @@ namespace LibHac.FsSrv.Sf
     {
         public Result SetDivisionCount(int divisionCount);
         public Result ReadSaveDataExtraData(OutBuffer extraData);
-        public Result OpenSaveDataDiffChunkIterator(out ReferenceCountedDisposable<ISaveDataChunkIterator> iterator);
-        public Result OpenSaveDataChunkExporter(out ReferenceCountedDisposable<ISaveDataChunkExporter> exporter, uint chunkId);
+        public Result OpenSaveDataDiffChunkIterator(ref SharedRef<ISaveDataChunkIterator> outIterator);
+        public Result OpenSaveDataChunkExporter(ref SharedRef<ISaveDataChunkExporter> outExporter, uint chunkId);
         public Result CancelExport();
         public Result SuspendExport(OutBuffer exportContext);
         public Result GetKeySeed(out KeySeed keySeed);

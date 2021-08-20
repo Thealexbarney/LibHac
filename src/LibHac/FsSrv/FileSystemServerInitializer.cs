@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs.Impl;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.FsCreator;
@@ -38,11 +39,11 @@ namespace LibHac.FsSrv
 
             FileSystemProxyConfiguration fspConfig = InitializeFileSystemProxy(server, config);
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = server.Impl.GetFileSystemProxyServiceObject();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = server.Impl.GetFileSystemProxyServiceObject();
             ulong processId = client.Os.GetCurrentProcessId().Value;
-            fsProxy.Target.SetCurrentProcess(processId).IgnoreResult();
+            fileSystemProxy.Get.SetCurrentProcess(processId).IgnoreResult();
 
-            client.Fs.Impl.InitializeDfcFileSystemProxyServiceObject(fsProxy);
+            client.Fs.Impl.InitializeDfcFileSystemProxyServiceObject(ref fileSystemProxy.Ref());
 
             InitializeFileSystemProxyServer(client, server);
 
@@ -76,7 +77,10 @@ namespace LibHac.FsSrv
             var saveDataIndexerManager = new SaveDataIndexerManager(server.Hos.Fs, Fs.SaveData.SaveIndexerId,
                 new ArrayPoolMemoryResource(), new SdHandleManager(), false);
 
-            var programRegistryService = new ProgramRegistryServiceImpl(server);
+            var programRegistryConfig = new ProgramRegistryServiceImpl.Configuration();
+            programRegistryConfig.FsServer = server;
+
+            var programRegistryService = new ProgramRegistryServiceImpl(in programRegistryConfig);
 
             server.InitializeProgramRegistryImpl(programRegistryService);
 
@@ -84,7 +88,7 @@ namespace LibHac.FsSrv
             baseStorageConfig.BisStorageCreator = config.FsCreators.BuiltInStorageCreator;
             baseStorageConfig.GameCardStorageCreator = config.FsCreators.GameCardStorageCreator;
             baseStorageConfig.FsServer = server;
-            baseStorageConfig.DeviceOperator = new ReferenceCountedDisposable<IDeviceOperator>(config.DeviceOperator);
+            baseStorageConfig.DeviceOperator = new SharedRef<IDeviceOperator>(config.DeviceOperator);
             var baseStorageService = new BaseStorageServiceImpl(in baseStorageConfig);
 
             var timeService = new TimeServiceImpl(server);
@@ -194,9 +198,10 @@ namespace LibHac.FsSrv
                 _server = server;
             }
 
-            public Result GetServiceObject(out object serviceObject)
+            public Result GetServiceObject(ref SharedRef<IDisposable> serviceObject)
             {
-                serviceObject = _server.Impl.GetFileSystemProxyServiceObject();
+                using SharedRef<IFileSystemProxy> derivedObject = _server.Impl.GetFileSystemProxyServiceObject();
+                serviceObject.SetByMove(ref derivedObject.Ref());
                 return Result.Success;
             }
         }
@@ -210,9 +215,10 @@ namespace LibHac.FsSrv
                 _server = server;
             }
 
-            public Result GetServiceObject(out object serviceObject)
+            public Result GetServiceObject(ref SharedRef<IDisposable> serviceObject)
             {
-                serviceObject = _server.Impl.GetFileSystemProxyForLoaderServiceObject();
+                using SharedRef<IFileSystemProxyForLoader> derivedObject = _server.Impl.GetFileSystemProxyForLoaderServiceObject();
+                serviceObject.SetByMove(ref derivedObject.Ref());
                 return Result.Success;
             }
         }
@@ -226,9 +232,10 @@ namespace LibHac.FsSrv
                 _server = server;
             }
 
-            public Result GetServiceObject(out object serviceObject)
+            public Result GetServiceObject(ref SharedRef<IDisposable> serviceObject)
             {
-                serviceObject = _server.Impl.GetProgramRegistryServiceObject();
+                using SharedRef<IProgramRegistry> derivedObject = _server.Impl.GetProgramRegistryServiceObject();
+                serviceObject.SetByMove(ref derivedObject.Ref());
                 return Result.Success;
             }
         }

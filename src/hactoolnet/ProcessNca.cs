@@ -50,8 +50,11 @@ namespace hactoolnet
 
                         string mountName = $"section{i}";
 
-                        fs.Register(mountName.ToU8Span(), OpenFileSystem(i));
-                        fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.SectionOutDir[i]));
+                        using var inputFs = new UniqueRef<IFileSystem>(OpenFileSystem(i));
+                        using var outputFs = new UniqueRef<IFileSystem>(new LocalFileSystem(ctx.Options.SectionOutDir[i]));
+
+                        fs.Register(mountName.ToU8Span(), ref inputFs.Ref());
+                        fs.Register("output".ToU8Span(), ref outputFs.Ref());
 
                         fs.Impl.EnableFileSystemAccessorAccessLog(mountName.ToU8Span());
                         fs.Impl.EnableFileSystemAccessorAccessLog("output".ToU8Span());
@@ -102,8 +105,11 @@ namespace hactoolnet
                     {
                         FileSystemClient fs = ctx.Horizon.Fs;
 
-                        fs.Register("rom".ToU8Span(), OpenFileSystemByType(NcaSectionType.Data));
-                        fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.RomfsOutDir));
+                        using var inputFs = new UniqueRef<IFileSystem>(OpenFileSystemByType(NcaSectionType.Data));
+                        using var outputFs = new UniqueRef<IFileSystem>(new LocalFileSystem(ctx.Options.RomfsOutDir));
+
+                        fs.Register("rom".ToU8Span(), ref inputFs.Ref());
+                        fs.Register("output".ToU8Span(), ref outputFs.Ref());
 
                         fs.Impl.EnableFileSystemAccessorAccessLog("rom".ToU8Span());
                         fs.Impl.EnableFileSystemAccessorAccessLog("output".ToU8Span());
@@ -162,8 +168,11 @@ namespace hactoolnet
                     {
                         FileSystemClient fs = ctx.Horizon.Fs;
 
-                        fs.Register("code".ToU8Span(), OpenFileSystemByType(NcaSectionType.Code));
-                        fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.ExefsOutDir));
+                        using var inputFs = new UniqueRef<IFileSystem>(OpenFileSystemByType(NcaSectionType.Data));
+                        using var outputFs = new UniqueRef<IFileSystem>(new LocalFileSystem(ctx.Options.RomfsOutDir));
+
+                        fs.Register("code".ToU8Span(), ref inputFs.Ref());
+                        fs.Register("output".ToU8Span(), ref outputFs.Ref());
 
                         fs.Impl.EnableFileSystemAccessorAccessLog("code".ToU8Span());
                         fs.Impl.EnableFileSystemAccessorAccessLog("output".ToU8Span());

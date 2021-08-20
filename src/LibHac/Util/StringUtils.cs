@@ -38,6 +38,29 @@ namespace LibHac.Util
             return i;
         }
 
+        public static int Strlcpy(Span<byte> dest, ReadOnlySpan<byte> source, int maxLen)
+        {
+            int maxLenLocal = Math.Min(Math.Min(dest.Length, source.Length), maxLen);
+
+            int i = 0;
+            if (maxLenLocal > 0)
+            {
+                for (; i < maxLenLocal - 1 && source[i] != 0; i++)
+                {
+                    dest[i] = source[i];
+                }
+
+                dest[i] = 0;
+            }
+
+            while (i < source.Length && source[i] != 0)
+            {
+                i++;
+            }
+
+            return i;
+        }
+
         public static int GetLength(ReadOnlySpan<byte> s)
         {
             int i = 0;

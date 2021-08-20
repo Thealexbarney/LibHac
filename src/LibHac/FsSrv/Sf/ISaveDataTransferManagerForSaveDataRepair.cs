@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Sf;
 
@@ -8,11 +9,11 @@ namespace LibHac.FsSrv.Sf
     {
         public Result GetChallenge(OutBuffer challenge);
         public Result SetKeyPackage(InBuffer keyPackage);
-        public Result OpenSaveDataExporterAndGetEncryptedKey(out ReferenceCountedDisposable<ISaveDataDivisionExporter> exporter, out RsaEncryptedKey key, SaveDataSpaceId spaceId, ulong saveDataId);
+        public Result OpenSaveDataExporterAndGetEncryptedKey(ref SharedRef<ISaveDataDivisionExporter> outExporter, out RsaEncryptedKey key, SaveDataSpaceId spaceId, ulong saveDataId);
         public Result PrepareOpenSaveDataImporter(out RsaEncryptedKey key);
-        public Result OpenSaveDataImporterForSaveDataAfterRepair(out ReferenceCountedDisposable<ISaveDataDivisionImporter> importer, InBuffer initialDataBeforeRepair, InBuffer initialDataAfterRepair, UserId userId, SaveDataSpaceId spaceId);
-        public Result OpenSaveDataImporterForSaveDataBeforeRepair(out ReferenceCountedDisposable<ISaveDataDivisionImporter> importer, InBuffer initialData, UserId userId, SaveDataSpaceId spaceId);
-        public Result OpenSaveDataExporterWithKey(out ReferenceCountedDisposable<ISaveDataDivisionExporter> exporter, in AesKey key, SaveDataSpaceId spaceId, ulong saveDataId);
-        public Result OpenSaveDataImporterWithKey(out ReferenceCountedDisposable<ISaveDataDivisionImporter> importer, in AesKey key, InBuffer initialData, UserId userId, ulong saveDataSpaceId);
+        public Result OpenSaveDataImporterForSaveDataAfterRepair(ref SharedRef<ISaveDataDivisionImporter> outImporter, InBuffer initialDataBeforeRepair, InBuffer initialDataAfterRepair, UserId userId, SaveDataSpaceId spaceId);
+        public Result OpenSaveDataImporterForSaveDataBeforeRepair(ref SharedRef<ISaveDataDivisionImporter> outImporter, InBuffer initialData, UserId userId, SaveDataSpaceId spaceId);
+        public Result OpenSaveDataExporterWithKey(ref SharedRef<ISaveDataDivisionExporter> outExporter, in AesKey key, SaveDataSpaceId spaceId, ulong saveDataId);
+        public Result OpenSaveDataImporterWithKey(ref SharedRef<ISaveDataDivisionImporter> outImporter, in AesKey key, InBuffer initialData, UserId userId, ulong saveDataSpaceId);
     }
 }

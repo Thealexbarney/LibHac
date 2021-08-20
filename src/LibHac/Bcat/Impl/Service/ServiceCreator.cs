@@ -4,6 +4,7 @@ using LibHac.Common;
 
 namespace LibHac.Bcat.Impl.Service
 {
+    // Todo: Update BCAT service object management
     internal class ServiceCreator : IServiceCreator
     {
         private BcatServer Server { get; }
@@ -19,43 +20,38 @@ namespace LibHac.Bcat.Impl.Service
             AccessControl = accessControl;
         }
 
-        public Result CreateDeliveryCacheStorageService(out IDeliveryCacheStorageService service, ulong processId)
+        public void Dispose() { }
+
+        public Result CreateDeliveryCacheStorageService(ref SharedRef<IDeliveryCacheStorageService> outService,
+            ulong processId)
         {
             Result rc = Server.Hos.Arp.GetApplicationLaunchProperty(out ApplicationLaunchProperty launchProperty,
                 processId);
 
             if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out service);
                 return ResultBcat.NotFound.LogConverted(rc);
-            }
 
-            return CreateDeliveryCacheStorageServiceImpl(out service, launchProperty.ApplicationId);
+            return CreateDeliveryCacheStorageServiceImpl(ref outService, launchProperty.ApplicationId);
         }
 
-        public Result CreateDeliveryCacheStorageServiceWithApplicationId(out IDeliveryCacheStorageService service,
-            ApplicationId applicationId)
+        public Result CreateDeliveryCacheStorageServiceWithApplicationId(
+            ref SharedRef<IDeliveryCacheStorageService> outService, ApplicationId applicationId)
         {
             if (!AccessControl.HasFlag(AccessControl.MountOthersDeliveryCacheStorage))
-            {
-                UnsafeHelpers.SkipParamInit(out service);
                 return ResultBcat.PermissionDenied.Log();
-            }
 
-            return CreateDeliveryCacheStorageServiceImpl(out service, applicationId);
+            return CreateDeliveryCacheStorageServiceImpl(ref outService, applicationId);
         }
 
-        private Result CreateDeliveryCacheStorageServiceImpl(out IDeliveryCacheStorageService service,
+        private Result CreateDeliveryCacheStorageServiceImpl(ref SharedRef<IDeliveryCacheStorageService> outService,
             ApplicationId applicationId)
         {
-            UnsafeHelpers.SkipParamInit(out service);
-
             Result rc = Server.GetStorageManager().Open(applicationId.Value);
             if (rc.IsFailure()) return rc;
 
             // todo: Check if network account required
 
-            service = new DeliveryCacheStorageService(Server, applicationId.Value, AccessControl);
+            outService.Reset(new DeliveryCacheStorageService(Server, applicationId.Value, AccessControl));
 
             return Result.Success;
         }

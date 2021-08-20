@@ -11,116 +11,103 @@ namespace LibHac.FsSrv
 {
     public class FileSystemProxyCoreImpl
     {
-        private FileSystemCreatorInterfaces FsCreators { get; }
-        private BaseFileSystemServiceImpl BaseFileSystemService { get; }
-        private EncryptionSeed SdEncryptionSeed { get; set; }
+        private FileSystemCreatorInterfaces _fsCreators;
+        private BaseFileSystemServiceImpl _baseFileSystemService;
+        private EncryptionSeed _sdEncryptionSeed;
 
         public FileSystemProxyCoreImpl(FileSystemCreatorInterfaces fsCreators, BaseFileSystemServiceImpl baseFsService)
         {
-            FsCreators = fsCreators;
-            BaseFileSystemService = baseFsService;
+            _fsCreators = fsCreators;
+            _baseFileSystemService = baseFsService;
         }
 
-        public Result OpenCloudBackupWorkStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenCloudBackupWorkStorageFileSystem(ref SharedRef<IFileSystem> outFileSystem,
             CloudBackupWorkStorageId storageId)
         {
             throw new NotImplementedException();
         }
 
-        public Result OpenCustomStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> outFileSystem,
-            CustomStorageId storageId)
+        public Result OpenCustomStorageFileSystem(ref SharedRef<IFileSystem> outFileSystem, CustomStorageId storageId)
         {
-            UnsafeHelpers.SkipParamInit(out outFileSystem);
+            // Hack around error CS8350.
+            const int pathBufferLength = 0x40;
+            Span<byte> buffer = stackalloc byte[pathBufferLength];
+            ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+            Span<byte> pathBuffer = MemoryMarshal.CreateSpan(ref bufferRef, pathBufferLength);
 
-            ReferenceCountedDisposable<IFileSystem> fileSystem = null;
-            ReferenceCountedDisposable<IFileSystem> tempFs = null;
-            try
+            using var fileSystem = new SharedRef<IFileSystem>();
+
+            if (storageId == CustomStorageId.System)
             {
-                // Hack around error CS8350.
-                const int pathBufferLength = 0x40;
-                Span<byte> buffer = stackalloc byte[pathBufferLength];
-                ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-                Span<byte> pathBuffer = MemoryMarshal.CreateSpan(ref bufferRef, pathBufferLength);
+                Result rc = _baseFileSystemService.OpenBisFileSystem(ref fileSystem.Ref(), BisPartitionId.User);
+                if (rc.IsFailure()) return rc;
 
-                if (storageId == CustomStorageId.System)
-                {
-                    Result rc = BaseFileSystemService.OpenBisFileSystem(out fileSystem, BisPartitionId.User);
-                    if (rc.IsFailure()) return rc;
+                using var path = new Path();
+                rc = PathFunctions.SetUpFixedPathSingleEntry(ref path.Ref(), pathBuffer,
+                    CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System));
+                if (rc.IsFailure()) return rc;
 
-                    using var path = new Path();
-                    rc = PathFunctions.SetUpFixedPathSingleEntry(ref path.Ref(), pathBuffer,
-                        CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System));
-                    if (rc.IsFailure()) return rc;
-
-                    tempFs = Shared.Move(ref fileSystem);
-                    rc = Utility.WrapSubDirectory(out fileSystem, ref tempFs, in path, true);
-                    if (rc.IsFailure()) return rc;
-                }
-                else if (storageId == CustomStorageId.SdCard)
-                {
-                    Result rc = BaseFileSystemService.OpenSdCardProxyFileSystem(out fileSystem);
-                    if (rc.IsFailure()) return rc;
-
-                    using var path = new Path();
-                    rc = PathFunctions.SetUpFixedPathDoubleEntry(ref path.Ref(), pathBuffer,
-                        CommonPaths.SdCardNintendoRootDirectoryName,
-                        CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System));
-                    if (rc.IsFailure()) return rc;
-
-                    tempFs = Shared.Move(ref fileSystem);
-                    rc = Utility.WrapSubDirectory(out fileSystem, ref tempFs, in path, true);
-                    if (rc.IsFailure()) return rc;
-
-                    tempFs = Shared.Move(ref fileSystem);
-                    rc = FsCreators.EncryptedFileSystemCreator.Create(out fileSystem, ref tempFs,
-                        IEncryptedFileSystemCreator.KeyId.CustomStorage, SdEncryptionSeed);
-                    if (rc.IsFailure()) return rc;
-                }
-                else
-                {
-                    return ResultFs.InvalidArgument.Log();
-                }
-
-                outFileSystem = Shared.Move(ref fileSystem);
-                return Result.Success;
+                using SharedRef<IFileSystem> tempFs = SharedRef<IFileSystem>.CreateMove(ref fileSystem.Ref());
+                rc = Utility.WrapSubDirectory(ref fileSystem.Ref(), ref tempFs.Ref(), in path, createIfMissing: true);
+                if (rc.IsFailure()) return rc;
             }
-            finally
+            else if (storageId == CustomStorageId.SdCard)
             {
-                fileSystem?.Dispose();
-                tempFs?.Dispose();
+                Result rc = _baseFileSystemService.OpenSdCardProxyFileSystem(ref fileSystem.Ref());
+                if (rc.IsFailure()) return rc;
+
+                using var path = new Path();
+                rc = PathFunctions.SetUpFixedPathDoubleEntry(ref path.Ref(), pathBuffer,
+                    CommonPaths.SdCardNintendoRootDirectoryName,
+                    CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System));
+                if (rc.IsFailure()) return rc;
+
+                using SharedRef<IFileSystem> tempFs = SharedRef<IFileSystem>.CreateMove(ref fileSystem.Ref());
+                rc = Utility.WrapSubDirectory(ref fileSystem.Ref(), ref tempFs.Ref(), in path, createIfMissing: true);
+                if (rc.IsFailure()) return rc;
+
+                tempFs.SetByMove(ref fileSystem.Ref());
+                rc = _fsCreators.EncryptedFileSystemCreator.Create(ref fileSystem.Ref(), ref tempFs.Ref(),
+                    IEncryptedFileSystemCreator.KeyId.CustomStorage, in _sdEncryptionSeed);
+                if (rc.IsFailure()) return rc;
             }
+            else
+            {
+                return ResultFs.InvalidArgument.Log();
+            }
+
+            outFileSystem.SetByMove(ref fileSystem.Ref());
+            return Result.Success;
         }
 
-        private Result OpenHostFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, in Path path)
+        private Result OpenHostFileSystem(ref SharedRef<IFileSystem> outFileSystem, in Path path)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
             using var pathHost = new Path();
             Result rc = pathHost.Initialize(in path);
             if (rc.IsFailure()) return rc;
 
-            rc = FsCreators.TargetManagerFileSystemCreator.NormalizeCaseOfPath(out bool isSupported, ref pathHost.Ref());
+            rc = _fsCreators.TargetManagerFileSystemCreator.NormalizeCaseOfPath(out bool isSupported, ref pathHost.Ref());
             if (rc.IsFailure()) return rc;
 
-            rc = FsCreators.TargetManagerFileSystemCreator.Create(out fileSystem, in pathHost, isSupported, false,
-                Result.Success);
+            rc = _fsCreators.TargetManagerFileSystemCreator.Create(ref outFileSystem, in pathHost, isSupported,
+                ensureRootPathExists: false, Result.Success);
             if (rc.IsFailure()) return rc;
 
             return Result.Success;
         }
 
-        public Result OpenHostFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, in Path path,
+        public Result OpenHostFileSystem(ref SharedRef<IFileSystem> outFileSystem, in Path path,
             bool openCaseSensitive)
         {
             if (!path.IsEmpty() && openCaseSensitive)
             {
-                Result rc = OpenHostFileSystem(out fileSystem, in path);
+                Result rc = OpenHostFileSystem(ref outFileSystem, in path);
                 if (rc.IsFailure()) return rc;
             }
             else
             {
-                Result rc = FsCreators.TargetManagerFileSystemCreator.Create(out fileSystem, in path, openCaseSensitive,
-                    false, Result.Success);
+                Result rc = _fsCreators.TargetManagerFileSystemCreator.Create(ref outFileSystem, in path,
+                    openCaseSensitive, ensureRootPathExists: false, Result.Success);
                 if (rc.IsFailure()) return rc;
             }
 
@@ -129,7 +116,7 @@ namespace LibHac.FsSrv
 
         public Result SetSdCardEncryptionSeed(in EncryptionSeed seed)
         {
-            SdEncryptionSeed = seed;
+            _sdEncryptionSeed = seed;
             return Result.Success;
         }
     }

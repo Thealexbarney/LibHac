@@ -1,18 +1,14 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs;
-using LibHac.Fs.Fsa;
-using LibHac.FsSystem.Save;
 
 namespace LibHac.FsSystem
 {
     public interface ISaveDataFileSystemCacheManager : IDisposable
     {
-        bool GetCache(out ReferenceCountedDisposable<IFileSystem> fileSystem, SaveDataSpaceId spaceId, ulong saveDataId);
-        void Register(ReferenceCountedDisposable<ApplicationTemporaryFileSystem> fileSystem);
-        void Register(ReferenceCountedDisposable<SaveDataFileSystem> fileSystem);
+        bool GetCache(ref SharedRef<SaveDataFileSystemHolder> outFileSystem, SaveDataSpaceId spaceId, ulong saveDataId);
+        void Register(ref SharedRef<SaveDataFileSystemHolder> fileSystem);
+        void Register(ref SharedRef<ApplicationTemporaryFileSystem> fileSystem);
         void Unregister(SaveDataSpaceId spaceId, ulong saveDataId);
-        
-        // LibHac addition
-        void Register(ReferenceCountedDisposable<DirectorySaveDataFileSystem> fileSystem);
     }
 }

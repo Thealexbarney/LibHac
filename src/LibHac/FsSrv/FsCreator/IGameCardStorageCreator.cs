@@ -1,11 +1,12 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Common;
+using LibHac.Fs;
 
 namespace LibHac.FsSrv.FsCreator
 {
     public interface IGameCardStorageCreator
     {
-        Result CreateReadOnly(GameCardHandle handle, out ReferenceCountedDisposable<IStorage> storage);
-        Result CreateSecureReadOnly(GameCardHandle handle, out ReferenceCountedDisposable<IStorage> storage);
-        Result CreateWriteOnly(GameCardHandle handle, out ReferenceCountedDisposable<IStorage> storage);
+        Result CreateReadOnly(GameCardHandle handle, ref SharedRef<IStorage> outStorage);
+        Result CreateSecureReadOnly(GameCardHandle handle, ref SharedRef<IStorage> outStorage);
+        Result CreateWriteOnly(GameCardHandle handle, ref SharedRef<IStorage> outStorage);
     }
 }

@@ -1,19 +1,26 @@
-﻿using LibHac.Sm;
+﻿using System;
+using LibHac.Common;
+using LibHac.Sm;
 
 namespace LibHac.Bcat.Impl.Ipc
 {
     internal class BcatServiceObject : IServiceObject
     {
-        private IServiceCreator _serviceCreator;
+        private SharedRef<IServiceCreator> _serviceCreator;
 
-        public BcatServiceObject(IServiceCreator serviceCreator)
+        public BcatServiceObject(ref SharedRef<IServiceCreator> serviceCreator)
         {
-            _serviceCreator = serviceCreator;
+            _serviceCreator = SharedRef<IServiceCreator>.CreateMove(ref serviceCreator);
         }
 
-        public Result GetServiceObject(out object serviceObject)
+        public void Dispose()
         {
-            serviceObject = _serviceCreator;
+            _serviceCreator.Destroy();
+        }
+
+        public Result GetServiceObject(ref SharedRef<IDisposable> serviceObject)
+        {
+            serviceObject.SetByCopy(ref _serviceCreator);
             return Result.Success;
         }
     }

@@ -8,11 +8,11 @@ namespace LibHac.FsSystem
     /// <summary>
     /// An <see cref="IFileSystem"/> that uses a directory of another <see cref="IFileSystem"/> as its root directory.
     /// </summary>
-    /// <remarks>Based on FS 12.0.3 (nnSdk 12.3.1)</remarks>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     public class SubdirectoryFileSystem : IFileSystem
     {
         private IFileSystem _baseFileSystem;
-        private ReferenceCountedDisposable<IFileSystem> _baseFileSystemShared;
+        private SharedRef<IFileSystem> _baseFileSystemShared;
         private Path.Stored _rootPath;
 
         public SubdirectoryFileSystem(IFileSystem baseFileSystem)
@@ -20,16 +20,15 @@ namespace LibHac.FsSystem
             _baseFileSystem = baseFileSystem;
         }
 
-        public SubdirectoryFileSystem(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem)
+        public SubdirectoryFileSystem(ref SharedRef<IFileSystem> baseFileSystem)
         {
-            _baseFileSystemShared = Shared.Move(ref baseFileSystem);
-            _baseFileSystem = _baseFileSystemShared.Target;
+            _baseFileSystemShared = SharedRef<IFileSystem>.CreateMove(ref baseFileSystem);
+            _baseFileSystem = _baseFileSystemShared.Get;
         }
 
         public override void Dispose()
         {
-            ReferenceCountedDisposable<IFileSystem> sharedFs = Shared.Move(ref _baseFileSystemShared);
-            sharedFs?.Dispose();
+            _baseFileSystemShared.Destroy();
             base.Dispose();
         }
 

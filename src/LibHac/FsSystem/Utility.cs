@@ -10,8 +10,8 @@ namespace LibHac.FsSystem
     /// <summary>
     /// Various utility functions used by the <see cref="LibHac.FsSystem"/> namespace.
     /// </summary>
-    /// <remarks>Based on FS 12.0.3 (nnSdk 12.3.1)</remarks>
-    internal static class Utility12
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+    internal static class Utility
     {
         public delegate Result FsIterationTask(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure);
 
@@ -22,7 +22,7 @@ namespace LibHac.FsSystem
         /// C# does not allow closures over byref-like types. This struct is used as a sort of manual imitation of a closure struct.
         /// It contains various fields that can used if needed to pass references to <see cref="FsIterationTask"/> methods.
         /// The main shortcomings are that every type that might possibly be passed must have a field in the struct.
-        /// The struct must also be manually passed through the <see cref="Utility12.IterateDirectoryRecursively"/> method.
+        /// The struct must also be manually passed through the <see cref="Utility.IterateDirectoryRecursively"/> method.
         /// And because ref fields aren't as thing as of C# 10, some ref structs may have to be copied into the closure struct. 
         /// </remarks>
         public ref struct FsIterationTaskClosure
@@ -410,7 +410,7 @@ namespace LibHac.FsSystem
         }
 
         public static Result MakeUniqueLockWithPin<T>(ref UniqueRef<IUniqueLock> outUniqueLock,
-            SemaphoreAdapter semaphore, ref ReferenceCountedDisposable<T> objectToPin) where T : class, IDisposable
+            SemaphoreAdapter semaphore, ref SharedRef<T> objectToPin) where T : class, IDisposable
         {
             using var semaphoreAdapter = new UniqueLock<SemaphoreAdapter>();
             Result rc = TryAcquireCountSemaphore(ref semaphoreAdapter.Ref(), semaphore);

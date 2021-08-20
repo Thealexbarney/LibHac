@@ -6,6 +6,7 @@ using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Os;
 using static LibHac.Fs.Impl.AccessLogStrings;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim
@@ -65,32 +66,32 @@ namespace LibHac.Fs.Shim
                 Result rc = fs.Impl.CheckMountName(mountName);
                 if (rc.IsFailure()) return rc;
 
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+                using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                 rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, Fs.SaveData.InvalidProgramId,
                     SaveDataType.System, userId, saveDataId);
                 if (rc.IsFailure()) return rc;
 
-                ReferenceCountedDisposable<IFileSystemSf> fileSystem = null;
-                try
+                using var fileSystem = new SharedRef<IFileSystemSf>();
+
+                rc = fileSystemProxy.Get.OpenSaveDataFileSystemBySystemSaveDataId(ref fileSystem.Ref(), spaceId, in attribute);
+                if (rc.IsFailure()) return rc;
+
+                var fileSystemAdapterRaw = new FileSystemServiceObjectAdapter(ref fileSystem.Ref());
+                using var fileSystemAdapter = new UniqueRef<IFileSystem>(fileSystemAdapterRaw);
+
+                if (!fileSystemAdapter.HasValue)
+                    return ResultFs.AllocationMemoryFailedInSystemSaveDataA.Log();
+
+                if (spaceId == SaveDataSpaceId.System)
                 {
-                    rc = fsProxy.Target.OpenSaveDataFileSystemBySystemSaveDataId(out fileSystem, spaceId, in attribute);
-                    if (rc.IsFailure()) return rc;
-
-                    var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
-
-                    if (spaceId == SaveDataSpaceId.System)
-                    {
-                        return fs.Register(mountName, fileSystemAdapter, fileSystemAdapter, null, false, false);
-                    }
-                    else
-                    {
-                        return fs.Register(mountName, fileSystemAdapter);
-                    }
+                    using var mountNameGenerator = new UniqueRef<ICommonMountNameGenerator>();
+                    return fs.Register(mountName, fileSystemAdapterRaw, ref fileSystemAdapter.Ref(),
+                        ref mountNameGenerator.Ref(), false, false);
                 }
-                finally
+                else
                 {
-                    fileSystem?.Dispose();
+                    return fs.Register(mountName, ref fileSystemAdapter.Ref());
                 }
             }
         }

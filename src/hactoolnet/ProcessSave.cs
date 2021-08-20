@@ -35,7 +35,8 @@ namespace hactoolnet
                 var save = new SaveDataFileSystem(ctx.KeySet, file, ctx.Options.IntegrityLevel, true);
                 FileSystemClient fs = ctx.Horizon.Fs;
 
-                fs.Register("save".ToU8Span(), save);
+                using var saveUnique = new UniqueRef<IFileSystem>(save);
+                fs.Register("save".ToU8Span(), ref saveUnique.Ref());
                 fs.Impl.EnableFileSystemAccessorAccessLog("save".ToU8Span());
 
                 if (ctx.Options.Validate)
@@ -45,7 +46,8 @@ namespace hactoolnet
 
                 if (ctx.Options.OutDir != null)
                 {
-                    fs.Register("output".ToU8Span(), new LocalFileSystem(ctx.Options.OutDir));
+                    using var outputFs = new UniqueRef<IFileSystem>(new LocalFileSystem(ctx.Options.OutDir));
+                    fs.Register("output".ToU8Span(), ref outputFs.Ref());
                     fs.Impl.EnableFileSystemAccessorAccessLog("output".ToU8Span());
 
                     FsUtils.CopyDirectoryWithProgress(fs, "save:/".ToU8Span(), "output:/".ToU8Span(), logger: ctx.Logger).ThrowIfFailure();
@@ -89,7 +91,8 @@ namespace hactoolnet
 
                     if (ctx.Options.RepackSource != null)
                     {
-                        fs.Register("input".ToU8Span(), new LocalFileSystem(ctx.Options.RepackSource));
+                        using var inputFs = new UniqueRef<IFileSystem>(new LocalFileSystem(ctx.Options.RepackSource));
+                        fs.Register("input".ToU8Span(), ref inputFs.Ref());
                         fs.Impl.EnableFileSystemAccessorAccessLog("input".ToU8Span());
 
                         fs.CleanDirectoryRecursively("save:/".ToU8Span());

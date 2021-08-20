@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs;
 
 namespace LibHac.FsSrv
@@ -141,8 +142,8 @@ namespace LibHac.FsSrv
         /// <summary>
         /// Returns an <see cref="SaveDataInfoReaderImpl"/> that iterates through the <see cref="SaveDataIndexer"/>.
         /// </summary>
-        /// <param name="infoReader">If the method returns successfully, contains the created <see cref="SaveDataInfoReaderImpl"/>.</param>
+        /// <param name="outInfoReader">If the method returns successfully, contains the created <see cref="SaveDataInfoReaderImpl"/>.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<SaveDataInfoReaderImpl> infoReader);
+        Result OpenSaveDataInfoReader(ref SharedRef<SaveDataInfoReaderImpl> outInfoReader);
     }
 }

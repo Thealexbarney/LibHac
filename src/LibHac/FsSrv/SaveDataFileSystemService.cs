@@ -17,6 +17,7 @@ using IFileSf = LibHac.FsSrv.Sf.IFile;
 using Path = LibHac.Fs.Path;
 using SaveData = LibHac.Fs.SaveData;
 using static LibHac.Fs.StringTraits;
+using Utility = LibHac.FsSystem.Utility;
 
 namespace LibHac.FsSrv
 {
@@ -33,7 +34,7 @@ namespace LibHac.FsSrv
 
         private const int SaveDataBlockSize = 0x4000;
 
-        private ReferenceCountedDisposable<SaveDataFileSystemService>.WeakReference _selfReference;
+        private WeakRef<SaveDataFileSystemService> _selfReference;
         private SaveDataFileSystemServiceImpl _serviceImpl;
         private ulong _processId;
         private Path.Stored _saveDataRootPath;
@@ -41,6 +42,12 @@ namespace LibHac.FsSrv
         private SemaphoreAdapter _saveDataMountCountSemaphore;
 
         private HorizonClient Hos => _serviceImpl.Hos;
+
+        private SharedRef<SaveDataFileSystemService> GetSharedFromThis() =>
+            SharedRef<SaveDataFileSystemService>.Create(ref _selfReference);
+
+        private SharedRef<ISaveDataMultiCommitCoreInterface> GetSharedMultiCommitInterfaceFromThis() =>
+            SharedRef<ISaveDataMultiCommitCoreInterface>.Create(ref _selfReference);
 
         public SaveDataFileSystemService(SaveDataFileSystemServiceImpl serviceImpl, ulong processId)
         {
@@ -50,42 +57,35 @@ namespace LibHac.FsSrv
             _saveDataMountCountSemaphore = new SemaphoreAdapter(SaveMountSemaphoreCount, SaveMountSemaphoreCount);
         }
 
-        public static ReferenceCountedDisposable<SaveDataFileSystemService> CreateShared(
-            SaveDataFileSystemServiceImpl serviceImpl, ulong processId)
+        public static SharedRef<SaveDataFileSystemService> CreateShared(SaveDataFileSystemServiceImpl serviceImpl, ulong processId)
         {
             // Create the service
             var saveService = new SaveDataFileSystemService(serviceImpl, processId);
 
             // Wrap the service in a ref-counter and give the service a weak self-reference
-            var sharedService = new ReferenceCountedDisposable<SaveDataFileSystemService>(saveService);
-            saveService._selfReference =
-                new ReferenceCountedDisposable<SaveDataFileSystemService>.WeakReference(sharedService);
+            using var sharedService = new SharedRef<SaveDataFileSystemService>(saveService);
+            saveService._selfReference = WeakRef<SaveDataFileSystemService>.Create(ref sharedService.Ref());
 
-            return sharedService;
+            return SharedRef<SaveDataFileSystemService>.CreateMove(ref sharedService.Ref());
         }
 
         private class SaveDataOpenCountAdapter : IEntryOpenCountSemaphoreManager
         {
-            private ReferenceCountedDisposable<SaveDataFileSystemService> _saveService;
+            private SharedRef<SaveDataFileSystemService> _saveService;
 
-            public static ReferenceCountedDisposable<IEntryOpenCountSemaphoreManager> CreateShared(
-                ref ReferenceCountedDisposable<SaveDataFileSystemService> saveService)
+            public SaveDataOpenCountAdapter(ref SharedRef<SaveDataFileSystemService> saveService)
             {
-                var adapter = new SaveDataOpenCountAdapter();
-                Shared.Move(out adapter._saveService, ref saveService);
-
-                return new ReferenceCountedDisposable<IEntryOpenCountSemaphoreManager>(adapter);
+                _saveService = SharedRef<SaveDataFileSystemService>.CreateMove(ref saveService);
             }
 
             public Result TryAcquireEntryOpenCountSemaphore(ref UniqueRef<IUniqueLock> outSemaphore)
             {
-                return _saveService.Target.TryAcquireSaveDataEntryOpenCountSemaphore(ref outSemaphore);
+                return _saveService.Get.TryAcquireSaveDataEntryOpenCountSemaphore(ref outSemaphore);
             }
 
             public void Dispose()
             {
-                _saveService?.Dispose();
-                _saveService = null;
+                _saveService.Destroy();
             }
         }
 
@@ -448,7 +448,7 @@ namespace LibHac.FsSrv
 
         public Result DeleteSaveDataFileSystem(ulong saveDataId)
         {
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
 
             return DeleteSaveDataFileSystemCommon(SaveDataSpaceId.System, saveDataId);
         }
@@ -471,7 +471,7 @@ namespace LibHac.FsSrv
 
         public Result DeleteSaveDataFileSystemBySaveDataSpaceId(SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
             return DeleteSaveDataFileSystemBySaveDataSpaceIdCore(spaceId, saveDataId);
         }
@@ -497,7 +497,7 @@ namespace LibHac.FsSrv
         public Result DeleteSaveDataFileSystemBySaveDataAttribute(SaveDataSpaceId spaceId,
             in SaveDataAttribute attribute)
         {
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
             Result rs = GetSaveDataInfo(out SaveDataInfo info, spaceId, in attribute);
             if (rs.IsFailure()) return rs;
@@ -662,7 +662,7 @@ namespace LibHac.FsSrv
             return ResultFs.NotImplemented.Log();
         }
 
-        public Result OpenSaveDataFile(out ReferenceCountedDisposable<IFileSf> file, SaveDataSpaceId spaceId,
+        public Result OpenSaveDataFile(ref SharedRef<IFileSf> file, SaveDataSpaceId spaceId,
             in SaveDataAttribute attribute, SaveDataMetaType metaType)
         {
             throw new NotImplementedException();
@@ -690,7 +690,7 @@ namespace LibHac.FsSrv
             Result rc;
 
             StorageType storageFlag = DecidePossibleStorageFlag(attribute.Type, creationInfo.SpaceId);
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
             using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
@@ -861,7 +861,7 @@ namespace LibHac.FsSrv
         {
             UnsafeHelpers.SkipParamInit(out info);
 
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
             using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
             Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
@@ -905,7 +905,7 @@ namespace LibHac.FsSrv
             in SaveDataCreationInfo creationInfo, in SaveDataMetaInfo metaInfo, in Optional<HashSalt> hashSalt)
         {
             StorageType storageFlag = DecidePossibleStorageFlag(attribute.Type, creationInfo.SpaceId);
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -942,7 +942,7 @@ namespace LibHac.FsSrv
             in SaveDataCreationInfo creationInfo)
         {
             StorageType storageFlag = DecidePossibleStorageFlag(attribute.Type, creationInfo.SpaceId);
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -974,23 +974,23 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result OpenSaveDataFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        public Result OpenSaveDataFileSystem(ref SharedRef<IFileSystemSf> fileSystem,
             SaveDataSpaceId spaceId, in SaveDataAttribute attribute)
         {
-            return OpenUserSaveDataFileSystem(out fileSystem, spaceId, in attribute, false);
+            return OpenUserSaveDataFileSystem(ref fileSystem, spaceId, in attribute, false);
         }
 
-        public Result OpenReadOnlySaveDataFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        public Result OpenReadOnlySaveDataFileSystem(ref SharedRef<IFileSystemSf> fileSystem,
             SaveDataSpaceId spaceId, in SaveDataAttribute attribute)
         {
-            return OpenUserSaveDataFileSystem(out fileSystem, spaceId, in attribute, true);
+            return OpenUserSaveDataFileSystem(ref fileSystem, spaceId, in attribute, true);
         }
 
-        private Result OpenSaveDataFileSystemCore(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        private Result OpenSaveDataFileSystemCore(ref SharedRef<IFileSystem> outFileSystem,
             out ulong saveDataId, SaveDataSpaceId spaceId, in SaveDataAttribute attribute, bool openReadOnly,
             bool cacheExtraData)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem, out saveDataId);
+            UnsafeHelpers.SkipParamInit(out saveDataId);
 
             using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
@@ -1021,7 +1021,7 @@ namespace LibHac.FsSrv
 
             // Open the save data using its ID
             Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
-            Result saveFsResult = _serviceImpl.OpenSaveDataFileSystem(out fileSystem, spaceId, tempSaveDataId,
+            Result saveFsResult = _serviceImpl.OpenSaveDataFileSystem(ref outFileSystem, spaceId, tempSaveDataId,
                 in saveDataRootPath, openReadOnly, attribute.Type, cacheExtraData);
 
             if (saveFsResult.IsSuccess())
@@ -1077,78 +1077,78 @@ namespace LibHac.FsSrv
             }
         }
 
-        private Result OpenUserSaveDataFileSystemCore(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        private Result OpenUserSaveDataFileSystemCore(ref SharedRef<IFileSystemSf> outFileSystem,
             SaveDataSpaceId spaceId, in SaveDataAttribute attribute, ProgramInfo programInfo, bool openReadOnly)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-            ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
-            ReferenceCountedDisposable<SaveDataFileSystemService> saveService = null;
-            ReferenceCountedDisposable<IEntryOpenCountSemaphoreManager> openEntryCountAdapter = null;
-
             StorageType storageFlag = DecidePossibleStorageFlag(attribute.Type, spaceId);
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
-            try
+            // Try grabbing the mount count semaphore
+            using var mountCountSemaphore = new UniqueRef<IUniqueLock>();
+            Result rc = TryAcquireSaveDataMountCountSemaphore(ref mountCountSemaphore.Ref());
+            if (rc.IsFailure()) return rc;
+
+            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
+            bool useAsyncFileSystem = !_serviceImpl.IsAllowedDirectorySaveData(spaceId, in saveDataRootPath);
+
+            using var fileSystem = new SharedRef<IFileSystem>();
+
+            // Open the file system
+            rc = OpenSaveDataFileSystemCore(ref fileSystem.Ref(), out ulong saveDataId, spaceId, in attribute,
+                openReadOnly, true);
+            if (rc.IsFailure()) return rc;
+
+            // Can't use attribute in a closure, so copy the needed field
+            SaveDataType type = attribute.Type;
+
+            Result ReadExtraData(out SaveDataExtraData data)
             {
-                // Try grabbing the mount count semaphore
-                using var mountCountSemaphore = new UniqueRef<IUniqueLock>();
-                Result rc = TryAcquireSaveDataMountCountSemaphore(ref mountCountSemaphore.Ref());
-                if (rc.IsFailure()) return rc;
-
-                Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
-                bool useAsyncFileSystem = !_serviceImpl.IsAllowedDirectorySaveData(spaceId, in saveDataRootPath);
-
-                // Open the file system
-                rc = OpenSaveDataFileSystemCore(out tempFileSystem, out ulong saveDataId, spaceId, in attribute,
-                    openReadOnly, true);
-                if (rc.IsFailure()) return rc;
-
-                // Can't use attribute in a closure, so copy the needed field
-                SaveDataType type = attribute.Type;
-
-                Result ReadExtraData(out SaveDataExtraData data)
-                {
-                    Path savePath = _saveDataRootPath.DangerousGetPath();
-                    return _serviceImpl.ReadSaveDataFileSystemExtraData(out data, spaceId, saveDataId, type,
-                        in savePath);
-                }
-
-                // Check if we have permissions to open this save data
-                rc = SaveDataAccessibilityChecker.CheckOpen(in attribute, programInfo, ReadExtraData);
-                if (rc.IsFailure()) return rc;
-
-                // Add all the wrappers for the file system
-                tempFileSystem = StorageLayoutTypeSetFileSystem.CreateShared(ref tempFileSystem, storageFlag);
-
-                if (useAsyncFileSystem)
-                {
-                    tempFileSystem = AsynchronousAccessFileSystem.CreateShared(ref tempFileSystem);
-                }
-
-                saveService = _selfReference.AddReference();
-                openEntryCountAdapter = SaveDataOpenCountAdapter.CreateShared(ref saveService);
-
-                tempFileSystem = OpenCountFileSystem.CreateShared(ref tempFileSystem, ref openEntryCountAdapter,
-                    ref mountCountSemaphore.Ref());
-
-                var pathFlags = new PathFlags();
-                pathFlags.AllowBackslash();
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem, pathFlags, false);
-                return Result.Success;
+                Path savePath = _saveDataRootPath.DangerousGetPath();
+                return _serviceImpl.ReadSaveDataFileSystemExtraData(out data, spaceId, saveDataId, type,
+                    in savePath);
             }
-            finally
+
+            // Check if we have permissions to open this save data
+            rc = SaveDataAccessibilityChecker.CheckOpen(in attribute, programInfo, ReadExtraData);
+            if (rc.IsFailure()) return rc;
+
+            // Add all the wrappers for the file system
+            using var typeSetFileSystem =
+                new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref(), storageFlag));
+
+            using var asyncFileSystem = new SharedRef<IFileSystem>();
+
+            if (useAsyncFileSystem)
             {
-                tempFileSystem?.Dispose();
-                saveService?.Dispose();
-                openEntryCountAdapter?.Dispose();
+                asyncFileSystem.Reset(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref()));
             }
+            else
+            {
+                asyncFileSystem.SetByMove(ref typeSetFileSystem.Ref());
+            }
+
+            using SharedRef<SaveDataFileSystemService> saveService = GetSharedFromThis();
+            using var openEntryCountAdapter =
+                new SharedRef<IEntryOpenCountSemaphoreManager>(new SaveDataOpenCountAdapter(ref saveService.Ref()));
+
+            using var openCountFileSystem = new SharedRef<IFileSystem>(
+                new OpenCountFileSystem(ref asyncFileSystem.Ref(), ref openEntryCountAdapter.Ref(),
+                    ref mountCountSemaphore.Ref()));
+
+            var pathFlags = new PathFlags();
+            pathFlags.AllowBackslash();
+
+            using SharedRef<IFileSystemSf> fileSystemAdapter =
+                FileSystemInterfaceAdapter.CreateShared(ref openCountFileSystem.Ref(), pathFlags, false);
+
+            outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+
+            return Result.Success;
         }
 
-        private Result OpenUserSaveDataFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        private Result OpenUserSaveDataFileSystem(ref SharedRef<IFileSystemSf> outFileSystem,
             SaveDataSpaceId spaceId, in SaveDataAttribute attribute, bool openReadOnly)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
 
@@ -1183,15 +1183,13 @@ namespace LibHac.FsSrv
                 actualSpaceId = spaceId;
             }
 
-            return OpenUserSaveDataFileSystemCore(out fileSystem, actualSpaceId, in tempAttribute, programInfo,
+            return OpenUserSaveDataFileSystemCore(ref outFileSystem, actualSpaceId, in tempAttribute, programInfo,
                 openReadOnly);
         }
 
-        public Result OpenSaveDataFileSystemBySystemSaveDataId(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        public Result OpenSaveDataFileSystemBySystemSaveDataId(ref SharedRef<IFileSystemSf> outFileSystem,
             SaveDataSpaceId spaceId, in SaveDataAttribute attribute)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
             if (!IsStaticSaveDataIdValueRange(attribute.StaticSaveDataId))
                 return ResultFs.InvalidArgument.Log();
 
@@ -1199,7 +1197,7 @@ namespace LibHac.FsSrv
             if (rc.IsFailure()) return rc;
 
             StorageType storageFlag = DecidePossibleStorageFlag(attribute.Type, spaceId);
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
             Accessibility accessibility =
                 programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountSystemSaveData);
@@ -1210,52 +1208,58 @@ namespace LibHac.FsSrv
             Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
             bool useAsyncFileSystem = !_serviceImpl.IsAllowedDirectorySaveData(spaceId, in saveDataRootPath);
 
-            ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
-            ReferenceCountedDisposable<SaveDataFileSystemService> saveService = null;
-            ReferenceCountedDisposable<IEntryOpenCountSemaphoreManager> openEntryCountAdapter = null;
+            using var fileSystem = new SharedRef<IFileSystem>();
 
-            try
+            // Open the file system
+            rc = OpenSaveDataFileSystemCore(ref fileSystem.Ref(), out ulong saveDataId, spaceId, in attribute,
+                false, true);
+            if (rc.IsFailure()) return rc;
+
+            // Can't use attribute in a closure, so copy the needed field
+            SaveDataType type = attribute.Type;
+
+            Result ReadExtraData(out SaveDataExtraData data)
             {
-                // Open the file system
-                rc = OpenSaveDataFileSystemCore(out tempFileSystem, out ulong saveDataId, spaceId, in attribute, false,
-                    true);
-                if (rc.IsFailure()) return rc;
-
-                // Can't use attribute in a closure, so copy the needed field
-                SaveDataType type = attribute.Type;
-
-                Result ReadExtraData(out SaveDataExtraData data) =>
-                    _serviceImpl.ReadSaveDataFileSystemExtraData(out data, spaceId, saveDataId, type,
-                        _saveDataRootPath.DangerousGetPath());
-
-                // Check if we have permissions to open this save data
-                rc = SaveDataAccessibilityChecker.CheckOpen(in attribute, programInfo, ReadExtraData);
-                if (rc.IsFailure()) return rc;
-
-                // Add all the wrappers for the file system
-                tempFileSystem = StorageLayoutTypeSetFileSystem.CreateShared(ref tempFileSystem, storageFlag);
-
-                if (useAsyncFileSystem)
-                {
-                    tempFileSystem = AsynchronousAccessFileSystem.CreateShared(ref tempFileSystem);
-                }
-
-                saveService = _selfReference.AddReference();
-                openEntryCountAdapter = SaveDataOpenCountAdapter.CreateShared(ref saveService);
-
-                tempFileSystem = OpenCountFileSystem.CreateShared(ref tempFileSystem, ref openEntryCountAdapter);
-
-                var pathFlags = new PathFlags();
-                pathFlags.AllowBackslash();
-                fileSystem = FileSystemInterfaceAdapter.CreateShared(ref tempFileSystem, pathFlags, false);
-                return Result.Success;
+                Path savePath = _saveDataRootPath.DangerousGetPath();
+                return _serviceImpl.ReadSaveDataFileSystemExtraData(out data, spaceId, saveDataId, type,
+                    in savePath);
             }
-            finally
+
+            // Check if we have permissions to open this save data
+            rc = SaveDataAccessibilityChecker.CheckOpen(in attribute, programInfo, ReadExtraData);
+            if (rc.IsFailure()) return rc;
+
+            // Add all the wrappers for the file system
+            using var typeSetFileSystem =
+                new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref(), storageFlag));
+
+            using var asyncFileSystem = new SharedRef<IFileSystem>();
+
+            if (useAsyncFileSystem)
             {
-                tempFileSystem?.Dispose();
-                saveService?.Dispose();
-                openEntryCountAdapter?.Dispose();
+                asyncFileSystem.Reset(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref()));
             }
+            else
+            {
+                asyncFileSystem.SetByMove(ref typeSetFileSystem.Ref());
+            }
+
+            using SharedRef<SaveDataFileSystemService> saveService = GetSharedFromThis();
+            using var openEntryCountAdapter =
+                new SharedRef<IEntryOpenCountSemaphoreManager>(new SaveDataOpenCountAdapter(ref saveService.Ref()));
+
+            using var openCountFileSystem = new SharedRef<IFileSystem>(
+                new OpenCountFileSystem(ref asyncFileSystem.Ref(), ref openEntryCountAdapter.Ref()));
+
+            var pathFlags = new PathFlags();
+            pathFlags.AllowBackslash();
+
+            using SharedRef<IFileSystemSf> fileSystemAdapter =
+                FileSystemInterfaceAdapter.CreateShared(ref openCountFileSystem.Ref(), pathFlags, false);
+
+            outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+
+            return Result.Success;
         }
 
         // ReSharper disable once UnusedParameter.Local
@@ -1265,7 +1269,7 @@ namespace LibHac.FsSrv
         {
             UnsafeHelpers.SkipParamInit(out extraData);
 
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
             using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
             Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
@@ -1284,7 +1288,7 @@ namespace LibHac.FsSrv
         {
             UnsafeHelpers.SkipParamInit(out extraData);
 
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -1438,7 +1442,7 @@ namespace LibHac.FsSrv
         private Result WriteSaveDataFileSystemExtraDataCore(SaveDataSpaceId spaceId, ulong saveDataId,
             in SaveDataExtraData extraData, SaveDataType saveType, bool updateTimeStamp)
         {
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
             Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
             return _serviceImpl.WriteSaveDataFileSystemExtraData(spaceId, saveDataId, in extraData, in saveDataRootPath,
@@ -1448,7 +1452,7 @@ namespace LibHac.FsSrv
         private Result WriteSaveDataFileSystemExtraDataWithMaskCore(ulong saveDataId, SaveDataSpaceId spaceId,
             in SaveDataExtraData extraData, in SaveDataExtraData extraDataMask)
         {
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -1530,11 +1534,9 @@ namespace LibHac.FsSrv
             return WriteSaveDataFileSystemExtraDataWithMaskCore(saveDataId, spaceId, in extraDataRef, in maskRef);
         }
 
-        public Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader)
+        public Result OpenSaveDataInfoReader(ref SharedRef<ISaveDataInfoReader> outInfoReader)
         {
-            UnsafeHelpers.SkipParamInit(out infoReader);
-
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -1545,33 +1547,26 @@ namespace LibHac.FsSrv
                 return ResultFs.PermissionDenied.Log();
             }
 
-            ReferenceCountedDisposable<SaveDataInfoReaderImpl> reader = null;
+            using var reader = new SharedRef<SaveDataInfoReaderImpl>();
 
-            try
+            using (var accessor = new UniqueRef<SaveDataIndexerAccessor>())
             {
-                using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
-
                 rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
                 if (rc.IsFailure()) return rc;
 
-                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(out reader);
+                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(ref reader.Ref());
                 if (rc.IsFailure()) return rc;
+            }
 
-                infoReader = reader.AddReference<ISaveDataInfoReader>();
-                return Result.Success;
-            }
-            finally
-            {
-                reader?.Dispose();
-            }
+            outInfoReader.SetByMove(ref reader.Ref());
+
+            return Result.Success;
         }
 
         public Result OpenSaveDataInfoReaderBySaveDataSpaceId(
-            out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader, SaveDataSpaceId spaceId)
+            ref SharedRef<ISaveDataInfoReader> outInfoReader, SaveDataSpaceId spaceId)
         {
-            UnsafeHelpers.SkipParamInit(out infoReader);
-
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -1579,38 +1574,33 @@ namespace LibHac.FsSrv
             rc = CheckOpenSaveDataInfoReaderAccessControl(programInfo, spaceId);
             if (rc.IsFailure()) return rc;
 
-            ReferenceCountedDisposable<SaveDataInfoReaderImpl> reader = null;
+            using var filterReader = new UniqueRef<SaveDataInfoFilterReader>();
 
-            try
+            using (var accessor = new UniqueRef<SaveDataIndexerAccessor>())
             {
-                using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
-
                 rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
                 if (rc.IsFailure()) return rc;
 
-                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(out reader);
+                using var reader = new SharedRef<SaveDataInfoReaderImpl>();
+
+                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(ref reader.Ref());
                 if (rc.IsFailure()) return rc;
 
-                var infoFilter = new SaveDataInfoFilter(ConvertToRealSpaceId(spaceId), default, default, default,
-                    default, default, 0);
+                var filter = new SaveDataInfoFilter(ConvertToRealSpaceId(spaceId), programId: default,
+                    saveDataType: default, userId: default, saveDataId: default, index: default, rank: 0);
 
-                var filterReader = new SaveDataInfoFilterReader(reader, in infoFilter);
-                infoReader = new ReferenceCountedDisposable<ISaveDataInfoReader>(filterReader);
+                filterReader.Reset(new SaveDataInfoFilterReader(ref reader.Ref(), in filter));
+            }
 
-                return Result.Success;
-            }
-            finally
-            {
-                reader?.Dispose();
-            }
+            outInfoReader.Set(ref filterReader.Ref());
+
+            return Result.Success;
         }
 
-        public Result OpenSaveDataInfoReaderWithFilter(out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader,
+        public Result OpenSaveDataInfoReaderWithFilter(ref SharedRef<ISaveDataInfoReader> outInfoReader,
             SaveDataSpaceId spaceId, in SaveDataFilter filter)
         {
-            UnsafeHelpers.SkipParamInit(out infoReader);
-
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -1621,29 +1611,26 @@ namespace LibHac.FsSrv
             rc = CheckOpenSaveDataInfoReaderAccessControl(programInfo, spaceId);
             if (rc.IsFailure()) return rc;
 
-            ReferenceCountedDisposable<SaveDataInfoReaderImpl> reader = null;
+            using var filterReader = new UniqueRef<SaveDataInfoFilterReader>();
 
-            try
+            using (var accessor = new UniqueRef<SaveDataIndexerAccessor>())
             {
-                using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
-
-                rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
+                rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
                 if (rc.IsFailure()) return rc;
 
-                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(out reader);
+                using var reader = new SharedRef<SaveDataInfoReaderImpl>();
+
+                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(ref reader.Ref());
                 if (rc.IsFailure()) return rc;
 
-                var infoFilter = new SaveDataInfoFilter(spaceId, in filter);
+                var infoFilter = new SaveDataInfoFilter(ConvertToRealSpaceId(spaceId), in filter);
 
-                var filterReader = new SaveDataInfoFilterReader(reader, in infoFilter);
-                infoReader = new ReferenceCountedDisposable<ISaveDataInfoReader>(filterReader);
+                filterReader.Reset(new SaveDataInfoFilterReader(ref reader.Ref(), in infoFilter));
+            }
 
-                return Result.Success;
-            }
-            finally
-            {
-                reader?.Dispose();
-            }
+            outInfoReader.Set(ref filterReader.Ref());
+
+            return Result.Success;
         }
 
         private Result FindSaveDataWithFilterImpl(out long count, out SaveDataInfo info, SaveDataSpaceId spaceId,
@@ -1651,27 +1638,19 @@ namespace LibHac.FsSrv
         {
             UnsafeHelpers.SkipParamInit(out count, out info);
 
-            ReferenceCountedDisposable<SaveDataInfoReaderImpl> reader = null;
+            using var reader = new SharedRef<SaveDataInfoReaderImpl>();
+            using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
-            try
-            {
-                using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
+            Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+            if (rc.IsFailure()) return rc;
 
-                Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-                if (rc.IsFailure()) return rc;
+            rc = accessor.Get.Indexer.OpenSaveDataInfoReader(ref reader.Ref());
+            if (rc.IsFailure()) return rc;
 
-                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(out reader);
-                if (rc.IsFailure()) return rc;
+            using var filterReader =
+                new UniqueRef<SaveDataInfoFilterReader>(new SaveDataInfoFilterReader(ref reader.Ref(), in infoFilter));
 
-                using (var filterReader = new SaveDataInfoFilterReader(reader, in infoFilter))
-                {
-                    return filterReader.Read(out count, new OutBuffer(SpanHelpers.AsByteSpan(ref info)));
-                }
-            }
-            finally
-            {
-                reader?.Dispose();
-            }
+            return filterReader.Get.Read(out count, new OutBuffer(SpanHelpers.AsByteSpan(ref info)));
         }
 
         public Result FindSaveDataWithFilter(out long count, OutBuffer saveDataInfoBuffer, SaveDataSpaceId spaceId,
@@ -1682,7 +1661,7 @@ namespace LibHac.FsSrv
             if (saveDataInfoBuffer.Size != Unsafe.SizeOf<SaveDataInfo>())
                 return ResultFs.InvalidArgument.Log();
 
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -1710,13 +1689,13 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        private Result OpenSaveDataInternalStorageFileSystemCore(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        private Result OpenSaveDataInternalStorageFileSystemCore(ref SharedRef<IFileSystem> fileSystem,
             SaveDataSpaceId spaceId, ulong saveDataId, bool useSecondMacKey)
         {
             throw new NotImplementedException();
         }
 
-        public Result OpenSaveDataInternalStorageFileSystem(out ReferenceCountedDisposable<IFileSystemSf> fileSystem,
+        public Result OpenSaveDataInternalStorageFileSystem(ref SharedRef<IFileSystemSf> fileSystem,
             SaveDataSpaceId spaceId, ulong saveDataId)
         {
             throw new NotImplementedException();
@@ -1742,16 +1721,13 @@ namespace LibHac.FsSrv
                 saveDataId);
             if (rc.IsFailure()) return rc;
 
-            commitId = Utility.ConvertZeroCommitId(in extraData);
+            commitId = Impl.Utility.ConvertZeroCommitId(in extraData);
             return Result.Success;
         }
 
-        public Result OpenSaveDataInfoReaderOnlyCacheStorage(
-            out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader)
+        public Result OpenSaveDataInfoReaderOnlyCacheStorage(ref SharedRef<ISaveDataInfoReader> outInfoReader)
         {
-            UnsafeHelpers.SkipParamInit(out infoReader);
-
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
             // Find where the current program's cache storage is located
             Result rc = GetCacheStorageSpaceId(out SaveDataSpaceId spaceId);
@@ -1764,15 +1740,13 @@ namespace LibHac.FsSrv
                     return rc;
             }
 
-            return OpenSaveDataInfoReaderOnlyCacheStorage(out infoReader, spaceId);
+            return OpenSaveDataInfoReaderOnlyCacheStorage(ref outInfoReader, spaceId);
         }
 
-        private Result OpenSaveDataInfoReaderOnlyCacheStorage(
-            out ReferenceCountedDisposable<ISaveDataInfoReader> infoReader, SaveDataSpaceId spaceId)
+        private Result OpenSaveDataInfoReaderOnlyCacheStorage(ref SharedRef<ISaveDataInfoReader> outInfoReader,
+            SaveDataSpaceId spaceId)
         {
-            UnsafeHelpers.SkipParamInit(out infoReader);
-
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
             Result rc = GetProgramInfo(out ProgramInfo programInfo);
             if (rc.IsFailure()) return rc;
@@ -1780,16 +1754,15 @@ namespace LibHac.FsSrv
             if (spaceId != SaveDataSpaceId.SdCache && spaceId != SaveDataSpaceId.User)
                 return ResultFs.InvalidSaveDataSpaceId.Log();
 
-            ReferenceCountedDisposable<SaveDataInfoReaderImpl> reader = null;
-            try
-            {
-                using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
-                using var filterReader = new UniqueRef<SaveDataInfoFilterReader>();
+            using var filterReader = new UniqueRef<SaveDataInfoFilterReader>();
 
+            using (var reader = new SharedRef<SaveDataInfoReaderImpl>())
+            using (var accessor = new UniqueRef<SaveDataIndexerAccessor>())
+            {
                 rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
                 if (rc.IsFailure()) return rc;
 
-                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(out reader);
+                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(ref reader.Ref());
                 if (rc.IsFailure()) return rc;
 
                 ProgramId resolvedProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
@@ -1798,24 +1771,21 @@ namespace LibHac.FsSrv
                     SaveDataType.Cache, userId: default, saveDataId: default, index: default,
                     (int)SaveDataRank.Primary);
 
-                filterReader.Reset(new SaveDataInfoFilterReader(reader, in filter));
+                filterReader.Reset(new SaveDataInfoFilterReader(ref reader.Ref(), in filter));
+            }
 
-                infoReader = new ReferenceCountedDisposable<ISaveDataInfoReader>(filterReader.Release());
-                return Result.Success;
-            }
-            finally
-            {
-                reader?.Dispose();
-            }
+            outInfoReader.Set(ref filterReader.Ref());
+
+            return Result.Success;
         }
 
-        private Result OpenSaveDataMetaFileRaw(out ReferenceCountedDisposable<IFile> file, SaveDataSpaceId spaceId,
+        private Result OpenSaveDataMetaFileRaw(ref SharedRef<IFile> file, SaveDataSpaceId spaceId,
             ulong saveDataId, SaveDataMetaType metaType, OpenMode mode)
         {
             throw new NotImplementedException();
         }
 
-        public Result OpenSaveDataMetaFile(out ReferenceCountedDisposable<IFileSf> file, SaveDataSpaceId spaceId,
+        public Result OpenSaveDataMetaFile(ref SharedRef<IFileSf> file, SaveDataSpaceId spaceId,
             in SaveDataAttribute attribute, SaveDataMetaType metaType)
         {
             throw new NotImplementedException();
@@ -1903,7 +1873,7 @@ namespace LibHac.FsSrv
 
         public Result DeleteCacheStorage(ushort index)
         {
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
             Result rc = FindCacheStorage(out SaveDataInfo saveInfo, out SaveDataSpaceId spaceId, index);
             if (rc.IsFailure()) return rc;
@@ -1918,7 +1888,7 @@ namespace LibHac.FsSrv
         {
             UnsafeHelpers.SkipParamInit(out usableDataSize, out journalSize);
 
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
             Result rc = FindCacheStorage(out SaveDataInfo saveInfo, out SaveDataSpaceId spaceId, index);
             if (rc.IsFailure()) return rc;
@@ -1934,36 +1904,36 @@ namespace LibHac.FsSrv
             return Result.Success;
         }
 
-        public Result OpenSaveDataTransferManager(out ReferenceCountedDisposable<ISaveDataTransferManager> manager)
+        public Result OpenSaveDataTransferManager(ref SharedRef<ISaveDataTransferManager> manager)
         {
             throw new NotImplementedException();
         }
 
         public Result OpenSaveDataTransferManagerVersion2(
-            out ReferenceCountedDisposable<ISaveDataTransferManagerWithDivision> manager)
+            ref SharedRef<ISaveDataTransferManagerWithDivision> manager)
         {
             throw new NotImplementedException();
         }
 
         public Result OpenSaveDataTransferManagerForSaveDataRepair(
-            out ReferenceCountedDisposable<ISaveDataTransferManagerForSaveDataRepair> manager)
+            ref SharedRef<ISaveDataTransferManagerForSaveDataRepair> manager)
         {
             throw new NotImplementedException();
         }
 
         public Result OpenSaveDataTransferManagerForRepair(
-            out ReferenceCountedDisposable<ISaveDataTransferManagerForRepair> manager)
+            ref SharedRef<ISaveDataTransferManagerForRepair> manager)
         {
             throw new NotImplementedException();
         }
 
         public Result OpenSaveDataTransferProhibiter(
-            out ReferenceCountedDisposable<ISaveDataTransferProhibiter> prohibiter, Ncm.ApplicationId applicationId)
+            ref SharedRef<ISaveDataTransferProhibiter> prohibiter, Ncm.ApplicationId applicationId)
         {
             throw new NotImplementedException();
         }
 
-        public Result OpenSaveDataMover(out ReferenceCountedDisposable<ISaveDataMover> saveMover,
+        public Result OpenSaveDataMover(ref SharedRef<ISaveDataMover> saveMover,
             SaveDataSpaceId sourceSpaceId, SaveDataSpaceId destinationSpaceId, NativeHandle workBufferHandle,
             ulong workBufferSize)
         {
@@ -1999,7 +1969,7 @@ namespace LibHac.FsSrv
 
         public Result CleanUpSaveData()
         {
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
             using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
             Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
@@ -2016,7 +1986,7 @@ namespace LibHac.FsSrv
 
         public Result CompleteSaveDataExtension()
         {
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
             using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
             Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
@@ -2033,28 +2003,21 @@ namespace LibHac.FsSrv
 
         public Result CleanUpTemporaryStorage()
         {
-            using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
+            using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
+            using var fileSystem = new SharedRef<IFileSystem>();
 
-            ReferenceCountedDisposable<IFileSystem> fileSystem = null;
-            try
-            {
-                Result rc = _serviceImpl.OpenSaveDataDirectoryFileSystem(out fileSystem, SaveDataSpaceId.Temporary);
-                if (rc.IsFailure()) return rc;
+            Result rc = _serviceImpl.OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref(), SaveDataSpaceId.Temporary);
+            if (rc.IsFailure()) return rc;
 
-                using var pathRoot = new Path();
-                rc = PathFunctions.SetUpFixedPath(ref pathRoot.Ref(), new[] { (byte)'/' });
-                if (rc.IsFailure()) return rc;
+            using var pathRoot = new Path();
+            rc = PathFunctions.SetUpFixedPath(ref pathRoot.Ref(), new[] { (byte)'/' });
+            if (rc.IsFailure()) return rc;
 
-                rc = fileSystem.Target.CleanDirectoryRecursively(in pathRoot);
-                if (rc.IsFailure()) return rc;
+            rc = fileSystem.Get.CleanDirectoryRecursively(in pathRoot);
+            if (rc.IsFailure()) return rc;
 
-                _serviceImpl.ResetTemporaryStorageIndexer();
-                return Result.Success;
-            }
-            finally
-            {
-                fileSystem?.Dispose();
-            }
+            _serviceImpl.ResetTemporaryStorageIndexer();
+            return Result.Success;
         }
 
         public Result FixSaveData()
@@ -2063,28 +2026,17 @@ namespace LibHac.FsSrv
             return Result.Success;
         }
 
-        public Result OpenMultiCommitManager(out ReferenceCountedDisposable<IMultiCommitManager> commitManager)
+        public Result OpenMultiCommitManager(ref SharedRef<IMultiCommitManager> outCommitManager)
         {
-            UnsafeHelpers.SkipParamInit(out commitManager);
+            using SharedRef<ISaveDataMultiCommitCoreInterface>
+                commitInterface = GetSharedMultiCommitInterfaceFromThis();
 
-            ReferenceCountedDisposable<SaveDataFileSystemService> saveService = null;
-            ReferenceCountedDisposable<ISaveDataMultiCommitCoreInterface> commitInterface = null;
-            try
-            {
-                saveService = _selfReference.AddReference();
-                commitInterface = saveService.AddReference<ISaveDataMultiCommitCoreInterface>();
+            outCommitManager.Reset(new MultiCommitManager(_serviceImpl.FsServer, ref commitInterface.Ref()));
 
-                commitManager = MultiCommitManager.CreateShared(_serviceImpl.FsServer, ref commitInterface);
-                return Result.Success;
-            }
-            finally
-            {
-                saveService?.Dispose();
-                commitInterface?.Dispose();
-            }
+            return Result.Success;
         }
 
-        public Result OpenMultiCommitContext(out ReferenceCountedDisposable<IFileSystem> contextFileSystem)
+        public Result OpenMultiCommitContext(ref SharedRef<IFileSystem> contextFileSystem)
         {
             var attribute = new SaveDataAttribute
             {
@@ -2095,7 +2047,7 @@ namespace LibHac.FsSrv
                 ProgramId = new ProgramId(MultiCommitManager.ProgramId)
             };
 
-            return OpenSaveDataFileSystemCore(out contextFileSystem, out _, SaveDataSpaceId.System, in attribute, false,
+            return OpenSaveDataFileSystemCore(ref contextFileSystem, out _, SaveDataSpaceId.System, in attribute, false,
                 true);
         }
 
@@ -2120,66 +2072,44 @@ namespace LibHac.FsSrv
                 ProgramId = saveInfo.ProgramId
             };
 
-            ReferenceCountedDisposable<IFileSystem> fileSystem = null;
-            try
-            {
-                Result rc = OpenSaveDataFileSystemCore(out fileSystem, out _, saveInfo.SpaceId, in attribute, false,
-                    false);
-                if (rc.IsFailure()) return rc;
+            using var fileSystem = new SharedRef<IFileSystem>();
 
-                if (doRollback)
-                {
-                    rc = fileSystem.Target.Rollback();
-                }
-                else
-                {
-                    rc = fileSystem.Target.Commit();
-                }
+            Result rc = OpenSaveDataFileSystemCore(ref fileSystem.Ref(), out _, saveInfo.SpaceId, in attribute, false,
+                false);
+            if (rc.IsFailure()) return rc;
 
-                return rc;
-            }
-            finally
+            if (doRollback)
             {
-                fileSystem?.Dispose();
+                rc = fileSystem.Get.Rollback();
             }
+            else
+            {
+                rc = fileSystem.Get.Commit();
+            }
+
+            return rc;
         }
 
         private Result TryAcquireSaveDataEntryOpenCountSemaphore(ref UniqueRef<IUniqueLock> outSemaphoreLock)
         {
-            ReferenceCountedDisposable<SaveDataFileSystemService> saveService = null;
-            try
-            {
-                saveService = _selfReference.AddReference();
+            using SharedRef<SaveDataFileSystemService> saveService = GetSharedFromThis();
 
-                Result rc = Utility12.MakeUniqueLockWithPin(ref outSemaphoreLock, _openEntryCountSemaphore,
-                    ref saveService);
-                if (rc.IsFailure()) return rc;
+            Result rc = Utility.MakeUniqueLockWithPin(ref outSemaphoreLock, _openEntryCountSemaphore,
+                ref saveService.Ref());
+            if (rc.IsFailure()) return rc;
 
-                return Result.Success;
-            }
-            finally
-            {
-                saveService?.Dispose();
-            }
+            return Result.Success;
         }
 
         private Result TryAcquireSaveDataMountCountSemaphore(ref UniqueRef<IUniqueLock> outSemaphoreLock)
         {
-            ReferenceCountedDisposable<SaveDataFileSystemService> saveService = null;
-            try
-            {
-                saveService = _selfReference.AddReference();
+            using SharedRef<SaveDataFileSystemService> saveService = GetSharedFromThis();
 
-                Result rc = Utility12.MakeUniqueLockWithPin(ref outSemaphoreLock, _saveDataMountCountSemaphore,
-                    ref saveService);
-                if (rc.IsFailure()) return rc;
+            Result rc = Utility.MakeUniqueLockWithPin(ref outSemaphoreLock, _saveDataMountCountSemaphore,
+                ref saveService.Ref());
+            if (rc.IsFailure()) return rc;
 
-                return Result.Success;
-            }
-            finally
-            {
-                saveService?.Dispose();
-            }
+            return Result.Success;
         }
 
         public Result OverrideSaveDataTransferTokenSignVerificationKey(InBuffer key)
@@ -2303,17 +2233,17 @@ namespace LibHac.FsSrv
             return WriteSaveDataFileSystemExtraDataCore(spaceId, saveDataId, in extraData, type, updateTimeStamp);
         }
 
-        Result ISaveDataTransferCoreInterface.OpenSaveDataMetaFileRaw(out ReferenceCountedDisposable<IFile> file,
+        Result ISaveDataTransferCoreInterface.OpenSaveDataMetaFileRaw(ref SharedRef<IFile> file,
             SaveDataSpaceId spaceId, ulong saveDataId, SaveDataMetaType metaType, OpenMode mode)
         {
-            return OpenSaveDataMetaFileRaw(out file, spaceId, saveDataId, metaType, mode);
+            return OpenSaveDataMetaFileRaw(ref file, spaceId, saveDataId, metaType, mode);
         }
 
         Result ISaveDataTransferCoreInterface.OpenSaveDataInternalStorageFileSystemCore(
-            out ReferenceCountedDisposable<IFileSystem> fileSystem, SaveDataSpaceId spaceId, ulong saveDataId,
+            ref SharedRef<IFileSystem> fileSystem, SaveDataSpaceId spaceId, ulong saveDataId,
             bool useSecondMacKey)
         {
-            return OpenSaveDataInternalStorageFileSystemCore(out fileSystem, spaceId, saveDataId, useSecondMacKey);
+            return OpenSaveDataInternalStorageFileSystemCore(ref fileSystem, spaceId, saveDataId, useSecondMacKey);
         }
 
         Result ISaveDataTransferCoreInterface.OpenSaveDataIndexerAccessor(

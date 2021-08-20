@@ -69,7 +69,7 @@ namespace LibHac.FsSrv.Impl
         public void SetDeviceEvent(SimulatingDeviceTargetOperation operation,
             SimulatingDeviceAccessFailureEventType failureType, Result failureResult, bool isRecurringEvent)
         {
-            using ScopedLock<SdkRecursiveMutex> lk = ScopedLock.Lock(ref _mutex);
+            using ScopedLock<SdkRecursiveMutex> scopedLock = ScopedLock.Lock(ref _mutex);
 
             if (failureResult.IsFailure())
                 _failureResult = failureResult;
@@ -82,7 +82,7 @@ namespace LibHac.FsSrv.Impl
 
         public void ClearDeviceEvent()
         {
-            using ScopedLock<SdkRecursiveMutex> lk = ScopedLock.Lock(ref _mutex);
+            using ScopedLock<SdkRecursiveMutex> scopedLock = ScopedLock.Lock(ref _mutex);
 
             _isEventSet = false;
             _simulatedFailureType = SimulatingDeviceAccessFailureEventType.None;
@@ -93,7 +93,7 @@ namespace LibHac.FsSrv.Impl
 
         public void SetDetectionSimulationMode(SimulatingDeviceDetectionMode mode)
         {
-            using ScopedLock<SdkRecursiveMutex> lk = ScopedLock.Lock(ref _mutex);
+            using ScopedLock<SdkRecursiveMutex> scopedLock = ScopedLock.Lock(ref _mutex);
 
             _isDetectionSimulationEnabled = mode != SimulatingDeviceDetectionMode.NoSimulation;
             _detectionSimulationMode = mode;
@@ -109,7 +109,7 @@ namespace LibHac.FsSrv.Impl
             if (_isEventSet)
                 return Result.Success;
 
-            using ScopedLock<SdkRecursiveMutex> lk = ScopedLock.Lock(ref _mutex);
+            using ScopedLock<SdkRecursiveMutex> scopedLock = ScopedLock.Lock(ref _mutex);
 
             if ((_simulatedOperation & operation) == 0)
                 return Result.Success;

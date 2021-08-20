@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using LibHac.Common;
 
 namespace LibHac.Fs
 {
@@ -16,10 +14,6 @@ namespace LibHac.Fs
     /// </remarks>
     public abstract class IStorage : IDisposable
     {
-        // 0 = not disposed; 1 = disposed
-        private int _disposedState;
-        private bool IsDisposed => _disposedState != 0;
-
         /// <summary>
         /// Reads a sequence of bytes from the current <see cref="IStorage"/>.
         /// </summary>
@@ -30,9 +24,6 @@ namespace LibHac.Fs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Result Read(long offset, Span<byte> destination)
         {
-            if (IsDisposed)
-                return ResultFs.PreconditionViolation.Log();
-
             return DoRead(offset, destination);
         }
 
@@ -45,9 +36,6 @@ namespace LibHac.Fs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Result Write(long offset, ReadOnlySpan<byte> source)
         {
-            if (IsDisposed)
-                return ResultFs.PreconditionViolation.Log();
-
             return DoWrite(offset, source);
         }
 
@@ -58,9 +46,6 @@ namespace LibHac.Fs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Result Flush()
         {
-            if (IsDisposed)
-                return ResultFs.PreconditionViolation.Log();
-
             return DoFlush();
         }
 
@@ -71,9 +56,6 @@ namespace LibHac.Fs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Result SetSize(long size)
         {
-            if (IsDisposed)
-                return ResultFs.PreconditionViolation.Log();
-
             return DoSetSize(size);
         }
 
@@ -85,11 +67,6 @@ namespace LibHac.Fs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Result GetSize(out long size)
         {
-            UnsafeHelpers.SkipParamInit(out size);
-
-            if (IsDisposed)
-                return ResultFs.PreconditionViolation.Log();
-
             return DoGetSize(out size);
         }
 
@@ -106,14 +83,11 @@ namespace LibHac.Fs
         public Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
             ReadOnlySpan<byte> inBuffer)
         {
-            if (IsDisposed)
-                return ResultFs.PreconditionViolation.Log();
-
             return DoOperateRange(outBuffer, operationId, offset, size, inBuffer);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsRangeValid(long offset, long size, long totalSize)
+        public static bool CheckAccessRange(long offset, long size, long totalSize)
         {
             return offset >= 0 &&
                    size >= 0 &&
@@ -122,13 +96,14 @@ namespace LibHac.Fs
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsOffsetAndSizeValid(long offset, long size)
+        public static bool CheckOffsetAndSize(long offset, long size)
         {
             return offset >= 0 &&
                    size >= 0 &&
                    offset <= offset + size;
         }
 
+        // Todo: Remove Do* methods
         protected abstract Result DoRead(long offset, Span<byte> destination);
         protected abstract Result DoWrite(long offset, ReadOnlySpan<byte> source);
         protected abstract Result DoFlush();
@@ -141,16 +116,6 @@ namespace LibHac.Fs
             return ResultFs.NotImplemented.Log();
         }
 
-        public void Dispose()
-        {
-            // Make sure Dispose is only called once
-            if (Interlocked.CompareExchange(ref _disposedState, 1, 0) == 0)
-            {
-                Dispose(true);
-                GC.SuppressFinalize(this);
-            }
-        }
-
-        protected virtual void Dispose(bool disposing) { }
+        public virtual void Dispose() { }
     }
 }

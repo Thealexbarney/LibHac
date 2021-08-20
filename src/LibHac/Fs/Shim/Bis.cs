@@ -1,49 +1,53 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
-using LibHac.FsSystem;
 using LibHac.Os;
+using LibHac.FsSystem;
 using LibHac.Util;
 using static LibHac.Fs.Impl.CommonMountNames;
 using static LibHac.Fs.Impl.AccessLogStrings;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.Fs.Shim
 {
+    /// <summary>
+    /// Contains functions for mounting built-in-storage partition file systems
+    /// and opening the raw partitions as <see cref="IStorage"/>s.
+    /// </summary>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     [SkipLocalsInit]
     public static class Bis
     {
         private class BisCommonMountNameGenerator : ICommonMountNameGenerator
         {
-            private BisPartitionId PartitionId { get; }
+            private BisPartitionId _partitionId;
 
             public BisCommonMountNameGenerator(BisPartitionId partitionId)
             {
-                PartitionId = partitionId;
+                _partitionId = partitionId;
             }
 
             public void Dispose() { }
 
             public Result GenerateCommonMountName(Span<byte> nameBuffer)
             {
-                ReadOnlySpan<byte> mountName = GetBisMountName(PartitionId);
+                ReadOnlySpan<byte> mountName = GetBisMountName(_partitionId);
 
                 // Add 2 for the mount name separator and null terminator
-                // ReSharper disable once RedundantAssignment
                 int requiredNameBufferSize = StringUtils.GetLength(mountName, PathTools.MountNameLengthMax) + 2;
 
-                Debug.Assert(nameBuffer.Length >= requiredNameBufferSize);
+                Assert.SdkRequiresGreaterEqual(nameBuffer.Length, requiredNameBufferSize);
 
                 var sb = new U8StringBuilder(nameBuffer);
                 sb.Append(mountName).Append(StringTraits.DriveSeparator);
 
-                Debug.Assert(sb.Length == requiredNameBufferSize - 1);
+                Assert.SdkEqual(sb.Length, requiredNameBufferSize - 1);
 
                 return Result.Success;
             }
@@ -86,28 +90,34 @@ namespace LibHac.Fs.Shim
             static Result Mount(FileSystemClientImpl fs, U8Span mountName, BisPartitionId partitionId)
             {
                 Result rc = fs.CheckMountNameAcceptingReservedMountName(mountName);
-                if (rc.IsFailure()) return rc;
+                if (rc.IsFailure()) return rc.Miss();
 
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+                using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
 
                 // Nintendo doesn't use the provided rootPath
                 FspPath.CreateEmpty(out FspPath sfPath);
 
-                ReferenceCountedDisposable<IFileSystemSf> fileSystem = null;
-                try
-                {
-                    rc = fsProxy.Target.OpenBisFileSystem(out fileSystem, in sfPath, partitionId);
-                    if (rc.IsFailure()) return rc;
+                using var fileSystem = new SharedRef<IFileSystemSf>();
 
-                    var nameGenerator = new BisCommonMountNameGenerator(partitionId);
-                    var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
+                rc = fileSystemProxy.Get.OpenBisFileSystem(ref fileSystem.Ref(), in sfPath, partitionId);
+                if (rc.IsFailure()) return rc.Miss();
 
-                    return fs.Fs.Register(mountName, fileSystemAdapter, nameGenerator);
-                }
-                finally
-                {
-                    fileSystem?.Dispose();
-                }
+                using var mountNameGenerator =
+                    new UniqueRef<ICommonMountNameGenerator>(new BisCommonMountNameGenerator(partitionId));
+
+                if (!mountNameGenerator.HasValue)
+                    return ResultFs.AllocationMemoryFailedInBisA.Log();
+
+                using var fileSystemAdapter =
+                    new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+
+                if (!fileSystemAdapter.HasValue)
+                    return ResultFs.AllocationMemoryFailedInBisB.Log();
+
+                rc = fs.Fs.Register(mountName, ref fileSystemAdapter.Ref(), ref mountNameGenerator.Ref());
+                if (rc.IsFailure()) return rc.Miss();
+
+                return Result.Success;
             }
         }
 
@@ -155,75 +165,34 @@ namespace LibHac.Fs.Shim
             return ReadOnlySpan<byte>.Empty;
         }
 
-        public static Result SetBisRootForHost(this FileSystemClient fs, BisPartitionId partitionId, U8Span rootPath)
-        {
-            Unsafe.SkipInit(out FsPath pathBuffer);
-            Result rc;
-
-            int pathLen = StringUtils.GetLength(rootPath, PathTools.MaxPathLength + 1);
-            if (pathLen > PathTools.MaxPathLength)
-            {
-                fs.Impl.LogResultErrorMessage(ResultFs.TooLongPath.Value);
-                return ResultFs.TooLongPath.Log();
-            }
-
-            if (pathLen > 0)
-            {
-                byte endingSeparator = rootPath[pathLen - 1] == StringTraits.DirectorySeparator
-                    ? StringTraits.NullTerminator
-                    : StringTraits.DirectorySeparator;
-
-                var sb = new U8StringBuilder(pathBuffer.Str);
-                sb.Append(rootPath).Append(endingSeparator);
-
-                if (sb.Overflowed)
-                    return ResultFs.TooLongPath.Log();
-            }
-            else
-            {
-                pathBuffer.Str[0] = StringTraits.NullTerminator;
-            }
-
-            rc = PathUtility.ConvertToFspPath(out FspPath sfPath, pathBuffer.Str);
-            if (rc.IsFailure()) return rc;
-
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
-
-            rc = fsProxy.Target.SetBisRootForHost(partitionId, in sfPath);
-            fs.Impl.LogResultErrorMessage(rc);
-            return rc;
-        }
-
-        public static Result OpenBisPartition(this FileSystemClient fs, out IStorage partitionStorage,
+        public static Result OpenBisPartition(this FileSystemClient fs, ref UniqueRef<IStorage> outPartitionStorage,
             BisPartitionId partitionId)
         {
-            UnsafeHelpers.SkipParamInit(out partitionStorage);
+            using var storage = new SharedRef<IStorageSf>();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            ReferenceCountedDisposable<IStorageSf> storage = null;
-            try
-            {
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
-                Result rc = fsProxy.Target.OpenBisStorage(out storage, partitionId);
-                fs.Impl.AbortIfNeeded(rc);
-                if (rc.IsFailure()) return rc;
+            Result rc = fileSystemProxy.Get.OpenBisStorage(ref storage.Ref(), partitionId);
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc;
 
-                var storageAdapter = new StorageServiceObjectAdapter(storage);
+            var storageAdapter = new UniqueRef<IStorage>(new StorageServiceObjectAdapter(ref storage.Ref()));
 
-                partitionStorage = storageAdapter;
-                return Result.Success;
-            }
-            finally
-            {
-                storage?.Dispose();
-            }
+            if (!storageAdapter.HasValue)
+                return ResultFs.AllocationMemoryFailedInBisC.Log();
+
+            outPartitionStorage.Set(ref storageAdapter.Ref());
+            return Result.Success;
         }
 
         public static Result InvalidateBisCache(this FileSystemClient fs)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
-            Result rc = fsProxy.Target.InvalidateBisCache();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
+
+            Result rc = fileSystemProxy.Get.InvalidateBisCache();
             fs.Impl.AbortIfNeeded(rc);
-            return rc;
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
         }
     }
 }

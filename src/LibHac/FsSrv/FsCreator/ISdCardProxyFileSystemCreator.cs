@@ -1,10 +1,11 @@
-﻿using LibHac.Fs.Fsa;
+﻿using LibHac.Common;
+using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSrv.FsCreator
 {
     public interface ISdCardProxyFileSystemCreator
     {
-        Result Create(out ReferenceCountedDisposable<IFileSystem> outFileSystem, bool isCaseSensitive);
+        Result Create(ref SharedRef<IFileSystem> outFileSystem, bool openCaseSensitive);
 
         /// <summary>
         /// Formats the SD card.

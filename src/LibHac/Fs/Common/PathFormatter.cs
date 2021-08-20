@@ -14,7 +14,7 @@ namespace LibHac.Fs
     /// <summary>
     /// Contains functions for working with path formatting and normalization.
     /// </summary>
-    /// <remarks>Based on FS 12.0.3 (nnSdk 12.3.1)</remarks>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     public static class PathFormatter
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

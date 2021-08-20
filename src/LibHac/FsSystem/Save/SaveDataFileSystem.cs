@@ -16,7 +16,8 @@ namespace LibHac.FsSystem.Save
         public Header Header { get; }
         private bool IsFirstHeaderInUse { get; }
 
-        public IStorage BaseStorage { get; }
+        private SharedRef<IStorage> _baseStorageShared;
+        public IStorage BaseStorage { get; private set; }
         public bool LeaveOpen { get; }
 
         public SaveDataFileSystemCore SaveDataFileSystemCore { get; }
@@ -31,6 +32,13 @@ namespace LibHac.FsSystem.Save
         public HierarchicalIntegrityVerificationStorage FatIvfcStorage { get; }
 
         private KeySet KeySet { get; }
+
+        public SaveDataFileSystem(KeySet keySet, ref SharedRef<IStorage> storage,
+            IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
+            : this(keySet, storage.Get, integrityCheckLevel, true)
+        {
+            _baseStorageShared = SharedRef<IStorage>.CreateMove(ref storage);
+        }
 
         public SaveDataFileSystem(KeySet keySet, IStorage storage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         {
@@ -316,7 +324,10 @@ namespace LibHac.FsSystem.Save
             if (!LeaveOpen)
             {
                 BaseStorage?.Dispose();
+                BaseStorage = null;
             }
+
+            _baseStorageShared.Destroy();
 
             base.Dispose();
         }

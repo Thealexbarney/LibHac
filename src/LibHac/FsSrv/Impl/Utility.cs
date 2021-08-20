@@ -15,52 +15,49 @@ namespace LibHac.FsSrv.Impl
             return StringUtils.Compare(name, CommonMountNames.HostRootFileSystemMountName) == 0;
         }
 
-        public static Result CreateSubDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystem> subDirFileSystem,
-            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, in Path rootPath)
+        public static Result CreateSubDirectoryFileSystem(ref SharedRef<IFileSystem> outSubDirFileSystem,
+            ref SharedRef<IFileSystem> baseFileSystem, in Path rootPath)
         {
-            UnsafeHelpers.SkipParamInit(out subDirFileSystem);
-
             if (rootPath.IsEmpty())
             {
-                subDirFileSystem = Shared.Move(ref baseFileSystem);
+                outSubDirFileSystem.SetByMove(ref baseFileSystem);
                 return Result.Success;
             }
 
             // Check if the directory exists
             using var dir = new UniqueRef<IDirectory>();
-            Result rc = baseFileSystem.Target.OpenDirectory(ref dir.Ref(), rootPath, OpenDirectoryMode.Directory);
+            Result rc = baseFileSystem.Get.OpenDirectory(ref dir.Ref(), rootPath, OpenDirectoryMode.Directory);
             if (rc.IsFailure()) return rc;
 
             dir.Reset();
 
-            var fs = new SubdirectoryFileSystem(ref baseFileSystem);
-            using (var subDirFs = new ReferenceCountedDisposable<SubdirectoryFileSystem>(fs))
-            {
-                rc = subDirFs.Target.Initialize(in rootPath);
-                if (rc.IsFailure()) return rc;
+            using var fs = new SharedRef<SubdirectoryFileSystem>(new SubdirectoryFileSystem(ref baseFileSystem));
+            if (!fs.HasValue)
+                return ResultFs.AllocationMemoryFailedInSubDirectoryFileSystemCreatorA.Log();
 
-                subDirFileSystem = subDirFs.AddReference<IFileSystem>();
-                return Result.Success;
-            }
+            rc = fs.Get.Initialize(in rootPath);
+            if (rc.IsFailure()) return rc;
+
+            outSubDirFileSystem.SetByMove(ref fs.Ref());
+
+            return Result.Success;
         }
 
-        public static Result WrapSubDirectory(out ReferenceCountedDisposable<IFileSystem> fileSystem,
-            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, in Path rootPath, bool createIfMissing)
+        public static Result WrapSubDirectory(ref SharedRef<IFileSystem> outFileSystem,
+            ref SharedRef<IFileSystem> baseFileSystem, in Path rootPath, bool createIfMissing)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
             // The path must already exist if we're not automatically creating it
             if (!createIfMissing)
             {
-                Result result = baseFileSystem.Target.GetEntryType(out _, in rootPath);
+                Result result = baseFileSystem.Get.GetEntryType(out _, in rootPath);
                 if (result.IsFailure()) return result;
             }
 
             // Ensure the path exists or check if it's a directory
-            Result rc = Utility12.EnsureDirectory(baseFileSystem.Target, in rootPath);
+            Result rc = FsSystem.Utility.EnsureDirectory(baseFileSystem.Get, in rootPath);
             if (rc.IsFailure()) return rc;
 
-            return CreateSubDirectoryFileSystem(out fileSystem, ref baseFileSystem, rootPath);
+            return CreateSubDirectoryFileSystem(ref outFileSystem, ref baseFileSystem, rootPath);
         }
 
         public static long ConvertZeroCommitId(in SaveDataExtraData extraData)

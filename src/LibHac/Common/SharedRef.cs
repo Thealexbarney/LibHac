@@ -254,6 +254,46 @@ namespace LibHac.Common
             oldRefCount?.Decrement();
         }
 
+        public void Set<TFrom>(ref UniqueRef<TFrom> other) where TFrom : class, T
+        {
+            RefCount oldRefCount = _refCount;
+            TFrom otherValue = other.Release();
+
+            if (otherValue is not null)
+            {
+                _value = Unsafe.As<TFrom, T>(ref otherValue);
+                _refCount = new RefCount(otherValue);
+            }
+            else
+            {
+                _value = null;
+                _refCount = null;
+            }
+
+            oldRefCount?.Decrement();
+        }
+
+        public bool TryCastSet<TFrom>(ref SharedRef<TFrom> other) where TFrom : class, IDisposable
+        {
+            RefCount oldRefCount = _refCount;
+            TFrom otherValue = other.Get;
+
+            if (otherValue is T)
+            {
+                _value = Unsafe.As<TFrom, T>(ref other._value);
+                _refCount = other._refCount;
+
+                other._value = null;
+                other._refCount = null;
+
+                oldRefCount?.Decrement();
+
+                return true;
+            }
+
+            return false;
+        }
+
         private static void ThrowBadWeakPtr()
         {
             throw new ObjectDisposedException(string.Empty, "bad_weak_ptr");

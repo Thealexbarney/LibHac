@@ -13,10 +13,8 @@ namespace LibHac.Sm
     {
         private Dictionary<ServiceName, IServiceObject> Services { get; } = new Dictionary<ServiceName, IServiceObject>();
 
-        internal Result GetService(out object serviceObject, ServiceName serviceName)
+        internal Result GetService(ref SharedRef<IDisposable> outServiceObject, ServiceName serviceName)
         {
-            UnsafeHelpers.SkipParamInit(out serviceObject);
-
             Result rc = ValidateServiceName(serviceName);
             if (rc.IsFailure()) return rc;
 
@@ -25,7 +23,7 @@ namespace LibHac.Sm
                 return ResultSvc.NotFound.Log();
             }
 
-            return service.GetServiceObject(out serviceObject);
+            return service.GetServiceObject(ref outServiceObject);
         }
 
         internal Result RegisterService(IServiceObject service, ServiceName serviceName)

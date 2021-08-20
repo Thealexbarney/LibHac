@@ -21,46 +21,45 @@ namespace LibHac.Fs.Impl
     /// An adapter for using an <see cref="IFileSf"/> service object as an <see cref="IFile"/>. Used
     /// when receiving a Horizon IPC file object so it can be used as an <see cref="IFile"/> locally.
     /// </summary>
-    /// <remarks>Based on FS 12.0.3 (nnSdk 12.3.1)</remarks>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     internal class FileServiceObjectAdapter : IFile
     {
-        private ReferenceCountedDisposable<IFileSf> BaseFile { get; }
+        private SharedRef<IFileSf> _baseFile;
 
-        public FileServiceObjectAdapter(ReferenceCountedDisposable<IFileSf> baseFile)
+        public FileServiceObjectAdapter(ref SharedRef<IFileSf> baseFile)
         {
-            BaseFile = baseFile.AddReference();
+            _baseFile = SharedRef<IFileSf>.CreateMove(ref baseFile);
         }
 
         public override void Dispose()
         {
-            BaseFile?.Dispose();
-
+            _baseFile.Destroy();
             base.Dispose();
         }
 
         protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, in ReadOption option)
         {
-            return BaseFile.Target.Read(out bytesRead, offset, new OutBuffer(destination), destination.Length, option);
+            return _baseFile.Get.Read(out bytesRead, offset, new OutBuffer(destination), destination.Length, option);
         }
 
         protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
-            return BaseFile.Target.Write(offset, new InBuffer(source), source.Length, option);
+            return _baseFile.Get.Write(offset, new InBuffer(source), source.Length, option);
         }
 
         protected override Result DoFlush()
         {
-            return BaseFile.Target.Flush();
+            return _baseFile.Get.Flush();
         }
 
         protected override Result DoSetSize(long size)
         {
-            return BaseFile.Target.SetSize(size);
+            return _baseFile.Get.SetSize(size);
         }
 
         protected override Result DoGetSize(out long size)
         {
-            return BaseFile.Target.GetSize(out size);
+            return _baseFile.Get.GetSize(out size);
         }
 
         protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
@@ -69,16 +68,16 @@ namespace LibHac.Fs.Impl
             switch (operationId)
             {
                 case OperationId.InvalidateCache:
-                    return BaseFile.Target.OperateRange(out _, (int)OperationId.InvalidateCache, offset, size);
+                    return _baseFile.Get.OperateRange(out _, (int)OperationId.InvalidateCache, offset, size);
                 case OperationId.QueryRange:
                     if (outBuffer.Length != Unsafe.SizeOf<QueryRangeInfo>())
                         return ResultFs.InvalidSize.Log();
 
                     ref QueryRangeInfo info = ref SpanHelpers.AsStruct<QueryRangeInfo>(outBuffer);
 
-                    return BaseFile.Target.OperateRange(out info, (int)OperationId.QueryRange, offset, size);
+                    return _baseFile.Get.OperateRange(out info, (int)OperationId.QueryRange, offset, size);
                 default:
-                    return BaseFile.Target.OperateRangeWithBuffer(new OutBuffer(outBuffer), new InBuffer(inBuffer),
+                    return _baseFile.Get.OperateRangeWithBuffer(new OutBuffer(outBuffer), new InBuffer(inBuffer),
                         (int)operationId, offset, size);
             }
         }
@@ -88,32 +87,31 @@ namespace LibHac.Fs.Impl
     /// An adapter for using an <see cref="IDirectorySf"/> service object as an <see cref="IDirectory"/>. Used
     /// when receiving a Horizon IPC directory object so it can be used as an <see cref="IDirectory"/> locally.
     /// </summary>
-    /// <remarks>Based on FS 12.0.3 (nnSdk 12.3.1)</remarks>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     internal class DirectoryServiceObjectAdapter : IDirectory
     {
-        private ReferenceCountedDisposable<IDirectorySf> BaseDirectory { get; }
+        private SharedRef<IDirectorySf> _baseDirectory;
 
-        public DirectoryServiceObjectAdapter(ReferenceCountedDisposable<IDirectorySf> baseDirectory)
+        public DirectoryServiceObjectAdapter(ref SharedRef<IDirectorySf> baseDirectory)
         {
-            BaseDirectory = baseDirectory.AddReference();
+            _baseDirectory = SharedRef<IDirectorySf>.CreateMove(ref baseDirectory);
         }
 
         public override void Dispose()
         {
-            BaseDirectory?.Dispose();
-
+            _baseDirectory.Destroy();
             base.Dispose();
         }
 
         protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)
         {
             Span<byte> buffer = MemoryMarshal.Cast<DirectoryEntry, byte>(entryBuffer);
-            return BaseDirectory.Target.Read(out entriesRead, new OutBuffer(buffer));
+            return _baseDirectory.Get.Read(out entriesRead, new OutBuffer(buffer));
         }
 
         protected override Result DoGetEntryCount(out long entryCount)
         {
-            return BaseDirectory.Target.GetEntryCount(out entryCount);
+            return _baseDirectory.Get.GetEntryCount(out entryCount);
         }
     }
 
@@ -121,10 +119,10 @@ namespace LibHac.Fs.Impl
     /// An adapter for using an <see cref="IFileSystemSf"/> service object as an <see cref="IFileSystem"/>. Used
     /// when receiving a Horizon IPC file system object so it can be used as an <see cref="IFileSystem"/> locally.
     /// </summary>
-    /// <remarks>Based on FS 12.0.3 (nnSdk 12.3.1)</remarks>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
     {
-        private ReferenceCountedDisposable<IFileSystemSf> BaseFs { get; }
+        private SharedRef<IFileSystemSf> _baseFs;
 
         private static Result GetPathForServiceObject(out PathSf sfPath, in Path path)
         {
@@ -139,14 +137,14 @@ namespace LibHac.Fs.Impl
             return Result.Success;
         }
 
-        public FileSystemServiceObjectAdapter(ReferenceCountedDisposable<IFileSystemSf> baseFileSystem)
+        public FileSystemServiceObjectAdapter(ref SharedRef<IFileSystemSf> baseFileSystem)
         {
-            BaseFs = baseFileSystem.AddReference();
+            _baseFs = SharedRef<IFileSystemSf>.CreateMove(ref baseFileSystem);
         }
 
         public override void Dispose()
         {
-            BaseFs?.Dispose();
+            _baseFs.Destroy();
             base.Dispose();
         }
 
@@ -155,7 +153,7 @@ namespace LibHac.Fs.Impl
             Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.Target.CreateFile(in sfPath, size, (int)option);
+            return _baseFs.Get.CreateFile(in sfPath, size, (int)option);
         }
 
         protected override Result DoDeleteFile(in Path path)
@@ -163,7 +161,7 @@ namespace LibHac.Fs.Impl
             Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.Target.DeleteFile(in sfPath);
+            return _baseFs.Get.DeleteFile(in sfPath);
         }
 
         protected override Result DoCreateDirectory(in Path path)
@@ -171,7 +169,7 @@ namespace LibHac.Fs.Impl
             Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.Target.CreateDirectory(in sfPath);
+            return _baseFs.Get.CreateDirectory(in sfPath);
         }
 
         protected override Result DoDeleteDirectory(in Path path)
@@ -179,7 +177,7 @@ namespace LibHac.Fs.Impl
             Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.Target.DeleteDirectory(in sfPath);
+            return _baseFs.Get.DeleteDirectory(in sfPath);
         }
 
         protected override Result DoDeleteDirectoryRecursively(in Path path)
@@ -187,7 +185,7 @@ namespace LibHac.Fs.Impl
             Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.Target.DeleteDirectoryRecursively(in sfPath);
+            return _baseFs.Get.DeleteDirectoryRecursively(in sfPath);
         }
 
         protected override Result DoCleanDirectoryRecursively(in Path path)
@@ -195,7 +193,7 @@ namespace LibHac.Fs.Impl
             Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.Target.CleanDirectoryRecursively(in sfPath);
+            return _baseFs.Get.CleanDirectoryRecursively(in sfPath);
         }
 
         protected override Result DoRenameFile(in Path currentPath, in Path newPath)
@@ -206,7 +204,7 @@ namespace LibHac.Fs.Impl
             rc = GetPathForServiceObject(out PathSf newSfPath, in newPath);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.Target.RenameFile(in currentSfPath, in newSfPath);
+            return _baseFs.Get.RenameFile(in currentSfPath, in newSfPath);
         }
 
         protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
@@ -217,7 +215,7 @@ namespace LibHac.Fs.Impl
             rc = GetPathForServiceObject(out PathSf newSfPath, in newPath);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.Target.RenameDirectory(in currentSfPath, in newSfPath);
+            return _baseFs.Get.RenameDirectory(in currentSfPath, in newSfPath);
         }
 
         protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
@@ -229,7 +227,7 @@ namespace LibHac.Fs.Impl
 
             ref uint sfEntryType = ref Unsafe.As<DirectoryEntryType, uint>(ref entryType);
 
-            return BaseFs.Target.GetEntryType(out sfEntryType, in sfPath);
+            return _baseFs.Get.GetEntryType(out sfEntryType, in sfPath);
         }
 
         protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
@@ -239,7 +237,7 @@ namespace LibHac.Fs.Impl
             Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.Target.GetFreeSpaceSize(out freeSpace, in sfPath);
+            return _baseFs.Get.GetFreeSpaceSize(out freeSpace, in sfPath);
         }
 
         protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
@@ -249,7 +247,7 @@ namespace LibHac.Fs.Impl
             Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.Target.GetTotalSpaceSize(out totalSpace, in sfPath);
+            return _baseFs.Get.GetTotalSpaceSize(out totalSpace, in sfPath);
         }
 
         protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
@@ -257,19 +255,13 @@ namespace LibHac.Fs.Impl
             Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
-            ReferenceCountedDisposable<IFileSf> sfFile = null;
-            try
-            {
-                rc = BaseFs.Target.OpenFile(out sfFile, in sfPath, (uint)mode);
-                if (rc.IsFailure()) return rc;
+            using var fileServiceObject = new SharedRef<IFileSf>();
 
-                outFile.Reset(new FileServiceObjectAdapter(sfFile));
-                return Result.Success;
-            }
-            finally
-            {
-                sfFile?.Dispose();
-            }
+            rc = _baseFs.Get.OpenFile(ref fileServiceObject.Ref(), in sfPath, (uint)mode);
+            if (rc.IsFailure()) return rc;
+
+            outFile.Reset(new FileServiceObjectAdapter(ref fileServiceObject.Ref()));
+            return Result.Success;
         }
 
         protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
@@ -278,24 +270,18 @@ namespace LibHac.Fs.Impl
             Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
-            ReferenceCountedDisposable<IDirectorySf> sfDir = null;
-            try
-            {
-                rc = BaseFs.Target.OpenDirectory(out sfDir, in sfPath, (uint)mode);
-                if (rc.IsFailure()) return rc;
+            using var directoryServiceObject = new SharedRef<IDirectorySf>();
 
-                outDirectory.Reset(new DirectoryServiceObjectAdapter(sfDir));
-                return Result.Success;
-            }
-            finally
-            {
-                sfDir?.Dispose();
-            }
+            rc = _baseFs.Get.OpenDirectory(ref directoryServiceObject.Ref(), in sfPath, (uint)mode);
+            if (rc.IsFailure()) return rc;
+
+            outDirectory.Reset(new DirectoryServiceObjectAdapter(ref directoryServiceObject.Ref()));
+            return Result.Success;
         }
 
         protected override Result DoCommit()
         {
-            return BaseFs.Target.Commit();
+            return _baseFs.Get.Commit();
         }
 
         protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
@@ -305,7 +291,7 @@ namespace LibHac.Fs.Impl
             Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.Target.GetFileTimeStampRaw(out timeStamp, in sfPath);
+            return _baseFs.Get.GetFileTimeStampRaw(out timeStamp, in sfPath);
         }
 
         protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
@@ -314,15 +300,15 @@ namespace LibHac.Fs.Impl
             Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
             if (rc.IsFailure()) return rc;
 
-            return BaseFs.Target.QueryEntry(new OutBuffer(outBuffer), new InBuffer(inBuffer), (int)queryId, in sfPath);
+            return _baseFs.Get.QueryEntry(new OutBuffer(outBuffer), new InBuffer(inBuffer), (int)queryId, in sfPath);
         }
 
-        public ReferenceCountedDisposable<IFileSystemSf> GetFileSystem()
+        public SharedRef<IFileSystemSf> GetFileSystem()
         {
-            return BaseFs.AddReference();
+            return SharedRef<IFileSystemSf>.CreateCopy(ref _baseFs);
         }
 
-        public ReferenceCountedDisposable<IFileSystemSf> GetMultiCommitTarget()
+        public SharedRef<IFileSystemSf> GetMultiCommitTarget()
         {
             return GetFileSystem();
         }

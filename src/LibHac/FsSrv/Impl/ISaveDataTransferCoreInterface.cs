@@ -18,9 +18,9 @@ namespace LibHac.FsSrv.Impl
         Result WriteSaveDataFileSystemExtraDataCore(SaveDataSpaceId spaceId, ulong saveDataId, in SaveDataExtraData extraData, SaveDataType type, bool updateTimeStamp);
         Result FinalizeSaveDataCreation(ulong saveDataId, SaveDataSpaceId spaceId);
         Result CancelSaveDataCreation(ulong saveDataId, SaveDataSpaceId spaceId);
-        Result OpenSaveDataFile(out ReferenceCountedDisposable<IFileSf> file, SaveDataSpaceId spaceId, in SaveDataAttribute attribute, SaveDataMetaType metaType);
-        Result OpenSaveDataMetaFileRaw(out ReferenceCountedDisposable<IFile> file, SaveDataSpaceId spaceId, ulong saveDataId, SaveDataMetaType metaType, OpenMode mode);
-        Result OpenSaveDataInternalStorageFileSystemCore(out ReferenceCountedDisposable<IFileSystem> fileSystem, SaveDataSpaceId spaceId, ulong saveDataId, bool useSecondMacKey);
+        Result OpenSaveDataFile(ref SharedRef<IFileSf> file, SaveDataSpaceId spaceId, in SaveDataAttribute attribute, SaveDataMetaType metaType);
+        Result OpenSaveDataMetaFileRaw(ref SharedRef<IFile> file, SaveDataSpaceId spaceId, ulong saveDataId, SaveDataMetaType metaType, OpenMode mode);
+        Result OpenSaveDataInternalStorageFileSystemCore(ref SharedRef<IFileSystem> fileSystem, SaveDataSpaceId spaceId, ulong saveDataId, bool useSecondMacKey);
         Result ExtendSaveDataFileSystem(SaveDataSpaceId spaceId, ulong saveDataId, long dataSize, long journalSize);
         Result DeleteSaveDataFileSystemBySaveDataSpaceId(SaveDataSpaceId spaceId, ulong saveDataId);
         Result SwapSaveDataKeyAndState(SaveDataSpaceId spaceId, ulong saveDataId1, ulong saveDataId2);

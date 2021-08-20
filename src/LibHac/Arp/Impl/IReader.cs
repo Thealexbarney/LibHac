@@ -1,8 +1,9 @@
-﻿using LibHac.Ns;
+﻿using System;
+using LibHac.Ns;
 
 namespace LibHac.Arp.Impl
 {
-    public interface IReader
+    public interface IReader : IDisposable
     {
         Result GetApplicationLaunchProperty(out ApplicationLaunchProperty launchProperty, ulong processId);
         Result GetApplicationLaunchPropertyWithApplicationId(out ApplicationLaunchProperty launchProperty, ApplicationId applicationId);

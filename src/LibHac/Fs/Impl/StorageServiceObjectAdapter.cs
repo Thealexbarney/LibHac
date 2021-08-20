@@ -10,49 +10,39 @@ namespace LibHac.Fs.Impl
     /// An adapter for using an <see cref="IStorageSf"/> service object as an <see cref="IStorage"/>. Used
     /// when receiving a Horizon IPC storage object so it can be used as an <see cref="IStorage"/> locally.
     /// </summary>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
     internal class StorageServiceObjectAdapter : IStorage
     {
-        private ReferenceCountedDisposable<IStorageSf> BaseStorage { get; }
+        private SharedRef<IStorageSf> _baseStorage;
 
-        public StorageServiceObjectAdapter(ReferenceCountedDisposable<IStorageSf> baseStorage)
+        public StorageServiceObjectAdapter(ref SharedRef<IStorageSf> baseStorage)
         {
-            BaseStorage = baseStorage.AddReference();
-        }
-
-        protected StorageServiceObjectAdapter(ref ReferenceCountedDisposable<IStorageSf> baseStorage)
-        {
-            BaseStorage = Shared.Move(ref baseStorage);
-        }
-
-        public static ReferenceCountedDisposable<IStorage> CreateShared(
-            ref ReferenceCountedDisposable<IStorageSf> baseStorage)
-        {
-            return new ReferenceCountedDisposable<IStorage>(new StorageServiceObjectAdapter(ref baseStorage));
+            _baseStorage = SharedRef<IStorageSf>.CreateMove(ref baseStorage);
         }
 
         protected override Result DoRead(long offset, Span<byte> destination)
         {
-            return BaseStorage.Target.Read(offset, new OutBuffer(destination), destination.Length);
+            return _baseStorage.Get.Read(offset, new OutBuffer(destination), destination.Length);
         }
 
         protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
-            return BaseStorage.Target.Write(offset, new InBuffer(source), source.Length);
+            return _baseStorage.Get.Write(offset, new InBuffer(source), source.Length);
         }
 
         protected override Result DoFlush()
         {
-            return BaseStorage.Target.Flush();
+            return _baseStorage.Get.Flush();
         }
 
         protected override Result DoSetSize(long size)
         {
-            return BaseStorage.Target.SetSize(size);
+            return _baseStorage.Get.SetSize(size);
         }
 
         protected override Result DoGetSize(out long size)
         {
-            return BaseStorage.Target.GetSize(out size);
+            return _baseStorage.Get.GetSize(out size);
         }
 
         protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
@@ -61,27 +51,23 @@ namespace LibHac.Fs.Impl
             switch (operationId)
             {
                 case OperationId.InvalidateCache:
-                    return BaseStorage.Target.OperateRange(out _, (int)OperationId.InvalidateCache, offset, size);
+                    return _baseStorage.Get.OperateRange(out _, (int)OperationId.InvalidateCache, offset, size);
                 case OperationId.QueryRange:
                     if (outBuffer.Length != Unsafe.SizeOf<QueryRangeInfo>())
                         return ResultFs.InvalidSize.Log();
 
                     ref QueryRangeInfo info = ref SpanHelpers.AsStruct<QueryRangeInfo>(outBuffer);
 
-                    return BaseStorage.Target.OperateRange(out info, (int)OperationId.QueryRange, offset, size);
+                    return _baseStorage.Get.OperateRange(out info, (int)OperationId.QueryRange, offset, size);
                 default:
-                    return ResultFs.UnsupportedOperateRangeForFileServiceObjectAdapter.Log();
+                    return ResultFs.UnsupportedOperateRangeForStorageServiceObjectAdapter.Log();
             }
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                BaseStorage?.Dispose();
-            }
-
-            base.Dispose(disposing);
+            _baseStorage.Destroy();
+            base.Dispose();
         }
     }
 }

@@ -25,7 +25,7 @@ namespace LibHac.FsSystem
     /// <remarks>
     /// Transactional commits should be atomic as long as the <see cref="IFileSystem.RenameDirectory"/> function of the
     /// underlying <see cref="IFileSystem"/> is atomic.
-    /// <br/>Based on FS 12.0.3 (nnSdk 12.3.1)
+    /// <para>Based on FS 12.1.0 (nnSdk 12.3.1)</para>
     /// </remarks>
     public class DirectorySaveDataFileSystem : IFileSystem, ISaveDataExtraDataAccessor
     {
@@ -115,13 +115,6 @@ namespace LibHac.FsSystem
             {
                 return _baseFile.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer);
             }
-        }
-
-        public static ReferenceCountedDisposable<DirectorySaveDataFileSystem> CreateShared(IFileSystem baseFileSystem,
-            FileSystemClient fsClient)
-        {
-            var fileSystem = new DirectorySaveDataFileSystem(baseFileSystem, fsClient);
-            return new ReferenceCountedDisposable<DirectorySaveDataFileSystem>(fileSystem);
         }
 
         /// <summary>
@@ -578,7 +571,7 @@ namespace LibHac.FsSystem
 
                 using (var buffer = new RentedArray<byte>(IdealWorkBufferSize))
                 {
-                    return Utility12.CopyDirectoryRecursively(_baseFs, in destPath, in sourcePath, ref directoryEntry,
+                    return Utility.CopyDirectoryRecursively(_baseFs, in destPath, in sourcePath, ref directoryEntry,
                         buffer.Span);
                 }
             }
@@ -586,7 +579,7 @@ namespace LibHac.FsSystem
             {
                 using (var buffer = new RentedArray<byte>(IdealWorkBufferSize))
                 {
-                    return Utility12.CopyDirectoryRecursively(_baseFs, in destPath, in sourcePath, ref directoryEntry,
+                    return Utility.CopyDirectoryRecursively(_baseFs, in destPath, in sourcePath, ref directoryEntry,
                         buffer.Span);
                 }
             }

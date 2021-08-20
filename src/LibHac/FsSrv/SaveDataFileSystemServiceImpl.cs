@@ -85,138 +85,116 @@ namespace LibHac.FsSrv
         {
             UnsafeHelpers.SkipParamInit(out exists);
 
-            ReferenceCountedDisposable<IFileSystem> fileSystem = null;
-            try
+            using var fileSystem = new SharedRef<IFileSystem>();
+
+            Result rc = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref(), spaceId);
+            if (rc.IsFailure()) return rc.Miss();
+
+            // Get the path of the save data
+            // Hack around error CS8350.
+            const int bufferLength = 0x12;
+            Span<byte> buffer = stackalloc byte[bufferLength];
+            ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+            Span<byte> saveImageNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+
+            using var saveImageName = new Path();
+            rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
+            if (rc.IsFailure()) return rc.Miss();
+
+            rc = fileSystem.Get.GetEntryType(out _, in saveImageName);
+
+            if (rc.IsSuccess())
             {
-                Result rc = OpenSaveDataDirectoryFileSystem(out fileSystem, spaceId);
-                if (rc.IsFailure()) return rc;
-
-                // Get the path of the save data
-                // Hack around error CS8350.
-                const int bufferLength = 0x12;
-                Span<byte> buffer = stackalloc byte[bufferLength];
-                ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-                Span<byte> saveImageNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
-
-                using var saveImageName = new Path();
-                rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
-                if (rc.IsFailure()) return rc;
-
-                rc = fileSystem.Target.GetEntryType(out _, in saveImageName);
-
-                if (rc.IsSuccess())
-                {
-                    exists = true;
-                    return Result.Success;
-                }
-                else if (ResultFs.PathNotFound.Includes(rc))
-                {
-                    exists = false;
-                    return Result.Success;
-                }
-                else
-                {
-                    return rc;
-                }
-            }
-            finally
-            {
-                fileSystem?.Dispose();
-            }
-        }
-
-        public Result OpenSaveDataFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
-            SaveDataSpaceId spaceId, ulong saveDataId, in Path saveDataRootPath, bool openReadOnly, SaveDataType type,
-            bool cacheExtraData)
-        {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
-            ReferenceCountedDisposable<IFileSystem> saveDirectoryFs = null;
-            ReferenceCountedDisposable<IFileSystem> cachedSaveDataFs = null;
-            ReferenceCountedDisposable<IFileSystem> saveDataFs = null;
-            try
-            {
-                Result rc = OpenSaveDataDirectoryFileSystem(out saveDirectoryFs, spaceId, in saveDataRootPath, true);
-                if (rc.IsFailure()) return rc;
-
-                bool allowDirectorySaveData = IsAllowedDirectorySaveData2(spaceId, in saveDataRootPath);
-
-                // Note: When directory save data is allowed, Nintendo creates the save directory if it doesn't exist.
-                // This bypasses normal save data creation, leaving the save with empty extra data.
-                // Instead, we return that the save doesn't exist if the directory is missing.
-
-                // Note: Nintendo doesn't cache directory save data
-                // if (!allowDirectorySaveData)
-                {
-                    // Check if we have the requested file system cached
-                    if (_saveDataFsCacheManager.GetCache(out cachedSaveDataFs, spaceId, saveDataId))
-                    {
-                        saveDataFs =
-                            SaveDataFileSystemCacheRegisterBase<IFileSystem>.CreateShared(cachedSaveDataFs,
-                                _saveDataFsCacheManager);
-
-                        saveDataFs = SaveDataResultConvertFileSystem.CreateShared(ref saveDataFs);
-                    }
-                }
-
-                // Create a new file system if it's not in the cache
-                if (saveDataFs is null)
-                {
-                    ReferenceCountedDisposable<IFileSystem> saveFs = null;
-                    ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor = null;
-                    try
-                    {
-                        using ScopedLock<SdkRecursiveMutexType> scopedLock = _extraDataCacheManager.GetScopedLock();
-
-                        bool openShared = SaveDataProperties.IsSharedOpenNeeded(type);
-                        bool isMultiCommitSupported = SaveDataProperties.IsMultiCommitSupported(type);
-                        bool isJournalingSupported = SaveDataProperties.IsJournalingSupported(type);
-                        bool useDeviceUniqueMac = IsDeviceUniqueMac(spaceId);
-
-                        rc = _config.SaveFsCreator.Create(out saveFs, out extraDataAccessor, _saveDataFsCacheManager,
-                            ref saveDirectoryFs, spaceId, saveDataId, allowDirectorySaveData, useDeviceUniqueMac,
-                            isJournalingSupported, isMultiCommitSupported, openReadOnly, openShared, _timeStampGetter);
-                        if (rc.IsFailure()) return rc;
-
-                        saveDataFs = Shared.Move(ref saveFs);
-
-                        // Cache the extra data accessor if needed
-                        if (cacheExtraData && extraDataAccessor is not null)
-                        {
-                            extraDataAccessor.Target.RegisterCacheObserver(_extraDataCacheManager, spaceId, saveDataId);
-
-                            rc = _extraDataCacheManager.Register(extraDataAccessor, spaceId, saveDataId);
-                            if (rc.IsFailure()) return rc;
-                        }
-                    }
-                    finally
-                    {
-                        saveFs?.Dispose();
-                        extraDataAccessor?.Dispose();
-                    }
-                }
-
-                if (openReadOnly)
-                {
-                    saveDataFs = ReadOnlyFileSystem.CreateShared(ref saveDataFs);
-                }
-
-                Shared.Move(out fileSystem, ref saveDataFs);
+                exists = true;
                 return Result.Success;
             }
-            finally
+            else if (ResultFs.PathNotFound.Includes(rc))
             {
-                saveDirectoryFs?.Dispose();
-                cachedSaveDataFs?.Dispose();
-                saveDataFs?.Dispose();
+                exists = false;
+                return Result.Success;
+            }
+            else
+            {
+                return rc.Miss();
             }
         }
 
-        public Result OpenSaveDataMetaDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenSaveDataFileSystem(ref SharedRef<IFileSystem> outFileSystem, SaveDataSpaceId spaceId,
+            ulong saveDataId, in Path saveDataRootPath, bool openReadOnly, SaveDataType type, bool cacheExtraData)
+        {
+            using var fileSystem = new SharedRef<IFileSystem>();
+
+            Result rc = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref(), spaceId, in saveDataRootPath, true);
+            if (rc.IsFailure()) return rc.Miss();
+
+            bool allowDirectorySaveData = IsAllowedDirectorySaveData2(spaceId, in saveDataRootPath);
+
+            // Note: When directory save data is allowed, Nintendo creates the save directory if it doesn't exist.
+            // This bypasses normal save data creation, leaving the save with empty extra data.
+            // Instead, we return that the save doesn't exist if the directory is missing.
+
+            using var saveDataFs = new SharedRef<IFileSystem>();
+            using var cachedFs = new SharedRef<SaveDataFileSystemHolder>();
+
+            // Note: Nintendo doesn't cache directory save data
+            // if (!allowDirectorySaveData)
+            {
+                // Check if we have the requested file system cached
+                if (_saveDataFsCacheManager.GetCache(ref cachedFs.Ref(), spaceId, saveDataId))
+                {
+                    using var registerBase = new SharedRef<IFileSystem>(
+                        new SaveDataFileSystemCacheRegisterBase<SaveDataFileSystemHolder>(ref cachedFs.Ref(),
+                            _saveDataFsCacheManager));
+
+                    using var resultConvertFs = new SharedRef<SaveDataResultConvertFileSystem>(
+                        new SaveDataResultConvertFileSystem(ref registerBase.Ref()));
+
+                    saveDataFs.SetByMove(ref resultConvertFs.Ref());
+                }
+            }
+
+            // Create a new file system if it's not in the cache
+            if (!saveDataFs.HasValue)
+            {
+                using UniqueLockRef<SdkRecursiveMutexType> scopedLock = _extraDataCacheManager.GetScopedLock();
+                using var extraDataAccessor = new SharedRef<ISaveDataExtraDataAccessor>();
+
+                bool openShared = SaveDataProperties.IsSharedOpenNeeded(type);
+                bool isMultiCommitSupported = SaveDataProperties.IsMultiCommitSupported(type);
+                bool isJournalingSupported = SaveDataProperties.IsJournalingSupported(type);
+                bool useDeviceUniqueMac = IsDeviceUniqueMac(spaceId);
+
+                rc = _config.SaveFsCreator.Create(ref saveDataFs.Ref(), ref extraDataAccessor.Ref(),
+                    _saveDataFsCacheManager, ref fileSystem.Ref(), spaceId, saveDataId, allowDirectorySaveData,
+                    useDeviceUniqueMac, isJournalingSupported, isMultiCommitSupported, openReadOnly, openShared,
+                    _timeStampGetter);
+                if (rc.IsFailure()) return rc.Miss();
+
+                // Cache the extra data accessor if needed
+                if (cacheExtraData && extraDataAccessor.HasValue)
+                {
+                    extraDataAccessor.Get.RegisterCacheObserver(_extraDataCacheManager, spaceId, saveDataId);
+
+                    rc = _extraDataCacheManager.Register(ref extraDataAccessor.Ref(), spaceId, saveDataId);
+                    if (rc.IsFailure()) return rc.Miss();
+                }
+            }
+
+            if (openReadOnly)
+            {
+                outFileSystem.Reset(new ReadOnlyFileSystem(ref saveDataFs.Ref()));
+            }
+            else
+            {
+                outFileSystem.SetByMove(ref saveDataFs.Ref());
+            }
+
+            return Result.Success;
+        }
+
+        public Result OpenSaveDataMetaDirectoryFileSystem(ref SharedRef<IFileSystem> outFileSystem,
             SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
             // Hack around error CS8350.
             const int bufferLength = 0x1B;
             Span<byte> buffer = stackalloc byte[bufferLength];
@@ -226,12 +204,12 @@ namespace LibHac.FsSrv
             using var saveDataMetaIdDirectoryName = new Path();
             Result rc = PathFunctions.SetUpFixedPathSaveMetaDir(ref saveDataMetaIdDirectoryName.Ref(),
                 saveDataMetaIdDirectoryNameBuffer, saveDataId);
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
-            return OpenSaveDataDirectoryFileSystemImpl(out fileSystem, spaceId, in saveDataMetaIdDirectoryName);
+            return OpenSaveDataDirectoryFileSystemImpl(ref outFileSystem, spaceId, in saveDataMetaIdDirectoryName);
         }
 
-        public Result OpenSaveDataInternalStorageFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenSaveDataInternalStorageFileSystem(ref SharedRef<IFileSystem> outFileSystem,
             SaveDataSpaceId spaceId, ulong saveDataId, in Path saveDataRootPath, bool useSecondMacKey)
         {
             throw new NotImplementedException();
@@ -245,58 +223,52 @@ namespace LibHac.FsSrv
         }
 
         public Result CreateSaveDataMeta(ulong saveDataId, SaveDataSpaceId spaceId, SaveDataMetaType metaType,
-            long metaSize)
+            long metaFileSize)
         {
-            ReferenceCountedDisposable<IFileSystem> metaDirFs = null;
-            try
-            {
-                Result rc = OpenSaveDataMetaDirectoryFileSystem(out metaDirFs, spaceId, saveDataId);
-                if (rc.IsFailure()) return rc;
+            using var fileSystem = new SharedRef<IFileSystem>();
 
-                // Hack around error CS8350.
-                const int bufferLength = 0xF;
-                Span<byte> buffer = stackalloc byte[bufferLength];
-                ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-                Span<byte> saveDataMetaNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+            Result rc = OpenSaveDataMetaDirectoryFileSystem(ref fileSystem.Ref(), spaceId, saveDataId);
+            if (rc.IsFailure()) return rc.Miss();
 
-                using var saveDataMetaName = new Path();
-                rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer,
-                    (uint)metaType);
-                if (rc.IsFailure()) return rc;
+            // Hack around error CS8350.
+            const int bufferLength = 0xF;
+            Span<byte> buffer = stackalloc byte[bufferLength];
+            ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+            Span<byte> saveDataMetaNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-                return metaDirFs.Target.CreateFile(in saveDataMetaName, metaSize);
-            }
-            finally
-            {
-                metaDirFs?.Dispose();
-            }
+            using var saveDataMetaName = new Path();
+            rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer,
+                (uint)metaType);
+            if (rc.IsFailure()) return rc.Miss();
+
+            rc = fileSystem.Get.CreateFile(in saveDataMetaName, metaFileSize);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
         }
 
         public Result DeleteSaveDataMeta(ulong saveDataId, SaveDataSpaceId spaceId, SaveDataMetaType metaType)
         {
-            ReferenceCountedDisposable<IFileSystem> metaDirFs = null;
-            try
-            {
-                Result rc = OpenSaveDataMetaDirectoryFileSystem(out metaDirFs, spaceId, saveDataId);
-                if (rc.IsFailure()) return rc;
+            using var fileSystem = new SharedRef<IFileSystem>();
 
-                // Hack around error CS8350.
-                const int bufferLength = 0xF;
-                Span<byte> buffer = stackalloc byte[bufferLength];
-                ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-                Span<byte> saveDataMetaNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+            Result rc = OpenSaveDataMetaDirectoryFileSystem(ref fileSystem.Ref(), spaceId, saveDataId);
+            if (rc.IsFailure()) return rc.Miss();
 
-                using var saveDataMetaName = new Path();
-                rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer,
-                    (uint)metaType);
-                if (rc.IsFailure()) return rc;
+            // Hack around error CS8350.
+            const int bufferLength = 0xF;
+            Span<byte> buffer = stackalloc byte[bufferLength];
+            ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+            Span<byte> saveDataMetaNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-                return metaDirFs.Target.DeleteFile(in saveDataMetaName);
-            }
-            finally
-            {
-                metaDirFs?.Dispose();
-            }
+            using var saveDataMetaName = new Path();
+            rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer,
+                (uint)metaType);
+            if (rc.IsFailure()) return rc.Miss();
+
+            rc = fileSystem.Get.DeleteFile(in saveDataMetaName);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
         }
 
         public Result DeleteAllSaveDataMetas(ulong saveDataId, SaveDataSpaceId spaceId)
@@ -304,8 +276,8 @@ namespace LibHac.FsSrv
             ReadOnlySpan<byte> metaDirName = // /saveMeta
                 new[]
                 {
-                    (byte) '/', (byte) 's', (byte) 'a', (byte) 'v', (byte) 'e', (byte) 'M', (byte) 'e', (byte) 't',
-                    (byte) 'a'
+                    (byte)'/', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'M', (byte)'e', (byte)'t',
+                    (byte)'a'
                 };
 
             // Hack around error CS8350.
@@ -314,61 +286,57 @@ namespace LibHac.FsSrv
             ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
             Span<byte> saveDataIdDirectoryNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-            ReferenceCountedDisposable<IFileSystem> fileSystem = null;
-            try
+            using var fileSystem = new SharedRef<IFileSystem>();
+
+            using var saveDataMetaDirectoryName = new Path();
+            Result rc = PathFunctions.SetUpFixedPath(ref saveDataMetaDirectoryName.Ref(), metaDirName);
+            if (rc.IsFailure()) return rc.Miss();
+
+            rc = OpenSaveDataDirectoryFileSystemImpl(ref fileSystem.Ref(), spaceId, in saveDataMetaDirectoryName, false);
+            if (rc.IsFailure()) return rc.Miss();
+
+            using var saveDataIdDirectoryName = new Path();
+            PathFunctions.SetUpFixedPathSaveId(ref saveDataIdDirectoryName.Ref(), saveDataIdDirectoryNameBuffer,
+                saveDataId);
+            if (rc.IsFailure()) return rc.Miss();
+
+            // Delete the save data's meta directory, ignoring the error if the directory is already gone
+            rc = fileSystem.Get.DeleteDirectoryRecursively(in saveDataIdDirectoryName);
+
+            if (rc.IsFailure())
             {
-                using var saveDataMetaDirectoryName = new Path();
-                Result rc = PathFunctions.SetUpFixedPath(ref saveDataMetaDirectoryName.Ref(), metaDirName);
-                if (rc.IsFailure()) return rc;
+                if (!ResultFs.PathNotFound.Includes(rc))
+                    return rc.Catch().Handle();
 
-                rc = OpenSaveDataDirectoryFileSystemImpl(out fileSystem, spaceId, in saveDataMetaDirectoryName, false);
-                if (rc.IsFailure()) return rc;
-
-                using var saveDataIdDirectoryName = new Path();
-                PathFunctions.SetUpFixedPathSaveId(ref saveDataIdDirectoryName.Ref(), saveDataIdDirectoryNameBuffer,
-                    saveDataId);
-                if (rc.IsFailure()) return rc;
-
-                // Delete the save data's meta directory, ignoring the error if the directory is already gone
-                rc = fileSystem.Target.DeleteDirectoryRecursively(in saveDataIdDirectoryName);
-
-                if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc))
-                    return rc;
-
-                return Result.Success;
+                return rc.Miss();
             }
-            finally
-            {
-                fileSystem?.Dispose();
-            }
+
+            return Result.Success;
         }
 
         public Result OpenSaveDataMeta(ref UniqueRef<IFile> outMetaFile, ulong saveDataId, SaveDataSpaceId spaceId,
             SaveDataMetaType metaType)
         {
-            ReferenceCountedDisposable<IFileSystem> metaDirFs = null;
-            try
-            {
-                Result rc = OpenSaveDataMetaDirectoryFileSystem(out metaDirFs, spaceId, saveDataId);
-                if (rc.IsFailure()) return rc;
+            using var fileSystem = new SharedRef<IFileSystem>();
 
-                // Hack around error CS8350.
-                const int bufferLength = 0xF;
-                Span<byte> buffer = stackalloc byte[bufferLength];
-                ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-                Span<byte> saveDataMetaNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+            Result rc = OpenSaveDataMetaDirectoryFileSystem(ref fileSystem.Ref(), spaceId, saveDataId);
+            if (rc.IsFailure()) return rc.Miss();
 
-                using var saveDataMetaName = new Path();
-                rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer,
-                    (uint)metaType);
-                if (rc.IsFailure()) return rc;
+            // Hack around error CS8350.
+            const int bufferLength = 0xF;
+            Span<byte> buffer = stackalloc byte[bufferLength];
+            ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+            Span<byte> saveDataMetaNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-                return metaDirFs.Target.OpenFile(ref outMetaFile, in saveDataMetaName, OpenMode.ReadWrite);
-            }
-            finally
-            {
-                metaDirFs?.Dispose();
-            }
+            using var saveDataMetaName = new Path();
+            rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer,
+                (uint)metaType);
+            if (rc.IsFailure()) return rc.Miss();
+
+            rc = fileSystem.Get.OpenFile(ref outMetaFile, in saveDataMetaName, OpenMode.ReadWrite);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
         }
 
         public Result CreateSaveDataFileSystem(ulong saveDataId, in SaveDataAttribute attribute,
@@ -383,69 +351,59 @@ namespace LibHac.FsSrv
             ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
             Span<byte> saveImageNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-            ReferenceCountedDisposable<IFileSystem> saveDirectoryFs = null;
-            try
+            using var fileSystem = new SharedRef<IFileSystem>();
+
+            Result rc = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref(), creationInfo.SpaceId,
+                in saveDataRootPath, false);
+            if (rc.IsFailure()) return rc.Miss();
+
+            using var saveImageName = new Path();
+            rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
+            if (rc.IsFailure()) return rc.Miss();
+
+            if (_config.IsPseudoSaveData())
             {
-                Result rc = OpenSaveDataDirectoryFileSystem(out saveDirectoryFs, creationInfo.SpaceId,
-                    in saveDataRootPath, false);
-                if (rc.IsFailure()) return rc;
+                rc = FsSystem.Utility.EnsureDirectory(fileSystem.Get, in saveImageName);
+                if (rc.IsFailure()) return rc.Miss();
 
-                using var saveImageName = new Path();
-                rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
-                if (rc.IsFailure()) return rc;
+                using var saveFileSystem = new SharedRef<IFileSystem>();
+                using var extraDataAccessor = new SharedRef<ISaveDataExtraDataAccessor>();
 
-                if (_config.IsPseudoSaveData())
-                {
-                    rc = Utility12.EnsureDirectory(saveDirectoryFs.Target, in saveImageName);
-                    if (rc.IsFailure()) return rc;
+                bool isJournalingSupported = SaveDataProperties.IsJournalingSupported(attribute.Type);
 
-                    ReferenceCountedDisposable<IFileSystem> saveFs = null;
-                    ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor = null;
-                    try
-                    {
-                        bool isJournalingSupported = SaveDataProperties.IsJournalingSupported(attribute.Type);
+                rc = _config.SaveFsCreator.Create(ref saveFileSystem.Ref(), ref extraDataAccessor.Ref(),
+                    _saveDataFsCacheManager, ref fileSystem.Ref(), creationInfo.SpaceId, saveDataId,
+                    allowDirectorySaveData: true, useDeviceUniqueMac: false, isJournalingSupported,
+                    isMultiCommitSupported: false, openReadOnly: false, openShared: false, _timeStampGetter);
+                if (rc.IsFailure()) return rc.Miss();
 
-                        rc = _config.SaveFsCreator.Create(out saveFs, out extraDataAccessor, _saveDataFsCacheManager,
-                            ref saveDirectoryFs, creationInfo.SpaceId, saveDataId, allowDirectorySaveData: true,
-                            useDeviceUniqueMac: false, isJournalingSupported, isMultiCommitSupported: false,
-                            openReadOnly: false, openShared: false, _timeStampGetter);
-                        if (rc.IsFailure()) return rc;
+                var extraData = new SaveDataExtraData();
+                extraData.Attribute = attribute;
+                extraData.OwnerId = creationInfo.OwnerId;
 
-                        var extraData = new SaveDataExtraData();
-                        extraData.Attribute = attribute;
-                        extraData.OwnerId = creationInfo.OwnerId;
+                rc = GetSaveDataCommitTimeStamp(out extraData.TimeStamp);
+                if (rc.IsFailure())
+                    extraData.TimeStamp = 0;
 
-                        rc = GetSaveDataCommitTimeStamp(out extraData.TimeStamp);
-                        if (rc.IsFailure())
-                            extraData.TimeStamp = 0;
+                extraData.CommitId = 0;
+                _config.GenerateRandomData(SpanHelpers.AsByteSpan(ref extraData.CommitId)).IgnoreResult();
 
-                        extraData.CommitId = 0;
-                        _config.GenerateRandomData(SpanHelpers.AsByteSpan(ref extraData.CommitId)).IgnoreResult();
+                extraData.Flags = creationInfo.Flags;
+                extraData.DataSize = creationInfo.Size;
+                extraData.JournalSize = creationInfo.JournalSize;
 
-                        extraData.Flags = creationInfo.Flags;
-                        extraData.DataSize = creationInfo.Size;
-                        extraData.JournalSize = creationInfo.JournalSize;
+                rc = extraDataAccessor.Get.WriteExtraData(in extraData);
+                if (rc.IsFailure()) return rc.Miss();
 
-                        rc = extraDataAccessor.Target.WriteExtraData(in extraData);
-                        if (rc.IsFailure()) return rc;
-
-                        return extraDataAccessor.Target.CommitExtraData(true);
-                    }
-                    finally
-                    {
-                        saveFs?.Dispose();
-                        extraDataAccessor?.Dispose();
-                    }
-                }
-                else
-                {
-                    throw new NotImplementedException();
-                }
+                rc = extraDataAccessor.Get.CommitExtraData(true);
+                if (rc.IsFailure()) return rc.Miss();
             }
-            finally
+            else
             {
-                saveDirectoryFs?.Dispose();
+                throw new NotImplementedException();
             }
+
+            return Result.Success;
         }
 
         private Result WipeData(IFileSystem fileSystem, in Path filePath, RandomDataGenerator random)
@@ -462,46 +420,40 @@ namespace LibHac.FsSrv
             ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
             Span<byte> saveImageNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-            ReferenceCountedDisposable<IFileSystem> fileSystem = null;
-            try
+            using var fileSystem = new SharedRef<IFileSystem>();
+
+            _saveDataFsCacheManager.Unregister(spaceId, saveDataId);
+
+            // Open the directory containing the save data
+            Result rc = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref(), spaceId, in saveDataRootPath, false);
+            if (rc.IsFailure()) return rc.Miss();
+
+            using var saveImageName = new Path();
+            rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
+            if (rc.IsFailure()) return rc.Miss();
+
+            // Check if the save data is a file or a directory
+            rc = fileSystem.Get.GetEntryType(out DirectoryEntryType entryType, in saveImageName);
+            if (rc.IsFailure()) return rc.Miss();
+
+            // Delete the save data, wiping the file if needed
+            if (entryType == DirectoryEntryType.Directory)
             {
-                _saveDataFsCacheManager.Unregister(spaceId, saveDataId);
-
-                // Open the directory containing the save data
-                Result rc = OpenSaveDataDirectoryFileSystem(out fileSystem, spaceId, in saveDataRootPath, false);
-                if (rc.IsFailure()) return rc;
-
-                using var saveImageName = new Path();
-                rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
-                if (rc.IsFailure()) return rc;
-
-                // Check if the save data is a file or a directory
-                rc = fileSystem.Target.GetEntryType(out DirectoryEntryType entryType, in saveImageName);
-                if (rc.IsFailure()) return rc;
-
-                // Delete the save data, wiping the file if needed
-                if (entryType == DirectoryEntryType.Directory)
+                rc = fileSystem.Get.DeleteDirectoryRecursively(in saveImageName);
+                if (rc.IsFailure()) return rc.Miss();
+            }
+            else
+            {
+                if (wipeSaveFile)
                 {
-                    rc = fileSystem.Target.DeleteDirectoryRecursively(in saveImageName);
-                    if (rc.IsFailure()) return rc;
-                }
-                else
-                {
-                    if (wipeSaveFile)
-                    {
-                        WipeData(fileSystem.Target, in saveImageName, _config.GenerateRandomData).IgnoreResult();
-                    }
-
-                    rc = fileSystem.Target.DeleteFile(in saveImageName);
-                    if (rc.IsFailure()) return rc;
+                    WipeData(fileSystem.Get, in saveImageName, _config.GenerateRandomData).IgnoreResult();
                 }
 
-                return Result.Success;
+                rc = fileSystem.Get.DeleteFile(in saveImageName);
+                if (rc.IsFailure()) return rc.Miss();
             }
-            finally
-            {
-                fileSystem?.Dispose();
-            }
+
+            return Result.Success;
         }
 
         public Result ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, SaveDataSpaceId spaceId,
@@ -512,52 +464,43 @@ namespace LibHac.FsSrv
             // Nintendo returns blank extra data for directory save data.
             // We've extended directory save data to store extra data so we don't need to do that.
 
-            using ScopedLock<SdkRecursiveMutexType> scopedLockFsCache = _saveDataFsCacheManager.GetScopedLock();
-            using ScopedLock<SdkRecursiveMutexType> scopedLockExtraDataCache = _extraDataCacheManager.GetScopedLock();
+            using UniqueLockRef<SdkRecursiveMutexType> scopedLockFsCache = _saveDataFsCacheManager.GetScopedLock();
+            using UniqueLockRef<SdkRecursiveMutexType> scopedLockExtraDataCache = _extraDataCacheManager.GetScopedLock();
 
-            ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor = null;
-            try
+            using var extraDataAccessor = new SharedRef<ISaveDataExtraDataAccessor>();
+
+            // Try to grab an extra data accessor for the requested save from the cache.
+            Result rc = _extraDataCacheManager.GetCache(ref extraDataAccessor.Ref(), spaceId, saveDataId);
+
+            if (rc.IsSuccess())
             {
-                // Try to grab an extra data accessor for the requested save from the cache.
-                Result rc = _extraDataCacheManager.GetCache(out extraDataAccessor, spaceId, saveDataId);
-
-                if (rc.IsSuccess())
-                {
-                    // An extra data accessor was found in the cache. Read the extra data from it.
-                    return extraDataAccessor.Target.ReadExtraData(out extraData);
-                }
-
-                ReferenceCountedDisposable<IFileSystem> unusedSaveDataFs = null;
-                try
-                {
-                    // We won't actually use the returned save data FS.
-                    // Opening the FS should cache an extra data accessor for it.
-                    rc = OpenSaveDataFileSystem(out unusedSaveDataFs, spaceId, saveDataId, saveDataRootPath,
-                        openReadOnly: true, type, cacheExtraData: true);
-                    if (rc.IsFailure()) return rc;
-
-                    // Try to grab an accessor from the cache again.
-                    rc = _extraDataCacheManager.GetCache(out extraDataAccessor, spaceId, saveDataId);
-
-                    if (rc.IsFailure())
-                    {
-                        // No extra data accessor was registered for the requested save data.
-                        // Return a blank extra data struct.
-                        extraData = new SaveDataExtraData();
-                        return rc;
-                    }
-
-                    return extraDataAccessor.Target.ReadExtraData(out extraData);
-                }
-                finally
-                {
-                    unusedSaveDataFs?.Dispose();
-                }
+                // An extra data accessor was found in the cache. Read the extra data from it.
+                return extraDataAccessor.Get.ReadExtraData(out extraData);
             }
-            finally
+
+            using var unusedSaveDataFs = new SharedRef<IFileSystem>();
+
+            // We won't actually use the returned save data FS.
+            // Opening the FS should cache an extra data accessor for it.
+            rc = OpenSaveDataFileSystem(ref unusedSaveDataFs.Ref(), spaceId, saveDataId, saveDataRootPath,
+                openReadOnly: true, type, cacheExtraData: true);
+            if (rc.IsFailure()) return rc.Miss();
+
+            // Try to grab an accessor from the cache again.
+            rc = _extraDataCacheManager.GetCache(ref extraDataAccessor.Ref(), spaceId, saveDataId);
+
+            if (rc.IsFailure())
             {
-                extraDataAccessor?.Dispose();
+                // No extra data accessor was registered for the requested save data.
+                // Return a blank extra data struct.
+                extraData = new SaveDataExtraData();
+                return rc;
             }
+
+            rc = extraDataAccessor.Get.ReadExtraData(out extraData);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
         }
 
         public Result WriteSaveDataFileSystemExtraData(SaveDataSpaceId spaceId, ulong saveDataId,
@@ -566,56 +509,44 @@ namespace LibHac.FsSrv
             // Nintendo does nothing when writing directory save data extra data.
             // We've extended directory save data to store extra data so we don't return early.
 
-            using ScopedLock<SdkRecursiveMutexType> scopedLockFsCache = _saveDataFsCacheManager.GetScopedLock();
-            using ScopedLock<SdkRecursiveMutexType> scopedLockExtraDataCache = _extraDataCacheManager.GetScopedLock();
+            using UniqueLockRef<SdkRecursiveMutexType> scopedLockFsCache = _saveDataFsCacheManager.GetScopedLock();
+            using UniqueLockRef<SdkRecursiveMutexType> scopedLockExtraDataCache = _extraDataCacheManager.GetScopedLock();
 
-            ReferenceCountedDisposable<ISaveDataExtraDataAccessor> extraDataAccessor = null;
-            try
+            using var extraDataAccessor = new SharedRef<ISaveDataExtraDataAccessor>();
+
+            // Try to grab an extra data accessor for the requested save from the cache.
+            Result rc = _extraDataCacheManager.GetCache(ref extraDataAccessor.Ref(), spaceId, saveDataId);
+
+            if (rc.IsFailure())
             {
-                // Try to grab an extra data accessor for the requested save from the cache.
-                Result rc = _extraDataCacheManager.GetCache(out extraDataAccessor, spaceId, saveDataId);
+                // No accessor was found in the cache. Try to open one.
+                using var unusedSaveDataFs = new SharedRef<IFileSystem>();
+
+                // We won't actually use the returned save data FS.
+                // Opening the FS should cache an extra data accessor for it.
+                rc = OpenSaveDataFileSystem(ref unusedSaveDataFs.Ref(), spaceId, saveDataId, saveDataRootPath,
+                    openReadOnly: false, type, cacheExtraData: true);
+                if (rc.IsFailure()) return rc.Miss();
+
+                // Try to grab an accessor from the cache again.
+                rc = _extraDataCacheManager.GetCache(ref extraDataAccessor.Ref(), spaceId, saveDataId);
 
                 if (rc.IsFailure())
                 {
-                    // No accessor was found in the cache. Try to open one.
-                    ReferenceCountedDisposable<IFileSystem> unusedSaveDataFs = null;
-                    try
-                    {
-                        // We won't actually use the returned save data FS.
-                        // Opening the FS should cache an extra data accessor for it.
-                        rc = OpenSaveDataFileSystem(out unusedSaveDataFs, spaceId, saveDataId, saveDataRootPath,
-                            openReadOnly: false, type, cacheExtraData: true);
-                        if (rc.IsFailure()) return rc;
-
-                        // Try to grab an accessor from the cache again.
-                        rc = _extraDataCacheManager.GetCache(out extraDataAccessor, spaceId, saveDataId);
-
-                        if (rc.IsFailure())
-                        {
-                            // No extra data accessor was registered for the requested save data, so don't do anything.
-                            return rc;
-                        }
-                    }
-                    finally
-                    {
-                        unusedSaveDataFs?.Dispose();
-                    }
+                    // No extra data accessor was registered for the requested save data, so don't do anything.
+                    return Result.Success;
                 }
-
-                // We should have a valid accessor if we've reached this point.
-                // Write and commit the extra data.
-                rc = extraDataAccessor.Target.WriteExtraData(in extraData);
-                if (rc.IsFailure()) return rc;
-
-                rc = extraDataAccessor.Target.CommitExtraData(updateTimeStamp);
-                if (rc.IsFailure()) return rc;
-
-                return Result.Success;
             }
-            finally
-            {
-                extraDataAccessor?.Dispose();
-            }
+
+            // We should have a valid accessor if we've reached this point.
+            // Write and commit the extra data.
+            rc = extraDataAccessor.Get.WriteExtraData(in extraData);
+            if (rc.IsFailure()) return rc.Miss();
+
+            rc = extraDataAccessor.Get.CommitExtraData(updateTimeStamp);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
         }
 
         public Result CorruptSaveDataFileSystem(SaveDataSpaceId spaceId, ulong saveDataId, long offset,
@@ -634,50 +565,41 @@ namespace LibHac.FsSrv
             return !saveDataRootPath.IsEmpty();
         }
 
-        public Result OpenSaveDataDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenSaveDataDirectoryFileSystem(ref SharedRef<IFileSystem> outFileSystem,
             SaveDataSpaceId spaceId)
         {
             using var rootPath = new Path();
 
-            return OpenSaveDataDirectoryFileSystem(out fileSystem, spaceId, in rootPath, true);
+            return OpenSaveDataDirectoryFileSystem(ref outFileSystem, spaceId, in rootPath, true);
         }
 
-        public Result OpenSaveDataDirectoryFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenSaveDataDirectoryFileSystem(ref SharedRef<IFileSystem> outFileSystem,
             SaveDataSpaceId spaceId, in Path saveDataRootPath, bool allowEmulatedSave)
         {
             Result rc;
-            UnsafeHelpers.SkipParamInit(out fileSystem);
 
             if (allowEmulatedSave && IsAllowedDirectorySaveData(spaceId, in saveDataRootPath))
             {
-                ReferenceCountedDisposable<IFileSystem> tmFs = null;
-
-                try
+                using (var tmFileSystem = new SharedRef<IFileSystem>())
                 {
                     // Ensure the target save data directory exists
-                    rc = _config.TargetManagerFsCreator.Create(out tmFs, in saveDataRootPath, false, true,
+                    rc = _config.TargetManagerFsCreator.Create(ref tmFileSystem.Ref(), in saveDataRootPath, false, true,
                         ResultFs.SaveDataRootPathUnavailable.Value);
-                    if (rc.IsFailure()) return rc;
-
-                    tmFs.Dispose();
-
-                    using var path = new Path();
-                    rc = path.Initialize(in saveDataRootPath);
-                    if (rc.IsFailure()) return rc;
-
-                    rc = _config.TargetManagerFsCreator.NormalizeCaseOfPath(out bool isTargetFsCaseSensitive, ref path.Ref());
-                    if (rc.IsFailure()) return rc;
-
-                    rc = _config.TargetManagerFsCreator.Create(out tmFs, in path, isTargetFsCaseSensitive, false,
-                        ResultFs.SaveDataRootPathUnavailable.Value);
-                    if (rc.IsFailure()) return rc;
-
-                    return Result.Success;
+                    if (rc.IsFailure()) return rc.Miss();
                 }
-                finally
-                {
-                    tmFs?.Dispose();
-                }
+
+                using var path = new Path();
+                rc = path.Initialize(in saveDataRootPath);
+                if (rc.IsFailure()) return rc.Miss();
+
+                rc = _config.TargetManagerFsCreator.NormalizeCaseOfPath(out bool isTargetFsCaseSensitive, ref path.Ref());
+                if (rc.IsFailure()) return rc.Miss();
+
+                rc = _config.TargetManagerFsCreator.Create(ref outFileSystem, in path, isTargetFsCaseSensitive, false,
+                    ResultFs.SaveDataRootPathUnavailable.Value);
+                if (rc.IsFailure()) return rc.Miss();
+
+                return Result.Success;
             }
 
             using var saveDataDirPath = new Path();
@@ -693,100 +615,103 @@ namespace LibHac.FsSrv
             }
 
             rc = PathFunctions.SetUpFixedPath(ref saveDataDirPath.Ref(), saveDirName);
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
-            rc = OpenSaveDataDirectoryFileSystemImpl(out fileSystem, spaceId, in saveDataDirPath, true);
-            if (rc.IsFailure()) return rc;
+            rc = OpenSaveDataDirectoryFileSystemImpl(ref outFileSystem, spaceId, in saveDataDirPath, true);
+            if (rc.IsFailure()) return rc.Miss();
 
             return Result.Success;
         }
 
-        public Result OpenSaveDataDirectoryFileSystemImpl(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenSaveDataDirectoryFileSystemImpl(ref SharedRef<IFileSystem> outFileSystem,
             SaveDataSpaceId spaceId, in Path basePath)
         {
-            return OpenSaveDataDirectoryFileSystemImpl(out fileSystem, spaceId, in basePath, true);
+            return OpenSaveDataDirectoryFileSystemImpl(ref outFileSystem, spaceId, in basePath, true);
         }
 
-        public Result OpenSaveDataDirectoryFileSystemImpl(out ReferenceCountedDisposable<IFileSystem> fileSystem,
+        public Result OpenSaveDataDirectoryFileSystemImpl(ref SharedRef<IFileSystem> outFileSystem,
             SaveDataSpaceId spaceId, in Path basePath, bool createIfMissing)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
+            using var baseFileSystem = new SharedRef<IFileSystem>();
 
-            ReferenceCountedDisposable<IFileSystem> baseFileSystem = null;
-            ReferenceCountedDisposable<IFileSystem> tempFileSystem = null;
-            try
+            Result rc;
+
+            switch (spaceId)
             {
-                Result rc;
+                case SaveDataSpaceId.System:
+                    rc = _config.BaseFsService.OpenBisFileSystem(ref baseFileSystem.Ref(), BisPartitionId.System, true);
+                    if (rc.IsFailure()) return rc.Miss();
 
-                switch (spaceId)
+                    rc = Utility.WrapSubDirectory(ref outFileSystem, ref baseFileSystem.Ref(), in basePath,
+                        createIfMissing);
+                    if (rc.IsFailure()) return rc.Miss();
+
+                    return Result.Success;
+
+                case SaveDataSpaceId.User:
+                case SaveDataSpaceId.Temporary:
+                    rc = _config.BaseFsService.OpenBisFileSystem(ref baseFileSystem.Ref(), BisPartitionId.User, true);
+                    if (rc.IsFailure()) return rc.Miss();
+
+                    rc = Utility.WrapSubDirectory(ref outFileSystem, ref baseFileSystem.Ref(), in basePath, createIfMissing);
+                    if (rc.IsFailure()) return rc.Miss();
+
+                    return Result.Success;
+
+                case SaveDataSpaceId.SdSystem:
+                case SaveDataSpaceId.SdCache:
                 {
-                    case SaveDataSpaceId.System:
-                        rc = _config.BaseFsService.OpenBisFileSystem(out baseFileSystem, BisPartitionId.System, true);
-                        if (rc.IsFailure()) return rc;
+                    rc = _config.BaseFsService.OpenSdCardProxyFileSystem(ref baseFileSystem.Ref(), true);
+                    if (rc.IsFailure()) return rc.Miss();
 
-                        return Utility.WrapSubDirectory(out fileSystem, ref baseFileSystem, in basePath, createIfMissing);
+                    // Hack around error CS8350.
+                    const int bufferLength = 0x40;
+                    Span<byte> buffer = stackalloc byte[bufferLength];
+                    ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+                    Span<byte> pathParentBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-                    case SaveDataSpaceId.User:
-                    case SaveDataSpaceId.Temporary:
-                        rc = _config.BaseFsService.OpenBisFileSystem(out baseFileSystem, BisPartitionId.User, true);
-                        if (rc.IsFailure()) return rc;
+                    using var pathParent = new Path();
+                    rc = PathFunctions.SetUpFixedPathSingleEntry(ref pathParent.Ref(), pathParentBuffer,
+                        CommonPaths.SdCardNintendoRootDirectoryName);
+                    if (rc.IsFailure()) return rc.Miss();
 
-                        return Utility.WrapSubDirectory(out fileSystem, ref baseFileSystem, in basePath, createIfMissing);
+                    using var pathSdRoot = new Path();
+                    rc = pathSdRoot.Combine(in pathParent, in basePath);
+                    if (rc.IsFailure()) return rc.Miss();
 
-                    case SaveDataSpaceId.SdSystem:
-                    case SaveDataSpaceId.SdCache:
-                    {
-                        rc = _config.BaseFsService.OpenSdCardProxyFileSystem(out baseFileSystem, true);
-                        if (rc.IsFailure()) return rc;
+                    using SharedRef<IFileSystem> tempFileSystem =
+                        SharedRef<IFileSystem>.CreateMove(ref baseFileSystem.Ref());
+                    rc = Utility.WrapSubDirectory(ref baseFileSystem.Ref(), ref tempFileSystem.Ref(), in pathSdRoot, createIfMissing);
+                    if (rc.IsFailure()) return rc.Miss();
 
-                        // Hack around error CS8350.
-                        const int bufferLength = 0x40;
-                        Span<byte> buffer = stackalloc byte[bufferLength];
-                        ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-                        Span<byte> pathParentBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+                    rc = _config.EncryptedFsCreator.Create(ref outFileSystem, ref baseFileSystem.Ref(),
+                        IEncryptedFileSystemCreator.KeyId.Save, in _encryptionSeed);
+                    if (rc.IsFailure()) return rc.Miss();
 
-                        using var parentPath = new Path();
-                        rc = PathFunctions.SetUpFixedPathSingleEntry(ref parentPath.Ref(), pathParentBuffer,
-                            CommonPaths.SdCardNintendoRootDirectoryName);
-                        if (rc.IsFailure()) return rc;
-
-                        using var pathSdRoot = new Path();
-                        rc = pathSdRoot.Combine(in parentPath, in basePath);
-                        if (rc.IsFailure()) return rc;
-
-                        tempFileSystem = Shared.Move(ref baseFileSystem);
-                        rc = Utility.WrapSubDirectory(out baseFileSystem, ref tempFileSystem, in pathSdRoot,
-                            createIfMissing);
-                        if (rc.IsFailure()) return rc;
-
-                        rc = _config.EncryptedFsCreator.Create(out fileSystem, ref baseFileSystem,
-                            IEncryptedFileSystemCreator.KeyId.Save, in _encryptionSeed);
-                        if (rc.IsFailure()) return rc;
-
-                        return Result.Success;
-                    }
-
-                    case SaveDataSpaceId.ProperSystem:
-                        rc = _config.BaseFsService.OpenBisFileSystem(out baseFileSystem,
-                            BisPartitionId.SystemProperPartition, true);
-                        if (rc.IsFailure()) return rc;
-
-                        return Utility.WrapSubDirectory(out fileSystem, ref baseFileSystem, in basePath, createIfMissing);
-
-                    case SaveDataSpaceId.SafeMode:
-                        rc = _config.BaseFsService.OpenBisFileSystem(out baseFileSystem, BisPartitionId.SafeMode, true);
-                        if (rc.IsFailure()) return rc;
-
-                        return Utility.WrapSubDirectory(out fileSystem, ref baseFileSystem, in basePath, createIfMissing);
-
-                    default:
-                        return ResultFs.InvalidArgument.Log();
+                    return Result.Success;
                 }
-            }
-            finally
-            {
-                baseFileSystem?.Dispose();
-                tempFileSystem?.Dispose();
+
+                case SaveDataSpaceId.ProperSystem:
+                    rc = _config.BaseFsService.OpenBisFileSystem(ref baseFileSystem.Ref(),
+                        BisPartitionId.SystemProperPartition, true);
+                    if (rc.IsFailure()) return rc.Miss();
+
+                    rc = Utility.WrapSubDirectory(ref outFileSystem, ref baseFileSystem.Ref(), in basePath, createIfMissing);
+                    if (rc.IsFailure()) return rc.Miss();
+
+                    return Result.Success;
+
+                case SaveDataSpaceId.SafeMode:
+                    rc = _config.BaseFsService.OpenBisFileSystem(ref baseFileSystem.Ref(), BisPartitionId.SafeMode, true);
+                    if (rc.IsFailure()) return rc.Miss();
+
+                    rc = Utility.WrapSubDirectory(ref outFileSystem, ref baseFileSystem.Ref(), in basePath, createIfMissing);
+                    if (rc.IsFailure()) return rc.Miss();
+
+                    return Result.Success;
+
+                default:
+                    return ResultFs.InvalidArgument.Log();
             }
         }
 
@@ -876,7 +801,7 @@ namespace LibHac.FsSrv
             using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
             Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), out bool _, SaveDataSpaceId.User);
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
             count = accessor.Get.Indexer.GetIndexCount();
             return Result.Success;

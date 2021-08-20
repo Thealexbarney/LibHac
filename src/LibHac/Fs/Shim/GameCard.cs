@@ -9,6 +9,7 @@ using LibHac.FsSrv.Sf;
 using LibHac.Os;
 using LibHac.Util;
 using static LibHac.Fs.Impl.AccessLogStrings;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
@@ -48,12 +49,12 @@ namespace LibHac.Fs.Shim
                 int handleDigitCount = Unsafe.SizeOf<GameCardHandle>() * 2;
 
                 // Determine how much space we need.
-                int neededSize =
+                int requiredNameBufferSize =
                     StringUtils.GetLength(CommonMountNames.GameCardFileSystemMountName, PathTool.MountNameLengthMax) +
                     StringUtils.GetLength(GetGameCardMountNameSuffix(PartitionId), PathTool.MountNameLengthMax) +
                     handleDigitCount + 2;
 
-                Assert.SdkRequiresGreaterEqual(nameBuffer.Length, neededSize);
+                Assert.SdkRequiresGreaterEqual(nameBuffer.Length, requiredNameBufferSize);
 
                 // Generate the name.
                 var sb = new U8StringBuilder(nameBuffer);
@@ -62,7 +63,7 @@ namespace LibHac.Fs.Shim
                     .AppendFormat(Handle.Value, 'x', (byte)handleDigitCount)
                     .Append(StringTraits.DriveSeparator);
 
-                Assert.SdkEqual(sb.Length, neededSize - 1);
+                Assert.SdkEqual(sb.Length, requiredNameBufferSize - 1);
 
                 return Result.Success;
             }
@@ -72,23 +73,16 @@ namespace LibHac.Fs.Shim
         {
             UnsafeHelpers.SkipParamInit(out handle);
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-            ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
-            try
-            {
-                Result rc = fsProxy.Target.OpenDeviceOperator(out deviceOperator);
-                fs.Impl.AbortIfNeeded(rc);
-                if (rc.IsFailure()) return rc;
+            Result rc = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc;
 
-                rc = deviceOperator.Target.GetGameCardHandle(out handle);
-                fs.Impl.AbortIfNeeded(rc);
-                return rc;
-            }
-            finally
-            {
-                deviceOperator?.Dispose();
-            }
+            rc = deviceOperator.Get.GetGameCardHandle(out handle);
+            fs.Impl.AbortIfNeeded(rc);
+            return rc;
         }
 
         public static Result MountGameCardPartition(this FileSystemClient fs, U8Span mountName, GameCardHandle handle,
@@ -116,6 +110,7 @@ namespace LibHac.Fs.Shim
             {
                 rc = Mount(fs, mountName, handle, partitionId);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
@@ -130,69 +125,61 @@ namespace LibHac.Fs.Shim
                 Result rc = fs.Impl.CheckMountNameAcceptingReservedMountName(mountName);
                 if (rc.IsFailure()) return rc;
 
-                using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+                using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
+                using var fileSystem = new SharedRef<IFileSystemSf>();
 
-                ReferenceCountedDisposable<IFileSystemSf> fileSystem = null;
-                try
-                {
-                    rc = fsProxy.Target.OpenGameCardFileSystem(out fileSystem, handle, partitionId);
-                    if (rc.IsFailure()) return rc;
+                rc = fileSystemProxy.Get.OpenGameCardFileSystem(ref fileSystem.Ref(), handle, partitionId);
+                if (rc.IsFailure()) return rc;
 
-                    var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
-                    var mountNameGenerator = new GameCardCommonMountNameGenerator(handle, partitionId);
-                    return fs.Register(mountName, fileSystemAdapter, mountNameGenerator);
-                }
-                finally
-                {
-                    fileSystem?.Dispose();
-                }
+                using var fileSystemAdapter =
+                    new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+
+                if (!fileSystemAdapter.HasValue)
+                    return ResultFs.AllocationMemoryFailedInGameCardC.Log();
+
+                using var mountNameGenerator =
+                    new UniqueRef<ICommonMountNameGenerator>(new GameCardCommonMountNameGenerator(handle, partitionId));
+
+                if (!mountNameGenerator.HasValue)
+                    return ResultFs.AllocationMemoryFailedInGameCardD.Log();
+
+                return fs.Register(mountName, ref fileSystemAdapter.Ref(), ref mountNameGenerator.Ref());
             }
         }
 
         public static bool IsGameCardInserted(this FileSystemClient fs)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-            ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
-            try
-            {
-                Result rc = fsProxy.Target.OpenDeviceOperator(out deviceOperator);
-                fs.Impl.LogResultErrorMessage(rc);
-                Abort.DoAbortUnless(rc.IsSuccess());
+            Result rc = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+            fs.Impl.LogResultErrorMessage(rc);
+            Abort.DoAbortUnless(rc.IsSuccess());
 
-                rc = deviceOperator.Target.IsGameCardInserted(out bool isInserted);
-                fs.Impl.LogResultErrorMessage(rc);
-                Abort.DoAbortUnless(rc.IsSuccess());
+            rc = deviceOperator.Get.IsGameCardInserted(out bool isInserted);
+            fs.Impl.LogResultErrorMessage(rc);
+            Abort.DoAbortUnless(rc.IsSuccess());
 
-                return isInserted;
-            }
-            finally
-            {
-                deviceOperator?.Dispose();
-            }
+            return isInserted;
         }
 
-        public static Result OpenGameCardPartition(this FileSystemClient fs, out IStorage storage,
+        public static Result OpenGameCardPartition(this FileSystemClient fs, ref UniqueRef<IStorage> outStorage,
             GameCardHandle handle, GameCardPartitionRaw partitionType)
         {
-            UnsafeHelpers.SkipParamInit(out storage);
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using var storage = new SharedRef<IStorageSf>();
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            Result rc = fileSystemProxy.Get.OpenGameCardStorage(ref storage.Ref(), handle, partitionType);
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc;
 
-            ReferenceCountedDisposable<IStorageSf> sfStorage = null;
-            try
-            {
-                Result rc = fsProxy.Target.OpenGameCardStorage(out sfStorage, handle, partitionType);
-                fs.Impl.AbortIfNeeded(rc);
-                if (rc.IsFailure()) return rc;
+            using var storageAdapter = new UniqueRef<IStorage>(new StorageServiceObjectAdapter(ref storage.Ref()));
 
-                storage = new StorageServiceObjectAdapter(sfStorage);
-                return Result.Success;
-            }
-            finally
-            {
-                sfStorage?.Dispose();
-            }
+            if (!storageAdapter.HasValue)
+                return ResultFs.AllocationMemoryFailedInGameCardB.Log();
+
+            outStorage.Set(ref storageAdapter.Ref());
+            return Result.Success;
         }
     }
 }

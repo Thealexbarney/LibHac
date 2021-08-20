@@ -21,8 +21,8 @@ namespace LibHac.Tests.Kvdb
         {
             FileSystemClient fsClient = FileSystemServerFactory.CreateClient(false);
 
-            var mountedFs = new InMemoryFileSystem();
-            fsClient.Register(MountName, mountedFs).ThrowIfFailure();
+            using var mountedFs = new UniqueRef<IFileSystem>(new InMemoryFileSystem());
+            fsClient.Register(MountName, ref mountedFs.Ref()).ThrowIfFailure();
 
             FlatMapKeyValueStore<T> kvStore = Create<T>(fsClient, capacity);
 

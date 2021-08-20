@@ -7,6 +7,7 @@ using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Os;
 using static LibHac.Fs.Impl.AccessLogStrings;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim
@@ -14,25 +15,22 @@ namespace LibHac.Fs.Shim
     [SkipLocalsInit]
     public static class SdCard
     {
-        private static Result OpenSdCardFileSystem(FileSystemClient fs,
-            out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
+        private static Result OpenSdCardFileSystem(FileSystemClient fs, ref SharedRef<IFileSystemSf> outFileSystem)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            return OpenFileSystem(fs, fsProxy, out fileSystem);
+            return OpenFileSystem(fs, ref fileSystemProxy.Ref(), ref outFileSystem);
 
-            static Result OpenFileSystem(FileSystemClient fs, ReferenceCountedDisposable<IFileSystemProxy> fsProxy,
-                out ReferenceCountedDisposable<IFileSystemSf> fileSystem)
+            static Result OpenFileSystem(FileSystemClient fs, ref SharedRef<IFileSystemProxy> fileSystemProxy,
+                ref SharedRef<IFileSystemSf> outFileSystem)
             {
-                UnsafeHelpers.SkipParamInit(out fileSystem);
-
                 // Retry a few times if the storage device isn't ready yet
                 const int maxRetries = 10;
                 const int retryInterval = 1000;
 
                 for (int i = 0; i < maxRetries; i++)
                 {
-                    Result rc = fsProxy.Target.OpenSdCardFileSystem(out fileSystem);
+                    Result rc = fileSystemProxy.Get.OpenSdCardFileSystem(ref outFileSystem);
 
                     if (rc.IsSuccess())
                         break;
@@ -51,10 +49,15 @@ namespace LibHac.Fs.Shim
         }
 
         private static Result RegisterFileSystem(FileSystemClient fs, U8Span mountName,
-            ReferenceCountedDisposable<IFileSystemSf> fileSystem)
+            ref SharedRef<IFileSystemSf> fileSystem)
         {
-            var fileSystemAdapter = new FileSystemServiceObjectAdapter(fileSystem);
-            return fs.Register(mountName, fileSystemAdapter);
+            using var fileSystemAdapter =
+                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem));
+
+            if (!fileSystemAdapter.HasValue)
+                return ResultFs.AllocationMemoryFailedInSdCardA.Log();
+
+            return fs.Register(mountName, ref fileSystemAdapter.Ref());
         }
 
         public static Result MountSdCard(this FileSystemClient fs, U8Span mountName)
@@ -79,79 +82,69 @@ namespace LibHac.Fs.Shim
             {
                 rc = fs.Impl.CheckMountName(mountName);
             }
+
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
             // Open the SD card file system
-            ReferenceCountedDisposable<IFileSystemSf> fileSystem = null;
-            try
+            using var fileSystem = new SharedRef<IFileSystemSf>();
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
             {
-                if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
-                {
-                    Tick start = fs.Hos.Os.GetSystemTick();
-                    rc = OpenSdCardFileSystem(fs, out fileSystem);
-                    Tick end = fs.Hos.Os.GetSystemTick();
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = OpenSdCardFileSystem(fs, ref fileSystem.Ref());
+                Tick end = fs.Hos.Os.GetSystemTick();
 
-                    fs.Impl.OutputAccessLogUnlessResultSuccess(rc, start, end, null, new U8Span(logBuffer));
-                }
-                else
-                {
-                    rc = OpenSdCardFileSystem(fs, out fileSystem);
-                }
-                fs.Impl.AbortIfNeeded(rc);
-                if (rc.IsFailure()) return rc;
-
-                // Mount the file system
-                if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
-                {
-                    Tick start = fs.Hos.Os.GetSystemTick();
-                    rc = RegisterFileSystem(fs, mountName, fileSystem);
-                    Tick end = fs.Hos.Os.GetSystemTick();
-
-                    fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(logBuffer));
-                }
-                else
-                {
-                    rc = RegisterFileSystem(fs, mountName, fileSystem);
-                }
-                fs.Impl.AbortIfNeeded(rc);
-                if (rc.IsFailure()) return rc;
-
-                if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
-                    fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
-
-                return Result.Success;
+                fs.Impl.OutputAccessLogUnlessResultSuccess(rc, start, end, null, new U8Span(logBuffer));
             }
-            finally
+            else
             {
-                fileSystem?.Dispose();
+                rc = OpenSdCardFileSystem(fs, ref fileSystem.Ref());
             }
+
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc;
+
+            // Mount the file system
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
+            {
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = RegisterFileSystem(fs, mountName, ref fileSystem.Ref());
+                Tick end = fs.Hos.Os.GetSystemTick();
+
+                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(logBuffer));
+            }
+            else
+            {
+                rc = RegisterFileSystem(fs, mountName, ref fileSystem.Ref());
+            }
+
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc;
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
+                fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
+
+            return Result.Success;
         }
 
         public static bool IsSdCardInserted(this FileSystemClient fs)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-            ReferenceCountedDisposable<IDeviceOperator> deviceOperator = null;
-            try
-            {
-                Result rc = fsProxy.Target.OpenDeviceOperator(out deviceOperator);
-                fs.Impl.LogResultErrorMessage(rc);
-                Abort.DoAbortUnless(rc.IsSuccess());
+            Result rc = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+            fs.Impl.LogResultErrorMessage(rc);
+            Abort.DoAbortUnless(rc.IsSuccess());
 
-                rc = CheckIfInserted(fs, deviceOperator, out bool isInserted);
-                fs.Impl.LogResultErrorMessage(rc);
-                Abort.DoAbortUnless(rc.IsSuccess());
+            rc = CheckIfInserted(fs, ref deviceOperator.Ref(), out bool isInserted);
+            fs.Impl.LogResultErrorMessage(rc);
+            Abort.DoAbortUnless(rc.IsSuccess());
 
-                return isInserted;
-            }
-            finally
-            {
-                deviceOperator?.Dispose();
-            }
+            return isInserted;
 
-            static Result CheckIfInserted(FileSystemClient fs,
-                ReferenceCountedDisposable<IDeviceOperator> deviceOperator, out bool isInserted)
+            static Result CheckIfInserted(FileSystemClient fs, ref SharedRef<IDeviceOperator> deviceOperator,
+                out bool isInserted)
             {
                 UnsafeHelpers.SkipParamInit(out isInserted);
 
@@ -161,7 +154,7 @@ namespace LibHac.Fs.Shim
 
                 for (int i = 0; i < maxRetries; i++)
                 {
-                    Result rc = deviceOperator.Target.IsSdCardInserted(out isInserted);
+                    Result rc = deviceOperator.Get.IsSdCardInserted(out isInserted);
 
                     if (rc.IsSuccess())
                         break;
@@ -181,9 +174,9 @@ namespace LibHac.Fs.Shim
 
         public static Result SetSdCardEncryptionSeed(this FileSystemClient fs, in EncryptionSeed seed)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            Result rc = fsProxy.Target.SetSdCardEncryptionSeed(in seed);
+            Result rc = fileSystemProxy.Get.SetSdCardEncryptionSeed(in seed);
             fs.Impl.AbortIfNeeded(rc);
             return rc;
         }
@@ -197,9 +190,9 @@ namespace LibHac.Fs.Shim
 
         public static bool IsSdCardAccessible(this FileSystemClient fs)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            Result rc = fsProxy.Target.IsSdCardAccessible(out bool isAccessible);
+            Result rc = fileSystemProxy.Get.IsSdCardAccessible(out bool isAccessible);
             fs.Impl.LogResultErrorMessage(rc);
             Abort.DoAbortUnless(rc.IsSuccess());
 
@@ -208,9 +201,9 @@ namespace LibHac.Fs.Shim
 
         public static Result SetSdCardAccessibility(this FileSystemClientImpl fs, bool isAccessible)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
 
-            Result rc = fsProxy.Target.SetSdCardAccessibility(isAccessible);
+            Result rc = fileSystemProxy.Get.SetSdCardAccessibility(isAccessible);
             fs.AbortIfNeeded(rc);
             return rc;
         }

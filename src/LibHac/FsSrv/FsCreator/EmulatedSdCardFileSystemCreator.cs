@@ -11,62 +11,50 @@ namespace LibHac.FsSrv.FsCreator
     {
         private const string DefaultPath = "/sdcard";
 
-        private EmulatedSdCard SdCard { get; }
-        private ReferenceCountedDisposable<IFileSystem> _rootFileSystem;
-        private string Path { get; }
+        private EmulatedSdCard _sdCard;
+        private SharedRef<IFileSystem> _rootFileSystem;
+        private SharedRef<IFileSystem> _sdCardFileSystem;
+        private string _path;
 
-        private ReferenceCountedDisposable<IFileSystem> _sdCardFileSystem;
-
-        public EmulatedSdCardFileSystemCreator(EmulatedSdCard sdCard, IFileSystem rootFileSystem)
+        public EmulatedSdCardFileSystemCreator(EmulatedSdCard sdCard, ref SharedRef<IFileSystem> rootFileSystem)
         {
-            SdCard = sdCard;
-            _rootFileSystem = new ReferenceCountedDisposable<IFileSystem>(rootFileSystem);
+            _sdCard = sdCard;
+            _rootFileSystem = SharedRef<IFileSystem>.CreateMove(ref rootFileSystem);
         }
 
-        public EmulatedSdCardFileSystemCreator(EmulatedSdCard sdCard, IFileSystem rootFileSystem, string path)
+        public EmulatedSdCardFileSystemCreator(EmulatedSdCard sdCard, ref SharedRef<IFileSystem> rootFileSystem, string path)
         {
-            SdCard = sdCard;
-            _rootFileSystem = new ReferenceCountedDisposable<IFileSystem>(rootFileSystem);
-            Path = path;
+            _sdCard = sdCard;
+            _rootFileSystem = SharedRef<IFileSystem>.CreateMove(ref rootFileSystem);
+            _path = path;
         }
 
         public void Dispose()
         {
-            if (_rootFileSystem is not null)
-            {
-                _rootFileSystem.Dispose();
-                _rootFileSystem = null;
-            }
-
-            if (_sdCardFileSystem is not null)
-            {
-                _sdCardFileSystem.Dispose();
-                _sdCardFileSystem = null;
-            }
+            _rootFileSystem.Destroy();
+            _sdCardFileSystem.Destroy();
         }
 
-        public Result Create(out ReferenceCountedDisposable<IFileSystem> outFileSystem, bool isCaseSensitive)
+        public Result Create(ref SharedRef<IFileSystem> outFileSystem, bool openCaseSensitive)
         {
-            UnsafeHelpers.SkipParamInit(out outFileSystem);
-
-            if (!SdCard.IsSdCardInserted())
+            if (!_sdCard.IsSdCardInserted())
             {
                 return ResultFs.PortSdCardNoDevice.Log();
             }
 
-            if (_sdCardFileSystem is not null)
+            if (_sdCardFileSystem.HasValue)
             {
-                outFileSystem = _sdCardFileSystem.AddReference();
+                outFileSystem.SetByCopy(ref _sdCardFileSystem);
 
                 return Result.Success;
             }
 
-            if (_rootFileSystem is null)
+            if (!_rootFileSystem.HasValue)
             {
                 return ResultFs.PreconditionViolation.Log();
             }
 
-            string path = Path ?? DefaultPath;
+            string path = _path ?? DefaultPath;
 
             using var sdCardPath = new Path();
             Result rc = sdCardPath.Initialize(StringUtils.StringToUtf8(path));
@@ -79,21 +67,13 @@ namespace LibHac.FsSrv.FsCreator
 
             // Todo: Add ProxyFileSystem?
 
-            ReferenceCountedDisposable<IFileSystem> tempFs = null;
-            try
-            {
-                tempFs = _rootFileSystem.AddReference();
-                rc = Utility.WrapSubDirectory(out _sdCardFileSystem, ref tempFs, in sdCardPath, true);
-                if (rc.IsFailure()) return rc;
+            using SharedRef<IFileSystem> fileSystem = SharedRef<IFileSystem>.CreateCopy(ref _rootFileSystem);
+            rc = Utility.WrapSubDirectory(ref _sdCardFileSystem, ref fileSystem.Ref(), in sdCardPath, true);
+            if (rc.IsFailure()) return rc;
 
-                outFileSystem = _sdCardFileSystem.AddReference();
+            outFileSystem.SetByCopy(ref _sdCardFileSystem);
 
-                return Result.Success;
-            }
-            finally
-            {
-                tempFs?.Dispose();
-            }
+            return Result.Success;
         }
 
         public Result Format(bool removeFromFatFsCache)

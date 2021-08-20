@@ -63,9 +63,9 @@ namespace LibHac.Fs
                 return Result.Success;
             }
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            Result rc = fsProxy.Target.GetGlobalAccessLogMode(out mode);
+            Result rc = fileSystemProxy.Get.GetGlobalAccessLogMode(out mode);
             fs.Impl.AbortIfNeeded(rc);
             return rc;
         }
@@ -79,9 +79,9 @@ namespace LibHac.Fs
                 return Result.Success;
             }
 
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            Result rc = fsProxy.Target.SetGlobalAccessLogMode(mode);
+            Result rc = fileSystemProxy.Get.SetGlobalAccessLogMode(mode);
             fs.Impl.AbortIfNeeded(rc);
             return rc;
         }
@@ -133,8 +133,8 @@ namespace LibHac.Fs
 
         public static void OutputApplicationInfoAccessLog(this FileSystemClient fs, in ApplicationInfo applicationInfo)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.Impl.GetFileSystemProxyServiceObject();
-            fsProxy.Target.OutputApplicationInfoAccessLog(in applicationInfo).IgnoreResult();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            fileSystemProxy.Get.OutputApplicationInfoAccessLog(in applicationInfo).IgnoreResult();
         }
     }
 }
@@ -323,14 +323,14 @@ namespace LibHac.Fs.Impl
 
         private static void FlushAccessLogOnSdCardImpl(FileSystemClientImpl fs)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
-            fsProxy.Target.FlushAccessLogOnSdCard().IgnoreResult();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
+            fileSystemProxy.Get.FlushAccessLogOnSdCard().IgnoreResult();
         }
 
         private static void OutputAccessLogToSdCardImpl(FileSystemClientImpl fs, U8Span message)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
-            fsProxy.Target.OutputAccessLogToSdCard(new InBuffer(message.Value)).IgnoreResult();
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
+            fileSystemProxy.Get.OutputAccessLogToSdCard(new InBuffer(message.Value)).IgnoreResult();
         }
 
         // The original function creates a string using the input format string and format args.
@@ -423,8 +423,8 @@ namespace LibHac.Fs.Impl
 
         private static void GetProgramIndexForAccessLog(FileSystemClientImpl fs, out int index, out int count)
         {
-            using ReferenceCountedDisposable<IFileSystemProxy> fsProxy = fs.GetFileSystemProxyServiceObject();
-            Result rc = fsProxy.Target.GetProgramIndexForAccessLog(out index, out count);
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
+            Result rc = fileSystemProxy.Get.GetProgramIndexForAccessLog(out index, out count);
             Abort.DoAbortUnless(rc.IsSuccess());
         }
 

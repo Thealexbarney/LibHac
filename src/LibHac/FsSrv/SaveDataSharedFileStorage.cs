@@ -11,15 +11,19 @@ using LibHac.Util;
 
 namespace LibHac.FsSrv
 {
+    /// <summary>
+    /// Contains global functions for SaveDataSharedFileStorage.
+    /// </summary>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1).</remarks>
     public static class SaveDataSharedFileStorageGlobalMethods
     {
         public static Result OpenSaveDataStorage(this FileSystemServer fsSrv,
-            out ReferenceCountedDisposable<IStorage> saveDataStorage,
-            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, SaveDataSpaceId spaceId, ulong saveDataId,
-            OpenMode mode, Optional<SaveDataOpenTypeSetFileStorage.OpenType> type)
+            ref SharedRef<IStorage> outSaveDataStorage, ref SharedRef<IFileSystem> baseFileSystem,
+            SaveDataSpaceId spaceId, ulong saveDataId, OpenMode mode,
+            Optional<SaveDataOpenTypeSetFileStorage.OpenType> type)
         {
             return fsSrv.Globals.SaveDataSharedFileStorage.SaveDataFileStorageHolder.OpenSaveDataStorage(
-                out saveDataStorage, ref baseFileSystem, spaceId, saveDataId, mode, type);
+                ref outSaveDataStorage, ref baseFileSystem, spaceId, saveDataId, mode, type);
         }
     }
 
@@ -41,6 +45,7 @@ namespace LibHac.FsSrv
     /// This class keeps track of which types of save data file systems have been opened from the save data file.
     /// Only one of each file system type can be opened at the same time.
     /// </summary>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1).</remarks>
     public class SaveDataOpenTypeSetFileStorage : FileStorageBasedFileSystem
     {
         public enum OpenType
@@ -69,8 +74,7 @@ namespace LibHac.FsSrv
             _mutex.Initialize();
         }
 
-        public Result Initialize(ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, in Path path, OpenMode mode,
-            OpenType type)
+        public Result Initialize(ref SharedRef<IFileSystem> baseFileSystem, in Path path, OpenMode mode, OpenType type)
         {
             Result rc = Initialize(ref baseFileSystem, in path, mode);
             if (rc.IsFailure()) return rc;
@@ -107,8 +111,7 @@ namespace LibHac.FsSrv
 
         public void UnsetOpenType(OpenType type)
         {
-            using ScopedLock<SdkMutexType> scopedLock =
-                ScopedLock.Lock(ref Globals.Mutex);
+            using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref Globals.Mutex);
 
             if (type == OpenType.Normal)
             {
@@ -157,42 +160,42 @@ namespace LibHac.FsSrv
     /// read-only access to a save data image via a normal save data file system and an internal file system.
     /// Once an internal file system is opened, it will be considered valid until the save data image is
     /// written to via the normal file system, at which point any accesses via the internal file system will
-    /// return <see cref="ResultFs.SaveDataPorterInvalidated"/>.
+    /// return <see cref="ResultFs.SaveDataPorterInvalidated"/>
+    /// <para>Based on FS 12.1.0 (nnSdk 12.3.1).</para>
     /// </remarks>
     public class SaveDataSharedFileStorage : IStorage
     {
-        private ReferenceCountedDisposable<SaveDataOpenTypeSetFileStorage> _baseStorage;
+        private SharedRef<SaveDataOpenTypeSetFileStorage> _baseStorage;
         private SaveDataOpenTypeSetFileStorage.OpenType _type;
 
-        public SaveDataSharedFileStorage(ref ReferenceCountedDisposable<SaveDataOpenTypeSetFileStorage> baseStorage,
+        public SaveDataSharedFileStorage(ref SharedRef<SaveDataOpenTypeSetFileStorage> baseStorage,
             SaveDataOpenTypeSetFileStorage.OpenType type)
         {
-            _baseStorage = Shared.Move(ref baseStorage);
+            _baseStorage = SharedRef<SaveDataOpenTypeSetFileStorage>.CreateMove(ref baseStorage);
             _type = type;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (disposing)
-            {
-                _baseStorage?.Target.UnsetOpenType(_type);
-                _baseStorage?.Dispose();
-            }
+            if (_baseStorage.HasValue)
+                _baseStorage.Get.UnsetOpenType(_type);
 
-            base.Dispose(disposing);
+            _baseStorage.Destroy();
+
+            base.Dispose();
         }
 
         private Result AccessCheck(bool isWriteAccess)
         {
             if (_type == SaveDataOpenTypeSetFileStorage.OpenType.Internal)
             {
-                if (_baseStorage.Target.IsInternalStorageInvalidated())
+                if (_baseStorage.Get.IsInternalStorageInvalidated())
                     return ResultFs.SaveDataPorterInvalidated.Log();
             }
             else if (_type == SaveDataOpenTypeSetFileStorage.OpenType.Normal && isWriteAccess)
             {
                 // Any opened internal file system will be invalid after a write to the normal file system
-                _baseStorage.Target.InvalidateInternalStorage();
+                _baseStorage.Get.InvalidateInternalStorage();
             }
 
             return Result.Success;
@@ -200,90 +203,91 @@ namespace LibHac.FsSrv
 
         protected override Result DoRead(long offset, Span<byte> destination)
         {
-            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
+            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Get.GetLock();
 
             Result rc = AccessCheck(isWriteAccess: false);
             if (rc.IsFailure()) return rc;
 
-            return _baseStorage.Target.Read(offset, destination);
+            return _baseStorage.Get.Read(offset, destination);
         }
 
         protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
         {
-            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
+            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Get.GetLock();
 
             Result rc = AccessCheck(isWriteAccess: true);
             if (rc.IsFailure()) return rc;
 
-            return _baseStorage.Target.Write(offset, source);
-        }
-
-        protected override Result DoFlush()
-        {
-            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
-
-            Result rc = AccessCheck(isWriteAccess: true);
-            if (rc.IsFailure()) return rc;
-
-            return _baseStorage.Target.Flush();
+            return _baseStorage.Get.Write(offset, source);
         }
 
         protected override Result DoSetSize(long size)
         {
-            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
+            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Get.GetLock();
 
             Result rc = AccessCheck(isWriteAccess: true);
             if (rc.IsFailure()) return rc;
 
-            return _baseStorage.Target.SetSize(size);
+            return _baseStorage.Get.SetSize(size);
         }
 
         protected override Result DoGetSize(out long size)
         {
             Unsafe.SkipInit(out size);
 
-            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
+            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Get.GetLock();
 
             Result rc = AccessCheck(isWriteAccess: false);
             if (rc.IsFailure()) return rc;
 
-            return _baseStorage.Target.GetSize(out size);
+            return _baseStorage.Get.GetSize(out size);
+        }
+
+        protected override Result DoFlush()
+        {
+            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Get.GetLock();
+
+            Result rc = AccessCheck(isWriteAccess: true);
+            if (rc.IsFailure()) return rc;
+
+            return _baseStorage.Get.Flush();
         }
 
         protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
             ReadOnlySpan<byte> inBuffer)
         {
-            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Target.GetLock();
+            using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Get.GetLock();
 
             Result rc = AccessCheck(isWriteAccess: true);
             if (rc.IsFailure()) return rc;
 
-            return _baseStorage.Target.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+            return _baseStorage.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer);
         }
     }
 
     /// <summary>
     /// Holds references to any open shared save data image files.
     /// </summary>
+    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1).</remarks>
     public class SaveDataFileStorageHolder
     {
         private struct Entry
         {
-            private ReferenceCountedDisposable<SaveDataOpenTypeSetFileStorage> _storage;
+            private SharedRef<SaveDataOpenTypeSetFileStorage> _storage;
             private SaveDataSpaceId _spaceId;
             private ulong _saveDataId;
 
-            public Entry(ref ReferenceCountedDisposable<SaveDataOpenTypeSetFileStorage> storage,
-                SaveDataSpaceId spaceId, ulong saveDataId)
+            public Entry(ref SharedRef<SaveDataOpenTypeSetFileStorage> storage, SaveDataSpaceId spaceId,
+                ulong saveDataId)
             {
-                _storage = Shared.Move(ref storage);
+                _storage = SharedRef<SaveDataOpenTypeSetFileStorage>.CreateMove(ref storage);
                 _spaceId = spaceId;
                 _saveDataId = saveDataId;
             }
 
             public void Dispose()
             {
-                _storage?.Dispose();
+                _storage.Destroy();
             }
 
             public bool Contains(SaveDataSpaceId spaceId, ulong saveDataId)
@@ -291,9 +295,9 @@ namespace LibHac.FsSrv
                 return _spaceId == spaceId && _saveDataId == saveDataId;
             }
 
-            public ReferenceCountedDisposable<SaveDataOpenTypeSetFileStorage> GetStorage()
+            public SharedRef<SaveDataOpenTypeSetFileStorage> GetStorage()
             {
-                return _storage.AddReference();
+                return SharedRef<SaveDataOpenTypeSetFileStorage>.CreateCopy(ref _storage);
             }
         }
 
@@ -325,12 +329,10 @@ namespace LibHac.FsSrv
             }
         }
 
-        public Result OpenSaveDataStorage(out ReferenceCountedDisposable<IStorage> saveDataStorage,
-            ref ReferenceCountedDisposable<IFileSystem> baseFileSystem, SaveDataSpaceId spaceId, ulong saveDataId,
-            OpenMode mode, Optional<SaveDataOpenTypeSetFileStorage.OpenType> type)
+        public Result OpenSaveDataStorage(ref SharedRef<IStorage> outSaveDataStorage,
+            ref SharedRef<IFileSystem> baseFileSystem, SaveDataSpaceId spaceId, ulong saveDataId, OpenMode mode,
+            Optional<SaveDataOpenTypeSetFileStorage.OpenType> type)
         {
-            UnsafeHelpers.SkipParamInit(out saveDataStorage);
-
             // Hack around error CS8350.
             const int bufferLength = 0x12;
             Span<byte> buffer = stackalloc byte[bufferLength];
@@ -344,67 +346,43 @@ namespace LibHac.FsSrv
             // If an open type isn't specified, open the save without the shared file storage layer
             if (!type.HasValue)
             {
-                ReferenceCountedDisposable<FileStorageBasedFileSystem> fileStorage = null;
-                try
-                {
-                    fileStorage =
-                        new ReferenceCountedDisposable<FileStorageBasedFileSystem>(new FileStorageBasedFileSystem());
+                using var fileStorage = new SharedRef<FileStorageBasedFileSystem>(new FileStorageBasedFileSystem());
+                rc = fileStorage.Get.Initialize(ref baseFileSystem, in saveImageName, mode);
+                if (rc.IsFailure()) return rc;
 
-                    rc = fileStorage.Target.Initialize(ref baseFileSystem, in saveImageName, mode);
-                    if (rc.IsFailure()) return rc;
-
-                    saveDataStorage = fileStorage.AddReference<IStorage>();
-                    return Result.Success;
-                }
-                finally
-                {
-                    fileStorage?.Dispose();
-                }
+                outSaveDataStorage.SetByMove(ref fileStorage.Ref());
+                return Result.Success;
             }
 
             using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref Globals.Mutex);
 
-            ReferenceCountedDisposable<SaveDataOpenTypeSetFileStorage> baseFileStorage = null;
-            ReferenceCountedDisposable<SaveDataOpenTypeSetFileStorage> tempBaseFileStorage = null;
-            try
+            using SharedRef<SaveDataOpenTypeSetFileStorage> baseFileStorage = GetStorage(spaceId, saveDataId);
+
+            if (baseFileStorage.HasValue)
             {
-                baseFileStorage = GetStorage(spaceId, saveDataId);
-
-                if (baseFileStorage is not null)
-                {
-                    rc = baseFileStorage.Target.SetOpenType(type.ValueRo);
-                    if (rc.IsFailure()) return rc;
-                }
-                else
-                {
-                    baseFileStorage =
-                        new ReferenceCountedDisposable<SaveDataOpenTypeSetFileStorage>(
-                            new SaveDataOpenTypeSetFileStorage(_fsServer, spaceId, saveDataId));
-
-                    rc = baseFileStorage.Target.Initialize(ref baseFileSystem, in saveImageName, mode,
-                        type.ValueRo);
-                    if (rc.IsFailure()) return rc;
-
-                    tempBaseFileStorage = baseFileStorage.AddReference();
-                    rc = Register(ref tempBaseFileStorage, spaceId, saveDataId);
-                    if (rc.IsFailure()) return rc;
-                }
-
-                saveDataStorage =
-                    new ReferenceCountedDisposable<IStorage>(
-                        new SaveDataSharedFileStorage(ref baseFileStorage, type.ValueRo));
+                rc = baseFileStorage.Get.SetOpenType(type.ValueRo);
+                if (rc.IsFailure()) return rc;
             }
-            finally
+            else
             {
-                baseFileStorage?.Dispose();
-                tempBaseFileStorage?.Dispose();
+                baseFileStorage.Reset(new SaveDataOpenTypeSetFileStorage(_fsServer, spaceId, saveDataId));
+                rc = baseFileStorage.Get.Initialize(ref baseFileSystem, in saveImageName, mode, type.ValueRo);
+                if (rc.IsFailure()) return rc;
+
+                using SharedRef<SaveDataOpenTypeSetFileStorage> baseFileStorageCopy =
+                    SharedRef<SaveDataOpenTypeSetFileStorage>.CreateCopy(ref baseFileStorage.Ref());
+
+                rc = Register(ref baseFileStorageCopy.Ref(), spaceId, saveDataId);
+                if (rc.IsFailure()) return rc;
             }
+
+            outSaveDataStorage.Reset(new SaveDataSharedFileStorage(ref baseFileStorage.Ref(), type.ValueRo));
 
             return Result.Success;
         }
 
-        public Result Register(ref ReferenceCountedDisposable<SaveDataOpenTypeSetFileStorage> storage,
-            SaveDataSpaceId spaceId, ulong saveDataId)
+        public Result Register(ref SharedRef<SaveDataOpenTypeSetFileStorage> storage, SaveDataSpaceId spaceId,
+            ulong saveDataId)
         {
             Assert.SdkRequires(Globals.Mutex.IsLockedByCurrentThread());
 
@@ -414,8 +392,7 @@ namespace LibHac.FsSrv
             return Result.Success;
         }
 
-        public ReferenceCountedDisposable<SaveDataOpenTypeSetFileStorage> GetStorage(SaveDataSpaceId spaceId,
-            ulong saveDataId)
+        public SharedRef<SaveDataOpenTypeSetFileStorage> GetStorage(SaveDataSpaceId spaceId, ulong saveDataId)
         {
             Assert.SdkRequires(Globals.Mutex.IsLockedByCurrentThread());
 
@@ -431,7 +408,7 @@ namespace LibHac.FsSrv
                 currentEntry = currentEntry.Next;
             }
 
-            return null;
+            return new SharedRef<SaveDataOpenTypeSetFileStorage>();
         }
 
         public void Unregister(SaveDataSpaceId spaceId, ulong saveDataId)

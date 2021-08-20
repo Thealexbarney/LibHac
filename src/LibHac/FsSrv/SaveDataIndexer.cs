@@ -9,7 +9,6 @@ using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
-using LibHac.FsSrv.Sf;
 using LibHac.Kvdb;
 using LibHac.Sf;
 
@@ -507,10 +506,8 @@ namespace LibHac.FsSrv
             }
         }
 
-        public Result OpenSaveDataInfoReader(out ReferenceCountedDisposable<SaveDataInfoReaderImpl> infoReader)
+        public Result OpenSaveDataInfoReader(ref SharedRef<SaveDataInfoReaderImpl> outInfoReader)
         {
-            UnsafeHelpers.SkipParamInit(out infoReader);
-
             lock (Locker)
             {
                 Result rc = TryInitializeDatabase();
@@ -520,14 +517,12 @@ namespace LibHac.FsSrv
                 if (rc.IsFailure()) return rc;
 
                 // Create the reader and register it in the opened-reader list
-                using (var reader = new ReferenceCountedDisposable<Reader>(new Reader(this)))
-                {
-                    rc = RegisterReader(reader);
-                    if (rc.IsFailure()) return rc;
+                using var reader = new SharedRef<Reader>(new Reader(this));
+                rc = RegisterReader(ref reader.Ref());
+                if (rc.IsFailure()) return rc;
 
-                    infoReader = reader.AddReference<SaveDataInfoReaderImpl>();
-                    return Result.Success;
-                }
+                outInfoReader.SetByCopy(ref reader.Ref());
+                return Result.Success;
             }
         }
 
@@ -670,9 +665,9 @@ namespace LibHac.FsSrv
         /// </summary>
         /// <param name="reader">The reader to add.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        private Result RegisterReader(ReferenceCountedDisposable<Reader> reader)
+        private Result RegisterReader(ref SharedRef<Reader> reader)
         {
-            OpenReaders.Add(new ReaderAccessor(reader));
+            OpenReaders.Add(new ReaderAccessor(ref reader));
 
             return Result.Success;
         }
@@ -711,9 +706,11 @@ namespace LibHac.FsSrv
         {
             foreach (ReaderAccessor accessor in OpenReaders)
             {
-                using (ReferenceCountedDisposable<Reader> reader = accessor.Lock())
+                using SharedRef<Reader> reader = accessor.Lock();
+
+                if (reader.HasValue)
                 {
-                    reader?.Target.Fix(in key);
+                    reader.Get.Fix(in key);
                 }
             }
 
@@ -782,30 +779,21 @@ namespace LibHac.FsSrv
             }
         }
 
-        private class ReaderAccessor
+        private class ReaderAccessor : IDisposable
         {
-            private ReferenceCountedDisposable<Reader>.WeakReference _reader;
+            private WeakRef<Reader> _reader;
 
-            public ReaderAccessor(ReferenceCountedDisposable<Reader> reader)
+            public ReaderAccessor(ref SharedRef<Reader> reader)
             {
-                _reader = new ReferenceCountedDisposable<Reader>.WeakReference(reader);
+                _reader = new WeakRef<Reader>(ref reader);
             }
 
-            public ReferenceCountedDisposable<Reader> Lock()
-            {
-                return _reader.TryAddReference();
-            }
-
-            public bool IsExpired()
-            {
-                using (ReferenceCountedDisposable<Reader> reference = _reader.TryAddReference())
-                {
-                    return reference == null;
-                }
-            }
+            public void Dispose() => _reader.Destroy();
+            public SharedRef<Reader> Lock() => _reader.Lock();
+            public bool IsExpired() => _reader.Expired;
         }
 
-        private class Reader : SaveDataInfoReaderImpl, ISaveDataInfoReader
+        private class Reader : SaveDataInfoReaderImpl
         {
             private readonly SaveDataIndexer _indexer;
             private FlatMapKeyValueStore<SaveDataAttribute>.Iterator _iterator;

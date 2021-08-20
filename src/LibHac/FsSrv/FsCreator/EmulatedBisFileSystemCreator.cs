@@ -39,10 +39,10 @@ namespace LibHac.FsSrv.FsCreator
         /// Each partition will be located at their default paths in this IFileSystem.
         /// </summary>
         /// <param name="rootFileSystem">The <see cref="IFileSystem"/> to use as the root file system.</param>
-        public EmulatedBisFileSystemCreator(IFileSystem rootFileSystem)
+        public EmulatedBisFileSystemCreator(ref SharedRef<IFileSystem> rootFileSystem)
         {
             Config = new EmulatedBisFileSystemCreatorConfig();
-            Config.RootFileSystem = rootFileSystem;
+            Config.SetRootFileSystem(ref rootFileSystem).ThrowIfFailure();
         }
 
         /// <summary>
@@ -55,20 +55,20 @@ namespace LibHac.FsSrv.FsCreator
         }
 
         // Todo: Make case sensitive
-        public Result Create(out ReferenceCountedDisposable<IFileSystem> fileSystem, BisPartitionId partitionId,
-            bool caseSensitive)
+        public Result Create(ref SharedRef<IFileSystem> outFileSystem, BisPartitionId partitionId, bool caseSensitive)
         {
-            UnsafeHelpers.SkipParamInit(out fileSystem);
-
             if (!IsValidPartitionId(partitionId)) return ResultFs.InvalidArgument.Log();
 
-            if (Config.TryGetFileSystem(out IFileSystem fs, partitionId))
+            using var fileSystem = new SharedRef<IFileSystem>();
+            if (Config.TryGetFileSystem(ref fileSystem.Ref(), partitionId))
             {
-                fileSystem = new ReferenceCountedDisposable<IFileSystem>(fs);
+                outFileSystem.SetByMove(ref fileSystem.Ref());
                 return Result.Success;
             }
 
-            if (Config.RootFileSystem == null)
+            using var rootFileSystem = new SharedRef<IFileSystem>();
+
+            if (!Config.TryGetRootFileSystem(ref rootFileSystem.Ref()))
             {
                 return ResultFs.PreconditionViolation.Log();
             }
@@ -82,23 +82,12 @@ namespace LibHac.FsSrv.FsCreator
             rc = bisRootPath.Normalize(pathFlags);
             if (rc.IsFailure()) return rc;
 
-            ReferenceCountedDisposable<IFileSystem> partitionFileSystem = null;
-            ReferenceCountedDisposable<IFileSystem> sharedRootFs = null;
-            try
-            {
-                sharedRootFs = new ReferenceCountedDisposable<IFileSystem>(Config.RootFileSystem);
+            using var partitionFileSystem = new SharedRef<IFileSystem>();
+            rc = Utility.WrapSubDirectory(ref partitionFileSystem.Ref(), ref rootFileSystem.Ref(), in bisRootPath, true);
+            if (rc.IsFailure()) return rc;
 
-                rc = Utility.WrapSubDirectory(out partitionFileSystem, ref sharedRootFs, in bisRootPath, true);
-                if (rc.IsFailure()) return rc;
-
-                Shared.Move(out fileSystem, ref partitionFileSystem);
-                return Result.Success;
-            }
-            finally
-            {
-                partitionFileSystem?.Dispose();
-                sharedRootFs?.Dispose();
-            }
+            outFileSystem.SetByMove(ref partitionFileSystem.Ref());
+            return Result.Success;
         }
 
         public Result SetBisRoot(BisPartitionId partitionId, string rootPath)

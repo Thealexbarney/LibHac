@@ -81,7 +81,7 @@ namespace LibHac.Fs
     /// ensure a write buffer is allocated and copy the input path to it. <see cref="SetShallowBuffer"/> will
     /// directly use the input buffer without copying. If this method is used, the caller must ensure the path
     /// is normalized before passing it to <see cref="SetShallowBuffer"/>.</para>
-    /// <br/>Based on FS 12.0.3 (nnSdk 12.3.1)</remarks>
+    /// <para>Based on FS 12.1.0 (nnSdk 12.3.1)</para></remarks>
     [DebuggerDisplay("{" + nameof(ToString) + "(),nq}")]
     public ref struct Path
     {
@@ -1084,6 +1084,16 @@ namespace LibHac.Fs
 
     public static class PathFunctions
     {
+        /// <summary>
+        /// Initializes a <see cref="Path"/> with the provided basic path.
+        /// The provided path must be a normalized basic path starting with a directory separator
+        /// and not containing any sort of prefix such as a mount name.
+        /// </summary>
+        /// <param name="path">The <see cref="Path"/> to initialize.</param>
+        /// <param name="pathBuffer">The string used to initialize the <see cref="Path"/>.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.InvalidCharacter"/>: The path contains an invalid character.<br/>
+        /// <see cref="ResultFs.InvalidPathFormat"/>: The path is in an invalid format or is not normalized.</returns>
         public static Result SetUpFixedPath(ref Path path, ReadOnlySpan<byte> pathBuffer)
         {
             Result rc = PathNormalizer.IsNormalized(out bool isNormalized, out _, pathBuffer);
@@ -1101,6 +1111,14 @@ namespace LibHac.Fs
         // Only a small number of format strings are used with these functions, so we can hard code them all easily.
 
         // /%s
+        /// <summary>
+        /// Initializes a <see cref="Path"/> using the format string <c>/%s</c>
+        /// </summary>
+        /// <param name="path">The <see cref="Path"/> to be initialized.</param>
+        /// <param name="pathBuffer">The buffer that will contain the built string.</param>
+        /// <param name="entryName">The first entry in the generated path.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.InvalidArgument"/>: <paramref name="pathBuffer"/> was too small to contain the built path.</returns>
         internal static Result SetUpFixedPathSingleEntry(ref Path path, Span<byte> pathBuffer,
             ReadOnlySpan<byte> entryName)
         {
@@ -1114,6 +1132,15 @@ namespace LibHac.Fs
         }
 
         // /%s/%s
+        /// <summary>
+        /// Initializes a <see cref="Path"/> using the format string <c>/%s/%s</c>
+        /// </summary>
+        /// <param name="path">The <see cref="Path"/> to be initialized.</param>
+        /// <param name="pathBuffer">The buffer that will contain the built string.</param>
+        /// <param name="entryName1">The first entry in the generated path.</param>
+        /// <param name="entryName2">The second entry in the generated path.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.InvalidArgument"/>: <paramref name="pathBuffer"/> was too small to contain the built path.</returns>
         internal static Result SetUpFixedPathDoubleEntry(ref Path path, Span<byte> pathBuffer,
             ReadOnlySpan<byte> entryName1, ReadOnlySpan<byte> entryName2)
         {
@@ -1128,6 +1155,14 @@ namespace LibHac.Fs
         }
 
         // /%016llx
+        /// <summary>
+        /// Initializes a <see cref="Path"/> using the format string <c>/%016llx</c>
+        /// </summary>
+        /// <param name="path">The <see cref="Path"/> to be initialized.</param>
+        /// <param name="pathBuffer">The buffer that will contain the built string.</param>
+        /// <param name="saveDataId">The save data ID to insert into the path.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.InvalidArgument"/>: <paramref name="pathBuffer"/> was too small to contain the built path.</returns>
         internal static Result SetUpFixedPathSaveId(ref Path path, Span<byte> pathBuffer, ulong saveDataId)
         {
             var sb = new U8StringBuilder(pathBuffer);
@@ -1140,6 +1175,14 @@ namespace LibHac.Fs
         }
 
         // /%08x.meta
+        /// <summary>
+        /// Initializes a <see cref="Path"/> using the format string <c>/%08x.meta</c>
+        /// </summary>
+        /// <param name="path">The <see cref="Path"/> to be initialized.</param>
+        /// <param name="pathBuffer">The buffer that will contain the built string.</param>
+        /// <param name="metaType">The <see cref="SaveDataMetaType"/> to insert into the path.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.InvalidArgument"/>: <paramref name="pathBuffer"/> was too small to contain the built path.</returns>
         internal static Result SetUpFixedPathSaveMetaName(ref Path path, Span<byte> pathBuffer, uint metaType)
         {
             ReadOnlySpan<byte> metaExtension = new[] { (byte)'.', (byte)'m', (byte)'e', (byte)'t', (byte)'a' };  // ".meta"
@@ -1154,6 +1197,14 @@ namespace LibHac.Fs
         }
 
         // /saveMeta/%016llx
+        /// <summary>
+        /// Initializes a <see cref="Path"/> using the format string <c>/saveMeta/%016llx</c>
+        /// </summary>
+        /// <param name="path">The <see cref="Path"/> to be initialized.</param>
+        /// <param name="pathBuffer">The buffer that will contain the built string.</param>
+        /// <param name="saveDataId">The save data ID to insert into the path.</param>
+        /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+        /// <see cref="ResultFs.InvalidArgument"/>: <paramref name="pathBuffer"/> was too small to contain the built path.</returns>
         internal static Result SetUpFixedPathSaveMetaDir(ref Path path, Span<byte> pathBuffer, ulong saveDataId)
         {
             ReadOnlySpan<byte> metaDirectoryName = new[]

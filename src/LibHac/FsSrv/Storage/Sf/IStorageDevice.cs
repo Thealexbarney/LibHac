@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs;
 
 namespace LibHac.FsSrv.Storage.Sf
@@ -7,7 +8,7 @@ namespace LibHac.FsSrv.Storage.Sf
     {
         Result GetHandle(out uint handle);
         Result IsHandleValid(out bool isValid);
-        Result OpenOperator(out ReferenceCountedDisposable<IStorageDeviceOperator> deviceOperator);
+        Result OpenOperator(ref SharedRef<IStorageDeviceOperator> outDeviceOperator);
         Result Read(long offset, Span<byte> destination);
         Result Write(long offset, ReadOnlySpan<byte> source);
         Result Flush();

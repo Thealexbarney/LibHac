@@ -16,7 +16,7 @@ namespace LibHac.Fs
             if (destination.Length == 0)
                 return Result.Success;
 
-            if (!IsRangeValid(offset, destination.Length, StorageBuffer.Length))
+            if (!CheckAccessRange(offset, destination.Length, StorageBuffer.Length))
                 return ResultFs.OutOfRange.Log();
 
             StorageBuffer.AsSpan((int)offset, destination.Length).CopyTo(destination);
@@ -29,7 +29,7 @@ namespace LibHac.Fs
             if (source.Length == 0)
                 return Result.Success;
 
-            if (!IsRangeValid(offset, source.Length, StorageBuffer.Length))
+            if (!CheckAccessRange(offset, source.Length, StorageBuffer.Length))
                 return ResultFs.OutOfRange.Log();
 
             source.CopyTo(StorageBuffer.AsSpan((int)offset));

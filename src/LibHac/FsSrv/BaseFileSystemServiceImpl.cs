@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSrv.FsCreator;
 using LibHac.FsSrv.Impl;
@@ -12,7 +13,7 @@ namespace LibHac.FsSrv
     {
         private Configuration _config;
 
-        public delegate Result BisWiperCreator(out IWiper wiper, NativeHandle transferMemoryHandle,
+        public delegate Result BisWiperCreator(ref UniqueRef<IWiper> outWiper, NativeHandle transferMemoryHandle,
             ulong transferMemorySize);
 
         public BaseFileSystemServiceImpl(in Configuration configuration)
@@ -34,23 +35,26 @@ namespace LibHac.FsSrv
             public FileSystemServer FsServer;
         }
 
-        public Result OpenBaseFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
-            BaseFileSystemId fileSystemId)
+        public Result OpenBaseFileSystem(ref SharedRef<IFileSystem> outFileSystem, BaseFileSystemId fileSystemId)
         {
             throw new NotImplementedException();
         }
 
-        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
-            BisPartitionId partitionId)
+        public Result FormatBaseFileSystem(BaseFileSystemId fileSystemId)
         {
-            return OpenBisFileSystem(out fileSystem, partitionId, false);
+            throw new NotImplementedException();
         }
 
-        public Result OpenBisFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem,
-            BisPartitionId partitionId, bool caseSensitive)
+        public Result OpenBisFileSystem(ref SharedRef<IFileSystem> outFileSystem, BisPartitionId partitionId)
         {
-            Result rc = _config.BisFileSystemCreator.Create(out fileSystem, partitionId, caseSensitive);
-            if (rc.IsFailure()) return rc;
+            return OpenBisFileSystem(ref outFileSystem, partitionId, false);
+        }
+
+        public Result OpenBisFileSystem(ref SharedRef<IFileSystem> outFileSystem, BisPartitionId partitionId,
+            bool caseSensitive)
+        {
+            Result rc = _config.BisFileSystemCreator.Create(ref outFileSystem, partitionId, caseSensitive);
+            if (rc.IsFailure()) return rc.Miss();
 
             return Result.Success;
         }
@@ -65,33 +69,31 @@ namespace LibHac.FsSrv
             throw new NotImplementedException();
         }
 
-        public Result OpenGameCardFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, GameCardHandle handle,
+        public Result OpenGameCardFileSystem(ref SharedRef<IFileSystem> outFileSystem, GameCardHandle handle,
             GameCardPartition partitionId)
         {
-            Result rc;
-            int tries = 0;
+            const int maxTries = 2;
+            Result rc = Result.Success;
 
-            do
+            for (int i = 0; i < maxTries; i++)
             {
-                rc = _config.GameCardFileSystemCreator.Create(out fileSystem, handle, partitionId);
+                rc = _config.GameCardFileSystemCreator.Create(ref outFileSystem, handle, partitionId);
 
                 if (!ResultFs.DataCorrupted.Includes(rc))
                     break;
-
-                tries++;
-            } while (tries < 2);
+            }
 
             return rc;
         }
 
-        public Result OpenSdCardProxyFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem)
+        public Result OpenSdCardProxyFileSystem(ref SharedRef<IFileSystem> outFileSystem)
         {
-            return OpenSdCardProxyFileSystem(out fileSystem, false);
+            return OpenSdCardProxyFileSystem(ref outFileSystem, false);
         }
 
-        public Result OpenSdCardProxyFileSystem(out ReferenceCountedDisposable<IFileSystem> fileSystem, bool openCaseSensitive)
+        public Result OpenSdCardProxyFileSystem(ref SharedRef<IFileSystem> outFileSystem, bool openCaseSensitive)
         {
-            return _config.SdCardFileSystemCreator.Create(out fileSystem, openCaseSensitive);
+            return _config.SdCardFileSystemCreator.Create(ref outFileSystem, openCaseSensitive);
         }
 
         public Result FormatSdCardProxyFileSystem()
@@ -110,9 +112,10 @@ namespace LibHac.FsSrv
             return false;
         }
 
-        public Result OpenBisWiper(out IWiper wiper, NativeHandle transferMemoryHandle, ulong transferMemorySize)
+        public Result OpenBisWiper(ref UniqueRef<IWiper> outBisWiper, NativeHandle transferMemoryHandle,
+            ulong transferMemorySize)
         {
-            return _config.BisWiperCreator(out wiper, transferMemoryHandle, transferMemorySize);
+            return _config.BisWiperCreator(ref outBisWiper, transferMemoryHandle, transferMemorySize);
         }
 
         internal Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)

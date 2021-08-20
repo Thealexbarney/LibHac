@@ -1219,10 +1219,11 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 6,8,,,,InvalidHandle,
 6,1023,,,,InternalError,
 
+8,1,,,,ResolverNotFound,
 8,2,,,,ProgramNotFound,
 8,3,,,,DataNotFound,
-8,4,,,,UnknownStorageId,
-8,5,,,,LocationResolverNotFound,
+8,4,,,,UnknownResolver,
+8,5,,,,ApplicationNotFound,
 8,6,,,,HtmlDocumentNotFound,
 8,7,,,,AddOnContentNotFound,
 8,8,,,,ControlNotFound,

@@ -110,6 +110,28 @@ namespace LibHac
             return this;
         }
 
+        public Result Handle()
+        {
+            return this;
+        }
+
+        public Result Rethrow()
+        {
+            return this;
+        }
+
+        public Result Catch()
+        {
+            return this;
+        }
+
+        public Result Miss()
+        {
+            MissImpl();
+
+            return this;
+        }
+
         public bool TryGetResultName(out string name)
         {
             IResultNameResolver resolver = NameResolver;
@@ -174,6 +196,12 @@ namespace LibHac
         private void LogConvertedImpl(Result originalResult)
         {
             Logger?.LogConvertedResult(this, originalResult);
+        }
+
+        [Conditional("DEBUG")]
+        private void MissImpl()
+        {
+
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -298,6 +326,26 @@ namespace LibHac
             public Result LogConverted(Result originalResult)
             {
                 return Value.LogConverted(originalResult);
+            }
+
+            public Result Handle()
+            {
+                return Value.Handle();
+            }
+
+            public Result Rethrow()
+            {
+                return Value.Rethrow();
+            }
+
+            public Result Catch()
+            {
+                return Value.Catch();
+            }
+
+            public Result Miss()
+            {
+                return Value.Miss();
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

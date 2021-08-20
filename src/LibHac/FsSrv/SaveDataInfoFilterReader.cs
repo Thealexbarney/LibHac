@@ -2,23 +2,21 @@
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
-using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 using LibHac.Sf;
 using LibHac.Util;
 
 namespace LibHac.FsSrv
 {
-    internal class SaveDataInfoFilterReader : SaveDataInfoReaderImpl, ISaveDataInfoReader
+    internal class SaveDataInfoFilterReader : SaveDataInfoReaderImpl
     {
-        private ReferenceCountedDisposable<SaveDataInfoReaderImpl> Reader { get; }
-        private SaveDataInfoFilter InfoFilter { get; }
+        private SharedRef<SaveDataInfoReaderImpl> _reader;
+        private SaveDataInfoFilter _infoFilter;
 
-        public SaveDataInfoFilterReader(ReferenceCountedDisposable<SaveDataInfoReaderImpl> reader,
-            in SaveDataInfoFilter infoFilter)
+        public SaveDataInfoFilterReader(ref SharedRef<SaveDataInfoReaderImpl> reader, in SaveDataInfoFilter infoFilter)
         {
-            Reader = reader.AddReference();
-            InfoFilter = infoFilter;
+            _reader = SharedRef<SaveDataInfoReaderImpl>.CreateMove(ref reader);
+            _infoFilter = infoFilter;
         }
 
         public Result Read(out long readCount, OutBuffer saveDataInfoBuffer)
@@ -30,7 +28,7 @@ namespace LibHac.FsSrv
             SaveDataInfo tempInfo = default;
             Span<byte> tempInfoBytes = SpanHelpers.AsByteSpan(ref tempInfo);
 
-            SaveDataInfoReaderImpl reader = Reader.Target;
+            SaveDataInfoReaderImpl reader = _reader.Get;
             int count = 0;
 
             while (count < outInfo.Length)
@@ -40,7 +38,7 @@ namespace LibHac.FsSrv
 
                 if (baseReadCount == 0) break;
 
-                if (InfoFilter.Includes(in tempInfo))
+                if (_infoFilter.Includes(in tempInfo))
                 {
                     outInfo[count] = tempInfo;
 
@@ -55,7 +53,7 @@ namespace LibHac.FsSrv
 
         public void Dispose()
         {
-            Reader?.Dispose();
+            _reader.Destroy();
         }
     }
 
