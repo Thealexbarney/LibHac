@@ -336,35 +336,10 @@ namespace LibHac.FsSystem
             Result rc = ResolveFullPath(out string fullPath, in path, true);
             if (rc.IsFailure()) return rc;
 
-            foreach (string file in Directory.EnumerateFiles(fullPath))
-            {
-                rc = TargetLockedAvoidance.RetryToAvoidTargetLocked(
-                    () =>
-                    {
-                        rc = GetFileInfo(out FileInfo fileInfo, file);
-                        if (rc.IsFailure()) return rc;
+            rc = GetDirInfo(out DirectoryInfo dir, fullPath);
+            if (rc.IsFailure()) return rc;
 
-                        return DeleteFileInternal(fileInfo);
-                    }, _fsClient);
-
-                if (rc.IsFailure()) return rc;
-            }
-
-            foreach (string dir in Directory.EnumerateDirectories(fullPath))
-            {
-                rc = TargetLockedAvoidance.RetryToAvoidTargetLocked(
-                    () =>
-                    {
-                        rc = GetDirInfo(out DirectoryInfo dirInfo, dir);
-                        if (rc.IsFailure()) return rc;
-
-                        return DeleteDirectoryInternal(dirInfo, true);
-                    }, _fsClient);
-
-                if (rc.IsFailure()) return rc;
-            }
-
-            return Result.Success;
+            return CleanDirectoryInternal(dir, _fsClient);
         }
 
         protected override Result DoDeleteFile(in Path path)
@@ -636,6 +611,32 @@ namespace LibHac.FsSystem
             try
             {
                 stream.SetLength(size);
+            }
+            catch (Exception ex) when (ex.HResult < 0)
+            {
+                return HResult.HResultToHorizonResult(ex.HResult).Log();
+            }
+
+            return Result.Success;
+        }
+
+        private static Result CleanDirectoryInternal(DirectoryInfo dir, FileSystemClient fsClient)
+        {
+            try
+            {
+                foreach (FileInfo fileInfo in dir.EnumerateFiles())
+                {
+                    Result rc = TargetLockedAvoidance.RetryToAvoidTargetLocked(() => DeleteFileInternal(fileInfo),
+                        fsClient);
+                    if (rc.IsFailure()) return rc;
+                }
+
+                foreach (DirectoryInfo dirInfo in dir.EnumerateDirectories())
+                {
+                    Result rc = TargetLockedAvoidance.RetryToAvoidTargetLocked(() => DeleteDirectoryInternal(dirInfo, true),
+                        fsClient);
+                    if (rc.IsFailure()) return rc;
+                }
             }
             catch (Exception ex) when (ex.HResult < 0)
             {
