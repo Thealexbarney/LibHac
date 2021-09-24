@@ -88,7 +88,7 @@ namespace LibHac.FsSrv
             baseStorageConfig.BisStorageCreator = config.FsCreators.BuiltInStorageCreator;
             baseStorageConfig.GameCardStorageCreator = config.FsCreators.GameCardStorageCreator;
             baseStorageConfig.FsServer = server;
-            baseStorageConfig.DeviceOperator = new SharedRef<IDeviceOperator>(config.DeviceOperator);
+            baseStorageConfig.DeviceOperator = config.DeviceOperator;
             var baseStorageService = new BaseStorageServiceImpl(in baseStorageConfig);
 
             var timeService = new TimeServiceImpl(server);

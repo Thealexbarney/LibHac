@@ -386,8 +386,7 @@ namespace LibHac.FsSrv
         {
             Assert.SdkRequires(Globals.Mutex.IsLockedByCurrentThread());
 
-            var entry = new Entry(ref storage, spaceId, saveDataId);
-            _entryList.AddLast(entry);
+            _entryList.AddLast(new Entry(ref storage, spaceId, saveDataId));
 
             return Result.Success;
         }

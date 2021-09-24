@@ -14,7 +14,7 @@ namespace LibHac.FsSrv.Impl
         protected DeepRetryFileSystem(ref SharedRef<IFileSystem> baseFileSystem,
             ref SharedRef<IRomFileSystemAccessFailureManager> accessFailureManager) : base(ref baseFileSystem)
         {
-            _accessFailureManager = Shared.Move(ref accessFailureManager);
+            _accessFailureManager = SharedRef<IRomFileSystemAccessFailureManager>.CreateMove(ref accessFailureManager);
         }
 
         public static SharedRef<IFileSystem> CreateShared(ref SharedRef<IFileSystem> baseFileSystem,

@@ -155,7 +155,7 @@ namespace LibHac.FsSrv
                 {
                     if (type == FileSystemProxyType.Package)
                     {
-                        outFileSystem = nspFileSystem;
+                        outFileSystem.SetByMove(ref nspFileSystem.Ref());
                         return Result.Success;
                     }
 
@@ -649,7 +649,7 @@ namespace LibHac.FsSrv
             switch (fsType)
             {
                 case FileSystemProxyType.Package:
-                    outFileSystem = baseFileSystem;
+                    outFileSystem.SetByMove(ref baseFileSystem);
                     return Result.Success;
 
                 case FileSystemProxyType.Code:

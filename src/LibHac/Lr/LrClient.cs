@@ -18,7 +18,7 @@ namespace LibHac.Lr
         }
     }
 
-    internal struct LrClientGlobals
+    internal struct LrClientGlobals : IDisposable
     {
         public HorizonClient Hos;
         public LrServiceGlobals LrService;

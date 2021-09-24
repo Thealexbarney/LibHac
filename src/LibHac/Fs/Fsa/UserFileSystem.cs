@@ -573,7 +573,7 @@ namespace LibHac.Fs.Fsa
                 rc = fileSystem.OpenDirectory(ref accessor.Ref(), subPath, mode);
                 Tick end = fs.Hos.Os.GetSystemTick();
 
-                fs.Impl.OutputAccessLog(rc, start, end, accessor, new U8Span(logBuffer));
+                fs.Impl.OutputAccessLog(rc, start, end, accessor.Get, new U8Span(logBuffer));
             }
             else
             {
