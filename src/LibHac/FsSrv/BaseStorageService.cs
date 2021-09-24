@@ -180,9 +180,13 @@ namespace LibHac.FsSrv
     {
         private Configuration _config;
 
+        // LibHac addition
+        private SharedRef<IDeviceOperator> _deviceOperator;
+
         public BaseStorageServiceImpl(in Configuration configuration)
         {
             _config = configuration;
+            _deviceOperator = new SharedRef<IDeviceOperator>(configuration.DeviceOperator);
         }
 
         public struct Configuration
@@ -193,7 +197,7 @@ namespace LibHac.FsSrv
             // LibHac additions
             public FileSystemServer FsServer;
             // Todo: The DeviceOperator in FS uses mostly global state. Decide how to handle this.
-            public SharedRef<IDeviceOperator> DeviceOperator;
+            public IDeviceOperator DeviceOperator;
         }
 
         internal Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
@@ -232,7 +236,7 @@ namespace LibHac.FsSrv
         internal Result OpenDeviceOperator(ref SharedRef<IDeviceOperator> outDeviceOperator,
             AccessControl accessControl)
         {
-            outDeviceOperator.SetByCopy(ref _config.DeviceOperator);
+            outDeviceOperator.SetByCopy(ref _deviceOperator);
             return Result.Success;
         }
     }

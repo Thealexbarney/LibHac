@@ -229,10 +229,7 @@ namespace LibHac.Fs.Fsa
         public Result OpenFile(ref UniqueRef<IFile> file, in Path path, OpenMode mode)
         {
             if ((mode & OpenMode.ReadWrite) == 0 || (mode & ~OpenMode.All) != 0)
-            {
-                UnsafeHelpers.SkipParamInit(out file);
                 return ResultFs.InvalidOpenMode.Log();
-            }
 
             return DoOpenFile(ref file, in path, mode);
         }

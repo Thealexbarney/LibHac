@@ -8,7 +8,7 @@ using LibHac.Sm;
 
 namespace LibHac
 {
-    public class HorizonClient
+    public class HorizonClient : IDisposable
     {
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         private Horizon Horizon { get; }
@@ -35,6 +35,12 @@ namespace LibHac
             Lr = new LrClient(this);
 
             ArpLazy = new Lazy<ArpClient>(InitArpClient, true);
+        }
+
+        public void Dispose()
+        {
+            Fs.Dispose();
+            Lr.Dispose();
         }
 
         private ArpClient InitArpClient()

@@ -1,9 +1,10 @@
-﻿using LibHac.Common;
+﻿using System;
+using LibHac.Common;
 using LibHac.FsSrv.Sf;
 
 namespace LibHac.Fs.Shim
 {
-    internal struct FileSystemProxyServiceObjectGlobals
+    internal struct FileSystemProxyServiceObjectGlobals : IDisposable
     {
         public nint FileSystemProxyServiceObjectInitGuard;
         public SharedRef<IFileSystemProxy> FileSystemProxyServiceObject;
@@ -15,6 +16,20 @@ namespace LibHac.Fs.Shim
         public SharedRef<IProgramRegistry> ProgramRegistryServiceObject;
 
         public SharedRef<IFileSystemProxy> DfcFileSystemProxyServiceObject;
+
+        public void Dispose()
+        {
+            FileSystemProxyServiceObject.Destroy();
+            FileSystemProxyServiceObjectInitGuard = default;
+
+            FileSystemProxyForLoaderServiceObject.Destroy();
+            FileSystemProxyForLoaderServiceObjectInitGuard = default;
+
+            ProgramRegistryServiceObject.Destroy();
+            ProgramRegistryServiceObjectInitGuard = default;
+
+            DfcFileSystemProxyServiceObject.Destroy();
+        }
     }
 
     public static class FileSystemProxyServiceObject

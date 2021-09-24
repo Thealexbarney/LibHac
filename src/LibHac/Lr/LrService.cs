@@ -1,11 +1,12 @@
-﻿using LibHac.Common;
+﻿using System;
+using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Ncm;
 using LibHac.Os;
 
 namespace LibHac.Lr
 {
-    internal struct LrServiceGlobals
+    internal struct LrServiceGlobals : IDisposable
     {
         public SharedRef<ILocationResolverManager> LocationResolver;
         public SdkMutexType InitializationMutex;

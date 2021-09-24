@@ -60,7 +60,7 @@ namespace LibHac.FsSrv.Impl
             while (currentEntry is not null)
             {
                 ref Cache entry = ref currentEntry.ValueRef;
-                _accessorList.Remove(entry);
+                _accessorList.Remove(currentEntry);
                 entry.Dispose();
 
                 currentEntry = _accessorList.First;
@@ -69,15 +69,15 @@ namespace LibHac.FsSrv.Impl
             _accessorList.Clear();
         }
 
-        public Result Register(ref SharedRef<ISaveDataExtraDataAccessor> accessor,
-            SaveDataSpaceId spaceId, ulong saveDataId)
+        public Result Register(ref SharedRef<ISaveDataExtraDataAccessor> accessor, SaveDataSpaceId spaceId,
+            ulong saveDataId)
         {
-            var cache = new Cache(ref accessor, spaceId, saveDataId);
+            var node = new LinkedListNode<Cache>(new Cache(ref accessor, spaceId, saveDataId));
 
             using (ScopedLock.Lock(ref _mutex))
             {
                 UnregisterImpl(spaceId, saveDataId);
-                _accessorList.AddLast(cache);
+                _accessorList.AddLast(node);
             }
 
             return Result.Success;

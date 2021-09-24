@@ -1,10 +1,11 @@
-﻿using LibHac.Fs.Fsa;
+﻿using System;
+using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
 using LibHac.FsSystem;
 
 namespace LibHac.Fs
 {
-    public class FileSystemClient
+    public class FileSystemClient : IDisposable
     {
         internal FileSystemClientGlobals Globals;
 
@@ -15,9 +16,14 @@ namespace LibHac.Fs
         {
             Globals.Initialize(this, horizonClient);
         }
+
+        public void Dispose()
+        {
+            Globals.Dispose();
+        }
     }
 
-    internal struct FileSystemClientGlobals
+    internal struct FileSystemClientGlobals : IDisposable
     {
         public HorizonClient Hos;
         public object InitMutex;
@@ -36,6 +42,11 @@ namespace LibHac.Fs
             UserMountTable.Initialize(fsClient);
             FsContextHandler.Initialize(fsClient);
             DirectorySaveDataFileSystem.Initialize(fsClient);
+        }
+
+        public void Dispose()
+        {
+            FileSystemProxyServiceObject.Dispose();
         }
     }
 
