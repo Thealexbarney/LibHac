@@ -4,6 +4,8 @@ using System.Threading;
 using InlineIL;
 using LibHac.Diag;
 
+#pragma warning disable LH0001, LH0002, LH0003, LH0004, LH0005
+
 namespace LibHac.Common
 {
     public static class SharedRefExtensions
@@ -105,6 +107,7 @@ namespace LibHac.Common
         }
     }
 
+    [NonCopyableDisposable]
     public struct SharedRef<T> : IDisposable where T : class, IDisposable
     {
         // SharedRef and WeakRef should share a base type, but struct inheritance doesn't exist in C#.
@@ -300,6 +303,7 @@ namespace LibHac.Common
         }
     }
 
+    [NonCopyableDisposable]
     public struct WeakRef<T> : IDisposable where T : class, IDisposable
     {
         private T _value;

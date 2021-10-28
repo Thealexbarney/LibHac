@@ -15,6 +15,7 @@ namespace LibHac.Common
         }
     }
 
+    [NonCopyableDisposable]
     public struct UniqueRef<T> : IDisposable where T : class, IDisposable
     {
         private T _value;

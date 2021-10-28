@@ -455,7 +455,7 @@ namespace LibHac.FsSystem.Save
 
         public bool IsListStart()
         {
-            return Prev == int.MinValue;
+            return Prev == unchecked((int)0x80000000);
         }
 
         public bool IsListEnd()
@@ -485,12 +485,12 @@ namespace LibHac.FsSystem.Save
 
         public void MakeListStart()
         {
-            Prev = int.MinValue;
+            Prev = unchecked((int)0x80000000);
         }
 
         public bool IsRangeEntry()
         {
-            return Prev != int.MinValue && Prev < 0;
+            return Prev != unchecked((int)0x80000000) && Prev < 0;
         }
 
         public void MakeRangeEntry()

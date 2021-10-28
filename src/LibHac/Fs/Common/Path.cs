@@ -83,6 +83,7 @@ namespace LibHac.Fs
     /// is normalized before passing it to <see cref="SetShallowBuffer"/>.</para>
     /// <para>Based on FS 12.1.0 (nnSdk 12.3.1)</para></remarks>
     [DebuggerDisplay("{" + nameof(ToString) + "(),nq}")]
+    [NonCopyableDisposable]
     public ref struct Path
     {
         /// <summary>

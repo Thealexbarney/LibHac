@@ -268,7 +268,7 @@ namespace LibHac.FsSrv.Impl
             var adapter = new FileSystemInterfaceAdapter(ref baseFileSystem, allowAllOperations);
             using var sharedAdapter = new SharedRef<FileSystemInterfaceAdapter>(adapter);
 
-            adapter._selfReference = new WeakRef<FileSystemInterfaceAdapter>(ref sharedAdapter.Ref());
+            adapter._selfReference.Set(ref sharedAdapter.Ref());
 
             return SharedRef<IFileSystemSf>.CreateMove(ref sharedAdapter.Ref());
         }
@@ -279,7 +279,7 @@ namespace LibHac.FsSrv.Impl
             var adapter = new FileSystemInterfaceAdapter(ref baseFileSystem, flags, allowAllOperations);
             using var sharedAdapter = new SharedRef<FileSystemInterfaceAdapter>(adapter);
 
-            adapter._selfReference = new WeakRef<FileSystemInterfaceAdapter>(ref sharedAdapter.Ref());
+            adapter._selfReference.Set(ref sharedAdapter.Ref());
 
             return SharedRef<IFileSystemSf>.CreateMove(ref sharedAdapter.Ref());
         }
