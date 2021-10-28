@@ -107,7 +107,7 @@ namespace LibHac.Fs
         /// <param name="size">The size of the created SubStorage.</param>
         public SubStorage(ref SharedRef<IStorage> baseStorage, long offset, long size)
         {
-            BaseStorage = _sharedBaseStorage.Get;
+            BaseStorage = baseStorage.Get;
             _offset = offset;
             _size = size;
             _isResizable = false;
