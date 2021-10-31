@@ -204,6 +204,8 @@ namespace LibHac.FsSrv
                 serviceObject.SetByMove(ref derivedObject.Ref());
                 return Result.Success;
             }
+
+            public void Dispose() { }
         }
 
         private class FileSystemProxyForLoaderService : IServiceObject
@@ -221,6 +223,8 @@ namespace LibHac.FsSrv
                 serviceObject.SetByMove(ref derivedObject.Ref());
                 return Result.Success;
             }
+
+            public void Dispose() { }
         }
 
         private class ProgramRegistryService : IServiceObject
@@ -238,6 +242,8 @@ namespace LibHac.FsSrv
                 serviceObject.SetByMove(ref derivedObject.Ref());
                 return Result.Success;
             }
+
+            public void Dispose() { }
         }
 
         private class DummyStackUsageReporter : IStackUsageReporter
