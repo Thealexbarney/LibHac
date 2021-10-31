@@ -3,8 +3,8 @@
 namespace LibHac.Common
 {
     [AttributeUsage(AttributeTargets.Struct)]
-    public sealed class NonCopyableAttribute : System.Attribute { }
+    public sealed class NonCopyableAttribute : Attribute { }
 
     [AttributeUsage(AttributeTargets.Struct)]
-    public sealed class NonCopyableDisposableAttribute : System.Attribute { }
+    public sealed class NonCopyableDisposableAttribute : Attribute { }
 }

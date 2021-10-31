@@ -25,32 +25,28 @@ namespace LibHac.Bcat.Impl.Service
             Access = accessControl;
         }
 
-        public Result CreateFileService(out IDeliveryCacheFileService service)
+        public Result CreateFileService(ref SharedRef<IDeliveryCacheFileService> service)
         {
             lock (Locker)
             {
-                UnsafeHelpers.SkipParamInit(out service);
-
                 if (FileServiceOpenCount >= MaxOpenCount)
                     return ResultBcat.ServiceOpenLimitReached.Log();
 
-                service = new DeliveryCacheFileService(Server, this, ApplicationId, Access);
+                service.Reset(new DeliveryCacheFileService(Server, this, ApplicationId, Access));
 
                 FileServiceOpenCount++;
                 return Result.Success;
             }
         }
 
-        public Result CreateDirectoryService(out IDeliveryCacheDirectoryService service)
+        public Result CreateDirectoryService(ref SharedRef<IDeliveryCacheDirectoryService> service)
         {
             lock (Locker)
             {
-                UnsafeHelpers.SkipParamInit(out service);
-
                 if (DirectoryServiceOpenCount >= MaxOpenCount)
                     return ResultBcat.ServiceOpenLimitReached.Log();
 
-                service = new DeliveryCacheDirectoryService(Server, this, ApplicationId, Access);
+                service.Reset(new DeliveryCacheDirectoryService(Server, this, ApplicationId, Access));
 
                 DirectoryServiceOpenCount++;
                 return Result.Success;
