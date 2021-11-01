@@ -43,7 +43,7 @@ namespace LibHac.FsSrv
 
             // Wrap the service in a ref-counter and give the service a weak self-reference
             using var sharedService = new SharedRef<NcaFileSystemService>(ncaService);
-            ncaService._selfReference = new WeakRef<NcaFileSystemService>(ref sharedService.Ref());
+            ncaService._selfReference.Set(in sharedService);
 
             return SharedRef<NcaFileSystemService>.CreateMove(ref sharedService.Ref());
         }
@@ -154,7 +154,7 @@ namespace LibHac.FsSrv
                 new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref()));
 
             using SharedRef<IRomFileSystemAccessFailureManager> accessFailureManager =
-                SharedRef<IRomFileSystemAccessFailureManager>.Create(ref _selfReference);
+                SharedRef<IRomFileSystemAccessFailureManager>.Create(in _selfReference);
 
             using SharedRef<IFileSystem> retryFileSystem =
                 DeepRetryFileSystem.CreateShared(ref asyncFileSystem.Ref(), ref accessFailureManager.Ref());

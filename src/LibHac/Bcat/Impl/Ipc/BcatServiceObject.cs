@@ -20,7 +20,7 @@ namespace LibHac.Bcat.Impl.Ipc
 
         public Result GetServiceObject(ref SharedRef<IDisposable> serviceObject)
         {
-            serviceObject.SetByCopy(ref _serviceCreator);
+            serviceObject.SetByCopy(in _serviceCreator);
             return Result.Success;
         }
     }

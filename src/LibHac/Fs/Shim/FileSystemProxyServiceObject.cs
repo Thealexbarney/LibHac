@@ -4,6 +4,7 @@ using LibHac.FsSrv.Sf;
 
 namespace LibHac.Fs.Shim
 {
+    [NonCopyable]
     internal struct FileSystemProxyServiceObjectGlobals : IDisposable
     {
         public nint FileSystemProxyServiceObjectInitGuard;
@@ -46,7 +47,7 @@ namespace LibHac.Fs.Shim
                 g.FileSystemProxyServiceObject.SetByMove(ref createdObject.Ref());
             }
 
-            return SharedRef<IFileSystemProxy>.CreateCopy(ref g.FileSystemProxyServiceObject);
+            return SharedRef<IFileSystemProxy>.CreateCopy(in g.FileSystemProxyServiceObject);
         }
 
         private static SharedRef<IFileSystemProxy> GetFileSystemProxyServiceObjectImpl(FileSystemClientImpl fs)
@@ -56,7 +57,7 @@ namespace LibHac.Fs.Shim
 
             if (dfcServiceObject.HasValue)
             {
-                return SharedRef<IFileSystemProxy>.CreateCopy(ref dfcServiceObject);
+                return SharedRef<IFileSystemProxy>.CreateCopy(in dfcServiceObject);
             }
 
             using var fileSystemProxy = new SharedRef<IFileSystemProxy>();
@@ -84,7 +85,7 @@ namespace LibHac.Fs.Shim
                 g.FileSystemProxyForLoaderServiceObject.SetByMove(ref createdObject.Ref());
             }
 
-            return SharedRef<IFileSystemProxyForLoader>.CreateCopy(ref g.FileSystemProxyForLoaderServiceObject);
+            return SharedRef<IFileSystemProxyForLoader>.CreateCopy(in g.FileSystemProxyForLoaderServiceObject);
         }
 
         private static SharedRef<IFileSystemProxyForLoader> GetFileSystemProxyForLoaderServiceObjectImpl(
@@ -114,7 +115,7 @@ namespace LibHac.Fs.Shim
                 g.ProgramRegistryServiceObject.SetByMove(ref createdObject.Ref());
             }
 
-            return SharedRef<IProgramRegistry>.CreateCopy(ref g.ProgramRegistryServiceObject);
+            return SharedRef<IProgramRegistry>.CreateCopy(in g.ProgramRegistryServiceObject);
         }
 
         private static SharedRef<IProgramRegistry> GetProgramRegistryServiceObjectImpl(FileSystemClientImpl fs)

@@ -81,7 +81,10 @@ namespace LibHac.Boot
         private const int ModernStage1Size = 0x7000;
         private const int MarikoWarmBootPlainTextSectionSize = 0x330;
 
-        private IStorage BaseStorage { get; set; }
+        private SharedRef<IStorage> _baseStorage;
+        private SubStorage _pk11Storage;
+        private SubStorage _bodyStorage;
+
         private KeySet KeySet { get; set; }
 
         public bool IsModern { get; private set; }
@@ -94,8 +97,6 @@ namespace LibHac.Boot
         public byte KeyRevision { get; private set; }
 
         public int Pk11Size { get; private set; }
-        private IStorage Pk11Storage { get; set; }
-        private IStorage BodyStorage { get; set; }
 
         private Package1MarikoOemHeader _marikoOemHeader;
         private Package1MetaData _metaData;
@@ -109,13 +110,13 @@ namespace LibHac.Boot
         public ref readonly Package1Pk11Header Pk11Header => ref _pk11Header;
         public ref readonly Buffer16 Pk11Mac => ref _pk11Mac;
 
-        public Result Initialize(KeySet keySet, IStorage storage)
+        public Result Initialize(KeySet keySet, in SharedRef<IStorage> storage)
         {
             KeySet = keySet;
-            BaseStorage = storage;
+            _baseStorage.SetByCopy(in storage);
 
             // Read what might be a mariko header and check if it actually is a mariko header
-            Result rc = BaseStorage.Read(0, SpanHelpers.AsByteSpan(ref _marikoOemHeader));
+            Result rc = _baseStorage.Get.Read(0, SpanHelpers.AsByteSpan(ref _marikoOemHeader));
             if (rc.IsFailure()) return rc;
 
             IsMariko = IsMarikoImpl();
@@ -127,8 +128,11 @@ namespace LibHac.Boot
             }
             else
             {
-                BodyStorage = BaseStorage;
-                rc = BodyStorage.Read(0, SpanHelpers.AsByteSpan(ref _metaData));
+                rc = _baseStorage.Get.GetSize(out long baseStorageSize);
+                if (rc.IsFailure()) return rc.Miss();
+
+                _bodyStorage = new SubStorage(in _baseStorage, 0, baseStorageSize);
+                rc = _bodyStorage.Read(0, SpanHelpers.AsByteSpan(ref _metaData));
                 if (rc.IsFailure()) return rc;
             }
 
@@ -169,7 +173,7 @@ namespace LibHac.Boot
                 return ResultLibHac.InvalidPackage1MarikoBodySize.Log();
 
             // Verify the body storage size is not smaller than the size in the header
-            Result rc = BaseStorage.GetSize(out long totalSize);
+            Result rc = _baseStorage.Get.GetSize(out long totalSize);
             if (rc.IsFailure()) return rc;
 
             long bodySize = totalSize - Unsafe.SizeOf<Package1MarikoOemHeader>();
@@ -177,7 +181,7 @@ namespace LibHac.Boot
                 return ResultLibHac.InvalidPackage1MarikoBodySize.Log();
 
             // Create body SubStorage and metadata buffers
-            var bodySubStorage = new SubStorage(BaseStorage, Unsafe.SizeOf<Package1MarikoOemHeader>(), bodySize);
+            var bodySubStorage = new SubStorage(in _baseStorage, Unsafe.SizeOf<Package1MarikoOemHeader>(), bodySize);
 
             Span<Package1MetaData> metaData = stackalloc Package1MetaData[2];
             Span<byte> metaData1 = SpanHelpers.AsByteSpan(ref metaData[0]);
@@ -189,7 +193,7 @@ namespace LibHac.Boot
 
             // Set the body storage and decrypted metadata
             _metaData = metaData[0];
-            BodyStorage = bodySubStorage;
+            _bodyStorage = bodySubStorage;
 
             // The plaintext metadata is followed by an encrypted copy
             // If these two match then the body is already decrypted
@@ -208,7 +212,8 @@ namespace LibHac.Boot
             if (IsDecrypted)
             {
                 var decStorage = new AesCbcStorage(bodySubStorage, KeySet.MarikoBek, _metaData.Iv, true);
-                BodyStorage = new CachedStorage(decStorage, 0x4000, 1, true);
+                var cachedStorage = new CachedStorage(decStorage, 0x4000, 1, true);
+                _bodyStorage = new SubStorage(cachedStorage, 0, bodySize);
             }
 
             return Result.Success;
@@ -236,7 +241,7 @@ namespace LibHac.Boot
             // Read the package1ldr footer
             int footerOffset = stage1Size - Unsafe.SizeOf<Package1Stage1Footer>();
 
-            Result rc = BodyStorage.Read(footerOffset, SpanHelpers.AsByteSpan(ref _stage1Footer));
+            Result rc = _bodyStorage.Read(footerOffset, SpanHelpers.AsByteSpan(ref _stage1Footer));
             if (rc.IsFailure()) return rc;
 
             // Get the PK11 size from the field in the unencrypted stage 1 footer
@@ -249,12 +254,12 @@ namespace LibHac.Boot
         {
             int pk11Offset = IsModern ? ModernStage1Size : LegacyStage1Size;
 
-            return BodyStorage.Read(pk11Offset, SpanHelpers.AsByteSpan(ref _pk11Header));
+            return _bodyStorage.Read(pk11Offset, SpanHelpers.AsByteSpan(ref _pk11Header));
         }
 
         private Result ReadModernEristaMac()
         {
-            return BaseStorage.Read(ModernStage1Size + Pk11Size, _pk11Mac.Bytes);
+            return _baseStorage.Get.Read(ModernStage1Size + Pk11Size, _pk11Mac.Bytes);
         }
 
         private Result SetPk11Storage()
@@ -262,7 +267,7 @@ namespace LibHac.Boot
             // Read the PK11 header from the body storage
             int pk11Offset = IsModern ? ModernStage1Size : LegacyStage1Size;
 
-            Result rc = BodyStorage.Read(pk11Offset, SpanHelpers.AsByteSpan(ref _pk11Header));
+            Result rc = _bodyStorage.Read(pk11Offset, SpanHelpers.AsByteSpan(ref _pk11Header));
             if (rc.IsFailure()) return rc;
 
             // Check if PK11 is already decrypted, creating the PK11 storage if it is
@@ -270,11 +275,11 @@ namespace LibHac.Boot
 
             if (IsDecrypted)
             {
-                Pk11Storage = new SubStorage(BodyStorage, pk11Offset, Pk11Size);
+                _pk11Storage = new SubStorage(_bodyStorage, pk11Offset, Pk11Size);
                 return Result.Success;
             }
 
-            var encPk11Storage = new SubStorage(BodyStorage, pk11Offset, Pk11Size);
+            var encPk11Storage = new SubStorage(_bodyStorage, pk11Offset, Pk11Size);
 
             // See if we have an Erista package1 key that can decrypt this PK11
             if (!IsMariko && TryFindEristaKeyRevision())
@@ -293,13 +298,13 @@ namespace LibHac.Boot
                         KeySet.Package1Keys[KeyRevision].DataRo.ToArray(), _stage1Footer.Iv.ToArray(), true);
                 }
 
-                Pk11Storage = new CachedStorage(decPk11Storage, 0x4000, 1, true);
+                _pk11Storage = new SubStorage(new CachedStorage(decPk11Storage, 0x4000, 1, true), 0, Pk11Size);
 
                 return Result.Success;
             }
 
             // We can't decrypt the PK11. Set Pk11Storage to the encrypted PK11 storage
-            Pk11Storage = encPk11Storage;
+            _pk11Storage = encPk11Storage;
             return Result.Success;
         }
 
@@ -375,15 +380,15 @@ namespace LibHac.Boot
 
                 // The metadata at the start of the body is unencrypted, so don't take its data from the decrypted
                 // body storage
-                storages.Add(new SubStorage(BaseStorage, 0, Unsafe.SizeOf<Package1MarikoOemHeader>() + metaSize));
-                storages.Add(new SubStorage(BodyStorage, metaSize, _marikoOemHeader.Size - metaSize));
+                storages.Add(new SubStorage(in _baseStorage, 0, Unsafe.SizeOf<Package1MarikoOemHeader>() + metaSize));
+                storages.Add(new SubStorage(_bodyStorage, metaSize, _marikoOemHeader.Size - metaSize));
             }
             else
             {
                 int stage1Size = IsModern ? ModernStage1Size : LegacyStage1Size;
 
-                storages.Add(new SubStorage(BaseStorage, 0, stage1Size));
-                storages.Add(Pk11Storage);
+                storages.Add(new SubStorage(in _baseStorage, 0, stage1Size));
+                storages.Add(_pk11Storage);
 
                 if (IsModern)
                 {
@@ -429,7 +434,7 @@ namespace LibHac.Boot
             int offset = Unsafe.SizeOf<Package1Pk11Header>() + GetSectionOffset(sectionType);
             int size = GetSectionSize(sectionType);
 
-            return new SubStorage(Pk11Storage, offset, size);
+            return new SubStorage(_pk11Storage, offset, size);
         }
 
 

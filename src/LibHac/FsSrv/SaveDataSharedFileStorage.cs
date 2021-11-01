@@ -271,6 +271,7 @@ namespace LibHac.FsSrv
     /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1).</remarks>
     public class SaveDataFileStorageHolder
     {
+        [NonCopyable]
         private struct Entry
         {
             private SharedRef<SaveDataOpenTypeSetFileStorage> _storage;
@@ -297,7 +298,7 @@ namespace LibHac.FsSrv
 
             public SharedRef<SaveDataOpenTypeSetFileStorage> GetStorage()
             {
-                return SharedRef<SaveDataOpenTypeSetFileStorage>.CreateCopy(ref _storage);
+                return SharedRef<SaveDataOpenTypeSetFileStorage>.CreateCopy(in _storage);
             }
         }
 
@@ -370,7 +371,7 @@ namespace LibHac.FsSrv
                 if (rc.IsFailure()) return rc;
 
                 using SharedRef<SaveDataOpenTypeSetFileStorage> baseFileStorageCopy =
-                    SharedRef<SaveDataOpenTypeSetFileStorage>.CreateCopy(ref baseFileStorage.Ref());
+                    SharedRef<SaveDataOpenTypeSetFileStorage>.CreateCopy(in baseFileStorage);
 
                 rc = Register(ref baseFileStorageCopy.Ref(), spaceId, saveDataId);
                 if (rc.IsFailure()) return rc;

@@ -268,7 +268,7 @@ namespace LibHac.FsSrv.Impl
             var adapter = new FileSystemInterfaceAdapter(ref baseFileSystem, allowAllOperations);
             using var sharedAdapter = new SharedRef<FileSystemInterfaceAdapter>(adapter);
 
-            adapter._selfReference.Set(ref sharedAdapter.Ref());
+            adapter._selfReference.Set(in sharedAdapter);
 
             return SharedRef<IFileSystemSf>.CreateMove(ref sharedAdapter.Ref());
         }
@@ -279,7 +279,7 @@ namespace LibHac.FsSrv.Impl
             var adapter = new FileSystemInterfaceAdapter(ref baseFileSystem, flags, allowAllOperations);
             using var sharedAdapter = new SharedRef<FileSystemInterfaceAdapter>(adapter);
 
-            adapter._selfReference.Set(ref sharedAdapter.Ref());
+            adapter._selfReference.Set(in sharedAdapter);
 
             return SharedRef<IFileSystemSf>.CreateMove(ref sharedAdapter.Ref());
         }
@@ -498,7 +498,7 @@ namespace LibHac.FsSrv.Impl
             if (rc.IsFailure()) return rc;
 
             using SharedRef<FileSystemInterfaceAdapter> selfReference =
-                SharedRef<FileSystemInterfaceAdapter>.Create(ref _selfReference);
+                SharedRef<FileSystemInterfaceAdapter>.Create(in _selfReference);
 
             var adapter = new FileInterfaceAdapter(ref file.Ref(), ref selfReference.Ref(), _allowAllOperations);
             outFile.Reset(adapter);
@@ -529,7 +529,7 @@ namespace LibHac.FsSrv.Impl
             if (rc.IsFailure()) return rc;
 
             using SharedRef<FileSystemInterfaceAdapter> selfReference =
-                SharedRef<FileSystemInterfaceAdapter>.Create(ref _selfReference);
+                SharedRef<FileSystemInterfaceAdapter>.Create(in _selfReference);
 
             var adapter = new DirectoryInterfaceAdapter(ref directory.Ref(), ref selfReference.Ref());
             outDirectory.Reset(adapter);
@@ -590,7 +590,7 @@ namespace LibHac.FsSrv.Impl
 
         public Result GetImpl(ref SharedRef<IFileSystem> fileSystem)
         {
-            fileSystem.SetByCopy(ref _baseFileSystem);
+            fileSystem.SetByCopy(in _baseFileSystem);
             return Result.Success;
         }
     }

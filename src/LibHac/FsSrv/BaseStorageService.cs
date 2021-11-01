@@ -236,7 +236,7 @@ namespace LibHac.FsSrv
         internal Result OpenDeviceOperator(ref SharedRef<IDeviceOperator> outDeviceOperator,
             AccessControl accessControl)
         {
-            outDeviceOperator.SetByCopy(ref _deviceOperator);
+            outDeviceOperator.SetByCopy(in _deviceOperator);
             return Result.Success;
         }
     }

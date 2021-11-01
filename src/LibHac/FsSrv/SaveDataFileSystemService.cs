@@ -44,10 +44,10 @@ namespace LibHac.FsSrv
         private HorizonClient Hos => _serviceImpl.Hos;
 
         private SharedRef<SaveDataFileSystemService> GetSharedFromThis() =>
-            SharedRef<SaveDataFileSystemService>.Create(ref _selfReference);
+            SharedRef<SaveDataFileSystemService>.Create(in _selfReference);
 
         private SharedRef<ISaveDataMultiCommitCoreInterface> GetSharedMultiCommitInterfaceFromThis() =>
-            SharedRef<ISaveDataMultiCommitCoreInterface>.Create(ref _selfReference);
+            SharedRef<ISaveDataMultiCommitCoreInterface>.Create(in _selfReference);
 
         public SaveDataFileSystemService(SaveDataFileSystemServiceImpl serviceImpl, ulong processId)
         {
@@ -64,7 +64,7 @@ namespace LibHac.FsSrv
 
             // Wrap the service in a ref-counter and give the service a weak self-reference
             using var sharedService = new SharedRef<SaveDataFileSystemService>(saveService);
-            saveService._selfReference = WeakRef<SaveDataFileSystemService>.Create(ref sharedService.Ref());
+            saveService._selfReference.Set(in sharedService);
 
             return SharedRef<SaveDataFileSystemService>.CreateMove(ref sharedService.Ref());
         }
@@ -1088,7 +1088,7 @@ namespace LibHac.FsSrv
             Result rc = TryAcquireSaveDataMountCountSemaphore(ref mountCountSemaphore.Ref());
             if (rc.IsFailure()) return rc;
 
-            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
+            using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
             bool useAsyncFileSystem = !_serviceImpl.IsAllowedDirectorySaveData(spaceId, in saveDataRootPath);
 
             using var fileSystem = new SharedRef<IFileSystem>();
@@ -1103,7 +1103,7 @@ namespace LibHac.FsSrv
 
             Result ReadExtraData(out SaveDataExtraData data)
             {
-                Path savePath = _saveDataRootPath.DangerousGetPath();
+                using Path savePath = _saveDataRootPath.DangerousGetPath();
                 return _serviceImpl.ReadSaveDataFileSystemExtraData(out data, spaceId, saveDataId, type,
                     in savePath);
             }
@@ -1278,7 +1278,7 @@ namespace LibHac.FsSrv
             rc = accessor.Get.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
             if (rc.IsFailure()) return rc;
 
-            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
+            using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
             return _serviceImpl.ReadSaveDataFileSystemExtraData(out extraData, spaceId, saveDataId, key.Type,
                 in saveDataRootPath);
         }
@@ -1444,7 +1444,7 @@ namespace LibHac.FsSrv
         {
             using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
 
-            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
+            using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
             return _serviceImpl.WriteSaveDataFileSystemExtraData(spaceId, saveDataId, in extraData, in saveDataRootPath,
                 saveType, updateTimeStamp);
         }
@@ -1472,7 +1472,7 @@ namespace LibHac.FsSrv
                 ReadExtraData);
             if (rc.IsFailure()) return rc;
 
-            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
+            using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
             rc = _serviceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraDataModify, spaceId,
                 saveDataId, key.Type, in saveDataRootPath);
             if (rc.IsFailure()) return rc;
@@ -1893,7 +1893,7 @@ namespace LibHac.FsSrv
             Result rc = FindCacheStorage(out SaveDataInfo saveInfo, out SaveDataSpaceId spaceId, index);
             if (rc.IsFailure()) return rc;
 
-            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
+            using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
             rc = _serviceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, spaceId,
                 saveInfo.SaveDataId, saveInfo.Type, in saveDataRootPath);
             if (rc.IsFailure()) return rc;

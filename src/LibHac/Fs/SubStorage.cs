@@ -49,7 +49,7 @@ namespace LibHac.Fs
             _offset = other._offset;
             _size = other._size;
             _isResizable = other._isResizable;
-            _sharedBaseStorage = SharedRef<IStorage>.CreateCopy(ref other._sharedBaseStorage);
+            _sharedBaseStorage = SharedRef<IStorage>.CreateCopy(in other._sharedBaseStorage);
         }
 
         /// <summary>
@@ -90,7 +90,7 @@ namespace LibHac.Fs
             _offset = other._offset + offset;
             _size = size;
             _isResizable = false;
-            _sharedBaseStorage = SharedRef<IStorage>.CreateCopy(ref other._sharedBaseStorage);
+            _sharedBaseStorage = SharedRef<IStorage>.CreateCopy(in other._sharedBaseStorage);
 
             Assert.SdkRequiresLessEqual(0, offset);
             Assert.SdkRequiresLessEqual(0, size);
@@ -105,13 +105,13 @@ namespace LibHac.Fs
         /// <param name="baseStorage">The base <see cref="IStorage"/>.</param>
         /// <param name="offset">The offset in the base storage at which to begin the created SubStorage.</param>
         /// <param name="size">The size of the created SubStorage.</param>
-        public SubStorage(ref SharedRef<IStorage> baseStorage, long offset, long size)
+        public SubStorage(in SharedRef<IStorage> baseStorage, long offset, long size)
         {
             BaseStorage = baseStorage.Get;
             _offset = offset;
             _size = size;
             _isResizable = false;
-            _sharedBaseStorage = SharedRef<IStorage>.CreateCopy(ref baseStorage);
+            _sharedBaseStorage = SharedRef<IStorage>.CreateCopy(in baseStorage);
 
             Assert.SdkRequiresNotNull(baseStorage.Get);
             Assert.SdkRequiresLessEqual(0, _offset);
@@ -137,7 +137,7 @@ namespace LibHac.Fs
                 _offset = other._offset;
                 _size = other._size;
                 _isResizable = other._isResizable;
-                _sharedBaseStorage.SetByCopy(ref other._sharedBaseStorage);
+                _sharedBaseStorage.SetByCopy(in other._sharedBaseStorage);
             }
         }
 

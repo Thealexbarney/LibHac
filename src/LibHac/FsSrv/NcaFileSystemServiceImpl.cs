@@ -145,7 +145,7 @@ namespace LibHac.FsSrv
             }
 
             using var nspFileSystem = new SharedRef<IFileSystem>();
-            using SharedRef<IFileSystem> tempFileSystem = SharedRef<IFileSystem>.CreateCopy(ref baseFileSystem.Ref());
+            using SharedRef<IFileSystem> tempFileSystem = SharedRef<IFileSystem>.CreateCopy(in baseFileSystem);
             rc = ParseNsp(ref currentPath, ref nspFileSystem.Ref(), ref baseFileSystem.Ref());
 
             if (rc.IsSuccess())

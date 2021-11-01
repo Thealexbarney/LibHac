@@ -15,10 +15,10 @@ namespace hactoolnet
     {
         public static void ProcessPk11(Context ctx)
         {
-            using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
+            using (var file = new SharedRef<IStorage>(new LocalStorage(ctx.Options.InFile, FileAccess.Read)))
             {
                 var package1 = new LibHac.Boot.Package1();
-                package1.Initialize(ctx.KeySet, file).ThrowIfFailure();
+                package1.Initialize(ctx.KeySet, in file).ThrowIfFailure();
 
                 ctx.Logger.LogMessage(package1.Print());
 
