@@ -443,11 +443,8 @@ namespace LibHac.Tests.Fs
             rc = fileSystem.OpenFile(ref file.Ref(), path, OpenMode.ReadWrite);
             if (rc.IsFailure()) return rc;
 
-            using (file)
-            {
-                rc = file.Get.Write(0, SpanHelpers.AsByteSpan(ref extraData), WriteOption.Flush);
-                if (rc.IsFailure()) return rc;
-            }
+            rc = file.Get.Write(0, SpanHelpers.AsByteSpan(ref extraData), WriteOption.Flush);
+            if (rc.IsFailure()) return rc;
 
             return Result.Success;
         }

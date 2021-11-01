@@ -305,7 +305,7 @@ namespace LibHac.Fs.Impl
 
         public SharedRef<IFileSystemSf> GetFileSystem()
         {
-            return SharedRef<IFileSystemSf>.CreateCopy(ref _baseFs);
+            return SharedRef<IFileSystemSf>.CreateCopy(in _baseFs);
         }
 
         public SharedRef<IFileSystemSf> GetMultiCommitTarget()

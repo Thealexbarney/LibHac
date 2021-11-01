@@ -24,7 +24,7 @@ namespace LibHac.FsSrv
 
             using var sharedRootFileSystem = new SharedRef<IFileSystem>(rootFileSystem);
             using SharedRef<IFileSystem> sharedRootFileSystemCopy =
-                SharedRef<IFileSystem>.CreateCopy(ref sharedRootFileSystem.Ref());
+                SharedRef<IFileSystem>.CreateCopy(in sharedRootFileSystem);
 
             creators.RomFileSystemCreator = new RomFileSystemCreator();
             creators.PartitionFileSystemCreator = new PartitionFileSystemCreator();

@@ -521,7 +521,7 @@ namespace LibHac.FsSrv
                 rc = RegisterReader(ref reader.Ref());
                 if (rc.IsFailure()) return rc;
 
-                outInfoReader.SetByCopy(ref reader.Ref());
+                outInfoReader.SetByCopy(in reader.Ref());
                 return Result.Success;
             }
         }
@@ -785,7 +785,7 @@ namespace LibHac.FsSrv
 
             public ReaderAccessor(ref SharedRef<Reader> reader)
             {
-                _reader = new WeakRef<Reader>(ref reader);
+                _reader = new WeakRef<Reader>(in reader);
             }
 
             public void Dispose() => _reader.Destroy();

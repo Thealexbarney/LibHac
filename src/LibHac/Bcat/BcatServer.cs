@@ -59,7 +59,7 @@ namespace LibHac.Bcat
             {
                 Debug.Assert((uint)type < ServiceTypeCount);
 
-                return SharedRef<IServiceCreator>.CreateCopy(ref _serviceCreators[(int)type]);
+                return SharedRef<IServiceCreator>.CreateCopy(in _serviceCreators[(int)type]);
             }
         }
 

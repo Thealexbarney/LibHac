@@ -12,16 +12,17 @@ namespace LibHac.FsSrv.Impl
     /// </summary>
     public class SaveDataExtraDataAccessorCacheManager : ISaveDataExtraDataAccessorCacheObserver
     {
+        [NonCopyable]
         private struct Cache : IDisposable
         {
             private WeakRef<ISaveDataExtraDataAccessor> _accessor;
             private readonly SaveDataSpaceId _spaceId;
             private readonly ulong _saveDataId;
 
-            public Cache(ref SharedRef<ISaveDataExtraDataAccessor> accessor, SaveDataSpaceId spaceId,
+            public Cache(in SharedRef<ISaveDataExtraDataAccessor> accessor, SaveDataSpaceId spaceId,
                 ulong saveDataId)
             {
-                _accessor = new WeakRef<ISaveDataExtraDataAccessor>(ref accessor);
+                _accessor = new WeakRef<ISaveDataExtraDataAccessor>(in accessor);
                 _spaceId = spaceId;
                 _saveDataId = saveDataId;
             }
@@ -69,10 +70,10 @@ namespace LibHac.FsSrv.Impl
             _accessorList.Clear();
         }
 
-        public Result Register(ref SharedRef<ISaveDataExtraDataAccessor> accessor, SaveDataSpaceId spaceId,
+        public Result Register(in SharedRef<ISaveDataExtraDataAccessor> accessor, SaveDataSpaceId spaceId,
             ulong saveDataId)
         {
-            var node = new LinkedListNode<Cache>(new Cache(ref accessor, spaceId, saveDataId));
+            var node = new LinkedListNode<Cache>(new Cache(in accessor, spaceId, saveDataId));
 
             using (ScopedLock.Lock(ref _mutex))
             {

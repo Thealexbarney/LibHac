@@ -7,6 +7,7 @@ namespace LibHac.FsSystem
 {
     public class SaveDataFileSystemCacheManager : ISaveDataFileSystemCacheManager
     {
+        [NonCopyable]
         private struct Cache
         {
             // Note: Nintendo only supports caching SaveDataFileSystem. We support DirectorySaveDataFileSystem too,

@@ -156,11 +156,11 @@ namespace LibHac.Common
             return sharedRef;
         }
 
-        public static SharedRef<T> CreateCopy<TFrom>(ref SharedRef<TFrom> other) where TFrom : class, T
+        public static SharedRef<T> CreateCopy<TFrom>(in SharedRef<TFrom> other) where TFrom : class, T
         {
             var sharedRef = new SharedRef<T>();
 
-            sharedRef._value = Unsafe.As<TFrom, T>(ref other._value);
+            sharedRef._value = Unsafe.As<TFrom, T>(ref other.Ref()._value);
             sharedRef._refCount = other._refCount;
 
             sharedRef._refCount?.Increment();
@@ -168,9 +168,9 @@ namespace LibHac.Common
             return sharedRef;
         }
 
-        public static SharedRef<T> Create<TFrom>(ref WeakRef<TFrom> other) where TFrom : class, T
+        public static SharedRef<T> Create<TFrom>(in WeakRef<TFrom> other) where TFrom : class, T
         {
-            ref SharedRef<TFrom> otherShared = ref Unsafe.As<WeakRef<TFrom>, SharedRef<TFrom>>(ref other);
+            ref SharedRef<TFrom> otherShared = ref Unsafe.As<WeakRef<TFrom>, SharedRef<TFrom>>(ref other.Ref());
 
             var sharedRef = new SharedRef<T>();
 
@@ -244,14 +244,14 @@ namespace LibHac.Common
             oldRefCount?.Decrement();
         }
 
-        public void SetByCopy<TFrom>(ref SharedRef<TFrom> other) where TFrom : class, T
+        public void SetByCopy<TFrom>(in SharedRef<TFrom> other) where TFrom : class, T
         {
             RefCount oldRefCount = _refCount;
             RefCount otherRef = other._refCount;
 
             otherRef?.Increment();
 
-            _value = Unsafe.As<TFrom, T>(ref other._value);
+            _value = Unsafe.As<TFrom, T>(ref other.Ref()._value);
             _refCount = otherRef;
 
             oldRefCount?.Decrement();
@@ -309,9 +309,9 @@ namespace LibHac.Common
         private T _value;
         private RefCount _refCount;
 
-        public WeakRef(ref SharedRef<T> other)
+        public WeakRef(in SharedRef<T> other)
         {
-            this = Create(ref other);
+            this = Create(in other);
         }
 
         [Obsolete("This method should never be manually called. Use the Destroy method instead.", true)]
@@ -350,7 +350,7 @@ namespace LibHac.Common
             return weakRef;
         }
 
-        public static WeakRef<T> CreateCopy<TFrom>(ref WeakRef<TFrom> other) where TFrom : class, T
+        public static WeakRef<T> CreateCopy<TFrom>(in WeakRef<TFrom> other) where TFrom : class, T
         {
             var weakRef = new WeakRef<T>();
 
@@ -361,7 +361,7 @@ namespace LibHac.Common
 
                 if (weakRef._refCount.IncrementIfNotZero())
                 {
-                    weakRef._value = Unsafe.As<TFrom, T>(ref other._value);
+                    weakRef._value = Unsafe.As<TFrom, T>(ref other.Ref()._value);
                     weakRef._refCount.Decrement();
                 }
             }
@@ -369,9 +369,9 @@ namespace LibHac.Common
             return weakRef;
         }
 
-        public static WeakRef<T> Create<TFrom>(ref SharedRef<TFrom> other) where TFrom : class, T
+        public static WeakRef<T> Create<TFrom>(in SharedRef<TFrom> other) where TFrom : class, T
         {
-            ref WeakRef<TFrom> otherWeak = ref Unsafe.As<SharedRef<TFrom>, WeakRef<TFrom>>(ref other);
+            ref WeakRef<TFrom> otherWeak = ref Unsafe.As<SharedRef<TFrom>, WeakRef<TFrom>>(ref other.Ref());
 
             var weakRef = new WeakRef<T>();
 
@@ -411,16 +411,16 @@ namespace LibHac.Common
             temp.DisposeInternal();
         }
 
-        public void SetCopy<TFrom>(ref WeakRef<TFrom> other) where TFrom : class, T
+        public void SetCopy<TFrom>(in WeakRef<TFrom> other) where TFrom : class, T
         {
-            WeakRef<T> temp = CreateCopy(ref other);
+            WeakRef<T> temp = CreateCopy(in other);
             Swap(ref temp);
             temp.DisposeInternal();
         }
 
-        public void Set<TFrom>(ref SharedRef<TFrom> other) where TFrom : class, T
+        public void Set<TFrom>(in SharedRef<TFrom> other) where TFrom : class, T
         {
-            WeakRef<T> temp = Create(ref other);
+            WeakRef<T> temp = Create(in other);
             Swap(ref temp);
             temp.DisposeInternal();
         }

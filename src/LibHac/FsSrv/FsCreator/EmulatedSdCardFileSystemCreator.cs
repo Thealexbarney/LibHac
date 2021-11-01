@@ -44,7 +44,7 @@ namespace LibHac.FsSrv.FsCreator
 
             if (_sdCardFileSystem.HasValue)
             {
-                outFileSystem.SetByCopy(ref _sdCardFileSystem);
+                outFileSystem.SetByCopy(in _sdCardFileSystem);
 
                 return Result.Success;
             }
@@ -67,11 +67,11 @@ namespace LibHac.FsSrv.FsCreator
 
             // Todo: Add ProxyFileSystem?
 
-            using SharedRef<IFileSystem> fileSystem = SharedRef<IFileSystem>.CreateCopy(ref _rootFileSystem);
+            using SharedRef<IFileSystem> fileSystem = SharedRef<IFileSystem>.CreateCopy(in _rootFileSystem);
             rc = Utility.WrapSubDirectory(ref _sdCardFileSystem, ref fileSystem.Ref(), in sdCardPath, true);
             if (rc.IsFailure()) return rc;
 
-            outFileSystem.SetByCopy(ref _sdCardFileSystem);
+            outFileSystem.SetByCopy(in _sdCardFileSystem);
 
             return Result.Success;
         }

@@ -175,7 +175,7 @@ namespace LibHac.FsSrv
                 {
                     extraDataAccessor.Get.RegisterCacheObserver(_extraDataCacheManager, spaceId, saveDataId);
 
-                    rc = _extraDataCacheManager.Register(ref extraDataAccessor.Ref(), spaceId, saveDataId);
+                    rc = _extraDataCacheManager.Register(in extraDataAccessor, spaceId, saveDataId);
                     if (rc.IsFailure()) return rc.Miss();
                 }
             }

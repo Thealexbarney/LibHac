@@ -62,7 +62,7 @@ namespace LibHac.FsSystem
 
             using (var sharedStorage = new SharedRef<IStorage>(storage))
             {
-                return new SubStorage(ref sharedStorage.Ref(), start, length);
+                return new SubStorage(in sharedStorage, start, length);
             }
         }
 

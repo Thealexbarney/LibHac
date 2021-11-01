@@ -50,7 +50,7 @@ namespace LibHac.FsSrv.FsCreator
 
         public bool TryGetRootFileSystem(ref SharedRef<IFileSystem> outFileSystem)
         {
-            outFileSystem.SetByCopy(ref _rootFileSystem);
+            outFileSystem.SetByCopy(in _rootFileSystem);
 
             return outFileSystem.HasValue;
         }
@@ -60,7 +60,7 @@ namespace LibHac.FsSrv.FsCreator
             if (!IsValidPartitionId(partitionId))
                 return false;
 
-            outFileSystem.SetByCopy(ref PartitionFileSystems[GetArrayIndex(partitionId)]);
+            outFileSystem.SetByCopy(in PartitionFileSystems[GetArrayIndex(partitionId)]);
 
             return outFileSystem.HasValue;
         }

@@ -83,8 +83,8 @@ namespace LibHac.FsSrv.FsCreator
                     isMultiCommitSupported, !openReadOnly);
                 if (rc.IsFailure()) return rc;
 
-                outFileSystem.SetByCopy(ref saveDirFs.Ref());
-                outExtraDataAccessor.SetByCopy(ref saveDirFs.Ref());
+                outFileSystem.SetByCopy(in saveDirFs);
+                outExtraDataAccessor.SetByCopy(in saveDirFs);
 
                 return Result.Success;
             }
