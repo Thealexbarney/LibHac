@@ -24,7 +24,7 @@ namespace LibHac
         {
             if (type == XciPartitionType.Root) return true;
 
-            return GetRootPartition().FileExists(type.GetFileName());
+            return GetRootPartition().FileExists("/" + type.GetFileName());
         }
 
         public XciPartition OpenPartition(XciPartitionType type)
