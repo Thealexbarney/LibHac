@@ -501,12 +501,12 @@ namespace LibHac.Fs.Shim
             Result rc = fileSystemProxy.Get.OpenSaveDataInfoReaderBySaveDataSpaceId(ref reader.Ref(), spaceId);
             if (rc.IsFailure()) return rc;
 
-            var iterator = new UniqueRef<SaveDataIterator>(new SaveDataIterator(fs.Fs, ref reader.Ref()));
+            using var iterator = new UniqueRef<SaveDataIterator>(new SaveDataIterator(fs.Fs, ref reader.Ref()));
 
             if (!iterator.HasValue)
                 return ResultFs.AllocationMemoryFailedInSaveDataManagementA.Log();
 
-            outIterator.Set(ref iterator);
+            outIterator.Set(ref iterator.Ref());
 
             return Result.Success;
         }
@@ -520,12 +520,12 @@ namespace LibHac.Fs.Shim
             Result rc = fileSystemProxy.Get.OpenSaveDataInfoReaderWithFilter(ref reader.Ref(), spaceId, in filter);
             if (rc.IsFailure()) return rc;
 
-            var iterator = new UniqueRef<SaveDataIterator>(new SaveDataIterator(fs.Fs, ref reader.Ref()));
+            using var iterator = new UniqueRef<SaveDataIterator>(new SaveDataIterator(fs.Fs, ref reader.Ref()));
 
             if (!iterator.HasValue)
                 return ResultFs.AllocationMemoryFailedInSaveDataManagementA.Log();
 
-            outIterator.Set(ref iterator);
+            outIterator.Set(ref iterator.Ref());
 
             return Result.Success;
         }

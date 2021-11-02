@@ -6,6 +6,7 @@ using LibHac.Os;
 
 namespace LibHac.Lr
 {
+    [NonCopyable]
     internal struct LrServiceGlobals : IDisposable
     {
         public SharedRef<ILocationResolverManager> LocationResolver;

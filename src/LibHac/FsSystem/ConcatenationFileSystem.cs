@@ -457,7 +457,7 @@ namespace LibHac.FsSystem
                 Unsafe.SkipInit(out DirectoryEntry entry);
                 using var directory = new UniqueRef<IDirectory>();
 
-                Path path = _path.DangerousGetPath();
+                using Path path = _path.DangerousGetPath();
 
                 Result rc = _baseFileSystem.OpenDirectory(ref directory.Ref(), in path,
                     OpenDirectoryMode.All | OpenDirectoryMode.NoFileSize);

@@ -22,7 +22,7 @@ namespace LibHac.FsSystem
             Result rc = Initialize(baseStorage.Get);
             if (rc.IsFailure()) return rc;
 
-            _baseStorageShared = SharedRef<IStorage>.CreateMove(ref baseStorage);
+            _baseStorageShared.SetByMove(ref baseStorage);
             return Result.Success;
         }
 

@@ -180,8 +180,13 @@ namespace LibHac.FsSrv
             _currentProcess = processId;
 
             // Initialize the NCA file system service
-            _ncaFsService = NcaFileSystemService.CreateShared(Globals.NcaFileSystemServiceImpl, processId);
-            _saveFsService = SaveDataFileSystemService.CreateShared(Globals.SaveDataFileSystemServiceImpl, processId);
+            using SharedRef<NcaFileSystemService> ncaFsService =
+                NcaFileSystemService.CreateShared(Globals.NcaFileSystemServiceImpl, processId);
+            _ncaFsService.SetByMove(ref ncaFsService.Ref());
+
+            using SharedRef<SaveDataFileSystemService> saveFsService =
+                SaveDataFileSystemService.CreateShared(Globals.SaveDataFileSystemServiceImpl, processId);
+            _saveFsService.SetByMove(ref saveFsService.Ref());
 
             return Result.Success;
         }

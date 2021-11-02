@@ -5,6 +5,7 @@ using static LibHac.Fs.StringTraits;
 
 namespace LibHac.Fs.Common
 {
+    [NonCopyableDisposable]
     public ref struct DirectoryPathParser
     {
         private Span<byte> _buffer;
@@ -48,10 +49,10 @@ namespace LibHac.Fs.Common
         }
 
         // Todo: Return reference when escape semantics are better
-        public readonly Path GetCurrentPath()
-        {
-            return CurrentPath;
-        }
+        //public ref readonly Path GetCurrentPath()
+        //{
+        //    return ref CurrentPath;
+        //}
 
         public Result ReadNext(out bool isFinished)
         {

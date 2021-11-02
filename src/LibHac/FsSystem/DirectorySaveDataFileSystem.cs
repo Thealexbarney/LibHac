@@ -178,6 +178,7 @@ namespace LibHac.FsSystem
             base.Dispose();
         }
 
+        [NonCopyable]
         private ref struct RetryClosure
         {
             public DirectorySaveDataFileSystem This;

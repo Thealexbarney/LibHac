@@ -1077,7 +1077,7 @@ namespace LibHac.Fs
             }
         }
 
-        public override string ToString() => StringUtils.Utf8ZToString(_string);
+        public override readonly string ToString() => StringUtils.Utf8ZToString(_string);
 
         public override bool Equals(object obj) => throw new NotSupportedException();
         public override int GetHashCode() => throw new NotImplementedException();

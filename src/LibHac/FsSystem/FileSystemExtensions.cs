@@ -159,11 +159,15 @@ namespace LibHac.FsSystem
             bool ignoreCase = searchOptions.HasFlag(SearchOptions.CaseInsensitive);
             bool recurse = searchOptions.HasFlag(SearchOptions.RecurseSubdirectories);
 
-            var pathNormalized = new Path();
-            InitializeFromString(ref pathNormalized, path).ThrowIfFailure();
-
             using var directory = new UniqueRef<IDirectory>();
-            fileSystem.OpenDirectory(ref directory.Ref(), in pathNormalized, OpenDirectoryMode.All).ThrowIfFailure();
+
+            using (var pathNormalized = new Path())
+            {
+                InitializeFromString(ref pathNormalized.Ref(), path).ThrowIfFailure();
+
+                fileSystem.OpenDirectory(ref directory.Ref(), in pathNormalized, OpenDirectoryMode.All)
+                    .ThrowIfFailure();
+            }
 
             while (true)
             {
