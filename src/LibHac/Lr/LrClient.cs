@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 
 namespace LibHac.Lr
 {
@@ -18,6 +19,7 @@ namespace LibHac.Lr
         }
     }
 
+    [NonCopyable]
     internal struct LrClientGlobals : IDisposable
     {
         public HorizonClient Hos;

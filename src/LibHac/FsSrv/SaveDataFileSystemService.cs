@@ -461,7 +461,7 @@ namespace LibHac.FsSrv
                 return rc;
 
             // Delete the actual save data.
-            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
+            using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
             rc = _serviceImpl.DeleteSaveDataFileSystem(spaceId, saveDataId, wipeSaveFile, in saveDataRootPath);
             if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc))
                 return rc;
@@ -774,7 +774,7 @@ namespace LibHac.FsSrv
                 }
 
                 // After the new save was added to the save indexer, create the save data file or directory.
-                Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
+                using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
                 rc = _serviceImpl.CreateSaveDataFileSystem(saveDataId, in attribute, in creationInfo,
                     in saveDataRootPath, in hashSalt, false);
 
@@ -1020,7 +1020,7 @@ namespace LibHac.FsSrv
             }
 
             // Open the save data using its ID
-            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
+            using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
             Result saveFsResult = _serviceImpl.OpenSaveDataFileSystem(ref outFileSystem, spaceId, tempSaveDataId,
                 in saveDataRootPath, openReadOnly, attribute.Type, cacheExtraData);
 
@@ -1205,7 +1205,7 @@ namespace LibHac.FsSrv
             if (!accessibility.CanRead || !accessibility.CanWrite)
                 return ResultFs.PermissionDenied.Log();
 
-            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
+            using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
             bool useAsyncFileSystem = !_serviceImpl.IsAllowedDirectorySaveData(spaceId, in saveDataRootPath);
 
             using var fileSystem = new SharedRef<IFileSystem>();
@@ -1220,7 +1220,7 @@ namespace LibHac.FsSrv
 
             Result ReadExtraData(out SaveDataExtraData data)
             {
-                Path savePath = _saveDataRootPath.DangerousGetPath();
+                using Path savePath = _saveDataRootPath.DangerousGetPath();
                 return _serviceImpl.ReadSaveDataFileSystemExtraData(out data, spaceId, saveDataId, type,
                     in savePath);
             }
@@ -1342,7 +1342,7 @@ namespace LibHac.FsSrv
                 ReadExtraData);
             if (rc.IsFailure()) return rc;
 
-            Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
+            using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
             rc = _serviceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData tempExtraData, resolvedSpaceId,
                 saveDataId, key.Type, in saveDataRootPath);
             if (rc.IsFailure()) return rc;

@@ -39,7 +39,7 @@ namespace LibHac.FsSystem
 
         private Result ResolveFullPath(ref Path outPath, in Path relativePath)
         {
-            Path rootPath = _rootPath.DangerousGetPath();
+            using Path rootPath = _rootPath.DangerousGetPath();
             return outPath.Combine(in rootPath, in relativePath);
         }
 

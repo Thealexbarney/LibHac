@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
 using LibHac.FsSystem;
@@ -23,6 +24,7 @@ namespace LibHac.Fs
         }
     }
 
+    [NonCopyable]
     internal struct FileSystemClientGlobals : IDisposable
     {
         public HorizonClient Hos;

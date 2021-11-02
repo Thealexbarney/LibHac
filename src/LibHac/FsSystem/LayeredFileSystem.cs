@@ -270,7 +270,7 @@ namespace LibHac.FsSystem
                 // todo: Efficient way to remove duplicates
                 var names = new HashSet<string>();
 
-                Path path = _path.DangerousGetPath();
+                using Path path = _path.DangerousGetPath();
                 using var dir = new UniqueRef<IDirectory>();
 
                 // Open new directories for each source because we need to remove duplicate entries

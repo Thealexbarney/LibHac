@@ -76,7 +76,7 @@ namespace LibHac.Fs.Shim
                     programId);
                 if (rc.IsFailure()) return rc;
 
-                var fileSystemAdapter =
+                using var fileSystemAdapter =
                     new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
 
                 if (!fileSystemAdapter.HasValue)

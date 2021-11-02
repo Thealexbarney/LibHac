@@ -175,7 +175,7 @@ namespace LibHac.Fs.Shim
             fs.Impl.AbortIfNeeded(rc);
             if (rc.IsFailure()) return rc;
 
-            var storageAdapter = new UniqueRef<IStorage>(new StorageServiceObjectAdapter(ref storage.Ref()));
+            using var storageAdapter = new UniqueRef<IStorage>(new StorageServiceObjectAdapter(ref storage.Ref()));
 
             if (!storageAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInBisC.Log();

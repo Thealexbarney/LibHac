@@ -4,7 +4,7 @@ using System.Threading;
 using InlineIL;
 using LibHac.Diag;
 
-#pragma warning disable LH0001, LH0002, LH0003, LH0004, LH0005
+#pragma warning disable LH0001
 
 namespace LibHac.Common
 {

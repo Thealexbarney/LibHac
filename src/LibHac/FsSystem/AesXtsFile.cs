@@ -8,7 +8,7 @@ namespace LibHac.FsSystem
 {
     public class AesXtsFile : IFile
     {
-        private UniqueRef<IFile> BaseFile { get; }
+        private UniqueRef<IFile> _baseFile;
         private U8String Path { get; }
         private byte[] KekSeed { get; }
         private byte[] VerificationKey { get; }
@@ -23,15 +23,15 @@ namespace LibHac.FsSystem
         public AesXtsFile(OpenMode mode, ref UniqueRef<IFile> baseFile, U8String path, ReadOnlySpan<byte> kekSeed, ReadOnlySpan<byte> verificationKey, int blockSize)
         {
             Mode = mode;
-            BaseFile = new UniqueRef<IFile>(ref baseFile);
+            _baseFile = new UniqueRef<IFile>(ref baseFile);
             Path = path;
             KekSeed = kekSeed.ToArray();
             VerificationKey = verificationKey.ToArray();
             BlockSize = blockSize;
 
-            Header = new AesXtsFileHeader(BaseFile.Get);
+            Header = new AesXtsFileHeader(_baseFile.Get);
 
-            BaseFile.Get.GetSize(out long fileSize).ThrowIfFailure();
+            _baseFile.Get.GetSize(out long fileSize).ThrowIfFailure();
 
             if (!Header.TryDecryptHeader(Path.ToString(), KekSeed, VerificationKey))
             {
@@ -43,7 +43,7 @@ namespace LibHac.FsSystem
                 ThrowHelper.ThrowResult(ResultFs.AesXtsFileTooShort.Value, "NAX0 key derivation failed.");
             }
 
-            var fileStorage = new FileStorage(BaseFile.Get);
+            var fileStorage = new FileStorage(_baseFile.Get);
             var encStorage = new SubStorage(fileStorage, HeaderLength, fileSize - HeaderLength);
             encStorage.SetResizable(true);
 
@@ -116,7 +116,7 @@ namespace LibHac.FsSystem
         {
             Header.SetSize(size, VerificationKey);
 
-            Result rc = BaseFile.Get.Write(0, Header.ToBytes(false));
+            Result rc = _baseFile.Get.Write(0, Header.ToBytes(false));
             if (rc.IsFailure()) return rc;
 
             return BaseStorage.SetSize(Alignment.AlignUp(size, 0x10));
@@ -126,7 +126,7 @@ namespace LibHac.FsSystem
         {
             BaseStorage.Flush();
             BaseStorage.Dispose();
-            BaseFile.Destroy();
+            _baseFile.Destroy();
 
             base.Dispose();
         }

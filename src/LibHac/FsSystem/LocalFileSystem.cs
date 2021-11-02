@@ -175,7 +175,7 @@ namespace LibHac.FsSystem
             rc = pathNormalized.Normalize(pathFlags);
             if (rc.IsFailure()) return rc;
 
-            Path rootPath = _rootPath.DangerousGetPath();
+            using Path rootPath = _rootPath.DangerousGetPath();
 
             using var fullPath = new Path();
             rc = fullPath.Combine(in rootPath, in pathNormalized);
