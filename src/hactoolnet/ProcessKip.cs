@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSystem;
 using LibHac.Kernel;
@@ -9,50 +10,50 @@ namespace hactoolnet
     {
         public static void ProcessKip1(Context ctx)
         {
-            using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
+            using var file = new SharedRef<IStorage>(new LocalStorage(ctx.Options.InFile, FileAccess.Read));
+
+            using var kip = new KipReader();
+            kip.Initialize(in file).ThrowIfFailure();
+
+            if (!string.IsNullOrWhiteSpace(ctx.Options.UncompressedOut))
             {
-                var kip = new KipReader();
-                kip.Initialize(file).ThrowIfFailure();
+                byte[] uncompressed = new byte[kip.GetUncompressedSize()];
 
-                if (!string.IsNullOrWhiteSpace(ctx.Options.UncompressedOut))
-                {
-                    byte[] uncompressed = new byte[kip.GetUncompressedSize()];
+                kip.ReadUncompressedKip(uncompressed).ThrowIfFailure();
 
-                    kip.ReadUncompressedKip(uncompressed).ThrowIfFailure();
-
-                    File.WriteAllBytes(ctx.Options.UncompressedOut, uncompressed);
-                }
+                File.WriteAllBytes(ctx.Options.UncompressedOut, uncompressed);
             }
         }
 
         public static void ProcessIni1(Context ctx)
         {
-            using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
-            {
-                string outDir = ctx.Options.OutDir;
+            using var file = new SharedRef<IStorage>(new LocalStorage(ctx.Options.InFile, FileAccess.Read));
 
-                if (outDir != null)
-                {
-                    ExtractIni1(file, outDir);
-                }
+            string outDir = ctx.Options.OutDir;
+
+            if (outDir != null)
+            {
+                ExtractIni1(in file, outDir);
             }
         }
 
-        public static void ExtractIni1(IStorage iniStorage, string outDir)
+        public static void ExtractIni1(in SharedRef<IStorage> iniStorage, string outDir)
         {
-            var ini1 = new InitialProcessBinaryReader();
+            using var ini1 = new InitialProcessBinaryReader();
             ini1.Initialize(iniStorage).ThrowIfFailure();
 
             Directory.CreateDirectory(outDir);
-            var kipReader = new KipReader();
+            using var kipReader = new KipReader();
 
             for (int i = 0; i < ini1.ProcessCount; i++)
             {
-                ini1.OpenKipStorage(out IStorage kipStorage, i).ThrowIfFailure();
+                using var kipStorage = new UniqueRef<IStorage>();
+                ini1.OpenKipStorage(ref kipStorage.Ref(), i).ThrowIfFailure();
 
-                kipReader.Initialize(kipStorage).ThrowIfFailure();
+                using SharedRef<IStorage> sharedKipStorage = SharedRef<IStorage>.Create(ref kipStorage.Ref());
+                kipReader.Initialize(in sharedKipStorage).ThrowIfFailure();
 
-                kipStorage.WriteAllBytes(System.IO.Path.Combine(outDir, $"{kipReader.Name.ToString()}.kip1"));
+                sharedKipStorage.Get.WriteAllBytes(System.IO.Path.Combine(outDir, $"{kipReader.Name.ToString()}.kip1"));
             }
         }
     }

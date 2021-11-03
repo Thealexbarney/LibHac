@@ -8,9 +8,9 @@ using LibHac.Fs;
 
 namespace LibHac.Kernel
 {
-    public class KipReader
+    public class KipReader : IDisposable
     {
-        private IStorage KipStorage { get; set; }
+        private SharedRef<IStorage> _kipStorage;
 
         private KipHeader _header;
 
@@ -34,48 +34,51 @@ namespace LibHac.Kernel
         public int AffinityMask => _header.AffinityMask;
         public int StackSize => _header.StackSize;
 
-        public Result Initialize(IStorage kipData)
+        public void Dispose()
         {
-            if (kipData is null)
+            _kipStorage.Destroy();
+        }
+
+        public Result Initialize(in SharedRef<IStorage> kipData)
+        {
+            if (!kipData.HasValue)
                 return ResultLibHac.NullArgument.Log();
 
             // Verify there's enough data to read the header
-            Result rc = kipData.GetSize(out long kipSize);
+            Result rc = kipData.Get.GetSize(out long kipSize);
             if (rc.IsFailure()) return rc;
 
             if (kipSize < Unsafe.SizeOf<KipHeader>())
                 return ResultLibHac.InvalidKipFileSize.Log();
 
-            rc = kipData.Read(0, SpanHelpers.AsByteSpan(ref _header));
+            rc = kipData.Get.Read(0, SpanHelpers.AsByteSpan(ref _header));
             if (rc.IsFailure()) return rc;
 
             if (!_header.IsValid)
                 return ResultLibHac.InvalidKipMagic.Log();
 
-            KipStorage = kipData;
+            _kipStorage.SetByCopy(in kipData);
             return Result.Success;
         }
 
         /// <summary>
         /// Gets the raw input KIP file.
         /// </summary>
-        /// <param name="kipData">If the operation returns successfully, an <see cref="IStorage"/>
+        /// <param name="outKipData">If the operation returns successfully, an <see cref="IStorage"/>
         /// containing the KIP data.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        public Result GetRawData(out IStorage kipData)
+        public Result GetRawData(ref UniqueRef<IStorage> outKipData)
         {
-            UnsafeHelpers.SkipParamInit(out kipData);
-
             int kipFileSize = GetFileSize();
 
-            Result rc = KipStorage.GetSize(out long inputFileSize);
+            Result rc = _kipStorage.Get.GetSize(out long inputFileSize);
             if (rc.IsFailure()) return rc;
 
             // Verify the input KIP file isn't truncated
             if (inputFileSize < kipFileSize)
                 return ResultLibHac.InvalidKipFileSize.Log();
 
-            kipData = new SubStorage(KipStorage, 0, kipFileSize);
+            outKipData.Reset(new SubStorage(in _kipStorage, 0, kipFileSize));
             return Result.Success;
         }
 
@@ -149,14 +152,14 @@ namespace LibHac.Kernel
             int offset = CalculateSegmentOffset((int)segment);
 
             // Verify the segment offset is in-range
-            rc = KipStorage.GetSize(out long kipSize);
+            rc = _kipStorage.Get.GetSize(out long kipSize);
             if (rc.IsFailure()) return rc;
 
             if (kipSize < offset + segmentHeader.FileSize)
                 return ResultLibHac.InvalidKipFileSize.Log();
 
             // Read the segment data.
-            rc = KipStorage.Read(offset, buffer.Slice(0, segmentHeader.FileSize));
+            rc = _kipStorage.Get.Read(offset, buffer.Slice(0, segmentHeader.FileSize));
             if (rc.IsFailure()) return rc;
 
             // Decompress if necessary.

@@ -15,43 +15,42 @@ namespace hactoolnet
     {
         public static void ProcessPk11(Context ctx)
         {
-            using (var file = new SharedRef<IStorage>(new LocalStorage(ctx.Options.InFile, FileAccess.Read)))
+            using var file = new SharedRef<IStorage>(new LocalStorage(ctx.Options.InFile, FileAccess.Read));
+
+            var package1 = new LibHac.Boot.Package1();
+            package1.Initialize(ctx.KeySet, in file).ThrowIfFailure();
+
+            ctx.Logger.LogMessage(package1.Print());
+
+            string outDir = ctx.Options.OutDir;
+
+            if (package1.IsDecrypted && outDir != null)
             {
-                var package1 = new LibHac.Boot.Package1();
-                package1.Initialize(ctx.KeySet, in file).ThrowIfFailure();
+                Directory.CreateDirectory(outDir);
 
-                ctx.Logger.LogMessage(package1.Print());
+                IStorage decryptedStorage = package1.OpenDecryptedPackage1Storage();
 
-                string outDir = ctx.Options.OutDir;
+                WriteFile(decryptedStorage, "Decrypted.bin");
+                WriteFile(package1.OpenWarmBootStorage(), "Warmboot.bin");
+                WriteFile(package1.OpenNxBootloaderStorage(), "NX_Bootloader.bin");
+                WriteFile(package1.OpenSecureMonitorStorage(), "Secure_Monitor.bin");
 
-                if (package1.IsDecrypted && outDir != null)
+                if (package1.IsMariko)
                 {
-                    Directory.CreateDirectory(outDir);
+                    WriteFile(package1.OpenDecryptedWarmBootStorage(), "Warmboot_Decrypted.bin");
 
-                    IStorage decryptedStorage = package1.OpenDecryptedPackage1Storage();
+                    var marikoOemLoader = new SubStorage(decryptedStorage, Unsafe.SizeOf<Package1MarikoOemHeader>(),
+                        package1.MarikoOemHeader.Size);
 
-                    WriteFile(decryptedStorage, "Decrypted.bin");
-                    WriteFile(package1.OpenWarmBootStorage(), "Warmboot.bin");
-                    WriteFile(package1.OpenNxBootloaderStorage(), "NX_Bootloader.bin");
-                    WriteFile(package1.OpenSecureMonitorStorage(), "Secure_Monitor.bin");
-
-                    if (package1.IsMariko)
-                    {
-                        WriteFile(package1.OpenDecryptedWarmBootStorage(), "Warmboot_Decrypted.bin");
-
-                        var marikoOemLoader = new SubStorage(decryptedStorage, Unsafe.SizeOf<Package1MarikoOemHeader>(),
-                            package1.MarikoOemHeader.Size);
-
-                        WriteFile(marikoOemLoader, "Mariko_OEM_Bootloader.bin");
-                    }
+                    WriteFile(marikoOemLoader, "Mariko_OEM_Bootloader.bin");
                 }
+            }
 
-                void WriteFile(IStorage storage, string filename)
-                {
-                    string path = Path.Combine(outDir, filename);
-                    ctx.Logger.LogMessage($"Writing {path}...");
-                    storage.WriteAllBytes(path, ctx.Logger);
-                }
+            void WriteFile(IStorage storage, string filename)
+            {
+                string path = Path.Combine(outDir, filename);
+                ctx.Logger.LogMessage($"Writing {path}...");
+                storage.WriteAllBytes(path, ctx.Logger);
             }
         }
 
@@ -105,43 +104,47 @@ namespace hactoolnet
 
         public static void ProcessPk21(Context ctx)
         {
-            using (var file = new CachedStorage(new LocalStorage(ctx.Options.InFile, FileAccess.Read), 0x4000, 4, false))
+            using var file = new SharedRef<IStorage>(new CachedStorage(new LocalStorage(ctx.Options.InFile, FileAccess.Read), 0x4000, 4, false));
+
+            using var package2 = new Package2StorageReader();
+            package2.Initialize(ctx.KeySet, in file).ThrowIfFailure();
+
+            ctx.Logger.LogMessage(package2.Print());
+
+            string outDir = ctx.Options.OutDir;
+            string iniDir = ctx.Options.Ini1OutDir;
+
+            if (iniDir == null && ctx.Options.ExtractIni1)
             {
-                var package2 = new Package2StorageReader();
-                package2.Initialize(ctx.KeySet, file).ThrowIfFailure();
+                iniDir = Path.Combine(outDir, "INI1");
+            }
 
-                ctx.Logger.LogMessage(package2.Print());
+            if (outDir != null)
+            {
+                Directory.CreateDirectory(outDir);
 
-                string outDir = ctx.Options.OutDir;
-                string iniDir = ctx.Options.Ini1OutDir;
+                using var kernelStorage = new UniqueRef<IStorage>();
+                package2.OpenPayload(ref kernelStorage.Ref(), 0).ThrowIfFailure();
+                kernelStorage.Get.WriteAllBytes(Path.Combine(outDir, "Kernel.bin"), ctx.Logger);
 
-                if (iniDir == null && ctx.Options.ExtractIni1)
-                {
-                    iniDir = Path.Combine(outDir, "INI1");
-                }
+                using var ini1Storage = new UniqueRef<IStorage>();
+                package2.OpenIni(ref ini1Storage.Ref()).ThrowIfFailure();
+                ini1Storage.Get.WriteAllBytes(Path.Combine(outDir, "INI1.bin"), ctx.Logger);
 
-                if (outDir != null)
-                {
-                    Directory.CreateDirectory(outDir);
+                using var decPackageStorage = new UniqueRef<IStorage>();
+                package2.OpenDecryptedPackage(ref decPackageStorage.Ref()).ThrowIfFailure();
+                decPackageStorage.Get.WriteAllBytes(Path.Combine(outDir, "Decrypted.bin"), ctx.Logger);
+            }
 
-                    package2.OpenPayload(out IStorage kernelStorage, 0).ThrowIfFailure();
-                    kernelStorage.WriteAllBytes(Path.Combine(outDir, "Kernel.bin"), ctx.Logger);
+            if (iniDir != null)
+            {
+                Directory.CreateDirectory(iniDir);
 
-                    package2.OpenIni(out IStorage ini1Storage).ThrowIfFailure();
-                    ini1Storage.WriteAllBytes(Path.Combine(outDir, "INI1.bin"), ctx.Logger);
+                using var ini1Storage = new UniqueRef<IStorage>();
+                package2.OpenIni(ref ini1Storage.Ref()).ThrowIfFailure();
 
-                    package2.OpenDecryptedPackage(out IStorage decPackageStorage).ThrowIfFailure();
-                    decPackageStorage.WriteAllBytes(Path.Combine(outDir, "Decrypted.bin"), ctx.Logger);
-                }
-
-                if (iniDir != null)
-                {
-                    Directory.CreateDirectory(iniDir);
-
-                    package2.OpenIni(out IStorage ini1Storage).ThrowIfFailure();
-
-                    ProcessKip.ExtractIni1(ini1Storage, iniDir);
-                }
+                using SharedRef<IStorage> sharedIni1Storage = SharedRef<IStorage>.Create(ref ini1Storage.Ref());
+                ProcessKip.ExtractIni1(in sharedIni1Storage, iniDir);
             }
         }
 
