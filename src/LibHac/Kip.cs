@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSystem;
 using LibHac.Kernel;
@@ -200,8 +201,10 @@ namespace LibHac
 
             for (int i = 0; i < KipCount; i++)
             {
+                using var sharedStorage = new SharedRef<IStorage>(Storage.Slice(offset));
+
                 Kips[i] = new KipReader();
-                Kips[i].Initialize(Storage.Slice(offset)).ThrowIfFailure();
+                Kips[i].Initialize(in sharedStorage).ThrowIfFailure();
 
                 offset += Kips[i].GetFileSize();
             }

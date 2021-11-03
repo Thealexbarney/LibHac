@@ -13,17 +13,22 @@ namespace LibHac.Boot
     /// <summary>
     /// Parses a package2 file and opens the payloads within.
     /// </summary>
-    public class Package2StorageReader
+    public class Package2StorageReader : IDisposable
     {
         private const int KernelPayloadIndex = 0;
         private const int IniPayloadIndex = 1;
 
-        private IStorage _storage;
+        private SharedRef<IStorage> _storage;
         private Package2Header _header;
         private KeySet _keySet;
         private Crypto.AesKey _key;
 
         public ref readonly Package2Header Header => ref _header;
+
+        public void Dispose()
+        {
+            _storage.Destroy();
+        }
 
         /// <summary>
         /// Initializes the <see cref="Package2StorageReader"/>.
@@ -31,15 +36,15 @@ namespace LibHac.Boot
         /// <param name="keySet">The keyset to use for decrypting the package.</param>
         /// <param name="storage">An <see cref="IStorage"/> of the encrypted package2.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        public Result Initialize(KeySet keySet, IStorage storage)
+        public Result Initialize(KeySet keySet, in SharedRef<IStorage> storage)
         {
-            Result rc = storage.Read(0, SpanHelpers.AsByteSpan(ref _header));
+            Result rc = storage.Get.Read(0, SpanHelpers.AsByteSpan(ref _header));
             if (rc.IsFailure()) return rc;
 
             _key = keySet.Package2Keys[_header.Meta.KeyGeneration];
             DecryptHeader(_key, ref _header.Meta, ref _header.Meta);
 
-            _storage = storage;
+            _storage.SetByCopy(in storage);
             _keySet = keySet;
             return Result.Success;
         }
@@ -47,14 +52,12 @@ namespace LibHac.Boot
         /// <summary>
         /// Opens a decrypted <see cref="IStorage"/> of one of the payloads in the package.
         /// </summary>
-        /// <param name="payloadStorage">If the method returns successfully, contains an <see cref="IStorage"/>
+        /// <param name="outPayloadStorage">If the method returns successfully, contains an <see cref="IStorage"/>
         /// of the specified payload.</param>
         /// <param name="index">The index of the payload to get. Must me less than <see cref="Package2Header.PayloadCount"/></param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        public Result OpenPayload(out IStorage payloadStorage, int index)
+        public Result OpenPayload(ref UniqueRef<IStorage> outPayloadStorage, int index)
         {
-            UnsafeHelpers.SkipParamInit(out payloadStorage);
-
             if ((uint)index >= Package2Header.PayloadCount)
                 return ResultLibHac.ArgumentOutOfRange.Log();
 
@@ -65,53 +68,52 @@ namespace LibHac.Boot
 
             if (size == 0)
             {
-                payloadStorage = payloadSubStorage;
+                outPayloadStorage.Reset(payloadSubStorage);
                 return Result.Success;
             }
 
             byte[] iv = _header.Meta.PayloadIvs[index].Bytes.ToArray();
-            payloadStorage = new CachedStorage(new Aes128CtrStorage(payloadSubStorage, _key.DataRo.ToArray(), iv, true), 0x4000, 1, true);
+            outPayloadStorage.Reset(new CachedStorage(new Aes128CtrStorage(payloadSubStorage, _key.DataRo.ToArray(), iv, true), 0x4000, 1, true));
             return Result.Success;
         }
 
         /// <summary>
         /// Opens an <see cref="IStorage"/> of the kernel payload.
         /// </summary>
-        /// <param name="kernelStorage">If the method returns successfully, contains an <see cref="IStorage"/>
+        /// <param name="outKernelStorage">If the method returns successfully, contains an <see cref="IStorage"/>
         /// of the kernel payload.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        public Result OpenKernel(out IStorage kernelStorage)
+        public Result OpenKernel(ref UniqueRef<IStorage> outKernelStorage)
         {
-            return OpenPayload(out kernelStorage, KernelPayloadIndex);
+            return OpenPayload(ref outKernelStorage, KernelPayloadIndex);
         }
 
         /// <summary>
         /// Opens an <see cref="IStorage"/> of the initial process binary. If the binary is embedded in
         /// the kernel, this method will attempt to locate and return the embedded binary.
         /// </summary>
-        /// <param name="iniStorage">If the method returns successfully, contains an <see cref="IStorage"/>
+        /// <param name="outIniStorage">If the method returns successfully, contains an <see cref="IStorage"/>
         /// of the initial process binary.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        public Result OpenIni(out IStorage iniStorage)
+        public Result OpenIni(ref UniqueRef<IStorage> outIniStorage)
         {
             if (HasIniPayload())
             {
-                return OpenPayload(out iniStorage, IniPayloadIndex);
+                return OpenPayload(ref outIniStorage, IniPayloadIndex);
             }
 
             // Ini is embedded in the kernel
-            UnsafeHelpers.SkipParamInit(out iniStorage);
-
-            Result rc = OpenKernel(out IStorage kernelStorage);
+            using var kernelStorage = new UniqueRef<IStorage>();
+            Result rc = OpenKernel(ref kernelStorage.Ref());
             if (rc.IsFailure()) return rc;
 
-            if (!IniExtract.TryGetIni1Offset(out int offset, out int size, kernelStorage))
+            if (!IniExtract.TryGetIni1Offset(out int offset, out int size, kernelStorage.Get))
             {
                 // Unable to find the ini. Could be a new, unsupported layout.
                 return ResultLibHac.NotImplemented.Log();
             }
 
-            iniStorage = new SubStorage(kernelStorage, offset, size);
+            outIniStorage.Reset(new SubStorage(kernelStorage.Release(), offset, size));
             return Result.Success;
         }
 
@@ -140,7 +142,7 @@ namespace LibHac.Boot
             Unsafe.SkipInit(out Package2Meta meta);
             Span<byte> metaBytes = SpanHelpers.AsByteSpan(ref meta);
 
-            Result rc = _storage.Read(Package2Header.SignatureSize, metaBytes);
+            Result rc = _storage.Get.Read(Package2Header.SignatureSize, metaBytes);
             if (rc.IsFailure()) return rc;
 
             return _header.VerifySignature(_keySet.Package2SigningKeyParams.Modulus, metaBytes);
@@ -209,10 +211,10 @@ namespace LibHac.Boot
         /// <summary>
         /// Opens a decrypted <see cref="IStorage"/> of the entire package.
         /// </summary>
-        /// <param name="packageStorage">If the method returns successfully, contains a decrypted
+        /// <param name="outPackageStorage">If the method returns successfully, contains a decrypted
         /// <see cref="IStorage"/> of the package.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        public Result OpenDecryptedPackage(out IStorage packageStorage)
+        public Result OpenDecryptedPackage(ref UniqueRef<IStorage> outPackageStorage)
         {
             var storages = new List<IStorage>(4);
 
@@ -239,17 +241,14 @@ namespace LibHac.Boot
                 if (_header.Meta.PayloadSizes[i] == 0)
                     continue;
 
-                Result rc = OpenPayload(out IStorage payloadStorage, i);
-                if (rc.IsFailure())
-                {
-                    UnsafeHelpers.SkipParamInit(out packageStorage);
-                    return rc;
-                }
+                using var payloadStorage = new UniqueRef<IStorage>();
+                Result rc = OpenPayload(ref payloadStorage.Ref(), i);
+                if (rc.IsFailure()) return rc.Miss();
 
-                storages.Add(payloadStorage);
+                storages.Add(payloadStorage.Release());
             }
 
-            packageStorage = new ConcatenationStorage(storages, true);
+            outPackageStorage.Reset(new ConcatenationStorage(storages, true));
             return Result.Success;
         }
 
