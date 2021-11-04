@@ -10,32 +10,6 @@ namespace LibHac.FsSystem
 {
     public static class StorageExtensions
     {
-        [Obsolete("The standard Span-based IStorage methods should be used instead.")]
-        public static Result Read(this IStorage storage, long offset, byte[] buffer, int count, int bufferOffset)
-        {
-            ValidateStorageParameters(buffer, offset, count, bufferOffset);
-            return storage.Read(offset, buffer.AsSpan(bufferOffset, count));
-        }
-
-        [Obsolete("The standard Span-based IStorage methods should be used instead.")]
-        public static Result Write(this IStorage storage, long offset, byte[] buffer, int count, int bufferOffset)
-        {
-            ValidateStorageParameters(buffer, offset, count, bufferOffset);
-            return storage.Write(offset, buffer.AsSpan(bufferOffset, count));
-        }
-
-        // todo: remove this method when the above Read and Write methods are removed
-        // (Hopefully they're still above, or else someone didn't listen)
-        // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
-        private static void ValidateStorageParameters(byte[] buffer, long offset, int count, int bufferOffset)
-        // ReSharper restore ParameterOnlyUsedForPreconditionCheck.Local
-        {
-            if (buffer == null) throw new ArgumentNullException(nameof(buffer));
-            if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), "Argument must be non-negative.");
-            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), "Argument must be non-negative.");
-            if (bufferOffset < 0) throw new ArgumentOutOfRangeException(nameof(bufferOffset), "Argument must be non-negative.");
-        }
-
         public static IStorage Slice(this IStorage storage, long start)
         {
             storage.GetSize(out long length).ThrowIfFailure();
