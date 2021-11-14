@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace LibHac.GcSrv
+namespace LibHac.GcSrv;
+
+public interface IGameCardKeyManager
 {
-    public interface IGameCardKeyManager
-    {
-        void PresetInternalKeys(ReadOnlySpan<byte> gameCardKey, ReadOnlySpan<byte> gameCardCertificate);
-    }
+    void PresetInternalKeys(ReadOnlySpan<byte> gameCardKey, ReadOnlySpan<byte> gameCardCertificate);
 }

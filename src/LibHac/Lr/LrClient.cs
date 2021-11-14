@@ -1,39 +1,38 @@
 ﻿using System;
 using LibHac.Common;
 
-namespace LibHac.Lr
+namespace LibHac.Lr;
+
+public class LrClient : IDisposable
 {
-    public class LrClient : IDisposable
+    internal LrClientGlobals Globals;
+    internal HorizonClient Hos => Globals.Hos;
+
+    public LrClient(HorizonClient horizonClient)
     {
-        internal LrClientGlobals Globals;
-        internal HorizonClient Hos => Globals.Hos;
-
-        public LrClient(HorizonClient horizonClient)
-        {
-            Globals.Initialize(this, horizonClient);
-        }
-
-        public void Dispose()
-        {
-            Globals.Dispose();
-        }
+        Globals.Initialize(this, horizonClient);
     }
 
-    [NonCopyable]
-    internal struct LrClientGlobals : IDisposable
+    public void Dispose()
     {
-        public HorizonClient Hos;
-        public LrServiceGlobals LrService;
+        Globals.Dispose();
+    }
+}
 
-        public void Initialize(LrClient lrClient, HorizonClient horizonClient)
-        {
-            Hos = horizonClient;
-            LrService.Initialize();
-        }
+[NonCopyable]
+internal struct LrClientGlobals : IDisposable
+{
+    public HorizonClient Hos;
+    public LrServiceGlobals LrService;
 
-        public void Dispose()
-        {
-            LrService.Dispose();
-        }
+    public void Initialize(LrClient lrClient, HorizonClient horizonClient)
+    {
+        Hos = horizonClient;
+        LrService.Initialize();
+    }
+
+    public void Dispose()
+    {
+        LrService.Dispose();
     }
 }

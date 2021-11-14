@@ -1,11 +1,10 @@
-﻿namespace LibHac.Os
+﻿namespace LibHac.Os;
+
+public readonly struct ProcessId
 {
-    public readonly struct ProcessId
-    {
-        public static ProcessId InvalidId => new ProcessId(ulong.MaxValue);
+    public static ProcessId InvalidId => new ProcessId(ulong.MaxValue);
 
-        public readonly ulong Value;
+    public readonly ulong Value;
 
-        public ProcessId(ulong value) => Value = value;
-    }
+    public ProcessId(ulong value) => Value = value;
 }

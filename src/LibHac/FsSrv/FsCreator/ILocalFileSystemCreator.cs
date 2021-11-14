@@ -1,10 +1,9 @@
 ﻿using LibHac.Fs.Fsa;
 
-namespace LibHac.FsSrv.FsCreator
+namespace LibHac.FsSrv.FsCreator;
+
+public interface ILocalFileSystemCreator
 {
-    public interface ILocalFileSystemCreator
-    {
-        Result Create(out IFileSystem fileSystem, bool someBool);
-        Result Create(out IFileSystem fileSystem, string path, bool openCaseSensitive);
-    }
+    Result Create(out IFileSystem fileSystem, bool someBool);
+    Result Create(out IFileSystem fileSystem, string path, bool openCaseSensitive);
 }

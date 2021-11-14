@@ -2,36 +2,35 @@
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
-namespace LibHac.FsSrv.FsCreator
+namespace LibHac.FsSrv.FsCreator;
+
+public class EmulatedGameCardFsCreator : IGameCardFileSystemCreator
 {
-    public class EmulatedGameCardFsCreator : IGameCardFileSystemCreator
+    // ReSharper disable once NotAccessedField.Local
+    private EmulatedGameCardStorageCreator _storageCreator;
+    private EmulatedGameCard _gameCard;
+
+    public EmulatedGameCardFsCreator(EmulatedGameCardStorageCreator storageCreator, EmulatedGameCard gameCard)
     {
-        // ReSharper disable once NotAccessedField.Local
-        private EmulatedGameCardStorageCreator _storageCreator;
-        private EmulatedGameCard _gameCard;
+        _storageCreator = storageCreator;
+        _gameCard = gameCard;
+    }
 
-        public EmulatedGameCardFsCreator(EmulatedGameCardStorageCreator storageCreator, EmulatedGameCard gameCard)
+    public Result Create(ref SharedRef<IFileSystem> outFileSystem, GameCardHandle handle,
+        GameCardPartition partitionType)
+    {
+        // Use the old xci code temporarily
+
+        Result rc = _gameCard.GetXci(out Xci xci, handle);
+        if (rc.IsFailure()) return rc;
+
+        if (!xci.HasPartition((XciPartitionType)partitionType))
         {
-            _storageCreator = storageCreator;
-            _gameCard = gameCard;
+            return ResultFs.PartitionNotFound.Log();
         }
 
-        public Result Create(ref SharedRef<IFileSystem> outFileSystem, GameCardHandle handle,
-            GameCardPartition partitionType)
-        {
-            // Use the old xci code temporarily
-
-            Result rc = _gameCard.GetXci(out Xci xci, handle);
-            if (rc.IsFailure()) return rc;
-
-            if (!xci.HasPartition((XciPartitionType)partitionType))
-            {
-                return ResultFs.PartitionNotFound.Log();
-            }
-
-            XciPartition fs = xci.OpenPartition((XciPartitionType)partitionType);
-            outFileSystem.Reset(fs);
-            return Result.Success;
-        }
+        XciPartition fs = xci.OpenPartition((XciPartitionType)partitionType);
+        outFileSystem.Reset(fs);
+        return Result.Success;
     }
 }

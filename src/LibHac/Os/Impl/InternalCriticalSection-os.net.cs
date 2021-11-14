@@ -1,36 +1,35 @@
 ﻿using System.Threading;
 
-namespace LibHac.Os.Impl
+namespace LibHac.Os.Impl;
+
+internal struct InternalCriticalSectionImpl
 {
-    internal struct InternalCriticalSectionImpl
+    private object _obj;
+
+    public void Initialize()
     {
-        private object _obj;
+        _obj = new object();
+    }
 
-        public void Initialize()
-        {
-            _obj = new object();
-        }
+    public void FinalizeObject() { }
 
-        public void FinalizeObject() { }
+    public void Enter()
+    {
+        Monitor.Enter(_obj);
+    }
 
-        public void Enter()
-        {
-            Monitor.Enter(_obj);
-        }
+    public bool TryEnter()
+    {
+        return Monitor.TryEnter(_obj);
+    }
 
-        public bool TryEnter()
-        {
-            return Monitor.TryEnter(_obj);
-        }
+    public void Leave()
+    {
+        Monitor.Exit(_obj);
+    }
 
-        public void Leave()
-        {
-            Monitor.Exit(_obj);
-        }
-
-        public bool IsLockedByCurrentThread()
-        {
-            return Monitor.IsEntered(_obj);
-        }
+    public bool IsLockedByCurrentThread()
+    {
+        return Monitor.IsEntered(_obj);
     }
 }

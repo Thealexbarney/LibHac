@@ -1,10 +1,9 @@
 ﻿using System;
 using LibHac.Fs;
 
-namespace LibHac.FsSystem
+namespace LibHac.FsSystem;
+
+public interface ISaveDataExtraDataAccessorCacheObserver : IDisposable
 {
-    public interface ISaveDataExtraDataAccessorCacheObserver : IDisposable
-    {
-        void Unregister(SaveDataSpaceId spaceId, ulong saveDataId);
-    }
+    void Unregister(SaveDataSpaceId spaceId, ulong saveDataId);
 }

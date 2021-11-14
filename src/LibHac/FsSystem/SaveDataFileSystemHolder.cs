@@ -4,50 +4,49 @@ using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
-namespace LibHac.FsSystem
+namespace LibHac.FsSystem;
+
+public class SaveDataFileSystemHolder : ForwardingFileSystem
 {
-    public class SaveDataFileSystemHolder : ForwardingFileSystem
+    public SaveDataFileSystemHolder(ref SharedRef<IFileSystem> baseFileSystem) : base(ref baseFileSystem)
     {
-        public SaveDataFileSystemHolder(ref SharedRef<IFileSystem> baseFileSystem) : base(ref baseFileSystem)
+        Assert.SdkRequires(BaseFileSystem.Get.GetType() == typeof(SaveDataFileSystemHolder) ||
+                           BaseFileSystem.Get.GetType() == typeof(ApplicationTemporaryFileSystem));
+    }
+
+    public SaveDataSpaceId GetSaveDataSpaceId()
+    {
+        IFileSystem baseFs = BaseFileSystem.Get;
+
+        if (baseFs.GetType() == typeof(DirectorySaveDataFileSystem))
         {
-            Assert.SdkRequires(BaseFileSystem.Get.GetType() == typeof(SaveDataFileSystemHolder) ||
-                               BaseFileSystem.Get.GetType() == typeof(ApplicationTemporaryFileSystem));
+            return ((DirectorySaveDataFileSystem)baseFs).GetSaveDataSpaceId();
         }
 
-        public SaveDataSpaceId GetSaveDataSpaceId()
+        throw new NotImplementedException();
+    }
+
+    public ulong GetSaveDataId()
+    {
+        IFileSystem baseFs = BaseFileSystem.Get;
+
+        if (baseFs.GetType() == typeof(DirectorySaveDataFileSystem))
         {
-            IFileSystem baseFs = BaseFileSystem.Get;
-
-            if (baseFs.GetType() == typeof(DirectorySaveDataFileSystem))
-            {
-                return ((DirectorySaveDataFileSystem)baseFs).GetSaveDataSpaceId();
-            }
-
-            throw new NotImplementedException();
+            return ((DirectorySaveDataFileSystem)baseFs).GetSaveDataId();
         }
 
-        public ulong GetSaveDataId()
+        throw new NotImplementedException();
+    }
+
+    public Result RollbackOnlyModified()
+    {
+        IFileSystem baseFs = BaseFileSystem.Get;
+
+        if (baseFs.GetType() == typeof(DirectorySaveDataFileSystem))
         {
-            IFileSystem baseFs = BaseFileSystem.Get;
-
-            if (baseFs.GetType() == typeof(DirectorySaveDataFileSystem))
-            {
-                return ((DirectorySaveDataFileSystem)baseFs).GetSaveDataId();
-            }
-
-            throw new NotImplementedException();
+            return ((DirectorySaveDataFileSystem)baseFs).Rollback();
         }
 
-        public Result RollbackOnlyModified()
-        {
-            IFileSystem baseFs = BaseFileSystem.Get;
-
-            if (baseFs.GetType() == typeof(DirectorySaveDataFileSystem))
-            {
-                return ((DirectorySaveDataFileSystem)baseFs).Rollback();
-            }
-
-            throw new NotImplementedException();
-        }
+        throw new NotImplementedException();
     }
 }

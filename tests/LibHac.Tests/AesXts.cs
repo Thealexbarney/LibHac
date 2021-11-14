@@ -3,11 +3,11 @@ using LibHac.FsSystem;
 using LibHac.Util;
 using Xunit;
 
-namespace LibHac.Tests
+namespace LibHac.Tests;
+
+public class AesXts
 {
-    public class AesXts
-    {
-        public static readonly TheoryData<TestData> TestVectors = new TheoryData<TestData>
+    public static readonly TheoryData<TestData> TestVectors = new TheoryData<TestData>
         {
             // #1 32 byte key, 32 byte PTX 
             new TestData
@@ -110,33 +110,32 @@ namespace LibHac.Tests
             }
         };
 
-        [Theory]
-        [MemberData(nameof(TestVectors))]
-        public static void Encrypt(TestData data) => TestTransform(data, false);
+    [Theory]
+    [MemberData(nameof(TestVectors))]
+    public static void Encrypt(TestData data) => TestTransform(data, false);
 
-        [Theory]
-        [MemberData(nameof(TestVectors))]
-        public static void Decrypt(TestData data) => TestTransform(data, true);
+    [Theory]
+    [MemberData(nameof(TestVectors))]
+    public static void Decrypt(TestData data) => TestTransform(data, true);
 
-        private static void TestTransform(TestData data, bool decrypting)
-        {
-            var transform = new Aes128XtsTransform(data.Key1, data.Key2, decrypting);
-            byte[] transformed = data.GetInitialText(decrypting).ToArray();
+    private static void TestTransform(TestData data, bool decrypting)
+    {
+        var transform = new Aes128XtsTransform(data.Key1, data.Key2, decrypting);
+        byte[] transformed = data.GetInitialText(decrypting).ToArray();
 
-            transform.TransformBlock(transformed, 0, transformed.Length, data.Sector);
-            Assert.Equal(data.GetTransformedText(decrypting), transformed);
-        }
+        transform.TransformBlock(transformed, 0, transformed.Length, data.Sector);
+        Assert.Equal(data.GetTransformedText(decrypting), transformed);
+    }
 
-        public struct TestData
-        {
-            public byte[] CipherText;
-            public byte[] PlainText;
-            public byte[] Key1;
-            public byte[] Key2;
-            public ulong Sector;
+    public struct TestData
+    {
+        public byte[] CipherText;
+        public byte[] PlainText;
+        public byte[] Key1;
+        public byte[] Key2;
+        public ulong Sector;
 
-            public byte[] GetInitialText(bool decrypting) => decrypting ? CipherText : PlainText;
-            public byte[] GetTransformedText(bool decrypting) => decrypting ? PlainText : CipherText;
-        }
+        public byte[] GetInitialText(bool decrypting) => decrypting ? CipherText : PlainText;
+        public byte[] GetTransformedText(bool decrypting) => decrypting ? PlainText : CipherText;
     }
 }

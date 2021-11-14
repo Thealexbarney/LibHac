@@ -1,35 +1,34 @@
 ﻿using System;
 
-namespace LibHac.Kvdb
+namespace LibHac.Kvdb;
+
+internal struct AutoBuffer : IDisposable
 {
-    internal struct AutoBuffer : IDisposable
+    private const int Alignment = 0x10;
+
+    private MemoryResource _memoryResource;
+    private MemoryResource.Buffer _buffer;
+
+    public Span<byte> Get() => _buffer.Get();
+    public int GetSize() => _buffer.Length;
+
+    public Result Initialize(long size, MemoryResource memoryResource)
     {
-        private const int Alignment = 0x10;
+        MemoryResource.Buffer buffer = memoryResource.Allocate(size, Alignment);
+        if (!buffer.IsValid)
+            return ResultKvdb.AllocationFailed.Log();
 
-        private MemoryResource _memoryResource;
-        private MemoryResource.Buffer _buffer;
+        _memoryResource = memoryResource;
+        _buffer = buffer;
 
-        public Span<byte> Get() => _buffer.Get();
-        public int GetSize() => _buffer.Length;
+        return Result.Success;
+    }
 
-        public Result Initialize(long size, MemoryResource memoryResource)
+    public void Dispose()
+    {
+        if (_buffer.IsValid)
         {
-            MemoryResource.Buffer buffer = memoryResource.Allocate(size, Alignment);
-            if (!buffer.IsValid)
-                return ResultKvdb.AllocationFailed.Log();
-
-            _memoryResource = memoryResource;
-            _buffer = buffer;
-
-            return Result.Success;
-        }
-
-        public void Dispose()
-        {
-            if (_buffer.IsValid)
-            {
-                _memoryResource.Deallocate(ref _buffer, Alignment);
-            }
+            _memoryResource.Deallocate(ref _buffer, Alignment);
         }
     }
 }

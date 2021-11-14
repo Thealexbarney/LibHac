@@ -5,283 +5,282 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Util;
 
-namespace LibHac.FsSystem
+namespace LibHac.FsSystem;
+
+public class AesXtsFileSystem : IFileSystem
 {
-    public class AesXtsFileSystem : IFileSystem
+    public int BlockSize { get; }
+
+    private IFileSystem _baseFileSystem;
+    private SharedRef<IFileSystem> _sharedBaseFileSystem;
+    private byte[] _kekSource;
+    private byte[] _validationKey;
+
+    public AesXtsFileSystem(ref SharedRef<IFileSystem> fs, byte[] keys, int blockSize)
     {
-        public int BlockSize { get; }
+        _sharedBaseFileSystem = SharedRef<IFileSystem>.CreateMove(ref fs);
+        _baseFileSystem = _sharedBaseFileSystem.Get;
+        _kekSource = keys.AsSpan(0, 0x10).ToArray();
+        _validationKey = keys.AsSpan(0x10, 0x10).ToArray();
+        BlockSize = blockSize;
+    }
 
-        private IFileSystem _baseFileSystem;
-        private SharedRef<IFileSystem> _sharedBaseFileSystem;
-        private byte[] _kekSource;
-        private byte[] _validationKey;
+    public AesXtsFileSystem(IFileSystem fs, byte[] keys, int blockSize)
+    {
+        _baseFileSystem = fs;
+        _kekSource = keys.AsSpan(0, 0x10).ToArray();
+        _validationKey = keys.AsSpan(0x10, 0x10).ToArray();
+        BlockSize = blockSize;
+    }
 
-        public AesXtsFileSystem(ref SharedRef<IFileSystem> fs, byte[] keys, int blockSize)
+    public override void Dispose()
+    {
+        _sharedBaseFileSystem.Destroy();
+        base.Dispose();
+    }
+
+    protected override Result DoCreateDirectory(in Path path)
+    {
+        return _baseFileSystem.CreateDirectory(path);
+    }
+
+    protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
+    {
+        return CreateFile(path, size, option, new byte[0x20]);
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="AesXtsFile"/> using the provided key.
+    /// </summary>
+    /// <param name="path">The full path of the file to create.</param>
+    /// <param name="size">The initial size of the created file.</param>
+    /// <param name="options">Flags to control how the file is created.
+    /// Should usually be <see cref="CreateFileOptions.None"/></param>
+    /// <param name="key">The 256-bit key containing a 128-bit data key followed by a 128-bit tweak key.</param>
+    public Result CreateFile(in Path path, long size, CreateFileOptions options, byte[] key)
+    {
+        long containerSize = AesXtsFile.HeaderLength + Alignment.AlignUp(size, 0x10);
+
+        Result rc = _baseFileSystem.CreateFile(in path, containerSize, options);
+        if (rc.IsFailure()) return rc;
+
+        var header = new AesXtsFileHeader(key, size, path.ToString(), _kekSource, _validationKey);
+
+        using var baseFile = new UniqueRef<IFile>();
+        rc = _baseFileSystem.OpenFile(ref baseFile.Ref(), in path, OpenMode.Write);
+        if (rc.IsFailure()) return rc;
+
+        rc = baseFile.Get.Write(0, header.ToBytes(false));
+        if (rc.IsFailure()) return rc;
+
+        return Result.Success;
+    }
+
+    protected override Result DoDeleteDirectory(in Path path)
+    {
+        return _baseFileSystem.DeleteDirectory(path);
+    }
+
+    protected override Result DoDeleteDirectoryRecursively(in Path path)
+    {
+        return _baseFileSystem.DeleteDirectoryRecursively(path);
+    }
+
+    protected override Result DoCleanDirectoryRecursively(in Path path)
+    {
+        return _baseFileSystem.CleanDirectoryRecursively(path);
+    }
+
+    protected override Result DoDeleteFile(in Path path)
+    {
+        return _baseFileSystem.DeleteFile(path);
+    }
+
+    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+        OpenDirectoryMode mode)
+    {
+        using var baseDir = new UniqueRef<IDirectory>();
+        Result rc = _baseFileSystem.OpenDirectory(ref baseDir.Ref(), path, mode);
+        if (rc.IsFailure()) return rc;
+
+        outDirectory.Reset(new AesXtsDirectory(_baseFileSystem, ref baseDir.Ref(), new U8String(path.GetString().ToArray()), mode));
+        return Result.Success;
+    }
+
+    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
+    {
+        using var baseFile = new UniqueRef<IFile>();
+        Result rc = _baseFileSystem.OpenFile(ref baseFile.Ref(), path, mode | OpenMode.Read);
+        if (rc.IsFailure()) return rc;
+
+        var xtsFile = new AesXtsFile(mode, ref baseFile.Ref(), new U8String(path.GetString().ToArray()), _kekSource,
+            _validationKey, BlockSize);
+
+        outFile.Reset(xtsFile);
+        return Result.Success;
+    }
+
+    protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
+    {
+        // todo: Return proper result codes
+
+        // Official code procedure:
+        // Make sure all file headers can be decrypted
+        // Rename directory to the new path
+        // Reencrypt file headers with new path
+        // If no errors, return
+        // Reencrypt any modified file headers with the old path
+        // Rename directory to the old path
+
+        Result rc = _baseFileSystem.RenameDirectory(currentPath, newPath);
+        if (rc.IsFailure()) return rc;
+
+        try
         {
-            _sharedBaseFileSystem = SharedRef<IFileSystem>.CreateMove(ref fs);
-            _baseFileSystem = _sharedBaseFileSystem.Get;
-            _kekSource = keys.AsSpan(0, 0x10).ToArray();
-            _validationKey = keys.AsSpan(0x10, 0x10).ToArray();
-            BlockSize = blockSize;
+            RenameDirectoryImpl(currentPath.ToString(), newPath.ToString(), false);
+        }
+        catch (Exception)
+        {
+            RenameDirectoryImpl(currentPath.ToString(), newPath.ToString(), true);
+            _baseFileSystem.RenameDirectory(currentPath, newPath);
+
+            throw;
         }
 
-        public AesXtsFileSystem(IFileSystem fs, byte[] keys, int blockSize)
+        return Result.Success;
+    }
+
+    private void RenameDirectoryImpl(string srcDir, string dstDir, bool doRollback)
+    {
+        foreach (DirectoryEntryEx entry in this.EnumerateEntries(dstDir, "*"))
         {
-            _baseFileSystem = fs;
-            _kekSource = keys.AsSpan(0, 0x10).ToArray();
-            _validationKey = keys.AsSpan(0x10, 0x10).ToArray();
-            BlockSize = blockSize;
-        }
+            string subSrcPath = $"{srcDir}/{entry.Name}";
+            string subDstPath = $"{dstDir}/{entry.Name}";
 
-        public override void Dispose()
-        {
-            _sharedBaseFileSystem.Destroy();
-            base.Dispose();
-        }
-
-        protected override Result DoCreateDirectory(in Path path)
-        {
-            return _baseFileSystem.CreateDirectory(path);
-        }
-
-        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
-        {
-            return CreateFile(path, size, option, new byte[0x20]);
-        }
-
-        /// <summary>
-        /// Creates a new <see cref="AesXtsFile"/> using the provided key.
-        /// </summary>
-        /// <param name="path">The full path of the file to create.</param>
-        /// <param name="size">The initial size of the created file.</param>
-        /// <param name="options">Flags to control how the file is created.
-        /// Should usually be <see cref="CreateFileOptions.None"/></param>
-        /// <param name="key">The 256-bit key containing a 128-bit data key followed by a 128-bit tweak key.</param>
-        public Result CreateFile(in Path path, long size, CreateFileOptions options, byte[] key)
-        {
-            long containerSize = AesXtsFile.HeaderLength + Alignment.AlignUp(size, 0x10);
-
-            Result rc = _baseFileSystem.CreateFile(in path, containerSize, options);
-            if (rc.IsFailure()) return rc;
-
-            var header = new AesXtsFileHeader(key, size, path.ToString(), _kekSource, _validationKey);
-
-            using var baseFile = new UniqueRef<IFile>();
-            rc = _baseFileSystem.OpenFile(ref baseFile.Ref(), in path, OpenMode.Write);
-            if (rc.IsFailure()) return rc;
-
-            rc = baseFile.Get.Write(0, header.ToBytes(false));
-            if (rc.IsFailure()) return rc;
-
-            return Result.Success;
-        }
-
-        protected override Result DoDeleteDirectory(in Path path)
-        {
-            return _baseFileSystem.DeleteDirectory(path);
-        }
-
-        protected override Result DoDeleteDirectoryRecursively(in Path path)
-        {
-            return _baseFileSystem.DeleteDirectoryRecursively(path);
-        }
-
-        protected override Result DoCleanDirectoryRecursively(in Path path)
-        {
-            return _baseFileSystem.CleanDirectoryRecursively(path);
-        }
-
-        protected override Result DoDeleteFile(in Path path)
-        {
-            return _baseFileSystem.DeleteFile(path);
-        }
-
-        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
-            OpenDirectoryMode mode)
-        {
-            using var baseDir = new UniqueRef<IDirectory>();
-            Result rc = _baseFileSystem.OpenDirectory(ref baseDir.Ref(), path, mode);
-            if (rc.IsFailure()) return rc;
-
-            outDirectory.Reset(new AesXtsDirectory(_baseFileSystem, ref baseDir.Ref(), new U8String(path.GetString().ToArray()), mode));
-            return Result.Success;
-        }
-
-        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
-        {
-            using var baseFile = new UniqueRef<IFile>();
-            Result rc = _baseFileSystem.OpenFile(ref baseFile.Ref(), path, mode | OpenMode.Read);
-            if (rc.IsFailure()) return rc;
-
-            var xtsFile = new AesXtsFile(mode, ref baseFile.Ref(), new U8String(path.GetString().ToArray()), _kekSource,
-                _validationKey, BlockSize);
-
-            outFile.Reset(xtsFile);
-            return Result.Success;
-        }
-
-        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
-        {
-            // todo: Return proper result codes
-
-            // Official code procedure:
-            // Make sure all file headers can be decrypted
-            // Rename directory to the new path
-            // Reencrypt file headers with new path
-            // If no errors, return
-            // Reencrypt any modified file headers with the old path
-            // Rename directory to the old path
-
-            Result rc = _baseFileSystem.RenameDirectory(currentPath, newPath);
-            if (rc.IsFailure()) return rc;
-
-            try
+            if (entry.Type == DirectoryEntryType.Directory)
             {
-                RenameDirectoryImpl(currentPath.ToString(), newPath.ToString(), false);
+                RenameDirectoryImpl(subSrcPath, subDstPath, doRollback);
             }
-            catch (Exception)
+
+            if (entry.Type == DirectoryEntryType.File)
             {
-                RenameDirectoryImpl(currentPath.ToString(), newPath.ToString(), true);
-                _baseFileSystem.RenameDirectory(currentPath, newPath);
-
-                throw;
-            }
-
-            return Result.Success;
-        }
-
-        private void RenameDirectoryImpl(string srcDir, string dstDir, bool doRollback)
-        {
-            foreach (DirectoryEntryEx entry in this.EnumerateEntries(dstDir, "*"))
-            {
-                string subSrcPath = $"{srcDir}/{entry.Name}";
-                string subDstPath = $"{dstDir}/{entry.Name}";
-
-                if (entry.Type == DirectoryEntryType.Directory)
+                if (doRollback)
                 {
-                    RenameDirectoryImpl(subSrcPath, subDstPath, doRollback);
+                    if (TryReadXtsHeader(subDstPath, subDstPath, out AesXtsFileHeader header))
+                    {
+                        WriteXtsHeader(header, subDstPath, subSrcPath);
+                    }
                 }
-
-                if (entry.Type == DirectoryEntryType.File)
+                else
                 {
-                    if (doRollback)
-                    {
-                        if (TryReadXtsHeader(subDstPath, subDstPath, out AesXtsFileHeader header))
-                        {
-                            WriteXtsHeader(header, subDstPath, subSrcPath);
-                        }
-                    }
-                    else
-                    {
-                        AesXtsFileHeader header = ReadXtsHeader(subDstPath, subSrcPath);
-                        WriteXtsHeader(header, subDstPath, subDstPath);
-                    }
+                    AesXtsFileHeader header = ReadXtsHeader(subDstPath, subSrcPath);
+                    WriteXtsHeader(header, subDstPath, subDstPath);
                 }
             }
         }
+    }
 
-        protected override Result DoRenameFile(in Path currentPath, in Path newPath)
+    protected override Result DoRenameFile(in Path currentPath, in Path newPath)
+    {
+        // todo: Return proper result codes
+
+        AesXtsFileHeader header = ReadXtsHeader(currentPath.ToString(), currentPath.ToString());
+
+        Result rc = _baseFileSystem.RenameFile(currentPath, newPath);
+        if (rc.IsFailure()) return rc;
+
+        try
         {
-            // todo: Return proper result codes
+            WriteXtsHeader(header, newPath.ToString(), newPath.ToString());
+        }
+        catch (Exception)
+        {
+            _baseFileSystem.RenameFile(newPath, currentPath);
+            WriteXtsHeader(header, currentPath.ToString(), currentPath.ToString());
 
-            AesXtsFileHeader header = ReadXtsHeader(currentPath.ToString(), currentPath.ToString());
-
-            Result rc = _baseFileSystem.RenameFile(currentPath, newPath);
-            if (rc.IsFailure()) return rc;
-
-            try
-            {
-                WriteXtsHeader(header, newPath.ToString(), newPath.ToString());
-            }
-            catch (Exception)
-            {
-                _baseFileSystem.RenameFile(newPath, currentPath);
-                WriteXtsHeader(header, currentPath.ToString(), currentPath.ToString());
-
-                throw;
-            }
-
-            return Result.Success;
+            throw;
         }
 
-        protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
+        return Result.Success;
+    }
+
+    protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
+    {
+        return _baseFileSystem.GetEntryType(out entryType, path);
+    }
+
+    protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
+    {
+        return _baseFileSystem.GetFileTimeStampRaw(out timeStamp, path);
+    }
+
+    protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
+    {
+        return _baseFileSystem.GetFreeSpaceSize(out freeSpace, path);
+    }
+
+    protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
+    {
+        return _baseFileSystem.GetTotalSpaceSize(out totalSpace, path);
+    }
+
+    protected override Result DoCommit()
+    {
+        return _baseFileSystem.Commit();
+    }
+
+    protected override Result DoCommitProvisionally(long counter)
+    {
+        return _baseFileSystem.CommitProvisionally(counter);
+    }
+
+    protected override Result DoRollback()
+    {
+        return _baseFileSystem.Rollback();
+    }
+
+    protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
+        in Path path)
+    {
+        return _baseFileSystem.QueryEntry(outBuffer, inBuffer, queryId, path);
+    }
+
+    private AesXtsFileHeader ReadXtsHeader(string filePath, string keyPath)
+    {
+        if (!TryReadXtsHeader(filePath, keyPath, out AesXtsFileHeader header))
         {
-            return _baseFileSystem.GetEntryType(out entryType, path);
+            ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderInvalidKeysInRenameFile.Value, "Could not decrypt AES-XTS keys");
         }
 
-        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
-        {
-            return _baseFileSystem.GetFileTimeStampRaw(out timeStamp, path);
-        }
+        return header;
+    }
 
-        protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
-        {
-            return _baseFileSystem.GetFreeSpaceSize(out freeSpace, path);
-        }
+    private bool TryReadXtsHeader(string filePath, string keyPath, out AesXtsFileHeader header)
+    {
+        Debug.Assert(PathTools.IsNormalized(filePath.AsSpan()));
+        Debug.Assert(PathTools.IsNormalized(keyPath.AsSpan()));
 
-        protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
-        {
-            return _baseFileSystem.GetTotalSpaceSize(out totalSpace, path);
-        }
+        header = null;
 
-        protected override Result DoCommit()
-        {
-            return _baseFileSystem.Commit();
-        }
+        using var file = new UniqueRef<IFile>();
+        Result rc = _baseFileSystem.OpenFile(ref file.Ref(), filePath.ToU8Span(), OpenMode.Read);
+        if (rc.IsFailure()) return false;
 
-        protected override Result DoCommitProvisionally(long counter)
-        {
-            return _baseFileSystem.CommitProvisionally(counter);
-        }
+        header = new AesXtsFileHeader(file.Get);
 
-        protected override Result DoRollback()
-        {
-            return _baseFileSystem.Rollback();
-        }
+        return header.TryDecryptHeader(keyPath, _kekSource, _validationKey);
+    }
 
-        protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
-            in Path path)
-        {
-            return _baseFileSystem.QueryEntry(outBuffer, inBuffer, queryId, path);
-        }
+    private void WriteXtsHeader(AesXtsFileHeader header, string filePath, string keyPath)
+    {
+        Debug.Assert(PathTools.IsNormalized(filePath.AsSpan()));
+        Debug.Assert(PathTools.IsNormalized(keyPath.AsSpan()));
 
-        private AesXtsFileHeader ReadXtsHeader(string filePath, string keyPath)
-        {
-            if (!TryReadXtsHeader(filePath, keyPath, out AesXtsFileHeader header))
-            {
-                ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderInvalidKeysInRenameFile.Value, "Could not decrypt AES-XTS keys");
-            }
+        header.EncryptHeader(keyPath, _kekSource, _validationKey);
 
-            return header;
-        }
+        using var file = new UniqueRef<IFile>();
+        _baseFileSystem.OpenFile(ref file.Ref(), filePath.ToU8Span(), OpenMode.ReadWrite);
 
-        private bool TryReadXtsHeader(string filePath, string keyPath, out AesXtsFileHeader header)
-        {
-            Debug.Assert(PathTools.IsNormalized(filePath.AsSpan()));
-            Debug.Assert(PathTools.IsNormalized(keyPath.AsSpan()));
-
-            header = null;
-
-            using var file = new UniqueRef<IFile>();
-            Result rc = _baseFileSystem.OpenFile(ref file.Ref(), filePath.ToU8Span(), OpenMode.Read);
-            if (rc.IsFailure()) return false;
-
-            header = new AesXtsFileHeader(file.Get);
-
-            return header.TryDecryptHeader(keyPath, _kekSource, _validationKey);
-        }
-
-        private void WriteXtsHeader(AesXtsFileHeader header, string filePath, string keyPath)
-        {
-            Debug.Assert(PathTools.IsNormalized(filePath.AsSpan()));
-            Debug.Assert(PathTools.IsNormalized(keyPath.AsSpan()));
-
-            header.EncryptHeader(keyPath, _kekSource, _validationKey);
-
-            using var file = new UniqueRef<IFile>();
-            _baseFileSystem.OpenFile(ref file.Ref(), filePath.ToU8Span(), OpenMode.ReadWrite);
-
-            file.Get.Write(0, header.ToBytes(false), WriteOption.Flush).ThrowIfFailure();
-        }
+        file.Get.Write(0, header.ToBytes(false), WriteOption.Flush).ThrowIfFailure();
     }
 }

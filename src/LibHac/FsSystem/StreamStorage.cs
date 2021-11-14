@@ -2,81 +2,80 @@
 using System.IO;
 using LibHac.Fs;
 
-namespace LibHac.FsSystem
+namespace LibHac.FsSystem;
+
+public class StreamStorage : IStorage
 {
-    public class StreamStorage : IStorage
+    // todo: handle Stream exceptions
+
+    private Stream BaseStream { get; }
+    private object Locker { get; } = new object();
+    private long Length { get; }
+    private bool LeaveOpen { get; }
+
+    public StreamStorage(Stream baseStream, bool leaveOpen)
     {
-        // todo: handle Stream exceptions
+        BaseStream = baseStream;
+        Length = BaseStream.Length;
+        LeaveOpen = leaveOpen;
+    }
 
-        private Stream BaseStream { get; }
-        private object Locker { get; } = new object();
-        private long Length { get; }
-        private bool LeaveOpen { get; }
-
-        public StreamStorage(Stream baseStream, bool leaveOpen)
+    protected override Result DoRead(long offset, Span<byte> destination)
+    {
+        lock (Locker)
         {
-            BaseStream = baseStream;
-            Length = BaseStream.Length;
-            LeaveOpen = leaveOpen;
+            if (BaseStream.Position != offset)
+            {
+                BaseStream.Position = offset;
+            }
+
+            BaseStream.Read(destination);
         }
 
-        protected override Result DoRead(long offset, Span<byte> destination)
-        {
-            lock (Locker)
-            {
-                if (BaseStream.Position != offset)
-                {
-                    BaseStream.Position = offset;
-                }
+        return Result.Success;
+    }
 
-                BaseStream.Read(destination);
+    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    {
+        lock (Locker)
+        {
+            if (BaseStream.Position != offset)
+            {
+                BaseStream.Position = offset;
             }
+
+            BaseStream.Write(source);
+        }
+
+        return Result.Success;
+    }
+
+    protected override Result DoFlush()
+    {
+        lock (Locker)
+        {
+            BaseStream.Flush();
 
             return Result.Success;
         }
+    }
 
-        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    protected override Result DoSetSize(long size)
+    {
+        return ResultFs.NotImplemented.Log();
+    }
+
+    protected override Result DoGetSize(out long size)
+    {
+        size = Length;
+        return Result.Success;
+    }
+
+    public override void Dispose()
+    {
+        if (!LeaveOpen)
         {
-            lock (Locker)
-            {
-                if (BaseStream.Position != offset)
-                {
-                    BaseStream.Position = offset;
-                }
-
-                BaseStream.Write(source);
-            }
-
-            return Result.Success;
-        }
-
-        protected override Result DoFlush()
-        {
-            lock (Locker)
-            {
-                BaseStream.Flush();
-
-                return Result.Success;
-            }
-        }
-
-        protected override Result DoSetSize(long size)
-        {
-            return ResultFs.NotImplemented.Log();
-        }
-
-        protected override Result DoGetSize(out long size)
-        {
-            size = Length;
-            return Result.Success;
-        }
-
-        public override void Dispose()
-        {
-            if (!LeaveOpen)
-            {
-                BaseStream?.Dispose();
-            }
+            BaseStream?.Dispose();
         }
     }
 }

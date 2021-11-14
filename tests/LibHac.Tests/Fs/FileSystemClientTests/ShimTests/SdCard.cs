@@ -4,78 +4,77 @@ using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
 using Xunit;
 
-namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests
+namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests;
+
+public class SdCard
 {
-    public class SdCard
+    [Fact]
+    public void MountSdCard_CardIsInserted_Succeeds()
     {
-        [Fact]
-        public void MountSdCard_CardIsInserted_Succeeds()
-        {
-            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-            Assert.Success(fs.MountSdCard("sdcard".ToU8Span()));
-        }
+        Assert.Success(fs.MountSdCard("sdcard".ToU8Span()));
+    }
 
-        [Fact]
-        public void MountSdCard_CardIsNotInserted_Fails()
-        {
-            FileSystemClient fs = FileSystemServerFactory.CreateClient(false);
+    [Fact]
+    public void MountSdCard_CardIsNotInserted_Fails()
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(false);
 
-            Assert.Result(ResultFs.PortSdCardNoDevice, fs.MountSdCard("sdcard".ToU8Span()));
-        }
+        Assert.Result(ResultFs.PortSdCardNoDevice, fs.MountSdCard("sdcard".ToU8Span()));
+    }
 
-        [Fact]
-        public void MountSdCard_CanWriteToFsAfterMounted()
-        {
-            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+    [Fact]
+    public void MountSdCard_CanWriteToFsAfterMounted()
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-            fs.MountSdCard("sdcard".ToU8String());
+        fs.MountSdCard("sdcard".ToU8String());
 
-            Assert.Success(fs.CreateFile("sdcard:/file".ToU8Span(), 100, CreateFileOptions.None));
-        }
+        Assert.Success(fs.CreateFile("sdcard:/file".ToU8Span(), 100, CreateFileOptions.None));
+    }
 
-        [Fact]
-        public void IsSdCardInserted_CardIsInserted_ReturnsTrue()
-        {
-            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+    [Fact]
+    public void IsSdCardInserted_CardIsInserted_ReturnsTrue()
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-            Assert.True(fs.IsSdCardInserted());
-        }
+        Assert.True(fs.IsSdCardInserted());
+    }
 
-        [Fact]
-        public void IsSdCardInserted_CardIsNotInserted_ReturnsFalse()
-        {
-            FileSystemClient fs = FileSystemServerFactory.CreateClient(false);
+    [Fact]
+    public void IsSdCardInserted_CardIsNotInserted_ReturnsFalse()
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(false);
 
-            Assert.False(fs.IsSdCardInserted());
-        }
+        Assert.False(fs.IsSdCardInserted());
+    }
 
-        [Fact]
-        public void IsSdCardAccessible_CardIsInserted_ReturnsTrue()
-        {
-            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+    [Fact]
+    public void IsSdCardAccessible_CardIsInserted_ReturnsTrue()
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-            Assert.True(fs.IsSdCardAccessible());
-        }
+        Assert.True(fs.IsSdCardAccessible());
+    }
 
-        [Fact]
-        public void IsSdCardAccessible_CardIsNotInserted_ReturnsFalse()
-        {
-            FileSystemClient fs = FileSystemServerFactory.CreateClient(false);
+    [Fact]
+    public void IsSdCardAccessible_CardIsNotInserted_ReturnsFalse()
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(false);
 
-            Assert.False(fs.IsSdCardAccessible());
-        }
+        Assert.False(fs.IsSdCardAccessible());
+    }
 
-        [Fact]
-        public void SetSdCardAccessibility_SetAccessibilityPersists()
-        {
-            FileSystemClient fs = FileSystemServerFactory.CreateClient(false);
+    [Fact]
+    public void SetSdCardAccessibility_SetAccessibilityPersists()
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(false);
 
-            fs.SetSdCardAccessibility(true);
-            Assert.True(fs.IsSdCardAccessible());
+        fs.SetSdCardAccessibility(true);
+        Assert.True(fs.IsSdCardAccessible());
 
-            fs.SetSdCardAccessibility(false);
-            Assert.False(fs.IsSdCardAccessible());
-        }
+        fs.SetSdCardAccessibility(false);
+        Assert.False(fs.IsSdCardAccessible());
     }
 }

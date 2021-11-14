@@ -1,11 +1,10 @@
 ﻿using System;
 
-namespace LibHac.Crypto
+namespace LibHac.Crypto;
+
+public interface IHash
 {
-    public interface IHash
-    {
-        void Initialize();
-        void Update(ReadOnlySpan<byte> data);
-        void GetHash(Span<byte> hashBuffer);
-    }
+    void Initialize();
+    void Update(ReadOnlySpan<byte> data);
+    void GetHash(Span<byte> hashBuffer);
 }

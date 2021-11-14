@@ -3,44 +3,43 @@ using LibHac.Fs;
 using LibHac.FsSystem;
 using LibHac.FsSystem.RomFs;
 
-namespace hactoolnet
+namespace hactoolnet;
+
+internal static class ProcessRomfs
 {
-    internal static class ProcessRomfs
+    public static void Process(Context ctx)
     {
-        public static void Process(Context ctx)
+        using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
         {
-            using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
+            Process(ctx, file);
+        }
+    }
+
+    public static void Process(Context ctx, IStorage romfsStorage)
+    {
+        var romfs = new RomFsFileSystem(romfsStorage);
+
+        if (ctx.Options.ListRomFs)
+        {
+            foreach (DirectoryEntryEx entry in romfs.EnumerateEntries())
             {
-                Process(ctx, file);
+                ctx.Logger.LogMessage(entry.FullPath);
             }
         }
 
-        public static void Process(Context ctx, IStorage romfsStorage)
+        if (ctx.Options.RomfsOut != null)
         {
-            var romfs = new RomFsFileSystem(romfsStorage);
+            romfsStorage.GetSize(out long romFsSize).ThrowIfFailure();
 
-            if (ctx.Options.ListRomFs)
+            using (var outFile = new FileStream(ctx.Options.RomfsOut, FileMode.Create, FileAccess.ReadWrite))
             {
-                foreach (DirectoryEntryEx entry in romfs.EnumerateEntries())
-                {
-                    ctx.Logger.LogMessage(entry.FullPath);
-                }
+                romfsStorage.CopyToStream(outFile, romFsSize, ctx.Logger);
             }
+        }
 
-            if (ctx.Options.RomfsOut != null)
-            {
-                romfsStorage.GetSize(out long romFsSize).ThrowIfFailure();
-
-                using (var outFile = new FileStream(ctx.Options.RomfsOut, FileMode.Create, FileAccess.ReadWrite))
-                {
-                    romfsStorage.CopyToStream(outFile, romFsSize, ctx.Logger);
-                }
-            }
-
-            if (ctx.Options.RomfsOutDir != null)
-            {
-                romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
-            }
+        if (ctx.Options.RomfsOutDir != null)
+        {
+            romfs.Extract(ctx.Options.RomfsOutDir, ctx.Logger);
         }
     }
 }

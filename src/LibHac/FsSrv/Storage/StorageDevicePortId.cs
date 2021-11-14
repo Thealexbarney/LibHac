@@ -1,10 +1,9 @@
-﻿namespace LibHac.FsSrv.Storage
+﻿namespace LibHac.FsSrv.Storage;
+
+public enum StorageDevicePortId : byte
 {
-    public enum StorageDevicePortId : byte
-    {
-        Invalid = 0,
-        Mmc = 1,
-        SdCard = 2,
-        GameCard = 3
-    }
+    Invalid = 0,
+    Mmc = 1,
+    SdCard = 2,
+    GameCard = 3
 }

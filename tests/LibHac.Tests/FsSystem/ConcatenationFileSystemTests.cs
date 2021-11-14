@@ -1,7 +1,6 @@
-﻿namespace LibHac.Tests.FsSystem
+﻿namespace LibHac.Tests.FsSystem;
+
+public class ConcatenationFileSystemTests
 {
-    public class ConcatenationFileSystemTests
-    {
-        //asdf
-    }
+    //asdf
 }

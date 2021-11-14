@@ -4,41 +4,40 @@ using System.Runtime.Intrinsics;
 using LibHac.Common;
 using LibHac.Crypto.Impl;
 
-namespace LibHac.Crypto
+namespace LibHac.Crypto;
+
+public class AesXtsEncryptorNi : ICipherWithIv
 {
-    public class AesXtsEncryptorNi : ICipherWithIv
+    private AesXtsModeNi _baseCipher;
+
+    public ref Buffer16 Iv => ref Unsafe.As<Vector128<byte>, Buffer16>(ref _baseCipher.Iv);
+
+    public AesXtsEncryptorNi(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv)
     {
-        private AesXtsModeNi _baseCipher;
-
-        public ref Buffer16 Iv => ref Unsafe.As<Vector128<byte>, Buffer16>(ref _baseCipher.Iv);
-
-        public AesXtsEncryptorNi(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv)
-        {
-            _baseCipher = new AesXtsModeNi();
-            _baseCipher.Initialize(key1, key2, iv, false);
-        }
-
-        public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
-        {
-            _baseCipher.Encrypt(input, output);
-        }
+        _baseCipher = new AesXtsModeNi();
+        _baseCipher.Initialize(key1, key2, iv, false);
     }
 
-    public class AesXtsDecryptorNi : ICipherWithIv
+    public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
     {
-        private AesXtsModeNi _baseCipher;
+        _baseCipher.Encrypt(input, output);
+    }
+}
 
-        public ref Buffer16 Iv => ref Unsafe.As<Vector128<byte>, Buffer16>(ref _baseCipher.Iv);
+public class AesXtsDecryptorNi : ICipherWithIv
+{
+    private AesXtsModeNi _baseCipher;
 
-        public AesXtsDecryptorNi(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv)
-        {
-            _baseCipher = new AesXtsModeNi();
-            _baseCipher.Initialize(key1, key2, iv, true);
-        }
+    public ref Buffer16 Iv => ref Unsafe.As<Vector128<byte>, Buffer16>(ref _baseCipher.Iv);
 
-        public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
-        {
-            _baseCipher.Decrypt(input, output);
-        }
+    public AesXtsDecryptorNi(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv)
+    {
+        _baseCipher = new AesXtsModeNi();
+        _baseCipher.Initialize(key1, key2, iv, true);
+    }
+
+    public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
+    {
+        _baseCipher.Decrypt(input, output);
     }
 }

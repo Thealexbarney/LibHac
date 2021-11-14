@@ -4,70 +4,69 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 
-namespace LibHac
+namespace LibHac;
+
+public class Xci
 {
-    public class Xci
+    public XciHeader Header { get; }
+
+    private IStorage BaseStorage { get; }
+    private object InitLocker { get; } = new object();
+    private XciPartition RootPartition { get; set; }
+
+    public Xci(KeySet keySet, IStorage storage)
     {
-        public XciHeader Header { get; }
+        BaseStorage = storage;
+        Header = new XciHeader(keySet, storage.AsStream());
+    }
 
-        private IStorage BaseStorage { get; }
-        private object InitLocker { get; } = new object();
-        private XciPartition RootPartition { get; set; }
+    public bool HasPartition(XciPartitionType type)
+    {
+        if (type == XciPartitionType.Root) return true;
 
-        public Xci(KeySet keySet, IStorage storage)
+        return GetRootPartition().FileExists("/" + type.GetFileName());
+    }
+
+    public XciPartition OpenPartition(XciPartitionType type)
+    {
+        XciPartition root = GetRootPartition();
+        if (type == XciPartitionType.Root) return root;
+
+        using var partitionFile = new UniqueRef<IFile>();
+        root.OpenFile(ref partitionFile.Ref(), type.GetFileName().ToU8Span(), OpenMode.Read).ThrowIfFailure();
+        return new XciPartition(partitionFile.Release().AsStorage());
+    }
+
+    private XciPartition GetRootPartition()
+    {
+        if (RootPartition != null) return RootPartition;
+
+        InitializeRootPartition();
+
+        return RootPartition;
+    }
+
+    private void InitializeRootPartition()
+    {
+        lock (InitLocker)
         {
-            BaseStorage = storage;
-            Header = new XciHeader(keySet, storage.AsStream());
-        }
+            if (RootPartition != null) return;
 
-        public bool HasPartition(XciPartitionType type)
-        {
-            if (type == XciPartitionType.Root) return true;
+            IStorage rootStorage = BaseStorage.Slice(Header.RootPartitionOffset);
 
-            return GetRootPartition().FileExists("/" + type.GetFileName());
-        }
-
-        public XciPartition OpenPartition(XciPartitionType type)
-        {
-            XciPartition root = GetRootPartition();
-            if (type == XciPartitionType.Root) return root;
-
-            using var partitionFile = new UniqueRef<IFile>();
-            root.OpenFile(ref partitionFile.Ref(), type.GetFileName().ToU8Span(), OpenMode.Read).ThrowIfFailure();
-            return new XciPartition(partitionFile.Release().AsStorage());
-        }
-
-        private XciPartition GetRootPartition()
-        {
-            if (RootPartition != null) return RootPartition;
-
-            InitializeRootPartition();
-
-            return RootPartition;
-        }
-
-        private void InitializeRootPartition()
-        {
-            lock (InitLocker)
+            RootPartition = new XciPartition(rootStorage)
             {
-                if (RootPartition != null) return;
-
-                IStorage rootStorage = BaseStorage.Slice(Header.RootPartitionOffset);
-
-                RootPartition = new XciPartition(rootStorage)
-                {
-                    Offset = Header.RootPartitionOffset,
-                    HashValidity = Header.PartitionFsHeaderValidity
-                };
-            }
+                Offset = Header.RootPartitionOffset,
+                HashValidity = Header.PartitionFsHeaderValidity
+            };
         }
     }
+}
 
-    public class XciPartition : PartitionFileSystem
-    {
-        public long Offset { get; internal set; }
-        public Validity HashValidity { get; set; } = Validity.Unchecked;
+public class XciPartition : PartitionFileSystem
+{
+    public long Offset { get; internal set; }
+    public Validity HashValidity { get; set; } = Validity.Unchecked;
 
-        public XciPartition(IStorage storage) : base(storage) { }
-    }
+    public XciPartition(IStorage storage) : base(storage) { }
 }

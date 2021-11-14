@@ -6,54 +6,54 @@ using LibHac.FsSystem.Save;
 using LibHac.Tests.Fs;
 using Xunit;
 
-namespace LibHac.Tests.FsSystem
+namespace LibHac.Tests.FsSystem;
+
+public class BufferedStorageTests
 {
-    public class BufferedStorageTests
+    [Fact]
+    public void Write_SingleBlock_CanReadBack()
     {
-        [Fact]
-        public void Write_SingleBlock_CanReadBack()
-        {
-            byte[] buffer = new byte[0x18000];
-            byte[] workBuffer = new byte[0x18000];
-            var bufferManager = new FileSystemBufferManager();
-            Assert.Success(bufferManager.Initialize(5, buffer, 0x4000, workBuffer));
+        byte[] buffer = new byte[0x18000];
+        byte[] workBuffer = new byte[0x18000];
+        var bufferManager = new FileSystemBufferManager();
+        Assert.Success(bufferManager.Initialize(5, buffer, 0x4000, workBuffer));
 
-            byte[] storageBuffer = new byte[0x80000];
-            var baseStorage = new SubStorage(new MemoryStorage(storageBuffer), 0, storageBuffer.Length);
+        byte[] storageBuffer = new byte[0x80000];
+        var baseStorage = new SubStorage(new MemoryStorage(storageBuffer), 0, storageBuffer.Length);
 
-            var bufferedStorage = new BufferedStorage();
-            Assert.Success(bufferedStorage.Initialize(baseStorage, bufferManager, 0x4000, 4));
+        var bufferedStorage = new BufferedStorage();
+        Assert.Success(bufferedStorage.Initialize(baseStorage, bufferManager, 0x4000, 4));
 
-            byte[] writeBuffer = new byte[0x400];
-            byte[] readBuffer = new byte[0x400];
+        byte[] writeBuffer = new byte[0x400];
+        byte[] readBuffer = new byte[0x400];
 
-            writeBuffer.AsSpan().Fill(0xAA);
-            Assert.Success(bufferedStorage.Write(0x10000, writeBuffer));
-            Assert.Success(bufferedStorage.Read(0x10000, readBuffer));
+        writeBuffer.AsSpan().Fill(0xAA);
+        Assert.Success(bufferedStorage.Write(0x10000, writeBuffer));
+        Assert.Success(bufferedStorage.Read(0x10000, readBuffer));
 
-            Assert.Equal(writeBuffer, readBuffer);
-        }
+        Assert.Equal(writeBuffer, readBuffer);
+    }
 
-        public class AccessTestConfig
-        {
-            public int[] SizeClassProbs { get; set; }
-            public int[] SizeClassMaxSizes { get; set; }
-            public int[] TaskProbs { get; set; }
-            public int[] AccessTypeProbs { get; set; }
-            public ulong RngSeed { get; set; }
-            public int FrequentAccessBlockCount { get; set; }
-            public int BlockSize { get; set; }
-            public int StorageCacheCount { get; set; }
-            public bool EnableBulkRead { get; set; }
-            public int StorageSize { get; set; }
-            public int HeapSize { get; set; }
-            public int HeapBlockSize { get; set; }
-            public int BufferManagerCacheCount { get; set; }
-        }
+    public class AccessTestConfig
+    {
+        public int[] SizeClassProbs { get; set; }
+        public int[] SizeClassMaxSizes { get; set; }
+        public int[] TaskProbs { get; set; }
+        public int[] AccessTypeProbs { get; set; }
+        public ulong RngSeed { get; set; }
+        public int FrequentAccessBlockCount { get; set; }
+        public int BlockSize { get; set; }
+        public int StorageCacheCount { get; set; }
+        public bool EnableBulkRead { get; set; }
+        public int StorageSize { get; set; }
+        public int HeapSize { get; set; }
+        public int HeapBlockSize { get; set; }
+        public int BufferManagerCacheCount { get; set; }
+    }
 
 
-        public static AccessTestConfig[] AccessTestConfigs =
-        {
+    public static AccessTestConfig[] AccessTestConfigs =
+    {
             new()
             {
                 SizeClassProbs = new[] {50, 50, 5},
@@ -168,62 +168,61 @@ namespace LibHac.Tests.FsSystem
             }
         };
 
-        private static TheoryData<T> CreateTheoryData<T>(IEnumerable<T> items)
+    private static TheoryData<T> CreateTheoryData<T>(IEnumerable<T> items)
+    {
+        var output = new TheoryData<T>();
+
+        foreach (T item in items)
         {
-            var output = new TheoryData<T>();
-
-            foreach (T item in items)
-            {
-                output.Add(item);
-            }
-
-            return output;
+            output.Add(item);
         }
 
-        public static TheoryData<AccessTestConfig> AccessTestTheoryData = CreateTheoryData(AccessTestConfigs);
+        return output;
+    }
 
-        [Theory]
-        [MemberData(nameof(AccessTestTheoryData))]
-        public void ReadWrite_AccessCorrectnessTestAgainstMemoryStorage(AccessTestConfig config)
+    public static TheoryData<AccessTestConfig> AccessTestTheoryData = CreateTheoryData(AccessTestConfigs);
+
+    [Theory]
+    [MemberData(nameof(AccessTestTheoryData))]
+    public void ReadWrite_AccessCorrectnessTestAgainstMemoryStorage(AccessTestConfig config)
+    {
+        int orderMax = FileSystemBuddyHeap.QueryOrderMax((nuint)config.HeapSize, (nuint)config.HeapBlockSize);
+        int workBufferSize = (int)FileSystemBuddyHeap.QueryWorkBufferSize(orderMax);
+        byte[] workBuffer = GC.AllocateArray<byte>(workBufferSize, true);
+        byte[] heapBuffer = new byte[config.HeapSize];
+
+        var bufferManager = new FileSystemBufferManager();
+        Assert.Success(bufferManager.Initialize(config.BufferManagerCacheCount, heapBuffer, config.HeapBlockSize, workBuffer));
+
+        byte[] memoryStorageArray = new byte[config.StorageSize];
+        byte[] bufferedStorageArray = new byte[config.StorageSize];
+
+        var memoryStorage = new MemoryStorage(memoryStorageArray);
+        var baseBufferedStorage = new SubStorage(new MemoryStorage(bufferedStorageArray), 0, bufferedStorageArray.Length);
+
+        var bufferedStorage = new BufferedStorage();
+        Assert.Success(bufferedStorage.Initialize(baseBufferedStorage, bufferManager, config.BlockSize, config.StorageCacheCount));
+
+        if (config.EnableBulkRead)
         {
-            int orderMax = FileSystemBuddyHeap.QueryOrderMax((nuint)config.HeapSize, (nuint)config.HeapBlockSize);
-            int workBufferSize = (int)FileSystemBuddyHeap.QueryWorkBufferSize(orderMax);
-            byte[] workBuffer = GC.AllocateArray<byte>(workBufferSize, true);
-            byte[] heapBuffer = new byte[config.HeapSize];
-
-            var bufferManager = new FileSystemBufferManager();
-            Assert.Success(bufferManager.Initialize(config.BufferManagerCacheCount, heapBuffer, config.HeapBlockSize, workBuffer));
-
-            byte[] memoryStorageArray = new byte[config.StorageSize];
-            byte[] bufferedStorageArray = new byte[config.StorageSize];
-
-            var memoryStorage = new MemoryStorage(memoryStorageArray);
-            var baseBufferedStorage = new SubStorage(new MemoryStorage(bufferedStorageArray), 0, bufferedStorageArray.Length);
-
-            var bufferedStorage = new BufferedStorage();
-            Assert.Success(bufferedStorage.Initialize(baseBufferedStorage, bufferManager, config.BlockSize, config.StorageCacheCount));
-
-            if (config.EnableBulkRead)
-            {
-                bufferedStorage.EnableBulkRead();
-            }
-
-            var memoryStorageEntry = new StorageTester.Entry(memoryStorage, memoryStorageArray);
-            var bufferedStorageEntry = new StorageTester.Entry(bufferedStorage, bufferedStorageArray);
-
-            var testerConfig = new StorageTester.Configuration()
-            {
-                Entries = new[] { memoryStorageEntry, bufferedStorageEntry },
-                SizeClassProbs = config.SizeClassProbs,
-                SizeClassMaxSizes = config.SizeClassMaxSizes,
-                TaskProbs = config.TaskProbs,
-                AccessTypeProbs = config.AccessTypeProbs,
-                RngSeed = config.RngSeed,
-                FrequentAccessBlockCount = config.FrequentAccessBlockCount
-            };
-
-            var tester = new StorageTester(testerConfig);
-            tester.Run(0x100);
+            bufferedStorage.EnableBulkRead();
         }
+
+        var memoryStorageEntry = new StorageTester.Entry(memoryStorage, memoryStorageArray);
+        var bufferedStorageEntry = new StorageTester.Entry(bufferedStorage, bufferedStorageArray);
+
+        var testerConfig = new StorageTester.Configuration()
+        {
+            Entries = new[] { memoryStorageEntry, bufferedStorageEntry },
+            SizeClassProbs = config.SizeClassProbs,
+            SizeClassMaxSizes = config.SizeClassMaxSizes,
+            TaskProbs = config.TaskProbs,
+            AccessTypeProbs = config.AccessTypeProbs,
+            RngSeed = config.RngSeed,
+            FrequentAccessBlockCount = config.FrequentAccessBlockCount
+        };
+
+        var tester = new StorageTester(testerConfig);
+        tester.Run(0x100);
     }
 }

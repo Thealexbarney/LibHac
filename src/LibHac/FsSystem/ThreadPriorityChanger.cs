@@ -1,51 +1,50 @@
 ﻿using System;
 
-namespace LibHac.FsSystem
+namespace LibHac.FsSystem;
+
+// Todo: Actually implement both of these structs
+public struct ScopedThreadPriorityChanger : IDisposable
 {
-    // Todo: Actually implement both of these structs
-    public struct ScopedThreadPriorityChanger : IDisposable
+    public enum Mode
     {
-        public enum Mode
-        {
-            Absolute,
-            Relative
-        }
-
-        public ScopedThreadPriorityChanger(int priority, Mode mode)
-        {
-            // Change the current thread priority
-        }
-
-        public void Dispose()
-        {
-            // Change thread priority back
-        }
+        Absolute,
+        Relative
     }
 
-    public struct ScopedThreadPriorityChangerByAccessPriority : IDisposable
+    public ScopedThreadPriorityChanger(int priority, Mode mode)
     {
-        public enum AccessMode
-        {
-            Read,
-            Write
-        }
+        // Change the current thread priority
+    }
 
-        private ScopedThreadPriorityChanger _scopedChanger;
+    public void Dispose()
+    {
+        // Change thread priority back
+    }
+}
 
-        public ScopedThreadPriorityChangerByAccessPriority(AccessMode mode)
-        {
-            _scopedChanger = new ScopedThreadPriorityChanger(GetThreadPriorityByAccessPriority(mode),
-                ScopedThreadPriorityChanger.Mode.Absolute);
-        }
+public struct ScopedThreadPriorityChangerByAccessPriority : IDisposable
+{
+    public enum AccessMode
+    {
+        Read,
+        Write
+    }
 
-        public void Dispose()
-        {
-            _scopedChanger.Dispose();
-        }
+    private ScopedThreadPriorityChanger _scopedChanger;
 
-        private static int GetThreadPriorityByAccessPriority(AccessMode mode)
-        {
-            return 0;
-        }
+    public ScopedThreadPriorityChangerByAccessPriority(AccessMode mode)
+    {
+        _scopedChanger = new ScopedThreadPriorityChanger(GetThreadPriorityByAccessPriority(mode),
+            ScopedThreadPriorityChanger.Mode.Absolute);
+    }
+
+    public void Dispose()
+    {
+        _scopedChanger.Dispose();
+    }
+
+    private static int GetThreadPriorityByAccessPriority(AccessMode mode)
+    {
+        return 0;
     }
 }

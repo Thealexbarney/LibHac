@@ -1,12 +1,11 @@
 ﻿using System;
 
-namespace LibHac.Fat
+namespace LibHac.Fat;
+
+public struct FatFormatParam
 {
-    public struct FatFormatParam
-    {
-        public bool IsSdCard;
-        public uint ProtectedAreaSectors;
-        public Result WriteVerifyErrorResult;
-        public Memory<byte> WorkBuffer;
-    }
+    public bool IsSdCard;
+    public uint ProtectedAreaSectors;
+    public Result WriteVerifyErrorResult;
+    public Memory<byte> WorkBuffer;
 }

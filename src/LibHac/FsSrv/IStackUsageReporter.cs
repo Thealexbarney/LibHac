@@ -1,7 +1,6 @@
-﻿namespace LibHac.FsSrv
+﻿namespace LibHac.FsSrv;
+
+public interface IStackUsageReporter
 {
-    public interface IStackUsageReporter
-    {
-        uint GetStackUsage();
-    }
+    uint GetStackUsage();
 }

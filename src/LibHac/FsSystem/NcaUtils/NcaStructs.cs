@@ -1,82 +1,81 @@
-﻿namespace LibHac.FsSystem.NcaUtils
+﻿namespace LibHac.FsSystem.NcaUtils;
+
+public class TitleVersion
 {
-    public class TitleVersion
+    public uint Version { get; }
+    public int Major { get; }
+    public int Minor { get; }
+    public int Patch { get; }
+    public int Revision { get; }
+
+    public TitleVersion(uint version, bool isSystemTitle = false)
     {
-        public uint Version { get; }
-        public int Major { get; }
-        public int Minor { get; }
-        public int Patch { get; }
-        public int Revision { get; }
+        Version = version;
 
-        public TitleVersion(uint version, bool isSystemTitle = false)
+        if (isSystemTitle)
         {
-            Version = version;
-
-            if (isSystemTitle)
-            {
-                Revision = (int)(version & ((1 << 16) - 1));
-                Patch = (int)((version >> 16) & ((1 << 4) - 1));
-                Minor = (int)((version >> 20) & ((1 << 6) - 1));
-                Major = (int)((version >> 26) & ((1 << 6) - 1));
-            }
-            else
-            {
-                Revision = (byte)version;
-                Patch = (byte)(version >> 8);
-                Minor = (byte)(version >> 16);
-                Major = (byte)(version >> 24);
-            }
+            Revision = (int)(version & ((1 << 16) - 1));
+            Patch = (int)((version >> 16) & ((1 << 4) - 1));
+            Minor = (int)((version >> 20) & ((1 << 6) - 1));
+            Major = (int)((version >> 26) & ((1 << 6) - 1));
         }
-
-        public override string ToString()
+        else
         {
-            return $"{Major}.{Minor}.{Patch}.{Revision}";
+            Revision = (byte)version;
+            Patch = (byte)(version >> 8);
+            Minor = (byte)(version >> 16);
+            Major = (byte)(version >> 24);
         }
     }
 
-    public enum NcaSectionType
+    public override string ToString()
     {
-        Code,
-        Data,
-        Logo
+        return $"{Major}.{Minor}.{Patch}.{Revision}";
     }
+}
 
-    public enum NcaContentType
-    {
-        Program,
-        Meta,
-        Control,
-        Manual,
-        Data,
-        PublicData
-    }
+public enum NcaSectionType
+{
+    Code,
+    Data,
+    Logo
+}
 
-    public enum DistributionType
-    {
-        Download,
-        GameCard
-    }
+public enum NcaContentType
+{
+    Program,
+    Meta,
+    Control,
+    Manual,
+    Data,
+    PublicData
+}
 
-    public enum NcaEncryptionType
-    {
-        Auto,
-        None,
-        XTS,
-        AesCtr,
-        AesCtrEx
-    }
+public enum DistributionType
+{
+    Download,
+    GameCard
+}
 
-    public enum NcaHashType
-    {
-        Auto,
-        None,
-        Sha256,
-        Ivfc
-    }
+public enum NcaEncryptionType
+{
+    Auto,
+    None,
+    XTS,
+    AesCtr,
+    AesCtrEx
+}
 
-    public enum NcaFormatType
-    {
-        Romfs,
-        Pfs0
-    }
+public enum NcaHashType
+{
+    Auto,
+    None,
+    Sha256,
+    Ivfc
+}
+
+public enum NcaFormatType
+{
+    Romfs,
+    Pfs0
 }

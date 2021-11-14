@@ -1,25 +1,24 @@
 ﻿using System;
 using LibHac.Fs.Fsa;
 
-namespace LibHac.Fs
+namespace LibHac.Fs;
+
+public readonly struct DirectoryHandle : IDisposable
 {
-    public readonly struct DirectoryHandle : IDisposable
+    internal readonly Impl.DirectoryAccessor Directory;
+
+    public bool IsValid => Directory is not null;
+
+    internal DirectoryHandle(Impl.DirectoryAccessor directory)
     {
-        internal readonly Impl.DirectoryAccessor Directory;
+        Directory = directory;
+    }
 
-        public bool IsValid => Directory is not null;
-
-        internal DirectoryHandle(Impl.DirectoryAccessor directory)
+    public void Dispose()
+    {
+        if (IsValid)
         {
-            Directory = directory;
-        }
-
-        public void Dispose()
-        {
-            if (IsValid)
-            {
-                Directory.GetParent().Hos.Fs.CloseDirectory(this);
-            }
+            Directory.GetParent().Hos.Fs.CloseDirectory(this);
         }
     }
 }

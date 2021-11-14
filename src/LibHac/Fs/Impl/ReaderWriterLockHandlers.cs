@@ -1,53 +1,52 @@
 ﻿using System;
 using System.Threading;
 
-namespace LibHac.Fs.Impl
+namespace LibHac.Fs.Impl;
+
+/// <summary>
+/// A wrapper for handling write access to a reader-writer lock.
+/// </summary>
+public class UniqueLock : IDisposable
 {
-    /// <summary>
-    /// A wrapper for handling write access to a reader-writer lock.
-    /// </summary>
-    public class UniqueLock : IDisposable
+    private ReaderWriterLockSlim _lock;
+    private bool _hasLock;
+
+    public UniqueLock(ReaderWriterLockSlim readerWriterLock)
     {
-        private ReaderWriterLockSlim _lock;
-        private bool _hasLock;
-
-        public UniqueLock(ReaderWriterLockSlim readerWriterLock)
-        {
-            _lock = readerWriterLock;
-            readerWriterLock.EnterWriteLock();
-            _hasLock = true;
-        }
-
-        public void Dispose()
-        {
-            if (_hasLock)
-            {
-                _lock.ExitWriteLock();
-            }
-        }
+        _lock = readerWriterLock;
+        readerWriterLock.EnterWriteLock();
+        _hasLock = true;
     }
 
-    /// <summary>
-    /// A wrapper for handling read access to a reader-writer lock.
-    /// </summary>
-    public class SharedLock : IDisposable
+    public void Dispose()
     {
-        private ReaderWriterLockSlim _lock;
-        private bool _hasLock;
-
-        public SharedLock(ReaderWriterLockSlim readerWriterLock)
+        if (_hasLock)
         {
-            _lock = readerWriterLock;
-            readerWriterLock.EnterReadLock();
-            _hasLock = true;
+            _lock.ExitWriteLock();
         }
+    }
+}
 
-        public void Dispose()
+/// <summary>
+/// A wrapper for handling read access to a reader-writer lock.
+/// </summary>
+public class SharedLock : IDisposable
+{
+    private ReaderWriterLockSlim _lock;
+    private bool _hasLock;
+
+    public SharedLock(ReaderWriterLockSlim readerWriterLock)
+    {
+        _lock = readerWriterLock;
+        readerWriterLock.EnterReadLock();
+        _hasLock = true;
+    }
+
+    public void Dispose()
+    {
+        if (_hasLock)
         {
-            if (_hasLock)
-            {
-                _lock.EnterReadLock();
-            }
+            _lock.EnterReadLock();
         }
     }
 }

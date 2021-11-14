@@ -1,7 +1,6 @@
-﻿namespace LibHac.FsSystem
+﻿namespace LibHac.FsSystem;
+
+public interface ISaveDataCommitTimeStampGetter
 {
-    public interface ISaveDataCommitTimeStampGetter
-    {
-        Result Get(out long timeStamp);
-    }
+    Result Get(out long timeStamp);
 }

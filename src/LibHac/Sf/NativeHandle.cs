@@ -2,30 +2,29 @@
 using LibHac.Os;
 using LibHac.Svc;
 
-namespace LibHac.Sf
+namespace LibHac.Sf;
+
+public class NativeHandle : IDisposable
 {
-    public class NativeHandle : IDisposable
+    private OsState Os { get; }
+    public Handle Handle { get; private set; }
+    public bool IsManaged { get; private set; }
+
+    public NativeHandle(OsState os, Handle handle)
     {
-        private OsState Os { get; }
-        public Handle Handle { get; private set; }
-        public bool IsManaged { get; private set; }
+        Os = os;
+        Handle = handle;
+    }
 
-        public NativeHandle(OsState os, Handle handle)
-        {
-            Os = os;
-            Handle = handle;
-        }
+    public NativeHandle(OsState os, Handle handle, bool isManaged)
+    {
+        Handle = handle;
+        IsManaged = isManaged;
+    }
 
-        public NativeHandle(OsState os, Handle handle, bool isManaged)
-        {
-            Handle = handle;
-            IsManaged = isManaged;
-        }
-
-        public void Dispose()
-        {
-            if (IsManaged)
-                Os.CloseNativeHandle(Handle.Object);
-        }
+    public void Dispose()
+    {
+        if (IsManaged)
+            Os.CloseNativeHandle(Handle.Object);
     }
 }

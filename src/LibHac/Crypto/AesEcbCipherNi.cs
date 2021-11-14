@@ -1,37 +1,36 @@
 ﻿using System;
 using LibHac.Crypto.Impl;
 
-namespace LibHac.Crypto
+namespace LibHac.Crypto;
+
+public class AesEcbEncryptorNi : ICipher
 {
-    public class AesEcbEncryptorNi : ICipher
+    private AesEcbModeNi _baseCipher;
+
+    public AesEcbEncryptorNi(ReadOnlySpan<byte> key)
     {
-        private AesEcbModeNi _baseCipher;
-
-        public AesEcbEncryptorNi(ReadOnlySpan<byte> key)
-        {
-            _baseCipher = new AesEcbModeNi();
-            _baseCipher.Initialize(key, false);
-        }
-
-        public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
-        {
-            _baseCipher.Encrypt(input, output);
-        }
+        _baseCipher = new AesEcbModeNi();
+        _baseCipher.Initialize(key, false);
     }
 
-    public class AesEcbDecryptorNi : ICipher
+    public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
     {
-        private AesEcbModeNi _baseCipher;
+        _baseCipher.Encrypt(input, output);
+    }
+}
 
-        public AesEcbDecryptorNi(ReadOnlySpan<byte> key)
-        {
-            _baseCipher = new AesEcbModeNi();
-            _baseCipher.Initialize(key, true);
-        }
+public class AesEcbDecryptorNi : ICipher
+{
+    private AesEcbModeNi _baseCipher;
 
-        public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
-        {
-            _baseCipher.Decrypt(input, output);
-        }
+    public AesEcbDecryptorNi(ReadOnlySpan<byte> key)
+    {
+        _baseCipher = new AesEcbModeNi();
+        _baseCipher.Initialize(key, true);
+    }
+
+    public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
+    {
+        _baseCipher.Decrypt(input, output);
     }
 }

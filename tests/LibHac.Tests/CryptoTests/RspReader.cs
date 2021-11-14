@@ -6,215 +6,214 @@ using System.Reflection;
 using LibHac.Util;
 using Xunit;
 
-namespace LibHac.Tests.CryptoTests
+namespace LibHac.Tests.CryptoTests;
+
+public class RspReader
 {
-    public class RspReader
+    private StreamReader Reader { get; }
+
+    public RspReader(Stream stream)
     {
-        private StreamReader Reader { get; }
+        Reader = new StreamReader(stream);
+    }
 
-        public RspReader(Stream stream)
+    public IEnumerable<EncryptionTestVector> GetEncryptionTestVectors()
+    {
+        string line;
+        bool isEncryptType = false;
+
+        var testVector = new EncryptionTestVector();
+        bool canOutputVector = false;
+
+        while ((line = Reader.ReadLine()?.Trim()) != null)
         {
-            Reader = new StreamReader(stream);
-        }
-
-        public IEnumerable<EncryptionTestVector> GetEncryptionTestVectors()
-        {
-            string line;
-            bool isEncryptType = false;
-
-            var testVector = new EncryptionTestVector();
-            bool canOutputVector = false;
-
-            while ((line = Reader.ReadLine()?.Trim()) != null)
+            if (line.Length == 0)
             {
-                if (line.Length == 0)
+                if (canOutputVector)
                 {
-                    if (canOutputVector)
-                    {
-                        testVector.Encrypt = isEncryptType;
+                    testVector.Encrypt = isEncryptType;
 
-                        yield return testVector;
+                    yield return testVector;
 
-                        testVector = new EncryptionTestVector();
-                        canOutputVector = false;
-                    }
-
-                    continue;
+                    testVector = new EncryptionTestVector();
+                    canOutputVector = false;
                 }
 
-                if (line[0] == '#') continue;
-
-                if (line[0] == '[')
-                {
-                    if (line == "[ENCRYPT]") isEncryptType = true;
-                    if (line == "[DECRYPT]") isEncryptType = false;
-
-                    continue;
-                }
-
-                string[] kvp = line.Split(new[] { " = " }, StringSplitOptions.None);
-                if (kvp.Length != 2) throw new InvalidDataException();
-
-                canOutputVector = true;
-
-                switch (kvp[0].ToUpperInvariant())
-                {
-                    case "COUNT":
-                        testVector.Count = int.Parse(kvp[1]);
-                        break;
-                    case "DATAUNITLEN":
-                        testVector.DataUnitLength = int.Parse(kvp[1]);
-                        break;
-                    case "KEY":
-                        testVector.Key = kvp[1].ToBytes();
-                        break;
-                    case "IV":
-                    case "I":
-                        testVector.Iv = kvp[1].ToBytes();
-                        break;
-                    case "PLAINTEXT":
-                    case "PT":
-                        testVector.PlainText = kvp[1].ToBytes();
-                        break;
-                    case "CIPHERTEXT":
-                    case "CT":
-                        testVector.CipherText = kvp[1].ToBytes();
-                        break;
-                }
-            }
-        }
-
-        public static TheoryData<EncryptionTestVector> ReadEncryptionTestVectors(bool getEncryptTests, params string[] filenames)
-        {
-            EncryptionTestVector[] vectorArray = ReadEncryptionTestVectorsArray(getEncryptTests, filenames);
-            var testVectors = new TheoryData<EncryptionTestVector>();
-
-            foreach (EncryptionTestVector test in vectorArray)
-            {
-                testVectors.Add(test);
+                continue;
             }
 
-            return testVectors;
-        }
+            if (line[0] == '#') continue;
 
-        public static EncryptionTestVector[] ReadEncryptionTestVectorsArray(bool getEncryptTests, params string[] filenames)
-        {
-            IEnumerable<string> resourcePaths = filenames.Select(x => $"LibHac.Tests.CryptoTests.TestVectors.{x}");
-            var testVectors = new List<EncryptionTestVector>();
-
-            foreach (string path in resourcePaths)
+            if (line[0] == '[')
             {
-                using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(path))
-                {
-                    var reader = new RspReader(stream);
+                if (line == "[ENCRYPT]") isEncryptType = true;
+                if (line == "[DECRYPT]") isEncryptType = false;
 
-                    foreach (EncryptionTestVector tv in reader.GetEncryptionTestVectors().Where(x => x.Encrypt == getEncryptTests))
-                    {
-                        testVectors.Add(tv);
-                    }
-                }
+                continue;
             }
 
-            return testVectors.ToArray();
-        }
+            string[] kvp = line.Split(new[] { " = " }, StringSplitOptions.None);
+            if (kvp.Length != 2) throw new InvalidDataException();
 
-        public IEnumerable<HashTestVector> GetHashTestVectors()
-        {
-            string line;
+            canOutputVector = true;
 
-            var testVector = new HashTestVector();
-            bool canOutputVector = false;
-
-            while ((line = Reader.ReadLine()?.Trim()) != null)
+            switch (kvp[0].ToUpperInvariant())
             {
-                if (line.Length == 0)
-                {
-                    if (canOutputVector)
-                    {
-                        yield return testVector;
-
-                        testVector = new HashTestVector();
-                        canOutputVector = false;
-                    }
-
-                    continue;
-                }
-
-                if (line[0] == '#') continue;
-                if (line[0] == '[') continue;
-
-                string[] kvp = line.Split(new[] { " = " }, StringSplitOptions.None);
-                if (kvp.Length != 2) throw new InvalidDataException();
-
-                canOutputVector = true;
-
-                switch (kvp[0].ToUpperInvariant())
-                {
-                    case "LEN":
-                        testVector.LengthBits = int.Parse(kvp[1]);
-                        testVector.LengthBytes = testVector.LengthBits / 8;
-                        break;
-                    case "MSG":
-                        testVector.Message = kvp[1].ToBytes();
-                        break;
-                    case "MD":
-                        testVector.Digest = kvp[1].ToBytes();
-                        break;
-                }
+                case "COUNT":
+                    testVector.Count = int.Parse(kvp[1]);
+                    break;
+                case "DATAUNITLEN":
+                    testVector.DataUnitLength = int.Parse(kvp[1]);
+                    break;
+                case "KEY":
+                    testVector.Key = kvp[1].ToBytes();
+                    break;
+                case "IV":
+                case "I":
+                    testVector.Iv = kvp[1].ToBytes();
+                    break;
+                case "PLAINTEXT":
+                case "PT":
+                    testVector.PlainText = kvp[1].ToBytes();
+                    break;
+                case "CIPHERTEXT":
+                case "CT":
+                    testVector.CipherText = kvp[1].ToBytes();
+                    break;
             }
-        }
-
-        public static TheoryData<HashTestVector> ReadHashTestVectors(params string[] filenames)
-        {
-            HashTestVector[] vectorArray = ReadHashTestVectorsArray(filenames);
-            var testVectors = new TheoryData<HashTestVector>();
-
-            foreach (HashTestVector test in vectorArray)
-            {
-                testVectors.Add(test);
-            }
-
-            return testVectors;
-        }
-
-        public static HashTestVector[] ReadHashTestVectorsArray(params string[] filenames)
-        {
-            IEnumerable<string> resourcePaths = filenames.Select(x => $"LibHac.Tests.CryptoTests.TestVectors.{x}");
-            var testVectors = new List<HashTestVector>();
-
-            foreach (string path in resourcePaths)
-            {
-                using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(path))
-                {
-                    var reader = new RspReader(stream);
-
-                    foreach (HashTestVector tv in reader.GetHashTestVectors())
-                    {
-                        testVectors.Add(tv);
-                    }
-                }
-            }
-
-            return testVectors.ToArray();
         }
     }
 
-    public class EncryptionTestVector
+    public static TheoryData<EncryptionTestVector> ReadEncryptionTestVectors(bool getEncryptTests, params string[] filenames)
     {
-        public bool Encrypt { get; set; }
-        public int Count { get; set; }
-        public int DataUnitLength { get; set; }
-        public byte[] Key { get; set; }
-        public byte[] Iv { get; set; }
-        public byte[] PlainText { get; set; }
-        public byte[] CipherText { get; set; }
+        EncryptionTestVector[] vectorArray = ReadEncryptionTestVectorsArray(getEncryptTests, filenames);
+        var testVectors = new TheoryData<EncryptionTestVector>();
+
+        foreach (EncryptionTestVector test in vectorArray)
+        {
+            testVectors.Add(test);
+        }
+
+        return testVectors;
     }
 
-    public class HashTestVector
+    public static EncryptionTestVector[] ReadEncryptionTestVectorsArray(bool getEncryptTests, params string[] filenames)
     {
-        public int LengthBits { get; set; }
-        public int LengthBytes { get; set; }
-        public byte[] Message { get; set; }
-        public byte[] Digest { get; set; }
+        IEnumerable<string> resourcePaths = filenames.Select(x => $"LibHac.Tests.CryptoTests.TestVectors.{x}");
+        var testVectors = new List<EncryptionTestVector>();
+
+        foreach (string path in resourcePaths)
+        {
+            using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(path))
+            {
+                var reader = new RspReader(stream);
+
+                foreach (EncryptionTestVector tv in reader.GetEncryptionTestVectors().Where(x => x.Encrypt == getEncryptTests))
+                {
+                    testVectors.Add(tv);
+                }
+            }
+        }
+
+        return testVectors.ToArray();
     }
+
+    public IEnumerable<HashTestVector> GetHashTestVectors()
+    {
+        string line;
+
+        var testVector = new HashTestVector();
+        bool canOutputVector = false;
+
+        while ((line = Reader.ReadLine()?.Trim()) != null)
+        {
+            if (line.Length == 0)
+            {
+                if (canOutputVector)
+                {
+                    yield return testVector;
+
+                    testVector = new HashTestVector();
+                    canOutputVector = false;
+                }
+
+                continue;
+            }
+
+            if (line[0] == '#') continue;
+            if (line[0] == '[') continue;
+
+            string[] kvp = line.Split(new[] { " = " }, StringSplitOptions.None);
+            if (kvp.Length != 2) throw new InvalidDataException();
+
+            canOutputVector = true;
+
+            switch (kvp[0].ToUpperInvariant())
+            {
+                case "LEN":
+                    testVector.LengthBits = int.Parse(kvp[1]);
+                    testVector.LengthBytes = testVector.LengthBits / 8;
+                    break;
+                case "MSG":
+                    testVector.Message = kvp[1].ToBytes();
+                    break;
+                case "MD":
+                    testVector.Digest = kvp[1].ToBytes();
+                    break;
+            }
+        }
+    }
+
+    public static TheoryData<HashTestVector> ReadHashTestVectors(params string[] filenames)
+    {
+        HashTestVector[] vectorArray = ReadHashTestVectorsArray(filenames);
+        var testVectors = new TheoryData<HashTestVector>();
+
+        foreach (HashTestVector test in vectorArray)
+        {
+            testVectors.Add(test);
+        }
+
+        return testVectors;
+    }
+
+    public static HashTestVector[] ReadHashTestVectorsArray(params string[] filenames)
+    {
+        IEnumerable<string> resourcePaths = filenames.Select(x => $"LibHac.Tests.CryptoTests.TestVectors.{x}");
+        var testVectors = new List<HashTestVector>();
+
+        foreach (string path in resourcePaths)
+        {
+            using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(path))
+            {
+                var reader = new RspReader(stream);
+
+                foreach (HashTestVector tv in reader.GetHashTestVectors())
+                {
+                    testVectors.Add(tv);
+                }
+            }
+        }
+
+        return testVectors.ToArray();
+    }
+}
+
+public class EncryptionTestVector
+{
+    public bool Encrypt { get; set; }
+    public int Count { get; set; }
+    public int DataUnitLength { get; set; }
+    public byte[] Key { get; set; }
+    public byte[] Iv { get; set; }
+    public byte[] PlainText { get; set; }
+    public byte[] CipherText { get; set; }
+}
+
+public class HashTestVector
+{
+    public int LengthBits { get; set; }
+    public int LengthBytes { get; set; }
+    public byte[] Message { get; set; }
+    public byte[] Digest { get; set; }
 }

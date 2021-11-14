@@ -1,24 +1,23 @@
 ﻿using System.Diagnostics;
 
-namespace LibHac.Os
+namespace LibHac.Os;
+
+public interface ITickGenerator
 {
-    public interface ITickGenerator
+    Tick GetCurrentTick();
+}
+
+internal class DefaultTickGenerator : ITickGenerator
+{
+    private readonly long _initialTick;
+
+    public DefaultTickGenerator()
     {
-        Tick GetCurrentTick();
+        _initialTick = Stopwatch.GetTimestamp();
     }
 
-    internal class DefaultTickGenerator : ITickGenerator
+    public Tick GetCurrentTick()
     {
-        private readonly long _initialTick;
-
-        public DefaultTickGenerator()
-        {
-            _initialTick = Stopwatch.GetTimestamp();
-        }
-
-        public Tick GetCurrentTick()
-        {
-            return new Tick(Stopwatch.GetTimestamp() - _initialTick);
-        }
+        return new Tick(Stopwatch.GetTimestamp() - _initialTick);
     }
 }

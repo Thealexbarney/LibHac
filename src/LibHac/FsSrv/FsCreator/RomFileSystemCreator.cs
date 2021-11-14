@@ -3,15 +3,14 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem.RomFs;
 
-namespace LibHac.FsSrv.FsCreator
+namespace LibHac.FsSrv.FsCreator;
+
+public class RomFileSystemCreator : IRomFileSystemCreator
 {
-    public class RomFileSystemCreator : IRomFileSystemCreator
+    // todo: Implement properly
+    public Result Create(ref SharedRef<IFileSystem> outFileSystem, ref SharedRef<IStorage> romFsStorage)
     {
-        // todo: Implement properly
-        public Result Create(ref SharedRef<IFileSystem> outFileSystem, ref SharedRef<IStorage> romFsStorage)
-        {
-            outFileSystem.Reset(new RomFsFileSystem(ref romFsStorage));
-            return Result.Success;
-        }
+        outFileSystem.Reset(new RomFsFileSystem(ref romFsStorage));
+        return Result.Success;
     }
 }

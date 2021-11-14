@@ -5,170 +5,169 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading;
 
-namespace LibHac
+namespace LibHac;
+
+public class ProgressBar : IDisposable, IProgressReport
 {
-    public class ProgressBar : IDisposable, IProgressReport
+    private const int BlockCount = 20;
+    private long _progress;
+    private long _total;
+    private readonly Timer _timer;
+
+    private bool _isMeasuringSpeed;
+    private Stopwatch _watch;
+    private long _timedBytes;
+
+    private readonly System.TimeSpan _animationInterval = System.TimeSpan.FromSeconds(1.0 / 30);
+    private const string Animation = @"|/-\";
+
+    private string _currentText = string.Empty;
+    private bool _disposed;
+    private int _animationIndex;
+
+    private StringBuilder LogText { get; } = new StringBuilder();
+
+    public ProgressBar()
     {
-        private const int BlockCount = 20;
-        private long _progress;
-        private long _total;
-        private readonly Timer _timer;
+        var timerCallBack = new TimerCallback(TimerHandler);
+        _timer = new Timer(timerCallBack, 0, 0, 0);
+    }
 
-        private bool _isMeasuringSpeed;
-        private Stopwatch _watch;
-        private long _timedBytes;
+    public void Report(long value)
+    {
+        Interlocked.Exchange(ref _progress, value);
+    }
 
-        private readonly System.TimeSpan _animationInterval = System.TimeSpan.FromSeconds(1.0 / 30);
-        private const string Animation = @"|/-\";
+    public void ReportAdd(long value)
+    {
+        Interlocked.Add(ref _progress, value);
+        if (_isMeasuringSpeed) Interlocked.Add(ref _timedBytes, value);
+    }
 
-        private string _currentText = string.Empty;
-        private bool _disposed;
-        private int _animationIndex;
-
-        private StringBuilder LogText { get; } = new StringBuilder();
-
-        public ProgressBar()
+    public void LogMessage(string message)
+    {
+        lock (_timer)
         {
-            var timerCallBack = new TimerCallback(TimerHandler);
-            _timer = new Timer(timerCallBack, 0, 0, 0);
+            LogText.AppendLine(message);
         }
+    }
 
-        public void Report(long value)
-        {
-            Interlocked.Exchange(ref _progress, value);
-        }
+    public void SetTotal(long value)
+    {
+        Interlocked.Exchange(ref _total, value);
+        Report(0);
+    }
 
-        public void ReportAdd(long value)
-        {
-            Interlocked.Add(ref _progress, value);
-            if (_isMeasuringSpeed) Interlocked.Add(ref _timedBytes, value);
-        }
+    public void StartNewStopWatch()
+    {
+        _isMeasuringSpeed = true;
+        _timedBytes = 0;
+        _watch = Stopwatch.StartNew();
+    }
 
-        public void LogMessage(string message)
-        {
-            lock (_timer)
-            {
-                LogText.AppendLine(message);
-            }
-        }
+    public void PauseStopWatch()
+    {
+        _isMeasuringSpeed = false;
+        _watch.Stop();
+    }
 
-        public void SetTotal(long value)
-        {
-            Interlocked.Exchange(ref _total, value);
-            Report(0);
-        }
+    public void ResumeStopWatch()
+    {
+        _isMeasuringSpeed = true;
 
-        public void StartNewStopWatch()
+        if (_watch == null)
         {
-            _isMeasuringSpeed = true;
-            _timedBytes = 0;
             _watch = Stopwatch.StartNew();
         }
-
-        public void PauseStopWatch()
+        else
         {
-            _isMeasuringSpeed = false;
-            _watch.Stop();
+            _watch.Start();
+        }
+    }
+
+    public string GetRateString()
+    {
+        return Utilities.GetBytesReadable((long)(_timedBytes / _watch.Elapsed.TotalSeconds)) + "/s";
+    }
+
+    private void TimerHandler(object state)
+    {
+        lock (_timer)
+        {
+            if (_disposed) return;
+
+            string text = string.Empty;
+            string speed = string.Empty;
+
+            if (_isMeasuringSpeed)
+            {
+                speed = $" {GetRateString()}";
+            }
+
+            if (_total > 0)
+            {
+                double progress = _total == 0 ? 0 : (double)_progress / _total;
+                int progressBlockCount = (int)Math.Min(progress * BlockCount, BlockCount);
+                text = $"[{new string('#', progressBlockCount)}{new string('-', BlockCount - progressBlockCount)}] {_progress}/{_total} {progress:P1} {Animation[_animationIndex++ % Animation.Length]}{speed}";
+            }
+            UpdateText(text);
+
+            ResetTimer();
+        }
+    }
+
+    private void UpdateText(string text)
+    {
+        var outputBuilder = new StringBuilder();
+
+        if (LogText.Length > 0)
+        {
+            // Erase current text
+            outputBuilder.Append("\r");
+            outputBuilder.Append(' ', _currentText.Length);
+            outputBuilder.Append("\r");
+            outputBuilder.Append(LogText);
+            _currentText = string.Empty;
+            LogText.Clear();
         }
 
-        public void ResumeStopWatch()
+        // Get length of common portion
+        int commonPrefixLength = 0;
+        int commonLength = Math.Min(_currentText.Length, text.Length);
+        while (commonPrefixLength < commonLength && text[commonPrefixLength] == _currentText[commonPrefixLength])
         {
-            _isMeasuringSpeed = true;
-
-            if (_watch == null)
-            {
-                _watch = Stopwatch.StartNew();
-            }
-            else
-            {
-                _watch.Start();
-            }
+            commonPrefixLength++;
         }
 
-        public string GetRateString()
+        // Backtrack to the first differing character
+        outputBuilder.Append('\b', _currentText.Length - commonPrefixLength);
+
+        // Output new suffix
+        outputBuilder.Append(text.Substring(commonPrefixLength));
+
+        // If the new text is shorter than the old one: delete overlapping characters
+        int overlapCount = _currentText.Length - text.Length;
+        if (overlapCount > 0)
         {
-            return Utilities.GetBytesReadable((long)(_timedBytes / _watch.Elapsed.TotalSeconds)) + "/s";
+            outputBuilder.Append(' ', overlapCount);
+            outputBuilder.Append('\b', overlapCount);
         }
 
-        private void TimerHandler(object state)
+        Console.Write(outputBuilder);
+        _currentText = text;
+    }
+
+    private void ResetTimer()
+    {
+        _timer.Change(_animationInterval, System.TimeSpan.FromMilliseconds(-1));
+    }
+
+    public void Dispose()
+    {
+        lock (_timer)
         {
-            lock (_timer)
-            {
-                if (_disposed) return;
-
-                string text = string.Empty;
-                string speed = string.Empty;
-
-                if (_isMeasuringSpeed)
-                {
-                    speed = $" {GetRateString()}";
-                }
-
-                if (_total > 0)
-                {
-                    double progress = _total == 0 ? 0 : (double)_progress / _total;
-                    int progressBlockCount = (int)Math.Min(progress * BlockCount, BlockCount);
-                    text = $"[{new string('#', progressBlockCount)}{new string('-', BlockCount - progressBlockCount)}] {_progress}/{_total} {progress:P1} {Animation[_animationIndex++ % Animation.Length]}{speed}";
-                }
-                UpdateText(text);
-
-                ResetTimer();
-            }
-        }
-
-        private void UpdateText(string text)
-        {
-            var outputBuilder = new StringBuilder();
-
-            if (LogText.Length > 0)
-            {
-                // Erase current text
-                outputBuilder.Append("\r");
-                outputBuilder.Append(' ', _currentText.Length);
-                outputBuilder.Append("\r");
-                outputBuilder.Append(LogText);
-                _currentText = string.Empty;
-                LogText.Clear();
-            }
-
-            // Get length of common portion
-            int commonPrefixLength = 0;
-            int commonLength = Math.Min(_currentText.Length, text.Length);
-            while (commonPrefixLength < commonLength && text[commonPrefixLength] == _currentText[commonPrefixLength])
-            {
-                commonPrefixLength++;
-            }
-
-            // Backtrack to the first differing character
-            outputBuilder.Append('\b', _currentText.Length - commonPrefixLength);
-
-            // Output new suffix
-            outputBuilder.Append(text.Substring(commonPrefixLength));
-
-            // If the new text is shorter than the old one: delete overlapping characters
-            int overlapCount = _currentText.Length - text.Length;
-            if (overlapCount > 0)
-            {
-                outputBuilder.Append(' ', overlapCount);
-                outputBuilder.Append('\b', overlapCount);
-            }
-
-            Console.Write(outputBuilder);
-            _currentText = text;
-        }
-
-        private void ResetTimer()
-        {
-            _timer.Change(_animationInterval, System.TimeSpan.FromMilliseconds(-1));
-        }
-
-        public void Dispose()
-        {
-            lock (_timer)
-            {
-                _disposed = true;
-                UpdateText(string.Empty);
-            }
+            _disposed = true;
+            UpdateText(string.Empty);
         }
     }
 }

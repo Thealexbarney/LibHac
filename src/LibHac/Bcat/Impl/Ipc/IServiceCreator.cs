@@ -1,14 +1,13 @@
 ﻿using System;
 using LibHac.Common;
 
-namespace LibHac.Bcat.Impl.Ipc
-{
-    public interface IServiceCreator : IDisposable
-    {
-        Result CreateDeliveryCacheStorageService(ref SharedRef<IDeliveryCacheStorageService> outService,
-            ulong processId);
+namespace LibHac.Bcat.Impl.Ipc;
 
-        Result CreateDeliveryCacheStorageServiceWithApplicationId(
-            ref SharedRef<IDeliveryCacheStorageService> outService, ApplicationId applicationId);
-    }
+public interface IServiceCreator : IDisposable
+{
+    Result CreateDeliveryCacheStorageService(ref SharedRef<IDeliveryCacheStorageService> outService,
+        ulong processId);
+
+    Result CreateDeliveryCacheStorageServiceWithApplicationId(
+        ref SharedRef<IDeliveryCacheStorageService> outService, ApplicationId applicationId);
 }

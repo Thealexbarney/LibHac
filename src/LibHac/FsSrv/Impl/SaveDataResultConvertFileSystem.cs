@@ -4,238 +4,237 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 
-namespace LibHac.FsSrv.Impl
+namespace LibHac.FsSrv.Impl;
+
+public static class SaveDataResultConvert
 {
-    public static class SaveDataResultConvert
+    private static Result ConvertCorruptedResult(Result result)
     {
-        private static Result ConvertCorruptedResult(Result result)
+        if (ResultFs.IntegrityVerificationStorageCorrupted.Includes(result))
         {
-            if (ResultFs.IntegrityVerificationStorageCorrupted.Includes(result))
-            {
-                if (ResultFs.IncorrectIntegrityVerificationMagic.Includes(result))
-                    return ResultFs.IncorrectSaveDataIntegrityVerificationMagic.Value;
+            if (ResultFs.IncorrectIntegrityVerificationMagic.Includes(result))
+                return ResultFs.IncorrectSaveDataIntegrityVerificationMagic.Value;
 
-                if (ResultFs.InvalidZeroHash.Includes(result))
-                    return ResultFs.InvalidSaveDataZeroHash.Value;
+            if (ResultFs.InvalidZeroHash.Includes(result))
+                return ResultFs.InvalidSaveDataZeroHash.Value;
 
-                if (ResultFs.NonRealDataVerificationFailed.Includes(result))
-                    return ResultFs.SaveDataNonRealDataVerificationFailed.Value;
+            if (ResultFs.NonRealDataVerificationFailed.Includes(result))
+                return ResultFs.SaveDataNonRealDataVerificationFailed.Value;
 
-                if (ResultFs.ClearedRealDataVerificationFailed.Includes(result))
-                    return ResultFs.ClearedSaveDataRealDataVerificationFailed.Value;
+            if (ResultFs.ClearedRealDataVerificationFailed.Includes(result))
+                return ResultFs.ClearedSaveDataRealDataVerificationFailed.Value;
 
-                if (ResultFs.UnclearedRealDataVerificationFailed.Includes(result))
-                    return ResultFs.UnclearedSaveDataRealDataVerificationFailed.Value;
+            if (ResultFs.UnclearedRealDataVerificationFailed.Includes(result))
+                return ResultFs.UnclearedSaveDataRealDataVerificationFailed.Value;
 
-                Assert.SdkAssert(false);
-            }
+            Assert.SdkAssert(false);
+        }
 
-            if (ResultFs.HostFileSystemCorrupted.Includes(result))
-            {
-                if (ResultFs.HostEntryCorrupted.Includes(result))
-                    return ResultFs.SaveDataHostEntryCorrupted.Value;
+        if (ResultFs.HostFileSystemCorrupted.Includes(result))
+        {
+            if (ResultFs.HostEntryCorrupted.Includes(result))
+                return ResultFs.SaveDataHostEntryCorrupted.Value;
 
-                if (ResultFs.HostFileDataCorrupted.Includes(result))
-                    return ResultFs.SaveDataHostFileDataCorrupted.Value;
+            if (ResultFs.HostFileDataCorrupted.Includes(result))
+                return ResultFs.SaveDataHostFileDataCorrupted.Value;
 
-                if (ResultFs.HostFileCorrupted.Includes(result))
-                    return ResultFs.SaveDataHostFileCorrupted.Value;
+            if (ResultFs.HostFileCorrupted.Includes(result))
+                return ResultFs.SaveDataHostFileCorrupted.Value;
 
-                if (ResultFs.InvalidHostHandle.Includes(result))
-                    return ResultFs.InvalidSaveDataHostHandle.Value;
+            if (ResultFs.InvalidHostHandle.Includes(result))
+                return ResultFs.InvalidSaveDataHostHandle.Value;
 
-                Assert.SdkAssert(false);
-            }
+            Assert.SdkAssert(false);
+        }
 
-            if (ResultFs.DatabaseCorrupted.Includes(result))
-            {
-                if (ResultFs.InvalidAllocationTableBlock.Includes(result))
-                    return ResultFs.InvalidSaveDataAllocationTableBlock.Value;
+        if (ResultFs.DatabaseCorrupted.Includes(result))
+        {
+            if (ResultFs.InvalidAllocationTableBlock.Includes(result))
+                return ResultFs.InvalidSaveDataAllocationTableBlock.Value;
 
-                if (ResultFs.InvalidKeyValueListElementIndex.Includes(result))
-                    return ResultFs.InvalidSaveDataKeyValueListElementIndex.Value;
+            if (ResultFs.InvalidKeyValueListElementIndex.Includes(result))
+                return ResultFs.InvalidSaveDataKeyValueListElementIndex.Value;
 
-                if (ResultFs.AllocationTableIteratedRangeEntry.Includes(result))
-                    return ResultFs.SaveDataAllocationTableIteratedRangeEntry.Value;
+            if (ResultFs.AllocationTableIteratedRangeEntry.Includes(result))
+                return ResultFs.SaveDataAllocationTableIteratedRangeEntry.Value;
 
-                if (ResultFs.InvalidAllocationTableOffset.Includes(result))
-                    return ResultFs.InvalidSaveDataAllocationTableOffset.Value;
+            if (ResultFs.InvalidAllocationTableOffset.Includes(result))
+                return ResultFs.InvalidSaveDataAllocationTableOffset.Value;
 
-                if (ResultFs.InvalidAllocationTableBlockCount.Includes(result))
-                    return ResultFs.InvalidSaveDataAllocationTableBlockCount.Value;
+            if (ResultFs.InvalidAllocationTableBlockCount.Includes(result))
+                return ResultFs.InvalidSaveDataAllocationTableBlockCount.Value;
 
-                if (ResultFs.InvalidKeyValueListEntryIndex.Includes(result))
-                    return ResultFs.InvalidSaveDataKeyValueListEntryIndex.Value;
+            if (ResultFs.InvalidKeyValueListEntryIndex.Includes(result))
+                return ResultFs.InvalidSaveDataKeyValueListEntryIndex.Value;
 
-                if (ResultFs.InvalidBitmapIndex.Includes(result))
-                    return ResultFs.InvalidSaveDataBitmapIndex.Value;
+            if (ResultFs.InvalidBitmapIndex.Includes(result))
+                return ResultFs.InvalidSaveDataBitmapIndex.Value;
 
-                Assert.SdkAssert(false);
-            }
+            Assert.SdkAssert(false);
+        }
 
-            if (ResultFs.ZeroBitmapFileCorrupted.Includes(result))
-            {
-                if (ResultFs.IncompleteBlockInZeroBitmapHashStorageFile.Includes(result))
-                    return ResultFs.IncompleteBlockInZeroBitmapHashStorageFileSaveData.Value;
+        if (ResultFs.ZeroBitmapFileCorrupted.Includes(result))
+        {
+            if (ResultFs.IncompleteBlockInZeroBitmapHashStorageFile.Includes(result))
+                return ResultFs.IncompleteBlockInZeroBitmapHashStorageFileSaveData.Value;
 
-                Assert.SdkAssert(false);
-            }
+            Assert.SdkAssert(false);
+        }
 
+        return result;
+    }
+
+    public static Result ConvertSaveFsDriverPublicResult(Result result)
+    {
+        if (result.IsSuccess())
             return result;
+
+        if (ResultFs.UnsupportedVersion.Includes(result))
+            return ResultFs.UnsupportedSaveDataVersion.Value;
+
+        if (ResultFs.IntegrityVerificationStorageCorrupted.Includes(result) ||
+            ResultFs.BuiltInStorageCorrupted.Includes(result) ||
+            ResultFs.HostFileSystemCorrupted.Includes(result) ||
+            ResultFs.DatabaseCorrupted.Includes(result) ||
+            ResultFs.ZeroBitmapFileCorrupted.Includes(result))
+        {
+            return ConvertCorruptedResult(result);
         }
 
-        public static Result ConvertSaveFsDriverPublicResult(Result result)
-        {
-            if (result.IsSuccess())
-                return result;
-
-            if (ResultFs.UnsupportedVersion.Includes(result))
-                return ResultFs.UnsupportedSaveDataVersion.Value;
-
-            if (ResultFs.IntegrityVerificationStorageCorrupted.Includes(result) ||
-                ResultFs.BuiltInStorageCorrupted.Includes(result) ||
-                ResultFs.HostFileSystemCorrupted.Includes(result) ||
-                ResultFs.DatabaseCorrupted.Includes(result) ||
-                ResultFs.ZeroBitmapFileCorrupted.Includes(result))
-            {
-                return ConvertCorruptedResult(result);
-            }
-
-            if (ResultFs.FatFileSystemCorrupted.Includes(result))
-                return result;
-
-            if (ResultFs.NotFound.Includes(result))
-                return ResultFs.PathNotFound.Value;
-
-            if (ResultFs.AllocationTableFull.Includes(result))
-                return ResultFs.UsableSpaceNotEnough.Value;
-
-            if (ResultFs.AlreadyExists.Includes(result))
-                return ResultFs.PathAlreadyExists.Value;
-
-            if (ResultFs.InvalidOffset.Includes(result))
-                return ResultFs.OutOfRange.Value;
-
-            if (ResultFs.IncompatiblePath.Includes(result) ||
-                ResultFs.FileNotFound.Includes(result))
-            {
-                return ResultFs.PathNotFound.Value;
-            }
-
+        if (ResultFs.FatFileSystemCorrupted.Includes(result))
             return result;
+
+        if (ResultFs.NotFound.Includes(result))
+            return ResultFs.PathNotFound.Value;
+
+        if (ResultFs.AllocationTableFull.Includes(result))
+            return ResultFs.UsableSpaceNotEnough.Value;
+
+        if (ResultFs.AlreadyExists.Includes(result))
+            return ResultFs.PathAlreadyExists.Value;
+
+        if (ResultFs.InvalidOffset.Includes(result))
+            return ResultFs.OutOfRange.Value;
+
+        if (ResultFs.IncompatiblePath.Includes(result) ||
+            ResultFs.FileNotFound.Includes(result))
+        {
+            return ResultFs.PathNotFound.Value;
         }
+
+        return result;
+    }
+}
+
+/// <summary>
+/// Wraps an <see cref="IFile"/>, converting its returned <see cref="Result"/>s
+/// to save-data-specific <see cref="Result"/>s.
+/// </summary>
+public class SaveDataResultConvertFile : IResultConvertFile
+{
+    public SaveDataResultConvertFile(ref UniqueRef<IFile> baseFile) : base(ref baseFile)
+    {
     }
 
-    /// <summary>
-    /// Wraps an <see cref="IFile"/>, converting its returned <see cref="Result"/>s
-    /// to save-data-specific <see cref="Result"/>s.
-    /// </summary>
-    public class SaveDataResultConvertFile : IResultConvertFile
+    protected override Result ConvertResult(Result result)
     {
-        public SaveDataResultConvertFile(ref UniqueRef<IFile> baseFile) : base(ref baseFile)
-        {
-        }
+        return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(result);
+    }
+}
 
-        protected override Result ConvertResult(Result result)
-        {
-            return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(result);
-        }
+/// <summary>
+/// Wraps an <see cref="IDirectory"/>, converting its returned <see cref="Result"/>s
+/// to save-data-specific <see cref="Result"/>s.
+/// </summary>
+public class SaveDataResultConvertDirectory : IResultConvertDirectory
+{
+    public SaveDataResultConvertDirectory(ref UniqueRef<IDirectory> baseDirectory) : base(ref baseDirectory)
+    {
     }
 
-    /// <summary>
-    /// Wraps an <see cref="IDirectory"/>, converting its returned <see cref="Result"/>s
-    /// to save-data-specific <see cref="Result"/>s.
-    /// </summary>
-    public class SaveDataResultConvertDirectory : IResultConvertDirectory
+    protected override Result ConvertResult(Result result)
     {
-        public SaveDataResultConvertDirectory(ref UniqueRef<IDirectory> baseDirectory) : base(ref baseDirectory)
-        {
-        }
+        return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(result);
+    }
+}
 
-        protected override Result ConvertResult(Result result)
-        {
-            return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(result);
-        }
+/// <summary>
+/// Wraps an <see cref="IFileSystem"/>, converting its returned <see cref="Result"/>s
+/// to save-data-specific <see cref="Result"/>s.
+/// </summary>
+public class SaveDataResultConvertFileSystem : IResultConvertFileSystem
+{
+    public SaveDataResultConvertFileSystem(ref SharedRef<IFileSystem> baseFileSystem)
+        : base(ref baseFileSystem)
+    {
     }
 
-    /// <summary>
-    /// Wraps an <see cref="IFileSystem"/>, converting its returned <see cref="Result"/>s
-    /// to save-data-specific <see cref="Result"/>s.
-    /// </summary>
-    public class SaveDataResultConvertFileSystem : IResultConvertFileSystem
+    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
     {
-        public SaveDataResultConvertFileSystem(ref SharedRef<IFileSystem> baseFileSystem)
-            : base(ref baseFileSystem)
-        {
-        }
+        using var file = new UniqueRef<IFile>();
+        Result rc = ConvertResult(BaseFileSystem.Get.OpenFile(ref file.Ref(), path, mode));
+        if (rc.IsFailure()) return rc;
 
-        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
-        {
-            using var file = new UniqueRef<IFile>();
-            Result rc = ConvertResult(BaseFileSystem.Get.OpenFile(ref file.Ref(), path, mode));
-            if (rc.IsFailure()) return rc;
-
-            outFile.Reset(new SaveDataResultConvertFile(ref file.Ref()));
-            return Result.Success;
-        }
-
-        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
-            OpenDirectoryMode mode)
-        {
-            using var directory = new UniqueRef<IDirectory>();
-            Result rc = ConvertResult(BaseFileSystem.Get.OpenDirectory(ref directory.Ref(), path, mode));
-            if (rc.IsFailure()) return rc;
-
-            outDirectory.Reset(new SaveDataResultConvertDirectory(ref directory.Ref()));
-            return Result.Success;
-        }
-
-        protected override Result ConvertResult(Result result)
-        {
-            return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(result);
-        }
+        outFile.Reset(new SaveDataResultConvertFile(ref file.Ref()));
+        return Result.Success;
     }
 
-    /// <summary>
-    /// Wraps an <see cref="ISaveDataExtraDataAccessor"/>, converting its returned <see cref="Result"/>s
-    /// to save-data-specific <see cref="Result"/>s.
-    /// </summary>
-    public class SaveDataExtraDataResultConvertAccessor : ISaveDataExtraDataAccessor
+    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+        OpenDirectoryMode mode)
     {
-        private SharedRef<ISaveDataExtraDataAccessor> _accessor;
+        using var directory = new UniqueRef<IDirectory>();
+        Result rc = ConvertResult(BaseFileSystem.Get.OpenDirectory(ref directory.Ref(), path, mode));
+        if (rc.IsFailure()) return rc;
 
-        public SaveDataExtraDataResultConvertAccessor(ref SharedRef<ISaveDataExtraDataAccessor> accessor)
-        {
-            _accessor = SharedRef<ISaveDataExtraDataAccessor>.CreateMove(ref accessor);
-        }
+        outDirectory.Reset(new SaveDataResultConvertDirectory(ref directory.Ref()));
+        return Result.Success;
+    }
 
-        public void Dispose()
-        {
-            _accessor.Destroy();
-        }
+    protected override Result ConvertResult(Result result)
+    {
+        return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(result);
+    }
+}
 
-        public Result WriteExtraData(in SaveDataExtraData extraData)
-        {
-            Result rc = _accessor.Get.WriteExtraData(in extraData);
-            return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(rc);
-        }
+/// <summary>
+/// Wraps an <see cref="ISaveDataExtraDataAccessor"/>, converting its returned <see cref="Result"/>s
+/// to save-data-specific <see cref="Result"/>s.
+/// </summary>
+public class SaveDataExtraDataResultConvertAccessor : ISaveDataExtraDataAccessor
+{
+    private SharedRef<ISaveDataExtraDataAccessor> _accessor;
 
-        public Result CommitExtraData(bool updateTimeStamp)
-        {
-            Result rc = _accessor.Get.CommitExtraData(updateTimeStamp);
-            return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(rc);
-        }
+    public SaveDataExtraDataResultConvertAccessor(ref SharedRef<ISaveDataExtraDataAccessor> accessor)
+    {
+        _accessor = SharedRef<ISaveDataExtraDataAccessor>.CreateMove(ref accessor);
+    }
 
-        public Result ReadExtraData(out SaveDataExtraData extraData)
-        {
-            Result rc = _accessor.Get.ReadExtraData(out extraData);
-            return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(rc);
-        }
+    public void Dispose()
+    {
+        _accessor.Destroy();
+    }
 
-        public void RegisterCacheObserver(ISaveDataExtraDataAccessorCacheObserver observer, SaveDataSpaceId spaceId,
-            ulong saveDataId)
-        {
-            _accessor.Get.RegisterCacheObserver(observer, spaceId, saveDataId);
-        }
+    public Result WriteExtraData(in SaveDataExtraData extraData)
+    {
+        Result rc = _accessor.Get.WriteExtraData(in extraData);
+        return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(rc);
+    }
+
+    public Result CommitExtraData(bool updateTimeStamp)
+    {
+        Result rc = _accessor.Get.CommitExtraData(updateTimeStamp);
+        return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(rc);
+    }
+
+    public Result ReadExtraData(out SaveDataExtraData extraData)
+    {
+        Result rc = _accessor.Get.ReadExtraData(out extraData);
+        return SaveDataResultConvert.ConvertSaveFsDriverPublicResult(rc);
+    }
+
+    public void RegisterCacheObserver(ISaveDataExtraDataAccessorCacheObserver observer, SaveDataSpaceId spaceId,
+        ulong saveDataId)
+    {
+        _accessor.Get.RegisterCacheObserver(observer, spaceId, saveDataId);
     }
 }

@@ -2,185 +2,184 @@
 using LibHac.Fs;
 using LibHac.Os;
 
-namespace LibHac.FsSrv.Impl
+namespace LibHac.FsSrv.Impl;
+
+internal struct DeviceEventSimulatorGlobals
 {
-    internal struct DeviceEventSimulatorGlobals
+    public GameCardEventSimulator GameCardEventSimulator;
+    public SdCardEventSimulator SdCardEventSimulator;
+    public nint GameCardEventSimulatorInit;
+    public nint SdCardEventSimulatorInit;
+}
+
+internal static class DeviceEventSimulatorGlobalMethods
+{
+    public static SdCardEventSimulator GetSdCardEventSimulator(this FileSystemServerImpl fs)
     {
-        public GameCardEventSimulator GameCardEventSimulator;
-        public SdCardEventSimulator SdCardEventSimulator;
-        public nint GameCardEventSimulatorInit;
-        public nint SdCardEventSimulatorInit;
-    }
+        ref DeviceEventSimulatorGlobals g = ref fs.Globals.DeviceEventSimulator;
+        using var guard = new InitializationGuard(ref g.SdCardEventSimulatorInit, fs.Globals.InitMutex);
 
-    internal static class DeviceEventSimulatorGlobalMethods
-    {
-        public static SdCardEventSimulator GetSdCardEventSimulator(this FileSystemServerImpl fs)
-        {
-            ref DeviceEventSimulatorGlobals g = ref fs.Globals.DeviceEventSimulator;
-            using var guard = new InitializationGuard(ref g.SdCardEventSimulatorInit, fs.Globals.InitMutex);
-
-            if (guard.IsInitialized)
-                return g.SdCardEventSimulator;
-
-            g.SdCardEventSimulator = new SdCardEventSimulator(fs.Hos.Os);
+        if (guard.IsInitialized)
             return g.SdCardEventSimulator;
-        }
 
-        public static GameCardEventSimulator GetGameCardEventSimulator(this FileSystemServerImpl fs)
-        {
-            ref DeviceEventSimulatorGlobals g = ref fs.Globals.DeviceEventSimulator;
-            using var guard = new InitializationGuard(ref g.GameCardEventSimulatorInit, fs.Globals.InitMutex);
+        g.SdCardEventSimulator = new SdCardEventSimulator(fs.Hos.Os);
+        return g.SdCardEventSimulator;
+    }
 
-            if (guard.IsInitialized)
-                return g.GameCardEventSimulator;
+    public static GameCardEventSimulator GetGameCardEventSimulator(this FileSystemServerImpl fs)
+    {
+        ref DeviceEventSimulatorGlobals g = ref fs.Globals.DeviceEventSimulator;
+        using var guard = new InitializationGuard(ref g.GameCardEventSimulatorInit, fs.Globals.InitMutex);
 
-            g.GameCardEventSimulator = new GameCardEventSimulator(fs.Hos.Os);
+        if (guard.IsInitialized)
             return g.GameCardEventSimulator;
-        }
+
+        g.GameCardEventSimulator = new GameCardEventSimulator(fs.Hos.Os);
+        return g.GameCardEventSimulator;
+    }
+}
+
+// ReSharper disable once InconsistentNaming
+public abstract class IDeviceEventSimulator
+{
+    private bool _isEventSet;
+    private bool _isDetectionSimulationEnabled;
+    private SdkRecursiveMutex _mutex;
+    private SimulatingDeviceDetectionMode _detectionSimulationMode;
+    private SimulatingDeviceAccessFailureEventType _simulatedFailureType;
+    private SimulatingDeviceTargetOperation _simulatedOperation;
+    private Result _failureResult;
+    private bool _isRecurringEvent;
+    private int _timeoutLengthMs;
+
+    private OsState _os;
+
+    public IDeviceEventSimulator(OsState os, int timeoutMs)
+    {
+        _os = os;
+        _timeoutLengthMs = timeoutMs;
+        _mutex = new SdkRecursiveMutex();
     }
 
-    // ReSharper disable once InconsistentNaming
-    public abstract class IDeviceEventSimulator
+    public virtual Result GetCorrespondingResult(SimulatingDeviceAccessFailureEventType eventType)
     {
-        private bool _isEventSet;
-        private bool _isDetectionSimulationEnabled;
-        private SdkRecursiveMutex _mutex;
-        private SimulatingDeviceDetectionMode _detectionSimulationMode;
-        private SimulatingDeviceAccessFailureEventType _simulatedFailureType;
-        private SimulatingDeviceTargetOperation _simulatedOperation;
-        private Result _failureResult;
-        private bool _isRecurringEvent;
-        private int _timeoutLengthMs;
+        return Result.Success;
+    }
 
-        private OsState _os;
+    public void SetDeviceEvent(SimulatingDeviceTargetOperation operation,
+        SimulatingDeviceAccessFailureEventType failureType, Result failureResult, bool isRecurringEvent)
+    {
+        using ScopedLock<SdkRecursiveMutex> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        public IDeviceEventSimulator(OsState os, int timeoutMs)
-        {
-            _os = os;
-            _timeoutLengthMs = timeoutMs;
-            _mutex = new SdkRecursiveMutex();
-        }
+        if (failureResult.IsFailure())
+            _failureResult = failureResult;
 
-        public virtual Result GetCorrespondingResult(SimulatingDeviceAccessFailureEventType eventType)
-        {
+        _isEventSet = true;
+        _simulatedFailureType = failureType;
+        _simulatedOperation = operation;
+        _isRecurringEvent = isRecurringEvent;
+    }
+
+    public void ClearDeviceEvent()
+    {
+        using ScopedLock<SdkRecursiveMutex> scopedLock = ScopedLock.Lock(ref _mutex);
+
+        _isEventSet = false;
+        _simulatedFailureType = SimulatingDeviceAccessFailureEventType.None;
+        _simulatedOperation = SimulatingDeviceTargetOperation.None;
+        _failureResult = Result.Success;
+        _isRecurringEvent = false;
+    }
+
+    public void SetDetectionSimulationMode(SimulatingDeviceDetectionMode mode)
+    {
+        using ScopedLock<SdkRecursiveMutex> scopedLock = ScopedLock.Lock(ref _mutex);
+
+        _isDetectionSimulationEnabled = mode != SimulatingDeviceDetectionMode.NoSimulation;
+        _detectionSimulationMode = mode;
+    }
+
+    public void ClearDetectionSimulationMode()
+    {
+        SetDetectionSimulationMode(SimulatingDeviceDetectionMode.NoSimulation);
+    }
+
+    public Result CheckSimulatedAccessFailureEvent(SimulatingDeviceTargetOperation operation)
+    {
+        if (_isEventSet)
             return Result.Success;
-        }
 
-        public void SetDeviceEvent(SimulatingDeviceTargetOperation operation,
-            SimulatingDeviceAccessFailureEventType failureType, Result failureResult, bool isRecurringEvent)
-        {
-            using ScopedLock<SdkRecursiveMutex> scopedLock = ScopedLock.Lock(ref _mutex);
+        using ScopedLock<SdkRecursiveMutex> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            if (failureResult.IsFailure())
-                _failureResult = failureResult;
+        if ((_simulatedOperation & operation) == 0)
+            return Result.Success;
 
-            _isEventSet = true;
-            _simulatedFailureType = failureType;
-            _simulatedOperation = operation;
-            _isRecurringEvent = isRecurringEvent;
-        }
+        Result result = GetCorrespondingResult(_simulatedFailureType);
 
-        public void ClearDeviceEvent()
-        {
-            using ScopedLock<SdkRecursiveMutex> scopedLock = ScopedLock.Lock(ref _mutex);
+        if (result.IsFailure() && _failureResult.IsFailure())
+            result = _failureResult;
 
-            _isEventSet = false;
-            _simulatedFailureType = SimulatingDeviceAccessFailureEventType.None;
-            _simulatedOperation = SimulatingDeviceTargetOperation.None;
-            _failureResult = Result.Success;
-            _isRecurringEvent = false;
-        }
+        if (_simulatedFailureType == SimulatingDeviceAccessFailureEventType.AccessTimeoutFailure)
+            SimulateTimeout();
 
-        public void SetDetectionSimulationMode(SimulatingDeviceDetectionMode mode)
-        {
-            using ScopedLock<SdkRecursiveMutex> scopedLock = ScopedLock.Lock(ref _mutex);
+        if (!_isRecurringEvent)
+            ClearDeviceEvent();
 
-            _isDetectionSimulationEnabled = mode != SimulatingDeviceDetectionMode.NoSimulation;
-            _detectionSimulationMode = mode;
-        }
-
-        public void ClearDetectionSimulationMode()
-        {
-            SetDetectionSimulationMode(SimulatingDeviceDetectionMode.NoSimulation);
-        }
-
-        public Result CheckSimulatedAccessFailureEvent(SimulatingDeviceTargetOperation operation)
-        {
-            if (_isEventSet)
-                return Result.Success;
-
-            using ScopedLock<SdkRecursiveMutex> scopedLock = ScopedLock.Lock(ref _mutex);
-
-            if ((_simulatedOperation & operation) == 0)
-                return Result.Success;
-
-            Result result = GetCorrespondingResult(_simulatedFailureType);
-
-            if (result.IsFailure() && _failureResult.IsFailure())
-                result = _failureResult;
-
-            if (_simulatedFailureType == SimulatingDeviceAccessFailureEventType.AccessTimeoutFailure)
-                SimulateTimeout();
-
-            if (!_isRecurringEvent)
-                ClearDeviceEvent();
-
-            return result;
-        }
-
-        public bool FilterDetectionState(bool actualState)
-        {
-            if (!_isDetectionSimulationEnabled)
-                return actualState;
-
-            bool simulatedState = _detectionSimulationMode switch
-            {
-                SimulatingDeviceDetectionMode.NoSimulation => actualState,
-                SimulatingDeviceDetectionMode.DeviceAttached => true,
-                SimulatingDeviceDetectionMode.DeviceRemoved => false,
-                _ => actualState
-            };
-
-            return simulatedState;
-        }
-
-        protected virtual void SimulateTimeout()
-        {
-            _os.SleepThread(TimeSpan.FromMilliSeconds(_timeoutLengthMs));
-        }
+        return result;
     }
 
-    public class GameCardEventSimulator : IDeviceEventSimulator
+    public bool FilterDetectionState(bool actualState)
     {
-        public GameCardEventSimulator(OsState os) : base(os, 2000) { }
+        if (!_isDetectionSimulationEnabled)
+            return actualState;
 
-        public override Result GetCorrespondingResult(SimulatingDeviceAccessFailureEventType eventType)
+        bool simulatedState = _detectionSimulationMode switch
         {
-            return eventType switch
-            {
-                SimulatingDeviceAccessFailureEventType.None => Result.Success,
-                SimulatingDeviceAccessFailureEventType.AccessTimeoutFailure => ResultFs.GameCardCardAccessTimeout.Log(),
-                SimulatingDeviceAccessFailureEventType.AccessFailure => ResultFs.GameCardAccessFailed.Log(),
-                SimulatingDeviceAccessFailureEventType.DataCorruption => ResultFs.SimulatedDeviceDataCorrupted.Log(),
-                _ => ResultFs.InvalidArgument.Log()
-            };
-        }
+            SimulatingDeviceDetectionMode.NoSimulation => actualState,
+            SimulatingDeviceDetectionMode.DeviceAttached => true,
+            SimulatingDeviceDetectionMode.DeviceRemoved => false,
+            _ => actualState
+        };
+
+        return simulatedState;
     }
 
-    public class SdCardEventSimulator : IDeviceEventSimulator
+    protected virtual void SimulateTimeout()
     {
-        public SdCardEventSimulator(OsState os) : base(os, 2000) { }
+        _os.SleepThread(TimeSpan.FromMilliSeconds(_timeoutLengthMs));
+    }
+}
 
-        public override Result GetCorrespondingResult(SimulatingDeviceAccessFailureEventType eventType)
+public class GameCardEventSimulator : IDeviceEventSimulator
+{
+    public GameCardEventSimulator(OsState os) : base(os, 2000) { }
+
+    public override Result GetCorrespondingResult(SimulatingDeviceAccessFailureEventType eventType)
+    {
+        return eventType switch
         {
-            return eventType switch
-            {
-                SimulatingDeviceAccessFailureEventType.None => Result.Success,
-                SimulatingDeviceAccessFailureEventType.AccessTimeoutFailure => ResultFs.PortSdCardResponseTimeoutError.Log(),
-                SimulatingDeviceAccessFailureEventType.AccessFailure => ResultFs.SdCardAccessFailed.Log(),
-                SimulatingDeviceAccessFailureEventType.DataCorruption => ResultFs.SimulatedDeviceDataCorrupted.Log(),
-                _ => ResultFs.InvalidArgument.Log()
-            };
-        }
+            SimulatingDeviceAccessFailureEventType.None => Result.Success,
+            SimulatingDeviceAccessFailureEventType.AccessTimeoutFailure => ResultFs.GameCardCardAccessTimeout.Log(),
+            SimulatingDeviceAccessFailureEventType.AccessFailure => ResultFs.GameCardAccessFailed.Log(),
+            SimulatingDeviceAccessFailureEventType.DataCorruption => ResultFs.SimulatedDeviceDataCorrupted.Log(),
+            _ => ResultFs.InvalidArgument.Log()
+        };
+    }
+}
+
+public class SdCardEventSimulator : IDeviceEventSimulator
+{
+    public SdCardEventSimulator(OsState os) : base(os, 2000) { }
+
+    public override Result GetCorrespondingResult(SimulatingDeviceAccessFailureEventType eventType)
+    {
+        return eventType switch
+        {
+            SimulatingDeviceAccessFailureEventType.None => Result.Success,
+            SimulatingDeviceAccessFailureEventType.AccessTimeoutFailure => ResultFs.PortSdCardResponseTimeoutError.Log(),
+            SimulatingDeviceAccessFailureEventType.AccessFailure => ResultFs.SdCardAccessFailed.Log(),
+            SimulatingDeviceAccessFailureEventType.DataCorruption => ResultFs.SimulatedDeviceDataCorrupted.Log(),
+            _ => ResultFs.InvalidArgument.Log()
+        };
     }
 }

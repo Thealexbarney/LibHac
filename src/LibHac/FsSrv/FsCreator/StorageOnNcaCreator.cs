@@ -7,73 +7,72 @@ using LibHac.FsSystem;
 using LibHac.FsSystem.Impl;
 using LibHac.FsSystem.NcaUtils;
 
-namespace LibHac.FsSrv.FsCreator
+namespace LibHac.FsSrv.FsCreator;
+
+public class StorageOnNcaCreator : IStorageOnNcaCreator
 {
-    public class StorageOnNcaCreator : IStorageOnNcaCreator
+    // ReSharper disable once UnusedMember.Local
+    private bool IsEnabledProgramVerification { get; set; }
+    private KeySet KeySet { get; }
+
+    public StorageOnNcaCreator(KeySet keySet)
     {
-        // ReSharper disable once UnusedMember.Local
-        private bool IsEnabledProgramVerification { get; set; }
-        private KeySet KeySet { get; }
+        KeySet = keySet;
+    }
 
-        public StorageOnNcaCreator(KeySet keySet)
+    // todo: Implement NcaReader and other Nca classes
+    public Result Create(ref SharedRef<IStorage> outStorage, out NcaFsHeader fsHeader, Nca nca,
+        int fsIndex, bool isCodeFs)
+    {
+        UnsafeHelpers.SkipParamInit(out fsHeader);
+
+        Result rc = OpenStorage(out IStorage storageTemp, nca, fsIndex);
+        if (rc.IsFailure()) return rc;
+
+        if (isCodeFs)
         {
-            KeySet = keySet;
-        }
-
-        // todo: Implement NcaReader and other Nca classes
-        public Result Create(ref SharedRef<IStorage> outStorage, out NcaFsHeader fsHeader, Nca nca,
-            int fsIndex, bool isCodeFs)
-        {
-            UnsafeHelpers.SkipParamInit(out fsHeader);
-
-            Result rc = OpenStorage(out IStorage storageTemp, nca, fsIndex);
-            if (rc.IsFailure()) return rc;
-
-            if (isCodeFs)
+            using (var codeFs = new PartitionFileSystemCore<StandardEntry>())
             {
-                using (var codeFs = new PartitionFileSystemCore<StandardEntry>())
-                {
-                    rc = codeFs.Initialize(storageTemp);
-                    if (rc.IsFailure()) return rc;
+                rc = codeFs.Initialize(storageTemp);
+                if (rc.IsFailure()) return rc;
 
-                    rc = VerifyAcidSignature(codeFs, nca);
-                    if (rc.IsFailure()) return rc;
-                }
+                rc = VerifyAcidSignature(codeFs, nca);
+                if (rc.IsFailure()) return rc;
             }
-
-            outStorage.Reset(storageTemp);
-            fsHeader = nca.GetFsHeader(fsIndex);
-
-            return Result.Success;
         }
 
-        public Result CreateWithPatch(ref SharedRef<IStorage> outStorage, out NcaFsHeader fsHeader,
-            Nca baseNca, Nca patchNca, int fsIndex, bool isCodeFs)
-        {
-            throw new NotImplementedException();
-        }
+        outStorage.Reset(storageTemp);
+        fsHeader = nca.GetFsHeader(fsIndex);
 
-        public Result OpenNca(out Nca nca, IStorage ncaStorage)
-        {
-            nca = new Nca(KeySet, ncaStorage);
-            return Result.Success;
-        }
+        return Result.Success;
+    }
 
-        public Result VerifyAcidSignature(IFileSystem codeFileSystem, Nca nca)
-        {
-            // todo
-            return Result.Success;
-        }
+    public Result CreateWithPatch(ref SharedRef<IStorage> outStorage, out NcaFsHeader fsHeader,
+        Nca baseNca, Nca patchNca, int fsIndex, bool isCodeFs)
+    {
+        throw new NotImplementedException();
+    }
 
-        private Result OpenStorage(out IStorage storage, Nca nca, int fsIndex)
-        {
-            UnsafeHelpers.SkipParamInit(out storage);
+    public Result OpenNca(out Nca nca, IStorage ncaStorage)
+    {
+        nca = new Nca(KeySet, ncaStorage);
+        return Result.Success;
+    }
 
-            if (!nca.SectionExists(fsIndex))
-                return ResultFs.PartitionNotFound.Log();
+    public Result VerifyAcidSignature(IFileSystem codeFileSystem, Nca nca)
+    {
+        // todo
+        return Result.Success;
+    }
 
-            storage = nca.OpenStorage(fsIndex, IntegrityCheckLevel.ErrorOnInvalid);
-            return Result.Success;
-        }
+    private Result OpenStorage(out IStorage storage, Nca nca, int fsIndex)
+    {
+        UnsafeHelpers.SkipParamInit(out storage);
+
+        if (!nca.SectionExists(fsIndex))
+            return ResultFs.PartitionNotFound.Log();
+
+        storage = nca.OpenStorage(fsIndex, IntegrityCheckLevel.ErrorOnInvalid);
+        return Result.Success;
     }
 }

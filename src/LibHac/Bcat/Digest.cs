@@ -4,26 +4,25 @@ using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Util;
 
-namespace LibHac.Bcat
+namespace LibHac.Bcat;
+
+[DebuggerDisplay("{ToString()}")]
+[StructLayout(LayoutKind.Sequential, Size = 16)]
+public struct Digest
 {
-    [DebuggerDisplay("{ToString()}")]
-    [StructLayout(LayoutKind.Sequential, Size = 16)]
-    public struct Digest
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)] private ulong _dummy0;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)] private ulong _dummy1;
+
+    public byte this[int i]
     {
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)] private ulong _dummy0;
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)] private ulong _dummy1;
+        get => Bytes[i];
+        set => Bytes[i] = value;
+    }
 
-        public byte this[int i]
-        {
-            get => Bytes[i];
-            set => Bytes[i] = value;
-        }
+    public Span<byte> Bytes => SpanHelpers.AsByteSpan(ref this);
 
-        public Span<byte> Bytes => SpanHelpers.AsByteSpan(ref this);
-
-        public override string ToString()
-        {
-            return Bytes.ToHexString();
-        }
+    public override string ToString()
+    {
+        return Bytes.ToHexString();
     }
 }

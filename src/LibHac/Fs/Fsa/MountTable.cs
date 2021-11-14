@@ -8,159 +8,158 @@ using LibHac.Os;
 using LibHac.Util;
 
 // ReSharper disable once CheckNamespace
-namespace LibHac.Fs.Impl
+namespace LibHac.Fs.Impl;
+
+/// <summary>
+/// Holds a list of <see cref="FileSystemAccessor"/>s that are indexed by their name.
+/// These may be retrieved or removed using their name as a key.
+/// </summary>
+/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+internal class MountTable : IDisposable
 {
-    /// <summary>
-    /// Holds a list of <see cref="FileSystemAccessor"/>s that are indexed by their name.
-    /// These may be retrieved or removed using their name as a key.
-    /// </summary>
-    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
-    internal class MountTable : IDisposable
+    private LinkedList<FileSystemAccessor> _fileSystemList;
+    private SdkMutexType _mutex;
+
+    // LibHac addition
+    private FileSystemClient _fsClient;
+
+    public MountTable(FileSystemClient fsClient)
     {
-        private LinkedList<FileSystemAccessor> _fileSystemList;
-        private SdkMutexType _mutex;
+        _fileSystemList = new LinkedList<FileSystemAccessor>();
+        _mutex = new SdkMutexType();
+        _mutex.Initialize();
 
-        // LibHac addition
-        private FileSystemClient _fsClient;
+        _fsClient = fsClient;
+    }
 
-        public MountTable(FileSystemClient fsClient)
+    // Note: The original class does not have a destructor
+    public void Dispose()
+    {
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
+
+        LinkedListNode<FileSystemAccessor> currentEntry = _fileSystemList.First;
+
+        while (currentEntry is not null)
         {
-            _fileSystemList = new LinkedList<FileSystemAccessor>();
-            _mutex = new SdkMutexType();
-            _mutex.Initialize();
+            FileSystemAccessor accessor = currentEntry.Value;
+            _fileSystemList.Remove(currentEntry);
+            accessor?.Dispose();
 
-            _fsClient = fsClient;
+            currentEntry = _fileSystemList.First;
         }
 
-        // Note: The original class does not have a destructor
-        public void Dispose()
+        _fileSystemList = null;
+        _fsClient = null;
+    }
+
+    private static bool Matches(FileSystemAccessor accessor, U8Span name)
+    {
+        return StringUtils.Compare(accessor.GetName(), name, Unsafe.SizeOf<MountName>()) == 0;
+    }
+
+    public Result Mount(ref UniqueRef<FileSystemAccessor> fileSystem)
+    {
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
+
+        if (!CanAcceptMountName(fileSystem.Get.GetName()))
+            return ResultFs.MountNameAlreadyExists.Log();
+
+        _fileSystemList.AddLast(fileSystem.Release());
+        return Result.Success;
+    }
+
+    public Result Find(out FileSystemAccessor accessor, U8Span name)
+    {
+        UnsafeHelpers.SkipParamInit(out accessor);
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
+
+        for (LinkedListNode<FileSystemAccessor> currentNode = _fileSystemList.First;
+            currentNode is not null;
+            currentNode = currentNode.Next)
         {
-            using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
-
-            LinkedListNode<FileSystemAccessor> currentEntry = _fileSystemList.First;
-
-            while (currentEntry is not null)
-            {
-                FileSystemAccessor accessor = currentEntry.Value;
-                _fileSystemList.Remove(currentEntry);
-                accessor?.Dispose();
-
-                currentEntry = _fileSystemList.First;
-            }
-
-            _fileSystemList = null;
-            _fsClient = null;
-        }
-
-        private static bool Matches(FileSystemAccessor accessor, U8Span name)
-        {
-            return StringUtils.Compare(accessor.GetName(), name, Unsafe.SizeOf<MountName>()) == 0;
-        }
-
-        public Result Mount(ref UniqueRef<FileSystemAccessor> fileSystem)
-        {
-            using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
-
-            if (!CanAcceptMountName(fileSystem.Get.GetName()))
-                return ResultFs.MountNameAlreadyExists.Log();
-
-            _fileSystemList.AddLast(fileSystem.Release());
+            if (!Matches(currentNode.Value, name)) continue;
+            accessor = currentNode.Value;
             return Result.Success;
         }
 
-        public Result Find(out FileSystemAccessor accessor, U8Span name)
+        return ResultFs.NotMounted.Log();
+    }
+
+    public void Unmount(U8Span name)
+    {
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
+
+        for (LinkedListNode<FileSystemAccessor> currentNode = _fileSystemList.First;
+            currentNode is not null;
+            currentNode = currentNode.Next)
         {
-            UnsafeHelpers.SkipParamInit(out accessor);
-            using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
-
-            for (LinkedListNode<FileSystemAccessor> currentNode = _fileSystemList.First;
-                currentNode is not null;
-                currentNode = currentNode.Next)
+            if (Matches(currentNode.Value, name))
             {
-                if (!Matches(currentNode.Value, name)) continue;
-                accessor = currentNode.Value;
-                return Result.Success;
+                _fileSystemList.Remove(currentNode);
+                currentNode.Value.Dispose();
+                return;
             }
-
-            return ResultFs.NotMounted.Log();
         }
 
-        public void Unmount(U8Span name)
+        _fsClient.Impl.LogErrorMessage(ResultFs.NotMounted.Value,
+            "Error: Unmount failed because the mount name was not mounted. The mount name is \"{0}\".\n",
+            name.ToString());
+
+        Abort.DoAbortUnlessSuccess(ResultFs.NotMounted.Value);
+    }
+
+    private bool CanAcceptMountName(U8Span name)
+    {
+        Assert.SdkAssert(_mutex.IsLockedByCurrentThread());
+
+        for (LinkedListNode<FileSystemAccessor> currentNode = _fileSystemList.First;
+            currentNode is not null;
+            currentNode = currentNode.Next)
         {
-            using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
-
-            for (LinkedListNode<FileSystemAccessor> currentNode = _fileSystemList.First;
-                currentNode is not null;
-                currentNode = currentNode.Next)
-            {
-                if (Matches(currentNode.Value, name))
-                {
-                    _fileSystemList.Remove(currentNode);
-                    currentNode.Value.Dispose();
-                    return;
-                }
-            }
-
-            _fsClient.Impl.LogErrorMessage(ResultFs.NotMounted.Value,
-                "Error: Unmount failed because the mount name was not mounted. The mount name is \"{0}\".\n",
-                name.ToString());
-
-            Abort.DoAbortUnlessSuccess(ResultFs.NotMounted.Value);
+            if (Matches(currentNode.Value, name))
+                return false;
         }
 
-        private bool CanAcceptMountName(U8Span name)
+        return true;
+    }
+
+    public int GetDataIdCount()
+    {
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
+
+        int count = 0;
+
+        for (LinkedListNode<FileSystemAccessor> currentNode = _fileSystemList.First;
+            currentNode is not null;
+            currentNode = currentNode.Next)
         {
-            Assert.SdkAssert(_mutex.IsLockedByCurrentThread());
-
-            for (LinkedListNode<FileSystemAccessor> currentNode = _fileSystemList.First;
-                currentNode is not null;
-                currentNode = currentNode.Next)
-            {
-                if (Matches(currentNode.Value, name))
-                    return false;
-            }
-
-            return true;
+            if (currentNode.Value.GetDataId().HasValue)
+                count++;
         }
 
-        public int GetDataIdCount()
+        return count;
+    }
+
+    public Result ListDataId(out int dataIdCount, Span<DataId> dataIdBuffer)
+    {
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
+
+        int count = 0;
+
+        for (LinkedListNode<FileSystemAccessor> currentNode = _fileSystemList.First;
+            currentNode is not null && count < dataIdBuffer.Length;
+            currentNode = currentNode.Next)
         {
-            using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
+            Optional<DataId> dataId = currentNode.Value.GetDataId();
 
-            int count = 0;
-
-            for (LinkedListNode<FileSystemAccessor> currentNode = _fileSystemList.First;
-                currentNode is not null;
-                currentNode = currentNode.Next)
+            if (dataId.HasValue)
             {
-                if (currentNode.Value.GetDataId().HasValue)
-                    count++;
+                dataIdBuffer[count] = dataId.Value;
+                count++;
             }
-
-            return count;
         }
 
-        public Result ListDataId(out int dataIdCount, Span<DataId> dataIdBuffer)
-        {
-            using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
-
-            int count = 0;
-
-            for (LinkedListNode<FileSystemAccessor> currentNode = _fileSystemList.First;
-                currentNode is not null && count < dataIdBuffer.Length;
-                currentNode = currentNode.Next)
-            {
-                Optional<DataId> dataId = currentNode.Value.GetDataId();
-
-                if (dataId.HasValue)
-                {
-                    dataIdBuffer[count] = dataId.Value;
-                    count++;
-                }
-            }
-
-            dataIdCount = count;
-            return Result.Success;
-        }
+        dataIdCount = count;
+        return Result.Success;
     }
 }
