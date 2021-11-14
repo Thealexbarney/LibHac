@@ -100,7 +100,7 @@ partial class Build : NukeBuild
                 gitRepository = (GitRepository)new GitRepositoryAttribute().GetValue(null, null);
 
                 gitVersion = GitVersionTasks.GitVersion(s => s
-                        .SetFramework("net5.0")
+                        .SetFramework("net6.0")
                         .DisableProcessLogOutput())
                     .Result;
             }
