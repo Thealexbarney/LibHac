@@ -3,122 +3,121 @@ using LibHac.Common;
 using LibHac.Common.Keys;
 using LibHac.Fs;
 
-namespace LibHac.FsSrv
+namespace LibHac.FsSrv;
+
+public class EmulatedGameCard
 {
-    public class EmulatedGameCard
+    private IStorage CardImageStorage { get; set; }
+    private int Handle { get; set; }
+    private XciHeader CardHeader { get; set; }
+    private Xci CardImage { get; set; }
+    private KeySet KeySet { get; set; }
+
+    public EmulatedGameCard() { }
+
+    public EmulatedGameCard(KeySet keySet)
     {
-        private IStorage CardImageStorage { get; set; }
-        private int Handle { get; set; }
-        private XciHeader CardHeader { get; set; }
-        private Xci CardImage { get; set; }
-        private KeySet KeySet { get; set; }
+        KeySet = keySet;
+    }
+    public GameCardHandle GetGameCardHandle()
+    {
+        return new GameCardHandle(Handle);
+    }
 
-        public EmulatedGameCard() { }
+    public bool IsGameCardHandleInvalid(GameCardHandle handle)
+    {
+        return Handle != handle.Value;
+    }
 
-        public EmulatedGameCard(KeySet keySet)
+    public bool IsGameCardInserted()
+    {
+        return CardImageStorage != null;
+    }
+
+    public void InsertGameCard(IStorage cardImageStorage)
+    {
+        RemoveGameCard();
+
+        CardImageStorage = cardImageStorage;
+
+        CardImage = new Xci(KeySet, cardImageStorage);
+        CardHeader = CardImage.Header;
+    }
+
+    public void RemoveGameCard()
+    {
+        if (IsGameCardInserted())
         {
-            KeySet = keySet;
+            CardImageStorage = null;
+            Handle++;
         }
-        public GameCardHandle GetGameCardHandle()
-        {
-            return new GameCardHandle(Handle);
-        }
+    }
 
-        public bool IsGameCardHandleInvalid(GameCardHandle handle)
-        {
-            return Handle != handle.Value;
-        }
+    internal Result GetXci(out Xci xci, GameCardHandle handle)
+    {
+        UnsafeHelpers.SkipParamInit(out xci);
 
-        public bool IsGameCardInserted()
-        {
-            return CardImageStorage != null;
-        }
+        if (IsGameCardHandleInvalid(handle)) return ResultFs.InvalidGameCardHandleOnRead.Log();
+        if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
 
-        public void InsertGameCard(IStorage cardImageStorage)
-        {
-            RemoveGameCard();
+        xci = CardImage;
+        return Result.Success;
+    }
 
-            CardImageStorage = cardImageStorage;
+    public Result Read(GameCardHandle handle, long offset, Span<byte> destination)
+    {
+        if (IsGameCardHandleInvalid(handle)) return ResultFs.InvalidGameCardHandleOnRead.Log();
+        if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
 
-            CardImage = new Xci(KeySet, cardImageStorage);
-            CardHeader = CardImage.Header;
-        }
+        return CardImageStorage.Read(offset, destination);
+    }
 
-        public void RemoveGameCard()
-        {
-            if (IsGameCardInserted())
-            {
-                CardImageStorage = null;
-                Handle++;
-            }
-        }
+    public Result GetGameCardImageHash(Span<byte> outBuffer)
+    {
+        if (outBuffer.Length < 0x20) return ResultFs.GameCardPreconditionViolation.Log();
+        if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
 
-        internal Result GetXci(out Xci xci, GameCardHandle handle)
-        {
-            UnsafeHelpers.SkipParamInit(out xci);
+        CardHeader.ImageHash.CopyTo(outBuffer.Slice(0, 0x20));
+        return Result.Success;
+    }
 
-            if (IsGameCardHandleInvalid(handle)) return ResultFs.InvalidGameCardHandleOnRead.Log();
-            if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
+    public Result GetGameCardDeviceId(Span<byte> outBuffer)
+    {
+        if (outBuffer.Length < 0x10) return ResultFs.GameCardPreconditionViolation.Log();
+        if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
 
-            xci = CardImage;
-            return Result.Success;
-        }
+        // Skip the security mode check
 
-        public Result Read(GameCardHandle handle, long offset, Span<byte> destination)
-        {
-            if (IsGameCardHandleInvalid(handle)) return ResultFs.InvalidGameCardHandleOnRead.Log();
-            if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
+        // Instead of caching the CardKeyArea data, read the value directly
+        return CardImageStorage.Read(0x7110, outBuffer.Slice(0, 0x10));
+    }
 
-            return CardImageStorage.Read(offset, destination);
-        }
+    internal Result GetCardInfo(out GameCardInfo cardInfo, GameCardHandle handle)
+    {
+        UnsafeHelpers.SkipParamInit(out cardInfo);
 
-        public Result GetGameCardImageHash(Span<byte> outBuffer)
-        {
-            if (outBuffer.Length < 0x20) return ResultFs.GameCardPreconditionViolation.Log();
-            if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
+        if (IsGameCardHandleInvalid(handle)) return ResultFs.InvalidGameCardHandleOnGetCardInfo.Log();
+        if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
 
-            CardHeader.ImageHash.CopyTo(outBuffer.Slice(0, 0x20));
-            return Result.Success;
-        }
+        cardInfo = GetCardInfoImpl();
+        return Result.Success;
+    }
 
-        public Result GetGameCardDeviceId(Span<byte> outBuffer)
-        {
-            if (outBuffer.Length < 0x10) return ResultFs.GameCardPreconditionViolation.Log();
-            if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
+    private GameCardInfo GetCardInfoImpl()
+    {
+        var info = new GameCardInfo();
 
-            // Skip the security mode check
+        CardHeader.RootPartitionHeaderHash.AsSpan().CopyTo(info.RootPartitionHeaderHash);
+        info.PackageId = CardHeader.PackageId;
+        info.Size = GameCard.GetGameCardSizeBytes(CardHeader.GameCardSize);
+        info.RootPartitionOffset = CardHeader.RootPartitionOffset;
+        info.RootPartitionHeaderSize = CardHeader.RootPartitionHeaderSize;
+        info.SecureAreaOffset = GameCard.CardPageToOffset(CardHeader.LimAreaPage);
+        info.SecureAreaSize = info.Size - info.SecureAreaOffset;
+        info.UpdateVersion = CardHeader.UppVersion;
+        info.UpdateTitleId = CardHeader.UppId;
+        info.Attribute = CardHeader.Flags;
 
-            // Instead of caching the CardKeyArea data, read the value directly
-            return CardImageStorage.Read(0x7110, outBuffer.Slice(0, 0x10));
-        }
-
-        internal Result GetCardInfo(out GameCardInfo cardInfo, GameCardHandle handle)
-        {
-            UnsafeHelpers.SkipParamInit(out cardInfo);
-
-            if (IsGameCardHandleInvalid(handle)) return ResultFs.InvalidGameCardHandleOnGetCardInfo.Log();
-            if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
-
-            cardInfo = GetCardInfoImpl();
-            return Result.Success;
-        }
-
-        private GameCardInfo GetCardInfoImpl()
-        {
-            var info = new GameCardInfo();
-
-            CardHeader.RootPartitionHeaderHash.AsSpan().CopyTo(info.RootPartitionHeaderHash);
-            info.PackageId = CardHeader.PackageId;
-            info.Size = GameCard.GetGameCardSizeBytes(CardHeader.GameCardSize);
-            info.RootPartitionOffset = CardHeader.RootPartitionOffset;
-            info.RootPartitionHeaderSize = CardHeader.RootPartitionHeaderSize;
-            info.SecureAreaOffset = GameCard.CardPageToOffset(CardHeader.LimAreaPage);
-            info.SecureAreaSize = info.Size - info.SecureAreaOffset;
-            info.UpdateVersion = CardHeader.UppVersion;
-            info.UpdateTitleId = CardHeader.UppId;
-            info.Attribute = CardHeader.Flags;
-
-            return info;
-        }
+        return info;
     }
 }

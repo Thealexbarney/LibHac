@@ -1,12 +1,11 @@
 ﻿using LibHac.Fs;
 
-namespace LibHac.SdmmcSrv
+namespace LibHac.SdmmcSrv;
+
+internal interface ISdmmcDeviceManager
 {
-    internal interface ISdmmcDeviceManager
-    {
-        Result Lock(out object locker, uint handle);
-        IStorage GetStorage();
-        SdmmcPort GetPortId();
-        Result NotifyCloseStorageDevice(uint handle);
-    }
+    Result Lock(out object locker, uint handle);
+    IStorage GetStorage();
+    SdmmcPort GetPortId();
+    Result NotifyCloseStorageDevice(uint handle);
 }

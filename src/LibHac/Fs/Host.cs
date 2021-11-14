@@ -1,31 +1,30 @@
 ﻿using System;
 
-namespace LibHac.Fs
+namespace LibHac.Fs;
+
+public readonly struct MountHostOption
 {
-    public readonly struct MountHostOption
+    public readonly MountHostOptionFlag Flags;
+
+    public MountHostOption(int flags)
     {
-        public readonly MountHostOptionFlag Flags;
-
-        public MountHostOption(int flags)
-        {
-            Flags = (MountHostOptionFlag)flags;
-        }
-
-        public MountHostOption(MountHostOptionFlag flags)
-        {
-            Flags = flags;
-        }
-
-        public static MountHostOption None => new MountHostOption(MountHostOptionFlag.None);
-
-        public static MountHostOption PseudoCaseSensitive =>
-            new MountHostOption(MountHostOptionFlag.PseudoCaseSensitive);
+        Flags = (MountHostOptionFlag)flags;
     }
 
-    [Flags]
-    public enum MountHostOptionFlag
+    public MountHostOption(MountHostOptionFlag flags)
     {
-        None = 0,
-        PseudoCaseSensitive = 1
+        Flags = flags;
     }
+
+    public static MountHostOption None => new MountHostOption(MountHostOptionFlag.None);
+
+    public static MountHostOption PseudoCaseSensitive =>
+        new MountHostOption(MountHostOptionFlag.PseudoCaseSensitive);
+}
+
+[Flags]
+public enum MountHostOptionFlag
+{
+    None = 0,
+    PseudoCaseSensitive = 1
 }

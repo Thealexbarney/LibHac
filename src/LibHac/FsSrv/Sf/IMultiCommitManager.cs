@@ -2,11 +2,10 @@
 using LibHac.Common;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
-namespace LibHac.FsSrv.Sf
+namespace LibHac.FsSrv.Sf;
+
+public interface IMultiCommitManager : IDisposable
 {
-    public interface IMultiCommitManager : IDisposable
-    {
-        Result Add(ref SharedRef<IFileSystemSf> fileSystem);
-        Result Commit();
-    }
+    Result Add(ref SharedRef<IFileSystemSf> fileSystem);
+    Result Commit();
 }

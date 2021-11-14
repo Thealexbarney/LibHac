@@ -3,73 +3,72 @@ using LibHac.Arp.Impl;
 using LibHac.Common;
 using LibHac.Ns;
 
-namespace LibHac.Arp
+namespace LibHac.Arp;
+
+public class ArpClient : IDisposable
 {
-    public class ArpClient : IDisposable
+    private HorizonClient _hosClient;
+    private SharedRef<IReader> _reader;
+
+    private readonly object _readerInitLocker = new object();
+
+    internal ArpClient(HorizonClient horizonClient)
     {
-        private HorizonClient _hosClient;
-        private SharedRef<IReader> _reader;
+        _hosClient = horizonClient;
+    }
 
-        private readonly object _readerInitLocker = new object();
+    public void Dispose()
+    {
+        _reader.Destroy();
+    }
 
-        internal ArpClient(HorizonClient horizonClient)
-        {
-            _hosClient = horizonClient;
-        }
+    public Result GetApplicationLaunchProperty(out ApplicationLaunchProperty launchProperty, ulong processId)
+    {
+        EnsureReaderInitialized();
 
-        public void Dispose()
-        {
-            _reader.Destroy();
-        }
+        return _reader.Get.GetApplicationLaunchProperty(out launchProperty, processId);
+    }
 
-        public Result GetApplicationLaunchProperty(out ApplicationLaunchProperty launchProperty, ulong processId)
-        {
-            EnsureReaderInitialized();
+    public Result GetApplicationLaunchProperty(out ApplicationLaunchProperty launchProperty, ApplicationId applicationId)
+    {
+        EnsureReaderInitialized();
 
-            return _reader.Get.GetApplicationLaunchProperty(out launchProperty, processId);
-        }
+        return _reader.Get.GetApplicationLaunchPropertyWithApplicationId(out launchProperty, applicationId);
+    }
 
-        public Result GetApplicationLaunchProperty(out ApplicationLaunchProperty launchProperty, ApplicationId applicationId)
-        {
-            EnsureReaderInitialized();
+    public Result GetApplicationControlProperty(out ApplicationControlProperty controlProperty, ulong processId)
+    {
+        EnsureReaderInitialized();
 
-            return _reader.Get.GetApplicationLaunchPropertyWithApplicationId(out launchProperty, applicationId);
-        }
+        return _reader.Get.GetApplicationControlProperty(out controlProperty, processId);
+    }
 
-        public Result GetApplicationControlProperty(out ApplicationControlProperty controlProperty, ulong processId)
-        {
-            EnsureReaderInitialized();
+    public Result GetApplicationControlProperty(out ApplicationControlProperty controlProperty, ApplicationId applicationId)
+    {
+        EnsureReaderInitialized();
 
-            return _reader.Get.GetApplicationControlProperty(out controlProperty, processId);
-        }
+        return _reader.Get.GetApplicationControlPropertyWithApplicationId(out controlProperty, applicationId);
+    }
 
-        public Result GetApplicationControlProperty(out ApplicationControlProperty controlProperty, ApplicationId applicationId)
-        {
-            EnsureReaderInitialized();
+    private void EnsureReaderInitialized()
+    {
+        if (_reader.HasValue)
+            return;
 
-            return _reader.Get.GetApplicationControlPropertyWithApplicationId(out controlProperty, applicationId);
-        }
-
-        private void EnsureReaderInitialized()
+        lock (_readerInitLocker)
         {
             if (_reader.HasValue)
                 return;
 
-            lock (_readerInitLocker)
+            using var reader = new SharedRef<IReader>();
+            Result rc = _hosClient.Sm.GetService(ref reader.Ref(), "arp:r");
+
+            if (rc.IsFailure())
             {
-                if (_reader.HasValue)
-                    return;
-
-                using var reader = new SharedRef<IReader>();
-                Result rc = _hosClient.Sm.GetService(ref reader.Ref(), "arp:r");
-
-                if (rc.IsFailure())
-                {
-                    throw new HorizonResultException(rc, "Failed to initialize arp reader.");
-                }
-
-                _reader.SetByMove(ref reader.Ref());
+                throw new HorizonResultException(rc, "Failed to initialize arp reader.");
             }
+
+            _reader.SetByMove(ref reader.Ref());
         }
     }
 }

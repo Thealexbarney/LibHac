@@ -8,79 +8,78 @@ using LibHac.Ncm;
 using LibHac.Os;
 using LibHac.Sm;
 
-namespace LibHac
+namespace LibHac;
+
+public class Horizon
 {
-    public class Horizon
+    private const int InitialProcessCountMax = 0x50;
+
+    internal ITickGenerator TickGenerator { get; }
+    internal ServiceManager ServiceManager { get; }
+    private HorizonClient LoaderClient { get; }
+
+    private ulong _currentInitialProcessId;
+    private ulong _currentProcessId;
+
+    public Horizon(HorizonConfiguration config)
     {
-        private const int InitialProcessCountMax = 0x50;
+        _currentProcessId = InitialProcessCountMax;
 
-        internal ITickGenerator TickGenerator { get; }
-        internal ServiceManager ServiceManager { get; }
-        private HorizonClient LoaderClient { get; }
+        TickGenerator = config.TickGenerator ?? new DefaultTickGenerator();
+        ServiceManager = new ServiceManager();
 
-        private ulong _currentInitialProcessId;
-        private ulong _currentProcessId;
+        LoaderClient = CreatePrivilegedHorizonClient();
+    }
 
-        public Horizon(HorizonConfiguration config)
-        {
-            _currentProcessId = InitialProcessCountMax;
+    public HorizonClient CreatePrivilegedHorizonClient()
+    {
+        ulong processId = Interlocked.Increment(ref _currentInitialProcessId);
 
-            TickGenerator = config.TickGenerator ?? new DefaultTickGenerator();
-            ServiceManager = new ServiceManager();
+        Abort.DoAbortUnless(processId <= InitialProcessCountMax, "Created too many privileged clients.");
 
-            LoaderClient = CreatePrivilegedHorizonClient();
-        }
+        // Todo: Register process with FS
 
-        public HorizonClient CreatePrivilegedHorizonClient()
-        {
-            ulong processId = Interlocked.Increment(ref _currentInitialProcessId);
+        return new HorizonClient(this, new ProcessId(processId));
+    }
 
-            Abort.DoAbortUnless(processId <= InitialProcessCountMax, "Created too many privileged clients.");
+    public HorizonClient CreateHorizonClient()
+    {
+        ulong processId = Interlocked.Increment(ref _currentProcessId);
 
-            // Todo: Register process with FS
+        // Todo: Register process with FS
 
-            return new HorizonClient(this, new ProcessId(processId));
-        }
+        return new HorizonClient(this, new ProcessId(processId));
+    }
 
-        public HorizonClient CreateHorizonClient()
-        {
-            ulong processId = Interlocked.Increment(ref _currentProcessId);
+    public HorizonClient CreateHorizonClient(ProgramLocation location, AccessControlBits.Bits fsPermissions)
+    {
+        var descriptor = new AccessControlDescriptor();
+        var dataHeader = new AccessControlDataHeader();
 
-            // Todo: Register process with FS
+        descriptor.Version = 1;
+        dataHeader.Version = 1;
 
-            return new HorizonClient(this, new ProcessId(processId));
-        }
+        descriptor.AccessFlags = (ulong)fsPermissions;
+        dataHeader.AccessFlags = (ulong)fsPermissions;
 
-        public HorizonClient CreateHorizonClient(ProgramLocation location, AccessControlBits.Bits fsPermissions)
-        {
-            var descriptor = new AccessControlDescriptor();
-            var dataHeader = new AccessControlDataHeader();
+        return CreateHorizonClientImpl(location, SpanHelpers.AsReadOnlyByteSpan(in dataHeader),
+            SpanHelpers.AsReadOnlyByteSpan(in descriptor));
+    }
 
-            descriptor.Version = 1;
-            dataHeader.Version = 1;
+    public HorizonClient CreateHorizonClient(ProgramLocation location, ReadOnlySpan<byte> fsAccessControlData,
+        ReadOnlySpan<byte> fsAccessControlDescriptor)
+    {
+        return CreateHorizonClientImpl(location, fsAccessControlData, fsAccessControlDescriptor);
+    }
 
-            descriptor.AccessFlags = (ulong)fsPermissions;
-            dataHeader.AccessFlags = (ulong)fsPermissions;
+    private HorizonClient CreateHorizonClientImpl(ProgramLocation location, ReadOnlySpan<byte> accessControlData,
+        ReadOnlySpan<byte> accessControlDescriptor)
+    {
+        HorizonClient client = CreateHorizonClient();
 
-            return CreateHorizonClientImpl(location, SpanHelpers.AsReadOnlyByteSpan(in dataHeader),
-                SpanHelpers.AsReadOnlyByteSpan(in descriptor));
-        }
+        LoaderClient.Fs.RegisterProgram(client.ProcessId.Value, location.ProgramId, location.StorageId,
+            accessControlData, accessControlDescriptor).ThrowIfFailure();
 
-        public HorizonClient CreateHorizonClient(ProgramLocation location, ReadOnlySpan<byte> fsAccessControlData,
-            ReadOnlySpan<byte> fsAccessControlDescriptor)
-        {
-            return CreateHorizonClientImpl(location, fsAccessControlData, fsAccessControlDescriptor);
-        }
-
-        private HorizonClient CreateHorizonClientImpl(ProgramLocation location, ReadOnlySpan<byte> accessControlData,
-            ReadOnlySpan<byte> accessControlDescriptor)
-        {
-            HorizonClient client = CreateHorizonClient();
-
-            LoaderClient.Fs.RegisterProgram(client.ProcessId.Value, location.ProgramId, location.StorageId,
-                accessControlData, accessControlDescriptor).ThrowIfFailure();
-
-            return client;
-        }
+        return client;
     }
 }

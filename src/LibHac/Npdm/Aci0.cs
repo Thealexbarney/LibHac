@@ -2,63 +2,62 @@
 using System;
 using System.IO;
 
-namespace LibHac.Npdm
+namespace LibHac.Npdm;
+
+public class Aci0
 {
-    public class Aci0
+    public string Magic;
+    public long TitleId { get; }
+    public int FsVersion { get; }
+    public ulong FsPermissionsBitmask { get; }
+    public ServiceAccessControl ServiceAccess { get; }
+    public KernelAccessControl KernelAccess { get; }
+
+    public Aci0(Stream stream, int offset)
     {
-        public string Magic;
-        public long TitleId { get; }
-        public int FsVersion { get; }
-        public ulong FsPermissionsBitmask { get; }
-        public ServiceAccessControl ServiceAccess { get; }
-        public KernelAccessControl KernelAccess { get; }
+        stream.Seek(offset, SeekOrigin.Begin);
 
-        public Aci0(Stream stream, int offset)
+        var reader = new BinaryReader(stream);
+
+        Magic = reader.ReadAscii(0x4);
+
+        if (Magic != "ACI0")
         {
-            stream.Seek(offset, SeekOrigin.Begin);
+            throw new Exception("ACI0 Stream doesn't contain ACI0 section!");
+        }
 
-            var reader = new BinaryReader(stream);
+        stream.Seek(0xc, SeekOrigin.Current);
 
-            Magic = reader.ReadAscii(0x4);
+        TitleId = reader.ReadInt64();
 
-            if (Magic != "ACI0")
-            {
-                throw new Exception("ACI0 Stream doesn't contain ACI0 section!");
-            }
+        //Reserved.
+        stream.Seek(8, SeekOrigin.Current);
 
-            stream.Seek(0xc, SeekOrigin.Current);
+        int fsAccessHeaderOffset = reader.ReadInt32();
+        int fsAccessHeaderSize = reader.ReadInt32();
+        int serviceAccessControlOffset = reader.ReadInt32();
+        int serviceAccessControlSize = reader.ReadInt32();
+        int kernelAccessControlOffset = reader.ReadInt32();
+        int kernelAccessControlSize = reader.ReadInt32();
 
-            TitleId = reader.ReadInt64();
+        if (fsAccessHeaderSize > 0)
+        {
+            var accessHeader = new FsAccessHeader(stream, offset + fsAccessHeaderOffset);
 
-            //Reserved.
-            stream.Seek(8, SeekOrigin.Current);
+            FsVersion = accessHeader.Version;
+            FsPermissionsBitmask = accessHeader.PermissionsBitmask;
+        }
 
-            int fsAccessHeaderOffset = reader.ReadInt32();
-            int fsAccessHeaderSize = reader.ReadInt32();
-            int serviceAccessControlOffset = reader.ReadInt32();
-            int serviceAccessControlSize = reader.ReadInt32();
-            int kernelAccessControlOffset = reader.ReadInt32();
-            int kernelAccessControlSize = reader.ReadInt32();
+        if (serviceAccessControlSize > 0)
+        {
+            ServiceAccess = new ServiceAccessControl(stream, offset + serviceAccessControlOffset,
+                serviceAccessControlSize);
+        }
 
-            if (fsAccessHeaderSize > 0)
-            {
-                var accessHeader = new FsAccessHeader(stream, offset + fsAccessHeaderOffset);
-
-                FsVersion = accessHeader.Version;
-                FsPermissionsBitmask = accessHeader.PermissionsBitmask;
-            }
-
-            if (serviceAccessControlSize > 0)
-            {
-                ServiceAccess = new ServiceAccessControl(stream, offset + serviceAccessControlOffset,
-                    serviceAccessControlSize);
-            }
-
-            if (kernelAccessControlSize > 0)
-            {
-                KernelAccess =
-                    new KernelAccessControl(stream, offset + kernelAccessControlOffset, kernelAccessControlSize);
-            }
+        if (kernelAccessControlSize > 0)
+        {
+            KernelAccess =
+                new KernelAccessControl(stream, offset + kernelAccessControlOffset, kernelAccessControlSize);
         }
     }
 }

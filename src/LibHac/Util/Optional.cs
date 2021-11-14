@@ -2,50 +2,49 @@
 using LibHac.Common;
 using LibHac.Diag;
 
-namespace LibHac.Util
+namespace LibHac.Util;
+
+public struct Optional<T>
 {
-    public struct Optional<T>
+    private bool _hasValue;
+    private T _value;
+
+    public readonly bool HasValue => _hasValue;
+    public ref T Value
     {
-        private bool _hasValue;
-        private T _value;
-
-        public readonly bool HasValue => _hasValue;
-        public ref T Value
+        get
         {
-            get
-            {
-                Assert.SdkRequires(_hasValue);
-                // It's beautiful, working around C# rules
-                return ref MemoryMarshal.GetReference(SpanHelpers.CreateSpan(ref _value, 1));
-            }
+            Assert.SdkRequires(_hasValue);
+            // It's beautiful, working around C# rules
+            return ref MemoryMarshal.GetReference(SpanHelpers.CreateSpan(ref _value, 1));
         }
-        public readonly ref readonly T ValueRo
+    }
+    public readonly ref readonly T ValueRo
+    {
+        get
         {
-            get
-            {
-                Assert.SdkRequires(_hasValue);
-                return ref MemoryMarshal.GetReference(SpanHelpers.CreateReadOnlySpan(in _value, 1));
-            }
+            Assert.SdkRequires(_hasValue);
+            return ref MemoryMarshal.GetReference(SpanHelpers.CreateReadOnlySpan(in _value, 1));
         }
+    }
 
-        public Optional(in T value)
-        {
-            _value = value;
-            _hasValue = true;
-        }
+    public Optional(in T value)
+    {
+        _value = value;
+        _hasValue = true;
+    }
 
-        public static implicit operator Optional<T>(in T value) => new Optional<T>(in value);
+    public static implicit operator Optional<T>(in T value) => new Optional<T>(in value);
 
-        public void Set(in T value)
-        {
-            _value = value;
-            _hasValue = true;
-        }
+    public void Set(in T value)
+    {
+        _value = value;
+        _hasValue = true;
+    }
 
-        public void Clear()
-        {
-            _hasValue = false;
-            _value = default;
-        }
+    public void Clear()
+    {
+        _hasValue = false;
+        _value = default;
     }
 }

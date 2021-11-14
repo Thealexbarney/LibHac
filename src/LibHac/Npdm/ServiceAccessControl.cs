@@ -2,36 +2,35 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace LibHac.Npdm
+namespace LibHac.Npdm;
+
+public class ServiceAccessControl
 {
-    public class ServiceAccessControl
+    public List<Tuple<string, bool>> Services { get; } = new List<Tuple<string, bool>>();
+
+    public ServiceAccessControl(Stream stream, int offset, int size)
     {
-        public List<Tuple<string, bool>> Services { get; } = new List<Tuple<string, bool>>();
+        stream.Seek(offset, SeekOrigin.Begin);
 
-        public ServiceAccessControl(Stream stream, int offset, int size)
+        var reader = new BinaryReader(stream);
+
+        int bytesRead = 0;
+
+        while (bytesRead != size)
         {
-            stream.Seek(offset, SeekOrigin.Begin);
+            byte controlByte = reader.ReadByte();
 
-            var reader = new BinaryReader(stream);
-
-            int bytesRead = 0;
-
-            while (bytesRead != size)
+            if (controlByte == 0)
             {
-                byte controlByte = reader.ReadByte();
-
-                if (controlByte == 0)
-                {
-                    break;
-                }
-
-                int  length          = ((controlByte & 0x07)) + 1;
-                bool registerAllowed = ((controlByte & 0x80) != 0);
-
-                Services.Add(new Tuple<string, bool>(reader.ReadAscii(length), registerAllowed));
-
-                bytesRead += length + 1;
+                break;
             }
+
+            int length = ((controlByte & 0x07)) + 1;
+            bool registerAllowed = ((controlByte & 0x80) != 0);
+
+            Services.Add(new Tuple<string, bool>(reader.ReadAscii(length), registerAllowed));
+
+            bytesRead += length + 1;
         }
     }
 }

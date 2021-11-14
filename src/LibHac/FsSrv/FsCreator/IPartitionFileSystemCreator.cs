@@ -2,10 +2,9 @@
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
-namespace LibHac.FsSrv.FsCreator
+namespace LibHac.FsSrv.FsCreator;
+
+public interface IPartitionFileSystemCreator
 {
-    public interface IPartitionFileSystemCreator
-    {
-        Result Create(ref SharedRef<IFileSystem> outFileSystem, ref SharedRef<IStorage> baseStorage);
-    }
+    Result Create(ref SharedRef<IFileSystem> outFileSystem, ref SharedRef<IStorage> baseStorage);
 }

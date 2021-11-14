@@ -4,198 +4,197 @@ using System.Threading;
 using LibHac.Common;
 using static InlineIL.IL.Emit;
 
-namespace LibHac.Os
+namespace LibHac.Os;
+
+/// <summary>
+/// Specifies that a constructed <see cref="UniqueLock{TMutex}"/> should not be automatically locked upon construction.<br/>
+/// Used only to differentiate between <see cref="UniqueLock{TMutex}"/> constructor signatures.
+/// </summary>
+public struct DeferLock { }
+
+public static class UniqueLock
 {
-    /// <summary>
-    /// Specifies that a constructed <see cref="UniqueLock{TMutex}"/> should not be automatically locked upon construction.<br/>
-    /// Used only to differentiate between <see cref="UniqueLock{TMutex}"/> constructor signatures.
-    /// </summary>
-    public struct DeferLock { }
-
-    public static class UniqueLock
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static UniqueLockRef<TMutex> Lock<TMutex>(ref TMutex lockable) where TMutex : struct, ILockable
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static UniqueLockRef<TMutex> Lock<TMutex>(ref TMutex lockable) where TMutex : struct, ILockable
-        {
-            return new UniqueLockRef<TMutex>(ref lockable);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static UniqueLock<TMutex> Lock<TMutex>(TMutex lockable) where TMutex : class, ILockable
-        {
-            return new UniqueLock<TMutex>(lockable);
-        }
-
-        // ReSharper disable once EntityNameCapturedOnly.Global
-        public static ref UniqueLockRef<T> Ref<T>(this in UniqueLockRef<T> value) where T : struct, ILockable
-        {
-            Ldarg(nameof(value));
-            Ret();
-            throw InlineIL.IL.Unreachable();
-        }
-
-        // ReSharper disable once EntityNameCapturedOnly.Global
-        public static ref UniqueLock<T> Ref<T>(this in UniqueLock<T> value) where T : class, ILockable
-        {
-            Ldarg(nameof(value));
-            Ret();
-            throw InlineIL.IL.Unreachable();
-        }
+        return new UniqueLockRef<TMutex>(ref lockable);
     }
 
-    public ref struct UniqueLockRef<TMutex> where TMutex : struct, ILockable
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static UniqueLock<TMutex> Lock<TMutex>(TMutex lockable) where TMutex : class, ILockable
     {
-        private Ref<TMutex> _mutex;
-        private bool _ownsLock;
+        return new UniqueLock<TMutex>(lockable);
+    }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public UniqueLockRef(ref TMutex mutex)
-        {
-            _mutex = new Ref<TMutex>(ref mutex);
-            mutex.Lock();
-            _ownsLock = true;
-        }
+    // ReSharper disable once EntityNameCapturedOnly.Global
+    public static ref UniqueLockRef<T> Ref<T>(this in UniqueLockRef<T> value) where T : struct, ILockable
+    {
+        Ldarg(nameof(value));
+        Ret();
+        throw InlineIL.IL.Unreachable();
+    }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public UniqueLockRef(ref TMutex mutex, DeferLock tag)
-        {
-            _mutex = new Ref<TMutex>(ref mutex);
-            _ownsLock = false;
-        }
+    // ReSharper disable once EntityNameCapturedOnly.Global
+    public static ref UniqueLock<T> Ref<T>(this in UniqueLock<T> value) where T : class, ILockable
+    {
+        Ldarg(nameof(value));
+        Ret();
+        throw InlineIL.IL.Unreachable();
+    }
+}
 
-        public UniqueLockRef(ref UniqueLockRef<TMutex> other)
-        {
-            this = other;
-            other = default;
-        }
+public ref struct UniqueLockRef<TMutex> where TMutex : struct, ILockable
+{
+    private Ref<TMutex> _mutex;
+    private bool _ownsLock;
 
-        public void Set(ref UniqueLockRef<TMutex> other)
-        {
-            if (_ownsLock)
-                _mutex.Value.Unlock();
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public UniqueLockRef(ref TMutex mutex)
+    {
+        _mutex = new Ref<TMutex>(ref mutex);
+        mutex.Lock();
+        _ownsLock = true;
+    }
 
-            this = other;
-            other = default;
-        }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public UniqueLockRef(ref TMutex mutex, DeferLock tag)
+    {
+        _mutex = new Ref<TMutex>(ref mutex);
+        _ownsLock = false;
+    }
 
-        public void Lock()
-        {
-            if (_mutex.IsNull)
-                throw new SynchronizationLockException("UniqueLock.Lock: References null mutex");
+    public UniqueLockRef(ref UniqueLockRef<TMutex> other)
+    {
+        this = other;
+        other = default;
+    }
 
-            if (_ownsLock)
-                throw new SynchronizationLockException("UniqueLock.Lock: Already locked");
-
-            _mutex.Value.Lock();
-            _ownsLock = true;
-        }
-
-        public bool TryLock()
-        {
-            if (_mutex.IsNull)
-                throw new SynchronizationLockException("UniqueLock.TryLock: References null mutex");
-
-            if (_ownsLock)
-                throw new SynchronizationLockException("UniqueLock.TryLock: Already locked");
-
-            _ownsLock = _mutex.Value.TryLock();
-            return _ownsLock;
-        }
-
-        public void Unlock()
-        {
-            if (_ownsLock)
-                throw new SynchronizationLockException("UniqueLock.Unlock: Not locked");
-
+    public void Set(ref UniqueLockRef<TMutex> other)
+    {
+        if (_ownsLock)
             _mutex.Value.Unlock();
-            _ownsLock = false;
-        }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Dispose()
-        {
-            if (_ownsLock)
-                _mutex.Value.Unlock();
-
-            this = default;
-        }
+        this = other;
+        other = default;
     }
 
-    public struct UniqueLock<TMutex> : IDisposable where TMutex : class, ILockable
+    public void Lock()
     {
-        private TMutex _mutex;
-        private bool _ownsLock;
+        if (_mutex.IsNull)
+            throw new SynchronizationLockException("UniqueLock.Lock: References null mutex");
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public UniqueLock(TMutex mutex)
-        {
-            _mutex = mutex;
-            mutex.Lock();
-            _ownsLock = true;
-        }
+        if (_ownsLock)
+            throw new SynchronizationLockException("UniqueLock.Lock: Already locked");
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public UniqueLock(TMutex mutex, DeferLock tag)
-        {
-            _mutex = mutex;
-            _ownsLock = false;
-        }
+        _mutex.Value.Lock();
+        _ownsLock = true;
+    }
 
-        public UniqueLock(ref UniqueLock<TMutex> other)
-        {
-            this = other;
-            other = default;
-        }
+    public bool TryLock()
+    {
+        if (_mutex.IsNull)
+            throw new SynchronizationLockException("UniqueLock.TryLock: References null mutex");
 
-        public void Set(ref UniqueLock<TMutex> other)
-        {
-            if (_ownsLock)
-                _mutex.Unlock();
+        if (_ownsLock)
+            throw new SynchronizationLockException("UniqueLock.TryLock: Already locked");
 
-            this = other;
-            other = default;
-        }
+        _ownsLock = _mutex.Value.TryLock();
+        return _ownsLock;
+    }
 
-        public void Lock()
-        {
-            if (_mutex is null)
-                throw new SynchronizationLockException("UniqueLock.Lock: References null mutex");
+    public void Unlock()
+    {
+        if (_ownsLock)
+            throw new SynchronizationLockException("UniqueLock.Unlock: Not locked");
 
-            if (_ownsLock)
-                throw new SynchronizationLockException("UniqueLock.Lock: Already locked");
+        _mutex.Value.Unlock();
+        _ownsLock = false;
+    }
 
-            _mutex.Lock();
-            _ownsLock = true;
-        }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Dispose()
+    {
+        if (_ownsLock)
+            _mutex.Value.Unlock();
 
-        public bool TryLock()
-        {
-            if (_mutex is null)
-                throw new SynchronizationLockException("UniqueLock.TryLock: References null mutex");
+        this = default;
+    }
+}
 
-            if (_ownsLock)
-                throw new SynchronizationLockException("UniqueLock.TryLock: Already locked");
+public struct UniqueLock<TMutex> : IDisposable where TMutex : class, ILockable
+{
+    private TMutex _mutex;
+    private bool _ownsLock;
 
-            _ownsLock = _mutex.TryLock();
-            return _ownsLock;
-        }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public UniqueLock(TMutex mutex)
+    {
+        _mutex = mutex;
+        mutex.Lock();
+        _ownsLock = true;
+    }
 
-        public void Unlock()
-        {
-            if (_ownsLock)
-                throw new SynchronizationLockException("UniqueLock.Unlock: Not locked");
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public UniqueLock(TMutex mutex, DeferLock tag)
+    {
+        _mutex = mutex;
+        _ownsLock = false;
+    }
 
+    public UniqueLock(ref UniqueLock<TMutex> other)
+    {
+        this = other;
+        other = default;
+    }
+
+    public void Set(ref UniqueLock<TMutex> other)
+    {
+        if (_ownsLock)
             _mutex.Unlock();
-            _ownsLock = false;
-        }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Dispose()
-        {
-            if (_ownsLock)
-                _mutex.Unlock();
+        this = other;
+        other = default;
+    }
 
-            this = default;
-        }
+    public void Lock()
+    {
+        if (_mutex is null)
+            throw new SynchronizationLockException("UniqueLock.Lock: References null mutex");
+
+        if (_ownsLock)
+            throw new SynchronizationLockException("UniqueLock.Lock: Already locked");
+
+        _mutex.Lock();
+        _ownsLock = true;
+    }
+
+    public bool TryLock()
+    {
+        if (_mutex is null)
+            throw new SynchronizationLockException("UniqueLock.TryLock: References null mutex");
+
+        if (_ownsLock)
+            throw new SynchronizationLockException("UniqueLock.TryLock: Already locked");
+
+        _ownsLock = _mutex.TryLock();
+        return _ownsLock;
+    }
+
+    public void Unlock()
+    {
+        if (_ownsLock)
+            throw new SynchronizationLockException("UniqueLock.Unlock: Not locked");
+
+        _mutex.Unlock();
+        _ownsLock = false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Dispose()
+    {
+        if (_ownsLock)
+            _mutex.Unlock();
+
+        this = default;
     }
 }

@@ -1,40 +1,39 @@
 ﻿using System;
 using LibHac.Common;
 
-namespace LibHac.Sm
+namespace LibHac.Sm;
+
+public class ServiceManagerClient
 {
-    public class ServiceManagerClient
+    private ServiceManager Server { get; }
+
+    internal ServiceManagerClient(ServiceManager server)
     {
-        private ServiceManager Server { get; }
+        Server = server;
+    }
 
-        internal ServiceManagerClient(ServiceManager server)
+    public Result GetService<T>(ref SharedRef<T> serviceObject, ReadOnlySpan<char> name) where T : class, IDisposable
+    {
+        using var service = new SharedRef<IDisposable>();
+
+        Result rc = Server.GetService(ref service.Ref(), ServiceName.Encode(name));
+        if (rc.IsFailure()) return rc.Miss();
+
+        if (serviceObject.TryCastSet(ref service.Ref()))
         {
-            Server = server;
+            return Result.Success;
         }
 
-        public Result GetService<T>(ref SharedRef<T> serviceObject, ReadOnlySpan<char> name) where T : class, IDisposable
-        {
-            using var service = new SharedRef<IDisposable>();
+        throw new InvalidCastException("The service object is not of the specified type.");
+    }
 
-            Result rc = Server.GetService(ref service.Ref(), ServiceName.Encode(name));
-            if (rc.IsFailure()) return rc.Miss();
+    public Result RegisterService(IServiceObject serviceObject, ReadOnlySpan<char> name)
+    {
+        return Server.RegisterService(serviceObject, ServiceName.Encode(name));
+    }
 
-            if (serviceObject.TryCastSet(ref service.Ref()))
-            {
-                return Result.Success;
-            }
-
-            throw new InvalidCastException("The service object is not of the specified type.");
-        }
-
-        public Result RegisterService(IServiceObject serviceObject, ReadOnlySpan<char> name)
-        {
-            return Server.RegisterService(serviceObject, ServiceName.Encode(name));
-        }
-
-        public Result UnregisterService(ReadOnlySpan<char> name)
-        {
-            return Server.UnregisterService(ServiceName.Encode(name));
-        }
+    public Result UnregisterService(ReadOnlySpan<char> name)
+    {
+        return Server.UnregisterService(ServiceName.Encode(name));
     }
 }

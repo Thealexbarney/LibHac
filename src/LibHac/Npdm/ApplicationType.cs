@@ -1,9 +1,8 @@
-namespace LibHac.Npdm
+namespace LibHac.Npdm;
+
+internal enum ApplicationType
 {
-    internal enum ApplicationType
-    {
-        SystemModule,
-        Application,
-        Applet
-    }
+    SystemModule,
+    Application,
+    Applet
 }

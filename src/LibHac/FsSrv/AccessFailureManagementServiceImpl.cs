@@ -4,66 +4,65 @@ using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Svc;
 
-namespace LibHac.FsSrv
+namespace LibHac.FsSrv;
+
+public class AccessFailureManagementServiceImpl
 {
-    public class AccessFailureManagementServiceImpl
+    private Configuration _config;
+    private AccessFailureDetectionEventManager _eventManager;
+
+    internal HorizonClient HorizonClient => _config.FsServer.Hos;
+
+    public AccessFailureManagementServiceImpl(in Configuration configuration)
     {
-        private Configuration _config;
-        private AccessFailureDetectionEventManager _eventManager;
+        _config = configuration;
+        _eventManager = new AccessFailureDetectionEventManager();
+    }
 
-        internal HorizonClient HorizonClient => _config.FsServer.Hos;
+    // LibHac addition
+    public struct Configuration
+    {
+        public FileSystemServer FsServer;
+    }
 
-        public AccessFailureManagementServiceImpl(in Configuration configuration)
-        {
-            _config = configuration;
-            _eventManager = new AccessFailureDetectionEventManager();
-        }
+    internal Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
+    {
+        var registry = new ProgramRegistryImpl(_config.FsServer);
+        return registry.GetProgramInfo(out programInfo, processId);
+    }
 
-        // LibHac addition
-        public struct Configuration
-        {
-            public FileSystemServer FsServer;
-        }
+    public Result CreateNotifier(ref UniqueRef<IEventNotifier> notifier, ulong processId, bool notifyOnDeepRetry)
+    {
+        return _eventManager.CreateNotifier(ref notifier, processId, notifyOnDeepRetry);
+    }
 
-        internal Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
-        {
-            var registry = new ProgramRegistryImpl(_config.FsServer);
-            return registry.GetProgramInfo(out programInfo, processId);
-        }
+    public void ResetAccessFailureDetection(ulong processId)
+    {
+        _eventManager.ResetAccessFailureDetection(processId);
+    }
 
-        public Result CreateNotifier(ref UniqueRef<IEventNotifier> notifier, ulong processId, bool notifyOnDeepRetry)
-        {
-            return _eventManager.CreateNotifier(ref notifier, processId, notifyOnDeepRetry);
-        }
+    public void DisableAccessFailureDetection(ulong processId)
+    {
+        _eventManager.DisableAccessFailureDetection(processId);
+    }
 
-        public void ResetAccessFailureDetection(ulong processId)
-        {
-            _eventManager.ResetAccessFailureDetection(processId);
-        }
+    public void NotifyAccessFailureDetection(ulong processId)
+    {
+        _eventManager.NotifyAccessFailureDetection(processId);
+    }
 
-        public void DisableAccessFailureDetection(ulong processId)
-        {
-            _eventManager.DisableAccessFailureDetection(processId);
-        }
+    public bool IsAccessFailureDetectionNotified(ulong processId)
+    {
+        return _eventManager.IsAccessFailureDetectionNotified(processId);
+    }
 
-        public void NotifyAccessFailureDetection(ulong processId)
-        {
-            _eventManager.NotifyAccessFailureDetection(processId);
-        }
+    public Handle GetEvent()
+    {
+        return _eventManager.GetEvent();
+    }
 
-        public bool IsAccessFailureDetectionNotified(ulong processId)
-        {
-            return _eventManager.IsAccessFailureDetectionNotified(processId);
-        }
-
-        public Handle GetEvent()
-        {
-            return _eventManager.GetEvent();
-        }
-
-        public Result HandleResolubleAccessFailure(out bool wasDeferred, Result nonDeferredResult, ulong processId)
-        {
-            throw new NotImplementedException();
-        }
+    public Result HandleResolubleAccessFailure(out bool wasDeferred, Result nonDeferredResult, ulong processId)
+    {
+        throw new NotImplementedException();
     }
 }

@@ -2,41 +2,40 @@
 using LibHac.Common;
 using LibHac.Crypto.Impl;
 
-namespace LibHac.Crypto
+namespace LibHac.Crypto;
+
+public class AesXtsEncryptor : ICipherWithIv
 {
-    public class AesXtsEncryptor : ICipherWithIv
+    private AesXtsMode _baseCipher;
+
+    public ref Buffer16 Iv => ref _baseCipher.Iv;
+
+    public AesXtsEncryptor(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv)
     {
-        private AesXtsMode _baseCipher;
-
-        public ref Buffer16 Iv => ref  _baseCipher.Iv;
-
-        public AesXtsEncryptor(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv)
-        {
-            _baseCipher = new AesXtsMode();
-            _baseCipher.Initialize(key1, key2, iv, false);
-        }
-
-        public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
-        {
-            _baseCipher.Encrypt(input, output);
-        }
+        _baseCipher = new AesXtsMode();
+        _baseCipher.Initialize(key1, key2, iv, false);
     }
 
-    public class AesXtsDecryptor : ICipherWithIv
+    public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
     {
-        private AesXtsMode _baseCipher;
-        
-        public ref Buffer16 Iv => ref _baseCipher.Iv;
+        _baseCipher.Encrypt(input, output);
+    }
+}
 
-        public AesXtsDecryptor(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv)
-        {
-            _baseCipher = new AesXtsMode();
-            _baseCipher.Initialize(key1, key2, iv, true);
-        }
+public class AesXtsDecryptor : ICipherWithIv
+{
+    private AesXtsMode _baseCipher;
 
-        public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
-        {
-            _baseCipher.Decrypt(input, output);
-        }
+    public ref Buffer16 Iv => ref _baseCipher.Iv;
+
+    public AesXtsDecryptor(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv)
+    {
+        _baseCipher = new AesXtsMode();
+        _baseCipher.Initialize(key1, key2, iv, true);
+    }
+
+    public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
+    {
+        _baseCipher.Decrypt(input, output);
     }
 }

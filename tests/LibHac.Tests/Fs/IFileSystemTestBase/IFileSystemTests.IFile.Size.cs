@@ -3,26 +3,25 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using Xunit;
 
-namespace LibHac.Tests.Fs.IFileSystemTestBase
+namespace LibHac.Tests.Fs.IFileSystemTestBase;
+
+public abstract partial class IFileSystemTests
 {
-    public abstract partial class IFileSystemTests
+    [Fact]
+    public void SetSize_FileSizeModified()
     {
-        [Fact]
-        public void SetSize_FileSizeModified()
-        {
-            IFileSystem fs = CreateFileSystem();
-            fs.CreateFile("/file", 0, CreateFileOptions.None);
+        IFileSystem fs = CreateFileSystem();
+        fs.CreateFile("/file", 0, CreateFileOptions.None);
 
-            using var file = new UniqueRef<IFile>();
-            fs.OpenFile(ref file.Ref(), "/file", OpenMode.All);
-            Result rc = file.Get.SetSize(54321);
-            file.Reset();
+        using var file = new UniqueRef<IFile>();
+        fs.OpenFile(ref file.Ref(), "/file", OpenMode.All);
+        Result rc = file.Get.SetSize(54321);
+        file.Reset();
 
-            fs.OpenFile(ref file.Ref(), "/file", OpenMode.All);
-            file.Get.GetSize(out long fileSize);
+        fs.OpenFile(ref file.Ref(), "/file", OpenMode.All);
+        file.Get.GetSize(out long fileSize);
 
-            Assert.Success(rc);
-            Assert.Equal(54321, fileSize);
-        }
+        Assert.Success(rc);
+        Assert.Equal(54321, fileSize);
     }
 }

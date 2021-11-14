@@ -2,10 +2,9 @@
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
-namespace LibHac.FsSrv.FsCreator
+namespace LibHac.FsSrv.FsCreator;
+
+public interface IBuiltInStorageFileSystemCreator
 {
-    public interface IBuiltInStorageFileSystemCreator
-    {
-        Result Create(ref SharedRef<IFileSystem> outFileSystem, BisPartitionId partitionId, bool caseSensitive);
-    }
+    Result Create(ref SharedRef<IFileSystem> outFileSystem, BisPartitionId partitionId, bool caseSensitive);
 }

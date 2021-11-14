@@ -5,33 +5,32 @@ using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 using static LibHac.FsSrv.FsCreator.IEncryptedFileSystemCreator;
 
-namespace LibHac.FsSrv.FsCreator
+namespace LibHac.FsSrv.FsCreator;
+
+public class EncryptedFileSystemCreator : IEncryptedFileSystemCreator
 {
-    public class EncryptedFileSystemCreator : IEncryptedFileSystemCreator
+    private KeySet KeySet { get; }
+
+    public EncryptedFileSystemCreator(KeySet keySet)
     {
-        private KeySet KeySet { get; }
+        KeySet = keySet;
+    }
 
-        public EncryptedFileSystemCreator(KeySet keySet)
+    public Result Create(ref SharedRef<IFileSystem> outEncryptedFileSystem, ref SharedRef<IFileSystem> baseFileSystem, KeyId idIndex, in EncryptionSeed encryptionSeed)
+    {
+        if (idIndex < KeyId.Save || idIndex > KeyId.CustomStorage)
         {
-            KeySet = keySet;
+            return ResultFs.InvalidArgument.Log();
         }
 
-        public Result Create(ref SharedRef<IFileSystem> outEncryptedFileSystem, ref SharedRef<IFileSystem> baseFileSystem, KeyId idIndex, in EncryptionSeed encryptionSeed)
-        {
-            if (idIndex < KeyId.Save || idIndex > KeyId.CustomStorage)
-            {
-                return ResultFs.InvalidArgument.Log();
-            }
+        // todo: "proper" key generation instead of a lazy hack
+        KeySet.SetSdSeed(encryptionSeed.Value);
 
-            // todo: "proper" key generation instead of a lazy hack
-            KeySet.SetSdSeed(encryptionSeed.Value);
+        using var encryptedFileSystem = new SharedRef<AesXtsFileSystem>(new AesXtsFileSystem(ref baseFileSystem,
+            KeySet.SdCardEncryptionKeys[(int)idIndex].DataRo.ToArray(), 0x4000));
 
-            using var encryptedFileSystem = new SharedRef<AesXtsFileSystem>(new AesXtsFileSystem(ref baseFileSystem,
-                KeySet.SdCardEncryptionKeys[(int)idIndex].DataRo.ToArray(), 0x4000));
+        outEncryptedFileSystem.SetByMove(ref encryptedFileSystem.Ref());
 
-            outEncryptedFileSystem.SetByMove(ref encryptedFileSystem.Ref());
-
-            return Result.Success;
-        }
+        return Result.Success;
     }
 }

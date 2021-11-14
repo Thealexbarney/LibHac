@@ -1,10 +1,9 @@
-﻿namespace LibHac.Bcat
+﻿namespace LibHac.Bcat;
+
+public enum BcatServiceType
 {
-    public enum BcatServiceType
-    {
-        BcatU,
-        BcatS,
-        BcatM,
-        BcatA
-    }
+    BcatU,
+    BcatS,
+    BcatM,
+    BcatA
 }

@@ -1,20 +1,19 @@
-﻿namespace LibHac.Os
+﻿namespace LibHac.Os;
+
+public interface IBasicLockable
 {
-    public interface IBasicLockable
-    {
-        void Lock();
-        void Unlock();
-    }
+    void Lock();
+    void Unlock();
+}
 
-    public interface ILockable : IBasicLockable
-    {
-        bool TryLock();
-    }
+public interface ILockable : IBasicLockable
+{
+    bool TryLock();
+}
 
-    public interface ISharedMutex : ILockable
-    {
-        void LockShared();
-        bool TryLockShared();
-        void UnlockShared();
-    }
+public interface ISharedMutex : ILockable
+{
+    void LockShared();
+    bool TryLockShared();
+    void UnlockShared();
 }

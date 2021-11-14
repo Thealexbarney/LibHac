@@ -2,10 +2,9 @@
 using LibHac.Common;
 using LibHac.FsSystem;
 
-namespace LibHac.FsSrv.Impl
+namespace LibHac.FsSrv.Impl;
+
+public interface IEntryOpenCountSemaphoreManager : IDisposable
 {
-    public interface IEntryOpenCountSemaphoreManager : IDisposable
-    {
-        Result TryAcquireEntryOpenCountSemaphore(ref UniqueRef<IUniqueLock> outSemaphore);
-    }
+    Result TryAcquireEntryOpenCountSemaphore(ref UniqueRef<IUniqueLock> outSemaphore);
 }

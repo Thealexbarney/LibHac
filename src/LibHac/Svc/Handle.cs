@@ -1,12 +1,11 @@
-﻿namespace LibHac.Svc
-{
-    public readonly struct Handle
-    {
-        public readonly object Object;
+﻿namespace LibHac.Svc;
 
-        public Handle(object obj)
-        {
-            Object = obj;
-        }
+public readonly struct Handle
+{
+    public readonly object Object;
+
+    public Handle(object obj)
+    {
+        Object = obj;
     }
 }

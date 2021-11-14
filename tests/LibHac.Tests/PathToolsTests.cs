@@ -6,12 +6,12 @@ using LibHac.FsSystem;
 using LibHac.Util;
 using Xunit;
 
-namespace LibHac.Tests
+namespace LibHac.Tests;
+
+public class PathToolsTests
 {
-    public class PathToolsTests
+    public static object[][] NormalizedPathTestItems =
     {
-        public static object[][] NormalizedPathTestItems =
-        {
             new object[] {"", "/"},
             new object[] {"/", "/"},
             new object[] {"/.", "/"},
@@ -54,8 +54,8 @@ namespace LibHac.Tests
             new object[] {"mount:/d./aa", "mount:/d./aa"},
         };
 
-        public static object[][] SubPathTestItems =
-        {
+    public static object[][] SubPathTestItems =
+    {
             new object[] {"/", "/", false},
             new object[] {"/", "/a", true},
             new object[] {"/", "/a/", true},
@@ -89,8 +89,8 @@ namespace LibHac.Tests
             new object[] {"mount:/a/b/c/", "mount:/a/b/cd", false},
         };
 
-        public static object[][] ParentDirectoryTestItems =
-        {
+    public static object[][] ParentDirectoryTestItems =
+    {
             new object[] {"/", ""},
             new object[] {"/a", "/"},
             new object[] {"/aa/aabc/f", "/aa/aabc"},
@@ -99,81 +99,81 @@ namespace LibHac.Tests
             new object[] {"mount:/aa/aabc/f", "mount:/aa/aabc"}
         };
 
-        public static object[][] IsNormalizedTestItems = GetNormalizedPaths(true);
+    public static object[][] IsNormalizedTestItems = GetNormalizedPaths(true);
 
-        public static object[][] IsNotNormalizedTestItems = GetNormalizedPaths(false);
+    public static object[][] IsNotNormalizedTestItems = GetNormalizedPaths(false);
 
-        [Theory]
-        [MemberData(nameof(NormalizedPathTestItems))]
-        public static void NormalizePath(string path, string expected)
+    [Theory]
+    [MemberData(nameof(NormalizedPathTestItems))]
+    public static void NormalizePath(string path, string expected)
+    {
+        string actual = PathTools.Normalize(path);
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [MemberData(nameof(IsNormalizedTestItems))]
+    public static void IsNormalized(string path)
+    {
+        Assert.True(PathTools.IsNormalized(path.AsSpan()));
+    }
+
+    [Theory]
+    [MemberData(nameof(IsNotNormalizedTestItems))]
+    public static void IsNotNormalized(string path)
+    {
+        Assert.False(PathTools.IsNormalized(path.AsSpan()));
+    }
+
+    [Theory]
+    [MemberData(nameof(SubPathTestItems))]
+    public static void TestSubPath(string rootPath, string path, bool expected)
+    {
+        bool actual = PathTools.IsSubPath(rootPath.AsSpan(), path.AsSpan());
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [MemberData(nameof(SubPathTestItems))]
+    public static void TestSubPathReverse(string rootPath, string path, bool expected)
+    {
+        bool actual = PathTools.IsSubPath(path.AsSpan(), rootPath.AsSpan());
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [MemberData(nameof(ParentDirectoryTestItems))]
+    public static void TestParentDirectory(string path, string expected)
+    {
+        string actual = PathTools.GetParentDirectory(path);
+
+        Assert.Equal(expected, actual);
+    }
+
+    private static object[][] GetNormalizedPaths(bool getNormalized)
+    {
+        var normalizedPaths = new HashSet<string>();
+        var notNormalizedPaths = new HashSet<string>();
+
+        foreach (object[] pair in NormalizedPathTestItems)
         {
-            string actual = PathTools.Normalize(path);
+            string pathNotNorm = (string)pair[0];
+            string pathNorm = (string)pair[1];
 
-            Assert.Equal(expected, actual);
+            if (pathNorm != pathNotNorm) notNormalizedPaths.Add(pathNotNorm);
+            normalizedPaths.Add(pathNorm);
         }
 
-        [Theory]
-        [MemberData(nameof(IsNormalizedTestItems))]
-        public static void IsNormalized(string path)
-        {
-            Assert.True(PathTools.IsNormalized(path.AsSpan()));
-        }
+        HashSet<string> paths = getNormalized ? normalizedPaths : notNormalizedPaths;
 
-        [Theory]
-        [MemberData(nameof(IsNotNormalizedTestItems))]
-        public static void IsNotNormalized(string path)
-        {
-            Assert.False(PathTools.IsNormalized(path.AsSpan()));
-        }
+        return paths.Select(x => new object[] { x }).ToArray();
+    }
 
-        [Theory]
-        [MemberData(nameof(SubPathTestItems))]
-        public static void TestSubPath(string rootPath, string path, bool expected)
-        {
-            bool actual = PathTools.IsSubPath(rootPath.AsSpan(), path.AsSpan());
-
-            Assert.Equal(expected, actual);
-        }
-
-        [Theory]
-        [MemberData(nameof(SubPathTestItems))]
-        public static void TestSubPathReverse(string rootPath, string path, bool expected)
-        {
-            bool actual = PathTools.IsSubPath(path.AsSpan(), rootPath.AsSpan());
-
-            Assert.Equal(expected, actual);
-        }
-
-        [Theory]
-        [MemberData(nameof(ParentDirectoryTestItems))]
-        public static void TestParentDirectory(string path, string expected)
-        {
-            string actual = PathTools.GetParentDirectory(path);
-
-            Assert.Equal(expected, actual);
-        }
-
-        private static object[][] GetNormalizedPaths(bool getNormalized)
-        {
-            var normalizedPaths = new HashSet<string>();
-            var notNormalizedPaths = new HashSet<string>();
-
-            foreach (object[] pair in NormalizedPathTestItems)
-            {
-                string pathNotNorm = (string)pair[0];
-                string pathNorm = (string)pair[1];
-
-                if (pathNorm != pathNotNorm) notNormalizedPaths.Add(pathNotNorm);
-                normalizedPaths.Add(pathNorm);
-            }
-
-            HashSet<string> paths = getNormalized ? normalizedPaths : notNormalizedPaths;
-
-            return paths.Select(x => new object[] { x }).ToArray();
-        }
-
-        public static object[][] GetFileNameTestItems =
-        {
+    public static object[][] GetFileNameTestItems =
+    {
             new object[] {"/a/bb/ccc", "ccc"},
             new object[] {"/a/bb/ccc/", ""},
             new object[] {"/a/bb", "bb"},
@@ -183,21 +183,21 @@ namespace LibHac.Tests
             new object[] {"/", ""},
         };
 
-        [Theory]
-        [MemberData(nameof(GetFileNameTestItems))]
-        public static void GetFileNameTest(string path, string expected)
-        {
-            var u8Path = path.ToU8String();
+    [Theory]
+    [MemberData(nameof(GetFileNameTestItems))]
+    public static void GetFileNameTest(string path, string expected)
+    {
+        var u8Path = path.ToU8String();
 
-            ReadOnlySpan<byte> fileName = PathTools.GetFileName(u8Path);
+        ReadOnlySpan<byte> fileName = PathTools.GetFileName(u8Path);
 
-            string actual = StringUtils.Utf8ZToString(fileName);
+        string actual = StringUtils.Utf8ZToString(fileName);
 
-            Assert.Equal(expected, actual);
-        }
+        Assert.Equal(expected, actual);
+    }
 
-        public static object[][] GetLastSegmentTestItems =
-        {
+    public static object[][] GetLastSegmentTestItems =
+    {
             new object[] {"/a/bb/ccc", "ccc"},
             new object[] {"/a/bb/ccc/", "ccc"},
             new object[] {"/a/bb", "bb"},
@@ -207,17 +207,16 @@ namespace LibHac.Tests
             new object[] {"/", ""},
         };
 
-        [Theory]
-        [MemberData(nameof(GetLastSegmentTestItems))]
-        public static void GetLastSegmentTest(string path, string expected)
-        {
-            var u8Path = path.ToU8String();
+    [Theory]
+    [MemberData(nameof(GetLastSegmentTestItems))]
+    public static void GetLastSegmentTest(string path, string expected)
+    {
+        var u8Path = path.ToU8String();
 
-            ReadOnlySpan<byte> fileName = PathTools.GetLastSegment(u8Path);
+        ReadOnlySpan<byte> fileName = PathTools.GetLastSegment(u8Path);
 
-            string actual = StringUtils.Utf8ZToString(fileName);
+        string actual = StringUtils.Utf8ZToString(fileName);
 
-            Assert.Equal(expected, actual);
-        }
+        Assert.Equal(expected, actual);
     }
 }

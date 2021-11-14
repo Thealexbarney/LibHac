@@ -3,21 +3,20 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using Xunit;
 
-namespace LibHac.Tests.Fs.IFileSystemTestBase
+namespace LibHac.Tests.Fs.IFileSystemTestBase;
+
+public abstract partial class IFileSystemTests
 {
-    public abstract partial class IFileSystemTests
+    [Fact]
+    public void OpenDirectory_PathIsFile_ReturnsPathNotFound()
     {
-        [Fact]
-        public void OpenDirectory_PathIsFile_ReturnsPathNotFound()
-        {
-            IFileSystem fs = CreateFileSystem();
+        IFileSystem fs = CreateFileSystem();
 
-            fs.CreateFile("/file", 0, CreateFileOptions.None);
+        fs.CreateFile("/file", 0, CreateFileOptions.None);
 
-            using var directory = new UniqueRef<IDirectory>();
-            Result rc = fs.OpenDirectory(ref directory.Ref(), "/file", OpenDirectoryMode.All);
+        using var directory = new UniqueRef<IDirectory>();
+        Result rc = fs.OpenDirectory(ref directory.Ref(), "/file", OpenDirectoryMode.All);
 
-            Assert.Result(ResultFs.PathNotFound, rc);
-        }
+        Assert.Result(ResultFs.PathNotFound, rc);
     }
 }

@@ -4,6 +4,7 @@
     <OutputType>Library</OutputType>
     <VersionPrefix>0.14.0</VersionPrefix>
     <TargetFramework>net5.0</TargetFramework>
+    <LangVersion>10.0</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 

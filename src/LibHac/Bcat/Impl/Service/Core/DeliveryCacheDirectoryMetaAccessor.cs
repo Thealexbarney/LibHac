@@ -5,96 +5,95 @@ using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
-namespace LibHac.Bcat.Impl.Service.Core
+namespace LibHac.Bcat.Impl.Service.Core;
+
+internal class DeliveryCacheDirectoryMetaAccessor
 {
-    internal class DeliveryCacheDirectoryMetaAccessor
+    private const int MaxEntryCount = 100;
+    private const int MetaFileHeaderValue = 1;
+
+    private BcatServer Server { get; }
+    private object Locker { get; } = new object();
+    private DeliveryCacheDirectoryMetaEntry[] Entries { get; } = new DeliveryCacheDirectoryMetaEntry[MaxEntryCount];
+    public int Count { get; private set; }
+
+    public DeliveryCacheDirectoryMetaAccessor(BcatServer server)
     {
-        private const int MaxEntryCount = 100;
-        private const int MetaFileHeaderValue = 1;
+        Server = server;
+    }
 
-        private BcatServer Server { get; }
-        private object Locker { get; } = new object();
-        private DeliveryCacheDirectoryMetaEntry[] Entries { get; } = new DeliveryCacheDirectoryMetaEntry[MaxEntryCount];
-        public int Count { get; private set; }
+    public Result ReadApplicationDirectoryMeta(ulong applicationId, bool allowMissingMetaFile)
+    {
+        Span<byte> metaPath = stackalloc byte[0x50];
+        Server.GetStorageManager().GetDirectoriesMetaPath(metaPath, applicationId);
 
-        public DeliveryCacheDirectoryMetaAccessor(BcatServer server)
+        return Read(new U8Span(metaPath), allowMissingMetaFile);
+    }
+
+    public Result GetEntry(out DeliveryCacheDirectoryMetaEntry entry, int index)
+    {
+        UnsafeHelpers.SkipParamInit(out entry);
+
+        lock (Locker)
         {
-            Server = server;
-        }
-
-        public Result ReadApplicationDirectoryMeta(ulong applicationId, bool allowMissingMetaFile)
-        {
-            Span<byte> metaPath = stackalloc byte[0x50];
-            Server.GetStorageManager().GetDirectoriesMetaPath(metaPath, applicationId);
-
-            return Read(new U8Span(metaPath), allowMissingMetaFile);
-        }
-
-        public Result GetEntry(out DeliveryCacheDirectoryMetaEntry entry, int index)
-        {
-            UnsafeHelpers.SkipParamInit(out entry);
-
-            lock (Locker)
+            if (index >= Count)
             {
-                if (index >= Count)
-                {
-                    return ResultBcat.NotFound.Log();
-                }
-
-                entry = Entries[index];
-                return Result.Success;
+                return ResultBcat.NotFound.Log();
             }
+
+            entry = Entries[index];
+            return Result.Success;
         }
+    }
 
-        private Result Read(U8Span path, bool allowMissingMetaFile)
+    private Result Read(U8Span path, bool allowMissingMetaFile)
+    {
+        lock (Locker)
         {
-            lock (Locker)
+            FileSystemClient fs = Server.GetFsClient();
+
+            Result rc = fs.OpenFile(out FileHandle handle, path, OpenMode.Read);
+
+            if (rc.IsFailure())
             {
-                FileSystemClient fs = Server.GetFsClient();
-
-                Result rc = fs.OpenFile(out FileHandle handle, path, OpenMode.Read);
-
-                if (rc.IsFailure())
+                if (ResultFs.PathNotFound.Includes(rc))
                 {
-                    if (ResultFs.PathNotFound.Includes(rc))
+                    if (allowMissingMetaFile)
                     {
-                        if (allowMissingMetaFile)
-                        {
-                            Count = 0;
-                            return Result.Success;
-                        }
-
-                        return ResultBcat.NotFound.LogConverted(rc);
+                        Count = 0;
+                        return Result.Success;
                     }
 
-                    return rc;
+                    return ResultBcat.NotFound.LogConverted(rc);
                 }
 
-                try
-                {
-                    Count = 0;
-                    int header = 0;
+                return rc;
+            }
 
-                    // Verify the header value
-                    rc = fs.ReadFile(out long bytesRead, handle, 0, SpanHelpers.AsByteSpan(ref header));
-                    if (rc.IsFailure()) return rc;
+            try
+            {
+                Count = 0;
+                int header = 0;
 
-                    if (bytesRead != sizeof(int) || header != MetaFileHeaderValue)
-                        return ResultBcat.InvalidDeliveryCacheStorageFile.Log();
+                // Verify the header value
+                rc = fs.ReadFile(out long bytesRead, handle, 0, SpanHelpers.AsByteSpan(ref header));
+                if (rc.IsFailure()) return rc;
 
-                    // Read all the directory entries
-                    Span<byte> buffer = MemoryMarshal.Cast<DeliveryCacheDirectoryMetaEntry, byte>(Entries);
-                    rc = fs.ReadFile(out bytesRead, handle, 4, buffer);
-                    if (rc.IsFailure()) return rc;
+                if (bytesRead != sizeof(int) || header != MetaFileHeaderValue)
+                    return ResultBcat.InvalidDeliveryCacheStorageFile.Log();
 
-                    Count = (int)((uint)bytesRead / Unsafe.SizeOf<DeliveryCacheDirectoryMetaEntry>());
+                // Read all the directory entries
+                Span<byte> buffer = MemoryMarshal.Cast<DeliveryCacheDirectoryMetaEntry, byte>(Entries);
+                rc = fs.ReadFile(out bytesRead, handle, 4, buffer);
+                if (rc.IsFailure()) return rc;
 
-                    return Result.Success;
-                }
-                finally
-                {
-                    fs.CloseFile(handle);
-                }
+                Count = (int)((uint)bytesRead / Unsafe.SizeOf<DeliveryCacheDirectoryMetaEntry>());
+
+                return Result.Success;
+            }
+            finally
+            {
+                fs.CloseFile(handle);
             }
         }
     }

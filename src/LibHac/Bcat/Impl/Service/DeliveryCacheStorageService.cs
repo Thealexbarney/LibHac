@@ -5,108 +5,107 @@ using LibHac.Bcat.Impl.Service.Core;
 using LibHac.Common;
 using LibHac.Util;
 
-namespace LibHac.Bcat.Impl.Service
+namespace LibHac.Bcat.Impl.Service;
+
+internal class DeliveryCacheStorageService : IDeliveryCacheStorageService
 {
-    internal class DeliveryCacheStorageService : IDeliveryCacheStorageService
+    private const int MaxOpenCount = 8;
+    private BcatServer Server { get; }
+
+    private object Locker { get; } = new object();
+    private AccessControl Access { get; }
+    private ulong ApplicationId { get; }
+    private int FileServiceOpenCount { get; set; }
+    private int DirectoryServiceOpenCount { get; set; }
+
+    public DeliveryCacheStorageService(BcatServer server, ulong applicationId, AccessControl accessControl)
     {
-        private const int MaxOpenCount = 8;
-        private BcatServer Server { get; }
+        Server = server;
+        ApplicationId = applicationId;
+        Access = accessControl;
+    }
 
-        private object Locker { get; } = new object();
-        private AccessControl Access { get; }
-        private ulong ApplicationId { get; }
-        private int FileServiceOpenCount { get; set; }
-        private int DirectoryServiceOpenCount { get; set; }
-
-        public DeliveryCacheStorageService(BcatServer server, ulong applicationId, AccessControl accessControl)
+    public Result CreateFileService(ref SharedRef<IDeliveryCacheFileService> service)
+    {
+        lock (Locker)
         {
-            Server = server;
-            ApplicationId = applicationId;
-            Access = accessControl;
+            if (FileServiceOpenCount >= MaxOpenCount)
+                return ResultBcat.ServiceOpenLimitReached.Log();
+
+            service.Reset(new DeliveryCacheFileService(Server, this, ApplicationId, Access));
+
+            FileServiceOpenCount++;
+            return Result.Success;
         }
+    }
 
-        public Result CreateFileService(ref SharedRef<IDeliveryCacheFileService> service)
+    public Result CreateDirectoryService(ref SharedRef<IDeliveryCacheDirectoryService> service)
+    {
+        lock (Locker)
         {
-            lock (Locker)
-            {
-                if (FileServiceOpenCount >= MaxOpenCount)
-                    return ResultBcat.ServiceOpenLimitReached.Log();
+            if (DirectoryServiceOpenCount >= MaxOpenCount)
+                return ResultBcat.ServiceOpenLimitReached.Log();
 
-                service.Reset(new DeliveryCacheFileService(Server, this, ApplicationId, Access));
+            service.Reset(new DeliveryCacheDirectoryService(Server, this, ApplicationId, Access));
 
-                FileServiceOpenCount++;
-                return Result.Success;
-            }
+            DirectoryServiceOpenCount++;
+            return Result.Success;
         }
+    }
 
-        public Result CreateDirectoryService(ref SharedRef<IDeliveryCacheDirectoryService> service)
+    public Result EnumerateDeliveryCacheDirectory(out int namesRead, Span<DirectoryName> nameBuffer)
+    {
+        UnsafeHelpers.SkipParamInit(out namesRead);
+
+        lock (Locker)
         {
-            lock (Locker)
+            var metaReader = new DeliveryCacheDirectoryMetaAccessor(Server);
+            Result rc = metaReader.ReadApplicationDirectoryMeta(ApplicationId, true);
+            if (rc.IsFailure()) return rc;
+
+            int i;
+            for (i = 0; i < nameBuffer.Length; i++)
             {
-                if (DirectoryServiceOpenCount >= MaxOpenCount)
-                    return ResultBcat.ServiceOpenLimitReached.Log();
+                rc = metaReader.GetEntry(out DeliveryCacheDirectoryMetaEntry entry, i);
 
-                service.Reset(new DeliveryCacheDirectoryService(Server, this, ApplicationId, Access));
-
-                DirectoryServiceOpenCount++;
-                return Result.Success;
-            }
-        }
-
-        public Result EnumerateDeliveryCacheDirectory(out int namesRead, Span<DirectoryName> nameBuffer)
-        {
-            UnsafeHelpers.SkipParamInit(out namesRead);
-
-            lock (Locker)
-            {
-                var metaReader = new DeliveryCacheDirectoryMetaAccessor(Server);
-                Result rc = metaReader.ReadApplicationDirectoryMeta(ApplicationId, true);
-                if (rc.IsFailure()) return rc;
-
-                int i;
-                for (i = 0; i < nameBuffer.Length; i++)
+                if (rc.IsFailure())
                 {
-                    rc = metaReader.GetEntry(out DeliveryCacheDirectoryMetaEntry entry, i);
+                    if (!ResultBcat.NotFound.Includes(rc))
+                        return rc;
 
-                    if (rc.IsFailure())
-                    {
-                        if (!ResultBcat.NotFound.Includes(rc))
-                            return rc;
-
-                        break;
-                    }
-
-                    StringUtils.Copy(nameBuffer[i].Bytes, entry.Name.Bytes);
+                    break;
                 }
 
-                namesRead = i;
-                return Result.Success;
+                StringUtils.Copy(nameBuffer[i].Bytes, entry.Name.Bytes);
             }
-        }
 
-        internal void NotifyCloseFile()
+            namesRead = i;
+            return Result.Success;
+        }
+    }
+
+    internal void NotifyCloseFile()
+    {
+        lock (Locker)
         {
-            lock (Locker)
-            {
-                FileServiceOpenCount--;
+            FileServiceOpenCount--;
 
-                Debug.Assert(FileServiceOpenCount >= 0);
-            }
+            Debug.Assert(FileServiceOpenCount >= 0);
         }
+    }
 
-        internal void NotifyCloseDirectory()
+    internal void NotifyCloseDirectory()
+    {
+        lock (Locker)
         {
-            lock (Locker)
-            {
-                DirectoryServiceOpenCount--;
+            DirectoryServiceOpenCount--;
 
-                Debug.Assert(DirectoryServiceOpenCount >= 0);
-            }
+            Debug.Assert(DirectoryServiceOpenCount >= 0);
         }
+    }
 
-        public void Dispose()
-        {
-            Server.GetStorageManager().Release(ApplicationId);
-        }
+    public void Dispose()
+    {
+        Server.GetStorageManager().Release(ApplicationId);
     }
 }

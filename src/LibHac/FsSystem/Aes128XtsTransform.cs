@@ -30,210 +30,209 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using LibHac.Util;
 
-namespace LibHac.FsSystem
+namespace LibHac.FsSystem;
+
+public class Aes128XtsTransform
 {
-    public class Aes128XtsTransform
+    private const int BlockSize = 128;
+    private const int BlockSizeBytes = BlockSize / 8;
+
+    private readonly byte[] _cc = new byte[16];
+    private readonly bool _decrypting;
+    private readonly ICryptoTransform _key1;
+    private readonly ICryptoTransform _key2;
+
+    private readonly byte[] _pp = new byte[16];
+    private readonly byte[] _t = new byte[16];
+
+    public Aes128XtsTransform(byte[] key1, byte[] key2, bool decrypting)
     {
-        private const int BlockSize = 128;
-        private const int BlockSizeBytes = BlockSize / 8;
+        if (key1?.Length != BlockSizeBytes || key2?.Length != BlockSizeBytes)
+            throw new ArgumentException($"Each key must be {BlockSizeBytes} bytes long");
 
-        private readonly byte[] _cc = new byte[16];
-        private readonly bool _decrypting;
-        private readonly ICryptoTransform _key1;
-        private readonly ICryptoTransform _key2;
+        var aes = Aes.Create();
+        if (aes == null) throw new CryptographicException("Unable to create AES object");
+        aes.Mode = CipherMode.ECB;
+        aes.Padding = PaddingMode.None;
 
-        private readonly byte[] _pp = new byte[16];
-        private readonly byte[] _t = new byte[16];
+        _decrypting = decrypting;
 
-        public Aes128XtsTransform(byte[] key1, byte[] key2, bool decrypting)
+        if (decrypting)
         {
-            if (key1?.Length != BlockSizeBytes || key2?.Length != BlockSizeBytes)
-                throw new ArgumentException($"Each key must be {BlockSizeBytes} bytes long");
-
-            var aes = Aes.Create();
-            if (aes == null) throw new CryptographicException("Unable to create AES object");
-            aes.Mode = CipherMode.ECB;
-            aes.Padding = PaddingMode.None;
-
-            _decrypting = decrypting;
-
-            if (decrypting)
-            {
-                _key1 = aes.CreateDecryptor(key1, new byte[BlockSizeBytes]);
-                _key2 = aes.CreateEncryptor(key2, new byte[BlockSizeBytes]);
-            }
-            else
-            {
-                _key1 = aes.CreateEncryptor(key1, new byte[BlockSizeBytes]);
-                _key2 = aes.CreateEncryptor(key2, new byte[BlockSizeBytes]);
-            }
+            _key1 = aes.CreateDecryptor(key1, new byte[BlockSizeBytes]);
+            _key2 = aes.CreateEncryptor(key2, new byte[BlockSizeBytes]);
         }
-
-        /// <summary>
-        /// Transforms a single block.
-        /// </summary>
-        /// <param name="buffer"> The input for which to compute the transform.</param>
-        /// <param name="offset">The offset into the byte array from which to begin using data.</param>
-        /// <param name="count">The number of bytes in the byte array to use as data.</param>
-        /// <param name="sector">The sector number of the block</param>
-        /// <returns>The number of bytes written.</returns>
-        public int TransformBlock(byte[] buffer, int offset, int count, ulong sector)
+        else
         {
-            int lim;
+            _key1 = aes.CreateEncryptor(key1, new byte[BlockSizeBytes]);
+            _key2 = aes.CreateEncryptor(key2, new byte[BlockSizeBytes]);
+        }
+    }
 
-            /* get number of blocks */
-            int m = count >> 4;
-            int mo = count & 15;
-            int alignedCount = Alignment.AlignUp(count, BlockSizeBytes);
+    /// <summary>
+    /// Transforms a single block.
+    /// </summary>
+    /// <param name="buffer"> The input for which to compute the transform.</param>
+    /// <param name="offset">The offset into the byte array from which to begin using data.</param>
+    /// <param name="count">The number of bytes in the byte array to use as data.</param>
+    /// <param name="sector">The sector number of the block</param>
+    /// <returns>The number of bytes written.</returns>
+    public int TransformBlock(byte[] buffer, int offset, int count, ulong sector)
+    {
+        int lim;
 
-            /* for i = 0 to m-2 do */
-            if (mo == 0)
-                lim = m;
-            else
-                lim = m - 1;
+        /* get number of blocks */
+        int m = count >> 4;
+        int mo = count & 15;
+        int alignedCount = Alignment.AlignUp(count, BlockSizeBytes);
 
-            byte[] tweak = ArrayPool<byte>.Shared.Rent(alignedCount);
-            try
+        /* for i = 0 to m-2 do */
+        if (mo == 0)
+            lim = m;
+        else
+            lim = m - 1;
+
+        byte[] tweak = ArrayPool<byte>.Shared.Rent(alignedCount);
+        try
+        {
+            FillArrayFromSector(tweak, sector);
+
+            /* encrypt the tweak */
+            _key2.TransformBlock(tweak, 0, 16, tweak, 0);
+
+            FillTweakBuffer(tweak.AsSpan(0, alignedCount));
+
+            if (lim > 0)
             {
-                FillArrayFromSector(tweak, sector);
+                Utilities.XorArrays(buffer.AsSpan(offset, lim * 16), tweak);
+                _key1.TransformBlock(buffer, offset, lim * 16, buffer, offset);
+                Utilities.XorArrays(buffer.AsSpan(offset, lim * 16), tweak);
+            }
 
-                /* encrypt the tweak */
-                _key2.TransformBlock(tweak, 0, 16, tweak, 0);
+            if (mo > 0)
+            {
+                Buffer.BlockCopy(tweak, lim * 16, _t, 0, 16);
 
-                FillTweakBuffer(tweak.AsSpan(0, alignedCount));
-
-                if (lim > 0)
+                if (_decrypting)
                 {
-                    Utilities.XorArrays(buffer.AsSpan(offset, lim * 16), tweak);
-                    _key1.TransformBlock(buffer, offset, lim * 16, buffer, offset);
-                    Utilities.XorArrays(buffer.AsSpan(offset, lim * 16), tweak);
+                    Buffer.BlockCopy(tweak, lim * 16 + 16, _cc, 0, 16);
+
+                    /* CC = tweak encrypt block m-1 */
+                    TweakCrypt(buffer, offset, _pp, 0, _cc);
+
+                    /* Cm = first ptlen % 16 bytes of CC */
+                    int i;
+                    for (i = 0; i < mo; i++)
+                    {
+                        _cc[i] = buffer[16 + i + offset];
+                        buffer[16 + i + offset] = _pp[i];
+                    }
+
+                    for (; i < 16; i++)
+                    {
+                        _cc[i] = _pp[i];
+                    }
+
+                    /* Cm-1 = Tweak encrypt PP */
+                    TweakCrypt(_cc, 0, buffer, offset, _t);
                 }
-
-                if (mo > 0)
+                else
                 {
-                    Buffer.BlockCopy(tweak, lim * 16, _t, 0, 16);
+                    /* CC = tweak encrypt block m-1 */
+                    TweakCrypt(buffer, offset, _cc, 0, _t);
 
-                    if (_decrypting)
+                    /* Cm = first ptlen % 16 bytes of CC */
+                    int i;
+                    for (i = 0; i < mo; i++)
                     {
-                        Buffer.BlockCopy(tweak, lim * 16 + 16, _cc, 0, 16);
-
-                        /* CC = tweak encrypt block m-1 */
-                        TweakCrypt(buffer, offset, _pp, 0, _cc);
-
-                        /* Cm = first ptlen % 16 bytes of CC */
-                        int i;
-                        for (i = 0; i < mo; i++)
-                        {
-                            _cc[i] = buffer[16 + i + offset];
-                            buffer[16 + i + offset] = _pp[i];
-                        }
-
-                        for (; i < 16; i++)
-                        {
-                            _cc[i] = _pp[i];
-                        }
-
-                        /* Cm-1 = Tweak encrypt PP */
-                        TweakCrypt(_cc, 0, buffer, offset, _t);
+                        _pp[i] = buffer[16 + i + offset];
+                        buffer[16 + i + offset] = _cc[i];
                     }
-                    else
+
+                    for (; i < 16; i++)
                     {
-                        /* CC = tweak encrypt block m-1 */
-                        TweakCrypt(buffer, offset, _cc, 0, _t);
-
-                        /* Cm = first ptlen % 16 bytes of CC */
-                        int i;
-                        for (i = 0; i < mo; i++)
-                        {
-                            _pp[i] = buffer[16 + i + offset];
-                            buffer[16 + i + offset] = _cc[i];
-                        }
-
-                        for (; i < 16; i++)
-                        {
-                            _pp[i] = _cc[i];
-                        }
-
-                        /* Cm-1 = Tweak encrypt PP */
-                        TweakCrypt(_pp, 0, buffer, offset, _t);
+                        _pp[i] = _cc[i];
                     }
+
+                    /* Cm-1 = Tweak encrypt PP */
+                    TweakCrypt(_pp, 0, buffer, offset, _t);
                 }
             }
-            finally { ArrayPool<byte>.Shared.Return(tweak); }
-
-            return count;
         }
+        finally { ArrayPool<byte>.Shared.Return(tweak); }
 
-        private static void FillTweakBuffer(Span<byte> buffer)
+        return count;
+    }
+
+    private static void FillTweakBuffer(Span<byte> buffer)
+    {
+        Span<ulong> bufL = MemoryMarshal.Cast<byte, ulong>(buffer);
+
+        ulong a = bufL[1];
+        ulong b = bufL[0];
+
+        for (int i = 2; i < bufL.Length; i += 2)
         {
-            Span<ulong> bufL = MemoryMarshal.Cast<byte, ulong>(buffer);
+            ulong tt = (ulong)((long)a >> 63) & 0x87;
 
-            ulong a = bufL[1];
-            ulong b = bufL[0];
+            a = (a << 1) | (b >> 63);
+            b = (b << 1) ^ tt;
 
-            for (int i = 2; i < bufL.Length; i += 2)
-            {
-                ulong tt = (ulong)((long)a >> 63) & 0x87;
-
-                a = (a << 1) | (b >> 63);
-                b = (b << 1) ^ tt;
-
-                bufL[i + 1] = a;
-                bufL[i] = b;
-            }
+            bufL[i + 1] = a;
+            bufL[i] = b;
         }
+    }
 
-        /// <summary>
-        /// Fills a byte array from a sector number (little endian)
-        /// </summary>
-        /// <param name="value">The destination</param>
-        /// <param name="sector">The sector number</param>
-        private static void FillArrayFromSector(byte[] value, ulong sector)
+    /// <summary>
+    /// Fills a byte array from a sector number (little endian)
+    /// </summary>
+    /// <param name="value">The destination</param>
+    /// <param name="sector">The sector number</param>
+    private static void FillArrayFromSector(byte[] value, ulong sector)
+    {
+        for (int i = 0xF; i >= 0; i--)
         {
-            for (int i = 0xF; i >= 0; i--)
-            {
-                value[i] = (byte)sector;
-                sector >>= 8;
-            }
+            value[i] = (byte)sector;
+            sector >>= 8;
         }
+    }
 
-        /// <summary>
-        /// Performs the Xts TweakCrypt operation
-        /// </summary>
-        private void TweakCrypt(byte[] inputBuffer, int inputOffset, byte[] outputBuffer, int outputOffset, byte[] t)
+    /// <summary>
+    /// Performs the Xts TweakCrypt operation
+    /// </summary>
+    private void TweakCrypt(byte[] inputBuffer, int inputOffset, byte[] outputBuffer, int outputOffset, byte[] t)
+    {
+        for (int x = 0; x < 16; x++)
         {
-            for (int x = 0; x < 16; x++)
-            {
-                outputBuffer[x + outputOffset] = (byte)(inputBuffer[x + inputOffset] ^ t[x]);
-            }
-
-            _key1.TransformBlock(outputBuffer, outputOffset, 16, outputBuffer, outputOffset);
-
-            for (int x = 0; x < 16; x++)
-            {
-                outputBuffer[x + outputOffset] = (byte)(outputBuffer[x + outputOffset] ^ t[x]);
-            }
-
-            MultiplyByX(t);
+            outputBuffer[x + outputOffset] = (byte)(inputBuffer[x + inputOffset] ^ t[x]);
         }
 
-        /// <summary>
-        /// Multiply by x
-        /// </summary>
-        /// <param name="i">The value to multiply by x (LFSR shift)</param>
-        private static void MultiplyByX(byte[] i)
+        _key1.TransformBlock(outputBuffer, outputOffset, 16, outputBuffer, outputOffset);
+
+        for (int x = 0; x < 16; x++)
         {
-            byte t = 0, tt = 0;
-
-            for (int x = 0; x < 16; x++)
-            {
-                tt = (byte)(i[x] >> 7);
-                i[x] = (byte)(((i[x] << 1) | t) & 0xFF);
-                t = tt;
-            }
-
-            if (tt > 0)
-                i[0] ^= 0x87;
+            outputBuffer[x + outputOffset] = (byte)(outputBuffer[x + outputOffset] ^ t[x]);
         }
+
+        MultiplyByX(t);
+    }
+
+    /// <summary>
+    /// Multiply by x
+    /// </summary>
+    /// <param name="i">The value to multiply by x (LFSR shift)</param>
+    private static void MultiplyByX(byte[] i)
+    {
+        byte t = 0, tt = 0;
+
+        for (int x = 0; x < 16; x++)
+        {
+            tt = (byte)(i[x] >> 7);
+            i[x] = (byte)(((i[x] << 1) | t) & 0xFF);
+            t = tt;
+        }
+
+        if (tt > 0)
+            i[0] ^= 0x87;
     }
 }

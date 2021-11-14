@@ -1,9 +1,8 @@
-﻿namespace LibHac.Crypto.Impl
+﻿namespace LibHac.Crypto.Impl;
+
+public enum HashState
 {
-    public enum HashState
-    {
-        Initial = 0,
-        Initialized,
-        Done
-    }
+    Initial = 0,
+    Initialized,
+    Done
 }

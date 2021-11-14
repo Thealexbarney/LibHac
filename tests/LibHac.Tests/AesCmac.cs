@@ -3,11 +3,11 @@ using LibHac.Crypto;
 using LibHac.Util;
 using Xunit;
 
-namespace LibHac.Tests
+namespace LibHac.Tests;
+
+public class AesCmac
 {
-    public class AesCmac
-    {
-        public static readonly TheoryData<TestData> TestVectors = new TheoryData<TestData>
+    public static readonly TheoryData<TestData> TestVectors = new TheoryData<TestData>
         {
             new TestData
             {
@@ -54,24 +54,23 @@ namespace LibHac.Tests
             }
         };
 
-        [Theory]
-        [MemberData(nameof(TestVectors))]
-        public static void TestCmacTestVectors(TestData data)
-        {
-            byte[] actual = new byte[0x10];
+    [Theory]
+    [MemberData(nameof(TestVectors))]
+    public static void TestCmacTestVectors(TestData data)
+    {
+        byte[] actual = new byte[0x10];
 
-            Aes.CalculateCmac(actual, data.Message.AsSpan(data.Start, data.Length), data.Key);
+        Aes.CalculateCmac(actual, data.Message.AsSpan(data.Start, data.Length), data.Key);
 
-            Assert.Equal(data.Expected, actual);
-        }
+        Assert.Equal(data.Expected, actual);
+    }
 
-        public struct TestData
-        {
-            public byte[] Key;
-            public byte[] Message;
-            public byte[] Expected;
-            public int Start;
-            public int Length;
-        }
+    public struct TestData
+    {
+        public byte[] Key;
+        public byte[] Message;
+        public byte[] Expected;
+        public int Start;
+        public int Length;
     }
 }

@@ -14,185 +14,184 @@ using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
-namespace LibHac.Fs.Shim
+namespace LibHac.Fs.Shim;
+
+/// <summary>
+/// Contains functions for mounting built-in-storage partition file systems
+/// and opening the raw partitions as <see cref="IStorage"/>s.
+/// </summary>
+/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+[SkipLocalsInit]
+public static class Bis
 {
-    /// <summary>
-    /// Contains functions for mounting built-in-storage partition file systems
-    /// and opening the raw partitions as <see cref="IStorage"/>s.
-    /// </summary>
-    /// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
-    [SkipLocalsInit]
-    public static class Bis
+    private class BisCommonMountNameGenerator : ICommonMountNameGenerator
     {
-        private class BisCommonMountNameGenerator : ICommonMountNameGenerator
+        private BisPartitionId _partitionId;
+
+        public BisCommonMountNameGenerator(BisPartitionId partitionId)
         {
-            private BisPartitionId _partitionId;
-
-            public BisCommonMountNameGenerator(BisPartitionId partitionId)
-            {
-                _partitionId = partitionId;
-            }
-
-            public void Dispose() { }
-
-            public Result GenerateCommonMountName(Span<byte> nameBuffer)
-            {
-                ReadOnlySpan<byte> mountName = GetBisMountName(_partitionId);
-
-                // Add 2 for the mount name separator and null terminator
-                int requiredNameBufferSize = StringUtils.GetLength(mountName, PathTools.MountNameLengthMax) + 2;
-
-                Assert.SdkRequiresGreaterEqual(nameBuffer.Length, requiredNameBufferSize);
-
-                var sb = new U8StringBuilder(nameBuffer);
-                sb.Append(mountName).Append(StringTraits.DriveSeparator);
-
-                Assert.SdkEqual(sb.Length, requiredNameBufferSize - 1);
-
-                return Result.Success;
-            }
+            _partitionId = partitionId;
         }
 
-        private static Result MountBis(this FileSystemClientImpl fs, U8Span mountName, BisPartitionId partitionId,
-            U8Span rootPath)
+        public void Dispose() { }
+
+        public Result GenerateCommonMountName(Span<byte> nameBuffer)
         {
-            Result rc;
+            ReadOnlySpan<byte> mountName = GetBisMountName(_partitionId);
 
-            if (fs.IsEnabledAccessLog(AccessLogTarget.System))
-            {
-                Tick start = fs.Hos.Os.GetSystemTick();
-                rc = Mount(fs, mountName, partitionId);
-                Tick end = fs.Hos.Os.GetSystemTick();
+            // Add 2 for the mount name separator and null terminator
+            int requiredNameBufferSize = StringUtils.GetLength(mountName, PathTools.MountNameLengthMax) + 2;
 
-                Span<byte> logBuffer = stackalloc byte[0x300];
-                var idString = new IdString();
-                var sb = new U8StringBuilder(logBuffer, true);
+            Assert.SdkRequiresGreaterEqual(nameBuffer.Length, requiredNameBufferSize);
 
-                sb.Append(LogName).Append(mountName).Append(LogQuote)
-                    .Append(LogBisPartitionId).Append(idString.ToString(partitionId))
-                    .Append(LogPath).Append(rootPath).Append(LogQuote);
+            var sb = new U8StringBuilder(nameBuffer);
+            sb.Append(mountName).Append(StringTraits.DriveSeparator);
 
-                fs.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
-            }
-            else
-            {
-                rc = Mount(fs, mountName, partitionId);
-            }
-
-            fs.AbortIfNeeded(rc);
-            if (rc.IsFailure()) return rc;
-
-            if (fs.IsEnabledAccessLog(AccessLogTarget.System))
-                fs.EnableFileSystemAccessorAccessLog(mountName);
+            Assert.SdkEqual(sb.Length, requiredNameBufferSize - 1);
 
             return Result.Success;
+        }
+    }
 
-            static Result Mount(FileSystemClientImpl fs, U8Span mountName, BisPartitionId partitionId)
-            {
-                Result rc = fs.CheckMountNameAcceptingReservedMountName(mountName);
-                if (rc.IsFailure()) return rc.Miss();
+    private static Result MountBis(this FileSystemClientImpl fs, U8Span mountName, BisPartitionId partitionId,
+        U8Span rootPath)
+    {
+        Result rc;
 
-                using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
+        if (fs.IsEnabledAccessLog(AccessLogTarget.System))
+        {
+            Tick start = fs.Hos.Os.GetSystemTick();
+            rc = Mount(fs, mountName, partitionId);
+            Tick end = fs.Hos.Os.GetSystemTick();
 
-                // Nintendo doesn't use the provided rootPath
-                FspPath.CreateEmpty(out FspPath sfPath);
+            Span<byte> logBuffer = stackalloc byte[0x300];
+            var idString = new IdString();
+            var sb = new U8StringBuilder(logBuffer, true);
 
-                using var fileSystem = new SharedRef<IFileSystemSf>();
+            sb.Append(LogName).Append(mountName).Append(LogQuote)
+                .Append(LogBisPartitionId).Append(idString.ToString(partitionId))
+                .Append(LogPath).Append(rootPath).Append(LogQuote);
 
-                rc = fileSystemProxy.Get.OpenBisFileSystem(ref fileSystem.Ref(), in sfPath, partitionId);
-                if (rc.IsFailure()) return rc.Miss();
-
-                using var mountNameGenerator =
-                    new UniqueRef<ICommonMountNameGenerator>(new BisCommonMountNameGenerator(partitionId));
-
-                if (!mountNameGenerator.HasValue)
-                    return ResultFs.AllocationMemoryFailedInBisA.Log();
-
-                using var fileSystemAdapter =
-                    new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
-
-                if (!fileSystemAdapter.HasValue)
-                    return ResultFs.AllocationMemoryFailedInBisB.Log();
-
-                rc = fs.Fs.Register(mountName, ref fileSystemAdapter.Ref(), ref mountNameGenerator.Ref());
-                if (rc.IsFailure()) return rc.Miss();
-
-                return Result.Success;
-            }
+            fs.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+        }
+        else
+        {
+            rc = Mount(fs, mountName, partitionId);
         }
 
-        public static Result MountBis(this FileSystemClient fs, U8Span mountName, BisPartitionId partitionId)
+        fs.AbortIfNeeded(rc);
+        if (rc.IsFailure()) return rc;
+
+        if (fs.IsEnabledAccessLog(AccessLogTarget.System))
+            fs.EnableFileSystemAccessorAccessLog(mountName);
+
+        return Result.Success;
+
+        static Result Mount(FileSystemClientImpl fs, U8Span mountName, BisPartitionId partitionId)
         {
-            return MountBis(fs.Impl, mountName, partitionId, default);
-        }
+            Result rc = fs.CheckMountNameAcceptingReservedMountName(mountName);
+            if (rc.IsFailure()) return rc.Miss();
 
-        public static Result MountBis(this FileSystemClient fs, BisPartitionId partitionId, U8Span rootPath)
-        {
-            return MountBis(fs.Impl, new U8Span(GetBisMountName(partitionId)), partitionId, rootPath);
-        }
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
 
-        public static ReadOnlySpan<byte> GetBisMountName(BisPartitionId partitionId)
-        {
-            switch (partitionId)
-            {
-                case BisPartitionId.BootPartition1Root:
-                case BisPartitionId.BootPartition2Root:
-                case BisPartitionId.UserDataRoot:
-                case BisPartitionId.BootConfigAndPackage2Part1:
-                case BisPartitionId.BootConfigAndPackage2Part2:
-                case BisPartitionId.BootConfigAndPackage2Part3:
-                case BisPartitionId.BootConfigAndPackage2Part4:
-                case BisPartitionId.BootConfigAndPackage2Part5:
-                case BisPartitionId.BootConfigAndPackage2Part6:
-                case BisPartitionId.CalibrationBinary:
-                    Abort.DoAbort("The partition specified is not mountable.");
-                    break;
+            // Nintendo doesn't use the provided rootPath
+            FspPath.CreateEmpty(out FspPath sfPath);
 
-                case BisPartitionId.CalibrationFile:
-                    return BisCalibrationFilePartitionMountName;
-                case BisPartitionId.SafeMode:
-                    return BisSafeModePartitionMountName;
-                case BisPartitionId.User:
-                    return BisUserPartitionMountName;
-                case BisPartitionId.System:
-                    return BisSystemPartitionMountName;
+            using var fileSystem = new SharedRef<IFileSystemSf>();
 
-                default:
-                    Abort.UnexpectedDefault();
-                    break;
-            }
+            rc = fileSystemProxy.Get.OpenBisFileSystem(ref fileSystem.Ref(), in sfPath, partitionId);
+            if (rc.IsFailure()) return rc.Miss();
 
-            return ReadOnlySpan<byte>.Empty;
-        }
+            using var mountNameGenerator =
+                new UniqueRef<ICommonMountNameGenerator>(new BisCommonMountNameGenerator(partitionId));
 
-        public static Result OpenBisPartition(this FileSystemClient fs, ref UniqueRef<IStorage> outPartitionStorage,
-            BisPartitionId partitionId)
-        {
-            using var storage = new SharedRef<IStorageSf>();
-            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
+            if (!mountNameGenerator.HasValue)
+                return ResultFs.AllocationMemoryFailedInBisA.Log();
 
-            Result rc = fileSystemProxy.Get.OpenBisStorage(ref storage.Ref(), partitionId);
-            fs.Impl.AbortIfNeeded(rc);
-            if (rc.IsFailure()) return rc;
+            using var fileSystemAdapter =
+                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
 
-            using var storageAdapter = new UniqueRef<IStorage>(new StorageServiceObjectAdapter(ref storage.Ref()));
+            if (!fileSystemAdapter.HasValue)
+                return ResultFs.AllocationMemoryFailedInBisB.Log();
 
-            if (!storageAdapter.HasValue)
-                return ResultFs.AllocationMemoryFailedInBisC.Log();
-
-            outPartitionStorage.Set(ref storageAdapter.Ref());
-            return Result.Success;
-        }
-
-        public static Result InvalidateBisCache(this FileSystemClient fs)
-        {
-            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
-
-            Result rc = fileSystemProxy.Get.InvalidateBisCache();
-            fs.Impl.AbortIfNeeded(rc);
+            rc = fs.Fs.Register(mountName, ref fileSystemAdapter.Ref(), ref mountNameGenerator.Ref());
             if (rc.IsFailure()) return rc.Miss();
 
             return Result.Success;
         }
+    }
+
+    public static Result MountBis(this FileSystemClient fs, U8Span mountName, BisPartitionId partitionId)
+    {
+        return MountBis(fs.Impl, mountName, partitionId, default);
+    }
+
+    public static Result MountBis(this FileSystemClient fs, BisPartitionId partitionId, U8Span rootPath)
+    {
+        return MountBis(fs.Impl, new U8Span(GetBisMountName(partitionId)), partitionId, rootPath);
+    }
+
+    public static ReadOnlySpan<byte> GetBisMountName(BisPartitionId partitionId)
+    {
+        switch (partitionId)
+        {
+            case BisPartitionId.BootPartition1Root:
+            case BisPartitionId.BootPartition2Root:
+            case BisPartitionId.UserDataRoot:
+            case BisPartitionId.BootConfigAndPackage2Part1:
+            case BisPartitionId.BootConfigAndPackage2Part2:
+            case BisPartitionId.BootConfigAndPackage2Part3:
+            case BisPartitionId.BootConfigAndPackage2Part4:
+            case BisPartitionId.BootConfigAndPackage2Part5:
+            case BisPartitionId.BootConfigAndPackage2Part6:
+            case BisPartitionId.CalibrationBinary:
+                Abort.DoAbort("The partition specified is not mountable.");
+                break;
+
+            case BisPartitionId.CalibrationFile:
+                return BisCalibrationFilePartitionMountName;
+            case BisPartitionId.SafeMode:
+                return BisSafeModePartitionMountName;
+            case BisPartitionId.User:
+                return BisUserPartitionMountName;
+            case BisPartitionId.System:
+                return BisSystemPartitionMountName;
+
+            default:
+                Abort.UnexpectedDefault();
+                break;
+        }
+
+        return ReadOnlySpan<byte>.Empty;
+    }
+
+    public static Result OpenBisPartition(this FileSystemClient fs, ref UniqueRef<IStorage> outPartitionStorage,
+        BisPartitionId partitionId)
+    {
+        using var storage = new SharedRef<IStorageSf>();
+        using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
+
+        Result rc = fileSystemProxy.Get.OpenBisStorage(ref storage.Ref(), partitionId);
+        fs.Impl.AbortIfNeeded(rc);
+        if (rc.IsFailure()) return rc;
+
+        using var storageAdapter = new UniqueRef<IStorage>(new StorageServiceObjectAdapter(ref storage.Ref()));
+
+        if (!storageAdapter.HasValue)
+            return ResultFs.AllocationMemoryFailedInBisC.Log();
+
+        outPartitionStorage.Set(ref storageAdapter.Ref());
+        return Result.Success;
+    }
+
+    public static Result InvalidateBisCache(this FileSystemClient fs)
+    {
+        using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
+
+        Result rc = fileSystemProxy.Get.InvalidateBisCache();
+        fs.Impl.AbortIfNeeded(rc);
+        if (rc.IsFailure()) return rc.Miss();
+
+        return Result.Success;
     }
 }

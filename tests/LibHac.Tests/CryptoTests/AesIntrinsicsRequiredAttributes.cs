@@ -1,27 +1,26 @@
 ﻿using LibHac.Crypto;
 using Xunit;
 
-namespace LibHac.Tests.CryptoTests
+namespace LibHac.Tests.CryptoTests;
+
+public sealed class AesIntrinsicsRequiredTheoryAttribute : TheoryAttribute
 {
-    public sealed class AesIntrinsicsRequiredTheoryAttribute : TheoryAttribute
+    public AesIntrinsicsRequiredTheoryAttribute()
     {
-        public AesIntrinsicsRequiredTheoryAttribute()
+        if (!Aes.IsAesNiSupported())
         {
-            if (!Aes.IsAesNiSupported())
-            {
-                Skip = "AES intrinsics required";
-            }
+            Skip = "AES intrinsics required";
         }
     }
+}
 
-    public sealed class AesIntrinsicsRequiredFactAttribute : FactAttribute
+public sealed class AesIntrinsicsRequiredFactAttribute : FactAttribute
+{
+    public AesIntrinsicsRequiredFactAttribute()
     {
-        public AesIntrinsicsRequiredFactAttribute()
+        if (!Aes.IsAesNiSupported())
         {
-            if (!Aes.IsAesNiSupported())
-            {
-                Skip = "AES intrinsics required";
-            }
+            Skip = "AES intrinsics required";
         }
     }
 }

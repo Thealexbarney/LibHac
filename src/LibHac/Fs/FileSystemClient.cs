@@ -4,61 +4,60 @@ using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
 using LibHac.FsSystem;
 
-namespace LibHac.Fs
+namespace LibHac.Fs;
+
+public class FileSystemClient : IDisposable
 {
-    public class FileSystemClient : IDisposable
+    internal FileSystemClientGlobals Globals;
+
+    public FileSystemClientImpl Impl => new FileSystemClientImpl(this);
+    internal HorizonClient Hos => Globals.Hos;
+
+    public FileSystemClient(HorizonClient horizonClient)
     {
-        internal FileSystemClientGlobals Globals;
-
-        public FileSystemClientImpl Impl => new FileSystemClientImpl(this);
-        internal HorizonClient Hos => Globals.Hos;
-
-        public FileSystemClient(HorizonClient horizonClient)
-        {
-            Globals.Initialize(this, horizonClient);
-        }
-
-        public void Dispose()
-        {
-            Globals.Dispose();
-        }
+        Globals.Initialize(this, horizonClient);
     }
 
-    [NonCopyable]
-    internal struct FileSystemClientGlobals : IDisposable
+    public void Dispose()
     {
-        public HorizonClient Hos;
-        public object InitMutex;
-        public AccessLogGlobals AccessLog;
-        public UserMountTableGlobals UserMountTable;
-        public FileSystemProxyServiceObjectGlobals FileSystemProxyServiceObject;
-        public FsContextHandlerGlobals FsContextHandler;
-        public ResultHandlingUtilityGlobals ResultHandlingUtility;
-        public DirectorySaveDataFileSystemGlobals DirectorySaveDataFileSystem;
+        Globals.Dispose();
+    }
+}
 
-        public void Initialize(FileSystemClient fsClient, HorizonClient horizonClient)
-        {
-            Hos = horizonClient;
-            InitMutex = new object();
-            AccessLog.Initialize(fsClient);
-            UserMountTable.Initialize(fsClient);
-            FsContextHandler.Initialize(fsClient);
-            DirectorySaveDataFileSystem.Initialize(fsClient);
-        }
+[NonCopyable]
+internal struct FileSystemClientGlobals : IDisposable
+{
+    public HorizonClient Hos;
+    public object InitMutex;
+    public AccessLogGlobals AccessLog;
+    public UserMountTableGlobals UserMountTable;
+    public FileSystemProxyServiceObjectGlobals FileSystemProxyServiceObject;
+    public FsContextHandlerGlobals FsContextHandler;
+    public ResultHandlingUtilityGlobals ResultHandlingUtility;
+    public DirectorySaveDataFileSystemGlobals DirectorySaveDataFileSystem;
 
-        public void Dispose()
-        {
-            FileSystemProxyServiceObject.Dispose();
-        }
+    public void Initialize(FileSystemClient fsClient, HorizonClient horizonClient)
+    {
+        Hos = horizonClient;
+        InitMutex = new object();
+        AccessLog.Initialize(fsClient);
+        UserMountTable.Initialize(fsClient);
+        FsContextHandler.Initialize(fsClient);
+        DirectorySaveDataFileSystem.Initialize(fsClient);
     }
 
-    // Functions in the nn::fs::detail namespace use this struct.
-    public readonly struct FileSystemClientImpl
+    public void Dispose()
     {
-        internal readonly FileSystemClient Fs;
-        internal HorizonClient Hos => Fs.Hos;
-        internal ref FileSystemClientGlobals Globals => ref Fs.Globals;
-
-        internal FileSystemClientImpl(FileSystemClient parentClient) => Fs = parentClient;
+        FileSystemProxyServiceObject.Dispose();
     }
+}
+
+// Functions in the nn::fs::detail namespace use this struct.
+public readonly struct FileSystemClientImpl
+{
+    internal readonly FileSystemClient Fs;
+    internal HorizonClient Hos => Fs.Hos;
+    internal ref FileSystemClientGlobals Globals => ref Fs.Globals;
+
+    internal FileSystemClientImpl(FileSystemClient parentClient) => Fs = parentClient;
 }

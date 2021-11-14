@@ -1,10 +1,9 @@
-﻿namespace LibHac
+﻿namespace LibHac;
+
+public enum KeyType
 {
-    public enum KeyType
-    {
-        None,
-        Common,
-        Unique,
-        Title
-    }
+    None,
+    Common,
+    Unique,
+    Title
 }

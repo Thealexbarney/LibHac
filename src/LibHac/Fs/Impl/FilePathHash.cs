@@ -1,7 +1,6 @@
-﻿namespace LibHac.Fs.Impl
+﻿namespace LibHac.Fs.Impl;
+
+public struct FilePathHash
 {
-    public struct FilePathHash
-    {
-        public int Data;
-    }
+    public int Data;
 }

@@ -2,30 +2,29 @@
 using LibHac.Common;
 using LibHac.Os;
 
-namespace LibHac.FsSystem
+namespace LibHac.FsSystem;
+
+public interface IUniqueLock : IDisposable { }
+
+public class UniqueLockWithPin<T> : IUniqueLock where T : class, IDisposable
 {
-    public interface IUniqueLock : IDisposable { }
+    private UniqueLock<SemaphoreAdapter> _semaphore;
+    private SharedRef<T> _pinnedObject;
 
-    public class UniqueLockWithPin<T> : IUniqueLock where T : class, IDisposable
+    public UniqueLockWithPin(ref UniqueLock<SemaphoreAdapter> semaphore, ref SharedRef<T> pinnedObject)
     {
-        private UniqueLock<SemaphoreAdapter> _semaphore;
-        private SharedRef<T> _pinnedObject;
+        _semaphore = new UniqueLock<SemaphoreAdapter>(ref semaphore);
+        _pinnedObject = SharedRef<T>.CreateMove(ref pinnedObject);
+    }
 
-        public UniqueLockWithPin(ref UniqueLock<SemaphoreAdapter> semaphore, ref SharedRef<T> pinnedObject)
+    public void Dispose()
+    {
+        using (var emptyLock = new UniqueLock<SemaphoreAdapter>())
         {
-            _semaphore = new UniqueLock<SemaphoreAdapter>(ref semaphore);
-            _pinnedObject = SharedRef<T>.CreateMove(ref pinnedObject);
+            _semaphore.Set(ref emptyLock.Ref());
         }
 
-        public void Dispose()
-        {
-            using (var emptyLock = new UniqueLock<SemaphoreAdapter>())
-            {
-                _semaphore.Set(ref emptyLock.Ref());
-            }
-
-            _pinnedObject.Destroy();
-            _semaphore.Dispose();
-        }
+        _pinnedObject.Destroy();
+        _semaphore.Dispose();
     }
 }

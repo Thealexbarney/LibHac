@@ -1,9 +1,8 @@
-﻿namespace LibHac.Fat
+﻿namespace LibHac.Fat;
+
+public struct FatAttribute
 {
-    public struct FatAttribute
-    {
-        public bool IsFatSafeEnabled;
-        public bool IsFatFormatNormalized;
-        public bool IsTimeStampUpdated;
-    }
+    public bool IsFatSafeEnabled;
+    public bool IsFatFormatNormalized;
+    public bool IsTimeStampUpdated;
 }

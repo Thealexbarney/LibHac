@@ -1,9 +1,8 @@
 ﻿using LibHac.Fs.Fsa;
 
-namespace LibHac.Tests.Fs.IFileSystemTestBase
+namespace LibHac.Tests.Fs.IFileSystemTestBase;
+
+public abstract partial class IFileSystemTests
 {
-    public abstract partial class IFileSystemTests
-    {
-        protected abstract IFileSystem CreateFileSystem();
-    }
+    protected abstract IFileSystem CreateFileSystem();
 }

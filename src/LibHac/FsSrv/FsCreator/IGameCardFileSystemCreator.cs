@@ -2,10 +2,9 @@
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
-namespace LibHac.FsSrv.FsCreator
+namespace LibHac.FsSrv.FsCreator;
+
+public interface IGameCardFileSystemCreator
 {
-    public interface IGameCardFileSystemCreator
-    {
-        Result Create(ref SharedRef<IFileSystem> outFileSystem, GameCardHandle handle, GameCardPartition partitionType);
-    }
+    Result Create(ref SharedRef<IFileSystem> outFileSystem, GameCardHandle handle, GameCardPartition partitionType);
 }

@@ -1,8 +1,7 @@
-﻿namespace LibHac.Os
+﻿namespace LibHac.Os;
+
+public enum ConditionVariableStatus
 {
-    public enum ConditionVariableStatus
-    {
-        TimedOut = 0,
-        Success = 1
-    }
+    TimedOut = 0,
+    Success = 1
 }

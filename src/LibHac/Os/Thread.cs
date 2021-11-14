@@ -1,12 +1,11 @@
 ﻿using LibHac.Os.Impl;
 
-namespace LibHac.Os
+namespace LibHac.Os;
+
+public static class Thread
 {
-    public static class Thread
+    public static void SleepThread(this OsState os, TimeSpan time)
     {
-        public static void SleepThread(this OsState os, TimeSpan time)
-        {
-            TimeoutHelperImpl.Sleep(os, time);
-        }
+        TimeoutHelperImpl.Sleep(os, time);
     }
 }

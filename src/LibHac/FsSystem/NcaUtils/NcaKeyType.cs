@@ -1,11 +1,10 @@
-﻿namespace LibHac.FsSystem.NcaUtils
+﻿namespace LibHac.FsSystem.NcaUtils;
+
+internal enum NcaKeyType
 {
-    internal enum NcaKeyType
-    {
-        AesXts0,
-        AesXts1,
-        AesCtr,
-        Type3,
-        Type4
-    }
+    AesXts0,
+    AesXts1,
+    AesCtr,
+    Type3,
+    Type4
 }

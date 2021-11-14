@@ -10,386 +10,386 @@ using LibHac.Crypto.Impl;
 using LibHac.Fs;
 using LibHac.FsSystem;
 
-namespace hactoolnet
+namespace hactoolnet;
+
+internal static class ProcessBench
 {
-    internal static class ProcessBench
+    private const int Size = 1024 * 1024 * 10;
+    private const int Iterations = 100;
+    private const int BlockSizeBlocked = 0x10;
+    private const int BlockSizeSeparate = 0x10;
+
+    private const int BatchCipherBenchSize = 1024 * 1024;
+    // ReSharper disable once UnusedMember.Local
+    private const int SingleBlockCipherBenchSize = 1024 * 128;
+    private const int ShaBenchSize = 1024 * 128;
+
+    private static double CpuFrequency { get; set; }
+
+    private static void CopyBenchmark(IStorage src, IStorage dst, int iterations, string label, IProgressReport logger)
     {
-        private const int Size = 1024 * 1024 * 10;
-        private const int Iterations = 100;
-        private const int BlockSizeBlocked = 0x10;
-        private const int BlockSizeSeparate = 0x10;
+        // Warmup
+        src.CopyTo(dst);
 
-        private const int BatchCipherBenchSize = 1024 * 1024;
-        // ReSharper disable once UnusedMember.Local
-        private const int SingleBlockCipherBenchSize = 1024 * 128;
-        private const int ShaBenchSize = 1024 * 128;
+        logger.SetTotal(iterations);
 
-        private static double CpuFrequency { get; set; }
-
-        private static void CopyBenchmark(IStorage src, IStorage dst, int iterations, string label, IProgressReport logger)
+        var encryptWatch = Stopwatch.StartNew();
+        for (int i = 0; i < iterations; i++)
         {
-            // Warmup
             src.CopyTo(dst);
+            logger.ReportAdd(1);
+        }
+        encryptWatch.Stop();
+        logger.SetTotal(0);
 
-            logger.SetTotal(iterations);
+        src.GetSize(out long srcSize).ThrowIfFailure();
 
-            var encryptWatch = Stopwatch.StartNew();
-            for (int i = 0; i < iterations; i++)
-            {
-                src.CopyTo(dst);
-                logger.ReportAdd(1);
-            }
-            encryptWatch.Stop();
-            logger.SetTotal(0);
+        string rate = Utilities.GetBytesReadable((long)(srcSize * iterations / encryptWatch.Elapsed.TotalSeconds));
+        logger.LogMessage($"{label}{rate}/s");
+    }
 
-            src.GetSize(out long srcSize).ThrowIfFailure();
+    private static void CipherBenchmark(ReadOnlySpan<byte> src, Span<byte> dst, Func<ICipher> cipherGenerator,
+        int iterations, string label, IProgressReport logger)
+    {
+        cipherGenerator().Transform(src, dst);
 
-            string rate = Utilities.GetBytesReadable((long)(srcSize * iterations / encryptWatch.Elapsed.TotalSeconds));
-            logger.LogMessage($"{label}{rate}/s");
+        var watch = new Stopwatch();
+        double[] runTimes = new double[iterations];
+
+        logger.SetTotal(iterations);
+
+        for (int i = 0; i < iterations; i++)
+        {
+            ICipher cipher = cipherGenerator();
+
+            watch.Restart();
+            cipher.Transform(src, dst);
+            watch.Stop();
+
+            logger.ReportAdd(1);
+            runTimes[i] = watch.Elapsed.TotalSeconds;
         }
 
-        private static void CipherBenchmark(ReadOnlySpan<byte> src, Span<byte> dst, Func<ICipher> cipherGenerator,
-            int iterations, string label, IProgressReport logger)
+        logger.SetTotal(0);
+
+        long srcSize = src.Length;
+
+        double fastestRun = runTimes.Min();
+        double averageRun = runTimes.Average();
+        double slowestRun = runTimes.Max();
+
+        string fastestRate = Utilities.GetBytesReadable((long)(srcSize / fastestRun));
+        string averageRate = Utilities.GetBytesReadable((long)(srcSize / averageRun));
+        string slowestRate = Utilities.GetBytesReadable((long)(srcSize / slowestRun));
+
+        logger.LogMessage($"{label}{averageRate}/s, fastest run: {fastestRate}/s, slowest run: {slowestRate}/s");
+    }
+
+    private static void CipherBenchmarkBlocked(ReadOnlySpan<byte> src, Span<byte> dst, Func<ICipher> cipherGenerator,
+        int iterations, string label, IProgressReport logger)
+    {
+        cipherGenerator().Transform(src, dst);
+
+        var watch = new Stopwatch();
+        double[] runTimes = new double[iterations];
+
+        logger.SetTotal(iterations);
+
+        int blockCount = src.Length / BlockSizeBlocked;
+
+        for (int i = 0; i < iterations; i++)
         {
-            cipherGenerator().Transform(src, dst);
+            ICipher cipher = cipherGenerator();
 
-            var watch = new Stopwatch();
-            double[] runTimes = new double[iterations];
+            watch.Restart();
 
-            logger.SetTotal(iterations);
-
-            for (int i = 0; i < iterations; i++)
+            for (int b = 0; b < blockCount; b++)
             {
-                ICipher cipher = cipherGenerator();
-
-                watch.Restart();
-                cipher.Transform(src, dst);
-                watch.Stop();
-
-                logger.ReportAdd(1);
-                runTimes[i] = watch.Elapsed.TotalSeconds;
+                cipher.Transform(src.Slice(b * BlockSizeBlocked, BlockSizeBlocked),
+                    dst.Slice(b * BlockSizeBlocked, BlockSizeBlocked));
             }
 
-            logger.SetTotal(0);
+            watch.Stop();
 
-            long srcSize = src.Length;
-
-            double fastestRun = runTimes.Min();
-            double averageRun = runTimes.Average();
-            double slowestRun = runTimes.Max();
-
-            string fastestRate = Utilities.GetBytesReadable((long)(srcSize / fastestRun));
-            string averageRate = Utilities.GetBytesReadable((long)(srcSize / averageRun));
-            string slowestRate = Utilities.GetBytesReadable((long)(srcSize / slowestRun));
-
-            logger.LogMessage($"{label}{averageRate}/s, fastest run: {fastestRate}/s, slowest run: {slowestRate}/s");
+            logger.ReportAdd(1);
+            runTimes[i] = watch.Elapsed.TotalSeconds;
         }
 
-        private static void CipherBenchmarkBlocked(ReadOnlySpan<byte> src, Span<byte> dst, Func<ICipher> cipherGenerator,
-            int iterations, string label, IProgressReport logger)
+        logger.SetTotal(0);
+
+        long srcSize = src.Length;
+
+        double fastestRun = runTimes.Min();
+        double averageRun = runTimes.Average();
+        double slowestRun = runTimes.Max();
+
+        string fastestRate = Utilities.GetBytesReadable((long)(srcSize / fastestRun));
+        string averageRate = Utilities.GetBytesReadable((long)(srcSize / averageRun));
+        string slowestRate = Utilities.GetBytesReadable((long)(srcSize / slowestRun));
+
+        logger.LogMessage($"{label}{averageRate}/s, fastest run: {fastestRate}/s, slowest run: {slowestRate}/s");
+    }
+
+    private delegate void CipherTaskSeparate(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key1,
+        ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false);
+
+    // Benchmarks encrypting each block separately, initializing a new cipher object for each one
+    private static void CipherBenchmarkSeparate(ReadOnlySpan<byte> src, Span<byte> dst, CipherTaskSeparate function,
+        int iterations, string label, bool dotNetCrypto, IProgressReport logger)
+    {
+        Debug.Assert(src.Length == dst.Length);
+
+        var watch = new Stopwatch();
+        double[] runTimes = new double[iterations];
+
+        ReadOnlySpan<byte> key1 = stackalloc byte[0x10];
+        ReadOnlySpan<byte> key2 = stackalloc byte[0x10];
+        ReadOnlySpan<byte> iv = stackalloc byte[0x10];
+
+        logger.SetTotal(iterations);
+
+        const int blockSize = BlockSizeSeparate;
+        int blockCount = src.Length / blockSize;
+
+        for (int i = 0; i < iterations; i++)
         {
-            cipherGenerator().Transform(src, dst);
+            watch.Restart();
 
-            var watch = new Stopwatch();
-            double[] runTimes = new double[iterations];
-
-            logger.SetTotal(iterations);
-
-            int blockCount = src.Length / BlockSizeBlocked;
-
-            for (int i = 0; i < iterations; i++)
+            for (int b = 0; b < blockCount; b++)
             {
-                ICipher cipher = cipherGenerator();
-
-                watch.Restart();
-
-                for (int b = 0; b < blockCount; b++)
-                {
-                    cipher.Transform(src.Slice(b * BlockSizeBlocked, BlockSizeBlocked),
-                        dst.Slice(b * BlockSizeBlocked, BlockSizeBlocked));
-                }
-
-                watch.Stop();
-
-                logger.ReportAdd(1);
-                runTimes[i] = watch.Elapsed.TotalSeconds;
+                function(src.Slice(b * blockSize, blockSize), dst.Slice(b * blockSize, blockSize),
+                    key1, key2, iv, dotNetCrypto);
             }
 
-            logger.SetTotal(0);
+            watch.Stop();
 
-            long srcSize = src.Length;
-
-            double fastestRun = runTimes.Min();
-            double averageRun = runTimes.Average();
-            double slowestRun = runTimes.Max();
-
-            string fastestRate = Utilities.GetBytesReadable((long)(srcSize / fastestRun));
-            string averageRate = Utilities.GetBytesReadable((long)(srcSize / averageRun));
-            string slowestRate = Utilities.GetBytesReadable((long)(srcSize / slowestRun));
-
-            logger.LogMessage($"{label}{averageRate}/s, fastest run: {fastestRate}/s, slowest run: {slowestRate}/s");
+            logger.ReportAdd(1);
+            runTimes[i] = watch.Elapsed.TotalSeconds;
         }
 
-        private delegate void CipherTaskSeparate(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key1,
-            ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false);
+        logger.SetTotal(0);
 
-        // Benchmarks encrypting each block separately, initializing a new cipher object for each one
-        private static void CipherBenchmarkSeparate(ReadOnlySpan<byte> src, Span<byte> dst, CipherTaskSeparate function,
-            int iterations, string label, bool dotNetCrypto, IProgressReport logger)
+        long srcSize = src.Length;
+
+        double fastestRun = runTimes.Min();
+        double averageRun = runTimes.Average();
+        double slowestRun = runTimes.Max();
+
+        string fastestRate = Utilities.GetBytesReadable((long)(srcSize / fastestRun));
+        string averageRate = Utilities.GetBytesReadable((long)(srcSize / averageRun));
+        string slowestRate = Utilities.GetBytesReadable((long)(srcSize / slowestRun));
+
+        logger.LogMessage($"{label}{averageRate}/s, fastest run: {fastestRate}/s, slowest run: {slowestRate}/s");
+    }
+
+    private static void RegisterAesSequentialBenchmarks(MultiBenchmark bench)
+    {
+        byte[] input = new byte[BatchCipherBenchSize];
+        byte[] output = new byte[BatchCipherBenchSize];
+
+        Func<double, string> resultPrinter = time => GetPerformanceString(time, BatchCipherBenchSize);
+
+        // Skip the first benchmark set if we don't have AES-NI intrinsics
+        for (int i = Aes.IsAesNiSupported() ? 0 : 1; i < 2; i++)
         {
-            Debug.Assert(src.Length == dst.Length);
+            // Prefer .NET crypto on the second set
+            string nameSuffix = i == 1 ? "built-in " : string.Empty;
+            bool preferDotNetImpl = i == 1;
 
-            var watch = new Stopwatch();
-            double[] runTimes = new double[iterations];
+            RegisterCipher($"AES-ECB {nameSuffix}encrypt",
+                () => Aes.CreateEcbEncryptor(new byte[0x10], preferDotNetImpl));
 
-            ReadOnlySpan<byte> key1 = stackalloc byte[0x10];
-            ReadOnlySpan<byte> key2 = stackalloc byte[0x10];
-            ReadOnlySpan<byte> iv = stackalloc byte[0x10];
+            RegisterCipher($"AES-ECB {nameSuffix}decrypt",
+                () => Aes.CreateEcbDecryptor(new byte[0x10], preferDotNetImpl));
 
-            logger.SetTotal(iterations);
+            RegisterCipher($"AES-CBC {nameSuffix}encrypt",
+                () => Aes.CreateCbcEncryptor(new byte[0x10], new byte[0x10], preferDotNetImpl));
 
-            const int blockSize = BlockSizeSeparate;
-            int blockCount = src.Length / blockSize;
+            RegisterCipher($"AES-CBC {nameSuffix}decrypt",
+                () => Aes.CreateCbcDecryptor(new byte[0x10], new byte[0x10], preferDotNetImpl));
 
-            for (int i = 0; i < iterations; i++)
-            {
-                watch.Restart();
+            RegisterCipher($"AES-CTR {nameSuffix}decrypt",
+                () => Aes.CreateCtrDecryptor(new byte[0x10], new byte[0x10], preferDotNetImpl));
 
-                for (int b = 0; b < blockCount; b++)
-                {
-                    function(src.Slice(b * blockSize, blockSize), dst.Slice(b * blockSize, blockSize),
-                        key1, key2, iv, dotNetCrypto);
-                }
+            RegisterCipher($"AES-XTS {nameSuffix}encrypt",
+                () => Aes.CreateXtsEncryptor(new byte[0x10], new byte[0x10], new byte[0x10], preferDotNetImpl));
 
-                watch.Stop();
-
-                logger.ReportAdd(1);
-                runTimes[i] = watch.Elapsed.TotalSeconds;
-            }
-
-            logger.SetTotal(0);
-
-            long srcSize = src.Length;
-
-            double fastestRun = runTimes.Min();
-            double averageRun = runTimes.Average();
-            double slowestRun = runTimes.Max();
-
-            string fastestRate = Utilities.GetBytesReadable((long)(srcSize / fastestRun));
-            string averageRate = Utilities.GetBytesReadable((long)(srcSize / averageRun));
-            string slowestRate = Utilities.GetBytesReadable((long)(srcSize / slowestRun));
-
-            logger.LogMessage($"{label}{averageRate}/s, fastest run: {fastestRate}/s, slowest run: {slowestRate}/s");
+            RegisterCipher($"AES-XTS {nameSuffix}decrypt",
+                () => Aes.CreateXtsDecryptor(new byte[0x10], new byte[0x10], new byte[0x10], preferDotNetImpl));
         }
 
-        private static void RegisterAesSequentialBenchmarks(MultiBenchmark bench)
+        void RegisterCipher(string name, Func<ICipher> cipherGenerator)
         {
-            byte[] input = new byte[BatchCipherBenchSize];
-            byte[] output = new byte[BatchCipherBenchSize];
+            ICipher cipher = null;
 
-            Func<double, string> resultPrinter = time => GetPerformanceString(time, BatchCipherBenchSize);
+            Action setup = () => cipher = cipherGenerator();
+            Action action = () => cipher.Transform(input, output);
 
-            // Skip the first benchmark set if we don't have AES-NI intrinsics
-            for (int i = Aes.IsAesNiSupported() ? 0 : 1; i < 2; i++)
-            {
-                // Prefer .NET crypto on the second set
-                string nameSuffix = i == 1 ? "built-in " : string.Empty;
-                bool preferDotNetImpl = i == 1;
-
-                RegisterCipher($"AES-ECB {nameSuffix}encrypt",
-                    () => Aes.CreateEcbEncryptor(new byte[0x10], preferDotNetImpl));
-
-                RegisterCipher($"AES-ECB {nameSuffix}decrypt",
-                    () => Aes.CreateEcbDecryptor(new byte[0x10], preferDotNetImpl));
-
-                RegisterCipher($"AES-CBC {nameSuffix}encrypt",
-                    () => Aes.CreateCbcEncryptor(new byte[0x10], new byte[0x10], preferDotNetImpl));
-
-                RegisterCipher($"AES-CBC {nameSuffix}decrypt",
-                    () => Aes.CreateCbcDecryptor(new byte[0x10], new byte[0x10], preferDotNetImpl));
-
-                RegisterCipher($"AES-CTR {nameSuffix}decrypt",
-                    () => Aes.CreateCtrDecryptor(new byte[0x10], new byte[0x10], preferDotNetImpl));
-
-                RegisterCipher($"AES-XTS {nameSuffix}encrypt",
-                    () => Aes.CreateXtsEncryptor(new byte[0x10], new byte[0x10], new byte[0x10], preferDotNetImpl));
-
-                RegisterCipher($"AES-XTS {nameSuffix}decrypt",
-                    () => Aes.CreateXtsDecryptor(new byte[0x10], new byte[0x10], new byte[0x10], preferDotNetImpl));
-            }
-
-            void RegisterCipher(string name, Func<ICipher> cipherGenerator)
-            {
-                ICipher cipher = null;
-
-                Action setup = () => cipher = cipherGenerator();
-                Action action = () => cipher.Transform(input, output);
-
-                bench.Register(name, setup, action, resultPrinter);
-            }
+            bench.Register(name, setup, action, resultPrinter);
         }
+    }
 
-        // ReSharper disable once UnusedParameter.Local
-        private static void RegisterAesSingleBlockBenchmarks(MultiBenchmark bench)
+    // ReSharper disable once UnusedParameter.Local
+    private static void RegisterAesSingleBlockBenchmarks(MultiBenchmark bench)
+    {
+        byte[] input = new byte[SingleBlockCipherBenchSize];
+        byte[] output = new byte[SingleBlockCipherBenchSize];
+
+        Func<double, string> resultPrinter = time => GetPerformanceString(time, SingleBlockCipherBenchSize);
+
+        bench.Register("AES single-block encrypt", () => { }, EncryptBlocks, resultPrinter);
+        bench.Register("AES single-block decrypt", () => { }, DecryptBlocks, resultPrinter);
+
+        bench.DefaultRunsNeeded = 1000;
+
+        void EncryptBlocks()
         {
-            byte[] input = new byte[SingleBlockCipherBenchSize];
-            byte[] output = new byte[SingleBlockCipherBenchSize];
+            ref byte inBlock = ref MemoryMarshal.GetReference(input.AsSpan());
+            ref byte outBlock = ref MemoryMarshal.GetReference(output.AsSpan());
 
-            Func<double, string> resultPrinter = time => GetPerformanceString(time, SingleBlockCipherBenchSize);
+            Vector128<byte> keyVec = Vector128<byte>.Zero;
 
-            bench.Register("AES single-block encrypt", () => { }, EncryptBlocks, resultPrinter);
-            bench.Register("AES single-block decrypt", () => { }, DecryptBlocks, resultPrinter);
+            ref byte end = ref Unsafe.Add(ref inBlock, input.Length);
 
-            bench.DefaultRunsNeeded = 1000;
-
-            void EncryptBlocks()
+            while (Unsafe.IsAddressLessThan(ref inBlock, ref end))
             {
-                ref byte inBlock = ref MemoryMarshal.GetReference(input.AsSpan());
-                ref byte outBlock = ref MemoryMarshal.GetReference(output.AsSpan());
+                var inputVec = Unsafe.ReadUnaligned<Vector128<byte>>(ref inBlock);
+                Vector128<byte> outputVec = AesCoreNi.EncryptBlock(inputVec, keyVec);
+                Unsafe.WriteUnaligned(ref outBlock, outputVec);
 
-                Vector128<byte> keyVec = Vector128<byte>.Zero;
-
-                ref byte end = ref Unsafe.Add(ref inBlock, input.Length);
-
-                while (Unsafe.IsAddressLessThan(ref inBlock, ref end))
-                {
-                    var inputVec = Unsafe.ReadUnaligned<Vector128<byte>>(ref inBlock);
-                    Vector128<byte> outputVec = AesCoreNi.EncryptBlock(inputVec, keyVec);
-                    Unsafe.WriteUnaligned(ref outBlock, outputVec);
-
-                    inBlock = ref Unsafe.Add(ref inBlock, Aes.BlockSize);
-                    outBlock = ref Unsafe.Add(ref outBlock, Aes.BlockSize);
-                }
-            }
-
-            void DecryptBlocks()
-            {
-                ref byte inBlock = ref MemoryMarshal.GetReference(input.AsSpan());
-                ref byte outBlock = ref MemoryMarshal.GetReference(output.AsSpan());
-
-                Vector128<byte> keyVec = Vector128<byte>.Zero;
-
-                ref byte end = ref Unsafe.Add(ref inBlock, input.Length);
-
-                while (Unsafe.IsAddressLessThan(ref inBlock, ref end))
-                {
-                    var inputVec = Unsafe.ReadUnaligned<Vector128<byte>>(ref inBlock);
-                    Vector128<byte> outputVec = AesCoreNi.DecryptBlock(inputVec, keyVec);
-                    Unsafe.WriteUnaligned(ref outBlock, outputVec);
-
-                    inBlock = ref Unsafe.Add(ref inBlock, Aes.BlockSize);
-                    outBlock = ref Unsafe.Add(ref outBlock, Aes.BlockSize);
-                }
+                inBlock = ref Unsafe.Add(ref inBlock, Aes.BlockSize);
+                outBlock = ref Unsafe.Add(ref outBlock, Aes.BlockSize);
             }
         }
 
-        private static void RegisterShaBenchmarks(MultiBenchmark bench)
+        void DecryptBlocks()
         {
-            byte[] input = new byte[ShaBenchSize];
-            byte[] digest = new byte[Sha256.DigestSize];
+            ref byte inBlock = ref MemoryMarshal.GetReference(input.AsSpan());
+            ref byte outBlock = ref MemoryMarshal.GetReference(output.AsSpan());
 
-            Func<double, string> resultPrinter = time => GetPerformanceString(time, ShaBenchSize);
+            Vector128<byte> keyVec = Vector128<byte>.Zero;
 
-            RegisterHash("SHA-256 built-in", () => new Sha256Generator());
+            ref byte end = ref Unsafe.Add(ref inBlock, input.Length);
 
-            void RegisterHash(string name, Func<IHash> hashGenerator)
+            while (Unsafe.IsAddressLessThan(ref inBlock, ref end))
             {
-                IHash hash = null;
+                var inputVec = Unsafe.ReadUnaligned<Vector128<byte>>(ref inBlock);
+                Vector128<byte> outputVec = AesCoreNi.DecryptBlock(inputVec, keyVec);
+                Unsafe.WriteUnaligned(ref outBlock, outputVec);
 
-                Action setup = () =>
-                {
-                    hash = hashGenerator();
-                    hash.Initialize();
-                };
-
-                Action action = () =>
-                {
-                    hash.Update(input);
-                    hash.GetHash(digest);
-                };
-
-                bench.Register(name, setup, action, resultPrinter);
+                inBlock = ref Unsafe.Add(ref inBlock, Aes.BlockSize);
+                outBlock = ref Unsafe.Add(ref outBlock, Aes.BlockSize);
             }
         }
+    }
 
-        private static void RunCipherBenchmark(Func<ICipher> cipherNet, Func<ICipher> cipherLibHac,
-            CipherTaskSeparate function, bool benchBlocked, string label, IProgressReport logger)
+    private static void RegisterShaBenchmarks(MultiBenchmark bench)
+    {
+        byte[] input = new byte[ShaBenchSize];
+        byte[] digest = new byte[Sha256.DigestSize];
+
+        Func<double, string> resultPrinter = time => GetPerformanceString(time, ShaBenchSize);
+
+        RegisterHash("SHA-256 built-in", () => new Sha256Generator());
+
+        void RegisterHash(string name, Func<IHash> hashGenerator)
         {
-            byte[] srcData = new byte[Size];
+            IHash hash = null;
 
-            byte[] dstDataLh = new byte[Size];
-            byte[] dstDataNet = new byte[Size];
-            byte[] dstDataBlockedLh = new byte[Size];
-            byte[] dstDataBlockedNet = new byte[Size];
-            byte[] dstDataSeparateLh = new byte[Size];
-            byte[] dstDataSeparateNet = new byte[Size];
+            Action setup = () =>
+            {
+                hash = hashGenerator();
+                hash.Initialize();
+            };
 
-            logger.LogMessage(string.Empty);
-            logger.LogMessage(label);
+            Action action = () =>
+            {
+                hash.Update(input);
+                hash.GetHash(digest);
+            };
 
+            bench.Register(name, setup, action, resultPrinter);
+        }
+    }
+
+    private static void RunCipherBenchmark(Func<ICipher> cipherNet, Func<ICipher> cipherLibHac,
+        CipherTaskSeparate function, bool benchBlocked, string label, IProgressReport logger)
+    {
+        byte[] srcData = new byte[Size];
+
+        byte[] dstDataLh = new byte[Size];
+        byte[] dstDataNet = new byte[Size];
+        byte[] dstDataBlockedLh = new byte[Size];
+        byte[] dstDataBlockedNet = new byte[Size];
+        byte[] dstDataSeparateLh = new byte[Size];
+        byte[] dstDataSeparateNet = new byte[Size];
+
+        logger.LogMessage(string.Empty);
+        logger.LogMessage(label);
+
+        if (Aes.IsAesNiSupported())
+            CipherBenchmark(srcData, dstDataLh, cipherLibHac, Iterations, "LibHac impl: ", logger);
+        CipherBenchmark(srcData, dstDataNet, cipherNet, Iterations, ".NET impl:   ", logger);
+
+        if (benchBlocked)
+        {
             if (Aes.IsAesNiSupported())
-                CipherBenchmark(srcData, dstDataLh, cipherLibHac, Iterations, "LibHac impl: ", logger);
-            CipherBenchmark(srcData, dstDataNet, cipherNet, Iterations, ".NET impl:   ", logger);
+                CipherBenchmarkBlocked(srcData, dstDataBlockedLh, cipherLibHac, Iterations / 5,
+                    "LibHac impl (blocked): ", logger);
+
+            CipherBenchmarkBlocked(srcData, dstDataBlockedNet, cipherNet, Iterations / 5, ".NET impl (blocked):   ",
+                logger);
+        }
+
+        if (function != null)
+        {
+            if (Aes.IsAesNiSupported())
+                CipherBenchmarkSeparate(srcData, dstDataSeparateLh, function, Iterations / 5,
+                    "LibHac impl (separate): ", false, logger);
+
+            CipherBenchmarkSeparate(srcData, dstDataSeparateNet, function, Iterations / 20,
+                ".NET impl (separate): ", true, logger);
+        }
+
+        if (Aes.IsAesNiSupported())
+        {
+            logger.LogMessage($"{dstDataLh.SequenceEqual(dstDataNet)}");
 
             if (benchBlocked)
             {
-                if (Aes.IsAesNiSupported())
-                    CipherBenchmarkBlocked(srcData, dstDataBlockedLh, cipherLibHac, Iterations / 5,
-                        "LibHac impl (blocked): ", logger);
-
-                CipherBenchmarkBlocked(srcData, dstDataBlockedNet, cipherNet, Iterations / 5, ".NET impl (blocked):   ",
-                    logger);
+                logger.LogMessage($"{dstDataLh.SequenceEqual(dstDataBlockedLh)}");
+                logger.LogMessage($"{dstDataLh.SequenceEqual(dstDataBlockedNet)}");
             }
 
             if (function != null)
             {
-                if (Aes.IsAesNiSupported())
-                    CipherBenchmarkSeparate(srcData, dstDataSeparateLh, function, Iterations / 5,
-                        "LibHac impl (separate): ", false, logger);
-
-                CipherBenchmarkSeparate(srcData, dstDataSeparateNet, function, Iterations / 20,
-                    ".NET impl (separate): ", true, logger);
-            }
-
-            if (Aes.IsAesNiSupported())
-            {
-                logger.LogMessage($"{dstDataLh.SequenceEqual(dstDataNet)}");
-
-                if (benchBlocked)
-                {
-                    logger.LogMessage($"{dstDataLh.SequenceEqual(dstDataBlockedLh)}");
-                    logger.LogMessage($"{dstDataLh.SequenceEqual(dstDataBlockedNet)}");
-                }
-
-                if (function != null)
-                {
-                    logger.LogMessage($"{dstDataLh.SequenceEqual(dstDataSeparateLh)}");
-                    logger.LogMessage($"{dstDataLh.SequenceEqual(dstDataSeparateNet)}");
-                }
+                logger.LogMessage($"{dstDataLh.SequenceEqual(dstDataSeparateLh)}");
+                logger.LogMessage($"{dstDataLh.SequenceEqual(dstDataSeparateNet)}");
             }
         }
+    }
 
-        private static string GetPerformanceString(double seconds, long bytes)
+    private static string GetPerformanceString(double seconds, long bytes)
+    {
+        string cyclesPerByteString = string.Empty;
+        double bytesPerSec = bytes / seconds;
+
+        if (CpuFrequency > 0)
         {
-            string cyclesPerByteString = string.Empty;
-            double bytesPerSec = bytes / seconds;
-
-            if (CpuFrequency > 0)
-            {
-                double cyclesPerByte = CpuFrequency / bytesPerSec;
-                cyclesPerByteString = $" ({cyclesPerByte:N3}x)";
-            }
-
-            return Utilities.GetBytesReadable((long)bytesPerSec) + "/s" + cyclesPerByteString;
+            double cyclesPerByte = CpuFrequency / bytesPerSec;
+            cyclesPerByteString = $" ({cyclesPerByte:N3}x)";
         }
 
-        public static void Process(Context ctx)
-        {
-            CpuFrequency = ctx.Options.CpuFrequencyGhz * 1_000_000_000;
+        return Utilities.GetBytesReadable((long)bytesPerSec) + "/s" + cyclesPerByteString;
+    }
 
-            switch (ctx.Options.BenchType?.ToLower())
-            {
-                case "aesctr":
+    public static void Process(Context ctx)
+    {
+        CpuFrequency = ctx.Options.CpuFrequencyGhz * 1_000_000_000;
+
+        switch (ctx.Options.BenchType?.ToLower())
+        {
+            case "aesctr":
                 {
                     IStorage decStorage = new MemoryStorage(new byte[Size]);
                     IStorage encStorage = new Aes128CtrStorage(new MemoryStorage(new byte[Size]), new byte[0x10], new byte[0x10], true);
@@ -412,7 +412,7 @@ namespace hactoolnet
                     break;
                 }
 
-                case "aesxts":
+            case "aesxts":
                 {
                     IStorage decStorage = new MemoryStorage(new byte[Size]);
                     IStorage encStorage = new Aes128XtsStorage(new MemoryStorage(new byte[Size]), new byte[0x20], 81920, true);
@@ -434,7 +434,7 @@ namespace hactoolnet
                     break;
                 }
 
-                case "aesecbnew":
+            case "aesecbnew":
                 {
                     Func<ICipher> encryptorNet = () => Aes.CreateEcbEncryptor(new byte[0x10], true);
                     Func<ICipher> encryptorLh = () => Aes.CreateEcbEncryptor(new byte[0x10]);
@@ -453,7 +453,7 @@ namespace hactoolnet
                     break;
                 }
 
-                case "aescbcnew":
+            case "aescbcnew":
                 {
                     Func<ICipher> encryptorNet = () => Aes.CreateCbcEncryptor(new byte[0x10], new byte[0x10], true);
                     Func<ICipher> encryptorLh = () => Aes.CreateCbcEncryptor(new byte[0x10], new byte[0x10]);
@@ -472,7 +472,7 @@ namespace hactoolnet
                     break;
                 }
 
-                case "aesctrnew":
+            case "aesctrnew":
                 {
                     Func<ICipher> encryptorNet = () => Aes.CreateCtrEncryptor(new byte[0x10], new byte[0x10], true);
                     Func<ICipher> encryptorLh = () => Aes.CreateCtrEncryptor(new byte[0x10], new byte[0x10]);
@@ -484,7 +484,7 @@ namespace hactoolnet
                     break;
                 }
 
-                case "aesxtsnew":
+            case "aesxtsnew":
                 {
                     Func<ICipher> encryptorNet = () => Aes.CreateXtsEncryptor(new byte[0x10], new byte[0x10], new byte[0x10], true);
                     Func<ICipher> encryptorLh = () => Aes.CreateXtsEncryptor(new byte[0x10], new byte[0x10], new byte[0x10]);
@@ -503,7 +503,7 @@ namespace hactoolnet
                     break;
                 }
 
-                case "crypto":
+            case "crypto":
                 {
                     var bench = new MultiBenchmark();
 
@@ -515,10 +515,9 @@ namespace hactoolnet
                     break;
                 }
 
-                default:
-                    ctx.Logger.LogMessage("Unknown benchmark type.");
-                    return;
-            }
+            default:
+                ctx.Logger.LogMessage("Unknown benchmark type.");
+                return;
         }
     }
 }

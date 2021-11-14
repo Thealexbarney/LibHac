@@ -1,9 +1,8 @@
 ﻿using LibHac.Fs;
 
-namespace LibHac.FsSrv.FsCreator
+namespace LibHac.FsSrv.FsCreator;
+
+public interface ISdStorageCreator
 {
-    public interface ISdStorageCreator
-    {
-        Result Create(out IStorage storage);
-    }
+    Result Create(out IStorage storage);
 }

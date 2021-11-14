@@ -7,206 +7,205 @@ using Xunit;
 
 using static LibHac.Fs.ApplicationSaveDataManagement;
 
-namespace LibHac.Tests.Fs.FileSystemClientTests
+namespace LibHac.Tests.Fs.FileSystemClientTests;
+
+public class ApplicationSaveDataManagementTests
 {
-    public class ApplicationSaveDataManagementTests
+    [Fact]
+    public static void EnsureApplicationSaveData_CreatesAccountSaveData()
     {
-        [Fact]
-        public static void EnsureApplicationSaveData_CreatesAccountSaveData()
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+
+        var applicationId = new Ncm.ApplicationId(11);
+        var userId = new Uid(2, 3);
+
+        var nacp = new ApplicationControlProperty
         {
-            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+            UserAccountSaveDataSize = 0x1000,
+            UserAccountSaveDataJournalSize = 0x1000
+        };
 
-            var applicationId = new Ncm.ApplicationId(11);
-            var userId = new Uid(2, 3);
+        Assert.Success(EnsureApplicationSaveData(fs, out _, applicationId, ref nacp, ref userId));
 
-            var nacp = new ApplicationControlProperty
-            {
-                UserAccountSaveDataSize = 0x1000,
-                UserAccountSaveDataJournalSize = 0x1000
-            };
+        using var iterator = new UniqueRef<SaveDataIterator>();
+        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
 
-            Assert.Success(EnsureApplicationSaveData(fs, out _, applicationId, ref nacp, ref userId));
+        var info = new SaveDataInfo[2];
+        Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
 
-            using var iterator = new UniqueRef<SaveDataIterator>();
-            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
+        Assert.Equal(1, entriesRead);
+        Assert.Equal(applicationId, info[0].ProgramId);
+        Assert.Equal(ConvertAccountUidToFsUserId(userId), info[0].UserId);
+        Assert.Equal(SaveDataType.Account, info[0].Type);
+    }
 
-            var info = new SaveDataInfo[2];
-            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+    [Fact]
+    public static void EnsureApplicationSaveData_CreatesDeviceSaveData()
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-            Assert.Equal(1, entriesRead);
-            Assert.Equal(applicationId, info[0].ProgramId);
-            Assert.Equal(ConvertAccountUidToFsUserId(userId), info[0].UserId);
-            Assert.Equal(SaveDataType.Account, info[0].Type);
-        }
+        var applicationId = new Ncm.ApplicationId(11);
+        var userId = new Uid(2, 3);
 
-        [Fact]
-        public static void EnsureApplicationSaveData_CreatesDeviceSaveData()
+        var nacp = new ApplicationControlProperty
         {
-            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+            DeviceSaveDataSize = 0x1000,
+            DeviceSaveDataJournalSize = 0x1000
+        };
 
-            var applicationId = new Ncm.ApplicationId(11);
-            var userId = new Uid(2, 3);
+        Assert.Success(EnsureApplicationSaveData(fs, out _, applicationId, ref nacp, ref userId));
 
-            var nacp = new ApplicationControlProperty
-            {
-                DeviceSaveDataSize = 0x1000,
-                DeviceSaveDataJournalSize = 0x1000
-            };
+        using var iterator = new UniqueRef<SaveDataIterator>();
+        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
 
-            Assert.Success(EnsureApplicationSaveData(fs, out _, applicationId, ref nacp, ref userId));
+        var info = new SaveDataInfo[2];
+        Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
 
-            using var iterator = new UniqueRef<SaveDataIterator>();
-            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
+        Assert.Equal(1, entriesRead);
+        Assert.Equal(applicationId, info[0].ProgramId);
+        Assert.Equal(UserId.InvalidId, info[0].UserId);
+        Assert.Equal(SaveDataType.Device, info[0].Type);
+    }
 
-            var info = new SaveDataInfo[2];
-            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+    [Fact]
+    public static void EnsureApplicationSaveData_CreatesBcatCacheStorage()
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-            Assert.Equal(1, entriesRead);
-            Assert.Equal(applicationId, info[0].ProgramId);
-            Assert.Equal(UserId.InvalidId, info[0].UserId);
-            Assert.Equal(SaveDataType.Device, info[0].Type);
-        }
+        var applicationId = new Ncm.ApplicationId(11);
+        var userId = new Uid(2, 3);
 
-        [Fact]
-        public static void EnsureApplicationSaveData_CreatesBcatCacheStorage()
+        var nacp = new ApplicationControlProperty
         {
-            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+            BcatDeliveryCacheStorageSize = 0x1000
+        };
 
-            var applicationId = new Ncm.ApplicationId(11);
-            var userId = new Uid(2, 3);
+        Assert.Success(EnsureApplicationSaveData(fs, out _, applicationId, ref nacp, ref userId));
 
-            var nacp = new ApplicationControlProperty
-            {
-                BcatDeliveryCacheStorageSize = 0x1000
-            };
+        using var iterator = new UniqueRef<SaveDataIterator>();
+        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
 
-            Assert.Success(EnsureApplicationSaveData(fs, out _, applicationId, ref nacp, ref userId));
+        var info = new SaveDataInfo[2];
+        Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
 
-            using var iterator = new UniqueRef<SaveDataIterator>();
-            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
+        Assert.Equal(1, entriesRead);
+        Assert.Equal(applicationId, info[0].ProgramId);
+        Assert.Equal(UserId.InvalidId, info[0].UserId);
+        Assert.Equal(SaveDataType.Bcat, info[0].Type);
+    }
 
-            var info = new SaveDataInfo[2];
-            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+    [Fact]
+    public static void EnsureApplicationSaveData_CreatesTemporaryStorage()
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-            Assert.Equal(1, entriesRead);
-            Assert.Equal(applicationId, info[0].ProgramId);
-            Assert.Equal(UserId.InvalidId, info[0].UserId);
-            Assert.Equal(SaveDataType.Bcat, info[0].Type);
-        }
+        var applicationId = new Ncm.ApplicationId(11);
+        var userId = new Uid(2, 3);
 
-        [Fact]
-        public static void EnsureApplicationSaveData_CreatesTemporaryStorage()
+        var nacp = new ApplicationControlProperty
         {
-            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+            TemporaryStorageSize = 0x1000
+        };
 
-            var applicationId = new Ncm.ApplicationId(11);
-            var userId = new Uid(2, 3);
+        Assert.Success(EnsureApplicationSaveData(fs, out _, applicationId, ref nacp, ref userId));
 
-            var nacp = new ApplicationControlProperty
-            {
-                TemporaryStorageSize = 0x1000
-            };
+        using var iterator = new UniqueRef<SaveDataIterator>();
+        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.Temporary);
 
-            Assert.Success(EnsureApplicationSaveData(fs, out _, applicationId, ref nacp, ref userId));
+        var info = new SaveDataInfo[2];
+        Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
 
-            using var iterator = new UniqueRef<SaveDataIterator>();
-            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.Temporary);
+        Assert.Equal(1, entriesRead);
+        Assert.Equal(applicationId, info[0].ProgramId);
+        Assert.Equal(UserId.InvalidId, info[0].UserId);
+        Assert.Equal(SaveDataType.Temporary, info[0].Type);
+    }
 
-            var info = new SaveDataInfo[2];
-            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+    [Fact]
+    public static void EnsureApplicationCacheStorage_SdCardAvailable_CreatesCacheStorageOnSd()
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-            Assert.Equal(1, entriesRead);
-            Assert.Equal(applicationId, info[0].ProgramId);
-            Assert.Equal(UserId.InvalidId, info[0].UserId);
-            Assert.Equal(SaveDataType.Temporary, info[0].Type);
-        }
+        var applicationId = new Ncm.ApplicationId(11);
 
-        [Fact]
-        public static void EnsureApplicationCacheStorage_SdCardAvailable_CreatesCacheStorageOnSd()
+        var nacp = new ApplicationControlProperty
         {
-            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+            CacheStorageSize = 0x1000,
+            CacheStorageJournalSize = 0x1000
+        };
 
-            var applicationId = new Ncm.ApplicationId(11);
+        Assert.Success(fs.EnsureApplicationCacheStorage(out _, out CacheStorageTargetMedia target, applicationId,
+            ref nacp));
 
-            var nacp = new ApplicationControlProperty
-            {
-                CacheStorageSize = 0x1000,
-                CacheStorageJournalSize = 0x1000
-            };
+        Assert.Equal(CacheStorageTargetMedia.SdCard, target);
 
-            Assert.Success(fs.EnsureApplicationCacheStorage(out _, out CacheStorageTargetMedia target, applicationId,
-                ref nacp));
+        using var iterator = new UniqueRef<SaveDataIterator>();
+        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.SdCache);
 
-            Assert.Equal(CacheStorageTargetMedia.SdCard, target);
+        var info = new SaveDataInfo[2];
+        Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
 
-            using var iterator = new UniqueRef<SaveDataIterator>();
-            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.SdCache);
+        Assert.Equal(1, entriesRead);
+        Assert.Equal(applicationId, info[0].ProgramId);
+        Assert.Equal(SaveDataType.Cache, info[0].Type);
+    }
 
-            var info = new SaveDataInfo[2];
-            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+    [Fact]
+    public static void EnsureApplicationCacheStorage_SdCardNotAvailable_CreatesCacheStorageOnBis()
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(false);
 
-            Assert.Equal(1, entriesRead);
-            Assert.Equal(applicationId, info[0].ProgramId);
-            Assert.Equal(SaveDataType.Cache, info[0].Type);
-        }
+        var applicationId = new Ncm.ApplicationId(11);
 
-        [Fact]
-        public static void EnsureApplicationCacheStorage_SdCardNotAvailable_CreatesCacheStorageOnBis()
+        var nacp = new ApplicationControlProperty
         {
-            FileSystemClient fs = FileSystemServerFactory.CreateClient(false);
+            CacheStorageSize = 0x1000,
+            CacheStorageJournalSize = 0x1000
+        };
 
-            var applicationId = new Ncm.ApplicationId(11);
+        Assert.Success(fs.EnsureApplicationCacheStorage(out _, out CacheStorageTargetMedia target, applicationId,
+            ref nacp));
 
-            var nacp = new ApplicationControlProperty
-            {
-                CacheStorageSize = 0x1000,
-                CacheStorageJournalSize = 0x1000
-            };
+        Assert.Equal(CacheStorageTargetMedia.Nand, target);
 
-            Assert.Success(fs.EnsureApplicationCacheStorage(out _, out CacheStorageTargetMedia target, applicationId,
-                ref nacp));
+        using var iterator = new UniqueRef<SaveDataIterator>();
+        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
 
-            Assert.Equal(CacheStorageTargetMedia.Nand, target);
+        var info = new SaveDataInfo[2];
+        Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
 
-            using var iterator = new UniqueRef<SaveDataIterator>();
-            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
+        Assert.Equal(1, entriesRead);
+        Assert.Equal(applicationId, info[0].ProgramId);
+        Assert.Equal(SaveDataType.Cache, info[0].Type);
+    }
 
-            var info = new SaveDataInfo[2];
-            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public static void GetCacheStorageTargetMedia_ReturnsTargetOfNewCacheStorage(bool isSdCardInserted)
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(isSdCardInserted);
 
-            Assert.Equal(1, entriesRead);
-            Assert.Equal(applicationId, info[0].ProgramId);
-            Assert.Equal(SaveDataType.Cache, info[0].Type);
-        }
+        var applicationId = new Ncm.ApplicationId(11);
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public static void GetCacheStorageTargetMedia_ReturnsTargetOfNewCacheStorage(bool isSdCardInserted)
+        var nacp = new ApplicationControlProperty
         {
-            FileSystemClient fs = FileSystemServerFactory.CreateClient(isSdCardInserted);
+            CacheStorageSize = 0x1000,
+            CacheStorageJournalSize = 0x1000
+        };
 
-            var applicationId = new Ncm.ApplicationId(11);
+        fs.EnsureApplicationCacheStorage(out _, out CacheStorageTargetMedia targetFromCreation, applicationId, ref nacp);
 
-            var nacp = new ApplicationControlProperty
-            {
-                CacheStorageSize = 0x1000,
-                CacheStorageJournalSize = 0x1000
-            };
+        Assert.Success(fs.GetCacheStorageTargetMedia(out CacheStorageTargetMedia target, applicationId));
+        Assert.Equal(targetFromCreation, target);
+    }
 
-            fs.EnsureApplicationCacheStorage(out _, out CacheStorageTargetMedia targetFromCreation, applicationId, ref nacp);
+    [Fact]
+    public static void GetCacheStorageTargetMedia_CacheStorageDoesNotExist_ReturnsNone()
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-            Assert.Success(fs.GetCacheStorageTargetMedia(out CacheStorageTargetMedia target, applicationId));
-            Assert.Equal(targetFromCreation, target);
-        }
-
-        [Fact]
-        public static void GetCacheStorageTargetMedia_CacheStorageDoesNotExist_ReturnsNone()
-        {
-            FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
-
-            Assert.Success(fs.GetCacheStorageTargetMedia(out CacheStorageTargetMedia target, new Ncm.ApplicationId(11)));
-            Assert.Equal(CacheStorageTargetMedia.None, target);
-        }
+        Assert.Success(fs.GetCacheStorageTargetMedia(out CacheStorageTargetMedia target, new Ncm.ApplicationId(11)));
+        Assert.Equal(CacheStorageTargetMedia.None, target);
     }
 }
