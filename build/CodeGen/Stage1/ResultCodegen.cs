@@ -252,8 +252,8 @@ public static class ResultCodeGen
             sb.AppendLine();
         }
 
-        sb.AppendLine($"namespace LibHac.{ns.Name}");
-        sb.AppendLineAndIncrease("{");
+        sb.AppendLine($"namespace LibHac.{ns.Name};");
+        sb.AppendLine();
 
         sb.AppendLine($"public static class Result{ns.ClassName}");
         sb.AppendLineAndIncrease("{");
@@ -296,7 +296,7 @@ public static class ResultCodeGen
         }
 
         sb.DecreaseAndAppendLine("}");
-        sb.DecreaseAndAppendLine("}");
+
 
         return sb.ToString();
     }
@@ -382,8 +382,8 @@ public static class ResultCodeGen
         sb.AppendLine("using System;");
         sb.AppendLine();
 
-        sb.AppendLine("namespace LibHac");
-        sb.AppendLineAndIncrease("{");
+        sb.AppendLine("namespace LibHac;");
+        sb.AppendLine();
 
         sb.AppendLine("internal partial class ResultNameResolver");
         sb.AppendLineAndIncrease("{");
@@ -405,7 +405,6 @@ public static class ResultCodeGen
 
         sb.AppendLine();
         sb.DecreaseAndAppendLine("};");
-        sb.DecreaseAndAppendLine("}");
         sb.DecreaseAndAppendLine("}");
 
         return sb.ToString();

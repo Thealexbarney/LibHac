@@ -32,8 +32,8 @@ public static class KeysCodeGen
         sb.AppendLine("using System;");
         sb.AppendLine();
 
-        sb.AppendLine("namespace LibHac.Common.Keys");
-        sb.AppendLineAndIncrease("{");
+        sb.AppendLine("namespace LibHac.Common.Keys;");
+        sb.AppendLine();
 
         sb.AppendLine("internal static partial class DefaultKeySet");
         sb.AppendLineAndIncrease("{");
@@ -50,7 +50,6 @@ public static class KeysCodeGen
         BuildArray(sb, "RsaSigningKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._rsaSigningKeysProd));
         BuildArray(sb, "RsaKeys", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._rsaKeys));
 
-        sb.DecreaseAndAppendLine("}");
         sb.DecreaseAndAppendLine("}");
 
         return sb.ToString();
