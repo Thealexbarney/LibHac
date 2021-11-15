@@ -177,6 +177,14 @@ public ref struct Path
     private int _writeBufferLength;
     private bool _isNormalized;
 
+    public Path()
+    {
+        _string = EmptyPath;
+        _writeBuffer = null;
+        _writeBufferLength = 0;
+        _isNormalized = false;
+    }
+
     public void Dispose()
     {
         byte[] writeBuffer = Shared.Move(ref _writeBuffer);
