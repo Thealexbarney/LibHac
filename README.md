@@ -33,8 +33,11 @@ Options:
   -k, --keyset         Load keys from an external file.
   -t, --intype=type    Specify input file type [nca, xci, romfs, pfs0, pk11, pk21, ini1, kip1, switchfs, save, ndv0, keygen, romfsbuild, pfsbuild]
   --titlekeys <file>   Load title keys from an external file.
+  --accesslog <file>   Specify the access log file path.
+  --disablekeywarns    Disables warning output when loading external keys.
 NCA options:
   --plaintext <file>   Specify file path for saving a decrypted copy of the NCA.
+  --ciphertext <file>  Specify file path for saving an encrypted copy of the NCA.
   --header <file>      Specify Header file path.
   --section0 <file>    Specify Section 0 file path.
   --section1 <file>    Specify Section 1 file path.
@@ -50,6 +53,8 @@ NCA options:
   --romfsdir <dir>     Specify RomFS directory path.
   --listromfs          List files in RomFS.
   --basenca            Set Base NCA to use with update partitions.
+KIP1 options:
+  --uncompressed <f>   Specify file path for saving uncompressed KIP1.
 RomFS options:
   --romfsdir <dir>     Specify RomFS directory path.
   --listromfs          List files in RomFS.
@@ -78,6 +83,8 @@ Package1 options:
   --outdir <dir>       Specify Package1 directory path.
 Package2 options:
   --outdir <dir>       Specify Package2 directory path.
+  --extractini1        Enable INI1 extraction to default directory (redundant with --ini1dir set).
+  --ini1dir <dir>      Specify INI1 directory path. Overrides default path, if present.
 INI1 options:
   --outdir <dir>       Specify INI1 directory path.
 Switch FS options:
@@ -101,6 +108,10 @@ Save data options:
   --listfiles          List files in save file.
   --repack <dir>       Replaces the contents of the save data with the specified directory.
   --replacefile <filename in save> <file> Replaces a file in the save data
+NAX0 options:
+  --sdseed <seed>      Set console unique seed for SD card NAX0 encryption.
+  --sdpath <path>      Set relative path for NAX0 key derivation (ex: /registered/000000FF/cafebabecafebabecafebabecafebabe.nca).
+  --plaintext          Specify file path to save decrypted contents.
 NDV0 (Delta) options:
                        Input delta patch can be a delta NCA file or a delta fragment file.
   --basefile <file>    Specify base file path.
