@@ -221,6 +221,8 @@ public static class Program
 
         var keySet = KeySet.CreateDefaultKeySet();
 
+        var logger = ctx.Options.DisableKeyWarns ? null : ctx.Logger;
+
         // If the user specifies a key file then only load that file into the mode they specified,
         // otherwise load both prod.keys and dev.keys.
         // Todo: Should we add a way that both dev-only key files and mixed prod/dev key files
@@ -228,11 +230,11 @@ public static class Program
         if (ctx.Options.Keyfile != null && File.Exists(ctx.Options.Keyfile))
         {
             keySet.SetMode(ctx.Options.KeyMode);
-            ExternalKeyReader.ReadKeyFile(keySet, ctx.Options.Keyfile, titleKeyFile, consoleKeyFile, ctx.Logger);
+            ExternalKeyReader.ReadKeyFile(keySet, ctx.Options.Keyfile, titleKeyFile, consoleKeyFile, logger);
         }
         else
         {
-            ExternalKeyReader.ReadKeyFile(keySet, prodKeyFile, devKeyFile, titleKeyFile, consoleKeyFile, ctx.Logger);
+            ExternalKeyReader.ReadKeyFile(keySet, prodKeyFile, devKeyFile, titleKeyFile, consoleKeyFile, logger);
         }
 
         keySet.SetMode(ctx.Options.KeyMode);
