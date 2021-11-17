@@ -13,6 +13,7 @@ internal class Options
     public bool Validate;
     public bool UseDevKeys;
     public bool EnableHash;
+    public bool DisableKeyWarns;
     public string Keyfile;
     public string TitleKeyFile;
     public string ConsoleKeyFile;
