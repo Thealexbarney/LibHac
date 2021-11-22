@@ -34,7 +34,7 @@ public class EmulatedDeviceOperator : IDeviceOperator
         UnsafeHelpers.SkipParamInit(out handle);
 
         if (!GameCard.IsGameCardInserted())
-            return ResultFs.GameCardNotInsertedOnGetHandle.Log();
+            return ResultFs.GameCardFsGetHandleFailure.Log();
 
         handle = GameCard.GetGameCardHandle();
         return Result.Success;

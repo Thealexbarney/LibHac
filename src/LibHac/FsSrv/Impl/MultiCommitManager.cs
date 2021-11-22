@@ -122,7 +122,7 @@ internal class MultiCommitManager : IMultiCommitManager
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.MultiCommitFileSystemLimit"/>: The maximum number of file systems have been added.
     /// <see cref="MaxFileSystemCount"/> file systems may be added to a single multi-commit.<br/>
-    /// <see cref="ResultFs.MultiCommitFileSystemAlreadyAdded"/>: The provided file system has already been added.</returns>
+    /// <see cref="ResultFs.MultiCommitHasOverlappingTargets"/>: The provided file system has already been added.</returns>
     public Result Add(ref SharedRef<IFileSystemSf> fileSystem)
     {
         if (_fileSystemCount >= MaxFileSystemCount)
@@ -136,7 +136,7 @@ internal class MultiCommitManager : IMultiCommitManager
         for (int i = 0; i < _fileSystemCount; i++)
         {
             if (ReferenceEquals(fsaFileSystem.Get, _fileSystems[i].Get))
-                return ResultFs.MultiCommitFileSystemAlreadyAdded.Log();
+                return ResultFs.MultiCommitHasOverlappingTargets.Log();
         }
 
         _fileSystems[_fileSystemCount].SetByMove(ref fsaFileSystem.Ref());

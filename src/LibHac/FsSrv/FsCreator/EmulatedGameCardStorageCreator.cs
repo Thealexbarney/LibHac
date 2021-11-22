@@ -17,7 +17,7 @@ public class EmulatedGameCardStorageCreator : IGameCardStorageCreator
     {
         if (GameCard.IsGameCardHandleInvalid(handle))
         {
-            return ResultFs.InvalidGameCardHandleOnOpenNormalPartition.Log();
+            return ResultFs.GameCardFsCheckHandleInCreateReadOnlyFailure.Log();
         }
 
         using var baseStorage = new SharedRef<IStorage>(new ReadOnlyGameCardStorage(GameCard, handle));
@@ -33,7 +33,7 @@ public class EmulatedGameCardStorageCreator : IGameCardStorageCreator
     {
         if (GameCard.IsGameCardHandleInvalid(handle))
         {
-            return ResultFs.InvalidGameCardHandleOnOpenSecurePartition.Log();
+            return ResultFs.GameCardFsCheckHandleInCreateSecureReadOnlyFailure.Log();
         }
 
         Span<byte> deviceId = stackalloc byte[0x10];

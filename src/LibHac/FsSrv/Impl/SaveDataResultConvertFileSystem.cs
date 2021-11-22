@@ -12,8 +12,8 @@ public static class SaveDataResultConvert
     {
         if (ResultFs.IntegrityVerificationStorageCorrupted.Includes(result))
         {
-            if (ResultFs.IncorrectIntegrityVerificationMagic.Includes(result))
-                return ResultFs.IncorrectSaveDataIntegrityVerificationMagic.Value;
+            if (ResultFs.IncorrectIntegrityVerificationMagicCode.Includes(result))
+                return ResultFs.IncorrectSaveDataIntegrityVerificationMagicCode.Value;
 
             if (ResultFs.InvalidZeroHash.Includes(result))
                 return ResultFs.InvalidSaveDataZeroHash.Value;
@@ -55,8 +55,8 @@ public static class SaveDataResultConvert
             if (ResultFs.InvalidKeyValueListElementIndex.Includes(result))
                 return ResultFs.InvalidSaveDataKeyValueListElementIndex.Value;
 
-            if (ResultFs.AllocationTableIteratedRangeEntry.Includes(result))
-                return ResultFs.SaveDataAllocationTableIteratedRangeEntry.Value;
+            if (ResultFs.InvalidAllocationTableChainEntry.Includes(result))
+                return ResultFs.InvalidSaveDataAllocationTableChainEntry.Value;
 
             if (ResultFs.InvalidAllocationTableOffset.Includes(result))
                 return ResultFs.InvalidSaveDataAllocationTableOffset.Value;

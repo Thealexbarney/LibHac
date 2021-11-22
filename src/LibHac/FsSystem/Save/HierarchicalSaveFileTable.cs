@@ -345,7 +345,7 @@ public class HierarchicalSaveFileTable
 
         if (PathTools.IsSubPath(srcPath, dstPath))
         {
-            return ResultFs.DirectoryNotRenamable.Log();
+            return ResultFs.DirectoryUnrenamable.Log();
         }
 
         if (oldKey.Parent != newKey.Parent)

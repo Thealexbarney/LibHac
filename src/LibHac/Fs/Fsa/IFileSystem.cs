@@ -128,7 +128,7 @@ public abstract class IFileSystem : IDisposable
     /// <see cref="ResultFs.PathNotFound"/>: <paramref name="currentPath"/> does not exist or is a file.<br/>
     /// <see cref="ResultFs.PathNotFound"/>: <paramref name="newPath"/>'s parent directory does not exist.<br/>
     /// <see cref="ResultFs.PathAlreadyExists"/>: <paramref name="newPath"/> already exists as either a file or directory.<br/>
-    /// <see cref="ResultFs.DirectoryNotRenamable"/>: Either <paramref name="currentPath"/> or <paramref name="newPath"/> is a subpath of the other.</returns>
+    /// <see cref="ResultFs.DirectoryUnrenamable"/>: Either <paramref name="currentPath"/> or <paramref name="newPath"/> is a subpath of the other.</returns>
     /// <remarks>
     /// If <paramref name="currentPath"/> and <paramref name="newPath"/> are the same, this function does nothing and returns <see cref="Result.Success"/>.
     /// </remarks>
@@ -229,7 +229,7 @@ public abstract class IFileSystem : IDisposable
     public Result OpenFile(ref UniqueRef<IFile> file, in Path path, OpenMode mode)
     {
         if ((mode & OpenMode.ReadWrite) == 0 || (mode & ~OpenMode.All) != 0)
-            return ResultFs.InvalidOpenMode.Log();
+            return ResultFs.InvalidModeForFileOpen.Log();
 
         return DoOpenFile(ref file, in path, mode);
     }
@@ -246,7 +246,7 @@ public abstract class IFileSystem : IDisposable
     {
         if ((mode & OpenDirectoryMode.All) == 0 ||
             (mode & ~(OpenDirectoryMode.All | OpenDirectoryMode.NoFileSize)) != 0)
-            return ResultFs.InvalidOpenMode.Log();
+            return ResultFs.InvalidModeForFileOpen.Log();
 
         return DoOpenDirectory(ref outDirectory, in path, mode);
     }

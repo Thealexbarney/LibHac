@@ -29,7 +29,7 @@ public class AesXtsFileHeader
 
         if (fileSize < 0x80)
         {
-            ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderTooShort.Value);
+            ThrowHelper.ThrowResult(ResultFs.AesXtsFileSystemFileHeaderSizeCorruptedOnFileOpen.Value);
         }
 
         var reader = new FileReader(aesXtsFile);
@@ -43,7 +43,7 @@ public class AesXtsFileHeader
 
         if (Magic != AesXtsFileMagic)
         {
-            ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderInvalidMagic.Value, "Invalid NAX0 magic value");
+            ThrowHelper.ThrowResult(ResultFs.AesXtsFileSystemFileNoHeaderOnFileOpen.Value, "Invalid NAX0 magic value");
         }
     }
 
