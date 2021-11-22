@@ -22,7 +22,7 @@ public class ExternalKeySet
                     return Result.Success;
                 }
 
-                return ResultFs.ExternalKeyAlreadyRegistered.Log();
+                return ResultFs.NcaExternalKeyInconsistent.Log();
             }
 
             ExternalKeys.Add(rightsId, key);
@@ -40,7 +40,7 @@ public class ExternalKeySet
                 return Result.Success;
             }
 
-            return ResultFs.NcaExternalKeyUnavailable.Log();
+            return ResultFs.NcaExternalKeyUnregistered.Log();
         }
     }
 

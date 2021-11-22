@@ -219,8 +219,8 @@ public class RomFsFileSystem : IFileSystem
 
         if (ResultFs.IntegrityVerificationStorageCorrupted.Includes(result))
         {
-            if (ResultFs.IncorrectIntegrityVerificationMagic.Includes(result))
-                return ResultFs.IncorrectRomIntegrityVerificationMagic.LogConverted(result);
+            if (ResultFs.IncorrectIntegrityVerificationMagicCode.Includes(result))
+                return ResultFs.IncorrectRomIntegrityVerificationMagicCode.LogConverted(result);
 
             if (ResultFs.InvalidZeroHash.Includes(result))
                 return ResultFs.InvalidRomZeroSignature.LogConverted(result);

@@ -25,9 +25,9 @@ internal static class SaveResults
 
         if (ResultFs.IntegrityVerificationStorageCorrupted.Includes(result))
         {
-            if (ResultFs.IncorrectIntegrityVerificationMagic.Includes(result))
+            if (ResultFs.IncorrectIntegrityVerificationMagicCode.Includes(result))
             {
-                return ResultFs.IncorrectSaveDataIntegrityVerificationMagic.Value;
+                return ResultFs.IncorrectSaveDataIntegrityVerificationMagicCode.Value;
             }
 
             if (ResultFs.InvalidZeroHash.Includes(result))
@@ -55,7 +55,7 @@ internal static class SaveResults
 
         if (ResultFs.BuiltInStorageCorrupted.Includes(result))
         {
-            if (ResultFs.InvalidGptPartitionSignature.Includes(result))
+            if (ResultFs.GptHeaderSignatureVerificationFailed.Includes(result))
             {
                 return ResultFs.SaveDataGptHeaderSignatureVerificationFailed.Value;
             }

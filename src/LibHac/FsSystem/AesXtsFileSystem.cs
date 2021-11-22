@@ -249,7 +249,7 @@ public class AesXtsFileSystem : IFileSystem
     {
         if (!TryReadXtsHeader(filePath, keyPath, out AesXtsFileHeader header))
         {
-            ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderInvalidKeysInRenameFile.Value, "Could not decrypt AES-XTS keys");
+            ThrowHelper.ThrowResult(ResultFs.AesXtsFileSystemFileHeaderCorruptedOnRename.Value, "Could not decrypt AES-XTS keys");
         }
 
         return header;

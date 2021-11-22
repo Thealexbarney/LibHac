@@ -57,8 +57,8 @@ public class EmulatedGameCard
     {
         UnsafeHelpers.SkipParamInit(out xci);
 
-        if (IsGameCardHandleInvalid(handle)) return ResultFs.InvalidGameCardHandleOnRead.Log();
-        if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
+        if (IsGameCardHandleInvalid(handle)) return ResultFs.GameCardFsCheckHandleInReadFailure.Log();
+        if (!IsGameCardInserted()) return ResultFs.GameCardCardNotInserted.Log();
 
         xci = CardImage;
         return Result.Success;
@@ -66,8 +66,8 @@ public class EmulatedGameCard
 
     public Result Read(GameCardHandle handle, long offset, Span<byte> destination)
     {
-        if (IsGameCardHandleInvalid(handle)) return ResultFs.InvalidGameCardHandleOnRead.Log();
-        if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
+        if (IsGameCardHandleInvalid(handle)) return ResultFs.GameCardFsCheckHandleInReadFailure.Log();
+        if (!IsGameCardInserted()) return ResultFs.GameCardCardNotInserted.Log();
 
         return CardImageStorage.Read(offset, destination);
     }
@@ -75,7 +75,7 @@ public class EmulatedGameCard
     public Result GetGameCardImageHash(Span<byte> outBuffer)
     {
         if (outBuffer.Length < 0x20) return ResultFs.GameCardPreconditionViolation.Log();
-        if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
+        if (!IsGameCardInserted()) return ResultFs.GameCardCardNotInserted.Log();
 
         CardHeader.ImageHash.CopyTo(outBuffer.Slice(0, 0x20));
         return Result.Success;
@@ -84,7 +84,7 @@ public class EmulatedGameCard
     public Result GetGameCardDeviceId(Span<byte> outBuffer)
     {
         if (outBuffer.Length < 0x10) return ResultFs.GameCardPreconditionViolation.Log();
-        if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
+        if (!IsGameCardInserted()) return ResultFs.GameCardCardNotInserted.Log();
 
         // Skip the security mode check
 
@@ -96,8 +96,8 @@ public class EmulatedGameCard
     {
         UnsafeHelpers.SkipParamInit(out cardInfo);
 
-        if (IsGameCardHandleInvalid(handle)) return ResultFs.InvalidGameCardHandleOnGetCardInfo.Log();
-        if (!IsGameCardInserted()) return ResultFs.GameCardNotInserted.Log();
+        if (IsGameCardHandleInvalid(handle)) return ResultFs.GameCardFsCheckHandleInGetStatusFailure.Log();
+        if (!IsGameCardInserted()) return ResultFs.GameCardCardNotInserted.Log();
 
         cardInfo = GetCardInfoImpl();
         return Result.Success;

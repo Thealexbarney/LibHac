@@ -35,12 +35,12 @@ public class AesXtsFile : IFile
 
         if (!Header.TryDecryptHeader(Path.ToString(), KekSeed, VerificationKey))
         {
-            ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderInvalidKeys.Value, "NAX0 key derivation failed.");
+            ThrowHelper.ThrowResult(ResultFs.AesXtsFileSystemFileHeaderCorruptedOnFileOpen.Value, "NAX0 key derivation failed.");
         }
 
         if (HeaderLength + Alignment.AlignUp(Header.Size, 0x10) > fileSize)
         {
-            ThrowHelper.ThrowResult(ResultFs.AesXtsFileTooShort.Value, "NAX0 key derivation failed.");
+            ThrowHelper.ThrowResult(ResultFs.AesXtsFileSystemFileSizeCorruptedOnFileOpen.Value, "NAX0 key derivation failed.");
         }
 
         var fileStorage = new FileStorage(_baseFile.Get);

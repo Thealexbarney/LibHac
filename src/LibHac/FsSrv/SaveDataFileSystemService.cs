@@ -528,7 +528,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             if (rc.IsFailure()) return rc;
 
             // Get the actual space ID of this save.
-            if (spaceId == SaveDataSpaceId.ProperSystem && spaceId == SaveDataSpaceId.SafeMode)
+            if (spaceId == SaveDataSpaceId.ProperSystem || spaceId == SaveDataSpaceId.SafeMode)
             {
                 actualSpaceId = spaceId;
             }

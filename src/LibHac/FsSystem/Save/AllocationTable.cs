@@ -39,7 +39,7 @@ public class AllocationTable
 
             if (entries[0].IsRangeEntry())
             {
-                ThrowHelper.ThrowResult(ResultFs.AllocationTableIteratedRangeEntry.Value);
+                ThrowHelper.ThrowResult(ResultFs.InvalidAllocationTableChainEntry.Value);
             }
         }
         else

@@ -35,23 +35,23 @@ public static class ResultFs
             /// <summary>Error code: 2002-0031; Inner value: 0x3e02</summary>
             public static Result.Base UsableSpaceNotEnoughForSaveData => new Result.Base(ModuleFs, 31);
             /// <summary>Error code: 2002-0032; Inner value: 0x4002</summary>
-            public static Result.Base UsableSpaceNotEnoughAfterDataErase => new Result.Base(ModuleFs, 32);
+            public static Result.Base UsableSpaceNotEnoughForSaveDataEvenAssistanceSuccess => new Result.Base(ModuleFs, 32);
             /// <summary>Error code: 2002-0033; Inner value: 0x4202</summary>
             public static Result.Base UsableSpaceNotEnoughForCacheStorage => new Result.Base(ModuleFs, 33);
 
             /// <summary>Error code: 2002-0034; Range: 34-38; Inner value: 0x4402</summary>
-            public static Result.Base UsableSpaceNotEnoughForBis => new Result.Base(ModuleFs, 34, 38);
+            public static Result.Base UsableSpaceNotEnoughMmc => new Result.Base(ModuleFs, 34, 38);
                 /// <summary>Error code: 2002-0035; Inner value: 0x4602</summary>
-                public static Result.Base UsableSpaceNotEnoughForBisCalibration => new Result.Base(ModuleFs, 35);
+                public static Result.Base UsableSpaceNotEnoughMmcCalibration => new Result.Base(ModuleFs, 35);
                 /// <summary>Error code: 2002-0036; Inner value: 0x4802</summary>
-                public static Result.Base UsableSpaceNotEnoughForBisSafe => new Result.Base(ModuleFs, 36);
+                public static Result.Base UsableSpaceNotEnoughMmcSafe => new Result.Base(ModuleFs, 36);
                 /// <summary>Error code: 2002-0037; Inner value: 0x4a02</summary>
-                public static Result.Base UsableSpaceNotEnoughForBisUser => new Result.Base(ModuleFs, 37);
+                public static Result.Base UsableSpaceNotEnoughMmcUser => new Result.Base(ModuleFs, 37);
                 /// <summary>Error code: 2002-0038; Inner value: 0x4c02</summary>
-                public static Result.Base UsableSpaceNotEnoughForBisSystem => new Result.Base(ModuleFs, 38);
+                public static Result.Base UsableSpaceNotEnoughMmcSystem => new Result.Base(ModuleFs, 38);
 
             /// <summary>Error code: 2002-0039; Inner value: 0x4e02</summary>
-            public static Result.Base UsableSpaceNotEnoughForSdCard => new Result.Base(ModuleFs, 39);
+            public static Result.Base UsableSpaceNotEnoughSdCard => new Result.Base(ModuleFs, 39);
 
         /// <summary>Error code: 2002-0050; Inner value: 0x6402</summary>
         public static Result.Base UnsupportedSdkVersion => new Result.Base(ModuleFs, 50);
@@ -67,9 +67,9 @@ public static class ResultFs
         /// <summary>Error code: 2002-1002; Inner value: 0x7d402</summary>
         public static Result.Base TargetNotFound => new Result.Base(ModuleFs, 1002);
         /// <summary>Error code: 2002-1003; Inner value: 0x7d602</summary>
-        public static Result.Base MmcPatrolDataNotInitialized => new Result.Base(ModuleFs, 1003);
+        public static Result.Base HasNotGottenPatrolCount => new Result.Base(ModuleFs, 1003);
         /// <summary>The requested external key was not found<br/>Error code: 2002-1004; Inner value: 0x7d802</summary>
-        public static Result.Base NcaExternalKeyUnavailable => new Result.Base(ModuleFs, 1004);
+        public static Result.Base NcaExternalKeyUnregistered => new Result.Base(ModuleFs, 1004);
 
         /// <summary>Error code: 2002-2000; Range: 2000-2499; Inner value: 0xfa002</summary>
         public static Result.Base SdCardAccessFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2000, 2499); }
@@ -109,16 +109,16 @@ public static class ResultFs
                     /// <summary>Error code: 2002-2044; Inner value: 0xff802</summary>
                     public static Result.Base PortSdCardAutoCommandResponseTimeoutError => new Result.Base(ModuleFs, 2044);
                     /// <summary>Error code: 2002-2045; Inner value: 0xffa02</summary>
-                    public static Result.Base PortSdCardCommandCompleteSoftwareTimeout => new Result.Base(ModuleFs, 2045);
+                    public static Result.Base PortSdCardCommandCompleteSwTimeout => new Result.Base(ModuleFs, 2045);
                     /// <summary>Error code: 2002-2046; Inner value: 0xffc02</summary>
-                    public static Result.Base PortSdCardTransferCompleteSoftwareTimeout => new Result.Base(ModuleFs, 2046);
+                    public static Result.Base PortSdCardTransferCompleteSwTimeout => new Result.Base(ModuleFs, 2046);
 
                 /// <summary>Error code: 2002-2048; Range: 2048-2070; Inner value: 0x100002</summary>
                 public static Result.Base PortSdCardDeviceStatusHasError { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2048, 2070); }
                     /// <summary>Error code: 2002-2049; Inner value: 0x100202</summary>
                     public static Result.Base PortSdCardDeviceStatusAddressOutOfRange => new Result.Base(ModuleFs, 2049);
                     /// <summary>Error code: 2002-2050; Inner value: 0x100402</summary>
-                    public static Result.Base PortSdCardDeviceStatusAddressMisaligned => new Result.Base(ModuleFs, 2050);
+                    public static Result.Base PortSdCardDeviceStatusAddressMisalign => new Result.Base(ModuleFs, 2050);
                     /// <summary>Error code: 2002-2051; Inner value: 0x100602</summary>
                     public static Result.Base PortSdCardDeviceStatusBlockLenError => new Result.Base(ModuleFs, 2051);
                     /// <summary>Error code: 2002-2052; Inner value: 0x100802</summary>
@@ -153,31 +153,31 @@ public static class ResultFs
                 /// <summary>Error code: 2002-2073; Inner value: 0x103202</summary>
                 public static Result.Base PortSdCardUnexpectedDeviceCsdValue => new Result.Base(ModuleFs, 2073);
                 /// <summary>Error code: 2002-2074; Inner value: 0x103402</summary>
-                public static Result.Base PortSdCardAbortTransactionSoftwareTimeout => new Result.Base(ModuleFs, 2074);
+                public static Result.Base PortSdCardAbortTransactionSwTimeout => new Result.Base(ModuleFs, 2074);
                 /// <summary>Error code: 2002-2075; Inner value: 0x103602</summary>
-                public static Result.Base PortSdCardCommandInhibitCmdSoftwareTimeout => new Result.Base(ModuleFs, 2075);
+                public static Result.Base PortSdCardCommandInhibitCmdSwTimeout => new Result.Base(ModuleFs, 2075);
                 /// <summary>Error code: 2002-2076; Inner value: 0x103802</summary>
-                public static Result.Base PortSdCardCommandInhibitDatSoftwareTimeout => new Result.Base(ModuleFs, 2076);
+                public static Result.Base PortSdCardCommandInhibitDatSwTimeout => new Result.Base(ModuleFs, 2076);
                 /// <summary>Error code: 2002-2077; Inner value: 0x103a02</summary>
-                public static Result.Base PortSdCardBusySoftwareTimeout => new Result.Base(ModuleFs, 2077);
+                public static Result.Base PortSdCardBusySwTimeout => new Result.Base(ModuleFs, 2077);
                 /// <summary>Error code: 2002-2078; Inner value: 0x103c02</summary>
-                public static Result.Base PortSdCardIssueTuningCommandSoftwareTimeout => new Result.Base(ModuleFs, 2078);
+                public static Result.Base PortSdCardIssueTuningCommandSwTimeout => new Result.Base(ModuleFs, 2078);
                 /// <summary>Error code: 2002-2079; Inner value: 0x103e02</summary>
                 public static Result.Base PortSdCardTuningFailed => new Result.Base(ModuleFs, 2079);
                 /// <summary>Error code: 2002-2080; Inner value: 0x104002</summary>
-                public static Result.Base PortSdCardMmcInitializationSoftwareTimeout => new Result.Base(ModuleFs, 2080);
+                public static Result.Base PortSdCardMmcInitializationSwTimeout => new Result.Base(ModuleFs, 2080);
                 /// <summary>Error code: 2002-2081; Inner value: 0x104202</summary>
                 public static Result.Base PortSdCardMmcNotSupportExtendedCsd => new Result.Base(ModuleFs, 2081);
                 /// <summary>Error code: 2002-2082; Inner value: 0x104402</summary>
                 public static Result.Base PortSdCardUnexpectedMmcExtendedCsdValue => new Result.Base(ModuleFs, 2082);
                 /// <summary>Error code: 2002-2083; Inner value: 0x104602</summary>
-                public static Result.Base PortSdCardMmcEraseSoftwareTimeout => new Result.Base(ModuleFs, 2083);
+                public static Result.Base PortSdCardMmcEraseSwTimeout => new Result.Base(ModuleFs, 2083);
                 /// <summary>Error code: 2002-2084; Inner value: 0x104802</summary>
                 public static Result.Base PortSdCardSdCardValidationError => new Result.Base(ModuleFs, 2084);
                 /// <summary>Error code: 2002-2085; Inner value: 0x104a02</summary>
-                public static Result.Base PortSdCardSdCardInitializationSoftwareTimeout => new Result.Base(ModuleFs, 2085);
+                public static Result.Base PortSdCardSdCardInitializationSwTimeout => new Result.Base(ModuleFs, 2085);
                 /// <summary>Error code: 2002-2086; Inner value: 0x104c02</summary>
-                public static Result.Base PortSdCardSdCardGetValidRcaSoftwareTimeout => new Result.Base(ModuleFs, 2086);
+                public static Result.Base PortSdCardSdCardGetValidRcaSwTimeout => new Result.Base(ModuleFs, 2086);
                 /// <summary>Error code: 2002-2087; Inner value: 0x104e02</summary>
                 public static Result.Base PortSdCardUnexpectedSdCardAcmdDisabled => new Result.Base(ModuleFs, 2087);
                 /// <summary>Error code: 2002-2088; Inner value: 0x105002</summary>
@@ -191,9 +191,9 @@ public static class ResultFs
                 /// <summary>Error code: 2002-2092; Inner value: 0x105802</summary>
                 public static Result.Base PortSdCardSdCardNotSupportSdr104AndSdr50 => new Result.Base(ModuleFs, 2092);
                 /// <summary>Error code: 2002-2093; Inner value: 0x105a02</summary>
-                public static Result.Base PortSdCardSdCardCannotSwitchAccessMode => new Result.Base(ModuleFs, 2093);
+                public static Result.Base PortSdCardSdCardCannotSwitchedAccessMode => new Result.Base(ModuleFs, 2093);
                 /// <summary>Error code: 2002-2094; Inner value: 0x105c02</summary>
-                public static Result.Base PortSdCardSdCardFailedSwitchAccessMode => new Result.Base(ModuleFs, 2094);
+                public static Result.Base PortSdCardSdCardFailedSwitchedAccessMode => new Result.Base(ModuleFs, 2094);
                 /// <summary>Error code: 2002-2095; Inner value: 0x105e02</summary>
                 public static Result.Base PortSdCardSdCardUnacceptableCurrentConsumption => new Result.Base(ModuleFs, 2095);
                 /// <summary>Error code: 2002-2096; Inner value: 0x106002</summary>
@@ -204,15 +204,15 @@ public static class ResultFs
             /// <summary>Error code: 2002-2128; Range: 2128-2158; Inner value: 0x10a002</summary>
             public static Result.Base PortSdCardHostControllerUnexpected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2128, 2158); }
                 /// <summary>Error code: 2002-2129; Inner value: 0x10a202</summary>
-                public static Result.Base PortSdCardInternalClockStableSoftwareTimeout => new Result.Base(ModuleFs, 2129);
+                public static Result.Base PortSdCardInternalClockStableSwTimeout => new Result.Base(ModuleFs, 2129);
                 /// <summary>Error code: 2002-2130; Inner value: 0x10a402</summary>
                 public static Result.Base PortSdCardSdHostStandardUnknownAutoCmdError => new Result.Base(ModuleFs, 2130);
                 /// <summary>Error code: 2002-2131; Inner value: 0x10a602</summary>
                 public static Result.Base PortSdCardSdHostStandardUnknownError => new Result.Base(ModuleFs, 2131);
                 /// <summary>Error code: 2002-2132; Inner value: 0x10a802</summary>
-                public static Result.Base PortSdCardSdmmcDllCalibrationSoftwareTimeout => new Result.Base(ModuleFs, 2132);
+                public static Result.Base PortSdCardSdmmcDllCalibrationSwTimeout => new Result.Base(ModuleFs, 2132);
                 /// <summary>Error code: 2002-2133; Inner value: 0x10aa02</summary>
-                public static Result.Base PortSdCardSdmmcDllApplicationSoftwareTimeout => new Result.Base(ModuleFs, 2133);
+                public static Result.Base PortSdCardSdmmcDllApplicationSwTimeout => new Result.Base(ModuleFs, 2133);
                 /// <summary>Error code: 2002-2134; Inner value: 0x10ac02</summary>
                 public static Result.Base PortSdCardSdHostStandardFailSwitchTo18V => new Result.Base(ModuleFs, 2134);
 
@@ -221,7 +221,7 @@ public static class ResultFs
                 /// <summary>Error code: 2002-2161; Inner value: 0x10e202</summary>
                 public static Result.Base PortSdCardNoWaitedInterrupt => new Result.Base(ModuleFs, 2161);
                 /// <summary>Error code: 2002-2162; Inner value: 0x10e402</summary>
-                public static Result.Base PortSdCardWaitInterruptSoftwareTimeout => new Result.Base(ModuleFs, 2162);
+                public static Result.Base PortSdCardWaitInterruptSwTimeout => new Result.Base(ModuleFs, 2162);
 
             /// <summary>Error code: 2002-2192; Inner value: 0x112002</summary>
             public static Result.Base PortSdCardAbortCommandIssued => new Result.Base(ModuleFs, 2192);
@@ -230,13 +230,13 @@ public static class ResultFs
             /// <summary>Error code: 2002-2201; Inner value: 0x113202</summary>
             public static Result.Base PortSdCardNotImplemented => new Result.Base(ModuleFs, 2201);
             /// <summary>Error code: 2002-2496; Inner value: 0x138002</summary>
-            public static Result.Base SdCardStorageDeviceInvalidated => new Result.Base(ModuleFs, 2496);
+            public static Result.Base PortSdCardStorageDeviceInvalidated => new Result.Base(ModuleFs, 2496);
             /// <summary>Error code: 2002-2497; Inner value: 0x138202</summary>
-            public static Result.Base SdCardFormatWriteVerificationFailed => new Result.Base(ModuleFs, 2497);
+            public static Result.Base PortSdCardWriteVerifyError => new Result.Base(ModuleFs, 2497);
             /// <summary>Error code: 2002-2498; Inner value: 0x138402</summary>
-            public static Result.Base SdCardFileSystemInvalidatedByRemoved => new Result.Base(ModuleFs, 2498);
+            public static Result.Base PortSdCardFileSystemInvalidatedByRemoved => new Result.Base(ModuleFs, 2498);
             /// <summary>Error code: 2002-2499; Inner value: 0x138602</summary>
-            public static Result.Base SdCardDeviceUnknownError => new Result.Base(ModuleFs, 2499);
+            public static Result.Base PortSdCardUnexpected => new Result.Base(ModuleFs, 2499);
 
         /// <summary>Error code: 2002-2500; Range: 2500-2999; Inner value: 0x138802</summary>
         public static Result.Base GameCardAccessFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2500, 2999); }
@@ -249,7 +249,7 @@ public static class ResultFs
             /// <summary>Error code: 2002-2511; Inner value: 0x139e02</summary>
             public static Result.Base GameCardLockerIndexOutOfRange => new Result.Base(ModuleFs, 2511);
             /// <summary>Error code: 2002-2520; Inner value: 0x13b002</summary>
-            public static Result.Base GameCardNotInserted => new Result.Base(ModuleFs, 2520);
+            public static Result.Base GameCardCardNotInserted => new Result.Base(ModuleFs, 2520);
             /// <summary>Error code: 2002-2521; Inner value: 0x13b202</summary>
             public static Result.Base InvalidGameCardIdInSpecificData => new Result.Base(ModuleFs, 2521);
             /// <summary>Error code: 2002-2522; Inner value: 0x13b402</summary>
@@ -269,37 +269,37 @@ public static class ResultFs
             /// <summary>Error code: 2002-2538; Inner value: 0x13d402</summary>
             public static Result.Base GameCardStatusCrcErrorAndRefreshRequested => new Result.Base(ModuleFs, 2538);
             /// <summary>Error code: 2002-2540; Inner value: 0x13d802</summary>
-            public static Result.Base InvalidSecureAccess => new Result.Base(ModuleFs, 2540);
+            public static Result.Base GameCardInvalidSecureAccess => new Result.Base(ModuleFs, 2540);
             /// <summary>Error code: 2002-2541; Inner value: 0x13da02</summary>
-            public static Result.Base InvalidNormalAccess => new Result.Base(ModuleFs, 2541);
+            public static Result.Base GameCardInvalidNormalAccess => new Result.Base(ModuleFs, 2541);
             /// <summary>Error code: 2002-2542; Inner value: 0x13dc02</summary>
-            public static Result.Base InvalidAccessAcrossMode => new Result.Base(ModuleFs, 2542);
+            public static Result.Base GameCardInvalidAccessAcrossMode => new Result.Base(ModuleFs, 2542);
 
             /// <summary>Error code: 2002-2543; Range: 2543-2546; Inner value: 0x13de02</summary>
             public static Result.Base GameCardWrongCard { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2543, 2546); }
                 /// <summary>Error code: 2002-2544; Inner value: 0x13e002</summary>
-                public static Result.Base InvalidGameCardInitialDataHash => new Result.Base(ModuleFs, 2544);
+                public static Result.Base GameCardInitialDataMismatch => new Result.Base(ModuleFs, 2544);
                 /// <summary>Error code: 2002-2545; Inner value: 0x13e202</summary>
-                public static Result.Base InvalidGameCardInitialDataReservedArea => new Result.Base(ModuleFs, 2545);
+                public static Result.Base GameCardInitialNotFilledWithZero => new Result.Base(ModuleFs, 2545);
                 /// <summary>Error code: 2002-2546; Inner value: 0x13e402</summary>
-                public static Result.Base InvalidGameCardCertificateKekIndex => new Result.Base(ModuleFs, 2546);
+                public static Result.Base GameCardKekIndexMismatch => new Result.Base(ModuleFs, 2546);
 
             /// <summary>Error code: 2002-2548; Inner value: 0x13e802</summary>
-            public static Result.Base InvalidGameCardModeForGetCardDeviceCertificate => new Result.Base(ModuleFs, 2548);
+            public static Result.Base GameCardInvalidGetCardDeviceCertificate => new Result.Base(ModuleFs, 2548);
             /// <summary>Error code: 2002-2549; Inner value: 0x13ea02</summary>
-            public static Result.Base NotSupportedForGameCardSecurityMode => new Result.Base(ModuleFs, 2549);
+            public static Result.Base GameCardUnregisteredCardSecureMethod => new Result.Base(ModuleFs, 2549);
             /// <summary>Error code: 2002-2550; Inner value: 0x13ec02</summary>
-            public static Result.Base Result2550 => new Result.Base(ModuleFs, 2550);
+            public static Result.Base GameCardCardNeedRetryAfterAsicReinitialize => new Result.Base(ModuleFs, 2550);
             /// <summary>Error code: 2002-2551; Inner value: 0x13ee02</summary>
-            public static Result.Base GameCardReadHeaderTryTimeoutForActivation => new Result.Base(ModuleFs, 2551);
+            public static Result.Base GameCardCardHeaderReadFailure => new Result.Base(ModuleFs, 2551);
             /// <summary>Error code: 2002-2552; Inner value: 0x13f002</summary>
-            public static Result.Base Result2552 => new Result.Base(ModuleFs, 2552);
+            public static Result.Base GameCardCardReinitializeFailure => new Result.Base(ModuleFs, 2552);
             /// <summary>Error code: 2002-2553; Inner value: 0x13f202</summary>
-            public static Result.Base InvalidGameCardModeForGetChallengeCardExistence => new Result.Base(ModuleFs, 2553);
+            public static Result.Base GameCardInvalidChallengeCardExistenceMode => new Result.Base(ModuleFs, 2553);
             /// <summary>Error code: 2002-2554; Inner value: 0x13f402</summary>
-            public static Result.Base InvalidGameCardHeader => new Result.Base(ModuleFs, 2554);
+            public static Result.Base GameCardInvalidCardHeader => new Result.Base(ModuleFs, 2554);
             /// <summary>Error code: 2002-2555; Inner value: 0x13f602</summary>
-            public static Result.Base InvalidGameCardCertificate => new Result.Base(ModuleFs, 2555);
+            public static Result.Base GameCardInvalidCardCertificate => new Result.Base(ModuleFs, 2555);
             /// <summary>Error code: 2002-2557; Inner value: 0x13fa02</summary>
             public static Result.Base Result2557 => new Result.Base(ModuleFs, 2557);
             /// <summary>Error code: 2002-2558; Inner value: 0x13fc02</summary>
@@ -419,44 +419,48 @@ public static class ResultFs
             public static Result.Base GameCardCommandReadDevParamFailure => new Result.Base(ModuleFs, 2744);
             /// <summary>Error code: 2002-2745; Inner value: 0x157202</summary>
             public static Result.Base GameCardCommandWriteDevParamFailure => new Result.Base(ModuleFs, 2745);
-            /// <summary>Error code: 2002-2901; Inner value: 0x16aa02</summary>
-            public static Result.Base GameCardParameterError => new Result.Base(ModuleFs, 2901);
-            /// <summary>Error code: 2002-2902; Inner value: 0x16ac02</summary>
-            public static Result.Base Result2902 => new Result.Base(ModuleFs, 2902);
-            /// <summary>Error code: 2002-2903; Inner value: 0x16ae02</summary>
-            public static Result.Base Result2903 => new Result.Base(ModuleFs, 2903);
-            /// <summary>Error code: 2002-2904; Inner value: 0x16b002</summary>
-            public static Result.Base Result2904 => new Result.Base(ModuleFs, 2904);
-            /// <summary>Error code: 2002-2905; Inner value: 0x16b202</summary>
-            public static Result.Base Result2905 => new Result.Base(ModuleFs, 2905);
-            /// <summary>Error code: 2002-2906; Inner value: 0x16b402</summary>
-            public static Result.Base Result2906 => new Result.Base(ModuleFs, 2906);
-            /// <summary>Error code: 2002-2950; Inner value: 0x170c02</summary>
-            public static Result.Base InvalidGameCardStorageAttribute => new Result.Base(ModuleFs, 2950);
-            /// <summary>Error code: 2002-2951; Inner value: 0x170e02</summary>
-            public static Result.Base GameCardNotInsertedOnGetHandle => new Result.Base(ModuleFs, 2951);
-            /// <summary>Error code: 2002-2952; Inner value: 0x171002</summary>
-            public static Result.Base InvalidGameCardHandleOnRead => new Result.Base(ModuleFs, 2952);
-            /// <summary>Error code: 2002-2954; Inner value: 0x171402</summary>
-            public static Result.Base InvalidGameCardHandleOnGetCardInfo => new Result.Base(ModuleFs, 2954);
-            /// <summary>Error code: 2002-2955; Inner value: 0x171602</summary>
-            public static Result.Base InvalidGameCardHandleOnGetGameCardDeviceCertificate => new Result.Base(ModuleFs, 2955);
-            /// <summary>Error code: 2002-2956; Inner value: 0x171802</summary>
-            public static Result.Base InvalidGameCardHandleOnGetGameCardImageHash => new Result.Base(ModuleFs, 2956);
-            /// <summary>Error code: 2002-2957; Inner value: 0x171a02</summary>
-            public static Result.Base InvalidGameCardHandleOnChallengeCardExistence => new Result.Base(ModuleFs, 2957);
-            /// <summary>Error code: 2002-2958; Inner value: 0x171c02</summary>
-            public static Result.Base InvalidGameCardHandleOnOnAcquireLock => new Result.Base(ModuleFs, 2958);
-            /// <summary>Error code: 2002-2959; Inner value: 0x171e02</summary>
-            public static Result.Base InvalidGameCardModeOnAcquireSecureLock => new Result.Base(ModuleFs, 2959);
-            /// <summary>Error code: 2002-2960; Inner value: 0x172002</summary>
-            public static Result.Base InvalidGameCardHandleOnOpenNormalPartition => new Result.Base(ModuleFs, 2960);
-            /// <summary>Error code: 2002-2961; Inner value: 0x172202</summary>
-            public static Result.Base InvalidGameCardHandleOnOpenSecurePartition => new Result.Base(ModuleFs, 2961);
-            /// <summary>Error code: 2002-2962; Inner value: 0x172402</summary>
-            public static Result.Base InvalidGameCardCompatibilityType => new Result.Base(ModuleFs, 2962);
-            /// <summary>Error code: 2002-2963; Inner value: 0x172602</summary>
-            public static Result.Base GameCardsNotSupportedOnDeviceModel => new Result.Base(ModuleFs, 2963);
+
+            /// <summary>Error code: 2002-2900; Range: 2900-2919; Inner value: 0x16a802</summary>
+            public static Result.Base GameCardDevCardUnexpectedFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2900, 2919); }
+                /// <summary>Error code: 2002-2901; Inner value: 0x16aa02</summary>
+                public static Result.Base GameCardDebugParameterMismatch => new Result.Base(ModuleFs, 2901);
+                /// <summary>Error code: 2002-2902; Inner value: 0x16ac02</summary>
+                public static Result.Base GameCardDebugEraseFailure => new Result.Base(ModuleFs, 2902);
+                /// <summary>Error code: 2002-2903; Inner value: 0x16ae02</summary>
+                public static Result.Base GameCardDebugWriteCrcMismatch => new Result.Base(ModuleFs, 2903);
+                /// <summary>Error code: 2002-2904; Inner value: 0x16b002</summary>
+                public static Result.Base GameCardDebugCardReceivedIdMismatch => new Result.Base(ModuleFs, 2904);
+                /// <summary>Error code: 2002-2905; Inner value: 0x16b202</summary>
+                public static Result.Base GameCardDebugCardId1Mismatch => new Result.Base(ModuleFs, 2905);
+                /// <summary>Error code: 2002-2906; Inner value: 0x16b402</summary>
+                public static Result.Base GameCardDebugCardId2Mismatch => new Result.Base(ModuleFs, 2906);
+
+            /// <summary>Error code: 2002-2950; Range: 2950-2998; Inner value: 0x170c02</summary>
+            public static Result.Base GameCardFsFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2950, 2998); }
+                /// <summary>Error code: 2002-2951; Inner value: 0x170e02</summary>
+                public static Result.Base GameCardFsGetHandleFailure => new Result.Base(ModuleFs, 2951);
+                /// <summary>Error code: 2002-2952; Inner value: 0x171002</summary>
+                public static Result.Base GameCardFsCheckHandleInReadFailure => new Result.Base(ModuleFs, 2952);
+                /// <summary>Error code: 2002-2954; Inner value: 0x171402</summary>
+                public static Result.Base GameCardFsCheckHandleInGetStatusFailure => new Result.Base(ModuleFs, 2954);
+                /// <summary>Error code: 2002-2955; Inner value: 0x171602</summary>
+                public static Result.Base GameCardFsCheckHandleInGetDeviceCertFailure => new Result.Base(ModuleFs, 2955);
+                /// <summary>Error code: 2002-2956; Inner value: 0x171802</summary>
+                public static Result.Base GameCardFsCheckHandleInGetCardImageHashFailure => new Result.Base(ModuleFs, 2956);
+                /// <summary>Error code: 2002-2957; Inner value: 0x171a02</summary>
+                public static Result.Base GameCardFsCheckHandleInChallengeCardExistence => new Result.Base(ModuleFs, 2957);
+                /// <summary>Error code: 2002-2958; Inner value: 0x171c02</summary>
+                public static Result.Base GameCardFsCheckHandleInOnAcquireLock => new Result.Base(ModuleFs, 2958);
+                /// <summary>Error code: 2002-2959; Inner value: 0x171e02</summary>
+                public static Result.Base GameCardFsCheckModeInOnAcquireSecureLock => new Result.Base(ModuleFs, 2959);
+                /// <summary>Error code: 2002-2960; Inner value: 0x172002</summary>
+                public static Result.Base GameCardFsCheckHandleInCreateReadOnlyFailure => new Result.Base(ModuleFs, 2960);
+                /// <summary>Error code: 2002-2961; Inner value: 0x172202</summary>
+                public static Result.Base GameCardFsCheckHandleInCreateSecureReadOnlyFailure => new Result.Base(ModuleFs, 2961);
+                /// <summary>Error code: 2002-2962; Inner value: 0x172402</summary>
+                public static Result.Base GameCardFsInvalidCompatibilityType => new Result.Base(ModuleFs, 2962);
+                /// <summary>Error code: 2002-2963; Inner value: 0x172602</summary>
+                public static Result.Base GameCardsNotSupportedOnDeviceModel => new Result.Base(ModuleFs, 2963);
 
     /// <summary>Error code: 2002-3000; Range: 3000-7999; Inner value: 0x177002</summary>
     public static Result.Base Internal { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 3000, 7999); }
@@ -469,7 +473,7 @@ public static class ResultFs
         /// <summary>Error code: 2002-3005; Inner value: 0x177a02</summary>
         public static Result.Base OutOfRange => new Result.Base(ModuleFs, 3005);
         /// <summary>Error code: 2002-3099; Inner value: 0x183602</summary>
-        public static Result.Base Result3099 => new Result.Base(ModuleFs, 3099);
+        public static Result.Base StorageDeviceInvalidOperation => new Result.Base(ModuleFs, 3099);
         /// <summary>Error code: 2002-3100; Inner value: 0x183802</summary>
         public static Result.Base SystemPartitionNotReady => new Result.Base(ModuleFs, 3100);
         /// <summary>Error code: 2002-3101; Inner value: 0x183a02</summary>
@@ -478,17 +482,17 @@ public static class ResultFs
         /// <summary>Error code: 2002-3200; Range: 3200-3499; Inner value: 0x190002</summary>
         public static Result.Base AllocationMemoryFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 3200, 3499); }
             /// <summary>Error code: 2002-3201; Inner value: 0x190202</summary>
-            public static Result.Base AllocationMemoryFailedInPrFile2 => new Result.Base(ModuleFs, 3201);
+            public static Result.Base AllocationMemoryFailedInFatFileSystemA => new Result.Base(ModuleFs, 3201);
             /// <summary>Error code: 2002-3203; Inner value: 0x190602</summary>
-            public static Result.Base AllocationMemoryFailedInFatFileSystemA => new Result.Base(ModuleFs, 3203);
+            public static Result.Base AllocationMemoryFailedInFatFileSystemC => new Result.Base(ModuleFs, 3203);
             /// <summary>Error code: 2002-3204; Inner value: 0x190802</summary>
-            public static Result.Base AllocationMemoryFailedInFatFileSystemB => new Result.Base(ModuleFs, 3204);
+            public static Result.Base AllocationMemoryFailedInFatFileSystemD => new Result.Base(ModuleFs, 3204);
             /// <summary>Error code: 2002-3205; Inner value: 0x190a02</summary>
-            public static Result.Base AllocationMemoryFailedInFatFileSystemC => new Result.Base(ModuleFs, 3205);
+            public static Result.Base AllocationMemoryFailedInFatFileSystemE => new Result.Base(ModuleFs, 3205);
             /// <summary>Error code: 2002-3206; Inner value: 0x190c02</summary>
-            public static Result.Base AllocationMemoryFailedInFatFileSystemD => new Result.Base(ModuleFs, 3206);
+            public static Result.Base AllocationMemoryFailedInFatFileSystemF => new Result.Base(ModuleFs, 3206);
             /// <summary>Error code: 2002-3208; Inner value: 0x191002</summary>
-            public static Result.Base AllocationMemoryFailedInFatFileSystemE => new Result.Base(ModuleFs, 3208);
+            public static Result.Base AllocationMemoryFailedInFatFileSystemH => new Result.Base(ModuleFs, 3208);
             /// <summary>Error code: 2002-3211; Inner value: 0x191602</summary>
             public static Result.Base AllocationMemoryFailedInFileSystemAccessorA => new Result.Base(ModuleFs, 3211);
             /// <summary>Error code: 2002-3212; Inner value: 0x191802</summary>
@@ -740,9 +744,9 @@ public static class ResultFs
             /// <summary>In Initialize<br/>Error code: 2002-3383; Inner value: 0x1a6e02</summary>
             public static Result.Base AllocationMemoryFailedInAesXtsFileE => new Result.Base(ModuleFs, 3383);
             /// <summary>Error code: 2002-3384; Inner value: 0x1a7002</summary>
-            public static Result.Base AllocationMemoryFailedInAesXtsFileSystemB => new Result.Base(ModuleFs, 3384);
+            public static Result.Base AllocationMemoryFailedInAesXtsFileF => new Result.Base(ModuleFs, 3384);
             /// <summary>Error code: 2002-3385; Inner value: 0x1a7202</summary>
-            public static Result.Base AllocationMemoryFailedInAesXtsFileSystemC => new Result.Base(ModuleFs, 3385);
+            public static Result.Base AllocationMemoryFailedInAesXtsFileG => new Result.Base(ModuleFs, 3385);
             /// <summary>Error code: 2002-3386; Inner value: 0x1a7402</summary>
             public static Result.Base AllocationMemoryFailedInReadOnlyFileSystemA => new Result.Base(ModuleFs, 3386);
             /// <summary>In Create allocating AesXtsFileSystem<br/>Error code: 2002-3394; Inner value: 0x1a8402</summary>
@@ -754,11 +758,13 @@ public static class ResultFs
             /// <summary>Error code: 2002-3406; Inner value: 0x1a9c02</summary>
             public static Result.Base AllocationMemoryFailedInSdmmcStorageServiceB => new Result.Base(ModuleFs, 3406);
             /// <summary>In OpenFile or OpenDirectory<br/>Error code: 2002-3407; Inner value: 0x1a9e02</summary>
-            public static Result.Base AllocationMemoryFailedInFileSystemInterfaceAdapter => new Result.Base(ModuleFs, 3407);
+            public static Result.Base AllocationMemoryFailedInFileSystemInterfaceAdapterA => new Result.Base(ModuleFs, 3407);
             /// <summary>Error code: 2002-3408; Inner value: 0x1aa002</summary>
             public static Result.Base AllocationMemoryFailedInGameCardFileSystemCreatorG => new Result.Base(ModuleFs, 3408);
             /// <summary>Error code: 2002-3409; Inner value: 0x1aa202</summary>
             public static Result.Base AllocationMemoryFailedInGameCardFileSystemCreatorH => new Result.Base(ModuleFs, 3409);
+            /// <summary>Error code: 2002-3410; Inner value: 0x1aa402</summary>
+            public static Result.Base AllocationMemoryFailedInAesXtsFileSystemB => new Result.Base(ModuleFs, 3410);
             /// <summary>Error code: 2002-3411; Inner value: 0x1aa602</summary>
             public static Result.Base AllocationMemoryFailedInBufferedStorageA => new Result.Base(ModuleFs, 3411);
             /// <summary>Error code: 2002-3412; Inner value: 0x1aa802</summary>
@@ -768,7 +774,7 @@ public static class ResultFs
             /// <summary>Error code: 2002-3420; Inner value: 0x1ab802</summary>
             public static Result.Base AllocationMemoryFailedNew => new Result.Base(ModuleFs, 3420);
             /// <summary>Error code: 2002-3421; Inner value: 0x1aba02</summary>
-            public static Result.Base AllocationMemoryFailedCreateShared => new Result.Base(ModuleFs, 3421);
+            public static Result.Base AllocationMemoryFailedInFileSystemProxyImplA => new Result.Base(ModuleFs, 3421);
             /// <summary>Error code: 2002-3422; Inner value: 0x1abc02</summary>
             public static Result.Base AllocationMemoryFailedMakeUnique => new Result.Base(ModuleFs, 3422);
             /// <summary>Error code: 2002-3423; Inner value: 0x1abe02</summary>
@@ -826,16 +832,16 @@ public static class ResultFs
                     /// <summary>Error code: 2002-3544; Inner value: 0x1bb002</summary>
                     public static Result.Base PortMmcAutoCommandResponseTimeoutError => new Result.Base(ModuleFs, 3544);
                     /// <summary>Error code: 2002-3545; Inner value: 0x1bb202</summary>
-                    public static Result.Base PortMmcCommandCompleteSoftwareTimeout => new Result.Base(ModuleFs, 3545);
+                    public static Result.Base PortMmcCommandCompleteSwTimeout => new Result.Base(ModuleFs, 3545);
                     /// <summary>Error code: 2002-3546; Inner value: 0x1bb402</summary>
-                    public static Result.Base PortMmcTransferCompleteSoftwareTimeout => new Result.Base(ModuleFs, 3546);
+                    public static Result.Base PortMmcTransferCompleteSwTimeout => new Result.Base(ModuleFs, 3546);
 
                 /// <summary>Error code: 2002-3548; Range: 3548-3570; Inner value: 0x1bb802</summary>
                 public static Result.Base PortMmcDeviceStatusHasError { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 3548, 3570); }
                     /// <summary>Error code: 2002-3549; Inner value: 0x1bba02</summary>
                     public static Result.Base PortMmcDeviceStatusAddressOutOfRange => new Result.Base(ModuleFs, 3549);
                     /// <summary>Error code: 2002-3550; Inner value: 0x1bbc02</summary>
-                    public static Result.Base PortMmcDeviceStatusAddressMisaligned => new Result.Base(ModuleFs, 3550);
+                    public static Result.Base PortMmcDeviceStatusAddressMisalign => new Result.Base(ModuleFs, 3550);
                     /// <summary>Error code: 2002-3551; Inner value: 0x1bbe02</summary>
                     public static Result.Base PortMmcDeviceStatusBlockLenError => new Result.Base(ModuleFs, 3551);
                     /// <summary>Error code: 2002-3552; Inner value: 0x1bc002</summary>
@@ -870,31 +876,31 @@ public static class ResultFs
                 /// <summary>Error code: 2002-3573; Inner value: 0x1bea02</summary>
                 public static Result.Base PortMmcUnexpectedDeviceCsdValue => new Result.Base(ModuleFs, 3573);
                 /// <summary>Error code: 2002-3574; Inner value: 0x1bec02</summary>
-                public static Result.Base PortMmcAbortTransactionSoftwareTimeout => new Result.Base(ModuleFs, 3574);
+                public static Result.Base PortMmcAbortTransactionSwTimeout => new Result.Base(ModuleFs, 3574);
                 /// <summary>Error code: 2002-3575; Inner value: 0x1bee02</summary>
-                public static Result.Base PortMmcCommandInhibitCmdSoftwareTimeout => new Result.Base(ModuleFs, 3575);
+                public static Result.Base PortMmcCommandInhibitCmdSwTimeout => new Result.Base(ModuleFs, 3575);
                 /// <summary>Error code: 2002-3576; Inner value: 0x1bf002</summary>
-                public static Result.Base PortMmcCommandInhibitDatSoftwareTimeout => new Result.Base(ModuleFs, 3576);
+                public static Result.Base PortMmcCommandInhibitDatSwTimeout => new Result.Base(ModuleFs, 3576);
                 /// <summary>Error code: 2002-3577; Inner value: 0x1bf202</summary>
-                public static Result.Base PortMmcBusySoftwareTimeout => new Result.Base(ModuleFs, 3577);
+                public static Result.Base PortMmcBusySwTimeout => new Result.Base(ModuleFs, 3577);
                 /// <summary>Error code: 2002-3578; Inner value: 0x1bf402</summary>
-                public static Result.Base PortMmcIssueTuningCommandSoftwareTimeout => new Result.Base(ModuleFs, 3578);
+                public static Result.Base PortMmcIssueTuningCommandSwTimeout => new Result.Base(ModuleFs, 3578);
                 /// <summary>Error code: 2002-3579; Inner value: 0x1bf602</summary>
                 public static Result.Base PortMmcTuningFailed => new Result.Base(ModuleFs, 3579);
                 /// <summary>Error code: 2002-3580; Inner value: 0x1bf802</summary>
-                public static Result.Base PortMmcMmcInitializationSoftwareTimeout => new Result.Base(ModuleFs, 3580);
+                public static Result.Base PortMmcMmcInitializationSwTimeout => new Result.Base(ModuleFs, 3580);
                 /// <summary>Error code: 2002-3581; Inner value: 0x1bfa02</summary>
                 public static Result.Base PortMmcMmcNotSupportExtendedCsd => new Result.Base(ModuleFs, 3581);
                 /// <summary>Error code: 2002-3582; Inner value: 0x1bfc02</summary>
                 public static Result.Base PortMmcUnexpectedMmcExtendedCsdValue => new Result.Base(ModuleFs, 3582);
                 /// <summary>Error code: 2002-3583; Inner value: 0x1bfe02</summary>
-                public static Result.Base PortMmcMmcEraseSoftwareTimeout => new Result.Base(ModuleFs, 3583);
+                public static Result.Base PortMmcMmcEraseSwTimeout => new Result.Base(ModuleFs, 3583);
                 /// <summary>Error code: 2002-3584; Inner value: 0x1c0002</summary>
                 public static Result.Base PortMmcSdCardValidationError => new Result.Base(ModuleFs, 3584);
                 /// <summary>Error code: 2002-3585; Inner value: 0x1c0202</summary>
-                public static Result.Base PortMmcSdCardInitializationSoftwareTimeout => new Result.Base(ModuleFs, 3585);
+                public static Result.Base PortMmcSdCardInitializationSwTimeout => new Result.Base(ModuleFs, 3585);
                 /// <summary>Error code: 2002-3586; Inner value: 0x1c0402</summary>
-                public static Result.Base PortMmcSdCardGetValidRcaSoftwareTimeout => new Result.Base(ModuleFs, 3586);
+                public static Result.Base PortMmcSdCardGetValidRcaSwTimeout => new Result.Base(ModuleFs, 3586);
                 /// <summary>Error code: 2002-3587; Inner value: 0x1c0602</summary>
                 public static Result.Base PortMmcUnexpectedSdCardAcmdDisabled => new Result.Base(ModuleFs, 3587);
                 /// <summary>Error code: 2002-3588; Inner value: 0x1c0802</summary>
@@ -908,9 +914,9 @@ public static class ResultFs
                 /// <summary>Error code: 2002-3592; Inner value: 0x1c1002</summary>
                 public static Result.Base PortMmcSdCardNotSupportSdr104AndSdr50 => new Result.Base(ModuleFs, 3592);
                 /// <summary>Error code: 2002-3593; Inner value: 0x1c1202</summary>
-                public static Result.Base PortMmcSdCardCannotSwitchAccessMode => new Result.Base(ModuleFs, 3593);
+                public static Result.Base PortMmcSdCardCannotSwitchedAccessMode => new Result.Base(ModuleFs, 3593);
                 /// <summary>Error code: 2002-3594; Inner value: 0x1c1402</summary>
-                public static Result.Base PortMmcSdCardFailedSwitchAccessMode => new Result.Base(ModuleFs, 3594);
+                public static Result.Base PortMmcSdCardFailedSwitchedAccessMode => new Result.Base(ModuleFs, 3594);
                 /// <summary>Error code: 2002-3595; Inner value: 0x1c1602</summary>
                 public static Result.Base PortMmcSdCardUnacceptableCurrentConsumption => new Result.Base(ModuleFs, 3595);
                 /// <summary>Error code: 2002-3596; Inner value: 0x1c1802</summary>
@@ -921,15 +927,15 @@ public static class ResultFs
             /// <summary>Error code: 2002-3628; Range: 3628-3658; Inner value: 0x1c5802</summary>
             public static Result.Base PortMmcHostControllerUnexpected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 3628, 3658); }
                 /// <summary>Error code: 2002-3629; Inner value: 0x1c5a02</summary>
-                public static Result.Base PortMmcInternalClockStableSoftwareTimeout => new Result.Base(ModuleFs, 3629);
+                public static Result.Base PortMmcInternalClockStableSwTimeout => new Result.Base(ModuleFs, 3629);
                 /// <summary>Error code: 2002-3630; Inner value: 0x1c5c02</summary>
                 public static Result.Base PortMmcSdHostStandardUnknownAutoCmdError => new Result.Base(ModuleFs, 3630);
                 /// <summary>Error code: 2002-3631; Inner value: 0x1c5e02</summary>
                 public static Result.Base PortMmcSdHostStandardUnknownError => new Result.Base(ModuleFs, 3631);
                 /// <summary>Error code: 2002-3632; Inner value: 0x1c6002</summary>
-                public static Result.Base PortMmcSdmmcDllCalibrationSoftwareTimeout => new Result.Base(ModuleFs, 3632);
+                public static Result.Base PortMmcSdmmcDllCalibrationSwTimeout => new Result.Base(ModuleFs, 3632);
                 /// <summary>Error code: 2002-3633; Inner value: 0x1c6202</summary>
-                public static Result.Base PortMmcSdmmcDllApplicationSoftwareTimeout => new Result.Base(ModuleFs, 3633);
+                public static Result.Base PortMmcSdmmcDllApplicationSwTimeout => new Result.Base(ModuleFs, 3633);
                 /// <summary>Error code: 2002-3634; Inner value: 0x1c6402</summary>
                 public static Result.Base PortMmcSdHostStandardFailSwitchTo18V => new Result.Base(ModuleFs, 3634);
 
@@ -938,7 +944,7 @@ public static class ResultFs
                 /// <summary>Error code: 2002-3661; Inner value: 0x1c9a02</summary>
                 public static Result.Base PortMmcNoWaitedInterrupt => new Result.Base(ModuleFs, 3661);
                 /// <summary>Error code: 2002-3662; Inner value: 0x1c9c02</summary>
-                public static Result.Base PortMmcWaitInterruptSoftwareTimeout => new Result.Base(ModuleFs, 3662);
+                public static Result.Base PortMmcWaitInterruptSwTimeout => new Result.Base(ModuleFs, 3662);
 
             /// <summary>Error code: 2002-3692; Inner value: 0x1cd802</summary>
             public static Result.Base PortMmcAbortCommandIssued => new Result.Base(ModuleFs, 3692);
@@ -947,7 +953,7 @@ public static class ResultFs
             /// <summary>Error code: 2002-3701; Inner value: 0x1cea02</summary>
             public static Result.Base PortMmcNotImplemented => new Result.Base(ModuleFs, 3701);
             /// <summary>Error code: 2002-3998; Inner value: 0x1f3c02</summary>
-            public static Result.Base Result3998 => new Result.Base(ModuleFs, 3998);
+            public static Result.Base PortMmcStorageDeviceInvalidated => new Result.Base(ModuleFs, 3998);
             /// <summary>Error code: 2002-3999; Inner value: 0x1f3e02</summary>
             public static Result.Base PortMmcUnexpected => new Result.Base(ModuleFs, 3999);
 
@@ -969,7 +975,9 @@ public static class ResultFs
                     /// <summary>Error code: 2002-4015; Inner value: 0x1f5e02</summary>
                     public static Result.Base InvalidAesCtrCounterExtendedOffset => new Result.Base(ModuleFs, 4015);
                     /// <summary>Error code: 2002-4016; Inner value: 0x1f6002</summary>
-                    public static Result.Base Result4016 => new Result.Base(ModuleFs, 4016);
+                    public static Result.Base InvalidAesCtrCounterExtendedDataStorageSize => new Result.Base(ModuleFs, 4016);
+                    /// <summary>Error code: 2002-4017; Inner value: 0x1f6202</summary>
+                    public static Result.Base InvalidAesCtrCounterExtendedMetaStorageSize => new Result.Base(ModuleFs, 4017);
 
                 /// <summary>Error code: 2002-4021; Range: 4021-4029; Inner value: 0x1f6a02</summary>
                 public static Result.Base IndirectStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4021, 4029); }
@@ -1066,11 +1074,13 @@ public static class ResultFs
                     public static Result.Base InvalidRomHierarchicalIntegrityVerificationLayerCount => new Result.Base(ModuleFs, 4081);
                     /// <summary>Error code: 2002-4082; Inner value: 0x1fe402</summary>
                     public static Result.Base RomNcaIndirectStorageOutOfRange => new Result.Base(ModuleFs, 4082);
+                    /// <summary>Error code: 2002-4083; Inner value: 0x1fe602</summary>
+                    public static Result.Base RomNcaInvalidCompressionInfo => new Result.Base(ModuleFs, 4083);
 
                 /// <summary>Error code: 2002-4141; Range: 4141-4179; Inner value: 0x205a02</summary>
                 public static Result.Base RomIntegrityVerificationStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4141, 4179); }
                     /// <summary>Error code: 2002-4142; Inner value: 0x205c02</summary>
-                    public static Result.Base IncorrectRomIntegrityVerificationMagic => new Result.Base(ModuleFs, 4142);
+                    public static Result.Base IncorrectRomIntegrityVerificationMagicCode => new Result.Base(ModuleFs, 4142);
                     /// <summary>Error code: 2002-4143; Inner value: 0x205e02</summary>
                     public static Result.Base InvalidRomZeroSignature => new Result.Base(ModuleFs, 4143);
                     /// <summary>Error code: 2002-4144; Inner value: 0x206002</summary>
@@ -1189,35 +1199,40 @@ public static class ResultFs
                 public static Result.Base ThumbnailHashVerificationFailed => new Result.Base(ModuleFs, 4352);
                 /// <summary>Error code: 2002-4357; Inner value: 0x220a02</summary>
                 public static Result.Base InvalidSaveDataInternalStorageIntegritySeedSize => new Result.Base(ModuleFs, 4357);
-                /// <summary>Error code: 2002-4358; Inner value: 0x220c02</summary>
-                public static Result.Base Result4358 => new Result.Base(ModuleFs, 4358);
-                /// <summary>Error code: 2002-4359; Inner value: 0x220e02</summary>
-                public static Result.Base Result4359 => new Result.Base(ModuleFs, 4359);
+                /// <summary>The bitmap for the allocation table is too small when opening InternalStorageFileNameIntegrityWithZeroFree.<br/>Error code: 2002-4358; Inner value: 0x220c02</summary>
+                public static Result.Base InvalidSaveDataInternalStorageAllocationTableFreeBitmapSizeA => new Result.Base(ModuleFs, 4358);
+                /// <summary>The bitmap for the allocation table is too small when opening AllocationTableDataWithZeroFree.<br/>Error code: 2002-4359; Inner value: 0x220e02</summary>
+                public static Result.Base InvalidSaveDataInternalStorageAllocationTableFreeBitmapSizeB => new Result.Base(ModuleFs, 4359);
 
                 /// <summary>Error code: 2002-4361; Range: 4361-4399; Inner value: 0x221202</summary>
                 public static Result.Base SaveDataIntegrityVerificationStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4361, 4399); }
                     /// <summary>Error code: 2002-4362; Inner value: 0x221402</summary>
-                    public static Result.Base IncorrectSaveDataIntegrityVerificationMagic => new Result.Base(ModuleFs, 4362);
+                    public static Result.Base IncorrectSaveDataIntegrityVerificationMagicCode => new Result.Base(ModuleFs, 4362);
                     /// <summary>Error code: 2002-4363; Inner value: 0x221602</summary>
                     public static Result.Base InvalidSaveDataZeroHash => new Result.Base(ModuleFs, 4363);
                     /// <summary>Error code: 2002-4364; Inner value: 0x221802</summary>
                     public static Result.Base SaveDataNonRealDataVerificationFailed => new Result.Base(ModuleFs, 4364);
-                    /// <summary>Error code: 2002-4372; Inner value: 0x222802</summary>
-                    public static Result.Base ClearedSaveDataRealDataVerificationFailed => new Result.Base(ModuleFs, 4372);
-                    /// <summary>Error code: 2002-4373; Inner value: 0x222a02</summary>
-                    public static Result.Base UnclearedSaveDataRealDataVerificationFailed => new Result.Base(ModuleFs, 4373);
 
-                /// <summary>Error code: 2002-4402; Inner value: 0x226402</summary>
-                public static Result.Base SaveDataGptHeaderSignatureVerificationFailed => new Result.Base(ModuleFs, 4402);
+                    /// <summary>Error code: 2002-4371; Range: 4371-4379; Inner value: 0x222602</summary>
+                    public static Result.Base SaveDataRealDataVerificationFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4371, 4379); }
+                        /// <summary>Error code: 2002-4372; Inner value: 0x222802</summary>
+                        public static Result.Base ClearedSaveDataRealDataVerificationFailed => new Result.Base(ModuleFs, 4372);
+                        /// <summary>Error code: 2002-4373; Inner value: 0x222a02</summary>
+                        public static Result.Base UnclearedSaveDataRealDataVerificationFailed => new Result.Base(ModuleFs, 4373);
 
-                /// <summary>Error code: 2002-4411; Range: 4411-4419; Inner value: 0x227602</summary>
-                public static Result.Base SaveDataCoreFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4411, 4419); }
-                    /// <summary>Error code: 2002-4412; Inner value: 0x227802</summary>
-                    public static Result.Base IncorrectSaveDataControlAreaMagic => new Result.Base(ModuleFs, 4412);
-                    /// <summary>Error code: 2002-4413; Inner value: 0x227a02</summary>
-                    public static Result.Base InvalidSaveDataFileReadOffset => new Result.Base(ModuleFs, 4413);
-                    /// <summary>Error code: 2002-4414; Inner value: 0x227c02</summary>
-                    public static Result.Base InvalidSaveDataCoreDataStorageSize => new Result.Base(ModuleFs, 4414);
+                /// <summary>Error code: 2002-4401; Range: 4401-4419; Inner value: 0x226202</summary>
+                public static Result.Base SaveDataBuiltInStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4401, 4419); }
+                    /// <summary>Error code: 2002-4402; Inner value: 0x226402</summary>
+                    public static Result.Base SaveDataGptHeaderSignatureVerificationFailed => new Result.Base(ModuleFs, 4402);
+
+                    /// <summary>Error code: 2002-4411; Range: 4411-4419; Inner value: 0x227602</summary>
+                    public static Result.Base SaveDataCoreFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4411, 4419); }
+                        /// <summary>Error code: 2002-4412; Inner value: 0x227802</summary>
+                        public static Result.Base IncorrectSaveDataFileSystemMagicCode => new Result.Base(ModuleFs, 4412);
+                        /// <summary>Error code: 2002-4413; Inner value: 0x227a02</summary>
+                        public static Result.Base InvalidSaveDataFileReadOffset => new Result.Base(ModuleFs, 4413);
+                        /// <summary>Error code: 2002-4414; Inner value: 0x227c02</summary>
+                        public static Result.Base InvalidSaveDataCoreDataStorageSize => new Result.Base(ModuleFs, 4414);
 
                 /// <summary>Error code: 2002-4427; Inner value: 0x229602</summary>
                 public static Result.Base IncompleteBlockInZeroBitmapHashStorageFileSaveData => new Result.Base(ModuleFs, 4427);
@@ -1256,7 +1271,7 @@ public static class ResultFs
                     /// <summary>Error code: 2002-4463; Inner value: 0x22de02</summary>
                     public static Result.Base InvalidSaveDataKeyValueListElementIndex => new Result.Base(ModuleFs, 4463);
                     /// <summary>Error code: 2002-4464; Inner value: 0x22e002</summary>
-                    public static Result.Base SaveDataAllocationTableIteratedRangeEntry => new Result.Base(ModuleFs, 4464);
+                    public static Result.Base InvalidSaveDataAllocationTableChainEntry => new Result.Base(ModuleFs, 4464);
                     /// <summary>Error code: 2002-4465; Inner value: 0x22e202</summary>
                     public static Result.Base InvalidSaveDataAllocationTableOffset => new Result.Base(ModuleFs, 4465);
                     /// <summary>Error code: 2002-4466; Inner value: 0x22e402</summary>
@@ -1362,11 +1377,13 @@ public static class ResultFs
                 public static Result.Base InvalidNspdVerificationData => new Result.Base(ModuleFs, 4545);
                 /// <summary>Error code: 2002-4546; Inner value: 0x238402</summary>
                 public static Result.Base MissingNspdVerificationData => new Result.Base(ModuleFs, 4546);
+                /// <summary>Error code: 2002-4547; Inner value: 0x238602</summary>
+                public static Result.Base NcaInvalidCompressionInfo => new Result.Base(ModuleFs, 4547);
 
             /// <summary>Error code: 2002-4601; Range: 4601-4639; Inner value: 0x23f202</summary>
             public static Result.Base IntegrityVerificationStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4601, 4639); }
                 /// <summary>Error code: 2002-4602; Inner value: 0x23f402</summary>
-                public static Result.Base IncorrectIntegrityVerificationMagic => new Result.Base(ModuleFs, 4602);
+                public static Result.Base IncorrectIntegrityVerificationMagicCode => new Result.Base(ModuleFs, 4602);
                 /// <summary>Error code: 2002-4603; Inner value: 0x23f602</summary>
                 public static Result.Base InvalidZeroHash => new Result.Base(ModuleFs, 4603);
                 /// <summary>Error code: 2002-4604; Inner value: 0x23f802</summary>
@@ -1397,9 +1414,9 @@ public static class ResultFs
             /// <summary>Error code: 2002-4661; Range: 4661-4679; Inner value: 0x246a02</summary>
             public static Result.Base BuiltInStorageCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4661, 4679); }
                 /// <summary>Error code: 2002-4662; Inner value: 0x246c02</summary>
-                public static Result.Base InvalidGptPartitionSignature => new Result.Base(ModuleFs, 4662);
+                public static Result.Base GptHeaderSignatureVerificationFailed => new Result.Base(ModuleFs, 4662);
                 /// <summary>Error code: 2002-4664; Inner value: 0x247002</summary>
-                public static Result.Base InvalidGptPartitionStorageSize => new Result.Base(ModuleFs, 4664);
+                public static Result.Base GptHeaderInvalidPartitionSize => new Result.Base(ModuleFs, 4664);
 
             /// <summary>Error code: 2002-4681; Range: 4681-4699; Inner value: 0x249202</summary>
             public static Result.Base FatFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4681, 4699); }
@@ -1410,15 +1427,15 @@ public static class ResultFs
                 /// <summary>Error code: 2002-4685; Inner value: 0x249a02</summary>
                 public static Result.Base ExFatUnavailable => new Result.Base(ModuleFs, 4685);
                 /// <summary>Error code: 2002-4686; Inner value: 0x249c02</summary>
-                public static Result.Base InvalidFatFormatForBisUser => new Result.Base(ModuleFs, 4686);
+                public static Result.Base InvalidFatFormatBisUser => new Result.Base(ModuleFs, 4686);
                 /// <summary>Error code: 2002-4687; Inner value: 0x249e02</summary>
-                public static Result.Base InvalidFatFormatForBisSystem => new Result.Base(ModuleFs, 4687);
+                public static Result.Base InvalidFatFormatBisSystem => new Result.Base(ModuleFs, 4687);
                 /// <summary>Error code: 2002-4688; Inner value: 0x24a002</summary>
-                public static Result.Base InvalidFatFormatForBisSafe => new Result.Base(ModuleFs, 4688);
+                public static Result.Base InvalidFatFormatBisSafe => new Result.Base(ModuleFs, 4688);
                 /// <summary>Error code: 2002-4689; Inner value: 0x24a202</summary>
-                public static Result.Base InvalidFatFormatForBisCalibration => new Result.Base(ModuleFs, 4689);
+                public static Result.Base InvalidFatFormatBisCalibration => new Result.Base(ModuleFs, 4689);
                 /// <summary>Error code: 2002-4690; Inner value: 0x24a402</summary>
-                public static Result.Base InvalidFatFormatForSdCard => new Result.Base(ModuleFs, 4690);
+                public static Result.Base InvalidFatFormatSd => new Result.Base(ModuleFs, 4690);
 
             /// <summary>Error code: 2002-4701; Range: 4701-4719; Inner value: 0x24ba02</summary>
             public static Result.Base HostFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4701, 4719); }
@@ -1438,7 +1455,7 @@ public static class ResultFs
                 /// <summary>Error code: 2002-4723; Inner value: 0x24e602</summary>
                 public static Result.Base InvalidKeyValueListElementIndex => new Result.Base(ModuleFs, 4723);
                 /// <summary>Error code: 2002-4724; Inner value: 0x24e802</summary>
-                public static Result.Base AllocationTableIteratedRangeEntry => new Result.Base(ModuleFs, 4724);
+                public static Result.Base InvalidAllocationTableChainEntry => new Result.Base(ModuleFs, 4724);
                 /// <summary>Error code: 2002-4725; Inner value: 0x24ea02</summary>
                 public static Result.Base InvalidAllocationTableOffset => new Result.Base(ModuleFs, 4725);
                 /// <summary>Error code: 2002-4726; Inner value: 0x24ec02</summary>
@@ -1451,47 +1468,47 @@ public static class ResultFs
             /// <summary>Error code: 2002-4741; Range: 4741-4759; Inner value: 0x250a02</summary>
             public static Result.Base AesXtsFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4741, 4759); }
                 /// <summary>Error code: 2002-4742; Inner value: 0x250c02</summary>
-                public static Result.Base AesXtsFileHeaderTooShort => new Result.Base(ModuleFs, 4742);
+                public static Result.Base AesXtsFileSystemFileHeaderSizeCorruptedOnFileOpen => new Result.Base(ModuleFs, 4742);
                 /// <summary>Error code: 2002-4743; Inner value: 0x250e02</summary>
-                public static Result.Base AesXtsFileHeaderInvalidKeys => new Result.Base(ModuleFs, 4743);
+                public static Result.Base AesXtsFileSystemFileHeaderCorruptedOnFileOpen => new Result.Base(ModuleFs, 4743);
                 /// <summary>Error code: 2002-4744; Inner value: 0x251002</summary>
-                public static Result.Base AesXtsFileHeaderInvalidMagic => new Result.Base(ModuleFs, 4744);
+                public static Result.Base AesXtsFileSystemFileNoHeaderOnFileOpen => new Result.Base(ModuleFs, 4744);
                 /// <summary>Error code: 2002-4745; Inner value: 0x251202</summary>
-                public static Result.Base AesXtsFileTooShort => new Result.Base(ModuleFs, 4745);
+                public static Result.Base AesXtsFileSystemFileSizeCorruptedOnFileOpen => new Result.Base(ModuleFs, 4745);
                 /// <summary>Error code: 2002-4746; Inner value: 0x251402</summary>
-                public static Result.Base AesXtsFileHeaderTooShortInSetSize => new Result.Base(ModuleFs, 4746);
+                public static Result.Base AesXtsFileSystemFileSizeCorruptedOnFileSetSize => new Result.Base(ModuleFs, 4746);
                 /// <summary>Error code: 2002-4747; Inner value: 0x251602</summary>
-                public static Result.Base AesXtsFileHeaderInvalidKeysInRenameFile => new Result.Base(ModuleFs, 4747);
+                public static Result.Base AesXtsFileSystemFileHeaderCorruptedOnRename => new Result.Base(ModuleFs, 4747);
                 /// <summary>Error code: 2002-4748; Inner value: 0x251802</summary>
-                public static Result.Base AesXtsFileHeaderInvalidKeysInSetSize => new Result.Base(ModuleFs, 4748);
+                public static Result.Base AesXtsFileSystemFileHeaderCorruptedOnFileSetSize => new Result.Base(ModuleFs, 4748);
 
             /// <summary>Error code: 2002-4761; Range: 4761-4769; Inner value: 0x253202</summary>
             public static Result.Base SaveDataTransferDataCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4761, 4769); }
                 /// <summary>Error code: 2002-4762; Inner value: 0x253402</summary>
-                public static Result.Base Result4762 => new Result.Base(ModuleFs, 4762);
+                public static Result.Base SaveDataTransferTokenMacVerificationFailed => new Result.Base(ModuleFs, 4762);
                 /// <summary>Error code: 2002-4763; Inner value: 0x253602</summary>
-                public static Result.Base Result4763 => new Result.Base(ModuleFs, 4763);
+                public static Result.Base SaveDataTransferTokenSignatureVerificationFailed => new Result.Base(ModuleFs, 4763);
                 /// <summary>Error code: 2002-4764; Inner value: 0x253802</summary>
-                public static Result.Base Result4764 => new Result.Base(ModuleFs, 4764);
+                public static Result.Base SaveDataTransferTokenChallengeVerificationFailed => new Result.Base(ModuleFs, 4764);
                 /// <summary>Error code: 2002-4765; Inner value: 0x253a02</summary>
-                public static Result.Base Result4765 => new Result.Base(ModuleFs, 4765);
+                public static Result.Base SaveDataTransferImportMacVerificationFailed => new Result.Base(ModuleFs, 4765);
                 /// <summary>Error code: 2002-4766; Inner value: 0x253c02</summary>
-                public static Result.Base Result4766 => new Result.Base(ModuleFs, 4766);
+                public static Result.Base SaveDataTransferInitialDataMacVerificationFailed => new Result.Base(ModuleFs, 4766);
                 /// <summary>Error code: 2002-4767; Inner value: 0x253e02</summary>
-                public static Result.Base Result4767 => new Result.Base(ModuleFs, 4767);
+                public static Result.Base SaveDataTransferInitialDataVersionVerificationFailed => new Result.Base(ModuleFs, 4767);
 
             /// <summary>Error code: 2002-4771; Range: 4771-4779; Inner value: 0x254602</summary>
             public static Result.Base SignedSystemPartitionDataCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4771, 4779); }
                 /// <summary>Error code: 2002-4772; Inner value: 0x254802</summary>
-                public static Result.Base Result4772 => new Result.Base(ModuleFs, 4772);
+                public static Result.Base SignedSystemPartitionInvalidSize => new Result.Base(ModuleFs, 4772);
                 /// <summary>Error code: 2002-4773; Inner value: 0x254a02</summary>
-                public static Result.Base Result4773 => new Result.Base(ModuleFs, 4773);
+                public static Result.Base SignedSystemPartitionSignatureVerificationFailed => new Result.Base(ModuleFs, 4773);
                 /// <summary>Error code: 2002-4774; Inner value: 0x254c02</summary>
-                public static Result.Base Result4774 => new Result.Base(ModuleFs, 4774);
+                public static Result.Base SignedSystemPartitionHashVerificationFailed => new Result.Base(ModuleFs, 4774);
                 /// <summary>Error code: 2002-4775; Inner value: 0x254e02</summary>
-                public static Result.Base Result4775 => new Result.Base(ModuleFs, 4775);
+                public static Result.Base SignedSystemPartitionPackage2HashVerificationFailed => new Result.Base(ModuleFs, 4775);
                 /// <summary>Error code: 2002-4776; Inner value: 0x255002</summary>
-                public static Result.Base Result4776 => new Result.Base(ModuleFs, 4776);
+                public static Result.Base SignedSystemPartitionInvalidAppendHashCount => new Result.Base(ModuleFs, 4776);
 
             /// <summary>Error code: 2002-4781; Inner value: 0x255a02</summary>
             public static Result.Base GameCardLogoDataCorrupted => new Result.Base(ModuleFs, 4781);
@@ -1505,6 +1522,9 @@ public static class ResultFs
                 /// <summary>The multi-commit has not been provisionally committed.<br/>Error code: 2002-4792; Inner value: 0x257002</summary>
                 public static Result.Base InvalidMultiCommitContextState => new Result.Base(ModuleFs, 4792);
 
+            /// <summary>Error code: 2002-4802; Inner value: 0x258402</summary>
+            public static Result.Base ConcatenationFsInvalidInternalFileCount => new Result.Base(ModuleFs, 4802);
+
             /// <summary>Error code: 2002-4811; Range: 4811-4819; Inner value: 0x259602</summary>
             public static Result.Base ZeroBitmapFileCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4811, 4819); }
                 /// <summary>Error code: 2002-4812; Inner value: 0x259802</summary>
@@ -1512,40 +1532,47 @@ public static class ResultFs
 
         /// <summary>Error code: 2002-5000; Range: 5000-5999; Inner value: 0x271002</summary>
         public static Result.Base Unexpected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 5000, 5999); }
-            /// <summary>Error code: 2002-5002; Inner value: 0x271402</summary>
-            public static Result.Base UnexpectedFatFileSystemError => new Result.Base(ModuleFs, 5002);
-            /// <summary>Error code: 2002-5003; Inner value: 0x271602</summary>
-            public static Result.Base FatFileSystemDriverError => new Result.Base(ModuleFs, 5003);
-            /// <summary>Error code: 2002-5024; Inner value: 0x274002</summary>
-            public static Result.Base FatSystemFileOpenCountLimit => new Result.Base(ModuleFs, 5024);
-            /// <summary>Error code: 2002-5025; Inner value: 0x274202</summary>
-            public static Result.Base FatUserFileOpenCountLimit => new Result.Base(ModuleFs, 5025);
-            /// <summary>Error code: 2002-5026; Inner value: 0x274402</summary>
-            public static Result.Base FatEntryIsDirectory => new Result.Base(ModuleFs, 5026);
-            /// <summary>Error code: 2002-5028; Inner value: 0x274802</summary>
-            public static Result.Base FatFileSystemPermissionDenied => new Result.Base(ModuleFs, 5028);
-            /// <summary>Error code: 2002-5029; Inner value: 0x274a02</summary>
-            public static Result.Base FatDriverInitializationFailed => new Result.Base(ModuleFs, 5029);
-            /// <summary>Error code: 2002-5055; Inner value: 0x277e02</summary>
-            public static Result.Base UnexpectedFatSafeError => new Result.Base(ModuleFs, 5055);
-            /// <summary>Error code: 2002-5110; Inner value: 0x27ec02</summary>
-            public static Result.Base Result5110 => new Result.Base(ModuleFs, 5110);
-            /// <summary>Error code: 2002-5121; Inner value: 0x280202</summary>
-            public static Result.Base UnexpectedFatFileSystemSectorCount => new Result.Base(ModuleFs, 5121);
-            /// <summary>Error code: 2002-5122; Inner value: 0x280402</summary>
-            public static Result.Base Result5122 => new Result.Base(ModuleFs, 5122);
-            /// <summary>Error code: 2002-5123; Inner value: 0x280602</summary>
-            public static Result.Base NullptrArgumentForFatFormat => new Result.Base(ModuleFs, 5123);
-            /// <summary>Error code: 2002-5124; Inner value: 0x280802</summary>
-            public static Result.Base InvalidFatFormatParamsA => new Result.Base(ModuleFs, 5124);
-            /// <summary>Error code: 2002-5125; Inner value: 0x280a02</summary>
-            public static Result.Base InvalidFatFormatParamsB => new Result.Base(ModuleFs, 5125);
-            /// <summary>Error code: 2002-5126; Inner value: 0x280c02</summary>
-            public static Result.Base InvalidFatFormatParamsC => new Result.Base(ModuleFs, 5126);
-            /// <summary>Error code: 2002-5127; Inner value: 0x280e02</summary>
-            public static Result.Base InvalidFatFormatParamsD => new Result.Base(ModuleFs, 5127);
-            /// <summary>Error code: 2002-5131; Inner value: 0x281602</summary>
-            public static Result.Base FatSectorWriteVerificationFailed => new Result.Base(ModuleFs, 5131);
+            /// <summary>Error code: 2002-5001; Range: 5001-5299; Inner value: 0x271202</summary>
+            public static Result.Base FatFsUnexpected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 5001, 5299); }
+                /// <summary>Error code: 2002-5002; Inner value: 0x271402</summary>
+                public static Result.Base FatFsUnclassified => new Result.Base(ModuleFs, 5002);
+                /// <summary>Error code: 2002-5003; Inner value: 0x271602</summary>
+                public static Result.Base FatFsStorageStateMissmatch => new Result.Base(ModuleFs, 5003);
+                /// <summary>Error code: 2002-5024; Inner value: 0x274002</summary>
+                public static Result.Base FatFsTooManyFilesOpenedS => new Result.Base(ModuleFs, 5024);
+                /// <summary>Error code: 2002-5025; Inner value: 0x274202</summary>
+                public static Result.Base FatFsTooManyFilesOpenedU => new Result.Base(ModuleFs, 5025);
+                /// <summary>Error code: 2002-5026; Inner value: 0x274402</summary>
+                public static Result.Base FatFsNotAFile => new Result.Base(ModuleFs, 5026);
+                /// <summary>Error code: 2002-5028; Inner value: 0x274802</summary>
+                public static Result.Base FatFsLockError => new Result.Base(ModuleFs, 5028);
+                /// <summary>Error code: 2002-5029; Inner value: 0x274a02</summary>
+                public static Result.Base FatFsInternalError => new Result.Base(ModuleFs, 5029);
+                /// <summary>Error code: 2002-5055; Inner value: 0x277e02</summary>
+                public static Result.Base FatFsModuleSafeError => new Result.Base(ModuleFs, 5055);
+                /// <summary>Error code: 2002-5110; Inner value: 0x27ec02</summary>
+                public static Result.Base FatFsUnexpectedSystemError => new Result.Base(ModuleFs, 5110);
+
+                /// <summary>Error code: 2002-5120; Range: 5120-5129; Inner value: 0x280002</summary>
+                public static Result.Base FatFsFormatUnexpected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 5120, 5129); }
+                    /// <summary>Error code: 2002-5121; Inner value: 0x280202</summary>
+                    public static Result.Base FatFsFormatUnsupportedSize => new Result.Base(ModuleFs, 5121);
+                    /// <summary>Error code: 2002-5122; Inner value: 0x280402</summary>
+                    public static Result.Base FatFsFormatInvalidBpb => new Result.Base(ModuleFs, 5122);
+                    /// <summary>Error code: 2002-5123; Inner value: 0x280602</summary>
+                    public static Result.Base FatFsFormatInvalidParameter => new Result.Base(ModuleFs, 5123);
+                    /// <summary>Error code: 2002-5124; Inner value: 0x280802</summary>
+                    public static Result.Base FatFsFormatIllegalSectorsA => new Result.Base(ModuleFs, 5124);
+                    /// <summary>Error code: 2002-5125; Inner value: 0x280a02</summary>
+                    public static Result.Base FatFsFormatIllegalSectorsB => new Result.Base(ModuleFs, 5125);
+                    /// <summary>Error code: 2002-5126; Inner value: 0x280c02</summary>
+                    public static Result.Base FatFsFormatIllegalSectorsC => new Result.Base(ModuleFs, 5126);
+                    /// <summary>Error code: 2002-5127; Inner value: 0x280e02</summary>
+                    public static Result.Base FatFsFormatIllegalSectorsD => new Result.Base(ModuleFs, 5127);
+
+                /// <summary>Error code: 2002-5131; Inner value: 0x281602</summary>
+                public static Result.Base FatFsWriteVerifyError => new Result.Base(ModuleFs, 5131);
+
             /// <summary>Error code: 2002-5301; Inner value: 0x296a02</summary>
             public static Result.Base UnexpectedInMountTableA => new Result.Base(ModuleFs, 5301);
             /// <summary>Error code: 2002-5302; Inner value: 0x296c02</summary>
@@ -1623,9 +1650,9 @@ public static class ResultFs
                 /// <summary>Error code: 2002-6030; Range: 6030-6059; Inner value: 0x2f1c02</summary>
                 public static Result.Base InvalidPathForOperation { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6030, 6059); }
                     /// <summary>Error code: 2002-6031; Inner value: 0x2f1e02</summary>
-                    public static Result.Base DirectoryNotDeletable => new Result.Base(ModuleFs, 6031);
+                    public static Result.Base DirectoryUndeletable => new Result.Base(ModuleFs, 6031);
                     /// <summary>Error code: 2002-6032; Inner value: 0x2f2002</summary>
-                    public static Result.Base DirectoryNotRenamable => new Result.Base(ModuleFs, 6032);
+                    public static Result.Base DirectoryUnrenamable => new Result.Base(ModuleFs, 6032);
                     /// <summary>Error code: 2002-6033; Inner value: 0x2f2202</summary>
                     public static Result.Base IncompatiblePath => new Result.Base(ModuleFs, 6033);
                     /// <summary>Error code: 2002-6034; Inner value: 0x2f2402</summary>
@@ -1654,11 +1681,11 @@ public static class ResultFs
                 /// <summary>Up to 10 file systems can be committed at the same time.<br/>Error code: 2002-6071; Inner value: 0x2f6e02</summary>
                 public static Result.Base InvalidCommitNameCount => new Result.Base(ModuleFs, 6071);
                 /// <summary>Error code: 2002-6072; Inner value: 0x2f7002</summary>
-                public static Result.Base InvalidOpenMode => new Result.Base(ModuleFs, 6072);
+                public static Result.Base InvalidModeForFileOpen => new Result.Base(ModuleFs, 6072);
                 /// <summary>Error code: 2002-6073; Inner value: 0x2f7202</summary>
                 public static Result.Base InvalidFileSize => new Result.Base(ModuleFs, 6073);
                 /// <summary>Error code: 2002-6074; Inner value: 0x2f7402</summary>
-                public static Result.Base InvalidDirectoryOpenMode => new Result.Base(ModuleFs, 6074);
+                public static Result.Base InvalidModeForDirectoryOpen => new Result.Base(ModuleFs, 6074);
                 /// <summary>Error code: 2002-6075; Inner value: 0x2f7602</summary>
                 public static Result.Base InvalidCommitOption => new Result.Base(ModuleFs, 6075);
 
@@ -1853,6 +1880,10 @@ public static class ResultFs
                 public static Result.Base UnsupportedWriteForZeroBitmapHashStorageFile => new Result.Base(ModuleFs, 6385);
                 /// <summary>Error code: 2002-6386; Inner value: 0x31e402</summary>
                 public static Result.Base UnsupportedSetSizeForZeroBitmapHashStorageFile => new Result.Base(ModuleFs, 6386);
+                /// <summary>Error code: 2002-6387; Inner value: 0x31e602</summary>
+                public static Result.Base UnsupportedWriteForCompressedStorage => new Result.Base(ModuleFs, 6387);
+                /// <summary>Error code: 2002-6388; Inner value: 0x31e802</summary>
+                public static Result.Base UnsupportedOperateRangeForCompressedStorage => new Result.Base(ModuleFs, 6388);
 
             /// <summary>Error code: 2002-6400; Range: 6400-6449; Inner value: 0x320002</summary>
             public static Result.Base PermissionDenied { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6400, 6449); }
@@ -1862,7 +1893,7 @@ public static class ResultFs
             /// <summary>Error code: 2002-6450; Inner value: 0x326402</summary>
             public static Result.Base PortAcceptableCountLimited => new Result.Base(ModuleFs, 6450);
             /// <summary>Error code: 2002-6452; Inner value: 0x326802</summary>
-            public static Result.Base ExternalKeyAlreadyRegistered => new Result.Base(ModuleFs, 6452);
+            public static Result.Base NcaExternalKeyInconsistent => new Result.Base(ModuleFs, 6452);
             /// <summary>Error code: 2002-6454; Inner value: 0x326c02</summary>
             public static Result.Base NeedFlush => new Result.Base(ModuleFs, 6454);
             /// <summary>Error code: 2002-6455; Inner value: 0x326e02</summary>
@@ -1874,17 +1905,17 @@ public static class ResultFs
             /// <summary>Error code: 2002-6458; Inner value: 0x327402</summary>
             public static Result.Base AllocatorAlreadyRegistered => new Result.Base(ModuleFs, 6458);
             /// <summary>Error code: 2002-6459; Inner value: 0x327602</summary>
-            public static Result.Base DefaultAllocatorUsed => new Result.Base(ModuleFs, 6459);
+            public static Result.Base DefaultAllocatorAlreadyUsed => new Result.Base(ModuleFs, 6459);
             /// <summary>Error code: 2002-6460; Inner value: 0x327802</summary>
-            public static Result.Base GameCardLogoDataNotReadable => new Result.Base(ModuleFs, 6460);
+            public static Result.Base GameCardLogoDataSizeInvalid => new Result.Base(ModuleFs, 6460);
             /// <summary>Error code: 2002-6461; Inner value: 0x327a02</summary>
             public static Result.Base AllocatorAlignmentViolation => new Result.Base(ModuleFs, 6461);
             /// <summary>Error code: 2002-6462; Inner value: 0x327c02</summary>
             public static Result.Base GlobalFileDataCacheAlreadyEnabled => new Result.Base(ModuleFs, 6462);
             /// <summary>The provided file system has already been added to the multi-commit manager.<br/>Error code: 2002-6463; Inner value: 0x327e02</summary>
-            public static Result.Base MultiCommitFileSystemAlreadyAdded => new Result.Base(ModuleFs, 6463);
-            /// <summary>Error code: 2002-6464; Inner value: 0x328002</summary>
-            public static Result.Base Result6464 => new Result.Base(ModuleFs, 6464);
+            public static Result.Base MultiCommitHasOverlappingTargets => new Result.Base(ModuleFs, 6463);
+            /// <summary>A multi-commit was performed while another multi-commit operation was already running.<br/>Error code: 2002-6464; Inner value: 0x328002</summary>
+            public static Result.Base MultiCommitAlreadyInProgress => new Result.Base(ModuleFs, 6464);
             /// <summary>Error code: 2002-6465; Inner value: 0x328202</summary>
             public static Result.Base UserNotExist => new Result.Base(ModuleFs, 6465);
             /// <summary>Error code: 2002-6466; Inner value: 0x328402</summary>
@@ -1939,63 +1970,63 @@ public static class ResultFs
             public static Result.Base SaveDataToExpandIsProvisionallyCommitted => new Result.Base(ModuleFs, 6907);
 
         /// <summary>Error code: 2002-7002; Inner value: 0x36b402</summary>
-        public static Result.Base Result7002 => new Result.Base(ModuleFs, 7002);
+        public static Result.Base SaveDataTransferV2KeySeedPackageMacVerificationFailed => new Result.Base(ModuleFs, 7002);
         /// <summary>Error code: 2002-7003; Inner value: 0x36b602</summary>
-        public static Result.Base Result7003 => new Result.Base(ModuleFs, 7003);
+        public static Result.Base SaveDataTransferV2KeySeedPackageSignatureVerificationFailed => new Result.Base(ModuleFs, 7003);
         /// <summary>Error code: 2002-7004; Inner value: 0x36b802</summary>
-        public static Result.Base Result7004 => new Result.Base(ModuleFs, 7004);
+        public static Result.Base SaveDataTransferV2KeySeedPackageChallengeVerificationFailed => new Result.Base(ModuleFs, 7004);
         /// <summary>Error code: 2002-7005; Inner value: 0x36ba02</summary>
-        public static Result.Base Result7005 => new Result.Base(ModuleFs, 7005);
+        public static Result.Base SaveDataTransferV2ImportDataVerificationFailed => new Result.Base(ModuleFs, 7005);
         /// <summary>Error code: 2002-7006; Inner value: 0x36bc02</summary>
-        public static Result.Base Result7006 => new Result.Base(ModuleFs, 7006);
+        public static Result.Base SaveDataTransferV2InitialDataGcmMacVerificationFailed => new Result.Base(ModuleFs, 7006);
         /// <summary>Error code: 2002-7009; Inner value: 0x36c202</summary>
-        public static Result.Base Result7009 => new Result.Base(ModuleFs, 7009);
+        public static Result.Base SaveDataTransferV2InitialDataMacVerificationFailed => new Result.Base(ModuleFs, 7009);
         /// <summary>Error code: 2002-7010; Inner value: 0x36c402</summary>
-        public static Result.Base Result7010 => new Result.Base(ModuleFs, 7010);
+        public static Result.Base SaveDataTransferV2ImportDataDecompressionFailed => new Result.Base(ModuleFs, 7010);
         /// <summary>Error code: 2002-7011; Inner value: 0x36c602</summary>
-        public static Result.Base Result7011 => new Result.Base(ModuleFs, 7011);
+        public static Result.Base SaveDataTransferV2PortContextMacVerificationFailed => new Result.Base(ModuleFs, 7011);
         /// <summary>Error code: 2002-7031; Inner value: 0x36ee02</summary>
         public static Result.Base SaveDataPorterInvalidated => new Result.Base(ModuleFs, 7031);
         /// <summary>Error code: 2002-7032; Inner value: 0x36f002</summary>
-        public static Result.Base Result7032 => new Result.Base(ModuleFs, 7032);
+        public static Result.Base SaveDataDivisionExporterChunkExportIncomplete => new Result.Base(ModuleFs, 7032);
         /// <summary>Error code: 2002-7033; Inner value: 0x36f202</summary>
-        public static Result.Base Result7033 => new Result.Base(ModuleFs, 7033);
+        public static Result.Base SaveDataDivisionImporterChunkImportIncomplete => new Result.Base(ModuleFs, 7033);
         /// <summary>Error code: 2002-7034; Inner value: 0x36f402</summary>
-        public static Result.Base Result7034 => new Result.Base(ModuleFs, 7034);
+        public static Result.Base SaveDataPorterInitialDataVersionVerificationFailed => new Result.Base(ModuleFs, 7034);
         /// <summary>Error code: 2002-7035; Inner value: 0x36f602</summary>
-        public static Result.Base Result7035 => new Result.Base(ModuleFs, 7035);
-        /// <summary>Error code: 2002-7036; Inner value: 0x36f802</summary>
-        public static Result.Base Result7036 => new Result.Base(ModuleFs, 7036);
-        /// <summary>Error code: 2002-7037; Inner value: 0x36fa02</summary>
-        public static Result.Base Result7037 => new Result.Base(ModuleFs, 7037);
+        public static Result.Base SaveDataChunkDecryptorGcmStreamVersionVerificationFailed => new Result.Base(ModuleFs, 7035);
+        /// <summary>The save data being ported has been modified since the importer/exporter was created.<br/>Error code: 2002-7036; Inner value: 0x36f802</summary>
+        public static Result.Base SaveDataPorterSaveDataModified => new Result.Base(ModuleFs, 7036);
+        /// <summary>The key generation or the version of the initial data or key package is too high.<br/>Error code: 2002-7037; Inner value: 0x36fa02</summary>
+        public static Result.Base SaveDataPorterVersionUnsupported => new Result.Base(ModuleFs, 7037);
         /// <summary>Error code: 2002-7038; Inner value: 0x36fc02</summary>
-        public static Result.Base Result7038 => new Result.Base(ModuleFs, 7038);
+        public static Result.Base SaveDataTransferV2SecondarySaveCorrupted => new Result.Base(ModuleFs, 7038);
         /// <summary>Error code: 2002-7062; Inner value: 0x372c02</summary>
-        public static Result.Base InvalidKeyPackageMac => new Result.Base(ModuleFs, 7062);
+        public static Result.Base SaveDataTransferForSaveDataRepairKeyPackageMacVerificationFailed => new Result.Base(ModuleFs, 7062);
         /// <summary>Error code: 2002-7063; Inner value: 0x372e02</summary>
-        public static Result.Base KeyPackageSignatureVerificationFailed => new Result.Base(ModuleFs, 7063);
+        public static Result.Base SaveDataTransferForSaveDataRepairKeyPackageSignatureVerificationFailed => new Result.Base(ModuleFs, 7063);
         /// <summary>Error code: 2002-7064; Inner value: 0x373002</summary>
-        public static Result.Base InvalidKeyPackageChallengeData => new Result.Base(ModuleFs, 7064);
+        public static Result.Base SaveDataTransferForSaveDataRepairKeyPackageChallengeVerificationFailed => new Result.Base(ModuleFs, 7064);
         /// <summary>Error code: 2002-7065; Inner value: 0x373202</summary>
-        public static Result.Base UnsupportedKeyPackageKeyGeneration => new Result.Base(ModuleFs, 7065);
+        public static Result.Base SaveDataTransferForSaveDataRepairUnsupportedKeyGeneration => new Result.Base(ModuleFs, 7065);
         /// <summary>Error code: 2002-7066; Inner value: 0x373402</summary>
-        public static Result.Base InvalidSaveDataRepairInitialDataContentGcmMac => new Result.Base(ModuleFs, 7066);
-        /// <summary>Error code: 2002-7069; Inner value: 0x373a02</summary>
-        public static Result.Base InvalidSaveDataRepairInitialDataCmac => new Result.Base(ModuleFs, 7069);
-        /// <summary>The before and after initial data have different AAD.<br/>Error code: 2002-7070; Inner value: 0x373c02</summary>
-        public static Result.Base SaveDataRepairInitialDataAadMismatch => new Result.Base(ModuleFs, 7070);
-        /// <summary>The before and after initial data refer to different saves.<br/>Error code: 2002-7071; Inner value: 0x373e02</summary>
-        public static Result.Base SaveDataRepairInitialDataSaveMismatch => new Result.Base(ModuleFs, 7071);
+        public static Result.Base SaveDataTransferForSaveDataRepairInitialDataMacVerificationFailed => new Result.Base(ModuleFs, 7066);
+        /// <summary>The initial data doesn't match the set key package.<br/>Error code: 2002-7069; Inner value: 0x373a02</summary>
+        public static Result.Base SaveDataTransferForSaveDataRepairIncorrectInitialData => new Result.Base(ModuleFs, 7069);
+        /// <summary>The before and after initial data refer to different saves.<br/>Error code: 2002-7070; Inner value: 0x373c02</summary>
+        public static Result.Base SaveDataTransferForSaveDataRepairInconsistentInitialData => new Result.Base(ModuleFs, 7070);
+        /// <summary>The initial data doesn't match the given user ID.<br/>Error code: 2002-7071; Inner value: 0x373e02</summary>
+        public static Result.Base SaveDataTransferForSaveDataRepairInitialDataIncorrectUserId => new Result.Base(ModuleFs, 7071);
 
         /// <summary>Error code: 2002-7100; Range: 7100-7139; Inner value: 0x377802</summary>
         public static Result.Base RamDiskCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 7100, 7139); }
             /// <summary>Error code: 2002-7101; Inner value: 0x377a02</summary>
-            public static Result.Base Result7101 => new Result.Base(ModuleFs, 7101);
+            public static Result.Base RamDiskVerifiedStorageVerificationFailed => new Result.Base(ModuleFs, 7101);
 
             /// <summary>Error code: 2002-7111; Range: 7111-7119; Inner value: 0x378e02</summary>
             public static Result.Base RamDiskSaveDataCoreFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 7111, 7119); }
                 /// <summary>Error code: 2002-7112; Inner value: 0x379002</summary>
-                public static Result.Base IncorrectRamDiskSaveDataControlAreaMagic => new Result.Base(ModuleFs, 7112);
+                public static Result.Base IncorrectRamDiskSaveDataFileSystemMagicCode => new Result.Base(ModuleFs, 7112);
                 /// <summary>Error code: 2002-7113; Inner value: 0x379202</summary>
                 public static Result.Base InvalidRamDiskSaveDataFileReadOffset => new Result.Base(ModuleFs, 7113);
                 /// <summary>Error code: 2002-7114; Inner value: 0x379402</summary>
@@ -2008,7 +2039,7 @@ public static class ResultFs
                 /// <summary>Error code: 2002-7123; Inner value: 0x37a602</summary>
                 public static Result.Base InvalidRamDiskKeyValueListElementIndex => new Result.Base(ModuleFs, 7123);
                 /// <summary>Error code: 2002-7124; Inner value: 0x37a802</summary>
-                public static Result.Base RamDiskAllocationTableIteratedRangeEntry => new Result.Base(ModuleFs, 7124);
+                public static Result.Base InvalidRamDiskAllocationTableChainEntry => new Result.Base(ModuleFs, 7124);
                 /// <summary>Error code: 2002-7125; Inner value: 0x37aa02</summary>
                 public static Result.Base InvalidRamDiskAllocationTableOffset => new Result.Base(ModuleFs, 7125);
                 /// <summary>Error code: 2002-7126; Inner value: 0x37ac02</summary>
@@ -2017,7 +2048,7 @@ public static class ResultFs
                 public static Result.Base InvalidRamDiskKeyValueListEntryIndex => new Result.Base(ModuleFs, 7127);
 
         /// <summary>Error code: 2002-7142; Inner value: 0x37cc02</summary>
-        public static Result.Base Result7142 => new Result.Base(ModuleFs, 7142);
+        public static Result.Base SaveDataTransferForRepairInitialDataMacVerificationFailed => new Result.Base(ModuleFs, 7142);
         /// <summary>Error code: 2002-7900; Inner value: 0x3db802</summary>
         public static Result.Base Unknown => new Result.Base(ModuleFs, 7900);
 

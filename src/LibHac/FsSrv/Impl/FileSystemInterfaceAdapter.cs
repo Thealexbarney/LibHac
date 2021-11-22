@@ -361,7 +361,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         if (rc.IsFailure()) return rc;
 
         if (pathNormalized == RootDir)
-            return ResultFs.DirectoryNotDeletable.Log();
+            return ResultFs.DirectoryUndeletable.Log();
 
         rc = _baseFileSystem.Get.DeleteDirectory(in pathNormalized);
         if (rc.IsFailure()) return rc;
@@ -376,7 +376,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         if (rc.IsFailure()) return rc;
 
         if (pathNormalized == RootDir)
-            return ResultFs.DirectoryNotDeletable.Log();
+            return ResultFs.DirectoryUndeletable.Log();
 
         rc = _baseFileSystem.Get.DeleteDirectoryRecursively(in pathNormalized);
         if (rc.IsFailure()) return rc;
@@ -423,7 +423,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         if (rc.IsFailure()) return rc;
 
         if (PathUtility.IsSubPath(currentPathNormalized.GetString(), newPathNormalized.GetString()))
-            return ResultFs.DirectoryNotRenamable.Log();
+            return ResultFs.DirectoryUnrenamable.Log();
 
         rc = _baseFileSystem.Get.RenameDirectory(in currentPathNormalized, in newPathNormalized);
         if (rc.IsFailure()) return rc;
