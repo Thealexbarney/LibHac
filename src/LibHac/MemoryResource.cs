@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
+using Buffer = LibHac.Mem.Buffer;
 
 namespace LibHac;
 
@@ -28,40 +29,6 @@ public abstract class MemoryResource
     protected abstract Buffer DoAllocate(long size, int alignment);
     protected abstract void DoDeallocate(Buffer buffer, int alignment);
     protected abstract bool DoIsEqual(MemoryResource other);
-
-    /// <summary>
-    /// Represents a region of memory allocated by a <see cref="MemoryResource"/>.
-    /// </summary>
-    public struct Buffer
-    {
-        private Memory<byte> _memory;
-
-        /// <summary>
-        /// A field where <see cref="MemoryResource"/> implementers can store info about the <see cref="Buffer"/>.
-        /// </summary>
-        internal object Extra { get; }
-
-        /// <summary>
-        /// The length of the buffer in bytes.
-        /// </summary>
-        public readonly int Length => _memory.Length;
-
-        /// <summary>
-        /// Gets a span from the <see cref="Buffer"/>.
-        /// </summary>
-        public readonly Span<byte> Get() => _memory.Span;
-
-        /// <summary>
-        /// Returns <see langword="true"/> if the <see cref="Buffer"/> is valid.
-        /// </summary>
-        public readonly bool IsValid => !_memory.Equals(default);
-
-        internal Buffer(Memory<byte> memory, object extra = null)
-        {
-            _memory = memory;
-            Extra = extra;
-        }
-    }
 }
 
 public class ArrayPoolMemoryResource : MemoryResource

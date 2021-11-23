@@ -5,6 +5,7 @@ using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using Buffer = LibHac.Mem.Buffer;
 
 namespace LibHac.Kvdb;
 
@@ -284,8 +285,8 @@ public class FlatMapKeyValueStore<TKey> : IDisposable where TKey : unmanaged, IE
             if (rc.IsFailure()) return rc;
 
             // Allocate memory for value.
-            MemoryResource.Buffer newValue = _memoryResource.Allocate(valueSize, Alignment);
-            if (!newValue.IsValid)
+            Buffer newValue = _memoryResource.Allocate(valueSize, Alignment);
+            if (newValue.IsNull)
                 return ResultKvdb.AllocationFailed.Log();
 
             bool success = false;
@@ -294,7 +295,7 @@ public class FlatMapKeyValueStore<TKey> : IDisposable where TKey : unmanaged, IE
                 // Read key and value.
                 Unsafe.SkipInit(out TKey key);
 
-                rc = reader.ReadKeyValue(SpanHelpers.AsByteSpan(ref key), newValue.Get());
+                rc = reader.ReadKeyValue(SpanHelpers.AsByteSpan(ref key), newValue.Span);
                 if (rc.IsFailure()) return rc;
 
                 rc = _index.AppendUnsafe(in key, newValue);
@@ -376,9 +377,9 @@ public class FlatMapKeyValueStore<TKey> : IDisposable where TKey : unmanaged, IE
     public struct KeyValue
     {
         public TKey Key;
-        public MemoryResource.Buffer Value;
+        public Buffer Value;
 
-        public KeyValue(in TKey key, MemoryResource.Buffer value)
+        public KeyValue(in TKey key, Buffer value)
         {
             Key = key;
             Value = value;
@@ -459,11 +460,11 @@ public class FlatMapKeyValueStore<TKey> : IDisposable where TKey : unmanaged, IE
             }
 
             // Allocate new value.
-            MemoryResource.Buffer newValue = _memoryResource.Allocate(value.Length, Alignment);
-            if (!newValue.IsValid)
+            Buffer newValue = _memoryResource.Allocate(value.Length, Alignment);
+            if (newValue.IsNull)
                 return ResultKvdb.AllocationFailed.Log();
 
-            value.CopyTo(newValue.Get());
+            value.CopyTo(newValue.Span);
 
             // Add the new entry to the list.
             _entries[index] = new KeyValue(in key, newValue);
@@ -479,7 +480,7 @@ public class FlatMapKeyValueStore<TKey> : IDisposable where TKey : unmanaged, IE
         /// <param name="key">The key to add.</param>
         /// <param name="value">The value to add.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        public Result AppendUnsafe(in TKey key, MemoryResource.Buffer value)
+        public Result AppendUnsafe(in TKey key, Buffer value)
         {
             if (_count >= _capacity)
                 return ResultKvdb.OutOfKeyResource.Log();
@@ -647,11 +648,11 @@ public class FlatMapKeyValueStore<TKey> : IDisposable where TKey : unmanaged, IE
         }
 
         public ref KeyValue Get() => ref _entries[_index];
-        public Span<byte> GetValue() => _entries[_index].Value.Get();
+        public Span<byte> GetValue() => _entries[_index].Value.Span;
 
         public ref T GetValue<T>() where T : unmanaged
         {
-            return ref SpanHelpers.AsStruct<T>(_entries[_index].Value.Get());
+            return ref SpanHelpers.AsStruct<T>(_entries[_index].Value.Span);
         }
 
         public void Next() => _index++;
@@ -720,7 +721,7 @@ public class FlatMapKeyValueStore<TKey> : IDisposable where TKey : unmanaged, IE
         }
 
         public ref readonly KeyValue Get() => ref _entries[_index];
-        public ReadOnlySpan<byte> GetValue() => _entries[_index].Value.Get();
+        public ReadOnlySpan<byte> GetValue() => _entries[_index].Value.Span;
 
         public void Next() => _index++;
         public bool IsEnd() => _index == _length;

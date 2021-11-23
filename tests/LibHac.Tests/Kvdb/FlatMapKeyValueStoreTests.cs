@@ -142,7 +142,7 @@ public class FlatMapKeyValueStoreTests
             ref FlatMapKeyValueStore<TTest>.KeyValue kv = ref iterator.Get();
 
             Assert.Equal(expectedKey, kv.Key);
-            Assert.Equal(expectedValue, kv.Value.Get().ToArray());
+            Assert.Equal(expectedValue, kv.Value.Span.ToArray());
 
             iterator.Next();
         }
@@ -299,7 +299,7 @@ public class FlatMapKeyValueStoreTests
             ref FlatMapKeyValueStore<TTest>.KeyValue kv = ref iterator.Get();
 
             Assert.Equal(expectedKey, kv.Key);
-            Assert.Equal(expectedValue, kv.Value.Get().ToArray());
+            Assert.Equal(expectedValue, kv.Value.Span.ToArray());
 
             iterator.Next();
         }
@@ -576,7 +576,7 @@ public class FlatMapKeyValueStoreTests
             ref FlatMapKeyValueStore<TTest>.KeyValue kv = ref iterator.Get();
 
             Assert.Equal(expectedKey, kv.Key);
-            Assert.Equal(expectedValue, kv.Value.Get().ToArray());
+            Assert.Equal(expectedValue, kv.Value.Span.ToArray());
 
             iterator.Next();
         }
