@@ -7,7 +7,7 @@ using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.FsSystem.Buffers;
 using LibHac.Util;
-using Buffer = LibHac.Fs.Buffer;
+using Buffer = LibHac.Mem.Buffer;
 using CacheHandle = System.Int64;
 
 namespace LibHac.FsSystem.Save;

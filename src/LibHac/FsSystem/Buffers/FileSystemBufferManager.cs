@@ -6,7 +6,7 @@ using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Util;
-using Buffer = LibHac.Fs.Buffer;
+using Buffer = LibHac.Mem.Buffer;
 using CacheHandle = System.Int64;
 
 // ReSharper disable once CheckNamespace

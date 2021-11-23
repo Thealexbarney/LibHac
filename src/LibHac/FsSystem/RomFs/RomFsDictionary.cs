@@ -192,7 +192,7 @@ internal class RomFsDictionary<T> where T : unmanaged
         if (value != _capacity)
         {
             byte[] newBuffer = new byte[value];
-            System.Buffer.BlockCopy(Entries, 0, newBuffer, 0, _length);
+            Buffer.BlockCopy(Entries, 0, newBuffer, 0, _length);
 
             Entries = newBuffer;
             _capacity = value;
