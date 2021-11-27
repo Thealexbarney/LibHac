@@ -71,7 +71,20 @@ public abstract class IStorage : IDisposable
     }
 
     /// <summary>
-    /// Performs various operations on the file. Used to extend the functionality of the <see cref="IStorage"/> interface.
+    /// Performs various operations on the storage. Used to extend the functionality of the <see cref="IStorage"/> interface.
+    /// </summary>
+    /// <param name="operationId">The operation to be performed.</param>
+    /// <param name="offset">The offset of the range to operate on.</param>
+    /// <param name="size">The size of the range to operate on.</param>
+    /// <returns>The <see cref="Result"/> of the operation.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Result OperateRange(OperationId operationId, long offset, long size)
+    {
+        return DoOperateRange(Span<byte>.Empty, operationId, offset, size, ReadOnlySpan<byte>.Empty);
+    }
+
+    /// <summary>
+    /// Performs various operations on the storage. Used to extend the functionality of the <see cref="IStorage"/> interface.
     /// </summary>
     /// <param name="outBuffer">A buffer that will contain the response from the operation.</param>
     /// <param name="operationId">The operation to be performed.</param>

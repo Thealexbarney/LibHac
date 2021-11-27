@@ -23,10 +23,10 @@ public class IndirectStorage : IStorage
         public int StorageIndex;
 
         public void SetVirtualOffset(long offset) => VirtualOffset = offset;
-        public long GetVirtualOffset() => VirtualOffset;
+        public readonly long GetVirtualOffset() => VirtualOffset;
 
         public void SetPhysicalOffset(long offset) => PhysicalOffset = offset;
-        public long GetPhysicalOffset() => PhysicalOffset;
+        public readonly long GetPhysicalOffset() => PhysicalOffset;
     }
 
     public static long QueryHeaderStorageSize() => BucketTree.QueryHeaderStorageSize();

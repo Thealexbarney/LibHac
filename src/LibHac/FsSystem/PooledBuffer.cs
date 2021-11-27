@@ -21,26 +21,26 @@ public struct PooledBuffer : IDisposable
     private const int HeapAllocatableSizeMax = HeapBlockSize * (1 << HeapOrderMax);
     private const int HeapAllocatableSizeMaxForLarge = HeapBlockSize * (1 << HeapOrderMaxForLarge);
 
-    private byte[] Array { get; set; }
-    private int Length { get; set; }
+    private byte[] _array;
+    private int _length;
 
     public PooledBuffer(int idealSize, int requiredSize)
     {
-        Array = null;
-        Length = default;
+        _array = null;
+        _length = default;
         Allocate(idealSize, requiredSize);
     }
 
     public Span<byte> GetBuffer()
     {
-        Assert.SdkRequiresNotNull(Array);
-        return Array.AsSpan(0, Length);
+        Assert.SdkRequiresNotNull(_array);
+        return _array.AsSpan(0, _length);
     }
 
     public int GetSize()
     {
-        Assert.SdkRequiresNotNull(Array);
-        return Length;
+        Assert.SdkRequiresNotNull(_array);
+        return _length;
     }
 
     public static int GetAllocatableSizeMax() => GetAllocatableSizeMaxCore(false);
@@ -56,7 +56,7 @@ public struct PooledBuffer : IDisposable
 
     private void AllocateCore(int idealSize, int requiredSize, bool enableLargeCapacity)
     {
-        Assert.SdkRequiresNull(Array);
+        Assert.SdkRequiresNull(_array);
 
         // Check that we can allocate this size.
         Assert.SdkRequiresLessEqual(requiredSize, GetAllocatableSizeMaxCore(enableLargeCapacity));
@@ -66,21 +66,21 @@ public struct PooledBuffer : IDisposable
 
         if (targetSize >= RentThresholdBytes)
         {
-            Array = ArrayPool<byte>.Shared.Rent(targetSize);
+            _array = ArrayPool<byte>.Shared.Rent(targetSize);
         }
         else
         {
-            Array = new byte[targetSize];
+            _array = new byte[targetSize];
         }
 
-        Length = Array.Length;
+        _length = _array.Length;
     }
 
     public void Deallocate()
     {
         // Shrink the buffer to empty.
         Shrink(0);
-        Assert.SdkNull(Array);
+        Assert.SdkNull(_array);
     }
 
     public void Shrink(int idealSize)
@@ -88,23 +88,23 @@ public struct PooledBuffer : IDisposable
         Assert.SdkRequiresLessEqual(idealSize, GetAllocatableSizeMaxCore(true));
 
         // Check if we actually need to shrink.
-        if (Length > idealSize)
+        if (_length > idealSize)
         {
-            Assert.SdkRequiresNotNull(Array);
+            Assert.SdkRequiresNotNull(_array);
 
             // Pretend we shrank the buffer.
-            Length = idealSize;
+            _length = idealSize;
 
             // Shrinking to zero means that we have no buffer.
-            if (Length == 0)
+            if (_length == 0)
             {
                 // Return the array if we rented it.
-                if (Array?.Length >= RentThresholdBytes)
+                if (_array?.Length >= RentThresholdBytes)
                 {
-                    ArrayPool<byte>.Shared.Return(Array);
+                    ArrayPool<byte>.Shared.Return(_array);
                 }
 
-                Array = null;
+                _array = null;
             }
         }
     }
