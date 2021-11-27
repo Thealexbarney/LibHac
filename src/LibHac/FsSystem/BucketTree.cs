@@ -133,16 +133,10 @@ public partial class BucketTree
         return visitor.Find(virtualAddress);
     }
 
-    public static int QueryHeaderStorageSize() => Unsafe.SizeOf<Header>();
+    public static int QueryHeaderStorageSize() => 16;
 
     public static long QueryNodeStorageSize(long nodeSize, long entrySize, int entryCount)
     {
-        Assert.SdkRequiresLessEqual(sizeof(long), entrySize);
-        Assert.SdkRequiresLessEqual(entrySize + Unsafe.SizeOf<NodeHeader>(), nodeSize);
-        Assert.SdkRequiresWithinMinMax(nodeSize, NodeSizeMin, NodeSizeMax);
-        Assert.SdkRequires(BitUtil.IsPowerOfTwo(nodeSize));
-        Assert.SdkRequiresLessEqual(0, entryCount);
-
         if (entryCount <= 0)
             return 0;
 
@@ -151,12 +145,6 @@ public partial class BucketTree
 
     public static long QueryEntryStorageSize(long nodeSize, long entrySize, int entryCount)
     {
-        Assert.SdkRequiresLessEqual(sizeof(long), entrySize);
-        Assert.SdkRequiresLessEqual(entrySize + Unsafe.SizeOf<NodeHeader>(), nodeSize);
-        Assert.SdkRequiresWithinMinMax(nodeSize, NodeSizeMin, NodeSizeMax);
-        Assert.SdkRequires(BitUtil.IsPowerOfTwo(nodeSize));
-        Assert.SdkRequiresLessEqual(0, entryCount);
-
         if (entryCount <= 0)
             return 0;
 
@@ -165,18 +153,19 @@ public partial class BucketTree
 
     private static int GetEntryCount(long nodeSize, long entrySize)
     {
-        return (int)((nodeSize - Unsafe.SizeOf<NodeHeader>()) / entrySize);
+        return (int)((nodeSize - 16) / entrySize);
     }
 
     private static int GetOffsetCount(long nodeSize)
     {
-        return (int)((nodeSize - Unsafe.SizeOf<NodeHeader>()) / sizeof(long));
+        return (int)((nodeSize - 16) / sizeof(long));
     }
 
     private static int GetEntrySetCount(long nodeSize, long entrySize, int entryCount)
     {
         int entryCountPerNode = GetEntryCount(nodeSize, entrySize);
-        return BitUtil.DivideUp(entryCount, entryCountPerNode);
+        uint divisor = (uint)entryCountPerNode;
+        return (int)(((uint)entryCount + divisor - 1) / divisor);
     }
 
     public static int GetNodeL2Count(long nodeSize, long entrySize, int entryCount)
@@ -187,10 +176,12 @@ public partial class BucketTree
         if (entrySetCount <= offsetCountPerNode)
             return 0;
 
-        int nodeL2Count = BitUtil.DivideUp(entrySetCount, offsetCountPerNode);
-        Abort.DoAbortUnless(nodeL2Count <= offsetCountPerNode);
+        uint divisor1 = (uint)offsetCountPerNode;
+        int nodeL2Count = (int)(((uint)entrySetCount + divisor1 - 1) / divisor1);
+        Assert.SdkLessEqual(nodeL2Count, offsetCountPerNode);
 
-        return BitUtil.DivideUp(entrySetCount - (offsetCountPerNode - (nodeL2Count - 1)), offsetCountPerNode);
+        uint divisor = (uint)offsetCountPerNode;
+        return (int)(((uint)(entrySetCount - (offsetCountPerNode - (nodeL2Count - 1))) + divisor - 1) / divisor);
     }
 
     private static long GetBucketTreeEntryOffset(long entrySetOffset, long entrySize, int entryIndex)
@@ -298,7 +289,7 @@ public partial class BucketTree
 
         public ref NodeHeader GetHeader()
         {
-            Assert.SdkRequiresGreaterEqual(_header.Length / sizeof(long), Unsafe.SizeOf<NodeHeader>());
+            Assert.SdkRequiresGreaterEqual(_header.Length * sizeof(long), Unsafe.SizeOf<NodeHeader>());
 
             return ref Unsafe.As<long, NodeHeader>(ref _header[0]);
         }
