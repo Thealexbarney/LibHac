@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using LibHac.Common;
 using LibHac.Diag.Impl;
 using LibHac.Os;
 
@@ -393,6 +394,98 @@ public static class Assert
         [CallerLineNumber] int lineNumber = 0)
     {
         NotNullImpl(AssertionType.SdkRequires, value, valueText, functionName, fileName, lineNumber);
+    }
+
+    // ---------------------------------------------------------------------
+    // Not null UniqueRef<T>
+    // ---------------------------------------------------------------------
+
+    private static void NotNullImpl<T>(AssertionType assertionType, in UniqueRef<T> value,
+        string valueText, string functionName, string fileName, int lineNumber) where T : class, IDisposable
+    {
+        if (AssertImpl.NotNull(in value))
+            return;
+
+        AssertImpl.InvokeAssertionNotNull(assertionType, valueText, functionName, fileName, lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    public static void NotNull<T>(in UniqueRef<T> value,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+        where T : class, IDisposable
+    {
+        NotNullImpl(AssertionType.UserAssert, in value, valueText, functionName, fileName, lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    internal static void SdkNotNull<T>(in UniqueRef<T> value,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+        where T : class, IDisposable
+    {
+        NotNullImpl(AssertionType.SdkAssert, in value, valueText, functionName, fileName, lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    internal static void SdkRequiresNotNull<T>(in UniqueRef<T> value,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+        where T : class, IDisposable
+    {
+        NotNullImpl(AssertionType.SdkRequires, in value, valueText, functionName, fileName, lineNumber);
+    }
+
+    // ---------------------------------------------------------------------
+    // Not null SharedRef<T>
+    // ---------------------------------------------------------------------
+
+    private static void NotNullImpl<T>(AssertionType assertionType, in SharedRef<T> value,
+        string valueText, string functionName, string fileName, int lineNumber) where T : class, IDisposable
+    {
+        if (AssertImpl.NotNull(in value))
+            return;
+
+        AssertImpl.InvokeAssertionNotNull(assertionType, valueText, functionName, fileName, lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    public static void NotNull<T>(in SharedRef<T> value,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+        where T : class, IDisposable
+    {
+        NotNullImpl(AssertionType.UserAssert, in value, valueText, functionName, fileName, lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    internal static void SdkNotNull<T>(in SharedRef<T> value,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+        where T : class, IDisposable
+    {
+        NotNullImpl(AssertionType.SdkAssert, in value, valueText, functionName, fileName, lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    internal static void SdkRequiresNotNull<T>(in SharedRef<T> value,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+        where T : class, IDisposable
+    {
+        NotNullImpl(AssertionType.SdkRequires, in value, valueText, functionName, fileName, lineNumber);
     }
 
     // ---------------------------------------------------------------------
