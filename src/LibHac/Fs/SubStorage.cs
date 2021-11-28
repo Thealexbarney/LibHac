@@ -201,6 +201,7 @@ public class SubStorage : IStorage
         if (rc.IsFailure()) return rc;
 
         _size = size;
+
         return Result.Success;
     }
 
@@ -217,9 +218,13 @@ public class SubStorage : IStorage
     protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
     {
         if (!IsValid()) return ResultFs.NotInitialized.Log();
-        if (size == 0) return Result.Success;
-        if (!CheckOffsetAndSize(_offset, size)) return ResultFs.OutOfRange.Log();
 
-        return base.DoOperateRange(outBuffer, operationId, _offset + offset, size, inBuffer);
+        if (operationId != OperationId.InvalidateCache)
+        {
+            if (size == 0) return Result.Success;
+            if (!CheckOffsetAndSize(_offset, size)) return ResultFs.OutOfRange.Log();
+        }
+
+        return BaseStorage.OperateRange(outBuffer, operationId, _offset + offset, size, inBuffer);
     }
 }

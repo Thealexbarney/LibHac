@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using LibHac.Common;
 using LibHac.Util;
 
 namespace LibHac.Diag.Impl;
@@ -143,6 +144,16 @@ internal static class AssertImpl
     public static bool NotNull<T>(ReadOnlySpan<T> span)
     {
         return !Unsafe.IsNullRef(ref MemoryMarshal.GetReference(span)) || span.Length == 0;
+    }
+
+    public static bool NotNull<T>(in UniqueRef<T> item) where T : class, IDisposable
+    {
+        return item.HasValue;
+    }
+
+    public static bool NotNull<T>(in SharedRef<T> item) where T : class, IDisposable
+    {
+        return item.HasValue;
     }
 
     public static bool WithinRange(int value, int lowerInclusive, int upperExclusive)
