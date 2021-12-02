@@ -60,7 +60,7 @@ public class BucketTreeTests : IClassFixture<BucketTreeBuffers>
         public byte[] Nodes;
         public byte[] Entries;
 
-        public BucketTree2 CreateBucketTree()
+        public BucketTree CreateBucketTree()
         {
             int entrySize = Unsafe.SizeOf<IndirectStorage.Entry>();
 
@@ -68,7 +68,7 @@ public class BucketTreeTests : IClassFixture<BucketTreeBuffers>
             using var nodeStorage = new ValueSubStorage(new MemoryStorage(Nodes), 0, Nodes.Length);
             using var entryStorage = new ValueSubStorage(new MemoryStorage(Entries), 0, Entries.Length);
 
-            var tree = new BucketTree2();
+            var tree = new BucketTree();
             Assert.Success(tree.Initialize(new ArrayPoolMemoryResource(), in nodeStorage, in entryStorage, NodeSize, entrySize, header.EntryCount));
 
             return tree;
@@ -79,9 +79,9 @@ public class BucketTreeTests : IClassFixture<BucketTreeBuffers>
     private void MoveNext_IterateAllFromStart_ReturnsCorrectEntries(int treeIndex)
     {
         ReadOnlySpan<IndirectStorage.Entry> entries = _entries.AsSpan(0, _treeData[treeIndex].EntryCount);
-        BucketTree2 tree = _treeData[treeIndex].CreateBucketTree();
+        BucketTree tree = _treeData[treeIndex].CreateBucketTree();
 
-        using var visitor = new BucketTree2.Visitor();
+        using var visitor = new BucketTree.Visitor();
         Assert.Success(tree.Find(ref visitor.Ref, 0));
 
         for (int i = 0; i < entries.Length; i++)
@@ -118,9 +118,9 @@ public class BucketTreeTests : IClassFixture<BucketTreeBuffers>
     private void MovePrevious_IterateAllFromEnd_ReturnsCorrectEntries(int treeIndex)
     {
         ReadOnlySpan<IndirectStorage.Entry> entries = _entries.AsSpan(0, _treeData[treeIndex].EntryCount);
-        BucketTree2 tree = _treeData[treeIndex].CreateBucketTree();
+        BucketTree tree = _treeData[treeIndex].CreateBucketTree();
 
-        using var visitor = new BucketTree2.Visitor();
+        using var visitor = new BucketTree.Visitor();
         Assert.Success(tree.Find(ref visitor.Ref, entries[^1].GetVirtualOffset()));
 
         for (int i = entries.Length - 1; i >= 0; i--)
@@ -158,7 +158,7 @@ public class BucketTreeTests : IClassFixture<BucketTreeBuffers>
         const int findCount = 10000;
 
         ReadOnlySpan<IndirectStorage.Entry> entries = _entries.AsSpan(0, _treeData[treeIndex].EntryCount);
-        BucketTree2 tree = _treeData[treeIndex].CreateBucketTree();
+        BucketTree tree = _treeData[treeIndex].CreateBucketTree();
 
         var random = new Random(123456);
 
@@ -170,7 +170,7 @@ public class BucketTreeTests : IClassFixture<BucketTreeBuffers>
             // Add a random shift amount to test finding offsets in the middle of an entry
             int offsetShift = random.Next(0, 1) * 0x500;
 
-            using var visitor = new BucketTree2.Visitor();
+            using var visitor = new BucketTree.Visitor();
             Assert.Success(tree.Find(ref visitor.Ref, expectedEntry.GetVirtualOffset() + offsetShift));
 
             ref readonly IndirectStorage.Entry actualEntry = ref visitor.Get<IndirectStorage.Entry>();

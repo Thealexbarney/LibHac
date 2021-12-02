@@ -2,20 +2,27 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Diag;
 using LibHac.Fs;
 
 namespace LibHac.FsSystem;
 
+/// <summary>
+/// Combines multiple <see cref="IStorage"/>s into a single <see cref="IStorage"/>.
+/// </summary>
+/// <remarks><para>The <see cref="IndirectStorage"/>'s <see cref="BucketTree"/> contains <see cref="Entry"/>
+/// values that describe how the created storage is to be built from the base storages.</para>
+/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
 public class IndirectStorage : IStorage
 {
     public static readonly int StorageCount = 2;
     public static readonly int NodeSize = 1024 * 16;
 
-    private BucketTree Table { get; } = new BucketTree();
-    private SubStorage[] DataStorage { get; } = new SubStorage[StorageCount];
+    private BucketTree _table;
+    private Array2<ValueSubStorage> _dataStorage;
 
-    [StructLayout(LayoutKind.Sequential, Size = 0x14, Pack = 4)]
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     public struct Entry
     {
         private long VirtualOffset;
@@ -29,6 +36,52 @@ public class IndirectStorage : IStorage
         public readonly long GetPhysicalOffset() => PhysicalOffset;
     }
 
+    public struct EntryData
+    {
+        public long VirtualOffset;
+        public long PhysicalOffset;
+        public int StorageIndex;
+
+        public void Set(in Entry entry)
+        {
+            VirtualOffset = entry.GetVirtualOffset();
+            PhysicalOffset = entry.GetPhysicalOffset();
+            StorageIndex = entry.StorageIndex;
+        }
+    }
+
+    private struct ContinuousReadingEntry : BucketTree.IContinuousReadingEntry
+    {
+        public int FragmentSizeMax => 1024 * 4;
+
+#pragma warning disable CS0649
+        // This field will be read in by BucketTree.Visitor.ScanContinuousReading
+        private Entry _entry;
+#pragma warning restore CS0649
+
+        public readonly long GetVirtualOffset() => _entry.GetVirtualOffset();
+        public readonly long GetPhysicalOffset() => _entry.GetPhysicalOffset();
+        public readonly bool IsFragment() => _entry.StorageIndex != 0;
+    }
+
+    public IndirectStorage()
+    {
+        _table = new BucketTree();
+    }
+
+    public override void Dispose()
+    {
+        FinalizeObject();
+
+        Span<ValueSubStorage> items = _dataStorage.Items;
+        for (int i = 0; i < items.Length; i++)
+            items[i].Dispose();
+
+        _table.Dispose();
+
+        base.Dispose();
+    }
+
     public static long QueryHeaderStorageSize() => BucketTree.QueryHeaderStorageSize();
 
     public static long QueryNodeStorageSize(int entryCount) =>
@@ -37,120 +90,86 @@ public class IndirectStorage : IStorage
     public static long QueryEntryStorageSize(int entryCount) =>
         BucketTree.QueryEntryStorageSize(NodeSize, Unsafe.SizeOf<Entry>(), entryCount);
 
-    public bool IsInitialized() => Table.IsInitialized();
-
-    public Result Initialize(SubStorage tableStorage)
-    {
-        // Read and verify the bucket tree header.
-        // note: skip init
-        var header = new BucketTree.Header();
-
-        Result rc = tableStorage.Read(0, SpanHelpers.AsByteSpan(ref header));
-        if (rc.IsFailure()) return rc;
-
-        rc = header.Verify();
-        if (rc.IsFailure()) return rc;
-
-        // Determine extents.
-        long nodeStorageSize = QueryNodeStorageSize(header.EntryCount);
-        long entryStorageSize = QueryEntryStorageSize(header.EntryCount);
-        long nodeStorageOffset = QueryHeaderStorageSize();
-        long entryStorageOffset = nodeStorageOffset + nodeStorageSize;
-
-        // Initialize.
-        var nodeStorage = new SubStorage(tableStorage, nodeStorageOffset, nodeStorageSize);
-        var entryStorage = new SubStorage(tableStorage, entryStorageOffset, entryStorageSize);
-
-        return Initialize(nodeStorage, entryStorage, header.EntryCount);
-    }
-
-    public Result Initialize(SubStorage nodeStorage, SubStorage entryStorage, int entryCount)
-    {
-        return Table.Initialize(nodeStorage, entryStorage, NodeSize, Unsafe.SizeOf<Entry>(), entryCount);
-    }
-
-    public void SetStorage(int index, SubStorage storage)
+    public void SetStorage(int index, in ValueSubStorage storage)
     {
         Assert.SdkRequiresInRange(index, 0, StorageCount);
-        DataStorage[index] = storage;
+        _dataStorage[index].Set(in storage);
     }
 
     public void SetStorage(int index, IStorage storage, long offset, long size)
     {
         Assert.SdkRequiresInRange(index, 0, StorageCount);
-        DataStorage[index] = new SubStorage(storage, offset, size);
+
+        using var subStorage = new ValueSubStorage(storage, offset, size);
+        _dataStorage[index].Set(in subStorage);
     }
 
-    public Result GetEntryList(Span<Entry> entryBuffer, out int outputEntryCount, long offset, long size)
+    protected ref ValueSubStorage GetDataStorage(int index)
     {
-        // Validate pre-conditions
-        Assert.SdkRequiresLessEqual(0, offset);
-        Assert.SdkRequiresLessEqual(0, size);
-        Assert.SdkRequires(IsInitialized());
-
-        // Clear the out count
-        outputEntryCount = 0;
-
-        // Succeed if there's no range
-        if (size == 0)
-            return Result.Success;
-
-        // Check that our range is valid
-        if (!Table.Includes(offset, size))
-            return ResultFs.OutOfRange.Log();
-
-        // Find the offset in our tree
-        var visitor = new BucketTree.Visitor();
-
-        try
-        {
-            Result rc = Table.Find(ref visitor, offset);
-            if (rc.IsFailure()) return rc;
-
-            long entryOffset = visitor.Get<Entry>().GetVirtualOffset();
-            if (entryOffset > 0 || !Table.Includes(entryOffset))
-                return ResultFs.InvalidIndirectEntryOffset.Log();
-
-            // Prepare to loop over entries
-            long endOffset = offset + size;
-            int count = 0;
-
-            ref Entry currentEntry = ref visitor.Get<Entry>();
-            while (currentEntry.GetVirtualOffset() < endOffset)
-            {
-                // Try to write the entry to the out list
-                if (entryBuffer.Length != 0)
-                {
-                    if (count >= entryBuffer.Length)
-                        break;
-
-                    entryBuffer[count] = currentEntry;
-                }
-
-                count++;
-
-                // Advance
-                if (visitor.CanMoveNext())
-                {
-                    rc = visitor.MoveNext();
-                    if (rc.IsFailure()) return rc;
-
-                    currentEntry = ref visitor.Get<Entry>();
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            // Write the entry count
-            outputEntryCount = count;
-            return Result.Success;
-        }
-        finally { visitor.Dispose(); }
+        Assert.SdkRequiresInRange(index, 0, StorageCount);
+        return ref _dataStorage[index];
     }
 
-    protected override unsafe Result DoRead(long offset, Span<byte> destination)
+    protected BucketTree GetEntryTable()
+    {
+        return _table;
+    }
+
+    public bool IsInitialized()
+    {
+        return _table.IsInitialized();
+    }
+
+    public Result Initialize(MemoryResource allocator, in ValueSubStorage tableStorage)
+    {
+        Unsafe.SkipInit(out BucketTree.Header header);
+
+        Result rc = tableStorage.Read(0, SpanHelpers.AsByteSpan(ref header));
+        if (rc.IsFailure()) return rc.Miss();
+
+        rc = header.Verify();
+        if (rc.IsFailure()) return rc.Miss();
+
+        long nodeStorageSize = QueryNodeStorageSize(header.EntryCount);
+        long entryStorageSize = QueryEntryStorageSize(header.EntryCount);
+        long nodeStorageOffset = QueryHeaderStorageSize();
+        long entryStorageOffset = nodeStorageSize + nodeStorageOffset;
+
+        rc = tableStorage.GetSize(out long storageSize);
+        if (rc.IsFailure()) return rc.Miss();
+
+        if (storageSize < entryStorageOffset + entryStorageSize)
+            return ResultFs.InvalidIndirectStorageBucketTreeSize.Log();
+
+        using var nodeStorage = new ValueSubStorage(tableStorage, nodeStorageOffset, nodeStorageSize);
+        using var entryStorage = new ValueSubStorage(tableStorage, entryStorageOffset, entryStorageSize);
+
+        return Initialize(allocator, in nodeStorage, in entryStorage, header.EntryCount);
+    }
+
+    public Result Initialize(MemoryResource allocator, in ValueSubStorage nodeStorage, in ValueSubStorage entryStorage,
+        int entryCount)
+    {
+        return _table.Initialize(allocator, in nodeStorage, in entryStorage, NodeSize, Unsafe.SizeOf<Entry>(),
+            entryCount);
+    }
+
+    public void FinalizeObject()
+    {
+        if (IsInitialized())
+        {
+            _table.FinalizeObject();
+
+            Span<ValueSubStorage> storages = _dataStorage.Items;
+            for (int i = 0; i < storages.Length; i++)
+            {
+                using var emptySubStorage = new ValueSubStorage();
+                storages[i].Set(in emptySubStorage);
+            }
+        }
+    }
+
+    protected override Result DoRead(long offset, Span<byte> destination)
     {
         // Validate pre-conditions
         Assert.SdkRequiresLessEqual(0, offset);
@@ -160,23 +179,24 @@ public class IndirectStorage : IStorage
         if (destination.Length == 0)
             return Result.Success;
 
-        // Pin and recreate the span because C# can't use byref-like types in a closure
-        int bufferSize = destination.Length;
-        fixed (byte* pBuffer = destination)
+        var closure = new OperatePerEntryClosure();
+        closure.OutBuffer = destination;
+        closure.Offset = offset;
+
+        Result rc = OperatePerEntry(offset, destination.Length, ReadImpl, ref closure, enableContinuousReading: true,
+            verifyEntryRanges: true);
+        if (rc.IsFailure()) return rc.Miss();
+
+        return Result.Success;
+
+        static Result ReadImpl(ref ValueSubStorage storage, long physicalOffset, long virtualOffset, long processSize,
+            ref OperatePerEntryClosure closure)
         {
-            // Copy the pointer to workaround CS1764.
-            // OperatePerEntry won't store the delegate anywhere, so it should be safe
-            byte* pBuffer2 = pBuffer;
+            int bufferPosition = (int)(virtualOffset - closure.Offset);
+            Result rc = storage.Read(physicalOffset, closure.OutBuffer.Slice(bufferPosition, (int)processSize));
+            if (rc.IsFailure()) return rc.Miss();
 
-            Result Operate(IStorage storage, long dataOffset, long currentOffset, long currentSize)
-            {
-                var buffer = new Span<byte>(pBuffer2, bufferSize);
-
-                return storage.Read(dataOffset,
-                    buffer.Slice((int)(currentOffset - offset), (int)currentSize));
-            }
-
-            return OperatePerEntry(offset, destination.Length, Operate);
+            return Result.Success;
         }
     }
 
@@ -190,20 +210,169 @@ public class IndirectStorage : IStorage
         return Result.Success;
     }
 
+    protected override Result DoGetSize(out long size)
+    {
+        UnsafeHelpers.SkipParamInit(out size);
+
+        Result rc = _table.GetOffsets(out BucketTree.Offsets offsets);
+        if (rc.IsFailure()) return rc.Miss();
+
+        size = offsets.EndOffset;
+        return Result.Success;
+    }
+
     protected override Result DoSetSize(long size)
     {
         return ResultFs.UnsupportedSetSizeForIndirectStorage.Log();
     }
 
-    protected override Result DoGetSize(out long size)
+    public Result GetEntryList(Span<Entry> entryBuffer, out int outputEntryCount, long offset, long size)
     {
-        size = Table.GetEnd();
+        UnsafeHelpers.SkipParamInit(out outputEntryCount);
+
+        // Validate pre-conditions
+        Assert.SdkRequiresLessEqual(0, offset);
+        Assert.SdkRequiresLessEqual(0, size);
+        Assert.SdkRequires(IsInitialized());
+
+        // Succeed if there's no range
+        if (size == 0)
+        {
+            outputEntryCount = 0;
+            return Result.Success;
+        }
+
+        // Check that our range is valid
+        Result rc = _table.GetOffsets(out BucketTree.Offsets offsets);
+        if (rc.IsFailure()) return rc.Miss();
+
+        if (!offsets.IsInclude(offset, size))
+            return ResultFs.OutOfRange.Log();
+
+
+        // Find the offset in our tree
+        using var visitor = new BucketTree.Visitor();
+
+        rc = _table.Find(ref visitor.Ref, offset);
+        if (rc.IsFailure()) return rc.Miss();
+
+        long entryOffset = visitor.Get<Entry>().GetVirtualOffset();
+        if (entryOffset < 0 || !offsets.IsInclude(entryOffset))
+            return ResultFs.InvalidIndirectEntryOffset.Log();
+
+        // Prepare to loop over entries
+        long endOffset = offset + size;
+        int count = 0;
+
+        var currentEntry = visitor.Get<Entry>();
+        while (currentEntry.GetVirtualOffset() < endOffset)
+        {
+            // Try to write the entry to the out list
+            if (entryBuffer.Length != 0)
+            {
+                if (count >= entryBuffer.Length)
+                    break;
+
+                entryBuffer[count] = currentEntry;
+            }
+
+            count++;
+
+            // Advance
+            if (!visitor.CanMoveNext())
+                break;
+
+            rc = visitor.MoveNext();
+            if (rc.IsFailure()) return rc;
+
+            currentEntry = visitor.Get<Entry>();
+        }
+
+        outputEntryCount = count;
         return Result.Success;
     }
 
-    private delegate Result OperateFunc(IStorage storage, long dataOffset, long currentOffset, long currentSize);
+    protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+        ReadOnlySpan<byte> inBuffer)
+    {
+        Assert.SdkRequiresLessEqual(0, offset);
+        Assert.SdkRequiresLessEqual(0, size);
+        Assert.SdkRequires(IsInitialized());
 
-    private Result OperatePerEntry(long offset, long size, OperateFunc func)
+        switch (operationId)
+        {
+            case OperationId.InvalidateCache:
+                if (!_table.IsEmpty())
+                {
+                    Result rc = _table.InvalidateCache();
+                    if (rc.IsFailure()) return rc.Miss();
+
+                    for (int i = 0; i < _dataStorage.Items.Length; i++)
+                    {
+                        rc = _dataStorage.Items[i].OperateRange(OperationId.InvalidateCache, 0, long.MaxValue);
+                        if (rc.IsFailure()) return rc.Miss();
+                    }
+                }
+                break;
+            case OperationId.QueryRange:
+                if (outBuffer.Length != Unsafe.SizeOf<QueryRangeInfo>())
+                    return ResultFs.InvalidArgument.Log();
+
+                if (size > 0)
+                {
+                    Result rc = _table.GetOffsets(out BucketTree.Offsets offsets);
+                    if (rc.IsFailure()) return rc.Miss();
+
+                    if (!offsets.IsInclude(offset, size))
+                        return ResultFs.OutOfRange.Log();
+
+                    if (!_table.IsEmpty())
+                    {
+                        var closure = new OperatePerEntryClosure();
+                        closure.OperationId = operationId;
+                        closure.InBuffer = inBuffer;
+
+                        static Result QueryRangeImpl(ref ValueSubStorage storage, long physicalOffset,
+                            long virtualOffset, long processSize, ref OperatePerEntryClosure closure)
+                        {
+                            Unsafe.SkipInit(out QueryRangeInfo currentInfo);
+                            Result rc = storage.OperateRange(SpanHelpers.AsByteSpan(ref currentInfo),
+                                closure.OperationId, physicalOffset, processSize, closure.InBuffer);
+                            if (rc.IsFailure()) return rc.Miss();
+
+                            closure.InfoMerged.Merge(in currentInfo);
+                            return Result.Success;
+                        }
+
+                        rc = OperatePerEntry(offset, size, QueryRangeImpl, ref closure, enableContinuousReading: false,
+                            verifyEntryRanges: true);
+                        if (rc.IsFailure()) return rc.Miss();
+
+                        SpanHelpers.AsByteSpan(ref closure.InfoMerged).CopyTo(outBuffer);
+                    }
+                }
+                break;
+            default:
+                return ResultFs.UnsupportedOperateRangeForIndirectStorage.Log();
+        }
+
+        return Result.Success;
+    }
+
+    protected delegate Result OperatePerEntryFunc(ref ValueSubStorage storage, long physicalOffset, long virtualOffset,
+        long processSize, ref OperatePerEntryClosure closure);
+
+    protected ref struct OperatePerEntryClosure
+    {
+        public Span<byte> OutBuffer;
+        public ReadOnlySpan<byte> InBuffer;
+        public long Offset;
+        public OperationId OperationId;
+        public QueryRangeInfo InfoMerged;
+    }
+
+    protected Result OperatePerEntry(long offset, long size, OperatePerEntryFunc func,
+        ref OperatePerEntryClosure closure, bool enableContinuousReading, bool verifyEntryRanges)
     {
         // Validate preconditions
         Assert.SdkRequiresLessEqual(0, offset);
@@ -215,94 +384,146 @@ public class IndirectStorage : IStorage
             return Result.Success;
 
         // Validate arguments
-        if (!Table.Includes(offset, size))
+        Result rc = _table.GetOffsets(out BucketTree.Offsets offsets);
+        if (rc.IsFailure()) return rc.Miss();
+
+        if (!offsets.IsInclude(offset, size))
             return ResultFs.OutOfRange.Log();
 
         // Find the offset in our tree
         var visitor = new BucketTree.Visitor();
 
-        try
-        {
-            Result rc = Table.Find(ref visitor, offset);
-            if (rc.IsFailure()) return rc;
+        rc = _table.Find(ref visitor, offset);
+        if (rc.IsFailure()) return rc;
 
-            long entryOffset = visitor.Get<Entry>().GetVirtualOffset();
-            if (entryOffset < 0 || !Table.Includes(entryOffset))
+        long entryOffset = visitor.Get<Entry>().GetVirtualOffset();
+        if (entryOffset < 0 || !offsets.IsInclude(entryOffset))
+            return ResultFs.InvalidIndirectEntryOffset.Log();
+
+        // Prepare to operate in chunks
+        long currentOffset = offset;
+        long endOffset = offset + size;
+        var continuousReading = new BucketTree.ContinuousReadingInfo();
+
+        while (currentOffset < endOffset)
+        {
+            // Get the current entry
+            var currentEntry = visitor.Get<Entry>();
+
+            // Get and validate the entry's offset
+            long currentEntryOffset = currentEntry.GetVirtualOffset();
+            if (currentEntryOffset > currentOffset)
+                return ResultFs.InvalidIndirectEntryOffset.Log();
+
+            // Validate the storage index
+            if (currentEntry.StorageIndex < 0 || currentEntry.StorageIndex >= StorageCount)
                 return ResultFs.InvalidIndirectEntryStorageIndex.Log();
 
-            // Prepare to operate in chunks
-            long currentOffset = offset;
-            long endOffset = offset + size;
-
-            while (currentOffset < endOffset)
+            if (enableContinuousReading)
             {
-                // Get the current entry
-                var currentEntry = visitor.Get<Entry>();
-
-                // Get and validate the entry's offset
-                long currentEntryOffset = currentEntry.GetVirtualOffset();
-                if (currentEntryOffset > currentOffset)
-                    return ResultFs.InvalidIndirectEntryOffset.Log();
-
-                // Validate the storage index
-                if (currentEntry.StorageIndex < 0 || currentEntry.StorageIndex >= StorageCount)
-                    return ResultFs.InvalidIndirectEntryStorageIndex.Log();
-
-                // todo: Implement continuous reading
-
-                // Get and validate the next entry offset
-                long nextEntryOffset;
-                if (visitor.CanMoveNext())
+                if (continuousReading.CheckNeedScan())
                 {
-                    rc = visitor.MoveNext();
-                    if (rc.IsFailure()) return rc;
-
-                    nextEntryOffset = visitor.Get<Entry>().GetVirtualOffset();
-                    if (!Table.Includes(nextEntryOffset))
-                        return ResultFs.InvalidIndirectEntryOffset.Log();
-                }
-                else
-                {
-                    nextEntryOffset = Table.GetEnd();
+                    rc = visitor.ScanContinuousReading<ContinuousReadingEntry>(out continuousReading, currentOffset,
+                        endOffset - currentOffset);
+                    if (rc.IsFailure()) return rc.Miss();
                 }
 
-                if (currentOffset >= nextEntryOffset)
-                    return ResultFs.InvalidIndirectEntryOffset.Log();
-
-                // Get the offset of the entry in the data we read
-                long dataOffset = currentOffset - currentEntryOffset;
-                long dataSize = nextEntryOffset - currentEntryOffset - dataOffset;
-                Assert.SdkLess(0, dataSize);
-
-                // Determine how much is left
-                long remainingSize = endOffset - currentOffset;
-                long currentSize = Math.Min(remainingSize, dataSize);
-                Assert.SdkLessEqual(currentSize, size);
-
+                if (continuousReading.CanDo())
                 {
-                    SubStorage currentStorage = DataStorage[currentEntry.StorageIndex];
+                    if (currentEntry.StorageIndex != 0)
+                        return ResultFs.InvalidIndirectStorageIndex.Log();
 
-                    // Get the current data storage's size.
-                    rc = currentStorage.GetSize(out long currentDataStorageSize);
-                    if (rc.IsFailure()) return rc;
+                    long offsetInEntry = currentOffset - currentEntryOffset;
+                    long entryStorageOffset = currentEntry.GetPhysicalOffset();
+                    long dataStorageOffset = entryStorageOffset + offsetInEntry;
 
-                    // Ensure that we remain within range.
-                    long currentEntryPhysicalOffset = currentEntry.GetPhysicalOffset();
+                    long continuousReadSize = continuousReading.GetReadSize();
 
-                    if (currentEntryPhysicalOffset < 0 || currentEntryPhysicalOffset > currentDataStorageSize)
-                        return ResultFs.IndirectStorageCorrupted.Log();
+                    if (verifyEntryRanges)
+                    {
+                        rc = _dataStorage[0].GetSize(out long storageSize);
+                        if (rc.IsFailure()) return rc.Miss();
 
-                    if (currentDataStorageSize < currentEntryPhysicalOffset + dataOffset + currentSize)
-                        return ResultFs.IndirectStorageCorrupted.Log();
+                        // Ensure that we remain within range
+                        if (entryStorageOffset < 0 || entryStorageOffset > storageSize)
+                            return ResultFs.InvalidIndirectEntryOffset.Log();
 
-                    rc = func(currentStorage, currentEntryPhysicalOffset + dataOffset, currentOffset, currentSize);
-                    if (rc.IsFailure()) return rc;
+                        if (dataStorageOffset + continuousReadSize > storageSize)
+                            return ResultFs.InvalidIndirectStorageSize.Log();
+                    }
+
+                    rc = func(ref _dataStorage[0], dataStorageOffset, currentOffset, continuousReadSize, ref closure);
+                    if (rc.IsFailure()) return rc.Miss();
+
+                    continuousReading.Done();
                 }
-
-                currentOffset += currentSize;
             }
+
+            // Get and validate the next entry offset
+            long nextEntryOffset;
+            if (visitor.CanMoveNext())
+            {
+                rc = visitor.MoveNext();
+                if (rc.IsFailure()) return rc;
+
+                nextEntryOffset = visitor.Get<Entry>().GetVirtualOffset();
+                if (!offsets.IsInclude(nextEntryOffset))
+                    return ResultFs.InvalidIndirectEntryOffset.Log();
+            }
+            else
+            {
+                nextEntryOffset = offsets.EndOffset;
+            }
+
+            if (currentOffset >= nextEntryOffset)
+                return ResultFs.InvalidIndirectEntryOffset.Log();
+
+            // Get the offset of the data we need in the entry 
+            long dataOffsetInEntry = currentOffset - currentEntryOffset;
+            long dataSize = nextEntryOffset - currentEntryOffset - dataOffsetInEntry;
+            Assert.SdkLess(0, dataSize);
+
+            // Determine how much is left
+            long remainingSize = endOffset - currentOffset;
+            long processSize = Math.Min(remainingSize, dataSize);
+            Assert.SdkLessEqual(processSize, size);
+
+            // Operate, if we need to
+            bool needsOperate;
+            if (!enableContinuousReading)
+            {
+                needsOperate = true;
+            }
+            else
+            {
+                needsOperate = !continuousReading.IsDone() || currentEntry.StorageIndex != 0;
+            }
+
+            if (needsOperate)
+            {
+                long entryStorageOffset = currentEntry.GetPhysicalOffset();
+                long dataStorageOffset = entryStorageOffset + dataOffsetInEntry;
+
+                if (verifyEntryRanges)
+                {
+                    rc = _dataStorage[currentEntry.StorageIndex].GetSize(out long storageSize);
+                    if (rc.IsFailure()) return rc.Miss();
+
+                    // Ensure that we remain within range
+                    if (entryStorageOffset < 0 || entryStorageOffset > storageSize)
+                        return ResultFs.IndirectStorageCorrupted.Log();
+
+                    if (dataStorageOffset + processSize > storageSize)
+                        return ResultFs.IndirectStorageCorrupted.Log();
+                }
+
+                rc = func(ref _dataStorage[currentEntry.StorageIndex], dataStorageOffset, currentOffset, processSize,
+                    ref closure);
+                if (rc.IsFailure()) return rc.Miss();
+            }
+
+            currentOffset += processSize;
         }
-        finally { visitor.Dispose(); }
 
         return Result.Success;
     }
