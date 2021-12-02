@@ -117,15 +117,15 @@ public class BucketTreeBuilderTests
         const int nodeSize = 0x4000;
         const int entryCount = 10;
 
-        byte[] headerBuffer = new byte[BucketTree2.QueryHeaderStorageSize()];
-        byte[] nodeBuffer = new byte[(int)BucketTree2.QueryNodeStorageSize(nodeSize, Unsafe.SizeOf<IndirectStorage.Entry>(), entryCount)];
-        byte[] entryBuffer = new byte[(int)BucketTree2.QueryEntryStorageSize(nodeSize, Unsafe.SizeOf<IndirectStorage.Entry>(), entryCount)];
+        byte[] headerBuffer = new byte[BucketTree.QueryHeaderStorageSize()];
+        byte[] nodeBuffer = new byte[(int)BucketTree.QueryNodeStorageSize(nodeSize, Unsafe.SizeOf<IndirectStorage.Entry>(), entryCount)];
+        byte[] entryBuffer = new byte[(int)BucketTree.QueryEntryStorageSize(nodeSize, Unsafe.SizeOf<IndirectStorage.Entry>(), entryCount)];
 
         using var headerStorage = new ValueSubStorage(new MemoryStorage(headerBuffer), 0, headerBuffer.Length);
         using var nodeStorage = new ValueSubStorage(new MemoryStorage(nodeBuffer), 0, nodeBuffer.Length);
         using var entryStorage = new ValueSubStorage(new MemoryStorage(entryBuffer), 0, entryBuffer.Length);
 
-        var builder = new BucketTree2.Builder();
+        var builder = new BucketTree.Builder();
 
         Assert.Success(builder.Initialize(new ArrayPoolMemoryResource(), in headerStorage, in nodeStorage, in entryStorage, nodeSize, Unsafe.SizeOf<IndirectStorage.Entry>(), entryCount));
 
@@ -141,15 +141,15 @@ public class BucketTreeBuilderTests
         const int nodeSize = 0x4000;
         const int entryCount = 2;
 
-        byte[] headerBuffer = new byte[BucketTree2.QueryHeaderStorageSize()];
-        byte[] nodeBuffer = new byte[(int)BucketTree2.QueryNodeStorageSize(nodeSize, Unsafe.SizeOf<IndirectStorage.Entry>(), entryCount)];
-        byte[] entryBuffer = new byte[(int)BucketTree2.QueryEntryStorageSize(nodeSize, Unsafe.SizeOf<IndirectStorage.Entry>(), entryCount)];
+        byte[] headerBuffer = new byte[BucketTree.QueryHeaderStorageSize()];
+        byte[] nodeBuffer = new byte[(int)BucketTree.QueryNodeStorageSize(nodeSize, Unsafe.SizeOf<IndirectStorage.Entry>(), entryCount)];
+        byte[] entryBuffer = new byte[(int)BucketTree.QueryEntryStorageSize(nodeSize, Unsafe.SizeOf<IndirectStorage.Entry>(), entryCount)];
 
         using var headerStorage = new ValueSubStorage(new MemoryStorage(headerBuffer), 0, headerBuffer.Length);
         using var nodeStorage = new ValueSubStorage(new MemoryStorage(nodeBuffer), 0, nodeBuffer.Length);
         using var entryStorage = new ValueSubStorage(new MemoryStorage(entryBuffer), 0, entryBuffer.Length);
 
-        var builder = new BucketTree2.Builder();
+        var builder = new BucketTree.Builder();
 
         Assert.Success(builder.Initialize(new ArrayPoolMemoryResource(), in headerStorage, in nodeStorage, in entryStorage, nodeSize, Unsafe.SizeOf<IndirectStorage.Entry>(), entryCount));
 

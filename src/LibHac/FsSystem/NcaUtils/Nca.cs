@@ -293,11 +293,11 @@ public class Nca
         var relocationTableStorage = new SubStorage(patchStorage, patchInfo.RelocationTreeOffset, patchInfo.RelocationTreeSize);
         var cachedTableStorage = new CachedStorage(relocationTableStorage, IndirectStorage.NodeSize, 4, true);
 
-        var tableNodeStorage = new SubStorage(cachedTableStorage, 0, nodeStorageSize);
-        var tableEntryStorage = new SubStorage(cachedTableStorage, nodeStorageSize, entryStorageSize);
+        using var tableNodeStorage = new ValueSubStorage(cachedTableStorage, 0, nodeStorageSize);
+        using var tableEntryStorage = new ValueSubStorage(cachedTableStorage, nodeStorageSize, entryStorageSize);
 
         var storage = new IndirectStorage();
-        storage.Initialize(tableNodeStorage, tableEntryStorage, treeHeader.EntryCount).ThrowIfFailure();
+        storage.Initialize(new ArrayPoolMemoryResource(), in tableNodeStorage, in tableEntryStorage, treeHeader.EntryCount).ThrowIfFailure();
 
         storage.SetStorage(0, baseStorage, 0, baseSize);
         storage.SetStorage(1, patchStorage, 0, patchSize);

@@ -25,7 +25,14 @@ public class Aes128CtrExStorage : Aes128CtrStorage
         int entryCount, byte[] key, byte[] counter, bool leaveOpen)
         : base(baseStorage, key, counter, leaveOpen)
     {
-        Result rc = Table.Initialize(nodeStorage, entryStorage, NodeSize, Unsafe.SizeOf<Entry>(), entryCount);
+        nodeStorage.GetSize(out long nodeStorageSize).ThrowIfFailure();
+        entryStorage.GetSize(out long entryStorageSize).ThrowIfFailure();
+
+        using var valueNodeStorage = new ValueSubStorage(nodeStorage, 0, nodeStorageSize);
+        using var valueEntryStorage = new ValueSubStorage(entryStorage, 0, entryStorageSize);
+
+        Result rc = Table.Initialize(new ArrayPoolMemoryResource(), in valueNodeStorage, in valueEntryStorage, NodeSize,
+            Unsafe.SizeOf<Entry>(), entryCount);
         rc.ThrowIfFailure();
     }
 
@@ -34,53 +41,55 @@ public class Aes128CtrExStorage : Aes128CtrStorage
         if (destination.Length == 0)
             return Result.Success;
 
-        var visitor = new BucketTree.Visitor();
+        Result rc = Table.GetOffsets(out BucketTree.Offsets offsets);
+        if (rc.IsFailure()) return rc.Miss();
 
-        try
+        if (!offsets.IsInclude(offset, destination.Length))
+            return ResultFs.OutOfRange.Log();
+
+        using var visitor = new BucketTree.Visitor();
+
+        rc = Table.Find(ref visitor.Ref, offset);
+        if (rc.IsFailure()) return rc;
+
+        long inPos = offset;
+        int outPos = 0;
+        int remaining = destination.Length;
+
+        while (remaining > 0)
         {
-            Result rc = Table.Find(ref visitor, offset);
-            if (rc.IsFailure()) return rc;
+            var currentEntry = visitor.Get<Entry>();
 
-            long inPos = offset;
-            int outPos = 0;
-            int remaining = destination.Length;
-
-            while (remaining > 0)
+            // Get and validate the next entry offset
+            long nextEntryOffset;
+            if (visitor.CanMoveNext())
             {
-                var currentEntry = visitor.Get<Entry>();
+                rc = visitor.MoveNext();
+                if (rc.IsFailure()) return rc;
 
-                // Get and validate the next entry offset
-                long nextEntryOffset;
-                if (visitor.CanMoveNext())
-                {
-                    rc = visitor.MoveNext();
-                    if (rc.IsFailure()) return rc;
-
-                    nextEntryOffset = visitor.Get<Entry>().Offset;
-                    if (!Table.Includes(nextEntryOffset))
-                        return ResultFs.InvalidIndirectEntryOffset.Log();
-                }
-                else
-                {
-                    nextEntryOffset = Table.GetEnd();
-                }
-
-                int bytesToRead = (int)Math.Min(nextEntryOffset - inPos, remaining);
-
-                lock (_locker)
-                {
-                    UpdateCounterSubsection((uint)currentEntry.Generation);
-
-                    rc = base.DoRead(inPos, destination.Slice(outPos, bytesToRead));
-                    if (rc.IsFailure()) return rc;
-                }
-
-                outPos += bytesToRead;
-                inPos += bytesToRead;
-                remaining -= bytesToRead;
+                nextEntryOffset = visitor.Get<Entry>().Offset;
+                if (!offsets.IsInclude(nextEntryOffset))
+                    return ResultFs.InvalidIndirectEntryOffset.Log();
             }
+            else
+            {
+                nextEntryOffset = offsets.EndOffset;
+            }
+
+            int bytesToRead = (int)Math.Min(nextEntryOffset - inPos, remaining);
+
+            lock (_locker)
+            {
+                UpdateCounterSubsection((uint)currentEntry.Generation);
+
+                rc = base.DoRead(inPos, destination.Slice(outPos, bytesToRead));
+                if (rc.IsFailure()) return rc;
+            }
+
+            outPos += bytesToRead;
+            inPos += bytesToRead;
+            remaining -= bytesToRead;
         }
-        finally { visitor.Dispose(); }
 
         return Result.Success;
     }
