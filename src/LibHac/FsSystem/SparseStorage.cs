@@ -108,25 +108,20 @@ public class SparseStorage : IndirectStorage
         }
         else
         {
-            var closure = new OperatePerEntryClosure();
-            closure.OutBuffer = destination;
-            closure.Offset = offset;
+            var closure = new OperatePerEntryClosure { OutBuffer = destination, Offset = offset };
 
-            Result rc = OperatePerEntry(offset, destination.Length, ReadImpl, ref closure,
-                enableContinuousReading: false, verifyEntryRanges: true);
+            Result rc = OperatePerEntry(offset, destination.Length, enableContinuousReading: false, verifyEntryRanges: true, ref closure,
+                static (ref ValueSubStorage storage, long physicalOffset, long virtualOffset, long size, ref OperatePerEntryClosure closure) =>
+                {
+                    int bufferPosition = (int)(virtualOffset - closure.Offset);
+                    Result rc = storage.Read(physicalOffset, closure.OutBuffer.Slice(bufferPosition, (int)size));
+                    if (rc.IsFailure()) return rc.Miss();
+
+                    return Result.Success;
+                });
             if (rc.IsFailure()) return rc.Miss();
         }
 
         return Result.Success;
-
-        static Result ReadImpl(ref ValueSubStorage storage, long physicalOffset, long virtualOffset, long processSize,
-            ref OperatePerEntryClosure closure)
-        {
-            int bufferPosition = (int)(virtualOffset - closure.Offset);
-            Result rc = storage.Read(physicalOffset, closure.OutBuffer.Slice(bufferPosition, (int)processSize));
-            if (rc.IsFailure()) return rc.Miss();
-
-            return Result.Success;
-        }
     }
 }

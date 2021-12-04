@@ -702,7 +702,7 @@ public partial class BucketTree : IDisposable
             return ResultFs.OutOfRange.Log();
 
         // Create a pooled buffer for our scan.
-        var pool = new PooledBuffer((int)_nodeSize, 1);
+        using var pool = new PooledBuffer((int)_nodeSize, 1);
         var buffer = Span<byte>.Empty;
 
         Result rc = _entryStorage.GetSize(out long entryStorageSize);
