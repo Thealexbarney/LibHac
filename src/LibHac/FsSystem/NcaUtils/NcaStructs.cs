@@ -1,4 +1,8 @@
-﻿namespace LibHac.FsSystem.NcaUtils;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LibHac.Common.FixedArrays;
+
+namespace LibHac.FsSystem.NcaUtils;
 
 public class TitleVersion
 {
@@ -31,6 +35,42 @@ public class TitleVersion
     public override string ToString()
     {
         return $"{Major}.{Minor}.{Patch}.{Revision}";
+    }
+}
+
+public struct NcaSparseInfo
+{
+    public long MetaOffset;
+    public long MetaSize;
+    public Array16<byte> MetaHeader;
+    public long PhysicalOffset;
+    public ushort Generation;
+    private Array6<byte> _reserved;
+
+    public readonly uint GetGeneration() => (uint)(Generation << 16);
+    public readonly long GetPhysicalSize() => MetaOffset + MetaSize;
+
+    public readonly NcaAesCtrUpperIv MakeAesCtrUpperIv(NcaAesCtrUpperIv upperIv)
+    {
+        NcaAesCtrUpperIv sparseUpperIv = upperIv;
+        sparseUpperIv.Generation = GetGeneration();
+        return sparseUpperIv;
+    }
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public struct NcaAesCtrUpperIv
+{
+    [FieldOffset(0)] public ulong Value;
+
+    [FieldOffset(0)] public uint Generation;
+    [FieldOffset(4)] public uint SecureValue;
+
+    internal NcaAesCtrUpperIv(ulong value)
+    {
+        Unsafe.SkipInit(out Generation);
+        Unsafe.SkipInit(out SecureValue);
+        Value = value;
     }
 }
 

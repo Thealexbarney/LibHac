@@ -61,6 +61,17 @@ public struct NcaFsHeader
         return GetPatchInfo().RelocationTreeSize != 0;
     }
 
+    public ref NcaSparseInfo GetSparseInfo()
+    {
+        return ref MemoryMarshal.Cast<byte, NcaSparseInfo>(_header.Span.Slice(FsHeaderStruct.SparseInfoOffset,
+            FsHeaderStruct.SparseInfoSize))[0];
+    }
+
+    public bool ExistsSparseLayer()
+    {
+        return GetSparseInfo().Generation != 0;
+    }
+
     public ulong Counter
     {
         get => Header.UpperCounter;
@@ -86,6 +97,8 @@ public struct NcaFsHeader
         public const int IntegrityInfoSize = 0xF8;
         public const int PatchInfoOffset = 0x100;
         public const int PatchInfoSize = 0x40;
+        public const int SparseInfoOffset = 0x148;
+        public const int SparseInfoSize = 0x30;
 
         [FieldOffset(0)] public short Version;
         [FieldOffset(2)] public byte FormatType;

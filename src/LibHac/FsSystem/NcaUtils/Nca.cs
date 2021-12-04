@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Common.Keys;
 using LibHac.Crypto;
@@ -148,12 +149,71 @@ public class Nca
         long offset = Header.GetSectionStartOffset(index);
         long size = Header.GetSectionSize(index);
 
-        BaseStorage.GetSize(out long baseSize).ThrowIfFailure();
+        BaseStorage.GetSize(out long ncaStorageSize).ThrowIfFailure();
 
-        if (!IsSubRange(offset, size, baseSize))
+        NcaFsHeader fsHeader = Header.GetFsHeader(index);
+
+        if (fsHeader.ExistsSparseLayer())
+        {
+            ref NcaSparseInfo sparseInfo = ref fsHeader.GetSparseInfo();
+
+            Unsafe.SkipInit(out BucketTree.Header header);
+            sparseInfo.MetaHeader.ItemsRo.CopyTo(SpanHelpers.AsByteSpan(ref header));
+            header.Verify().ThrowIfFailure();
+
+            var sparseStorage = new SparseStorage();
+
+            if (header.EntryCount == 0)
+            {
+                sparseStorage.Initialize(size);
+            }
+            else
+            {
+                long dataSize = sparseInfo.GetPhysicalSize();
+
+                if (!IsSubRange(sparseInfo.PhysicalOffset, dataSize, ncaStorageSize))
+                {
+                    throw new InvalidDataException(
+                        $"Section offset (0x{offset:x}) and length (0x{size:x}) fall outside the total NCA length (0x{ncaStorageSize:x}).");
+                }
+
+                IStorage baseStorage = BaseStorage.Slice(sparseInfo.PhysicalOffset, dataSize);
+                baseStorage.GetSize(out long baseStorageSize).ThrowIfFailure();
+
+                long metaOffset = sparseInfo.MetaOffset;
+                long metaSize = sparseInfo.MetaSize;
+
+                if (metaOffset - sparseInfo.PhysicalOffset + metaSize > baseStorageSize)
+                    ResultFs.NcaBaseStorageOutOfRangeB.Value.ThrowIfFailure();
+
+                IStorage metaStorageEncrypted = baseStorage.Slice(metaOffset, metaSize);
+
+                ulong upperCounter = sparseInfo.MakeAesCtrUpperIv(new NcaAesCtrUpperIv(fsHeader.Counter)).Value;
+                IStorage metaStorage = OpenAesCtrStorage(metaStorageEncrypted, index, sparseInfo.PhysicalOffset + metaOffset, upperCounter);
+
+                long nodeOffset = 0;
+                long nodeSize = IndirectStorage.QueryNodeStorageSize(header.EntryCount);
+                long entryOffset = nodeOffset + nodeSize;
+                long entrySize = IndirectStorage.QueryEntryStorageSize(header.EntryCount);
+
+                using var nodeStorage = new ValueSubStorage(metaStorage, nodeOffset, nodeSize);
+                using var entryStorage = new ValueSubStorage(metaStorage, entryOffset, entrySize);
+
+                new SubStorage(metaStorage, nodeOffset, nodeSize).WriteAllBytes("nodeStorage");
+
+                sparseStorage.Initialize(new ArrayPoolMemoryResource(), in nodeStorage, in entryStorage, header.EntryCount).ThrowIfFailure();
+
+                using var dataStorage = new ValueSubStorage(baseStorage, 0, sparseInfo.GetPhysicalSize());
+                sparseStorage.SetDataStorage(in dataStorage);
+            }
+
+            return sparseStorage;
+        }
+
+        if (!IsSubRange(offset, size, ncaStorageSize))
         {
             throw new InvalidDataException(
-                $"Section offset (0x{offset:x}) and length (0x{size:x}) fall outside the total NCA length (0x{baseSize:x}).");
+                $"Section offset (0x{offset:x}) and length (0x{size:x}) fall outside the total NCA length (0x{ncaStorageSize:x}).");
         }
 
         return BaseStorage.Slice(offset, size);
@@ -170,7 +230,7 @@ public class Nca
             case NcaEncryptionType.XTS:
                 return OpenAesXtsStorage(baseStorage, index, decrypting);
             case NcaEncryptionType.AesCtr:
-                return OpenAesCtrStorage(baseStorage, index);
+                return OpenAesCtrStorage(baseStorage, index, Header.GetSectionStartOffset(index), header.Counter);
             case NcaEncryptionType.AesCtrEx:
                 return OpenAesCtrExStorage(baseStorage, index, decrypting);
             default:
@@ -191,13 +251,12 @@ public class Nca
     }
     // ReSharper restore UnusedParameter.Local
 
-    private IStorage OpenAesCtrStorage(IStorage baseStorage, int index)
+    private IStorage OpenAesCtrStorage(IStorage baseStorage, int index, long offset, ulong upperCounter)
     {
-        NcaFsHeader fsHeader = GetFsHeader(index);
         byte[] key = GetContentKey(NcaKeyType.AesCtr);
-        byte[] counter = Aes128CtrStorage.CreateCounter(fsHeader.Counter, Header.GetSectionStartOffset(index));
+        byte[] counter = Aes128CtrStorage.CreateCounter(upperCounter, Header.GetSectionStartOffset(index));
 
-        var aesStorage = new Aes128CtrStorage(baseStorage, key, Header.GetSectionStartOffset(index), counter, true);
+        var aesStorage = new Aes128CtrStorage(baseStorage, key, offset, counter, true);
         return new CachedStorage(aesStorage, 0x4000, 4, true);
     }
 

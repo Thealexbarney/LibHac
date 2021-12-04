@@ -2,9 +2,9 @@
 
 internal enum NcaKeyType
 {
-    AesXts0,
-    AesXts1,
-    AesCtr,
-    Type3,
-    Type4
+    AesXts0 = 0,
+    AesXts1 = 1,
+    AesCtr = 2,
+    AesCtrEx = 3,
+    AesCtrHw = 4
 }
