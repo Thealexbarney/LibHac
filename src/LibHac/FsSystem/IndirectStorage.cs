@@ -179,25 +179,21 @@ public class IndirectStorage : IStorage
         if (destination.Length == 0)
             return Result.Success;
 
-        var closure = new OperatePerEntryClosure();
-        closure.OutBuffer = destination;
-        closure.Offset = offset;
+        var closure = new OperatePerEntryClosure { OutBuffer = destination, Offset = offset };
 
-        Result rc = OperatePerEntry(offset, destination.Length, ReadImpl, ref closure, enableContinuousReading: true,
-            verifyEntryRanges: true);
+        Result rc = OperatePerEntry(offset, destination.Length, enableContinuousReading: true, verifyEntryRanges: true, ref closure,
+            static (ref ValueSubStorage storage, long physicalOffset, long virtualOffset, long size, ref OperatePerEntryClosure entryClosure) =>
+            {
+                int bufferPosition = (int)(virtualOffset - entryClosure.Offset);
+                Result rc = storage.Read(physicalOffset, entryClosure.OutBuffer.Slice(bufferPosition, (int)size));
+                if (rc.IsFailure()) return rc.Miss();
+
+                return Result.Success;
+            });
+
         if (rc.IsFailure()) return rc.Miss();
 
         return Result.Success;
-
-        static Result ReadImpl(ref ValueSubStorage storage, long physicalOffset, long virtualOffset, long processSize,
-            ref OperatePerEntryClosure closure)
-        {
-            int bufferPosition = (int)(virtualOffset - closure.Offset);
-            Result rc = storage.Read(physicalOffset, closure.OutBuffer.Slice(bufferPosition, (int)processSize));
-            if (rc.IsFailure()) return rc.Miss();
-
-            return Result.Success;
-        }
     }
 
     protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
@@ -328,24 +324,19 @@ public class IndirectStorage : IStorage
 
                     if (!_table.IsEmpty())
                     {
-                        var closure = new OperatePerEntryClosure();
-                        closure.OperationId = operationId;
-                        closure.InBuffer = inBuffer;
+                        var closure = new OperatePerEntryClosure { OperationId = operationId, InBuffer = inBuffer };
 
-                        static Result QueryRangeImpl(ref ValueSubStorage storage, long physicalOffset,
-                            long virtualOffset, long processSize, ref OperatePerEntryClosure closure)
-                        {
-                            Unsafe.SkipInit(out QueryRangeInfo currentInfo);
-                            Result rc = storage.OperateRange(SpanHelpers.AsByteSpan(ref currentInfo),
-                                closure.OperationId, physicalOffset, processSize, closure.InBuffer);
-                            if (rc.IsFailure()) return rc.Miss();
+                        rc = OperatePerEntry(offset, size, enableContinuousReading: false, verifyEntryRanges: true, ref closure,
+                            static (ref ValueSubStorage storage, long physicalOffset, long virtualOffset, long processSize, ref OperatePerEntryClosure closure) =>
+                            {
+                                Unsafe.SkipInit(out QueryRangeInfo currentInfo);
+                                Result rc = storage.OperateRange(SpanHelpers.AsByteSpan(ref currentInfo),
+                                    closure.OperationId, physicalOffset, processSize, closure.InBuffer);
+                                if (rc.IsFailure()) return rc.Miss();
 
-                            closure.InfoMerged.Merge(in currentInfo);
-                            return Result.Success;
-                        }
-
-                        rc = OperatePerEntry(offset, size, QueryRangeImpl, ref closure, enableContinuousReading: false,
-                            verifyEntryRanges: true);
+                                closure.InfoMerged.Merge(in currentInfo);
+                                return Result.Success;
+                            });
                         if (rc.IsFailure()) return rc.Miss();
 
                         SpanHelpers.AsByteSpan(ref closure.InfoMerged).CopyTo(outBuffer);
@@ -371,8 +362,8 @@ public class IndirectStorage : IStorage
         public QueryRangeInfo InfoMerged;
     }
 
-    protected Result OperatePerEntry(long offset, long size, OperatePerEntryFunc func,
-        ref OperatePerEntryClosure closure, bool enableContinuousReading, bool verifyEntryRanges)
+    protected Result OperatePerEntry(long offset, long size, bool enableContinuousReading, bool verifyEntryRanges,
+        ref OperatePerEntryClosure closure, OperatePerEntryFunc func)
     {
         // Validate preconditions
         Assert.SdkRequiresLessEqual(0, offset);
@@ -391,9 +382,9 @@ public class IndirectStorage : IStorage
             return ResultFs.OutOfRange.Log();
 
         // Find the offset in our tree
-        var visitor = new BucketTree.Visitor();
+        using var visitor = new BucketTree.Visitor();
 
-        rc = _table.Find(ref visitor, offset);
+        rc = _table.Find(ref visitor.Ref, offset);
         if (rc.IsFailure()) return rc;
 
         long entryOffset = visitor.Get<Entry>().GetVirtualOffset();
