@@ -168,8 +168,8 @@ internal static class ProcessNca
                 {
                     FileSystemClient fs = ctx.Horizon.Fs;
 
-                    using var inputFs = new UniqueRef<IFileSystem>(OpenFileSystemByType(NcaSectionType.Data));
-                    using var outputFs = new UniqueRef<IFileSystem>(new LocalFileSystem(ctx.Options.RomfsOutDir));
+                    using var inputFs = new UniqueRef<IFileSystem>(OpenFileSystemByType(NcaSectionType.Code));
+                    using var outputFs = new UniqueRef<IFileSystem>(new LocalFileSystem(ctx.Options.ExefsOutDir));
 
                     fs.Register("code".ToU8Span(), ref inputFs.Ref());
                     fs.Register("output".ToU8Span(), ref outputFs.Ref());
