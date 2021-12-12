@@ -51,7 +51,10 @@ public static class FileSystemExtensions
             Result rc = closure.DestinationPathBuffer.AppendChild(entry.Name);
             if (rc.IsFailure()) return rc;
 
-            return closure.SourceFileSystem.CreateDirectory(in closure.DestinationPathBuffer);
+            rc = closure.DestFileSystem.CreateDirectory(in closure.DestinationPathBuffer);
+            if (rc.IsFailure() && !ResultFs.PathAlreadyExists.Includes(rc)) return rc.Miss();
+
+            return Result.Success;
         }
 
         static Result OnExitDir(in Path path, in DirectoryEntry entry, ref Utility.FsIterationTaskClosure closure)
@@ -92,8 +95,6 @@ public static class FileSystemExtensions
         in Path sourcePath, Span<byte> workBuffer, IProgressReport logger = null,
         CreateFileOptions option = CreateFileOptions.None)
     {
-        logger?.LogMessage(sourcePath.ToString());
-
         // Open source file.
         using var sourceFile = new UniqueRef<IFile>();
         Result rc = sourceFileSystem.OpenFile(ref sourceFile.Ref(), sourcePath, OpenMode.Read);
@@ -136,7 +137,7 @@ public static class FileSystemExtensions
     {
         var destFs = new LocalFileSystem(destinationPath);
 
-        source.CopyDirectory(destFs, "/", "/", logger);
+        source.CopyDirectory(destFs, "/", "/", logger).ThrowIfFailure();
     }
 
     public static IEnumerable<DirectoryEntryEx> EnumerateEntries(this IFileSystem fileSystem)
