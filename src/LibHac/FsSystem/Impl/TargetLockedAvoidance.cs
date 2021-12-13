@@ -7,7 +7,7 @@ namespace LibHac.FsSystem.Impl;
 
 internal static class TargetLockedAvoidance
 {
-    private const int RetryCount = 2;
+    private const int RetryCount = 25;
     private const int SleepTimeMs = 2;
 
     // Allow usage outside of a Horizon context by using standard .NET APIs

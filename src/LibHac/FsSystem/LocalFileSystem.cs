@@ -653,7 +653,28 @@ public class LocalFileSystem : IAttributeFileSystem
 
         try
         {
-            dir.Delete(recursive);
+            try
+            {
+                dir.Delete(recursive);
+            }
+            catch (Exception ex) when (ex.HResult is HResult.COR_E_IO or HResult.ERROR_ACCESS_DENIED)
+            {
+                if (recursive)
+                {
+                    Result rc = DeleteDirectoryRecursivelyWithReadOnly(dir);
+                    if (rc.IsFailure()) return rc.Miss();
+                }
+                else
+                {
+                    // Try to delete read-only directories by first removing the read-only flag
+                    if (dir.Attributes.HasFlag(FileAttributes.ReadOnly))
+                    {
+                        dir.Attributes &= ~FileAttributes.ReadOnly;
+                    }
+
+                    dir.Delete(false);
+                }
+            }
         }
         catch (Exception ex) when (ex.HResult < 0)
         {
@@ -670,7 +691,20 @@ public class LocalFileSystem : IAttributeFileSystem
 
         try
         {
-            file.Delete();
+            try
+            {
+                file.Delete();
+            }
+            catch (UnauthorizedAccessException ex) when (ex.HResult == HResult.ERROR_ACCESS_DENIED)
+            {
+                // Try to delete read-only files by first removing the read-only flag.
+                if (file.Attributes.HasFlag(FileAttributes.ReadOnly))
+                {
+                    file.Attributes &= ~FileAttributes.ReadOnly;
+                }
+
+                file.Delete();
+            }
         }
         catch (Exception ex) when (ex.HResult < 0)
         {
@@ -678,6 +712,49 @@ public class LocalFileSystem : IAttributeFileSystem
         }
 
         return EnsureDeleted(file);
+    }
+
+    private static Result DeleteDirectoryRecursivelyWithReadOnly(DirectoryInfo rootDir)
+    {
+        try
+        {
+            foreach (FileSystemInfo info in rootDir.EnumerateFileSystemInfos())
+            {
+                if (info is FileInfo file)
+                {
+                    // Check each file for the read-only flag before deleting.
+                    if (file.Attributes.HasFlag(FileAttributes.ReadOnly))
+                    {
+                        file.Attributes &= ~FileAttributes.ReadOnly;
+                    }
+
+                    file.Delete();
+                }
+                else if (info is DirectoryInfo dir)
+                {
+                    Result rc = DeleteDirectoryRecursivelyWithReadOnly(dir);
+                    if (rc.IsFailure()) return rc.Miss();
+                }
+                else
+                {
+                    return ResultFs.UnexpectedInLocalFileSystemF.Log();
+                }
+            }
+
+            // The directory should be empty now. Remove any read-only flag and delete it.
+            if (rootDir.Attributes.HasFlag(FileAttributes.ReadOnly))
+            {
+                rootDir.Attributes &= ~FileAttributes.ReadOnly;
+            }
+
+            rootDir.Delete(true);
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            return HResult.HResultToHorizonResult(ex.HResult).Log();
+        }
+
+        return Result.Success;
     }
 
     private static Result CreateDirInternal(DirectoryInfo dir, NxFileAttributes attributes)

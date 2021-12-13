@@ -19,6 +19,7 @@ internal static class HResult
     public const int ERROR_ALREADY_EXISTS = unchecked((int)0x800700B7);
     public const int ERROR_DIRECTORY = unchecked((int)0x8007010B);
     public const int ERROR_SPACES_NOT_ENOUGH_DRIVES = unchecked((int)0x80E7000B);
+    public const int COR_E_IO = unchecked((int)0x80131620);
 
     public static Result HResultToHorizonResult(int hResult) => hResult switch
     {
@@ -35,6 +36,7 @@ internal static class HResult
         ERROR_ALREADY_EXISTS => ResultFs.PathAlreadyExists.Value,
         ERROR_DIRECTORY => ResultFs.PathNotFound.Value,
         ERROR_SPACES_NOT_ENOUGH_DRIVES => ResultFs.UsableSpaceNotEnough.Value,
+        COR_E_IO => ResultFs.TargetLocked.Value,
         _ => ResultFs.UnexpectedInLocalFileSystemE.Value
     };
 }
