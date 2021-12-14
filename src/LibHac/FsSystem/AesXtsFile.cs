@@ -23,15 +23,14 @@ public class AesXtsFile : IFile
     public AesXtsFile(OpenMode mode, ref UniqueRef<IFile> baseFile, U8String path, ReadOnlySpan<byte> kekSeed, ReadOnlySpan<byte> verificationKey, int blockSize)
     {
         Mode = mode;
-        _baseFile = new UniqueRef<IFile>(ref baseFile);
         Path = path;
         KekSeed = kekSeed.ToArray();
         VerificationKey = verificationKey.ToArray();
         BlockSize = blockSize;
 
-        Header = new AesXtsFileHeader(_baseFile.Get);
+        Header = new AesXtsFileHeader(baseFile.Get);
 
-        _baseFile.Get.GetSize(out long fileSize).ThrowIfFailure();
+        baseFile.Get.GetSize(out long fileSize).ThrowIfFailure();
 
         if (!Header.TryDecryptHeader(Path.ToString(), KekSeed, VerificationKey))
         {
@@ -43,11 +42,12 @@ public class AesXtsFile : IFile
             ThrowHelper.ThrowResult(ResultFs.AesXtsFileSystemFileSizeCorruptedOnFileOpen.Value, "NAX0 key derivation failed.");
         }
 
-        var fileStorage = new FileStorage(_baseFile.Get);
+        var fileStorage = new FileStorage(baseFile.Get);
         var encStorage = new SubStorage(fileStorage, HeaderLength, fileSize - HeaderLength);
         encStorage.SetResizable(true);
 
         BaseStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Header.DecryptedKey1, Header.DecryptedKey2, BlockSize, true), 4, true);
+        _baseFile = new UniqueRef<IFile>(ref baseFile);
     }
 
     public byte[] GetKey()
