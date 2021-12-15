@@ -4,6 +4,11 @@ public struct InternalCriticalSection : ILockable
 {
     private InternalCriticalSectionImpl _impl;
 
+    public InternalCriticalSection()
+    {
+        _impl = new InternalCriticalSectionImpl();
+    }
+
     public void Initialize() => _impl.Initialize();
     public void FinalizeObject() => _impl.FinalizeObject();
 

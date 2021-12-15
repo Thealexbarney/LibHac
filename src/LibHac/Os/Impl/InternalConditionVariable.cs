@@ -4,7 +4,7 @@ internal struct InternalConditionVariable
 {
     private InternalConditionVariableImpl _impl;
 
-    public InternalConditionVariable(nint _ = 0)
+    public InternalConditionVariable()
     {
         _impl = new InternalConditionVariableImpl();
     }

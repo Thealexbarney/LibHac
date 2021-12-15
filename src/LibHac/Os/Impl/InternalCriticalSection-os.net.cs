@@ -6,6 +6,11 @@ internal struct InternalCriticalSectionImpl
 {
     private object _obj;
 
+    public InternalCriticalSectionImpl()
+    {
+        _obj = new object();
+    }
+
     public void Initialize()
     {
         _obj = new object();

@@ -7,7 +7,7 @@ internal struct InternalConditionVariableImpl
 {
     private object _obj;
 
-    public InternalConditionVariableImpl(nint _ = 0) => _obj = new object();
+    public InternalConditionVariableImpl() => _obj = new object();
     public void Initialize() => _obj = new object();
 
     public void Signal()

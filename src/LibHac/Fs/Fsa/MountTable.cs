@@ -27,7 +27,6 @@ internal class MountTable : IDisposable
     {
         _fileSystemList = new LinkedList<FileSystemAccessor>();
         _mutex = new SdkMutexType();
-        _mutex.Initialize();
 
         _fsClient = fsClient;
     }
