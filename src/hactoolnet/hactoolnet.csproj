@@ -2,12 +2,11 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
-    <LangVersion>10.0</LangVersion>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
   <PropertyGroup>
-    <VersionPrefix>0.14.0</VersionPrefix>
+    <VersionPrefix>0.15.0</VersionPrefix>
     <PathMap Condition=" '$(BuildType)' == 'Release' ">$(MSBuildProjectDirectory)=C:/hactoolnet/</PathMap>
   </PropertyGroup>
 

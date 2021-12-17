@@ -2,9 +2,8 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <VersionPrefix>0.14.0</VersionPrefix>
-    <TargetFramework>net5.0</TargetFramework>
-    <LangVersion>10.0</LangVersion>
+    <VersionPrefix>0.15.0</VersionPrefix>
+    <TargetFramework>net6.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -42,7 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Fody" Version="6.5.2" PrivateAssets="All" />
+    <PackageReference Include="Fody" Version="6.6.0" PrivateAssets="All" />
     <PackageReference Include="InlineIL.Fody" Version="1.7.1" PrivateAssets="All" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
   </ItemGroup>

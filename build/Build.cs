@@ -44,7 +44,7 @@ partial class Build : NukeBuild
     AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
     AbsolutePath SignedArtifactsDirectory => ArtifactsDirectory / "signed";
     AbsolutePath TempDirectory => RootDirectory / ".nuke" / "temp";
-    AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_net5.0";
+    AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_net6.0";
     AbsolutePath CliNativeDir => TempDirectory / $"hactoolnet_{HostOsName}";
     AbsolutePath CliNativeExe => CliNativeDir / $"hactoolnet{NativeProgramExtension}";
     AbsolutePath CliCoreZip => ArtifactsDirectory / $"hactoolnet-{VersionString}-netcore.zip";
@@ -221,7 +221,7 @@ partial class Build : NukeBuild
 
             DotNetPublish(s => publishSettings
                 .SetProject(HactoolnetProject)
-                .SetFramework("net5.0")
+                .SetFramework("net6.0")
                 .SetOutput(CliCoreDir)
                 .SetNoBuild(true)
                 .SetProperties(VersionProps));
@@ -271,7 +271,7 @@ partial class Build : NukeBuild
                 .EnableNoBuild()
                 .SetConfiguration(Configuration);
 
-            if (EnvironmentInfo.IsUnix) settings = settings.SetProperty("TargetFramework", "net5.0");
+            if (EnvironmentInfo.IsUnix) settings = settings.SetProperty("TargetFramework", "net6.0");
 
             DotNetTest(s => settings);
         });
@@ -374,6 +374,7 @@ partial class Build : NukeBuild
             .SetConfiguration(Configuration)
             .SetProject(HactoolnetProject)
             .SetRuntime(NativeRuntime)
+            .SetSelfContained(true)
             .SetOutput(CliNativeDir)
             .SetProperties(VersionProps)
             .AddProperty("BuildType", buildType);
@@ -585,7 +586,7 @@ partial class Build : NukeBuild
             SignAssemblies(password, toSign.Select(x => x.ToString()).ToArray());
 
             // Avoid having multiple signed versions of the same file
-            File.Copy(nupkgDir / "lib" / "net5.0" / "LibHac.dll", coreFxDir / "LibHac.dll", true);
+            File.Copy(nupkgDir / "lib" / "net6.0" / "LibHac.dll", coreFxDir / "LibHac.dll", true);
 
             ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(nupkgFile), nupkgDir, pkgFileList);
             ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliCoreZip), coreFxDir);
