@@ -261,6 +261,7 @@ __pycache__/
 *.pyc
 **/launchSettings.json
 
+.nuke/temp
 
 global.json
 

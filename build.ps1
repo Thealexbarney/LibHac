@@ -1,6 +1,6 @@
 [CmdletBinding()]
 Param(
-    [Parameter(Position = 0, Mandatory = $false, ValueFromRemainingArguments = $true)]
+    [Parameter(Position=0,Mandatory=$false,ValueFromRemainingArguments=$true)]
     [string[]]$BuildArguments
 )
 
@@ -14,9 +14,9 @@ $PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
 ###########################################################################
 
 $BuildProjectFile = "$PSScriptRoot\build\_build.csproj"
-$TempDirectory = "$PSScriptRoot\.tmp"
+$TempDirectory = "$PSScriptRoot\\.nuke\temp"
 
-$DotNetGlobalFile = "$PSScriptRoot\global.json"
+$DotNetGlobalFile = "$PSScriptRoot\\global.json"
 $DotNetInstallUrl = "https://dot.net/v1/dotnet-install.ps1"
 $DotNetChannel = "Current"
 $DotNetCliVersion = Get-Content DotnetCliVersion.txt
@@ -38,22 +38,26 @@ function ExecSafe([scriptblock] $cmd) {
 try {
     $json = "{`"sdk`":{`"version`":`"$DotNetCliVersion`"}}"
     Out-File -FilePath $DotNetGlobalFile -Encoding utf8 -InputObject $json
-
+    
     # If global.json exists, load expected version
     if (Test-Path $DotNetGlobalFile) {
-        $DotNetVersion = $(Get-Content $DotNetGlobalFile | Out-String | ConvertFrom-Json).sdk.version
+        $DotNetGlobal = $(Get-Content $DotNetGlobalFile | Out-String | ConvertFrom-Json)
+        if ($DotNetGlobal.PSObject.Properties["sdk"] -and $DotNetGlobal.sdk.PSObject.Properties["version"]) {
+            $DotNetVersion = $DotNetGlobal.sdk.version
+        }
     }
-
+    
     $DotNetDirectory = "$TempDirectory\dotnet-win"
     $env:DOTNET_EXE = "$DotNetDirectory\dotnet.exe"
 
-    # If dotnet is installed locally, and expected version is not set or installation matches the expected version
+    # If dotnet CLI is installed globally and it matches requested version, use for execution
     if ($null -ne (Get-Command "dotnet" -ErrorAction SilentlyContinue) -and `
-        (!(Test-Path variable:DotNetVersion) -or $(& cmd.exe /c 'dotnet --version 2>&1') -eq $DotNetVersion)) {
+         $(dotnet --version) -eq $DotNetVersion) {
         $env:DOTNET_EXE = (Get-Command "dotnet").Path
     }
+    # If dotnet CLI is installed locally and it matches requested version, use for execution
     elseif ($null -eq (Get-Command $env:DOTNET_EXE -ErrorAction SilentlyContinue) -or `
-        !(Test-Path variable:DotNetVersion) -or $(& cmd.exe /c "$env:DOTNET_EXE --version 2>&1") -ne $DotNetVersion) {
+        !(Test-Path variable:DotNetVersion) -or $(& $env:DOTNET_EXE --version) -ne $DotNetVersion) {
 
         # Download install script
         $DotNetInstallFile = "$TempDirectory\dotnet-install.ps1"
@@ -63,11 +67,11 @@ try {
 
         # Install by channel or version
         if (!(Test-Path variable:DotNetVersion)) {
-            ExecSafe { & $DotNetInstallFile -InstallDir $DotNetDirectory -Channel $DotNetChannel -NoPath }
+            ExecSafe { & powershell $DotNetInstallFile -InstallDir $DotNetDirectory -Channel $DotNetChannel -NoPath }
+        } else {
+            ExecSafe { & powershell $DotNetInstallFile -InstallDir $DotNetDirectory -Version $DotNetVersion -NoPath }
         }
-        else {
-            ExecSafe { & $DotNetInstallFile -InstallDir $DotNetDirectory -Version $DotNetVersion -NoPath }
-        }
+        $env:DOTNET_EXE = "$DotNetDirectory\dotnet.exe"
     }
 
     Write-Output "Microsoft (R) .NET Core SDK version $(& $env:DOTNET_EXE --version)"
