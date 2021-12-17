@@ -1,6 +1,7 @@
 version: 0.0.0-{build}
-image: Visual Studio 2019
+image: Visual Studio 2022
 environment:
+  IGNORE_NORMALISATION_GIT_HEAD_MOVE: 1
   myget_api_key:
     secure: 0xJoYAtR6psXCRvk1qm5czDObkeRjHKPjfe5gIExXVFPwA0VVODYv/hBZYUtz2F3
 build_script:

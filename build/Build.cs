@@ -43,7 +43,7 @@ partial class Build : NukeBuild
     AbsolutePath TestsDirectory => RootDirectory / "tests";
     AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
     AbsolutePath SignedArtifactsDirectory => ArtifactsDirectory / "signed";
-    AbsolutePath TempDirectory => RootDirectory / ".tmp";
+    AbsolutePath TempDirectory => RootDirectory / ".nuke" / "temp";
     AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_net5.0";
     AbsolutePath CliNativeDir => TempDirectory / $"hactoolnet_{HostOsName}";
     AbsolutePath CliNativeExe => CliNativeDir / $"hactoolnet{NativeProgramExtension}";
@@ -142,21 +142,21 @@ partial class Build : NukeBuild
                 suffix += $"+{gitVersion.Sha.Substring(0, 8)}";
             }
 
-            if (Host == HostType.AppVeyor)
+            if (Host is AppVeyor appVeyor)
             {
-                    // Workaround GitVersion issue by getting PR info manually https://github.com/GitTools/GitVersion/issues/1927
-                    string prNumber = Environment.GetEnvironmentVariable("APPVEYOR_PULL_REQUEST_NUMBER");
+                // Workaround GitVersion issue by getting PR info manually https://github.com/GitTools/GitVersion/issues/1927
+                int? prNumber = appVeyor.PullRequestNumber;
                 string branchName = Environment.GetEnvironmentVariable("APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH");
 
-                if (int.TryParse(prNumber, out int prInt) && branchName != null)
+                if (prNumber != null && branchName != null)
                 {
-                    string prString = $"PullRequest{prInt:D4}";
+                    string prString = $"PullRequest{prNumber:D4}";
 
                     VersionString = VersionString.Replace(branchName, prString);
-                    suffix = suffix.Replace(branchName, prString);
+                    suffix = suffix?.Replace(branchName, prString) ?? "";
                 }
 
-                SetAppVeyorVersion(VersionString);
+                appVeyor.UpdateBuildVersion(VersionString);
             }
 
             VersionProps = new Dictionary<string, object>
@@ -226,8 +226,8 @@ partial class Build : NukeBuild
                 .SetNoBuild(true)
                 .SetProperties(VersionProps));
 
-                // Hack around OS newline differences
-                if (EnvironmentInfo.IsUnix)
+            // Hack around OS newline differences
+            if (EnvironmentInfo.IsUnix)
             {
                 foreach (string filename in Directory.EnumerateFiles(CliCoreDir, "*.json"))
                 {
@@ -255,8 +255,6 @@ partial class Build : NukeBuild
             {
                 RepackNugetPackage(filename);
             }
-
-            if (Host != HostType.AppVeyor) return;
 
             foreach (string filename in Directory.EnumerateFiles(ArtifactsDirectory, "*.*nupkg"))
             {
@@ -292,10 +290,7 @@ partial class Build : NukeBuild
             ZipFiles(CliCoreZip, namesCore);
             Logger.Normal($"Created {CliCoreZip}");
 
-            if (Host == HostType.AppVeyor)
-            {
-                PushArtifact(CliCoreZip);
-            }
+            PushArtifact(CliCoreZip);
         });
 
     Target Publish => _ => _
@@ -396,10 +391,7 @@ partial class Build : NukeBuild
         ZipFile(CliNativeZip, CliNativeExe, $"hactoolnet{NativeProgramExtension}");
         Logger.Normal($"Created {CliNativeZip}");
 
-        if (Host == HostType.AppVeyor)
-        {
-            PushArtifact(CliNativeZip);
-        }
+        PushArtifact(CliNativeZip);
     }
 
     public static void ZipFiles(string outFile, IEnumerable<string> files)
@@ -530,53 +522,18 @@ partial class Build : NukeBuild
         return compressed;
     }
 
-    public static void PushArtifact(string path)
+    public static void PushArtifact(string path, string name = null)
     {
+        if (Host is not AppVeyor appVeyor) return;
+
         if (!File.Exists(path))
         {
             Logger.Warn($"Unable to add artifact {path}");
         }
 
-        var psi = new ProcessStartInfo
-        {
-            FileName = "appveyor",
-            Arguments = $"PushArtifact \"{path}\"",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        var proc = new Process
-        {
-            StartInfo = psi
-        };
-
-        proc.Start();
-
-        proc.WaitForExit();
+        appVeyor.PushArtifact(path, name);
 
         Logger.Normal($"Added AppVeyor artifact {path}");
-    }
-
-    public static void SetAppVeyorVersion(string version)
-    {
-        var psi = new ProcessStartInfo
-        {
-            FileName = "appveyor",
-            Arguments = $"UpdateBuild -Version \"{version}\"",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        var proc = new Process
-        {
-            StartInfo = psi
-        };
-
-        proc.Start();
-
-        proc.WaitForExit();
     }
 
     public static void ReplaceLineEndings(string filename)

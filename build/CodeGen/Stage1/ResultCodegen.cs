@@ -42,7 +42,7 @@ public static class ResultCodeGen
         WriteOutput("LibHac/ResultNameResolver.Generated.cs", archiveStr);
 
         string enumStr = PrintEnum(modules);
-        WriteOutput("../.tmp/result_enums.txt", enumStr);
+        WriteOutput("../.nuke/temp/result_enums.txt", enumStr);
     }
 
     private static ResultSet ReadResults()
