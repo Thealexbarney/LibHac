@@ -132,7 +132,7 @@ public class LocalFileSystem : IAttributeFileSystem
 
         if (utf8Path.At(0) == DirectorySeparator && utf8Path.At(1) != DirectorySeparator)
         {
-            rc = pathNormalized.Initialize(utf8Path.Slice(1));
+            rc = pathNormalized.Initialize(utf8Path);
             if (rc.IsFailure()) return rc;
         }
         else
