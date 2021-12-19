@@ -3,7 +3,7 @@ using System.IO;
 using LibHac.Common.Keys;
 using LibHac.Util;
 
-namespace LibHac;
+namespace LibHac.Tools.Es;
 
 public class Ticket
 {

@@ -75,7 +75,7 @@ public class FileReader
     {
         FillBuffer(offset, 3, updatePosition);
 
-        return BitTools.SignExtend32(MemoryMarshal.Read<int>(_buffer), 24);
+        return SignExtend32(MemoryMarshal.Read<int>(_buffer), 24);
     }
 
     public uint ReadUInt32(long offset, bool updatePosition)
@@ -176,4 +176,10 @@ public class FileReader
     public byte[] ReadBytes(int length) => ReadBytes(Position, length, true);
     public void ReadBytes(Span<byte> destination) => ReadBytes(destination, Position, true);
     public string ReadAscii(int length) => ReadAscii(Position, length, true);
+
+    public static int SignExtend32(int value, int bits)
+    {
+        int shift = 8 * sizeof(int) - bits;
+        return (value << shift) >> shift;
+    }
 }

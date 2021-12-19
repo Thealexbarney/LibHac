@@ -2,7 +2,7 @@
 using LibHac.Fs;
 using LibHac.FsSystem;
 
-namespace LibHac;
+namespace LibHac.Tools.Ro;
 
 public class Nro
 {

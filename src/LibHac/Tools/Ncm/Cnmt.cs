@@ -4,7 +4,7 @@ using LibHac.FsSystem.NcaUtils;
 using LibHac.Ncm;
 using ContentType = LibHac.Ncm.ContentType;
 
-namespace LibHac;
+namespace LibHac.Tools.Ncm;
 
 public class Cnmt
 {

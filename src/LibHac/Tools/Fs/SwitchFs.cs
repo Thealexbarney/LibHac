@@ -12,9 +12,10 @@ using LibHac.FsSystem.NcaUtils;
 using LibHac.FsSystem.Save;
 using LibHac.Ncm;
 using LibHac.Ns;
+using LibHac.Tools.Ncm;
 using LibHac.Util;
 
-namespace LibHac;
+namespace LibHac.Tools.Fs;
 
 public class SwitchFs : IDisposable
 {
@@ -44,10 +45,10 @@ public class SwitchFs : IDisposable
     {
         var concatFs = new ConcatenationFileSystem(fileSystem);
 
-        using var contentDirPath = new Fs.Path();
+        using var contentDirPath = new LibHac.Fs.Path();
         PathFunctions.SetUpFixedPath(ref contentDirPath.Ref(), "/Nintendo/Contents".ToU8String()).ThrowIfFailure();
 
-        using var saveDirPath = new Fs.Path();
+        using var saveDirPath = new LibHac.Fs.Path();
         PathFunctions.SetUpFixedPath(ref saveDirPath.Ref(), "/Nintendo/save".ToU8String()).ThrowIfFailure();
 
         var contentDirFs = new SubdirectoryFileSystem(concatFs);
@@ -75,14 +76,14 @@ public class SwitchFs : IDisposable
 
         if (concatFs.DirectoryExists("/save"))
         {
-            using var savePath = new Fs.Path();
+            using var savePath = new LibHac.Fs.Path();
             PathFunctions.SetUpFixedPath(ref savePath.Ref(), "/save".ToU8String());
 
             saveDirFs = new SubdirectoryFileSystem(concatFs);
             saveDirFs.Initialize(in savePath).ThrowIfFailure();
         }
 
-        using var contentsPath = new Fs.Path();
+        using var contentsPath = new LibHac.Fs.Path();
         PathFunctions.SetUpFixedPath(ref contentsPath.Ref(), "/Contents".ToU8String());
 
         contentDirFs = new SubdirectoryFileSystem(concatFs);
@@ -195,11 +196,11 @@ public class SwitchFs : IDisposable
 
                     switch (content.Type)
                     {
-                        case Ncm.ContentType.Program:
-                        case Ncm.ContentType.Data:
+                        case LibHac.Ncm.ContentType.Program:
+                        case LibHac.Ncm.ContentType.Data:
                             title.MainNca = contentNca;
                             break;
-                        case Ncm.ContentType.Control:
+                        case LibHac.Ncm.ContentType.Control:
                             title.ControlNca = contentNca;
                             break;
                     }
