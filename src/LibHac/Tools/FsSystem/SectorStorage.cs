@@ -2,7 +2,7 @@
 using LibHac.Fs;
 using LibHac.Util;
 
-namespace LibHac.FsSystem;
+namespace LibHac.Tools.FsSystem;
 
 public class SectorStorage : IStorage
 {

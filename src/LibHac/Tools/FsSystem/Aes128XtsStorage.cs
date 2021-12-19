@@ -1,7 +1,7 @@
 using System;
 using LibHac.Fs;
 
-namespace LibHac.FsSystem;
+namespace LibHac.Tools.FsSystem;
 
 public class Aes128XtsStorage : SectorStorage
 {

@@ -1,5 +1,5 @@
 ﻿using System.Linq;
-using LibHac.FsSystem;
+using LibHac.Tools.FsSystem;
 using LibHac.Util;
 using Xunit;
 
