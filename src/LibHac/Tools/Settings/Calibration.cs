@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Text;
 
-namespace LibHac;
+namespace LibHac.Tools.Settings;
 
 public class Calibration
 {
