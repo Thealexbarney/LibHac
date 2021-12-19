@@ -3,7 +3,7 @@ using System.IO;
 using LibHac.Fs;
 using LibHac.Util;
 
-namespace LibHac.FsSystem.Save;
+namespace LibHac.Tools.FsSystem.Save;
 
 public class AllocationTableStorage : IStorage
 {

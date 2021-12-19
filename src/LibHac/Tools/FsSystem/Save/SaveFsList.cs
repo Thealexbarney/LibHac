@@ -7,7 +7,7 @@ using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Util;
 
-namespace LibHac.FsSystem.Save;
+namespace LibHac.Tools.FsSystem.Save;
 
 // todo: Change constraint to "unmanaged" after updating to
 // a newer SDK https://github.com/dotnet/csharplang/issues/1937

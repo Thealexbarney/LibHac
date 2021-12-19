@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LibHac.FsSystem.Save;
+namespace LibHac.Tools.FsSystem.Save;
 
 public class AllocationTableIterator
 {

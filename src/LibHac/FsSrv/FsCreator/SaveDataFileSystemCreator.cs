@@ -6,7 +6,7 @@ using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
-using LibHac.FsSystem.Save;
+using LibHac.Tools.FsSystem.Save;
 using LibHac.Util;
 
 using OpenType = LibHac.FsSrv.SaveDataOpenTypeSetFileStorage.OpenType;

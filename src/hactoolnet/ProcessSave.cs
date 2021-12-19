@@ -10,7 +10,7 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSystem;
-using LibHac.FsSystem.Save;
+using LibHac.Tools.FsSystem.Save;
 using static hactoolnet.Print;
 using Path = System.IO.Path;
 

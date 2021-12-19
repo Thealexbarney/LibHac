@@ -1,7 +1,7 @@
 ﻿using System;
 using LibHac.Fs;
 
-namespace LibHac.FsSystem.Save;
+namespace LibHac.Tools.FsSystem.Save;
 
 public class HierarchicalDuplexStorage : IStorage
 {

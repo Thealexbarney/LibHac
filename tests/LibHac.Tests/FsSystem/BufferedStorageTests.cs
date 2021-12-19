@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using LibHac.Fs;
 using LibHac.FsSystem;
-using LibHac.FsSystem.Save;
 using LibHac.Tests.Fs;
 using Xunit;
 

@@ -3,8 +3,9 @@ using System.IO;
 using LibHac.Common.Keys;
 using LibHac.Crypto;
 using LibHac.Fs;
+using LibHac.FsSystem;
 
-namespace LibHac.FsSystem.Save;
+namespace LibHac.Tools.FsSystem.Save;
 
 public class Header
 {

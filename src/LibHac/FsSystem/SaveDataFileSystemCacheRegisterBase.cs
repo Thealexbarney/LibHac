@@ -4,7 +4,7 @@ using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
-using LibHac.FsSystem.Save;
+using LibHac.Tools.FsSystem.Save;
 
 namespace LibHac.FsSystem;
 

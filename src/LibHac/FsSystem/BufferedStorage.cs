@@ -10,7 +10,7 @@ using LibHac.Util;
 using Buffer = LibHac.Mem.Buffer;
 using CacheHandle = System.Int64;
 
-namespace LibHac.FsSystem.Save;
+namespace LibHac.FsSystem;
 
 /// <summary>
 /// An <see cref="IStorage"/> that provides buffered access to a base <see cref="IStorage"/>.
@@ -21,7 +21,7 @@ public class BufferedStorage : IStorage
     private const int InvalidIndex = -1;
 
     /// <summary>
-    /// Caches a single block of data for a <see cref="Save.BufferedStorage"/>
+    /// Caches a single block of data for a <see cref="FsSystem.BufferedStorage"/>
     /// </summary>
     private struct Cache : IDisposable
     {
@@ -101,7 +101,7 @@ public class BufferedStorage : IStorage
         }
 
         /// <summary>
-        /// Decrements the ref-count and adds the <see cref="Cache"/> to its <see cref="Save.BufferedStorage"/>'s
+        /// Decrements the ref-count and adds the <see cref="Cache"/> to its <see cref="FsSystem.BufferedStorage"/>'s
         /// fetch list if the <see cref="Cache"/> has no more references, and registering the buffer with
         /// the <see cref="IBufferManager"/> if not dirty.
         /// </summary>
@@ -186,7 +186,7 @@ public class BufferedStorage : IStorage
 
         /// <summary>
         /// Increments the ref-count and removes the <see cref="Cache"/> from its
-        /// <see cref="Save.BufferedStorage"/>'s fetch list if needed.
+        /// <see cref="FsSystem.BufferedStorage"/>'s fetch list if needed.
         /// </summary>
         public void Unlink()
         {
@@ -557,7 +557,7 @@ public class BufferedStorage : IStorage
     }
 
     /// <summary>
-    /// Allows iteration over the <see cref="Save.BufferedStorage.Cache"/> in a <see cref="Save.BufferedStorage"/>.
+    /// Allows iteration over the <see cref="Cache"/> in a <see cref="FsSystem.BufferedStorage"/>.
     /// Several options exist for which Caches to iterate.
     /// </summary>
     private ref struct SharedCache
@@ -584,11 +584,11 @@ public class BufferedStorage : IStorage
         }
 
         /// <summary>
-        /// Moves to the next <see cref="Save.BufferedStorage.Cache"/> that contains data from the specified range.
+        /// Moves to the next <see cref="FsSystem.BufferedStorage.Cache"/> that contains data from the specified range.
         /// </summary>
         /// <param name="offset">The start offset of the range.</param>
         /// <param name="size">The size of the range.</param>
-        /// <returns><see langword="true"/> if a <see cref="Save.BufferedStorage.Cache"/> from the
+        /// <returns><see langword="true"/> if a <see cref="FsSystem.BufferedStorage.Cache"/> from the
         /// specified range was found. <see langword="false"/> if no matching Caches exist,
         /// or if all matching Caches have already been iterated.</returns>
         public bool AcquireNextOverlappedCache(long offset, long size)
@@ -643,9 +643,9 @@ public class BufferedStorage : IStorage
         }
 
         /// <summary>
-        /// Moves to the next dirty <see cref="Save.BufferedStorage.Cache"/>.
+        /// Moves to the next dirty <see cref="FsSystem.BufferedStorage.Cache"/>.
         /// </summary>
-        /// <returns><see langword="true"/> if a dirty <see cref="Save.BufferedStorage.Cache"/> was found.
+        /// <returns><see langword="true"/> if a dirty <see cref="FsSystem.BufferedStorage.Cache"/> was found.
         /// <see langword="false"/> if no dirty Caches exist,
         /// or if all dirty Caches have already been iterated.</returns>
         public bool AcquireNextDirtyCache()
@@ -686,9 +686,9 @@ public class BufferedStorage : IStorage
         }
 
         /// <summary>
-        /// Moves to the next valid <see cref="Save.BufferedStorage.Cache"/>.
+        /// Moves to the next valid <see cref="FsSystem.BufferedStorage.Cache"/>.
         /// </summary>
-        /// <returns><see langword="true"/> if a valid <see cref="Save.BufferedStorage.Cache"/> was found.
+        /// <returns><see langword="true"/> if a valid <see cref="FsSystem.BufferedStorage.Cache"/> was found.
         /// <see langword="false"/> if no valid Caches exist,
         /// or if all valid Caches have already been iterated.</returns>
         public bool AcquireNextValidCache()
@@ -729,10 +729,10 @@ public class BufferedStorage : IStorage
         }
 
         /// <summary>
-        /// Moves to a <see cref="Save.BufferedStorage.Cache"/> that can be used for
+        /// Moves to a <see cref="FsSystem.BufferedStorage.Cache"/> that can be used for
         /// fetching a new block from the base <see cref="IStorage"/>.
         /// </summary>
-        /// <returns><see langword="true"/> if a <see cref="Save.BufferedStorage.Cache"/> was acquired.
+        /// <returns><see langword="true"/> if a <see cref="FsSystem.BufferedStorage.Cache"/> was acquired.
         /// Otherwise, <see langword="false"/>.</returns>
         public bool AcquireFetchableCache()
         {
@@ -758,9 +758,9 @@ public class BufferedStorage : IStorage
         }
 
         /// <summary>
-        /// Reads from the current <see cref="Save.BufferedStorage.Cache"/>'s buffer.
+        /// Reads from the current <see cref="FsSystem.BufferedStorage.Cache"/>'s buffer.
         /// The provided <paramref name="offset"/> must be inside the block of
-        /// data held by the <see cref="Save.BufferedStorage.Cache"/>.
+        /// data held by the <see cref="FsSystem.BufferedStorage.Cache"/>.
         /// </summary>
         /// <param name="offset">The offset in the base <see cref="IStorage"/> to be read from.</param>
         /// <param name="buffer">The buffer in which to place the read data.</param>
@@ -772,8 +772,8 @@ public class BufferedStorage : IStorage
 
         /// <summary>
         /// Buffers data to be written to the base <see cref="IStorage"/> when the current
-        /// <see cref="Save.BufferedStorage.Cache"/> is flushed. The provided <paramref name="offset"/>
-        /// must be contained by the block of data held by the <see cref="Save.BufferedStorage.Cache"/>.
+        /// <see cref="FsSystem.BufferedStorage.Cache"/> is flushed. The provided <paramref name="offset"/>
+        /// must be contained by the block of data held by the <see cref="FsSystem.BufferedStorage.Cache"/>.
         /// </summary>
         /// <param name="offset">The offset in the base <see cref="IStorage"/> to be written to.</param>
         /// <param name="buffer">The buffer containing the data to be written.</param>
@@ -784,7 +784,7 @@ public class BufferedStorage : IStorage
         }
 
         /// <summary>
-        /// If the current <see cref="Save.BufferedStorage.Cache"/> is dirty,
+        /// If the current <see cref="FsSystem.BufferedStorage.Cache"/> is dirty,
         /// flushes its data to the base <see cref="IStorage"/>.
         /// </summary>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
@@ -795,7 +795,7 @@ public class BufferedStorage : IStorage
         }
 
         /// <summary>
-        /// Invalidates the data in the current <see cref="Save.BufferedStorage.Cache"/>.
+        /// Invalidates the data in the current <see cref="FsSystem.BufferedStorage.Cache"/>.
         /// Any dirty data will be discarded.
         /// </summary>
         public void Invalidate()
@@ -805,11 +805,11 @@ public class BufferedStorage : IStorage
         }
 
         /// <summary>
-        /// Checks if the current <see cref="Save.BufferedStorage.Cache"/> covers any of the specified range.
+        /// Checks if the current <see cref="FsSystem.BufferedStorage.Cache"/> covers any of the specified range.
         /// </summary>
         /// <param name="offset">The start offset of the range to check.</param>
         /// <param name="size">The size of the range to check.</param>
-        /// <returns><see langword="true"/> if the current <see cref="Save.BufferedStorage.Cache"/>'s range
+        /// <returns><see langword="true"/> if the current <see cref="FsSystem.BufferedStorage.Cache"/>'s range
         /// covers any of the input range. Otherwise, <see langword="false"/>.</returns>
         public bool Hits(long offset, long size)
         {
@@ -818,7 +818,7 @@ public class BufferedStorage : IStorage
         }
 
         /// <summary>
-        /// Releases the current <see cref="Save.BufferedStorage.Cache"/> to return to the fetch list.
+        /// Releases the current <see cref="FsSystem.BufferedStorage.Cache"/> to return to the fetch list.
         /// </summary>
         private void Release()
         {
@@ -839,8 +839,8 @@ public class BufferedStorage : IStorage
     }
 
     /// <summary>
-    /// Provides exclusive access to a <see cref="Save.BufferedStorage.Cache"/>
-    /// entry in a <see cref="Save.BufferedStorage"/>.
+    /// Provides exclusive access to a <see cref="Cache"/>
+    /// entry in a <see cref="FsSystem.BufferedStorage"/>.
     /// </summary>
     private ref struct UniqueCache
     {
@@ -856,7 +856,7 @@ public class BufferedStorage : IStorage
         }
 
         /// <summary>
-        /// Disposes the <see cref="UniqueCache"/>, releasing any held <see cref="Save.BufferedStorage.Cache"/>.
+        /// Disposes the <see cref="UniqueCache"/>, releasing any held <see cref="FsSystem.BufferedStorage.Cache"/>.
         /// </summary>
         public void Dispose()
         {
@@ -870,7 +870,7 @@ public class BufferedStorage : IStorage
         }
 
         /// <summary>
-        /// Attempts to gain exclusive access to the <see cref="Save.BufferedStorage.Cache"/> held by
+        /// Attempts to gain exclusive access to the <see cref="FsSystem.BufferedStorage.Cache"/> held by
         /// <paramref name="sharedCache"/> and prepare it to read a new block from the base <see cref="IStorage"/>.
         /// </summary>
         /// <param name="sharedCache">The <see cref="SharedCache"/> to gain exclusive access to.</param>
@@ -894,7 +894,7 @@ public class BufferedStorage : IStorage
 
         /// <summary>
         /// Reads the storage block containing the specified offset into the
-        /// <see cref="Save.BufferedStorage.Cache"/>'s buffer, and sets the Cache to that offset.
+        /// <see cref="FsSystem.BufferedStorage.Cache"/>'s buffer, and sets the Cache to that offset.
         /// </summary>
         /// <param name="offset">An offset in the block to fetch.</param>
         /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
@@ -907,7 +907,7 @@ public class BufferedStorage : IStorage
         }
 
         /// <summary>
-        /// Fills the <see cref="Save.BufferedStorage.Cache"/>'s buffer from an input buffer containing a block of data
+        /// Fills the <see cref="FsSystem.BufferedStorage.Cache"/>'s buffer from an input buffer containing a block of data
         /// read from the base <see cref="IStorage"/>, and sets the Cache to that offset.
         /// </summary>
         /// <param name="offset">The start offset of the block in the base <see cref="IStorage"/>

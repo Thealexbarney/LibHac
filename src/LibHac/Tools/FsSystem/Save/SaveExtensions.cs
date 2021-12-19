@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace LibHac.FsSystem.Save;
+namespace LibHac.Tools.FsSystem.Save;
 
 public static class SaveExtensions
 {
