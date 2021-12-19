@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using LibHac.Fs;
 using LibHac.FsSystem;
+using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.RomFs;
 

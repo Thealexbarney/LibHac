@@ -7,6 +7,7 @@ using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
 using LibHac.Util;
 
