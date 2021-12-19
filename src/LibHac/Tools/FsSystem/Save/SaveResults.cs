@@ -1,6 +1,6 @@
 ﻿using LibHac.Fs;
 
-namespace LibHac.FsSystem.Save;
+namespace LibHac.Tools.FsSystem.Save;
 
 internal static class SaveResults
 {

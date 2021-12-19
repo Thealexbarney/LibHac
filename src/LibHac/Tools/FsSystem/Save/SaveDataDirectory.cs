@@ -4,7 +4,7 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Util;
 
-namespace LibHac.FsSystem.Save;
+namespace LibHac.Tools.FsSystem.Save;
 
 public class SaveDataDirectory : IDirectory
 {

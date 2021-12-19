@@ -3,9 +3,10 @@ using System.IO;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.FsSystem;
 using LibHac.Util;
 
-namespace LibHac.FsSystem.Save;
+namespace LibHac.Tools.FsSystem.Save;
 
 public class HierarchicalSaveFileTable
 {

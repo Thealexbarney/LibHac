@@ -2,8 +2,9 @@
 using System.Collections;
 using System.IO;
 using LibHac.Fs;
+using LibHac.FsSystem;
 
-namespace LibHac.FsSystem.Save;
+namespace LibHac.Tools.FsSystem.Save;
 
 public class DuplexBitmap
 {

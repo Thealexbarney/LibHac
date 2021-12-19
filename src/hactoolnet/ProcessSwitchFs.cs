@@ -9,9 +9,9 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 using LibHac.FsSystem.NcaUtils;
-using LibHac.FsSystem.Save;
 using LibHac.Ns;
 using LibHac.Tools.Fs;
+using LibHac.Tools.FsSystem.Save;
 using Path = System.IO.Path;
 
 namespace hactoolnet;
