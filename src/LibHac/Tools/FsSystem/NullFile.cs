@@ -2,7 +2,7 @@
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
-namespace LibHac.FsSystem;
+namespace LibHac.Tools.FsSystem;
 
 public class NullFile : IFile
 {
