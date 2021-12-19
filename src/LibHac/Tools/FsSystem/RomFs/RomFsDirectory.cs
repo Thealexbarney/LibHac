@@ -2,9 +2,10 @@
 using System.Text;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.FsSystem;
 using LibHac.Util;
 
-namespace LibHac.FsSystem.RomFs;
+namespace LibHac.Tools.FsSystem.RomFs;
 
 public class RomFsDirectory : IDirectory
 {

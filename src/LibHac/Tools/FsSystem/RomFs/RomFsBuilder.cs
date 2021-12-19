@@ -5,9 +5,10 @@ using System.Linq;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.FsSystem;
 using LibHac.Util;
 
-namespace LibHac.FsSystem.RomFs;
+namespace LibHac.Tools.FsSystem.RomFs;
 
 /// <summary>
 /// Builds a RomFS from a collection of files.
