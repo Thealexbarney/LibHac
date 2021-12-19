@@ -8,6 +8,10 @@ using LibHac.Os;
 // ReSharper disable once CheckNamespace
 namespace LibHac.Fs;
 
+/// <summary>
+/// Allows interacting with an <see cref="IFile"/> via an <see cref="IStorage"/> interface.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class FileStorage : IStorage
 {
     private const long InvalidSize = -1;
@@ -100,18 +104,22 @@ public class FileStorage : IStorage
 
     protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
     {
-        if (operationId == OperationId.InvalidateCache || operationId == OperationId.QueryRange)
+        if (operationId == OperationId.InvalidateCache)
+        {
+            Result rc = _baseFile.OperateRange(OperationId.InvalidateCache, offset, size);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return Result.Success;
+        }
+
+        if (operationId == OperationId.QueryRange)
         {
             if (size == 0)
             {
-                if (operationId == OperationId.QueryRange)
-                {
-                    if (outBuffer.Length != Unsafe.SizeOf<QueryRangeInfo>())
-                        return ResultFs.InvalidSize.Log();
+                if (outBuffer.Length != Unsafe.SizeOf<QueryRangeInfo>())
+                    return ResultFs.InvalidSize.Log();
 
-                    SpanHelpers.AsStruct<QueryRangeInfo>(outBuffer).Clear();
-                }
-
+                SpanHelpers.AsStruct<QueryRangeInfo>(outBuffer).Clear();
                 return Result.Success;
             }
 
@@ -140,6 +148,12 @@ public class FileStorage : IStorage
     }
 }
 
+/// <summary>
+/// Opens a file from an <see cref="IFileSystem"/> and allows interacting with it through an
+/// <see cref="IStorage"/> interface. The opened file will automatically be closed when the
+/// <see cref="FileStorageBasedFileSystem"/> is disposed.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class FileStorageBasedFileSystem : FileStorage
 {
     private SharedRef<IFileSystem> _baseFileSystem;
@@ -153,6 +167,16 @@ public class FileStorageBasedFileSystem : FileStorage
         base.Dispose();
     }
 
+    /// <summary>
+    /// Initializes this <see cref="FileStorageBasedFileSystem"/> with the file at the specified path.
+    /// </summary>
+    /// <param name="baseFileSystem">The <see cref="IFileSystem"/> containing the file to open.</param>
+    /// <param name="path">The full path of the file to open.</param>
+    /// <param name="mode">Specifies the access permissions of the opened file.</param>
+    /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+    /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a directory.<br/>
+    /// <see cref="ResultFs.TargetLocked"/>: When opening as <see cref="OpenMode.Write"/>,
+    /// the file is already opened as <see cref="OpenMode.Write"/>.</returns>
     public Result Initialize(ref SharedRef<IFileSystem> baseFileSystem, in Path path, OpenMode mode)
     {
         using var baseFile = new UniqueRef<IFile>();
@@ -168,6 +192,11 @@ public class FileStorageBasedFileSystem : FileStorage
     }
 }
 
+/// <summary>
+/// Provides an <see cref="IStorage"/> interface for interacting with an opened file from a mounted file system.
+/// The caller may choose whether or not the file will be closed when the <see cref="FileHandleStorage"/> is disposed.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class FileHandleStorage : IStorage
 {
     private const long InvalidSize = -1;
@@ -177,11 +206,24 @@ public class FileHandleStorage : IStorage
     private long _size;
     private SdkMutexType _mutex;
 
-    // LibHac addition
+    // LibHac addition because we don't use global state for the FS client
     private FileSystemClient _fsClient;
 
+    /// <summary>
+    /// Initializes a new <see cref="FileHandleStorage"/> with the provided <see cref="FileHandle"/>.
+    /// The file will not be closed when this <see cref="FileHandleStorage"/> is disposed.
+    /// </summary>
+    /// <param name="fsClient">The <see cref="FileSystemClient"/> of the provided <see cref="FileHandle"/>.</param>
+    /// <param name="handle">The handle of the file to use.</param>
     public FileHandleStorage(FileSystemClient fsClient, FileHandle handle) : this(fsClient, handle, false) { }
 
+    /// <summary>
+    /// Initializes a new <see cref="FileHandleStorage"/> with the provided <see cref="FileHandle"/>.
+    /// </summary>
+    /// <param name="fsClient">The <see cref="FileSystemClient"/> of the provided <see cref="FileHandle"/>.</param>
+    /// <param name="handle">The handle of the file to use.</param>
+    /// <param name="closeFile">Should <paramref name="handle"/> be closed when this
+    /// <see cref="FileHandleStorage"/> is disposed?</param>
     public FileHandleStorage(FileSystemClient fsClient, FileHandle handle, bool closeFile)
     {
         _fsClient = fsClient;
