@@ -2,6 +2,7 @@
 using LibHac.Common;
 using LibHac.Common.Keys;
 using LibHac.Fs;
+using LibHac.Tools.Fs;
 
 namespace LibHac.FsSrv;
 
