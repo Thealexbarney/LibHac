@@ -2,7 +2,7 @@
 
 using System;
 
-namespace LibHac;
+namespace LibHac.Util;
 
 public static class Lz4
 {
