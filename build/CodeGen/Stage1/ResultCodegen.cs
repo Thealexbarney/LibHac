@@ -39,7 +39,7 @@ public static class ResultCodeGen
         byte[] archive = BuildArchive(modules);
         byte[] compressedArchive = Build.DeflateBytes(archive);
         string archiveStr = PrintArchive(compressedArchive);
-        WriteOutput("LibHac/ResultNameResolver.Generated.cs", archiveStr);
+        WriteOutput("LibHac/Common/ResultNameResolver.Generated.cs", archiveStr);
 
         string enumStr = PrintEnum(modules);
         WriteOutput("../.nuke/temp/result_enums.txt", enumStr);
@@ -382,7 +382,7 @@ public static class ResultCodeGen
         sb.AppendLine("using System;");
         sb.AppendLine();
 
-        sb.AppendLine("namespace LibHac;");
+        sb.AppendLine("namespace LibHac.Common;");
         sb.AppendLine();
 
         sb.AppendLine("internal partial class ResultNameResolver");

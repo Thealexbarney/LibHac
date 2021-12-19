@@ -4,10 +4,9 @@ using System.IO;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using LibHac.Common;
 using LibHac.Util;
 
-namespace LibHac;
+namespace LibHac.Common;
 
 internal partial class ResultNameResolver : Result.IResultNameResolver
 {
