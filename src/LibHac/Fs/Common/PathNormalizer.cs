@@ -1,7 +1,6 @@
 ﻿using System;
 using LibHac.Common;
 using LibHac.Diag;
-using LibHac.FsSystem;
 using static LibHac.Fs.PathUtility;
 using static LibHac.Fs.StringTraits;
 
@@ -48,7 +47,7 @@ public static class PathNormalizer
             if (IsParentDirectoryPathReplacementNeeded(currentPath))
             {
                 // Allocate a buffer to hold the replacement path.
-                convertedPath = new RentedArray<byte>(PathTools.MaxPathLength + 1);
+                convertedPath = new RentedArray<byte>(PathTool.EntryNameLengthMax + 1);
 
                 // Replace the path.
                 ReplaceParentDirectoryPath(convertedPath.Span, currentPath);

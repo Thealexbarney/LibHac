@@ -4,7 +4,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Diag;
-using LibHac.FsSystem;
 using LibHac.Util;
 using static LibHac.Fs.StringTraits;
 
@@ -58,8 +57,8 @@ public static class PathFormatter
         newPath = default;
 
         int maxMountLength = outMountNameBuffer.Length == 0
-            ? PathTools.MountNameLengthMax + 1
-            : Math.Min(outMountNameBuffer.Length, PathTools.MountNameLengthMax + 1);
+            ? PathTool.MountNameLengthMax + 1
+            : Math.Min(outMountNameBuffer.Length, PathTool.MountNameLengthMax + 1);
 
         int mountLength;
         for (mountLength = 0; mountLength < maxMountLength && path.At(mountLength) != 0; mountLength++)

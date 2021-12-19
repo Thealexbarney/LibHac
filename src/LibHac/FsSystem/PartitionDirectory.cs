@@ -47,7 +47,7 @@ public class PartitionDirectory : IDirectory
             entry.Size = fileEntry.Size;
 
             StringUtils.Copy(entry.Name, nameUtf8);
-            entry.Name[PathTools.MaxPathLength] = 0;
+            entry.Name[PathTool.EntryNameLengthMax] = 0;
 
             CurrentIndex++;
         }

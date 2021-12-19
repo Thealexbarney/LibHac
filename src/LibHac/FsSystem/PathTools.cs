@@ -12,12 +12,8 @@ namespace LibHac.FsSystem;
 public static class PathTools
 {
     // todo: Consolidate these
-    internal const char DirectorySeparator = '/';
-    internal const char MountSeparator = ':';
-    internal const int MountNameLengthMax = 0xF;
-
-    // Todo: Remove
-    internal const int MaxPathLength = 0x300;
+    private const char DirectorySeparator = '/';
+    private const char MountSeparator = ':';
 
     public static string Normalize(string inPath)
     {
@@ -27,7 +23,7 @@ public static class PathTools
         var sb = new ValueStringBuilder(initialBuffer);
 
         int rootLen = 0;
-        int maxMountLen = Math.Min(inPath.Length, MountNameLengthMax);
+        int maxMountLen = Math.Min(inPath.Length, PathTool.MountNameLengthMax);
 
         for (int i = 0; i < maxMountLen; i++)
         {
@@ -480,7 +476,7 @@ public static class PathTools
     {
         UnsafeHelpers.SkipParamInit(out length);
 
-        int maxLen = Math.Min(path.Length, MountNameLengthMax);
+        int maxLen = Math.Min(path.Length, PathTool.MountNameLengthMax);
 
         for (int i = 0; i < maxLen; i++)
         {

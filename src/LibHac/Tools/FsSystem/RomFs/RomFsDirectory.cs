@@ -2,7 +2,6 @@
 using System.Text;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
-using LibHac.FsSystem;
 using LibHac.Util;
 
 namespace LibHac.Tools.FsSystem.RomFs;
@@ -52,7 +51,7 @@ public class RomFsDirectory : IDirectory
                     Span<byte> nameUtf8 = Encoding.UTF8.GetBytes(name);
 
                     StringUtils.Copy(entry.Name, nameUtf8);
-                    entry.Name[PathTools.MaxPathLength] = 0;
+                    entry.Name[PathTool.EntryNameLengthMax] = 0;
 
                     entry.Type = DirectoryEntryType.Directory;
                     entry.Size = 0;
@@ -72,7 +71,7 @@ public class RomFsDirectory : IDirectory
                     Span<byte> nameUtf8 = Encoding.UTF8.GetBytes(name);
 
                     StringUtils.Copy(entry.Name, nameUtf8);
-                    entry.Name[PathTools.MaxPathLength] = 0;
+                    entry.Name[PathTool.EntryNameLengthMax] = 0;
 
                     entry.Type = DirectoryEntryType.File;
                     entry.Size = info.Length;

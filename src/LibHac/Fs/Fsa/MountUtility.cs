@@ -2,7 +2,6 @@
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs.Impl;
-using LibHac.FsSystem;
 using LibHac.Os;
 using LibHac.Util;
 using static LibHac.Fs.StringTraits;
@@ -18,12 +17,12 @@ public static class MountUtility
         subPath = default;
 
         int mountLen = 0;
-        int maxMountLen = Math.Min(path.Length, PathTools.MountNameLengthMax);
+        int maxMountLen = Math.Min(path.Length, PathTool.MountNameLengthMax);
 
         if (WindowsPath.IsWindowsDrive(path) || WindowsPath.IsUncPath(path))
         {
             StringUtils.Copy(mountName.Name, CommonPaths.HostRootFileSystemMountName);
-            mountName.Name[PathTools.MountNameLengthMax] = StringTraits.NullTerminator;
+            mountName.Name[PathTool.MountNameLengthMax] = StringTraits.NullTerminator;
 
             subPath = path;
             return Result.Success;
@@ -31,7 +30,7 @@ public static class MountUtility
 
         for (int i = 0; i <= maxMountLen; i++)
         {
-            if (path[i] == PathTools.MountSeparator)
+            if (path[i] == StringTraits.DriveSeparator)
             {
                 mountLen = i;
                 break;
@@ -79,7 +78,7 @@ public static class MountUtility
             if (name[i] == DriveSeparator || name[i] == DirectorySeparator)
                 return false;
 
-            if (++length > PathTools.MountNameLengthMax)
+            if (++length > PathTool.MountNameLengthMax)
                 return false;
         }
 

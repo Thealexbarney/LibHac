@@ -41,7 +41,7 @@ public class LocalDirectory : IDirectory
             long length = isDir ? 0 : ((FileInfo)localEntry).Length;
 
             StringUtils.Copy(entryBuffer[i].Name, name);
-            entryBuffer[i].Name[PathTools.MaxPathLength] = 0;
+            entryBuffer[i].Name[PathTool.EntryNameLengthMax] = 0;
 
             entryBuffer[i].Attributes = localEntry.Attributes.ToNxAttributes();
             entryBuffer[i].Type = type;
