@@ -11,6 +11,7 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 using LibHac.Spl;
+using LibHac.Tools.Crypto;
 using LibHac.Tools.FsSystem.RomFs;
 
 namespace LibHac.Tools.FsSystem.NcaUtils;

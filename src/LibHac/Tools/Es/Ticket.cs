@@ -2,6 +2,7 @@
 using System.IO;
 using LibHac.Common;
 using LibHac.Common.Keys;
+using LibHac.Tools.Crypto;
 using LibHac.Util;
 
 namespace LibHac.Tools.Es;

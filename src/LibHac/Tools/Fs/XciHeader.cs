@@ -5,6 +5,7 @@ using LibHac.Common;
 using LibHac.Common.Keys;
 using LibHac.Crypto;
 using LibHac.Fs;
+using LibHac.Tools.Crypto;
 
 namespace LibHac.Tools.Fs;
 
