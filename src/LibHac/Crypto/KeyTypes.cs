@@ -28,7 +28,7 @@ public struct AesKey
 
     public static implicit operator ReadOnlySpan<byte>(in AesKey value) => value.DataRo;
 
-    public override readonly string ToString() => DataRo.ToHexString();
+    public readonly override string ToString() => DataRo.ToHexString();
 
 #if DEBUG
     [FieldOffset(8)] [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly ulong _dummy1;
@@ -60,7 +60,7 @@ public struct AesXtsKey
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool IsZeros() => (DataRo64[0] | DataRo64[1] | DataRo64[2] | DataRo64[3]) == 0;
 
-    public override readonly string ToString() => DataRo.ToHexString();
+    public readonly override string ToString() => DataRo.ToHexString();
 }
 
 [DebuggerDisplay("{ToString()}")]
@@ -83,7 +83,7 @@ public struct AesIv
     public static implicit operator Span<byte>(in AesIv value) => Unsafe.AsRef(in value).Data;
     public static implicit operator ReadOnlySpan<byte>(in AesIv value) => value.DataRo;
 
-    public override readonly string ToString() => DataRo.ToHexString();
+    public readonly override string ToString() => DataRo.ToHexString();
 
 #if DEBUG
     [FieldOffset(8)] [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly ulong _dummy1;
@@ -110,7 +110,7 @@ public struct AesCmac
     public static implicit operator Span<byte>(in AesCmac value) => Unsafe.AsRef(in value).Data;
     public static implicit operator ReadOnlySpan<byte>(in AesCmac value) => value.DataRo;
 
-    public override readonly string ToString() => DataRo.ToHexString();
+    public readonly override string ToString() => DataRo.ToHexString();
 
 #if DEBUG
     [FieldOffset(8)] [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly ulong _dummy1;

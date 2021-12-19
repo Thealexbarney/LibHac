@@ -49,7 +49,7 @@ public struct EncryptedKeyBlob
         return SpanHelpers.AsReadOnlyByteSpan(in value);
     }
 
-    public override readonly string ToString() => ReadOnlyBytes.ToHexString();
+    public readonly override string ToString() => ReadOnlyBytes.ToHexString();
 }
 
 [DebuggerDisplay("{ToString()}")]
@@ -89,5 +89,5 @@ public struct KeyBlob
         return SpanHelpers.AsReadOnlyByteSpan(in value);
     }
 
-    public override readonly string ToString() => ReadOnlyBytes.ToHexString();
+    public readonly override string ToString() => ReadOnlyBytes.ToHexString();
 }

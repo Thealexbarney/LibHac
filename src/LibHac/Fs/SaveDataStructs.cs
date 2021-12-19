@@ -68,7 +68,7 @@ public struct SaveDataAttribute : IEquatable<SaveDataAttribute>, IComparable<Sav
         return Result.Success;
     }
 
-    public override readonly bool Equals(object obj)
+    public readonly override bool Equals(object obj)
     {
         return obj is SaveDataAttribute attribute && Equals(attribute);
     }
@@ -86,7 +86,7 @@ public struct SaveDataAttribute : IEquatable<SaveDataAttribute>, IComparable<Sav
     public static bool operator ==(SaveDataAttribute left, SaveDataAttribute right) => left.Equals(right);
     public static bool operator !=(SaveDataAttribute left, SaveDataAttribute right) => !(left == right);
 
-    public override readonly int GetHashCode()
+    public readonly override int GetHashCode()
     {
         // ReSharper disable NonReadonlyMemberInGetHashCode
         return HashCode.Combine(ProgramId, Type, UserId, StaticSaveDataId, Rank, Index);

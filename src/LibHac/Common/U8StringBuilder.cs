@@ -439,7 +439,7 @@ public ref struct U8StringBuilder
         }
     }
 
-    public override readonly string ToString() => StringUtils.Utf8ZToString(Buffer);
+    public readonly override string ToString() => StringUtils.Utf8ZToString(Buffer);
 }
 
 public static class U8StringBuilderExtensions

@@ -1085,7 +1085,7 @@ public ref struct Path
         }
     }
 
-    public override readonly string ToString() => StringUtils.Utf8ZToString(_string);
+    public readonly override string ToString() => StringUtils.Utf8ZToString(_string);
 
     public override bool Equals(object obj) => throw new NotSupportedException();
     public override int GetHashCode() => throw new NotImplementedException();
