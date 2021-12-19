@@ -1,7 +1,7 @@
 ﻿using LibHac;
 using LibHac.Common;
 using LibHac.Common.Keys;
-using LibHac.FsSystem;
+using LibHac.Tools.FsSystem;
 
 namespace hactoolnet;
 

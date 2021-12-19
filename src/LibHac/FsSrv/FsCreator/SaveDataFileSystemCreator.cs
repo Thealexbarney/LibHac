@@ -6,6 +6,7 @@ using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
+using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.Save;
 using LibHac.Util;
 
