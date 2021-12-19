@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Buffers.Binary;
 using System.Text;
-using LibHac;
+using LibHac.Common;
 using LibHac.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
 

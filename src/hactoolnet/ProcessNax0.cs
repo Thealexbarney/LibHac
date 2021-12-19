@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
-using LibHac;
 using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Fs;

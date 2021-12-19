@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSystem;
 

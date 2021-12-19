@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LibHac;
+namespace LibHac.Common;
 
 public class HorizonResultException : LibHacException
 {

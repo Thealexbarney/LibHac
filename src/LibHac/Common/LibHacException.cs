@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LibHac;
+namespace LibHac.Common;
 
 /// <summary>
 /// This is the exception that is thrown when an error occurs 

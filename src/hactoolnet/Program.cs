@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using LibHac;
+using LibHac.Common;
 using LibHac.Common.Keys;
 using LibHac.Diag;
 using LibHac.Fs;
@@ -221,7 +222,7 @@ public static class Program
 
         var keySet = KeySet.CreateDefaultKeySet();
 
-        var logger = ctx.Options.DisableKeyWarns ? null : ctx.Logger;
+        IProgressReport logger = ctx.Options.DisableKeyWarns ? null : ctx.Logger;
 
         // If the user specifies a key file then only load that file into the mode they specified,
         // otherwise load both prod.keys and dev.keys.

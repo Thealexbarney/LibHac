@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Security.Cryptography;
+using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.FsSystem;
 

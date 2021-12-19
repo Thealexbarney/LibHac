@@ -4,7 +4,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace LibHac;
+namespace LibHac.Common;
 
 public static class Utilities
 {

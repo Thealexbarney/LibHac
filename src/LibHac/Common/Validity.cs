@@ -1,4 +1,4 @@
-﻿namespace LibHac;
+﻿namespace LibHac.Common;
 
 public enum Validity : byte
 {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
+using LibHac.Common;
 using Buffer = LibHac.Mem.Buffer;
 
 namespace LibHac;

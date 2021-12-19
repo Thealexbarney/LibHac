@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading;
 
-namespace LibHac;
+namespace LibHac.Common;
 
 public class ProgressBar : IDisposable, IProgressReport
 {

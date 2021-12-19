@@ -2,6 +2,7 @@
 using System;
 using System.Buffers.Binary;
 using System.IO;
+using LibHac.Common;
 using LibHac.Common.Keys;
 
 namespace LibHac.Npdm;
