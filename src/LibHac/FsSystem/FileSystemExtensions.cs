@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.Tools.FsSystem;
 using LibHac.Util;
 using Path = LibHac.Fs.Path;
 
