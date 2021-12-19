@@ -630,6 +630,7 @@ public class NcaFileSystemServiceImpl
         {
             ulong ncaProgramId = ncaTemp.Header.TitleId;
 
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
             if (ncaProgramId != ulong.MaxValue && ncaId != ncaProgramId)
             {
                 return ResultFs.InvalidNcaId.Log();

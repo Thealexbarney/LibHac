@@ -414,6 +414,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         return Result.Success;
     }
 
+    // ReSharper disable once OutParameterValueIsAlwaysDiscarded.Local
     private Result OpenDataFileSystemCore(ref SharedRef<IFileSystem> outFileSystem, out bool isHostFs,
         ulong programId, StorageId storageId)
     {

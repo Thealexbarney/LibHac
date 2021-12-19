@@ -11,7 +11,7 @@ public struct NcaSparseInfo
     public Array16<byte> MetaHeader;
     public long PhysicalOffset;
     public ushort Generation;
-    private Array6<byte> _reserved;
+    public Array6<byte> Reserved;
 
     public readonly uint GetGeneration() => (uint)(Generation << 16);
     public readonly long GetPhysicalSize() => MetaOffset + MetaSize;
