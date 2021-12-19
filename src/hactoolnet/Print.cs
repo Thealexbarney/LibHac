@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 using System.Text;
 using LibHac;
 using LibHac.FsSystem;
-using LibHac.FsSystem.NcaUtils;
+using LibHac.Tools.FsSystem.NcaUtils;
 
 namespace hactoolnet;
 

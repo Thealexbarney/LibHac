@@ -1,7 +1,7 @@
 ﻿using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
-using LibHac.FsSystem.NcaUtils;
+using LibHac.Tools.FsSystem.NcaUtils;
 
 namespace LibHac.FsSrv.FsCreator;
 
