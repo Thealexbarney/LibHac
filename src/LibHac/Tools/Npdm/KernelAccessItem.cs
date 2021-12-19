@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace LibHac.Npdm;
+namespace LibHac.Tools.Npdm;
 
 public class KernelAccessControlItem
 {

@@ -1,9 +1,10 @@
 // ReSharper disable UnusedVariable
+
 using System;
 using System.IO;
 using LibHac.Common;
 
-namespace LibHac.Npdm;
+namespace LibHac.Tools.Npdm;
 
 public class Aci0
 {

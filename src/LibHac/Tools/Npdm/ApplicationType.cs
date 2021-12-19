@@ -1,4 +1,4 @@
-namespace LibHac.Npdm;
+namespace LibHac.Tools.Npdm;
 
 internal enum ApplicationType
 {

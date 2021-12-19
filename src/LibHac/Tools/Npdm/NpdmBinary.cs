@@ -1,11 +1,12 @@
 // ReSharper disable UnusedVariable
+
 using System;
 using System.Buffers.Binary;
 using System.IO;
 using LibHac.Common;
 using LibHac.Common.Keys;
 
-namespace LibHac.Npdm;
+namespace LibHac.Tools.Npdm;
 
 //https://github.com/Ryujinx/Ryujinx/blob/master/Ryujinx.HLE/Loaders/Npdm/Npdm.cs
 //https://github.com/SciresM/hactool/blob/master/npdm.c

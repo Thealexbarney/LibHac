@@ -1,8 +1,9 @@
 ﻿// ReSharper disable UnusedVariable
+
 using System;
 using System.IO;
 
-namespace LibHac.Npdm;
+namespace LibHac.Tools.Npdm;
 
 public class FsAccessHeader
 {
