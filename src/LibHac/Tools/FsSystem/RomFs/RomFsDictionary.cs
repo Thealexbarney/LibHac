@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Fs;
+using LibHac.FsSystem;
 using LibHac.Util;
 
-namespace LibHac.FsSystem.RomFs;
+namespace LibHac.Tools.FsSystem.RomFs;
 
 internal class RomFsDictionary<T> where T : unmanaged
 {

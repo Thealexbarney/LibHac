@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace LibHac.FsSystem.RomFs;
+namespace LibHac.Tools.FsSystem.RomFs;
 
 internal ref struct RomEntryKey
 {
@@ -32,9 +32,7 @@ internal ref struct RomEntryKey
     }
 }
 
-// todo: Change constraint to "unmanaged" after updating to
-// a newer SDK https://github.com/dotnet/csharplang/issues/1937
-internal ref struct RomKeyValuePair<T> where T : struct
+internal ref struct RomKeyValuePair<T> where T : unmanaged
 {
     public RomEntryKey Key;
     public int Offset;

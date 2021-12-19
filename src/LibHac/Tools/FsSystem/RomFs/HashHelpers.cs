@@ -6,7 +6,7 @@
 using System;
 using System.Diagnostics;
 
-namespace LibHac;
+namespace LibHac.Tools.FsSystem.RomFs;
 
 internal static class HashHelpers
 {

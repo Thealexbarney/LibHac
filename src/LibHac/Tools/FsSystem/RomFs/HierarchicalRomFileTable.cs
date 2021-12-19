@@ -2,9 +2,10 @@
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.FsSystem;
 using LibHac.Util;
 
-namespace LibHac.FsSystem.RomFs;
+namespace LibHac.Tools.FsSystem.RomFs;
 
 /// <summary>
 /// Represents the file table used by the RomFS format.
