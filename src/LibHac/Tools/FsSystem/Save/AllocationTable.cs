@@ -4,7 +4,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
-using LibHac.FsSystem;
 
 namespace LibHac.Tools.FsSystem.Save;
 

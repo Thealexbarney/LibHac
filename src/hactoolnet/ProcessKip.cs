@@ -3,6 +3,7 @@ using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSystem;
 using LibHac.Kernel;
+using LibHac.Tools.FsSystem;
 
 namespace hactoolnet;
 
