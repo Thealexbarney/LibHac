@@ -2,10 +2,11 @@
 using System.Buffers;
 using System.Collections.Generic;
 using LibHac.Common;
+using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 
-namespace LibHac.Fs;
+namespace LibHac.Tools.Fs;
 
 public static class FileSystemClientUtils
 {
