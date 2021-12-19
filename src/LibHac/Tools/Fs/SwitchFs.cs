@@ -10,6 +10,7 @@ using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 using LibHac.Ncm;
 using LibHac.Ns;
+using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
 using LibHac.Tools.FsSystem.Save;
 using LibHac.Tools.Ncm;
