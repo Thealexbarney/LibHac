@@ -7,6 +7,7 @@ using LibHac.Fs.Fsa;
 using LibHac.FsSrv;
 using LibHac.FsSystem;
 using LibHac.Tests.Fs.IFileSystemTestBase;
+using LibHac.Tools.Fs;
 using Xunit;
 
 namespace LibHac.Tests.Fs;

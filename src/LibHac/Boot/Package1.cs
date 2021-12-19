@@ -1,6 +1,5 @@
 ﻿using LibHac.Common;
 using LibHac.Fs;
-using LibHac.FsSystem;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;

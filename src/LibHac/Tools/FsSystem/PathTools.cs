@@ -5,9 +5,10 @@ using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
+using LibHac.FsSystem;
 using LibHac.Util;
 
-namespace LibHac.FsSystem;
+namespace LibHac.Tools.FsSystem;
 
 public static class PathTools
 {

@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
-using LibHac.FsSystem;
 using LibHac.Tools.FsSystem;
 
 namespace LibHac.Tools.Fs;
