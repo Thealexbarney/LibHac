@@ -1,7 +1,7 @@
 ﻿using System;
 using LibHac.Fs;
 
-namespace LibHac.FsSystem;
+namespace LibHac.Tools.FsSystem;
 
 /// <summary>
 /// An <see cref="IStorage"/> that returns all zeros when read, and does nothing on write.

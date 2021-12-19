@@ -2,7 +2,7 @@
 using System.IO;
 using LibHac.Fs;
 
-namespace LibHac.FsSystem;
+namespace LibHac.Tools.FsSystem;
 
 public class StorageStream : Stream
 {
