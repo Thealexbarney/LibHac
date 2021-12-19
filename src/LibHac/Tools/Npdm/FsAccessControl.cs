@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace LibHac.Npdm;
+namespace LibHac.Tools.Npdm;
 
 public class FsAccessControl
 {

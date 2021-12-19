@@ -1,5 +1,5 @@
 // ReSharper disable InconsistentNaming
-namespace LibHac.Npdm;
+namespace LibHac.Tools.Npdm;
 
 public enum FsPermissionBool : ulong
 {

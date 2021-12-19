@@ -1,11 +1,12 @@
 // ReSharper disable UnusedVariable
+
 using System;
 using System.IO;
 using LibHac.Common;
 using LibHac.Common.Keys;
 using LibHac.Tools.Crypto;
 
-namespace LibHac.Npdm;
+namespace LibHac.Tools.Npdm;
 
 public class Acid
 {

@@ -5,7 +5,7 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Util;
 
-namespace LibHac.FsSystem;
+namespace LibHac.Tools.FsSystem;
 
 public class LayeredFileSystem : IFileSystem
 {
