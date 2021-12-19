@@ -1,4 +1,4 @@
-﻿namespace LibHac.FsSystem.NcaUtils;
+﻿namespace LibHac.Tools.FsSystem.NcaUtils;
 
 internal enum NcaKeyType
 {

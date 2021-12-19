@@ -1,6 +1,6 @@
 ﻿using LibHac;
 using LibHac.Fs;
-using LibHac.FsSystem.NcaUtils;
+using LibHac.FsSystem;
 using LibHac.Ncm;
 using LibHac.Tools.Fs;
 using ContentType = LibHac.Ncm.ContentType;

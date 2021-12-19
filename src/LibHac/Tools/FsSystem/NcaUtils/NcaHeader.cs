@@ -7,9 +7,10 @@ using LibHac.Common.Keys;
 using LibHac.Crypto;
 using LibHac.Diag;
 using LibHac.Fs;
+using LibHac.FsSystem;
 using LibHac.Util;
 
-namespace LibHac.FsSystem.NcaUtils;
+namespace LibHac.Tools.FsSystem.NcaUtils;
 
 public struct NcaHeader
 {

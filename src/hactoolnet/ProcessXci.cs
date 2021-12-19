@@ -4,8 +4,8 @@ using System.Text;
 using LibHac;
 using LibHac.Fs;
 using LibHac.FsSystem;
-using LibHac.FsSystem.NcaUtils;
 using LibHac.Tools.Fs;
+using LibHac.Tools.FsSystem.NcaUtils;
 using static hactoolnet.Print;
 
 namespace hactoolnet;

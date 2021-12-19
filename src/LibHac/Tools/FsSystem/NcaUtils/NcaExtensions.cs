@@ -4,8 +4,9 @@ using System.Diagnostics;
 using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.FsSystem;
 
-namespace LibHac.FsSystem.NcaUtils;
+namespace LibHac.Tools.FsSystem.NcaUtils;
 
 public static class NcaExtensions
 {

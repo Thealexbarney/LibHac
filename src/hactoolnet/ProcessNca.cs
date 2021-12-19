@@ -6,8 +6,8 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSystem;
-using LibHac.FsSystem.NcaUtils;
 using LibHac.Npdm;
+using LibHac.Tools.FsSystem.NcaUtils;
 using static hactoolnet.Print;
 
 namespace hactoolnet;

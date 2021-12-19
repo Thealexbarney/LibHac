@@ -9,10 +9,11 @@ using LibHac.Crypto;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.FsSystem;
 using LibHac.FsSystem.RomFs;
 using LibHac.Spl;
 
-namespace LibHac.FsSystem.NcaUtils;
+namespace LibHac.Tools.FsSystem.NcaUtils;
 
 public class Nca
 {
@@ -778,7 +779,7 @@ public class Nca
         return Header.VerifySignature1(KeySet.NcaHeaderSigningKeyParams[0].Modulus);
     }
 
-    internal void GenerateAesCounter(int sectionIndex, Ncm.ContentType type, int minorVersion)
+    internal void GenerateAesCounter(int sectionIndex, LibHac.Ncm.ContentType type, int minorVersion)
     {
         int counterType;
         int counterVersion;
@@ -789,14 +790,14 @@ public class Nca
 
         switch (type)
         {
-            case Ncm.ContentType.Program:
+            case LibHac.Ncm.ContentType.Program:
                 counterType = sectionIndex + 1;
                 break;
-            case Ncm.ContentType.HtmlDocument:
-                counterType = (int)Ncm.ContentType.HtmlDocument;
+            case LibHac.Ncm.ContentType.HtmlDocument:
+                counterType = (int)LibHac.Ncm.ContentType.HtmlDocument;
                 break;
-            case Ncm.ContentType.LegalInformation:
-                counterType = (int)Ncm.ContentType.LegalInformation;
+            case LibHac.Ncm.ContentType.LegalInformation:
+                counterType = (int)LibHac.Ncm.ContentType.LegalInformation;
                 break;
             default:
                 counterType = 0;
