@@ -1,4 +1,4 @@
-﻿namespace LibHac.FsSystem;
+﻿namespace LibHac.Tools.FsSystem;
 
 internal static class Messages
 {

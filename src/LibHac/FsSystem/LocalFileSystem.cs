@@ -8,6 +8,7 @@ using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem.Impl;
+using LibHac.Tools.FsSystem;
 using LibHac.Util;
 using static LibHac.Fs.StringTraits;
 using Path = LibHac.Fs.Path;

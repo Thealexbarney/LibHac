@@ -6,6 +6,7 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 using LibHac.Tools.Fs;
+using LibHac.Tools.FsSystem;
 
 namespace hactoolnet;
 
