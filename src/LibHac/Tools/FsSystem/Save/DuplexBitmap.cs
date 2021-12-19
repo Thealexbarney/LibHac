@@ -2,7 +2,6 @@
 using System.Collections;
 using System.IO;
 using LibHac.Fs;
-using LibHac.FsSystem;
 
 namespace LibHac.Tools.FsSystem.Save;
 

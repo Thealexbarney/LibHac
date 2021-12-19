@@ -5,7 +5,6 @@ using System.Text;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
-using LibHac.FsSystem;
 using Aes = LibHac.Crypto.Aes;
 
 namespace LibHac.Tools.FsSystem;

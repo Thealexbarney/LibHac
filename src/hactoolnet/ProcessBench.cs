@@ -8,7 +8,6 @@ using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Crypto.Impl;
 using LibHac.Fs;
-using LibHac.FsSystem;
 using LibHac.Tools.FsSystem;
 
 namespace hactoolnet;

@@ -4,7 +4,7 @@ using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
-namespace LibHac.FsSystem;
+namespace LibHac.Tools.FsSystem;
 
 /// <summary>
 /// Provides an <see cref="IFile"/> interface for interacting with a <see cref="Stream"/>

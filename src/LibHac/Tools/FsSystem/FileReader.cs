@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using LibHac.Fs.Fsa;
 
-namespace LibHac.FsSystem;
+namespace LibHac.Tools.FsSystem;
 
 public class FileReader
 {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using LibHac.Fs;
+using LibHac.Tools.FsSystem;
 
 namespace LibHac.FsSystem;
 
