@@ -5,7 +5,7 @@ using LibHac.Common.Keys;
 using LibHac.Crypto;
 using LibHac.Fs;
 
-namespace LibHac;
+namespace LibHac.Tools.Fs;
 
 public class XciHeader
 {

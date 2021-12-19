@@ -2,6 +2,7 @@
 using LibHac.Fs;
 using LibHac.FsSystem.NcaUtils;
 using LibHac.Ncm;
+using LibHac.Tools.Fs;
 using ContentType = LibHac.Ncm.ContentType;
 
 namespace hactoolnet;
