@@ -212,7 +212,7 @@ public static class HierarchicalIntegrityVerificationStorageExtensions
                     break;
                 }
 
-                if (block == Validity.Unchecked && levelValidity != Validity.Invalid)
+                if (block == Validity.Unchecked)
                 {
                     levelValidity = Validity.Unchecked;
                 }

@@ -195,6 +195,7 @@ public class Nca
 
                 long nodeOffset = 0;
                 long nodeSize = IndirectStorage.QueryNodeStorageSize(header.EntryCount);
+                // ReSharper disable once UselessBinaryOperation
                 long entryOffset = nodeOffset + nodeSize;
                 long entrySize = IndirectStorage.QueryEntryStorageSize(header.EntryCount);
 

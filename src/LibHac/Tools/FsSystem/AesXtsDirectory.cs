@@ -85,7 +85,7 @@ public class AesXtsDirectory : IDirectory
             if (bytesRead != sizeof(uint) || magic != AesXtsFileHeader.AesXtsFileMagic) return 0;
 
             file.Get.Read(out bytesRead, fileSizeOffset, SpanHelpers.AsByteSpan(ref fileSize), ReadOption.None);
-            if (bytesRead != sizeof(long) || magic != AesXtsFileHeader.AesXtsFileMagic) return 0;
+            if (bytesRead != sizeof(long)) return 0;
 
             return fileSize;
         }
