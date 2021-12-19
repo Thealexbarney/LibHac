@@ -6,6 +6,7 @@ using LibHac.Boot;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSystem;
+using LibHac.Tools.FsSystem;
 using static hactoolnet.Print;
 using Path = System.IO.Path;
 

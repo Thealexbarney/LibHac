@@ -2,8 +2,9 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Fs;
+using LibHac.FsSystem;
 
-namespace LibHac.FsSystem;
+namespace LibHac.Tools.FsSystem;
 
 public class Aes128CtrExStorage : Aes128CtrStorage
 {

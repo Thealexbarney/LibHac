@@ -1,9 +1,9 @@
-﻿using LibHac.Crypto;
-using LibHac.Fs;
-using System;
+﻿using System;
 using LibHac.Common;
+using LibHac.Crypto;
+using LibHac.Fs;
 
-namespace LibHac.FsSystem;
+namespace LibHac.Tools.FsSystem;
 
 public class AesCbcStorage : SectorStorage
 {

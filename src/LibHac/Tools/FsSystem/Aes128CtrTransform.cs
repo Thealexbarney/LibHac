@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 using LibHac.Common;
 using LibHac.Util;
 
-namespace LibHac.FsSystem;
+namespace LibHac.Tools.FsSystem;
 
 public class Aes128CtrTransform
 {

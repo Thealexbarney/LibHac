@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using LibHac.Fs;
 
-namespace LibHac.FsSystem;
+namespace LibHac.Tools.FsSystem;
 
 public class CachedStorage : IStorage
 {
