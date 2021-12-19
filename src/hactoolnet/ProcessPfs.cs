@@ -1,9 +1,10 @@
 ﻿using System.IO;
 using System.Reflection;
 using System.Text;
-using LibHac;
 using LibHac.Fs;
 using LibHac.FsSystem;
+using LibHac.Tools.Es;
+using LibHac.Tools.Fs;
 using LibHac.Util;
 using static hactoolnet.Print;
 
