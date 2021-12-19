@@ -6,7 +6,6 @@ using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Os;
-using LibHac.FsSystem;
 using LibHac.Util;
 using static LibHac.Fs.Impl.CommonMountNames;
 using static LibHac.Fs.Impl.AccessLogStrings;
@@ -40,7 +39,7 @@ public static class Bis
             ReadOnlySpan<byte> mountName = GetBisMountName(_partitionId);
 
             // Add 2 for the mount name separator and null terminator
-            int requiredNameBufferSize = StringUtils.GetLength(mountName, PathTools.MountNameLengthMax) + 2;
+            int requiredNameBufferSize = StringUtils.GetLength(mountName, PathTool.MountNameLengthMax) + 2;
 
             Assert.SdkRequiresGreaterEqual(nameBuffer.Length, requiredNameBufferSize);
 

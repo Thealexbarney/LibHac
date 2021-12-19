@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
-using LibHac;
 using LibHac.Common;
 using LibHac.Common.Keys;
 using LibHac.Crypto;

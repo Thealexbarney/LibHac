@@ -251,7 +251,7 @@ public class InMemoryFileSystem : IAttributeFileSystem
                     ref DirectoryEntry entry = ref entryBuffer[i];
 
                     StringUtils.Copy(entry.Name, CurrentDir.Name);
-                    entry.Name[PathTools.MaxPathLength] = 0;
+                    entry.Name[PathTool.EntryNameLengthMax] = 0;
 
                     entry.Type = DirectoryEntryType.Directory;
                     entry.Attributes = CurrentDir.Attributes;
@@ -269,7 +269,7 @@ public class InMemoryFileSystem : IAttributeFileSystem
                     ref DirectoryEntry entry = ref entryBuffer[i];
 
                     StringUtils.Copy(entry.Name, CurrentFile.Name);
-                    entry.Name[PathTools.MaxPathLength] = 0;
+                    entry.Name[PathTool.EntryNameLengthMax] = 0;
 
                     entry.Type = DirectoryEntryType.File;
                     entry.Attributes = CurrentFile.Attributes;

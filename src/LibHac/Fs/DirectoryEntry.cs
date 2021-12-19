@@ -30,7 +30,7 @@ public struct DirectoryEntry
     [FieldOffset(0x304)] public DirectoryEntryType Type;
     [FieldOffset(0x308)] public long Size;
 
-    public Span<byte> Name => SpanHelpers.CreateSpan(ref _name, PathTools.MaxPathLength + 1);
+    public Span<byte> Name => SpanHelpers.CreateSpan(ref _name, PathTool.EntryNameLengthMax + 1);
 }
 
 public enum DirectoryEntryType : byte
