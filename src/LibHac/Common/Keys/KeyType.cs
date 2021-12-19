@@ -1,4 +1,4 @@
-﻿namespace LibHac;
+﻿namespace LibHac.Common.Keys;
 
 public enum KeyType
 {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LibHac;
+namespace LibHac.Common.Keys;
 
 /// <summary>
 /// This is the exception that is thrown when an action requires a key that is not found in the provided keyset.
