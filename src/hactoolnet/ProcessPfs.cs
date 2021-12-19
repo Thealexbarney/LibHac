@@ -5,6 +5,7 @@ using LibHac.Fs;
 using LibHac.FsSystem;
 using LibHac.Tools.Es;
 using LibHac.Tools.Fs;
+using LibHac.Tools.FsSystem;
 using LibHac.Util;
 using static hactoolnet.Print;
 
