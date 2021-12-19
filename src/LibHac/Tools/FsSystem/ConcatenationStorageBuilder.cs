@@ -2,9 +2,8 @@
 using System.IO;
 using System.Linq;
 using LibHac.Fs;
-using LibHac.Tools.FsSystem;
 
-namespace LibHac.FsSystem;
+namespace LibHac.Tools.FsSystem;
 
 public class ConcatenationStorageBuilder
 {
