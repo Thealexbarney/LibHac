@@ -4,7 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using LibHac;
+using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Crypto.Impl;
 using LibHac.Fs;
@@ -390,130 +390,130 @@ internal static class ProcessBench
         switch (ctx.Options.BenchType?.ToLower())
         {
             case "aesctr":
-                {
-                    IStorage decStorage = new MemoryStorage(new byte[Size]);
-                    IStorage encStorage = new Aes128CtrStorage(new MemoryStorage(new byte[Size]), new byte[0x10], new byte[0x10], true);
+            {
+                IStorage decStorage = new MemoryStorage(new byte[Size]);
+                IStorage encStorage = new Aes128CtrStorage(new MemoryStorage(new byte[Size]), new byte[0x10], new byte[0x10], true);
 
-                    CopyBenchmark(decStorage, encStorage, Iterations, "MemoryStorage Encrypt: ", ctx.Logger);
-                    CopyBenchmark(encStorage, decStorage, Iterations, "MemoryStorage Decrypt: ", ctx.Logger);
+                CopyBenchmark(decStorage, encStorage, Iterations, "MemoryStorage Encrypt: ", ctx.Logger);
+                CopyBenchmark(encStorage, decStorage, Iterations, "MemoryStorage Decrypt: ", ctx.Logger);
 
-                    decStorage = new NullStorage(Size);
-                    encStorage = new Aes128CtrStorage(new NullStorage(Size), new byte[0x10], new byte[0x10], true);
+                decStorage = new NullStorage(Size);
+                encStorage = new Aes128CtrStorage(new NullStorage(Size), new byte[0x10], new byte[0x10], true);
 
-                    CopyBenchmark(decStorage, encStorage, Iterations, "NullStorage Encrypt: ", ctx.Logger);
-                    CopyBenchmark(encStorage, decStorage, Iterations, "NullStorage Decrypt: ", ctx.Logger);
+                CopyBenchmark(decStorage, encStorage, Iterations, "NullStorage Encrypt: ", ctx.Logger);
+                CopyBenchmark(encStorage, decStorage, Iterations, "NullStorage Decrypt: ", ctx.Logger);
 
-                    decStorage = new MemoryStorage(new byte[Size]);
-                    encStorage = new CachedStorage(new Aes128CtrStorage(new MemoryStorage(new byte[Size]), new byte[0x10], new byte[0x10], true), 0x4000, 4, true);
+                decStorage = new MemoryStorage(new byte[Size]);
+                encStorage = new CachedStorage(new Aes128CtrStorage(new MemoryStorage(new byte[Size]), new byte[0x10], new byte[0x10], true), 0x4000, 4, true);
 
-                    CopyBenchmark(decStorage, encStorage, Iterations, "CachedStorage Encrypt: ", ctx.Logger);
-                    CopyBenchmark(encStorage, decStorage, Iterations, "CachedStorage Decrypt: ", ctx.Logger);
+                CopyBenchmark(decStorage, encStorage, Iterations, "CachedStorage Encrypt: ", ctx.Logger);
+                CopyBenchmark(encStorage, decStorage, Iterations, "CachedStorage Decrypt: ", ctx.Logger);
 
-                    break;
-                }
+                break;
+            }
 
             case "aesxts":
-                {
-                    IStorage decStorage = new MemoryStorage(new byte[Size]);
-                    IStorage encStorage = new Aes128XtsStorage(new MemoryStorage(new byte[Size]), new byte[0x20], 81920, true);
+            {
+                IStorage decStorage = new MemoryStorage(new byte[Size]);
+                IStorage encStorage = new Aes128XtsStorage(new MemoryStorage(new byte[Size]), new byte[0x20], 81920, true);
 
-                    CopyBenchmark(decStorage, encStorage, Iterations, "MemoryStorage Encrypt: ", ctx.Logger);
-                    CopyBenchmark(encStorage, decStorage, Iterations, "MemoryStorage Decrypt: ", ctx.Logger);
+                CopyBenchmark(decStorage, encStorage, Iterations, "MemoryStorage Encrypt: ", ctx.Logger);
+                CopyBenchmark(encStorage, decStorage, Iterations, "MemoryStorage Decrypt: ", ctx.Logger);
 
-                    decStorage = new NullStorage(Size);
-                    encStorage = new Aes128XtsStorage(new NullStorage(Size), new byte[0x20], 81920, true);
+                decStorage = new NullStorage(Size);
+                encStorage = new Aes128XtsStorage(new NullStorage(Size), new byte[0x20], 81920, true);
 
-                    CopyBenchmark(decStorage, encStorage, Iterations, "NullStorage Encrypt: ", ctx.Logger);
-                    CopyBenchmark(encStorage, decStorage, Iterations, "NullStorage Decrypt: ", ctx.Logger);
+                CopyBenchmark(decStorage, encStorage, Iterations, "NullStorage Encrypt: ", ctx.Logger);
+                CopyBenchmark(encStorage, decStorage, Iterations, "NullStorage Decrypt: ", ctx.Logger);
 
-                    decStorage = new MemoryStorage(new byte[Size]);
-                    encStorage = new CachedStorage(new Aes128XtsStorage(new MemoryStorage(new byte[Size]), new byte[0x20], 0x4000, true), 4, true);
+                decStorage = new MemoryStorage(new byte[Size]);
+                encStorage = new CachedStorage(new Aes128XtsStorage(new MemoryStorage(new byte[Size]), new byte[0x20], 0x4000, true), 4, true);
 
-                    CopyBenchmark(decStorage, encStorage, Iterations, "CachedStorage Encrypt: ", ctx.Logger);
-                    CopyBenchmark(encStorage, decStorage, Iterations, "CachedStorage Decrypt: ", ctx.Logger);
-                    break;
-                }
+                CopyBenchmark(decStorage, encStorage, Iterations, "CachedStorage Encrypt: ", ctx.Logger);
+                CopyBenchmark(encStorage, decStorage, Iterations, "CachedStorage Decrypt: ", ctx.Logger);
+                break;
+            }
 
             case "aesecbnew":
-                {
-                    Func<ICipher> encryptorNet = () => Aes.CreateEcbEncryptor(new byte[0x10], true);
-                    Func<ICipher> encryptorLh = () => Aes.CreateEcbEncryptor(new byte[0x10]);
-                    CipherTaskSeparate encrypt = (input, output, key1, _, _, crypto) =>
-                        Aes.EncryptEcb128(input, output, key1, crypto);
+            {
+                Func<ICipher> encryptorNet = () => Aes.CreateEcbEncryptor(new byte[0x10], true);
+                Func<ICipher> encryptorLh = () => Aes.CreateEcbEncryptor(new byte[0x10]);
+                CipherTaskSeparate encrypt = (input, output, key1, _, _, crypto) =>
+                    Aes.EncryptEcb128(input, output, key1, crypto);
 
-                    RunCipherBenchmark(encryptorNet, encryptorLh, encrypt, true, "AES-ECB encrypt", ctx.Logger);
+                RunCipherBenchmark(encryptorNet, encryptorLh, encrypt, true, "AES-ECB encrypt", ctx.Logger);
 
-                    Func<ICipher> decryptorNet = () => Aes.CreateEcbDecryptor(new byte[0x10], true);
-                    Func<ICipher> decryptorLh = () => Aes.CreateEcbDecryptor(new byte[0x10]);
-                    CipherTaskSeparate decrypt = (input, output, key1, _, _, crypto) =>
-                        Aes.DecryptEcb128(input, output, key1, crypto);
+                Func<ICipher> decryptorNet = () => Aes.CreateEcbDecryptor(new byte[0x10], true);
+                Func<ICipher> decryptorLh = () => Aes.CreateEcbDecryptor(new byte[0x10]);
+                CipherTaskSeparate decrypt = (input, output, key1, _, _, crypto) =>
+                    Aes.DecryptEcb128(input, output, key1, crypto);
 
-                    RunCipherBenchmark(decryptorNet, decryptorLh, decrypt, true, "AES-ECB decrypt", ctx.Logger);
+                RunCipherBenchmark(decryptorNet, decryptorLh, decrypt, true, "AES-ECB decrypt", ctx.Logger);
 
-                    break;
-                }
+                break;
+            }
 
             case "aescbcnew":
-                {
-                    Func<ICipher> encryptorNet = () => Aes.CreateCbcEncryptor(new byte[0x10], new byte[0x10], true);
-                    Func<ICipher> encryptorLh = () => Aes.CreateCbcEncryptor(new byte[0x10], new byte[0x10]);
-                    CipherTaskSeparate encrypt = (input, output, key1, _, iv, crypto) =>
-                        Aes.EncryptCbc128(input, output, key1, iv, crypto);
+            {
+                Func<ICipher> encryptorNet = () => Aes.CreateCbcEncryptor(new byte[0x10], new byte[0x10], true);
+                Func<ICipher> encryptorLh = () => Aes.CreateCbcEncryptor(new byte[0x10], new byte[0x10]);
+                CipherTaskSeparate encrypt = (input, output, key1, _, iv, crypto) =>
+                    Aes.EncryptCbc128(input, output, key1, iv, crypto);
 
-                    RunCipherBenchmark(encryptorNet, encryptorLh, encrypt, true, "AES-CBC encrypt", ctx.Logger);
+                RunCipherBenchmark(encryptorNet, encryptorLh, encrypt, true, "AES-CBC encrypt", ctx.Logger);
 
-                    Func<ICipher> decryptorNet = () => Aes.CreateCbcDecryptor(new byte[0x10], new byte[0x10], true);
-                    Func<ICipher> decryptorLh = () => Aes.CreateCbcDecryptor(new byte[0x10], new byte[0x10]);
-                    CipherTaskSeparate decrypt = (input, output, key1, _, iv, crypto) =>
-                        Aes.DecryptCbc128(input, output, key1, iv, crypto);
+                Func<ICipher> decryptorNet = () => Aes.CreateCbcDecryptor(new byte[0x10], new byte[0x10], true);
+                Func<ICipher> decryptorLh = () => Aes.CreateCbcDecryptor(new byte[0x10], new byte[0x10]);
+                CipherTaskSeparate decrypt = (input, output, key1, _, iv, crypto) =>
+                    Aes.DecryptCbc128(input, output, key1, iv, crypto);
 
-                    RunCipherBenchmark(decryptorNet, decryptorLh, decrypt, true, "AES-CBC decrypt", ctx.Logger);
+                RunCipherBenchmark(decryptorNet, decryptorLh, decrypt, true, "AES-CBC decrypt", ctx.Logger);
 
-                    break;
-                }
+                break;
+            }
 
             case "aesctrnew":
-                {
-                    Func<ICipher> encryptorNet = () => Aes.CreateCtrEncryptor(new byte[0x10], new byte[0x10], true);
-                    Func<ICipher> encryptorLh = () => Aes.CreateCtrEncryptor(new byte[0x10], new byte[0x10]);
-                    CipherTaskSeparate encrypt = (input, output, key1, _, iv, crypto) =>
-                        Aes.EncryptCtr128(input, output, key1, iv, crypto);
+            {
+                Func<ICipher> encryptorNet = () => Aes.CreateCtrEncryptor(new byte[0x10], new byte[0x10], true);
+                Func<ICipher> encryptorLh = () => Aes.CreateCtrEncryptor(new byte[0x10], new byte[0x10]);
+                CipherTaskSeparate encrypt = (input, output, key1, _, iv, crypto) =>
+                    Aes.EncryptCtr128(input, output, key1, iv, crypto);
 
-                    RunCipherBenchmark(encryptorNet, encryptorLh, encrypt, true, "AES-CTR", ctx.Logger);
+                RunCipherBenchmark(encryptorNet, encryptorLh, encrypt, true, "AES-CTR", ctx.Logger);
 
-                    break;
-                }
+                break;
+            }
 
             case "aesxtsnew":
-                {
-                    Func<ICipher> encryptorNet = () => Aes.CreateXtsEncryptor(new byte[0x10], new byte[0x10], new byte[0x10], true);
-                    Func<ICipher> encryptorLh = () => Aes.CreateXtsEncryptor(new byte[0x10], new byte[0x10], new byte[0x10]);
-                    CipherTaskSeparate encrypt = (input, output, key1, key2, iv, crypto) =>
-                        Aes.EncryptXts128(input, output, key1, key2, iv, crypto);
+            {
+                Func<ICipher> encryptorNet = () => Aes.CreateXtsEncryptor(new byte[0x10], new byte[0x10], new byte[0x10], true);
+                Func<ICipher> encryptorLh = () => Aes.CreateXtsEncryptor(new byte[0x10], new byte[0x10], new byte[0x10]);
+                CipherTaskSeparate encrypt = (input, output, key1, key2, iv, crypto) =>
+                    Aes.EncryptXts128(input, output, key1, key2, iv, crypto);
 
-                    RunCipherBenchmark(encryptorNet, encryptorLh, encrypt, false, "AES-XTS encrypt", ctx.Logger);
+                RunCipherBenchmark(encryptorNet, encryptorLh, encrypt, false, "AES-XTS encrypt", ctx.Logger);
 
-                    Func<ICipher> decryptorNet = () => Aes.CreateXtsDecryptor(new byte[0x10], new byte[0x10], new byte[0x10], true);
-                    Func<ICipher> decryptorLh = () => Aes.CreateXtsDecryptor(new byte[0x10], new byte[0x10], new byte[0x10]);
-                    CipherTaskSeparate decrypt = (input, output, key1, key2, iv, crypto) =>
-                        Aes.DecryptXts128(input, output, key1, key2, iv, crypto);
+                Func<ICipher> decryptorNet = () => Aes.CreateXtsDecryptor(new byte[0x10], new byte[0x10], new byte[0x10], true);
+                Func<ICipher> decryptorLh = () => Aes.CreateXtsDecryptor(new byte[0x10], new byte[0x10], new byte[0x10]);
+                CipherTaskSeparate decrypt = (input, output, key1, key2, iv, crypto) =>
+                    Aes.DecryptXts128(input, output, key1, key2, iv, crypto);
 
-                    RunCipherBenchmark(decryptorNet, decryptorLh, decrypt, false, "AES-XTS decrypt", ctx.Logger);
+                RunCipherBenchmark(decryptorNet, decryptorLh, decrypt, false, "AES-XTS decrypt", ctx.Logger);
 
-                    break;
-                }
+                break;
+            }
 
             case "crypto":
-                {
-                    var bench = new MultiBenchmark();
+            {
+                var bench = new MultiBenchmark();
 
-                    RegisterAesSequentialBenchmarks(bench);
-                    RegisterAesSingleBlockBenchmarks(bench);
-                    RegisterShaBenchmarks(bench);
+                RegisterAesSequentialBenchmarks(bench);
+                RegisterAesSingleBlockBenchmarks(bench);
+                RegisterShaBenchmarks(bench);
 
-                    bench.Run();
-                    break;
-                }
+                bench.Run();
+                break;
+            }
 
             default:
                 ctx.Logger.LogMessage("Unknown benchmark type.");

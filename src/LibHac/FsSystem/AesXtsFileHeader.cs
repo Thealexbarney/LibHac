@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 

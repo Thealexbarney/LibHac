@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers.Binary;
 using System.Diagnostics;
+using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;

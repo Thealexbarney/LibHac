@@ -17,7 +17,7 @@ internal static class ProcessPackage
     {
         using var file = new SharedRef<IStorage>(new LocalStorage(ctx.Options.InFile, FileAccess.Read));
 
-        var package1 = new LibHac.Boot.Package1();
+        var package1 = new Package1();
         package1.Initialize(ctx.KeySet, in file).ThrowIfFailure();
 
         ctx.Logger.LogMessage(package1.Print());
@@ -54,7 +54,7 @@ internal static class ProcessPackage
         }
     }
 
-    private static string Print(this LibHac.Boot.Package1 package1)
+    private static string Print(this Package1 package1)
     {
         int colLen = 36;
         var sb = new StringBuilder();
