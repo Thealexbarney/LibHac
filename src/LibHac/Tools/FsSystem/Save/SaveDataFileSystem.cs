@@ -5,7 +5,6 @@ using LibHac.Common.Keys;
 using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
-using LibHac.FsSystem;
 using Path = LibHac.Fs.Path;
 
 namespace LibHac.Tools.FsSystem.Save;

@@ -4,7 +4,6 @@ using LibHac.Common;
 using LibHac.Common.Keys;
 using LibHac.Crypto;
 using LibHac.Fs;
-using LibHac.FsSystem;
 
 namespace LibHac.Tools.FsSystem.Save;
 

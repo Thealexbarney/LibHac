@@ -4,10 +4,9 @@ using System.IO;
 using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Fs;
-using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.Save;
 
-namespace LibHac.FsSystem;
+namespace LibHac.Tools.FsSystem;
 
 public class IntegrityVerificationStorage : SectorStorage
 {
