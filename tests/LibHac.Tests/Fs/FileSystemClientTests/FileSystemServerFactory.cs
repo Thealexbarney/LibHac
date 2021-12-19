@@ -2,6 +2,7 @@
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv;
+using LibHac.Tools.Fs;
 
 namespace LibHac.Tests.Fs.FileSystemClientTests;
 

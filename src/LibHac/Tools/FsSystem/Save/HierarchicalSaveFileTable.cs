@@ -3,7 +3,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
-using LibHac.FsSystem;
 using LibHac.Util;
 
 namespace LibHac.Tools.FsSystem.Save;

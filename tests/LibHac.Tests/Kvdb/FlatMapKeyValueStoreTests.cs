@@ -4,6 +4,7 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Kvdb;
 using LibHac.Tests.Fs.FileSystemClientTests;
+using LibHac.Tools.Fs;
 using Xunit;
 
 using TTest = System.Int32;

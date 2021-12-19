@@ -2,11 +2,13 @@
 using System.Diagnostics;
 using System.IO;
 using LibHac.Common;
+using LibHac.Fs;
 using LibHac.Fs.Fsa;
-using LibHac.FsSystem;
+using LibHac.Tools.FsSystem;
 using LibHac.Util;
+using Path = LibHac.Fs.Path;
 
-namespace LibHac.Fs;
+namespace LibHac.Tools.Fs;
 
 /// <summary>
 /// A filesystem stored in-memory. Mainly used for testing.
