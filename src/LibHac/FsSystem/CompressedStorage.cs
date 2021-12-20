@@ -4,7 +4,9 @@ using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.FsSystem.Impl;
 using LibHac.Os;
+
 using Buffer = LibHac.Mem.Buffer;
+using CacheHandle = System.Int64;
 
 namespace LibHac.FsSystem;
 
@@ -135,7 +137,7 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
         public struct CacheEntry : IBlockCacheManagerEntry<Range>
         {
             public Range Range { get; set; }
-            public long Handle { get; set; }
+            public CacheHandle Handle { get; set; }
             public Buffer Buffer { get; set; }
             public bool IsValid { get; set; }
             public bool IsCached { get; set; }

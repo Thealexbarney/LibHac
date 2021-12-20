@@ -3,6 +3,8 @@ using LibHac.FsSystem;
 using LibHac.Mem;
 using Xunit;
 
+using CacheHandle = System.Int64;
+
 namespace LibHac.Tests.FsSystem;
 
 public class FileSystemBufferManagerTests
@@ -38,7 +40,7 @@ public class FileSystemBufferManagerTests
         FileSystemBufferManager manager = CreateManager(0x20000);
         Buffer buffer1 = manager.AllocateBuffer(0x10000);
 
-        long handle = manager.RegisterCache(buffer1, new IBufferManager.BufferAttribute());
+        CacheHandle handle = manager.RegisterCache(buffer1, new IBufferManager.BufferAttribute());
 
         manager.AllocateBuffer(0x10000);
         Buffer buffer3 = manager.AcquireCache(handle);
@@ -52,7 +54,7 @@ public class FileSystemBufferManagerTests
         FileSystemBufferManager manager = CreateManager(0x20000);
         Buffer buffer1 = manager.AllocateBuffer(0x10000);
 
-        long handle = manager.RegisterCache(buffer1, new IBufferManager.BufferAttribute());
+        CacheHandle handle = manager.RegisterCache(buffer1, new IBufferManager.BufferAttribute());
 
         manager.AllocateBuffer(0x20000);
         Buffer buffer3 = manager.AcquireCache(handle);
@@ -69,10 +71,10 @@ public class FileSystemBufferManagerTests
         Buffer buffer3 = manager.AllocateBuffer(0x8000);
         Buffer buffer4 = manager.AllocateBuffer(0x8000);
 
-        long handle1 = manager.RegisterCache(buffer1, new IBufferManager.BufferAttribute());
-        long handle2 = manager.RegisterCache(buffer2, new IBufferManager.BufferAttribute());
-        long handle3 = manager.RegisterCache(buffer3, new IBufferManager.BufferAttribute());
-        long handle4 = manager.RegisterCache(buffer4, new IBufferManager.BufferAttribute());
+        CacheHandle handle1 = manager.RegisterCache(buffer1, new IBufferManager.BufferAttribute());
+        CacheHandle handle2 = manager.RegisterCache(buffer2, new IBufferManager.BufferAttribute());
+        CacheHandle handle3 = manager.RegisterCache(buffer3, new IBufferManager.BufferAttribute());
+        CacheHandle handle4 = manager.RegisterCache(buffer4, new IBufferManager.BufferAttribute());
 
         manager.AllocateBuffer(0x10000);
 

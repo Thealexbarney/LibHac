@@ -3,6 +3,7 @@ using LibHac.Diag;
 using LibHac.Fs;
 
 using Buffer = LibHac.Mem.Buffer;
+using CacheHandle = System.Int64;
 
 namespace LibHac.FsSystem.Impl;
 
@@ -13,7 +14,7 @@ public interface IBlockCacheManagerEntry<TRange> where TRange : struct, IBlockCa
     bool IsWriteBack { get; set; }
     bool IsCached { get; set; }
     bool IsFlushing { set; }
-    long Handle { get; set; }
+    CacheHandle Handle { get; set; }
     Buffer Buffer { get; set; }
     short Age { get; set; }
 

@@ -5,16 +5,21 @@ using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
+using LibHac.Os;
 using LibHac.Util;
+
 using Buffer = LibHac.Mem.Buffer;
 using CacheHandle = System.Int64;
 
 // ReSharper disable once CheckNamespace
 namespace LibHac.FsSystem;
 
+/// <summary>
+/// An <see cref="IBufferManager"/> that uses a <see cref="FileSystemBuddyHeap"/> as an allocator.
+/// </summary>
 public class FileSystemBufferManager : IBufferManager
 {
-    private class CacheHandleTable
+    private class CacheHandleTable : IDisposable
     {
         private struct Entry
         {
@@ -62,14 +67,24 @@ public class FileSystemBufferManager : IBufferManager
             }
         }
 
-        private Entry[] Entries { get; set; }
-        private int EntryCount { get; set; }
-        private int EntryCountMax { get; set; }
-        private LinkedList<AttrInfo> AttrList { get; set; } = new();
-        private int CacheCountMin { get; set; }
-        private int CacheSizeMin { get; set; }
-        private int TotalCacheSize { get; set; }
-        private CacheHandle CurrentHandle { get; set; }
+        private Entry[] _entries;
+        private int _entryCount;
+        private int _entryCountMax;
+        private LinkedList<AttrInfo> _attrList;
+        private int _cacheCountMin;
+        private int _cacheSizeMin;
+        private int _totalCacheSize;
+        private CacheHandle _currentHandle;
+
+        public CacheHandleTable()
+        {
+            _attrList = new LinkedList<AttrInfo>();
+        }
+
+        public void Dispose()
+        {
+            FinalizeObject();
+        }
 
         // ReSharper disable once UnusedMember.Local
         // We can't use an external buffer in C# without ensuring all allocated buffers are pinned.
@@ -90,41 +105,53 @@ public class FileSystemBufferManager : IBufferManager
         public Result Initialize(int maxCacheCount)
         {
             // Validate pre-conditions.
-            Assert.SdkRequiresNull(Entries);
+            Assert.SdkRequiresNull(_entries);
 
             // Note: We don't have the option of using an external Entry buffer like the original C++ code
             // because Entry includes managed references so we can't cast a byte* to Entry* without pinning.
             // If we don't have an external buffer, try to allocate an internal one.
 
-            Entries = new Entry[maxCacheCount];
+            _entries = new Entry[maxCacheCount];
 
-            if (Entries == null)
+            if (_entries == null)
             {
                 return ResultFs.AllocationMemoryFailedInFileSystemBufferManagerA.Log();
             }
 
             // Set entries.
-            EntryCount = 0;
-            EntryCountMax = maxCacheCount;
+            _entryCount = 0;
+            _entryCountMax = maxCacheCount;
 
-            Assert.SdkNotNull(Entries);
+            Assert.SdkNotNull(_entries);
 
-            CacheCountMin = maxCacheCount / 16;
-            CacheSizeMin = CacheCountMin * 0x100;
+            _cacheCountMin = maxCacheCount / 16;
+            _cacheSizeMin = _cacheCountMin * 0x100;
 
             return Result.Success;
+        }
+
+        public void FinalizeObject()
+        {
+            if (_entries is null)
+                return;
+
+            Assert.SdkAssert(_entryCount == 0);
+
+            _attrList.Clear();
+            _entries = null;
+            _totalCacheSize = 0;
         }
 
         // ReSharper disable once UnusedParameter.Local
         private int GetCacheCountMin(BufferAttribute attr)
         {
-            return CacheCountMin;
+            return _cacheCountMin;
         }
 
         // ReSharper disable once UnusedParameter.Local
         private int GetCacheSizeMin(BufferAttribute attr)
         {
-            return CacheSizeMin;
+            return _cacheSizeMin;
         }
 
         public bool Register(out CacheHandle handle, Buffer buffer, BufferAttribute attr)
@@ -132,7 +159,7 @@ public class FileSystemBufferManager : IBufferManager
             UnsafeHelpers.SkipParamInit(out handle);
 
             // Validate pre-conditions.
-            Assert.SdkRequiresNotNull(Entries);
+            Assert.SdkRequiresNotNull(_entries);
             Assert.SdkRequiresNotNull(ref handle);
 
             // Get the entry.
@@ -154,10 +181,10 @@ public class FileSystemBufferManager : IBufferManager
                 // Make a new attr info and add it to the list.
                 // Note: Not using attr info buffer
                 var newInfo = new AttrInfo(attr.Level, 1, buffer.Length);
-                AttrList.AddLast(newInfo);
+                _attrList.AddLast(newInfo);
             }
 
-            TotalCacheSize += buffer.Length;
+            _totalCacheSize += buffer.Length;
             handle = entry.GetHandle();
             return true;
         }
@@ -166,17 +193,17 @@ public class FileSystemBufferManager : IBufferManager
         {
             // Validate pre-conditions.
             Unsafe.SkipInit(out buffer);
-            Assert.SdkRequiresNotNull(Entries);
+            Assert.SdkRequiresNotNull(_entries);
             Assert.SdkRequiresNotNull(ref buffer);
 
             UnsafeHelpers.SkipParamInit(out buffer);
 
             // Find the lower bound for the entry.
-            for (int i = 0; i < EntryCount; i++)
+            for (int i = 0; i < _entryCount; i++)
             {
-                if (Entries[i].GetHandle() == handle)
+                if (_entries[i].GetHandle() == handle)
                 {
-                    UnregisterCore(out buffer, ref Entries[i]);
+                    UnregisterCore(out buffer, ref _entries[i]);
                     return true;
                 }
             }
@@ -190,13 +217,13 @@ public class FileSystemBufferManager : IBufferManager
         {
             // Validate pre-conditions.
             Unsafe.SkipInit(out buffer);
-            Assert.SdkRequiresNotNull(Entries);
+            Assert.SdkRequiresNotNull(_entries);
             Assert.SdkRequiresNotNull(ref buffer);
 
             UnsafeHelpers.SkipParamInit(out buffer);
 
             // If we have no entries, we can't unregister any.
-            if (EntryCount == 0)
+            if (_entryCount == 0)
             {
                 return false;
             }
@@ -214,18 +241,18 @@ public class FileSystemBufferManager : IBufferManager
 
             // Find an entry, falling back to the first entry.
             ref Entry entry = ref Unsafe.NullRef<Entry>();
-            for (int i = 0; i < EntryCount; i++)
+            for (int i = 0; i < _entryCount; i++)
             {
-                if (CanUnregister(this, ref Entries[i]))
+                if (CanUnregister(this, ref _entries[i]))
                 {
-                    entry = ref Entries[i];
+                    entry = ref _entries[i];
                     break;
                 }
             }
 
             if (Unsafe.IsNullRef(ref entry))
             {
-                entry = ref Entries[0];
+                entry = ref _entries[0];
             }
 
             Assert.SdkNotNull(ref entry);
@@ -237,7 +264,7 @@ public class FileSystemBufferManager : IBufferManager
         {
             // Validate pre-conditions.
             Unsafe.SkipInit(out buffer);
-            Assert.SdkRequiresNotNull(Entries);
+            Assert.SdkRequiresNotNull(_entries);
             Assert.SdkRequiresNotNull(ref buffer);
             Assert.SdkRequiresNotNull(ref entry);
 
@@ -254,8 +281,8 @@ public class FileSystemBufferManager : IBufferManager
             attrInfo.SubtractCacheSize(entry.GetSize());
 
             // Release from cached size.
-            Assert.SdkGreaterEqual(TotalCacheSize, entry.GetSize());
-            TotalCacheSize -= entry.GetSize();
+            Assert.SdkGreaterEqual(_totalCacheSize, entry.GetSize());
+            _totalCacheSize -= entry.GetSize();
 
             // Release the entry.
             buffer = entry.GetBuffer();
@@ -264,27 +291,27 @@ public class FileSystemBufferManager : IBufferManager
 
         public CacheHandle PublishCacheHandle()
         {
-            Assert.SdkRequires(Entries != null);
-            return ++CurrentHandle;
+            Assert.SdkRequires(_entries != null);
+            return ++_currentHandle;
         }
 
         public int GetTotalCacheSize()
         {
-            return TotalCacheSize;
+            return _totalCacheSize;
         }
 
         private ref Entry AcquireEntry(Buffer buffer, BufferAttribute attr)
         {
             // Validate pre-conditions.
-            Assert.SdkRequiresNotNull(Entries);
+            Assert.SdkRequiresNotNull(_entries);
 
             ref Entry entry = ref Unsafe.NullRef<Entry>();
-            if (EntryCount < EntryCountMax)
+            if (_entryCount < _entryCountMax)
             {
-                entry = ref Entries[EntryCount];
+                entry = ref _entries[_entryCount];
                 entry.Initialize(PublishCacheHandle(), buffer, attr);
-                EntryCount++;
-                Assert.SdkAssert(EntryCount == 1 || Entries[EntryCount - 2].GetHandle() < entry.GetHandle());
+                _entryCount++;
+                Assert.SdkAssert(_entryCount == 1 || _entries[_entryCount - 2].GetHandle() < entry.GetHandle());
             }
 
             return ref entry;
@@ -293,11 +320,11 @@ public class FileSystemBufferManager : IBufferManager
         private void ReleaseEntry(ref Entry entry)
         {
             // Validate pre-conditions.
-            Assert.SdkRequiresNotNull(Entries);
+            Assert.SdkRequiresNotNull(_entries);
             Assert.SdkRequiresNotNull(ref entry);
 
             // Ensure the entry is valid.
-            Span<Entry> entryBuffer = Entries;
+            Span<Entry> entryBuffer = _entries;
             Assert.SdkAssert(!Unsafe.IsAddressLessThan(ref entry, ref MemoryMarshal.GetReference(entryBuffer)));
             Assert.SdkAssert(Unsafe.IsAddressLessThan(ref entry,
                 ref Unsafe.Add(ref MemoryMarshal.GetReference(entryBuffer), entryBuffer.Length)));
@@ -307,17 +334,17 @@ public class FileSystemBufferManager : IBufferManager
                         Unsafe.SizeOf<Entry>();
 
             // Copy the entries back by one.
-            Span<Entry> source = entryBuffer.Slice(index + 1, EntryCount - (index + 1));
+            Span<Entry> source = entryBuffer.Slice(index + 1, _entryCount - (index + 1));
             Span<Entry> dest = entryBuffer.Slice(index);
             source.CopyTo(dest);
 
             // Decrement our entry count.
-            EntryCount--;
+            _entryCount--;
         }
 
         private ref AttrInfo FindAttrInfo(BufferAttribute attr)
         {
-            LinkedListNode<AttrInfo> curNode = AttrList.First;
+            LinkedListNode<AttrInfo> curNode = _attrList.First;
 
             while (curNode != null)
             {
@@ -333,50 +360,54 @@ public class FileSystemBufferManager : IBufferManager
         }
     }
 
-    private FileSystemBuddyHeap BuddyHeap { get; } = new();
-    private CacheHandleTable CacheTable { get; } = new();
-    private int TotalSize { get; set; }
-    private int PeakFreeSize { get; set; }
-    private int PeakTotalAllocatableSize { get; set; }
-    private int RetriedCount { get; set; }
-    private object Locker { get; } = new();
+    private FileSystemBuddyHeap _buddyHeap;
+    private CacheHandleTable _cacheTable;
+    private int _totalSize;
+    private int _peakFreeSize;
+    private int _peakTotalAllocatableSize;
+    private int _retriedCount;
+    private SdkMutexType _mutex;
 
-    protected override void Dispose(bool disposing)
+    public FileSystemBufferManager()
     {
-        if (disposing)
-        {
-            BuddyHeap.Dispose();
-        }
+        _buddyHeap = new FileSystemBuddyHeap();
+        _cacheTable = new CacheHandleTable();
+        _mutex = new SdkMutexType();
+    }
 
-        base.Dispose(disposing);
+    public override void Dispose()
+    {
+        _cacheTable.Dispose();
+        _buddyHeap.Dispose();
+        base.Dispose();
     }
 
     public Result Initialize(int maxCacheCount, Memory<byte> heapBuffer, int blockSize)
     {
-        Result rc = CacheTable.Initialize(maxCacheCount);
+        Result rc = _cacheTable.Initialize(maxCacheCount);
         if (rc.IsFailure()) return rc;
 
-        rc = BuddyHeap.Initialize(heapBuffer, blockSize);
+        rc = _buddyHeap.Initialize(heapBuffer, blockSize);
         if (rc.IsFailure()) return rc;
 
-        TotalSize = (int)BuddyHeap.GetTotalFreeSize();
-        PeakFreeSize = TotalSize;
-        PeakTotalAllocatableSize = TotalSize;
+        _totalSize = (int)_buddyHeap.GetTotalFreeSize();
+        _peakFreeSize = _totalSize;
+        _peakTotalAllocatableSize = _totalSize;
 
         return Result.Success;
     }
 
     public Result Initialize(int maxCacheCount, Memory<byte> heapBuffer, int blockSize, int maxOrder)
     {
-        Result rc = CacheTable.Initialize(maxCacheCount);
+        Result rc = _cacheTable.Initialize(maxCacheCount);
         if (rc.IsFailure()) return rc;
 
-        rc = BuddyHeap.Initialize(heapBuffer, blockSize, maxOrder);
+        rc = _buddyHeap.Initialize(heapBuffer, blockSize, maxOrder);
         if (rc.IsFailure()) return rc;
 
-        TotalSize = (int)BuddyHeap.GetTotalFreeSize();
-        PeakFreeSize = TotalSize;
-        PeakTotalAllocatableSize = TotalSize;
+        _totalSize = (int)_buddyHeap.GetTotalFreeSize();
+        _peakFreeSize = _totalSize;
+        _peakTotalAllocatableSize = _totalSize;
 
         return Result.Success;
     }
@@ -386,15 +417,15 @@ public class FileSystemBufferManager : IBufferManager
         // Note: We can't use an external buffer for the cache handle table since it contains managed pointers,
         // so pass the work buffer directly to the buddy heap.
 
-        Result rc = CacheTable.Initialize(maxCacheCount);
+        Result rc = _cacheTable.Initialize(maxCacheCount);
         if (rc.IsFailure()) return rc;
 
-        rc = BuddyHeap.Initialize(heapBuffer, blockSize, workBuffer);
+        rc = _buddyHeap.Initialize(heapBuffer, blockSize, workBuffer);
         if (rc.IsFailure()) return rc;
 
-        TotalSize = (int)BuddyHeap.GetTotalFreeSize();
-        PeakFreeSize = TotalSize;
-        PeakTotalAllocatableSize = TotalSize;
+        _totalSize = (int)_buddyHeap.GetTotalFreeSize();
+        _peakFreeSize = _totalSize;
+        _peakTotalAllocatableSize = _totalSize;
 
         return Result.Success;
     }
@@ -405,40 +436,39 @@ public class FileSystemBufferManager : IBufferManager
         // Note: We can't use an external buffer for the cache handle table since it contains managed pointers,
         // so pass the work buffer directly to the buddy heap.
 
-        Result rc = CacheTable.Initialize(maxCacheCount);
+        Result rc = _cacheTable.Initialize(maxCacheCount);
         if (rc.IsFailure()) return rc;
 
-        rc = BuddyHeap.Initialize(heapBuffer, blockSize, maxOrder, workBuffer);
+        rc = _buddyHeap.Initialize(heapBuffer, blockSize, maxOrder, workBuffer);
         if (rc.IsFailure()) return rc;
 
-        TotalSize = (int)BuddyHeap.GetTotalFreeSize();
-        PeakFreeSize = TotalSize;
-        PeakTotalAllocatableSize = TotalSize;
+        _totalSize = (int)_buddyHeap.GetTotalFreeSize();
+        _peakFreeSize = _totalSize;
+        _peakTotalAllocatableSize = _totalSize;
 
         return Result.Success;
     }
 
     protected override Buffer DoAllocateBuffer(int size, BufferAttribute attribute)
     {
-        lock (Locker)
-        {
-            return AllocateBufferImpl(size, attribute);
-        }
+        using var lk = new ScopedLock<SdkMutexType>(ref _mutex);
+
+        return AllocateBufferImpl(size, attribute);
     }
 
     private Buffer AllocateBufferImpl(int size, BufferAttribute attribute)
     {
-        int order = BuddyHeap.GetOrderFromBytes((nuint)size);
+        int order = _buddyHeap.GetOrderFromBytes((nuint)size);
         Assert.SdkAssert(order >= 0);
 
         // Allocate space on the heap
         Buffer buffer;
-        while ((buffer = BuddyHeap.AllocateBufferByOrder(order)).IsNull)
+        while ((buffer = _buddyHeap.AllocateBufferByOrder(order)).IsNull)
         {
             // Not enough space in heap. Deallocate cached buffer and try again.
-            RetriedCount++;
+            _retriedCount++;
 
-            if (!CacheTable.UnregisterOldest(out Buffer deallocateBuffer, attribute, size))
+            if (!_cacheTable.UnregisterOldest(out Buffer deallocateBuffer, attribute, size))
             {
                 // No cached buffers left to deallocate.
                 return Buffer.Empty;
@@ -448,57 +478,56 @@ public class FileSystemBufferManager : IBufferManager
         }
 
         // Successfully allocated a buffer.
-        int allocatedSize = (int)BuddyHeap.GetBytesFromOrder(order);
+        int allocatedSize = (int)_buddyHeap.GetBytesFromOrder(order);
         Assert.SdkAssert(size <= allocatedSize);
 
         // Update heap stats
-        int freeSize = (int)BuddyHeap.GetTotalFreeSize();
-        PeakFreeSize = Math.Min(PeakFreeSize, freeSize);
+        int freeSize = (int)_buddyHeap.GetTotalFreeSize();
+        _peakFreeSize = Math.Min(_peakFreeSize, freeSize);
 
-        int totalAllocatableSize = freeSize + CacheTable.GetTotalCacheSize();
-        PeakTotalAllocatableSize = Math.Min(PeakTotalAllocatableSize, totalAllocatableSize);
+        int totalAllocatableSize = freeSize + _cacheTable.GetTotalCacheSize();
+        _peakTotalAllocatableSize = Math.Min(_peakTotalAllocatableSize, totalAllocatableSize);
 
         return buffer;
     }
 
     protected override void DoDeallocateBuffer(Buffer buffer)
     {
-        lock (Locker)
-        {
-            DeallocateBufferImpl(buffer);
-        }
+        using var lk = new ScopedLock<SdkMutexType>(ref _mutex);
+
+        DeallocateBufferImpl(buffer);
     }
 
     private void DeallocateBufferImpl(Buffer buffer)
     {
         Assert.SdkRequires(BitUtil.IsPowerOfTwo(buffer.Length));
 
-        BuddyHeap.Free(buffer);
+        _buddyHeap.Free(buffer);
     }
 
     protected override CacheHandle DoRegisterCache(Buffer buffer, BufferAttribute attribute)
     {
-        lock (Locker)
-        {
-            return RegisterCacheImpl(buffer, attribute);
-        }
+        using var lk = new ScopedLock<SdkMutexType>(ref _mutex);
+
+        return RegisterCacheImpl(buffer, attribute);
     }
 
     private CacheHandle RegisterCacheImpl(Buffer buffer, BufferAttribute attribute)
     {
-        CacheHandle handle;
+        // ReSharper disable once RedundantAssignment
+        CacheHandle handle = 0;
 
         // Try to register the handle.
-        while (!CacheTable.Register(out handle, buffer, attribute))
+        while (!_cacheTable.Register(out handle, buffer, attribute))
         {
             // Unregister a buffer and try registering again.
-            RetriedCount++;
-            if (!CacheTable.UnregisterOldest(out Buffer deallocateBuffer, attribute))
+            _retriedCount++;
+            if (!_cacheTable.UnregisterOldest(out Buffer deallocateBuffer, attribute))
             {
                 // Can't unregister any existing buffers.
                 // Register the input buffer to /dev/null.
                 DeallocateBufferImpl(buffer);
-                return CacheTable.PublishCacheHandle();
+                return _cacheTable.PublishCacheHandle();
             }
 
             // Deallocate the unregistered buffer.
@@ -510,18 +539,17 @@ public class FileSystemBufferManager : IBufferManager
 
     protected override Buffer DoAcquireCache(CacheHandle handle)
     {
-        lock (Locker)
-        {
-            return AcquireCacheImpl(handle);
-        }
+        using var lk = new ScopedLock<SdkMutexType>(ref _mutex);
+
+        return AcquireCacheImpl(handle);
     }
 
     private Buffer AcquireCacheImpl(CacheHandle handle)
     {
-        if (CacheTable.Unregister(out Buffer range, handle))
+        if (_cacheTable.Unregister(out Buffer range, handle))
         {
-            int totalAllocatableSize = (int)BuddyHeap.GetTotalFreeSize() + CacheTable.GetTotalCacheSize();
-            PeakTotalAllocatableSize = Math.Min(PeakTotalAllocatableSize, totalAllocatableSize);
+            int totalAllocatableSize = (int)_buddyHeap.GetTotalFreeSize() + _cacheTable.GetTotalCacheSize();
+            _peakTotalAllocatableSize = Math.Min(_peakTotalAllocatableSize, totalAllocatableSize);
         }
         else
         {
@@ -533,86 +561,80 @@ public class FileSystemBufferManager : IBufferManager
 
     protected override int DoGetTotalSize()
     {
-        return TotalSize;
+        return _totalSize;
     }
 
     protected override int DoGetFreeSize()
     {
-        lock (Locker)
-        {
-            return GetFreeSizeImpl();
-        }
+        using var lk = new ScopedLock<SdkMutexType>(ref _mutex);
+
+        return GetFreeSizeImpl();
     }
 
     private int GetFreeSizeImpl()
     {
-        return (int)BuddyHeap.GetTotalFreeSize();
+        return (int)_buddyHeap.GetTotalFreeSize();
     }
 
     protected override int DoGetTotalAllocatableSize()
     {
-        lock (Locker)
-        {
-            return GetTotalAllocatableSizeImpl();
-        }
+        using var lk = new ScopedLock<SdkMutexType>(ref _mutex);
+
+        return GetTotalAllocatableSizeImpl();
     }
 
     private int GetTotalAllocatableSizeImpl()
     {
-        return GetFreeSizeImpl() + CacheTable.GetTotalCacheSize();
+        return GetFreeSizeImpl() + _cacheTable.GetTotalCacheSize();
     }
 
     protected override int DoGetFreeSizePeak()
     {
-        lock (Locker)
-        {
-            return GetFreeSizePeakImpl();
-        }
+        using var lk = new ScopedLock<SdkMutexType>(ref _mutex);
+
+        return GetFreeSizePeakImpl();
     }
 
     private int GetFreeSizePeakImpl()
     {
-        return PeakFreeSize;
+        return _peakFreeSize;
     }
 
     protected override int DoGetTotalAllocatableSizePeak()
     {
-        lock (Locker)
-        {
-            return GetTotalAllocatableSizePeakImpl();
-        }
+        using var lk = new ScopedLock<SdkMutexType>(ref _mutex);
+
+        return GetTotalAllocatableSizePeakImpl();
     }
 
     private int GetTotalAllocatableSizePeakImpl()
     {
-        return PeakTotalAllocatableSize;
+        return _peakTotalAllocatableSize;
     }
 
     protected override int DoGetRetriedCount()
     {
-        lock (Locker)
-        {
-            return GetRetriedCountImpl();
-        }
+        using var lk = new ScopedLock<SdkMutexType>(ref _mutex);
+
+        return GetRetriedCountImpl();
     }
 
     private int GetRetriedCountImpl()
     {
-        return RetriedCount;
+        return _retriedCount;
     }
 
     protected override void DoClearPeak()
     {
-        lock (Locker)
-        {
-            ClearPeakImpl();
-        }
+        using var lk = new ScopedLock<SdkMutexType>(ref _mutex);
+
+        ClearPeakImpl();
     }
 
     private void ClearPeakImpl()
     {
-        PeakFreeSize = GetFreeSizeImpl();
-        PeakTotalAllocatableSize = GetTotalAllocatableSizeImpl();
-        RetriedCount = 0;
+        _peakFreeSize = GetFreeSizeImpl();
+        _peakTotalAllocatableSize = GetTotalAllocatableSizeImpl();
+        _retriedCount = 0;
     }
 }
