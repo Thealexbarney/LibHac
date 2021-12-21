@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.FsSystem.Buffers;
+using LibHac.Os;
 using LibHac.Util;
 
 using Buffer = LibHac.Mem.Buffer;
@@ -32,73 +32,82 @@ public class BufferedStorage : IStorage
             public Span<byte> Buffer;
         }
 
-        private BufferedStorage BufferedStorage { get; set; }
-        private Buffer MemoryRange { get; set; }
-        private CacheHandle CacheHandle { get; set; }
-        private long Offset { get; set; }
+        private BufferedStorage _bufferedStorage;
+        private Buffer _memoryRange;
+        private CacheHandle _cacheHandle;
+        private long _offset;
+
+        // Todo: Atomic<T> type for these two bools?
         private bool _isValid;
         private bool _isDirty;
-        private int ReferenceCount { get; set; }
-        private int Index { get; set; }
-        private int NextIndex { get; set; }
-        private int PrevIndex { get; set; }
+        private int _referenceCount;
 
-        private ref Cache Next => ref BufferedStorage.Caches[NextIndex];
-        private ref Cache Prev => ref BufferedStorage.Caches[PrevIndex];
+        // Instead of storing pointers to the next Cache we store indexes
+        private int _index;
+        private int _nextIndex;
+        private int _prevIndex;
+
+        private ref Cache Next => ref _bufferedStorage._caches[_nextIndex];
+        private ref Cache Prev => ref _bufferedStorage._caches[_prevIndex];
+
+        public Cache(int index)
+        {
+            _bufferedStorage = null;
+            _memoryRange = Buffer.Empty;
+            _cacheHandle = 0;
+            _offset = InvalidOffset;
+            _isValid = false;
+            _isDirty = false;
+            _referenceCount = 1;
+            _index = index;
+            _nextIndex = InvalidIndex;
+            _prevIndex = InvalidIndex;
+        }
 
         public void Dispose()
         {
             FinalizeObject();
         }
 
-        public void Initialize(BufferedStorage bufferedStorage, int index)
+        public void Initialize(BufferedStorage bufferedStorage)
         {
-            // Note: C# can't have default constructors on structs, so the default constructor code was
-            // moved into Initialize since Initialize is always called right after the constructor.
-            Offset = InvalidOffset;
-            ReferenceCount = 1;
-            Index = index;
-            NextIndex = InvalidIndex;
-            PrevIndex = InvalidIndex;
-            // End default constructor code
-
             Assert.SdkRequiresNotNull(bufferedStorage);
-            Assert.SdkRequires(BufferedStorage == null);
+            Assert.SdkRequires(_bufferedStorage == null);
 
-            BufferedStorage = bufferedStorage;
+            _bufferedStorage = bufferedStorage;
             Link();
         }
 
         public void FinalizeObject()
         {
-            Assert.SdkRequiresNotNull(BufferedStorage);
-            Assert.SdkRequiresNotNull(BufferedStorage.BufferManager);
-            Assert.SdkRequiresEqual(0, ReferenceCount);
+            Assert.SdkRequiresNotNull(_bufferedStorage);
+            Assert.SdkRequiresNotNull(_bufferedStorage._bufferManager);
+            Assert.SdkRequiresEqual(0, _referenceCount);
 
             // If we're valid, acquire our cache handle and free our buffer.
             if (IsValid())
             {
-                IBufferManager bufferManager = BufferedStorage.BufferManager;
+                IBufferManager bufferManager = _bufferedStorage._bufferManager;
                 if (!_isDirty)
                 {
-                    Assert.SdkAssert(MemoryRange.IsNull);
-                    MemoryRange = bufferManager.AcquireCache(CacheHandle);
+                    Assert.SdkAssert(_memoryRange.IsNull);
+                    _memoryRange = bufferManager.AcquireCache(_cacheHandle);
                 }
 
-                if (!MemoryRange.IsNull)
+                if (!_memoryRange.IsNull)
                 {
-                    bufferManager.DeallocateBuffer(MemoryRange);
-                    MemoryRange = Buffer.Empty;
+                    bufferManager.DeallocateBuffer(_memoryRange);
+                    _memoryRange = Buffer.Empty;
                 }
             }
 
             // Clear all our members.
-            BufferedStorage = null;
-            Offset = InvalidOffset;
+            _bufferedStorage = null;
+            _offset = InvalidOffset;
             _isValid = false;
             _isDirty = false;
-            NextIndex = InvalidIndex;
-            PrevIndex = InvalidIndex;
+            _nextIndex = InvalidIndex;
+            _prevIndex = InvalidIndex;
         }
 
         /// <summary>
@@ -108,79 +117,79 @@ public class BufferedStorage : IStorage
         /// </summary>
         public void Link()
         {
-            Assert.SdkRequiresNotNull(BufferedStorage);
-            Assert.SdkRequiresNotNull(BufferedStorage.BufferManager);
-            Assert.SdkRequiresLess(0, ReferenceCount);
+            Assert.SdkRequiresNotNull(_bufferedStorage);
+            Assert.SdkRequiresNotNull(_bufferedStorage._bufferManager);
+            Assert.SdkRequiresLess(0, _referenceCount);
 
-            ReferenceCount--;
-            if (ReferenceCount == 0)
+            _referenceCount--;
+            if (_referenceCount == 0)
             {
-                Assert.SdkAssert(NextIndex == InvalidIndex);
-                Assert.SdkAssert(PrevIndex == InvalidIndex);
+                Assert.SdkAssert(_nextIndex == InvalidIndex);
+                Assert.SdkAssert(_prevIndex == InvalidIndex);
 
                 // If the fetch list is empty we can simply add it as the only cache in the list.
-                if (BufferedStorage.NextFetchCacheIndex == InvalidIndex)
+                if (_bufferedStorage._nextFetchCacheIndex == InvalidIndex)
                 {
-                    BufferedStorage.NextFetchCacheIndex = Index;
-                    NextIndex = Index;
-                    PrevIndex = Index;
+                    _bufferedStorage._nextFetchCacheIndex = _index;
+                    _nextIndex = _index;
+                    _prevIndex = _index;
                 }
                 else
                 {
                     // Check against a cache being registered twice.
-                    ref Cache cache = ref BufferedStorage.NextFetchCache;
+                    ref Cache cache = ref _bufferedStorage.NextFetchCache;
                     do
                     {
-                        if (cache.IsValid() && Hits(cache.Offset, BufferedStorage.BlockSize))
+                        if (cache.IsValid() && Hits(cache._offset, _bufferedStorage._blockSize))
                         {
                             _isValid = false;
                             break;
                         }
 
                         cache = ref cache.Next;
-                    } while (cache.Index != BufferedStorage.NextFetchCacheIndex);
+                    } while (cache._index != _bufferedStorage._nextFetchCacheIndex);
 
                     // Verify the end of the fetch list loops back to the start.
-                    Assert.SdkAssert(BufferedStorage.NextFetchCache.PrevIndex != InvalidIndex);
-                    Assert.SdkEqual(BufferedStorage.NextFetchCache.Prev.NextIndex,
-                        BufferedStorage.NextFetchCacheIndex);
+                    Assert.SdkAssert(_bufferedStorage.NextFetchCache._prevIndex != InvalidIndex);
+                    Assert.SdkEqual(_bufferedStorage.NextFetchCache.Prev._nextIndex,
+                        _bufferedStorage._nextFetchCacheIndex);
 
                     // Link into the fetch list.
-                    NextIndex = BufferedStorage.NextFetchCacheIndex;
-                    PrevIndex = BufferedStorage.NextFetchCache.PrevIndex;
-                    Next.PrevIndex = Index;
-                    Prev.NextIndex = Index;
+                    _nextIndex = _bufferedStorage._nextFetchCacheIndex;
+                    _prevIndex = _bufferedStorage.NextFetchCache._prevIndex;
+                    Next._prevIndex = _index;
+                    Prev._nextIndex = _index;
 
                     // Insert invalid caches at the start of the list so they'll
                     // be used first when a fetch cache is needed.
                     if (!IsValid())
-                        BufferedStorage.NextFetchCacheIndex = Index;
+                        _bufferedStorage._nextFetchCacheIndex = _index;
                 }
 
                 // If we're not valid, clear our offset.
                 if (!IsValid())
                 {
-                    Offset = InvalidOffset;
+                    _offset = InvalidOffset;
                     _isDirty = false;
                 }
 
                 // Ensure our buffer state is coherent.
                 // We can let go of our buffer if it's not dirty, allowing the buffer to be used elsewhere if needed.
-                if (!MemoryRange.IsNull && !IsDirty())
+                if (!_memoryRange.IsNull && !IsDirty())
                 {
                     // If we're valid, register the buffer with the buffer manager for possible later retrieval.
                     // Otherwise the the data in the buffer isn't needed, so deallocate it.
                     if (IsValid())
                     {
-                        CacheHandle = BufferedStorage.BufferManager.RegisterCache(MemoryRange,
+                        _cacheHandle = _bufferedStorage._bufferManager.RegisterCache(_memoryRange,
                             new IBufferManager.BufferAttribute());
                     }
                     else
                     {
-                        BufferedStorage.BufferManager.DeallocateBuffer(MemoryRange);
+                        _bufferedStorage._bufferManager.DeallocateBuffer(_memoryRange);
                     }
 
-                    MemoryRange = default;
+                    _memoryRange = default;
                 }
             }
         }
@@ -191,42 +200,42 @@ public class BufferedStorage : IStorage
         /// </summary>
         public void Unlink()
         {
-            Assert.SdkRequiresNotNull(BufferedStorage);
-            Assert.SdkRequiresGreaterEqual(ReferenceCount, 0);
+            Assert.SdkRequiresNotNull(_bufferedStorage);
+            Assert.SdkRequiresGreaterEqual(_referenceCount, 0);
 
-            ReferenceCount++;
-            if (ReferenceCount == 1)
+            _referenceCount++;
+            if (_referenceCount == 1)
             {
                 // If we're the first to grab this Cache, the Cache should be in the BufferedStorage's fetch list.
-                Assert.SdkNotEqual(NextIndex, InvalidIndex);
-                Assert.SdkNotEqual(PrevIndex, InvalidIndex);
-                Assert.SdkEqual(Next.PrevIndex, Index);
-                Assert.SdkEqual(Prev.NextIndex, Index);
+                Assert.SdkNotEqual(_nextIndex, InvalidIndex);
+                Assert.SdkNotEqual(_prevIndex, InvalidIndex);
+                Assert.SdkEqual(Next._prevIndex, _index);
+                Assert.SdkEqual(Prev._nextIndex, _index);
 
                 // Set the new fetch list head if this Cache is the current head
-                if (BufferedStorage.NextFetchCacheIndex == Index)
+                if (_bufferedStorage._nextFetchCacheIndex == _index)
                 {
-                    if (NextIndex != Index)
+                    if (_nextIndex != _index)
                     {
-                        BufferedStorage.NextFetchCacheIndex = NextIndex;
+                        _bufferedStorage._nextFetchCacheIndex = _nextIndex;
                     }
                     else
                     {
-                        BufferedStorage.NextFetchCacheIndex = InvalidIndex;
+                        _bufferedStorage._nextFetchCacheIndex = InvalidIndex;
                     }
                 }
 
-                BufferedStorage.NextAcquireCacheIndex = Index;
+                _bufferedStorage._nextAcquireCacheIndex = _index;
 
-                Next.PrevIndex = PrevIndex;
-                Prev.NextIndex = NextIndex;
-                NextIndex = InvalidIndex;
-                PrevIndex = InvalidIndex;
+                Next._prevIndex = _prevIndex;
+                Prev._nextIndex = _nextIndex;
+                _nextIndex = InvalidIndex;
+                _prevIndex = InvalidIndex;
             }
             else
             {
-                Assert.SdkEqual(NextIndex, InvalidIndex);
-                Assert.SdkEqual(PrevIndex, InvalidIndex);
+                Assert.SdkEqual(_nextIndex, InvalidIndex);
+                Assert.SdkEqual(_prevIndex, InvalidIndex);
             }
         }
 
@@ -237,22 +246,22 @@ public class BufferedStorage : IStorage
         /// </summary>
         /// <param name="offset">The offset in the base <see cref="IStorage"/> to be read from.</param>
         /// <param name="buffer">The buffer in which to place the read data.</param>
-        public void Read(long offset, Span<byte> buffer)
+        public readonly void Read(long offset, Span<byte> buffer)
         {
-            Assert.SdkRequiresNotNull(BufferedStorage);
-            Assert.SdkRequiresEqual(NextIndex, InvalidIndex);
-            Assert.SdkRequiresEqual(PrevIndex, InvalidIndex);
+            Assert.SdkRequiresNotNull(_bufferedStorage);
+            Assert.SdkRequiresEqual(_nextIndex, InvalidIndex);
+            Assert.SdkRequiresEqual(_prevIndex, InvalidIndex);
             Assert.SdkRequires(IsValid());
             Assert.SdkRequires(Hits(offset, 1));
-            Assert.SdkRequires(!MemoryRange.IsNull);
+            Assert.SdkRequires(!_memoryRange.IsNull);
 
-            long readOffset = offset - Offset;
-            long readableOffsetMax = BufferedStorage.BlockSize - buffer.Length;
+            long readOffset = offset - _offset;
+            long readableOffsetMax = _bufferedStorage._blockSize - buffer.Length;
 
             Assert.SdkLessEqual(0, readOffset);
             Assert.SdkLessEqual(readOffset, readableOffsetMax);
 
-            Span<byte> cacheBuffer = MemoryRange.Span.Slice((int)readOffset, buffer.Length);
+            Span<byte> cacheBuffer = _memoryRange.Span.Slice((int)readOffset, buffer.Length);
             cacheBuffer.CopyTo(buffer);
         }
 
@@ -265,20 +274,20 @@ public class BufferedStorage : IStorage
         /// <param name="buffer">The buffer containing the data to be written.</param>
         public void Write(long offset, ReadOnlySpan<byte> buffer)
         {
-            Assert.SdkRequiresNotNull(BufferedStorage);
-            Assert.SdkRequiresEqual(NextIndex, InvalidIndex);
-            Assert.SdkRequiresEqual(PrevIndex, InvalidIndex);
+            Assert.SdkRequiresNotNull(_bufferedStorage);
+            Assert.SdkRequiresEqual(_nextIndex, InvalidIndex);
+            Assert.SdkRequiresEqual(_prevIndex, InvalidIndex);
             Assert.SdkRequires(IsValid());
             Assert.SdkRequires(Hits(offset, 1));
-            Assert.SdkRequires(!MemoryRange.IsNull);
+            Assert.SdkRequires(!_memoryRange.IsNull);
 
-            long writeOffset = offset - Offset;
-            long writableOffsetMax = BufferedStorage.BlockSize - buffer.Length;
+            long writeOffset = offset - _offset;
+            long writableOffsetMax = _bufferedStorage._blockSize - buffer.Length;
 
             Assert.SdkLessEqual(0, writeOffset);
             Assert.SdkLessEqual(writeOffset, writableOffsetMax);
 
-            Span<byte> cacheBuffer = MemoryRange.Span.Slice((int)writeOffset, buffer.Length);
+            Span<byte> cacheBuffer = _memoryRange.Span.Slice((int)writeOffset, buffer.Length);
             buffer.CopyTo(cacheBuffer);
             _isDirty = true;
         }
@@ -290,25 +299,25 @@ public class BufferedStorage : IStorage
         /// <returns>The <see cref="Result"/> of the operation.</returns>
         public Result Flush()
         {
-            Assert.SdkRequiresNotNull(BufferedStorage);
-            Assert.SdkRequiresEqual(NextIndex, InvalidIndex);
-            Assert.SdkRequiresEqual(PrevIndex, InvalidIndex);
+            Assert.SdkRequiresNotNull(_bufferedStorage);
+            Assert.SdkRequiresEqual(_nextIndex, InvalidIndex);
+            Assert.SdkRequiresEqual(_prevIndex, InvalidIndex);
             Assert.SdkRequires(IsValid());
 
             if (_isDirty)
             {
-                Assert.SdkRequires(!MemoryRange.IsNull);
+                Assert.SdkRequires(!_memoryRange.IsNull);
 
-                long baseSize = BufferedStorage.BaseStorageSize;
-                long blockSize = BufferedStorage.BlockSize;
-                long flushSize = Math.Min(blockSize, baseSize - Offset);
+                long baseSize = _bufferedStorage._baseStorageSize;
+                long blockSize = _bufferedStorage._blockSize;
+                long flushSize = Math.Min(blockSize, baseSize - _offset);
 
-                SubStorage baseStorage = BufferedStorage.BaseStorage;
-                Span<byte> cacheBuffer = MemoryRange.Span;
+                ref ValueSubStorage baseStorage = ref _bufferedStorage._baseStorage;
+                Span<byte> cacheBuffer = _memoryRange.Span;
                 Assert.SdkEqual(flushSize, cacheBuffer.Length);
 
-                Result rc = baseStorage.Write(Offset, cacheBuffer);
-                if (rc.IsFailure()) return rc;
+                Result rc = baseStorage.Write(_offset, cacheBuffer);
+                if (rc.IsFailure()) return rc.Miss();
 
                 _isDirty = false;
 
@@ -328,23 +337,23 @@ public class BufferedStorage : IStorage
         /// <see cref="Cache"/> is prepared to fetch; <see langword="false"/> if not.</returns>
         public (Result Result, bool IsPrepared) PrepareFetch()
         {
-            Assert.SdkRequiresNotNull(BufferedStorage);
-            Assert.SdkRequiresNotNull(BufferedStorage.BufferManager);
-            Assert.SdkRequiresEqual(NextIndex, InvalidIndex);
-            Assert.SdkRequiresEqual(PrevIndex, InvalidIndex);
+            Assert.SdkRequiresNotNull(_bufferedStorage);
+            Assert.SdkRequiresNotNull(_bufferedStorage._bufferManager);
+            Assert.SdkRequiresEqual(_nextIndex, InvalidIndex);
+            Assert.SdkRequiresEqual(_prevIndex, InvalidIndex);
             Assert.SdkRequires(IsValid());
-            Assert.SdkRequires(Monitor.IsEntered(BufferedStorage.Locker));
+            Assert.SdkRequires(_bufferedStorage._mutex.IsLockedByCurrentThread());
 
             (Result Result, bool IsPrepared) result = (Result.Success, false);
 
-            if (ReferenceCount == 1)
+            if (_referenceCount == 1)
             {
                 result.Result = Flush();
 
                 if (result.Result.IsSuccess())
                 {
                     _isValid = false;
-                    ReferenceCount = 0;
+                    _referenceCount = 0;
                     result.IsPrepared = true;
                 }
             }
@@ -358,16 +367,16 @@ public class BufferedStorage : IStorage
         /// </summary>
         public void UnprepareFetch()
         {
-            Assert.SdkRequiresNotNull(BufferedStorage);
-            Assert.SdkRequiresNotNull(BufferedStorage.BufferManager);
-            Assert.SdkRequiresEqual(NextIndex, InvalidIndex);
-            Assert.SdkRequiresEqual(PrevIndex, InvalidIndex);
+            Assert.SdkRequiresNotNull(_bufferedStorage);
+            Assert.SdkRequiresNotNull(_bufferedStorage._bufferManager);
+            Assert.SdkRequiresEqual(_nextIndex, InvalidIndex);
+            Assert.SdkRequiresEqual(_prevIndex, InvalidIndex);
             Assert.SdkRequires(!IsValid());
             Assert.SdkRequires(!_isDirty);
-            Assert.SdkRequires(Monitor.IsEntered(BufferedStorage.Locker));
+            Assert.SdkRequires(_bufferedStorage._mutex.IsLockedByCurrentThread());
 
             _isValid = true;
-            ReferenceCount = 1;
+            _referenceCount = 1;
         }
 
         /// <summary>
@@ -378,28 +387,28 @@ public class BufferedStorage : IStorage
         /// <see cref="ResultFs.BufferAllocationFailed"/>: A buffer could not be allocated.</returns>
         public Result Fetch(long offset)
         {
-            Assert.SdkRequiresNotNull(BufferedStorage);
-            Assert.SdkRequiresNotNull(BufferedStorage.BufferManager);
-            Assert.SdkRequiresEqual(NextIndex, InvalidIndex);
-            Assert.SdkRequiresEqual(PrevIndex, InvalidIndex);
+            Assert.SdkRequiresNotNull(_bufferedStorage);
+            Assert.SdkRequiresNotNull(_bufferedStorage._bufferManager);
+            Assert.SdkRequiresEqual(_nextIndex, InvalidIndex);
+            Assert.SdkRequiresEqual(_prevIndex, InvalidIndex);
             Assert.SdkRequires(!IsValid());
             Assert.SdkRequires(!_isDirty);
 
             Result rc;
 
             // Make sure this Cache has an allocated buffer
-            if (MemoryRange.IsNull)
+            if (_memoryRange.IsNull)
             {
                 rc = AllocateFetchBuffer();
-                if (rc.IsFailure()) return rc;
+                if (rc.IsFailure()) return rc.Miss();
             }
 
             CalcFetchParameter(out FetchParameter fetchParam, offset);
 
-            rc = BufferedStorage.BaseStorage.Read(fetchParam.Offset, fetchParam.Buffer);
-            if (rc.IsFailure()) return rc;
+            rc = _bufferedStorage._baseStorage.Read(fetchParam.Offset, fetchParam.Buffer);
+            if (rc.IsFailure()) return rc.Miss();
 
-            Offset = fetchParam.Offset;
+            _offset = fetchParam.Offset;
             Assert.SdkAssert(Hits(offset, 1));
 
             return Result.Success;
@@ -416,19 +425,19 @@ public class BufferedStorage : IStorage
         /// <see cref="ResultFs.BufferAllocationFailed"/>: A buffer could not be allocated.</returns>
         public Result FetchFromBuffer(long offset, ReadOnlySpan<byte> buffer)
         {
-            Assert.SdkRequiresNotNull(BufferedStorage);
-            Assert.SdkRequiresNotNull(BufferedStorage.BufferManager);
-            Assert.SdkRequiresEqual(NextIndex, InvalidIndex);
-            Assert.SdkRequiresEqual(PrevIndex, InvalidIndex);
+            Assert.SdkRequiresNotNull(_bufferedStorage);
+            Assert.SdkRequiresNotNull(_bufferedStorage._bufferManager);
+            Assert.SdkRequiresEqual(_nextIndex, InvalidIndex);
+            Assert.SdkRequiresEqual(_prevIndex, InvalidIndex);
             Assert.SdkRequires(!IsValid());
             Assert.SdkRequires(!_isDirty);
-            Assert.SdkRequiresAligned((ulong)offset, (int)BufferedStorage.BlockSize);
+            Assert.SdkRequiresAligned((ulong)offset, (int)_bufferedStorage._blockSize);
 
             // Make sure this Cache has an allocated buffer
-            if (MemoryRange.IsNull)
+            if (_memoryRange.IsNull)
             {
                 Result rc = AllocateFetchBuffer();
-                if (rc.IsFailure()) return rc;
+                if (rc.IsFailure()) return rc.Miss();
             }
 
             CalcFetchParameter(out FetchParameter fetchParam, offset);
@@ -436,7 +445,7 @@ public class BufferedStorage : IStorage
             Assert.SdkLessEqual(fetchParam.Buffer.Length, buffer.Length);
 
             buffer.Slice(0, fetchParam.Buffer.Length).CopyTo(fetchParam.Buffer);
-            Offset = fetchParam.Offset;
+            _offset = fetchParam.Offset;
             Assert.SdkAssert(Hits(offset, 1));
 
             return Result.Success;
@@ -449,15 +458,15 @@ public class BufferedStorage : IStorage
         /// <see langword="false"/> if the buffer has been evicted from the <see cref="IBufferManager"/> cache.</returns>
         public bool TryAcquireCache()
         {
-            Assert.SdkRequiresNotNull(BufferedStorage);
-            Assert.SdkRequiresNotNull(BufferedStorage.BufferManager);
+            Assert.SdkRequiresNotNull(_bufferedStorage);
+            Assert.SdkRequiresNotNull(_bufferedStorage._bufferManager);
             Assert.SdkRequires(IsValid());
 
-            if (!MemoryRange.IsNull)
+            if (!_memoryRange.IsNull)
                 return true;
 
-            MemoryRange = BufferedStorage.BufferManager.AcquireCache(CacheHandle);
-            _isValid = !MemoryRange.IsNull;
+            _memoryRange = _bufferedStorage._bufferManager.AcquireCache(_cacheHandle);
+            _isValid = !_memoryRange.IsNull;
             return _isValid;
         }
 
@@ -466,7 +475,7 @@ public class BufferedStorage : IStorage
         /// </summary>
         public void Invalidate()
         {
-            Assert.SdkRequiresNotNull(BufferedStorage);
+            Assert.SdkRequiresNotNull(_bufferedStorage);
             _isValid = false;
         }
 
@@ -475,11 +484,11 @@ public class BufferedStorage : IStorage
         /// </summary>
         /// <returns><see langword="true"/> if this <see cref="Cache"/> has a valid buffer
         /// or if anybody currently has a reference to this Cache. Otherwise, <see langword="false"/>.</returns>
-        public bool IsValid()
+        public readonly bool IsValid()
         {
-            Assert.SdkRequiresNotNull(BufferedStorage);
+            Assert.SdkRequiresNotNull(_bufferedStorage);
 
-            return _isValid || ReferenceCount > 0;
+            return _isValid || _referenceCount > 0;
         }
 
         /// <summary>
@@ -488,9 +497,9 @@ public class BufferedStorage : IStorage
         /// </summary>
         /// <returns><see langword="true"/> if this <see cref="Cache"/> has unflushed data.
         /// Otherwise, <see langword="false"/>.</returns>
-        public bool IsDirty()
+        public readonly bool IsDirty()
         {
-            Assert.SdkRequiresNotNull(BufferedStorage);
+            Assert.SdkRequiresNotNull(_bufferedStorage);
 
             return _isDirty;
         }
@@ -502,12 +511,12 @@ public class BufferedStorage : IStorage
         /// <param name="size">The size of the range to check.</param>
         /// <returns><see langword="true"/> if this <see cref="Cache"/>'s range covers any of the input range.
         /// Otherwise, <see langword="false"/>.</returns>
-        public bool Hits(long offset, long size)
+        public readonly bool Hits(long offset, long size)
         {
-            Assert.SdkRequiresNotNull(BufferedStorage);
+            Assert.SdkRequiresNotNull(_bufferedStorage);
 
-            long blockSize = BufferedStorage.BlockSize;
-            return (offset < Offset + blockSize) && (Offset < offset + size);
+            long blockSize = _bufferedStorage._blockSize;
+            return (offset < _offset + blockSize) && (_offset < offset + size);
         }
 
         /// <summary>
@@ -518,15 +527,20 @@ public class BufferedStorage : IStorage
         /// <see cref="ResultFs.BufferAllocationFailed"/>: A buffer could not be allocated.</returns>
         private Result AllocateFetchBuffer()
         {
-            IBufferManager bufferManager = BufferedStorage.BufferManager;
-            Assert.SdkAssert(bufferManager.AcquireCache(CacheHandle).IsNull);
+            IBufferManager bufferManager = _bufferedStorage._bufferManager;
+            Assert.SdkAssert(bufferManager.AcquireCache(_cacheHandle).IsNull);
 
-            Result rc = BufferManagerUtility.AllocateBufferUsingBufferManagerContext(out Buffer bufferTemp,
-                bufferManager, (int)BufferedStorage.BlockSize, new IBufferManager.BufferAttribute(),
+            Result rc = BufferManagerUtility.AllocateBufferUsingBufferManagerContext(out _memoryRange,
+                bufferManager, (int)_bufferedStorage._blockSize, new IBufferManager.BufferAttribute(),
                 static (in Buffer buffer) => !buffer.IsNull);
 
             // Clear the current MemoryRange if allocation failed.
-            MemoryRange = rc.IsSuccess() ? bufferTemp : default;
+            if (rc.IsFailure())
+            {
+                _memoryRange = Buffer.Empty;
+                return rc.Log();
+            }
+
             return Result.Success;
         }
 
@@ -537,14 +551,14 @@ public class BufferedStorage : IStorage
         /// <param name="fetchParam">When this function returns, contains
         /// the parameters that can be used to fetch the block.</param>
         /// <param name="offset">The offset to be fetched.</param>
-        private void CalcFetchParameter(out FetchParameter fetchParam, long offset)
+        private readonly void CalcFetchParameter(out FetchParameter fetchParam, long offset)
         {
-            long blockSize = BufferedStorage.BlockSize;
-            long storageOffset = Alignment.AlignDownPow2(offset, (uint)BufferedStorage.BlockSize);
-            long baseSize = BufferedStorage.BaseStorageSize;
+            long blockSize = _bufferedStorage._blockSize;
+            long storageOffset = Alignment.AlignDownPow2(offset, (uint)_bufferedStorage._blockSize);
+            long baseSize = _bufferedStorage._baseStorageSize;
             long remainingSize = baseSize - storageOffset;
             long cacheSize = Math.Min(blockSize, remainingSize);
-            Span<byte> cacheBuffer = MemoryRange.Span.Slice(0, (int)cacheSize);
+            Span<byte> cacheBuffer = _memoryRange.Span.Slice(0, (int)cacheSize);
 
             Assert.SdkLessEqual(0, offset);
             Assert.SdkLess(offset, baseSize);
@@ -570,18 +584,18 @@ public class BufferedStorage : IStorage
 
         public SharedCache(BufferedStorage bufferedStorage)
         {
-            Assert.SdkRequiresNotNull(bufferedStorage);
             Cache = default;
             StartCache = new Ref<Cache>(ref bufferedStorage.NextAcquireCache);
             BufferedStorage = bufferedStorage;
+
+            Assert.SdkRequiresNotNull(BufferedStorage);
         }
 
         public void Dispose()
         {
-            lock (BufferedStorage.Locker)
-            {
-                Release();
-            }
+            using var lk = new ScopedLock<SdkMutexType>(ref BufferedStorage._mutex);
+
+            Release();
         }
 
         /// <summary>
@@ -601,46 +615,45 @@ public class BufferedStorage : IStorage
 
             // Make sure the Cache instance is in-range.
             Assert.SdkAssert(!Unsafe.IsAddressLessThan(ref start,
-                ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches)));
+                ref MemoryMarshal.GetArrayDataReference(BufferedStorage._caches)));
 
             Assert.SdkAssert(!Unsafe.IsAddressGreaterThan(ref start,
-                ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches),
-                    BufferedStorage.CacheCount)));
+                ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(BufferedStorage._caches),
+                    BufferedStorage._cacheCount)));
 
-            lock (BufferedStorage.Locker)
+            using var lk = new ScopedLock<SdkMutexType>(ref BufferedStorage._mutex);
+
+            Release();
+            Assert.SdkAssert(Cache.IsNull);
+
+            for (ref Cache cache = ref start; ; cache = ref Unsafe.Add(ref cache, 1))
             {
-                Release();
-                Assert.SdkAssert(Cache.IsNull);
-
-                for (ref Cache cache = ref start; ; cache = ref Unsafe.Add(ref cache, 1))
+                // Wrap to the front of the list if we've reached the end.
+                ref Cache end = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(BufferedStorage._caches),
+                    BufferedStorage._cacheCount);
+                if (!Unsafe.IsAddressLessThan(ref cache, ref end))
                 {
-                    // Wrap to the front of the list if we've reached the end.
-                    ref Cache end = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches),
-                        BufferedStorage.CacheCount);
-                    if (!Unsafe.IsAddressLessThan(ref cache, ref end))
-                    {
-                        cache = ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches);
-                    }
-
-                    // Break if we've iterated all the Caches
-                    if (!isFirst && Unsafe.AreSame(ref cache, ref StartCache.Value))
-                    {
-                        break;
-                    }
-
-                    if (cache.IsValid() && cache.Hits(offset, size) && cache.TryAcquireCache())
-                    {
-                        cache.Unlink();
-                        Cache = new Ref<Cache>(ref cache);
-                        return true;
-                    }
-
-                    isFirst = false;
+                    cache = ref MemoryMarshal.GetArrayDataReference(BufferedStorage._caches);
                 }
 
-                Cache = default;
-                return false;
+                // Break if we've iterated all the Caches
+                if (!isFirst && Unsafe.AreSame(ref cache, ref StartCache.Value))
+                {
+                    break;
+                }
+
+                if (cache.IsValid() && cache.Hits(offset, size) && cache.TryAcquireCache())
+                {
+                    cache.Unlink();
+                    Cache = new Ref<Cache>(ref cache);
+                    return true;
+                }
+
+                isFirst = false;
             }
+
+            Cache = default;
+            return false;
         }
 
         /// <summary>
@@ -654,15 +667,15 @@ public class BufferedStorage : IStorage
             Assert.SdkRequiresNotNull(BufferedStorage);
 
             ref Cache start = ref Cache.IsNull
-                ? ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches)
+                ? ref MemoryMarshal.GetArrayDataReference(BufferedStorage._caches)
                 : ref Unsafe.Add(ref Cache.Value, 1);
 
-            ref Cache end = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches),
-                BufferedStorage.CacheCount);
+            ref Cache end = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(BufferedStorage._caches),
+                BufferedStorage._cacheCount);
 
             // Validate the range.
             Assert.SdkAssert(!Unsafe.IsAddressLessThan(ref start,
-                ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches)));
+                ref MemoryMarshal.GetArrayDataReference(BufferedStorage._caches)));
 
             Assert.SdkAssert(!Unsafe.IsAddressGreaterThan(ref start, ref end));
 
@@ -671,8 +684,8 @@ public class BufferedStorage : IStorage
 
             // Find the next dirty Cache
             for (ref Cache cache = ref start;
-                Unsafe.IsAddressLessThan(ref cache, ref end);
-                cache = ref Unsafe.Add(ref cache, 1))
+                 Unsafe.IsAddressLessThan(ref cache, ref end);
+                 cache = ref Unsafe.Add(ref cache, 1))
             {
                 if (cache.IsValid() && cache.IsDirty() && cache.TryAcquireCache())
                 {
@@ -697,15 +710,15 @@ public class BufferedStorage : IStorage
             Assert.SdkRequiresNotNull(BufferedStorage);
 
             ref Cache start = ref Cache.IsNull
-                ? ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches)
+                ? ref MemoryMarshal.GetArrayDataReference(BufferedStorage._caches)
                 : ref Unsafe.Add(ref Cache.Value, 1);
 
-            ref Cache end = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches),
-                BufferedStorage.CacheCount);
+            ref Cache end = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(BufferedStorage._caches),
+                BufferedStorage._cacheCount);
 
             // Validate the range.
             Assert.SdkAssert(!Unsafe.IsAddressLessThan(ref start,
-                ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches)));
+                ref MemoryMarshal.GetArrayDataReference(BufferedStorage._caches)));
 
             Assert.SdkAssert(!Unsafe.IsAddressGreaterThan(ref start, ref end));
 
@@ -739,23 +752,22 @@ public class BufferedStorage : IStorage
         {
             Assert.SdkRequiresNotNull(BufferedStorage);
 
-            lock (BufferedStorage.Locker)
+            using var lk = new ScopedLock<SdkMutexType>(ref BufferedStorage._mutex);
+
+            Release();
+            Assert.SdkAssert(Cache.IsNull);
+
+            Cache = new Ref<Cache>(ref BufferedStorage.NextFetchCache);
+
+            if (!Cache.IsNull)
             {
-                Release();
-                Assert.SdkAssert(Cache.IsNull);
+                if (Cache.Value.IsValid())
+                    Cache.Value.TryAcquireCache();
 
-                Cache = new Ref<Cache>(ref BufferedStorage.NextFetchCache);
-
-                if (!Cache.IsNull)
-                {
-                    if (Cache.Value.IsValid())
-                        Cache.Value.TryAcquireCache();
-
-                    Cache.Value.Unlink();
-                }
-
-                return !Cache.IsNull;
+                Cache.Value.Unlink();
             }
+
+            return !Cache.IsNull;
         }
 
         /// <summary>
@@ -827,11 +839,11 @@ public class BufferedStorage : IStorage
             {
                 // Make sure the Cache instance is in-range.
                 Assert.SdkAssert(!Unsafe.IsAddressLessThan(ref Cache.Value,
-                    ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches)));
+                    ref MemoryMarshal.GetArrayDataReference(BufferedStorage._caches)));
 
                 Assert.SdkAssert(!Unsafe.IsAddressGreaterThan(ref Cache.Value,
-                    ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(BufferedStorage.Caches),
-                        BufferedStorage.CacheCount)));
+                    ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(BufferedStorage._caches),
+                        BufferedStorage._cacheCount)));
 
                 Cache.Value.Link();
                 Cache = default;
@@ -845,15 +857,14 @@ public class BufferedStorage : IStorage
     /// </summary>
     private ref struct UniqueCache
     {
-        // ReSharper disable once MemberHidesStaticFromOuterClass
-        private Ref<Cache> Cache { get; set; }
-        private BufferedStorage BufferedStorage { get; }
+        private Ref<Cache> _cache;
+        private BufferedStorage _bufferedStorage;
 
         public UniqueCache(BufferedStorage bufferedStorage)
         {
-            Assert.SdkRequiresNotNull(bufferedStorage);
-            Cache = default;
-            BufferedStorage = bufferedStorage;
+            _cache = default;
+            _bufferedStorage = bufferedStorage;
+            Assert.SdkRequiresNotNull(_bufferedStorage);
         }
 
         /// <summary>
@@ -861,12 +872,12 @@ public class BufferedStorage : IStorage
         /// </summary>
         public void Dispose()
         {
-            if (!Cache.IsNull)
+            if (!_cache.IsNull)
             {
-                lock (BufferedStorage.Locker)
-                {
-                    Cache.Value.UnprepareFetch();
-                }
+                using var lk = new ScopedLock<SdkMutexType>(ref _bufferedStorage._mutex);
+
+                _cache.Value.UnprepareFetch();
+
             }
         }
 
@@ -876,21 +887,20 @@ public class BufferedStorage : IStorage
         /// </summary>
         /// <param name="sharedCache">The <see cref="SharedCache"/> to gain exclusive access to.</param>
         /// <returns>The <see cref="Result"/> of the operation, and <see langword="true"/> if exclusive
-        /// access to the <see cref="Cache"/> was gained; <see langword="false"/> if not.</returns>
+        /// access to the <see cref="_cache"/> was gained; <see langword="false"/> if not.</returns>
         public (Result Result, bool wasUpgradeSuccessful) Upgrade(in SharedCache sharedCache)
         {
-            Assert.SdkRequires(BufferedStorage == sharedCache.BufferedStorage);
+            Assert.SdkRequires(_bufferedStorage == sharedCache.BufferedStorage);
             Assert.SdkRequires(!sharedCache.Cache.IsNull);
 
-            lock (BufferedStorage.Locker)
-            {
-                (Result Result, bool wasUpgradeSuccessful) result = sharedCache.Cache.Value.PrepareFetch();
+            using var lk = new ScopedLock<SdkMutexType>(ref _bufferedStorage._mutex);
 
-                if (result.Result.IsSuccess() && result.wasUpgradeSuccessful)
-                    Cache = sharedCache.Cache;
+            (Result Result, bool wasUpgradeSuccessful) result = sharedCache.Cache.Value.PrepareFetch();
 
-                return result;
-            }
+            if (result.Result.IsSuccess() && result.wasUpgradeSuccessful)
+                _cache = sharedCache.Cache;
+
+            return result;
         }
 
         /// <summary>
@@ -902,9 +912,9 @@ public class BufferedStorage : IStorage
         /// <see cref="ResultFs.BufferAllocationFailed"/>: A buffer could not be allocated.</returns>
         public Result Fetch(long offset)
         {
-            Assert.SdkRequires(!Cache.IsNull);
+            Assert.SdkRequires(!_cache.IsNull);
 
-            return Cache.Value.Fetch(offset);
+            return _cache.Value.Fetch(offset);
         }
 
         /// <summary>
@@ -918,48 +928,42 @@ public class BufferedStorage : IStorage
         /// <see cref="ResultFs.BufferAllocationFailed"/>: A buffer could not be allocated.</returns>
         public Result FetchFromBuffer(long offset, ReadOnlySpan<byte> buffer)
         {
-            Assert.SdkRequires(!Cache.IsNull);
+            Assert.SdkRequires(!_cache.IsNull);
 
-            return Cache.Value.FetchFromBuffer(offset, buffer);
+            return _cache.Value.FetchFromBuffer(offset, buffer).Miss();
         }
     }
 
-    private SubStorage BaseStorage { get; set; }
-    private IBufferManager BufferManager { get; set; }
-    private long BlockSize { get; set; }
-
+    private ValueSubStorage _baseStorage;
+    private IBufferManager _bufferManager;
+    private long _blockSize;
     private long _baseStorageSize;
-    private long BaseStorageSize
-    {
-        get => _baseStorageSize;
-        set => _baseStorageSize = value;
-    }
-
-    private Cache[] Caches { get; set; }
-    private int CacheCount { get; set; }
-    private int NextAcquireCacheIndex { get; set; }
-    private int NextFetchCacheIndex { get; set; }
-    private object Locker { get; } = new();
-    private bool BulkReadEnabled { get; set; }
+    private Cache[] _caches;
+    private int _cacheCount;
+    private int _nextAcquireCacheIndex;
+    private int _nextFetchCacheIndex;
+    private SdkMutexType _mutex;
+    private bool _bulkReadEnabled;
 
     /// <summary>
     /// The <see cref="Cache"/> at which new <see cref="SharedCache"/>s will begin iterating.
     /// </summary>
-    private ref Cache NextAcquireCache => ref Caches[NextAcquireCacheIndex];
+    private ref Cache NextAcquireCache => ref _caches[_nextAcquireCacheIndex];
 
     /// <summary>
     /// A list of <see cref="Cache"/>s that can be used for fetching
     /// new blocks of data from the base <see cref="IStorage"/>.
     /// </summary>
-    private ref Cache NextFetchCache => ref Caches[NextFetchCacheIndex];
+    private ref Cache NextFetchCache => ref _caches[_nextFetchCacheIndex];
 
     /// <summary>
     /// Creates an uninitialized <see cref="BufferedStorage"/>.
     /// </summary>
     public BufferedStorage()
     {
-        NextAcquireCacheIndex = InvalidIndex;
-        NextFetchCacheIndex = InvalidIndex;
+        _nextAcquireCacheIndex = InvalidIndex;
+        _nextFetchCacheIndex = InvalidIndex;
+        _mutex = new SdkMutexType();
     }
 
     /// <summary>
@@ -968,6 +972,7 @@ public class BufferedStorage : IStorage
     public override void Dispose()
     {
         FinalizeObject();
+        _baseStorage.Dispose();
         base.Dispose();
     }
 
@@ -979,48 +984,53 @@ public class BufferedStorage : IStorage
     /// <param name="baseStorage">The base storage to use.</param>
     /// <param name="bufferManager">The buffer manager used to allocate and cache memory.</param>
     /// <param name="blockSize">The size of each cached block. Must be a power of 2.</param>
-    /// <param name="cacheCount">The maximum number of blocks that can be cached at one time.</param>
+    /// <param name="bufferCount">The maximum number of blocks that can be cached at one time.</param>
     /// <returns></returns>
-    public Result Initialize(SubStorage baseStorage, IBufferManager bufferManager, int blockSize, int cacheCount)
+    public Result Initialize(in ValueSubStorage baseStorage, IBufferManager bufferManager, int blockSize, int bufferCount)
     {
-        Assert.SdkRequiresNotNull(baseStorage);
         Assert.SdkRequiresNotNull(bufferManager);
         Assert.SdkRequiresLess(0, blockSize);
         Assert.SdkRequires(BitUtil.IsPowerOfTwo(blockSize));
-        Assert.SdkRequiresLess(0, cacheCount);
+        Assert.SdkRequiresLess(0, bufferCount);
 
         // Get the base storage size.
         Result rc = baseStorage.GetSize(out _baseStorageSize);
-        if (rc.IsFailure()) return rc;
+        if (rc.IsFailure()) return rc.Miss();
 
         // Set members.
-        BaseStorage = baseStorage;
-        BufferManager = bufferManager;
-        BlockSize = blockSize;
-        CacheCount = cacheCount;
+        _baseStorage.Set(in baseStorage);
+        _bufferManager = bufferManager;
+        _blockSize = blockSize;
+        _cacheCount = bufferCount;
 
         // Allocate the caches.
-        if (Caches != null)
+        if (_caches != null)
         {
-            for (int i = 0; i < Caches.Length; i++)
+            for (int i = 0; i < _caches.Length; i++)
             {
-                Caches[i].FinalizeObject();
+                _caches[i].FinalizeObject();
             }
         }
 
-        Caches = new Cache[cacheCount];
-        if (Caches == null)
+        _caches = new Cache[bufferCount];
+        if (_caches == null)
         {
             return ResultFs.AllocationMemoryFailedInBufferedStorageA.Log();
         }
 
-        // Initialize the caches.
-        for (int i = 0; i < Caches.Length; i++)
+        for (int i = 0; i < _caches.Length; i++)
         {
-            Caches[i].Initialize(this, i);
+            _caches[i] = new Cache(i);
         }
 
-        NextAcquireCacheIndex = 0;
+        // Initialize the caches.
+        for (int i = 0; i < _caches.Length; i++)
+        {
+            _caches[i].Initialize(this);
+        }
+
+        _nextFetchCacheIndex = 0;
+        _nextAcquireCacheIndex = 0;
         return Result.Success;
     }
 
@@ -1029,17 +1039,21 @@ public class BufferedStorage : IStorage
     /// </summary>
     public void FinalizeObject()
     {
-        BaseStorage = null;
-        BaseStorageSize = 0;
+        using (var emptyStorage = new ValueSubStorage())
+        {
+            _baseStorage.Set(in emptyStorage);
+        }
 
-        foreach (Cache cache in Caches)
+        _baseStorageSize = 0;
+
+        foreach (Cache cache in _caches)
         {
             cache.Dispose();
         }
 
-        Caches = null;
-        CacheCount = 0;
-        NextFetchCacheIndex = InvalidIndex;
+        _caches = null;
+        _cacheCount = 0;
+        _nextFetchCacheIndex = InvalidIndex;
     }
 
     /// <summary>
@@ -1047,7 +1061,7 @@ public class BufferedStorage : IStorage
     /// </summary>
     /// <returns><see langword="true"/> if this <see cref="BufferedStorage"/> is initialized.
     /// Otherwise, <see langword="false"/>.</returns>
-    public bool IsInitialized() => Caches != null;
+    public bool IsInitialized() => _caches != null;
 
     protected override Result DoRead(long offset, Span<byte> destination)
     {
@@ -1058,7 +1072,7 @@ public class BufferedStorage : IStorage
             return Result.Success;
 
         // Do the read.
-        return ReadCore(offset, destination);
+        return ReadCore(offset, destination).Miss();
     }
 
     protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
@@ -1070,14 +1084,14 @@ public class BufferedStorage : IStorage
             return Result.Success;
 
         // Do the read.
-        return WriteCore(offset, source);
+        return WriteCore(offset, source).Miss();
     }
 
     protected override Result DoGetSize(out long size)
     {
         Assert.SdkRequires(IsInitialized());
 
-        size = BaseStorageSize;
+        size = _baseStorageSize;
         return Result.Success;
     }
 
@@ -1086,11 +1100,11 @@ public class BufferedStorage : IStorage
         Assert.SdkRequires(IsInitialized());
 
         Result rc;
-        long prevSize = BaseStorageSize;
+        long prevSize = _baseStorageSize;
         if (prevSize < size)
         {
             // Prepare to expand.
-            if (!Alignment.IsAlignedPow2(prevSize, (uint)BlockSize))
+            if (!Alignment.IsAlignedPow2(prevSize, (uint)_blockSize))
             {
                 using var cache = new SharedCache(this);
                 long invalidateOffset = prevSize;
@@ -1099,7 +1113,7 @@ public class BufferedStorage : IStorage
                 if (cache.AcquireNextOverlappedCache(invalidateOffset, invalidateSize))
                 {
                     rc = cache.Flush();
-                    if (rc.IsFailure()) return rc;
+                    if (rc.IsFailure()) return rc.Miss();
 
                     cache.Invalidate();
                 }
@@ -1113,14 +1127,14 @@ public class BufferedStorage : IStorage
             using var cache = new SharedCache(this);
             long invalidateOffset = prevSize;
             long invalidateSize = size - prevSize;
-            bool isFragment = Alignment.IsAlignedPow2(size, (uint)BlockSize);
+            bool isFragment = Alignment.IsAlignedPow2(size, (uint)_blockSize);
 
             while (cache.AcquireNextOverlappedCache(invalidateOffset, invalidateSize))
             {
                 if (isFragment && cache.Hits(invalidateOffset, 1))
                 {
                     rc = cache.Flush();
-                    if (rc.IsFailure()) return rc;
+                    if (rc.IsFailure()) return rc.Miss();
                 }
 
                 cache.Invalidate();
@@ -1128,14 +1142,14 @@ public class BufferedStorage : IStorage
         }
 
         // Set the size.
-        rc = BaseStorage.SetSize(size);
-        if (rc.IsFailure()) return rc;
+        rc = _baseStorage.SetSize(size);
+        if (rc.IsFailure()) return rc.Miss();
 
         // Get our new size.
-        rc = BaseStorage.GetSize(out long newSize);
-        if (rc.IsFailure()) return rc;
+        rc = _baseStorage.GetSize(out long newSize);
+        if (rc.IsFailure()) return rc.Miss();
 
-        BaseStorageSize = newSize;
+        _baseStorageSize = newSize;
         return Result.Success;
     }
 
@@ -1153,7 +1167,7 @@ public class BufferedStorage : IStorage
                 cache.Invalidate();
         }
 
-        return BaseStorage.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+        return _baseStorage.OperateRange(outBuffer, operationId, offset, size, inBuffer);
     }
 
     protected override Result DoFlush()
@@ -1164,12 +1178,12 @@ public class BufferedStorage : IStorage
         using var cache = new SharedCache(this);
         while (cache.AcquireNextDirtyCache())
         {
-            Result flushResult = cache.Flush();
-            if (flushResult.IsFailure()) return flushResult;
+            Result rc = cache.Flush();
+            if (rc.IsFailure()) return rc.Miss();
         }
 
         // Flush the base storage.
-        return BaseStorage.Flush();
+        return _baseStorage.Flush().Miss();
     }
 
     /// <summary>
@@ -1188,9 +1202,9 @@ public class BufferedStorage : IStorage
     /// Gets the <see cref="IBufferManager"/> used by this <see cref="BufferedStorage"/>.
     /// </summary>
     /// <returns>The buffer manager.</returns>
-    public IBufferManager GetBufferManager() => BufferManager;
+    public IBufferManager GetBufferManager() => _bufferManager;
 
-    public void EnableBulkRead() => BulkReadEnabled = true;
+    public void EnableBulkRead() => _bulkReadEnabled = true;
 
     /// <summary>
     /// Flushes the cache to the base <see cref="IStorage"/> if less than 1/8 of the
@@ -1199,12 +1213,12 @@ public class BufferedStorage : IStorage
     /// <returns>The <see cref="Result"/> of the operation.</returns>
     private Result PrepareAllocation()
     {
-        uint flushThreshold = (uint)BufferManager.GetTotalSize() / 8;
+        uint flushThreshold = (uint)_bufferManager.GetTotalSize() / 8;
 
-        if (BufferManager.GetTotalAllocatableSize() < flushThreshold)
+        if (_bufferManager.GetTotalAllocatableSize() < flushThreshold)
         {
             Result rc = Flush();
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
         }
 
         return Result.Success;
@@ -1217,9 +1231,9 @@ public class BufferedStorage : IStorage
     /// <returns></returns>
     private Result ControlDirtiness()
     {
-        uint flushThreshold = (uint)BufferManager.GetTotalSize() / 4;
+        uint flushThreshold = (uint)_bufferManager.GetTotalSize() / 4;
 
-        if (BufferManager.GetTotalAllocatableSize() < flushThreshold)
+        if (_bufferManager.GetTotalAllocatableSize() < flushThreshold)
         {
             using var cache = new SharedCache(this);
             int dirtyCount = 0;
@@ -1229,7 +1243,7 @@ public class BufferedStorage : IStorage
                 if (++dirtyCount > 1)
                 {
                     Result rc = cache.Flush();
-                    if (rc.IsFailure()) return rc;
+                    if (rc.IsFailure()) return rc.Miss();
 
                     cache.Invalidate();
                 }
@@ -1248,11 +1262,11 @@ public class BufferedStorage : IStorage
     /// <returns>The <see cref="Result"/> of the operation.</returns>
     private Result ReadCore(long offset, Span<byte> destination)
     {
-        Assert.SdkRequiresNotNull(Caches);
+        Assert.SdkRequiresNotNull(_caches);
         Assert.SdkRequiresNotNull(destination);
 
         // Validate the offset.
-        long baseStorageSize = BaseStorageSize;
+        long baseStorageSize = _baseStorageSize;
         if (offset < 0 || offset > baseStorageSize)
             return ResultFs.InvalidOffset.Log();
 
@@ -1269,7 +1283,7 @@ public class BufferedStorage : IStorage
         //
         // This is imitated during bulk reads by tracking if there are any partial head or tail blocks that aren't
         // already in the cache. After the bulk read is complete these partial blocks will be added to the cache.
-        if (BulkReadEnabled)
+        if (_bulkReadEnabled)
         {
             // Read any blocks at the head of the range that are cached.
             bool headCacheNeeded =
@@ -1283,16 +1297,16 @@ public class BufferedStorage : IStorage
             // Perform bulk reads.
             const long bulkReadSizeMax = 1024 * 1024 * 2; // 2 MB
 
-            if (remainingSize < bulkReadSizeMax)
+            if (remainingSize <= bulkReadSizeMax)
             {
                 // Try to do a bulk read.
                 Result rc = BulkRead(currentOffset, destination.Slice((int)bufferOffset, (int)remainingSize),
                     headCacheNeeded, tailCacheNeeded);
 
-                // If the read fails due to insufficient pooled buffer size,
+                // If the read fails due to insufficient pooled buffer size
                 // then we want to fall back to the normal read path.
                 if (!ResultFs.AllocationPooledBufferNotEnoughSize.Includes(rc))
-                    return rc;
+                    return rc.Miss();
             }
         }
 
@@ -1302,27 +1316,27 @@ public class BufferedStorage : IStorage
             // Determine how much to read this iteration.
             int currentSize;
 
-            // If the offset is in the middle of a block. Read the remaining part of that block.
-            if (!Alignment.IsAlignedPow2(currentOffset, (uint)BlockSize))
+            // If the offset is in the middle of a block, read the remaining part of that block.
+            if (!Alignment.IsAlignedPow2(currentOffset, (uint)_blockSize))
             {
-                long alignedSize = BlockSize - (currentOffset & (BlockSize - 1));
+                long alignedSize = _blockSize - (currentOffset & (_blockSize - 1));
                 currentSize = (int)Math.Min(alignedSize, remainingSize);
             }
             // If we only have a partial block left to read, read that partial block.
-            else if (remainingSize < BlockSize)
+            else if (remainingSize < _blockSize)
             {
                 currentSize = (int)remainingSize;
             }
             // We have at least one full block to read. Read all the remaining full blocks at once.
             else
             {
-                currentSize = (int)Alignment.AlignDownPow2(remainingSize, (uint)BlockSize);
+                currentSize = (int)Alignment.AlignDownPow2(remainingSize, (uint)_blockSize);
             }
 
             Span<byte> currentDestination = destination.Slice((int)bufferOffset, currentSize);
 
             // If reading a single block or less, read it using the cache
-            if (currentSize <= BlockSize)
+            if (currentSize <= _blockSize)
             {
                 using var cache = new SharedCache(this);
 
@@ -1331,13 +1345,13 @@ public class BufferedStorage : IStorage
                 {
                     // The block wasn't in the cache. Read the block from the base storage
                     Result rc = PrepareAllocation();
-                    if (rc.IsFailure()) return rc;
+                    if (rc.IsFailure()) return rc.Miss();
 
                     // Loop until we can get exclusive access to the cache block
                     while (true)
                     {
                         if (!cache.AcquireFetchableCache())
-                            return ResultFs.OutOfResource.Log();
+                            return ResultFs.OutOfResource.Value;
 
                         // Try to upgrade out SharedCache to a UniqueCache
                         using var fetchCache = new UniqueCache(this);
@@ -1349,14 +1363,14 @@ public class BufferedStorage : IStorage
                         if (upgradeResult.wasUpgradeSuccessful)
                         {
                             rc = fetchCache.Fetch(currentOffset);
-                            if (rc.IsFailure()) return rc;
+                            if (rc.IsFailure()) return rc.Miss();
 
                             break;
                         }
                     }
 
                     rc = ControlDirtiness();
-                    if (rc.IsFailure()) return rc;
+                    if (rc.IsFailure()) return rc.Miss();
                 }
 
                 // Copy the data from the cache buffer to the destination buffer
@@ -1372,15 +1386,15 @@ public class BufferedStorage : IStorage
                     while (cache.AcquireNextOverlappedCache(currentOffset, currentSize))
                     {
                         Result rc = cache.Flush();
-                        if (rc.IsFailure()) return rc;
+                        if (rc.IsFailure()) return rc.Miss();
 
                         cache.Invalidate();
                     }
                 }
 
                 // Read directly from the base storage to the destination buffer
-                Result rcRead = BaseStorage.Read(currentOffset, currentDestination);
-                if (rcRead.IsFailure()) return rcRead;
+                Result rcRead = _baseStorage.Read(currentOffset, currentDestination);
+                if (rcRead.IsFailure()) return rcRead.Miss();
             }
 
             remainingSize -= currentSize;
@@ -1407,24 +1421,24 @@ public class BufferedStorage : IStorage
     /// Otherwise, <see langword="false"/>.</returns>
     private bool ReadHeadCache(ref long offset, Span<byte> buffer, ref long size, ref long bufferOffset)
     {
-        bool isCacheNeeded = !Alignment.IsAlignedPow2(offset, (uint)BlockSize);
+        bool isCacheNeeded = !Alignment.IsAlignedPow2(offset, (uint)_blockSize);
 
         while (size > 0)
         {
             long currentSize;
 
-            if (!Alignment.IsAlignedPow2(offset, (uint)BlockSize))
+            if (!Alignment.IsAlignedPow2(offset, (uint)_blockSize))
             {
-                long alignedSize = Alignment.AlignUpPow2(offset, (uint)BlockSize) - offset;
+                long alignedSize = Alignment.AlignUpPow2(offset, (uint)_blockSize) - offset;
                 currentSize = Math.Min(alignedSize, size);
             }
-            else if (size < BlockSize)
+            else if (size < _blockSize)
             {
                 currentSize = size;
             }
             else
             {
-                currentSize = BlockSize;
+                currentSize = _blockSize;
             }
 
             using var cache = new SharedCache(this);
@@ -1444,25 +1458,25 @@ public class BufferedStorage : IStorage
 
     private bool ReadTailCache(long offset, Span<byte> buffer, ref long size, long bufferOffset)
     {
-        bool isCacheNeeded = !Alignment.IsAlignedPow2(offset + size, (uint)BlockSize);
+        bool isCacheNeeded = !Alignment.IsAlignedPow2(offset + size, (uint)_blockSize);
 
         while (size > 0)
         {
             long currentOffsetEnd = offset + size;
             long currentSize;
 
-            if (!Alignment.IsAlignedPow2(currentOffsetEnd, (uint)BlockSize))
+            if (!Alignment.IsAlignedPow2(currentOffsetEnd, (uint)_blockSize))
             {
-                long alignedSize = currentOffsetEnd - Alignment.AlignDownPow2(currentOffsetEnd, (uint)BlockSize);
+                long alignedSize = currentOffsetEnd - Alignment.AlignDownPow2(currentOffsetEnd, (uint)_blockSize);
                 currentSize = Math.Min(alignedSize, size);
             }
-            else if (size < BlockSize)
+            else if (size < _blockSize)
             {
                 currentSize = size;
             }
             else
             {
-                currentSize = BlockSize;
+                currentSize = _blockSize;
             }
 
             long currentOffset = currentOffsetEnd - currentSize;
@@ -1497,9 +1511,9 @@ public class BufferedStorage : IStorage
         Result rc;
 
         // Determine aligned extents.
-        long alignedOffset = Alignment.AlignDownPow2(offset, (uint)BlockSize);
-        long alignedOffsetEnd = Math.Min(Alignment.AlignUpPow2(offset + buffer.Length, (uint)BlockSize),
-            BaseStorageSize);
+        long alignedOffset = Alignment.AlignDownPow2(offset, (uint)_blockSize);
+        long alignedOffsetEnd = Math.Min(Alignment.AlignUpPow2(offset + buffer.Length, (uint)_blockSize),
+            _baseStorageSize);
         long alignedSize = alignedOffsetEnd - alignedOffset;
 
         // Allocate a work buffer if either the head or tail of the range isn't aligned.
@@ -1526,15 +1540,15 @@ public class BufferedStorage : IStorage
             while (cache.AcquireNextOverlappedCache(alignedOffset, alignedSize))
             {
                 rc = cache.Flush();
-                if (rc.IsFailure()) return rc;
+                if (rc.IsFailure()) return rc.Miss();
 
                 cache.Invalidate();
             }
         }
 
         // Read from the base storage.
-        rc = BaseStorage.Read(alignedOffset, workBuffer.Slice(0, (int)alignedSize));
-        if (rc.IsFailure()) return rc;
+        rc = _baseStorage.Read(alignedOffset, workBuffer.Slice(0, (int)alignedSize));
+        if (rc.IsFailure()) return rc.Miss();
         if (workBuffer != buffer)
         {
             workBuffer.Slice((int)(offset - alignedOffset), buffer.Length).CopyTo(buffer);
@@ -1546,7 +1560,7 @@ public class BufferedStorage : IStorage
         if (isHeadCacheNeeded)
         {
             rc = PrepareAllocation();
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
             using var cache = new SharedCache(this);
             while (true)
@@ -1557,12 +1571,12 @@ public class BufferedStorage : IStorage
                 using var fetchCache = new UniqueCache(this);
                 (Result Result, bool wasUpgradeSuccessful) upgradeResult = fetchCache.Upgrade(in cache);
                 if (upgradeResult.Result.IsFailure())
-                    return upgradeResult.Result;
+                    return upgradeResult.Result.Miss();
 
                 if (upgradeResult.wasUpgradeSuccessful)
                 {
                     rc = fetchCache.FetchFromBuffer(alignedOffset, workBuffer.Slice(0, (int)alignedSize));
-                    if (rc.IsFailure()) return rc;
+                    if (rc.IsFailure()) return rc.Miss();
                     break;
                 }
             }
@@ -1571,12 +1585,12 @@ public class BufferedStorage : IStorage
         }
 
         // Cache the tail block if needed.
-        if (isTailCacheNeeded && (!isHeadCacheNeeded || alignedSize > BlockSize))
+        if (isTailCacheNeeded && (!isHeadCacheNeeded || alignedSize > _blockSize))
         {
             if (!cached)
             {
                 rc = PrepareAllocation();
-                if (rc.IsFailure()) return rc;
+                if (rc.IsFailure()) return rc.Miss();
             }
 
             using var cache = new SharedCache(this);
@@ -1588,16 +1602,16 @@ public class BufferedStorage : IStorage
                 using var fetchCache = new UniqueCache(this);
                 (Result Result, bool wasUpgradeSuccessful) upgradeResult = fetchCache.Upgrade(in cache);
                 if (upgradeResult.Result.IsFailure())
-                    return upgradeResult.Result;
+                    return upgradeResult.Result.Miss();
 
                 if (upgradeResult.wasUpgradeSuccessful)
                 {
-                    long tailCacheOffset = Alignment.AlignDownPow2(offset + buffer.Length, (uint)BlockSize);
+                    long tailCacheOffset = Alignment.AlignDownPow2(offset + buffer.Length, (uint)_blockSize);
                     long tailCacheSize = alignedSize - tailCacheOffset + alignedOffset;
 
                     rc = fetchCache.FetchFromBuffer(tailCacheOffset,
                         workBuffer.Slice((int)(tailCacheOffset - alignedOffset), (int)tailCacheSize));
-                    if (rc.IsFailure()) return rc;
+                    if (rc.IsFailure()) return rc.Miss();
                     break;
                 }
             }
@@ -1606,7 +1620,7 @@ public class BufferedStorage : IStorage
         if (cached)
         {
             rc = ControlDirtiness();
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
         }
 
         return Result.Success;
@@ -1614,11 +1628,11 @@ public class BufferedStorage : IStorage
 
     private Result WriteCore(long offset, ReadOnlySpan<byte> source)
     {
-        Assert.SdkRequiresNotNull(Caches);
+        Assert.SdkRequiresNotNull(_caches);
         Assert.SdkRequiresNotNull(source);
 
         // Validate the offset.
-        long baseStorageSize = BaseStorageSize;
+        long baseStorageSize = _baseStorageSize;
 
         if (offset < 0 || baseStorageSize < offset)
             return ResultFs.InvalidOffset.Log();
@@ -1635,34 +1649,34 @@ public class BufferedStorage : IStorage
             ReadOnlySpan<byte> currentSource = source.Slice(bufferOffset);
             int currentSize;
 
-            if (!Alignment.IsAlignedPow2(currentOffset, (uint)BlockSize))
+            if (!Alignment.IsAlignedPow2(currentOffset, (uint)_blockSize))
             {
-                int alignedSize = (int)(BlockSize - (currentOffset & (BlockSize - 1)));
+                int alignedSize = (int)(_blockSize - (currentOffset & (_blockSize - 1)));
                 currentSize = Math.Min(alignedSize, remainingSize);
             }
-            else if (remainingSize < BlockSize)
+            else if (remainingSize < _blockSize)
             {
                 currentSize = remainingSize;
             }
             else
             {
-                currentSize = Alignment.AlignDownPow2(remainingSize, (uint)BlockSize);
+                currentSize = Alignment.AlignDownPow2(remainingSize, (uint)_blockSize);
             }
 
             Result rc;
-            if (currentSize < BlockSize)
+            if (currentSize <= _blockSize)
             {
                 using var cache = new SharedCache(this);
 
                 if (!cache.AcquireNextOverlappedCache(currentOffset, currentSize))
                 {
                     rc = PrepareAllocation();
-                    if (rc.IsFailure()) return rc;
+                    if (rc.IsFailure()) return rc.Miss();
 
                     while (true)
                     {
                         if (!cache.AcquireFetchableCache())
-                            return ResultFs.OutOfResource.Log();
+                            return ResultFs.OutOfResource.Value;
 
                         using var fetchCache = new UniqueCache(this);
                         (Result Result, bool wasUpgradeSuccessful) upgradeResult = fetchCache.Upgrade(in cache);
@@ -1672,7 +1686,7 @@ public class BufferedStorage : IStorage
                         if (upgradeResult.wasUpgradeSuccessful)
                         {
                             rc = fetchCache.Fetch(currentOffset);
-                            if (rc.IsFailure()) return rc;
+                            if (rc.IsFailure()) return rc.Miss();
                             break;
                         }
                     }
@@ -1682,7 +1696,7 @@ public class BufferedStorage : IStorage
                 BufferManagerUtility.EnableBlockingBufferManagerAllocation();
 
                 rc = ControlDirtiness();
-                if (rc.IsFailure()) return rc;
+                if (rc.IsFailure()) return rc.Miss();
             }
             else
             {
@@ -1691,14 +1705,14 @@ public class BufferedStorage : IStorage
                     while (cache.AcquireNextOverlappedCache(currentOffset, currentSize))
                     {
                         rc = cache.Flush();
-                        if (rc.IsFailure()) return rc;
+                        if (rc.IsFailure()) return rc.Miss();
 
                         cache.Invalidate();
                     }
                 }
 
-                rc = BaseStorage.Write(currentOffset, currentSource.Slice(0, currentSize));
-                if (rc.IsFailure()) return rc;
+                rc = _baseStorage.Write(currentOffset, currentSource.Slice(0, currentSize));
+                if (rc.IsFailure()) return rc.Miss();
 
                 BufferManagerUtility.EnableBlockingBufferManagerAllocation();
             }

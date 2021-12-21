@@ -18,10 +18,10 @@ public class BufferedStorageTests
         Assert.Success(bufferManager.Initialize(5, buffer, 0x4000, workBuffer));
 
         byte[] storageBuffer = new byte[0x80000];
-        var baseStorage = new SubStorage(new MemoryStorage(storageBuffer), 0, storageBuffer.Length);
+        using var baseStorage = new ValueSubStorage(new MemoryStorage(storageBuffer), 0, storageBuffer.Length);
 
         var bufferedStorage = new BufferedStorage();
-        Assert.Success(bufferedStorage.Initialize(baseStorage, bufferManager, 0x4000, 4));
+        Assert.Success(bufferedStorage.Initialize(in baseStorage, bufferManager, 0x4000, 4));
 
         byte[] writeBuffer = new byte[0x400];
         byte[] readBuffer = new byte[0x400];
@@ -196,10 +196,10 @@ public class BufferedStorageTests
         byte[] bufferedStorageArray = new byte[config.StorageSize];
 
         var memoryStorage = new MemoryStorage(memoryStorageArray);
-        var baseBufferedStorage = new SubStorage(new MemoryStorage(bufferedStorageArray), 0, bufferedStorageArray.Length);
+        using var baseBufferedStorage = new ValueSubStorage(new MemoryStorage(bufferedStorageArray), 0, bufferedStorageArray.Length);
 
         var bufferedStorage = new BufferedStorage();
-        Assert.Success(bufferedStorage.Initialize(baseBufferedStorage, bufferManager, config.BlockSize, config.StorageCacheCount));
+        Assert.Success(bufferedStorage.Initialize(in baseBufferedStorage, bufferManager, config.BlockSize, config.StorageCacheCount));
 
         if (config.EnableBulkRead)
         {
