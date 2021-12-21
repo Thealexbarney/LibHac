@@ -9,7 +9,7 @@ using LibHac.Os;
 using LibHac.Util;
 
 using Buffer = LibHac.Mem.Buffer;
-using CacheHandle = System.Int64;
+using CacheHandle = System.UInt64;
 
 // ReSharper disable once CheckNamespace
 namespace LibHac.FsSystem;
@@ -17,6 +17,7 @@ namespace LibHac.FsSystem;
 /// <summary>
 /// An <see cref="IBufferManager"/> that uses a <see cref="FileSystemBuddyHeap"/> as an allocator.
 /// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class FileSystemBufferManager : IBufferManager
 {
     private class CacheHandleTable : IDisposable

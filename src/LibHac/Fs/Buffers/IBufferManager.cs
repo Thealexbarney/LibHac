@@ -1,7 +1,7 @@
 ﻿using System;
 
 using Buffer = LibHac.Mem.Buffer;
-using CacheHandle = System.Int64;
+using CacheHandle = System.UInt64;
 
 // ReSharper disable once CheckNamespace
 namespace LibHac.Fs;

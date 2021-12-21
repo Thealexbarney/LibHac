@@ -3,7 +3,7 @@ using LibHac.Diag;
 using LibHac.Fs;
 
 using Buffer = LibHac.Mem.Buffer;
-using CacheHandle = System.Int64;
+using CacheHandle = System.UInt64;
 
 namespace LibHac.FsSystem.Impl;
 
