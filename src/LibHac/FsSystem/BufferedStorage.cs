@@ -16,6 +16,7 @@ namespace LibHac.FsSystem;
 /// <summary>
 /// An <see cref="IStorage"/> that provides buffered access to a base <see cref="IStorage"/>.
 /// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class BufferedStorage : IStorage
 {
     private const long InvalidOffset = long.MaxValue;
@@ -673,6 +674,8 @@ public class BufferedStorage : IStorage
             ref Cache end = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(BufferedStorage._caches),
                 BufferedStorage._cacheCount);
 
+            using var lk = new ScopedLock<SdkMutexType>(ref BufferedStorage._mutex);
+
             // Validate the range.
             Assert.SdkAssert(!Unsafe.IsAddressLessThan(ref start,
                 ref MemoryMarshal.GetArrayDataReference(BufferedStorage._caches)));
@@ -715,6 +718,8 @@ public class BufferedStorage : IStorage
 
             ref Cache end = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(BufferedStorage._caches),
                 BufferedStorage._cacheCount);
+
+            using var lk = new ScopedLock<SdkMutexType>(ref BufferedStorage._mutex);
 
             // Validate the range.
             Assert.SdkAssert(!Unsafe.IsAddressLessThan(ref start,
@@ -1161,10 +1166,7 @@ public class BufferedStorage : IStorage
         // Invalidate caches if needed.
         if (operationId == OperationId.InvalidateCache)
         {
-            using var cache = new SharedCache(this);
-
-            while (cache.AcquireNextOverlappedCache(offset, size))
-                cache.Invalidate();
+            InvalidateCaches();
         }
 
         return _baseStorage.OperateRange(outBuffer, operationId, offset, size, inBuffer);
@@ -1351,13 +1353,13 @@ public class BufferedStorage : IStorage
                     while (true)
                     {
                         if (!cache.AcquireFetchableCache())
-                            return ResultFs.OutOfResource.Value;
+                            return ResultFs.OutOfResource.Log();
 
                         // Try to upgrade out SharedCache to a UniqueCache
                         using var fetchCache = new UniqueCache(this);
                         (Result Result, bool wasUpgradeSuccessful) upgradeResult = fetchCache.Upgrade(in cache);
                         if (upgradeResult.Result.IsFailure())
-                            return upgradeResult.Result;
+                            return upgradeResult.Result.Miss();
 
                         // Fetch the data from the base storage into the cache buffer if successful
                         if (upgradeResult.wasUpgradeSuccessful)
@@ -1676,12 +1678,12 @@ public class BufferedStorage : IStorage
                     while (true)
                     {
                         if (!cache.AcquireFetchableCache())
-                            return ResultFs.OutOfResource.Value;
+                            return ResultFs.OutOfResource.Log();
 
                         using var fetchCache = new UniqueCache(this);
                         (Result Result, bool wasUpgradeSuccessful) upgradeResult = fetchCache.Upgrade(in cache);
                         if (upgradeResult.Result.IsFailure())
-                            return upgradeResult.Result;
+                            return upgradeResult.Result.Miss();
 
                         if (upgradeResult.wasUpgradeSuccessful)
                         {
