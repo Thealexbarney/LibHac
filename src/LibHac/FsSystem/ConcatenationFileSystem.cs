@@ -8,6 +8,7 @@ using LibHac.Common.FixedArrays;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.Os;
 using LibHac.Util;
 using static LibHac.FsSystem.Utility;
 
@@ -27,7 +28,7 @@ namespace LibHac.FsSystem;
 /// Each internal file except the final one must have the internal file size that was specified
 /// at the creation of the <see cref="ConcatenationFileSystem"/>.
 /// </para>
-/// <para>Based on FS 12.1.0 (nnSdk 12.3.1)</para>
+/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para>
 /// </remarks>
 public class ConcatenationFileSystem : IFileSystem
 {
@@ -211,6 +212,8 @@ public class ConcatenationFileSystem : IFileSystem
 
             if (size > currentSize)
             {
+                Assert.SdkAssert(_fileArray.Count > currentTailIndex);
+
                 rc = _fileArray[currentTailIndex].SetSize(GetInternalFileSize(size, currentTailIndex));
                 if (rc.IsFailure()) return rc.Miss();
 
@@ -285,12 +288,13 @@ public class ConcatenationFileSystem : IFileSystem
                     if (!_mode.HasFlag(OpenMode.Read))
                         return ResultFs.ReadUnpermitted.Log();
 
-                    var closure = new OperateRangeClosure();
-                    closure.OutBuffer = outBuffer;
-                    closure.InBuffer = inBuffer;
-                    closure.OperationId = operationId;
+                    foreach (IFile file in _fileArray)
+                    {
+                        Result rc = file.OperateRange(operationId, 0, long.MaxValue);
+                        if (rc.IsFailure()) return rc.Miss();
+                    }
 
-                    return DoOperateRangeImpl(offset, size, InvalidateCacheImpl, ref closure).Ret();
+                    return Result.Success;
                 }
                 case OperationId.QueryRange:
                 {
@@ -310,11 +314,6 @@ public class ConcatenationFileSystem : IFileSystem
                 }
                 default:
                     return ResultFs.UnsupportedOperateRangeForConcatenationFile.Log();
-            }
-
-            static Result InvalidateCacheImpl(IFile file, long offset, long size, ref OperateRangeClosure closure)
-            {
-                return file.OperateRange(closure.OutBuffer, closure.OperationId, offset, size, closure.InBuffer).Ret();
             }
 
             static Result QueryRangeImpl(IFile file, long offset, long size, ref OperateRangeClosure closure)
@@ -370,7 +369,6 @@ public class ConcatenationFileSystem : IFileSystem
 
         private ref struct OperateRangeClosure
         {
-            public Span<byte> OutBuffer;
             public ReadOnlySpan<byte> InBuffer;
             public OperationId OperationId;
             public QueryRangeInfo InfoMerged;
@@ -496,6 +494,7 @@ public class ConcatenationFileSystem : IFileSystem
 
     private UniqueRef<IAttributeFileSystem> _baseFileSystem;
     private long _internalFileSize;
+    private SdkMutexType _mutex;
 
     /// <summary>
     /// Initializes a new <see cref="ConcatenationFileSystem"/> with an internal file size of <see cref="DefaultInternalFileSize"/>.
@@ -516,6 +515,7 @@ public class ConcatenationFileSystem : IFileSystem
     {
         _baseFileSystem = new UniqueRef<IAttributeFileSystem>(ref baseFileSystem);
         _internalFileSize = internalFileSize;
+        _mutex = new SdkMutexType();
     }
 
     public override void Dispose()
@@ -611,6 +611,8 @@ public class ConcatenationFileSystem : IFileSystem
 
     protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         if (IsConcatenationFile(in path))
         {
             entryType = DirectoryEntryType.File;
@@ -622,26 +624,36 @@ public class ConcatenationFileSystem : IFileSystem
 
     protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         return _baseFileSystem.Get.GetFreeSpaceSize(out freeSpace, path).Ret();
     }
 
     protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         return _baseFileSystem.Get.GetTotalSpaceSize(out totalSpace, path).Ret();
     }
 
     protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         return _baseFileSystem.Get.GetFileTimeStampRaw(out timeStamp, path).Ret();
     }
 
     protected override Result DoFlush()
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         return _baseFileSystem.Get.Flush().Ret();
     }
 
     protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         if (!IsConcatenationFile(in path))
         {
             return _baseFileSystem.Get.OpenFile(ref outFile, in path, mode).Ret();
@@ -700,6 +712,8 @@ public class ConcatenationFileSystem : IFileSystem
     protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
         OpenDirectoryMode mode)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         if (IsConcatenationFile(path))
         {
             return ResultFs.PathNotFound.Log();
@@ -720,6 +734,8 @@ public class ConcatenationFileSystem : IFileSystem
 
     protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         CreateFileOptions newOption = option & ~CreateFileOptions.CreateConcatenationFile;
 
         // Create a normal file if the concatenation file flag isn't set
@@ -802,6 +818,8 @@ public class ConcatenationFileSystem : IFileSystem
 
     protected override Result DoDeleteFile(in Path path)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         if (!IsConcatenationFile(in path))
         {
             return _baseFileSystem.Get.DeleteFile(in path).Ret();
@@ -834,6 +852,8 @@ public class ConcatenationFileSystem : IFileSystem
 
     protected override Result DoCreateDirectory(in Path path)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         // Check if the parent path is a concatenation file because we can't create a directory inside one.
         using var parentPath = new Path();
         Result rc = GenerateParentPath(ref parentPath.Ref(), in path);
@@ -847,6 +867,8 @@ public class ConcatenationFileSystem : IFileSystem
 
     protected override Result DoDeleteDirectory(in Path path)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         // Make sure the directory isn't a concatenation file.
         if (IsConcatenationFile(path))
             return ResultFs.PathNotFound.Log();
@@ -875,7 +897,13 @@ public class ConcatenationFileSystem : IFileSystem
 
     protected override Result DoDeleteDirectoryRecursively(in Path path)
     {
-        if (IsConcatenationFile(in path))
+        bool isConcatenationFile;
+        using (new ScopedLock<SdkMutexType>(ref _mutex))
+        {
+            isConcatenationFile = IsConcatenationFile(in path);
+        }
+
+        if (isConcatenationFile)
             return ResultFs.PathNotFound.Log();
 
         Result rc = CleanDirectoryRecursivelyImpl(in path);
@@ -886,7 +914,13 @@ public class ConcatenationFileSystem : IFileSystem
 
     protected override Result DoCleanDirectoryRecursively(in Path path)
     {
-        if (IsConcatenationFile(in path))
+        bool isConcatenationFile;
+        using (new ScopedLock<SdkMutexType>(ref _mutex))
+        {
+            isConcatenationFile = IsConcatenationFile(in path);
+        }
+
+        if (isConcatenationFile)
             return ResultFs.PathNotFound.Log();
 
         return CleanDirectoryRecursivelyImpl(in path).Ret();
@@ -894,6 +928,8 @@ public class ConcatenationFileSystem : IFileSystem
 
     protected override Result DoRenameFile(in Path currentPath, in Path newPath)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         if (IsConcatenationFile(in currentPath))
             return _baseFileSystem.Get.RenameDirectory(in currentPath, in newPath).Ret();
 
@@ -902,6 +938,8 @@ public class ConcatenationFileSystem : IFileSystem
 
     protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         if (IsConcatenationFile(in currentPath))
             return ResultFs.PathNotFound.Log();
 
@@ -911,6 +949,8 @@ public class ConcatenationFileSystem : IFileSystem
     public Result GetFileSize(out long size, in Path path)
     {
         UnsafeHelpers.SkipParamInit(out size);
+
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
 
         using var internalFilePath = new Path();
         Result rc = internalFilePath.Initialize(in path);
@@ -950,6 +990,8 @@ public class ConcatenationFileSystem : IFileSystem
     protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
         in Path path)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         if (queryId != QueryId.SetConcatenationFileAttribute)
             return ResultFs.UnsupportedQueryEntryForConcatenationFileSystem.Log();
 
@@ -958,11 +1000,15 @@ public class ConcatenationFileSystem : IFileSystem
 
     protected override Result DoCommit()
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         return _baseFileSystem.Get.Commit().Ret();
     }
 
     protected override Result DoCommitProvisionally(long counter)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         return _baseFileSystem.Get.CommitProvisionally(counter).Ret();
     }
 }
