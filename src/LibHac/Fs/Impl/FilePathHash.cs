@@ -1,6 +1,8 @@
-﻿namespace LibHac.Fs.Impl;
+﻿using LibHac.Common.FixedArrays;
+
+namespace LibHac.Fs.Impl;
 
 public struct FilePathHash
 {
-    public int Data;
+    public Array4<byte> Data;
 }

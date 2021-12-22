@@ -97,9 +97,9 @@ public static class Registrar
         if (!accessor.HasValue)
             return ResultFs.AllocationMemoryFailedInRegisterB.Log();
 
-        accessor.Get.SetFileDataCacheAttachable(useDataCache);
+        // accessor.Get.SetFileDataCacheAttachable(useDataCache);
         accessor.Get.SetPathBasedFileDataCacheAttachable(usePathCache);
-        accessor.Get.SetDataId(dataId);
+        // accessor.Get.SetDataId(dataId);
 
         Result rc = fs.Impl.Register(ref accessor.Ref());
         if (rc.IsFailure()) return rc.Miss();

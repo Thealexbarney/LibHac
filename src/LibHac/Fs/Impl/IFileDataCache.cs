@@ -7,11 +7,15 @@ using LibHac.Fs.Fsa;
 namespace LibHac.Fs.Impl;
 
 // ReSharper disable once InconsistentNaming
+/// <summary>
+/// Provides a system for caching reads to one or more file systems.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 internal abstract class IFileDataCache : IDisposable
 {
     public abstract void Dispose();
 
-    public abstract void Purge(IFileSystem fileSystem);
+    public abstract void Purge(IStorage storage);
 
     protected abstract Result DoRead(IFile file, out long bytesRead, long offset, Span<byte> destination,
         in ReadOption option, ref FileDataCacheAccessResult cacheAccessResult);

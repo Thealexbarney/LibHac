@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Diag;
-using LibHac.Ncm;
 using LibHac.Os;
 using LibHac.Util;
 
@@ -14,7 +13,7 @@ namespace LibHac.Fs.Impl;
 /// Holds a list of <see cref="FileSystemAccessor"/>s that are indexed by their name.
 /// These may be retrieved or removed using their name as a key.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 internal class MountTable : IDisposable
 {
     private LinkedList<FileSystemAccessor> _fileSystemList;
@@ -76,9 +75,11 @@ internal class MountTable : IDisposable
             currentNode is not null;
             currentNode = currentNode.Next)
         {
-            if (!Matches(currentNode.Value, name)) continue;
-            accessor = currentNode.Value;
-            return Result.Success;
+            if (Matches(currentNode.Value, name))
+            {
+                accessor = currentNode.Value;
+                return Result.Success;
+            }
         }
 
         return ResultFs.NotMounted.Log();
@@ -120,45 +121,5 @@ internal class MountTable : IDisposable
         }
 
         return true;
-    }
-
-    public int GetDataIdCount()
-    {
-        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
-
-        int count = 0;
-
-        for (LinkedListNode<FileSystemAccessor> currentNode = _fileSystemList.First;
-            currentNode is not null;
-            currentNode = currentNode.Next)
-        {
-            if (currentNode.Value.GetDataId().HasValue)
-                count++;
-        }
-
-        return count;
-    }
-
-    public Result ListDataId(out int dataIdCount, Span<DataId> dataIdBuffer)
-    {
-        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
-
-        int count = 0;
-
-        for (LinkedListNode<FileSystemAccessor> currentNode = _fileSystemList.First;
-            currentNode is not null && count < dataIdBuffer.Length;
-            currentNode = currentNode.Next)
-        {
-            Optional<DataId> dataId = currentNode.Value.GetDataId();
-
-            if (dataId.HasValue)
-            {
-                dataIdBuffer[count] = dataId.Value;
-                count++;
-            }
-        }
-
-        dataIdCount = count;
-        return Result.Success;
     }
 }
