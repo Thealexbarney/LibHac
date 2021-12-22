@@ -21,26 +21,26 @@ internal static class ProcessSwitchFs
     public static void Process(Context ctx)
     {
         SwitchFs switchFs;
-        var baseFs = new LocalFileSystem(ctx.Options.InFile);
+        using var baseFs = new UniqueRef<IAttributeFileSystem>(new LocalFileSystem(ctx.Options.InFile));
 
         if (Directory.Exists(Path.Combine(ctx.Options.InFile, "Nintendo", "Contents", "registered")))
         {
             ctx.Logger.LogMessage("Treating path as SD card storage");
-            switchFs = SwitchFs.OpenSdCard(ctx.KeySet, baseFs);
+            switchFs = SwitchFs.OpenSdCard(ctx.KeySet, ref baseFs.Ref());
 
             CheckForNcaFolders(ctx, switchFs);
         }
         else if (Directory.Exists(Path.Combine(ctx.Options.InFile, "Contents", "registered")))
         {
             ctx.Logger.LogMessage("Treating path as NAND storage");
-            switchFs = SwitchFs.OpenNandPartition(ctx.KeySet, baseFs);
+            switchFs = SwitchFs.OpenNandPartition(ctx.KeySet, ref baseFs.Ref());
 
             CheckForNcaFolders(ctx, switchFs);
         }
         else
         {
             ctx.Logger.LogMessage("Treating path as a directory of loose NCAs");
-            switchFs = SwitchFs.OpenNcaDirectory(ctx.KeySet, baseFs);
+            switchFs = SwitchFs.OpenNcaDirectory(ctx.KeySet, baseFs.Get);
         }
 
         if (ctx.Options.ListNcas)
