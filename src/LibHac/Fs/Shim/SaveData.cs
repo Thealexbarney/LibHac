@@ -50,7 +50,7 @@ public static class SaveData
         using var mountNameGenerator = new UniqueRef<ICommonMountNameGenerator>();
 
         rc = fs.Fs.Register(mountName, fileSystemAdapterRaw, ref fileSystemAdapter.Ref(),
-            ref mountNameGenerator.Ref(), false, true);
+            ref mountNameGenerator.Ref(), false, null, true);
         if (rc.IsFailure()) return rc.Miss();
 
         return Result.Success;
