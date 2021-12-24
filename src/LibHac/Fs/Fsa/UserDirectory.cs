@@ -7,6 +7,10 @@ using static LibHac.Fs.Impl.AccessLogStrings;
 
 namespace LibHac.Fs.Fsa;
 
+/// <summary>
+/// Contains functions for interacting with opened directories.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 [SkipLocalsInit]
 public static class UserDirectory
 {

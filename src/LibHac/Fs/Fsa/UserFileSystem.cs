@@ -5,11 +5,16 @@ using LibHac.Fs.Impl;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Sf;
 using LibHac.Os;
+using LibHac.Util;
 using static LibHac.Fs.Impl.AccessLogStrings;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Fsa;
 
+/// <summary>
+/// Contains functions for interacting with mounted file systems.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 [SkipLocalsInit]
 public static class UserFileSystem
 {
@@ -228,7 +233,7 @@ public static class UserFileSystem
         return rc;
     }
 
-    public static Result RenameFile(this FileSystemClient fs, U8Span oldPath, U8Span newPath)
+    public static Result RenameFile(this FileSystemClient fs, U8Span currentPath, U8Span newPath)
     {
         Result rc;
         U8Span currentSubPath, newSubPath;
@@ -239,18 +244,18 @@ public static class UserFileSystem
         if (fs.Impl.IsEnabledAccessLog())
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = fs.Impl.FindFileSystem(out currentFileSystem, out currentSubPath, oldPath);
+            rc = fs.Impl.FindFileSystem(out currentFileSystem, out currentSubPath, currentPath);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
-            sb.Append(LogPath).Append(oldPath).Append(LogNewPath).Append(newPath).Append((byte)'"');
+            sb.Append(LogPath).Append(currentPath).Append(LogNewPath).Append(newPath).Append((byte)'"');
             logBuffer = sb.Buffer;
 
             fs.Impl.OutputAccessLogUnlessResultSuccess(rc, start, end, null, new U8Span(logBuffer));
         }
         else
         {
-            rc = fs.Impl.FindFileSystem(out currentFileSystem, out currentSubPath, oldPath);
+            rc = fs.Impl.FindFileSystem(out currentFileSystem, out currentSubPath, currentPath);
         }
         fs.Impl.AbortIfNeeded(rc);
         if (rc.IsFailure()) return rc;
@@ -294,7 +299,7 @@ public static class UserFileSystem
         return rc;
     }
 
-    public static Result RenameDirectory(this FileSystemClient fs, U8Span oldPath, U8Span newPath)
+    public static Result RenameDirectory(this FileSystemClient fs, U8Span currentPath, U8Span newPath)
     {
         Result rc;
         U8Span currentSubPath, newSubPath;
@@ -305,18 +310,18 @@ public static class UserFileSystem
         if (fs.Impl.IsEnabledAccessLog())
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = fs.Impl.FindFileSystem(out currentFileSystem, out currentSubPath, oldPath);
+            rc = fs.Impl.FindFileSystem(out currentFileSystem, out currentSubPath, currentPath);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
-            sb.Append(LogPath).Append(oldPath).Append(LogNewPath).Append(newPath).Append((byte)'"');
+            sb.Append(LogPath).Append(currentPath).Append(LogNewPath).Append(newPath).Append((byte)'"');
             logBuffer = sb.Buffer;
 
             fs.Impl.OutputAccessLogUnlessResultSuccess(rc, start, end, null, new U8Span(logBuffer));
         }
         else
         {
-            rc = fs.Impl.FindFileSystem(out currentFileSystem, out currentSubPath, oldPath);
+            rc = fs.Impl.FindFileSystem(out currentFileSystem, out currentSubPath, currentPath);
         }
         fs.Impl.AbortIfNeeded(rc);
         if (rc.IsFailure()) return rc;
@@ -421,19 +426,18 @@ public static class UserFileSystem
         FileSystemAccessor fileSystem;
         Span<byte> logBuffer = stackalloc byte[0x300];
 
+        static Result FindImpl(FileSystemClient fs, U8Span path, out FileSystemAccessor fileSystem, ref U8Span subPath)
+        {
+            if (fs.Impl.IsValidMountName(path))
+                return fs.Impl.Find(out fileSystem, path);
+            else
+                return fs.Impl.FindFileSystem(out fileSystem, out subPath, path);
+        }
+
         if (fs.Impl.IsEnabledAccessLog())
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            if (fs.Impl.IsValidMountName(path))
-            {
-                rc = fs.Impl.Find(out fileSystem, path);
-                if (rc.IsFailure()) return rc;
-            }
-            else
-            {
-                rc = fs.Impl.FindFileSystem(out fileSystem, out subPath, path);
-                if (rc.IsFailure()) return rc;
-            }
+            rc = FindImpl(fs, path, out fileSystem, ref subPath);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
@@ -445,24 +449,25 @@ public static class UserFileSystem
         }
         else
         {
-            if (fs.Impl.IsValidMountName(path))
-            {
-                rc = fs.Impl.Find(out fileSystem, path);
-                if (rc.IsFailure()) return rc;
-            }
-            else
-            {
-                rc = fs.Impl.FindFileSystem(out fileSystem, out subPath, path);
-                if (rc.IsFailure()) return rc;
-            }
+            rc = FindImpl(fs, path, out fileSystem, ref subPath);
         }
         fs.Impl.AbortIfNeeded(rc);
         if (rc.IsFailure()) return rc;
 
+        static Result GetImpl(out long freeSpace, FileSystemAccessor fileSystem, U8Span subPath)
+        {
+            UnsafeHelpers.SkipParamInit(out freeSpace);
+
+            if (subPath.IsEmpty() && StringUtils.Compare(subPath, new[] { (byte)'/' }) != 0)
+                return ResultFs.InvalidMountName.Log();
+
+            return fileSystem.GetFreeSpaceSize(out freeSpace, new U8Span(new[] { (byte)'/' }));
+        }
+
         if (fs.Impl.IsEnabledAccessLog() && fileSystem.IsEnabledAccessLog())
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = fileSystem.GetFreeSpaceSize(out freeSpace, subPath);
+            rc = GetImpl(out freeSpace, fileSystem, subPath);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
@@ -474,7 +479,7 @@ public static class UserFileSystem
         }
         else
         {
-            rc = fileSystem.GetFreeSpaceSize(out freeSpace, subPath);
+            rc = GetImpl(out freeSpace, fileSystem, subPath);
         }
         fs.Impl.AbortIfNeeded(rc);
         return rc;
@@ -633,6 +638,9 @@ public static class UserFileSystem
         // Todo: Add access log
 
         if (mountNames.Length > 10)
+            return ResultFs.InvalidCommitNameCount.Log();
+
+        if (mountNames.Length < 10)
             return ResultFs.InvalidCommitNameCount.Log();
 
         if (mountNames.Length == 0)
