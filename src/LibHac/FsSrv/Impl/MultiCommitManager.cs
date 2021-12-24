@@ -55,7 +55,7 @@ internal class MultiCommitManager : IMultiCommitManager
     private const int CurrentCommitContextVersion = 0x10000;
     private const long CommitContextFileSize = 0x200;
 
-    // /commitinfo
+    /// <summary>"<c>/commitinfo</c>"</summary>
     private static ReadOnlySpan<byte> CommitContextFileName =>
         new[] { (byte)'/', (byte)'c', (byte)'o', (byte)'m', (byte)'m', (byte)'i', (byte)'t', (byte)'i', (byte)'n', (byte)'f', (byte)'o' };
 

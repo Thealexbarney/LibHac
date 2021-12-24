@@ -525,8 +525,10 @@ internal class FileSystemAccessor : IDisposable
         Remove(_openDirectories, directory);
     }
 
+    /// <summary>"<c>$fs</c>"</summary>
     private static ReadOnlySpan<byte> LogFsModuleName => new[] { (byte)'$', (byte)'f', (byte)'s' }; // "$fs"
 
+    /// <summary>"<c>------ FS ERROR INFORMATION ------\n</c>"</summary>
     private static ReadOnlySpan<byte> LogFsErrorInfo => // "------ FS ERROR INFORMATION ------\n"
         new[]
         {
@@ -537,6 +539,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'-', (byte)'-', (byte)'\\', (byte)'n'
         };
 
+    /// <summary>"<c>Error: File not closed</c>"</summary>
     private static ReadOnlySpan<byte> LogFileNotClosed => // "Error: File not closed"
         new[]
         {
@@ -545,6 +548,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'c', (byte)'l', (byte)'o', (byte)'s', (byte)'e', (byte)'d'
         };
 
+    /// <summary>"<c>Error: Directory not closed</c>"</summary>
     private static ReadOnlySpan<byte> LogDirectoryNotClosed => // "Error: Directory not closed"
         new[]
         {
@@ -554,6 +558,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'s', (byte)'e', (byte)'d'
         };
 
+    /// <summary>"<c> (mount_name: "</c>"</summary>
     private static ReadOnlySpan<byte> LogMountName => // " (mount_name: ""
         new[]
         {
@@ -561,6 +566,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'n', (byte)'a', (byte)'m', (byte)'e', (byte)':', (byte)' ', (byte)'"'
         };
 
+    /// <summary>"<c>", count: </c>"</summary>
     private static ReadOnlySpan<byte> LogCount => // "", count: "
         new[]
         {
@@ -568,10 +574,13 @@ internal class FileSystemAccessor : IDisposable
             (byte)':', (byte)' '
         };
 
+    /// <summary>"<c>)\n</c>"</summary>
     public static ReadOnlySpan<byte> LogLineEnd => new[] { (byte)')', (byte)'\\', (byte)'n' }; // ")\n"
 
+    /// <summary>"<c> | </c>"</summary>
     public static ReadOnlySpan<byte> LogOrOperator => new[] { (byte)' ', (byte)'|', (byte)' ' };  // " | "
 
+    /// <summary>"<c>OpenMode_Read</c>"</summary>
     private static ReadOnlySpan<byte> LogOpenModeRead => // "OpenMode_Read"
         new[]
         {
@@ -579,6 +588,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'_', (byte)'R', (byte)'e', (byte)'a', (byte)'d'
         };
 
+    /// <summary>"<c>OpenMode_Write</c>"</summary>
     private static ReadOnlySpan<byte> LogOpenModeWrite => // "OpenMode_Write"
         new[]
         {
@@ -586,6 +596,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'_', (byte)'W', (byte)'r', (byte)'i', (byte)'t', (byte)'e'
         };
 
+    /// <summary>"<c>OpenMode_AllowAppend</c>"</summary>
     private static ReadOnlySpan<byte> LogOpenModeAppend => // "OpenMode_AllowAppend"
         new[]
         {
@@ -594,6 +605,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'p', (byte)'e', (byte)'n', (byte)'d'
         };
 
+    /// <summary>"<c>     handle: 0x</c>"</summary>
     private static ReadOnlySpan<byte> LogHandle => // "     handle: 0x"
         new[]
         {
@@ -601,6 +613,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'d', (byte)'l', (byte)'e', (byte)':', (byte)' ', (byte)'0', (byte)'x'
         };
 
+    /// <summary>"<c>, open_mode: </c>"</summary>
     private static ReadOnlySpan<byte> LogOpenMode => // ", open_mode: "
         new[]
         {
@@ -608,6 +621,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'o', (byte)'d', (byte)'e', (byte)':', (byte)' '
         };
 
+    /// <summary>"<c>, size:</c>"</summary>
     private static ReadOnlySpan<byte> LogSize => // ", size: "
         new[]
         {
