@@ -12,6 +12,11 @@ public struct UnpreparedRangeInfo
     public Array20<byte> Reserved;
 }
 
+public struct UnpreparedFileInformation
+{
+    public Array769<byte> Path;
+}
+
 public struct LazyLoadArguments
 {
     public int GuideIndex;
