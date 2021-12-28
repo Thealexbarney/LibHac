@@ -8,8 +8,11 @@ namespace LibHac.Fs.Fsa;
 /// <summary>
 /// Provides an interface for accessing a file system. <c>/</c> is used as the path delimiter.
 /// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public abstract class IFileSystem : IDisposable
 {
+    public virtual void Dispose() { }
+
     /// <summary>
     /// Creates or overwrites a file at the specified path.
     /// </summary>
@@ -171,25 +174,22 @@ public abstract class IFileSystem : IDisposable
     }
 
     /// <summary>
-    /// Gets the amount of available free space on a drive, in bytes.
+    /// Opens an <see cref="IFile"/> instance for the specified path.
     /// </summary>
-    /// <param name="freeSpace">If the operation returns successfully, the amount of free space available on the drive, in bytes.</param>
-    /// <param name="path">The path of the drive to query. Unused in almost all cases.</param>
-    /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-    public Result GetFreeSpaceSize(out long freeSpace, in Path path)
+    /// <param name="file">If the operation returns successfully,
+    /// An <see cref="IFile"/> instance for the specified path.</param>
+    /// <param name="path">The full path of the file to open.</param>
+    /// <param name="mode">Specifies the access permissions of the created <see cref="IFile"/>.</param>
+    /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+    /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a directory.<br/>
+    /// <see cref="ResultFs.TargetLocked"/>: When opening as <see cref="OpenMode.Write"/>,
+    /// the file is already opened as <see cref="OpenMode.Write"/>.</returns>
+    public Result OpenFile(ref UniqueRef<IFile> file, in Path path, OpenMode mode)
     {
-        return DoGetFreeSpaceSize(out freeSpace, in path);
-    }
+        if ((mode & OpenMode.ReadWrite) == 0 || (mode & ~OpenMode.All) != 0)
+            return ResultFs.InvalidModeForFileOpen.Log();
 
-    /// <summary>
-    /// Gets the total size of storage space on a drive, in bytes.
-    /// </summary>
-    /// <param name="totalSpace">If the operation returns successfully, the total size of the drive, in bytes.</param>
-    /// <param name="path">The path of the drive to query. Unused in almost all cases.</param>
-    /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-    public Result GetTotalSpaceSize(out long totalSpace, in Path path)
-    {
-        return DoGetTotalSpaceSize(out totalSpace, in path);
+        return DoOpenFile(ref file, in path, mode);
     }
 
     /// <summary>
@@ -213,25 +213,6 @@ public abstract class IFileSystem : IDisposable
         if (rs.IsFailure()) return rs;
 
         return DoOpenFile(ref file, in pathNormalized, mode);
-    }
-
-    /// <summary>
-    /// Opens an <see cref="IFile"/> instance for the specified path.
-    /// </summary>
-    /// <param name="file">If the operation returns successfully,
-    /// An <see cref="IFile"/> instance for the specified path.</param>
-    /// <param name="path">The full path of the file to open.</param>
-    /// <param name="mode">Specifies the access permissions of the created <see cref="IFile"/>.</param>
-    /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
-    /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a directory.<br/>
-    /// <see cref="ResultFs.TargetLocked"/>: When opening as <see cref="OpenMode.Write"/>,
-    /// the file is already opened as <see cref="OpenMode.Write"/>.</returns>
-    public Result OpenFile(ref UniqueRef<IFile> file, in Path path, OpenMode mode)
-    {
-        if ((mode & OpenMode.ReadWrite) == 0 || (mode & ~OpenMode.All) != 0)
-            return ResultFs.InvalidModeForFileOpen.Log();
-
-        return DoOpenFile(ref file, in path, mode);
     }
 
     /// <summary>
@@ -263,6 +244,28 @@ public abstract class IFileSystem : IDisposable
     public Result Rollback() => DoRollback();
 
     public Result Flush() => DoFlush();
+
+    /// <summary>
+    /// Gets the amount of available free space on a drive, in bytes.
+    /// </summary>
+    /// <param name="freeSpace">If the operation returns successfully, the amount of free space available on the drive, in bytes.</param>
+    /// <param name="path">The path of the drive to query. Unused in almost all cases.</param>
+    /// <returns>The <see cref="Result"/> of the requested operation.</returns>
+    public Result GetFreeSpaceSize(out long freeSpace, in Path path)
+    {
+        return DoGetFreeSpaceSize(out freeSpace, in path);
+    }
+
+    /// <summary>
+    /// Gets the total size of storage space on a drive, in bytes.
+    /// </summary>
+    /// <param name="totalSpace">If the operation returns successfully, the total size of the drive, in bytes.</param>
+    /// <param name="path">The path of the drive to query. Unused in almost all cases.</param>
+    /// <returns>The <see cref="Result"/> of the requested operation.</returns>
+    public Result GetTotalSpaceSize(out long totalSpace, in Path path)
+    {
+        return DoGetTotalSpaceSize(out totalSpace, in path);
+    }
 
     /// <summary>
     /// Gets the creation, last accessed, and last modified timestamps of a file or directory.
@@ -333,8 +336,6 @@ public abstract class IFileSystem : IDisposable
 
     protected virtual Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
         in Path path) => ResultFs.NotImplemented.Log();
-
-    public virtual void Dispose() { }
 }
 
 /// <summary>

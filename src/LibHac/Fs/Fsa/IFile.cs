@@ -10,17 +10,20 @@ namespace LibHac.Fs.Fsa;
 /// </summary>
 /// <remarks><see cref="IFile"/> is similar to <see cref="IStorage"/>, and has a few main differences:
 /// 
-/// - <see cref="IFile"/> allows an <see cref="OpenMode"/> to be set that controls read, write
-/// and append permissions for the file.
+/// <para>- <see cref="IFile"/> allows an <see cref="OpenMode"/> to be set that controls read, write
+/// and append permissions for the file.</para>
 ///
-/// - If the <see cref="IFile"/> cannot read or write as many bytes as requested, it will read
-/// or write as many bytes as it can and return that number of bytes to the caller.
+/// <para>- If the <see cref="IFile"/> cannot read or write as many bytes as requested, it will read
+/// or write as many bytes as it can and return that number of bytes to the caller.</para>
 ///
-/// - If <see cref="Write"/> is called on an offset past the end of the <see cref="IFile"/>,
+/// <para>- If <see cref="Write"/> is called on an offset past the end of the <see cref="IFile"/>,
 /// the <see cref="OpenMode.AllowAppend"/> mode is set and the file supports expansion,
-/// the file will be expanded so that it is large enough to contain the written data.</remarks>
+/// the file will be expanded so that it is large enough to contain the written data.</para>
+/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
 public abstract class IFile : IDisposable
 {
+    public virtual void Dispose() { }
+
     /// <summary>
     /// Reads a sequence of bytes from the current <see cref="IFile"/>.
     /// </summary>
@@ -174,15 +177,6 @@ public abstract class IFile : IDisposable
         return Result.Success;
     }
 
-    protected Result DrySetSize(long size, OpenMode openMode)
-    {
-        // Check that we can write.
-        if (!openMode.HasFlag(OpenMode.Write))
-            return ResultFs.WriteUnpermitted.Log();
-
-        return Result.Success;
-    }
-
     protected Result DryWrite(out bool needsAppend, long offset, long size, in WriteOption option,
         OpenMode openMode)
     {
@@ -196,6 +190,8 @@ public abstract class IFile : IDisposable
         Result rc = GetSize(out long fileSize);
         if (rc.IsFailure()) return rc;
 
+        needsAppend = false;
+
         if (fileSize < offset + size)
         {
             if (!openMode.HasFlag(OpenMode.AllowAppend))
@@ -203,10 +199,15 @@ public abstract class IFile : IDisposable
 
             needsAppend = true;
         }
-        else
-        {
-            needsAppend = false;
-        }
+
+        return Result.Success;
+    }
+
+    protected Result DrySetSize(long size, OpenMode openMode)
+    {
+        // Check that we can write.
+        if (!openMode.HasFlag(OpenMode.Write))
+            return ResultFs.WriteUnpermitted.Log();
 
         return Result.Success;
     }
@@ -218,6 +219,4 @@ public abstract class IFile : IDisposable
     protected abstract Result DoGetSize(out long size);
     protected abstract Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
         ReadOnlySpan<byte> inBuffer);
-
-    public virtual void Dispose() { }
 }
