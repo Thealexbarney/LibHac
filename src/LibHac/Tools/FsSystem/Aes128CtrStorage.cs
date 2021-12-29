@@ -59,9 +59,9 @@ public class Aes128CtrStorage : SectorStorage
         Counter = _decryptor.Counter;
     }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
-        Result rc = base.DoRead(offset, destination);
+        Result rc = base.Read(offset, destination);
         if (rc.IsFailure()) return rc;
 
         lock (_locker)
@@ -73,7 +73,7 @@ public class Aes128CtrStorage : SectorStorage
         return Result.Success;
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         byte[] encrypted = ArrayPool<byte>.Shared.Rent(source.Length);
         try
@@ -87,7 +87,7 @@ public class Aes128CtrStorage : SectorStorage
                 _decryptor.TransformBlock(encryptedSpan);
             }
 
-            Result rc = base.DoWrite(offset, encryptedSpan);
+            Result rc = base.Write(offset, encryptedSpan);
             if (rc.IsFailure()) return rc;
         }
         finally

@@ -11,7 +11,7 @@ public class MemoryStorage : IStorage
         StorageBuffer = buffer;
     }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         if (destination.Length == 0)
             return Result.Success;
@@ -24,7 +24,7 @@ public class MemoryStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         if (source.Length == 0)
             return Result.Success;
@@ -37,20 +37,26 @@ public class MemoryStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoFlush()
+    public override Result Flush()
     {
         return Result.Success;
     }
 
-    protected override Result DoSetSize(long size)
+    public override Result SetSize(long size)
     {
         return ResultFs.UnsupportedSetSizeForMemoryStorage.Log();
     }
 
-    protected override Result DoGetSize(out long size)
+    public override Result GetSize(out long size)
     {
         size = StorageBuffer.Length;
 
         return Result.Success;
+    }
+
+    public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+        ReadOnlySpan<byte> inBuffer)
+    {
+        throw new NotImplementedException();
     }
 }

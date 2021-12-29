@@ -52,7 +52,7 @@ public class FileStorage : IStorage
         _baseFile = file;
     }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         if (destination.Length == 0)
             return Result.Success;
@@ -66,7 +66,7 @@ public class FileStorage : IStorage
         return _baseFile.Read(out _, offset, destination, ReadOption.None);
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         if (source.Length == 0)
             return Result.Success;
@@ -80,12 +80,12 @@ public class FileStorage : IStorage
         return _baseFile.Write(offset, source, WriteOption.None);
     }
 
-    protected override Result DoFlush()
+    public override Result Flush()
     {
         return _baseFile.Flush();
     }
 
-    protected override Result DoGetSize(out long size)
+    public override Result GetSize(out long size)
     {
         UnsafeHelpers.SkipParamInit(out size);
 
@@ -96,13 +96,13 @@ public class FileStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoSetSize(long size)
+    public override Result SetSize(long size)
     {
         _fileSize = InvalidSize;
         return _baseFile.SetSize(size);
     }
 
-    protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+    public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
     {
         if (operationId == OperationId.InvalidateCache)
         {
@@ -245,7 +245,7 @@ public class FileHandleStorage : IStorage
         base.Dispose();
     }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
@@ -261,7 +261,7 @@ public class FileHandleStorage : IStorage
         return _fsClient.ReadFile(_handle, offset, destination, ReadOption.None);
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
@@ -277,12 +277,12 @@ public class FileHandleStorage : IStorage
         return _fsClient.WriteFile(_handle, offset, source, WriteOption.None);
     }
 
-    protected override Result DoFlush()
+    public override Result Flush()
     {
         return _fsClient.FlushFile(_handle);
     }
 
-    protected override Result DoGetSize(out long size)
+    public override Result GetSize(out long size)
     {
         UnsafeHelpers.SkipParamInit(out size);
 
@@ -293,13 +293,13 @@ public class FileHandleStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoSetSize(long size)
+    public override Result SetSize(long size)
     {
         _size = InvalidSize;
         return _fsClient.SetFileSize(_handle, size);
     }
 
-    protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+    public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
     {
         if (operationId != OperationId.QueryRange)
             return ResultFs.UnsupportedOperateRangeForFileHandleStorage.Log();

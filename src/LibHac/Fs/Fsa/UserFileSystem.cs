@@ -637,10 +637,10 @@ public static class UserFileSystem
     {
         // Todo: Add access log
 
-        if (mountNames.Length > 10)
+        if (mountNames.Length < 0)
             return ResultFs.InvalidCommitNameCount.Log();
 
-        if (mountNames.Length < 10)
+        if (mountNames.Length > 10)
             return ResultFs.InvalidCommitNameCount.Log();
 
         if (mountNames.Length == 0)

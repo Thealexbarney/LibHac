@@ -24,7 +24,7 @@ public class AllocationTableStorage : IStorage
         _length = initialBlock == -1 ? 0 : table.GetListLength(initialBlock) * blockSize;
     }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         var iterator = new AllocationTableIterator(Fat, InitialBlock);
 
@@ -58,7 +58,7 @@ public class AllocationTableStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         var iterator = new AllocationTableIterator(Fat, InitialBlock);
 
@@ -92,18 +92,18 @@ public class AllocationTableStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoFlush()
+    public override Result Flush()
     {
         return BaseStorage.Flush();
     }
 
-    protected override Result DoGetSize(out long size)
+    public override Result GetSize(out long size)
     {
         size = _length;
         return Result.Success;
     }
 
-    protected override Result DoSetSize(long size)
+    public override Result SetSize(long size)
     {
         int oldBlockCount = (int)BitUtil.DivideUp(_length, BlockSize);
         int newBlockCount = (int)BitUtil.DivideUp(size, BlockSize);
@@ -146,5 +146,11 @@ public class AllocationTableStorage : IStorage
         _length = newBlockCount * BlockSize;
 
         return Result.Success;
+    }
+
+    public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+        ReadOnlySpan<byte> inBuffer)
+    {
+        throw new NotImplementedException();
     }
 }

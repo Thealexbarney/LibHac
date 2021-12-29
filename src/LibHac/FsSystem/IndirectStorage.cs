@@ -169,7 +169,7 @@ public class IndirectStorage : IStorage
         }
     }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         // Validate pre-conditions
         Assert.SdkRequiresLessEqual(0, offset);
@@ -196,17 +196,17 @@ public class IndirectStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         return ResultFs.UnsupportedWriteForIndirectStorage.Log();
     }
 
-    protected override Result DoFlush()
+    public override Result Flush()
     {
         return Result.Success;
     }
 
-    protected override Result DoGetSize(out long size)
+    public override Result GetSize(out long size)
     {
         UnsafeHelpers.SkipParamInit(out size);
 
@@ -217,7 +217,7 @@ public class IndirectStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoSetSize(long size)
+    public override Result SetSize(long size)
     {
         return ResultFs.UnsupportedSetSizeForIndirectStorage.Log();
     }
@@ -288,7 +288,7 @@ public class IndirectStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+    public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
         ReadOnlySpan<byte> inBuffer)
     {
         Assert.SdkRequiresLessEqual(0, offset);

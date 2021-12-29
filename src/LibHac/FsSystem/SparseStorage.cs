@@ -16,7 +16,7 @@ public class SparseStorage : IndirectStorage
 {
     private class ZeroStorage : IStorage
     {
-        protected override Result DoRead(long offset, Span<byte> destination)
+        public override Result Read(long offset, Span<byte> destination)
         {
             Assert.SdkRequiresGreaterEqual(offset, 0);
 
@@ -26,28 +26,28 @@ public class SparseStorage : IndirectStorage
             return Result.Success;
         }
 
-        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+        public override Result Write(long offset, ReadOnlySpan<byte> source)
         {
             return ResultFs.UnsupportedWriteForZeroStorage.Log();
         }
 
-        protected override Result DoFlush()
+        public override Result Flush()
         {
             return Result.Success;
         }
 
-        protected override Result DoGetSize(out long size)
+        public override Result GetSize(out long size)
         {
             size = long.MaxValue;
             return Result.Success;
         }
 
-        protected override Result DoSetSize(long size)
+        public override Result SetSize(long size)
         {
             return ResultFs.UnsupportedSetSizeForZeroStorage.Log();
         }
 
-        protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+        public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
             ReadOnlySpan<byte> inBuffer)
         {
             return Result.Success;
@@ -86,7 +86,7 @@ public class SparseStorage : IndirectStorage
         SetStorage(1, _zeroStorage, 0, long.MaxValue);
     }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         // Validate pre-conditions
         Assert.SdkRequiresLessEqual(0, offset);

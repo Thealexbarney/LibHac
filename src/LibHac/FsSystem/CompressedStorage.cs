@@ -320,7 +320,7 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
         _core.FinalizeObject();
     }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         Result rc = _cacheManager.Read(_core, offset, destination);
         if (rc.IsFailure()) return rc.Miss();
@@ -328,22 +328,22 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
         return Result.Success;
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         return ResultFs.UnsupportedWriteForCompressedStorage.Log();
     }
 
-    protected override Result DoFlush()
+    public override Result Flush()
     {
         return Result.Success;
     }
 
-    protected override Result DoSetSize(long size)
+    public override Result SetSize(long size)
     {
         return ResultFs.UnsupportedSetSizeForIndirectStorage.Log();
     }
 
-    protected override Result DoGetSize(out long size)
+    public override Result GetSize(out long size)
     {
         Result rc = _core.GetSize(out size);
         if (rc.IsFailure()) return rc.Miss();
@@ -351,7 +351,7 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
         return Result.Success;
     }
 
-    protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+    public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
         ReadOnlySpan<byte> inBuffer)
     {
         Assert.SdkRequiresLessEqual(0, offset);

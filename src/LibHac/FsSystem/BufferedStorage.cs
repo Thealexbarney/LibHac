@@ -1068,7 +1068,7 @@ public class BufferedStorage : IStorage
     /// Otherwise, <see langword="false"/>.</returns>
     public bool IsInitialized() => _caches != null;
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         Assert.SdkRequires(IsInitialized());
 
@@ -1080,7 +1080,7 @@ public class BufferedStorage : IStorage
         return ReadCore(offset, destination).Miss();
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         Assert.SdkRequires(IsInitialized());
 
@@ -1092,7 +1092,7 @@ public class BufferedStorage : IStorage
         return WriteCore(offset, source).Miss();
     }
 
-    protected override Result DoGetSize(out long size)
+    public override Result GetSize(out long size)
     {
         Assert.SdkRequires(IsInitialized());
 
@@ -1100,7 +1100,7 @@ public class BufferedStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoSetSize(long size)
+    public override Result SetSize(long size)
     {
         Assert.SdkRequires(IsInitialized());
 
@@ -1158,7 +1158,7 @@ public class BufferedStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+    public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
         ReadOnlySpan<byte> inBuffer)
     {
         Assert.SdkRequires(IsInitialized());
@@ -1172,7 +1172,7 @@ public class BufferedStorage : IStorage
         return _baseStorage.OperateRange(outBuffer, operationId, offset, size, inBuffer);
     }
 
-    protected override Result DoFlush()
+    public override Result Flush()
     {
         Assert.SdkRequires(IsInitialized());
 
