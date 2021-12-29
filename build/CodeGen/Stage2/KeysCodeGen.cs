@@ -37,17 +37,17 @@ public static class KeysCodeGen
         sb.AppendLine("internal static partial class DefaultKeySet");
         sb.AppendLineAndIncrease("{");
 
-        BuildArray(sb, "RootKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._rootKeysDev));
-        BuildArray(sb, "RootKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._rootKeysProd));
-        BuildArray(sb, "KeySeeds", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._keySeeds));
-        BuildArray(sb, "StoredKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._storedKeysDev));
-        BuildArray(sb, "StoredKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._storedKeysProd));
-        BuildArray(sb, "DerivedKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._derivedKeysDev));
-        BuildArray(sb, "DerivedKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._derivedKeysProd));
-        BuildArray(sb, "DeviceKeys", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._deviceKeys));
-        BuildArray(sb, "RsaSigningKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._rsaSigningKeysDev));
-        BuildArray(sb, "RsaSigningKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._rsaSigningKeysProd));
-        BuildArray(sb, "RsaKeys", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._rsaKeys));
+        BuildArray(sb, "RootKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RootKeysDev));
+        BuildArray(sb, "RootKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RootKeysProd));
+        BuildArray(sb, "KeySeeds", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.KeySeeds));
+        BuildArray(sb, "StoredKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.StoredKeysDev));
+        BuildArray(sb, "StoredKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.StoredKeysProd));
+        BuildArray(sb, "DerivedKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.DerivedKeysDev));
+        BuildArray(sb, "DerivedKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.DerivedKeysProd));
+        BuildArray(sb, "DeviceKeys", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.DeviceKeys));
+        BuildArray(sb, "RsaSigningKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RsaSigningKeysDev));
+        BuildArray(sb, "RsaSigningKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RsaSigningKeysProd));
+        BuildArray(sb, "RsaKeys", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RsaKeys));
 
         sb.DecreaseAndAppendLine("}");
 

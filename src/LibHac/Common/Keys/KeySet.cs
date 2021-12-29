@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using LibHac.Boot;
 using LibHac.Common.FixedArrays;
@@ -31,11 +30,11 @@ public class KeySet
     public ref AllKeys KeyStruct => ref _keys;
     public Mode CurrentMode => _mode;
 
-    private ref RootKeys RootKeys => ref _mode == Mode.Dev ? ref _keys._rootKeysDev : ref _keys._rootKeysProd;
-    private ref StoredKeys StoredKeys => ref _mode == Mode.Dev ? ref _keys._storedKeysDev : ref _keys._storedKeysProd;
-    private ref DerivedKeys DerivedKeys => ref _mode == Mode.Dev ? ref _keys._derivedKeysDev : ref _keys._derivedKeysProd;
-    private ref RsaSigningKeys RsaSigningKeys => ref _mode == Mode.Dev ? ref _keys._rsaSigningKeysDev : ref _keys._rsaSigningKeysProd;
-    private ref RsaKeys RsaKeys => ref _keys._rsaKeys;
+    private ref RootKeys RootKeys => ref _mode == Mode.Dev ? ref _keys.RootKeysDev : ref _keys.RootKeysProd;
+    private ref StoredKeys StoredKeys => ref _mode == Mode.Dev ? ref _keys.StoredKeysDev : ref _keys.StoredKeysProd;
+    private ref DerivedKeys DerivedKeys => ref _mode == Mode.Dev ? ref _keys.DerivedKeysDev : ref _keys.DerivedKeysProd;
+    private ref RsaSigningKeys RsaSigningKeys => ref _mode == Mode.Dev ? ref _keys.RsaSigningKeysDev : ref _keys.RsaSigningKeysProd;
+    private ref RsaKeys RsaKeys => ref _keys.RsaKeys;
 
     private ref RsaSigningKeyParameters RsaSigningKeyParams => ref _mode == Mode.Dev
         ? ref _rsaSigningKeyParamsDev
@@ -47,44 +46,44 @@ public class KeySet
     public ref AesKey MarikoKek => ref RootKeys.MarikoKek;
     public ref AesKey MarikoBek => ref RootKeys.MarikoBek;
     public Span<KeyBlob> KeyBlobs => RootKeys.KeyBlobs.Items;
-    public Span<AesKey> KeyBlobKeySources => _keys._keySeeds.KeyBlobKeySources.Items;
-    public ref AesKey KeyBlobMacKeySource => ref _keys._keySeeds.KeyBlobMacKeySource;
+    public Span<AesKey> KeyBlobKeySources => _keys.KeySeeds.KeyBlobKeySources.Items;
+    public ref AesKey KeyBlobMacKeySource => ref _keys.KeySeeds.KeyBlobMacKeySource;
     public ref AesKey TsecRootKek => ref RootKeys.TsecRootKek;
     public ref AesKey Package1MacKek => ref RootKeys.Package1MacKek;
     public ref AesKey Package1Kek => ref RootKeys.Package1Kek;
     public Span<AesKey> TsecAuthSignatures => RootKeys.TsecAuthSignatures.Items;
     public Span<AesKey> TsecRootKeys => RootKeys.TsecRootKeys.Items;
-    public Span<AesKey> MasterKekSources => _keys._keySeeds.MasterKekSources.Items;
+    public Span<AesKey> MasterKekSources => _keys.KeySeeds.MasterKekSources.Items;
 
     public Span<AesKey> MarikoMasterKekSources => _mode == Mode.Dev
-        ? _keys._keySeeds.MarikoMasterKekSources_dev.Items
-        : _keys._keySeeds.MarikoMasterKekSources.Items;
+        ? _keys.KeySeeds.MarikoMasterKekSourcesDev.Items
+        : _keys.KeySeeds.MarikoMasterKekSources.Items;
 
     public Span<AesKey> MasterKeks => DerivedKeys.MasterKeks.Items;
-    public ref AesKey MasterKeySource => ref _keys._keySeeds.MasterKeySource;
+    public ref AesKey MasterKeySource => ref _keys.KeySeeds.MasterKeySource;
     public Span<AesKey> MasterKeys => DerivedKeys.MasterKeys.Items;
     public Span<AesKey> Package1MacKeys => DerivedKeys.Package1MacKeys.Items;
     public Span<AesKey> Package1Keys => DerivedKeys.Package1Keys.Items;
     public Span<AesKey> Package2Keys => DerivedKeys.Package2Keys.Items;
-    public ref AesKey Package2KeySource => ref _keys._keySeeds.Package2KeySource;
-    public ref AesKey PerConsoleKeySource => ref _keys._keySeeds.PerConsoleKeySource;
-    public ref AesKey RetailSpecificAesKeySource => ref _keys._keySeeds.RetailSpecificAesKeySource;
-    public ref AesKey BisKekSource => ref _keys._keySeeds.BisKekSource;
-    public Span<AesXtsKey> BisKeySources => _keys._keySeeds.BisKeySources.Items;
-    public ref AesKey AesKekGenerationSource => ref _keys._keySeeds.AesKekGenerationSource;
-    public ref AesKey AesKeyGenerationSource => ref _keys._keySeeds.AesKeyGenerationSource;
-    public ref AesKey KeyAreaKeyApplicationSource => ref _keys._keySeeds.KeyAreaKeyApplicationSource;
-    public ref AesKey KeyAreaKeyOceanSource => ref _keys._keySeeds.KeyAreaKeyOceanSource;
-    public ref AesKey KeyAreaKeySystemSource => ref _keys._keySeeds.KeyAreaKeySystemSource;
-    public ref AesKey TitleKekSource => ref _keys._keySeeds.TitleKekSource;
-    public ref AesKey HeaderKekSource => ref _keys._keySeeds.HeaderKekSource;
-    public ref AesKey SdCardKekSource => ref _keys._keySeeds.SdCardKekSource;
-    public Span<AesXtsKey> SdCardKeySources => _keys._keySeeds.SdCardKeySources.Items;
-    public ref AesKey DeviceUniqueSaveMacKekSource => ref _keys._keySeeds.DeviceUniqueSaveMacKekSource;
-    public Span<AesKey> DeviceUniqueSaveMacKeySources => _keys._keySeeds.DeviceUniqueSaveMacKeySources.Items;
-    public ref AesKey SeedUniqueSaveMacKekSource => ref _keys._keySeeds.SeedUniqueSaveMacKekSource;
-    public ref AesKey SeedUniqueSaveMacKeySource => ref _keys._keySeeds.SeedUniqueSaveMacKeySource;
-    public ref AesXtsKey HeaderKeySource => ref _keys._keySeeds.HeaderKeySource;
+    public ref AesKey Package2KeySource => ref _keys.KeySeeds.Package2KeySource;
+    public ref AesKey PerConsoleKeySource => ref _keys.KeySeeds.PerConsoleKeySource;
+    public ref AesKey RetailSpecificAesKeySource => ref _keys.KeySeeds.RetailSpecificAesKeySource;
+    public ref AesKey BisKekSource => ref _keys.KeySeeds.BisKekSource;
+    public Span<AesXtsKey> BisKeySources => _keys.KeySeeds.BisKeySources.Items;
+    public ref AesKey AesKekGenerationSource => ref _keys.KeySeeds.AesKekGenerationSource;
+    public ref AesKey AesKeyGenerationSource => ref _keys.KeySeeds.AesKeyGenerationSource;
+    public ref AesKey KeyAreaKeyApplicationSource => ref _keys.KeySeeds.KeyAreaKeyApplicationSource;
+    public ref AesKey KeyAreaKeyOceanSource => ref _keys.KeySeeds.KeyAreaKeyOceanSource;
+    public ref AesKey KeyAreaKeySystemSource => ref _keys.KeySeeds.KeyAreaKeySystemSource;
+    public ref AesKey TitleKekSource => ref _keys.KeySeeds.TitleKekSource;
+    public ref AesKey HeaderKekSource => ref _keys.KeySeeds.HeaderKekSource;
+    public ref AesKey SdCardKekSource => ref _keys.KeySeeds.SdCardKekSource;
+    public Span<AesXtsKey> SdCardKeySources => _keys.KeySeeds.SdCardKeySources.Items;
+    public ref AesKey DeviceUniqueSaveMacKekSource => ref _keys.KeySeeds.DeviceUniqueSaveMacKekSource;
+    public Span<AesKey> DeviceUniqueSaveMacKeySources => _keys.KeySeeds.DeviceUniqueSaveMacKeySources.Items;
+    public ref AesKey SeedUniqueSaveMacKekSource => ref _keys.KeySeeds.SeedUniqueSaveMacKekSource;
+    public ref AesKey SeedUniqueSaveMacKeySource => ref _keys.KeySeeds.SeedUniqueSaveMacKeySource;
+    public ref AesXtsKey HeaderKeySource => ref _keys.KeySeeds.HeaderKeySource;
     public ref AesXtsKey HeaderKey => ref DerivedKeys.HeaderKey;
     public Span<AesKey> TitleKeks => DerivedKeys.TitleKeks.Items;
     public Span<Array3<AesKey>> KeyAreaKeys => DerivedKeys.KeyAreaKeys.Items;
@@ -92,19 +91,19 @@ public class KeySet
     public ref AesKey ETicketRsaKek => ref DerivedKeys.ETicketRsaKek;
     public ref AesKey SslRsaKek => ref DerivedKeys.SslRsaKek;
 
-    public ref AesKey SecureBootKey => ref _keys._deviceKeys.SecureBootKey;
-    public ref AesKey TsecKey => ref _keys._deviceKeys.TsecKey;
-    public Span<AesKey> KeyBlobKeys => _keys._deviceKeys.KeyBlobKeys.Items;
-    public Span<AesKey> KeyBlobMacKeys => _keys._deviceKeys.KeyBlobMacKeys.Items;
-    public Span<EncryptedKeyBlob> EncryptedKeyBlobs => _keys._deviceKeys.EncryptedKeyBlobs.Items;
-    public ref AesKey DeviceKey => ref _keys._deviceKeys.DeviceKey;
-    public Span<AesXtsKey> BisKeys => _keys._deviceKeys.BisKeys.Items;
-    public Span<AesKey> DeviceUniqueSaveMacKeys => _keys._deviceKeys.DeviceUniqueSaveMacKeys.Items;
-    public ref AesKey SeedUniqueSaveMacKey => ref _keys._deviceKeys.SeedUniqueSaveMacKey;
-    public ref AesKey SdCardEncryptionSeed => ref _keys._deviceKeys.SdCardEncryptionSeed;
+    public ref AesKey SecureBootKey => ref _keys.DeviceKeys.SecureBootKey;
+    public ref AesKey TsecKey => ref _keys.DeviceKeys.TsecKey;
+    public Span<AesKey> KeyBlobKeys => _keys.DeviceKeys.KeyBlobKeys.Items;
+    public Span<AesKey> KeyBlobMacKeys => _keys.DeviceKeys.KeyBlobMacKeys.Items;
+    public Span<EncryptedKeyBlob> EncryptedKeyBlobs => _keys.DeviceKeys.EncryptedKeyBlobs.Items;
+    public ref AesKey DeviceKey => ref _keys.DeviceKeys.DeviceKey;
+    public Span<AesXtsKey> BisKeys => _keys.DeviceKeys.BisKeys.Items;
+    public Span<AesKey> DeviceUniqueSaveMacKeys => _keys.DeviceKeys.DeviceUniqueSaveMacKeys.Items;
+    public ref AesKey SeedUniqueSaveMacKey => ref _keys.DeviceKeys.SeedUniqueSaveMacKey;
+    public ref AesKey SdCardEncryptionSeed => ref _keys.DeviceKeys.SdCardEncryptionSeed;
 
     // Todo: Make a separate type? Not actually an AES-XTS key, but it's still the same shape.
-    public Span<AesXtsKey> SdCardEncryptionKeys => _keys._deviceKeys.SdCardEncryptionKeys.Items;
+    public Span<AesXtsKey> SdCardEncryptionKeys => _keys.DeviceKeys.SdCardEncryptionKeys.Items;
 
     public Span<RsaKey> NcaHeaderSigningKeys => RsaSigningKeys.NcaHeaderSigningKeys.Items;
     public Span<RsaKey> AcidSigningKeys => RsaSigningKeys.AcidSigningKeys.Items;
@@ -259,23 +258,21 @@ public class KeySet
     }
 }
 
-[StructLayout(LayoutKind.Sequential)]
 public struct AllKeys
 {
-    public RootKeys _rootKeysDev;
-    public RootKeys _rootKeysProd;
-    public KeySeeds _keySeeds;
-    public StoredKeys _storedKeysDev;
-    public StoredKeys _storedKeysProd;
-    public DerivedKeys _derivedKeysDev;
-    public DerivedKeys _derivedKeysProd;
-    public DeviceKeys _deviceKeys;
-    public RsaSigningKeys _rsaSigningKeysDev;
-    public RsaSigningKeys _rsaSigningKeysProd;
-    public RsaKeys _rsaKeys;
+    public RootKeys RootKeysDev;
+    public RootKeys RootKeysProd;
+    public KeySeeds KeySeeds;
+    public StoredKeys StoredKeysDev;
+    public StoredKeys StoredKeysProd;
+    public DerivedKeys DerivedKeysDev;
+    public DerivedKeys DerivedKeysProd;
+    public DeviceKeys DeviceKeys;
+    public RsaSigningKeys RsaSigningKeysDev;
+    public RsaSigningKeys RsaSigningKeysProd;
+    public RsaKeys RsaKeys;
 }
 
-[StructLayout(LayoutKind.Sequential)]
 public struct RootKeys
 {
     // Mariko keys. The AES class keys are currently unused.
@@ -298,14 +295,13 @@ public struct RootKeys
     public Array32<AesKey> TsecRootKeys;
 }
 
-[StructLayout(LayoutKind.Sequential)]
 public struct KeySeeds
 {
     public Array32<AesKey> KeyBlobKeySources;
     public AesKey KeyBlobMacKeySource;
     public Array32<AesKey> MasterKekSources;
     public Array32<AesKey> MarikoMasterKekSources;
-    public Array32<AesKey> MarikoMasterKekSources_dev;
+    public Array32<AesKey> MarikoMasterKekSourcesDev;
     public AesKey MasterKeySource;
     public AesKey Package2KeySource;
     public AesKey PerConsoleKeySource;
@@ -331,13 +327,11 @@ public struct KeySeeds
 /// <summary>
 /// Holds keys that are stored directly in Horizon programs.
 /// </summary>
-[StructLayout(LayoutKind.Sequential)]
 public struct StoredKeys
 {
     public AesKey XciHeaderKey;
 }
 
-[StructLayout(LayoutKind.Sequential)]
 public struct DerivedKeys
 {
     public Array32<AesKey> MasterKeks;
@@ -352,7 +346,6 @@ public struct DerivedKeys
     public AesKey SslRsaKek;
 }
 
-[StructLayout(LayoutKind.Sequential)]
 public struct DeviceKeys
 {
     public AesKey SecureBootKey;
@@ -368,7 +361,6 @@ public struct DeviceKeys
     public Array3<AesXtsKey> SdCardEncryptionKeys;
 }
 
-[StructLayout(LayoutKind.Sequential)]
 public struct RsaSigningKeys
 {
     public Array2<RsaKey> NcaHeaderSigningKeys;
@@ -376,7 +368,6 @@ public struct RsaSigningKeys
     public RsaKey Package2SigningKey;
 }
 
-[StructLayout(LayoutKind.Sequential)]
 public struct RsaKeys
 {
     public RsaFullKey BetaNca0KeyAreaKey;
