@@ -112,8 +112,8 @@ public class StatusReportServiceImpl
 
         if (_config.GetPatrolAllocateCounts != null)
         {
-            _config.GetPatrolAllocateCounts(out reportInfo.PatrolAllocateSuccessCount,
-                out reportInfo.PatrolAllocateFailureCount);
+            _config.GetPatrolAllocateCounts(out reportInfo.PatrolReadAllocateBufferSuccessCount,
+                out reportInfo.PatrolReadAllocateBufferFailureCount);
         }
 
         return Result.Success;

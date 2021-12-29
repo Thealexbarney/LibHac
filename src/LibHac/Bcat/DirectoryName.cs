@@ -1,33 +1,20 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Util;
 
 namespace LibHac.Bcat;
 
 [DebuggerDisplay("{ToString()}")]
-[StructLayout(LayoutKind.Sequential, Size = MaxSize)]
 public struct DirectoryName
 {
     private const int MaxSize = 0x20;
 
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)] private ulong _dummy0;
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)] private ulong _dummy1;
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)] private ulong _dummy2;
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)] private ulong _dummy3;
+    public Array32<byte> Value;
 
-    public byte this[int i]
+    public readonly bool IsValid()
     {
-        get => Bytes[i];
-        set => Bytes[i] = value;
-    }
-
-    public Span<byte> Bytes => SpanHelpers.AsByteSpan(ref this);
-
-    public bool IsValid()
-    {
-        Span<byte> name = Bytes;
+        ReadOnlySpan<byte> name = Value.ItemsRo;
 
         int i;
         for (i = 0; i < name.Length; i++)
@@ -45,8 +32,8 @@ public struct DirectoryName
         return name[i] == 0;
     }
 
-    public override string ToString()
+    public readonly override string ToString()
     {
-        return StringUtils.Utf8ZToString(Bytes);
+        return StringUtils.Utf8ZToString(Value.ItemsRo);
     }
 }

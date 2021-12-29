@@ -56,7 +56,7 @@ internal class DeliveryCacheFileMetaAccessor
         {
             for (int i = 0; i < Count; i++)
             {
-                if (StringUtils.CompareCaseInsensitive(Entries[i].Name.Bytes, fileName.Bytes) == 0)
+                if (StringUtils.CompareCaseInsensitive(Entries[i].Name.Value, fileName.Value) == 0)
                 {
                     entry = Entries[i];
                     return Result.Success;
