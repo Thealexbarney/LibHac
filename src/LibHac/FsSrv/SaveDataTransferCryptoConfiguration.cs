@@ -1,19 +1,19 @@
 ﻿using System;
-using LibHac.Crypto;
+using LibHac.Common.FixedArrays;
 
 namespace LibHac.FsSrv;
 
 public class SaveDataTransferCryptoConfiguration
 {
-    private Data100 _tokenSigningKeyModulus;
-    private Data100 _keySeedPackageSigningKeyModulus;
-    private Data100 _kekEncryptionKeyModulus;
-    private Data100 _keyPackageSigningModulus;
+    private Array256<byte> _tokenSigningKeyModulus;
+    private Array256<byte> _keySeedPackageSigningKeyModulus;
+    private Array256<byte> _kekEncryptionKeyModulus;
+    private Array256<byte> _keyPackageSigningModulus;
 
-    public Span<byte> TokenSigningKeyModulus => _tokenSigningKeyModulus.Data;
-    public Span<byte> KeySeedPackageSigningKeyModulus => _keySeedPackageSigningKeyModulus.Data;
-    public Span<byte> KekEncryptionKeyModulus => _kekEncryptionKeyModulus.Data;
-    public Span<byte> KeyPackageSigningModulus => _keyPackageSigningModulus.Data;
+    public Span<byte> TokenSigningKeyModulus => _tokenSigningKeyModulus.Items;
+    public Span<byte> KeySeedPackageSigningKeyModulus => _keySeedPackageSigningKeyModulus.Items;
+    public Span<byte> KekEncryptionKeyModulus => _kekEncryptionKeyModulus.Items;
+    public Span<byte> KeyPackageSigningModulus => _keyPackageSigningModulus.Items;
 
     public SaveTransferAesKeyGenerator GenerateAesKey { get; set; }
     public RandomDataGenerator GenerateRandomData { get; set; }

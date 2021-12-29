@@ -11,7 +11,7 @@ namespace LibHac.Fs.Fsa;
 
 public static class MountUtility
 {
-    internal static Result GetMountNameAndSubPath(out MountName mountName, out U8Span subPath, U8Span path)
+    private static Result GetMountNameAndSubPath(out MountName mountName, out U8Span subPath, U8Span path)
     {
         UnsafeHelpers.SkipParamInit(out mountName);
         subPath = default;

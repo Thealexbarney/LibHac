@@ -225,8 +225,8 @@ public class KeySet
     {
         return new RSAParameters
         {
-            Exponent = key.PublicExponent.DataRo.ToArray(),
-            Modulus = key.Modulus.DataRo.ToArray()
+            Exponent = key.PublicExponent.ItemsRo.ToArray(),
+            Modulus = key.Modulus.ItemsRo.ToArray()
         };
     }
 
@@ -234,14 +234,14 @@ public class KeySet
     {
         return new RSAParameters
         {
-            D = key.PrivateExponent.DataRo.ToArray(),
-            DP = key.Dp.DataRo.ToArray(),
-            DQ = key.Dq.DataRo.ToArray(),
-            Exponent = key.PublicExponent.DataRo.ToArray(),
-            InverseQ = key.InverseQ.DataRo.ToArray(),
-            Modulus = key.Modulus.DataRo.ToArray(),
-            P = key.P.DataRo.ToArray(),
-            Q = key.Q.DataRo.ToArray()
+            D = key.PrivateExponent.ItemsRo.ToArray(),
+            DP = key.Dp.ItemsRo.ToArray(),
+            DQ = key.Dq.ItemsRo.ToArray(),
+            Exponent = key.PublicExponent.ItemsRo.ToArray(),
+            InverseQ = key.InverseQ.ItemsRo.ToArray(),
+            Modulus = key.Modulus.ItemsRo.ToArray(),
+            P = key.P.ItemsRo.ToArray(),
+            Q = key.Q.ItemsRo.ToArray()
         };
     }
 
