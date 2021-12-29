@@ -102,7 +102,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                 break;
             case SaveDataSpaceId.User:
             case SaveDataSpaceId.Temporary:
-            case SaveDataSpaceId.SdCache:
+            case SaveDataSpaceId.SdUser:
                 if (!programInfo.AccessControl.CanCall(OperationType.OpenSaveDataInfoReader))
                     return ResultFs.PermissionDenied.Log();
                 break;
@@ -1751,7 +1751,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         Result rc = GetProgramInfo(out ProgramInfo programInfo);
         if (rc.IsFailure()) return rc;
 
-        if (spaceId != SaveDataSpaceId.SdCache && spaceId != SaveDataSpaceId.User)
+        if (spaceId != SaveDataSpaceId.SdUser && spaceId != SaveDataSpaceId.User)
             return ResultFs.InvalidSaveDataSpaceId.Log();
 
         using var filterReader = new UniqueRef<SaveDataInfoFilterReader>();
@@ -1810,12 +1810,12 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         // Cache storage on the SD card will always take priority over case storage in NAND
         if (_serviceImpl.IsSdCardAccessible())
         {
-            rc = SaveExists(out bool existsOnSdCard, SaveDataSpaceId.SdCache);
+            rc = SaveExists(out bool existsOnSdCard, SaveDataSpaceId.SdUser);
             if (rc.IsFailure()) return rc;
 
             if (existsOnSdCard)
             {
-                spaceId = SaveDataSpaceId.SdCache;
+                spaceId = SaveDataSpaceId.SdUser;
                 return Result.Success;
             }
         }
@@ -2207,7 +2207,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             return StorageType.Bis | StorageType.SdCard | StorageType.Usb;
 
         if (type == SaveDataType.System ||
-            spaceId != SaveDataSpaceId.SdSystem && spaceId != SaveDataSpaceId.SdCache)
+            spaceId != SaveDataSpaceId.SdSystem && spaceId != SaveDataSpaceId.SdUser)
             return StorageType.Bis;
 
         return StorageType.SdCard | StorageType.Usb;

@@ -659,37 +659,37 @@ public class SaveDataFileSystemServiceImpl
                 return Result.Success;
 
             case SaveDataSpaceId.SdSystem:
-            case SaveDataSpaceId.SdCache:
-                {
-                    rc = _config.BaseFsService.OpenSdCardProxyFileSystem(ref baseFileSystem.Ref(), true);
-                    if (rc.IsFailure()) return rc.Miss();
+            case SaveDataSpaceId.SdUser:
+            {
+                rc = _config.BaseFsService.OpenSdCardProxyFileSystem(ref baseFileSystem.Ref(), true);
+                if (rc.IsFailure()) return rc.Miss();
 
-                    // Hack around error CS8350.
-                    const int bufferLength = 0x40;
-                    Span<byte> buffer = stackalloc byte[bufferLength];
-                    ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-                    Span<byte> pathParentBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+                // Hack around error CS8350.
+                const int bufferLength = 0x40;
+                Span<byte> buffer = stackalloc byte[bufferLength];
+                ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+                Span<byte> pathParentBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
 
-                    using var pathParent = new Path();
-                    rc = PathFunctions.SetUpFixedPathSingleEntry(ref pathParent.Ref(), pathParentBuffer,
-                        CommonPaths.SdCardNintendoRootDirectoryName);
-                    if (rc.IsFailure()) return rc.Miss();
+                using var pathParent = new Path();
+                rc = PathFunctions.SetUpFixedPathSingleEntry(ref pathParent.Ref(), pathParentBuffer,
+                    CommonPaths.SdCardNintendoRootDirectoryName);
+                if (rc.IsFailure()) return rc.Miss();
 
-                    using var pathSdRoot = new Path();
-                    rc = pathSdRoot.Combine(in pathParent, in basePath);
-                    if (rc.IsFailure()) return rc.Miss();
+                using var pathSdRoot = new Path();
+                rc = pathSdRoot.Combine(in pathParent, in basePath);
+                if (rc.IsFailure()) return rc.Miss();
 
-                    using SharedRef<IFileSystem> tempFileSystem =
-                        SharedRef<IFileSystem>.CreateMove(ref baseFileSystem.Ref());
-                    rc = Utility.WrapSubDirectory(ref baseFileSystem.Ref(), ref tempFileSystem.Ref(), in pathSdRoot, createIfMissing);
-                    if (rc.IsFailure()) return rc.Miss();
+                using SharedRef<IFileSystem> tempFileSystem =
+                    SharedRef<IFileSystem>.CreateMove(ref baseFileSystem.Ref());
+                rc = Utility.WrapSubDirectory(ref baseFileSystem.Ref(), ref tempFileSystem.Ref(), in pathSdRoot, createIfMissing);
+                if (rc.IsFailure()) return rc.Miss();
 
-                    rc = _config.EncryptedFsCreator.Create(ref outFileSystem, ref baseFileSystem.Ref(),
-                        IEncryptedFileSystemCreator.KeyId.Save, in _encryptionSeed);
-                    if (rc.IsFailure()) return rc.Miss();
+                rc = _config.EncryptedFsCreator.Create(ref outFileSystem, ref baseFileSystem.Ref(),
+                    IEncryptedFileSystemCreator.KeyId.Save, in _encryptionSeed);
+                if (rc.IsFailure()) return rc.Miss();
 
-                    return Result.Success;
-                }
+                return Result.Success;
+            }
 
             case SaveDataSpaceId.ProperSystem:
                 rc = _config.BaseFsService.OpenBisFileSystem(ref baseFileSystem.Ref(),
@@ -721,7 +721,7 @@ public class SaveDataFileSystemServiceImpl
 
         _config.SaveFsCreator.SetSdCardEncryptionSeed(seed.Value);
         _config.SaveIndexerManager.InvalidateIndexer(SaveDataSpaceId.SdSystem);
-        _config.SaveIndexerManager.InvalidateIndexer(SaveDataSpaceId.SdCache);
+        _config.SaveIndexerManager.InvalidateIndexer(SaveDataSpaceId.SdUser);
 
         return Result.Success;
     }

@@ -25,7 +25,7 @@ public class SaveData
         var applicationId = new Ncm.ApplicationId(1);
         FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-        fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdCache, applicationId.Value, 0, 0, SaveDataFlags.None);
+        fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdUser, applicationId.Value, 0, 0, SaveDataFlags.None);
         fs.MountCacheStorage("cache".ToU8Span(), applicationId);
 
         fs.CreateFile("cache:/file".ToU8Span(), 0);
@@ -43,7 +43,7 @@ public class SaveData
         var applicationId = new Ncm.ApplicationId(1);
         FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-        Assert.Success(fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdCache, applicationId.Value, 0, 0, SaveDataFlags.None));
+        Assert.Success(fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdUser, applicationId.Value, 0, 0, SaveDataFlags.None));
         Assert.Success(fs.MountCacheStorage("cache".ToU8Span(), applicationId));
         fs.CreateFile("cache:/sd".ToU8Span(), 0);
         fs.Commit("cache".ToU8Span());

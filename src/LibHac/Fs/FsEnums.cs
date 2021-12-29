@@ -52,7 +52,7 @@ public enum SaveDataSpaceId : byte
     User = 1,
     SdSystem = 2,
     Temporary = 3,
-    SdCache = 4,
+    SdUser = 4,
     ProperSystem = 100,
     SafeMode = 101,
     BisAuto = 127
@@ -260,5 +260,5 @@ public enum SdCardSpeedMode
     Sdr50 = 5,
     Sdr104 = 6,
     Ddr50 = 7,
-    Unknown = 8,
+    Unknown = 8
 }

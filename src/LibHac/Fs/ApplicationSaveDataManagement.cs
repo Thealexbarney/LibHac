@@ -253,7 +253,7 @@ public static class ApplicationSaveDataManagement
         }
         else if (targetMedia == CacheStorageTargetMedia.SdCard)
         {
-            rc = TryCreateCacheStorage(fs, out requiredSizeLocal, SaveDataSpaceId.SdCache, applicationId,
+            rc = TryCreateCacheStorage(fs, out requiredSizeLocal, SaveDataSpaceId.SdUser, applicationId,
                 saveDataOwnerId, index, dataSize, journalSize, allowExisting);
             if (rc.IsFailure()) return rc;
         }
@@ -265,7 +265,7 @@ public static class ApplicationSaveDataManagement
             {
                 target = CacheStorageTargetMedia.SdCard;
 
-                Result CreateFuncSdCard() => fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdCache,
+                Result CreateFuncSdCard() => fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdUser,
                     saveDataOwnerId, index, dataSize, journalSize, SaveDataFlags.None);
 
                 rc = CreateSaveData(fs, CreateFuncSdCard, ref requiredSizeLocal, 0x4000, dataSize, journalSize);
@@ -420,7 +420,7 @@ public static class ApplicationSaveDataManagement
 
         if (fs.IsSdCardAccessible())
         {
-            Result rc = fs.FindSaveDataWithFilter(out _, SaveDataSpaceId.SdCache, in filter);
+            Result rc = fs.FindSaveDataWithFilter(out _, SaveDataSpaceId.SdUser, in filter);
             if (rc.IsFailure() && !ResultFs.TargetNotFound.Includes(rc)) return rc;
 
             if (rc.IsSuccess())

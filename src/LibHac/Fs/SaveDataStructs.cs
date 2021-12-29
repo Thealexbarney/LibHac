@@ -118,7 +118,7 @@ public struct SaveDataCreationInfo
     [FieldOffset(0x18)] public ulong OwnerId;
     [FieldOffset(0x20)] public SaveDataFlags Flags;
     [FieldOffset(0x24)] public SaveDataSpaceId SpaceId;
-    [FieldOffset(0x25)] public bool Field25;
+    [FieldOffset(0x25)] public bool IsPseudoSaveData;
 
     public static Result Make(out SaveDataCreationInfo creationInfo, long size, long journalSize, ulong ownerId,
         SaveDataFlags flags, SaveDataSpaceId spaceId)
@@ -132,7 +132,7 @@ public struct SaveDataCreationInfo
         tempCreationInfo.OwnerId = ownerId;
         tempCreationInfo.Flags = flags;
         tempCreationInfo.SpaceId = spaceId;
-        tempCreationInfo.Field25 = false;
+        tempCreationInfo.IsPseudoSaveData = false;
 
         if (!SaveDataTypesValidity.IsValid(in tempCreationInfo))
             return ResultFs.InvalidArgument.Log();
@@ -331,7 +331,7 @@ internal static class SaveDataTypesValidity
 
     public static bool IsValid(in SaveDataSpaceId spaceId)
     {
-        return (uint)spaceId <= (uint)SaveDataSpaceId.SdCache || spaceId == SaveDataSpaceId.ProperSystem ||
+        return (uint)spaceId <= (uint)SaveDataSpaceId.SdUser || spaceId == SaveDataSpaceId.ProperSystem ||
                spaceId == SaveDataSpaceId.SafeMode;
     }
 

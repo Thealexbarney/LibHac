@@ -140,7 +140,7 @@ public class ApplicationSaveDataManagementTests
         Assert.Equal(CacheStorageTargetMedia.SdCard, target);
 
         using var iterator = new UniqueRef<SaveDataIterator>();
-        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.SdCache);
+        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.SdUser);
 
         var info = new SaveDataInfo[2];
         Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
