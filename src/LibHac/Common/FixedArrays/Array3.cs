@@ -1,10 +1,9 @@
-﻿using System;
+﻿#pragma warning disable CS0169, IDE0051 // Remove unused private members
+using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace LibHac.Common.FixedArrays;
 
-[StructLayout(LayoutKind.Sequential)]
 public struct Array3<T>
 {
     public const int Length = 3;
