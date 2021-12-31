@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using LibHac.Util;
 
@@ -8,7 +7,6 @@ namespace LibHac.Common;
 /// <summary>
 /// A generic 128-bit ID value.
 /// </summary>
-[DebuggerDisplay("{ToString()}")]
 [StructLayout(LayoutKind.Sequential, Size = 0x10)]
 public struct Id128 : IEquatable<Id128>, IComparable<Id128>, IComparable
 {

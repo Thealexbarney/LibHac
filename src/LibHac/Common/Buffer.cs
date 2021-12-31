@@ -10,7 +10,6 @@ namespace LibHac.Common;
 /// Represents a buffer of 16 bytes.
 /// Contains functions that assist with common operations on small buffers.
 /// </summary>
-[DebuggerDisplay("{ToString()}")]
 [StructLayout(LayoutKind.Sequential, Size = 16)]
 public struct Buffer16
 {
@@ -67,7 +66,6 @@ public struct Buffer16
     }
 }
 
-[DebuggerDisplay("{ToString()}")]
 [StructLayout(LayoutKind.Sequential, Size = 32)]
 public struct Buffer32
 {

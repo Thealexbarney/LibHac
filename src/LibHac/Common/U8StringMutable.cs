@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Text;
 using LibHac.Util;
 
 namespace LibHac.Common;
 
-[DebuggerDisplay("{ToString()}")]
 public readonly struct U8StringMutable
 {
     private readonly byte[] _buffer;

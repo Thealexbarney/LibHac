@@ -8,7 +8,6 @@ using LibHac.Util;
 
 namespace LibHac.FsSrv.Sf;
 
-[DebuggerDisplay("{ToString()}")]
 [StructLayout(LayoutKind.Sequential, Size = MaxLength + 1)]
 public readonly struct FspPath
 {

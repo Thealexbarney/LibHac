@@ -8,7 +8,6 @@ using LibHac.Util;
 
 namespace LibHac.Lr;
 
-[DebuggerDisplay("{ToString()}")]
 [StructLayout(LayoutKind.Sequential, Size = PathTool.EntryNameLengthMax)]
 public struct Path
 {

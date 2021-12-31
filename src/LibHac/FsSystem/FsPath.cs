@@ -8,7 +8,6 @@ using LibHac.Util;
 
 namespace LibHac.FsSystem;
 
-[DebuggerDisplay("{ToString()}")]
 [StructLayout(LayoutKind.Sequential, Size = MaxLength + 1)]
 public struct FsPath
 {

@@ -8,7 +8,6 @@ using LibHac.Util;
 
 namespace LibHac.Crypto;
 
-[DebuggerDisplay("{ToString()}")]
 [StructLayout(LayoutKind.Explicit, Size = Size)]
 public struct AesKey
 {
@@ -36,7 +35,6 @@ public struct AesKey
 #endif
 }
 
-[DebuggerDisplay("{ToString()}")]
 [StructLayout(LayoutKind.Explicit, Size = Size)]
 public struct AesXtsKey
 {
@@ -64,7 +62,6 @@ public struct AesXtsKey
     public readonly override string ToString() => DataRo.ToHexString();
 }
 
-[DebuggerDisplay("{ToString()}")]
 [StructLayout(LayoutKind.Explicit, Size = Size)]
 public struct AesIv
 {
@@ -91,7 +88,6 @@ public struct AesIv
 #endif
 }
 
-[DebuggerDisplay("{ToString()}")]
 [StructLayout(LayoutKind.Explicit, Size = Size)]
 public struct AesCmac
 {

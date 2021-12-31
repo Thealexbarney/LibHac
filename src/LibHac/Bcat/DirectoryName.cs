@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Diagnostics;
 using LibHac.Common.FixedArrays;
 using LibHac.Util;
 
 namespace LibHac.Bcat;
 
-[DebuggerDisplay("{ToString()}")]
 public struct DirectoryName
 {
     private const int MaxSize = 0x20;

@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 
 namespace LibHac.Spl;
 
-[DebuggerDisplay("{ToString()}")]
 [StructLayout(LayoutKind.Sequential, Size = 0x10)]
 public struct AccessKey : IEquatable<AccessKey>
 {
