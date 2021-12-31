@@ -1,12 +1,12 @@
-﻿using System.Runtime.InteropServices;
+﻿using LibHac.Common.FixedArrays;
 using LibHac.Ncm;
 
 namespace LibHac.Fs;
 
-[StructLayout(LayoutKind.Explicit, Size = 0x20)]
 public struct ProgramIndexMapInfo
 {
-    [FieldOffset(0x00)] public ProgramId ProgramId;
-    [FieldOffset(0x08)] public ProgramId MainProgramId;
-    [FieldOffset(0x10)] public byte ProgramIndex;
+    public ProgramId ProgramId;
+    public ProgramId MainProgramId;
+    public byte ProgramIndex;
+    public Array15<byte> Reserved;
 }

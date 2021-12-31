@@ -146,4 +146,147 @@ public class TypeLayoutTests
         Assert.Equal(0x58, GetOffset(in s, in s.PooledBufferFailedIdealAllocationCountOnAsyncAccess));
         Assert.Equal(0x60, GetOffset(in s, in s.Reserved));
     }
+
+    [Fact]
+    public static void ApplicationInfo_Layout()
+    {
+        var s = new ApplicationInfo();
+
+        Assert.Equal(0x20, Unsafe.SizeOf<ApplicationInfo>());
+
+        Assert.Equal(0x0, GetOffset(in s, in s.ApplicationId));
+        Assert.Equal(0x8, GetOffset(in s, in s.Version));
+        Assert.Equal(0xC, GetOffset(in s, in s.LaunchType));
+        Assert.Equal(0xD, GetOffset(in s, in s.IsMultiProgram));
+        Assert.Equal(0xE, GetOffset(in s, in s.Reserved));
+    }
+
+    [Fact]
+    public static void CodeVerificationData_Layout()
+    {
+        var s = new CodeVerificationData();
+
+        Assert.Equal(0x124, Unsafe.SizeOf<CodeVerificationData>());
+
+        Assert.Equal(0x000, GetOffset(in s, in s.Signature));
+        Assert.Equal(0x100, GetOffset(in s, in s.Hash));
+        Assert.Equal(0x120, GetOffset(in s, in s.HasData));
+        Assert.Equal(0x121, GetOffset(in s, in s.Reserved));
+    }
+
+    [Fact]
+    public static void DirectoryEntry_Layout()
+    {
+        var s = new DirectoryEntry();
+
+        Assert.Equal(0x310, Unsafe.SizeOf<DirectoryEntry>());
+
+        Assert.Equal(0x000, GetOffset(in s, in s.Name));
+        Assert.Equal(0x301, GetOffset(in s, in s.Attributes));
+        Assert.Equal(0x302, GetOffset(in s, in s.Reserved302));
+        Assert.Equal(0x304, GetOffset(in s, in s.Type));
+        Assert.Equal(0x305, GetOffset(in s, in s.Reserved305));
+        Assert.Equal(0x308, GetOffset(in s, in s.Size));
+    }
+
+    [Fact]
+    public static void EncryptionSeed_Layout()
+    {
+        var s = new EncryptionSeed();
+
+        Assert.Equal(0x10, Unsafe.SizeOf<EncryptionSeed>());
+
+        Assert.Equal(0, GetOffset(in s, in s.Value));
+    }
+
+    [Fact]
+    public static void FileSystemProxyErrorInfo_Layout()
+    {
+        var s = new FileSystemProxyErrorInfo();
+
+        Assert.Equal(0x80, Unsafe.SizeOf<FileSystemProxyErrorInfo>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.RemountForDataCorruptionCount));
+        Assert.Equal(0x04, GetOffset(in s, in s.UnrecoverableDataCorruptionByRemountCount));
+        Assert.Equal(0x08, GetOffset(in s, in s.FatFsError));
+        Assert.Equal(0x28, GetOffset(in s, in s.RecoveredByInvalidateCacheCount));
+        Assert.Equal(0x2C, GetOffset(in s, in s.SaveDataIndexCount));
+        Assert.Equal(0x30, GetOffset(in s, in s.Reserved));
+    }
+
+    [Fact]
+    public static void StorageErrorInfo_Layout()
+    {
+        var s = new StorageErrorInfo();
+
+        Assert.Equal(0x10, Unsafe.SizeOf<StorageErrorInfo>());
+
+        Assert.Equal(0x0, GetOffset(in s, in s.NumActivationFailures));
+        Assert.Equal(0x4, GetOffset(in s, in s.NumActivationErrorCorrections));
+        Assert.Equal(0x8, GetOffset(in s, in s.NumReadWriteFailures));
+        Assert.Equal(0xC, GetOffset(in s, in s.NumReadWriteErrorCorrections));
+    }
+
+    [Fact]
+    public static void FileTimeStamp_Layout()
+    {
+        var s = new FileTimeStamp();
+
+        Assert.Equal(0x20, Unsafe.SizeOf<FileTimeStamp>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.Created));
+        Assert.Equal(0x08, GetOffset(in s, in s.Accessed));
+        Assert.Equal(0x10, GetOffset(in s, in s.Modified));
+        Assert.Equal(0x18, GetOffset(in s, in s.IsLocalTime));
+        Assert.Equal(0x19, GetOffset(in s, in s.Reserved));
+    }
+
+    [Fact]
+    public static void FileTimeStampRaw_Layout()
+    {
+        var s = new FileTimeStampRaw();
+
+        Assert.Equal(0x20, Unsafe.SizeOf<FileTimeStampRaw>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.Created));
+        Assert.Equal(0x08, GetOffset(in s, in s.Accessed));
+        Assert.Equal(0x10, GetOffset(in s, in s.Modified));
+        Assert.Equal(0x18, GetOffset(in s, in s.IsLocalTime));
+        Assert.Equal(0x19, GetOffset(in s, in s.Reserved));
+    }
+
+    [Fact]
+    public static void ProgramIndexMapInfo_Layout()
+    {
+        var s = new ProgramIndexMapInfo();
+
+        Assert.Equal(0x20, Unsafe.SizeOf<ProgramIndexMapInfo>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.ProgramId));
+        Assert.Equal(0x08, GetOffset(in s, in s.MainProgramId));
+        Assert.Equal(0x10, GetOffset(in s, in s.ProgramIndex));
+        Assert.Equal(0x11, GetOffset(in s, in s.Reserved));
+    }
+
+    [Fact]
+    public static void QueryRangeInfo_Layout()
+    {
+        var s = new QueryRangeInfo();
+
+        Assert.Equal(0x40, Unsafe.SizeOf<QueryRangeInfo>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.AesCtrKeyType));
+        Assert.Equal(0x04, GetOffset(in s, in s.SpeedEmulationType));
+        Assert.Equal(0x08, GetOffset(in s, in s.Reserved));
+    }
+
+    [Fact]
+    public static void RightsId_Layout()
+    {
+        var s = new RightsId();
+
+        Assert.Equal(0x10, Unsafe.SizeOf<RightsId>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.Value));
+    }
 }

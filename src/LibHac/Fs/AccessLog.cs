@@ -2,10 +2,10 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Unicode;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Diag;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
@@ -34,13 +34,13 @@ namespace LibHac.Fs
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = 0x20)]
     public struct ApplicationInfo
     {
         public Ncm.ApplicationId ApplicationId;
         public uint Version;
         public byte LaunchType;
         public bool IsMultiProgram;
+        public Array18<byte> Reserved;
     }
 
     [Flags]

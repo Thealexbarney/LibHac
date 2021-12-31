@@ -62,9 +62,9 @@ public class StatusReportServiceImpl
     {
         errorInfo = new FileSystemProxyErrorInfo();
 
-        _config.NcaFsServiceImpl.GetAndClearRomFsErrorInfo(out errorInfo.RomFsRemountForDataCorruptionCount,
-            out errorInfo.RomFsUnrecoverableDataCorruptionByRemountCount,
-            out errorInfo.RomFsRecoveredByInvalidateCacheCount);
+        _config.NcaFsServiceImpl.GetAndClearRomFsErrorInfo(out errorInfo.RemountForDataCorruptionCount,
+            out errorInfo.UnrecoverableDataCorruptionByRemountCount,
+            out errorInfo.RecoveredByInvalidateCacheCount);
 
         // Missing: GetFatInfo
 

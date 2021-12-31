@@ -1,18 +1,15 @@
 ﻿using System;
-using System.Runtime.InteropServices;
-using LibHac.Common;
+using LibHac.Common.FixedArrays;
 
 namespace LibHac.Fs;
-
-[StructLayout(LayoutKind.Explicit)]
 public struct DirectoryEntry
 {
-    [FieldOffset(0)] private byte _name;
-    [FieldOffset(0x301)] public NxFileAttributes Attributes;
-    [FieldOffset(0x304)] public DirectoryEntryType Type;
-    [FieldOffset(0x308)] public long Size;
-
-    public Span<byte> Name => SpanHelpers.CreateSpan(ref _name, PathTool.EntryNameLengthMax + 1);
+    public Array769<byte> Name;
+    public NxFileAttributes Attributes;
+    public Array2<byte> Reserved302;
+    public DirectoryEntryType Type;
+    public Array3<byte> Reserved305;
+    public long Size;
 }
 
 public enum DirectoryEntryType : byte

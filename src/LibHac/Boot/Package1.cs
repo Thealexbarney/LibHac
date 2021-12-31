@@ -1,71 +1,63 @@
-﻿using LibHac.Common;
-using LibHac.Fs;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Common.Keys;
 using LibHac.Diag;
+using LibHac.Fs;
 using LibHac.Tools.FsSystem;
 using LibHac.Util;
 
 namespace LibHac.Boot;
 
-[StructLayout(LayoutKind.Explicit, Size = 0x170)]
 public struct Package1MarikoOemHeader
 {
-    [FieldOffset(0x000)] private byte _aesMac;
-    [FieldOffset(0x010)] private byte _rsaSig;
-    [FieldOffset(0x110)] private byte _salt;
-    [FieldOffset(0x130)] private byte _hash;
-    [FieldOffset(0x150)] public int Version;
-    [FieldOffset(0x154)] public int Size;
-    [FieldOffset(0x158)] public int LoadAddress;
-    [FieldOffset(0x15C)] public int EntryPoint;
-    [FieldOffset(0x160)] private byte _reserved;
-
-    public ReadOnlySpan<byte> AesMac => SpanHelpers.CreateSpan(ref _aesMac, 0x10);
-    public ReadOnlySpan<byte> RsaSig => SpanHelpers.CreateSpan(ref _rsaSig, 0x100);
-    public ReadOnlySpan<byte> Salt => SpanHelpers.CreateSpan(ref _salt, 0x20);
-    public ReadOnlySpan<byte> Hash => SpanHelpers.CreateSpan(ref _hash, 0x20);
-    public ReadOnlySpan<byte> Reserved => SpanHelpers.CreateSpan(ref _reserved, 0x10);
+    public Array16<byte> AesMac;
+    public Array256<byte> RsaSig;
+    public Array32<byte> Salt;
+    public Array32<byte> Hash;
+    public int Version;
+    public int Size;
+    public int LoadAddress;
+    public int EntryPoint;
+    public Array16<byte> Reserved;
 }
 
-[StructLayout(LayoutKind.Explicit, Size = 0x20)]
 public struct Package1MetaData
 {
-    [FieldOffset(0x00)] public uint LoaderHash;
-    [FieldOffset(0x04)] public uint SecureMonitorHash;
-    [FieldOffset(0x08)] public uint BootloaderHash;
-    [FieldOffset(0x10)] private byte _buildDate;
-    [FieldOffset(0x1E)] public byte KeyGeneration;
-    [FieldOffset(0x1F)] public byte Version;
+    public uint LoaderHash;
+    public uint SecureMonitorHash;
+    public uint BootloaderHash;
+    public uint Reserved;
+    private Array14<byte> _buildDate;
+    public byte KeyGeneration;
+    public byte Version;
 
-    public U8Span BuildDate => new U8Span(SpanHelpers.CreateSpan(ref _buildDate, 0xE));
-    public ReadOnlySpan<byte> Iv => SpanHelpers.CreateSpan(ref _buildDate, 0x10);
+    public U8Span BuildDate => new U8Span(_buildDate);
+    public ReadOnlySpan<byte> Iv => SpanHelpers.CreateSpan(ref MemoryMarshal.GetReference(_buildDate.Items), 0x10);
 }
 
-[StructLayout(LayoutKind.Explicit, Size = 0x20)]
 public struct Package1Stage1Footer
 {
-    [FieldOffset(0x00)] public int Pk11Size;
-    [FieldOffset(0x10)] private byte _iv;
-
-    public ReadOnlySpan<byte> Iv => SpanHelpers.CreateSpan(ref _iv, 0x10);
+    public int Pk11Size;
+    public Array12<byte> Reserved;
+    public Array16<byte> Iv;
 }
 
-[StructLayout(LayoutKind.Explicit, Size = 0x20)]
 public struct Package1Pk11Header
 {
-    public const uint ExpectedMagic = 0x31314B50; // PK11
+    public static readonly uint ExpectedMagic = 0x31314B50; // PK11
 
-    [FieldOffset(0x00)] public uint Magic;
-    [FieldOffset(0x04)] public int WarmBootSize;
-    [FieldOffset(0x08)] public int WarmBootOffset;
-    [FieldOffset(0x10)] public int BootloaderSize;
-    [FieldOffset(0x14)] public int BootloaderOffset;
-    [FieldOffset(0x18)] public int SecureMonitorSize;
-    [FieldOffset(0x1C)] public int SecureMonitorOffset;
+    public uint Magic;
+    public int WarmBootSize;
+    public int WarmBootOffset;
+    public int Reserved;
+    public int BootloaderSize;
+    public int BootloaderOffset;
+    public int SecureMonitorSize;
+    public int SecureMonitorOffset;
 }
 
 public enum Package1Section
@@ -102,13 +94,13 @@ public class Package1
     private Package1MetaData _metaData;
     private Package1Stage1Footer _stage1Footer;
     private Package1Pk11Header _pk11Header;
-    private Buffer16 _pk11Mac;
+    private Array16<byte> _pk11Mac;
 
     public ref readonly Package1MarikoOemHeader MarikoOemHeader => ref _marikoOemHeader;
     public ref readonly Package1MetaData MetaData => ref _metaData;
     public ref readonly Package1Stage1Footer Stage1Footer => ref _stage1Footer;
     public ref readonly Package1Pk11Header Pk11Header => ref _pk11Header;
-    public ref readonly Buffer16 Pk11Mac => ref _pk11Mac;
+    public ref readonly Array16<byte> Pk11Mac => ref _pk11Mac;
 
     public Result Initialize(KeySet keySet, in SharedRef<IStorage> storage)
     {
@@ -259,7 +251,7 @@ public class Package1
 
     private Result ReadModernEristaMac()
     {
-        return _baseStorage.Get.Read(ModernStage1Size + Pk11Size, _pk11Mac.Bytes);
+        return _baseStorage.Get.Read(ModernStage1Size + Pk11Size, _pk11Mac.Items);
     }
 
     private Result SetPk11Storage()
@@ -295,7 +287,7 @@ public class Package1
             else
             {
                 decPk11Storage = new Aes128CtrStorage(encPk11Storage,
-                    KeySet.Package1Keys[KeyRevision].DataRo.ToArray(), _stage1Footer.Iv.ToArray(), true);
+                    KeySet.Package1Keys[KeyRevision].DataRo.ToArray(), _stage1Footer.Iv.ItemsRo.ToArray(), true);
             }
 
             _pk11Storage = new SubStorage(new CachedStorage(decPk11Storage, 0x4000, 1, true), 0, Pk11Size);
@@ -359,7 +351,7 @@ public class Package1
     // MarikoOemHeader must be read first
     private bool IsMarikoImpl()
     {
-        return MarikoOemHeader.AesMac.IsZeros() && MarikoOemHeader.Reserved.IsZeros();
+        return MarikoOemHeader.AesMac.ItemsRo.IsZeros() && MarikoOemHeader.Reserved.ItemsRo.IsZeros();
     }
 
     /// <summary>
@@ -392,7 +384,7 @@ public class Package1
 
             if (IsModern)
             {
-                storages.Add(new MemoryStorage(_pk11Mac.Bytes.ToArray()));
+                storages.Add(new MemoryStorage(_pk11Mac.ItemsRo.ToArray()));
             }
         }
 
@@ -436,7 +428,6 @@ public class Package1
 
         return new SubStorage(_pk11Storage, offset, size);
     }
-
 
     public IStorage OpenDecryptedWarmBootStorage()
     {

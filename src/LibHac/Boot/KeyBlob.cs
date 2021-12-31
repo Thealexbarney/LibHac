@@ -1,42 +1,27 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Crypto;
 using LibHac.Util;
 
 namespace LibHac.Boot;
 
-[DebuggerDisplay("{ToString()}")]
-[StructLayout(LayoutKind.Explicit, Size = 0xB0)]
 public struct EncryptedKeyBlob
 {
-#if DEBUG
-    [FieldOffset(0x00)] [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Buffer32 _dummy1;
-    [FieldOffset(0x20)] [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Buffer32 _dummy2;
-    [FieldOffset(0x40)] [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Buffer32 _dummy3;
-    [FieldOffset(0x60)] [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Buffer32 _dummy4;
-    [FieldOffset(0x80)] [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Buffer32 _dummy5;
-    [FieldOffset(0xA0)] [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Buffer16 _dummy6;
-#endif
-
-    [FieldOffset(0x00)] public AesCmac Cmac;
-    [FieldOffset(0x10)] public AesIv Counter;
-
-    public Span<byte> Payload => Bytes.Slice(0x20, Unsafe.SizeOf<KeyBlob>());
+    public AesCmac Cmac;
+    public AesIv Counter;
+    public Array144<byte> Payload;
 
     public Span<byte> Bytes => SpanHelpers.AsByteSpan(ref this);
-    public readonly ReadOnlySpan<byte> ReadOnlyBytes => SpanHelpers.AsReadOnlyByteSpan(in this);
+    public readonly ReadOnlySpan<byte> BytesRo => SpanHelpers.AsReadOnlyByteSpan(in this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool IsZeros()
     {
-        ReadOnlySpan<ulong> ulongSpan = MemoryMarshal.Cast<byte, ulong>(ReadOnlyBytes);
-
-        for (int i = 0; i < ulongSpan.Length; i++)
+        foreach (ulong val in SpanHelpers.AsReadOnlySpan<EncryptedKeyBlob, ulong>(in this))
         {
-            if (ulongSpan[i] != 0)
+            if (val != 0)
                 return false;
         }
 
@@ -44,39 +29,27 @@ public struct EncryptedKeyBlob
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator ReadOnlySpan<byte>(in EncryptedKeyBlob value)
-    {
-        return SpanHelpers.AsReadOnlyByteSpan(in value);
-    }
+    public static implicit operator ReadOnlySpan<byte>(in EncryptedKeyBlob value) =>
+        SpanHelpers.AsReadOnlyByteSpan(in value);
 
-    public readonly override string ToString() => ReadOnlyBytes.ToHexString();
+    public readonly override string ToString() => BytesRo.ToHexString();
 }
 
-[DebuggerDisplay("{ToString()}")]
-[StructLayout(LayoutKind.Explicit, Size = 0x90)]
 public struct KeyBlob
 {
-#if DEBUG
-    [FieldOffset(0x00)] [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Buffer32 _dummy1;
-    [FieldOffset(0x20)] [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Buffer32 _dummy2;
-    [FieldOffset(0x40)] [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Buffer32 _dummy3;
-    [FieldOffset(0x60)] [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Buffer32 _dummy4;
-#endif
-
-    [FieldOffset(0x00)] public AesKey MasterKek;
-    [FieldOffset(0x80)] public AesKey Package1Key;
+    public AesKey MasterKek;
+    public Array112<byte> Unused;
+    public AesKey Package1Key;
 
     public Span<byte> Bytes => SpanHelpers.AsByteSpan(ref this);
-    public readonly ReadOnlySpan<byte> ReadOnlyBytes => SpanHelpers.AsReadOnlyByteSpan(in this);
+    public readonly ReadOnlySpan<byte> BytesRo => SpanHelpers.AsReadOnlyByteSpan(in this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool IsZeros()
     {
-        ReadOnlySpan<ulong> ulongSpan = MemoryMarshal.Cast<byte, ulong>(ReadOnlyBytes);
-
-        for (int i = 0; i < ulongSpan.Length; i++)
+        foreach (ulong val in SpanHelpers.AsReadOnlySpan<KeyBlob, ulong>(in this))
         {
-            if (ulongSpan[i] != 0)
+            if (val != 0)
                 return false;
         }
 
@@ -84,10 +57,6 @@ public struct KeyBlob
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator ReadOnlySpan<byte>(in KeyBlob value)
-    {
-        return SpanHelpers.AsReadOnlyByteSpan(in value);
-    }
-
-    public readonly override string ToString() => ReadOnlyBytes.ToHexString();
+    public static implicit operator ReadOnlySpan<byte>(in KeyBlob value) => SpanHelpers.AsReadOnlyByteSpan(in value);
+    public readonly override string ToString() => BytesRo.ToHexString();
 }
