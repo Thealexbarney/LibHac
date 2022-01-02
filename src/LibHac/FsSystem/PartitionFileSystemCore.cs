@@ -359,7 +359,7 @@ public class PartitionFileSystemCore<T> : IFileSystem where T : unmanaged, IPart
 
                     U8Span name = ParentFs._metaData.GetName(CurrentIndex);
                     StringUtils.Copy(entryBuffer[i].Name.Items, name);
-                    entryBuffer[i].Name[FsPath.MaxLength] = 0;
+                    entryBuffer[i].Name[PathTool.EntryNameLengthMax] = 0;
 
                     CurrentIndex++;
                 }

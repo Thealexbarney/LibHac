@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
@@ -96,8 +95,6 @@ public class InitialProcessBinaryReader : IDisposable
         return Result.Success;
     }
 
-
-    [StructLayout(LayoutKind.Sequential, Size = 0x10)]
     public struct IniHeader
     {
         public uint Magic;

@@ -229,7 +229,7 @@ public class SwitchFs : IDisposable
                 control.Get.Read(out _, 0, title.Control.ByteSpan).ThrowIfFailure();
             }
 
-            foreach (ref ApplicationControlTitle desc in title.Control.Value.Titles)
+            foreach (ref readonly ApplicationControlProperty.ApplicationTitle desc in title.Control.Value.Title.ItemsRo)
             {
                 if (!desc.Name.IsEmpty())
                 {

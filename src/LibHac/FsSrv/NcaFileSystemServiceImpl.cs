@@ -474,7 +474,7 @@ public class NcaFileSystemServiceImpl
             return ResultFs.PathNotFound.Log();
         }
 
-        if (StringUtils.GetLength(path, FsPath.MaxLength) == 0)
+        if (StringUtils.GetLength(path, PathTool.EntryNameLengthMax) == 0)
         {
             shouldContinue = false;
         }

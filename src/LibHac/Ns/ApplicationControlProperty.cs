@@ -1,188 +1,302 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 using LibHac.Common;
-using LibHac.Ncm;
+using LibHac.Common.FixedArrays;
 
 namespace LibHac.Ns;
 
-[StructLayout(LayoutKind.Explicit, Size = 0x4000)]
 public struct ApplicationControlProperty
 {
-    private const int TitleCount = 0x10;
-    private const int IsbnSize = 0x25;
-    private const int RatingAgeCount = 0x20;
-    private const int DisplayVersionSize = 0x10;
-    private const int ApplicationErrorCodeCategorySize = 8;
-    private const int LocalCommunicationIdCount = 8;
-    private const int Reserved30F3Size = 3;
-    private const int BcatPassphraseSize = 0x41;
-    private const int ReservedForUserAccountSaveDataOperationSize = 6;
-    private const int PlayLogQueryableApplicationIdCount = 0x10;
-    private const int ReceivableDataConfigurationCount = 0x10;
+    public Array16<ApplicationTitle> Title;
+    public Array37<byte> Isbn;
+    public StartupUserAccountValue StartupUserAccount;
+    public UserAccountSwitchLockValue UserAccountSwitchLock;
+    public AddOnContentRegistrationTypeValue AddOnContentRegistrationType;
+    public AttributeFlagValue AttributeFlag;
+    public uint SupportedLanguageFlag;
+    public ParentalControlFlagValue ParentalControlFlag;
+    public ScreenshotValue Screenshot;
+    public VideoCaptureValue VideoCapture;
+    public DataLossConfirmationValue DataLossConfirmation;
+    public PlayLogPolicyValue PlayLogPolicy;
+    public ulong PresenceGroupId;
+    public Array32<sbyte> RatingAge;
+    public Array16<byte> DisplayVersion;
+    public ulong AddOnContentBaseId;
+    public ulong SaveDataOwnerId;
+    public long UserAccountSaveDataSize;
+    public long UserAccountSaveDataJournalSize;
+    public long DeviceSaveDataSize;
+    public long DeviceSaveDataJournalSize;
+    public long BcatDeliveryCacheStorageSize;
+    public Array8<byte> ApplicationErrorCodeCategory;
+    public Array8<ulong> LocalCommunicationId;
+    public LogoTypeValue LogoType;
+    public LogoHandlingValue LogoHandling;
+    public RuntimeAddOnContentInstallValue RuntimeAddOnContentInstall;
+    public RuntimeParameterDeliveryValue RuntimeParameterDelivery;
+    public Array2<byte> Reserved30F4;
+    public CrashReportValue CrashReport;
+    public HdcpValue Hdcp;
+    public ulong SeedForPseudoDeviceId;
+    public Array65<byte> BcatPassphrase;
+    public StartupUserAccountOptionFlagValue StartupUserAccountOption;
+    public Array6<byte> ReservedForUserAccountSaveDataOperation;
+    public long UserAccountSaveDataSizeMax;
+    public long UserAccountSaveDataJournalSizeMax;
+    public long DeviceSaveDataSizeMax;
+    public long DeviceSaveDataJournalSizeMax;
+    public long TemporaryStorageSize;
+    public long CacheStorageSize;
+    public long CacheStorageJournalSize;
+    public long CacheStorageDataAndJournalSizeMax;
+    public ushort CacheStorageIndexMax;
+    public byte Reserved318A;
+    public byte RuntimeUpgrade;
+    public uint SupportingLimitedLicenses;
+    public Array16<ulong> PlayLogQueryableApplicationId;
+    public PlayLogQueryCapabilityValue PlayLogQueryCapability;
+    public RepairFlagValue RepairFlag;
+    public byte ProgramIndex;
+    public RequiredNetworkServiceLicenseOnLaunchValue RequiredNetworkServiceLicenseOnLaunchFlag;
+    public Array4<byte> Reserved3214;
+    public ApplicationNeighborDetectionClientConfiguration NeighborDetectionClientConfiguration;
+    public ApplicationJitConfiguration JitConfiguration;
+    public RequiredAddOnContentsSetBinaryDescriptor RequiredAddOnContentsSetBinaryDescriptors;
+    public PlayReportPermissionValue PlayReportPermission;
+    public CrashScreenshotForProdValue CrashScreenshotForProd;
+    public CrashScreenshotForDevValue CrashScreenshotForDev;
+    public byte ContentsAvailabilityTransitionPolicy;
+    public Array4<byte> Reserved3404;
+    public AccessibleLaunchRequiredVersionValue AccessibleLaunchRequiredVersion;
+    public Array3000<byte> Reserved3448;
 
-    [FieldOffset(0x0000)] private byte _titles;
-    [FieldOffset(0x3000)] private byte _isbn;
-    [FieldOffset(0x3025)] public StartupUserAccount StartupUserAccount;
-    [FieldOffset(0x3026)] public byte UserAccountSwitchLock;
-    [FieldOffset(0x3027)] public byte AddOnContentRegistrationType;
-    [FieldOffset(0x3028)] public ApplicationAttribute ApplicationAttribute;
-    [FieldOffset(0x302C)] public uint SupportedLanguages;
-    [FieldOffset(0x3030)] public ParentalControlFlagValue ParentalControl;
-    [FieldOffset(0x3034)] public ScreenshotValue Screenshot;
-    [FieldOffset(0x3035)] public VideoCaptureValue VideoCaptureMode;
-    [FieldOffset(0x3036)] public byte DataLossConfirmation;
-    [FieldOffset(0x3037)] public byte PlayLogPolicy;
-    [FieldOffset(0x3038)] public ulong PresenceGroupId;
-    [FieldOffset(0x3040)] private sbyte _ratingAge;
-    [FieldOffset(0x3060)] private byte _displayVersion;
-    [FieldOffset(0x3070)] public ulong AddOnContentBaseId;
-    [FieldOffset(0x3078)] public ProgramId SaveDataOwnerId;
-    [FieldOffset(0x3080)] public long UserAccountSaveDataSize;
-    [FieldOffset(0x3088)] public long UserAccountSaveDataJournalSize;
-    [FieldOffset(0x3090)] public long DeviceSaveDataSize;
-    [FieldOffset(0x3098)] public long DeviceSaveDataJournalSize;
-    [FieldOffset(0x30A0)] public long BcatDeliveryCacheStorageSize;
-    [FieldOffset(0x30A8)] private byte _applicationErrorCodeCategory;
-    [FieldOffset(0x30B0)] private ulong _localCommunicationIds;
-    [FieldOffset(0x30F0)] public LogoType LogoType;
-    [FieldOffset(0x30F1)] public LogoHandling LogoHandling;
-    [FieldOffset(0x30F2)] public byte RuntimeAddOnContentInstall;
-    [FieldOffset(0x30F3)] public byte _reserved30F3;
-    [FieldOffset(0x30F6)] public byte CrashReport;
-    [FieldOffset(0x30F7)] public byte Hdcp;
-    [FieldOffset(0x30F8)] public ulong SeedForPseudoDeviceId;
-    [FieldOffset(0x3100)] private byte _bcatPassphrase;
-    [FieldOffset(0x3141)] public byte StartupUserAccountOption;
-    [FieldOffset(0x3142)] private byte _reservedForUserAccountSaveDataOperation;
-    [FieldOffset(0x3148)] public long UserAccountSaveDataMaxSize;
-    [FieldOffset(0x3150)] public long UserAccountSaveDataMaxJournalSize;
-    [FieldOffset(0x3158)] public long DeviceSaveDataMaxSize;
-    [FieldOffset(0x3160)] public long DeviceSaveDataMaxJournalSize;
-    [FieldOffset(0x3168)] public long TemporaryStorageSize;
-    [FieldOffset(0x3170)] public long CacheStorageSize;
-    [FieldOffset(0x3178)] public long CacheStorageJournalSize;
-    [FieldOffset(0x3180)] public long CacheStorageMaxSizeAndMaxJournalSize;
-    [FieldOffset(0x3188)] public long CacheStorageMaxIndex;
-    [FieldOffset(0x3190)] private ulong _playLogQueryableApplicationId;
-    [FieldOffset(0x3210)] public PlayLogQueryCapability PlayLogQueryCapability;
-    [FieldOffset(0x3211)] public byte RepairFlag;
-    [FieldOffset(0x3212)] public byte ProgramIndex;
-    [FieldOffset(0x3213)] public byte RequiredNetworkServiceLicenseOnLaunchFlag;
-    [FieldOffset(0x3214)] public uint Reserved3214;
-    [FieldOffset(0x3218)] public ApplicationControlDataConfiguration SendDataConfiguration;
-    [FieldOffset(0x3230)] private ApplicationControlDataConfiguration _receivableDataConfigurations;
-    [FieldOffset(0x32B0)] public ulong JitConfigurationFlag;
-    [FieldOffset(0x32B8)] public long MemorySize;
+    public struct ApplicationTitle
+    {
+        private Array512<byte> _name;
+        private Array256<byte> _publisher;
 
-    [FieldOffset(0x3000), DebuggerBrowsable(DebuggerBrowsableState.Never)] private Padding200 _padding1;
-    [FieldOffset(0x3200), DebuggerBrowsable(DebuggerBrowsableState.Never)] private Padding100 _padding2;
+        public U8SpanMutable Name => new U8SpanMutable(_name.Items);
+        public U8SpanMutable Publisher => new U8SpanMutable(_publisher.Items);
+    }
 
-    public Span<ApplicationControlTitle> Titles => SpanHelpers.CreateSpan(ref Unsafe.As<byte, ApplicationControlTitle>(ref _titles), TitleCount);
-    public U8SpanMutable Isbn => new U8SpanMutable(SpanHelpers.CreateSpan(ref _isbn, IsbnSize));
-    public Span<sbyte> RatingAge => SpanHelpers.CreateSpan(ref _ratingAge, RatingAgeCount);
-    public U8SpanMutable DisplayVersion => new U8SpanMutable(SpanHelpers.CreateSpan(ref _displayVersion, DisplayVersionSize));
+    public struct ApplicationNeighborDetectionClientConfiguration
+    {
+        public ApplicationNeighborDetectionGroupConfiguration SendGroupConfiguration;
+        public Array16<ApplicationNeighborDetectionGroupConfiguration> ReceivableGroupConfigurations;
+    }
 
-    public U8SpanMutable ApplicationErrorCodeCategory =>
-        new U8SpanMutable(SpanHelpers.CreateSpan(ref _applicationErrorCodeCategory,
-            ApplicationErrorCodeCategorySize));
+    public struct ApplicationNeighborDetectionGroupConfiguration
+    {
+        public ulong GroupId;
+        public Array16<byte> Key;
+    }
 
-    public Span<ulong> LocalCommunicationIds => SpanHelpers.CreateSpan(ref _localCommunicationIds, LocalCommunicationIdCount);
-    public Span<byte> Reserved30F3 => SpanHelpers.CreateSpan(ref _reserved30F3, Reserved30F3Size);
-    public U8SpanMutable BcatPassphrase => new U8SpanMutable(SpanHelpers.CreateSpan(ref _bcatPassphrase, BcatPassphraseSize));
+    public struct ApplicationJitConfiguration
+    {
+        public JitConfigurationFlag Flags;
+        public long MemorySize;
+    }
 
-    public Span<byte> ReservedForUserAccountSaveDataOperation =>
-        SpanHelpers.CreateSpan(ref _reservedForUserAccountSaveDataOperation,
-            ReservedForUserAccountSaveDataOperationSize);
+    public struct RequiredAddOnContentsSetBinaryDescriptor
+    {
+        public Array32<ushort> Descriptors;
+    }
 
-    public Span<ulong> PlayLogQueryableApplicationId =>
-        SpanHelpers.CreateSpan(ref _playLogQueryableApplicationId, PlayLogQueryableApplicationIdCount);
+    public struct AccessibleLaunchRequiredVersionValue
+    {
+        public Array8<ulong> ApplicationId;
+    }
 
-    public Span<ApplicationControlDataConfiguration> ReceivableDataConfigurations =>
-        SpanHelpers.CreateSpan(ref _receivableDataConfigurations, ReceivableDataConfigurationCount);
-}
+    public enum Language
+    {
+        AmericanEnglish = 0,
+        BritishEnglish = 1,
+        Japanese = 2,
+        French = 3,
+        German = 4,
+        LatinAmericanSpanish = 5,
+        Spanish = 6,
+        Italian = 7,
+        Dutch = 8,
+        CanadianFrench = 9,
+        Portuguese = 10,
+        Russian = 11,
+        Korean = 12,
+        TraditionalChinese = 13,
+        SimplifiedChinese = 14,
+        BrazilianPortuguese = 15
+    }
 
-[StructLayout(LayoutKind.Explicit, Size = 0x300)]
-public struct ApplicationControlTitle
-{
-    private const int NameLength = 0x200;
-    private const int PublisherLength = 0x100;
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
+    public enum Organization
+    {
+        CERO = 0,
+        GRACGCRB = 1,
+        GSRMR = 2,
+        ESRB = 3,
+        ClassInd = 4,
+        USK = 5,
+        PEGI = 6,
+        PEGIPortugal = 7,
+        PEGIBBFC = 8,
+        Russian = 9,
+        ACB = 10,
+        OFLC = 11,
+        IARCGeneric = 12
+    }
 
-    [FieldOffset(0x000)] private byte _name;
-    [FieldOffset(0x200)] private byte _publisher;
+    public enum StartupUserAccountValue : byte
+    {
+        None = 0,
+        Required = 1,
+        RequiredWithNetworkServiceAccountAvailable = 2
+    }
 
-    [FieldOffset(0x000), DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private Padding200 _padding0;
+    public enum UserAccountSwitchLockValue : byte
+    {
+        Disable = 0,
+        Enable = 1
+    }
 
-    [FieldOffset(0x200), DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private Padding100 _padding200;
+    public enum AddOnContentRegistrationTypeValue : byte
+    {
+        AllOnLaunch = 0,
+        OnDemand = 1
+    }
 
-    public U8SpanMutable Name => new U8SpanMutable(SpanHelpers.CreateSpan(ref _name, NameLength));
-    public U8SpanMutable Publisher => new U8SpanMutable(SpanHelpers.CreateSpan(ref _publisher, PublisherLength));
-}
+    [Flags]
+    public enum AttributeFlagValue
+    {
+        None = 0,
+        Demo = 1 << 0,
+        RetailInteractiveDisplay = 1 << 1,
+    }
 
-[StructLayout(LayoutKind.Explicit, Size = 0x18)]
-public struct ApplicationControlDataConfiguration
-{
-    [FieldOffset(0)] public ulong Id;
-    [FieldOffset(8)] private byte _key;
+    public enum ParentalControlFlagValue
+    {
+        None = 0,
+        FreeCommunication = 1
+    }
 
-    [FieldOffset(8), DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private Padding10 _keyPadding;
+    public enum ScreenshotValue : byte
+    {
+        Allow = 0,
+        Deny = 1
+    }
 
-    public Span<byte> Key => SpanHelpers.CreateSpan(ref _key, 0x10);
-}
+    public enum VideoCaptureValue : byte
+    {
+        Disable = 0,
+        Manual = 1,
+        Enable = 2
+    }
 
-public enum StartupUserAccount : byte
-{
-    None = 0,
-    Required = 1,
-    RequiredWithNetworkServiceAccountAvailable = 2
-}
+    public enum DataLossConfirmationValue : byte
+    {
+        None = 0,
+        Required = 1
+    }
 
-public enum LogoHandling : byte
-{
-    Auto = 0,
-    Manual = 1
-}
+    public enum PlayLogPolicyValue : byte
+    {
+        Open = 0,
+        LogOnly = 1,
+        None = 2,
+        Closed = 3,
+        All = 0
+    }
 
-public enum LogoType : byte
-{
-    LicensedByNintendo = 0,
-    DistributedByNintendo = 1,
-    Nintendo = 2
-}
+    public enum LogoTypeValue : byte
+    {
+        LicensedByNintendo = 0,
+        DistributedByNintendo = 1,
+        Nintendo = 2
+    }
 
-[Flags]
-public enum ApplicationAttribute
-{
-    None = 0,
-    Demo = 1
-}
+    public enum LogoHandlingValue : byte
+    {
+        Auto = 0,
+        Manual = 1
+    }
 
-public enum PlayLogQueryCapability : byte
-{
-    None = 0,
-    WhiteList = 1,
-    All = 2
-}
+    public enum RuntimeAddOnContentInstallValue : byte
+    {
+        Deny = 0,
+        AllowAppend = 1,
+        AllowAppendButDontDownloadWhenUsingNetwork = 2
+    }
 
-public enum ParentalControlFlagValue
-{
-    None = 0,
-    FreeCommunication = 1
-}
+    public enum RuntimeParameterDeliveryValue : byte
+    {
+        Always = 0,
+        AlwaysIfUserStateMatched = 1,
+        OnRestart = 2
+    }
 
-public enum ScreenshotValue : byte
-{
-    Allow = 0,
-    Deny = 1
-}
+    public enum CrashReportValue : byte
+    {
+        Deny = 0,
+        Allow = 1
+    }
 
-public enum VideoCaptureValue : byte
-{
-    Deny = 0,
-    Allow = 1,
-    Automatic = 2
+    public enum HdcpValue : byte
+    {
+        None = 0,
+        Required = 1
+    }
+
+    [Flags]
+    public enum StartupUserAccountOptionFlagValue : byte
+    {
+        None = 0,
+        IsOptional = 1 << 0
+    }
+
+    public enum PlayLogQueryCapabilityValue : byte
+    {
+        None = 0,
+        WhiteList = 1,
+        All = 2
+    }
+
+    [Flags]
+    public enum RepairFlagValue : byte
+    {
+        None = 0,
+        SuppressGameCardAccess = 1 << 0
+    }
+
+    [Flags]
+    public enum RequiredNetworkServiceLicenseOnLaunchValue : byte
+    {
+        None = 0,
+        Common = 1 << 0
+    }
+
+    [Flags]
+    public enum JitConfigurationFlag : ulong
+    {
+        None = 0,
+        Enabled = 1 << 0
+    }
+
+    [Flags]
+    public enum PlayReportPermissionValue : byte
+    {
+        None = 0,
+        TargetMarketing = 1 << 0
+    }
+
+    public enum CrashScreenshotForProdValue : byte
+    {
+        Deny = 0,
+        Allow = 1
+    }
+
+    public enum CrashScreenshotForDevValue : byte
+    {
+        Deny = 0,
+        Allow = 1
+    }
 }

@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Diag;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
-using LibHac.FsSystem;
 using LibHac.Os;
 using LibHac.Util;
 using static LibHac.Fs.StringTraits;
@@ -65,11 +65,11 @@ public static class Host
 
     private class HostCommonMountNameGenerator : ICommonMountNameGenerator
     {
-        private FsPath _path;
+        private Array769<byte> _path;
 
         public HostCommonMountNameGenerator(U8Span path)
         {
-            StringUtils.Strlcpy(_path.Str, path, FsPath.MaxLength + 1);
+            StringUtils.Strlcpy(_path.Items, path, PathTool.EntryNameLengthMax + 1);
         }
 
         public void Dispose() { }
@@ -77,13 +77,13 @@ public static class Host
         public Result GenerateCommonMountName(Span<byte> nameBuffer)
         {
             int requiredNameBufferSize =
-                StringUtils.GetLength(_path.Str, FsPath.MaxLength + 1) + HostRootFileSystemPathLength;
+                StringUtils.GetLength(_path, PathTool.EntryNameLengthMax + 1) + HostRootFileSystemPathLength;
 
             if (nameBuffer.Length < requiredNameBufferSize)
                 return ResultFs.TooLongPath.Log();
 
             var sb = new U8StringBuilder(nameBuffer);
-            sb.Append(HostRootFileSystemPath).Append(_path.Str);
+            sb.Append(HostRootFileSystemPath).Append(_path);
 
             Assert.SdkEqual(sb.Length, requiredNameBufferSize - 1);
 
