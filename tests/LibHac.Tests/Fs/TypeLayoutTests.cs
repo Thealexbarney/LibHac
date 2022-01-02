@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using LibHac.Fs;
+using LibHac.Fs.Impl;
 using Xunit;
 using static LibHac.Tests.Common.Layout;
 
@@ -288,5 +289,69 @@ public class TypeLayoutTests
         Assert.Equal(0x10, Unsafe.SizeOf<RightsId>());
 
         Assert.Equal(0x00, GetOffset(in s, in s.Value));
+    }
+
+    [Fact]
+    public static void RsaEncryptedKey_Layout()
+    {
+        var s = new RsaEncryptedKey();
+
+        Assert.Equal(0x100, Unsafe.SizeOf<RsaEncryptedKey>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.Value));
+    }
+
+    [Fact]
+    public static void AesKey_Layout()
+    {
+        var s = new AesKey();
+
+        Assert.Equal(0x10, Unsafe.SizeOf<AesKey>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.Value));
+    }
+
+    [Fact]
+    public static void InitialDataAad_Layout()
+    {
+        var s = new InitialDataAad();
+
+        Assert.Equal(0x20, Unsafe.SizeOf<InitialDataAad>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.Value));
+    }
+
+    [Fact]
+    public static void KeySeed_Layout()
+    {
+        var s = new KeySeed();
+
+        Assert.Equal(0x10, Unsafe.SizeOf<KeySeed>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.Value));
+    }
+
+    [Fact]
+    public static void InitialDataMac_Layout()
+    {
+        var s = new InitialDataMac();
+
+        Assert.Equal(0x10, Unsafe.SizeOf<InitialDataMac>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.Value));
+    }
+
+    [Fact]
+    public static void ImportReportInfo_Layout()
+    {
+        var s = new ImportReportInfo();
+
+        Assert.Equal(0x20, Unsafe.SizeOf<ImportReportInfo>());
+
+        Assert.Equal(0, GetOffset(in s, in s.DiffChunkCount));
+        Assert.Equal(1, GetOffset(in s, in s.DoubleDivisionDiffChunkCount));
+        Assert.Equal(2, GetOffset(in s, in s.HalfDivisionDiffChunkCount));
+        Assert.Equal(3, GetOffset(in s, in s.CompressionRate));
+        Assert.Equal(4, GetOffset(in s, in s.Reserved));
     }
 }

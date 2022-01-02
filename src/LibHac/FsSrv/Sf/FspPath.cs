@@ -1,26 +1,21 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Fs;
 using LibHac.Util;
 
 namespace LibHac.FsSrv.Sf;
 
-[StructLayout(LayoutKind.Sequential, Size = MaxLength + 1)]
+[StructLayout(LayoutKind.Sequential)]
 public readonly struct FspPath
 {
     internal const int MaxLength = 0x300;
 
-#if DEBUG
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Padding100 Padding000;
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Padding100 Padding100;
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Padding100 Padding200;
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly byte Padding300;
-#endif
+    private readonly Array769<byte> _value;
 
-    public ReadOnlySpan<byte> Str => SpanHelpers.AsReadOnlyByteSpan(in this);
+    public ReadOnlySpan<byte> Str => SpanHelpers.AsReadOnlyByteSpan(in _value);
 
     public static Result FromSpan(out FspPath fspPath, ReadOnlySpan<byte> path)
     {
@@ -28,7 +23,7 @@ public readonly struct FspPath
 
         Span<byte> str = SpanHelpers.AsByteSpan(ref fspPath);
 
-        // Ensure null terminator even if the creation fails for safety
+        // Ensure null terminator even if the creation fails
         str[MaxLength] = 0;
 
         var sb = new U8StringBuilder(str);

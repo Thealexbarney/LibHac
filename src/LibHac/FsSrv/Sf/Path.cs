@@ -1,23 +1,14 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using LibHac.Common;
-using LibHac.Fs;
-
-#if DEBUG
-using System.Diagnostics;
-#endif
+using LibHac.Common.FixedArrays;
 
 namespace LibHac.FsSrv.Sf;
 
-[StructLayout(LayoutKind.Sequential, Size = PathTool.EntryNameLengthMax + 1)]
+[StructLayout(LayoutKind.Sequential)]
 public readonly struct Path
 {
-#if DEBUG
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Padding100 Padding000;
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Padding100 Padding100;
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly Padding100 Padding200;
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly byte Padding300;
-#endif
+    private readonly Array769<byte> _value;
 
-    public ReadOnlySpan<byte> Str => SpanHelpers.AsReadOnlyByteSpan(in this);
+    public ReadOnlySpan<byte> Str => SpanHelpers.AsReadOnlyByteSpan(in _value);
 }

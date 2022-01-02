@@ -752,30 +752,30 @@ public readonly struct AccessControlBits
     public bool CanWriteSaveDataFileSystemExtraDataTimeStamp() => Has(Bits.SaveDataBackUp);
 }
 
-[StructLayout(LayoutKind.Explicit, Size = 0x2C)]
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
 internal struct AccessControlDescriptor
 {
-    [FieldOffset(0x00)] public byte Version;
-    [FieldOffset(0x01)] public byte ContentOwnerIdCount;
-    [FieldOffset(0x02)] public byte SaveDataOwnerIdCount;
-    [FieldOffset(0x04)] public ulong AccessFlags;
-    [FieldOffset(0x0C)] public ulong ContentOwnerIdMin;
-    [FieldOffset(0x14)] public ulong ContentOwnerIdMax;
-    [FieldOffset(0x1C)] public ulong SaveDataOwnerIdMin;
-    [FieldOffset(0x24)] public ulong SaveDataOwnerIdMax;
+    public byte Version;
+    public byte ContentOwnerIdCount;
+    public byte SaveDataOwnerIdCount;
+    public ulong AccessFlags;
+    public ulong ContentOwnerIdMin;
+    public ulong ContentOwnerIdMax;
+    public ulong SaveDataOwnerIdMin;
+    public ulong SaveDataOwnerIdMax;
     // public ulong ContentOwnerIds[ContentOwnerIdCount];
     // public ulong SaveDataOwnerIds[SaveDataOwnerIdCount];
 }
 
-[StructLayout(LayoutKind.Explicit, Size = 0x1C)]
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
 internal struct AccessControlDataHeader
 {
-    [FieldOffset(0x00)] public byte Version;
-    [FieldOffset(0x04)] public ulong AccessFlags;
-    [FieldOffset(0x0C)] public int ContentOwnerInfoOffset;
-    [FieldOffset(0x10)] public int ContentOwnerInfoSize;
-    [FieldOffset(0x14)] public int SaveDataOwnerInfoOffset;
-    [FieldOffset(0x18)] public int SaveDataOwnerInfoSize;
+    public byte Version;
+    public ulong AccessFlags;
+    public int ContentOwnerInfoOffset;
+    public int ContentOwnerInfoSize;
+    public int SaveDataOwnerInfoOffset;
+    public int SaveDataOwnerInfoSize;
 
     // [FieldOffset(ContentOwnerInfoOffset)]
     // public int ContentOwnerInfoCount;
